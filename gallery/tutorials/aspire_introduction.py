@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import aspire
-
+from aspire.image import Image
 
 # %%
 # API Primitives
@@ -88,16 +88,15 @@ import aspire
 # fundemental structures behind the scenes.  A lot of ASPIRE code
 # passes around ``Image`` and ``Volume`` instances.
 
-from aspire.image import Image
 
 # Create an ``Image`` instance from random data.
-img_data = np.random.random((100,100))
+img_data = np.random.random((100, 100))
 img = Image(img_data)
 logging.info(f"img shape: {img.shape}")  # Note this produces a stack of 1.
 logging.info(f"str(img): {img}")  # Note this produces a stack of 1.
 
 # Create an Image for a stack of 3 100x100 images.
-img_data = np.random.random((3,100,100))
+img_data = np.random.random((3, 100, 100))
 img = Image(img_data)
 
 # Most often, ``Image``s will behave like Numpy arrays, but you
@@ -243,7 +242,7 @@ projections.show()
 #            +dual()
 #            +sign()
 #         }
-#  
+#
 #         Filter o-- DualFilter
 #         Filter o-- FunctionFilter
 #         Filter o-- PowerFilter
@@ -256,7 +255,7 @@ projections.show()
 #         Filter o-- IdentityFilter
 #         Filter o-- CTFFilter
 #         CTFFilter o-- RadialCTFFilter
- 
+
 # %%
 # ``CTFFilter`` and ``RadialCTFFilter`` the most common filters
 # encountered when starting out and are detailed in
@@ -439,11 +438,13 @@ noise_estimator.estimate()
 # apply in a pipeline.  Here we want to apply a custom noise function.
 # We will use a function of two variables for this example.
 
-from aspire.operators import FunctionFilter
 from aspire.noise import CustomNoiseAdder
+from aspire.operators import FunctionFilter
+
 
 def noise_function(x, y):
     return 1e-7 * np.exp(-(x * x + y * y) / (2 * 0.3**2))
+
 
 # In python, functions are first class objects.  We take advantage of
 # that to pass this function around as a variable.  The function is
@@ -469,7 +470,7 @@ from aspire.noise import AnisotropicNoiseEstimator
 # Estimate noise.
 aiso_noise_estimator = AnisotropicNoiseEstimator(sim)
 
-#%%
+# %%
 # Applying the ``Simulation.whiten()`` method requires passing the
 # filter corresponding to the estimated noise instance.  Then we can
 # inspect some of the whitened images.  While noise is still present,
@@ -532,13 +533,15 @@ ctf_filters = [
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Here we'll combine the parameters above into a new simulation.
 
-sim = Simulation(n=num_imgs,
-                 vols=v2,
-                 amplitudes=1,
-                 offsets=0,
-                 noise_adder=white_noise_adder,
-                 unique_filters=ctf_filters,
-                 seed=42)
+sim = Simulation(
+    n=num_imgs,
+    vols=v2,
+    amplitudes=1,
+    offsets=0,
+    noise_adder=white_noise_adder,
+    unique_filters=ctf_filters,
+    seed=42,
+)
 
 # Simulation has two unique accessors ``clean_images`` which disables
 # noise, and ``projections`` which are clean uncorrupted projections.
@@ -556,7 +559,6 @@ sim.clean_images[:5].show()
 # %%
 # The first five corrupted images.
 sim.images[:5].show()
-
 
 
 # %%

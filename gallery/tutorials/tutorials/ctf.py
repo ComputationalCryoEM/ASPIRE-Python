@@ -373,7 +373,7 @@ src = RelionSource(
     "../data/sample_relion_data.star",
     pixel_size=1.338,
     max_rows=10000,
-    data_folder='../data',
+    data_folder="../data",
 )
 src.downsample(64)  # easier to visualize
 src.images[:3].show()
