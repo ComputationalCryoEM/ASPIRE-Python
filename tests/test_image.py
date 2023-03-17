@@ -1,8 +1,6 @@
 import logging
 import os.path
-import warnings
 
-import matplotlib
 import numpy as np
 import pytest
 from pytest import raises
@@ -10,6 +8,8 @@ from scipy import misc
 
 from aspire.image import Image
 from aspire.utils import powerset, utest_tolerance
+
+from .test_utils import matplotlib_dry_run
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -285,12 +285,10 @@ def testMultiDimBroadcast():
     assert np.allclose(X[0], 2 * ims.asnumpy())
 
 
+@matplotlib_dry_run
 def testShow():
     """
     Test show doesn't crash.
     """
-    # Use non GUI backend.
-    matplotlib.use("Agg")
-    warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
     im = Image(np.random.random((3, 8, 8)))
     im.show()

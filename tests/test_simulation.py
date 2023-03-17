@@ -1,9 +1,7 @@
 import os.path
 import tempfile
-import warnings
 from unittest import TestCase
 
-import matplotlib
 import numpy as np
 from pytest import raises
 
@@ -13,6 +11,8 @@ from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
 from aspire.utils.types import utest_tolerance
 from aspire.volume import LegacyVolume, Volume
+
+from .test_utils import matplotlib_dry_run
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -30,22 +30,16 @@ class SingleSimTestCase(TestCase):
         """Test we can get an Image from a length 1 Sim."""
         _ = self.sim.images[0]
 
+    @matplotlib_dry_run
     def testImageShow(self):
-        # Use non GUI backend.
-        matplotlib.use("Agg")
-        warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
         self.sim.images[:].show()
 
+    @matplotlib_dry_run
     def testCleanImagesShow(self):
-        # Use non GUI backend.
-        matplotlib.use("Agg")
-        warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
         self.sim.clean_images[:].show()
 
+    @matplotlib_dry_run
     def testProjectionsShow(self):
-        # Use non GUI backend.
-        matplotlib.use("Agg")
-        warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
         self.sim.projections[:].show()
 
 

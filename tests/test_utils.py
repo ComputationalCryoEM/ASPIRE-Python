@@ -1,6 +1,9 @@
+import warnings
+from contextlib import contextmanager
 from unittest import TestCase
 from unittest.mock import patch
 
+import matplotlib
 import numpy as np
 from parameterized import parameterized
 from pytest import raises
@@ -312,3 +315,38 @@ class MultiProcessingUtilsTestCase(TestCase):
 
     def testGetNumMultiProcs(self):
         self.assertTrue(isinstance(num_procs_suggestion(), int))
+
+
+@contextmanager
+def matplotlib_no_gui():
+    """
+    Context manager for disabling and restoring matplotlib plots, and
+    ignoring associated warnings.
+    """
+
+    # Save current backend
+    backend = matplotlib.get_backend()
+
+    # Use non GUI backend.
+    matplotlib.use("Agg")
+
+    # Save and restore current warnings list.
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
+
+        yield
+
+    # Restore backend
+    matplotlib.use(backend)
+
+
+def matplotlib_dry_run(func):
+    """
+    Decorator that wraps function in `matplotlib_no_gui` context.
+    """
+
+    def wrapper(*args, **kwargs):
+        with matplotlib_no_gui():
+            return func(*args, **kwargs)
+
+    return wrapper
