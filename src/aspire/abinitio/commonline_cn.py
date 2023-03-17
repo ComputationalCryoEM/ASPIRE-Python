@@ -72,11 +72,13 @@ class CLSymmetryCn(CLSymmetryC3C4):
             )
         else:
             symmetry = symmetry.upper()
-            if not symmetry[0] == "C":
+            _sym_type = symmetry[0]
+            _order = int(symmetry[1:])
+            if not (_sym_type == "C" and _order > 4):
                 raise NotImplementedError(
-                    f"Only Cn symmetry supported. {symmetry} was supplied."
+                    f"Only Cn symmetry, n > 4, supported. {symmetry} was supplied."
                 )
-            self.order = int(symmetry[1:])
+            self.order = _order
 
     def _estimate_relative_viewing_directions(self):
         n_img = self.n_img

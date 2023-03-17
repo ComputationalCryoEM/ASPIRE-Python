@@ -95,7 +95,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
     def estimate_rotations(self):
         """
-        Estimate rotation matrices for molecules with Cn symmetry.
+        Estimate rotation matrices for molecules with Cn symmetry, n > 2.
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
