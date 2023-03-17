@@ -228,37 +228,26 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         return vijs, viis_rank1
 
-    def _compute_scls_inds(self, Ri_cands):
+    def _compute_scls_inds(self, Ris_tilde):
         """
         Compute self-common-lines indices induced by candidate rotations.
 
-        :param Ri_cands: An array of size n_candsx3x3 of candidate rotations.
+        :param Ris_tilde: An array of size n_candsx3x3 of candidate rotations.
         :return: An n_cands x (order-1)//2 x 2 array holding the indices of the (order-1)//2
             non-collinear pairs of self-common-lines for each candidate rotation.
         """
-        order = self.order
-        n_theta = self.n_theta
-        n_scl_pairs = (order - 1) // 2
-        n_cands = Ri_cands.shape[0]
+        n_scl_pairs = (self.order - 1) // 2
+        n_cands = Ris_tilde.shape[0]
         scls_inds = np.zeros((n_cands, n_scl_pairs, 2), dtype=np.uint16)
-        rots_symm = cyclic_rotations(order, dtype=self.dtype).matrices
+        rots_symm = cyclic_rotations(self.order, dtype=self.dtype).matrices
 
-        for i_cand, Ri_cand in enumerate(Ri_cands):
+        for i_cand, Ri_cand in enumerate(Ris_tilde):
             Riigs = Ri_cand.T @ rots_symm[1 : n_scl_pairs + 1] @ Ri_cand
 
-            c1s = np.array((-Riigs[:, 1, 2], Riigs[:, 0, 2])).T
-            c2s = np.array((Riigs[:, 2, 1], -Riigs[:, 2, 0])).T
+            c1s, c2s = self.relative_rots_to_cl_indices(Riigs, self.n_theta)
 
-            c1s_inds = self.cl_angles_to_ind(c1s, n_theta)
-            c2s_inds = self.cl_angles_to_ind(c2s, n_theta)
-
-            inds = np.where(c1s_inds >= (n_theta // 2))
-            c1s_inds[inds] -= n_theta // 2
-            c2s_inds[inds] += n_theta // 2
-            c2s_inds[inds] = np.mod(c2s_inds[inds], n_theta)
-
-            scls_inds[i_cand, :, 0] = c1s_inds
-            scls_inds[i_cand, :, 1] = c2s_inds
+            scls_inds[i_cand, :, 0] = c1s
+            scls_inds[i_cand, :, 1] = c2s
         return scls_inds
 
     def _compute_cls_inds(self, Ris_tilde, R_theta_ijs):
@@ -270,33 +259,45 @@ class CLSymmetryCn(CLSymmetryC3C4):
         :return: An array of size n_cands x n_cands x n_theta_ijs x 2 holding common-lines
             indices induced by the supplied rotations.
         """
-        n_theta = self.n_theta
         n_points_sphere = self.n_points_sphere
         n_theta_ijs = R_theta_ijs.shape[0]
         cij_inds = np.zeros(
             (n_points_sphere, n_points_sphere, n_theta_ijs, 2), dtype=np.uint16
         )
         logger.info("Computing common-line indices induced by candidate rotations.")
-        with tqdm(total=n_points_sphere) as pbar:
-            for i in range(n_points_sphere):
-                for j in range(n_points_sphere):
-                    R_cands = Ris_tilde[i].T @ R_theta_ijs @ Ris_tilde[j]
+        for i in tqdm(range(n_points_sphere)):
+            for j in range(n_points_sphere):
+                R_cands = Ris_tilde[i].T @ R_theta_ijs @ Ris_tilde[j]
 
-                    c1s = np.array((-R_cands[:, 1, 2], R_cands[:, 0, 2])).T
-                    c2s = np.array((R_cands[:, 2, 1], -R_cands[:, 2, 0])).T
+                c1s, c2s = self.relative_rots_to_cl_indices(R_cands, self.n_theta)
 
-                    c1s = self.cl_angles_to_ind(c1s, n_theta)
-                    c2s = self.cl_angles_to_ind(c2s, n_theta)
-
-                    inds = np.where(c1s >= n_theta // 2)
-                    c1s[inds] -= n_theta // 2
-                    c2s[inds] += n_theta // 2
-                    c2s[inds] = np.mod(c2s[inds], n_theta)
-
-                    cij_inds[i, j, :, 0] = c1s
-                    cij_inds[i, j, :, 1] = c2s
-                pbar.update()
+                cij_inds[i, j, :, 0] = c1s
+                cij_inds[i, j, :, 1] = c2s
         return cij_inds
+
+    @staticmethod
+    def relative_rots_to_cl_indices(relative_rots, n_theta):
+        """
+        Given a set of relative rotations between pairs of images
+        produce the common-line indices for each pair.
+
+        :param relative_rots: The n x 3 x 3 relative rotations between pairs of images.
+        :param n_theta: The theta resolution for common-line indices.
+
+        :return: Common-line indices c1s, c2s each length n.
+        """
+        c1s = np.array((-relative_rots[:, 1, 2], relative_rots[:, 0, 2])).T
+        c2s = np.array((relative_rots[:, 2, 1], -relative_rots[:, 2, 0])).T
+
+        c1s = CLSymmetryC3C4.cl_angles_to_ind(c1s, n_theta)
+        c2s = CLSymmetryC3C4.cl_angles_to_ind(c2s, n_theta)
+
+        inds = np.where(c1s >= n_theta // 2)
+        c1s[inds] -= n_theta // 2
+        c2s[inds] += n_theta // 2
+        c2s[inds] = np.mod(c2s[inds], n_theta)
+
+        return c1s, c2s
 
     @staticmethod
     def generate_candidate_rots(n, equator_threshold, order, degree_res, seed):
@@ -306,8 +307,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         :param n: Number of rotations to generate.
         :param equator_threshold: Angular distance from equator (in degrees).
-        :param order: Cyclic order of underlying molecule. Number of in-plane
-            rotations must be divisible by order.
+        :param order: Cyclic order of underlying molecule.
         :param degree_res: Degree resolution for in-plane rotations.
         :param seed: Random seed.
 
