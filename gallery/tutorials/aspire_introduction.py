@@ -589,48 +589,39 @@ src.images[:10].show()
 # %%
 # Pipeline Roadmap
 # ----------------
-# lorem ipsum diagramum
+# Now that the primitives have been introduced we can explore higher
+# level components.  The higher level components are designed to be
+# modular and cacheable (to memory or disk) to support experimentation
+# with entire pipelines or focuses algorithmic development on specific
+# components.  Most pipelines will follow a flow of data and
+# components moving mostly left to right in the table below.  This
+# table is not exhaustive, but represents some of the most common
+# components.
 
 # %%
-# .. list-table:: Pipeline Components
-#    :header-rows: 1
-#
-#    * - Data Source
-#      - Preprocessing
-#      - 2D Denoising
-#      - Orientation Estimation
-#      - VolumeEstimator
-#    * - Simulation
-#      - Noise Estimation
-#      - Class Averagring
-#      - CLSyncVoting
-#      - MeanVolumeEstimator
-#    * - RelionSource
-#      - downsample
-#      - cov2d (CWF)
-#      - CLSymmetryC3C4
-#      - 
-#    * - CoordinateSource
-#      - whiten
-#      - 
-#      - CLSymmetryCn
-#      - 
-#    * - 
-#      - phase_flip
-#      - 
-#      - 
-#      - 
-#    * - 
-#      - normalize_backgrond
-#      - 
-#      - 
-#      - 
-#    * - 
-#      - CTFEstimator
-#      - 
-#      - 
-#      - 
-
+# +----------------+--------------------+-----------------+----------------+---------------------+
+# |  Image Processing                                     | Abinitio                             |
+# +----------------+--------------------+-----------------+----------------+---------------------+
+# | Data           | Preprocessing      | Denoising       | Orientation    |  3D Reconstruction  |
+# +================+====================+=================+================+=====================+
+# |Simulation      | NoiseEstimator     | Class Averaging | CLSyncVoting   | MeanVolumeEstimator |
+# +----------------+--------------------+-----------------+----------------+---------------------+
+# |RelionSource    | downsample         | cov2d (CWF)     | CLSymmetryC3C4 |                     |
+# +----------------+--------------------+-----------------+----------------+---------------------+
+# |CoordinateSource| whiten             |                 | CLSymmetryCn   |                     |
+# +----------------+--------------------+-----------------+----------------+---------------------+
+# |                | phase_flip         |                 |                |                     |
+# +----------------+--------------------+-----------------+----------------+---------------------+
+# |                |normalize_background|                 |                |                     |
+# +----------------+--------------------+-----------------+----------------+---------------------+
+# |                | CTFEstimator       |                 |                |                     |
+# +----------------+--------------------+-----------------+----------------+---------------------+
 
 # %%
+# We're now ready to explore a small example end to end abinitio
+# pipeline using simulated data.
 # :ref:`sphx_glr_auto_tutorials_pipeline_demo.py`
+
+# %%
+# Larger simulations and experiments based on EMPIAR data can be found
+# in :ref:`Experiments <exp>`.
