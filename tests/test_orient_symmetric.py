@@ -95,7 +95,7 @@ def source_orientation_objs(L, n_img, order, dtype):
 def test_estimate_rotations(L, order, dtype):
     n_img = 24
     if order > 4:
-        n_img = 8
+        n_img = 8  # This is to save on test time.
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
 
     # Estimate rotations.
@@ -212,7 +212,7 @@ def test_relative_viewing_directions(L, order, dtype):
     # volume with C3 or C4 symmetry.
     n_img = 24
     if order > 4:
-        n_img = 8
+        n_img = 8  # This is to save on test time.
     src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
 
     # Calculate ground truth relative viewing directions, viis and vijs.
@@ -273,19 +273,27 @@ def test_relative_viewing_directions(L, order, dtype):
     angular_dist_vijs = np.mean(min_theta_vij)
     angular_dist_viis = np.mean(min_theta_vii)
 
-    # Check that estimates are indeed approximately rank 1.
+    # Check that estimates are indeed approximately rank-1.
     # ie. check that the svd is close to [1, 0, 0].
+    sii = (
+        sii / np.linalg.norm(sii, axis=1)[..., np.newaxis]
+    )  # Normalize for comparison to [1, 0, 0]
+    sij = (
+        sij / np.linalg.norm(sij, axis=1)[..., np.newaxis]
+    )  # Normalize for comparison to [1, 0, 0]
     error_ij = np.linalg.norm(np.array([1, 0, 0], dtype=dtype) - sij, axis=1)
     error_ii = np.linalg.norm(np.array([1, 0, 0], dtype=dtype) - sii, axis=1)
-    max_tol_ii = 1e-5
-    mean_tol_ii = 1e-5
-    if order > 4:
-        max_tol_ii = 8e-2
-        mean_tol_ii = 2e-2
-    assert np.max(error_ij) < 4e-1
-    assert np.max(error_ii) < max_tol_ii
-    assert np.mean(error_ij) < 3e-3
-    assert np.mean(error_ii) < mean_tol_ii
+    max_tol_ij = 1e-7
+    mean_tol_ij = 1e-7
+    # For order < 5, the method for estimating vijs leads to estimates
+    # which do not as tightly approximate rank-1.
+    if order < 5:
+        max_tol_ij = 4e-1
+        mean_tol_ij = 3e-3
+    assert np.max(error_ij) < max_tol_ij
+    assert np.max(error_ii) < 1e-6
+    assert np.mean(error_ij) < mean_tol_ij
+    assert np.mean(error_ii) < 1e-7
 
     # Check that the mean angular difference is within 2 degrees.
     angle_tol = 2 * np.pi / 180
