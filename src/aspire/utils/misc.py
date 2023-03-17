@@ -312,10 +312,10 @@ def all_pairs(n, return_map=False):
         - n x 2 array of pairs (i, j), i<j.
         - n x n array with pairs-to-linear index map.
     """
-    pairs = np.column_stack(np.triu_indices(n, 1))
+    pairs = np.column_stack(np.triu_indices(n, 1)).astype(np.uint16)
 
     if return_map:
-        pairs_to_linear_map = np.empty((n, n), dtype=np.uint16)
+        pairs_to_linear_map = np.empty((n, n), dtype="int")
         for index, pair in enumerate(pairs):
             pairs_to_linear_map[pair[0], pair[1]] = index
         return pairs, pairs_to_linear_map

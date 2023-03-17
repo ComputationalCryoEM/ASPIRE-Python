@@ -28,7 +28,6 @@ param_list_c3_c4 = [
 # For testing Cn methods where n>4.
 param_list_cn = [
     (44, 5, np.float32),
-    pytest.param(44, 5, np.float32, marks=pytest.mark.expensive),
     pytest.param(45, 6, np.float64, marks=pytest.mark.expensive),
     pytest.param(44, 7, np.float32, marks=pytest.mark.expensive),
     pytest.param(44, 8, np.float32, marks=pytest.mark.expensive),
