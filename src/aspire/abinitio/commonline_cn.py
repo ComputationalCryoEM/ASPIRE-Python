@@ -89,7 +89,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # Generate candidate rotation matrices and the common-line and
         # self-common-line indices induced by those rotations.
-        Ris_tilde, R_theta_ijs = self.generate_cand_rots(
+        Ris_tilde, R_theta_ijs = self.generate_candidate_rots(
             self.n_points_sphere,
             self.equator_threshold,
             self.order,
@@ -299,7 +299,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         return cij_inds
 
     @staticmethod
-    def generate_cand_rots(n, equator_threshold, order, degree_res, seed):
+    def generate_candidate_rots(n, equator_threshold, order, degree_res, seed):
         """
         Generate random rotations that exclude rotations inducing equator images
         for use as candidates in the CLSymmetryCn algorithm.

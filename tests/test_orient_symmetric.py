@@ -55,7 +55,7 @@ def source_orientation_objs(L, n_img, order, dtype):
         # We artificially exclude equator images from the simulation as they will be
         # incorrectly identified by the CL method. We keep images slightly further away
         # from being equator images than the 10 degree default threshold used in the CL method.
-        rotations, _ = CLSymmetryCn.generate_cand_rots(
+        rotations, _ = CLSymmetryCn.generate_candidate_rots(
             n=n_img,
             equator_threshold=15,
             order=order,
