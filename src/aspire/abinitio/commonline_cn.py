@@ -4,7 +4,15 @@ import numpy as np
 from numpy.linalg import norm
 
 from aspire.abinitio import CLSymmetryC3C4
-from aspire.utils import J_conjugate, Rotation, anorm, cyclic_rotations, tqdm, trange
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    all_pairs,
+    anorm,
+    cyclic_rotations,
+    tqdm,
+    trange,
+)
 from aspire.utils.random import Random, randn
 
 logger = logging.getLogger(__name__)
@@ -81,11 +89,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
             self.order = _order
 
     def _estimate_relative_viewing_directions(self):
-        n_img = self.n_img
-        n_theta = self.n_theta
         pf = self.pf
-        max_shift_1d = self.max_shift
-        shift_step = self.shift_step
 
         # Generate candidate rotation matrices and the common-line and
         # self-common-line indices induced by those rotations.
@@ -104,7 +108,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         # Generate shift phases.
         r_max = pf.shape[-1]
         shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
-            r_max, max_shift_1d, shift_step
+            r_max, self.max_shift, self.shift_step
         )
         n_shifts = len(shifts)
         all_shift_phases = shift_phases.T
@@ -115,118 +119,119 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # Pre-compute shifted pf's.
         pf_shifted = (pf * all_shift_phases[:, None, None]).swapaxes(0, 1)
-        pf_shifted = pf_shifted.reshape((n_img, n_shifts * (n_theta // 2), r_max))
+        pf_shifted = pf_shifted.reshape(
+            (self.n_img, n_shifts * (self.n_theta // 2), r_max)
+        )
 
         # Step 1: pre-calculate the likelihood with respect to the self-common-lines.
-        scores_self_corrs = np.zeros((n_img, n_cands), dtype=self.dtype)
+        scores_self_corrs = self._scl_likelihood(pf_shifted, pf_full, scls_inds)
+
+        # Step 2: Compute the likelihood for each pair of candidate matrices with respect
+        # to the common-lines they induce. Then compute estimates for viis and vijs.
+        logger.info("Computing pairwise likelihood.")
+        n_vijs = self.n_img * (self.n_img - 1) // 2
+        vijs = np.zeros((n_vijs, 3, 3), dtype=self.dtype)
+        viis = np.zeros((self.n_img, 3, 3), dtype=self.dtype)
+        rots_symm = cyclic_rotations(self.order, self.dtype).matrices
+
+        # List of MeanOuterProductEstimator instances.
+        # Used to keep a running mean of J-synchronized estimates for vii.
+        mean_est = []
+        for _ in range(self.n_img):
+            mean_est.append(MeanOuterProductEstimator())
+
+        pairs = all_pairs(self.n_img)
+        for ind, (i, j) in enumerate(tqdm(pairs)):
+            # Compute correlation.
+            corrs_ij = np.real(pf_shifted[i] @ np.conj(pf_full[j]).T)
+
+            # Max out over shifts.
+            corrs_ij = np.max(
+                np.reshape(corrs_ij, (n_shifts, self.n_theta // 2, self.n_theta)),
+                axis=0,
+            )
+
+            # Arrange correlation based on common lines induced by candidate rotations.
+            corrs = corrs_ij[cijs_inds[..., 0], cijs_inds[..., 1]]
+            corrs = np.reshape(
+                corrs,
+                (
+                    self.n_points_sphere,
+                    self.n_points_sphere,
+                    self.order,
+                    n_theta_ijs // self.order,
+                ),
+            )
+
+            # Take the mean over all symmetry induced common lines.
+            corrs = np.mean(corrs, axis=-2)
+
+            # Self common-lines are invariant to n_theta_ijs (i.e., in-plane rotation angles)
+            # so we max them out to estimate viis, but hold onto the index for the best
+            # in-plane rotation to compute the estimate for vijs.
+            opt_theta_ij_ind_per_sphere_points = np.argmax(corrs, axis=-1)
+            corrs = np.max(corrs, axis=-1)
+
+            # Maximum likelihood while taking into consideration both cls and scls.
+            corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])
+
+            # Extract the optimal candidates.
+            opt_sphere_i, opt_sphere_j = np.unravel_index(np.argmax(corrs), corrs.shape)
+            opt_theta_ij = opt_theta_ij_ind_per_sphere_points[
+                opt_sphere_i, opt_sphere_j
+            ]
+
+            opt_Ri_tilde = Ris_tilde[opt_sphere_i]
+            opt_Rj_tilde = Ris_tilde[opt_sphere_j]
+            opt_R_theta_ij = R_theta_ijs[opt_theta_ij]
+
+            # Compute the estimate of vi*vi.T as given by j.
+            vii_j = np.mean(opt_Ri_tilde.T @ rots_symm @ opt_Ri_tilde, axis=0)
+            mean_est[i].push(vii_j)
+
+            # Compute the estimate of vj*vj.T as given by i.
+            vjj_i = np.mean(opt_Rj_tilde.T @ rots_symm @ opt_Rj_tilde, axis=0)
+            mean_est[j].push(vjj_i)
+
+            # Compute the estimate of vi*vj.T.
+            vijs[ind] = np.mean(
+                opt_Ri_tilde.T @ rots_symm @ opt_R_theta_ij @ opt_Rj_tilde,
+                axis=0,
+            )
+
+        # There are conflicting methods betweeen the paper and the Matlab code for
+        # finding the optimal estimates for viis. The paper suggests using SVD to find
+        # the estimate for vii which is closest to rank 1. The Matlab code takes the
+        # median over the stack of all estimates for vii. Here we have implemented
+        # a method which J-synchronizes the estimates prior to taking the mean.
+        # See issue #869 for more details.
+        for i in range(self.n_img):
+            viis[i] = mean_est[i].synchronized_mean()
+
+        # As we are using a mean to get the estimates, viis, the estimate will not be rank-1
+        # So we use SVD to find a close rank-1 approximation.
+        U, S, V = np.linalg.svd(viis)
+        S_rank1 = np.zeros((self.n_img, 3, 3), dtype=self.dtype)
+        S_rank1[:, 0, 0] = S[:, 0]
+        viis_rank1 = U @ S_rank1 @ V
+
+        return vijs, viis_rank1
+
+    def _scl_likelihood(self, pf_shifted, pf_full, scls_inds):
+        scores_self_corrs = np.zeros((self.n_img, len(scls_inds)), dtype=self.dtype)
         logger.info("Computing likelihood wrt self common-lines.")
-        for i in trange(n_img):
+        for i in trange(self.n_img):
             # Compute correlation of pf[i] with itself over all shifts.
             corrs = np.real(pf_shifted[i] @ np.conj(pf_full[i]).T)
-            corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
+            # Reshape to (n_shifts, n_theta//2, n_theta).
+            corrs = np.reshape(corrs, (-1, self.n_theta // 2, self.n_theta))
             corrs_cands = np.max(
                 (corrs[:, scls_inds[:, :, 0], scls_inds[:, :, 1]]), axis=0
             )
 
             scores_self_corrs[i] = np.mean(corrs_cands, axis=1)
 
-        # Step 2: Compute the likelihood for each pair of candidate matrices with respect
-        # to the common-lines they induce.
-        logger.info("Computing pairwise likelihood.")
-        n_vijs = n_img * (n_img - 1) // 2
-        vijs = np.zeros((n_vijs, 3, 3), dtype=self.dtype)
-        viis = np.zeros((n_img, 3, 3), dtype=self.dtype)
-        rots_symm = cyclic_rotations(self.order, self.dtype).matrices
-        c = 0
-
-        # List of MeanOuterProductEstimator instances.
-        # Used to keep a running mean of J-synchronized estimates for vii.
-        mean_est = []
-        for _ in range(n_img):
-            mean_est.append(MeanOuterProductEstimator())
-
-        with tqdm(total=n_vijs) as pbar:
-            for i in range(n_img):
-                for j in range(i + 1, n_img):
-                    # Compute correlation.
-                    corrs_ij = pf_shifted[i] @ np.conj(pf_full[j]).T
-
-                    # Max out over shifts.
-                    corrs_ij = np.max(
-                        np.reshape(
-                            np.real(corrs_ij), (n_shifts, n_theta // 2, n_theta)
-                        ),
-                        axis=0,
-                    )
-
-                    # Arrange correlation based on common lines induced by candidate rotations.
-                    corrs = corrs_ij[cijs_inds[..., 0], cijs_inds[..., 1]]
-                    corrs = np.reshape(
-                        corrs, (-1, self.order, n_theta_ijs // self.order)
-                    )
-                    # Take the mean over all symmetric common lines.
-                    corrs = np.mean(corrs, axis=1)
-                    corrs = np.reshape(
-                        corrs,
-                        (
-                            self.n_points_sphere,
-                            self.n_points_sphere,
-                            n_theta_ijs // self.order,
-                        ),
-                    )
-
-                    # Self common-lines are invariant to n_theta_ijs (i.e., in-plane rotation angles) so max them out.
-                    opt_theta_ij_ind_per_sphere_points = np.argmax(corrs, axis=-1)
-                    corrs = np.max(corrs, axis=-1)
-
-                    # Maximum likelihood while taking into consideration both cls and scls.
-                    corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])
-
-                    # Extract the optimal candidates.
-                    opt_sphere_i, opt_sphere_j = np.unravel_index(
-                        np.argmax(corrs), corrs.shape
-                    )
-                    opt_theta_ij = opt_theta_ij_ind_per_sphere_points[
-                        opt_sphere_i, opt_sphere_j
-                    ]
-
-                    opt_Ri_tilde = Ris_tilde[opt_sphere_i]
-                    opt_Rj_tilde = Ris_tilde[opt_sphere_j]
-                    opt_R_theta_ij = R_theta_ijs[opt_theta_ij]
-
-                    # Compute the estimate of vi*vi.T as given by j.
-                    vii_j = np.mean(opt_Ri_tilde.T @ rots_symm @ opt_Ri_tilde, axis=0)
-                    mean_est[i].push(vii_j)
-
-                    # Compute the estimate of vj*vj.T as given by i.
-                    vjj_i = np.mean(opt_Rj_tilde.T @ rots_symm @ opt_Rj_tilde, axis=0)
-                    mean_est[j].push(vjj_i)
-
-                    # Compute the estimate of vi*vj.T.
-                    vijs[c] = np.mean(
-                        opt_Ri_tilde.T @ rots_symm @ opt_R_theta_ij @ opt_Rj_tilde,
-                        axis=0,
-                    )
-
-                    c += 1
-                    pbar.update()
-
-                # There are conflicting methods betweeen the paper and the Matlab code for
-                # finding the optimal estimate. The paper suggests using SVD to find the
-                # estimate for vii which is closest to rank 1. The Matlab code takes the
-                # median over the stack of all estimates for vii. Here we have implemented
-                # a method which J-synchronizes the estimates prior to taking the mean.
-                # See issue #869 for more details.
-                viis[i] = mean_est[i].synchronized_mean()
-
-        # As we are using a mean to get the estimates, viis, the estimate will not be rank-1
-        # So we use SVD to find a close rank-1 approximation.
-        U, S, V = np.linalg.svd(viis)
-        S_rank1 = np.zeros((n_img, 3, 3), dtype=self.dtype)
-        S_rank1[:, 0, 0] = S[:, 0]
-        viis_rank1 = U @ S_rank1 @ V
-
-        return vijs, viis_rank1
+        return scores_self_corrs
 
     def _compute_scls_inds(self, Ris_tilde):
         """
