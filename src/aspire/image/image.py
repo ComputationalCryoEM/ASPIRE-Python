@@ -461,7 +461,7 @@ class Image:
             )
 
             plt.figure(figsize=figsize)
-            for i, im in enumerate(self):
+            for i, im in enumerate(self.asnumpy()):
                 plt.subplot(self.n_images // columns + 1, columns, i + 1)
                 plt.imshow(im, cmap="gray")
                 if colorbar:
