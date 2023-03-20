@@ -82,3 +82,33 @@ class SimTestCase(TestCase):
                 equal_nan=True,
             )
         )
+
+    def test_get_metadata_all(self):
+        """
+        Test we can get the entire metadata table.
+        """
+
+        # Get the metadata via our API.
+        metadata_api = self.sim.get_metadata()
+
+        # Access the metadata directly in the frame.
+        metadata_df = self.sim._metadata.to_numpy()
+
+        # Assert we've returned the entire table.
+        self.assertTrue(np.all(metadata_api == metadata_df))
+
+    def test_get_metadata_index_slice(self):
+        """
+        Test we can get all columns for a selection of rows.
+        """
+        # Test rows
+        rows = [0, 1, 42]
+
+        # Get the metadata from our API.
+        metadata_api = self.sim.get_metadata(indices=rows)
+
+        # Access the metadata directly in the frame.
+        metadata_df = self.sim._metadata.loc[rows].to_numpy()
+
+        # Assert we've returned the rows
+        self.assertTrue(np.all(metadata_api == metadata_df))

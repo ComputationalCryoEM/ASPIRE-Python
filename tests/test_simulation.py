@@ -12,6 +12,8 @@ from aspire.source.simulation import Simulation
 from aspire.utils.types import utest_tolerance
 from aspire.volume import LegacyVolume, Volume
 
+from .test_utils import matplotlib_dry_run
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
@@ -27,6 +29,18 @@ class SingleSimTestCase(TestCase):
     def testImage(self):
         """Test we can get an Image from a length 1 Sim."""
         _ = self.sim.images[0]
+
+    @matplotlib_dry_run
+    def testImageShow(self):
+        self.sim.images[:].show()
+
+    @matplotlib_dry_run
+    def testCleanImagesShow(self):
+        self.sim.clean_images[:].show()
+
+    @matplotlib_dry_run
+    def testProjectionsShow(self):
+        self.sim.projections[:].show()
 
 
 class SimVolTestCase(TestCase):

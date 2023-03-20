@@ -9,6 +9,8 @@ from scipy import misc
 from aspire.image import Image
 from aspire.utils import powerset, utest_tolerance
 
+from .test_utils import matplotlib_dry_run
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 logger = logging.getLogger(__name__)
@@ -281,3 +283,12 @@ def testMultiDimBroadcast():
     mdim_ims_np, mdim_ims = get_mdim_images()
     X = mdim_ims + ims
     assert np.allclose(X[0], 2 * ims.asnumpy())
+
+
+@matplotlib_dry_run
+def testShow():
+    """
+    Test show doesn't crash.
+    """
+    im = Image(np.random.random((3, 8, 8)))
+    im.show()
