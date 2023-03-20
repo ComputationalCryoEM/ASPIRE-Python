@@ -122,10 +122,10 @@ class CLSymmetryCn(CLSymmetryC3C4):
         logger.info("Computing likelihood wrt self common-lines.")
         for i in trange(n_img):
             # Compute correlation of pf[i] with itself over all shifts.
-            corrs = pf_shifted[i] @ np.conj(pf_full[i]).T
+            corrs = np.real(pf_shifted[i] @ np.conj(pf_full[i]).T)
             corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
             corrs_cands = np.max(
-                np.real(corrs[:, scls_inds[:, :, 0], scls_inds[:, :, 1]]), axis=0
+                (corrs[:, scls_inds[:, :, 0], scls_inds[:, :, 1]]), axis=0
             )
 
             scores_self_corrs[i] = np.mean(corrs_cands, axis=1)
