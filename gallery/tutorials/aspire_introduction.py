@@ -266,7 +266,20 @@ projections.show()
 # %%
 # ``Basis``
 # ---------
-# What can I say.
+# ASPIRE provides a selection of ``Basis`` classes designed for
+# working with CryoEM data in two and three dimensions.  Most of these
+# basis implementations are optimized for efficient rotations, often
+# called the *"Steerable"* property.  As of writing most algorithms in
+# ASPIRE are written to work well with the Fast Fourier Bessel Basis
+# classes ``FFBBasis2D`` and ``FFBBasis3D``.  These correspond to
+# direct slower reference ``FBBasis2D`` and ``FBBasis3D`` methods.
+#
+# Recently, a related Fourier Bessel method using the Fast Laplacian
+# Eigenfunction transforms was integrated as``FLEBasis2D``.
+# Additional, Prolate Spheroidal Wave Function methods are available
+# via ``FPSWFBasis2D`` and ``FPSWFBasis3D``, but their integration
+# into other components like 2D covariance analysis is incomplete, and
+# slated for a future release.
 
 # %%
 # The ``source`` Package
