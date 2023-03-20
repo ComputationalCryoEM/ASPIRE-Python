@@ -102,7 +102,6 @@ class CLSymmetryCn(CLSymmetryC3C4):
         )
         cijs_inds = self._compute_cls_inds(Ris_tilde, R_theta_ijs)
         scls_inds = self._compute_scls_inds(Ris_tilde)
-        n_cands = len(Ris_tilde)
         n_theta_ijs = len(R_theta_ijs)
 
         # Generate shift phases.
