@@ -515,7 +515,7 @@ class CoordinateSourceTestCase(TestCase):
         src.downsample(60)
         src.normalize_background()
         noise_estimator = WhiteNoiseEstimator(src)
-        src.whiten(noise_estimator.filter)
+        src.whiten(noise_estimator)
         src.invert_contrast()
         # call .images() to ensure the filters are applied
         # and not just added to pipeline

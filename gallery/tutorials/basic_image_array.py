@@ -139,7 +139,7 @@ noise_estimator = AnisotropicNoiseEstimator(imgs_src)
 
 # Once we have the estimator instance,
 #   we can use it in a transform applied to our Source.
-imgs_src.whiten(noise_estimator.filter)
+imgs_src.whiten(noise_estimator)
 
 
 # Peek at two whitened images and their corresponding spectrum.

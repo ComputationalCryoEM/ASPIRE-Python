@@ -78,7 +78,7 @@ src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
-src.whiten(aiso_noise_estimator.filter)
+src.whiten(aiso_noise_estimator)
 
 # Plot the noise profile for inspection
 if interactive:
