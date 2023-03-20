@@ -33,7 +33,7 @@ from aspire.basis import FFBBasis3D
 from aspire.denoising import DefaultClassAvgSource, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
-from aspire.source import ArrayImageSource, RelionSource
+from aspire.source import RelionSource
 
 logger = logging.getLogger(__name__)
 
@@ -134,15 +134,12 @@ logger.info("Begin Class Averaging")
 # Now perform classification and averaging for each class.
 # This also demonstrates the potential to use a different source for classification and averaging.
 
-avgs_src = DefaultClassAvgSource(
+avgs = DefaultClassAvgSource(
     classification_src,
     n_nbor=n_nbor,
     averager_src=src,
     num_procs=None,  # Automatically configure parallel processing
 )
-
-# We'll manually cache `n_classes` worth to speed things up.
-avgs = ArrayImageSource(avgs_src.images[:n_classes])
 
 if interactive:
     avgs.images[:10].show()
@@ -157,7 +154,8 @@ if interactive:
 
 logger.info("Begin Orientation Estimation")
 
-orient_est = CLSyncVoting(avgs, n_theta=360)
+# Run orientation estimation on first `n_classes` from `avgs`.
+orient_est = CLSyncVoting(avgs[:n_classes], n_theta=360)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations

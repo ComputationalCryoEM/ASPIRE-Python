@@ -26,7 +26,7 @@ from aspire.denoising import DefaultClassAvgSource, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
-from aspire.source import ArrayImageSource, Simulation
+from aspire.source import Simulation
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     get_rots_mse,
@@ -162,15 +162,12 @@ if do_cov2d:
 # Now perform classification and averaging for each class.
 # This also demonstrates the potential to use a different source for classification and averaging.
 
-avgs_src = DefaultClassAvgSource(
+avgs = DefaultClassAvgSource(
     classification_src,
     n_nbor=n_nbor,
     averager_src=src,
     num_procs=None,  # Automatically configure parallel processing
 )
-
-# We'll manually cache `n_classes` worth to speed things up.
-avgs = ArrayImageSource(avgs_src.images[:n_classes])
 
 if interactive:
     avgs.images[:10].show()
@@ -187,10 +184,11 @@ logger.info("Begin Orientation Estimation")
 
 # Stash true rotations for later comparison.
 # Note class selection re-ordered our images, so we remap the indices back to the original source.
-indices = avgs_src.selection_indices
+indices = avgs.selection_indices
 true_rotations = src.rotations[indices[:n_classes]]
 
-orient_est = CLSyncVoting(avgs, n_theta=180)
+# Run orientation estimation on first `n_classes` from `avgs`.
+orient_est = CLSyncVoting(avgs[:n_classes], n_theta=180)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations

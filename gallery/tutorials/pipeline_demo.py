@@ -193,12 +193,6 @@ avgs = DebugClassAvgSource(
     classifier=rir,
 )
 
-# For this small example, it is most effective to just cache these
-# manually.
-
-from aspire.source import ArrayImageSource
-
-avgs = ArrayImageSource(avgs.images[:n_classes])
 
 # %%
 # View the Class Averages
@@ -227,7 +221,8 @@ from aspire.abinitio import CLSyncVoting
 # Stash true rotations for later comparison
 true_rotations = src.rotations[:n_classes]
 
-orient_est = CLSyncVoting(avgs, n_theta=72)
+# Run orientation estimation on first `n_classes` from `avgs`.
+orient_est = CLSyncVoting(avgs[:n_classes], n_theta=72)
 
 # Get the estimated rotations
 orient_est.estimate_rotations()

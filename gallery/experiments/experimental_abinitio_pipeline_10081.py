@@ -30,7 +30,7 @@ from aspire.basis import FFBBasis3D
 from aspire.denoising import DefaultClassAvgSource
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
-from aspire.source import ArrayImageSource, RelionSource
+from aspire.source import RelionSource
 
 logger = logging.getLogger(__name__)
 
@@ -89,10 +89,6 @@ logger.info("Begin Class Averaging")
 # Automatically configure parallel processing
 avgs = DefaultClassAvgSource(src, n_nbor=n_nbor, num_procs=None)
 
-# We'll manually cache `n_classes` worth to speed things up.
-avgs = ArrayImageSource(avgs.images[:n_classes])
-
-
 # %%
 # Common Line Estimation
 # ----------------------
@@ -102,7 +98,8 @@ avgs = ArrayImageSource(avgs.images[:n_classes])
 
 logger.info("Begin Orientation Estimation")
 
-orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=360, max_shift=0)
+# Run orientation estimation on first `n_classes` from `avgs`.
+orient_est = CLSymmetryC3C4(avgs[:n_classes], symmetry="C4", n_theta=360, max_shift=0)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
