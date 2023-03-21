@@ -62,9 +62,9 @@ img_with_noise = noise.forward(img)
 # We will plot the original and first noisy image,
 # because we only have one image in our Image stack right now.
 fig, axs = plt.subplots(1, 2)
-axs[0].imshow(img[0], cmap=plt.cm.gray)
+axs[0].imshow(img.asnumpy()[0], cmap=plt.cm.gray)
 axs[0].set_title("Starting Image")
-axs[1].imshow(img_with_noise[0], cmap=plt.cm.gray)
+axs[1].imshow(img_with_noise.asnumpy()[0], cmap=plt.cm.gray)
 axs[1].set_title("Noisy Image")
 plt.tight_layout()
 plt.show()
@@ -102,7 +102,7 @@ imgs_with_noise = noise_adder.forward(imgs)
 # Let's see the first two noisy images.
 # They should each display slightly different noise.
 fig, axs = plt.subplots(2, 2)
-for i, img in enumerate(imgs_with_noise[0:2]):
+for i, img in enumerate(imgs_with_noise[0:2].asnumpy()):
     axs[0, i].imshow(img, cmap=plt.cm.gray)
     axs[0, i].set_title(f"Custom Noisy Image {i}")
     img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(img)))
@@ -131,7 +131,7 @@ plt.show()
 imgs_src = ArrayImageSource(imgs_with_noise)
 
 # We'll copy the orginals for comparison later, before we process them further.
-noisy_imgs_copy = imgs_src.images[:n_imgs]
+noisy_imgs_copy = imgs_src.images[:n_imgs].asnumpy()
 
 # One of the tools we can use is a NoiseEstimator,
 #   which consumes from a Source.
@@ -144,7 +144,7 @@ imgs_src.whiten(noise_estimator.filter)
 
 # Peek at two whitened images and their corresponding spectrum.
 fig, axs = plt.subplots(2, 2)
-for i, img in enumerate(imgs_src.images[:2]):
+for i, img in enumerate(imgs_src.images[:2].asnumpy()):
     axs[0, i].imshow(img, cmap=plt.cm.gray)
     axs[0, i].set_title(f"Whitened Noisy Image {i}")
     img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(img)))
@@ -175,7 +175,7 @@ def radial_profile(data):
 
 # Lets pickout several images and plot their the radial profile of their noise.
 colors = ["r", "g", "b", "k", "c"]
-for i, img in enumerate(imgs_src.images[: len(colors)]):
+for i, img in enumerate(imgs_src.images[: len(colors)].asnumpy()):
     img_with_noise_f = np.abs(np.fft.fftshift(np.fft.fft2(noisy_imgs_copy[i])))
     plt.plot(
         radial_profile(img_with_noise_f),

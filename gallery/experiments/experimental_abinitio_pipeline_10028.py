@@ -184,5 +184,5 @@ logger.info(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")
 
 # Peek at result
 if interactive:
-    plt.imshow(np.sum(estimated_volume[0], axis=-1))
+    plt.imshow(np.sum(estimated_volume.asnumpy()[0], axis=-1))
     plt.show()

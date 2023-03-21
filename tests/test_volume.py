@@ -463,3 +463,16 @@ class VolumeTestCase(TestCase):
         X = self.data_12 + self.data_1
         self.assertTrue(np.allclose(X[0], 2 * self.data_1))
         self.assertTrue(np.allclose(X[1], self.data_1 + self.data_2))
+
+
+def test_asnumpy_readonly():
+    """
+    Attempting assignment should raise an error.
+    """
+    ary = np.random.random((3, 8, 8, 8))
+    im = Volume(ary)
+    vw = im.asnumpy()
+
+    # Attempt assignment
+    with raises(ValueError, match=r".*destination is read-only.*"):
+        vw[0, 0, 0, 0] = 123

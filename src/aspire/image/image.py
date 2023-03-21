@@ -248,7 +248,16 @@ class Image:
         return msg
 
     def asnumpy(self):
-        return self._data
+        """
+        Return image data as a (<stack>, resolution, resolution)
+        read-only array view.
+
+        :return: read-only ndarray view
+        """
+
+        view = self._data.view()
+        view.flags.writeable = False
+        return view
 
     def copy(self):
         return self.__class__(self._data.copy())

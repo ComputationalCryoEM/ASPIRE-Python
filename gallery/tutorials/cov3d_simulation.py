@@ -92,7 +92,7 @@ eigs_est = Volume(np.transpose(eigs_est, (3, 0, 1, 2)))
 # Truncate the eigendecomposition. Since we know the true rank of the
 # covariance matrix, we enforce it here.
 
-eigs_est_trunc = Volume(eigs_est[: num_vols - 1])
+eigs_est_trunc = eigs_est[: num_vols - 1]
 lambdas_est_trunc = lambdas_est[: num_vols - 1, : num_vols - 1]
 
 # Estimate the coordinates in the eigenbasis. Given the images, we find the
