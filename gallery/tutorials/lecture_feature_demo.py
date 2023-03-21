@@ -103,7 +103,7 @@ L = v2.resolution
 #   We'll use three orthographic projections, one per axis
 fig, axs = plt.subplots(1, 3)
 for i in range(3):
-    axs[i].imshow(np.sum(v2[0], axis=i), cmap="gray")
+    axs[i].imshow(np.sum(v2.asnumpy()[0], axis=i), cmap="gray")
 plt.show()
 
 # %%

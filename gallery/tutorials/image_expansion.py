@@ -95,11 +95,11 @@ dtime = tstop - tstart
 logger.info(f"Finish fast FB expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on fast FB basis
-ffb_images = ffb_basis.evaluate(ffb_coeffs)
+ffb_images = ffb_basis.evaluate(ffb_coeffs).asnumpy()
 logger.info("Finish reconstruction of images from fast FB expansion coefficients.")
 
 # Calculate the mean value of maximum differences between the fast FB estimated images to the original images
-diff = (ffb_images - org_images).asnumpy()
+diff = ffb_images - org_images
 ffb_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between FFB estimated images and original images: {ffb_meanmax}"
@@ -139,11 +139,11 @@ dtime = tstop - tstart
 logger.info(f"Finish direct PSWF expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
-pswf_images = pswf_basis.evaluate(pswf_coeffs)
+pswf_images = pswf_basis.evaluate(pswf_coeffs).asnumpy()
 logger.info("Finish reconstruction of images from direct PSWF expansion coefficients.")
 
 # Calculate the mean value of maximum differences between direct PSWF estimated images and original images
-diff = (pswf_images - org_images).asnumpy()
+diff = pswf_images - org_images
 pswf_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between PSWF estimated images and original images: {pswf_meanmax}"
@@ -183,11 +183,11 @@ dtime = tstop - tstart
 logger.info(f"Finish fast PSWF expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
-fpswf_images = fpswf_basis.evaluate(fpswf_coeffs)
+fpswf_images = fpswf_basis.evaluate(fpswf_coeffs).asnumpy()
 logger.info("Finish reconstruction of images from fast PSWF expansion coefficients.")
 
 # Calculate mean value of maximum differences between the fast PSWF estimated images and the original images
-diff = (fpswf_images - org_images).asnumpy()
+diff = fpswf_images - org_images
 fpswf_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between FPSWF estimated images and original images: {fpswf_meanmax}"
