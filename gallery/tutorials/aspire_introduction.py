@@ -374,8 +374,26 @@ sim.images[:10].show()  # Lo Res
 sim = Simulation(n=num_imgs, vols=v2, seed=42)
 sim.images[:10].show()
 
-# We can also view the rotations used to create these projections
+# We can also view the rotations used to create these projections.
 logging.info(sim.rotations)
+
+# %
+# Given any ``Source``, we can also take slices using typical slicing
+# syntax, or provide our own iterable of indices.
+
+sim_evens = sim[0::2]
+sim_odds = sim[1::2]
+
+# We can also generate random selections.
+# Shuffle indices then take the first 5.
+subset_shuffled_inds = np.random.permutation(sim.n)[:5]
+sim_shuffled_subset = sim[subset_shuffled_inds]
+
+# %
+# Underneath those slices, ASPIRE relies on ``IndexedSource``, which
+# we can also call direcly to remap indices.
+
+sim_shuffled_subset = IndexedSource(sim, sim_shuffled_subset)
 
 
 # %%
