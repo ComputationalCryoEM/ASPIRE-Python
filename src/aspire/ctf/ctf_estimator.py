@@ -502,7 +502,7 @@ class CtfEstimator:
         X = grid["x"]
         Y = grid["y"]
 
-        signal -= np.min(signal)
+        signal = signal - np.min(signal)
 
         rad_sq_min = N * pixel_size / g_min
         rad_sq_max = N * pixel_size / g_max
