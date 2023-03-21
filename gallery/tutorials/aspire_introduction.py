@@ -172,12 +172,12 @@ L = v2.resolution
 # %%
 # Plot Data
 # """""""""
-# For quick sanity checking purposes we can view as a contour plot.
-#   We'll use three orthographic projections, one per axis
-fig, axs = plt.subplots(1, 3)
+# For quick sanity checking purposes we can view some plots.
+#   We'll use three orthographic projections, one per axis.
+orthographic_projections = np.empty((3, L,L,L), dtype=v2.dtype)
 for i in range(3):
-    axs[i].imshow(np.sum(v2[0], axis=i), cmap="gray")
-plt.show()
+    orthographic_projections = np.sum(v2, axis=(0,i+1))
+Image(orthographic_projections).show()
 
 # %%
 # ``Rotation`` Class

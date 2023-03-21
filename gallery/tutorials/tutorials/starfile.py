@@ -62,7 +62,7 @@ mean_est = mean_estimator.estimate()
 #   which is wrapper on an ndarray representing a stack of one or more 3d volumes.
 # We will visualize the data via orthogonal projections along the three axes.
 
-vol = mean_est[0]
+vol = mean_est.asnumpy()[0]
 # Visualize volume
 L = vol.shape[0]
 # Plots

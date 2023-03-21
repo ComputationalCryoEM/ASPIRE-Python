@@ -186,5 +186,5 @@ estimated_volume.save(volume_filename_prefix_out, overwrite=True)
 
 # Peek at result
 if interactive:
-    plt.imshow(np.sum(estimated_volume[0], axis=-1))
+    plt.imshow(np.sum(estimated_volume.asnumpy()[0], axis=-1))
     plt.show()

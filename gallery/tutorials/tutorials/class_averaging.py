@@ -12,7 +12,6 @@ import numpy as np
 from PIL import Image as PILImage
 
 from aspire.classification import RIRClass2D, TopClassSelector
-from aspire.image import Image
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
 from aspire.utils import gaussian_2d
@@ -197,7 +196,7 @@ noisy_src.images[review_class].show()
 logger.info(f"Class {review_class}'s neighors: {classes[review_class]}")
 
 # Report the identified neighbors
-Image(noisy_src.images[:][classes[review_class]]).show()
+noisy_src.images[classes[review_class]].show()
 
 # Display the averaged result
 avgs.images[review_class].show()
