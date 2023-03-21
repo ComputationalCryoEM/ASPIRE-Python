@@ -4,6 +4,8 @@ Starfile
 
 """
 
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -20,11 +22,14 @@ from aspire.source import RelionSource
 # They are intended to handle batching data conversion/prep behind the scenes.
 # Here we load a ".star" file using the RelionSource class
 
+data_folder = os.path.join(os.path.dirname(os.getcwd()), "data")
+file_path = os.path.join(data_folder, "sample_relion_data.star")
+
 source = RelionSource(
-    "../data/sample_relion_data.star",
+    file_path,
     pixel_size=1.338,
     max_rows=10000,
-    data_folder="../data/",
+    data_folder=data_folder,
 )
 
 # Reduce the resolution

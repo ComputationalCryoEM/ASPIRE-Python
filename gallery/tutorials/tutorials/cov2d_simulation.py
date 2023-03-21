@@ -24,7 +24,9 @@ from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR = "../data"
+file_path = os.path.join(
+    os.path.dirname(os.getcwd()), "data", "clean70SRibosome_vol_65p.mrc"
+)
 
 
 logger.info(
@@ -83,7 +85,7 @@ logger.info(
     f"Load 3D map and downsample 3D map to desired grids "
     f"of {img_size} x {img_size} x {img_size}."
 )
-vols = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"), dtype=dtype)
+vols = Volume.load(file_path, dtype=dtype)
 
 # Scale and downsample
 vols[0] /= np.max(vols[0])

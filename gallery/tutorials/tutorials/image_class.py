@@ -12,8 +12,8 @@ import numpy as np
 from aspire.image import Image
 from aspire.operators import CTFFilter
 
-DATA_DIR = "../data"
-img_data = np.load(os.path.join(DATA_DIR, "monuments.npy"))
+file_path = os.path.join(os.path.dirname(os.getcwd()), "data", "monuments.npy")
+img_data = np.load(file_path)
 img_data.shape, img_data.dtype
 
 # %%

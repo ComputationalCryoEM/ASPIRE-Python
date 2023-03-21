@@ -143,8 +143,8 @@ from aspire.volume import Volume
 # A low res example file is included in the repo as a sanity check.
 # We can instantiate this as an ASPIRE Volume instance using
 # ``Volume.load()``.
-DATA_DIR = "data"
-v = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
+file_path = os.path.join(os.getcwd(), "data", "clean70SRibosome_vol_65p.mrc")
+v = Volume.load(file_path)
 
 # More interesting data requires downloading locally.
 # v = Volume.load("path/to/EMD-2660/map/emd_2660.map")
@@ -174,9 +174,9 @@ L = v2.resolution
 # """""""""
 # For quick sanity checking purposes we can view some plots.
 #   We'll use three orthographic projections, one per axis.
-orthographic_projections = np.empty((3, L,L,L), dtype=v2.dtype)
+orthographic_projections = np.empty((3, L, L, L), dtype=v2.dtype)
 for i in range(3):
-    orthographic_projections = np.sum(v2, axis=(0,i+1))
+    orthographic_projections = np.sum(v2, axis=(0, i + 1))
 Image(orthographic_projections).show()
 
 # %%
@@ -386,14 +386,16 @@ sim_odds = sim[1::2]
 
 # We can also generate random selections.
 # Shuffle indices then take the first 5.
-subset_shuffled_inds = np.random.permutation(sim.n)[:5]
-sim_shuffled_subset = sim[subset_shuffled_inds]
+shuffled_inds = np.random.permutation(sim.n)[:5]
+sim_shuffled_subset = sim[shuffled_inds]
 
 # %
 # Underneath those slices, ASPIRE relies on ``IndexedSource``, which
 # we can also call direcly to remap indices.
 
-sim_shuffled_subset = IndexedSource(sim, sim_shuffled_subset)
+from aspire.source import IndexedSource
+
+sim_shuffled_subset = IndexedSource(sim, shuffled_inds)
 
 
 # %%
