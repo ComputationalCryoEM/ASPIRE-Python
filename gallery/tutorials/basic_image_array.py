@@ -131,7 +131,7 @@ plt.show()
 imgs_src = ArrayImageSource(imgs_with_noise)
 
 # We'll copy the orginals for comparison later, before we process them further.
-noisy_imgs_copy = imgs_src.images[:n_imgs].asnumpy().copy()
+noisy_imgs_copy = imgs_src.images[:n_imgs].asnumpy()
 
 # One of the tools we can use is a NoiseEstimator,
 #   which consumes from a Source.
