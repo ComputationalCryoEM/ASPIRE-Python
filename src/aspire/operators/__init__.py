@@ -15,4 +15,10 @@ from .filters import (
     ZeroFilter,
     evaluate_src_filters_on_grid,
 )
+from .symmetry_groups import (
+    CyclicSymmetryGroup,
+    DihedralSymmetryGroup,
+    OctahedralSymmetryGroup,
+    TetrahedralSymmetryGroup,
+)
 from .wemd import wemd_embed, wemd_norm
