@@ -9,7 +9,7 @@ from aspire.operators import (
     OctahedralSymmetryGroup,
     TetrahedralSymmetryGroup,
 )
-from aspire.utils import Rotation, bump_3d, grid_3d
+from aspire.utils import bump_3d, grid_3d
 from aspire.utils.random import Random, randn
 from aspire.volume import Volume
 
