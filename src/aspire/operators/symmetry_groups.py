@@ -63,6 +63,15 @@ class CyclicSymmetryGroup(SymmetryGroup):
     """
 
     def __init__(self, order, dtype):
+        """
+        `CyclicSymmetryGroup` instance that serves up a `Rotation` object
+        containing rotation matrices of the symmetry group (including
+        the Identity) accessed via the `matrices` attribute.
+
+        :param order: The cyclic order for the symmetry group (int).
+        :param dtype: Numpy dtype to be used for rotation matrices.
+        """
+
         self.order = int(order)
         super().__init__(dtype=dtype)
 
@@ -91,6 +100,15 @@ class DihedralSymmetryGroup(SymmetryGroup):
     """
 
     def __init__(self, order, dtype):
+        """
+        `DihedralSymmetryGroup` instance that serves up a `Rotation` object
+        containing rotation matrices of the symmetry group (including
+        the Identity) accessed via the `matrices` attribute.
+
+        :param order: The cyclic order for the symmetry group (int).
+        :param dtype: Numpy dtype to be used for rotation matrices.
+        """
+
         self.order = int(order)
         super().__init__(dtype=dtype)
 
@@ -125,6 +143,14 @@ class TetrahedralSymmetryGroup(SymmetryGroup):
     """
 
     def __init__(self, dtype):
+        """
+        `TetrahedralSymmetryGroup` instance that serves up a `Rotation` object
+        containing rotation matrices of the symmetry group (including
+        the Identity) accessed via the `matrices` attribute.
+
+        :param dtype: Numpy dtype to be used for rotation matrices.
+        """
+
         super().__init__(dtype=dtype)
 
     @property
@@ -171,6 +197,13 @@ class OctahedralSymmetryGroup(SymmetryGroup):
     """
 
     def __init__(self, dtype):
+        """
+        `TetrahedralSymmetryGroup` instance that serves up a `Rotation` object
+        containing rotation matrices of the symmetry group (including
+        the Identity) accessed via the `matrices` attribute.
+
+        :param dtype: Numpy dtype to be used for rotation matrices.
+        """
         super().__init__(dtype=dtype)
 
         self._symmetry_group = self.generate_rotations()
