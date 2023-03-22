@@ -89,6 +89,9 @@ logger.info("Begin Class Averaging")
 # Automatically configure parallel processing
 avgs = DefaultClassAvgSource(src, n_nbor=n_nbor, num_procs=None)
 
+# We'll continue our pipeline with the first ``n_classes`` from ``avgs``.
+avgs = avgs[:n_classes]
+
 # %%
 # Common Line Estimation
 # ----------------------
@@ -98,8 +101,8 @@ avgs = DefaultClassAvgSource(src, n_nbor=n_nbor, num_procs=None)
 
 logger.info("Begin Orientation Estimation")
 
-# Run orientation estimation on first `n_classes` from `avgs`.
-orient_est = CLSymmetryC3C4(avgs[:n_classes], symmetry="C4", n_theta=360, max_shift=0)
+# Run orientation estimation on  ``avgs``.
+orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=360, max_shift=0)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations

@@ -140,6 +140,8 @@ avgs = DefaultClassAvgSource(
     averager_src=src,
     num_procs=None,  # Automatically configure parallel processing
 )
+# We'll continue our pipeline with the first `n_classes` from `avgs`.
+avgs = avgs[:n_classes]
 
 if interactive:
     avgs.images[:10].show()
@@ -154,8 +156,8 @@ if interactive:
 
 logger.info("Begin Orientation Estimation")
 
-# Run orientation estimation on first `n_classes` from `avgs`.
-orient_est = CLSyncVoting(avgs[:n_classes], n_theta=360)
+# Run orientation estimation on ``avgs``.
+orient_est = CLSyncVoting(avgs, n_theta=360)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
