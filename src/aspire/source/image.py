@@ -293,6 +293,8 @@ class ImageSource(ABC):
         :param values: Rotation angles in radians, as a n x 3 array
         :return: None
         """
+
+        values = values.astype(self.dtype)
         self._rotations = Rotation.from_euler(values)
         self.set_metadata(
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"], np.rad2deg(values)
@@ -306,6 +308,8 @@ class ImageSource(ABC):
         :param values: Rotation matrices as a n x 3 x 3 array
         :return: None
         """
+
+        values = values.astype(self.dtype)
         self._rotations = Rotation.from_matrix(values)
         self.set_metadata(
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"],
@@ -1104,7 +1108,7 @@ class IndexedSource(ImageSource):
         # here, but it returns a Numpy array, which would need to be
         # converted back into Pandas for use below. So here we'll just
         # use `loc` to return a dataframe.
-        metadata = self.src._metadata.loc[self.index_map]
+        metadata = self.src._metadata.loc[self.index_map].copy()
 
         # Construct a fully formed ImageSource with this metadata
         super().__init__(
@@ -1115,6 +1119,11 @@ class IndexedSource(ImageSource):
             memory=memory,
         )
 
+        # Create filter indices, these are required to pass unharmed through filter eval code
+        #   that is potentially called by other methods later.
+        self.filter_indices = np.zeros(self.n, dtype=int)
+        self.unique_filters = [IdentityFilter()]
+
     def _images(self, indices):
         """
         Returns images from `self.src` corresponding to `indices`
@@ -1124,7 +1133,13 @@ class IndexedSource(ImageSource):
         :return: An `Image` object.
         """
         mapped_indices = self.index_map[indices]
-        return self.src.images[mapped_indices]
+        # Load previous source image data and apply any transforms
+        # belonging to this IndexedSource.  Note the previous source
+        # requires remapped indices, while the current source uses the
+        # `indices` arg directly.
+        return self.generation_pipeline.forward(
+            self.src.images[mapped_indices], indices
+        )
 
     def __repr__(self):
         return f"{self.__class__.__name__} mapping {self.n} of {self.src.n} indices from {self.src.__class__.__name__}."
