@@ -43,7 +43,7 @@ source.downsample(L)
 # Estimate noise in the ImageSource instance
 noise_estimator = AnisotropicNoiseEstimator(source)
 # Apply whitening to ImageSource
-source.whiten(noise_estimator.filter)
+source.whiten(noise_estimator)
 
 # Display subset of the images
 images = source.images[:10]

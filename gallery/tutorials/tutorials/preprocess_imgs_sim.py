@@ -99,7 +99,7 @@ imgs_nb = source.images[0].asnumpy()
 
 logger.info("Whiten noise of images")
 noise_estimator = WhiteNoiseEstimator(source)
-source.whiten(noise_estimator.filter)
+source.whiten(noise_estimator)
 imgs_wt = source.images[0].asnumpy()
 
 logger.info("Invert the global density contrast if need")

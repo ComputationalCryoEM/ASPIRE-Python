@@ -505,12 +505,12 @@ aiso_noise_estimator = AnisotropicNoiseEstimator(sim)
 
 # %%
 # Applying the ``Simulation.whiten()`` method requires passing the
-# filter corresponding to the estimated noise instance.  Then we can
-# inspect some of the whitened images.  While noise is still present,
-# we can see a dramatic change.
+# corresponding to the noise estimator instance.  Then we can inspect
+# some of the whitened images.  While noise is still present, we can
+# see a dramatic change.
 
 # Whiten based on the estimated noise
-sim.whiten(aiso_noise_estimator.filter)
+sim.whiten(aiso_noise_estimator)
 
 # What do the whitened images look like...
 sim.images[:10].show()
