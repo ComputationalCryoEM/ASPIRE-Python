@@ -122,7 +122,7 @@ src.whiten(aiso_noise_estimator)
 
 # Plot the noise profile for inspection
 if interactive:
-    plt.imshow(aiso_noise_estimator.evaluate_grid(L))
+    plt.imshow(aiso_noise_estimator.filter.evaluate_grid(L))
     plt.show()
 
 # Peek, what do the whitened images look like...
