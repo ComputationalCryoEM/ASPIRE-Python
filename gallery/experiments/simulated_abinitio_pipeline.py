@@ -188,7 +188,7 @@ logger.info("Begin Orientation Estimation")
 
 # Stash true rotations for later comparison.
 # Note class selection re-ordered our images, so we remap the indices back to the original source.
-indices = avgs.index_map #  Also available from avgs.src.selection_indices[:n_classes]
+indices = avgs.index_map  #  Also available from avgs.src.selection_indices[:n_classes]
 true_rotations = src.rotations[indices]
 
 # Run orientation estimation on ``avgs``.

@@ -339,7 +339,9 @@ class BFRAverager2D(AligningAverager2D):
                 # Shift in real space to avoid extra conversions
                 if self._base_image_shift is not None:
                     neighbors_imgs[0] = (
-                        Image(neighbors_imgs[0]).shift(self._base_image_shift).asnumpy()[0]
+                        Image(neighbors_imgs[0])
+                        .shift(self._base_image_shift)
+                        .asnumpy()[0]
                     )
 
                 # Evaluate_t into basis
