@@ -89,8 +89,9 @@ class Averager2D(ABC):
 
     def _cls_images(self, cls, src=None):
         """
-        Util to return images as an array for class k (provided as array `cls` ),
-        preserving the class/nbor order.
+        Util to return images as an array for class k (provided as
+        array `cls` ), preserving the class/nbor order.  Note, Images
+        will be a read-only view, copy if mutations required.
 
         :param cls: An iterable (0/1-D array or list) that holds the indices of images to align.
             In class averaging, this would be a class.
@@ -202,11 +203,11 @@ class AligningAverager2D(Averager2D):
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
                 # Retrieve relevant images directly from source.
-                neighbors_imgs = Image(self._cls_images(classes[i]))
+                neighbors_imgs = self._cls_images(classes[i])
 
                 # Do shifts
                 if self.shifts is not None:
-                    neighbors_imgs.shift(self.shifts[i])
+                    Image(neighbors_imgs).shift(self.shifts[i])
 
                 neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
@@ -332,17 +333,17 @@ class BFRAverager2D(AligningAverager2D):
             # Get the coefs for these neighbors
             if basis_coefficients is None:
                 # Retrieve relevant images
-                neighbors_imgs = Image(self._cls_images(classes[k]))
+                neighbors_imgs = self._cls_images(classes[k]).copy()
 
                 # We optionally can shift the base image by `_base_image_shift`
                 # Shift in real space to avoid extra conversions
                 if self._base_image_shift is not None:
                     neighbors_imgs[0] = (
-                        neighbors_imgs[0].shift(self._base_image_shift).asnumpy()
+                        Image(neighbors_imgs[0]).shift(self._base_image_shift).asnumpy()[0]
                     )
 
                 # Evaluate_t into basis
-                nbr_coef = self.composite_basis.evaluate_t(neighbors_imgs)
+                nbr_coef = self.composite_basis.evaluate_t(Image(neighbors_imgs))
             else:
                 nbr_coef = basis_coefficients[classes[k]]
 
@@ -471,7 +472,7 @@ class BFSRAverager2D(BFRAverager2D):
         #  because we will mutate them with shifts in the loop.
         if basis_coefficients is None:
             original_coef = self.composite_basis.evaluate_t(
-                self._cls_images(classes[:, 0], src=self.src)
+                Image(self._cls_images(classes[:, 0], src=self.src))
             )
         else:
             original_coef = basis_coefficients[classes[:, 0], :].copy()
