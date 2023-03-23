@@ -97,7 +97,7 @@ jobs:
         pytest -n2 --durations=50 -s
 
   # Build and Deploy production (master) docs.
-  docs:
+  docs_deploy:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
