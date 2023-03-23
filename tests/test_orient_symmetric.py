@@ -37,9 +37,9 @@ param_list_cn = [
 
 # Method to instantiate a Simulation source and orientation estimation object.
 def source_orientation_objs(L, n_img, order, dtype):
-    # This Volume is hand picked to have a fairly even distribution of energy.
+    # This Volume is hand picked to have a fairly even distribution of density.
     # Due to the rotations used to generate symmetric volumes, some seeds will
-    # generate volumes with a high concentration of energy in the center causing
+    # generate volumes with a high concentration of denisty in the center causing
     # misidentification of common-lines.
     vol = CnSymmetricVolume(
         L=L,
