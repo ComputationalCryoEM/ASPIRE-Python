@@ -90,6 +90,9 @@ avgs = DefaultClassAvgSource(src, n_nbor=n_nbor, num_procs=None)
 # We'll continue our pipeline with the first ``n_classes`` from ``avgs``.
 avgs = avgs[:n_classes]
 
+# Save off the set of class average images.
+avgs.save("experimental_10081_class_averages.star", overwrite=True)
+
 # %%
 # Common Line Estimation
 # ----------------------
