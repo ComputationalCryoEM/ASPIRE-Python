@@ -1050,6 +1050,14 @@ class ImageSource(ABC):
         #     `estimate_signal_var`   we yield: signal_variance
         snr = (signal_power - noise_power) / noise_power
 
+        # Check for extremal values.
+        if snr < 0:
+            logger.warning(
+                "For extremely low SNR, estimation accuracy may be impaired."
+                f"  Clamping estimated SNR {snr} to 0."
+            )
+            snr = 0
+
         return snr
 
 
