@@ -17,9 +17,10 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-from aspire.noise import WhiteNoiseEstimator
+from aspire.noise import NoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import (
     CTFFilter,
+    Filter,
     IdentityFilter,
     MultiplicativeFilter,
     PowerFilter,
@@ -458,14 +459,29 @@ class ImageSource(ABC):
 
         self.L = L
 
-    def whiten(self, noise_filter):
+    def whiten(self, noise_estimate):
         """
         Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
 
-        :param noise_filter: The noise psd of the images as a `Filter` object. Typically determined by a
-            NoiseEstimator class, and available as its `filter` attribute.
+        :param noise_estimate: `NoiseEstimator` or `Filter`. When
+            passed a `NoiseEstimator` the `filter` attribute will be
+            queried.  Alternatively, the noise PSD may be passed
+            directly as a `Filter` object.
         :return: On return, the `ImageSource` object has been modified in place.
         """
+
+        if isinstance(noise_estimate, NoiseEstimator):
+            # Any NoiseEstimator instance should have a `filter`.
+            noise_filter = noise_estimate.filter
+        elif isinstance(noise_estimate, Filter):
+            # We were given a `Filter` object.
+            noise_filter = noise_estimate
+        else:
+            raise TypeError(
+                f"Whiten passed {noise_estimate}"
+                " instead of `NoiseEstimator` or `Filter`."
+            )
+
         logger.info("Whitening source object")
         whiten_filter = PowerFilter(noise_filter, power=-0.5)
 
