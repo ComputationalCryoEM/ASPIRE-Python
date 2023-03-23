@@ -174,6 +174,8 @@ avgs = avgs[:n_classes]
 if interactive:
     avgs.images[:10].show()
 
+# Save off the set of class average images.
+avgs.save("simulated_abinitio_pipeline_class_averages.star", overwrite=True)
 
 # %%
 # Common Line Estimation
@@ -186,8 +188,8 @@ logger.info("Begin Orientation Estimation")
 
 # Stash true rotations for later comparison.
 # Note class selection re-ordered our images, so we remap the indices back to the original source.
-indices = avgs.selection_indices
-true_rotations = src.rotations[indices[:n_classes]]
+indices = avgs.index_map  # Also available from avgs.src.selection_indices[:n_classes]
+true_rotations = src.rotations[indices]
 
 # Run orientation estimation on ``avgs``.
 orient_est = CLSyncVoting(avgs, n_theta=180)
