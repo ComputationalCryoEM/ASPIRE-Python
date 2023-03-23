@@ -96,6 +96,7 @@ jobs:
         # -n runs test in parallel using pytest-xdist
         pytest -n2 --durations=50 -s
 
+  # Build and Deploy production (master) docs.
   docs:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
@@ -104,7 +105,7 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.7'
+        python-version: '3.8'
     - name: Install Dependencies
       run: |
         pip install -e ".[dev]"
@@ -147,3 +148,29 @@ jobs:
         ASPIREDIR=${{ env.WORK_DIR }} pytest --durations=50
     - name: Cleanup
       run: rm -rf ${{ env.WORK_DIR }}
+
+  # Build branch's docs and gallery.
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Build Sphinx docs
+        run: |
+          make distclean
+          sphinx-apidoc -f -o ./source ../src -H Modules
+          make html
+        working-directory: ./docs
+      - name: Archive Sphinx docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: sphinx-docs
+          path: docs
+          retention-days: 7
