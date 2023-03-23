@@ -151,6 +151,7 @@ jobs:
 
   # Build branch's docs and gallery.
   docs:
+    needs: check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
