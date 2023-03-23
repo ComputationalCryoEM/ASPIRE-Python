@@ -38,8 +38,8 @@ class OrientedSource(ImageSource):
                 f"`orientation_estimator` should be subclass of `CLOrient3D`, found {self.orientation_estimator}."
             )
 
-        # Get metadata from src.
-        metadata = self.src._metadata
+        # Get metadata from src. Take a copy to keep original source metadata.
+        metadata = self.src._metadata.copy()
 
         super().__init__(
             L=self.src.L,
