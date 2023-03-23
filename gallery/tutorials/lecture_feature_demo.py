@@ -272,14 +272,14 @@ sim4.images[:10].show()
 # Noise Whitening
 # ---------------
 #
-# Applying the ``Simulation.whiten()`` method just requires passing the filter corresponding to the estimated noise instance.
+# Applying the ``Simulation.whiten()`` method just requires passing a `NoiseEstimator` instance.
 # Then we can inspect some of the whitened images.  While noise is still present, we can see a dramatic change.
 
 # Estimate noise.
 aiso_noise_estimator = AnisotropicNoiseEstimator(sim4)
 
 # Whiten based on the estimated noise
-sim4.whiten(aiso_noise_estimator.filter)
+sim4.whiten(aiso_noise_estimator)
 
 # What do the whitened images look like...
 sim4.images[:10].show()
