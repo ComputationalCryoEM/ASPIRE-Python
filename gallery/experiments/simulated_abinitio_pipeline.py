@@ -174,6 +174,8 @@ avgs = avgs[:n_classes]
 if interactive:
     avgs.images[:10].show()
 
+# Save off the set of class average images.
+avgs.save("simulated_abinitio_pipeline_class_averages.star", overwrite=True)
 
 # %%
 # Common Line Estimation
