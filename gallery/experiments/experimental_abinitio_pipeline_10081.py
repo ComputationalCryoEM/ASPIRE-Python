@@ -44,10 +44,8 @@ n_imgs = None  # Set to None for all images in starfile, can set smaller for tes
 img_size = 32  # Downsample the images/reconstruction to a desired resolution
 n_classes = 2000  # How many class averages to compute.
 n_nbor = 100  # How many neighbors to stack
-starfile_in = (
-    "/scratch/ExperimentalData/staging/10081/data/Particles/micrographs/data.star"
-)
-data_folder = "../.."  # This depends on the specific starfile entries.
+starfile_in = "10081/data/particle_stacks/data.star"
+data_folder = "."  # This depends on the specific starfile entries.
 volume_output_filename = f"10081_abinitio_c{n_classes}_m{n_nbor}_{img_size}.mrc"
 pixel_size = 1.3
 
