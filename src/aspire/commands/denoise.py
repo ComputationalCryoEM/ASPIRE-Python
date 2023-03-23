@@ -96,7 +96,7 @@ def denoise(
 
     # Whiten the noise of images
     logger.info("Whiten the noise of images from the noise estimator")
-    source.whiten(noise_estimator.filter)
+    source.whiten(noise_estimator)
 
     if denoise_method == "CWF":
         logger.info("Denoise the images using CWF cov2D method.")
