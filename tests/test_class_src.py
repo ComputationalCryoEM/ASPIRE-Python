@@ -117,7 +117,7 @@ def class_sim_fixture(dtype, img_size):
 
 
 @pytest.mark.parametrize(
-    "test_src_cls", CLS_SRCS, ids=lambda param: f"ClassSource={param}"
+    "test_src_cls", CLS_SRCS, ids=lambda param: f"ClassSource={param.__class__}"
 )
 def test_basic_averaging(class_sim_fixture, test_src_cls):
     """
