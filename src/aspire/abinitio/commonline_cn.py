@@ -167,7 +167,10 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
             # Compute maximum likelihood while taking into consideration both cls and scls.
             # Get indices of optimal candidates for Ri_tilde, Rj_tilde, and R_theta_ij.
-            corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])[..., np.newaxis]
+            corrs = (
+                corrs
+                * np.outer(scores_self_corrs[i], scores_self_corrs[j])[..., np.newaxis]
+            )
             opt_i, opt_j, opt_ij = np.unravel_index(np.argmax(corrs), corrs.shape)
 
             # Optimal candidate rotations.
