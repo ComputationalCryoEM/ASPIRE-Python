@@ -4,7 +4,6 @@ import math
 import numpy as np
 import scipy.sparse as sparse
 
-from aspire.abinitio.orientation_src import OrientEstSource
 from aspire.basis import PolarBasis2D
 from aspire.utils import common_line_from_rots
 from aspire.utils.random import choice
@@ -95,12 +94,6 @@ class CLOrient3D:
         Subclasses should implement this function.
         """
         raise NotImplementedError("subclasses should implement this")
-
-    def save_rotations(self):
-        """
-        Return a new ImageSource object for orientation information
-        """
-        return OrientEstSource(self.src, self)
 
     def build_clmatrix(self):
         """
