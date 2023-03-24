@@ -1151,7 +1151,7 @@ class OrientedSource(IndexedSource):
     Source for oriented 2D images using orientation estimation methods.
     """
 
-    def __init__(self, src, orientation_estimator=None):
+    def __init__(self, src, orientation_estimator=None, rotations=None):
         """
         Constructor of an object for finding the orientations for 2D images
         using orientation estimation methods.
@@ -1166,15 +1166,6 @@ class OrientedSource(IndexedSource):
                 f"`src` should be subclass of `ImageSource`, found {self.src}."
             )
 
-        if orientation_estimator is None:
-            orientation_estimator = CLSyncVoting(src)
-
-        self.orientation_estimator = orientation_estimator
-        if not isinstance(self.orientation_estimator, CLOrient3D):
-            raise ValueError(
-                f"`orientation_estimator` should be subclass of `CLOrient3D`, found {self.orientation_estimator}."
-            )
-
         # `indices` for IndexedSource.
         indices = np.arange(self.src.n)
 
@@ -1183,14 +1174,34 @@ class OrientedSource(IndexedSource):
             indices=indices,
         )
 
-        # Create filter indices, these are required to pass unharmed through filter eval code
-        #   that is potentially called by other methods later.
-        self.filter_indices = np.zeros(self.n, dtype=int)
-        self.unique_filters = [IdentityFilter()]
-
-        # Flags to check if orientation estimation and debug message have already been executed.
+        # Flags to not repeat orientation estimation and debug message.
         self._oriented = False
         self._warned = False
+
+        # estimator and rotations are mutually exclusive.
+        if orientation_estimator is not None and rotations is not None:
+            raise RuntimeError(
+                "Must provide either an `orientation_estimator` or `rotations`. Found both."
+            )
+
+        if rotations is None:
+            if orientation_estimator is None:
+                orientation_estimator = CLSyncVoting(src)
+
+            self.orientation_estimator = orientation_estimator
+            if not isinstance(self.orientation_estimator, CLOrient3D):
+                raise ValueError(
+                    f"`orientation_estimator` should be subclass of `CLOrient3D`, found {self.orientation_estimator}."
+                )
+
+        else:
+            assert rotations.shape == (
+                src.n,
+                3,
+                3,
+            ), f"'rotations' must have shape (src.n, 3, 3), found shape {rotations.shape}"
+            self.rotations = rotations
+            self._oriented = True
 
     def _images(self, indices):
         """
@@ -1208,8 +1219,9 @@ class OrientedSource(IndexedSource):
             self.rotations = self.orientation_estimator.rotations
             self._oriented = True
 
-        logger.debug(f"{self.__class__.__name__} arleady oriented, skipping")
-        self._warned = True
+        if not self._warned:
+            logger.debug(f"{self.__class__.__name__} arleady oriented, skipping")
+            self._warned = True
 
         return super()._images(indices)
 
