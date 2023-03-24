@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from aspire import config
-from aspire.utils import complex_type, real_type
+from aspire.utils import LogFilterByCount, complex_type, real_type
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +134,9 @@ class Plan:
             else:
                 # If a Plan was constructed as a generic Plan(), use the default (best) Plan class
                 if default_plan_class is None:
-                    check_backends(raise_errors=True)
+                    # Limit log noise to once
+                    with LogFilterByCount(logger, 1):
+                        check_backends(raise_errors=True)
                 return super(Plan, cls).__new__(default_plan_class)
         else:
             # If a Plan-subclass was constructed directly, invoke default behavior
