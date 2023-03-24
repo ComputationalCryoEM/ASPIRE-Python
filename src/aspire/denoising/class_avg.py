@@ -178,7 +178,7 @@ class ClassAvgSource(ImageSource):
             }
 
             # Get heap dict once to avoid traversing heap in a loop.
-            heap_dict = self.self.class_selector.heap_id_dict
+            heap_dict = self.class_selector.heap_id_dict
 
             # Recursively call `_images`.
             # `heap_inds` set should be empty in the recursive call,
