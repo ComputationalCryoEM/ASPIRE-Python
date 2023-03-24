@@ -110,7 +110,7 @@ def preprocess(
     if whiten:
         logger.info("Whiten noise of images")
         noise_estimator = WhiteNoiseEstimator(source)
-        source.whiten(noise_estimator.filter)
+        source.whiten(noise_estimator)
 
     if invert_contrast:
         logger.info("Invert global density contrast")

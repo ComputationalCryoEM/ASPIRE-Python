@@ -18,9 +18,10 @@ from aspire.image.xform import (
     Multiply,
     Pipeline,
 )
-from aspire.noise import WhiteNoiseEstimator
+from aspire.noise import NoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import (
     CTFFilter,
+    Filter,
     IdentityFilter,
     MultiplicativeFilter,
     PowerFilter,
@@ -270,6 +271,8 @@ class ImageSource(ABC):
         :param values: Rotation angles in radians, as a n x 3 array
         :return: None
         """
+
+        values = values.astype(self.dtype)
         self._rotations = Rotation.from_euler(values)
         self.set_metadata(
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"], np.rad2deg(values)
@@ -283,6 +286,8 @@ class ImageSource(ABC):
         :param values: Rotation matrices as a n x 3 x 3 array
         :return: None
         """
+
+        values = values.astype(self.dtype)
         self._rotations = Rotation.from_matrix(values)
         self.set_metadata(
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"],
@@ -455,14 +460,29 @@ class ImageSource(ABC):
 
         self.L = L
 
-    def whiten(self, noise_filter):
+    def whiten(self, noise_estimate):
         """
         Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
 
-        :param noise_filter: The noise psd of the images as a `Filter` object. Typically determined by a
-            NoiseEstimator class, and available as its `filter` attribute.
+        :param noise_estimate: `NoiseEstimator` or `Filter`. When
+            passed a `NoiseEstimator` the `filter` attribute will be
+            queried.  Alternatively, the noise PSD may be passed
+            directly as a `Filter` object.
         :return: On return, the `ImageSource` object has been modified in place.
         """
+
+        if isinstance(noise_estimate, NoiseEstimator):
+            # Any NoiseEstimator instance should have a `filter`.
+            noise_filter = noise_estimate.filter
+        elif isinstance(noise_estimate, Filter):
+            # We were given a `Filter` object.
+            noise_filter = noise_estimate
+        else:
+            raise TypeError(
+                f"Whiten passed {noise_estimate}"
+                " instead of `NoiseEstimator` or `Filter`."
+            )
+
         logger.info("Whitening source object")
         whiten_filter = PowerFilter(noise_filter, power=-0.5)
 
@@ -1047,6 +1067,14 @@ class ImageSource(ABC):
         #     `estimate_signal_var`   we yield: signal_variance
         snr = (signal_power - noise_power) / noise_power
 
+        # Check for extremal values.
+        if snr < 0:
+            logger.warning(
+                "For extremely low SNR, estimation accuracy may be impaired."
+                f"  Clamping estimated SNR {snr} to 0."
+            )
+            snr = 0
+
         return snr
 
 
@@ -1081,7 +1109,7 @@ class IndexedSource(ImageSource):
         # here, but it returns a Numpy array, which would need to be
         # converted back into Pandas for use below. So here we'll just
         # use `loc` to return a dataframe.
-        metadata = self.src._metadata.loc[self.index_map]
+        metadata = self.src._metadata.loc[self.index_map].copy()
 
         # Construct a fully formed ImageSource with this metadata
         super().__init__(
@@ -1092,6 +1120,11 @@ class IndexedSource(ImageSource):
             memory=memory,
         )
 
+        # Create filter indices, these are required to pass unharmed through filter eval code
+        #   that is potentially called by other methods later.
+        self.filter_indices = np.zeros(self.n, dtype=int)
+        self.unique_filters = [IdentityFilter()]
+
     def _images(self, indices):
         """
         Returns images from `self.src` corresponding to `indices`
@@ -1101,7 +1134,13 @@ class IndexedSource(ImageSource):
         :return: An `Image` object.
         """
         mapped_indices = self.index_map[indices]
-        return self.src.images[mapped_indices]
+        # Load previous source image data and apply any transforms
+        # belonging to this IndexedSource.  Note the previous source
+        # requires remapped indices, while the current source uses the
+        # `indices` arg directly.
+        return self.generation_pipeline.forward(
+            self.src.images[mapped_indices], indices
+        )
 
     def __repr__(self):
         return f"{self.__class__.__name__} mapping {self.n} of {self.src.n} indices from {self.src.__class__.__name__}."

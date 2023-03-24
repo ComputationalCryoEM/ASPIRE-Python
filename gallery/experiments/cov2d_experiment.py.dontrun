@@ -47,7 +47,7 @@ logger.info(f"var_noise before whitening {var_noise}")
 
 # Whiten the noise of images
 logger.info(f"Whiten the noise of images from the noise estimator")
-source.whiten(noise_estimator.filter)
+source.whiten(noise_estimator)
 #   Note this changes the noise variance,
 #   flattening spectrum and converging towards 1.
 #   Noise variance will be recomputed in DenoiserCov2D by default.

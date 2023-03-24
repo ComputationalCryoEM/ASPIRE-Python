@@ -94,7 +94,7 @@ def testWhiten(dtype):
     L = 64
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
-    sim.whiten(noise_estimator.filter)
+    sim.whiten(noise_estimator)
     imgs_wt = sim.images[:num_images].asnumpy()
 
     # calculate correlation between two neighboring pixels from background
@@ -110,8 +110,10 @@ def testWhiten(dtype):
 def testWhiten2(dtype):
     # Excercises missing cases using odd image resolutions with filter.
     #  Relates to GitHub issue #401.
-    # Otherwise this is the same as testWhiten, though the accuracy
+    # Otherwise this is the similar to testWhiten, though the accuracy
     #  (atol) for odd resolutions seems slightly worse.
+    # Note, we also use this test to excercise calling `whiten`
+    #  directly with a `Filter`.
     L = 63
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)

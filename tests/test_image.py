@@ -292,3 +292,16 @@ def testShow():
     """
     im = Image(np.random.random((3, 8, 8)))
     im.show()
+
+
+def test_asnumpy_readonly():
+    """
+    Attempting assignment should raise an error.
+    """
+    ary = np.random.random((3, 8, 8))
+    im = Image(ary)
+    vw = im.asnumpy()
+
+    # Attempt assignment
+    with raises(ValueError, match=r".*destination is read-only.*"):
+        vw[0, 0, 0] = 123

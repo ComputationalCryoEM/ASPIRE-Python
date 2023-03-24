@@ -103,11 +103,14 @@ class Volume:
 
     def asnumpy(self):
         """
-        Return volume as a (n_vols, resolution, resolution, resolution) array.
+        Return volume data as a (<stack>, resolution, resolution,
+        resolution) read-only array view.
 
-        :return: ndarray
+        :return: read-only ndarray view
         """
-        return self._data
+        view = self._data.view()
+        view.flags.writeable = False
+        return view
 
     def astype(self, dtype, copy=True):
         """

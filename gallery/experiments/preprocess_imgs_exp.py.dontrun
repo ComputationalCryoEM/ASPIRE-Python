@@ -45,7 +45,7 @@ imgs_nb = source.images[:nimgs_ext]
 
 print('Whiten noise of images')
 noise_estimator = WhiteNoiseEstimator(source)
-source.whiten(noise_estimator.filter)
+source.whiten(noise_estimator)
 imgs_wt = source.images[:nimgs_ext]
 
 print('Invert global density contrast')

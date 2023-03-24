@@ -148,7 +148,7 @@ def extract_particles(
         src.normalize_background()
     if whiten:
         estimator = WhiteNoiseEstimator(src)
-        src.whiten(estimator.filter)
+        src.whiten(estimator)
     if invert_contrast:
         src.invert_contrast()
 
