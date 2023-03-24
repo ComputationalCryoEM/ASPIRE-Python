@@ -9,6 +9,7 @@ from collections.abc import Iterable
 import mrcfile
 import numpy as np
 
+from aspire.abinitio import CLOrient3D, CLSyncVoting
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
     Downsample,
@@ -1429,6 +1430,74 @@ class IndexedSource(ImageSource):
 
     def __repr__(self):
         return f"{self.__class__.__name__} mapping {self.n} of {self.src.n} indices from {self.src.__class__.__name__}."
+
+
+class OrientedSource(IndexedSource):
+    """
+    Source for oriented 2D images using orientation estimation methods.
+    """
+
+    def __init__(self, src, orientation_estimator=None):
+        """
+        Constructor of an object for finding the orientations for 2D images
+        using orientation estimation methods.
+
+        :param src: Source used for orientation estimation
+        :param orientation_estimator: CLOrient3D subclass used for orientation estimation.
+        """
+
+        self.src = src
+        if not isinstance(self.src, ImageSource):
+            raise ValueError(
+                f"`src` should be subclass of `ImageSource`, found {self.src}."
+            )
+
+        if orientation_estimator is None:
+            orientation_estimator = CLSyncVoting(src)
+
+        self.orientation_estimator = orientation_estimator
+        if not isinstance(self.orientation_estimator, CLOrient3D):
+            raise ValueError(
+                f"`orientation_estimator` should be subclass of `CLOrient3D`, found {self.orientation_estimator}."
+            )
+
+        # `indices` for IndexedSource.
+        indices = np.arange(self.src.n)
+
+        super().__init__(
+            src=self.src,
+            indices=indices,
+        )
+
+        # Create filter indices, these are required to pass unharmed through filter eval code
+        #   that is potentially called by other methods later.
+        self.filter_indices = np.zeros(self.n, dtype=int)
+        self.unique_filters = [IdentityFilter()]
+
+        # Flags to check if orientation estimation and debug message have already been executed.
+        self._oriented = False
+        self._warned = False
+
+    def _images(self, indices):
+        """
+        Lazily performs orientation estimation and returns images from `self.src` corresponding to `indices`.
+
+        :param indices: A 1-D NumPy array of indices.
+        :return: An `Image` object.
+        """
+
+        if not self._oriented:
+            logger.info(
+                f"Estimating rotations for {self.src} using {self.orientation_estimator}."
+            )
+            self.orientation_estimator.estimate_rotations()
+            self.rotations = self.orientation_estimator.rotations
+            self._oriented = True
+
+        logger.debug(f"{self.__class__.__name__} arleady oriented, skipping")
+        self._warned = True
+
+        return super()._images(indices)
 
 
 class ArrayImageSource(ImageSource):

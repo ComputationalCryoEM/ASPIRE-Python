@@ -6,5 +6,3 @@ from .commonline_sync import CLSyncVoting
 from .commonline_c3_c4 import CLSymmetryC3C4
 from .commonline_cn import CLSymmetryCn
 
-# isort: on
-from .orientation_src import OrientEstSource
