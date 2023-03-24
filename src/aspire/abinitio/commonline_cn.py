@@ -165,24 +165,15 @@ class CLSymmetryCn(CLSymmetryC3C4):
             # Take the mean over all symmetry induced common lines.
             corrs = np.mean(corrs, axis=-2)
 
-            # Self common-lines are invariant to n_theta_ijs (i.e., in-plane rotation angles)
-            # so we max them out to estimate viis, but hold onto the index for the best
-            # in-plane rotation to compute the estimate for vijs.
-            opt_theta_ij_ind_per_sphere_points = np.argmax(corrs, axis=-1)
-            corrs = np.max(corrs, axis=-1)
+            # Compute maximum likelihood while taking into consideration both cls and scls.
+            # Get indices of optimal candidates for Ri_tilde, Rj_tilde, and R_theta_ij.
+            corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])[..., np.newaxis]
+            opt_i, opt_j, opt_ij = np.unravel_index(np.argmax(corrs), corrs.shape)
 
-            # Maximum likelihood while taking into consideration both cls and scls.
-            corrs = corrs * np.outer(scores_self_corrs[i], scores_self_corrs[j])
-
-            # Extract the optimal candidates.
-            opt_sphere_i, opt_sphere_j = np.unravel_index(np.argmax(corrs), corrs.shape)
-            opt_theta_ij = opt_theta_ij_ind_per_sphere_points[
-                opt_sphere_i, opt_sphere_j
-            ]
-
-            opt_Ri_tilde = Ris_tilde[opt_sphere_i]
-            opt_Rj_tilde = Ris_tilde[opt_sphere_j]
-            opt_R_theta_ij = R_theta_ijs[opt_theta_ij]
+            # Optimal candidate rotations.
+            opt_Ri_tilde = Ris_tilde[opt_i]
+            opt_Rj_tilde = Ris_tilde[opt_j]
+            opt_R_theta_ij = R_theta_ijs[opt_ij]
 
             # Compute the estimate of vi*vi.T as given by j.
             vii_j = np.mean(opt_Ri_tilde.T @ rots_symm @ opt_Ri_tilde, axis=0)
