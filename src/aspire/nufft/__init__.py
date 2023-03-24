@@ -45,7 +45,7 @@ def check_backends(raise_errors=True):
         If imports are working but the actual backend is not then we have bigger problems anyway.
         """
 
-        logger.info(f"Trying NFFT backend {backend}")
+        logger.debug(f"Trying NFFT backend {backend}")
         plan_class = None
         msg = None
         if backend == "cufinufft":
@@ -80,16 +80,16 @@ def check_backends(raise_errors=True):
                 msg = str(e)
 
         if plan_class is None:
-            logger.info(f"NFFT backend {backend} not usable:\n\t{msg}")
+            logger.debug(f"NFFT backend {backend} not usable:\n\t{msg}")
         else:
-            logger.info(f"NFFT backend {backend} usable.")
+            logger.debug(f"NFFT backend {backend} usable.")
             return plan_class
 
     # Note this dictionary is intentionally ordered
     backends = {k: _try_backend(k) for k in config["nufft"]["backends"].as_str_seq()}
     try:
         default_backend = next(k for k, v in backends.items() if v is not None)
-        logger.info(f"Selected NFFT backend = {default_backend}.")
+        logger.debug(f"Selected NFFT backend = {default_backend}.")
         default_plan_class = backends[default_backend]
     except StopIteration:
         msg = "No usable NFFT backend detected."
