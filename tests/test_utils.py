@@ -38,39 +38,38 @@ logger = logging.getLogger(__name__)
 def test_log_filter_by_count(caplog):
     msg = "A is for ASCII"
 
-    # count passed, count in context, count printed
-    # Should log. 1, 0, 1
+    # Should log.
     logger.info(msg)
     assert msg in caplog.text
     caplog.clear()
 
     with LogFilterByCount(logger, 1):
-        # Should log. 2, 1, 2
+        # Should log.
         logger.info(msg)
         assert msg in caplog.text
         caplog.clear()
 
-        # Should not log. 3, 2, 2
+        # Should not log.
         # with caplog.at_level(logging.INFO):
         logger.info(msg)
         assert msg not in caplog.text
         caplog.clear()
 
-    # Should log. 4, 2, 3
+    # Should log.
     logger.info(msg)
 
     with LogFilterByCount(logger, 1):
-        logger.error(Exception("Should work with exceptions."))  # 1, 1, 1
+        logger.error(Exception("Should work with exceptions."))
         assert "Should work" in caplog.text
         caplog.clear()
 
-        # Should not log (we've seen above twice). # 5, 3, 3
+        # Should not log (we've seen above twice).
         logger.info(msg)
         assert msg not in caplog.text
         caplog.clear()
 
     with LogFilterByCount(logger, 4):
-        # Should log (we've seen above thrice).  # 6, 4, 4
+        # Should log (we've seen above thrice).
         logger.info(msg)
         assert msg in caplog.text
         caplog.clear()
