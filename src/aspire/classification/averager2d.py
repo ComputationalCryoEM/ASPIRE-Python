@@ -203,11 +203,11 @@ class AligningAverager2D(Averager2D):
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
                 # Retrieve relevant images directly from source.
-                neighbors_imgs = self._cls_images(classes[i])
+                neighbors_imgs = Image(self._cls_images(classes[i]))
 
                 # Do shifts
                 if self.shifts is not None:
-                    Image(neighbors_imgs).shift(self.shifts[i])
+                    neighbors_imgs = neighbors_imgs.shift(self.shifts[i])
 
                 neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
