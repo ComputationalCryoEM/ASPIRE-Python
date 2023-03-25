@@ -148,6 +148,7 @@ class ClassAvgSource(ImageSource):
             self._class_select()
 
         # Remap to the selected ordering
+        _indices = indices.copy()  # Store original request
         indices = self.selection_indices[indices]
 
         # Check if there is a cache available from class selection component.
@@ -170,36 +171,49 @@ class ClassAvgSource(ImageSource):
             # For others, create an indexing map that preserves
             # original order.  Both of these dicts map requested image
             # id to location in the return array `im`.
-            indices_to_compute = {
-                ind: i for i, ind in enumerate(indices) if i not in heap_inds
-            }
+
+            # Note, this stores inds from the remapped `indices`.
             indices_from_heap = {
-                ind: i for i, ind in enumerate(indices) if i in heap_inds
+                ind: i for i, ind in enumerate(indices) if ind in heap_inds
+            }
+            # Note, this stores _inds from the original `_indices`.
+            # This allows the recusive call, which remaps the indices.
+            indices_to_compute = {
+                _ind: i
+                for i, _ind in enumerate(_indices)
+                if self.selection_indices[_ind] not in heap_inds
             }
 
             # Get heap dict once to avoid traversing heap in a loop.
             heap_dict = self.class_selector.heap_id_dict
 
+            # Create an empty array to pack results.
+            L = self.averager.src.L
+            im = np.empty(
+                (len(indices), L, L),
+                dtype=self.averager.dtype,
+            )
+
             # Recursively call `_images`.
             # `heap_inds` set should be empty in the recursive call,
             # and compute only remaining images (those not in heap).
-            _imgs = self._images(list(indices_to_compute.keys()))
+            _indices = list(indices_to_compute.keys())
+            # Skip when empty (everything requested in heap).
+            if len(_indices):
+                _imgs = self._images(_indices)
 
-            # Create an empty array to pack results.
-            im = np.empty(
-                (len(indices), _imgs.resolution, _imgs.resolution),
-                dtype=_imgs.dtype,
-            )
-
-            # Pack images computed from `_images` recursive call.
-            _inds = list(indices_to_compute.values())
-            im[_inds] = _imgs
+                # Pack images computed from `_images` recursive call.
+                _inds = list(indices_to_compute.values())
+                im[_inds] = _imgs
 
             # Pack images from heap.
             for k, i in indices_from_heap.items():
                 # map the image index to heap item location
                 heap_loc = heap_dict[k]
                 im[i] = self.class_selector.heap[heap_loc].image
+
+            # Finally construct an Image.
+            im = Image(im)
 
         else:
             # Perform image averaging for the requested images (classes)
