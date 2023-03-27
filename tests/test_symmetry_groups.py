@@ -4,13 +4,13 @@ import logging
 import numpy as np
 import pytest
 
-from aspire.operators import (
+from aspire.utils import Rotation
+from aspire.volume import (
     CyclicSymmetryGroup,
     DihedralSymmetryGroup,
     OctahedralSymmetryGroup,
     TetrahedralSymmetryGroup,
 )
-from aspire.utils import Rotation
 
 logger = logging.getLogger(__name__)
 
