@@ -16,6 +16,7 @@ from aspire.utils import (
     trange,
 )
 from aspire.utils.random import randn
+from aspire.volume import CyclicSymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                     f"Only C3 and C4 symmetry supported. {symmetry} was supplied."
                 )
             self.order = int(symmetry[1])
+        self.symmetry_group = CyclicSymmetryGroup(self.order, dtype=self.dtype)
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.degree_res = degree_res
