@@ -154,6 +154,7 @@ v = Volume.load(file_path)
 # simplify things, this notebook defaults to a small low resolution
 # sample file.  Unfortunately real data can be quite large so we do
 # not ship it with the repo.
+
 # v = Volume.load("path/to/EMD-2660/map/emd_2660.map")
 
 # %%
@@ -490,7 +491,6 @@ custom_noise = CustomNoiseAdder(noise_filter=FunctionFilter(noise_function))
 sim = Simulation(n=num_imgs, vols=v2, noise_adder=custom_noise)
 sim.images[:10].show()
 
-
 # %%
 # Noise Whitening
 # ^^^^^^^^^^^^^^^
@@ -526,25 +526,26 @@ sim.images[:10].show()
 
 # %%
 # Amplitudes
-# """"""""""
+# ^^^^^^^^^^
+#
 # Simulation automatically generates random amplitude variability.
 # To disable, set to ``amplitudes=1``.
 
 # %%
 # Offsets
-# """""""
+# ^^^^^^^
 # Simulation automatically generates random offsets.
 # To disable, set to ``offsets=0``.
 
 # %%
 # Noise
-# """""
+# ^^^^^
 # By default, no noise corruption is configured.
 # To enable, see ``NoiseAdder`` components.
 
 # %%
 # CTF
-# """
+# ^^^
 # By default, no CTF corruption is configured.
 # To enable, we must configure one or more CTFFilter.
 # Usually we will create a range of CTFFilters for a variety of
