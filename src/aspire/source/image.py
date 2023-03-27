@@ -1225,6 +1225,24 @@ class OrientedSource(IndexedSource):
 
         return super()._images(indices)
 
+    def _rots(self):
+        """
+        Converts internal `_rotations` representation to expected matrix form.
+        If rotations have not been set orientation estimation will be performed
+        prior to serving up the rotations.
+
+        :return: Rotation matrices as a n x 3 x 3 array
+        """
+        if not self._oriented:
+            logger.info(
+                f"Estimating rotations for {self.src} using {self.orientation_estimator}."
+            )
+            self.orientation_estimator.estimate_rotations()
+            self.rotations = self.orientation_estimator.rotations
+            self._oriented = True
+
+        return self._rotations.matrices.astype(self.dtype)
+
 
 class ArrayImageSource(ImageSource):
     """

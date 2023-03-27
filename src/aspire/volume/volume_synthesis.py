@@ -3,15 +3,15 @@ import abc
 import numpy as np
 from numpy.linalg import qr
 
-from aspire.operators import (
+from aspire.utils import bump_3d, grid_3d
+from aspire.utils.random import Random, randn
+from aspire.volume import (
     CyclicSymmetryGroup,
     DihedralSymmetryGroup,
     OctahedralSymmetryGroup,
     TetrahedralSymmetryGroup,
+    Volume,
 )
-from aspire.utils import bump_3d, grid_3d
-from aspire.utils.random import Random, randn
-from aspire.volume import Volume
 
 
 class SyntheticVolumeBase(abc.ABC):
