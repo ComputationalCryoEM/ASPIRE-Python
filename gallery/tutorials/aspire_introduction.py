@@ -69,7 +69,7 @@ from aspire.image import Image
 #    * - ``Rotations``
 #      - Utility class for stacks of 3D rotations.
 #    * - ``Filter``
-#      - Constructs and applied Image filters.
+#      - Constructs and applies Image filters.
 #    * - ``Basis``
 #      - Basis conversions and operations.
 #    * - ``Source``
@@ -99,11 +99,11 @@ logging.info(f"str(img): {img}")  # Note this produces a stack of 1.
 img_data = np.random.random((3, 100, 100))
 img = Image(img_data)
 
-# Most often, ``Image``s will behave like Numpy arrays, but you
+# Most often, Images will behave like Numpy arrays, but you
 # explicitly access the underlying Numpy array via ``asnumpy()``.
 img.asnumpy()
 
-# Image have a built in ``show()`` method, which works well for
+# Images have a built in ``show()`` method, which works well for
 # peeking at data.
 img.show()
 
@@ -116,8 +116,8 @@ img.show()
 # %%
 # More examples using the Image class can be found in:
 #
-# - :ref:`sphx_glr_auto_tutorials_image_class.py`
-# - :ref:`sphx_glr_auto_tutorials_basic_image_array.py`
+# - :ref:`sphx_glr_auto_tutorials_tutorials_image_class.py`
+# - :ref:`sphx_glr_auto_tutorials_tutorials_basic_image_array.py`
 
 
 # %%
@@ -146,23 +146,24 @@ from aspire.volume import Volume
 file_path = os.path.join(os.getcwd(), "data", "clean70SRibosome_vol_65p.mrc")
 v = Volume.load(file_path)
 
-# More interesting data requires downloading locally.
+# %%
+# More interesting data requires downloading locally.  A common
+# starting dataset can be downloaded from EMDB at
+# <https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.  After
+# downloading the associated `map` file, unzip in local directory.  To
+# simplify things, this notebook defaults to a small low resolution
+# sample file.  Unfortunately real data can be quite large so we do
+# not ship it with the repo.
 # v = Volume.load("path/to/EMD-2660/map/emd_2660.map")
 
 # %%
 # Downsample Volume
 # ^^^^^^^^^^^^^^^^^
-# Here we downsample the above volume to a desired resolution (32
-# should be good).  For the data source I chose to download a real
-# volume density map from `EMDB
-# <https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.  The download
-# was uncompressed in my local directory.  The notebook defaults to a
-# small low resolution sample file you may use to sanity check.
-# Unfortunately real data can be quite large so we do not ship it with
-# the repo.
+# Here we downsample the above volume to a desired image size (32
+# should be good).
 
-# Downsample the volume to a desired resolution
 img_size = 32
+
 # Volume.downsample() returns a new Volume instance.
 #   We will use this lower resolution volume later, calling it `v2`.
 v2 = v.downsample(img_size)
@@ -174,9 +175,9 @@ L = v2.resolution
 # """""""""
 # For quick sanity checking purposes we can view some plots.
 #   We'll use three orthographic projections, one per axis.
-orthographic_projections = np.empty((3, L, L, L), dtype=v2.dtype)
+orthographic_projections = np.empty((3, L, L), dtype=v2.dtype)
 for i in range(3):
-    orthographic_projections = np.sum(v2, axis=(0, i + 1))
+    orthographic_projections[i] = np.sum(v2, axis=(0, i + 1))
 Image(orthographic_projections).show()
 
 # %%
@@ -218,9 +219,10 @@ projections.show()
 
 # %%
 # Neat, we've generated random projections of some real data.  This
-# tutorial go on to show how this can be performed systematically with
+# tutorial will go on to show how this can be performed systematically with
 # other Computational CryoEM data simulation tasks.
 
+# %%
 # The ``filter`` Package
 # ----------------------
 # `Filters
@@ -257,11 +259,11 @@ projections.show()
 #         CTFFilter o-- RadialCTFFilter
 
 # %%
-# ``CTFFilter`` and ``RadialCTFFilter`` the most common filters
+# ``CTFFilter`` and ``RadialCTFFilter`` are the most common filters
 # encountered when starting out and are detailed in
-# :ref:`sphx_glr_auto_tutorials_ctf.py` The other filters are used
-# behind the scenes in components like ``NoiseAdders`` or more
-# advanced customized pipelines.
+# :ref:`sphx_glr_auto_tutorials_tutorials_ctf.py` The other filters
+# are used behind the scenes in components like ``NoiseAdders`` or
+# more advanced customized pipelines.
 
 # %%
 # ``Basis``
@@ -275,7 +277,7 @@ projections.show()
 # direct slower reference ``FBBasis2D`` and ``FBBasis3D`` methods.
 #
 # Recently, a related Fourier Bessel method using the Fast Laplacian
-# Eigenfunction transforms was integrated as``FLEBasis2D``.
+# Eigenfunction transforms was integrated as ``FLEBasis2D``.
 # Additional, Prolate Spheroidal Wave Function methods are available
 # via ``FPSWFBasis2D`` and ``FPSWFBasis3D``, but their integration
 # into other components like 2D covariance analysis is incomplete, and
@@ -296,9 +298,8 @@ projections.show()
 # higher level components interface.  ``ImageSource`` instances have a
 # consistent method ``images`` which must be implemented to serve up
 # images dynamically. This supports batch computation among other
-# things.  ``Source``s also store and serve up metadata like
-# `rotations`, `dtype`, and supporting pipelining certain
-# transformations.
+# things.  ``Source`` instances also store and serve up metadata like
+# `rotations`, `dtype`, and support pipelining transformations.
 #
 # The second reason is so we can design an experiment using a
 # synthetic ``Simulation`` source or our own provided Numpy arrays via
@@ -377,7 +378,7 @@ sim.images[:10].show()
 # We can also view the rotations used to create these projections.
 logging.info(sim.rotations)
 
-# %
+# %%
 # Given any ``Source``, we can also take slices using typical slicing
 # syntax, or provide our own iterable of indices.
 
@@ -389,7 +390,7 @@ sim_odds = sim[1::2]
 shuffled_inds = np.random.permutation(sim.n)[:5]
 sim_shuffled_subset = sim[shuffled_inds]
 
-# %
+# %%
 # Underneath those slices, ASPIRE relies on ``IndexedSource``, which
 # we can also call direcly to remap indices.
 
@@ -407,8 +408,8 @@ sim_shuffled_subset = IndexedSource(sim, shuffled_inds)
 # estimating different types of noise.
 
 # %%
-# ``NoiseAdder``s
-# ^^^^^^^^^^^^^^^
+# ``NoiseAdder``
+# ^^^^^^^^^^^^^^
 # ``NoiseAdder`` subclasses are used to add common or customized noise
 # to ``Simulation`` image generation pipelines.
 
@@ -427,7 +428,8 @@ logging.info(f"Target Noise Variance: {target_noise_variance}")
 # Then create a NoiseAdder based on that variance.
 white_noise_adder = WhiteNoiseAdder(target_noise_variance)
 
-# %% We can customize Sources by adding stages to their generation
+# %%
+# We can customize Sources by adding stages to their generation
 # pipeline.  In this case of a Simulation source, we want to corrupt
 # the projection images with noise.  Internally the
 # ``WhiteNoiseAdder`` creates a ``ScalarFilter`` which is multiplied
@@ -504,10 +506,10 @@ from aspire.noise import AnisotropicNoiseEstimator
 aiso_noise_estimator = AnisotropicNoiseEstimator(sim)
 
 # %%
-# Applying the ``Simulation.whiten()`` method requires passing the
-# corresponding to the noise estimator instance.  Then we can inspect
-# some of the whitened images.  While noise is still present, we can
-# see a dramatic change.
+# Applying the ``Simulation.whiten()`` method requires passing a
+# corresponding ``NoiseEstimator`` instance.  Then we can inspect some
+# of the whitened images.  While noise is still present, we can see a
+# dramatic change.
 
 # Whiten based on the estimated noise
 sim.whiten(aiso_noise_estimator)
@@ -517,7 +519,7 @@ sim.images[:10].show()
 
 # %%
 # Common Image Corruptions
-# ---------------------------
+# ------------------------
 # ``Simulation`` provides several configurable types of common CryoEM
 # image corruptions.  Users should be aware that Amplitude and Offset
 # corruption is enabled by default.
@@ -531,13 +533,13 @@ sim.images[:10].show()
 # %%
 # Offsets
 # """""""
-# Simulation automatically generates random offsets
+# Simulation automatically generates random offsets.
 # To disable, set to ``offsets=0``.
 
 # %%
 # Noise
 # """""
-# By default, no noise corruption is configured
+# By default, no noise corruption is configured.
 # To enable, see ``NoiseAdder`` components.
 
 # %%
@@ -578,7 +580,7 @@ sim = Simulation(
 
 # Simulation has two unique accessors ``clean_images`` which disables
 # noise, and ``projections`` which are clean uncorrupted projections.
-# Both act like calls to `image` and return show=able ``Image``
+# Both act like calls to `image` and return show-able ``Image``
 # instances.
 
 # %%
