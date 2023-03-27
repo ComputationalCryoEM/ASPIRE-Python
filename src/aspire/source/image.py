@@ -29,6 +29,7 @@ from aspire.operators import (
 )
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import Rotation, grid_2d, support_mask, trange
+from aspire.volume import CyclicSymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -1479,7 +1480,6 @@ class OrientedSource(IndexedSource):
                 raise ValueError(
                     f"`orientation_estimator` should be subclass of `CLOrient3D`, found {self.orientation_estimator}."
                 )
-
         else:
             assert rotations.shape == (
                 src.n,
@@ -1488,6 +1488,14 @@ class OrientedSource(IndexedSource):
             ), f"'rotations' must have shape (src.n, 3, 3), found shape {rotations.shape}"
             self.rotations = rotations
             self._oriented = True
+
+        # Set `symmetry_group` and populate metadata field for symmetry.
+        if hasattr(self.orientation_estimator, "symmetry_group"):
+            self.symmetry_group = self.orientation_estimator.symmetry_group
+        else:
+            self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
+
+        self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
 
     def _images(self, indices):
         """
