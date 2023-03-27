@@ -4,7 +4,7 @@ import click
 
 from aspire.abinitio import CLSyncVoting
 from aspire.commands import log_level_option
-from aspire.source.relion import RelionSource
+from aspire.source import OrientedSource, RelionSource
 from aspire.utils.logging import setConsoleLoggingLevel
 
 logger = logging.getLogger(__name__)
@@ -89,6 +89,6 @@ def orient3d(
 
     # Create new source object and save Estimate rotation matrices
     logger.info("Save Estimate rotation matrices.")
-    orient_est_src = orient_est.save_rotations()
+    orient_est_src = OrientedSource(source, rotations=orient_est.rotations)
 
     orient_est_src.save_metadata(starfile_out)
