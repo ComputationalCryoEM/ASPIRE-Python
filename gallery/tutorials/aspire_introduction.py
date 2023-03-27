@@ -424,7 +424,7 @@ from aspire.noise import WhiteNoiseAdder
 # Get the sample variance
 var = np.var(sim.images[:].asnumpy())
 logging.info(f"Sample Variance: {var}")
-target_noise_variance = 100.0 * var
+target_noise_variance = 10.0 * var
 logging.info(f"Target Noise Variance: {target_noise_variance}")
 # Then create a NoiseAdder based on that variance.
 white_noise_adder = WhiteNoiseAdder(target_noise_variance)
