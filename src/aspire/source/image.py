@@ -29,7 +29,7 @@ from aspire.operators import (
 )
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import Rotation, grid_2d, support_mask, trange
-from aspire.volume import CyclicSymmetryGroup
+from aspire.volume import CyclicSymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -1438,7 +1438,9 @@ class OrientedSource(IndexedSource):
     Source for oriented 2D images using orientation estimation methods.
     """
 
-    def __init__(self, src, orientation_estimator=None, rotations=None, symmetry_group=None):
+    def __init__(
+        self, src, orientation_estimator=None, rotations=None, symmetry_group=None
+    ):
         """
         Constructor of an oriented ImageSource object. Orientation is determined by
         performing orientation estimation using a supplied `orientation_estimator` or
@@ -1470,12 +1472,13 @@ class OrientedSource(IndexedSource):
         self._oriented = False
         self._warned = False
 
-        # estimator and rotations are mutually exclusive.
+        # orientation_estimator and rotations are mutually exclusive.
         if orientation_estimator is not None and rotations is not None:
             raise RuntimeError(
                 "Must provide either an `orientation_estimator` or `rotations`. Found both."
             )
 
+        # From orientation_estimator.
         if rotations is None:
             if orientation_estimator is None:
                 orientation_estimator = CLSyncVoting(src)
@@ -1483,8 +1486,22 @@ class OrientedSource(IndexedSource):
             self.orientation_estimator = orientation_estimator
             if not isinstance(self.orientation_estimator, CLOrient3D):
                 raise ValueError(
-                    f"`orientation_estimator` should be subclass of `CLOrient3D`, found {self.orientation_estimator}."
+                    "`orientation_estimator` should be subclass of `CLOrient3D`,"
+                    f" found {self.orientation_estimator}."
                 )
+
+            # Get `symmetry_group` from orientation estimator.
+            if symmetry_group is not None:
+                logger.info(
+                    f"Detected symmetry_group: {symmetry_group}."
+                    " Overriding with symmetry_group inherited from orientation_estimator."
+                )
+            if hasattr(orientation_estimator, "symmetry_group"):
+                self.symmetry_group = orientation_estimator.symmetry_group
+            else:
+                self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
+
+        # From rotations.
         else:
             assert rotations.shape == (
                 src.n,
@@ -1493,12 +1510,16 @@ class OrientedSource(IndexedSource):
             ), f"'rotations' must have shape (src.n, 3, 3), found shape {rotations.shape}"
             self.rotations = rotations
             self._oriented = True
-
-        # Set `symmetry_group` and populate metadata field for symmetry.
-        if hasattr(orientation_estimator, "symmetry_group"):
-            self.symmetry_group = orientation_estimator.symmetry_group
-        else:
-            self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
+            if symmetry_group is None:
+                logger.info(
+                    "`symmetry_group` not found. Please provide a SymmetryGroup object."
+                )
+            if not isinstance(symmetry_group, SymmetryGroup):
+                raise ValueError(
+                    f"symmetry_group must be a SymmetryGroup object, found {symmetry_group}."
+                    f" Try CyclicSymmetryGroup(order=1, dtype={self.dtype})."
+                )
+            self.symmetry_group = symmetry_group
 
         self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
 
