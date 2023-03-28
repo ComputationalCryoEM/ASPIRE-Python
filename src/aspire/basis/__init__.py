@@ -1,6 +1,7 @@
 # We'll tell isort not to sort these base classes
 # isort: off
 
+from .coef import Coef
 from .basis import Basis
 from .steerable import SteerableBasis2D
 from .fb import FBBasisMixin
