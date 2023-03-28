@@ -1152,13 +1152,18 @@ class OrientedSource(IndexedSource):
     Source for oriented 2D images using orientation estimation methods.
     """
 
-    def __init__(self, src, orientation_estimator=None, rotations=None):
+    def __init__(self, src, orientation_estimator=None, rotations=None, symmetry_group=None):
         """
-        Constructor of an object for finding the orientations for 2D images
-        using orientation estimation methods.
+        Constructor of an oriented ImageSource object. Orientation is determined by
+        performing orientation estimation using a supplied `orientation_estimator` or
+        by assigning the provided `rotations` to the source.
 
         :param src: Source used for orientation estimation
         :param orientation_estimator: CLOrient3D subclass used for orientation estimation.
+            Default uses the CLSyncVoting method.
+        :param rotations: 3D array of rotations matrices, size (src.n, 3, 3).
+        :param symmetry_group: A SymmetryGroup object denoting the symmetry of the
+            underlying molecule.
         """
 
         self.src = src
