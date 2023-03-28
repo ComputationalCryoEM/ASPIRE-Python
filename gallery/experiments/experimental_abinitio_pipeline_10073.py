@@ -7,6 +7,9 @@ components corresponding to loading real Relion picked
 particle Cryo-EM data and running key ASPIRE-Python
 Abinitio model components as a pipeline.
 
+This demonstrates using the Global BandedSNRImageQualityFunction
+approach starting with Relion polished picked particles.
+
 Specifically this pipeline uses the
 EMPIAR 10073 picked particles data, available here:
 
@@ -30,8 +33,8 @@ import numpy as np
 from aspire.abinitio import CLSyncVoting
 from aspire.basis import FFBBasis2D, FFBBasis3D
 from aspire.classification import (
+    BandedSNRImageQualityFunction,
     BFRAverager2D,
-    ContrastImageQualityFunction,
     GlobalWithRepulsionClassSelector,
 )
 from aspire.denoising import DefaultClassAvgSource
@@ -90,8 +93,8 @@ logger.info("Begin Class Averaging")
 
 # Build up the customized components.
 basis = FFBBasis2D(src.L, dtype=src.dtype)
-averager = BFRAverager2D(basis, src, num_procs=32)
-quality_function = ContrastImageQualityFunction()
+averager = BFRAverager2D(basis, src, num_procs=16)
+quality_function = BandedSNRImageQualityFunction()
 class_selector = GlobalWithRepulsionClassSelector(averager, quality_function)
 
 # Assemble the components into the Source.
@@ -99,7 +102,7 @@ avgs = DefaultClassAvgSource(
     src, n_nbor=n_nbor, averager=averager, class_selector=class_selector
 )
 np.save(
-    "experimental_10073_class_averages__indices.npy",
+    "experimental_10073_class_averages_indices.npy",
     avgs.selection_indices,
 )
 
@@ -120,7 +123,7 @@ avgs.save("experimental_10073_class_averages_global.star", overwrite=True)
 logger.info("Begin Orientation Estimation")
 
 # Run orientation estimation on ``avgs``.
-orient_est = CLSyncVoting(avgs, n_theta=180)
+orient_est = CLSyncVoting(avgs, n_theta=72)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
