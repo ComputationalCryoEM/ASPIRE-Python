@@ -21,17 +21,15 @@ def sim_fixture():
 
 
 @pytest.fixture
-def estimator_fixture(sim_fixture):
+def oriented_src_fixture(sim_fixture):
+    # Original sources
     sim, sim_C4 = sim_fixture
+
+    # Orientation estimators
     estimator = CLSyncVoting(sim)
     estimator_C4 = CLSymmetryC3C4(sim_C4, symmetry="C4", n_theta=72)
-    return estimator, estimator_C4
 
-
-@pytest.fixture
-def oriented_src_fixture(sim_fixture, estimator_fixture):
-    sim, sim_C4 = sim_fixture
-    estimator, estimator_C4 = estimator_fixture
+    # `OrientedSource`s
     src = OrientedSource(sim, orientation_estimator=estimator)
     src_C4 = OrientedSource(sim_C4, orientation_estimator=estimator_C4)
     src_from_rots = OrientedSource(
