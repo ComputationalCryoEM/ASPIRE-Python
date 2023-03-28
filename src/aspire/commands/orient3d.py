@@ -85,6 +85,7 @@ def orient3d(
     orient_est = CLSyncVoting(
         source, n_rad=n_rad, n_theta=n_theta, max_shift=max_shift, shift_step=shift_step
     )
+
     orient_est.estimate_rotations()
 
     # Create new source object and save Estimate rotation matrices
