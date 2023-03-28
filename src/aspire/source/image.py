@@ -1563,6 +1563,20 @@ class OrientedSource(IndexedSource):
 
         return self._rotations.matrices.astype(self.dtype)
 
+    def _angles(self):
+        if not self._oriented:
+            logger.info(
+                f"Estimating rotations for {self.src} using {self.orientation_estimator}."
+            )
+            self.orientation_estimator.estimate_rotations()
+            self.rotations = self.orientation_estimator.rotations
+            self._oriented = True
+
+        return super()._angles()
+
+    def __repr__(self):
+        return f"{self.__class__.__name__} for initial source {self.src.__class__.__name__}."
+
 
 class ArrayImageSource(ImageSource):
     """
