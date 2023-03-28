@@ -1490,8 +1490,8 @@ class OrientedSource(IndexedSource):
             self._oriented = True
 
         # Set `symmetry_group` and populate metadata field for symmetry.
-        if hasattr(self.orientation_estimator, "symmetry_group"):
-            self.symmetry_group = self.orientation_estimator.symmetry_group
+        if hasattr(orientation_estimator, "symmetry_group"):
+            self.symmetry_group = orientation_estimator.symmetry_group
         else:
             self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
 
