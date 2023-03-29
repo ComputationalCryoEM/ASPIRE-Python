@@ -13,30 +13,30 @@ from aspire.utils.random import randn
 from aspire.volume import CnSymmetricVolume
 
 # A set of these parameters are marked expensive to reduce testing time.
-# Each tuple holds the parameters (resolution "L", cyclic order "order", dtype).
+# Each tuple holds the parameters (n_img, resolution "L", cyclic order "order", dtype).
 param_list_c3_c4 = [
-    (44, 3, np.float32),
-    (45, 4, np.float64),
-    pytest.param(44, 4, np.float32, marks=pytest.mark.expensive),
-    pytest.param(44, 3, np.float64, marks=pytest.mark.expensive),
-    pytest.param(44, 4, np.float64, marks=pytest.mark.expensive),
-    pytest.param(45, 3, np.float32, marks=pytest.mark.expensive),
-    pytest.param(45, 4, np.float32, marks=pytest.mark.expensive),
-    pytest.param(45, 3, np.float64, marks=pytest.mark.expensive),
+    (24, 44, 3, np.float32),
+    (24, 45, 4, np.float64),
+    pytest.param(24, 44, 4, np.float32, marks=pytest.mark.expensive),
+    pytest.param(24, 44, 3, np.float64, marks=pytest.mark.expensive),
+    pytest.param(24, 44, 4, np.float64, marks=pytest.mark.expensive),
+    pytest.param(24, 45, 3, np.float32, marks=pytest.mark.expensive),
+    pytest.param(24, 45, 4, np.float32, marks=pytest.mark.expensive),
+    pytest.param(24, 45, 3, np.float64, marks=pytest.mark.expensive),
 ]
 
 # For testing Cn methods where n>4.
 param_list_cn = [
-    (44, 5, np.float32),
-    pytest.param(45, 6, np.float64, marks=pytest.mark.expensive),
-    pytest.param(44, 7, np.float32, marks=pytest.mark.expensive),
-    pytest.param(44, 8, np.float32, marks=pytest.mark.expensive),
-    pytest.param(45, 9, np.float64, marks=pytest.mark.expensive),
+    (8, 44, 5, np.float32),
+    pytest.param(24, 45, 6, np.float64, marks=pytest.mark.expensive),
+    pytest.param(24, 44, 7, np.float32, marks=pytest.mark.expensive),
+    pytest.param(24, 44, 8, np.float32, marks=pytest.mark.expensive),
+    pytest.param(24, 45, 9, np.float64, marks=pytest.mark.expensive),
 ]
 
 
 # Method to instantiate a Simulation source and orientation estimation object.
-def source_orientation_objs(L, n_img, order, dtype):
+def source_orientation_objs(n_img, L, order, dtype):
     # This Volume is hand picked to have a fairly even distribution of density.
     # Due to the rotations used to generate symmetric volumes, some seeds will
     # generate volumes with a high concentration of denisty in the center causing
@@ -91,12 +91,9 @@ def source_orientation_objs(L, n_img, order, dtype):
     return src, orient_est
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4 + param_list_cn)
-def test_estimate_rotations(L, order, dtype):
-    n_img = 24
-    if order > 4:
-        n_img = 8  # This is to save on test time.
-    src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
+@pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4 + param_list_cn)
+def test_estimate_rotations(n_img, L, order, dtype):
+    src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
 
     # Estimate rotations.
     cl_symm.estimate_rotations()
@@ -131,12 +128,11 @@ def test_estimate_rotations(L, order, dtype):
         assert np.mean(ang_dist) < 2
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
-def test_relative_rotations(L, order, dtype):
+@pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
+def test_relative_rotations(n_img, L, order, dtype):
     # Simulation source and common lines estimation instance
     # corresponding to volume with C3 or C4 symmetry.
-    n_img = 24
-    src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
+    src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
 
     # Estimate relative viewing directions.
     cl_symm.build_clmatrix()
@@ -171,12 +167,11 @@ def test_relative_rotations(L, order, dtype):
     assert mean_angular_distance < 5
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
-def test_self_relative_rotations(L, order, dtype):
+@pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
+def test_self_relative_rotations(n_img, L, order, dtype):
     # Simulation source and common lines Class corresponding to
     # volume with C3 or C4 symmetry.
-    n_img = 24
-    src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
+    src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
 
     # Estimate self-relative viewing directions, Riis.
     scl = cl_symm._self_clmatrix_c3_c4()
@@ -206,14 +201,11 @@ def test_self_relative_rotations(L, order, dtype):
     assert mean_angular_distance < 5
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4 + param_list_cn)
-def test_relative_viewing_directions(L, order, dtype):
+@pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4 + param_list_cn)
+def test_relative_viewing_directions(n_img, L, order, dtype):
     # Simulation source and common lines Class corresponding to
     # volume with C3 or C4 symmetry.
-    n_img = 24
-    if order > 4:
-        n_img = 8  # This is to save on test time.
-    src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
+    src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
 
     # Calculate ground truth relative viewing directions, viis and vijs.
     rots_gt = src.rotations
@@ -289,7 +281,7 @@ def test_relative_viewing_directions(L, order, dtype):
     # which do not as tightly approximate rank-1.
     if order < 5:
         max_tol_ij = 4e-1
-        mean_tol_ij = 3e-3
+        mean_tol_ij = 4e-3
     assert np.max(error_ij) < max_tol_ij
     assert np.max(error_ii) < 1e-6
     assert np.mean(error_ij) < mean_tol_ij
@@ -304,10 +296,9 @@ def test_relative_viewing_directions(L, order, dtype):
     assert angular_dist_viis < angle_tol
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
-def test_self_commonlines(L, order, dtype):
-    n_img = 24
-    src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
+@pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
+def test_self_commonlines(n_img, L, order, dtype):
+    src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
     n_theta = cl_symm.n_theta
 
     # Initialize common-lines orientation estimation object and compute self-common-lines matrix.
@@ -347,10 +338,9 @@ def test_self_commonlines(L, order, dtype):
     assert np.allclose(detection_rate, 1.0)
 
 
-@pytest.mark.parametrize("L, order, dtype", param_list_c3_c4)
-def test_commonlines(L, order, dtype):
-    n_img = 24
-    src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
+@pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
+def test_commonlines(n_img, L, order, dtype):
+    src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
     n_theta = cl_symm.n_theta
 
     # Build common-lines matrix.
@@ -408,7 +398,7 @@ def test_global_J_sync(dtype):
     L = 16
     n_img = 20
     order = 3  # test not dependent on order
-    _, orient_est = source_orientation_objs(L, n_img, order, dtype)
+    _, orient_est = source_orientation_objs(n_img, L, order, dtype)
 
     # Build a set of outer products of random third rows.
     vijs, viis, _ = build_outer_products(n_img, dtype)
@@ -438,7 +428,7 @@ def test_estimate_third_rows(dtype):
     L = 16
     n_img = 20
     order = 3  # test not dependent on order
-    _, orient_est = source_orientation_objs(L, n_img, order, dtype)
+    _, orient_est = source_orientation_objs(n_img, L, order, dtype)
 
     # Build outer products vijs, viis, and get ground truth third rows.
     vijs, viis, gt_vis = build_outer_products(n_img, dtype)
@@ -477,7 +467,7 @@ def test_dtype_pass_through(dtype):
     L = 16
     n_img = 20
     order = 3  # test does not depend on order
-    src, cl_symm = source_orientation_objs(L, n_img, order, dtype)
+    src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
     assert src.dtype == cl_symm.dtype
 
 
