@@ -52,9 +52,9 @@ def test_repr(oriented_src_fixture, sim_fixture):
 def test_images(oriented_src_fixture, sim_fixture):
     src, src_C4, src_from_rots = oriented_src_fixture
     sim, sim_C4 = sim_fixture
-    assert np.allclose(src.images[:].asnumpy(), sim.images[:].asnumpy())
-    assert np.allclose(src_C4.images[:].asnumpy(), sim_C4.images[:].asnumpy())
-    assert np.allclose(src_from_rots.images[:].asnumpy(), sim.images[:].asnumpy())
+    assert np.allclose(src.images[:], sim.images[:])
+    assert np.allclose(src_C4.images[:], sim_C4.images[:])
+    assert np.allclose(src_from_rots.images[:], sim.images[:])
 
 
 def test_rotations(oriented_src_fixture):
