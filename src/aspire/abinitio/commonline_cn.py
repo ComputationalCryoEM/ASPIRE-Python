@@ -89,7 +89,16 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 )
             self.order = _order
 
+    def estimate_rotations(self):
+        """
+        Estimate rotation matrices for molecules with Cn symmetry, n > 4.
+
+        :return: Array of rotation matrices, size n_imgx3x3.
+        """
+        super().estimate_rotations()
+
     def _estimate_relative_viewing_directions(self):
+        logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
         pf = self.pf
 
         # Generate candidate rotation matrices and the common-line and
