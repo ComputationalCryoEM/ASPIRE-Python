@@ -1,8 +1,10 @@
-import pytest
 import numpy as np
-from aspire.basis import Coef, FFBBasis2D
+import pytest
 
-COUNTS = [
+from aspire.basis import Coef, FFBBasis2D
+from aspire.utils import Rotation
+
+IMG_SIZE = [
     32,
     pytest.param(31, marks=pytest.mark.expensive),
 ]
@@ -14,40 +16,81 @@ STACKS = [
     (),
     (1,),
     (2,),
-    (3,4),
-    ]
-          
+    (3, 4),
+]
+
 
 def sim_fixture_id(params):
     stack, count, dtype = params
     return f"stack={stack}, count={count}, dtype={dtype}"
 
 
+# Dtypes for coef array
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
 def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=COUNTS, ids=lambda x: f"count={x}")
-def count(request):
+# Dtypes for basis
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+def basis_dtype(request):
     return request.param
+
+
+@pytest.fixture(params=IMG_SIZE, ids=lambda x: f"count={x}")
+def img_size(request):
+    return request.param
+
 
 @pytest.fixture(params=STACKS, ids=lambda x: f"stack={x}")
 def stack(request):
     return request.param
 
 
+ALLYOURBASES = [FFBBasis2D]
+
+
+@pytest.fixture(params=ALLYOURBASES, ids=lambda x: f"basis={x}")
+def basis(request, img_size, basis_dtype):
+    cls = request.param
+    return cls(img_size, dtype=basis_dtype)
+
+
 @pytest.fixture
-def coef_array_fixture(stack, count, dtype):
+def coef_fixture(basis, stack, dtype):
     """
     Construct testing coefficient array.
     """
     # Combine the stack and coefficent counts into multidimensional
-    # shape.    
-    size = stack + (count,)
-    return np.random.random(size=size).astype(dtype, copy=False)
+    # shape.
+    size = stack + (basis.count,)
 
-def test_coef_smoke(coef_array_fixture):
-    basis = FFBBasis2D(123)
-    c = Coef(basis, coef_array_fixture)
-    
+    coef_np = np.random.random(size=size).astype(dtype, copy=False)
+
+    return Coef(basis, coef_np, dtype=dtype), coef_np
+
+
+def test_coef_evalute(coef_fixture, basis):
+    # Unpack the fixture
+    coef, coef_np = coef_fixture
+
+    assert np.allclose(coef.evaluate(), basis.evaluate(coef_np))
+
+
+def test_coef_rotate(coef_fixture, basis):
+    # Unpack the fixture
+    coef, coef_np = coef_fixture
+
+    # Rotations
+    rots = np.linspace(-np.pi, np.pi, coef.n_stack).reshape(coef.stack_shape)
+
+    # Refl
+    refl = np.random.rand(coef.n_stack).reshape(coef.stack_shape) > 0.5  # Random bool
+
+    assert np.allclose(coef.rotate(rots), basis.rotate(coef_np, rots))
+
+    assert np.allclose(coef.rotate(rots, refl), basis.rotate(coef_np, rots, refl))
+
+
+def test_coef_shift(coef_fixture):
+    pass

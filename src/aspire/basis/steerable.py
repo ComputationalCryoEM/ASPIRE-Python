@@ -1,10 +1,12 @@
 import logging
 from collections.abc import Iterable
+from itertools import chain
 
 import numpy as np
 
-from aspire.basis import Basis
 from aspire.utils import complex_type
+
+from .basis import Basis
 
 logger = logging.getLogger(__name__)
 
@@ -156,11 +158,16 @@ class SteerableBasis2D(Basis):
 
         # Covert radians to a broadcastable shape
         if isinstance(radians, Iterable):
-            radians = np.fromiter(radians, dtype=self.dtype).reshape(-1, 1)
-            if len(radians) != len(coef):
+            radians = np.array(radians, dtype=self.dtype)
+            if radians.ndim < 2:
+                radians = radians.reshape(-1, 1)
+            else:
+                radians = np.atleast_3d(radians)
+
+            if radians.size != np.prod(coef.shape[:-1]):
                 raise RuntimeError(
-                    "`rotate` call `radians` length cannot broadcast with"
-                    f" `coef` {len(coef)} != {len(radians)}"
+                    f"`rotate` call `radians` {radians.shape} does not match"
+                    f" `coef` {coef.shape[:-1]}."
                 )
         # else: radians can be a constant
 
@@ -172,17 +179,17 @@ class SteerableBasis2D(Basis):
         # For all coef in stack,
         #   compute the ks * radian used in the trig functions
         ks_rad = np.atleast_2d(self.angular_indices * radians)
-        ks_pos = ks_rad[:, self._pos_angular_inds]
-        ks_neg = ks_rad[:, self._neg_angular_inds]
+        ks_pos = ks_rad[..., self._pos_angular_inds]
+        ks_neg = ks_rad[..., self._neg_angular_inds]
 
         # Slice the coef on postive and negative ells
-        coef_zer = coef[:, self._zero_angular_inds]
-        coef_pos = coef[:, self._pos_angular_inds]
-        coef_neg = coef[:, self._neg_angular_inds]
+        coef_zer = coef[..., self._zero_angular_inds]
+        coef_pos = coef[..., self._pos_angular_inds]
+        coef_neg = coef[..., self._neg_angular_inds]
 
         # Handle zero case and avoid mutating the original array
         coef = np.empty_like(coef)
-        coef[:, self._zero_angular_inds] = coef_zer
+        coef[..., self._zero_angular_inds] = coef_zer
 
         # refl
         if refl is not None:
@@ -193,12 +200,12 @@ class SteerableBasis2D(Basis):
             coef_neg[refl] = coef_neg[refl] * -1
 
         # Apply formula
-        coef[:, self._pos_angular_inds] = coef_pos * np.cos(ks_pos) + coef_neg * np.sin(
-            ks_neg
-        )
-        coef[:, self._neg_angular_inds] = coef_neg * np.cos(ks_neg) - coef_pos * np.sin(
+        coef[..., self._pos_angular_inds] = coef_pos * np.cos(
             ks_pos
-        )
+        ) + coef_neg * np.sin(ks_neg)
+        coef[..., self._neg_angular_inds] = coef_neg * np.cos(
+            ks_neg
+        ) - coef_pos * np.sin(ks_pos)
 
         return coef
 
