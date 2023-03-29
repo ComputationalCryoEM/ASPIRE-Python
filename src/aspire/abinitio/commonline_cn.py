@@ -9,6 +9,7 @@ from aspire.utils import (
     Rotation,
     all_pairs,
     anorm,
+    best_rank1_approximation,
     cyclic_rotations,
     tqdm,
     trange,
@@ -203,10 +204,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # As we are using a mean to get the estimates, viis, the estimate will not be rank-1
         # So we use SVD to find a close rank-1 approximation.
-        U, S, V = np.linalg.svd(viis)
-        S_rank1 = np.zeros((self.n_img, 3, 3), dtype=self.dtype)
-        S_rank1[:, 0, 0] = S[:, 0]
-        viis_rank1 = U @ S_rank1 @ V
+        viis_rank1 = best_rank1_approximation(viis)
 
         return vijs, viis_rank1
 

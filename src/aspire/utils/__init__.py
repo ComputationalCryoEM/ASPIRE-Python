@@ -34,6 +34,7 @@ from .matrix import (
     acorr,
     ainner,
     anorm,
+    best_rank1_approximation,
     eigs,
     fix_signs,
     im_to_vec,
