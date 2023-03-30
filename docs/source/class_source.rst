@@ -69,7 +69,7 @@ components they wish to configure.
 	 +images()
       }
       class DefaultClassAvgSource{
-	 version="11.0"
+	 version="0.11.0"
 	 src: ImageSource
 	 classifier: RIRClass2D
 	 class_selector: NeighborVarianceWithRepulsionClassSelector
@@ -101,7 +101,7 @@ Classifiers take an image ``Source`` and attempts to classify into
 reflection.  All ``Class2D`` instances are expected to implement a
 ``classify`` method which returns ``(classes, reflections,
 distances)``.  The three returned variables are expected to be 2D
-Numpy arrays in a neighbor network format having shape ``(n_classes,
+Numpy arrays in a neighbor network format having shape ``(src.n,
 n_nbors)``.  So to retrieve the input source indices for the first
 class's neighbors, we would want ``classes[0,:]``.  The first class
 index should be the base image used for classification.  So we would

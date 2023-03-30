@@ -340,7 +340,7 @@ def DefaultClassAvgSource(
     _versions = {
         None: ClassAvgSourcev110,
         "latest": ClassAvgSourcev110,
-        "11.0": ClassAvgSourcev110,
+        "0.11.0": ClassAvgSourcev110,
     }
 
     if version not in _versions:
