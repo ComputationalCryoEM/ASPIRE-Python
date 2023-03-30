@@ -1232,7 +1232,7 @@ class OrientedSource(ManuallyOrientedSource):
         if hasattr(orientation_estimator, "symmetry_group"):
             symmetry_group = orientation_estimator.symmetry_group
         else:
-            symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.src.dtype)
+            symmetry_group = CyclicSymmetryGroup(order=1, dtype=src.dtype)
 
         rotations = None
         super().__init__(

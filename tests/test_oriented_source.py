@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from aspire.abinitio import CLSymmetryC3C4, CLSyncVoting
-from aspire.source import OrientedSource, Simulation
+from aspire.source import ManuallyOrientedSource, OrientedSource, Simulation
 from aspire.volume import CnSymmetricVolume, CyclicSymmetryGroup
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ def oriented_src_fixture(sim_fixture):
     # `OrientedSource`s
     src = OrientedSource(sim, orientation_estimator=estimator)
     src_C4 = OrientedSource(sim_C4, orientation_estimator=estimator_C4)
-    src_from_rots = OrientedSource(
+    src_from_rots = ManuallyOrientedSource(
         sim,
         rotations=sim.rotations,
         symmetry_group=CyclicSymmetryGroup(order=1, dtype=sim.dtype),
