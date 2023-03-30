@@ -29,7 +29,7 @@ from aspire.operators import (
 )
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import Rotation, grid_2d, support_mask, trange
-from aspire.volume import CyclicSymmetryGroup, SymmetryGroup
+from aspire.volume import CyclicSymmetryGroup, SymmetryGroup, SymmetryParser
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +186,11 @@ class ImageSource(ABC):
                             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]
                         )
                     )
+                )
+            if self.has_metadata(["_rlnSymmetryGroup"]):
+                self.symmetry_group = SymmetryParser(
+                    symmetry=self.get_metadata(["_rlnSymmetryGroup"]),
+                    dtype=self.dtype,
                 )
 
         self.unique_filters = []
