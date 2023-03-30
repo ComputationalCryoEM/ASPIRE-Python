@@ -197,8 +197,8 @@ review_class = 5
 
 # Report the identified neighbor indices with respect to the input
 # ``noise_src``.
-classes = avgs._nn_classes[review_class]
-reflections = avgs._nn_reflections[review_class]
+classes = avgs.class_indices[review_class]
+reflections = avgs.class_refl[review_class]
 logger.info(f"Class {review_class}'s neighors: {classes}")
 logger.info(f"Class {review_class}'s reflections: {reflections}")
 

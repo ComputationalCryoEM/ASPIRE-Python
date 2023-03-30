@@ -102,6 +102,59 @@ class ClassAvgSource(ImageSource):
         self._class_select()
         return self._selection_indices
 
+    @property
+    def class_indices(self):
+        """
+        Returns table of class image indices as `(src.n, n_nbors)`
+        Numpy array.
+
+        Each row reprsents a class, with the columns ordered by
+        smallest `class_distances` from the reference image (zeroth
+        columm).
+
+        Note `n_nbors` is managed by `self.classifier` and used here
+        for documentation.
+
+        :return: Numpy array, integers.
+        """
+        self._classify()
+        return self._nn_classes
+
+    @property
+    def class_refl(self):
+        """
+        Returns table of class image reflections as `(src.n, n_nbors)`
+        Numpy array.
+
+        Follows same layout as `class_indices` but holds booleans that
+        are True when the image should be reflected before averaging.
+
+        Note `n_nbors` is managed by `self.classifier` and used here
+        for documentation.
+
+        :return: Numpy array, boolean.
+        """
+        self._classify()
+        return self._nn_reflections
+
+    @property
+    def class_distances(self):
+        """
+        Returns table of class image distances as `(src.n, n_nbors)`
+        Numpy array.
+
+        Follows same layout as `class_indices` but holds floats
+        representing the distance (returned by classifier) to the
+        zeroth image in each class.
+
+        Note `n_nbors` is managed by `self.classifier` and used here
+        for documentation.
+
+        :return: Numpy array, self.dtype.
+        """
+        self._classify()
+        return self._nn_distances
+
     def _class_select(self):
         """
         Uses the `class_selector` in conjunction with the classifier results
