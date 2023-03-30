@@ -102,10 +102,12 @@ reflection.  All ``Class2D`` instances are expected to implement a
 ``classify`` method which returns ``(classes, reflections,
 distances)``.  The three returned variables are expected to be 2D
 Numpy arrays in a neighbor network format having shape ``(src.n,
-n_nbors)``.  So to retrieve the input source indices for the first
-class's neighbors, we would want ``classes[0,:]``.  The first class
-index should be the base image used for classification.  So we would
-expect ``classes[0,0]`` to be ``input_src.images[0]``.
+n_nbors)``.  So to retrieve the set of input source indices for the
+first class's neighbors, we would want ``classes[0,:]``.  The first
+index ``classes[0,0]`` in the set is the index of the reference image
+used for classification.  In this case ``classes[0,0]=0``. The actual
+underlying image would be ``input_src.images[0]``, or more generally
+``input_src.images[classes[c,0]]`` for some class ``c``.
 
 No further class selection or order occurs during classification.
 Those methods are broken out into other components.
