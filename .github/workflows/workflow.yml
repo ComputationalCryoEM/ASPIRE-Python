@@ -173,5 +173,5 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: sphinx-docs
-          path: docs
+          path: docs/build
           retention-days: 7
