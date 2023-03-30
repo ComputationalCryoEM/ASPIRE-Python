@@ -272,7 +272,7 @@ class GlobalClassSelector(ClassSelector):
         self.averager = averager
         if not isinstance(self.averager, Averager2D):
             raise ValueError(
-                f"`averager` should be instance of `Averger2D`, found {self.averager}."
+                f"`averager` should be instance of `Averager2D`, found {self.averager}."
             )
 
         self._quality_function = quality_function
@@ -453,15 +453,13 @@ class ImageQualityFunction(ABC):
     @abstractmethod
     def _function(self, img):
         """
-        User defined 1d radial weight function.  The function is
-        expected to be defined on [0,sqrt(2)].  Function range is
-        currently not limited, but [0,1] is favorable.
+        User defined scoring function.  Function domain and range is
+        currently not limited, but [0,1] is favorable range.
 
         Developers can use the self._grid_cache for access to a
         grid_2d instance matching resolution of img.
 
-        :param img: 2d Numpy array
-        :returns: Image quality score
+        :param img: 2d Numpy array :returns: Image quality score
         """
 
     def __call__(self, img):

@@ -278,11 +278,11 @@ Averagers consume from a ``Source`` and return averaged images
 defined by class network arguments ``classes`` and ``reflections``.
 You may find the terms averaging and stacking used interchangeably in
 this context, so know that averaging does not always imply *arithmetic
-mean*,
+mean*.
 
 Some averaging techniques, those subclassing ``AligningAverager2D``
 have distinct ``alignment`` and ``averaging`` stages.  Others such as
-Expectation-Maximization may perform these internally and provide only
+expectation-maximization (EM) may perform these internally and provide only
 an opaque ``averages`` stage.
 
 .. mermaid::

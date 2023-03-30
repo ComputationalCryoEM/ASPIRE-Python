@@ -61,7 +61,7 @@ class ClassAvgSource(ImageSource):
         self.averager = averager
         if not isinstance(self.averager, Averager2D):
             raise ValueError(
-                f"`averager` should be instance of `Averger2D`, found {self.averager}."
+                f"`averager` should be instance of `Averager2D`, found {self.averager}."
             )
 
         self._nn_classes = None
