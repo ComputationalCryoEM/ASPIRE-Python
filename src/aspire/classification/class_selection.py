@@ -356,7 +356,7 @@ class GlobalClassSelector(ClassSelector):
 # preceeding components we can implement exclusion based on neighbor
 # distances or other ideas (VDM?) as different ClassRepulsion like
 # classes.
-class GreedyClassRepulsion:
+class GreedyClassRepulsionMixin:
     """
     Mixin to overload class selection based on excluding
     classes we've already seen as neighbors of another class.
@@ -370,14 +370,14 @@ class GreedyClassRepulsion:
         Sets optional `exclude_k`. All other args and **kwargs are
         passed to super().
 
-        GreedyClassRepulsion is similar to `cryo_select_subset` from
+        GreedyClassRepulsionMixin is similar to `cryo_select_subset` from
         MATLAB, but MATLAB found `exclude_k` iteratively based on a
         desired result set size.
 
         :param exclude_k: Number of neighbors from each class to
             exclude.  Defaults to all neighbors.
         """
-        # Pop of the parameter unique to GreedyClassRepulsion.
+        # Pop of the parameter unique to GreedyClassRepulsionMixin.
         self.exclude_k = kwargs.pop("exclude_k", None)
 
         # Instantiate an empty set to hold our excluded indices.
@@ -426,17 +426,17 @@ class GreedyClassRepulsion:
 
 
 class NeighborVarianceWithRepulsionClassSelector(
-    GreedyClassRepulsion, NeighborVarianceClassSelector
+    GreedyClassRepulsionMixin, NeighborVarianceClassSelector
 ):
     """
-    Selects top classes based on highest contrast with GreedyClassRepulsion.
+    Selects top classes based on highest contrast with GreedyClassRepulsionMixin.
     """
 
 
-class GlobalWithRepulsionClassSelector(GreedyClassRepulsion, GlobalClassSelector):
+class GlobalWithRepulsionClassSelector(GreedyClassRepulsionMixin, GlobalClassSelector):
     """
     Extends ClassSelector for methods that require
-    passing over all class average images and also GreedyClassRepulsion.
+    passing over all class average images and also GreedyClassRepulsionMixin.
     """
 
 

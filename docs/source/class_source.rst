@@ -160,7 +160,7 @@ can reduce pipeline run times by an order of magnitude.
        ClassSelector <|-- RandomClassSelector
        ClassSelector <|-- NeighborVarianceClassSelector
        ClassSelector <|-- DistanceClassSelector
-       ClassSelector o-- GreedyClassRepulsion
+       ClassSelector o-- GreedyClassRepulsionMixin
 
 Global Class Selectors
 ----------------------
@@ -222,21 +222,21 @@ Class Repulsion
 ^^^^^^^^^^^^^^^
 
 Class Repulsion are techniques used to avoid classes based on some
-criterion.  Currently we provide ``GreedyClassRepulsion``, but this
-mix-in class can be mimicked to implement alternate schemes.
+criterion.  Currently we provide ``GreedyClassRepulsionMixin``, but
+this mix-in class can be mimicked to implement alternate schemes.
 
-``GreedyClassRepulsion`` is based on the following intuition. Assume
-the selection has in fact ordered the classes so that *the "best"
-classes occur first*. It follows that the "best" expression of a
-viewing angle locus will be the first seen.  Now assume *the
-classifier returns classes with closest viewing angles* (up to
-reflections).  Then the classes formed by *neighbors of the current
-expression are inferior*.  The aggressiveness of the neighbor
+``GreedyClassRepulsionMixin`` is based on the following
+intuition. Assume the selection has in fact ordered the classes so
+that *the "best" classes occur first*. It follows that the "best"
+expression of a viewing angle locus will be the first seen.  Now
+assume *the classifier returns classes with closest viewing angles*
+(up to reflections).  Then the classes formed by *neighbors of the
+current expression are inferior*.  The aggressiveness of the neighbor
 repulsion count is tunable.
 
-In practice, ``GreedyClassRepulsion`` is a mix-in designed to be mixed
-into any other ``ClassSelector``.  Note, that repulsion can (and will)
-dramatically reduce the population of class averages returned.
+In practice, ``GreedyClassRepulsionMixin`` is a mix-in designed to be
+mixed into any other ``ClassSelector``.  Note, that repulsion can (and
+will) dramatically reduce the population of class averages returned.
 
 
 Image Quality Functions
