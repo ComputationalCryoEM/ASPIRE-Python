@@ -257,7 +257,7 @@ class ClassAvgSource(ImageSource):
             }
 
             # Get heap dict once to avoid traversing heap in a loop.
-            heap_dict = self.class_selector.heap_id_dict
+            heap_dict = self.class_selector.heap_idx_map
 
             # Create an empty array to pack results.
             L = self.averager.src.L

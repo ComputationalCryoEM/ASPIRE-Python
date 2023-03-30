@@ -314,7 +314,7 @@ class GlobalClassSelector(ClassSelector):
         return [item.index for item in self.heap]
 
     @property
-    def heap_id_dict(self):
+    def heap_idx_map(self):
         """
         Return map of image ids to heap position currently in the heap.
         """
