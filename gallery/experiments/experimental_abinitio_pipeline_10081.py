@@ -103,7 +103,7 @@ avgs.save("experimental_10081_class_averages.star", overwrite=True)
 logger.info("Begin Orientation Estimation")
 
 # Run orientation estimation on  ``avgs``.
-orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=360, max_shift=0)
+orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=72, max_shift=0)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
