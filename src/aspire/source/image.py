@@ -193,10 +193,10 @@ class ImageSource(ABC):
         `ImageAccessor`.
 
         :param n: Number of images.
-        """        
+        """
         self._set_n(n)
 
-    def _set_n(self, n):        
+    def _set_n(self, n):
         """
         Sets max image index `n` in `src` and associated
         `ImageAccessor`.
