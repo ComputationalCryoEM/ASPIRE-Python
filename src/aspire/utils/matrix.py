@@ -412,6 +412,26 @@ def eigs(A, k):
     return v, np.diag(w)
 
 
+def best_rank1_approximation(A):
+    """
+    Computes the best rank-1 approximation of A.
+
+    :param A: A 2D array or a 3D array where the first axis is the stack axis.
+    :return: rank-1 ndarray of same size.
+    """
+    og_shape = A.shape
+
+    if A.ndim == 2:
+        A = A[np.newaxis]
+    assert A.ndim == 3, "Array must be 2D or 3D representing a stack."
+
+    U, S, V = np.linalg.svd(A)
+    S_rank1 = np.zeros_like(A)
+    S_rank1[:, 0, 0] = S[:, 0]
+
+    return (U @ S_rank1 @ V).reshape(og_shape)
+
+
 def fix_signs(u):
     """
     Negates columns so the sign of the largest element in the column is positive.

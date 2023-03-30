@@ -11,7 +11,6 @@ from aspire.utils import (
     all_triplets,
     anorm,
     cyclic_rotations,
-    pairs_to_linear,
     tqdm,
     trange,
 )
@@ -75,6 +74,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             shift_step=shift_step,
         )
 
+        self._check_symmetry(symmetry)
+        self.epsilon = epsilon
+        self.max_iters = max_iters
+        self.degree_res = degree_res
+        self.seed = seed
+
+    def _check_symmetry(self, symmetry):
         if symmetry is None:
             raise NotImplementedError(
                 "Symmetry type not supplied. Please indicate C3 or C4 symmetry."
@@ -86,10 +92,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                     f"Only C3 and C4 symmetry supported. {symmetry} was supplied."
                 )
             self.order = int(symmetry[1])
-        self.epsilon = epsilon
-        self.max_iters = max_iters
-        self.degree_res = degree_res
-        self.seed = seed
 
     def estimate_rotations(self):
         """
@@ -97,8 +99,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
-        logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-        vijs, viis = self._estimate_relative_viewing_directions_c3_c4()
+        vijs, viis = self._estimate_relative_viewing_directions()
 
         logger.info("Performing global handedness synchronization.")
         vijs, viis = self._global_J_sync(vijs, viis)
@@ -115,12 +116,12 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
     # Primary Methods                         #
     ###########################################
 
-    def _estimate_relative_viewing_directions_c3_c4(self):
+    def _estimate_relative_viewing_directions(self):
         """
         Estimate the relative viewing directions vij = vi*vj^T, i<j, and vii = vi*vi^T, where
         vi is the third row of the i'th rotation matrix Ri.
         """
-
+        logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
         # Step 1: Detect a single pair of common-lines between each pair of images
         self.build_clmatrix()
         clmatrix = self.clmatrix
@@ -169,20 +170,21 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
         # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all
         # previously synchronized v_ij to get a consensus on the handedness of v_ii.
+        _, pairs_to_linear = all_pairs(n_img, return_map=True)
         for i in range(n_img):
             vii = viis[i]
             vii_J = J_conjugate(vii)
             J_consensus = 0
             for j in range(n_img):
                 if j < i:
-                    idx = pairs_to_linear(n_img, j, i)
+                    idx = pairs_to_linear[j, i]
                     vji = vijs[idx]
 
                     err1 = norm(vji @ vii - vji)
                     err2 = norm(vji @ vii_J - vji)
 
                 elif j > i:
-                    idx = pairs_to_linear(n_img, i, j)
+                    idx = pairs_to_linear[i, j]
                     vij = vijs[idx]
 
                     err1 = norm(vii @ vij - vij)
@@ -724,6 +726,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         n_img = self.n_img
         triplets = all_triplets(n_img)
+        pairs, pairs_to_linear = all_pairs(n_img, return_map=True)
 
         # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
         # 'conjugate' expresses which node of the triplet must be conjugated (True) to achieve synchronization.
@@ -751,9 +754,9 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         v = vijs
         new_vec = np.zeros_like(vec)
         for i, j, k in triplets:
-            ij = pairs_to_linear(n_img, i, j)
-            jk = pairs_to_linear(n_img, j, k)
-            ik = pairs_to_linear(n_img, i, k)
+            ij = pairs_to_linear[i, j]
+            jk = pairs_to_linear[j, k]
+            ik = pairs_to_linear[i, k]
             vij, vjk, vik = v[ij], v[jk], v[ik]
             vij_J = J_conjugate(vij)
             vjk_J = J_conjugate(vjk)
