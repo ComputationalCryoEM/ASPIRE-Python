@@ -312,7 +312,7 @@ class MatrixTestCase(TestCase):
         self.assertTrue(A.shape == A_rank1.shape)
 
         # Check return is rank-1.
-        self.assertTrue(np.allclose([s[1], s[2]], 0))
+        self.assertTrue(np.allclose(s[1:], 0))
 
     def testFixSigns(self):
         """
