@@ -256,3 +256,39 @@ class OctahedralSymmetryGroup(SymmetryGroup):
 
         # Return rotations.
         return Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
+
+
+class SymmetryParser:
+    def __init__(self, symmetry, dtype):
+        """
+        Takes a string, ie. 'C1', 'C7', 'D3', 'T', 'O', and returns a concrete
+        SymmetryGroup object.
+
+        :param symmetry: A string indicating the symmetry of a molecule.
+        :param dtype: dtype for rotation matrices.
+        :return: Concrete SymmetryGroup object.
+        """
+
+        symmetry = symmetry.upper()
+        symmetry_type = symmetry[0]
+        symmetric_order = symmetry[1:]
+
+        supported_types = ["C", "D", "T", "O"]
+        if symmetry_type not in supported_types:
+            raise ValueError(
+                f"Symmetry type {symmetry_type} not supported. Try: {*supported_types,}."
+            )
+
+        map_to_sym_group = {
+            "C": CyclicSymmetryGroup,
+            "D": DihedralSymmetryGroup,
+            "T": TetrahedralSymmetryGroup,
+            "O": OctahedralSymmetryGroup,
+        }
+
+        symmetry_group = map_to_sym_group[symmetry_type]
+        group_kwargs = dict(dtype=dtype)
+        if symmetric_order:
+            group_kwargs["order"] = int(symmetric_order)
+
+        self.symmetry_group = symmetry_group(**group_kwargs)
