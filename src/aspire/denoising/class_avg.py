@@ -74,11 +74,30 @@ class ClassAvgSource(ImageSource):
         self._selected = False
 
         # Note n will potentially be updated after class selection.
+        # Manage delayed setting `n` once.
+        self._n_set = False
+
         super().__init__(
             L=self.averager.src.L,
             n=self.averager.src.n,
             dtype=self.averager.src.dtype,
         )
+
+    @ImageSource.n.setter
+    def n(self, n):
+        """
+        Sets max image index `n` in `src` and associated
+        `ImageAccessor`.
+
+        :param n: Number of images.
+        """
+
+        # Resets the protection of self._n exactly once after __init__.
+        if (self._n is not None) and (not self._n_set):
+            self._n = None
+            self._n_set = True
+
+        super()._set_n(n)
 
     def _classify(self):
         """

@@ -134,6 +134,7 @@ class ImageSource(ABC):
         self._img_accessor = _ImageAccessor(self._images, n)
 
         self.L = L
+        self._n = None
         self.n = n
         self.dtype = np.dtype(dtype)
 
@@ -191,10 +192,20 @@ class ImageSource(ABC):
         Sets max image index `n` in `src` and associated
         `ImageAccessor`.
 
-        Used in sources that potentially reduce the set of images.
+        :param n: Number of images.
+        """        
+        self._set_n(n)
+
+    def _set_n(self, n):        
+        """
+        Sets max image index `n` in `src` and associated
+        `ImageAccessor`.
 
         :param n: Number of images.
         """
+        # Protect _n by default.
+        if self._n is not None:
+            raise RuntimeError("Source `n` is already set.")
 
         # Enforce type, just-in-case.
         if n != int(n):
