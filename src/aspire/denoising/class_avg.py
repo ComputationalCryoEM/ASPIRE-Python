@@ -235,8 +235,10 @@ class DebugClassAvgSource(ClassAvgSource):
     """
     Source for denoised 2D images using class average methods.
 
-    Defaults to `RIRClass2D`, `TopClassSelector`, `BFRAverager2D`
-    using a single processor.
+    In this context Debug means defaulting to:
+        * Using the defaults for `RIRClass2D`.
+        * Using `TopClassSelector` to select all classes maintaining the same order as the input source.
+        * Using `BFRAverager2D` with defaults on a single core.
     """
 
     def __init__(
