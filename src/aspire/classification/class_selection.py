@@ -38,11 +38,10 @@ class ClassSelector(ABC):
     def _select(self, classes, reflections, distances):
         """
         Using the provided arguments, returns an array representing
-        an index into `n` selected `classes`.
+        an index into selected `classes`.
 
         This is the method developers should implement for a custom algorithm.
 
-        :param n: number of classes to select
         :param classes: (n_img, n_nbor) array of image indices
         :param reflections: (n_img, n_nbor) boolean array of reflections between `classes[i][0]` and classes[i][j]`
         :param distances: (n_img, n_nbor) array of distances between `classes[i][0]` and classes[i][j]`
@@ -148,7 +147,7 @@ class RandomClassSelector(ClassSelector):
 
     def _select(self, classes, reflections, distances):
         """
-        Select random `n` classes from the population.
+        Select random classes from the population.
         """
         # Assign uniform quality.
         self._quality_scores = np.zeros(self.n)
