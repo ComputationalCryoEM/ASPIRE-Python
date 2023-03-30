@@ -29,11 +29,27 @@ class ImageStacker(abc.ABC):
         # This variable will be used to keep track of shape.
         self._return_image_size = None
 
+    @abc.abstractmethod
+    def _call(self, stack):
+        """
+
+        Subclasses must implement this method.
+
+        Given a 2D Numpy array performs the stacking computation
+        returning a 1D array. Packing and unpacking the array is done
+        by `_check_and_convert` and `_return` respectively in
+        `__call__`.
+
+        :param stack: 2D Numpy array.
+
+        :return: 1D Numpy array.
+        """
+
     def __call__(self, stack):
         """
         Stack the elements of `stack`.
 
-        Stack admits an Image class, or an Numpy array.
+        Admits an Image class, or an Numpy array.
 
         In the case of Numpy array, the data should be 2D
         where the first (slow) dimension is stack axis,
