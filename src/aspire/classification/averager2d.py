@@ -79,11 +79,11 @@ class Averager2D(ABC):
 
         Should return an Image source of synthetic class averages.
 
-        :param classes: class indices, refering to src. (n_classes, n_nbor).
+        :param classes: class indices, refering to src. (src.n, n_nbor).
         :param reflections: Bool representing whether to reflect image in `classes`.
             (n_clases, n_nbor)
         :param coefs: Optional basis coefs (could avoid recomputing).
-            (n_classes, coef_count)
+            (src.n, coef_count)
         :return: Stack of synthetic class average images as Image instance.
         """
 
@@ -157,22 +157,22 @@ class AligningAverager2D(Averager2D):
         During this process `rotations`, `reflections`, `shifts` and
         `correlations` properties will be computed for aligners.
 
-        `rotations` is an (n_classes, n_nbor) array of angles,
+        `rotations` is an (src.n, n_nbor) array of angles,
         which should represent the rotations needed to align images within
         that class. `rotations` is measured in CCW radians.
 
-        `shifts` is None or an (n_classes, n_nbor) array of 2D shifts
+        `shifts` is None or an (src.n, n_nbor) array of 2D shifts
         which should represent the translation needed to best align the images
         within that class.
 
-        `correlations` is an (n_classes, n_nbor) array representing
+        `correlations` is an (src.n, n_nbor) array representing
         a correlation like measure between classified images and their base
         image (image index 0).
 
         Subclasses of should implement and extend this method.
 
-        :param classes: (n_classes, n_nbor) integer array of img indices.
-        :param reflections: (n_classes, n_nbor) bool array of corresponding reflections,
+        :param classes: (src.n, n_nbor) integer array of img indices.
+        :param reflections: (src.n, n_nbor) bool array of corresponding reflections,
         :param basis_coefficients: (n_img, self.alignment_basis.count) basis coefficients,
 
         :returns: (rotations, shifts, correlations)
