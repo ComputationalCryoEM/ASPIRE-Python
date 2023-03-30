@@ -1147,32 +1147,26 @@ class IndexedSource(ImageSource):
         return f"{self.__class__.__name__} mapping {self.n} of {self.src.n} indices from {self.src.__class__.__name__}."
 
 
-class OrientedSource(IndexedSource):
+class ManuallyOrientedSource(IndexedSource):
     """
-    Source for oriented 2D images using orientation estimation methods.
+    Source for 2D images that have been manually oriented, ie. orientation rotations
+    have been precomputed.
     """
 
-    def __init__(
-        self, src, orientation_estimator=None, rotations=None, symmetry_group=None
-    ):
+    def __init__(self, src, rotations, symmetry_group):
         """
-        Constructor of an oriented ImageSource object. Orientation is determined by
-        performing orientation estimation using a supplied `orientation_estimator` or
-        by assigning the provided `rotations` to the source.
+        Constructor of an oriented ImageSource object. Orientation must be precomputed
+        with rotations provided upon instantiation.
 
         :param src: Source used for orientation estimation
-        :param orientation_estimator: CLOrient3D subclass used for orientation estimation.
-            Default uses the CLSyncVoting method.
         :param rotations: 3D array of rotations matrices, size (src.n, 3, 3).
         :param symmetry_group: A SymmetryGroup object denoting the symmetry of the
             underlying molecule.
         """
 
+        if not isinstance(src, ImageSource):
+            raise ValueError(f"`src` should be subclass of `ImageSource`, found {src}.")
         self.src = src
-        if not isinstance(self.src, ImageSource):
-            raise ValueError(
-                f"`src` should be subclass of `ImageSource`, found {self.src}."
-            )
 
         # `indices` for IndexedSource.
         indices = np.arange(self.src.n)
@@ -1182,60 +1176,74 @@ class OrientedSource(IndexedSource):
             indices=indices,
         )
 
-        # Flags to not repeat orientation estimation and debug message.
-        self._oriented = False
-        self._warned = False
-
-        # orientation_estimator and rotations are mutually exclusive.
-        if orientation_estimator is not None and rotations is not None:
-            raise RuntimeError(
-                "Must provide either an `orientation_estimator` or `rotations`. Found both."
-            )
-
-        # From orientation_estimator.
-        if rotations is None:
-            if orientation_estimator is None:
-                orientation_estimator = CLSyncVoting(src)
-
-            self.orientation_estimator = orientation_estimator
-            if not isinstance(self.orientation_estimator, CLOrient3D):
-                raise ValueError(
-                    "`orientation_estimator` should be subclass of `CLOrient3D`,"
-                    f" found {self.orientation_estimator}."
-                )
-
-            # Get `symmetry_group` from orientation estimator.
-            if symmetry_group is not None:
-                logger.info(
-                    f"Detected symmetry_group: {symmetry_group}."
-                    " Overriding with symmetry_group inherited from orientation_estimator."
-                )
-            if hasattr(orientation_estimator, "symmetry_group"):
-                self.symmetry_group = orientation_estimator.symmetry_group
-            else:
-                self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
-
-        # From rotations.
-        else:
+        if rotations is not None:
             assert rotations.shape == (
                 src.n,
                 3,
                 3,
             ), f"'rotations' must have shape (src.n, 3, 3), found shape {rotations.shape}"
             self.rotations = rotations
-            self._oriented = True
-            if symmetry_group is None:
-                logger.info(
-                    "`symmetry_group` not found. Please provide a SymmetryGroup object."
-                )
-            if not isinstance(symmetry_group, SymmetryGroup):
-                raise ValueError(
-                    f"symmetry_group must be a SymmetryGroup object, found {symmetry_group}."
-                    f" Try CyclicSymmetryGroup(order=1, dtype={self.dtype})."
-                )
-            self.symmetry_group = symmetry_group
 
+        if not isinstance(symmetry_group, SymmetryGroup):
+            raise ValueError(
+                f"symmetry_group must be a SymmetryGroup object, found {symmetry_group}."
+                f" For asymmetric molecules use CyclicSymmetryGroup(order=1, dtype={self.src.dtype})."
+            )
+        self.symmetry_group = symmetry_group
         self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
+
+    def _images(self, indices):
+        """
+        Returns images from `self.src` corresponding to `indices`.
+
+        :param indices: A 1-D NumPy array of indices.
+        :return: An `Image` object.
+        """
+
+        return super()._images(indices)
+
+
+class OrientedSource(ManuallyOrientedSource):
+    """
+    Source for oriented 2D images using orientation estimation methods.
+    """
+
+    def __init__(self, src, orientation_estimator=None):
+        """
+        Constructor of an oriented ImageSource object. Orientation is determined by
+        performing orientation estimation using a supplied `orientation_estimator`.
+
+        :param src: Source used for orientation estimation
+        :param orientation_estimator: CLOrient3D subclass used for orientation estimation.
+            Default uses the CLSyncVoting method.
+        """
+
+        if orientation_estimator is None:
+            orientation_estimator = CLSyncVoting(src)
+
+        self.orientation_estimator = orientation_estimator
+        if not isinstance(self.orientation_estimator, CLOrient3D):
+            raise ValueError(
+                "`orientation_estimator` should be subclass of `CLOrient3D`,"
+                f" found {self.orientation_estimator}."
+            )
+
+        # Get `symmetry_group` from orientation estimator.
+        if hasattr(orientation_estimator, "symmetry_group"):
+            symmetry_group = orientation_estimator.symmetry_group
+        else:
+            symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.src.dtype)
+
+        rotations = None
+        super().__init__(
+            src,
+            rotations,
+            symmetry_group,
+        )
+
+        # Flags to not repeat orientation estimation and debug message.
+        self._oriented = False
+        self._warned = False
 
     def _images(self, indices):
         """

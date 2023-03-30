@@ -5,6 +5,7 @@ from aspire.source.image import (
     ArrayImageSource,
     ImageSource,
     IndexedSource,
+    ManuallyOrientedSource,
     OrientedSource,
 )
 from aspire.source.relion import RelionSource
