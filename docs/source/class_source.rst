@@ -97,17 +97,17 @@ Classifiers
 ***********
 
 Classifiers take an image ``Source`` and attempts to classify into
-``classes`` that identify images with similar viewing angles up to
+``class_indices`` that identify images with similar viewing angles up to
 reflection.  All ``Class2D`` instances are expected to implement a
-``classify`` method which returns ``(classes, reflections,
-distances)``.  The three returned variables are expected to be 2D
+``classify`` method which returns ``(class_indices, class_refl,
+class_distances)``.  The three returned variables are expected to be 2D
 Numpy arrays in a neighbor network format having shape ``(src.n,
 n_nbors)``.  So to retrieve the set of input source indices for the
-first class's neighbors, we would want ``classes[0,:]``.  The first
-index ``classes[0,0]`` in the set is the index of the reference image
-used for classification.  In this case ``classes[0,0]=0``. The actual
+first class's neighbors, we would want ``class_indices[0,:]``.  The first
+index ``class_indices[0,0]`` in the set is the index of the reference image
+used for classification.  In this case ``class_indices[0,0]=0``. The actual
 underlying image would be ``input_src.images[0]``, or more generally
-``input_src.images[classes[c,0]]`` for some class ``c``.
+``input_src.images[class_indices[c,0]]`` for some class ``c``.
 
 No further class selection or order occurs during classification.
 Those methods are broken out into other components.
@@ -275,7 +275,7 @@ Averagers
 *********
 
 Averagers consume from a ``Source`` and return averaged images
-defined by class network arguments ``classes`` and ``reflections``.
+defined by class network arguments ``class_indices`` and ``class_refl``.
 You may find the terms averaging and stacking used interchangeably in
 this context, so know that averaging does not always imply *arithmetic
 mean*.
