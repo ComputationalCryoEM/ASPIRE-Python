@@ -338,7 +338,7 @@ class RIRClass2D(Class2D):
             #
             # Also we've converted from correlation to distance=1-correlation
             # https://github.com/ComputationalCryoEM/ASPIRE-Python/discussions/867
-            dist = 1 - corr
+            dist = np.sqrt(2.0 - 2.0 * corr)
 
             classes[start:finish] = np.argsort(dist, axis=1)[:, :n_nbor]
             # Store the corr values for the n_nbors in this batch
