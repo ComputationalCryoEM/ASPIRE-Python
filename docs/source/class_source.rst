@@ -307,6 +307,23 @@ an opaque ``averages`` stage.
 	AligningAverager2D <|-- ReddyChetterjiAverager2D
 	ReddyChetterjiAverager2D <|-- BFSReddyChetterjiAverager2D
 
+Each ``AligningAverager2D`` can be configured to use a custom
+``ImageStacker`` if desired.
+
+ImageStacker
+------------
+
+``ImageStacker`` provides an interface for the common task of stacking
+images.  Implementations for common stacking methods are provided and
+should work for both ``Image`` and (1D) coefficient stacks.  Users
+experimenting with advanced stacking are responsible for selecting an
+ImageStacker method appropriate for their data.
+
+Note that the ASPIRE default is naturally ``MeanImageStacker``.
+
+.. mermaid::
+
+   classDiagram
 	class ImageStacker{
 	    stack()
 	}
@@ -322,15 +339,3 @@ an opaque ``averages`` stage.
 	SigmaRejectionImageStacker .. Gaussian
 	SigmaRejectionImageStacker .. FWHM
 	ImageStacker <|-- WinsorizedImageStacker
-
-ImageStacker
-------------
-
-``ImageStacker`` provides an interface for the common task of stacking
-images.  Implementations for common stacking methods are provided and
-should work for both ``Image`` and (1D) coefficient stacks.  Users
-experimenting with advanced stacking are responsible for selecting an
-ImageStacker method appropriate for their data.
-
-Note that the ASPIRE default is naturally ``MeanImageStacker``.
-
