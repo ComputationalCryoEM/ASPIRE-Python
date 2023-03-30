@@ -114,7 +114,7 @@ Those methods are broken out into other components.
 
 Currently ASPIRE has a single classification algorithm known as
 ``RIRClass2D``.  This algorithm uses multiple applications of PCA in
-conjunction with Bispectrum analysis to identify nearest neighbors in
+conjunction with bispectrum analysis to identify nearest neighbors in
 a rotationally invariant feature space.
 
 .. mermaid::
@@ -169,12 +169,11 @@ Global Class Selection techniques first compute the entire collection
 registered and aligned class averages, then compute some quality
 measure on all classes.
 
-These are most similar to the historical MATLAB approaches, sometimes
-referred to as "out-of-core" methods.  It is believed that many legacy
-MATLAB experiments computed contrast (variance) of all class averaged
-images, sorted the class averages to express highest contrast,
-potentially avoiding classes with views we've already seen.  This can
-be accomplished now by using the ``ContrastImageQualityFunction`` in a
+Many classic experiments computed variance of each class averaged
+image, sorting to express highest variance.  Sometimes this is
+referred to as Contrast.  Often times the classes are selected to
+avoid classes with views we've already seen.  This can be accomplished
+now by using the ``VarianceImageQualityFunction`` in a
 ``GlobalWithRepulsionClassSelector``.
 
 An SNR based approach is also provided, and a Bandpass method should
@@ -205,7 +204,7 @@ described below.
 	  }
        ImageQualityFunction o-- WeightedImageQualityMixin
        ImageQualityFunction <|-- BandedSNRImageQualityFunction
-       ImageQualityFunction <|-- ContrastImageQualityFunction
+       ImageQualityFunction <|-- VarianceImageQualityFunction
        ImageQualityFunction <|-- BandpassImageQualityFunction_TBD
 
        class WeightedImageQualityMixin{
@@ -214,10 +213,10 @@ described below.
        WeightedImageQualityMixin <|-- RampWeightedImageQualityMixin
        WeightedImageQualityMixin <|-- BumpWeightedImageQualityMixin
 
-       GlobalClassSelector <|-- RampWeightedContrastImageQualityFunction
-       RampWeightedImageQualityMixin <|-- RampWeightedContrastImageQualityFunction
-       GlobalClassSelector <|-- BumpWeightedContrastImageQualityFunction
-       BumpWeightedImageQualityMixin <|-- BumpWeightedContrastImageQualityFunction
+       GlobalClassSelector <|-- RampWeightedVarianceImageQualityFunction
+       RampWeightedImageQualityMixin <|-- RampWeightedVarianceImageQualityFunction
+       GlobalClassSelector <|-- BumpWeightedVarianceImageQualityFunction
+       BumpWeightedImageQualityMixin <|-- BumpWeightedVarianceImageQualityFunction
 
 Class Repulsion
 ^^^^^^^^^^^^^^^
@@ -249,7 +248,7 @@ registered class average.  This function should operate on a single
 Image, with conversions and broadcasting being handled behind the
 scenes.
 
-An example would be ``ContrastImageQualityFunction`` which computes
+An example would be ``VarianceImageQualityFunction`` which computes
 and returns contrast as variance.
 
 Another advantage of using the class is that it exposes and manages a
@@ -264,8 +263,8 @@ WeightedImageQualityMixin
 applied prior to the image quality function call.
 
 Two concrete examples are provided
-``BumpWeightedContrastImageQualityFunction`` and
-``RampWeightedContrastImageQualityFunction`` which apply the
+``BumpWeightedVarianceImageQualityFunction`` and
+``RampWeightedVarianceImageQualityFunction`` which apply the
 respective weight functions prior to the Contrast calculation.
 
 Again, ``WeightedImageQualityMixin`` exposes and manages a grid cache,

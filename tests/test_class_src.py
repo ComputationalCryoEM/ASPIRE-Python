@@ -10,17 +10,17 @@ from aspire.basis import FFBBasis2D
 from aspire.classification import (
     BandedSNRImageQualityFunction,
     BFRAverager2D,
-    BumpWeightedContrastImageQualityFunction,
-    ContrastImageQualityFunction,
+    BumpWeightedVarianceImageQualityFunction,
     DistanceClassSelector,
     GlobalClassSelector,
     GlobalWithRepulsionClassSelector,
     NeighborVarianceClassSelector,
     NeighborVarianceWithRepulsionClassSelector,
-    RampWeightedContrastImageQualityFunction,
+    RampWeightedVarianceImageQualityFunction,
     RandomClassSelector,
     RIRClass2D,
     TopClassSelector,
+    VarianceImageQualityFunction,
 )
 from aspire.classification.class_selection import _HeapItem
 from aspire.denoising import DebugClassAvgSource, DefaultClassAvgSource
@@ -210,9 +210,9 @@ GLOBAL_SELECTORS = [
 
 QUALITY_FUNCTIONS = [
     BandedSNRImageQualityFunction,
-    ContrastImageQualityFunction,
-    BumpWeightedContrastImageQualityFunction,
-    RampWeightedContrastImageQualityFunction,
+    VarianceImageQualityFunction,
+    BumpWeightedVarianceImageQualityFunction,
+    RampWeightedVarianceImageQualityFunction,
 ]
 
 

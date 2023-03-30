@@ -11,19 +11,19 @@ from .averager2d import (
 from .class2d import Class2D
 from .class_selection import (
     BandedSNRImageQualityFunction,
-    BumpWeightedContrastImageQualityFunction,
     BumpWeightedImageQualityMixin,
+    BumpWeightedVarianceImageQualityFunction,
     ClassSelector,
-    ContrastImageQualityFunction,
     DistanceClassSelector,
     GlobalClassSelector,
     GlobalWithRepulsionClassSelector,
     NeighborVarianceClassSelector,
     NeighborVarianceWithRepulsionClassSelector,
-    RampWeightedContrastImageQualityFunction,
     RampWeightedImageQualityMixin,
+    RampWeightedVarianceImageQualityFunction,
     RandomClassSelector,
     TopClassSelector,
+    VarianceImageQualityFunction,
     WeightedImageQualityMixin,
 )
 from .rir_class2d import RIRClass2D

@@ -502,7 +502,7 @@ class ImageQualityFunction(ABC):
         return res
 
 
-class ContrastImageQualityFunction(ImageQualityFunction):
+class VarianceImageQualityFunction(ImageQualityFunction):
     """
     Computes the variance of pixels.
     """
@@ -636,16 +636,16 @@ class BumpWeightedImageQualityMixin(WeightedImageQualityMixin):
             return np.exp(-1 / (1 - r**2) + 1)
 
 
-class BumpWeightedContrastImageQualityFunction(
-    BumpWeightedImageQualityMixin, ContrastImageQualityFunction
+class BumpWeightedVarianceImageQualityFunction(
+    BumpWeightedImageQualityMixin, VarianceImageQualityFunction
 ):
     """
     Computes the variance of pixels after weighting with Bump function.
     """
 
 
-class RampWeightedContrastImageQualityFunction(
-    RampWeightedImageQualityMixin, ContrastImageQualityFunction
+class RampWeightedVarianceImageQualityFunction(
+    RampWeightedImageQualityMixin, VarianceImageQualityFunction
 ):
     """
     Computes the variance of pixels after weighting with Ramp function.
