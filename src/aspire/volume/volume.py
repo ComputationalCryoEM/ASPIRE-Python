@@ -17,6 +17,8 @@ from aspire.utils import (
     mat_to_vec,
     vec_to_mat,
 )
+from aspire.utils.types import complex_type
+from aspire.volume import CyclicSymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +106,9 @@ class Volume:
         self.n_vols = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
         self.size = self._data.size
+
+        # Set symmetry_group to 'C1' by default. Can be overriden by synthetic volumes.
+        self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
 
         # Numpy interop
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol

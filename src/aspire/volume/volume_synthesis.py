@@ -73,9 +73,9 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         vol = self._gaussian_blob_vols()
 
         bump_mask = bump_3d(self.L, spread=5, dtype=self.dtype)
-        vol = np.multiply(bump_mask, vol)
-
-        return Volume(vol)
+        vol = Volume(np.multiply(bump_mask, vol))
+        vol.symmetry_group = self.symmetry_group
+        return vol
 
     def _gaussian_blob_vols(self):
         """
