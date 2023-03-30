@@ -176,7 +176,7 @@ avoid classes with views we've already seen.  This can be accomplished
 now by using the ``VarianceImageQualityFunction`` in a
 ``GlobalWithRepulsionClassSelector``.
 
-An SNR based approach is also provided, and a Bandpass method should
+An SNR based approach is also provided, and a bandpass method should
 be implemented in a future release.  Again, these components are fully
 customizable and the base interfaces were designed with algorithm
 developers in mind.
@@ -226,7 +226,7 @@ criterion.  Currently we provide ``GreedyClassRepulsion``, but this
 mix-in class can be mimicked to implement alternate schemes.
 
 ``GreedyClassRepulsion`` is based on the following intuition. Assume
-the selection has in fact ordered the classes s.t. *the "best"
+the selection has in fact ordered the classes so that *the "best"
 classes occur first*. It follows that the "best" expression of a
 viewing angle locus will be the first seen.  Now assume *the
 classifier returns classes with closest viewing angles* (up to
@@ -265,7 +265,7 @@ applied prior to the image quality function call.
 Two concrete examples are provided
 ``BumpWeightedVarianceImageQualityFunction`` and
 ``RampWeightedVarianceImageQualityFunction`` which apply the
-respective weight functions prior to the Contrast calculation.
+respective weight functions prior to the variance calculation.
 
 Again, ``WeightedImageQualityMixin`` exposes and manages a grid cache,
 this time for grid weights.
