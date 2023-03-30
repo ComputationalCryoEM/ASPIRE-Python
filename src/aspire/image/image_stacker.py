@@ -29,7 +29,6 @@ class ImageStacker(abc.ABC):
         # This variable will be used to keep track of shape.
         self._return_image_size = None
 
-    @abc.abstractmethod
     def __call__(self, stack):
         """
         Stack the elements of `stack`.
@@ -57,6 +56,9 @@ class ImageStacker(abc.ABC):
 
         :return: Stacked data as Image (or Numpy array).
         """
+        stack = self._check_and_convert(stack)
+
+        return self._return(self._call(stack))
 
     def _check_and_convert(self, stack):
         """
@@ -118,10 +120,8 @@ class MeanImageStacker(ImageStacker):
     Stack using `mean`.
     """
 
-    def __call__(self, stack):
-        stack = self._check_and_convert(stack)
-
-        return self._return(stack.mean(axis=0))
+    def _call(self, stack):
+        return stack.mean(axis=0)
 
 
 class MedianImageStacker(ImageStacker):
@@ -129,10 +129,8 @@ class MedianImageStacker(ImageStacker):
     Stack using `median`.
     """
 
-    def __call__(self, stack):
-        stack = self._check_and_convert(stack)
-
-        return self._return(np.median(stack, axis=0))
+    def _call(self, stack):
+        return np.median(stack, axis=0)
 
 
 class SigmaRejectionImageStacker(ImageStacker):
@@ -183,12 +181,11 @@ class SigmaRejectionImageStacker(ImageStacker):
         else:
             self.sigma = float(rejection_sigma)
 
-    def __call__(self, stack):
+    def _call(self, stack):
         """
         Dispatches rejection method based on `rejection_sigma`.
         """
-        stack = self._check_and_convert(stack)
-        return self._return(self._method(stack))
+        return self._method(stack)
 
     def _gaussian_method(self, stack):
         """
@@ -206,7 +203,7 @@ class SigmaRejectionImageStacker(ImageStacker):
         masked_stack = ma.masked_array(stack, mask=outliers)
 
         # Return mean without the outliers
-        return masked_stack.mean(axis=0)
+        return masked_stack.mean(axis=0).data
 
     def _width_method(self, stack):
         """
@@ -226,7 +223,7 @@ class SigmaRejectionImageStacker(ImageStacker):
         masked_stack = ma.masked_array(stack, mask=outliers)
 
         # Return mean withou the outliers
-        return masked_stack.mean(axis=0)
+        return masked_stack.mean(axis=0).data
 
 
 class WinsorizedImageStacker(ImageStacker):
@@ -261,19 +258,17 @@ class WinsorizedImageStacker(ImageStacker):
             raise ValueError(f"`percentile` must be [0,1], passed {percentile}.")
         self.percentile = percentile
 
-    def __call__(self, stack):
+    def _call(self, stack):
         """
         Apply Winsorizing process the return the stack mean.
         """
-
-        stack = self._check_and_convert(stack)
 
         # Note, we intentionally disable `inplace` to avoid mutating
         # stack, just-in-case.
         stack = winsorize(stack, limits=self.percentile, inplace=False)
 
         # Return mean of Winsorized data.
-        return self._return(stack.mean(axis=0))
+        return stack.mean(axis=0).data
 
 
 # The following will be blocked by ABC because they are not
