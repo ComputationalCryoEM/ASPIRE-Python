@@ -226,7 +226,10 @@ class ClassAvgSource(ImageSource):
         # Check if there is a cache available from class selection component.
         # Note, we can use := for this in the branch directly, when Python>=3.8
         heap_inds = None
-        if hasattr(self.class_selector, "heap"):
+        # Check we are using the same averager before attempting to use heap.
+        if hasattr(self.class_selector, "heap") and (
+            self.averager == self.class_selector.averager
+        ):
             # Then check if request matches anything in the heap.
             heap_inds = set(indices).intersection(self.class_selector.heap_ids)
 
