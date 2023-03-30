@@ -18,7 +18,7 @@ from aspire.utils import (
     vecmat_to_volmat,
 )
 from aspire.utils.random import rand, randi, randn
-from aspire.volume import AsymmetricVolume, Volume
+from aspire.volume import AsymmetricVolume, SymmetryParser, Volume
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +105,9 @@ class Simulation(ImageSource):
         if not isinstance(self.vols, Volume):
             raise RuntimeError("`vols` should be a Volume instance or `None`.")
 
+        # Set symmetry group.
+        self.symmetry_group = self.vols.symmetry_group
+
         # Infer the details from volume when possible.
         super().__init__(
             L=self.vols.resolution, n=n, dtype=self.vols.dtype, memory=memory
@@ -156,6 +159,9 @@ class Simulation(ImageSource):
 
         self.offsets = offsets
         self.amplitudes = amplitudes
+
+        # Set symmetry group metadata
+        self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
 
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
