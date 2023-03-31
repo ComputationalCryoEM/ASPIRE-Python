@@ -86,7 +86,7 @@ mappings etc.
 
 ``DefaultClassAvgSource`` applies the most sensible defaults available
 in the current ASPIRE release.  ``DefaultClassAvgSource`` takes a
-version string, such as ``11.0`` which will return a specific
+version string, such as ``0.11.0`` which will return a specific
 configuration.  This version should allow users to perform a similar
 experiment across releases as ASPIRE implements improved methods.
 When a version is not provided, ``DefaultClassAvgSource`` defaults to
