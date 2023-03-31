@@ -110,7 +110,7 @@ reference image used for classification.  In this case
 ``input_src.images[0]``, or more generally
 ``input_src.images[class_indices[c,0]]`` for some class ``c``.
 
-No further class selection or order occurs during classification.
+No further class selection or ordering occurs during classification.
 Those methods are broken out into other components.
 
 Currently ASPIRE has a single classification algorithm known as
@@ -167,14 +167,14 @@ Global Class Selectors
 ----------------------
 
 Global Class Selection techniques first compute the entire collection
-registered and aligned class averages, then compute some quality
+of registered and aligned class averages, then compute some quality
 measure on all classes.
 
 Many classic experiments computed variance of each class averaged
 image, sorting to express highest variance.  Sometimes this is
-referred to as Contrast.  Often times the classes are selected to
-avoid classes with views we've already seen.  This can be accomplished
-now by using the ``VarianceImageQualityFunction`` in a
+referred to as contrast.  Often times the classes were selected to
+avoid classes with views already seen.  This can be accomplished now
+by using the ``VarianceImageQualityFunction`` in a
 ``GlobalWithRepulsionClassSelector``.
 
 An SNR based approach is also provided, and a bandpass method should
@@ -182,8 +182,8 @@ be implemented in a future release.  Again, these components are fully
 customizable and the base interfaces were designed with algorithm
 developers in mind.
 
-Implementing concrete ``GlobalClassSelector`` leverage subcomponents
-described below.
+To implementing concrete ``GlobalClassSelector`` instances, leverage
+the subcomponents described below.
 
 .. mermaid::
 
@@ -244,13 +244,13 @@ Image Quality Functions
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``ImageQualityFunction`` interface provides a consistent way to
-bring your own function to measure the quality of an aligned and
+bring your own function to measure the quality of a single aligned and
 registered class average.  This function should operate on a single
 Image, with conversions and broadcasting being handled behind the
 scenes.
 
 An example would be ``VarianceImageQualityFunction`` which computes
-and returns contrast as variance.
+and returns variance.
 
 Another advantage of using the class is that it exposes and manages a
 grid cache, which is handy to avoid recomputing the same grid for
