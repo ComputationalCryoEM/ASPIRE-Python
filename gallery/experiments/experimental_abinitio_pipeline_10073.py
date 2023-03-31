@@ -37,7 +37,7 @@ from aspire.classification import (
     BFRAverager2D,
     GlobalWithRepulsionClassSelector,
 )
-from aspire.denoising import DefaultClassAvgSource
+from aspire.denoising import ClassAvgSource
 from aspire.reconstruction import MeanEstimator
 from aspire.source import RelionSource
 
@@ -93,16 +93,26 @@ logger.info("Begin Class Averaging")
 
 # Build up the customized components.
 basis = FFBBasis2D(src.L, dtype=src.dtype)
+classifier = RIRClass2D(src, n_nbor=n_nbor, nn_implementation="sklearn")
 averager = BFRAverager2D(basis, src, num_procs=16)
 quality_function = BandedSNRImageQualityFunction()
 class_selector = GlobalWithRepulsionClassSelector(averager, quality_function)
 
 # Assemble the components into the Source.
-avgs = DefaultClassAvgSource(
-    src, n_nbor=n_nbor, averager=averager, class_selector=class_selector
+avgs = ClassAvgSource(
+    src, classifier=classifier, averager=averager, class_selector=class_selector
 )
+
+# Save out the resulting Nearest Neighbor networks arrays.
+np.savez("experimental_10073_class_averages_class_indices.npz",
+         'class_indices'=avgs.class_indices,
+         'class_refl'=avgs.class_refl,
+         'class_distances'=avgs.class_distances,
+        )
+
+# Save the class selection rankings.
 np.save(
-    "experimental_10073_class_averages_indices.npy",
+    "experimental_10073_class_averages_selection_indices.npy",
     avgs.selection_indices,
 )
 
