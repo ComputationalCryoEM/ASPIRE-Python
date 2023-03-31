@@ -254,7 +254,7 @@ class GlobalClassSelector(ClassSelector):
         Initializes a GlobalClassSelector.
 
         Because GlobalClassSelectors must compute all class averages,
-        a heap is maintained cache the top class averages as scored by
+        a heap cache maintains the top class averages as scored by
         `quality_function`.  If you have the memory, recommend setting
         the cache to be > n_classes*img_size*img_size*img.dtype.
 
@@ -263,7 +263,7 @@ class GlobalClassSelector(ClassSelector):
             returns numeric quality score.  This score will be used to
             sort the classes.  User's may provide a callable function,
             but extending `ImageQualityFunction` is recommended.  For
-            example, this module provides methods for Contrast and SNR
+            example, this module provides methods for variance and SNR
             based quality.
         :param heap_size_limit_bytes: Max heap size in Bytes.
             Defaults 2GB, 0 will disable.
