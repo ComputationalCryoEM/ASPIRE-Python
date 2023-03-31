@@ -97,16 +97,17 @@ Classifiers
 ***********
 
 Classifiers take an image ``Source`` and attempts to classify into
-``class_indices`` that identify images with similar viewing angles up to
-reflection.  All ``Class2D`` instances are expected to implement a
+``class_indices`` that identify images with similar viewing angles up
+to reflection.  All ``Class2D`` instances are expected to implement a
 ``classify`` method which returns ``(class_indices, class_refl,
-class_distances)``.  The three returned variables are expected to be 2D
-Numpy arrays in a neighbor network format having shape ``(src.n,
-n_nbors)``.  So to retrieve the set of input source indices for the
-first class's neighbors, we would want ``class_indices[0,:]``.  The first
-index ``class_indices[0,0]`` in the set is the index of the reference image
-used for classification.  In this case ``class_indices[0,0]=0``. The actual
-underlying image would be ``input_src.images[0]``, or more generally
+class_distances)``.  The three returned variables are expected to be
+2D Numpy arrays in a neighbor network format having shape
+``(src.n, n_nbors)``.  So to retrieve the set of input source indices
+for the first class's neighbors, we would want ``class_indices[0,:]``.
+The first index ``class_indices[0,0]`` in the set is the index of the
+reference image used for classification.  In this case
+``class_indices[0,0]=0``. The actual underlying image would be
+``input_src.images[0]``, or more generally
 ``input_src.images[class_indices[c,0]]`` for some class ``c``.
 
 No further class selection or order occurs during classification.
