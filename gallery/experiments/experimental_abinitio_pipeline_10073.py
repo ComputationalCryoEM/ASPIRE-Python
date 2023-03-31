@@ -36,6 +36,7 @@ from aspire.classification import (
     BandedSNRImageQualityFunction,
     BFRAverager2D,
     GlobalWithRepulsionClassSelector,
+    RIRClass2D,
 )
 from aspire.denoising import ClassAvgSource
 from aspire.reconstruction import MeanEstimator
@@ -104,11 +105,12 @@ avgs = ClassAvgSource(
 )
 
 # Save out the resulting Nearest Neighbor networks arrays.
-np.savez("experimental_10073_class_averages_class_indices.npz",
-         class_indices=avgs.class_indices,
-         class_refl=avgs.class_refl,
-         class_distances=avgs.class_distances,
-        )
+np.savez(
+    "experimental_10073_class_averages_class_indices.npz",
+    class_indices=avgs.class_indices,
+    class_refl=avgs.class_refl,
+    class_distances=avgs.class_distances,
+)
 
 # Save the class selection rankings.
 np.save(
