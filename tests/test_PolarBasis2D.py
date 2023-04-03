@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 from pytest import raises
 
-from aspire.basis import PolarBasis2D
+from aspire.basis import Coef, PolarBasis2D
 from aspire.image import Image
 from aspire.utils import complex_type, utest_tolerance
 from aspire.utils.matlab_compat import m_reshape
@@ -397,7 +397,7 @@ class PolarBasis2DTestCase(TestCase, UniversalBasisMixin):
             dtype=complex_type(self.dtype),
         )
 
-        x = self.basis.evaluate(v)
+        x = Coef(self.basis, v).evaluate()
         result = np.array(
             [
                 [
@@ -503,13 +503,13 @@ class PolarBasis2DTestCase(TestCase, UniversalBasisMixin):
 
         x = m_reshape(x, (self.basis.nrad * self.basis.ntheta,))
 
-        x_t = self.basis.evaluate(x).asnumpy()
+        x_t = Coef(self.basis, x).evaluate()
         y = randn(np.prod(self.basis.sz), seed=self.seed).astype(self.dtype)
         y_t = self.basis.evaluate_t(
             Image(m_reshape(y, self.basis.sz)[np.newaxis, :])
         )  # RCOPT
 
-        lhs = np.dot(y, m_reshape(x_t, (np.prod(self.basis.sz),)))
+        lhs = np.dot(y, m_reshape(x_t.asnumpy(), (np.prod(self.basis.sz),)))
         rhs = np.real(np.dot(y_t, x))
         logging.debug(
             f"lhs: {lhs} rhs: {rhs} absdiff: {np.abs(lhs-rhs)} atol: {utest_tolerance(self.dtype)}"

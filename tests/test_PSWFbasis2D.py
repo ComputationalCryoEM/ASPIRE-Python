@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 import pytest
 
-from aspire.basis import PSWFBasis2D
+from aspire.basis import Coef, PSWFBasis2D
 from aspire.image import Image
 
 from ._basis_util import UniversalBasisMixin, pswf_params_2d, show_basis_params
@@ -36,6 +36,6 @@ class TestPSWFBasis2D(UniversalBasisMixin):
         coeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
-        result = basis.evaluate(coeffs)
+        result = Coef(basis, coeffs).evaluate()
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
-        assert np.allclose(result.asnumpy(), images)
+        assert np.allclose(result, images)

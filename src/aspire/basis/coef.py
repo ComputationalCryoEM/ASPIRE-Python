@@ -136,7 +136,7 @@ class Coef:
         return self.__class__(self.basis, self._data.copy())
 
     def evaluate(self):
-        return self.basis.evaluate(self.asnumpy())
+        return self.basis.evaluate(self)
 
     def rotate(self, radians, refl=None):
         """
@@ -151,7 +151,7 @@ class Coef:
         if not isinstance(self.basis, SteerableBasis2D):
             raise RuntimeError(f"self.basis={self.basis} is not SteerableBasis.")
 
-        return self.basis.rotate(self.asnumpy(), radians, refl)
+        return self.basis.rotate(self, radians, refl)
 
     def shift(self, shifts):
         """
@@ -170,7 +170,7 @@ class Coef:
                 f"self.basis={self.basis} does not provide `shift` method."
             )
 
-        return self.basis.shift(self.asnumpy(), shifts)
+        return self.basis.shift(self, shifts)
 
     def __mul__(self, other):
         if isinstance(other, Coef):

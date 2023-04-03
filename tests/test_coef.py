@@ -66,29 +66,29 @@ def coef_fixture(basis, stack, dtype):
 
     coef_np = np.random.random(size=size).astype(dtype, copy=False)
 
-    return Coef(basis, coef_np, dtype=dtype), coef_np
+    return Coef(basis, coef_np, dtype=dtype)
 
 
 def test_coef_evalute(coef_fixture, basis):
-    # Unpack the fixture
-    coef, coef_np = coef_fixture
-
-    assert np.allclose(coef.evaluate(), basis.evaluate(coef_np))
+    assert np.allclose(coef_fixture.evaluate(), basis.evaluate(coef_fixture))
 
 
 def test_coef_rotate(coef_fixture, basis):
-    # Unpack the fixture
-    coef, coef_np = coef_fixture
-
     # Rotations
-    rots = np.linspace(-np.pi, np.pi, coef.n_stack).reshape(coef.stack_shape)
+    rots = np.linspace(-np.pi, np.pi, coef_fixture.n_stack).reshape(
+        coef_fixture.stack_shape
+    )
 
     # Refl
-    refl = np.random.rand(coef.n_stack).reshape(coef.stack_shape) > 0.5  # Random bool
+    refl = (
+        np.random.rand(coef_fixture.n_stack).reshape(coef_fixture.stack_shape) > 0.5
+    )  # Random bool
 
-    assert np.allclose(coef.rotate(rots), basis.rotate(coef_np, rots))
+    assert np.allclose(coef_fixture.rotate(rots), basis.rotate(coef_fixture, rots))
 
-    assert np.allclose(coef.rotate(rots, refl), basis.rotate(coef_np, rots, refl))
+    assert np.allclose(
+        coef_fixture.rotate(rots, refl), basis.rotate(coef_fixture, rots, refl)
+    )
 
 
 def test_coef_shift(coef_fixture):

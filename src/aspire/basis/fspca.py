@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from aspire.basis import FFBBasis2D, SteerableBasis2D
+from aspire.basis import Coef, FFBBasis2D, SteerableBasis2D
 from aspire.covariance import BatchedRotCov2D
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, fix_signs, real_type
@@ -252,6 +252,7 @@ class FSPCABasis(SteerableBasis2D):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, self.src.n)
             batch_coef = self.basis.evaluate_t(self.src.images[start:finish])
+            batch_coef = batch_coef.asnumpy()
 
             # Make the Data matrix (A_k)
             # # Construct A_k, matrix of expansion coefficients a^i_k_q
@@ -330,13 +331,15 @@ class FSPCABasis(SteerableBasis2D):
             Fourier Bessel basis.
         :return: Stack of coefs in the FSPCABasis.
         """
+        if not isinstance(x, Coef):
+            raise TypeError(f"'x' should be `Coef` instance, received {type(x)}.")
 
         # Apply linear combination defined by FSPCA (eigvecs)
-        c_fspca = x @ self.eigvecs
+        c_fspca = x.asnumpy() @ self.eigvecs
 
         assert c_fspca.shape == (x.shape[0], self.count)
 
-        return c_fspca
+        return Coef(self, c_fspca)
 
     def evaluate_to_image_basis(self, c):
         """
@@ -346,6 +349,9 @@ class FSPCABasis(SteerableBasis2D):
         :return: The Image instance representing a stack of images in the
             standard 2D coordinate basis..
         """
+        if not isinstance(c, Coef):
+            raise TypeError(f"'c' should be `Coef` instance, received {type(c)}.")
+
         c_fb = self.evaluate(c)
 
         return self.basis.evaluate(c_fb)
@@ -358,6 +364,9 @@ class FSPCABasis(SteerableBasis2D):
         :return: The (real) coefs representing a stack of images in self.basis
         """
 
+        if not isinstance(c, Coef):
+            raise TypeError(f"'c' should be `Coef` instance, received {type(c)}.")
+
         # apply FSPCA eigenvector to coefs c, yields coefs in self.basis
         eigvecs = self.eigvecs
         if isinstance(eigvecs, BlkDiagMatrix):
@@ -368,7 +377,7 @@ class FSPCABasis(SteerableBasis2D):
         # corrected_c[:, self.angular_indices!=0] *= 2
         # return corrected_c @ eigvecs.T
 
-        return c @ eigvecs.T
+        return Coef(c.basis, c @ eigvecs.T)
 
     # TODO: Python>=3.8 @cached_property
     def _get_compressed_indices(self):
@@ -464,9 +473,9 @@ class FSPCABasis(SteerableBasis2D):
         :param coef: Coefficients from this basis.
         :return: Complex coefficent representation from this basis.
         """
-
-        if coef.ndim == 1:
-            coef = coef.reshape(1, -1)
+        if not isinstance(coef, Coef):
+            raise TypeError(f"'coef' should be `Coef` instance, received {type(coef)}.")
+        coef = coef.asnumpy()
 
         if coef.dtype not in (np.float64, np.float32):
             raise TypeError("coef provided to to_complex should be real.")
@@ -570,7 +579,7 @@ class FSPCABasis(SteerableBasis2D):
         if isinstance(eigvecs, BlkDiagMatrix):
             eigvecs = eigvecs.dense()
 
-        return self.basis.evaluate(eigvecs.T)
+        return Coef(self.basis, eigvecs.T).evaluate()
 
     def shift(self, coef, shifts):
         """
