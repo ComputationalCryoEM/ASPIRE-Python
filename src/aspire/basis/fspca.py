@@ -168,7 +168,7 @@ class FSPCABasis(SteerableBasis2D):
         )
 
         # Create the arrays to be packed by _compute_spca
-        self.eigvals = np.zeros(self.basis.count, dtype=self.dtype)
+        self._eigvals = np.zeros(self.basis.count, dtype=self.dtype)
 
         self.eigvecs = BlkDiagMatrix.empty(2 * self.basis.ell_max + 1, dtype=self.dtype)
 
@@ -211,7 +211,7 @@ class FSPCABasis(SteerableBasis2D):
             basis_inds.append(_basis_inds)
 
             # Store the eigvals for this block, note this is a flat array.
-            self.eigvals[_basis_inds] = eigvals_k
+            self._eigvals[_basis_inds] = eigvals_k
 
             # Store the eigvecs, note this is a BlkDiagMatrix and is assigned incrementally.
             self.eigvecs[angular_index] = eigvecs_k
@@ -231,7 +231,7 @@ class FSPCABasis(SteerableBasis2D):
         #
         # We can pass a full or truncated slice of sorted_indices to any array indexed by
         # the coefs.  This is used later for compression and index re-generation.
-        self.sorted_indices = np.argsort(-np.abs(self.eigvals))
+        self.sorted_indices = np.argsort(-np.abs(self._eigvals))
 
         compressed_indices = self._get_compressed_indices()
 
@@ -444,7 +444,7 @@ class FSPCABasis(SteerableBasis2D):
         compressed_indices = self._get_compressed_indices()
         self.count = len(compressed_indices)
 
-        self.eigvals = self.eigvals[compressed_indices]
+        self._eigvals = self._eigvals[compressed_indices]
         if isinstance(self.eigvecs, BlkDiagMatrix):
             self.eigvecs = self.eigvecs.dense()
         self.eigvecs = self.eigvecs[:, compressed_indices]
@@ -565,6 +565,13 @@ class FSPCABasis(SteerableBasis2D):
             filter_nonzero_freqs=filter_nonzero_freqs,
             freq_cutoff=freq_cutoff,
         )
+
+    @property
+    def eigvals(self):
+        """
+        Return the eigenvals as a Coef instance of FSPCABasis.
+        """
+        return Coef(self, self._eigvals)
 
     def eigen_images(self):
         """

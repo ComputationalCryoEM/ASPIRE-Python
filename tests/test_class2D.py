@@ -6,7 +6,8 @@ import numpy as np
 import pytest
 from sklearn import datasets
 
-from aspire.basis import FFBBasis2D, FSPCABasis
+
+from aspire.basis import Coef, FFBBasis2D, FSPCABasis
 from aspire.classification import RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.noise import WhiteNoiseAdder
@@ -70,7 +71,11 @@ class FSPCATestCase(TestCase):
             TypeError, match="coef provided to to_complex should be real."
         ):
             _ = self.fspca_basis.to_complex(
-                np.arange(self.fspca_basis.count, dtype=np.complex64)
+                Coef(
+                    self.fspca_basis,
+                    np.arange(self.fspca_basis.count),
+                    dtype=np.complex64,
+                )
             )
 
         with pytest.raises(

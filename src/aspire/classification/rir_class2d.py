@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
-from aspire.basis import FSPCABasis
+from aspire.basis import Coef, FSPCABasis
 from aspire.classification import Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
@@ -181,7 +181,7 @@ class RIRClass2D(Class2D):
         self.fspca_coef = self.pca_basis.spca_coef
 
         # Compute Bispectrum
-        coef_b, coef_b_r = self.bispectrum(self.fspca_coef)
+        coef_b, coef_b_r = self.bispectrum(Coef(self.pca_basis, self.fspca_coef))
 
         # # Stage 2: Compute Nearest Neighbors
         logger.info(f"Calculate Nearest Neighbors using {self._nn_implementation}.")
@@ -251,6 +251,11 @@ class RIRClass2D(Class2D):
         :param coef: complex steerable coefficients (eg. from FSPCABasis).
         :returns: tuple of arrays (coef_b, coef_b_r)
         """
+        if not isinstance(coef, Coef):
+            raise TypeError(
+                f"`coef` should be a `Coef` instance, received {type(coef)}"
+            )
+
         # _bispectrum is assigned during initialization.
         return self._bispectrum(coef)
 
@@ -405,7 +410,9 @@ class RIRClass2D(Class2D):
         coef = self.pca_basis.to_complex(coef)
         # Take just positive frequencies, corresponds to complex indices.
         # Original implementation used norm of Complex values, here abs of Real.
-        eigvals = np.abs(self.pca_basis.eigvals[self.pca_basis.signs_indices >= 0])
+        eigvals = np.abs(
+            self.pca_basis.eigvals.asnumpy()[0, self.pca_basis.signs_indices >= 0]
+        )
 
         # Legacy code included a sanity check:
         # non_zero_freqs = self.pca_basis.complex_angular_indices != 0
@@ -479,6 +486,11 @@ class RIRClass2D(Class2D):
 
         :return: Compressed feature and reflected feature vectors.
         """
+
+        if not isinstance(coef, Coef):
+            raise TypeError(
+                f"`coef` should be a `Coef` instance, received {type(coef)}"
+            )
 
         # The legacy code expects the complex representation
         coef = self.pca_basis.to_complex(coef)
