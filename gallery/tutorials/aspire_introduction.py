@@ -88,21 +88,24 @@ from aspire.image import Image
 # fundemental structures behind the scenes.  A lot of ASPIRE code
 # passes around ``Image`` and ``Volume`` instances.
 
-
+# %%
 # Create an ``Image`` instance from random data.
 img_data = np.random.random((100, 100))
 img = Image(img_data)
 logging.info(f"img shape: {img.shape}")  # Note this produces a stack of 1.
 logging.info(f"str(img): {img}")  # Note this produces a stack of 1.
 
+# %%
 # Create an Image for a stack of 3 100x100 images.
 img_data = np.random.random((3, 100, 100))
 img = Image(img_data)
 
+# %%
 # Most often, Images will behave like Numpy arrays, but you
 # explicitly access the underlying Numpy array via ``asnumpy()``.
 img.asnumpy()
 
+# %%
 # Images have a built in ``show()`` method, which works well for
 # peeking at data.
 img.show()
@@ -149,11 +152,11 @@ v = Volume.load(file_path)
 # %%
 # More interesting data requires downloading locally.  A common
 # starting dataset can be downloaded from EMDB at
-# <https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.  After
+# `<https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.  After
 # downloading the associated `map` file, unzip in local directory.  To
 # simplify things, this notebook defaults to a small low resolution
-# sample file.  Unfortunately real data can be quite large so we do
-# not ship it with the repo.
+# sample file instead.  Unfortunately real data can be quite large so
+# we do not ship it with the repo.
 
 # v = Volume.load("path/to/EMD-2660/map/emd_2660.map")
 
@@ -209,6 +212,7 @@ rots = Rotation.generate_random_rotations(n=num_rotations, seed=12345)
 logging.info(rots)
 logging.info(rots.matrices)
 
+# %%
 # Using the zero-th (and in this case, only) volume, compute
 # projections using the stack of rotations:
 projections = v.project(0, rots)
@@ -277,9 +281,9 @@ projections.show()
 # classes ``FFBBasis2D`` and ``FFBBasis3D``.  These correspond to
 # direct slower reference ``FBBasis2D`` and ``FBBasis3D`` methods.
 #
-# Recently, a related Fourier Bessel method using the Fast Laplacian
+# Recently, a related Fourier Bessel method using Fast Laplacian
 # Eigenfunction transforms was integrated as ``FLEBasis2D``.
-# Additional, Prolate Spheroidal Wave Function methods are available
+# Additional Prolate Spheroidal Wave Function methods are available
 # via ``FPSWFBasis2D`` and ``FPSWFBasis3D``, but their integration
 # into other components like 2D covariance analysis is incomplete, and
 # slated for a future release.
@@ -361,21 +365,25 @@ from aspire.source import Simulation
 # Total images in our source.
 num_imgs = 100
 
+# %%
 # Generate a Simulation instance based on the original volume data.
 sim = Simulation(n=num_imgs, vols=v)
 # Display the first 10 images
 sim.images[:10].show()  # Hi Res
 
+# %%
 # Repeat for the lower resolution (downsampled) volume v2.
 sim = Simulation(n=num_imgs, vols=v2)
 sim.images[:10].show()  # Lo Res
 
+# %%
 # Note both of those simulations have the same rotations because they
-#   had the same seed by default, We recreate ``sim`` with a distinct
-#   seed to get different random samples (of rotations).
+# had the same seed by default, We recreate ``sim`` with a distinct
+# seed to get different random samples (of rotations).
 sim = Simulation(n=num_imgs, vols=v2, seed=42)
 sim.images[:10].show()
 
+# %%
 # We can also view the rotations used to create these projections.
 logging.info(sim.rotations)
 
@@ -421,12 +429,12 @@ sim_shuffled_subset = IndexedSource(sim, shuffled_inds)
 
 from aspire.noise import WhiteNoiseAdder
 
-# Get the sample variance
+# %%
+# Get the sample variance, then create a NoiseAdder based on that variance.
 var = np.var(sim.images[:].asnumpy())
 logging.info(f"Sample Variance: {var}")
 target_noise_variance = 10.0 * var
 logging.info(f"Target Noise Variance: {target_noise_variance}")
-# Then create a NoiseAdder based on that variance.
 white_noise_adder = WhiteNoiseAdder(target_noise_variance)
 
 # %%
@@ -446,7 +454,7 @@ sim.images[:10].show()
 # %%
 # ``WhiteNoiseEstimator``
 # """""""""""""""""""""""
-# We can estimate the noise across an ``ImageSource``.
+# We can estimate the noise across an ``ImageSource``, and
 # we've generated a simulation with known noise variance.
 # Lets see how the estimate compares.
 #
@@ -497,8 +505,7 @@ sim.images[:10].show()
 # We will now combine a more advanced noise estimation technique with
 # an ``ImageSource`` preprocessing method ``whiten``.
 #
-# First an anisotropic noise estimate is performed.  We will use the
-# resulting ``Filter``.
+# First an anisotropic noise estimate is performed.
 
 from aspire.noise import AnisotropicNoiseEstimator
 
@@ -511,10 +518,11 @@ aiso_noise_estimator = AnisotropicNoiseEstimator(sim)
 # of the whitened images.  While noise is still present, we can see a
 # dramatic change.
 
-# Whiten based on the estimated noise
+# Whiten based on the estimated noise.
 sim.whiten(aiso_noise_estimator)
 
-# What do the whitened images look like...
+# %%
+# What do the whitened images look like?
 sim.images[:10].show()
 
 # %%
@@ -527,7 +535,6 @@ sim.images[:10].show()
 # %%
 # Amplitudes
 # ^^^^^^^^^^
-#
 # Simulation automatically generates random amplitude variability.
 # To disable, set to ``amplitudes=1``.
 
@@ -613,14 +620,17 @@ src = RelionSource(
     max_rows=1024,
 )
 
-# Downsample
+# %%
+# Add downsampling to the ``src`` pipeline.
 src.downsample(img_size)
 
+# %%
 # Relionsource will auto populate ``CTFFilter`` instances from the
 # STAR file metadata when available. Having these filters allows us to
 # perform a phase flipping correction.
 src.phase_flip()
 
+# %%
 # Display the experimental data images.
 src.images[:10].show()
 
@@ -630,7 +640,7 @@ src.images[:10].show()
 # Now that the primitives have been introduced we can explore higher
 # level components.  The higher level components are designed to be
 # modular and cacheable (to memory or disk) to support experimentation
-# with entire pipelines or focuses algorithmic development on specific
+# with entire pipelines or focused algorithmic development on specific
 # components.  Most pipelines will follow a flow of data and
 # components moving mostly left to right in the table below.  This
 # table is not exhaustive, but represents some of the most common
