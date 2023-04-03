@@ -13,7 +13,7 @@ class Coef:
     Numpy interoperable basis stacks.
     """
 
-    def __init__(self, basis, data, dtype=np.float64):
+    def __init__(self, basis, data, dtype=None):
         """
         A stack of one or more coefficient arrays.
 
@@ -30,7 +30,10 @@ class Coef:
 
         :return: Image instance holding `data`.
         """
-        if not isinstance(data, np.ndarray):
+
+        if isinstance(data, Coef):
+            data = data.asnumpy()
+        elif not isinstance(data, np.ndarray):
             raise ValueError("Coef should be instantiated with an ndarray")
 
         if data.ndim < 1:
@@ -46,7 +49,9 @@ class Coef:
             self.dtype = np.dtype(dtype)
 
         if not isinstance(basis, Basis):
-            raise TypeError(f"`basis` is required to be a `Basis` instance.")
+            raise TypeError(
+                f"`basis` is required to be a `Basis` instance, received {type(basis)}"
+            )
         self.basis = basis
 
         self._data = data.astype(self.dtype, copy=False)
@@ -59,13 +64,21 @@ class Coef:
 
         if self.count != self.basis.count:
             raise RuntimeError(
-                "Provided data count of {self.count} does not match basis count of {self.basis.count}."
+                f"Provided data count of {self.count} does not match basis count of {self.basis.count}."
             )
 
         # Numpy interop
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
         self.__array_interface__ = self.asnumpy().__array_interface__
         self.__array__ = self.asnumpy()
+
+    def __len__(self):
+        """
+        Return stack length.
+
+        Note this is product of all stack dimensions.
+        """
+        return self.n_stack
 
     def asnumpy(self):
         """
@@ -79,8 +92,48 @@ class Coef:
         view.flags.writeable = False
         return view
 
+    def _check_key_dims(self, key):
+        if isinstance(key, tuple) and (len(key) > self._data.ndim):
+            raise ValueError(
+                f"Coef stack_dim is {self.stack_ndim}, slice length must be =< {self.ndim}"
+            )
+
+    def __getitem__(self, key):
+        self._check_key_dims(key)
+        return self.__class__(self.basis, self._data[key])
+
+    def __setitem__(self, key, value):
+        self._check_key_dims(key)
+        self._data[key] = value
+
+    def stack_reshape(self, *args):
+        """
+        Reshape the stack axis.
+
+        :*args: Integer(s) or tuple describing the intended shape.
+
+        :returns: Coef instance
+        """
+
+        # If we're passed a tuple, use that
+        if len(args) == 1 and isinstance(args[0], tuple):
+            shape = args[0]
+        else:
+            # Otherwise use the variadic args
+            shape = args
+
+        # Sanity check the size
+        if shape != (-1,) and np.prod(shape) != self.n_stack:
+            raise ValueError(
+                f"Number of images {self.n_stack} cannot be reshaped to {shape}."
+            )
+
+        return self.__class__(
+            self.basis, self._data.reshape(*shape, *self._data.shape[-1:])
+        )
+
     def copy(self):
-        return self.__class__(self._data.copy())
+        return self.__class__(self.basis, self._data.copy())
 
     def evaluate(self):
         return self.basis.evaluate(self.asnumpy())
@@ -118,3 +171,24 @@ class Coef:
             )
 
         return self.basis.shift(self.asnumpy(), shifts)
+
+    def __mul__(self, other):
+        if isinstance(other, Coef):
+            other = other._data
+
+        return self.__class__(self.basis, self._data * other)
+
+    def __add__(self, other):
+        if isinstance(other, Coef):
+            other = other._data
+
+        return self.__class__(self.basis, self._data + other)
+
+    def __sub__(self, other):
+        if isinstance(other, Coef):
+            other = other._data
+
+        return self.__class__(self.basis, self._data - other)
+
+    def __neg__(self):
+        return self.__class__(self.basis, -self._data)

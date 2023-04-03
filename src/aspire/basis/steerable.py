@@ -1,6 +1,5 @@
 import logging
 from collections.abc import Iterable
-from itertools import chain
 
 import numpy as np
 
@@ -152,9 +151,12 @@ class SteerableBasis2D(Basis):
         :param refl: Optional reflect image (about y=0) (bool)
         :return: rotated coefs.
         """
+        from .coef import Coef
 
-        # Enforce a stack axis to support sanity checks
-        coef = np.atleast_2d(coef)
+        if not isinstance(coef, Coef):
+            raise TypeError(f"`coef` must be `Coef` instance, received {type(coef)}.")
+
+        coef = coef.asnumpy()
 
         # Covert radians to a broadcastable shape
         if isinstance(radians, Iterable):
@@ -207,7 +209,7 @@ class SteerableBasis2D(Basis):
             ks_neg
         ) - coef_pos * np.sin(ks_pos)
 
-        return coef
+        return Coef(self, coef)
 
     def complex_rotate(self, complex_coef, radians, refl=None):
         """

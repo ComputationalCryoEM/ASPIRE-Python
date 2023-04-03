@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.special import jv
 
-from aspire.basis import FBBasisMixin, SteerableBasis2D
+from aspire.basis import Coef, FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
 from aspire.utils import complex_type, real_type, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
@@ -294,8 +294,13 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         :return: Complex coefficent representation from this basis.
         """
 
-        if coef.ndim == 1:
-            coef = coef.reshape(1, -1)
+        if not isinstance(coef, Coef):
+            raise TypeError(
+                f"coef should be instanace of `Coef`, received {type(coef)}."
+            )
+
+        # if coef.ndim == 1:
+        #     coef = coef.reshape(1, -1)
 
         if coef.dtype not in (np.float64, np.float32):
             raise TypeError("coef provided to to_complex should be real.")
@@ -310,18 +315,19 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         # Return the same precision as coef
         imaginary = dtype(1j)
 
-        ccoef = np.zeros((coef.shape[0], self.complex_count), dtype=dtype)
+        ccoef = np.zeros((*coef.stack_shape, self.complex_count), dtype=dtype)
+        coef = coef.asnumpy()
 
         ind = 0
         idx = np.arange(self.k_max[0], dtype=int)
         ind += np.size(idx)
 
-        ccoef[:, idx] = coef[:, idx]
+        ccoef[..., idx] = coef[..., idx]
 
         for ell in range(1, self.ell_max + 1):
             idx = ind + np.arange(self.k_max[ell], dtype=int)
-            ccoef[:, idx] = (
-                coef[:, self._pos[idx]] - imaginary * coef[:, self._neg[idx]]
+            ccoef[..., idx] = (
+                coef[..., self._pos[idx]] - imaginary * coef[..., self._neg[idx]]
             ) / 2.0
 
             ind += np.size(idx)
@@ -373,7 +379,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             ind += np.size(idx)
             ind_pos += 2 * self.k_max[ell]
 
-        return coef
+        return Coef(self, coef)
 
     def calculate_bispectrum(
         self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None

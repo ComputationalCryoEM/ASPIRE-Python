@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 from aspire.basis import Coef, FFBBasis2D
-from aspire.utils import Rotation
 
 IMG_SIZE = [
     32,

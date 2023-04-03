@@ -95,9 +95,16 @@ class Basis:
                 f" Inconsistent dtypes v: {v.dtype} self coefficient dtype: {self.coefficient_dtype}"
             )
 
+        from .coef import Coef
+
+        if not isinstance(v, Coef):
+            # v = Coef(self, v)
+            raise TypeError(f"`evaluate` should be passed a `Coef`, received {type(v)}")
+
         # Flatten stack, ndim is wrt Basis (2 or 3)
-        stack_shape = v.shape[:-1]
-        v = v.reshape(-1, self.count)
+        stack_shape = v.stack_shape
+        # v = v.reshape(-1, self.count)
+        v = v.stack_reshape(-1).asnumpy()
         # Compute the transform
         x = self._evaluate(v)
         # Restore stack shape
@@ -142,7 +149,9 @@ class Basis:
         x = x.reshape(*stack_shape, self.count)
 
         # Return an ndarray
-        return x
+        from .coef import Coef
+
+        return Coef(self, x)
 
     def _evaluate_t(self, v):
         raise NotImplementedError("Subclasses should implement this")
@@ -190,6 +199,8 @@ class Basis:
             those first dimensions of `x`.
 
         """
+        from .coef import Coef
+
         if isinstance(x, Image) or isinstance(x, Volume):
             x = x.asnumpy()
 
@@ -199,6 +210,7 @@ class Basis:
                 f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
             )
 
+        # TODO: We should  only need to do this block when we are not passed Image/Volume.
         # check that last ndim values of input shape match
         # the shape of this basis
         assert (
@@ -211,7 +223,7 @@ class Basis:
 
         operator = LinearOperator(
             shape=(self.count, self.count),
-            matvec=lambda v: self.evaluate_t(self.evaluate(v)),
+            matvec=lambda v: self.evaluate_t(self.evaluate(Coef(self, v))),
             dtype=self.dtype,
         )
 
@@ -224,7 +236,7 @@ class Basis:
         v = np.zeros((n_data, self.count), dtype=self.coefficient_dtype)
 
         for isample in range(0, n_data):
-            b = self.evaluate_t(self._cls(x[isample])).T
+            b = self.evaluate_t(self._cls(x[isample])).asnumpy().T
             # TODO: need check the initial condition x0 can improve the results or not.
             v[isample], info = cg(operator, b, tol=tol, atol=0)
             if info != 0:
@@ -232,4 +244,5 @@ class Basis:
 
         # return v coefficients with the last dimension of self.count
         v = v.reshape((*sz_roll, self.count))
-        return v
+
+        return Coef(self, v)
