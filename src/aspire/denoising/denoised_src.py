@@ -38,7 +38,7 @@ class DenoisedImageSource(ImageSource):
         if self._cached_im is not None:
             logger.info("Loading images from cache")
             return self.generation_pipeline.forward(
-                Image(self._cached_im[indices, :, :]), indices
+                self._cached_im[indices, :, :], indices
             )
 
         # start and end (and indices) refer to the indices in the DenoisedImageSource
