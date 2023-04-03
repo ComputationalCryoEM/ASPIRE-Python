@@ -73,7 +73,7 @@ class CLOrient3D:
         self.basis = PolarBasis2D(
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
-        self.pf = self.basis.evaluate_t(imgs)
+        self.pf = self.basis.evaluate_t(imgs).asnumpy()
         self.pf = self.pf.reshape(self.n_img, self.n_theta, self.n_rad)
 
         n_theta_half = self.n_theta // 2

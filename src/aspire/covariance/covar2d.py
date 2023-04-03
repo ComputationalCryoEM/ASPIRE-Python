@@ -4,6 +4,7 @@ import numpy as np
 from numpy.linalg import eig, inv
 from scipy.linalg import solve, sqrtm
 
+from aspire.basis import Coef
 from aspire.operators import BlkDiagMatrix, RadialCTFFilter
 from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import make_symmat
@@ -107,10 +108,13 @@ class RotCov2D:
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be averaged.
         :return: The mean value vector for all images.
         """
+
         if coeffs.size == 0:
             raise RuntimeError("The coefficients need to be calculated first!")
+
         mask = self.basis._indices["ells"] == 0
         mean_coeff = np.zeros(self.basis.count, dtype=coeffs.dtype)
+        # Use array for manually masking, since Coef.__getitem__ tries to return a Coef.
         mean_coeff[mask] = np.mean(coeffs[..., mask], axis=0)
 
         return mean_coeff
@@ -181,8 +185,16 @@ class RotCov2D:
         :return: The mean value vector for all images.
         """
 
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
+            )
+
+        # TODO: Redundant, remove?
         if coeffs.size == 0:
             raise RuntimeError("The coefficients need to be calculated!")
+
+        coeffs = coeffs.asnumpy()
 
         # should assert we require none or both...
         if (ctf_fb is None) or (ctf_idx is None):
@@ -241,6 +253,11 @@ class RotCov2D:
             are accounted for and inverted to yield a covariance estimate of the unfiltered images.
         """
 
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
+            )
+
         if coeffs.size == 0:
             raise RuntimeError("The coefficients need to be calculated!")
 
@@ -271,6 +288,7 @@ class RotCov2D:
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
+        coeffs = coeffs.asnumpy()
         b_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
         b_noise = BlkDiagMatrix.zeros_like(ctf_fb[0])
         A = []
@@ -408,6 +426,11 @@ class RotCov2D:
             and white noise of variance `noise_var` for the noise.
         """
 
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
+            )
+
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
 
@@ -430,6 +453,7 @@ class RotCov2D:
 
         noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
 
+        coeffs = coeffs.asnumpy()
         coeffs_est = np.zeros_like(coeffs)
 
         for k in np.unique(ctf_idx[:]):
@@ -452,7 +476,7 @@ class RotCov2D:
             coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
 
-        return coeffs_est
+        return Coef(self.basis, coeffs_est)
 
 
 class BatchedRotCov2D(RotCov2D):
@@ -524,7 +548,7 @@ class BatchedRotCov2D(RotCov2D):
             batch = np.arange(start, min(start + self.batch_size, src.n))
 
             im = src.images[batch[0] : batch[0] + len(batch)]
-            coeff = basis.evaluate_t(im)
+            coeff = basis.evaluate_t(im).asnumpy()
 
             for k in np.unique(ctf_idx[batch]):
                 coeff_k = coeff[ctf_idx[batch] == k]
@@ -788,6 +812,11 @@ class BatchedRotCov2D(RotCov2D):
             and white noise of variance `noise_var` for the noise.
         """
 
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
+            )
+
         if mean_coeff is None:
             mean_coeff = self.get_mean()
 
@@ -808,6 +837,7 @@ class BatchedRotCov2D(RotCov2D):
 
         noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
 
+        coeffs = coeffs.asnumpy()
         coeffs_est = np.zeros_like(coeffs)
 
         for k in np.unique(ctf_idx[:]):
@@ -830,4 +860,4 @@ class BatchedRotCov2D(RotCov2D):
             coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
 
-        return coeffs_est
+        return Coef(self.basis, coeffs_est)

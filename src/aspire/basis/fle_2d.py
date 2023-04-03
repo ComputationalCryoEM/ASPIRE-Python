@@ -5,7 +5,7 @@ import scipy.sparse as sparse
 from scipy.fft import dct, idct
 from scipy.special import jv
 
-from aspire.basis import FBBasisMixin, SteerableBasis2D
+from aspire.basis import Coef, FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
 from aspire.basis.fle_2d_utils import (
     barycentric_interp_sparse,
@@ -465,6 +465,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             be evaluated. The last dimension must be equal to `self.count`
         :return: An Image object containing the corresponding images.
         """
+
         # convert from FB order
         coeffs = coeffs[..., self._fb_to_fle_indices]
 
@@ -649,14 +650,13 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :param bandlimit: Integer bandlimit (max frequency).
         :return: Band-limited coefficient array.
         """
-        if len(coeffs.shape) == 1:
-            coeffs = coeffs.reshape((1, coeffs.shape[0]))
-        assert (
-            len(coeffs.shape) == 2
-        ), "Input a stack of coefficients of dimension (num_images, self.count)."
-        assert (
-            coeffs.shape[1] == self.count
-        ), "Number of coefficients must match self.count."
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be a `Coef` instance, received {type(coeffs)}."
+            )
+
+        # Copy to mutate the coeffs.
+        coeffs = coeffs.asnumpy().copy()
 
         k = self.count - 1
         for _ in range(self.count):
@@ -664,7 +664,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                 k = k - 1
         coeffs[:, k + 1 :] = 0
 
-        return coeffs
+        return Coef(self, coeffs)
 
     def radial_convolve(self, coeffs, radial_img):
         """
@@ -673,6 +673,18 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :param radial_img: A 2D NumPy array of size (self.nres, self.nres).
         :return: Convolved FLE coefficients.
         """
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be a `Coef` instance, received {type(coeffs)}."
+            )
+
+        if len(coeffs.stack_shape) > 1:
+            raise NotImplementedError(
+                "`radial_convolve` currently only implemented for 1D stacks."
+            )
+
+        coeffs = coeffs.asnumpy()
+
         num_img = coeffs.shape[0]
         coeffs_conv = np.zeros(coeffs.shape)
 
@@ -691,7 +703,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Convert from internal FLE ordering to FB convention
         coeffs_conv = coeffs_conv[..., self._fle_to_fb_indices]
 
-        return coeffs_conv
+        return Coef(self, coeffs_conv)
 
     def _radial_convolve_weights(self, b):
         """

@@ -192,3 +192,9 @@ class Coef:
 
     def __neg__(self):
         return self.__class__(self.basis, -self._data)
+
+    def size(self):
+        """
+        Return np.size of underlying data.
+        """
+        return np.size(self._data)
