@@ -15,7 +15,6 @@ from aspire.utils import (
     get_full_version,
     mem_based_cpu_suggestion,
     num_procs_suggestion,
-    pairs_to_linear,
     physical_core_cpu_suggestion,
     powerset,
     utest_tolerance,
@@ -146,20 +145,18 @@ class UtilsTestCase(TestCase):
 
     def testAllPairs(self):
         n = 25
-        pairs = all_pairs(n)
+        pairs, pairs_to_linear = all_pairs(n, return_map=True)
         nchoose2 = n * (n - 1) // 2
+        # Build all pairs using a loop to ensure numpy upper_triu() ordering matches.
+        pairs_from_loop = [[i, j] for i in range(n - 1) for j in range(i + 1, n)]
         self.assertTrue(len(pairs) == nchoose2)
         self.assertTrue(len(pairs[0]) == 2)
+        self.assertTrue((pairs == pairs_from_loop).all())
 
-    def testPairsToLinear(self):
-        n = 10
-        pairs = all_pairs(n)
-        all_pairs_index = np.zeros(len(pairs))
-        pairs_to_linear_index = np.zeros(len(pairs))
-        for idx, (i, j) in enumerate(pairs):
-            all_pairs_index[idx] = pairs.index((i, j))
-            pairs_to_linear_index[idx] = pairs_to_linear(n, i, j)
-        self.assertTrue(np.allclose(all_pairs_index, pairs_to_linear_index))
+        # Test the pairs_to_linear index mapping.
+        self.assertTrue(
+            (pairs_to_linear[pairs[:, 0], pairs[:, 1]] == np.arange(nchoose2)).all()
+        )
 
     def testAllTriplets(self):
         n = 25
