@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 import pytest
 
-from aspire.basis import FFBBasis3D
+from aspire.basis import FFBBasis3D, Coef
 from aspire.utils import grid_3d
 from aspire.volume import AsymmetricVolume, Volume
 
@@ -460,7 +460,7 @@ class TestFFBBasis3D(UniversalBasisMixin):
             dtype=basis.dtype,
         )
 
-        result = basis.evaluate(coeffs)
+        result = Coef(basis, coeffs).evaluate()
 
         ref = np.load(
             os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_out_8_8_8.npy")

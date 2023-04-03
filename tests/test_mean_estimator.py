@@ -140,7 +140,7 @@ class MeanEstimatorTestCase(TestCase):
         )
 
     def testAdjoint(self):
-        mean_b_coeff = self.estimator.src_backward().squeeze()
+        mean_b_coeff = self.estimator.src_backward()
         self.assertTrue(
             np.allclose(
                 mean_b_coeff,
