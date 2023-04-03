@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 import pytest
 
-from aspire.basis import FBBasis3D, Coef
+from aspire.basis import Coef, FBBasis3D,
 from aspire.utils import grid_3d, utest_tolerance
 from aspire.volume import AsymmetricVolume, Volume
 
