@@ -143,14 +143,14 @@ def extract_particles(
 
     # optional preprocessing steps
     if 0 < downsample < src.L:
-        src.downsample(downsample)
+        src = src.downsample(downsample)
     if normalize_bg:
-        src.normalize_background()
+        src = src.normalize_background()
     if whiten:
         estimator = WhiteNoiseEstimator(src)
-        src.whiten(estimator)
+        src = src.whiten(estimator)
     if invert_contrast:
-        src.invert_contrast()
+        src = src.invert_contrast()
 
     # saves to .mrcs and STAR file with column "_rlnImageName"
     src.save(

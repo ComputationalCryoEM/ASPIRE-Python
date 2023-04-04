@@ -28,7 +28,7 @@ source = RelionSource(
 
 # Reduce the resolution
 L = 12  # You may try 16 but it takes a significant amount of time.
-source.downsample(L)
+source = source.downsample(L)
 
 # %%
 # Noise Estimation and Whitening
@@ -37,7 +37,7 @@ source.downsample(L)
 # Estimate noise in the ImageSource instance
 noise_estimator = AnisotropicNoiseEstimator(source)
 # Apply whitening to ImageSource
-source.whiten(noise_estimator)
+source = source.whiten(noise_estimator)
 
 # Display subset of the images
 images = source.images[:10]

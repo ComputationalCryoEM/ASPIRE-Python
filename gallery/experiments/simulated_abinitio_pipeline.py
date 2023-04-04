@@ -114,11 +114,11 @@ if interactive:
 
 # Use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
-src.phase_flip()
+src = src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
-src.whiten(aiso_noise_estimator)
+src = src.whiten(aiso_noise_estimator)
 
 # Plot the noise profile for inspection
 if interactive:
@@ -130,7 +130,7 @@ if interactive:
     src.images[:10].show()
 
 # Cache to memory for some speedup
-src.cache()
+src = src.cache()
 
 # %%
 # Optional: CWF Denoising

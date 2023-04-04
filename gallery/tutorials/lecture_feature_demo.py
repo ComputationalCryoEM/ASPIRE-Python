@@ -279,7 +279,7 @@ sim4.images[:10].show()
 aiso_noise_estimator = AnisotropicNoiseEstimator(sim4)
 
 # Whiten based on the estimated noise
-sim4.whiten(aiso_noise_estimator)
+sim4 = sim4.whiten(aiso_noise_estimator)
 
 # What do the whitened images look like...
 sim4.images[:10].show()
@@ -300,7 +300,7 @@ src = RelionSource(
     max_rows=1024,
 )
 
-src.downsample(img_size)
+src = src.downsample(img_size)
 
 src.images[:10].show()
 

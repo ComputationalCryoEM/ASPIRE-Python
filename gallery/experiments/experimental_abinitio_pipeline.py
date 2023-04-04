@@ -66,7 +66,7 @@ src = RelionSource(starfile_in, pixel_size=pixel_size, max_rows=n_imgs)
 
 # Downsample the images
 logger.info(f"Set the resolution to {img_size} X {img_size}")
-src.downsample(img_size)
+src = src.downsample(img_size)
 
 # Peek
 if interactive:
@@ -74,11 +74,11 @@ if interactive:
 
 # Use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
-src.phase_flip()
+src = src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
-src.whiten(aiso_noise_estimator)
+src = src.whiten(aiso_noise_estimator)
 
 # Plot the noise profile for inspection
 if interactive:
@@ -92,7 +92,7 @@ if interactive:
 # # Optionally invert image contrast, depends on data convention.
 # # This is not needed for 10028, but included anyway.
 # logger.info("Invert the global density contrast")
-# src.invert_contrast()
+# src = src.invert_contrast()
 
 # %%
 # Optional: CWF Denoising

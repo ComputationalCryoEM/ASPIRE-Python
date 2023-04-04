@@ -143,7 +143,7 @@ src.images[0:10].show()
 # --------------
 # We apply ``phase_flip()`` to correct for CTF effects.
 
-src.phase_flip()
+src = src.phase_flip()
 src.images[0:10].show()
 
 

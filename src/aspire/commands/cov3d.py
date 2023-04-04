@@ -47,10 +47,10 @@ def cov3d(
         starfile, data_folder=data_folder, pixel_size=pixel_size, max_rows=max_rows
     )
 
-    source.downsample(max_resolution)
-    source.cache()
+    source = source.downsample(max_resolution)
+    source = source.cache()
 
-    source.whiten()
+    source = source.whiten()
     basis = FBBasis3D((max_resolution, max_resolution, max_resolution))
     mean_estimator = MeanEstimator(source, basis, batch_size=8192)
     mean_est = mean_estimator.estimate()
