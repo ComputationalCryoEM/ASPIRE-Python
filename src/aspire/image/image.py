@@ -478,6 +478,105 @@ class Image:
 
             plt.show()
 
+    def frc(self, other, resolution=None, cutoff=0.143, eps=1e-4, dtype=None):
+        r"""
+        Compute the Fourier ring correlation between two images.
+
+        Images are assumed to be well aligned.
+
+        Stack of both images must be `1` and shape of both images must match.
+
+        When `resolution` (pixel-size in Angstrom) is provided, returns
+        tuple(`estimated_resolution`,  FRC as a Numpy array).  `estimated_resolution` is 1/Angstrom.
+
+        The FRC is defined as:
+
+        .. math::
+
+           c(i) = \frac{ \Re( \sum_i{ \mathcal{F}_1(i) * {\mathcal{F}^{*}_2(i) } } ) }{\
+             \sqrt{ \sum_i { | \mathcal{F}_1(i) |^2 } * \sum_i{| \mathcal{F}^{*}_2}(i) |^2 } }
+
+        :param other: `Image` instance to compare.
+        :param resolution: Optional, pixel-size in Angstrom. #TODO check pixel-size vs 1/A?
+        :param cutoff: Cutoff value, traditionally `1.43`.
+        :param eps: Epsilon past boundary values, defaults 1e-4.
+        :param dtype: Optional, dtype. Defaults to `self.dtype`.
+
+        :return: FRC as Numpy array or tuple(estimated_resolution,  FRC as a Numpy array).
+        """
+
+        dtype = np.dtype(dtype or self.dtype)
+
+        # When passed resolution, sanity check type.
+        if resolution is not None:
+            resolution = float(resolution)
+
+        if not isinstance(other, Image):
+            raise TypeError(
+                f"`other` image must be an `Image` instance, received {type(other)}"
+            )
+
+        if self.shape != other.shape:
+            raise RuntimeError(f"Shapes do not match, {self.shape} != {other.shape}.")
+
+        if self.stack_ndim != 1 or self.n_images != 1:
+            raise RuntimeError(
+                f"FRC is computed between two singletons, received {self}."
+            )
+
+        # Compute shells from 2D grid.
+        L = self.resolution
+        radii = grid_2d(L, shifted=True, normalized=False, dtype=dtype)["r"]
+
+        # Compute centered Fourier transforms,
+        #   upcasting when nessecary.
+        f1 = fft.centered_fft2(self.asnumpy().astype(dtype, copy=False))
+        f2 = fft.centered_fft2(other.asnumpy().astype(dtype, copy=False))
+
+        correlations = np.zeros(L // 2, dtype=dtype)
+        inner_diameter = 0.5 + eps
+        for i in range(0, L // 2):
+            # Compute ring mask
+            outer_diameter = 0.5 + (i + 1) + eps
+            ring_mask = (radii > inner_diameter) & (radii < outer_diameter)
+            logger.debug(f"Ring, Elements:  {i}, {np.sum(ring_mask)}")
+
+            # Mask off values in Fourier space
+            r1 = ring_mask * f1
+            r2 = ring_mask * f2
+
+            # Compute FRC
+            num = np.real(np.sum(r1 * np.conj(r2)))
+            den = np.sqrt(np.sum(np.abs(r1) ** 2) * np.sum(np.abs(r2) ** 2))
+            # Assign
+            correlations[i] = num / den
+            # Update ring
+            inner_diameter = outer_diameter
+
+        logger.debug(f"FRC: {correlations}")
+        result = correlations
+
+        if resolution is not None:
+            if np.min(correlations) > cutoff:
+                # All correlations are above cutoff
+                c_ind = L // 2  # Index of highest sampled frequency.
+            elif np.max(correlations) < cutoff:
+                # All correlations are below cutoff.
+                c_ind = 0
+            else:
+                # Correlations cross the cutoff.
+                # Find the first index of a correlation at `cutoff`.
+                c_ind = np.argmax(correlations <= cutoff)
+
+            # Convert to frequency
+            c = c_ind * (1 / (L * resolution))
+
+            logger.debug(f"FRC Resolution: {c}")
+            # Construct the result tuple.
+            result = (c, result)
+
+        return result
+
 
 class CartesianImage(Image):
     def expand(self, basis):
