@@ -1,9 +1,10 @@
+import copy
 import logging
 import os.path
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Iterable
-import copy
+
 import mrcfile
 import numpy as np
 import pandas as pd
@@ -104,6 +105,7 @@ def as_copy(func):
         func_copy = copy.deepcopy(func)
         func_copy(obj_copy, *args, **kwargs)
         return obj_copy
+
     return wrapper
 
 
