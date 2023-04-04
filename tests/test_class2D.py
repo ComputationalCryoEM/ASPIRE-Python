@@ -47,7 +47,7 @@ class FSPCATestCase(TestCase):
             vols=v,
             dtype=self.dtype,
         )
-        self.src.cache()  # Precompute image stack
+        self.src = self.src.cache()  # Precompute image stack
 
         # Calculate some projection images
         self.imgs = self.src.images[:]

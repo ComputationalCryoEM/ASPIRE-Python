@@ -38,7 +38,7 @@ def get_sim_object(L, dtype):
 def testPhaseFlip(L, dtype):
     sim = get_sim_object(L, dtype)
     imgs_org = sim.images[:num_images]
-    sim.phase_flip()
+    sim = sim.phase_flip()
     imgs_pf = sim.images[:num_images]
 
     # check energy conservation
@@ -64,7 +64,7 @@ def testEmptyPhaseFlip(caplog):
     )
     # assert we log a warning to the user
     with caplog.at_level(logging.WARNING):
-        sim.phase_flip()
+        _ = sim.phase_flip()
         assert "No Filters found" in caplog.text
 
 
@@ -74,7 +74,7 @@ def testNormBackground(L, dtype):
     bg_radius = 1.0
     grid = grid_2d(sim.L, indexing="yx")
     mask = grid["r"] > bg_radius
-    sim.normalize_background()
+    sim = sim.normalize_background()
     imgs_nb = sim.images[:num_images].asnumpy()
     new_mean = np.mean(imgs_nb[:, mask])
     new_variance = np.var(imgs_nb[:, mask])
@@ -94,7 +94,7 @@ def testWhiten(dtype):
     L = 64
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
-    sim.whiten(noise_estimator)
+    sim = sim.whiten(noise_estimator)
     imgs_wt = sim.images[:num_images].asnumpy()
 
     # calculate correlation between two neighboring pixels from background
@@ -117,7 +117,7 @@ def testWhiten2(dtype):
     L = 63
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
-    sim.whiten(noise_estimator.filter)
+    sim = sim.whiten(noise_estimator.filter)
     imgs_wt = sim.images[:num_images].asnumpy()
 
     corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
@@ -130,11 +130,11 @@ def testWhiten2(dtype):
 def testInvertContrast(L, dtype):
     sim1 = get_sim_object(L, dtype)
     imgs_org = sim1.images[:num_images]
-    sim1.invert_contrast()
+    sim1 = sim1.invert_contrast()
     imgs1_rc = sim1.images[:num_images]
     # need to set the negative images to the second simulation object
     sim2 = ArrayImageSource(-imgs_org)
-    sim2.invert_contrast()
+    sim2 = sim2.invert_contrast()
     imgs2_rc = sim2.images[:num_images]
 
     # all images should be the same after inverting contrast

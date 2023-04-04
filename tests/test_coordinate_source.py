@@ -387,9 +387,9 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
 
     def testCached(self):
-        src_cached = BoxesCoordinateSource(self.files_box)
+        src = BoxesCoordinateSource(self.files_box)
         src_uncached = BoxesCoordinateSource(self.files_box)
-        src_cached.cache()
+        src_cached = src.cache()
         self.assertTrue(
             np.array_equal(
                 src_cached.images[:].asnumpy(), src_uncached.images[:].asnumpy()
@@ -512,11 +512,11 @@ class CoordinateSourceTestCase(TestCase):
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
         src = BoxesCoordinateSource(self.files_box, max_rows=5)
-        src.downsample(60)
-        src.normalize_background()
+        src = src.downsample(60)
+        src = src.normalize_background()
         noise_estimator = WhiteNoiseEstimator(src)
-        src.whiten(noise_estimator)
-        src.invert_contrast()
+        src = src.whiten(noise_estimator)
+        src = src.invert_contrast()
         # call .images() to ensure the filters are applied
         # and not just added to pipeline
         src.images[:5]
