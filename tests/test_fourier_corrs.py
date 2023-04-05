@@ -55,8 +55,14 @@ def image_fixture(img_size, dtype):
     img, img_rot = src.images[:]
 
     noisy_src = Simulation(
-        L=img_size, n=2, vols=v, offsets=0, amplitudes=1, C=1, angles=rots.angles,
-        noise_adder=BlueNoiseAdder(var=np.var(img.asnumpy()*0.5)),
+        L=img_size,
+        n=2,
+        vols=v,
+        offsets=0,
+        amplitudes=1,
+        C=1,
+        angles=rots.angles,
+        noise_adder=BlueNoiseAdder(var=np.var(img.asnumpy() * 0.5)),
     )
     img_noisy = noisy_src.images[0]
 
