@@ -538,8 +538,8 @@ class Volume:
 
         # Compute centered Fourier transforms,
         #   upcasting when nessecary.
-        f1 = fft.centered_fftn(self.asnumpy().astype(dtype, copy=False))
-        f2 = fft.centered_fftn(other.asnumpy().astype(dtype, copy=False))
+        f1 = fft.centered_fftn(self.asnumpy()[0].astype(dtype, copy=False))
+        f2 = fft.centered_fftn(other.asnumpy()[0].astype(dtype, copy=False))
 
         correlations = np.zeros(L // 2, dtype=dtype)
         inner_diameter = 0.5 + eps

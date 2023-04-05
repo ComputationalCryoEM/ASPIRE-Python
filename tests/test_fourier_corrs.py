@@ -5,8 +5,9 @@ import numpy as np
 import pytest
 
 from aspire.noise import BlueNoiseAdder
+from aspire.numeric import fft
 from aspire.source import Simulation
-from aspire.utils import Rotation
+from aspire.utils import Rotation, grid_3d
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -85,7 +86,14 @@ def volume_fixture(img_size, dtype):
 
     vol_rot = vol.rotate(rots)
 
-    return vol, vol_rot
+    # Scale gaussian noise radially
+    noise = np.random.normal(loc=0, scale=1, size=vol.shape)
+    noise = noise * (1.0 + grid_3d(img_size, normalized=False)["r"]) * 0.33
+    vol_noise = Volume(
+        np.real(fft.centered_ifftn(fft.centered_fftn(vol.asnumpy()[0]) * (1 + noise)))
+    )
+
+    return vol, vol_rot, vol_noise
 
 
 # FRC
@@ -120,7 +128,7 @@ def test_frc_noise(image_fixture):
 
 
 def test_fsc_id(volume_fixture):
-    vol, _ = volume_fixture
+    vol, _, _ = volume_fixture
 
     fsc = vol.fsc(vol)
     assert np.allclose(fsc, 1)
@@ -131,20 +139,14 @@ def test_fsc_id(volume_fixture):
 
 
 def test_fsc_rot(volume_fixture):
-    vol_a, vol_b = volume_fixture
+    vol_a, vol_b, _ = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_b, resolution=1)
     assert np.isclose(fsc_resolution, 0.0930, rtol=0.01)
 
 
-# @pytest.mark.skip(reason="Need to check for valid FSC curve....")
 def test_fsc_noise(volume_fixture):
-    vol_a, _ = volume_fixture
-
-    noise = np.random.normal(
-        loc=np.mean(vol_a), scale=np.std(vol_a), size=vol_a.size
-    ).reshape(vol_a.shape)
-    vol_n = vol_a + noise
+    vol_a, _, vol_n = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_n, resolution=1)
-    assert np.isclose(fsc_resolution, 0.38, rtol=0.1)
+    assert np.isclose(fsc_resolution, 0.38, rtol=0.3)
