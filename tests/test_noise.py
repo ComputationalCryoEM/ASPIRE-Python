@@ -8,7 +8,9 @@ import pytest
 from aspire.image import Image
 from aspire.noise import (
     AnisotropicNoiseEstimator,
+    BlueNoiseAdder,
     CustomNoiseAdder,
+    PinkNoiseAdder,
     WhiteNoiseAdder,
     WhiteNoiseEstimator,
 )
@@ -26,6 +28,12 @@ DTYPES = [np.float32, np.float64]
 VARS = [0.1] + [
     pytest.param(10 ** (-x), marks=pytest.mark.expensive) for x in range(2, 5)
 ]
+
+
+def _noise_function(x, y):
+    f = np.exp(-(x * x + y * y) / (2 * 0.3**2))
+    m = np.mean(f)
+    return f / m
 
 
 def sim_fixture_id(params):
@@ -58,17 +66,6 @@ def sim_fixture(request):
 )
 def adder(request):
     return request.param
-
-
-# Create the custom noise function and associated Filter
-def _pinkish_spectrum(x, y):
-    """
-    Util method for generating a pink like noise spectrum.
-    """
-    s = x[-1] - x[-2]
-    f = 2 * s / (np.hypot(x, y) + s)
-    m = np.mean(f)
-    return f / m
 
 
 def test_white_noise_estimator_clean_corners(sim_fixture):
@@ -130,7 +127,7 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
     by generating a sample of the noise.
     """
 
-    custom_filter = FunctionFilter(f=_pinkish_spectrum) * ScalarFilter(
+    custom_filter = FunctionFilter(f=_noise_function) * ScalarFilter(
         value=target_noise_variance
     )
 
@@ -209,18 +206,39 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
 @pytest.mark.parametrize(
     "target_noise_variance", VARS, ids=lambda param: f"var={param}"
 )
+def test_blue_iso_noise_estimation(sim_fixture, target_noise_variance):
+    """
+    Test that prescribing isotropic blue-ish noise
+    is close to target for a variety of paramaters.
+    """
+
+    # Create the CustomNoiseAdder
+    sim_fixture.noise_adder = BlueNoiseAdder(var=target_noise_variance)
+
+    # TODO, potentially remove or change to Isotropic after #842
+    # Compare with AnisotropicNoiseEstimator consuming sim_from_snr
+    noise_estimator = AnisotropicNoiseEstimator(sim_fixture, batchSize=512)
+    est_noise_variance = noise_estimator.estimate()
+    logger.info(
+        "est_noise_variance, target_noise_variance ="
+        f" {est_noise_variance}, {target_noise_variance}"
+    )
+
+    # Check we're within 5%
+    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)
+
+
+@pytest.mark.parametrize(
+    "target_noise_variance", VARS, ids=lambda param: f"var={param}"
+)
 def test_pink_iso_noise_estimation(sim_fixture, target_noise_variance):
     """
     Test that prescribing isotropic pink-ish noise
     is close to target for a variety of paramaters.
     """
 
-    custom_filter = FunctionFilter(f=_pinkish_spectrum) * ScalarFilter(
-        value=target_noise_variance
-    )
-
     # Create the CustomNoiseAdder
-    sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
+    sim_fixture.noise_adder = PinkNoiseAdder(var=target_noise_variance)
 
     # TODO, potentially remove or change to Isotropic after #842
     # Compare with AnisotropicNoiseEstimator consuming sim_from_snr
