@@ -2,7 +2,8 @@
 Class Averaging
 ===============
 
-We demonstrate class averaging using the rotationally invariant representation algorithm.
+We demonstrate class averaging using the rotationally invariant
+representation algorithm.
 """
 
 import logging
@@ -11,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as PILImage
 
-from aspire.classification import RIRClass2D, TopClassSelector
+from aspire.denoising import DebugClassAvgSource, DefaultClassAvgSource
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
 from aspire.utils import gaussian_2d
@@ -68,7 +69,8 @@ plt.show()
 # Example Data Set Source
 # ^^^^^^^^^^^^^^^^^^^^^^^
 #
-# We concatenate and shuffle 512 rotations of the Gaussian images above to create our data set.
+# We concatenate and shuffle 512 rotations of the Gaussian images
+# above to create our data set.
 
 # How many entries (angles) in our stack
 N = 512
@@ -85,42 +87,51 @@ for i, theta in enumerate(thetas):
     classYOvalL[i] = np.asarray(PILImage.fromarray(yoval_discL).rotate(theta))
     classYOvalR[i] = np.asarray(PILImage.fromarray(yoval_discR).rotate(theta))
 
-# We'll make an example data set by concatentating then shuffling these.
+# We'll make an example data set by concatentating then shuffling
+# these.
 example_array = np.concatenate((classRound, classOval, classYOvalL, classYOvalR))
 np.random.seed(1234567)
 np.random.shuffle(example_array)
 
-# So now that we have cooked up an example dataset, lets create an ASPIRE source
+# So now that we have cooked up an example dataset, lets create an
+# ASPIRE source
 src = ArrayImageSource(example_array)
 
 # Let's peek at the images to make sure they're shuffled up nicely
 src.images[:10].show()
 
 # %%
-# Class Average
-# -------------
+# Basic Class Average
+# -------------------
 #
-# We use the ASPIRE ``RIRClass2D`` class to classify the images via the rotationally invariant representation (RIR)
-# algorithm. We then yield class averages by performing ``classify``.
+# This first example uses the ``DebugClassAvgSource`` to classify
+# images via the rotationally invariant representation
+# (``RIRClass2D``) algorithm.  ``DebugClassAvgSource`` internally uses
+# ``TopClassSelector`` by default.  ``TopClassSelector``
+# deterministically selects the first ``n_classes``.
+# ``DebugClassAvgSource`` also uses brute force rotational alignment
+# without shifts.  These simplifications are useful for development
+# and debugging.  Later we will discuss the more general
+# ``ClassAvgSource`` and the modular components that are more suitable
+# to simulations and experimental datasets.
 
-rir = RIRClass2D(
-    src,
-    fspca_components=400,
-    bispectrum_components=300,  # Compressed Features after last PCA stage.
+avgs = DebugClassAvgSource(
+    src=src,
     n_nbor=10,
-    n_classes=10,
-    large_pca_implementation="legacy",
-    nn_implementation="legacy",
-    bispectrum_implementation="legacy",
     num_procs=1,  # Change to "auto" if your machine has many processors
 )
 
-classes, reflections, dists = rir.classify()
-avgs = rir.averages(classes, reflections, dists)
+# %%
+# .. note:
+#     ``ClassAvgSource``s are lazily evaluated.
+#     They will generally compute the classifications, selections,
+#     and serve averaged results on request using the `.images[...]`.
+
 
 # %%
 # Display Classes
 # ^^^^^^^^^^^^^^^
+# Now we will request the first 10 images and display them.
 
 avgs.images[:10].show()
 
@@ -152,31 +163,23 @@ noisy_src.images[:10].show()
 # %%
 # RIR with Noise
 # ^^^^^^^^^^^^^^
-# This also demonstrates changing the Nearest Neighbor search to using
-# scikit-learn, and using ``TopClassSelector``.``TopClassSelector``
-# will deterministically select the first ``n_classes``.  This is useful
-# for development and debugging.  By default ``RIRClass2D`` uses a
-# ``RandomClassSelector``.
+# Here we will use the noise_src.
 
-noisy_rir = RIRClass2D(
-    noisy_src,
-    fspca_components=400,
-    bispectrum_components=300,
+avgs = DebugClassAvgSource(
+    src=noisy_src,
     n_nbor=10,
-    n_classes=10,
-    selector=TopClassSelector(),
-    large_pca_implementation="legacy",
-    nn_implementation="sklearn",
-    bispectrum_implementation="legacy",
     num_procs=1,  # Change to "auto" if your machine has many processors
 )
-
-classes, reflections, dists = noisy_rir.classify()
-avgs = noisy_rir.averages(classes, reflections, dists)
 
 # %%
 # Display Classes
 # ^^^^^^^^^^^^^^^
+# Here, on request for images, the class average source will classify,
+# select, and average images.  All this occurs inside the
+# ``ClassAvgSource`` components.  When using more advanced class
+# average sources, the images are remapped by the `selector`.  In this
+# case, using ``DebugClassAvgSource`` the first 10 images will simply
+# correspond to the first ten from ``noise_src``.
 
 avgs.images[:10].show()
 
@@ -185,34 +188,49 @@ avgs.images[:10].show()
 # Review a class
 # --------------
 #
-# Select a class to review.
+# Select a class to review in the output.
 
 review_class = 5
 
-# Display the original image.
-noisy_src.images[review_class].show()
+# Map this image from the sorted selection back to the input
+# ``noisy_src``.
 
-# Report the identified neighbor indices
-logger.info(f"Class {review_class}'s neighors: {classes[review_class]}")
+# Report the identified neighbor indices with respect to the input
+# ``noise_src``.
+classes = avgs.class_indices[review_class]
+reflections = avgs.class_refl[review_class]
+logger.info(f"Class {review_class}'s neighors: {classes}")
+logger.info(f"Class {review_class}'s reflections: {reflections}")
 
-# Report the identified neighbors
-noisy_src.images[classes[review_class]].show()
+# The original image is the initial image in the class array.
+original_image_idx = classes[0]
 
+# %%
+# Report the identified neighbors, original is the first image.
+
+noisy_src.images[classes].show()
+
+# %%
+# Display original image.
+
+noisy_src.images[original_image_idx].show()
+
+# %%
 # Display the averaged result
 avgs.images[review_class].show()
 
 # %%
 # Alignment Details
-# -----------------
+# ^^^^^^^^^^^^^^^^^
 #
-# Alignment details are exposed when avaialable from an underlying ``averager``.
-# In this case, we'll get the estimated alignments for the ``review_class``.
-# These alignment arrays are indexed the same as ``classes``,
-# having shape (n_classes, n_nbor).
+# Alignment details are exposed when available from an underlying
+# ``averager``.  In this case, we'll get the estimated alignments for
+# the ``review_class``.
 
-est_rotations = noisy_rir.averager.rotations[review_class]
-est_shifts = noisy_rir.averager.shifts[review_class]
-est_correlations = noisy_rir.averager.correlations[review_class]
+
+est_rotations = avgs.averager.rotations
+est_shifts = avgs.averager.shifts
+est_correlations = avgs.averager.correlations
 
 logger.info(f"Estimated Rotations: {est_rotations}")
 logger.info(f"Estimated Shifts: {est_shifts}")
@@ -221,16 +239,17 @@ logger.info(f"Estimated Correlations: {est_correlations}")
 # Compare the original unaligned images with the estimated alignment.
 # Get the indices from the classification results.
 nbr = 3
-original_img_0_idx = classes[review_class][0]
-original_img_nbr_idx = classes[review_class][nbr]
+original_img_0_idx = classes[0]
+original_img_nbr_idx = classes[nbr]
 
 # Lookup the images.
 original_img_0 = noisy_src.images[original_img_0_idx].asnumpy()[0]
 original_img_nbr = noisy_src.images[original_img_nbr_idx].asnumpy()[0]
 
 # Rotate using estimated rotations.
-angle = est_rotations[nbr] * 180 / np.pi
-if reflections[review_class][nbr]:
+angle = est_rotations[0, nbr] * 180 / np.pi
+if reflections[nbr]:
+    logger.info("Reflection reported.")
     original_img_nbr = np.flipud(original_img_nbr)
 rotated_img_nbr = np.asarray(PILImage.fromarray(original_img_nbr).rotate(angle))
 
@@ -251,3 +270,24 @@ plt.imshow(rotated_img_nbr)
 plt.xlabel(f"Img {nbr} rotated {angle:.4}*")
 plt.tight_layout()
 plt.show()
+
+
+# %%
+# ClassAvgSource Components
+# -------------------------
+# For more realistic simulations and experimental data,
+# ASPIRE provides a wholly customizable base ``ClassAvgSource``
+# class. This class expects a user to instantiate and provide
+# all components required for class averaging.
+#
+# To make things easier a practical starting point
+# ``DefaultClassAvgSource`` is provided which fills in reasonable
+# defaults based on what is available in the current ASPIRE-Python.
+# The defaults can be overridden simply by instantiating your own
+# instances of components and passing during initialization.
+
+# Using the defaults requires only passing a source.
+# After understanding the various components that can be
+# combined in a ``ClassAvgSource``, they can be customized
+# or easily extended.
+avg_src = DefaultClassAvgSource(noisy_src)

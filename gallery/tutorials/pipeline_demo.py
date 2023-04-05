@@ -3,15 +3,16 @@
 Ab-initio Pipeline Demonstration
 ================================
 
-This tutorial demonstrates some key components of an ab-initio reconstruction pipeline using
-synthetic data generated with ASPIRE's ``Simulation`` class of objects.
+This tutorial demonstrates some key components of an ab-initio
+reconstruction pipeline using synthetic data generated with ASPIRE's
+``Simulation`` class of objects.
 """
 
 # %%
 # Download a Volume
 # -----------------
-# We begin by downloading a high resolution volume map of the 80S Ribosome, sourced from
-# EMDB: https://www.ebi.ac.uk/emdb/EMD-2660.
+# We begin by downloading a high resolution volume map of the 80S
+# Ribosome, sourced from EMDB: https://www.ebi.ac.uk/emdb/EMD-2660.
 
 import logging
 import os
@@ -60,17 +61,20 @@ vol = original_vol.downsample(res)
 # %%
 # Create a Simulation Source
 # --------------------------
-# ASPIRE's ``Simulation`` class can be used to generate a synthetic dataset of projection images.
-# A ``Simulation`` object produces random projections of a supplied Volume and applies noise and
-# CTF filters. The resulting stack of 2D images is stored in an ``Image`` object.
+# ASPIRE's ``Simulation`` class can be used to generate a synthetic
+# dataset of projection images.  A ``Simulation`` object produces
+# random projections of a supplied Volume and applies noise and CTF
+# filters. The resulting stack of 2D images is stored in an ``Image``
+# object.
 
 
 # %%
 # CTF Filters
 # ^^^^^^^^^^^^^^^^^^^^^
-# Let's start by creating CTF filters. The ``operators`` package contains a collection
-# of filter classes that can be supplied to a ``Simulation``.
-# We use ``RadialCTFFilter`` to generate a set of CTF filters with various defocus values.
+# Let's start by creating CTF filters. The ``operators`` package
+# contains a collection of filter classes that can be supplied to a
+# ``Simulation``.  We use ``RadialCTFFilter`` to generate a set of CTF
+# filters with various defocus values.
 
 # Create CTF filters
 from aspire.operators import RadialCTFFilter
@@ -85,17 +89,19 @@ ctf_filters = [
     for d in np.linspace(defocus_min, defocus_max, defocus_ct)
 ]
 
-
 # %%
 # Initialize Simulation Object
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# We feed our ``Volume`` and filters into ``Simulation`` to generate the dataset of images.
-# When controlled white Gaussian noise is desired, ``WhiteNoiseAdder.from_snr()``
-# can be used to generate a simulation data set around a specific SNR.
+# We feed our ``Volume`` and filters into ``Simulation`` to generate
+# the dataset of images.  When controlled white Gaussian noise is
+# desired, ``WhiteNoiseAdder.from_snr()`` can be used to generate a
+# simulation data set around a specific SNR.
 #
-# Alternatively, users can bring their own images using an ``ArrayImageSource``,
-# or define their own custom noise functions via ``Simulation(..., noise_adder=CustomNoiseAdder(...))``.
-# Examples can be found in ``tutorials/class_averaging.py`` and ``experiments/simulated_abinitio_pipeline.py``.
+# Alternatively, users can bring their own images using an
+# ``ArrayImageSource``, or define their own custom noise functions via
+# ``Simulation(..., noise_adder=CustomNoiseAdder(...))``.  Examples
+# can be found in ``tutorials/class_averaging.py`` and
+# ``experiments/simulated_abinitio_pipeline.py``.
 
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
@@ -103,10 +109,15 @@ from aspire.source import Simulation
 # set parameters
 res = 41
 n_imgs = 2500
-# SNR target for white gaussian noise
-# Note, the SNR value was chosen based on other parameters for this quick tutorial,
-# and can be changed to adjust the power of the additive noise.
+
+# SNR target for white gaussian noise.
 snr = 0.5
+
+# %%
+# .. note::
+#   Note, the SNR value was chosen based on other parameters for this
+#   quick tutorial, and can be changed to adjust the power of the
+#   additive noise.
 
 # For this ``Simulation`` we set all 2D offset vectors to zero,
 # but by default offset vectors will be randomly distributed.
@@ -150,10 +161,14 @@ src.images[0:10].show()
 # %%
 # Class Averaging
 # ---------------
-# We use ``RIRClass2D`` object to classify the images via the rotationally invariant
-# representation (RIR) algorithm. Class selection is customizable. The classification module
-# also includes a set of protocols for selecting a set of images to be used for classification.
-# Here we're using ``TopClassSelector``, which selects the first ``n_classes`` images from the source.
+# We use ``RIRClass2D`` object to classify the images via the
+# rotationally invariant representation (RIR) algorithm. Class
+# selection is customizable. The classification module also includes a
+# set of protocols for selecting a set of images to be used for
+# classification.  Here we're using ``TopClassSelector``, which
+# selects the first ``n_classes`` images from the source.  In
+# practice, the selection is done by sorting class averages based on
+# some configurable notion of quality.
 
 from aspire.classification import RIRClass2D, TopClassSelector
 
@@ -161,21 +176,25 @@ from aspire.classification import RIRClass2D, TopClassSelector
 n_classes = 200
 n_nbor = 6
 
-# Create a class averaging instance. Note that the ``fspca_components`` and
-# ``bispectrum_components`` were selected for this small tutorial.
+# We will customize our class averaging source. Note that the
+# ``fspca_components`` and ``bispectrum_components`` were selected for
+# this small tutorial.
 rir = RIRClass2D(
     src,
     fspca_components=40,
     bispectrum_components=30,
     n_nbor=n_nbor,
-    n_classes=n_classes,
-    selector=TopClassSelector(),
-    num_procs=1,  # Change to "auto" if your machine has many processors
 )
 
-# classify and average
-classes, reflections, distances = rir.classify()
-avgs = rir.averages(classes, reflections, distances)
+from aspire.denoising import DebugClassAvgSource
+
+avgs = DebugClassAvgSource(
+    src=src,
+    classifier=rir,
+)
+
+# We'll continue our pipeline with the first ``n_classes`` from ``avgs``.
+avgs = avgs[:n_classes]
 
 
 # %%
@@ -187,22 +206,25 @@ avgs.images[0:10].show()
 
 # %%
 
-# Show original images corresponding to those classes. This 1:1 comparison is only expected to
-# work because we used ``TopClassSelector`` to classify our images.
+# Show original images corresponding to those classes. This 1:1
+# comparison is only expected to work because we used
+# ``TopClassSelector`` to classify our images.
 src.images[0:10].show()
 
 
 # %%
 # Orientation Estimation
 # ----------------------
-# We initialize a ``CLSyncVoting`` class instance for estimating the orientations of the images.
-# The estimation employs the common lines method with synchronization and voting.
+# We initialize a ``CLSyncVoting`` class instance for estimating the
+# orientations of the images.  The estimation employs the common lines
+# method with synchronization and voting.
 
 from aspire.abinitio import CLSyncVoting
 
 # Stash true rotations for later comparison
 true_rotations = src.rotations[:n_classes]
 
+# Run orientation estimation on ``avgs``.
 orient_est = CLSyncVoting(avgs, n_theta=72)
 
 # Get the estimated rotations
@@ -213,8 +235,9 @@ rots_est = orient_est.rotations
 # %%
 # Mean Squared Error
 # ------------------
-# ASIPRE has some built-in utility functions for globally aligning the estimated rotations
-# to the true rotations and computing the mean squared error.
+# ASPIRE has some built-in utility functions for globally aligning the
+# estimated rotations to the true rotations and computing the mean
+# squared error.
 
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
@@ -232,8 +255,9 @@ mse_reg
 # %%
 # Volume Reconstruction
 # ---------------------
-# Now that we have our class averages and rotation estimates, we can estimate the
-# mean volume by supplying the class averages and basis for back projection.
+# Now that we have our class averages and rotation estimates, we can
+# estimate the mean volume by supplying the class averages and basis
+# for back projection.
 
 from aspire.basis import FFBBasis3D
 from aspire.reconstruction import MeanEstimator
@@ -254,14 +278,16 @@ estimated_volume = estimator.estimate()
 # %%
 # Comparison of Estimated Volume with Source Volume
 # -------------------------------------------------
-# To get a visual confirmation that our results are sane, we rotate the
-# estimated volume by the estimated rotations and project along the z-axis.
-# These estimated projections should align with the original projection images.
+# To get a visual confirmation that our results are sane, we rotate
+# the estimated volume by the estimated rotations and project along
+# the z-axis.  These estimated projections should align with the
+# original projection images.
 
 from aspire.source import ArrayImageSource
 
-# Get projections from the estimated volume using the estimated orientations.
-# We instantiate the projections as an ``ArrayImageSource`` to access the ``Image.show()`` method.
+# Get projections from the estimated volume using the estimated
+# orientations.  We instantiate the projections as an
+# ``ArrayImageSource`` to access the ``Image.show()`` method.
 projections_est = ArrayImageSource(estimated_volume.project(0, rots_est))
 
 # We view the first 10 projections of the estimated volume.
