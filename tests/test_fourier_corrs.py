@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pytest
 
+from aspire.noise import BlueNoiseAdder
 from aspire.source import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
@@ -53,7 +54,13 @@ def image_fixture(img_size, dtype):
 
     img, img_rot = src.images[:]
 
-    return img, img_rot
+    noisy_src = Simulation(
+        L=img_size, n=2, vols=v, offsets=0, amplitudes=1, C=1, angles=rots.angles,
+        noise_adder=BlueNoiseAdder(var=np.var(img.asnumpy()*0.5)),
+    )
+    img_noisy = noisy_src.images[0]
+
+    return img, img_rot, img_noisy
 
 
 @pytest.fixture
@@ -79,7 +86,7 @@ def volume_fixture(img_size, dtype):
 
 
 def test_frc_id(image_fixture):
-    img, _ = image_fixture
+    img, _, _ = image_fixture
 
     frc = img.frc(img)
     assert np.allclose(frc, 1)
@@ -90,20 +97,14 @@ def test_frc_id(image_fixture):
 
 
 def test_frc_rot(image_fixture):
-    img_a, img_b = image_fixture
+    img_a, img_b, _ = image_fixture
 
     frc_resolution, frc = img_a.frc(img_b, resolution=1)
     assert np.isclose(frc_resolution, 0.031, rtol=0.01)
 
 
-# @pytest.mark.skip(reason="Need to check for valid FRC curve....")
 def test_frc_noise(image_fixture):
-    img_a, _ = image_fixture
-
-    noise = np.random.normal(
-        loc=np.mean(img_a), scale=0.5 * np.std(img_a), size=img_a.size
-    ).reshape(img_a.shape)
-    img_n = img_a + noise
+    img_a, _, img_n = image_fixture
 
     frc_resolution, frc = img_a.frc(img_n, resolution=1)
     assert np.isclose(frc_resolution, 0.3, rtol=0.3)
