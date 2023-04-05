@@ -16,6 +16,7 @@ linear and nonlinear dimensionality reduction, randomized algorithms in numerica
 
    installation
    quickstart
+   class_source
    modules
    authors
 
