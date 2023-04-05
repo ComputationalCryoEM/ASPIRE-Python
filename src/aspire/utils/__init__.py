@@ -30,7 +30,7 @@ from .misc import (  # isort:skip
     fuzzy_mask,
 )
 
-from .logging import get_full_version, tqdm, trange
+from .logging import LogFilterByCount, get_full_version, tqdm, trange
 from .matrix import (
     acorr,
     ainner,

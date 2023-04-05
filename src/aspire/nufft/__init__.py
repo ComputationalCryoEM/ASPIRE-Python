@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from aspire import config
-from aspire.utils import complex_type, real_type
+from aspire.utils import LogFilterByCount, complex_type, real_type
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ def check_backends(raise_errors=True):
         If imports are working but the actual backend is not then we have bigger problems anyway.
         """
 
-        logger.info(f"Trying NFFT backend {backend}")
+        logger.debug(f"Trying NFFT backend {backend}")
         plan_class = None
         msg = None
         if backend == "cufinufft":
@@ -80,16 +80,16 @@ def check_backends(raise_errors=True):
                 msg = str(e)
 
         if plan_class is None:
-            logger.info(f"NFFT backend {backend} not usable:\n\t{msg}")
+            logger.debug(f"NFFT backend {backend} not usable:\n\t{msg}")
         else:
-            logger.info(f"NFFT backend {backend} usable.")
+            logger.debug(f"NFFT backend {backend} usable.")
             return plan_class
 
     # Note this dictionary is intentionally ordered
     backends = {k: _try_backend(k) for k in config["nufft"]["backends"].as_str_seq()}
     try:
         default_backend = next(k for k, v in backends.items() if v is not None)
-        logger.info(f"Selected NFFT backend = {default_backend}.")
+        logger.debug(f"Selected NFFT backend = {default_backend}.")
         default_plan_class = backends[default_backend]
     except StopIteration:
         msg = "No usable NFFT backend detected."
@@ -134,7 +134,9 @@ class Plan:
             else:
                 # If a Plan was constructed as a generic Plan(), use the default (best) Plan class
                 if default_plan_class is None:
-                    check_backends(raise_errors=True)
+                    # Limit log noise to once
+                    with LogFilterByCount(logger, 1):
+                        check_backends(raise_errors=True)
                 return super(Plan, cls).__new__(default_plan_class)
         else:
             # If a Plan-subclass was constructed directly, invoke default behavior
