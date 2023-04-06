@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 IMG_SIZES = [
     64,
-    #    65,
+    65,
 ]
 DTYPES = [
     np.float64,
-    #    np.float32,
+    np.float32,
 ]
 
 
@@ -45,7 +45,7 @@ def image_fixture(img_size, dtype):
     ).downsample(img_size)
 
     # Instantiate ASPIRE's Rotation class with a set of angles.
-    thetas = [0, 1.23]
+    thetas = [0, 0.123]
     rots = Rotation.about_axis("z", thetas, dtype=dtype)
 
     # Contruct the Simulation source.
@@ -111,7 +111,7 @@ def test_frc_rot(image_fixture):
     img_a, img_b, _ = image_fixture
 
     frc_resolution, frc = img_a.frc(img_b, pixel_size=1)
-    assert np.isclose(frc_resolution[0][0], 1 / 0.031, rtol=0.01)
+    assert np.isclose(frc_resolution[0][0], 3.76, rtol=0.01)
 
 
 def test_frc_noise(image_fixture):
