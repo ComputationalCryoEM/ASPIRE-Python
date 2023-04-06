@@ -8,5 +8,5 @@ API Introduction
 ----------------
 
 Newcomers should start here to get an overview of ASPIRE's primitive
-structures and interfaces, building up to a short Simulated Abinitio
-Pipeline.
+structures and interfaces, building up to a short simulated ab-initio
+pipeline.

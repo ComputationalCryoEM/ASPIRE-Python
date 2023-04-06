@@ -386,7 +386,7 @@ src.images[:3].show()
 # %%
 # CTFFIND4: External Validation
 # -----------------------------
-# CTFFIND4 is often used by other CryoEM distributions,
+# CTFFIND4 is often used by other cryo-EM distributions,
 # and was used to confirm the forward CTF filter model of ASPIRE.
 # For transparency, an example run using the ``test_img.mrc``
 # generated earlier is documented.

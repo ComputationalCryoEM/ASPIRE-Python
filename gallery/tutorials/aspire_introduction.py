@@ -4,7 +4,7 @@ ASPIRE-Python Introduction
 
 In this notebook we will introduce the core API components, then
 demonstrate basic usage corresponding to topics from Princeton's
-MATH586.
+MAT586.
 """
 
 # %%
@@ -15,7 +15,7 @@ MATH586.
 # Anaconda Python, by following the instructions in the README.  `The
 # instructions for developers is the most comprehensive
 # <https://github.com/ComputationalCryoEM/ASPIRE-Python/blob/master/README.md#for-developers>`_.
-# Windows is provided, but generally Linux and OSX are recommended,
+# Windows is provided, but generally Linux and MacOS are recommended,
 # with Linux being the most diversely tested platform.
 #
 
@@ -26,7 +26,7 @@ MATH586.
 # typical data science codes on your machine (a netbook for example),
 # you may use Tiger/Adroit/Della at Princeton or another cluster.
 # After logging into Tiger, ``module load anaconda3/2020.7`` and
-# continue to follow the anaconda instructions for developers in the
+# continue to follow the Anaconda instructions for developers in the
 # link above.  Those instructions should create a working environment
 # for tinkering with ASPIRE code found in this notebook.
 
@@ -37,7 +37,6 @@ MATH586.
 # Along the way we will import relevant components from ``aspire``.
 # Users may also import ``aspire`` once as a top level package.
 
-import logging
 import os
 
 import matplotlib.pyplot as plt
@@ -73,7 +72,7 @@ from aspire.image import Image
 #    * - ``Basis``
 #      - Basis conversions and operations.
 #    * - ``Source``
-#      - Produces primitive components. ``ImageSource`` produces ``Images``.
+#      - Produces primitive components. ``ImageSource`` produces ``Image`` instances.
 
 
 # %%
@@ -85,15 +84,15 @@ from aspire.image import Image
 # class is a thin wrapper over Numpy arrays for a stack containing 1
 # or more images (2D data).  In this notebook we won't be working
 # directly with the ``Image`` class a lot, but it will be one of the
-# fundemental structures behind the scenes.  A lot of ASPIRE code
+# fundamental structures behind the scenes.  A lot of ASPIRE code
 # passes around ``Image`` and ``Volume`` instances.
 
 # %%
 # Create an ``Image`` instance from random data.
 img_data = np.random.random((100, 100))
 img = Image(img_data)
-logging.info(f"img shape: {img.shape}")  # Note this produces a stack of 1.
-logging.info(f"str(img): {img}")  # Note this produces a stack of 1.
+print(f"img shape: {img.shape}")  # Note this produces a stack of one.
+print(f"str(img): {img}")
 
 # %%
 # Create an Image for a stack of 3 100x100 images.
@@ -130,7 +129,7 @@ img.show()
 # Like ``Image``, the `Volume
 # <https://computationalcryoem.github.io/ASPIRE-Python/aspire.volume.html#aspire.volume.Volume>`_
 # class is a thin wrapper over Numpy arrays that provides specialized
-# methods for a stack containing 1 or more volumes (3D data).
+# methods for a stack containing one or more volumes (3D data).
 
 from aspire.volume import Volume
 
@@ -143,22 +142,22 @@ from aspire.volume import Volume
 # ``Volumes`` ``.map`` and ``.mrc`` are currently supported.  For
 # ``.npy`` Numpy can be used.
 
-# A low res example file is included in the repo as a sanity check.
+# A low-resolution example file is included in the repo as a sanity check.
 # We can instantiate this as an ASPIRE Volume instance using
 # ``Volume.load()``.
 file_path = os.path.join(os.getcwd(), "data", "clean70SRibosome_vol_65p.mrc")
-v = Volume.load(file_path)
+vol = Volume.load(file_path)
 
 # %%
 # More interesting data requires downloading locally.  A common
 # starting dataset can be downloaded from EMDB at
 # `<https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.  After
 # downloading the associated `map` file, unzip in local directory.  To
-# simplify things, this notebook defaults to a small low resolution
+# simplify things, this notebook defaults to a small low-resolution
 # sample file instead.  Unfortunately real data can be quite large so
 # we do not ship it with the repo.
 
-# v = Volume.load("path/to/EMD-2660/map/emd_2660.map")
+# vol = Volume.load("path/to/EMD-2660/map/emd_2660.map")
 
 # %%
 # Downsample Volume
@@ -170,18 +169,18 @@ img_size = 32
 
 # Volume.downsample() returns a new Volume instance.
 #   We will use this lower resolution volume later, calling it `v2`.
-v2 = v.downsample(img_size)
+vol_ds = vol.downsample(img_size)
 # L is often used as short hand for image and volume sizes (in pixels/voxels).
-L = v2.resolution
+L = vol_ds.resolution
 
 # %%
 # Plot Data
 # """""""""
 # For quick sanity checking purposes we can view some plots.
 #   We'll use three orthographic projections, one per axis.
-orthographic_projections = np.empty((3, L, L), dtype=v2.dtype)
+orthographic_projections = np.empty((3, L, L), dtype=vol_ds.dtype)
 for i in range(3):
-    orthographic_projections[i] = np.sum(v2, axis=(0, i + 1))
+    orthographic_projections[i] = np.sum(vol_ds, axis=(0, i + 1))
 Image(orthographic_projections).show()
 
 # %%
@@ -195,9 +194,9 @@ Image(orthographic_projections).show()
 # rotations (ie, axis-angle).  Other ASPIRE components dealing with 3D
 # rotations will generally expect instances of ``Rotation``.
 #
-# A common task in Computational CryoEM is generating random
-# projections, which can be achieved by applying random 3D
-# rotations. The following code will generate some random rotations,
+# A common task in computational cryo-EM is generating random
+# projections, by applying random 3D rotations to a volume and projecting along the z-axis.
+# The following code will generate some random rotations,
 # and use the ``Volume.project()`` method to return an ``Image``
 # instance representing the stack of projections.  We can display
 # projection images using the ``Image.show()`` method.
@@ -209,14 +208,14 @@ rots = Rotation.generate_random_rotations(n=num_rotations, seed=12345)
 
 # %%
 # We can access the Numpy array holding the actual stack of 3x3 matrices:
-logging.info(rots)
-logging.info(rots.matrices)
+print(rots)
+print(rots.matrices)
 
 # %%
 # Using the zero-th (and in this case, only) volume, compute
 # projections using the stack of rotations:
-projections = v.project(0, rots)
-logging.info(projections)
+projections = vol.project(0, rots)
+print(projections)
 
 # %%
 # ``project()`` returns an Image instance, so we can call ``show``.
@@ -225,7 +224,7 @@ projections.show()
 # %%
 # Neat, we've generated random projections of some real data.  This
 # tutorial will go on to show how this can be performed systematically with
-# other Computational CryoEM data simulation tasks.
+# other cryo-EM data simulation tasks.
 
 # %%
 # The ``filter`` Package
@@ -234,7 +233,9 @@ projections.show()
 # <https://computationalcryoem.github.io/ASPIRE-Python/aspire.operators.html#module-aspire.operators.filters>`_
 # are a collection of classes which once configured can be applied to
 # ``Images``, typically in an ``ImageSource`` pipeline which will be
-# discussed in a later section.
+# discussed in a later section.  Specifically, applying a ``Filter``
+# convolves the filter with the images contained in the ``Image``
+# instance.
 
 # %%
 #
@@ -250,12 +251,7 @@ projections.show()
 #            +sign()
 #         }
 #
-#         Filter o-- DualFilter
 #         Filter o-- FunctionFilter
-#         Filter o-- PowerFilter
-#         Filter o-- LambdaFilter
-#         Filter o-- MultiplicativeFilter
-#         Filter o-- ScaledFilter
 #         Filter o-- ArrayFilter
 #         Filter o-- ScalarFilter
 #         Filter o-- ZeroFilter
@@ -266,33 +262,36 @@ projections.show()
 # %%
 # ``CTFFilter`` and ``RadialCTFFilter`` are the most common filters
 # encountered when starting out and are detailed in
-# :ref:`sphx_glr_auto_tutorials_tutorials_ctf.py` The other filters
+# :ref:`sphx_glr_auto_tutorials_tutorials_ctf.py`.  The other filters
 # are used behind the scenes in components like ``NoiseAdders`` or
-# more advanced customized pipelines.
+# more advanced customized pipelines.  Several filters for internal or
+# advanced use cases are omitted from the diagram, but can be found in
+# the `aspire.operators.filter` module.
 
 # %%
 # ``Basis``
 # ---------
 # ASPIRE provides a selection of ``Basis`` classes designed for
-# working with CryoEM data in two and three dimensions.  Most of these
-# basis implementations are optimized for efficient rotations, often
-# called the *"Steerable"* property.  As of writing most algorithms in
-# ASPIRE are written to work well with the Fast Fourier Bessel Basis
-# classes ``FFBBasis2D`` and ``FFBBasis3D``.  These correspond to
-# direct slower reference ``FBBasis2D`` and ``FBBasis3D`` methods.
+# working with cryo-EM data in two and three dimensions.  Most of
+# these basis implementations are optimized for efficient rotations,
+# often called the *"steerable"* property.  As of this writing most
+# algorithms in ASPIRE are written to work well with the fast
+# Fourier-Bessel (FFB) basis classes ``FFBBasis2D`` and
+# ``FFBBasis3D``.  These correspond to direct slower reference
+# ``FBBasis2D`` and ``FBBasis3D`` classes.
 #
-# Recently, a related Fourier Bessel method using Fast Laplacian
-# Eigenfunction transforms was integrated as ``FLEBasis2D``.
-# Additional Prolate Spheroidal Wave Function methods are available
-# via ``FPSWFBasis2D`` and ``FPSWFBasis3D``, but their integration
-# into other components like 2D covariance analysis is incomplete, and
-# slated for a future release.
+# Recently, a related Fourier-Bessel method using fast Laplacian
+# eigenfunction (FLE) transforms was integrated as ``FLEBasis2D``.
+# Additional prolate spheroidal wave function (PSWF) methods are
+# available via ``FPSWFBasis2D`` and ``FPSWFBasis3D``, but their
+# integration into other components like 2D covariance analysis is
+# incomplete, and slated for a future release.
 
 # %%
 # The ``source`` Package
 # ----------------------
 #
-# `aspire.source
+# The `aspire.source
 # <https://computationalcryoem.github.io/ASPIRE-Python/aspire.source.html#module-aspire.source.simulation>`_
 # package contains a collection of data source interfaces.
 # Ostensibly, a ``Source`` is a producer of some primitive type, most
@@ -300,10 +299,11 @@ projections.show()
 # are designed to accept an ``ImageSource``.
 #
 # The first reason for this is to normalize the way a wide variety of
-# higher level components interface.  ``ImageSource`` instances have a
-# consistent method ``images`` which must be implemented to serve up
-# images dynamically. This supports batch computation among other
-# things.  ``Source`` instances also store and serve up metadata like
+# higher-level components interface.  ``ImageSource`` instances have a
+# consistent property ``images`` which must be implemented to serve up
+# images dynamically using a square-bracket ``[]`` syntax familiar to
+# Numpy users. This supports batch computation among other things.
+# ``Source`` instances also store and serve up metadata like
 # `rotations`, `dtype`, and support pipelining transformations.
 #
 # The second reason is so we can design an experiment using a
@@ -367,25 +367,25 @@ num_imgs = 100
 
 # %%
 # Generate a Simulation instance based on the original volume data.
-sim = Simulation(n=num_imgs, vols=v)
+sim = Simulation(n=num_imgs, vols=vol)
 # Display the first 10 images
 sim.images[:10].show()  # Hi Res
 
 # %%
-# Repeat for the lower resolution (downsampled) volume v2.
-sim = Simulation(n=num_imgs, vols=v2)
+# Repeat for the lower resolution (downsampled) volume vol_ds.
+sim = Simulation(n=num_imgs, vols=vol_ds)
 sim.images[:10].show()  # Lo Res
 
 # %%
 # Note both of those simulations have the same rotations because they
 # had the same seed by default, We recreate ``sim`` with a distinct
 # seed to get different random samples (of rotations).
-sim = Simulation(n=num_imgs, vols=v2, seed=42)
+sim = Simulation(n=num_imgs, vols=vol_ds, seed=42)
 sim.images[:10].show()
 
 # %%
 # We can also view the rotations used to create these projections.
-logging.info(sim.rotations)
+print(sim.rotations)
 
 # %%
 # Given any ``Source``, we can also take slices using typical slicing
@@ -396,7 +396,7 @@ sim_odds = sim[1::2]
 
 # We can also generate random selections.
 # Shuffle indices then take the first 5.
-shuffled_inds = np.random.permutation(sim.n)[:5]
+shuffled_inds = np.random.choice(sim.n, 5, replace=False)
 sim_shuffled_subset = sim[shuffled_inds]
 
 # %%
@@ -432,9 +432,9 @@ from aspire.noise import WhiteNoiseAdder
 # %%
 # Get the sample variance, then create a NoiseAdder based on that variance.
 var = np.var(sim.images[:].asnumpy())
-logging.info(f"Sample Variance: {var}")
+print(f"Sample Variance: {var}")
 target_noise_variance = 10.0 * var
-logging.info(f"Target Noise Variance: {target_noise_variance}")
+print(f"Target Noise Variance: {target_noise_variance}")
 white_noise_adder = WhiteNoiseAdder(target_noise_variance)
 
 # %%
@@ -447,7 +447,7 @@ white_noise_adder = WhiteNoiseAdder(target_noise_variance)
 # ``seed``.
 
 # Creating the new simulation with this additional noise is easy:
-sim = Simulation(n=num_imgs, vols=v2, noise_adder=white_noise_adder)
+sim = Simulation(n=num_imgs, vols=vol_ds, noise_adder=white_noise_adder)
 # These should be rather noisy now ...
 sim.images[:10].show()
 
@@ -459,7 +459,8 @@ sim.images[:10].show()
 # Lets see how the estimate compares.
 #
 # In this case, we know the noise to be white, so we can proceed directly to
-# `WhiteNoiseEstimator <https://computationalcryoem.github.io/ASPIRE-Python/aspire.noise.html#aspire.noise.noise.WhiteNoiseEstimator>`_.  The noise estimators consume from a ``Source``.
+# `WhiteNoiseEstimator <https://computationalcryoem.github.io/ASPIRE-Python/aspire.noise.html#aspire.noise.noise.WhiteNoiseEstimator>`_.
+# The noise estimators consume from an ``ImageSource``.
 #
 # The white noise estimator should log a diagnostic variance value.
 # Internally, it also uses the estimation results to build a
@@ -490,13 +491,13 @@ def noise_function(x, y):
     return 1e-7 * np.exp(-(x * x + y * y) / (2 * 0.3**2))
 
 
-# In python, functions are first class objects.  We take advantage of
+# In Python, functions are first class objects.  We take advantage of
 # that to pass this function around as a variable.  The function is
 # evaluated later, internally, during pipeline execution.
 custom_noise = CustomNoiseAdder(noise_filter=FunctionFilter(noise_function))
 
 # Create yet another Simulation source to tinker with.
-sim = Simulation(n=num_imgs, vols=v2, noise_adder=custom_noise)
+sim = Simulation(n=num_imgs, vols=vol_ds, noise_adder=custom_noise)
 sim.images[:10].show()
 
 # %%
@@ -528,8 +529,8 @@ sim.images[:10].show()
 # %%
 # Common Image Corruptions
 # ------------------------
-# ``Simulation`` provides several configurable types of common CryoEM
-# image corruptions.  Users should be aware that Amplitude and Offset
+# ``Simulation`` provides several configurable types of common cryo-EM
+# image corruptions.  Users should be aware that amplitude and offset
 # corruption is enabled by default.
 
 # %%
@@ -554,8 +555,8 @@ sim.images[:10].show()
 # CTF
 # ^^^
 # By default, no CTF corruption is configured.
-# To enable, we must configure one or more CTFFilter.
-# Usually we will create a range of CTFFilters for a variety of
+# To enable, we must configure one or more ``CTFFilter`` instances.
+# Usually we will create a range of filters for a variety of
 # defocus levels.
 
 from aspire.operators import RadialCTFFilter
@@ -578,7 +579,7 @@ ctf_filters = [
 
 sim = Simulation(
     n=num_imgs,
-    vols=v2,
+    vols=vol_ds,
     amplitudes=1,
     offsets=0,
     noise_adder=white_noise_adder,
@@ -625,7 +626,7 @@ src = RelionSource(
 src.downsample(img_size)
 
 # %%
-# Relionsource will auto populate ``CTFFilter`` instances from the
+# ``RelionSource`` will auto-populate ``CTFFilter`` instances from the
 # STAR file metadata when available. Having these filters allows us to
 # perform a phase flipping correction.
 src.phase_flip()
@@ -637,18 +638,18 @@ src.images[:10].show()
 # %%
 # Pipeline Roadmap
 # ----------------
-# Now that the primitives have been introduced we can explore higher
-# level components.  The higher level components are designed to be
-# modular and cacheable (to memory or disk) to support experimentation
-# with entire pipelines or focused algorithmic development on specific
-# components.  Most pipelines will follow a flow of data and
-# components moving mostly left to right in the table below.  This
-# table is not exhaustive, but represents some of the most common
-# components.
+# Now that the primitives have been introduced we can explore
+# higher-level components.  The higher-level components are designed
+# to be modular and cacheable (to memory or disk) to support
+# experimentation with entire pipelines or focused algorithmic
+# development on specific components.  Most pipelines will follow a
+# flow of data and components moving mostly left to right in the table
+# below.  This table is not exhaustive, but represents some of the
+# most common components.
 
 # %%
 # +----------------+--------------------+-----------------+----------------+---------------------+
-# |  Image Processing                                     | Abinitio                             |
+# |  Image Processing                                     | Ab initio                             |
 # +----------------+--------------------+-----------------+----------------+---------------------+
 # | Data           | Preprocessing      | Denoising       | Orientation    |  3D Reconstruction  |
 # +================+====================+=================+================+=====================+
@@ -666,7 +667,7 @@ src.images[:10].show()
 # +----------------+--------------------+-----------------+----------------+---------------------+
 
 # %%
-# We're now ready to explore a small example end to end abinitio
+# We're now ready to explore a small example end-to-end ab initio
 # pipeline using simulated data.
 # :ref:`sphx_glr_auto_tutorials_pipeline_demo.py`
 

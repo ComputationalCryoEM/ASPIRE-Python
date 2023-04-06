@@ -4,7 +4,7 @@ Abinitio Pipeline - Experimental Data Empiar 10073
 
 This notebook introduces a selection of
 components corresponding to loading real Relion picked
-particle Cryo-EM data and running key ASPIRE-Python
+particle cryo-EM data and running key ASPIRE-Python
 Abinitio model components as a pipeline.
 
 This demonstrates using the Global BandedSNRImageQualityFunction
