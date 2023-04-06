@@ -486,16 +486,11 @@ class Volume:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
         return cls(loaded_data.astype(dtype))
 
-    def fsc(self, other, resolution=None, cutoff=0.143, eps=1e-4, dtype=None):
+    def fsc(self, other, pixel_size=None, cutoff=0.143, eps=1e-4, dtype=None):
         r"""
         Compute the Fourier shell correlation between two volumes.
 
         Volumes are assumed to be well aligned.
-
-        Stack of both volumes must be `1` and shape of both volumes must match.
-
-        When `resolution` (pixel-size in Angstrom) is provided, returns
-        tuple(`estimated_resolution`,  FSC as a Numpy array).  `estimated_resolution` is 1/Angstrom.
 
         The FSC is defined as:
 
@@ -505,85 +500,30 @@ class Volume:
              \sqrt{ \sum_i { | \mathcal{F}_1(i) |^2 } * \sum_i{| \mathcal{F}^{*}_2}(i) |^2 } }
 
         :param other: `Volume` instance to compare.
-        :param resolution: Optional, pixel-size in Angstrom. #TODO check pixel-size vs 1/A?
-        :param cutoff: Cutoff value, traditionally `1.43`.
+        :param pixel_size: Pixel size in Angstrom.
+            For synthetic data, 1 is a reasonable value.
+        :param cutoff: Cutoff value, traditionally `.143`.
         :param eps: Epsilon past boundary values, defaults 1e-4.
-        :param dtype: Optional, dtype. Defaults to `self.dtype`.
-
-        :return: FSC as Numpy array or tuple(estimated_resolution,  FSC as a Numpy array).
+        :return: tuple(estimated_resolution,  FRC),
+            where `estimated_resolution` is in Angstrom
+            and FRC is a Numpy array of correlations.
         """
-
-        dtype = np.dtype(dtype or self.dtype)
-
-        # When passed resolution, sanity check type.
-        if resolution is not None:
-            resolution = float(resolution)
+        from aspire.reconstruction import FourierShellCorrelation
 
         if not isinstance(other, Volume):
             raise TypeError(
                 f"`other` image must be an `Volume` instance, received {type(other)}"
             )
 
-        if self.shape != other.shape:
-            raise RuntimeError(f"Shapes do not match, {self.shape} != {other.shape}.")
+        fsc = FourierShellCorrelation(
+            a=self.asnumpy(),
+            b=other.asnumpy(),
+            pixel_size=pixel_size,
+            cutoff=cutoff,
+            eps=eps,
+        )
 
-        if self.stack_ndim != 1 or self.n_vols != 1:
-            raise RuntimeError(
-                f"FSC is computed between two singletons, received {self}."
-            )
-
-        # Compute shells from 3D grid.
-        L = self.resolution
-        radii = grid_3d(L, shifted=True, normalized=False, dtype=dtype)["r"]
-
-        # Compute centered Fourier transforms,
-        #   upcasting when nessecary.
-        f1 = fft.centered_fftn(self.asnumpy()[0].astype(dtype, copy=False))
-        f2 = fft.centered_fftn(other.asnumpy()[0].astype(dtype, copy=False))
-
-        correlations = np.zeros(L // 2, dtype=dtype)
-        inner_diameter = 0.5 + eps
-        for i in range(0, L // 2):
-            # Compute shell mask
-            outer_diameter = 0.5 + (i + 1) + eps
-            shell_mask = (radii > inner_diameter) & (radii < outer_diameter)
-            logger.debug(f"Shell, Elements:  {i}, {np.sum(shell_mask)}")
-
-            # Mask off values in Fourier space
-            s1 = shell_mask * f1
-            s2 = shell_mask * f2
-
-            # Compute FSC
-            num = np.real(np.sum(s1 * np.conj(s2)))
-            den = np.sqrt(np.sum(np.abs(s1) ** 2) * np.sum(np.abs(s2) ** 2))
-            # Assign
-            correlations[i] = num / den
-            # Update shell
-            inner_diameter = outer_diameter
-
-        logger.debug(f"FSC: {correlations}")
-        result = correlations
-
-        if resolution is not None:
-            if np.min(correlations) > cutoff:
-                # All correlations are above cutoff
-                c_ind = L // 2  # Index of highest sampled frequency.
-            elif np.max(correlations) < cutoff:
-                # All correlations are below cutoff.
-                c_ind = 0
-            else:
-                # Correlations cross the cutoff.
-                # Find the first index of a correlation at `cutoff`.
-                c_ind = np.argmax(correlations <= cutoff)
-
-            # Convert to frequency
-            c = c_ind * (1 / (L * resolution))
-
-            logger.debug(f"FSC Resolution: {c}")
-            # Construct the result tuple.
-            result = (c, result)
-
-        return result
+        return fsc.estimated_resolution, fsc.correlations
 
 
 class CartesianVolume(Volume):

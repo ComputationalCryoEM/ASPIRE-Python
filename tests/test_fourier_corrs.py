@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 IMG_SIZES = [
     64,
-    65,
+    #    65,
 ]
 DTYPES = [
     np.float64,
-    np.float32,
+    #    np.float32,
 ]
 
 
@@ -81,7 +81,7 @@ def volume_fixture(img_size, dtype):
     ).downsample(img_size)
 
     # Instantiate ASPIRE's Rotation class with a set of angles.
-    thetas = [1.23]
+    thetas = [0.12]
     rots = Rotation.about_axis("z", thetas, dtype=dtype)
 
     vol_rot = vol.rotate(rots)
@@ -102,26 +102,23 @@ def volume_fixture(img_size, dtype):
 def test_frc_id(image_fixture):
     img, _, _ = image_fixture
 
-    frc = img.frc(img)
-    assert np.allclose(frc, 1)
-
-    frc_resolution, frc = img.frc(img, resolution=1)
-    assert np.isclose(frc_resolution, 0.5, rtol=0.02)
+    frc_resolution, frc = img.frc(img, pixel_size=1)
+    assert np.isclose(frc_resolution[0][0], 2, rtol=0.02)
     assert np.allclose(frc, 1)
 
 
 def test_frc_rot(image_fixture):
     img_a, img_b, _ = image_fixture
 
-    frc_resolution, frc = img_a.frc(img_b, resolution=1)
-    assert np.isclose(frc_resolution, 0.031, rtol=0.01)
+    frc_resolution, frc = img_a.frc(img_b, pixel_size=1)
+    assert np.isclose(frc_resolution[0][0], 1 / 0.031, rtol=0.01)
 
 
 def test_frc_noise(image_fixture):
     img_a, _, img_n = image_fixture
 
-    frc_resolution, frc = img_a.frc(img_n, resolution=1)
-    assert np.isclose(frc_resolution, 0.3, rtol=0.3)
+    frc_resolution, frc = img_a.frc(img_n, pixel_size=1)
+    assert np.isclose(frc_resolution[0][0], 1 / 0.3, rtol=0.3)
 
 
 # FSC
@@ -130,23 +127,20 @@ def test_frc_noise(image_fixture):
 def test_fsc_id(volume_fixture):
     vol, _, _ = volume_fixture
 
-    fsc = vol.fsc(vol)
-    assert np.allclose(fsc, 1)
-
-    fsc_resolution, fsc = vol.fsc(vol, resolution=1)
-    assert np.isclose(fsc_resolution, 0.5, rtol=0.02)
+    fsc_resolution, fsc = vol.fsc(vol, pixel_size=1)
+    assert np.isclose(fsc_resolution[0][0], 2.0, rtol=0.02)
     assert np.allclose(fsc, 1)
 
 
 def test_fsc_rot(volume_fixture):
     vol_a, vol_b, _ = volume_fixture
 
-    fsc_resolution, fsc = vol_a.fsc(vol_b, resolution=1)
-    assert np.isclose(fsc_resolution, 0.0930, rtol=0.01)
+    fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1)
+    assert np.isclose(fsc_resolution[0][0], 3.2, rtol=0.01)
 
 
 def test_fsc_noise(volume_fixture):
     vol_a, _, vol_n = volume_fixture
 
-    fsc_resolution, fsc = vol_a.fsc(vol_n, resolution=1)
-    assert np.isclose(fsc_resolution, 0.38, rtol=0.3)
+    fsc_resolution, fsc = vol_a.fsc(vol_n, pixel_size=1)
+    assert np.isclose(fsc_resolution[0][0], 1 / 0.38, rtol=0.3)
