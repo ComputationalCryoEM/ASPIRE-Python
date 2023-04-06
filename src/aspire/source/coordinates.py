@@ -70,18 +70,6 @@ class CoordinateSource(ImageSource, ABC):
         # Read shapes of all micrographs
         self.mrc_shapes = self._get_mrc_shapes()
 
-        # map mrc indices to particle indices
-        # i'th element contains a list of particle indices corresponding to i'th mrc
-        self.mrc_index_to_particles = []
-        for mrc_idx in range(self.num_micrographs):
-            self.mrc_index_to_particles.append(
-                [
-                    particle_idx
-                    for particle_idx, particle in enumerate(self.particles)
-                    if particle[0] == mrc_idx
-                ]
-            )
-
         # get first mrc and coordinate file to report some data
         first_mrc_index, first_coord = self.particles[0]
         first_mrc = self.mrc_paths[first_mrc_index]
@@ -139,6 +127,18 @@ class CoordinateSource(ImageSource, ABC):
         logger.info(f"CoordinateSource object contains {n} particles.")
 
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
+
+        # map mrc indices to particle indices
+        # i'th element contains a list of particle indices corresponding to i'th mrc
+        self.mrc_index_to_particles = []
+        for mrc_idx in range(self.num_micrographs):
+            self.mrc_index_to_particles.append(
+                [
+                    particle_idx
+                    for particle_idx, particle in enumerate(self.particles)
+                    if particle[0] == mrc_idx
+                ]
+            )
 
         # CTF envelope decay factor
         self.B = B
