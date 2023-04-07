@@ -97,12 +97,11 @@ def volume_fixture(img_size, dtype):
 
     vol_rot = vol.rotate(rots)
 
-    # Scale gaussian noise radially
-    noise = np.random.normal(loc=0, scale=1, size=vol.shape).astype(dtype, copy=False)
-    noise = noise * (1.0 + grid_3d(img_size, normalized=False)["r"]) * 0.3
-    vol_noise = Volume(
-        np.real(fft.centered_ifftn(fft.centered_fftn(vol.asnumpy()[0]) * (1 + noise)))
-    )
+    # Add some noise to the volume
+    noise = np.random.normal(
+        loc=0, scale=np.cbrt(vol.asnumpy().var()), size=vol.shape
+    ).astype(dtype, copy=False)
+    vol_noise = vol + noise
 
     return vol, vol_rot, vol_noise
 
@@ -154,19 +153,26 @@ def test_fsc_noise(volume_fixture):
     vol_a, _, vol_n = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_n, pixel_size=1)
-    assert np.isclose(fsc_resolution[0][0], 2.6 / 2, rtol=0.3)
+    assert fsc_resolution[0][0] > 4
 
 
 def test_fsc_plot(volume_fixture):
     """
     Smoke test the plots.
-    """
-    vol_a, vol_rot, _ = volume_fixture
 
-    fsc = FourierShellCorrelation(vol_a.asnumpy(), vol_rot.asnumpy(), pixel_size=1)
+    Also tests resetting the cutoff.
+    """
+    vol_a, vol_b, _ = volume_fixture
+
+    fsc = FourierShellCorrelation(
+        vol_a.asnumpy(), vol_b.asnumpy(), pixel_size=1, cutoff=0.5
+    )
 
     with matplotlib_no_gui():
         fsc.plot()
+
+        # Reset cutoff
+        fsc.cutoff = 0.143
 
         with tempfile.TemporaryDirectory() as tmp_input_dir:
             file_path = os.path.join(tmp_input_dir, "fsc_curve.png")

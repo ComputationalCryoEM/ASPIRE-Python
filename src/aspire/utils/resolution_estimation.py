@@ -230,7 +230,7 @@ class _FourierCorrelation:
         plt.title(self._plot_title)
         plt.xlabel("Resolution (Angstrom)")
         plt.ylabel("Correlation")
-        plt.ylim([0, 1])
+        plt.ylim([0, 1.1])
         plt.plot(freqs_angstrom, self.correlations[0][0])
         # Display cutoff
         plt.axhline(
