@@ -212,8 +212,9 @@ class _FourierCorrelation:
         # Construct x-axis labels
         x_inds = np.arange(self.L // 2)
         freqs = self._freq(x_inds)
-        # TODO: handle zero freq
-        freqs_angstrom = 1 / freqs
+        # TODO: handle zero freq better
+        with np.errstate(divide="ignore"):
+            freqs_angstrom = 1 / freqs
 
         # Check we're asking for a reasonable plot.
         stack = self.correlations.shape[: -self.dim]
