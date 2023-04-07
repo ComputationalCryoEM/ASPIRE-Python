@@ -31,10 +31,13 @@ logger.info(
 file_path = os.path.join(
     os.path.dirname(os.getcwd()), "data", "example_data_np_array.npy"
 )
+# Here the images were saved in Fortran order. Transpose from (129,
+# 129, 10) to (10, 129, 129) so that the stack axis is the slowest
+# moving axis.
 org_images = np.load(file_path).T
 
 # Set the sizes of images (129, 129)
-img_size = 129
+img_size = org_images.shape[-1]
 
 # %%
 # Expand Images with Normal Fourier-Bessel Basis Method
