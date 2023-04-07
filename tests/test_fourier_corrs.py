@@ -1,5 +1,6 @@
 import logging
 import os
+import tempfile
 
 import numpy as np
 import pytest
@@ -9,6 +10,8 @@ from aspire.numeric import fft
 from aspire.source import Simulation
 from aspire.utils import FourierShellCorrelation, Rotation, grid_3d
 from aspire.volume import Volume
+
+from .test_utils import matplotlib_no_gui
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -155,8 +158,16 @@ def test_fsc_noise(volume_fixture):
 
 
 def test_fsc_plot(volume_fixture):
-    vol_a, _, vol_n = volume_fixture
+    """
+    Smoke test the plots.
+    """
+    vol_a, vol_rot, _ = volume_fixture
 
-    # fsc_resolution, fsc = vol_a.fsc(vol_n, pixel_size=1)
-    fsc = FourierShellCorrelation(vol_a.asnumpy(), vol_n.asnumpy(), pixel_size=1)
-    fsc.plot()
+    fsc = FourierShellCorrelation(vol_a.asnumpy(), vol_rot.asnumpy(), pixel_size=1)
+
+    with matplotlib_no_gui():
+        fsc.plot()
+
+        with tempfile.TemporaryDirectory() as tmp_input_dir:
+            file_path = os.path.join(tmp_input_dir, "fsc_curve.png")
+            fsc.plot(save_to_file=file_path)
