@@ -2,6 +2,7 @@ import logging
 import os
 from collections import OrderedDict
 
+import numpy as np
 import pandas as pd
 from gemmi import cif
 
@@ -138,6 +139,14 @@ class StarFile:
             # if this block (loop or pair) is empty, continue
             if len(block) == 0:
                 continue
+
+            # look at values to detect if we're dealing with ndarrays
+            # in this case, the block can be typecast as a DataFrame
+            if isinstance(block, dict) and all(
+                isinstance(v, np.ndarray) for v in block.values()
+            ):
+                block = pd.DataFrame(block)
+
             # are we constructing a loop (DataFrame) or a pair (Dictionary)?
             if isinstance(block, dict):
                 for key, value in block.items():

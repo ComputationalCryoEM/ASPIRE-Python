@@ -8,7 +8,6 @@ from collections.abc import Iterable
 
 import mrcfile
 import numpy as np
-import pandas as pd
 
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
@@ -116,7 +115,7 @@ class ImageSource(ABC):
     `ImageSource`. The number of rows in this metadata table will equal the total number of images supported by this
     `ImageSource` (available as the 'n' attribute), though reading/writing of images is usually done in chunks.
 
-    This metadata table is implemented as a pandas `DataFrame`.
+    This metadata table is implemented as a dictionary of numpy arrays.
 
     The 'values' in this metadata table are usually primitive types (floats/ints/strings) that are suitable
     for being read from STAR files, and being written to STAR files. The columns corresponding to these fields
@@ -155,14 +154,14 @@ class ImageSource(ABC):
 
         # _rotations is assigned non None value
         #  by `rotations` or `angles` setters.
-        #  It is potentially used by sublasses to test if we've used setters.
-        #  This must come before the Relion/starfile meta data parsing below.
+        #  It is potentially used by subclasses to test if we've used setters.
+        #  This must come before the Relion/starfile metadata parsing below.
         self._rotations = None
 
         if metadata is None:
-            self._metadata = pd.DataFrame([], index=pd.RangeIndex(self.n))
+            self._metadata = {}
         else:
-            self._metadata = metadata
+            self._metadata = copy.copy(metadata)
             if self.has_metadata(["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]):
                 self._rotations = Rotation.from_euler(
                     np.deg2rad(
@@ -174,7 +173,6 @@ class ImageSource(ABC):
 
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
-        self._metadata_out = None
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
@@ -228,6 +226,88 @@ class ImageSource(ABC):
 
         return IndexedSource(self, indices)
 
+    def __len__(self):
+        """
+        Returns total number of images in source.
+        """
+        return self.n
+
+    def _metadata_as_dict(self, metadata_fields, indices, default_value=None):
+        """
+        Return a dictionary of selected metadata fields at selected indices.
+        :param metadata_fields: An iterable of strings specifying metadata fields.
+        :param indices: An ndarray of 0-indexed locations we're interested in.
+        :param default_value: A scalar default value to use if a metadata_field is not found.
+        :return: A dictionary of numpy arrays of specified metadata fields at specified indices.
+        """
+        result = {}
+        for metadata_field in metadata_fields:
+            if metadata_field in self._metadata:
+                result[metadata_field] = self._metadata[metadata_field][indices].copy()
+            else:
+                assert (
+                    default_value is not None
+                ), f"Missing metadata field {metadata_field} and no default_value supplied"
+                result[metadata_field] = np.full(len(indices), fill_value=default_value)
+        return result
+
+    def _metadata_as_ndarray(self, metadata_fields, indices, default_value=None):
+        """
+        Return a numpy array of selected metadata fields at selected indices.
+        :param metadata_fields: An iterable of strings specifying metadata fields.
+        :param indices: An ndarray of 0-indexed locations we're interested in.
+        :param default_value: A scalar default value to use if a metadata_field is not found.
+        :return: A numpy array of specified metadata fields at specified indices.
+        """
+        # Start with the most generic type - we'll narrow it later
+        result = np.empty((len(indices), len(metadata_fields))).astype("object")
+        # Keep track of dtypes of individual metadata fields, so we can narrow the result into a single dtype
+        dtypes = [None] * len(metadata_fields)
+
+        for i, metadata_field in enumerate(metadata_fields):
+            if metadata_field not in self._metadata:
+                assert (
+                    default_value is not None
+                ), f"Missing metadata field {metadata_field} and no default_value supplied"
+                result[:, i] = default_value
+                dtypes[i] = np.array([default_value]).dtype
+            else:
+                values = self._metadata[metadata_field][indices]
+                result[:, i] = values
+                dtypes[i] = values.dtype
+
+        dtype = np.result_type(*dtypes)
+        result = result.astype(dtype)
+
+        if result.shape[1] == 1:
+            result = result.squeeze(axis=1)
+
+        return result
+
+    def update(self, **kwargs):
+        """
+        Update certain properties that modify the underlying metadata, and return a new ImageSource
+        object with the new properties. The original object is unchanged.
+        """
+        updateable_props = (
+            "states",
+            "filter_indices",
+            "offsets",
+            "amplitudes",
+            "angles",
+            "rotations",
+        )
+
+        cp = copy.deepcopy(self)
+        for prop in updateable_props:
+            if prop in kwargs:
+                setattr(cp, prop, kwargs.pop(prop))
+
+        if kwargs:
+            logger.warning(f"Unhandled arguments = {kwargs.keys()}")
+
+        return cp
+
     @property
     def n(self):
         return self._n
@@ -267,12 +347,6 @@ class ImageSource(ABC):
         Return the number of CTFFilters found in this Source.
         """
         return len([f for f in self.unique_filters if isinstance(f, CTFFilter)])
-
-    def __len__(self):
-        """
-        Returns total number of images in source.
-        """
-        return self.n
 
     @property
     def states(self):
@@ -316,7 +390,7 @@ class ImageSource(ABC):
 
         :return: Rotation angles in radians, as a n x 3 array
         """
-        # Call a private method. This allows sub classes to effeciently override.
+        # Call a private method. This allows subclasses to efficiently override.
         return self._angles()
 
     def _angles(self):
@@ -385,36 +459,63 @@ class ImageSource(ABC):
             values should either be a scalar or a vector of length equal to the total number of images, |self.n|.
         :return: On return, the metadata associated with the specified indices has been modified.
         """
-        # Convert a single metadata field into a list of single metadata field, since that's what the 'columns'
-        # argument of a DataFrame constructor expects.
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]
 
         if indices is None:
-            indices = self._metadata.index.values
+            indices = np.arange(self.n)
 
-        df = pd.DataFrame(values, columns=metadata_fields, index=indices)
-        for metadata_field in metadata_fields:
-            series = df[metadata_field]
-            if metadata_field not in self._metadata.columns:
-                self._metadata = self._metadata.merge(
-                    series, how="left", left_index=True, right_index=True
+        try:
+            iter(values)
+        except TypeError:
+            values = [values] * len(indices)
+        else:
+            if isinstance(values, str):
+                values = [values] * len(indices)
+        assert len(values) == len(
+            indices
+        ), "Mismatch between len(values) and len(indices)"
+
+        values = np.array(values)  # make a copy for our use
+
+        # When creating metadata fields that are string, coerce them into python objects to allow string expansion
+        # later (replacing 'hello' with 'goodbye', for example).
+        # This is in part to conform to legacy implementation of metadata that used pandas,
+        # but is probably a good thing to do anyway.
+        # We also come up with a sensible fill value while we're at it.
+        if np.issubdtype(values.dtype, np.str_):
+            values = values.astype("object")
+            fill_value = ""
+        else:
+            fill_value = np.nan
+
+        if values.ndim == 1:
+            values = values.reshape(-1, 1)  # convert to column
+            values = np.tile(
+                values, (1, len(metadata_fields))
+            )  # stack columns for each metadata field
+
+        for i, metadata_field in enumerate(metadata_fields):
+            if metadata_field not in self._metadata:
+                self._metadata[metadata_field] = np.full(self.n, fill_value).astype(
+                    values.dtype
                 )
-            else:
-                self._metadata.update(series.astype(object))
+            self._metadata[metadata_field][indices] = values[:, i]
 
     def has_metadata(self, metadata_fields):
         """
-        Find out if one more more metadata fields are available for this `ImageSource`.
+        Find out if one or more metadata fields are available for this `ImageSource`.
 
         :param metadata_fields: A string, of list of strings, representing the metadata field(s) to be queried.
         :return: Boolean value indicating whether the field(s) are available.
         """
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]
-        return all(f in self._metadata.columns for f in metadata_fields)
+        return all(f in self._metadata for f in metadata_fields)
 
-    def get_metadata(self, metadata_fields=None, indices=None, default_value=None):
+    def get_metadata(
+        self, metadata_fields=None, indices=None, default_value=None, as_dict=False
+    ):
         """
         Get metadata field information of this ImageSource for a
         selection of fields of indices.  The default should return the
@@ -430,44 +531,39 @@ class ImageSource(ABC):
         :param default_value: Default scalar value to use for any
             fields not found in the metadata. If None, no default
             value is used, and missing field(s) cause a RuntimeError.
+        :param as_dict: Boolean indicating whether we want to return
+            metadata as a dictionary (True), or as a numpy ndarray (False).
+            In the latter case, all returned values are typecast to a common
+            numpy dtype, so use with caution.
         :return: An ndarray of values (any valid np types)
-            representing metadata info.
+            representing metadata info. If is_dict is True, then returns
+            a dictionary mapping metadata names to numpy arrays of values.
         """
-        # When metadata_fields=None, default to returning all.
         if metadata_fields is None:
-            metadata_fields = self._metadata.columns
-
+            metadata_fields = list(self._metadata.keys())
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]
+
         if indices is None:
-            indices = self._metadata.index.values
-
-        # The pandas .loc indexer does work with missing columns (as long as not ALL of them are missing)
-        # which messes with our logic. This behavior will change in pandas 0.21.0.
-        # See https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#indexing-with-list-with-missing-labels-is-deprecated
-        # We deal with the situation in a slightly verbose manner as follows.
-        missing_columns = [
-            col for col in metadata_fields if col not in self._metadata.columns
-        ]
-        if len(missing_columns) == 0:
-            result = self._metadata.loc[indices, metadata_fields]
+            indices = np.arange(self.n)
         else:
-            if default_value is not None:
-                right = pd.DataFrame(
-                    default_value, columns=missing_columns, index=indices
-                )
-                found_columns = [
-                    col for col in metadata_fields if col not in missing_columns
-                ]
-                if len(found_columns) > 0:
-                    left = self._metadata.loc[indices, found_columns]
-                    result = left.join(right)
-                else:
-                    result = right
-            else:
-                raise RuntimeError("Missing columns and no default value provided")
+            try:
+                iter(indices)
+            except TypeError:
+                indices = [indices]
 
-        return result.to_numpy().squeeze()
+        if as_dict:
+            return self._metadata_as_dict(
+                metadata_fields=metadata_fields,
+                indices=indices,
+                default_value=default_value,
+            )
+        else:
+            return self._metadata_as_ndarray(
+                metadata_fields=metadata_fields,
+                indices=indices,
+                default_value=default_value,
+            )
 
     def _apply_filters(
         self,
@@ -756,7 +852,7 @@ class ImageSource(ABC):
 
     def _populate_common_metadata(
         self,
-        df,
+        meta_dict,
         local_cols,
         starfile_filepath,
         batch_size,
@@ -765,8 +861,8 @@ class ImageSource(ABC):
         """
         Populate metadata columns common to all `ImageSource` subclasses.
         """
-        # Create a new column that we will be populating in the loop below
-        df["_rlnImageName"] = ""
+        # Create a new key that we will be populating in the loop below
+        meta_dict["_rlnImageName"] = np.full(self.n, fill_value="").astype("object")
 
         if save_mode == "single":
             # Save all images into one single mrc file
@@ -774,11 +870,8 @@ class ImageSource(ABC):
             fstem = os.path.splitext(fname)[0]
             mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
 
-            # Then set name in dataframe for the StarFile
-            # Note, here the row_indexer is :, representing all rows in this data frame.
-            #   df.loc will be reponsible for dereferencing and assigning values to df.
-            #   Pandas will assert df.shape[0] == self.n
-            df.loc[:, "_rlnImageName"] = [
+            # Then set name in dict for the StarFile
+            meta_dict["_rlnImageName"][:] = [
                 f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)
             ]
         else:
@@ -790,19 +883,16 @@ class ImageSource(ABC):
                     os.path.splitext(os.path.basename(starfile_filepath))[0]
                     + f"_{i_start}_{i_end-1}.mrcs"
                 )
-                # Note, here the row_indexer is a slice.
-                #   df.loc will be reponsible for dereferencing and assigning values to df.
-                #   Pandas will assert the lnegth of row_indexer equals num.
-                row_indexer = df[i_start:i_end].index
-                df.loc[row_indexer, "_rlnImageName"] = [
+                meta_dict["_rlnImageName"][i_start:i_end] = [
                     "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
                 ]
 
-        # Subclass-specific columns are popped to the end of the dataframe in order:
-        # pop() both removes the given column and returns its data as a Series,
-        # which is then tacked back on to the rightmost side of the df
+        # Subclass-specific columns are popped to the end of the dictionary in order:
+        # pop() both removes the given column and returns its data as a ndarray,
+        # which is then tacked back on to the rightmost side of metadata
+        # Note that all dictionaries in py>=3.7 are ordered
         for col in local_cols:
-            df[col] = df.pop(col)
+            meta_dict[col] = meta_dict.pop(col)
 
     def _populate_local_metadata(self):
         """
@@ -829,30 +919,30 @@ class ImageSource(ABC):
         # Get local metadata columns that were added by subclass
         local_cols = self._populate_local_metadata()
 
-        df = self._metadata.copy()
+        metadata = self.get_metadata(as_dict=True, default_value=42).copy()
         # Drop any column that doesn't start with a *single* underscore
-        df = df.drop(
-            [
-                str(col)
-                for col in df.columns
-                if not col.startswith("_") or col.startswith("__")
-            ],
-            axis=1,
-        )
+        metadata = {
+            k: v
+            for k, v in metadata.items()
+            if k.startswith("_") and not k.startswith("__")
+        }
 
         # Populates _rlnImageName column, setting up filepaths to .mrcs stacks
         self._populate_common_metadata(
-            df, local_cols, starfile_filepath, batch_size, save_mode
+            metadata, local_cols, starfile_filepath, batch_size, save_mode
         )
 
-        filename_indices = df._rlnImageName.str.split(pat="@", expand=True)[1].tolist()
+        filename_indices = [
+            x[1]
+            for x in np.char.split(metadata["_rlnImageName"].astype(np.str_), sep="@")
+        ]
 
         # initialize the star file object and save it
         odict = OrderedDict()
         # since our StarFile only has one block, the convention is to save it with the header "data_", i.e. its name is blank
         # if we had a block called "XYZ" it would be saved as "XYZ"
         # thus we index the metadata block with ""
-        odict[""] = df
+        odict[""] = metadata
         out_star = StarFile(blocks=odict)
         out_star.write(starfile_filepath)
         return filename_indices
@@ -1191,11 +1281,7 @@ class IndexedSource(ImageSource):
         self.index_map = _ImageAccessor(lambda x: x, src.n)[indices]
 
         # Get all the metadata associated with these indices.
-        # Note, I would have prefered to use our API (get_metadata)
-        # here, but it returns a Numpy array, which would need to be
-        # converted back into Pandas for use below. So here we'll just
-        # use `loc` to return a dataframe.
-        metadata = self.src._metadata.loc[self.index_map].copy()
+        metadata = self.src.get_metadata(indices=self.index_map, as_dict=True).copy()
 
         # Construct a fully formed ImageSource with this metadata
         super().__init__(
