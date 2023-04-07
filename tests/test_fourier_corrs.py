@@ -6,9 +6,8 @@ import numpy as np
 import pytest
 
 from aspire.noise import BlueNoiseAdder
-from aspire.numeric import fft
 from aspire.source import Simulation
-from aspire.utils import FourierShellCorrelation, Rotation, grid_3d
+from aspire.utils import FourierShellCorrelation, Rotation
 from aspire.volume import Volume
 
 from .test_utils import matplotlib_no_gui

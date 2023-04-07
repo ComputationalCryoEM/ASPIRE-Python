@@ -27,11 +27,12 @@ class _FourierCorrelation:
 .
     """
 
-    def __init__(self, a, b, pixel_size, cutoff=0.143, eps=1e-4):
+    def __init__(self, a, b, pixel_size=1, cutoff=0.143, eps=1e-4):
         """
         :param a: Input array a, shape(..., *dim).
         :param b: Input array b, shape(..., *dim).
         :param pixel_size: Pixel size in Angstrom.
+            Defaults to 1.
         :param cutoff: Cutoff value, traditionally `.143`.
         :param eps: Epsilon past boundary values, defaults 1e-4.
         """
@@ -70,30 +71,56 @@ class _FourierCorrelation:
 
     @property
     def _fourier_axes(self):
+        """
+        Returns tuple representing the axis containing signal data
+        based on dimension `dim`.
+        """
         return tuple(range(-self.dim, 0))
 
     def _reshape(self, x):
         """
-        Returns `x` with flattened stack axis and `x`'s original stack shape, as determined by `dim`.
+        Returns `x` with flattened stack axis and `x`'s original stack
+        shape, as determined by `dim`.
 
         :param x: Numpy ndarray
+
+        :return: (stack flattened x, x_stack_shape)
         """
-        # TODO, check 2d in put for dim=2 (singleton case)
+        # TODO, check 2d input for dim=2 (singleton case)
         original_stack_shape = x.shape[: -self.dim]
         x = x.reshape(-1, *x.shape[-self.dim :])
         return x, original_stack_shape
 
     @property
     def cutoff(self):
+        """
+        Returns `cutoff` value.
+        """
         return self._cutoff
 
     @cutoff.setter
-    def cutoff(self, cutoff_correlation):
-        self._cutoff = float(cutoff_correlation)
+    def cutoff(self, cutoff):
+        """
+        Sets `cutoff` value, and resets analysis, which is dependent
+        on `cutoff` values.
+
+        :param cutoff: Float
+        """
+        self._cutoff = float(cutoff)
+        if not (0 <= self._cutoff <= 1):
+            raise ValueError(
+                "Supplied correlation `cutoff` not in [0,1], {self._cutoff}"
+            )
         self._analyzed = False  # reset analysis
 
     @property
     def correlations(self):
+        """
+        Compute and return the Fourier correlations of signal stacks a
+        cross b.
+
+        :return: Numpy array
+        """
         # There is no need to run this twice if we assume inputs are immutable
         if self._correlations is not None:
             return self._correlations
@@ -143,7 +170,11 @@ class _FourierCorrelation:
 
     @property
     def estimated_resolution(self):
-        """ """
+        """
+        Return estimated resolution of stacks `a` cross `b`.
+
+        :return: Numpy array.
+        """
         self.analyze_correlations()
         return self._resolutions
 
@@ -182,18 +213,21 @@ class _FourierCorrelation:
         Converts `k` from index of Fourier transform to frequency (as
         length 1/A).
 
-        From Shannon-Nyquist, for a given pixel-size, sampling theorem
-        limits us to the sampled frequency 1/pixel_size.  Thus the
-        Bandwidth ranges from `[-1/pixel_size, 1/pixel_size]`, so the
-        total bandwidth is `2*(1/pixel_size)`.
-
-        Given a real space signal observed with `L` bins
-        (pixels/voxels), each with a `pixel_size` in Angstrom, we can
-        compute the width of a Fourier space bin to be the `Bandwidth
-        / L = (2*(1/pixel_size)) / L`.  Thus the frequency at an index
-        `k` is `freq_k = k * 2 * (1 / pixel_size) / L = 2*k /
-        (pixel_size * L)
+        :param k: Frequency index, integer or Numpy array of ints.
+        :return: Frequency in 1/Angstrom.
         """
+
+        # From Shannon-Nyquist, for a given pixel-size, sampling theorem
+        # limits us to the sampled frequency 1/pixel_size.  Thus the
+        # Bandwidth ranges from `[-1/pixel_size, 1/pixel_size]`, so the
+        # total bandwidth is `2*(1/pixel_size)`.
+
+        # Given a real space signal observed with `L` bins
+        # (pixels/voxels), each with a `pixel_size` in Angstrom, we can
+        # compute the width of a Fourier space bin to be the `Bandwidth
+        # / L = (2*(1/pixel_size)) / L`.  Thus the frequency at an index
+        # `k` is `freq_k = k * 2 * (1 / pixel_size) / L = 2*k /
+        # (pixel_size * L)
 
         # _freq(k) Units: 1 / (pixels * (Angstrom / pixel) = 1 / Angstrom
         # Similar idea to wavenumbers (cm-1).  Larger is higher frequency.
