@@ -3,6 +3,7 @@ This module contains code for estimating resolution achieved by reconstructions.
 """
 import logging
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.numeric import fft
@@ -173,6 +174,7 @@ class _FourierCorrelation:
         frequencies = self._freq(c_ind)
 
         # Convert to resolution in Angstrom, smaller is higher frequency.
+        # TODO: handle 0 freq
         self._resolutions = 1 / frequencies
 
     def _freq(self, k):
@@ -184,19 +186,57 @@ class _FourierCorrelation:
 
         Given a real space signal observed with `L` bins (pixels/voxels), each with a `pixel_size` in Angstrom,
         we can compute the width of a Fourier space bin to be the `Bandwidth / L  = (2*(1/pixel_size)) / L`.
-        Thus the frequency at an index `k` is `freq_k = k * 2 * (1 / pixel_size) / L  = 2*k / (pixel_size * L)        
+        Thus the frequency at an index `k` is `freq_k = k * 2 * (1 / pixel_size) / L  = 2*k / (pixel_size * L)
         """
-        
+
         # _freq(k) Units: 1 / (pixels * (Angstrom / pixel) = 1 / Angstrom
         # Similar idea to wavenumbers (cm-1).  Larger is higher frequency.
         return k * 2 / (self.L * self.pixel_size)
 
-                 
     def plot(self, to_file=False):
         """
         Generates a Fourier correlation plot.
         """
-        
+
+        # Construct x-axis labels
+        x_inds = np.arange(self.L // 2)
+        freqs = self._freq(x_inds)
+        # TODO: handle zero freq
+        freqs_angstrom = 1 / freqs
+
+        # Check we're asking for a reasonable plot.
+        stack = self.correlations.shape[: -self.dim]
+        if len(stack) > 2:
+            raise RuntimeError(
+                f"Unable to plot figure tables with more than 2 dim, stack shape {stack}. Try reducing to a simpler request."
+            )
+        if np.prod(stack) > 1:
+            raise RuntimeError(
+                f"Unable to plot figure tables with more than 1 figures, stack shape {stack}. Try reducing to a simpler request."
+            )
+
+        plt.figure(figsize=(8, 6))
+        plt.title(self._plot_title)
+        plt.xlabel("Resolution (Angstrom)")
+        plt.ylabel("Correlation")
+        plt.ylim([0, 1])
+        plt.plot(freqs_angstrom, self.correlations[0][0])
+        # Display cutoff
+        plt.axhline(
+            y=self.cutoff, color="r", linestyle="--", label=f"cutoff={self.cutoff}"
+        )
+        # Display resolution
+        plt.axvline(
+            x=self.estimated_resolution[0][0],
+            color="b",
+            linestyle=":",
+            label=f"Resolution={self.estimated_resolution[0][0]:.3f}",
+        )
+        # x-axis in decreasing
+        plt.gca().invert_xaxis()
+        plt.legend()
+        plt.show()
+
 
 class FourierRingCorrelation(_FourierCorrelation):
     """
@@ -204,6 +244,7 @@ class FourierRingCorrelation(_FourierCorrelation):
     """
 
     dim = 2
+    _plot_title = "Fourier Ring Correlation"
 
 
 class FourierShellCorrelation(_FourierCorrelation):
@@ -212,3 +253,4 @@ class FourierShellCorrelation(_FourierCorrelation):
     """
 
     dim = 3
+    _plot_title = "Fourier Shell Correlation"
