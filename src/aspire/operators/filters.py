@@ -458,3 +458,45 @@ class RadialCTFFilter(CTFFilter):
             alpha=alpha,
             B=B,
         )
+
+
+class BlueFilter(Filter):
+    """
+    Filter where power increases with frequency.
+    """
+
+    def __init__(self, dim=None, value=1):
+        super().__init__(dim=dim, radial=True)
+        self.value = value
+
+    def __repr__(self):
+        return f"BlueFilter (dim={self.dim}, value={self.value})"
+
+    def _evaluate(self, omega):
+        f = np.sqrt(omega[0])
+        m = np.mean(f)
+        f = f / m
+
+        return self.value * f
+
+
+class PinkFilter(Filter):
+    """
+    Filter where power decreases with frequency.
+    """
+
+    def __init__(self, dim=None, value=1):
+        super().__init__(dim=dim, radial=True)
+        self.value = value
+
+    def __repr__(self):
+        return f"PinkFilter (dim={self.dim}, value={self.value})"
+
+    def _evaluate(self, omega):
+        step = np.abs(np.subtract(*omega[0][:2]))
+        # Avoid zero division
+        f = np.sqrt(2 * step / (omega[0] + step))
+        m = np.mean(f)
+        f = f / m
+
+        return self.value * f
