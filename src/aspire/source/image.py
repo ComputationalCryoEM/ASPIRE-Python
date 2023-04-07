@@ -100,6 +100,17 @@ class _ImageAccessor:
 
 
 def as_copy(func):
+    """
+    Method decorator that invokes the decorated method on a deepcopy of the object,
+    and returns it on exit. The original object is unmodified.
+    This allows one to take a mutating method on an object:
+       obj.increment(by=2)
+    and use it in a functional way:
+       another = obj.increment(by=2)  # obj unmodified
+    Note that the original return value of the method is lost, so this decorator
+    is best used on methods that mutate the object but don't return anything.
+    """
+
     def wrapper(self, *args, **kwargs):
         obj_copy = copy.deepcopy(self)
         func_copy = copy.deepcopy(func)
