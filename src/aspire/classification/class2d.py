@@ -15,7 +15,6 @@ class Class2D(ABC):
         self,
         src,
         n_nbor=100,
-        n_classes=50,
         seed=None,
         dtype=None,
     ):
@@ -24,7 +23,6 @@ class Class2D(ABC):
 
         :param src: ImageSource or subclass, provides images.
         :param n_nbor: Number of nearest neighbors to compute.
-        :param n_classes: Number of class averages to return.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :param dtype: Numpy dtype, defaults to `src.dtype`.
         """
@@ -40,7 +38,6 @@ class Class2D(ABC):
             self.dtype = self.src.dtype
 
         self.n_nbor = n_nbor
-        self.n_classes = n_classes
         self.seed = seed
 
     @abstractmethod
@@ -49,10 +46,4 @@ class Class2D(ABC):
         Classify the images from Source into classes with similar viewing angles.
 
         Returns classes and associated metadata (classes, reflections, distances)
-        """
-
-    @abstractmethod
-    def averages(self, classes, refl, distances):
-        """
-        Returns class averages.
         """

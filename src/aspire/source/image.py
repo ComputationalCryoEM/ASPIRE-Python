@@ -141,7 +141,12 @@ class ImageSource(ABC):
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         """
+
+        # Instantiate the accessor for the `images` property
+        self._img_accessor = _ImageAccessor(self._images, n)
+
         self.L = L
+        self._n = None
         self.n = n
         self.dtype = np.dtype(dtype)
 
@@ -170,9 +175,6 @@ class ImageSource(ABC):
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
         self._metadata_out = None
-
-        # Instantiate the accessor for the `images` property
-        self._img_accessor = _ImageAccessor(self._images, self.n)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
@@ -225,6 +227,39 @@ class ImageSource(ABC):
         """
 
         return IndexedSource(self, indices)
+
+    @property
+    def n(self):
+        return self._n
+
+    @n.setter
+    def n(self, n):
+        """
+        Sets max image index `n` in `src` and associated
+        `ImageAccessor`.
+
+        :param n: Number of images.
+        """
+        self._set_n(n)
+
+    def _set_n(self, n):
+        """
+        Sets max image index `n` in `src` and associated
+        `ImageAccessor`.
+
+        :param n: Number of images.
+        """
+        # Protect _n by default.
+        if self._n is not None:
+            raise RuntimeError("Source `n` is already set.")
+
+        # Enforce type, just-in-case.
+        if n != int(n):
+            raise TypeError("`n` must be an integer")
+        n = int(n)
+
+        self._img_accessor.num_imgs = n
+        self._n = n
 
     @property
     def n_ctf_filters(self):

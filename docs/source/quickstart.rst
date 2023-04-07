@@ -1,5 +1,5 @@
-Getting Started
-===============
+Getting Started - CLI
+=====================
 
 After installing ASPIRE, the module can be invoked as a script, allowing you to perform several actions on a stack of
 CRYO projections (MRC files).

@@ -1,3 +1,4 @@
+import logging
 import warnings
 from contextlib import contextmanager
 from unittest import TestCase
@@ -10,6 +11,7 @@ from pytest import raises
 
 from aspire import __version__
 from aspire.utils import (
+    LogFilterByCount,
     all_pairs,
     all_triplets,
     get_full_version,
@@ -28,6 +30,48 @@ from aspire.utils.misc import (
     gaussian_3d,
     grid_3d,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def test_log_filter_by_count(caplog):
+    msg = "A is for ASCII"
+
+    # Should log.
+    logger.info(msg)
+    assert msg in caplog.text
+    caplog.clear()
+
+    with LogFilterByCount(logger, 1):
+        # Should log.
+        logger.info(msg)
+        assert msg in caplog.text
+        caplog.clear()
+
+        # Should not log.
+        # with caplog.at_level(logging.INFO):
+        logger.info(msg)
+        assert msg not in caplog.text
+        caplog.clear()
+
+    # Should log.
+    logger.info(msg)
+
+    with LogFilterByCount(logger, 1):
+        logger.error(Exception("Should work with exceptions."))
+        assert "Should work" in caplog.text
+        caplog.clear()
+
+        # Should not log (we've seen above twice).
+        logger.info(msg)
+        assert msg not in caplog.text
+        caplog.clear()
+
+    with LogFilterByCount(logger, 4):
+        # Should log (we've seen above thrice).
+        logger.info(msg)
+        assert msg in caplog.text
+        caplog.clear()
 
 
 class UtilsTestCase(TestCase):
