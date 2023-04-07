@@ -111,7 +111,7 @@ def test_frc_id(image_fixture):
     img, _, _ = image_fixture
 
     frc_resolution, frc = img.frc(img, pixel_size=1)
-    assert np.isclose(frc_resolution[0][0], 2, rtol=0.02)
+    assert np.isclose(frc_resolution[0][0], 1, rtol=0.02)
     assert np.allclose(frc, 1)
 
 
@@ -119,14 +119,14 @@ def test_frc_rot(image_fixture):
     img_a, img_b, _ = image_fixture
     assert img_a.dtype == img_b.dtype
     frc_resolution, frc = img_a.frc(img_b, pixel_size=1)
-    assert np.isclose(frc_resolution[0][0], 3.78, rtol=0.1)
+    assert np.isclose(frc_resolution[0][0], 3.78/2, rtol=0.1)
 
 
 def test_frc_noise(image_fixture):
     img_a, _, img_n = image_fixture
 
     frc_resolution, frc = img_a.frc(img_n, pixel_size=1)
-    assert np.isclose(frc_resolution[0][0], 3.5, rtol=0.2)
+    assert np.isclose(frc_resolution[0][0], 3.5/2, rtol=0.2)
 
 
 # FSC
@@ -136,7 +136,7 @@ def test_fsc_id(volume_fixture):
     vol, _, _ = volume_fixture
 
     fsc_resolution, fsc = vol.fsc(vol, pixel_size=1)
-    assert np.isclose(fsc_resolution[0][0], 2.0, rtol=0.02)
+    assert np.isclose(fsc_resolution[0][0], 1, rtol=0.02)
     assert np.allclose(fsc, 1)
 
 
@@ -144,11 +144,11 @@ def test_fsc_rot(volume_fixture):
     vol_a, vol_b, _ = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1)
-    assert np.isclose(fsc_resolution[0][0], 3.225, rtol=0.01)
+    assert np.isclose(fsc_resolution[0][0], 3.225/2, rtol=0.01)
 
 
 def test_fsc_noise(volume_fixture):
     vol_a, _, vol_n = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_n, pixel_size=1)
-    assert np.isclose(fsc_resolution[0][0], 2.6, rtol=0.3)
+    assert np.isclose(fsc_resolution[0][0], 2.6/2, rtol=0.3)
