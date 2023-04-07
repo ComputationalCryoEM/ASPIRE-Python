@@ -6,7 +6,14 @@ import numpy as np
 from aspire.image import Image
 from aspire.image.xform import Xform
 from aspire.numeric import fft, xp
-from aspire.operators import ArrayFilter, FunctionFilter, PowerFilter, ScalarFilter
+from aspire.operators import (
+    ArrayFilter,
+    BlueFilter,
+    FunctionFilter,
+    PinkFilter,
+    PowerFilter,
+    ScalarFilter,
+)
 from aspire.utils import grid_2d, randn, trange
 
 logger = logging.getLogger(__name__)
@@ -183,49 +190,34 @@ class WhiteNoiseAdder(NoiseAdder):
             self._build()
 
 
-class ColoredNoiseAdder(WhiteNoiseAdder):
-    @abc.abstractmethod
-    def _spectrum(self, x, y):
-        """
-        Colored noise spectrum (2d).
-        """
+class BlueNoiseAdder(WhiteNoiseAdder):
+    """
+    NoiseAdder where noise power increases with frequency.
+    """
 
     def _build(self):
         """
         Builds underlying Filter for this NoiseAdder.
         """
-        custom_filter = FunctionFilter(f=self._spectrum) * ScalarFilter(
-            value=self.noise_var
-        )
+        blue_filter = BlueFilter(value=self.noise_var)
 
         # Call the __init__ from parent of WhiteNoiseAdder.
-        super(WhiteNoiseAdder, self).__init__(
-            noise_filter=custom_filter, seed=self.seed
-        )
+        super(WhiteNoiseAdder, self).__init__(noise_filter=blue_filter, seed=self.seed)
 
 
-class BlueNoiseAdder(ColoredNoiseAdder):
-    """
-    NoiseAdder where noise power increases with frequency.
-    """
-
-    def _spectrum(self, x, y):
-        s = x[-1] - x[-2]
-        f = s * np.hypot(x, y)
-        m = np.mean(f)
-        return f / m
-
-
-class PinkNoiseAdder(ColoredNoiseAdder):
+class PinkNoiseAdder(WhiteNoiseAdder):
     """
     NoiseAdder where noise power decreases with frequency.
     """
 
-    def _spectrum(self, x, y):
-        s = x[-1] - x[-2]
-        f = 2 * s / (np.hypot(x, y) + s)
-        m = np.mean(f)
-        return f / m
+    def _build(self):
+        """
+        Builds underlying Filter for this NoiseAdder.
+        """
+        pink_filter = PinkFilter(value=self.noise_var)
+
+        # Call the __init__ from parent of WhiteNoiseAdder.
+        super(WhiteNoiseAdder, self).__init__(noise_filter=pink_filter, seed=self.seed)
 
 
 class NoiseEstimator:

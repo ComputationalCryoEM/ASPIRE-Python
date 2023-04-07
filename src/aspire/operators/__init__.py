@@ -1,6 +1,7 @@
 from .blk_diag_matrix import BlkDiagMatrix
 from .filters import (
     ArrayFilter,
+    BlueFilter,
     CTFFilter,
     DualFilter,
     Filter,
@@ -8,6 +9,7 @@ from .filters import (
     IdentityFilter,
     LambdaFilter,
     MultiplicativeFilter,
+    PinkFilter,
     PowerFilter,
     RadialCTFFilter,
     ScalarFilter,
