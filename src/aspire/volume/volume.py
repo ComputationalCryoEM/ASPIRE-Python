@@ -7,8 +7,16 @@ from numpy.linalg import qr
 import aspire.image
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
-from aspire.utils import Rotation, crop_pad_3d, grid_2d, grid_3d, mat_to_vec, vec_to_mat
-from aspire.utils.types import complex_type
+from aspire.utils import (
+    FourierShellCorrelation,
+    Rotation,
+    complex_type,
+    crop_pad_3d,
+    grid_2d,
+    grid_3d,
+    mat_to_vec,
+    vec_to_mat,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -508,7 +516,7 @@ class Volume:
             where `estimated_resolution` is in Angstrom
             and FRC is a Numpy array of correlations.
         """
-        from aspire.reconstruction import FourierShellCorrelation
+        # from aspire.reconstruction import FourierShellCorrelation
 
         if not isinstance(other, Volume):
             raise TypeError(
