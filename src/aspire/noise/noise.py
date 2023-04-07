@@ -9,7 +9,6 @@ from aspire.numeric import fft, xp
 from aspire.operators import (
     ArrayFilter,
     BlueFilter,
-    FunctionFilter,
     PinkFilter,
     PowerFilter,
     ScalarFilter,
