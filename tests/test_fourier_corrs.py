@@ -7,7 +7,7 @@ import pytest
 from aspire.noise import BlueNoiseAdder
 from aspire.numeric import fft
 from aspire.source import Simulation
-from aspire.utils import Rotation, grid_3d
+from aspire.utils import FourierShellCorrelation, Rotation, grid_3d
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -119,14 +119,14 @@ def test_frc_rot(image_fixture):
     img_a, img_b, _ = image_fixture
     assert img_a.dtype == img_b.dtype
     frc_resolution, frc = img_a.frc(img_b, pixel_size=1)
-    assert np.isclose(frc_resolution[0][0], 3.78/2, rtol=0.1)
+    assert np.isclose(frc_resolution[0][0], 3.78 / 2, rtol=0.1)
 
 
 def test_frc_noise(image_fixture):
     img_a, _, img_n = image_fixture
 
     frc_resolution, frc = img_a.frc(img_n, pixel_size=1)
-    assert np.isclose(frc_resolution[0][0], 3.5/2, rtol=0.2)
+    assert np.isclose(frc_resolution[0][0], 3.5 / 2, rtol=0.2)
 
 
 # FSC
@@ -144,11 +144,19 @@ def test_fsc_rot(volume_fixture):
     vol_a, vol_b, _ = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1)
-    assert np.isclose(fsc_resolution[0][0], 3.225/2, rtol=0.01)
+    assert np.isclose(fsc_resolution[0][0], 3.225 / 2, rtol=0.01)
 
 
 def test_fsc_noise(volume_fixture):
     vol_a, _, vol_n = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_n, pixel_size=1)
-    assert np.isclose(fsc_resolution[0][0], 2.6/2, rtol=0.3)
+    assert np.isclose(fsc_resolution[0][0], 2.6 / 2, rtol=0.3)
+
+
+def test_fsc_plot(volume_fixture):
+    vol_a, _, vol_n = volume_fixture
+
+    # fsc_resolution, fsc = vol_a.fsc(vol_n, pixel_size=1)
+    fsc = FourierShellCorrelation(vol_a.asnumpy(), vol_n.asnumpy(), pixel_size=1)
+    fsc.plot()
