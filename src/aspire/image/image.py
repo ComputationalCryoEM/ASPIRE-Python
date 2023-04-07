@@ -9,9 +9,7 @@ from scipy.linalg import lstsq
 import aspire.volume
 from aspire.nufft import anufft
 from aspire.numeric import fft, xp
-from aspire.reconstruction import FourierRingCorrelation
-from aspire.utils import crop_pad_2d, grid_2d
-from aspire.utils.matrix import anorm
+from aspire.utils import FourierRingCorrelation, anorm, crop_pad_2d, grid_2d
 
 logger = logging.getLogger(__name__)
 

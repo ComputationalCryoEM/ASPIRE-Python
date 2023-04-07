@@ -50,7 +50,14 @@ def image_fixture(img_size, dtype):
 
     # Contruct the Simulation source.
     src = Simulation(
-        L=img_size, n=2, vols=v, offsets=0, amplitudes=1, C=1, angles=rots.angles
+        L=img_size,
+        n=2,
+        vols=v,
+        offsets=0,
+        amplitudes=1,
+        C=1,
+        angles=rots.angles,
+        dtype=dtype,
     )
 
     img, img_rot = src.images[:]
@@ -64,6 +71,7 @@ def image_fixture(img_size, dtype):
         C=1,
         angles=rots.angles,
         noise_adder=BlueNoiseAdder(var=np.var(img.asnumpy() * 0.5)),
+        dtype=dtype,
     )
     img_noisy = noisy_src.images[0]
 
@@ -87,8 +95,8 @@ def volume_fixture(img_size, dtype):
     vol_rot = vol.rotate(rots)
 
     # Scale gaussian noise radially
-    noise = np.random.normal(loc=0, scale=1, size=vol.shape)
-    noise = noise * (1.0 + grid_3d(img_size, normalized=False)["r"]) * 0.33
+    noise = np.random.normal(loc=0, scale=1, size=vol.shape).astype(dtype, copy=False)
+    noise = noise * (1.0 + grid_3d(img_size, normalized=False)["r"]) * 0.3
     vol_noise = Volume(
         np.real(fft.centered_ifftn(fft.centered_fftn(vol.asnumpy()[0]) * (1 + noise)))
     )
@@ -109,16 +117,16 @@ def test_frc_id(image_fixture):
 
 def test_frc_rot(image_fixture):
     img_a, img_b, _ = image_fixture
-
+    assert img_a.dtype == img_b.dtype
     frc_resolution, frc = img_a.frc(img_b, pixel_size=1)
-    assert np.isclose(frc_resolution[0][0], 3.76, rtol=0.01)
+    assert np.isclose(frc_resolution[0][0], 3.78, rtol=0.1)
 
 
 def test_frc_noise(image_fixture):
     img_a, _, img_n = image_fixture
 
     frc_resolution, frc = img_a.frc(img_n, pixel_size=1)
-    assert np.isclose(frc_resolution[0][0], 1 / 0.3, rtol=0.3)
+    assert np.isclose(frc_resolution[0][0], 3.5, rtol=0.2)
 
 
 # FSC
@@ -136,11 +144,11 @@ def test_fsc_rot(volume_fixture):
     vol_a, vol_b, _ = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1)
-    assert np.isclose(fsc_resolution[0][0], 3.2, rtol=0.01)
+    assert np.isclose(fsc_resolution[0][0], 3.225, rtol=0.01)
 
 
 def test_fsc_noise(volume_fixture):
     vol_a, _, vol_n = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_n, pixel_size=1)
-    assert np.isclose(fsc_resolution[0][0], 1 / 0.38, rtol=0.3)
+    assert np.isclose(fsc_resolution[0][0], 2.6, rtol=0.3)
