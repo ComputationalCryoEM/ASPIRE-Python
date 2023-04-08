@@ -49,17 +49,17 @@ relion_metadata_fields = {
 }
 
 
-def df_to_relion_types(df):
+def df_to_relion_types(d):
     """
     Convert STAR file strings to data type for each field in a DataFrame loaded via
     `aspire.storage.StarFile`. Columns without a specified data type are read as
     `dtype=object`.
 
-    :param df: A `StarFile` block represented as a Pandas DataFrame.
+    :param df: A `StarFile` block represented as a dictionary.
     :return: The data frame with types converted where possible.
     """
-    column_types = {name: relion_metadata_fields.get(name, str) for name in df.columns}
-    return df.astype(column_types)
+    column_types = {name: relion_metadata_fields.get(name, str) for name in d.keys()}
+    return dict(zip(d.keys(), [np.array(list(map(column_types[k], d[k]))) for k in d.keys()]))
 
 
 class RelionStarFile(StarFile):
@@ -89,7 +89,7 @@ class RelionStarFile(StarFile):
         # validate 3.0 STAR file
         if len(self.blocks) == 1:
             data_block = self.get_block_by_index(0)
-            columns = data_block.columns.to_list()
+            columns = list(data_block.keys())
             if not any(
                 col in columns
                 for col in ["_rlnImageName", "_rlnMicrographName", "_rlnMovieName"]
@@ -120,7 +120,7 @@ class RelionStarFile(StarFile):
 
             data_block = self[self.data_block_name]
             # lastly, data block must contain a column identifying the type of data as well
-            columns = data_block.columns.to_list()
+            columns = list(data_block.keys())
             if not any(
                 col in columns
                 for col in ["_rlnImageName", "_rlnMicrographName", "_rlnMovieName"]
@@ -145,9 +145,7 @@ class RelionStarFile(StarFile):
         """
         _blocks = OrderedDict()
         for block_name, block in self.blocks.items():
-            # generic StarFile blocks can be DataFrame or dict
-            if not isinstance(block, dict):
-                _blocks[block_name] = df_to_relion_types(block)
+            _blocks[block_name] = df_to_relion_types(block)
         self.blocks = _blocks
 
     def get_merged_data_block(self):
@@ -166,7 +164,7 @@ class RelionStarFile(StarFile):
             # based on the corresponding optics group number (returns a new dataframe)
             data_block = self.data_block.copy()
             # get a NumPy array of optics indices for each row of data
-            optics_indices = self.data_block["_rlnOpticsGroup"].astype(int).to_numpy()
+            optics_indices = self.data_block["_rlnOpticsGroup"].astype(int)
             for optics_index, row in self.optics_block.iterrows():
                 # find row indices with this optics index
                 # Note optics group number is 1-indexed in Relion

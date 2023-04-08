@@ -5,7 +5,6 @@ from unittest import TestCase
 
 import mrcfile
 import numpy as np
-from pandas import DataFrame
 
 from aspire.image import Image
 from aspire.source import RelionSource
@@ -48,7 +47,7 @@ class LoadImagesTestCase(TestCase):
                 starfile_loop.append(f"{j+1:06d}@{mrcs_fn}")
 
         # save starfile
-        starfile_data[""] = DataFrame(starfile_loop, columns=starfile_keys)
+        starfile_data[""] = {k:np.array(starfile_loop) for k in starfile_keys}
         StarFile(blocks=starfile_data).write(self.starfile_path)
 
         # create source

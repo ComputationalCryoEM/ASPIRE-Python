@@ -3,7 +3,6 @@ import os
 from collections import OrderedDict
 
 import numpy as np
-import pandas as pd
 from gemmi import cif
 
 logger = logging.getLogger(__name__)
@@ -16,19 +15,10 @@ class StarFileError(Exception):
 class StarFile:
     def __init__(self, filepath="", blocks=None):
         """
-        Initialize either from a path to a STAR file or from an OrderedDict of dataframes
+        Initialize either from a path to a STAR file or from an OrderedDict of ndarrays
         """
         # if blocks are given, set self.blocks, otherwise initialize an empty OrderedDict()
         self.blocks = blocks or OrderedDict()
-        # if constructing from blocks, must switch pandas dtype to str
-        # otherwise comparison with StarFiles read from files will fail
-        # due to different data types
-        self.blocks = OrderedDict(
-            {
-                key: (block.astype(str) if isinstance(block, pd.DataFrame) else block)
-                for (key, block) in self.blocks.items()
-            }
-        )
         self.filepath = str(filepath)
         # raise an error if blocks and a filepath are both passed
         if bool(self.filepath) and bool(len(self.blocks)):
@@ -115,11 +105,11 @@ class StarFile:
                     )
             elif block_has_loop:
                 if gemmi_block.name not in self.blocks:
-                    # initialize DF from list of lists
-                    # read in with dtype=str because we do not want type conversion
-                    self.blocks[gemmi_block.name] = pd.DataFrame(
-                        loop_data, columns=loop_tags, dtype=str
-                    )
+                    # initialize dict from list of lists
+                    d = {}
+                    for i, loop_tag in enumerate(loop_tags):
+                        d[loop_tag] = [str(loop_data[j][i]) for j in range(len(loop_data))]
+                    self.blocks[gemmi_block.name] = d
                 else:
                     # enforce unique block names (keys of StarFile.block OrderedDict)
                     raise StarFileError(
@@ -140,28 +130,25 @@ class StarFile:
             if len(block) == 0:
                 continue
 
-            # look at values to detect if we're dealing with ndarrays
-            # in this case, the block can be typecast as a DataFrame
-            if isinstance(block, dict) and all(
-                isinstance(v, np.ndarray) for v in block.values()
-            ):
-                block = pd.DataFrame(block)
+            # look at values to detect if we're dealing with iterables
+            multiple_rows = isinstance(block, dict) and all(
+                not isinstance(v, str) and hasattr(v, '__iter__') for v in block.values()
+            )
 
-            # are we constructing a loop (DataFrame) or a pair (Dictionary)?
-            if isinstance(block, dict):
+            if not multiple_rows:
                 for key, value in block.items():
                     # simply assign one pair item for each dict entry
                     # write out as str because we do not want type conversion
                     _block.set_pair(key, str(value))
-            elif isinstance(block, pd.DataFrame):
-                # initialize loop with column names
-                _loop = _block.init_loop("", list(block.columns))
-                for row in block.values.tolist():
-                    # write out as str because we do not want type conversion
-                    row = [str(row[x]) for x in range(len(row))]
-                    _loop.add_row(row)
             else:
-                raise StarFileError(f"Unsupported type for block {name}: {type(block)}")
+                assert len(set(len(v) for v in block.values())) == 1, "Not all iterables of the block have the same length"
+                _n_rows = len(list(block.values())[0])
+                # initialize loop with column names
+                _keys = list(block.keys())
+                _loop = _block.init_loop("", _keys)
+                for i in range(_n_rows):
+                    row = [str(block[k][i]) for k in _keys]
+                    _loop.add_row(row)
 
         _doc.write_file(filepath)
 

@@ -61,12 +61,12 @@ class RelionSource(ImageSource):
 
         metadata = self.populate_metadata()
 
-        n = len(metadata)
+        n = len(metadata["__mrc_filepath"])
         if n == 0:
             raise RuntimeError("No mrcs files found for starfile!")
 
         # Peek into the first image and populate some attributes
-        first_mrc_filepath = metadata.loc[0]["__mrc_filepath"]
+        first_mrc_filepath = metadata["__mrc_filepath"][0]
         mrc = mrcfile.open(first_mrc_filepath)
 
         # Get the 'mode' (data type) - TODO: There's probably a more direct way to do this.
@@ -106,10 +106,10 @@ class RelionSource(ImageSource):
             "_rlnAmplitudeContrast",
         ]
         # If these all exist in the STAR file, we may create CTF filters for the source
-        if set(CTF_params).issubset(metadata.columns):
+        if set(CTF_params).issubset(metadata.keys()):
             # partition particles according to unique CTF parameters
             filter_params, filter_indices = np.unique(
-                metadata[CTF_params].values, return_inverse=True, axis=0
+                np.array([metadata[k] for k in CTF_params]).T, return_inverse=True, axis=0
             )
             filters = []
             # for each unique CTF configuration, create a CTFFilter object
@@ -132,7 +132,7 @@ class RelionSource(ImageSource):
             self.filter_indices = filter_indices
 
         # We have provided some, but not all the required params
-        elif any(param in metadata.columns for param in CTF_params):
+        elif any(param in metadata for param in CTF_params):
             logger.warning(
                 f"Found partially populated CTF Params."
                 f"  To automatically populate CTFFilters provide {CTF_params}"
@@ -164,25 +164,22 @@ class RelionSource(ImageSource):
         # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
         # in the _rlnImageName column. here, we're splitting this information
         # so we can get the particle's index in the .mrcs stack as an int
-        metadata[["__mrc_index", "__mrc_filename"]] = metadata[
-            "_rlnImageName"
-        ].str.split("@", n=1, expand=True)
+        indices_filenames = [s.split('@') for s in metadata['_rlnImageName']]
         # __mrc_index corresponds to the integer index of the particle in the __mrc_filename stack
         # Note that this is 1-based indexing
-        metadata["__mrc_index"] = pd.to_numeric(metadata["__mrc_index"])
+        metadata["__mrc_index"] = np.array([int(s[0]) for s in indices_filenames])
+        metadata["__mrc_filename"] = np.array([s[1] for s in indices_filenames])
 
         # Adding a full-filepath field to the Dataframe helps us save time later
         # Note that os.path.join works as expected when the second argument is an absolute path itself
-        metadata["__mrc_filepath"] = metadata["__mrc_filename"].apply(
-            lambda filename: os.path.join(self.data_folder, filename)
-        )
+        metadata["__mrc_filepath"] = np.array([os.path.join(self.data_folder, p) for p in metadata["__mrc_filename"]])
 
         # finally, chop off the metadata df at max_rows
         if self.max_rows is None:
             return metadata
         else:
-            max_rows = min(self.max_rows, len(metadata))
-            return metadata.iloc[:max_rows]
+            max_rows = min(self.max_rows, len(metadata["__mrc_filepath"]))
+            return {k: v[:max_rows] for k, v in metadata.items()}
 
     def __str__(self):
         return f"RelionSource ({self.n} images of size {self.L}x{self.L})"
@@ -206,34 +203,34 @@ class RelionSource(ImageSource):
         # Log the indices in case needed to debug a crash
         logger.debug(f"Indices: {indices}")
 
-        def load_single_mrcs(filepath, df):
+        def load_single_mrcs(filepath, indices):
             arr = mrcfile.open(filepath).data
             # if the stack only contains one image, arr will have shape (resolution, resolution)
             # the code below reshapes it to (1, resolution, resolution)
             if len(arr.shape) == 2:
                 arr = arr.reshape((1,) + arr.shape)
             # __mrc_index is the 1-based index of the particle in the stack
-            data = arr[df["__mrc_index"] - 1, :, :]
+            data = arr[self._metadata["__mrc_index"][indices] - 1, :, :]
 
-            return df.index, data
+            return indices, data
 
         n_workers = self.n_workers
         if n_workers < 0:
             n_workers = cpu_count() - 1
 
-        df = self._metadata.loc[indices]
         im = np.empty(
             (len(indices), self._original_resolution, self._original_resolution),
             dtype=self.dtype,
         )
 
-        groups = df.groupby("__mrc_filepath")
-        n_workers = min(n_workers, len(groups))
+        filepaths, filepath_indices = np.unique(self._metadata["__mrc_filepath"], return_inverse=True)
+        n_workers = min(n_workers, len(filepaths))
 
         with futures.ThreadPoolExecutor(n_workers) as executor:
             to_do = []
-            for filepath, _df in groups:
-                future = executor.submit(load_single_mrcs, filepath, _df)
+            for i, filepath in enumerate(filepaths):
+                this_filepath_indices = np.where(filepath_indices == i)
+                future = executor.submit(load_single_mrcs, filepath, this_filepath_indices)
                 to_do.append(future)
 
             for future in futures.as_completed(to_do):

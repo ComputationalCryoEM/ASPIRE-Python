@@ -9,7 +9,6 @@ from unittest import TestCase
 import mrcfile
 import numpy as np
 from click.testing import CliRunner
-from pandas import DataFrame
 
 import tests.saved_test_data
 from aspire.commands.extract_particles import extract_particles
@@ -190,9 +189,8 @@ class CoordinateSourceTestCase(TestCase):
         y_coords = [center[1] for center in centers]
         blocks = OrderedDict(
             {
-                "coordinates": DataFrame(
+                "coordinates":
                     {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
-                )
             }
         )
         starfile = StarFile(blocks=blocks)
@@ -245,9 +243,8 @@ class CoordinateSourceTestCase(TestCase):
         y_coords = [str(center[1]) + ".000" for center in centers]
         blocks = OrderedDict(
             {
-                "coordinates": DataFrame(
+                "coordinates":
                     {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
-                )
             }
         )
         starfile = StarFile(blocks=blocks)
@@ -270,7 +267,7 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnMicrographPixelSize": 400 + index,
         }
         blocks = OrderedDict(
-            {"root": DataFrame([params_dict], columns=params_dict.keys())}
+            {"root": params_dict}
         )
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
@@ -295,7 +292,7 @@ class CoordinateSourceTestCase(TestCase):
             ["opticsGroup1", 1, 500.0, 700.0, 600.0, 400.0],
             ["opticsGroup2", 2, 501.0, 701.0, 601.0, 401.0],
         ]
-        blocks["optics"] = DataFrame(optics_block, columns=optics_columns)
+        blocks["optics"] = dict(zip(optics_columns, zip(*optics_block)))
 
         micrographs_columns = [
             "_rlnMicrographName",
@@ -309,9 +306,7 @@ class CoordinateSourceTestCase(TestCase):
             [self.all_mrc_paths[0], 1, 1000.0, 900.0, 800.0],
             [self.all_mrc_paths[0], 2, 1001.0, 901.0, 801.0],
         ]
-        blocks["micrographs"] = DataFrame(
-            micrographs_block, columns=micrographs_columns
-        )
+        blocks["micrographs"] = dict(zip(micrographs_columns, zip(*micrographs_block)))
 
         star = StarFile(blocks=blocks)
         star.write(star_fp)
