@@ -8,6 +8,7 @@ from unittest import TestCase
 
 import mrcfile
 import numpy as np
+import pytest
 from click.testing import CliRunner
 from pandas import DataFrame
 
@@ -275,7 +276,7 @@ class CoordinateSourceTestCase(TestCase):
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
 
-    def createTestRelionCtfFile(self):
+    def createTestRelionCtfFile(self, reverse_optics_block_rows=False):
         """
         Creates example RELION-generated CTF file for a set of micrographs.
         """
@@ -295,6 +296,11 @@ class CoordinateSourceTestCase(TestCase):
             ["opticsGroup1", 1, 500.0, 700.0, 600.0, 400.0],
             ["opticsGroup2", 2, 501.0, 701.0, 601.0, 401.0],
         ]
+        # Since optics block rows are self-contained,
+        # reversing their order should have no affect anywhere.
+        if reverse_optics_block_rows:
+            optics_block = optics_block[::-1]
+
         blocks["optics"] = DataFrame(optics_block, columns=optics_columns)
 
         micrographs_columns = [
@@ -534,6 +540,16 @@ class CoordinateSourceTestCase(TestCase):
         self._testCtfMetadata(src)
 
     def testImportCtfFromRelion(self):
+        src = BoxesCoordinateSource(self.files_box)
+        src.import_relion_ctf(self.relion_ctf_file)
+        self._testCtfFilters(src)
+        self._testCtfMetadata(src)
+
+    @pytest.mark.xfail(strict=True)
+    def testImportCtfFromRelionReverseOpticsGroup(self):
+        self.relion_ctf_file = self.createTestRelionCtfFile(
+            reverse_optics_block_rows=True
+        )
         src = BoxesCoordinateSource(self.files_box)
         src.import_relion_ctf(self.relion_ctf_file)
         self._testCtfFilters(src)
