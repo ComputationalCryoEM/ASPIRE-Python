@@ -8,7 +8,6 @@ from unittest import TestCase
 
 import mrcfile
 import numpy as np
-import pytest
 from click.testing import CliRunner
 from pandas import DataFrame
 
