@@ -545,7 +545,6 @@ class CoordinateSourceTestCase(TestCase):
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
-    @pytest.mark.xfail(strict=True)
     def testImportCtfFromRelionReverseOpticsGroup(self):
         self.relion_ctf_file = self.createTestRelionCtfFile(
             reverse_optics_block_rows=True
