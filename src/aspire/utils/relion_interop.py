@@ -170,9 +170,7 @@ class RelionStarFile(StarFile):
             for _, row in self.optics_block.iterrows():
                 optics_index = row["_rlnOpticsGroup"]
                 # find row indices with this optics index
-                match = np.nonzero(optics_indices == optics_index)[
-                    0
-                ]  # returns 1-tuple
+                match = np.nonzero(optics_indices == optics_index)[0]  # returns 1-tuple
                 for param in self.optics_block.columns:
                     data_block.loc[match, param] = getattr(row, param)
 
