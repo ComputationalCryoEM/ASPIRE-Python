@@ -2,7 +2,6 @@ import logging
 import os
 from collections import OrderedDict
 
-import numpy as np
 from gemmi import cif
 
 logger = logging.getLogger(__name__)
@@ -18,12 +17,21 @@ class StarFile:
         Initialize either from a path to a STAR file or from an OrderedDict of ndarrays
         """
         # if blocks are given, set self.blocks, otherwise initialize an empty OrderedDict()
+        if blocks is not None:
+            for k in blocks:
+                for _k, _v in blocks[k].items():
+                    if not isinstance(_v, str):
+                        if hasattr(_v, "__iter__"):
+                            blocks[k][_k] = [str(__v) for __v in _v]
+                        else:
+                            blocks[k][_k] = str(_v)
+
         self.blocks = blocks or OrderedDict()
         self.filepath = str(filepath)
         # raise an error if blocks and a filepath are both passed
         if bool(self.filepath) and bool(len(self.blocks)):
             raise StarFileError(
-                "Pass either a path to a STAR file or an OrderedDict of Pandas DataFrames, not both"
+                "Pass either a path to a STAR file or an OrderedDict of dicts, not both"
             )
         if self.filepath:
             if not os.path.exists(self.filepath):
@@ -35,7 +43,7 @@ class StarFile:
     def _initialize_blocks(self):
         """
         Converts a gemmi Document object representing the .star file
-        at self.filepath into an OrderedDict of pandas dataframes, each of which represents one block in the .star file
+        at self.filepath into an OrderedDict of dicts, each of which represents one block in the .star file
         """
         logger.info(f"Parsing star file at: {self.filepath}")
         gemmi_doc = cif.read_file(self.filepath)
@@ -108,7 +116,9 @@ class StarFile:
                     # initialize dict from list of lists
                     d = {}
                     for i, loop_tag in enumerate(loop_tags):
-                        d[loop_tag] = [str(loop_data[j][i]) for j in range(len(loop_data))]
+                        d[loop_tag] = [
+                            str(loop_data[j][i]) for j in range(len(loop_data))
+                        ]
                     self.blocks[gemmi_block.name] = d
                 else:
                     # enforce unique block names (keys of StarFile.block OrderedDict)
@@ -132,7 +142,8 @@ class StarFile:
 
             # look at values to detect if we're dealing with iterables
             multiple_rows = isinstance(block, dict) and all(
-                not isinstance(v, str) and hasattr(v, '__iter__') for v in block.values()
+                not isinstance(v, str) and hasattr(v, "__iter__")
+                for v in block.values()
             )
 
             if not multiple_rows:
@@ -141,7 +152,9 @@ class StarFile:
                     # write out as str because we do not want type conversion
                     _block.set_pair(key, str(value))
             else:
-                assert len(set(len(v) for v in block.values())) == 1, "Not all iterables of the block have the same length"
+                assert (
+                    len(set(len(v) for v in block.values())) == 1
+                ), "Not all iterables of the block have the same length"
                 _n_rows = len(list(block.values())[0])
                 # initialize loop with column names
                 _keys = list(block.keys())
@@ -154,7 +167,7 @@ class StarFile:
 
     def get_block_by_index(self, index):
         """
-        Retrieve a DataFrame representing a star file block by its position in the starfile
+        Retrieve a dict representing a star file block by its position in the starfile
         """
         return self.blocks[list(self.blocks.keys())[index]]
 
@@ -192,12 +205,6 @@ class StarFile:
             if not isinstance(self_list[i][1], type(other_list[i][1])):
                 return False
             # finally, compare the objects themselves
-            if isinstance(self_list[i][1], pd.DataFrame):
-                # test using pandas DataFrame.equals()
-                if not self_list[i][1].equals(other_list[i][1]):
-                    return False
-            else:
-                # test dict equality
-                if not self_list[i][1] == other_list[i][1]:
-                    return False
+            if not self_list[i][1] == other_list[i][1]:
+                return False
         return True

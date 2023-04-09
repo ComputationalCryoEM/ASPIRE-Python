@@ -188,10 +188,7 @@ class CoordinateSourceTestCase(TestCase):
         x_coords = [center[0] for center in centers]
         y_coords = [center[1] for center in centers]
         blocks = OrderedDict(
-            {
-                "coordinates":
-                    {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
-            }
+            {"coordinates": {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}}
         )
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
@@ -242,10 +239,7 @@ class CoordinateSourceTestCase(TestCase):
         x_coords = [str(center[0]) + ".000" for center in centers]
         y_coords = [str(center[1]) + ".000" for center in centers]
         blocks = OrderedDict(
-            {
-                "coordinates":
-                    {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
-            }
+            {"coordinates": {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}}
         )
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
@@ -266,9 +260,7 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnVoltage": 500 + index,
             "_rlnMicrographPixelSize": 400 + index,
         }
-        blocks = OrderedDict(
-            {"root": params_dict}
-        )
+        blocks = OrderedDict({"root": params_dict})
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
 
@@ -489,14 +481,14 @@ class CoordinateSourceTestCase(TestCase):
         # we want to read the saved mrcs file from the STAR file
         image_name_column = saved_star.get_block_by_index(0)["_rlnImageName"]
         # we're reading a string of the form 0000X@mrcs_path.mrcs
-        _particle, mrcs_path = image_name_column.iloc[0].split("@")
+        _particle, mrcs_path = image_name_column[0].split("@")
         saved_mrcs_stack = mrcfile.open(os.path.join(self.data_folder, mrcs_path)).data
         # assert that the particles saved are correct
         for i in range(10):
             self.assertTrue(np.array_equal(imgs.asnumpy()[i], saved_mrcs_stack[i]))
         # assert that the star file has the correct metadata
         self.assertEqual(
-            saved_star[""].columns.tolist(),
+            list(saved_star[""].keys()),
             ["_rlnImageName", "_rlnCoordinateX", "_rlnCoordinateY"],
         )
         # assert that all the correct coordinates were saved

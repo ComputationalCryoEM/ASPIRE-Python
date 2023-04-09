@@ -5,7 +5,6 @@ from multiprocessing import cpu_count
 
 import mrcfile
 import numpy as np
-import pandas as pd
 
 from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
@@ -20,7 +19,7 @@ class RelionSource(ImageSource):
     A RelionSource represents a source of picked and cropped particles stored as slices in a `.mrcs` stack.
     It must be instantiated via a STAR file, which--at a minumum--lists the particles in each `.mrcs` stack in the
     `_rlnImageName` column. The STAR file may also contain Relion-specific metadata columns. This information
-    is read into a Pandas DataFrame table containing a row for each particle specifying its location and
+    is read into dictionaries containing rows for each particle specifying its location and
     its metadata. The metadata table may be augmented or modified via helper methods found in ImageSource. It may
     store, for example, Filter objects added during preprocessing.
     """
@@ -109,7 +108,9 @@ class RelionSource(ImageSource):
         if set(CTF_params).issubset(metadata.keys()):
             # partition particles according to unique CTF parameters
             filter_params, filter_indices = np.unique(
-                np.array([metadata[k] for k in CTF_params]).T, return_inverse=True, axis=0
+                np.array([metadata[k] for k in CTF_params]).T,
+                return_inverse=True,
+                axis=0,
             )
             filters = []
             # for each unique CTF configuration, create a CTFFilter object
@@ -148,7 +149,7 @@ class RelionSource(ImageSource):
     def populate_metadata(self):
         """
         Relion STAR files may contain a large number of metadata columns in addition
-        to the locations of particles. We read this into a Pandas DataFrame and add some of
+        to the locations of particles. We read this into a dict and add some of
         our own columns for convenience.
         """
         if self.data_folder is not None:
@@ -164,7 +165,7 @@ class RelionSource(ImageSource):
         # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
         # in the _rlnImageName column. here, we're splitting this information
         # so we can get the particle's index in the .mrcs stack as an int
-        indices_filenames = [s.split('@') for s in metadata['_rlnImageName']]
+        indices_filenames = [s.split("@") for s in metadata["_rlnImageName"]]
         # __mrc_index corresponds to the integer index of the particle in the __mrc_filename stack
         # Note that this is 1-based indexing
         metadata["__mrc_index"] = np.array([int(s[0]) for s in indices_filenames])
@@ -172,7 +173,9 @@ class RelionSource(ImageSource):
 
         # Adding a full-filepath field to the Dataframe helps us save time later
         # Note that os.path.join works as expected when the second argument is an absolute path itself
-        metadata["__mrc_filepath"] = np.array([os.path.join(self.data_folder, p) for p in metadata["__mrc_filename"]])
+        metadata["__mrc_filepath"] = np.array(
+            [os.path.join(self.data_folder, p) for p in metadata["__mrc_filename"]]
+        )
 
         # finally, chop off the metadata df at max_rows
         if self.max_rows is None:
@@ -223,14 +226,18 @@ class RelionSource(ImageSource):
             dtype=self.dtype,
         )
 
-        filepaths, filepath_indices = np.unique(self._metadata["__mrc_filepath"], return_inverse=True)
+        filepaths, filepath_indices = np.unique(
+            self._metadata["__mrc_filepath"], return_inverse=True
+        )
         n_workers = min(n_workers, len(filepaths))
 
         with futures.ThreadPoolExecutor(n_workers) as executor:
             to_do = []
             for i, filepath in enumerate(filepaths):
-                this_filepath_indices = np.where(filepath_indices == i)
-                future = executor.submit(load_single_mrcs, filepath, this_filepath_indices)
+                this_filepath_indices = np.where(filepath_indices == i)[0]
+                future = executor.submit(
+                    load_single_mrcs, filepath, this_filepath_indices
+                )
                 to_do.append(future)
 
             for future in futures.as_completed(to_do):

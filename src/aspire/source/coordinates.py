@@ -7,7 +7,6 @@ from math import floor
 
 import mrcfile
 import numpy as np
-import pandas as pd
 
 from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
@@ -223,8 +222,9 @@ class CoordinateSource(ImageSource, ABC):
         return a list of coordinates in box format.
         :param star_file: A path to a STAR file containing particle centers
         """
-        df = StarFile(star_file).get_block_by_index(0).astype(float)
+        df = StarFile(star_file).get_block_by_index(0)
         coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
+        coords = [(float(x), float(y)) for x, y in coords]
         return [
             self._box_coord_from_center(coord, self.particle_size) for coord in coords
         ]
@@ -315,16 +315,16 @@ class CoordinateSource(ImageSource, ABC):
                 "Number of CTF STAR files must match number of micrographs."
             )
 
-        # merge DataFrames from CTF files
-        dfs = []
+        # merge dicts from CTF files
+        dfs = defaultdict(list)
         for f in ctf:
             # ASPIRE's CTF Estimator produces legacy (=< 3.0) STAR files containing one row
             star = RelionStarFile(f)
-            dfs.append(star.data_block)
+            data_block = star.data_block
+            for k, v in data_block.items():
+                dfs[k].append(v)
 
-        df = pd.concat(dfs, ignore_index=True)
-
-        self._extract_ctf(df)
+        self._extract_ctf(dfs)
 
     def import_relion_ctf(self, ctf):
         """
@@ -336,8 +336,8 @@ class CoordinateSource(ImageSource, ABC):
         """
         data_block = RelionStarFile(ctf).get_merged_data_block()
 
-        # data_block is a pandas Dataframe containing the micrographs
-        if not len(data_block) == self.num_micrographs:
+        # data_block is a dict containing the micrographs
+        if not len(data_block[list(data_block.keys())[0]]) == self.num_micrographs:
             raise ValueError(
                 f"{ctf} has CTF information for {len(data_block)}",
                 f" micrographs but this source has {self.num_micrographs} micrographs.",
@@ -347,7 +347,7 @@ class CoordinateSource(ImageSource, ABC):
 
     def _extract_ctf(self, df):
         """
-        Receives a flattened DataFrame containing micrograph CTF information, and populates
+        Receives a dict containing micrograph CTF information, and populates
             the Source's CTF Filters, filter indices, and metadata.
         """
         # required CTF params excluding pixel size
@@ -361,10 +361,18 @@ class CoordinateSource(ImageSource, ABC):
             "_rlnMicrographPixelSize",
         ]
 
+        n = len(df["_rlnVoltage"])
         # get unique ctfs from the data block
         # i'th entry of `indices` contains the index of `filter_params` with corresponding CTF params
         filter_params, indices = np.unique(
-            df[CTF_params].astype(self.dtype).values, return_inverse=True, axis=0
+            np.vstack(
+                [
+                    np.array([df[c][i] for c in CTF_params]).astype(self.dtype)
+                    for i in range(n)
+                ]
+            ),
+            return_inverse=True,
+            axis=0,
         )
 
         # convert defocus_ang from degrees to radians
@@ -642,14 +650,14 @@ class CentersCoordinateSource(CoordinateSource):
         """
         df = StarFile(coord_file).get_block_by_index(0)
         # We're looking for specific columns for the X and Y coordinates
-        if not all(col in df.columns for col in ["_rlnCoordinateX", "_rlnCoordinateY"]):
+        if not all(col in df for col in ["_rlnCoordinateX", "_rlnCoordinateY"]):
             logger.error(f"Problem with coordinate file: {coord_file}")
             raise ValueError(
                 "STAR file does not contain _rlnCoordinateX, _rlnCoordinateY columns."
             )
         # check that all values in each column are numeric
         if not all(
-            all(df[col].apply(self._is_number))
+            all(map(self._is_number, df[col]))
             for col in ["_rlnCoordinateX", "_rlnCoordinateY"]
         ):
             logger.error(f"Problem with coordinate file: {coord_file}")

@@ -47,7 +47,7 @@ class LoadImagesTestCase(TestCase):
                 starfile_loop.append(f"{j+1:06d}@{mrcs_fn}")
 
         # save starfile
-        starfile_data[""] = {k:np.array(starfile_loop) for k in starfile_keys}
+        starfile_data[""] = {k: np.array(starfile_loop) for k in starfile_keys}
         StarFile(blocks=starfile_data).write(self.starfile_path)
 
         # create source
