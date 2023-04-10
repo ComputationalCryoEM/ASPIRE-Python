@@ -76,13 +76,13 @@ class SimTestCase(TestCase):
         # Get value of metadata fields for indices 0, 1, 2, 3
         values = self.sim.get_metadata(["rand_value1", "rand_value2"], [0, 1, 2, 3])
         # values that we didn't specify in get_metadata get initialized as 'missing'
-        # according to the detected dtype of input, in this case, np.iinfo(np.int64).min
+        # according to the detected dtype of input, in this case, np.iinfo(int).min
         self.assertTrue(
             np.allclose(
                 np.column_stack(
                     [
-                        [11, 12, np.iinfo(np.int64).min, 13],
-                        [21, 22, np.iinfo(np.int64).min, 23],
+                        [11, 12, np.iinfo(int).min, 13],
+                        [21, 22, np.iinfo(int).min, 23],
                     ]
                 ),
                 values,
