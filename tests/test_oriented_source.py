@@ -5,7 +5,7 @@ import pytest
 
 from aspire.abinitio import CLSymmetryC3C4, CLSyncVoting
 from aspire.source import OrientedSource, Simulation
-from aspire.volume import CnSymmetricVolume, CyclicSymmetryGroup
+from aspire.volume import CnSymmetricVolume
 
 logger = logging.getLogger(__name__)
 
@@ -32,17 +32,13 @@ def oriented_src_fixture(sim_fixture):
     # `OrientedSource`s
     src = OrientedSource(sim, orientation_estimator=estimator)
     src_C4 = OrientedSource(sim_C4, orientation_estimator=estimator_C4)
-    src_from_rots = OrientedSource(
-        sim,
-        rotations=sim.rotations,
-        symmetry_group=CyclicSymmetryGroup(order=1, dtype=sim.dtype),
-    )
-    return src, src_C4, src_from_rots
+
+    return src, src_C4
 
 
 def test_repr(oriented_src_fixture, sim_fixture):
     sim, _ = sim_fixture
-    src, _, _ = oriented_src_fixture
+    src, _ = oriented_src_fixture
 
     # Check that original source is mentioned in repr
     logger.debug(f"repr(OrientedSrc): {repr(src)}")
@@ -50,31 +46,27 @@ def test_repr(oriented_src_fixture, sim_fixture):
 
 
 def test_images(oriented_src_fixture, sim_fixture):
-    src, src_C4, src_from_rots = oriented_src_fixture
+    src, src_C4 = oriented_src_fixture
     sim, sim_C4 = sim_fixture
     assert np.allclose(src.images[:], sim.images[:])
     assert np.allclose(src_C4.images[:], sim_C4.images[:])
-    assert np.allclose(src_from_rots.images[:], sim.images[:])
 
 
 def test_rotations(oriented_src_fixture):
-    src, src_C4, src_from_rots = oriented_src_fixture
+    src, src_C4 = oriented_src_fixture
     # Smoke test for rotations
     _ = src.rotations
     _ = src_C4.rotations
-    _ = src_from_rots.rotations
 
 
 def test_angles(oriented_src_fixture):
-    src, src_C4, src_from_rots = oriented_src_fixture
+    src, src_C4 = oriented_src_fixture
     # Smoke test for angles
     _ = src.angles
     _ = src_C4.angles
-    _ = src_from_rots.angles
 
 
 def test_symmetry_group(oriented_src_fixture):
-    src, src_C4, src_from_rots = oriented_src_fixture
+    src, src_C4 = oriented_src_fixture
     assert str(src.symmetry_group) == "C1"
     assert str(src_C4.symmetry_group) == "C4"
-    assert str(src_from_rots.symmetry_group) == "C1"
