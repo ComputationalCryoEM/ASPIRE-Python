@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from aspire.basis import Basis
+from aspire.basis import SteerableBasis2D
 from aspire.basis.basis_utils import (
     d_decay_approx_fun,
     k_operator,
@@ -17,7 +17,7 @@ from aspire.utils import complex_type
 logger = logging.getLogger(__name__)
 
 
-class PSWFBasis2D(Basis):
+class PSWFBasis2D(SteerableBasis2D):
     """
     Define a derived class for direct Prolate Spheroidal Wave Function (PSWF) expanding 2D images
 
@@ -105,12 +105,12 @@ class PSWFBasis2D(Basis):
         """
         self._generate_samples()
 
-        self.non_neg_freq_inds = slice(0, len(self.ang_freqs))
+        self.non_neg_freq_inds = slice(0, len(self.angular_indices))
 
-        tmp = np.nonzero(self.ang_freqs == 0)[0]
+        tmp = np.nonzero(self.angular_indices == 0)[0]
         self.zero_freq_inds = slice(tmp[0], tmp[-1] + 1)
 
-        tmp = np.nonzero(self.ang_freqs > 0)[0]
+        tmp = np.nonzero(self.angular_indices > 0)[0]
         self.pos_freq_inds = slice(tmp[0], tmp[-1] + 1)
 
     def _generate_samples(self):
@@ -142,10 +142,14 @@ class PSWFBasis2D(Basis):
         self.max_ns = max_ns
 
         self.samples = self._evaluate_pswf2d_all(self._r_disk, self._theta_disk, max_ns)
-        self.ang_freqs = np.repeat(np.arange(len(max_ns)), max_ns).astype("float")
-        self.rad_freqs = np.concatenate([range(1, i + 1) for i in max_ns]).astype(
+        self.angular_indices = np.repeat(np.arange(len(max_ns)), max_ns).astype("float")
+        self.radial_indices = np.concatenate([range(1, i + 1) for i in max_ns]).astype(
             "float"
         )
+
+        # Added to support subclassing SteerableBasis
+        self.signs_indices = np.sign(self.angular_indices)
+
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
         self.samples_conj_transpose = self.samples.conj().transpose()
         # the column dimension of samples_conj_transpose is the number of basis coefficients
@@ -177,7 +181,7 @@ class PSWFBasis2D(Basis):
         coefficients = np.atleast_2d(coefficients)
         n_images = coefficients.shape[0]
 
-        angular_is_zero = np.absolute(self.ang_freqs) == 0
+        angular_is_zero = np.absolute(self.angular_indices) == 0
 
         flatten_images = coefficients[:, angular_is_zero] @ self.samples[
             angular_is_zero
@@ -366,3 +370,39 @@ class PSWFBasis2D(Basis):
 
         range_array = np.array(range(approx_length))
         return d_vec, approx_length, range_array
+
+    # For now, hack in rotation.
+    # TODO: Come back and deal with the details after we get cov2d and class avg working as well.
+    def rotate(self, coef, radians, refl=None):
+        return self.complex_rotate(coef, radians, refl)
+
+    def complex_rotate(self, complex_coef, radians, refl=None):
+        """ """
+
+        # Covert radians to a broadcastable shape
+        if isinstance(radians, np.ndarray):
+            if len(radians) != len(complex_coef):
+                raise RuntimeError(
+                    "`rotate` call `radians` length cannot broadcast with"
+                    f" `complex_coef` {len(complex_coef)} != {len(radians)}"
+                )
+            radians = radians.reshape(-1, 1)
+        # else: radians can be a constant
+
+        ks = self.angular_indices
+        assert len(ks) == complex_coef.shape[-1]
+
+        # Don't mutate the input coef array (danger)
+        _complex_coef = complex_coef.copy()
+
+        # refl
+        if refl is not None:
+            if isinstance(refl, np.ndarray):
+                assert len(refl) == len(complex_coef)
+            # else: refl can be a constant
+            # get the coefs corresponding to -ks , aka "ells"
+            _complex_coef[refl] = np.conj(complex_coef[refl])
+
+        _complex_coef = _complex_coef * np.exp(-1j * ks * radians)
+
+        return _complex_coef
