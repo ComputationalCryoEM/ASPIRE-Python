@@ -15,7 +15,6 @@ from aspire.utils import (
     trange,
 )
 from aspire.utils.random import randn
-from aspire.volume import CyclicSymmetryGroup
 
 logger = logging.getLogger(__name__)
 
