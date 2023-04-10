@@ -283,3 +283,41 @@ class SteerableBasis2D(Basis):
             )
 
         return self.evaluate_t(self.evaluate(coef).shift(shifts))
+
+    def indices_mask(self, **kwargs):
+        """
+        Given `radial=` or `angular=` expressions, return (`count`,)
+        shaped mask where values satisfying the expression are `True`.
+
+        Examples:
+            No args yield all indices.
+            `angular>=0` selects coefficients with non negative angular indices.
+            `angular=1, radial=2` selects coefficients satisfying angular index of 1 _and_ radial index of 2.
+
+
+        :return: Boolen mask of shape (`count`,).
+            Intended to be broadcast with `Coef` containers.
+        """
+
+        radial = kwargs.get("radial", None)
+        angular = kwargs.get("angular", None)
+
+        # slowly construct the map
+        radial_mask = np.zeros(self.count, dtype=bool)
+        angular_mask = np.zeros(self.count, dtype=bool)
+
+        if radial is None:
+            radial_mask[:] = True
+        else:
+            for k in np.atleast_1d(radial):
+                radial_mask[self.radial_indices == k] = True
+
+        if angular is None:
+            angular_mask[:] = True
+        else:
+            for el in np.atleast_1d(angular):
+                angular_mask[self.angular_indices == el] = True
+
+        mask = radial_mask & angular_mask
+
+        return mask

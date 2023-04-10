@@ -198,3 +198,15 @@ class Coef:
         Return np.size of underlying data.
         """
         return np.size(self._data)
+
+    def by_indices(self, **kwargs):
+        """
+        Select coefficients by indices (`radial`, `angular`).
+
+        See `SteerableBasis.indices_mask` for argument details.
+
+        :return: `Coef` vector.
+        """
+
+        mask = self.basis.indices_mask(**kwargs)
+        return self._data[:, mask]
