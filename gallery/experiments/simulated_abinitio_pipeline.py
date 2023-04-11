@@ -4,7 +4,7 @@ Abinitio Pipeline - Simulated Data
 
 This notebook introduces a selection of
 components corresponding to generating realistic
-simulated Cryo-EM data and running key ASPIRE-Python
+simulated cryo-EM data and running key ASPIRE-Python
 Abinitio model components as a pipeline.
 """
 
@@ -129,7 +129,7 @@ if interactive:
     src.images[:10].show()
 
 # Cache to memory for some speedup
-src = src.cache()
+src.cache()
 
 # %%
 # Optional: CWF Denoising
@@ -215,7 +215,7 @@ logger.info(
 logger.info("Begin Volume reconstruction")
 
 # Assign the estimated rotations to the class averages
-avgs.rotations = rots_est
+avgs = avgs.update(rotations=rots_est)
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((v.resolution,) * 3, dtype=v.dtype)

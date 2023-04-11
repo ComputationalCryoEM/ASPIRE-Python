@@ -4,7 +4,7 @@ Abinitio Pipeline - Experimental Data Empiar 10081
 
 This notebook introduces a selection of
 components corresponding to loading real Relion picked
-particle Cryo-EM data and running key ASPIRE-Python
+particle cryo-EM data and running key ASPIRE-Python
 Abinitio model components as a pipeline.
 
 Specifically this pipeline uses the
@@ -117,7 +117,7 @@ rots_est = orient_est.rotations
 logger.info("Begin Volume reconstruction")
 
 # Assign the estimated rotations to the class averages
-avgs.rotations = rots_est
+avgs = avgs.update(rotations=rots_est)
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((img_size,) * 3, dtype=src.dtype)

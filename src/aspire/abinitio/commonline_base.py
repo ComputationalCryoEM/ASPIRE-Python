@@ -217,7 +217,7 @@ class CLOrient3D:
         unknowns, shifts in x, y for a pair of images. The detailed implementation
         can be found in the book chapter as below:
         Y. Shkolnisky and A. Singer,
-        Center of Mass Operators for CryoEM - Theory and Implementation,
+        Center of Mass Operators for Cryo-EM - Theory and Implementation,
         Modeling Nanoscale Imaging in Electron Microscopy,
         T. Vogt, W. Dahmen, and P. Binev (Eds.)
         Nanostructure Science and Technology Series,

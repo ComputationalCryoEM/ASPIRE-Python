@@ -380,12 +380,10 @@ class CoordinateSourceTestCase(TestCase):
 
     def testCached(self):
         src = BoxesCoordinateSource(self.files_box)
-        src_uncached = BoxesCoordinateSource(self.files_box)
-        src_cached = src.cache()
+        src_uncached = src[:]
+        src.cache()
         self.assertTrue(
-            np.array_equal(
-                src_cached.images[:].asnumpy(), src_uncached.images[:].asnumpy()
-            )
+            np.array_equal(src.images[:].asnumpy(), src_uncached.images[:].asnumpy())
         )
 
     def testImagesRandomIndices(self):

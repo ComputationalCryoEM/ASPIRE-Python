@@ -27,6 +27,9 @@ class DenoisedImageSource(ImageSource):
         self.denoiser = denoiser
         self.batch_size = batch_size
 
+        # Any further operations should not mutate this instance.
+        self._mutable = False
+
     def _images(self, indices):
         """
         Internal function to return a set of images after denoising, when accessed via the

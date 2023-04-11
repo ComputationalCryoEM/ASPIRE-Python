@@ -140,9 +140,13 @@ class ImageSource(ABC):
     the unique "_rlnDefocusU"/"_rlnDefocusV" Relion parameters.
     """
 
+    # The abstract class starts off _mutable. Conrete classes should
+    # disable _mutable as the last step in __init__.
+    _mutable = True
+
     def __init__(self, L, n, dtype="double", metadata=None, memory=None):
         """
-        A Cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.
+        A cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.
 
         :param L: resolution of (square) images (int)
         :param n: The total number of images available
@@ -470,6 +474,12 @@ class ImageSource(ABC):
             values should either be a scalar or a vector of length equal to the total number of images, |self.n|.
         :return: On return, the metadata associated with the specified indices has been modified.
         """
+
+        # This breaks lots of things, maybe not something we want to rush out.
+        # # Check if we're in an immutable state.
+        # if not self._mutable:
+        #     raise RuntimeError("This source is no longer mutable, try using `update` instead of `set_metadata`")
+
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]
 
@@ -613,8 +623,13 @@ class ImageSource(ABC):
             self.filter_indices[indices],
         )
 
-    @as_copy
     def cache(self):
+        """
+        Computes all queued pipeline transformations and stores the
+        generated images in an array.  This trades memory for fast
+        image access, and is useful when images will be repeatedly
+        queried since it avoids recomputing on-the-fly.
+        """
         logger.info("Caching source images")
         self._cached_im = self.images[:]
         self.generation_pipeline.reset()
@@ -650,18 +665,24 @@ class ImageSource(ABC):
         self.L = L
 
     @as_copy
-    def whiten(self, noise_estimate):
+    def whiten(self, noise_estimate=None):
         """
         Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
 
-        :param noise_estimate: `NoiseEstimator` or `Filter`. When
+        When no `noise_estimate` is provided, a `WhiteNoiseEstimator`
+        will be instantiated at this preprocessing stage behind the
+        scenes.
+
+        :param noise_estimate: Optional, `NoiseEstimator` or `Filter`. When
             passed a `NoiseEstimator` the `filter` attribute will be
             queried.  Alternatively, the noise PSD may be passed
             directly as a `Filter` object.
         :return: On return, the `ImageSource` object has been modified in place.
         """
 
-        if isinstance(noise_estimate, NoiseEstimator):
+        if noise_estimate is None:
+            noise_filter = WhiteNoiseEstimator(self).filter
+        elif isinstance(noise_estimate, NoiseEstimator):
             # Any NoiseEstimator instance should have a `filter`.
             noise_filter = noise_estimate.filter
         elif isinstance(noise_estimate, Filter):
@@ -1308,6 +1329,9 @@ class IndexedSource(ImageSource):
         self.filter_indices = np.zeros(self.n, dtype=int)
         self.unique_filters = [IdentityFilter()]
 
+        # Any further operations should not mutate this instance.
+        self._mutable = False
+
     def _images(self, indices):
         """
         Returns images from `self.src` corresponding to `indices`
@@ -1381,6 +1405,9 @@ class ArrayImageSource(ImageSource):
             # This will populate `_rotations`,
             #   which is exposed by properties `angles` and `rotations`.
             self.angles = angles
+
+        # Any further operations should not mutate this instance.
+        self._mutable = False
 
     def _images(self, indices):
         """

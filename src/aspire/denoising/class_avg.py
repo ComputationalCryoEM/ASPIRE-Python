@@ -83,6 +83,10 @@ class ClassAvgSource(ImageSource):
             dtype=self.averager.src.dtype,
         )
 
+        # Any further operations should not mutate this instance.
+        # Note, updating `n` is a special case for this source at this time.
+        self._mutable = False
+
     @ImageSource.n.setter
     def n(self, n):
         """

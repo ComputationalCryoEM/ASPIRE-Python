@@ -29,10 +29,10 @@ n_img = 10
 # --------------------
 # This example starts with an mrc, which can be loaded as an ASPIRE Volume.
 
-DATA_DIR = "data"  # Tutorial example data folder
-v = Volume.load(
-    os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"), dtype=np.float64
+file_path = os.path.join(
+    os.path.dirname(os.getcwd()), "data", "clean70SRibosome_vol_65p.mrc"
 )
+v = Volume.load(file_path, dtype=np.float64)
 
 # Then we downsample to 60x60x60
 v.downsample(60)

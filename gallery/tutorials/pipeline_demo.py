@@ -1,5 +1,4 @@
 """
-================================
 Ab-initio Pipeline Demonstration
 ================================
 
@@ -32,9 +31,10 @@ def download(url, save_path, chunk_size=1024 * 1024):
             fd.write(chunk)
 
 
-if not os.path.exists("data/emd_2660.map"):
+file_path = os.path.join(os.getcwd(), "data", "emd_2660.map")
+if not os.path.exists(file_path):
     url = "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2660/map/emd_2660.map.gz"
-    download(url, "data/emd_2660.map")
+    download(url, file_path)
 
 # %%
 # Load a Volume
@@ -44,7 +44,7 @@ if not os.path.exists("data/emd_2660.map"):
 from aspire.volume import Volume
 
 # Load 80s Ribosome
-original_vol = Volume.load("data/emd_2660.map", dtype=np.float32)
+original_vol = Volume.load(file_path, dtype=np.float32)
 
 # Downsample the volume
 res = 41
@@ -263,7 +263,13 @@ from aspire.basis import FFBBasis3D
 from aspire.reconstruction import MeanEstimator
 
 # Assign the estimated rotations to the class averages
-avgs.rotations = rots_est
+avgs = avgs.update(rotations=rots_est)
+
+# %%
+# .. note::
+#     Outside of internal operations during ``ImageSource``
+#     construction, mutating meta data will return a new source
+#     object.
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D(res, dtype=vol.dtype)

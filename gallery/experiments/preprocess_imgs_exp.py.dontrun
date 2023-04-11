@@ -1,6 +1,6 @@
 #!/usr/bin/env  python
 """
-This script illustrates how to preprocess experimental CryoEM images
+This script illustrates how to preprocess experimental cryo-EM images
 before starting the pipeline of reconstructing 3D map.
 """
 
@@ -15,7 +15,7 @@ STARFILE_IN = '/path/to/untarred/empiar/dataset/input.star'
 PIXEL_SIZE = 1.34
 NUM_IMGS = 100
 
-print('This script illustrates how to preprocess experimental CryoEM images')
+print('This script illustrates how to preprocess experimental cryo-EM images')
 print(f'Read in images from {STARFILE_IN} and preprocess the images')
 source = RelionSource(
     STARFILE_IN,
