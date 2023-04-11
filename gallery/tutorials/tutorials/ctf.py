@@ -7,7 +7,7 @@ This tutorial demonstrates the CTF and corresponds to
 lecture notes from MATH586 at Princeton.
 """
 
-# sphinx_gallery_thumbnail_path = '../../gallery/tutorials/data/ctffind4/diagnostic_output.png'
+# sphinx_gallery_thumbnail_path = '../../../gallery/tutorials/data/ctffind4/diagnostic_output.png'
 
 # Get some common imports out of the way.
 import os
@@ -370,9 +370,10 @@ from aspire.source import RelionSource
 
 # Load an example Relion starfile
 src = RelionSource(
-    "data/sample_relion_data.star",
+    "../data/sample_relion_data.star",
     pixel_size=1.338,
     max_rows=10000,
+    data_folder="../data",
 )
 src = src.downsample(64)  # easier to visualize
 src.images[:3].show()
@@ -385,7 +386,7 @@ src.images[:3].show()
 # %%
 # CTFFIND4: External Validation
 # -----------------------------
-# CTFFIND4 is often used by other CryoEM distributions,
+# CTFFIND4 is often used by other cryo-EM distributions,
 # and was used to confirm the forward CTF filter model of ASPIRE.
 # For transparency, an example run using the ``test_img.mrc``
 # generated earlier is documented.
@@ -397,27 +398,27 @@ src.images[:3].show()
 # %%
 # Interactive session
 #
-# .. literalinclude:: ../../../gallery/tutorials/data/ctffind4/input.txt
+# .. literalinclude:: ../../../../gallery/tutorials/data/ctffind4/input.txt
 #
 #
 
 # %%
 # Diagnostic Output Text
 #
-# .. literalinclude:: ../../../gallery/tutorials/data/ctffind4/diagnostic_output.txt
+# .. literalinclude:: ../../../../gallery/tutorials/data/ctffind4/diagnostic_output.txt
 #
 #
 
 # %%
 # CTFFIND4 Diagnostic Output PDF (rendering of diagnostic_output_avrot.pdf).
 #
-# .. image:: ../../../gallery/tutorials/data/ctffind4/diagnostic_output_avrot.png
+# .. image:: ../../../../gallery/tutorials/data/ctffind4/diagnostic_output_avrot.png
 #     :alt: diagnostic_output_avrot.png
 #
 
 # %%
 # CTFFIND4 Diagnostic Output MRC (rendering of diagnostic_output.mrc).
 #
-# .. image:: ../../../gallery/tutorials/data/ctffind4/diagnostic_output.png
+# .. image:: ../../../../gallery/tutorials/data/ctffind4/diagnostic_output.png
 #     :alt: diagnostic_output.png
 #

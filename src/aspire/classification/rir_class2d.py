@@ -364,7 +364,7 @@ class RIRClass2D(Class2D):
 
         # ### The following was from legacy code. Be careful wrt order.
         M = M.T
-        u, s, v = pca_y(M, self.bispectrum_components)
+        u, s, v = pca_y(M, self.bispectrum_components, seed=self.seed)
 
         # Contruct coefficients
         coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
@@ -500,6 +500,7 @@ class RIRClass2D(Class2D):
                 eigval=complex_eigvals,
                 alpha=self.alpha,
                 sample_n=self.sample_n,
+                seed=self.seed,
             )
             # If we have produced a feature vector
             if coef_b.size != 0:

@@ -142,7 +142,7 @@ class ImageSource(ABC):
 
     def __init__(self, L, n, dtype="double", metadata=None, memory=None):
         """
-        A Cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.
+        A cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.
 
         :param L: resolution of (square) images (int)
         :param n: The total number of images available
