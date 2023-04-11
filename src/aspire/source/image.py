@@ -650,18 +650,24 @@ class ImageSource(ABC):
         self.L = L
 
     @as_copy
-    def whiten(self, noise_estimate):
+    def whiten(self, noise_estimate=None):
         """
         Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
 
-        :param noise_estimate: `NoiseEstimator` or `Filter`. When
+        When no `noise_estimate` is provided, a `WhiteNoiseEstimator`
+        will be instantiated at this preprocessing stage behind the
+        scenes.
+
+        :param noise_estimate: Optional, `NoiseEstimator` or `Filter`. When
             passed a `NoiseEstimator` the `filter` attribute will be
             queried.  Alternatively, the noise PSD may be passed
             directly as a `Filter` object.
         :return: On return, the `ImageSource` object has been modified in place.
         """
 
-        if isinstance(noise_estimate, NoiseEstimator):
+        if noise_estimate is None:
+            noise_filter = WhiteNoiseEstimator(self).filter
+        elif isinstance(noise_estimate, NoiseEstimator):
             # Any NoiseEstimator instance should have a `filter`.
             noise_filter = noise_estimate.filter
         elif isinstance(noise_estimate, Filter):
