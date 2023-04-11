@@ -4,8 +4,8 @@ Apple Picker
 
 We demonstrate ASPIRE's particle picking methods using the ``Apple`` class.
 """
-
 import logging
+import os
 
 import matplotlib.pyplot as plt
 import mrcfile
@@ -20,9 +20,11 @@ logger = logging.getLogger(__name__)
 #
 # Here we demonstrate reading in and plotting a raw micrograph.
 
-filename = "data/falcon_2012_06_12-14_33_35_0.mrc"
+file_path = os.path.join(
+    os.path.dirname(os.getcwd()), "data", "falcon_2012_06_12-14_33_35_0.mrc"
+)
 
-with mrcfile.open(filename, mode="r") as mrc:
+with mrcfile.open(file_path, mode="r") as mrc:
     micro_img = mrc.data
 
 plt.title("Sample Micrograph")
@@ -48,9 +50,9 @@ apple_picker = Apple(
 # Here we use the ``process_micrograph`` method from the ``Apple`` class to find particles in the micrograph.
 # It will also return an image suitable for display, and optionally save a jpg.
 
-centers, particles_img = apple_picker.process_micrograph(filename, create_jpg=True)
+centers, particles_img = apple_picker.process_micrograph(file_path, create_jpg=True)
 
-# Note that if you only desire ``centers`` you may call ``process_micrograph_centers(filename,...)``.
+# Note that if you only desire ``centers`` you may call ``process_micrograph_centers(file_path,...)``.
 
 # %%
 # Plot the Picked Particles

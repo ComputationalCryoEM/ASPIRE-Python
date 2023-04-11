@@ -131,7 +131,7 @@ Class Selectors
 
 Class Selectors consume the output of ``Class2D`` and attempt to order
 and/or filter classes down to a selection.  Selecting the "best"
-classes in CryoEM problems is still an area of active research.  Some
+classes in cryo-EM problems is still an area of active research.  Some
 common methods are provided, along with an extensible base interface.
 
 Generally, Class Selection comes in two flavors depending on what

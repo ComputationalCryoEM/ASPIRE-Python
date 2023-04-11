@@ -18,7 +18,9 @@ from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
-DATA_DIR = "data"
+file_path = os.path.join(
+    os.path.dirname(os.getcwd()), "data", "clean70SRibosome_vol_65p.mrc"
+)
 
 # %%
 # Specify Parameters
@@ -57,7 +59,7 @@ ctf_filters = [
 
 # Load the map file of a 70S ribosome and downsample the 3D map to desired resolution.
 logger.info("Load 3D map from mrc file")
-vols = Volume.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_65p.mrc"))
+vols = Volume.load(file_path)
 
 # Downsample the volume to a desired resolution and increase density
 # by 1.0e5 time for a better graph view

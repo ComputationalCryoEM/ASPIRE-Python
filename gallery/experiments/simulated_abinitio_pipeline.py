@@ -4,7 +4,7 @@ Abinitio Pipeline - Simulated Data
 
 This notebook introduces a selection of
 components corresponding to generating realistic
-simulated Cryo-EM data and running key ASPIRE-Python
+simulated cryo-EM data and running key ASPIRE-Python
 Abinitio model components as a pipeline.
 """
 
