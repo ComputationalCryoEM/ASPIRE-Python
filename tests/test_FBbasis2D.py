@@ -7,6 +7,7 @@ from scipy.special import jv
 
 from aspire.basis import FBBasis2D
 from aspire.image import Image
+from aspire.source import Simulation
 from aspire.utils import complex_type, real_type
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.random import randn
@@ -134,3 +135,32 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
 
         # Try a 0d vector, should not crash.
         _ = basis.to_real(cv1.reshape(-1))
+
+
+params = [pytest.param(256, np.float32, marks=pytest.mark.expensive)]
+
+
+@pytest.mark.parametrize(
+    "L, dtype",
+    params,
+)
+def testHighResFBBasis2D(L, dtype):
+    seed = 42
+    basis = FBBasis2D(L, dtype=dtype)
+    sim = Simulation(
+        n=1,
+        L=L,
+        dtype=dtype,
+        amplitudes=1,
+        offsets=0,
+        seed=seed,
+    )
+    im = sim.images[0]
+
+    # Round trip
+    coeff = basis.evaluate_t(im)
+    FB_im = basis.evaluate(coeff)
+
+    # Mask to compare inside disk of radius 1.
+    mask = grid_2d(L, normalized=True)["r"] < 1
+    assert np.allclose(FB_im.asnumpy()[0][mask], im.asnumpy()[0][mask], atol=3e-3)
