@@ -2,6 +2,7 @@ import numpy as np
 
 from aspire.operators import BlkDiagMatrix
 
+
 # TODO, Generalize
 def filter_to_basis_mat(h_fun, basis):
     """
@@ -19,7 +20,9 @@ def filter_to_basis_mat(h_fun, basis):
     from aspire.basis.basis_utils import lgwt
 
     if not isinstance(basis, SteerableBasis2D):
-        raise NotImplementedError("Currently only subclasses of SteerableBasis2D supported.")
+        raise NotImplementedError(
+            "Currently only subclasses of SteerableBasis2D supported."
+        )
     # Set same dimensions as basis object
     n_k = basis.n_r
     n_theta = basis.n_theta

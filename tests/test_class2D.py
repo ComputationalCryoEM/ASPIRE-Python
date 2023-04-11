@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 from sklearn import datasets
 
-
 from aspire.basis import Coef, FFBBasis2D, FSPCABasis
 from aspire.classification import RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y

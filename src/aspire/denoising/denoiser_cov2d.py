@@ -127,7 +127,9 @@ class DenoiserCov2D(Denoiser):
             basis = FFBBasis2D((self.src.L, self.src.L), dtype=src.dtype)
 
         if not isinstance(basis, SteerableBasis2D):
-            raise NotImplementedError("Currently only subclasses of SteerableBasis are supported.")
+            raise NotImplementedError(
+                "Currently only subclasses of SteerableBasis are supported."
+            )
 
         self.basis = basis
         self.cov2d = None
