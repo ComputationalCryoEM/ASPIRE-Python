@@ -189,13 +189,7 @@ class ImageSource(ABC):
                 )
 
         # Populate symmetry_group attribute from metadata if possible.
-        if self.has_metadata(["_rlnSymmetryGroup"]):
-            self.symmetry_group = SymmetryParser(
-                symmetry=self.get_metadata(["_rlnSymmetryGroup"])[0],
-                dtype=self.dtype,
-            ).symmetry_group
-        else:
-            self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
+        self._populate_symmetry_group()
 
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
@@ -246,6 +240,18 @@ class ImageSource(ABC):
         self._symmetry_group = value
         self.set_metadata(["_rlnSymmetryGroup"], str(value))
 
+    def _populate_symmetry_group(self):
+        # Populate symmetry_group attribute from metadata if possible.
+        if self.has_metadata(["_rlnSymmetryGroup"]):
+            self._symmetry_group = SymmetryParser(
+                symmetry=self.get_metadata(["_rlnSymmetryGroup"])[0],
+                dtype=self.dtype,
+            ).symmetry_group
+        # If not, we default to C1 symmetry and set the metadata accordingly.
+        else:
+            self._symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
+            self.set_metadata(["_rlnSymmetryGroup"], str(self._symmetry_group))
+            
     def __getitem__(self, indices):
         """
         Check `indices` and return slice of current Source as a new
