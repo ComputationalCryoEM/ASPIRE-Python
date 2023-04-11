@@ -22,7 +22,7 @@ class StarFile:
                 for _k, _v in blocks[k].items():
                     if not isinstance(_v, str):
                         if hasattr(_v, "__iter__"):
-                            blocks[k][_k] = [str(__v) for __v in _v]
+                            blocks[k][_k] = list(map(str, _v)) 
                         else:
                             blocks[k][_k] = str(_v)
 
