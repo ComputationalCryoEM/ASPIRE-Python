@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from aspire.basis import FFBBasis3D
-from aspire.volume import Volume
+from aspire.utils import grid_3d
+from aspire.volume import AsymmetricVolume, Volume
 
 from ._basis_util import UniversalBasisMixin, basis_params_3d, show_basis_params
 
@@ -486,3 +487,24 @@ class TestFFBBasis3D(UniversalBasisMixin):
         ]
 
         assert np.allclose(result, ref, atol=1e-2)
+
+
+params = [pytest.param(256, np.float32, marks=pytest.mark.expensive)]
+
+
+@pytest.mark.parametrize(
+    "L, dtype",
+    params,
+)
+def testHighResFFBbasis3D(L, dtype):
+    seed = 42
+    basis = FFBBasis3D(L, dtype=dtype)
+    vol_0 = AsymmetricVolume(L=L, C=1, K=64, dtype=dtype, seed=seed).generate()
+
+    # Round trip
+    coeff_0 = basis.evaluate_t(vol_0)
+    vol_1 = basis.evaluate(coeff_0)
+
+    # Mask to compare inside sphere of radius 1.
+    mask = grid_3d(L, normalized=True)["r"] < 1
+    assert np.allclose(vol_1.asnumpy()[0][mask], vol_0.asnumpy()[0][mask], atol=1e-3)

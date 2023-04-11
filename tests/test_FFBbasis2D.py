@@ -213,3 +213,32 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         rmse = np.sqrt(np.mean(np.square(diff), axis=(1, 2)))
         logger.info(f"RMSE shifted image diffs {rmse}")
         assert np.allclose(rmse, 0, atol=1e-5)
+
+
+params = [pytest.param(512, np.float32, marks=pytest.mark.expensive)]
+
+
+@pytest.mark.parametrize(
+    "L, dtype",
+    params,
+)
+def testHighResFFBBasis2D(L, dtype):
+    seed = 42
+    basis = FFBBasis2D(L, dtype=dtype)
+    sim = Simulation(
+        n=1,
+        L=L,
+        dtype=dtype,
+        amplitudes=1,
+        offsets=0,
+        seed=seed,
+    )
+    im = sim.images[0]
+
+    # Round trip
+    coeff = basis.evaluate_t(im)
+    FB_im = basis.evaluate(coeff)
+
+    # Mask to compare inside disk of radius 1.
+    mask = grid_2d(L, normalized=True)["r"] < 1
+    assert np.allclose(FB_im.asnumpy()[0][mask], im.asnumpy()[0][mask], atol=1e-4)

@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 from aspire.basis import FBBasis3D
-from aspire.utils import utest_tolerance
-from aspire.volume import Volume
+from aspire.utils import grid_3d, utest_tolerance
+from aspire.volume import AsymmetricVolume, Volume
 
 from ._basis_util import UniversalBasisMixin, basis_params_3d, show_basis_params
 
@@ -18,7 +18,6 @@ test_bases = [FBBasis3D(L, dtype=dtype) for L, dtype in basis_params_3d]
 class TestFBBasis3D(UniversalBasisMixin):
     def testFBBasis3DIndices(self, basis):
         indices = basis.indices()
-
         assert np.allclose(
             indices["ells"],
             [
@@ -686,3 +685,31 @@ class TestFBBasis3D(UniversalBasisMixin):
             ],
             atol=utest_tolerance(basis.dtype),
         )
+
+
+# NOTE: This test is failing for L=64. `coeff_0` has a few NANs which propogate into `vol_1`. See GH issue #923
+params = [pytest.param(64, np.float32, marks=pytest.mark.expensive)]
+
+
+@pytest.mark.parametrize(
+    "L, dtype",
+    params,
+)
+@pytest.mark.skip(reason="Failing for L=64 due to NaN values.")
+def testHighResFBbasis3D(L, dtype):
+    seed = 42
+    basis = FBBasis3D(L, dtype=dtype)
+    vol_0 = AsymmetricVolume(L=L, C=1, K=64, dtype=dtype, seed=seed).generate()
+
+    # First round trip
+    coeff_0 = basis.evaluate_t(vol_0)
+    vol_1 = basis.evaluate(coeff_0)
+
+    # Second round trip
+    coeff_1 = basis.evaluate_t(vol_1)
+    vol_2 = basis.evaluate(coeff_1)
+
+    # Mask to compare inside sphere of radius 1.
+    mask = grid_3d(L, normalized=True)["r"] < 1
+
+    assert np.allclose(vol_2.asnumpy()[0][mask], vol_1.asnumpy()[0][mask], atol=0.007)
