@@ -396,9 +396,7 @@ class CoordinateSourceTestCase(TestCase):
         src_uncached = src[:]
         src.cache()
         self.assertTrue(
-            np.array_equal(
-                src.images[:].asnumpy(), src_uncached.images[:].asnumpy()
-            )
+            np.array_equal(src.images[:].asnumpy(), src_uncached.images[:].asnumpy())
         )
 
     def testImagesRandomIndices(self):

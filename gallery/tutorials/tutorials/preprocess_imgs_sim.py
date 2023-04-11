@@ -11,7 +11,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aspire.noise import WhiteNoiseAdder, WhiteNoiseEstimator
+from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.volume import Volume
