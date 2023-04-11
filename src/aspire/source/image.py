@@ -187,13 +187,15 @@ class ImageSource(ABC):
                         )
                     )
                 )
-            if self.has_metadata(["_rlnSymmetryGroup"]):
-                self.symmetry_group = SymmetryParser(
-                    symmetry=self.get_metadata(["_rlnSymmetryGroup"])[0],
-                    dtype=self.dtype,
-                ).symmetry_group
-            else:
-                self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
+
+        # Populate symmetry_group attribute from metadata if possible.
+        if self.has_metadata(["_rlnSymmetryGroup"]):
+            self.symmetry_group = SymmetryParser(
+                symmetry=self.get_metadata(["_rlnSymmetryGroup"])[0],
+                dtype=self.dtype,
+            ).symmetry_group
+        else:
+            self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
 
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
