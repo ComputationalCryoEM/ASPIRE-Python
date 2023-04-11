@@ -1495,6 +1495,11 @@ class OrientedSource(IndexedSource):
                 f" found {self.orientation_estimator}."
             )
 
+    def _orient(self):
+        self.orientation_estimator.estimate_rotations()
+        self.rotations = self.orientation_estimator.rotations
+        self._oriented = True
+
     def _images(self, indices):
         """
         Lazily performs orientation estimation and returns images from `self.src` corresponding to `indices`.
@@ -1507,9 +1512,7 @@ class OrientedSource(IndexedSource):
             logger.info(
                 f"Estimating rotations for {self.src} using {self.orientation_estimator}."
             )
-            self.orientation_estimator.estimate_rotations()
-            self.rotations = self.orientation_estimator.rotations
-            self._oriented = True
+            self._orient()
 
         if not self._warned:
             logger.debug(f"{self.__class__.__name__} arleady oriented, skipping")
@@ -1529,9 +1532,7 @@ class OrientedSource(IndexedSource):
             logger.info(
                 f"Estimating rotations for {self.src} using {self.orientation_estimator}."
             )
-            self.orientation_estimator.estimate_rotations()
-            self.rotations = self.orientation_estimator.rotations
-            self._oriented = True
+            self._orient()
 
         return self._rotations.matrices.astype(self.dtype)
 
@@ -1540,11 +1541,14 @@ class OrientedSource(IndexedSource):
             logger.info(
                 f"Estimating rotations for {self.src} using {self.orientation_estimator}."
             )
-            self.orientation_estimator.estimate_rotations()
-            self.rotations = self.orientation_estimator.rotations
-            self._oriented = True
+            self._orient()
 
         return super()._angles()
+
+    def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
+        if not self._oriented:
+            self._orient()
+        return super().save_metadata(starfile_filepath, batch_size=512, save_mode=None)
 
     def __repr__(self):
         return f"{self.__class__.__name__} for initial source {self.src.__class__.__name__}."
