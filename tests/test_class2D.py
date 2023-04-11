@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
+# This seed is to stabilize the extremely small unit test (img size 16 etc).
+SEED = 42
+
 
 class FSPCATestCase(TestCase):
     def setUp(self):
@@ -35,10 +38,7 @@ class FSPCATestCase(TestCase):
 
         # Create a src from the volume
         self.src = Simulation(
-            L=self.resolution,
-            n=321,
-            vols=v,
-            dtype=self.dtype,
+            L=self.resolution, n=321, vols=v, dtype=self.dtype, seed=SEED
         )
         self.src.cache()  # Precompute image stack
 
@@ -125,10 +125,7 @@ class RIRClass2DTestCase(TestCase):
 
         # Clean
         self.clean_src = Simulation(
-            L=self.resolution,
-            n=self.n_img,
-            vols=v,
-            dtype=self.dtype,
+            L=self.resolution, n=self.n_img, vols=v, dtype=self.dtype, seed=SEED
         )
 
         # With Noise
@@ -140,6 +137,7 @@ class RIRClass2DTestCase(TestCase):
             vols=v,
             dtype=self.dtype,
             noise_adder=noise_adder,
+            seed=SEED,
         )
 
         # Set up FFB
@@ -199,6 +197,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
+            seed=SEED,
         )
 
     def testRIRLegacy(self):
@@ -217,6 +216,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
+            seed=SEED,
         )
 
         _ = rir.classify()
@@ -253,6 +253,7 @@ class RIRClass2DTestCase(TestCase):
             large_pca_implementation="sklearn",
             nn_implementation="sklearn",
             bispectrum_implementation="devel",
+            seed=SEED,
         )
 
         _ = rir.classify()

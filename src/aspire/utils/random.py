@@ -68,9 +68,7 @@ def random(*args, **kwargs):
     """
     Wraps numpy.random.random with ASPIRE Random context manager.
     """
-    seed = None
-    if "seed" in kwargs:
-        seed = kwargs.pop("seed")
+    seed = kwargs.pop("seed", None)
 
     with Random(seed):
         return np.random.random(*args, **kwargs)

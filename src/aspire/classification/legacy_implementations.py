@@ -4,10 +4,12 @@ import numpy as np
 import scipy.sparse as sps
 from scipy.linalg import qr
 
+from aspire.utils import random
+
 logger = logging.getLogger(__name__)
 
 
-def pca_y(x, k, num_iters=2):
+def pca_y(x, k, num_iters=2, seed=None):
     """
     PCA using QR factorization.
 
@@ -39,11 +41,11 @@ def pca_y(x, k, num_iters=2):
     ones = np.ones((n, k + 2))
     if x.dtype == np.dtype("complex"):
         h = operator(
-            (2 * np.random.random((k + 2, n)).T - ones)
-            + 1j * (2 * np.random.random((k + 2, n)).T - ones)
+            (2 * random((k + 2, n), seed=seed).T - ones)
+            + 1j * (2 * random((k + 2, n), seed=seed).T - ones)
         )
     else:
-        h = operator(2 * np.random.random((k + 2, n)).T - ones)
+        h = operator(2 * random((k + 2, n), seed=seed).T - ones)
 
     f = [h]
 
@@ -123,7 +125,7 @@ def bispec_operator_1(freqs):
     return o1, o2
 
 
-def bispec_2drot_large(coeff, freqs, eigval, alpha, sample_n):
+def bispec_2drot_large(coeff, freqs, eigval, alpha, sample_n, seed=None):
     """
     alpha 1/3
     sample_n 4000
@@ -145,14 +147,14 @@ def bispec_2drot_large(coeff, freqs, eigval, alpha, sample_n):
     mask = np.where(p, p, -1)  # taking the log in the next step will yield a 0
     m = np.exp(o1 * np.log(p, where=(mask > 0)))
     p_m = m / m.sum()
-    x = np.random.rand(len(m))
+    x = random(size=len(m), seed=seed)
     m_id = np.where(x < sample_n * p_m)[0]
     o1 = o1[m_id]
     o2 = o2[m_id]
     m = np.exp(o1 * coeff_norm + 1j * o2 * phase)
 
     # svd of the reduced bispectrum
-    u, s, v = pca_y(m, 300)
+    u, s, v = pca_y(m, 300, seed=seed)
 
     coeff_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
     coeff_b_r = np.conjugate(u.T).dot(np.conjugate(m))
