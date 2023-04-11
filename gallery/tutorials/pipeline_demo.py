@@ -263,8 +263,13 @@ from aspire.basis import FFBBasis3D
 from aspire.reconstruction import MeanEstimator
 
 # Assign the estimated rotations to the class averages
-# Reminder: mutating meta data will return a new source object.
 avgs = avgs.update(rotations=rots_est)
+
+# %%
+# .. note::
+#     Outside of internal operations during ``ImageSource``
+#     construction, mutating meta data will return a new source
+#     object.
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D(res, dtype=vol.dtype)
