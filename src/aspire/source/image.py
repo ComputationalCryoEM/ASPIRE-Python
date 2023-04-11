@@ -251,7 +251,7 @@ class ImageSource(ABC):
         else:
             self._symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
             self.set_metadata(["_rlnSymmetryGroup"], str(self._symmetry_group))
-            
+
     def __getitem__(self, indices):
         """
         Check `indices` and return slice of current Source as a new
