@@ -301,10 +301,12 @@ class SteerableBasis2D(Basis):
 
         radial = kwargs.get("radial", None)
         angular = kwargs.get("angular", None)
+        signs = kwargs.get("signs", None)
 
         # slowly construct the map
-        radial_mask = np.zeros(self.count, dtype=bool)
-        angular_mask = np.zeros(self.count, dtype=bool)
+        signs_mask = np.zeros(self.count, dtype=bool)
+        radial_mask = signs_mask.copy()
+        angular_mask = signs_mask.copy()
 
         if radial is None:
             radial_mask[:] = True
@@ -318,6 +320,12 @@ class SteerableBasis2D(Basis):
             for el in np.atleast_1d(angular):
                 angular_mask[self.angular_indices == el] = True
 
-        mask = radial_mask & angular_mask
+        if signs is None:
+            signs_mask[:] = True
+        else:
+            for s in np.atleast_1d(signs):
+                signs_mask[self.signs_indices == s] = True
+
+        mask = radial_mask & angular_mask & signs_mask
 
         return mask

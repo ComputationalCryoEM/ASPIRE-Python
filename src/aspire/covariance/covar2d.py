@@ -112,7 +112,8 @@ class RotCov2D:
         if coeffs.size == 0:
             raise RuntimeError("The coefficients need to be calculated first!")
 
-        mask = self.basis._indices["ells"] == 0
+        # mask = self.basis._indices["ells"] == 0
+        mask = self.basis.indices_mask(angular=0)
         mean_coeff = np.zeros(self.basis.count, dtype=coeffs.dtype)
         # Use array for manually masking, since Coef.__getitem__ tries to return a Coef.
         mean_coeff[mask] = np.mean(coeffs[..., mask], axis=0)
@@ -136,15 +137,21 @@ class RotCov2D:
         # Initialize a totally empty BlkDiagMatrix, build incrementally.
         covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
         ell = 0
-        mask = self.basis._indices["ells"] == ell
+
+        # mask = self.basis._indices["ells"] == ell
+        mask = self.basis.indices_mask(angular=ell)
+
         coeff_ell = coeffs[..., mask] - mean_coeff[mask]
         covar_ell = np.array(coeff_ell.T @ coeff_ell / coeffs.shape[0])
         covar_coeff.append(covar_ell)
 
         for ell in range(1, self.basis.ell_max + 1):
-            mask_ell = self.basis._indices["ells"] == ell
-            mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
-            mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
+            # mask_ell = self.basis._indices["ells"] == ell
+            mask_ell = self.basis.indices_mask(angular=ell)
+            # mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
+            # mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
+            mask_pos = mask_ell & (self.basis.indices_mask(signs=1))
+            mask_neg = mask_ell & (self.basis.indices_mask(signs=-1))
 
             covar_ell_diag = np.array(
                 coeffs[:, mask_pos].T @ coeffs[:, mask_pos]
