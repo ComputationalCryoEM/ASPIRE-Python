@@ -489,7 +489,12 @@ class CoordinateSourceTestCase(TestCase):
         # assert that the star file has the correct metadata
         self.assertEqual(
             list(saved_star[""].keys()),
-            ["_rlnImageName", "_rlnCoordinateX", "_rlnCoordinateY"],
+            [
+                "_rlnSymmetryGroup",
+                "_rlnImageName",
+                "_rlnCoordinateX",
+                "_rlnCoordinateY",
+            ],
         )
         # assert that all the correct coordinates were saved
         for i in range(10):
