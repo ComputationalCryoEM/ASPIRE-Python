@@ -145,6 +145,9 @@ class RelionSource(ImageSource):
 
         logger.info(f"Populated {self.n_ctf_filters} CTFFilters from '{filepath}'")
 
+        # Any further operations should not mutate this instance.
+        self._mutable = False
+
     def populate_metadata(self):
         """
         Relion STAR files may contain a large number of metadata columns in addition

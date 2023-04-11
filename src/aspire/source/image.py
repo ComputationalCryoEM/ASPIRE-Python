@@ -140,6 +140,10 @@ class ImageSource(ABC):
     the unique "_rlnDefocusU"/"_rlnDefocusV" Relion parameters.
     """
 
+    # The abstract class starts off _mutable. Conrete classes should
+    # disable _mutable as the last step in __init__.
+    _mutable = True
+
     def __init__(self, L, n, dtype="double", metadata=None, memory=None):
         """
         A cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.
@@ -470,6 +474,11 @@ class ImageSource(ABC):
             values should either be a scalar or a vector of length equal to the total number of images, |self.n|.
         :return: On return, the metadata associated with the specified indices has been modified.
         """
+
+        # # Check if we're in an immutable state.
+        # if not self._mutable:
+        #     raise RuntimeError("This source is no longer mutable, try using `update` instead of `set_metadata`")
+
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]
 
@@ -1314,6 +1323,9 @@ class IndexedSource(ImageSource):
         self.filter_indices = np.zeros(self.n, dtype=int)
         self.unique_filters = [IdentityFilter()]
 
+        # Any further operations should not mutate this instance.
+        self._mutable = False
+
     def _images(self, indices):
         """
         Returns images from `self.src` corresponding to `indices`
@@ -1387,6 +1399,9 @@ class ArrayImageSource(ImageSource):
             # This will populate `_rotations`,
             #   which is exposed by properties `angles` and `rotations`.
             self.angles = angles
+
+        # Any further operations should not mutate this instance.
+        self._mutable = False
 
     def _images(self, indices):
         """

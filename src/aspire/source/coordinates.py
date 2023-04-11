@@ -159,6 +159,9 @@ class CoordinateSource(ImageSource, ABC):
                 "__mrc_filepath", self.mrc_paths[mrc_index], particle_indices
             )
 
+        # Any further operations should not mutate this instance.
+        self._mutable = False
+
     def _populate_particles(self, coord_paths):
         """
         All subclasses create mrc_paths and coord_paths lists and pass them to
