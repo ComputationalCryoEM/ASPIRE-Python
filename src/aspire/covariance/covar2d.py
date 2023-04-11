@@ -208,7 +208,7 @@ class RotCov2D:
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [
                 BlkDiagMatrix.eye_like(
-                    RadialCTFFilter().fb_mat(self.basis), dtype=self.dtype
+                    RadialCTFFilter().basis_mat(self.basis), dtype=self.dtype
                 )
             ]
 
@@ -272,7 +272,7 @@ class RotCov2D:
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [
                 BlkDiagMatrix.eye_like(
-                    RadialCTFFilter().fb_mat(self.basis), dtype=self.dtype
+                    RadialCTFFilter().basis_mat(self.basis), dtype=self.dtype
                 )
             ]
 
@@ -531,12 +531,14 @@ class BatchedRotCov2D(RotCov2D):
             logger.info("CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
-            self.ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
+            self.ctf_fb = [
+                BlkDiagMatrix.eye_like(RadialCTFFilter().basis_mat(self.basis))
+            ]
         else:
             logger.info("Represent CTF filters in FB basis")
             unique_filters = src.unique_filters
             self.ctf_idx = src.filter_indices
-            self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
+            self.ctf_fb = [f.basis_mat(self.basis) for f in unique_filters]
 
     def _calc_rhs(self):
         src = self.src

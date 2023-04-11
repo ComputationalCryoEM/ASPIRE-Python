@@ -244,7 +244,7 @@ projections.show()
 #    classDiagram
 #        class Filter{
 #            +evaluate()
-#            +fb_mat()
+#            +basis_mat()
 #            +scale()
 #            +evaluate_grid()
 #            +dual()

@@ -260,4 +260,4 @@ class BatchedRotCov2DTestCaseCTF(BatchedRotCov2DTestCase):
 
     @property
     def ctf_fb(self):
-        return [f.fb_mat(self.basis) for f in self.src.unique_filters]
+        return [f.basis_mat(self.basis) for f in self.src.unique_filters]
