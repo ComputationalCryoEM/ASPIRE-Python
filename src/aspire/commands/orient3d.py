@@ -6,7 +6,6 @@ from aspire.abinitio import CLSyncVoting
 from aspire.commands import log_level_option
 from aspire.source import OrientedSource, RelionSource
 from aspire.utils.logging import setConsoleLoggingLevel
-from aspire.volume import CyclicSymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -86,15 +85,13 @@ def orient3d(
     orient_est = CLSyncVoting(
         source, n_rad=n_rad, n_theta=n_theta, max_shift=max_shift, shift_step=shift_step
     )
-    orient_est.estimate_rotations()
 
     # Create new source object and save Estimate rotation matrices
     logger.info("Save Estimate rotation matrices.")
 
     orient_est_src = OrientedSource(
         source,
-        rotations=orient_est.rotations,
-        symmetry_group=CyclicSymmetryGroup(order=1, dtype=source.dtype),
+        orient_est,
     )
 
     orient_est_src.save_metadata(starfile_out)
