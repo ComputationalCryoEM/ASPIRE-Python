@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from numpy.linalg import solve
 
-from aspire.basis import FFBBasis2D
+from aspire.basis import FFBBasis2D, SteerableBasis2D
 from aspire.covariance import BatchedRotCov2D
 from aspire.denoising import Denoiser
 from aspire.denoising.denoised_src import DenoisedImageSource
@@ -126,8 +126,8 @@ class DenoiserCov2D(Denoiser):
         if basis is None:
             basis = FFBBasis2D((self.src.L, self.src.L), dtype=src.dtype)
 
-        if not isinstance(basis, FFBBasis2D):
-            raise NotImplementedError("Currently only fast FB method is supported")
+        if not isinstance(basis, SteerableBasis2D):
+            raise NotImplementedError("Currently only subclasses of SteerableBasis are supported.")
 
         self.basis = basis
         self.cov2d = None
