@@ -1,11 +1,9 @@
 import logging
 
 import numpy as np
-from numpy.linalg import norm
 
 from aspire.abinitio import CLSymmetryC3C4
-from aspire.utils import J_conjugate, Rotation, anorm, cyclic_rotations, tqdm, trange
-from aspire.utils.random import choice, randn
+from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +66,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
             msg = "n_theta must be even"
             logger.error(msg)
             raise NotImplementedError(msg)
-
-        n_theta_half = self.n_theta // 2
 
         # need to do a copy to prevent modifying self.pf for other functions
         pf = self.pf.copy()
