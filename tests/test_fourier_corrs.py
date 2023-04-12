@@ -24,10 +24,16 @@ DTYPES = [
     np.float64,
     np.float32,
 ]
+METHOD = ["fft", "nufft"]
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
 def dtype(request):
+    return request.param
+
+
+@pytest.fixture(params=METHOD, ids=lambda x: f"method={x}")
+def method(request):
     return request.param
 
 
@@ -108,54 +114,54 @@ def volume_fixture(img_size, dtype):
 # FRC
 
 
-def test_frc_id(image_fixture):
+def test_frc_id(image_fixture, method):
     img, _, _ = image_fixture
 
-    frc_resolution, frc = img.frc(img, pixel_size=1)
+    frc_resolution, frc = img.frc(img, pixel_size=1, method=method)
     assert np.isclose(frc_resolution[0][0], 1, rtol=0.02)
     assert np.allclose(frc, 1)
 
 
-def test_frc_rot(image_fixture):
+def test_frc_rot(image_fixture, method):
     img_a, img_b, _ = image_fixture
     assert img_a.dtype == img_b.dtype
-    frc_resolution, frc = img_a.frc(img_b, pixel_size=1)
+    frc_resolution, frc = img_a.frc(img_b, pixel_size=1, method=method)
     assert np.isclose(frc_resolution[0][0], 3.78 / 2, rtol=0.1)
 
 
-def test_frc_noise(image_fixture):
+def test_frc_noise(image_fixture, method):
     img_a, _, img_n = image_fixture
 
-    frc_resolution, frc = img_a.frc(img_n, pixel_size=1)
+    frc_resolution, frc = img_a.frc(img_n, pixel_size=1, method=method)
     assert np.isclose(frc_resolution[0][0], 3.5 / 2, rtol=0.2)
 
 
 # FSC
 
 
-def test_fsc_id(volume_fixture):
+def test_fsc_id(volume_fixture, method):
     vol, _, _ = volume_fixture
 
-    fsc_resolution, fsc = vol.fsc(vol, pixel_size=1)
+    fsc_resolution, fsc = vol.fsc(vol, pixel_size=1, method=method)
     assert np.isclose(fsc_resolution[0][0], 1, rtol=0.02)
     assert np.allclose(fsc, 1)
 
 
-def test_fsc_rot(volume_fixture):
+def test_fsc_rot(volume_fixture, method):
     vol_a, vol_b, _ = volume_fixture
 
-    fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1)
+    fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, method=method)
     assert np.isclose(fsc_resolution[0][0], 3.225 / 2, rtol=0.01)
 
 
-def test_fsc_noise(volume_fixture):
+def test_fsc_noise(volume_fixture, method):
     vol_a, _, vol_n = volume_fixture
 
-    fsc_resolution, fsc = vol_a.fsc(vol_n, pixel_size=1)
+    fsc_resolution, fsc = vol_a.fsc(vol_n, pixel_size=1, method=method)
     assert fsc_resolution[0][0] > 4
 
 
-def test_fsc_plot(volume_fixture):
+def test_fsc_plot(volume_fixture, method):
     """
     Smoke test the plots.
 
@@ -164,8 +170,10 @@ def test_fsc_plot(volume_fixture):
     vol_a, vol_b, _ = volume_fixture
 
     fsc = FourierShellCorrelation(
-        vol_a.asnumpy(), vol_b.asnumpy(), pixel_size=1, cutoff=0.5
+        vol_a.asnumpy(), vol_b.asnumpy(), pixel_size=1, method=method, cutoff=0.5
     )
+    # test
+    fsc.plot()
 
     with matplotlib_no_gui():
         fsc.plot()

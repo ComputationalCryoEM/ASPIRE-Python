@@ -6,6 +6,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 
+from aspire.nufft import nufft
 from aspire.numeric import fft
 from aspire.utils import grid_2d
 
@@ -27,7 +28,7 @@ class _FourierCorrelation:
 .
     """
 
-    def __init__(self, a, b, pixel_size=1, cutoff=0.143, eps=1e-4):
+    def __init__(self, a, b, pixel_size=1, cutoff=0.143, eps=1e-4, method="fft"):
         """
         :param a: Input array a, shape(..., *dim).
         :param b: Input array b, shape(..., *dim).
@@ -35,6 +36,8 @@ class _FourierCorrelation:
             Defaults to 1.
         :param cutoff: Cutoff value, traditionally `.143`.
         :param eps: Epsilon past boundary values, defaults 1e-4.
+        :param method: Selects either 'fft' (on cartesian grid),
+            or 'nufft' (on polar grid). Defaults to 'fft'.
         """
 
         # Sanity checks
@@ -55,6 +58,15 @@ class _FourierCorrelation:
             raise RuntimeError(
                 f"`a` and `b` appear to have different data axis shapes, {a.shape[-1]} {b.shape[-1]}"
             )
+
+        # Method selection
+        methods = {"fft": self._fft_correlations, "nufft": self._nufft_correlations}
+        if method not in methods:
+            raise RuntimeError(
+                f"Requested method {method} not in available methods {methods}."
+            )
+        self.method = method
+        self._correlation_method = methods[self.method]
 
         # To support arbitrary broadcasting simply,
         # we'll force all shapes to be (-1, *(L,)*dim)
@@ -121,9 +133,19 @@ class _FourierCorrelation:
 
         :return: Numpy array
         """
-        # There is no need to run this twice if we assume inputs are immutable
+        # There is no need to run this twice if we assume inputs are immutable.
         if self._correlations is not None:
             return self._correlations
+
+        # Compute the correlations
+        self._correlations = self._correlation_method()
+
+        return self._correlations
+
+    def _fft_correlations(self):
+        """
+        Computes Fourier Correlations using the FFT on a cartesian grid.
+        """
 
         # Compute shells from 2D grid.
         radii = grid_2d(self.L, shifted=True, normalized=False, dtype=self.dtype)["r"]
@@ -163,10 +185,39 @@ class _FourierCorrelation:
         # Repack the table as (_a, _b, L//2)
         correlations = np.swapaxes(correlations, 0, 2)
         # Then unpack the a and b shapes.
-        self._correlations = correlations.reshape(
+        return correlations.reshape(
             *self._a_stack_shape, *self._b_stack_shape, self.L // 2
         )
-        return self._correlations
+
+    def _nufft_correlations(self):
+        """
+        Computes Fourier Correlations using the NUFFT on polar grid.
+        """
+
+        # TODO, should we use an internal tool (Polar2D?) for this
+        r = np.linspace(0, np.pi, self.L, endpoint=False, dtype=self.dtype)
+        phi = np.linspace(0, 2 * np.pi, 2 * self.L, endpoint=False, dtype=self.dtype)
+        x = r[:, np.newaxis] * np.cos(phi[np.newaxis, :])
+        y = r[:, np.newaxis] * np.sin(phi[np.newaxis, :])
+        fourier_pts = np.vstack((x.flatten(), y.flatten()))
+
+        # Stack signal data.  Note, we want a complex result.
+        signal = np.vstack((self._a, self._b))
+        # Compute NUFFT and unpack as two 1D stacks of the polar grid
+        # points, one for each image.
+        f1, f2 = nufft(signal, fourier_pts, real=False).reshape(
+            2, self._a.shape[0], len(r), len(phi)
+        )
+
+        # Compute the Fourier correlations
+        cov = np.sum(f1 * np.conj(f2), -1).real
+        norm1 = np.sqrt(np.sum(np.abs(f1) ** 2, -1))
+        norm2 = np.sqrt(np.sum(np.abs(f2) ** 2, -1))
+
+        correlations = np.mean(cov / (norm1 * norm2), 0)
+
+        # Then unpack the a and b shapes.
+        return correlations.reshape(*self._a_stack_shape, *self._b_stack_shape, self.L)
 
     @property
     def estimated_resolution(self):
@@ -280,7 +331,7 @@ class _FourierCorrelation:
         )
         # x-axis in decreasing
         plt.gca().invert_xaxis()
-        plt.legend()
+        plt.legend(title=f"Method: {self.method}")
 
         if save_to_file:
             plt.savefig(save_to_file)

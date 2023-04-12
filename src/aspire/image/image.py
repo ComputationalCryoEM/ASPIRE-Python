@@ -477,7 +477,7 @@ class Image:
 
             plt.show()
 
-    def frc(self, other, pixel_size, cutoff=0.143, eps=1e-4):
+    def frc(self, other, pixel_size, cutoff=0.143, eps=1e-4, method="fft"):
         r"""
         Compute the Fourier ring correlation between two images.
 
@@ -495,6 +495,8 @@ class Image:
             For synthetic data, 1 is a reasonable value.
         :param cutoff: Cutoff value, traditionally `1.43`.
         :param eps: Epsilon past boundary values, defaults 1e-4.
+        :param method: Selects either 'fft' (on cartesian grid),
+            or 'nufft' (on polar grid). Defaults to 'fft'.
 
         :return: tuple(estimated_resolution,  FRC),
             where `estimated_resolution` is in Angstrom
@@ -512,6 +514,7 @@ class Image:
             pixel_size=pixel_size,
             cutoff=cutoff,
             eps=eps,
+            method=method,
         )
 
         return frc.estimated_resolution, frc.correlations
