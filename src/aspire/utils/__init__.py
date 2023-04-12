@@ -1,3 +1,4 @@
+from .types import complex_type, real_type, utest_tolerance  # isort:skip
 from .coor_trans import (  # isort:skip
     common_line_from_rots,
     crop_pad_2d,
@@ -66,5 +67,4 @@ from .random import Random, choice, rand, randi, randn, random
 from .relion_interop import RelionStarFile, relion_metadata_fields
 from .resolution_estimation import FourierRingCorrelation, FourierShellCorrelation
 from .rotation import Rotation
-from .types import complex_type, real_type, utest_tolerance
 from .units import ratio_to_decibel, voltage_to_wavelength, wavelength_to_voltage
