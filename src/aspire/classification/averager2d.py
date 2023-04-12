@@ -226,7 +226,7 @@ class AligningAverager2D(Averager2D):
             )
 
             # Averaging in composite_basis
-            return self.image_stacker(neighbors_coefs)
+            return self.image_stacker(neighbors_coefs.asnumpy())
 
         if self.num_procs <= 1:
             for i in trange(n_classes):
@@ -677,7 +677,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 )
 
             # Averaging in composite_basis
-            return self.image_stacker(neighbors_coefs)
+            return self.image_stacker(neighbors_coefs.asnumpy())
 
         if self.num_procs <= 1:
             for i in trange(n_classes):

@@ -105,7 +105,9 @@ class ImageStacker(abc.ABC):
         # By this point we should always be an array with signal data
         # in the last axis.
         if not isinstance(stack, np.ndarray):
-            raise ValueError("`stack` should be `Image` instance or Numpy array.")
+            raise ValueError(
+                f"`stack` should be `Image` instance or Numpy array. Received {stack}"
+            )
         elif stack.ndim != 2:
             raise ValueError(
                 f"`stack` numpy array shape should be 2D for ImageStacker not {stack.shape}."
