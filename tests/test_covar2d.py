@@ -170,7 +170,7 @@ class Cov2DTestCaseCTF(Cov2DTestCase):
 
     @property
     def h_ctf_fb(self):
-        return [filt.basis_mat(self.basis) for filt in self.unique_filters]
+        return [self.basis.filter_to_basis_mat(f) for f in self.unique_filters]
 
     def testGetCWFCoeffsCTFargs(self):
         """

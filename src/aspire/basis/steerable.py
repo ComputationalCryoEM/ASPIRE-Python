@@ -332,12 +332,11 @@ class SteerableBasis2D(Basis):
         return mask
 
     @abc.abstractmethod
-    def filter_to_basis_mat(self, h_fun, matrix_type=None):
+    def filter_to_basis_mat(self, f, matrix_type=None):
         """
-        Convert a (nonradial) function in k space into a basis
-        representation.
+        Convert a filter into a basis representation.
 
-        :param h_fun: The function form in k space.
+        :param f: `Filter` object, usually a `CTFFilter`.
         :param matrix_type: Optional override, `BlkDiagMatrix` or
             `DiagMatrix`. Default `None` returns the default for
             this basis.

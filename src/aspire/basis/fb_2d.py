@@ -409,9 +409,12 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             freq_cutoff=freq_cutoff,
         )
 
-    def filter_to_basis_mat(self, h_fun, matrix_type=None):
+    def filter_to_basis_mat(self, f, matrix_type=None):
         # These form a circular dependence, import locally until time to clean up.
         from aspire.basis.basis_utils import lgwt
+
+        # Get the filter's evaluate function.
+        h_fun = f.evaluate
 
         # Set same dimensions as basis object
         n_k = self.n_r

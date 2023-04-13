@@ -206,9 +206,10 @@ class RotCov2D:
         # should assert we require none or both...
         if (ctf_fb is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
+            # TODO, we should be able to construct this shape without actually making a CTFFilter.
             ctf_fb = [
                 BlkDiagMatrix.eye_like(
-                    RadialCTFFilter().basis_mat(self.basis), dtype=self.dtype
+                    self.basis.filter_to_basis_mat(RadialCTFFilter()), dtype=self.dtype
                 )
             ]
 
@@ -272,7 +273,7 @@ class RotCov2D:
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_fb = [
                 BlkDiagMatrix.eye_like(
-                    RadialCTFFilter().basis_mat(self.basis), dtype=self.dtype
+                    self.basis.filter_to_basis_mat(RadialCTFFilter()), dtype=self.dtype
                 )
             ]
 
@@ -532,13 +533,15 @@ class BatchedRotCov2D(RotCov2D):
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
             self.ctf_fb = [
-                BlkDiagMatrix.eye_like(RadialCTFFilter().basis_mat(self.basis))
+                BlkDiagMatrix.eye_like(
+                    self.basis.filter_to_basis_mat(RadialCTFFilter())
+                )
             ]
         else:
             logger.info("Represent CTF filters in FB basis")
             unique_filters = src.unique_filters
             self.ctf_idx = src.filter_indices
-            self.ctf_fb = [f.basis_mat(self.basis) for f in unique_filters]
+            self.ctf_fb = [self.basis.filter_to_basis_mat(f) for f in unique_filters]
 
     def _calc_rhs(self):
         src = self.src

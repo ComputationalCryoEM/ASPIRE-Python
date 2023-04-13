@@ -88,12 +88,6 @@ class Filter:
     def _evaluate(self, omega):
         raise NotImplementedError("Subclasses should implement this method")
 
-    def basis_mat(self, basis):
-        """
-        Represent the filter in FB basis matrix
-        """
-        return basis.filter_to_basis_mat(self.evaluate)
-
     def scale(self, c=1):
         """
         Scale filter by a constant factor
