@@ -1,3 +1,4 @@
+import abc
 import logging
 from collections.abc import Iterable
 
@@ -329,3 +330,18 @@ class SteerableBasis2D(Basis):
         mask = radial_mask & angular_mask & signs_mask
 
         return mask
+
+    @abc.abstractmethod
+    def filter_to_basis_mat(self, h_fun, matrix_type=None):
+        """
+        Convert a (nonradial) function in k space into a basis
+        representation.
+
+        :param h_fun: The function form in k space.
+        :param matrix_type: Optional override, `BlkDiagMatrix` or
+            `DiagMatrix`. Default `None` returns the default for
+            this basis.
+
+        :return: `BlkDiagMatrix` or `DiagMatrix` instance
+            representation using `basis` expansion.
+        """
