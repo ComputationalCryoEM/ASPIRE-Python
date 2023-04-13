@@ -338,7 +338,7 @@ class AsymmetricVolume(CnSymmetricVolume):
     """
 
     def __init__(self, L, C, K=16, seed=None, dtype=np.float64):
-        super().__init__(L=L, C=C, order=1, seed=seed, dtype=dtype)
+        super().__init__(L=L, C=C, K=K, order=1, seed=seed, dtype=dtype)
 
     def _check_order(self):
         if self.order != 1:
