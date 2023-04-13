@@ -1,0 +1,540 @@
+"""
+Define a DiagMatrix module which implements operations for
+diagonal matrices as used by ASPIRE.
+"""
+
+import numpy as np
+from numpy.linalg import norm, solve
+from scipy.linalg import block_diag
+
+from aspire.utils.cell import Cell2D
+
+
+class DiagMatrix:
+    """
+    Define a DiagMatrix class which implements operations for
+    diagonal matrices as used by ASPIRE.
+
+    Currently DiagMatrix is implemented as the equivalent of square
+    matrices.  In the future it can be extended to support
+    applications with rectangular shapes.
+    """
+
+    # # # Check, do we need this here like i did for blkdiag?
+    # # Developers' Note:
+    # # All instances of this class should have priority over ndarray ops
+    # #   because we implement them here ourselves.
+    # # This is a more np current implementation of __array_priority__
+    # #   operator precedence schedule.
+    # # Mainly this effects rmul, radd, rsub eg:
+    # #   blk_y = scalar_a + ( scalar_b * blk_x)
+    # __array_ufunc__ = None
+
+    def __init__(self, data, dtype=None):
+        """
+        Instantiate a `DiagMatrix` with `data`.
+
+        `DiagMatrix` size corresponds to the last (fast) moving axis.
+        Slower axes are taken to be stack axes.
+        Inputs of zero or one dimension are taken to be a stack of one.
+
+        :param data: Diagonal matrix entries.
+        :param dtype: Datatype. Default of `None` will attempt
+        passthrough of `data.dtype`.  When explicitly provided, will
+        attempt casting `adata` as needed.
+        :return: `DiagMatrix` instance.
+        """
+
+        # Assign the datatype.
+        if dtype is None:
+            dtype = data.dtype
+        self.dtype = np.dtype(dtype)
+
+        self._data = data.astype(self.dtype, copy=False)
+        self.n = self._data.shape[-1]
+        self.stack_shape = self._data.shape[:-1]
+
+        # Numpy interop
+        # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
+        self.__array_interface__ = self.asnumpy().__array_interface__
+        self.__array__ = self.asnumpy()
+
+    def stack_reshape(self, *args):
+        """
+        Reshape the stack axis.
+
+        :*args: Integer(s) or tuple describing the intended shape.
+
+        :returns: DiagMatrix instance.
+        """
+
+        # If we're passed a tuple, use that
+        if len(args) == 1 and isinstance(args[0], tuple):
+            shape = args[0]
+        else:
+            # Otherwise use the variadic args
+            shape = args
+
+        # Sanity check the size
+        if shape != (-1,) and np.prod(shape) != self.n_stack:
+            raise ValueError(
+                f"Number of images {self.n_stack} cannot be reshaped to {shape}."
+            )
+
+        return DiagMatrix(self._data.reshape(*shape, self._data.shape[-1]))
+
+    def asnumpy(self):
+        view = self._data.view()
+        view.flags.writeable = False
+        return view
+
+    # def isfinite(self):
+    #     """
+    #     Check entries are finite.
+    #     Supports Numpy interoperability.
+    #     """
+    #     return np.isfinite(self.asnumpy())
+
+    def __repr__(self):
+        """
+        String represention describing instance.
+        """
+        return "DiagMatrix({}, {})".format(repr(self._data), repr(self.dtype))
+
+    def copy(self):
+        """
+        Returns new DiagMatrix which is a copy of `self`.
+
+        :return DiagMatrix like self
+        """
+
+        return DiagMatrix(self._data.copy())
+
+    # Not sure if I want these on the stack only, or generic yet.
+    # # Manually overload get/set methods,
+    # #   This is just for syntax which allows us to reference self[i] etc
+    # #     instead of writing self._data all the time. You may use either.
+    # def __getitem__(self, key):
+    #     """
+    #     Convenience wrapper, getter on self._data.
+    #     """
+
+    #     return self._data[key]
+
+    # def __setitem__(self, key, value):
+    #     """
+    #     Convenience wrapper, setter on self._data.
+    #     """
+
+    #     self._data[key] = value
+    #     self.reset_cache()
+
+    def __len__(self):
+        """
+        Convenience function for getting `n`.
+        """
+
+        return self.n
+
+    def _is_scalar_type(self, x):
+        """
+        Internal helper function checking scalar-ness for elementwise ops.
+
+        Essentially we are checking for a single numeric object, as opposed to
+        something like an `ndarray` or `DiagMatrix`. We do this by
+        checking `numpy.isscalar(x)`.
+
+        In the future this check may require extension to include ASPIRE or
+        other third party types beyond what is provided by numpy, so we
+        implement it now as a class method.
+
+        :param x: Value to check
+
+        :return: bool.
+        """
+
+        return np.isscalar(x)
+
+    def __check_size_compatible(self, other):
+        """
+        Sanity check two DiagMatrix instances are compatible in size
+        for addition operators. (Same size)
+
+        :param other: The DiagMatrix to compare with self.
+        """
+
+        if self.n != other.n:
+            raise RuntimeError(
+                "DiagMatrix instances are " f"not same dimension {self.n} != {other.n}"
+            )
+
+    def __check_dtype_compatible(self, other):
+        """
+        Sanity check two DiagMatrix instances are compatible in dtype.
+
+        :param other: The DiagMatrix to compare with self.
+        """
+
+        if self.dtype != other.dtype:
+            raise RuntimeError(
+                "DiagMatrix received different types,"
+                f"self: {self.dtype} and other: {other.dtype}.  Please validate and cast"
+                " as appropriate."
+            )
+
+    def add(self, other, inplace=False):
+        """
+        Define elementwise addition of DiagMatrix instances
+
+        :param other: The rhs DiagMatrix instance.
+        :param inplace: Boolean, when set to True change values in place,
+            otherwise return a new instance (default).
+        :return:  DiagMatrix instance with elementwise sum equal
+            to self + other.
+        """
+        return self._data + other._data
+
+    def __add__(self, other):
+        """
+        Operator overloading for addition.
+        """
+
+        return self.add(other)
+
+    def __iadd__(self, other):
+        """
+        Operator overloading for in-place addition.
+        """
+
+        return self.add(other, inplace=True)
+
+    def __radd__(self, other):
+        """
+        Convenience function for elementwise scalar addition.
+        """
+
+        return self.add(other)
+
+    def sub(self, other, inplace=False):
+        """
+        Define the element subtraction of DiagMatrix instance.
+
+        :param other: The rhs DiagMatrix instance.
+        :param inplace: Boolean, when set to True change values in place,
+            otherwise return a new instance (default).
+        :return: A DiagMatrix instance with elementwise subraction equal to
+            self - other.
+        """
+        return self._data - other._data
+
+    def __sub__(self, other):
+        """
+        Operator overloading for subtraction.
+        """
+
+        return self.sub(other)
+
+    def __isub__(self, other):
+        """
+        Operator overloading for in-place subtraction.
+        """
+
+        if self._is_scalar_type(other):
+            return self.__scalar_sub(other, inplace=True)
+
+        return self.sub(other, inplace=True)
+
+    def __rsub__(self, other):
+        """
+        Convenience function for elementwise scalar subtraction.
+        """
+
+        # Note, the case of DiagMatrix_L - DiagMatrix_R would be
+        #   evaluated as L.sub(R), so this is only for other
+        #   Object - DiagMatrix situations, namely scalars.
+
+        return -(self - other)
+
+    def matmul(self, other, inplace=False):
+        """
+        Compute the matrix multiplication of two DiagMatrix instances.
+
+        :param other: The rhs DiagMatrix instance.
+        :param inplace: Boolean, when set to True change values in place,
+            otherwise return a new instance (default).
+        :return: A DiagMatrix of self @ other.
+        """
+        if isinstance(other, DiagMatrix):
+            if inplace:
+                self._data *= other._data
+                res = self
+            else:
+                res = DiagMatrix(self._data * other._data)
+        elif isinstance(other, np.ndarray):
+            raise NotImplementedError("todo")
+
+        return res
+
+    def __matmul__(self, other):
+        """
+        Operator overload for matrix multiply of DiagMatrix instances.
+        """
+
+        return self.matmul(other)
+
+    def __rmatmul__(self, lhs):
+        """
+        Compute the right matrix multiplication with a DiagMatrix instance,
+        and a numpy array, lhs @ self.
+
+        :param other: The lhs Numpy instance.
+        :return: Returns numpy array representing `other @ self`.
+        """
+
+        # Note, we should only hit this method when mixing DiagMatrix with numpy.
+        #   This is because if both a and b are DiagMatrix,
+        #   then a@b would be handled first by a.__matmul__(b), never reaching here.
+        if not isinstance(lhs, np.ndarray):
+            raise RuntimeError("__rmatmul__ only defined for np.ndarray @ DiagMatrix.")
+        raise NotImplementedError
+        # return self.rapply(lhs)
+
+    def __imatmul__(self, other):
+        """
+        Operator overload for in-place matrix multiply of DiagMatrix
+         instances.
+        """
+
+        return self.matmul(other, inplace=True)
+
+    def mul(self, other, inplace=False):
+        """
+        Compute the elementwise multiplication of a DiagMatrix instance and a
+        scalar or another DiagMatrix.
+
+        :param other: The rhs in the multiplication..
+        :param inplace: Boolean, when set to True change values in place,
+            otherwise return a new instance (default).
+        :return: A DiagMatrix of self * other.
+        """
+        raise NotImplementedError("todo")
+
+    def __mul__(self, val):
+        """
+        Operator overload for DiagMatrix scalar multiply.
+        """
+
+        return self.mul(val)
+
+    def __imul__(self, val):
+        """
+        Operator overload for in-place DiagMatrix scalar multiply.
+        """
+
+        return self.mul(val, inplace=True)
+
+    def __rmul__(self, other):
+        """
+        Convenience function, elementwise rmul commutes to mul.
+        """
+
+        return self.mul(other)
+
+    def neg(self):
+        """
+        Compute the unary negation of DiagMatrix instance.
+
+        :return: A DiagMatrix like self.
+        """
+        return DiagMatrix(-self._data)
+
+    def __neg__(self):
+        """
+        Operator overload for unary negation of DiagMatrix instance.
+        """
+
+        return self.neg()
+
+    def abs(self):
+        """
+        Compute the elementwise absolute value of DiagMatrix instance.
+
+        :return: A DiagMatrix like self.
+        """
+        pass
+
+    def __abs__(self):
+        """
+        Operator overload for absolute value of DiagMatrix instance.
+        """
+
+        return DiagMatrix(self.abs(self._data))
+
+    def pow(self, val, inplace=False):
+        """
+        Compute the elementwise power of DiagMatrix instance.
+
+        :param inplace: Boolean, when set to True change values in place,
+            otherwise return a new instance (default).
+        :return: A DiagMatrix like self.
+        """
+
+        raise NotImplementedError("todo")
+
+    def __pow__(self, val):
+        """
+        Operator overload for inplace pow of DiagMatrix instance.
+        """
+
+        return self.pow(val)
+
+    def __ipow__(self, val):
+        """
+        Compute the in-place elementwise power of DiagMatrix instance.
+
+        :return: self raised to power, elementwise.
+        """
+
+        return self.pow(val, inplace=True)
+
+    def norm(self):
+        """
+        Compute the norm of a DiagMatrix instance.
+
+        :param inplace: Boolean, when set to True change values in place,
+            otherwise return a new instance (default).
+        :return: The norm of the DiagMatrix instance.
+        """
+        pass
+
+    def transpose(self):
+        """
+        Get the transpose matrix of a DiagMatrix instance.
+
+        :return: The corresponding transpose form as a DiagMatrix.
+        """
+        # This is sort of silly no?
+        return self.copy()
+
+    @property
+    def T(self):
+        """
+        Syntactic sugar for self.transpose().
+        """
+
+        return self.transpose()
+
+    @property
+    def dense(self):
+        """
+        Convert DiagMatrix instance into full matrix.
+
+        :return: The DiagMatrix instance including the zero elements of
+        non-diagonal elements.
+        """
+
+        if self._data.ndim == 1:
+            return np.diag(self._data)
+
+        original_stack_shape = self.stack_shape
+        diags = self.stack_reshape(-1)  # Flatten stack
+
+        dense = []
+        for d in diags.asnumpy():
+            dense.append(np.diag(d))
+        # Convert to np.array
+        dense = np.concatenate(dense)
+        # Reshape to original stack shape.
+        return dense.reshape(*original_stack_shape, self.n, self.n)
+
+    def apply(self, X):
+        """
+        Define the apply option of a block diagonal matrix with a matrix of
+        coefficient vectors.
+
+        :param X: Coefficient matrix, each column is a coefficient vector.
+        :return: A matrix with new coefficient vectors.
+        """
+
+        pass
+
+    def rapply(self, X):
+        """
+        Right apply.  Given a matrix of coefficient vectors,
+        applies the block diagonal matrix on the right hand side.
+        Example, X @ self.
+
+        This is the right hand side equivalent to `apply`.
+
+        :param X: Coefficient matrix, each column is a coefficient vector.
+
+        :return: A matrix with new coefficient vectors.
+        """
+
+        # For now do the transposes a @ b = (b.T @ a.T).T.
+        #  Note there is an optimization opportunity here,
+        #  but the current application of this method is only called once
+        #  per FSPCA/RIR classification.
+        return self.T.apply(X.T).T
+
+    def eigvals(self):
+        """
+        Compute the eigenvalues of a DiagMatrix.
+        :return: Array of eigvals, with length equal to the fully expanded matrix diagonal.
+
+        """
+        # this might be silly too.
+        return self._data.asnumpy()
+
+    @staticmethod
+    def empty(n, dtype=np.float32):
+        """
+        Instantiate an empty DiagMatrix with length `n`.
+        This corresponds to the diag(A) where A is (n,n).
+        Note, like Numpy, empty values are uninitialized.
+
+        :param n: Length of diagonal.
+        :param dtype: Datatype, defaults to np.float32.
+        :return: DiagMatrix instance.
+        """
+
+        return DiagMatrix(np.empty(n, dtype=dtype))
+
+    @staticmethod
+    def zeros(n, dtype=np.float32):
+        """
+        Instantiate a zero intialized DiagMatrix with length `n`.
+        This corresponds to the diag(A) where A is (n,n).
+
+        :param n: Length of diagonal.
+        :param dtype: Datatype, defaults to np.float32.
+        :return: DiagMatrix instance.
+        """
+
+        return DiagMatrix(np.zeros(n, dtype=dtype))
+
+    @staticmethod
+    def empty(n, dtype=np.float32):
+        """
+        Instantiate ones intialized DiagMatrix with length `n`.
+        This corresponds to the diag(A) where A is (n,n).
+
+        :param n: Length of diagonal.
+        :param dtype: Datatype, defaults to np.float32.
+        :return: DiagMatrix instance.
+        """
+
+        return DiagMatrix(np.ones(n, dtype=dtype))
+
+    # Silly?
+    @staticmethod
+    def eye(n, dtype=np.float32):
+        """
+        Build a DiagMatrix eye (identity) matrix.
+
+        :param n: Length of diagonal.
+        :param dtype: Datatype, defaults to np.float32.
+        :return: DiagMatrix instance.
+        """
+
+        return DiagMatrix.ones(n, dtype=dtype)

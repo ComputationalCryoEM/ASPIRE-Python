@@ -129,7 +129,7 @@ class Coef:
             )
 
         return self.__class__(
-            self.basis, self._data.reshape(*shape, *self._data.shape[-1:])
+            self.basis, self._data.reshape(*shape, self._data.shape[-1])
         )
 
     def copy(self):
