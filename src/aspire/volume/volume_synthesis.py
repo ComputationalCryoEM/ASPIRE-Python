@@ -337,7 +337,7 @@ class AsymmetricVolume(CnSymmetricVolume):
     An asymmetric Volume constructed of random 3D Gaussian blobs with compact support in the unit sphere.
     """
 
-    def __init__(self, L, C, K=16, seed=None, dtype=np.float64):
+    def __init__(self, L, C, K=64, seed=None, dtype=np.float64):
         super().__init__(L=L, C=C, K=K, order=1, seed=seed, dtype=dtype)
 
     def _check_order(self):
