@@ -225,8 +225,8 @@ class CoordinateSource(ImageSource, ABC):
         return a list of coordinates in box format.
         :param star_file: A path to a STAR file containing particle centers
         """
-        df = StarFile(star_file).get_block_by_index(0)
-        coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
+        data_block = StarFile(star_file).get_block_by_index(0)
+        coords = list(zip(data_block["_rlnCoordinateX"], data_block["_rlnCoordinateY"]))
         coords = [(float(x), float(y)) for x, y in coords]
         return [
             self._box_coord_from_center(coord, self.particle_size) for coord in coords
@@ -319,15 +319,15 @@ class CoordinateSource(ImageSource, ABC):
             )
 
         # merge dicts from CTF files
-        dfs = defaultdict(list)
+        data_blocks = defaultdict(list)
         for f in ctf:
             # ASPIRE's CTF Estimator produces legacy (=< 3.0) STAR files containing one row
             star = RelionStarFile(f)
             data_block = star.data_block
             for k, v in data_block.items():
-                dfs[k].append(v)
+                data_blocks[k].append(v)
 
-        self._extract_ctf(dfs)
+        self._extract_ctf(data_blocks)
 
     def import_relion_ctf(self, ctf):
         """
@@ -348,7 +348,7 @@ class CoordinateSource(ImageSource, ABC):
 
         self._extract_ctf(data_block)
 
-    def _extract_ctf(self, df):
+    def _extract_ctf(self, data_block):
         """
         Receives a dict containing micrograph CTF information, and populates
             the Source's CTF Filters, filter indices, and metadata.
@@ -364,10 +364,10 @@ class CoordinateSource(ImageSource, ABC):
             "_rlnMicrographPixelSize",
         ]
 
-        n = len(df["_rlnVoltage"])
+        n = len(data_block["_rlnVoltage"])
         # get unique ctfs from the data block
         # i'th entry of `indices` contains the index of `filter_params` with corresponding CTF params
-        ctf_data = np.stack( df[c] for c in CTF_params ).astype(self.dtype).T
+        ctf_data = np.stack( data_block[c] for c in CTF_params ).astype(self.dtype).T
         filter_params, indices = np.unique(
             ctf_data,
             return_inverse=True,
@@ -647,16 +647,16 @@ class CentersCoordinateSource(CoordinateSource):
         """
         Ensures that a STAR file contains numeric particle centers.
         """
-        df = StarFile(coord_file).get_block_by_index(0)
+        data_block = StarFile(coord_file).get_block_by_index(0)
         # We're looking for specific columns for the X and Y coordinates
-        if not all(col in df for col in ["_rlnCoordinateX", "_rlnCoordinateY"]):
+        if not all(col in data_block for col in ["_rlnCoordinateX", "_rlnCoordinateY"]):
             logger.error(f"Problem with coordinate file: {coord_file}")
             raise ValueError(
                 "STAR file does not contain _rlnCoordinateX, _rlnCoordinateY columns."
             )
         # check that all values in each column are numeric
         if not all(
-            all(map(self._is_number, df[col]))
+            all(map(self._is_number, data_block[col]))
             for col in ["_rlnCoordinateX", "_rlnCoordinateY"]
         ):
             logger.error(f"Problem with coordinate file: {coord_file}")
