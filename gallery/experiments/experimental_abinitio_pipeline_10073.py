@@ -77,7 +77,7 @@ src = RelionSource(
 logger.info(f"Set the resolution to {img_size} X {img_size}")
 src.downsample(img_size)
 
-src.cache()
+src = src.cache()
 
 # %%
 # Class Averaging

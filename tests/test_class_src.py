@@ -111,7 +111,7 @@ def class_sim_fixture(dtype, img_size):
         L=img_size, n=n, vols=v, offsets=0, amplitudes=1, C=1, angles=true_rots.angles
     )
     # Prefetch all the images
-    src.cache()
+    src = src.cache()
 
     return src
 

@@ -628,6 +628,12 @@ class ImageSource(ABC):
 
     @as_copy
     def cache(self):
+        """
+        Computes all queued pipeline transformations and stores the
+        generated images in an array.  This trades memory for fast
+        image access, and is useful when images will be repeatedly
+        queried since it avoids recomputing on-the-fly.
+        """
         logger.info("Caching source images")
         self._cached_im = self.images[:]
         self.generation_pipeline.reset()
