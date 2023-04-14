@@ -78,7 +78,7 @@ def denoise(
         source = source.downsample(max_resolution)
     else:
         logger.warn(f"Unable to downsample to {max_resolution}, using {source.L}")
-    source.cache()
+    source = source.cache()
 
     # Specify the fast FB basis method for expending the 2D images
     basis = FFBBasis2D((source.L, source.L))

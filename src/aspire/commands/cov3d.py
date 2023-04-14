@@ -48,7 +48,7 @@ def cov3d(
     )
 
     source = source.downsample(max_resolution)
-    source.cache()
+    source = source.cache()
 
     source = source.whiten()
     basis = FBBasis3D((max_resolution, max_resolution, max_resolution))

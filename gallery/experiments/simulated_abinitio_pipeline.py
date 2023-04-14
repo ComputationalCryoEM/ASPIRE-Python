@@ -129,7 +129,7 @@ if interactive:
     src.images[:10].show()
 
 # Cache to memory for some speedup
-src.cache()
+src = src.cache()
 
 # %%
 # Optional: CWF Denoising

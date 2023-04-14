@@ -167,7 +167,7 @@ class SimTestCase(TestCase):
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
         )
-        sim_cached.cache()
+        sim_cached = sim_cached.cache()
         self.assertTrue(
             np.array_equal(sim_cached.images[:].asnumpy(), self.sim.images[:].asnumpy())
         )
