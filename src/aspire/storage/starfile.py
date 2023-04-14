@@ -16,7 +16,8 @@ class StarFile:
         """
         Initialize either from a path to a STAR file or from an OrderedDict of ndarrays
         """
-        # if blocks are given, set self.blocks, otherwise initialize an empty OrderedDict()
+        # If blocks are given, set self.blocks, otherwise initialize an empty OrderedDict()
+        # The following code repacks provided blocks as strings while handling both singleton and iterable inputs.
         if blocks is not None:
             for k in blocks:
                 for _k, _v in blocks[k].items():
