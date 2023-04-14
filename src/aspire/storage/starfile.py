@@ -117,7 +117,7 @@ class StarFile:
                     d = {}
                     for i, loop_tag in enumerate(loop_tags):
                         d[loop_tag] = [
-                            str(loop_data[j][i]) for j in range(len(loop_data))
+                            str(x[i]) for x in loop_data
                         ]
                     self.blocks[gemmi_block.name] = d
                 else:
