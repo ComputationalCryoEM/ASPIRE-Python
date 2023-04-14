@@ -957,7 +957,7 @@ class ImageSource(ABC):
         # Get local metadata columns that were added by subclass
         local_cols = self._populate_local_metadata()
 
-        metadata = self.get_metadata(as_dict=True, default_value=42).copy()
+        metadata = self.get_metadata(as_dict=True).copy()
         # Drop any column that doesn't start with a *single* underscore
         metadata = {
             k: v
