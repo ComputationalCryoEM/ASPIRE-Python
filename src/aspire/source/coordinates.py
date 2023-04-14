@@ -340,7 +340,7 @@ class CoordinateSource(ImageSource, ABC):
         data_block = RelionStarFile(ctf).get_merged_data_block()
 
         # data_block is a dict containing the micrographs
-        if not len(data_block[list(data_block.keys())[0]]) == self.num_micrographs:
+        if not len(list(data_block.values())[0]) == self.num_micrographs:
             raise ValueError(
                 f"{ctf} has CTF information for {len(data_block)}",
                 f" micrographs but this source has {self.num_micrographs} micrographs.",
