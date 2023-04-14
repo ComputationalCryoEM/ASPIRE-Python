@@ -3,6 +3,7 @@ import logging
 import numpy as np
 
 from aspire.abinitio import CLSymmetryC3C4
+from aspire.utils import all_pairs
 from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
@@ -169,3 +170,51 @@ class CLSymmetryC2(CLSymmetryC3C4):
         mask[left:right, bottom:top] = 0
 
         return arr * mask
+
+    ###########################################
+    # Primary Methods                         #
+    ###########################################
+
+    def _estimate_relative_viewing_directions(self):
+        """
+        Estimate the relative viewing directions vij = vi*vj^T, i<j, and vii = vi*vi^T, where
+        vi is the third row of the i'th rotation matrix Ri.
+        """
+        logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
+        # Step 1: Detect a single pair of common-lines between each pair of images
+        self.build_clmatrix()
+        clmatrix = self.clmatrix
+
+        # Step 2: Calculate relative rotations associated with both mutual common lines.
+        Rijs, Rijgs = self._estimate_all_Rijs_c2(clmatrix)
+
+        # Step 3: Inner J-synchronization
+        vijs, viis = self._local_J_sync_c2(Rijs, Rijgs)
+
+        return vijs, viis
+
+    #################################################
+    # Secondary Methods for computing outer product #
+    #################################################
+
+    def _estimate_all_Rijs_c2(self, clmatrix):
+        """
+        Estimate Rijs using the voting method.
+        """
+        n_img = self.n_img
+        n_theta = self.n_theta
+        pairs = all_pairs(n_img)
+        Rijs = np.zeros((len(pairs), 3, 3))
+        Rijgs = np.zeros((len(pairs), 3, 3))
+        for idx, (i, j) in enumerate(pairs):
+            Rijs[idx] = self._syncmatrix_ij_vote_3n(
+                clmatrix[0], i, j, np.arange(n_img), n_theta
+            )
+            Rijgs[idx] = self._syncmatrix_ij_vote_3n(
+                clmatrix[0], i, j, np.arange(n_img), n_theta
+            )
+
+        return Rijs, Rijgs
+
+    def _local_J_sync_c2(Rijs, Rijgs):
+        pass
