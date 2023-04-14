@@ -260,9 +260,10 @@ class ImageSource(ABC):
             if metadata_field in self._metadata:
                 result[metadata_field] = self._metadata[metadata_field][indices].copy()
             else:
-                assert (
-                    default_value is not None
-                ), f"Missing metadata field {metadata_field} and no default_value supplied"
+                if default_value is None:
+                    raise ValueError(
+                        f"Missing metadata field {metadata_field} and no default_value supplied"
+                    )
                 result[metadata_field] = np.full(len(indices), fill_value=default_value)
         return result
 
@@ -281,9 +282,10 @@ class ImageSource(ABC):
 
         for i, metadata_field in enumerate(metadata_fields):
             if metadata_field not in self._metadata:
-                assert (
-                    default_value is not None
-                ), f"Missing metadata field {metadata_field} and no default_value supplied"
+                if default_value is None:
+                    raise ValueError(
+                        f"Missing metadata field {metadata_field} and no default_value supplied"
+                    )
                 result[:, i] = default_value
                 dtypes[i] = np.array([default_value]).dtype
             else:
@@ -493,9 +495,10 @@ class ImageSource(ABC):
         else:
             if isinstance(values, str):
                 values = [values] * len(indices)
-        assert len(values) == len(
-            indices
-        ), "Mismatch between len(values) and len(indices)"
+        if len(values) != len(indices):
+            raise RuntimeError(
+                f"Mismatch between len(values) {len(values)} and len(indices) {len(indices)}."
+            )
 
         values = np.array(values)  # make a copy for our use
 
@@ -651,9 +654,10 @@ class ImageSource(ABC):
 
     @as_copy
     def downsample(self, L):
-        assert (
-            L <= self.L
-        ), "Max desired resolution should be less than the current resolution"
+        if L > self.L:
+            raise ValueError(
+                "Max desired resolution {L} should be less than the current resolution {self.L}."
+            )
         logger.info(f"Setting max. resolution of source = {L}")
 
         self.generation_pipeline.add_xform(Downsample(resolution=L))
@@ -834,7 +838,8 @@ class ImageSource(ABC):
             amplitude.
         """
         all_idx = np.arange(start, min(start + num, self.n))
-        assert vol.n_vols == 1, "vol_forward expects a single volume, not a stack"
+        if vol.n_vols != 1:
+            raise ValueError("vol_forward expects a single volume, not a stack.")
 
         if vol.dtype != self.dtype:
             logger.warning(f"Volume.dtype {vol.dtype} inconsistent with {self.dtype}")
