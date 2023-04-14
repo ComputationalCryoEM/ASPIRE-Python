@@ -488,11 +488,15 @@ class ImageSource(ABC):
         if indices is None:
             indices = np.arange(self.n)
 
+        # Check if we're an iterable, and in case we're not, broadcast
+        # the single values into a list `indices` long.
         try:
             iter(values)
         except TypeError:
             values = [values] * len(indices)
         else:
+            # Special case for single `str`, which are iterable, but
+            # need to be broadcast like a singleton.
             if isinstance(values, str):
                 values = [values] * len(indices)
         if len(values) != len(indices):
