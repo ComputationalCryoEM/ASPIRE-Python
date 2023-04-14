@@ -56,7 +56,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
     def build_clmatrix(self):
         """
-        Build common-lines matrix from Fourier stack of 2D images
+        Build common-lines matrix from Fourier stack of 2D images.
         """
 
         n_img = self.n_img
