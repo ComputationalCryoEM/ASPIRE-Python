@@ -12,7 +12,6 @@ from collections import OrderedDict
 import mrcfile
 import numpy as np
 from numpy import linalg as npla
-from pandas import DataFrame
 from scipy.optimize import linprog
 from scipy.signal.windows import dpss
 
@@ -693,9 +692,8 @@ class CtfEstimator:
         data_block["_rlnAmplitudeContrast"] = params_dict["amplitude_contrast"]
         data_block["_rlnVoltage"] = params_dict["voltage"]
         data_block["_rlnMicrographPixelSize"] = params_dict["pixel_size"]
-        df = DataFrame([data_block])
         blocks = OrderedDict()
-        blocks["root"] = df
+        blocks["root"] = data_block
         star = StarFile(blocks=blocks)
         star.write(os.path.join(output_dir, os.path.splitext(name)[0]) + ".star")
 
