@@ -633,7 +633,7 @@ src = src.phase_flip()
 
 # %%
 # Display the experimental data images.
-src = src.images[:10].show()
+src.images[:10].show()
 
 # %%
 # Pipeline Roadmap
