@@ -887,8 +887,9 @@ class ImageSource(ABC):
         info = {"starfile": starfile_filepath, "mrcs": unique_filenames}
         return info
 
+    @staticmethod
     def _populate_common_metadata(
-        self,
+        n,
         meta_dict,
         local_cols,
         starfile_filepath,
@@ -899,22 +900,22 @@ class ImageSource(ABC):
         Populate metadata columns common to all `ImageSource` subclasses.
         """
         # Create a new key that we will be populating in the loop below
-        meta_dict["_rlnImageName"] = np.full(self.n, fill_value="").astype("object")
+        meta_dict["_rlnImageName"] = np.full(n, fill_value="").astype("object")
 
         if save_mode == "single":
             # Save all images into one single mrc file
             fname = os.path.basename(starfile_filepath)
             fstem = os.path.splitext(fname)[0]
-            mrcs_filename = f"{fstem}_{0}_{self.n-1}.mrcs"
+            mrcs_filename = f"{fstem}_{0}_{n-1}.mrcs"
 
             # Then set name in dict for the StarFile
             meta_dict["_rlnImageName"][:] = [
-                f"{j + 1:06}@{mrcs_filename}" for j in range(self.n)
+                f"{j + 1:06}@{mrcs_filename}" for j in range(n)
             ]
         else:
             # save all images into multiple mrc files in batch size
-            for i_start in np.arange(0, self.n, batch_size):
-                i_end = min(self.n, i_start + batch_size)
+            for i_start in np.arange(0, n, batch_size):
+                i_end = min(n, i_start + batch_size)
                 num = i_end - i_start
                 mrcs_filename = (
                     os.path.splitext(os.path.basename(starfile_filepath))[0]
@@ -966,7 +967,7 @@ class ImageSource(ABC):
 
         # Populates _rlnImageName column, setting up filepaths to .mrcs stacks
         self._populate_common_metadata(
-            metadata, local_cols, starfile_filepath, batch_size, save_mode
+            self.n, metadata, local_cols, starfile_filepath, batch_size, save_mode
         )
 
         filename_indices = [
