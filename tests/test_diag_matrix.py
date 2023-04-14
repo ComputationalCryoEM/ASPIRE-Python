@@ -47,10 +47,10 @@ def diag_matrix_fixture(stack, matrix_size, dtype):
     Generate some random diagonal matrix instance with stack, matrix_size and dtype.
     """
     shape = (2,) + stack + (matrix_size,)
-    d_np = np.random.random(shape)
-    # Internally convert dtype.  Passthrough will be checked explicitly in `test_dtype_passthrough`
-    d1 = DiagMatrix(d_np[0], dtype)
-    d2 = DiagMatrix(d_np[1], dtype)
+    # Internally convert dtype.  Passthrough will be checked explicitly in `test_dtype_passthrough` and `test_dtype_cast`
+    d_np = np.random.random(shape).astype(dtype, copy=False)
+    d1 = DiagMatrix(d_np[0])
+    d2 = DiagMatrix(d_np[1])
 
     return d1, d2, d_np
 
@@ -63,7 +63,14 @@ def test_dtype_passthrough():
         assert d.dtype == dtype
 
 
-def test_dense_conversion():
+def test_dtype_cast():
+    for dtype in (int, np.float32, np.float64, np.complex64, np.complex128):
+        d_np = np.empty(42, dtype=np.float16)
+        d = DiagMatrix(d_np, dtype)
+        assert d.dtype == dtype
+
+
+def test_dtype_conversion():
     # Zero Dimension stack
     d_np = np.arange(42)
     A_np = np.diag(d_np)
@@ -93,4 +100,104 @@ def test_dense_conversion():
 def test_diag_diag_add(diag_matrix_fixture):
     d1, d2, d_np = diag_matrix_fixture
 
-    np.allclose(d1 + d2, np.sum(d_np, axis=0))
+    np.testing.assert_allclose(d1 + d2, np.sum(d_np, axis=0))
+
+
+def test_diag_diag_sub(diag_matrix_fixture):
+    d1, d2, d_np = diag_matrix_fixture
+
+    np.testing.assert_allclose(d1 - d2, np.subtract(*d_np))
+
+
+def test_diag_diag_mul(diag_matrix_fixture):
+    d1, d2, d_np = diag_matrix_fixture
+
+    np.testing.assert_allclose(d1 * d2, np.multiply(*d_np))
+
+
+def test_diag_diag_matmul(diag_matrix_fixture):
+    d1, d2, d_np = diag_matrix_fixture
+
+    # compute the matmuls
+    d = d1 @ d2
+
+    _d1 = d1.stack_reshape(-1).asnumpy()
+    _d2 = d2.stack_reshape(-1).asnumpy()
+
+    for i, _d in enumerate(d.stack_reshape(-1).asnumpy()):
+        np.testing.assert_allclose(_d, np.diag(np.diag(_d1[i]) @ np.diag(_d2[i])))
+
+
+def test_neg(diag_matrix_fixture):
+    d1, _, d_np = diag_matrix_fixture
+
+    np.testing.assert_allclose(-d1, -d_np[0])
+
+
+def test_pow(diag_matrix_fixture):
+    d1, _, d_np = diag_matrix_fixture
+
+    ref = d_np[0] ** 2
+    np.testing.assert_allclose(d1**2, ref)
+    np.testing.assert_allclose(d1.pow(2), ref)
+
+    _d1 = d1
+    d1 = d1.pow(2, inplace=True)
+    np.testing.assert_allclose(d1, ref)
+    assert d1 is _d1, "Object refs should be identical for inplace ops"
+
+
+def test_norm(diag_matrix_fixture):
+    d1, _, d_np = diag_matrix_fixture
+
+    # Expand to dense matrix and compute norm
+    A = np.diag(d_np.reshape(-1, d_np.shape[-1])[0])
+    ref = np.linalg.norm(A, 2)  # 2-norm
+
+    np.testing.assert_allclose(d1.stack_reshape(-1).norm[0], ref)
+    np.testing.assert_allclose(d1.norm.flatten()[0], ref)
+
+
+def test_transpose(diag_matrix_fixture):
+    """
+    silly?
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    # Expand to dense matrix and compute transpose
+    A = np.diag(d_np.reshape(-1, d_np.shape[-1])[0])
+    ref = A.T.copy()
+
+    np.testing.assert_allclose(d1.stack_reshape(-1).T.dense[0], ref)
+    np.testing.assert_allclose(d1.stack_reshape(-1).transpose().dense[0], ref)
+
+
+def test_ones(diag_matrix_fixture):
+    _, _, d_np = diag_matrix_fixture
+    d = DiagMatrix.ones(d_np.shape)
+
+    np.testing.assert_allclose(d, 1)
+    np.testing.assert_equal(d.shape, d_np.shape)
+
+
+def test_zeros(diag_matrix_fixture):
+    _, _, d_np = diag_matrix_fixture
+    d = DiagMatrix.zeros(d_np.shape)
+
+    np.testing.assert_allclose(d, 0)
+    np.testing.assert_equal(d.shape, d_np.shape)
+
+
+def test_empty(diag_matrix_fixture):
+    _, _, d_np = diag_matrix_fixture
+    d = DiagMatrix.empty(d_np.shape)
+
+    np.testing.assert_equal(d.shape, d_np.shape)
+
+
+def test_ones(diag_matrix_fixture):
+    _, _, d_np = diag_matrix_fixture
+    d = DiagMatrix.ones(d_np.shape)
+
+    np.testing.assert_allclose(d, 1)
+    np.testing.assert_equal(d.shape, d_np.shape)

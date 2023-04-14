@@ -53,6 +53,7 @@ class DiagMatrix:
         self._data = data.astype(self.dtype, copy=False)
         self.n = self._data.shape[-1]
         self.stack_shape = self._data.shape[:-1]
+        self.shape = self._data.shape
 
         # Numpy interop
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
@@ -259,21 +260,35 @@ class DiagMatrix:
         """
         Compute the matrix multiplication of two DiagMatrix instances.
 
-        :param other: The rhs DiagMatrix instance.
+        :param other: The rhs `DiagMatrix`, or 2d dense Numpy array.
         :param inplace: Boolean, when set to True change values in place,
             otherwise return a new instance (default).
-        :return: A DiagMatrix of self @ other.
+        :return: Returns `self` @ `other`, as type of `other`
         """
         if isinstance(other, DiagMatrix):
-            if inplace:
-                self._data *= other._data
-                res = self
-            else:
-                res = DiagMatrix(self._data * other._data)
-        elif isinstance(other, np.ndarray):
-            raise NotImplementedError("todo")
+            return self.mul(other, inplace=inplace)
 
-        return res
+        if isinstance(other, np.ndarray):
+            # inplace infeasable, as the result will be dense.
+            if inplace:
+                raise RuntimeError(
+                    f"Inplace infeasable between DiagMatrix and dense ndarray matrix."
+                )
+            # For now, lets just interop with 2D `other` arrays,
+            # assumed to represent matrices.
+            if other.ndim != 2:
+                raise ValueError(
+                    f"DiagMatrix.matmul of ndarray only supports 2D, received {other.shape}."
+                )
+
+            # Then the mathematical `DA` for diag D and matrix A,
+            # is expressed in code as `D@A`.
+            #
+            # The operation `DA` is known as Left Scaling,
+            # and means to scale the row A_i by d_i in D.
+            # This can be accomplished by broadcasting an elemental multiply.
+
+            return D[..., np.newaxis] * A
 
     def __matmul__(self, other):
         """
@@ -285,7 +300,7 @@ class DiagMatrix:
     def __rmatmul__(self, lhs):
         """
         Compute the right matrix multiplication with a DiagMatrix instance,
-        and a numpy array, lhs @ self.
+        and a numpy array, `lhs` @ `self`.
 
         :param other: The lhs Numpy instance.
         :return: Returns numpy array representing `other @ self`.
@@ -296,8 +311,27 @@ class DiagMatrix:
         #   then a@b would be handled first by a.__matmul__(b), never reaching here.
         if not isinstance(lhs, np.ndarray):
             raise RuntimeError("__rmatmul__ only defined for np.ndarray @ DiagMatrix.")
-        raise NotImplementedError
-        # return self.rapply(lhs)
+
+        # inplace infeasable, as the result will be dense.
+        if inplace:
+            raise RuntimeError(
+                f"Inplace infeasable between DiagMatrix and dense ndarray matrix."
+            )
+        # For now, lets just interop with 2D `other` arrays,
+        # assumed to represent matrices.
+        if other.ndim != 2:
+            raise ValueError(
+                f"DiagMatrix.matmul of ndarray only supports 2D, received {other.shape}."
+            )
+
+        # Then the mathematical `AD` for diag D and matrix A,
+        # is expressed in code as `A@D`.
+        #
+        # The operation `AD` is known as Right Scaling,
+        # and means to scale the column A_j by d_j in D.
+        # This can be accomplished by broadcasting an elemental multiply.
+
+        return A * D[np.newaxis]
 
     def __imatmul__(self, other):
         """
@@ -317,7 +351,16 @@ class DiagMatrix:
             otherwise return a new instance (default).
         :return: A DiagMatrix of self * other.
         """
-        raise NotImplementedError("todo")
+        if isinstance(other, DiagMatrix):
+            if inplace:
+                self._data *= other._data
+                res = self
+            else:
+                res = DiagMatrix(self._data * other._data)
+        elif isinstance(other, np.ndarray):
+            raise NotImplementedError("todo")
+
+        return res
 
     def __mul__(self, val):
         """
@@ -379,7 +422,13 @@ class DiagMatrix:
         :return: A DiagMatrix like self.
         """
 
-        raise NotImplementedError("todo")
+        if inplace:
+            self._data[:] = self._data**val
+            res = self
+        else:
+            res = DiagMatrix(self._data**val)
+
+        return res
 
     def __pow__(self, val):
         """
@@ -397,15 +446,16 @@ class DiagMatrix:
 
         return self.pow(val, inplace=True)
 
+    @property
     def norm(self):
         """
         Compute the norm of a DiagMatrix instance.
 
-        :param inplace: Boolean, when set to True change values in place,
-            otherwise return a new instance (default).
         :return: The norm of the DiagMatrix instance.
         """
-        pass
+        # Elements of a diag matrix are its singular values,
+        #   and the norm is equal to the largest singular value.
+        return np.abs(self._data).max(axis=-1)
 
     def transpose(self):
         """
@@ -456,7 +506,7 @@ class DiagMatrix:
         :return: A matrix with new coefficient vectors.
         """
 
-        pass
+        raise NotImplementedError
 
     def rapply(self, X):
         """
@@ -514,7 +564,7 @@ class DiagMatrix:
         return DiagMatrix(np.zeros(n, dtype=dtype))
 
     @staticmethod
-    def empty(n, dtype=np.float32):
+    def ones(n, dtype=np.float32):
         """
         Instantiate ones intialized DiagMatrix with length `n`.
         This corresponds to the diag(A) where A is (n,n).
