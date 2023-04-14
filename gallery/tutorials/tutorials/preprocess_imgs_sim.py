@@ -79,11 +79,6 @@ source = Simulation(
     noise_adder=noise_adder,
 )
 
-# We'll copy ``source`` so we can use it in a later section.
-# Since ``source`` objects are designed to follow an immutable usage by default (like Numpy arrays),
-# we can copy a source just by copying the object.
-source_copy = source
-
 # %%
 # Apply Independent Preprocessing Techniques
 # ------------------------------------------
@@ -158,6 +153,11 @@ plt.tight_layout()
 # This is accomplished by reassigning each new ``ImageSource`` to the same variable.
 # In this case we reassign to ``source``.
 # Note, after each ``source`` assignment we'll manually save off the images for the plot below.
+
+# We'll copy ``source`` so we can use it in a later section.
+# Since ``source`` objects are designed to follow an immutable usage by default (like Numpy arrays),
+# we can copy a source just by copying the object.
+source_copy = source
 
 logger.info("Obtain original images.")
 imgs_seq_od = source.images[0].asnumpy()
