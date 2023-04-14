@@ -22,9 +22,11 @@ class StarFile:
             for k in blocks:
                 for _k, _v in blocks[k].items():
                     if not isinstance(_v, str):
-                        if hasattr(_v, "__iter__"):
-                            blocks[k][_k] = list(map(str, _v))
-                        else:
+                        try:
+                            # Cast iterable elements to string.
+                            blocks[k][_k] = list(map(str, iter(_v)))
+                        except TypeError:
+                            # Singleton, cast to string.
                             blocks[k][_k] = str(_v)
 
         self.blocks = blocks or OrderedDict()
