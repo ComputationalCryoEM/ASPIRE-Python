@@ -364,10 +364,9 @@ class CoordinateSource(ImageSource, ABC):
             "_rlnMicrographPixelSize",
         ]
 
-        n = len(data_block["_rlnVoltage"])
         # get unique ctfs from the data block
         # i'th entry of `indices` contains the index of `filter_params` with corresponding CTF params
-        ctf_data = np.stack( data_block[c] for c in CTF_params ).astype(self.dtype).T
+        ctf_data = np.stack(data_block[c] for c in CTF_params).astype(self.dtype).T
         filter_params, indices = np.unique(
             ctf_data,
             return_inverse=True,

@@ -117,9 +117,7 @@ class StarFile:
                     # initialize dict from list of lists
                     d = {}
                     for i, loop_tag in enumerate(loop_tags):
-                        d[loop_tag] = [
-                            str(x[i]) for x in loop_data
-                        ]
+                        d[loop_tag] = [str(x[i]) for x in loop_data]
                     self.blocks[gemmi_block.name] = d
                 else:
                     # enforce unique block names (keys of StarFile.block OrderedDict)
