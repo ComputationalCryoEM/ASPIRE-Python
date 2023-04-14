@@ -107,8 +107,9 @@ class RelionSource(ImageSource):
         # If these all exist in the STAR file, we may create CTF filters for the source
         if set(CTF_params).issubset(metadata.keys()):
             # partition particles according to unique CTF parameters
+            ctf_data = np.stack(metadata[k] for k in CTF_params).T
             filter_params, filter_indices = np.unique(
-                np.array([metadata[k] for k in CTF_params]).T,
+                ctf_data,
                 return_inverse=True,
                 axis=0,
             )

@@ -367,13 +367,9 @@ class CoordinateSource(ImageSource, ABC):
         n = len(df["_rlnVoltage"])
         # get unique ctfs from the data block
         # i'th entry of `indices` contains the index of `filter_params` with corresponding CTF params
+        ctf_data = np.stack( df[c] for c in CTF_params ).astype(self.dtype).T
         filter_params, indices = np.unique(
-            np.vstack(
-                [
-                    np.array([df[c][i] for c in CTF_params]).astype(self.dtype)
-                    for i in range(n)
-                ]
-            ),
+            ctf_data,
             return_inverse=True,
             axis=0,
         )
