@@ -33,7 +33,6 @@ setup(
         "mrcfile",
         "numpy>=1.21.5",
         "packaging",
-        "pandas>=1.3.5",
         "psutil",
         "pyfftw",
         "PyWavelets",

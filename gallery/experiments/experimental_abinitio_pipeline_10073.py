@@ -77,7 +77,7 @@ src = RelionSource(
 logger.info(f"Set the resolution to {img_size} X {img_size}")
 src.downsample(img_size)
 
-src.cache()
+src = src.cache()
 
 # %%
 # Class Averaging
@@ -149,7 +149,7 @@ rots_est = orient_est.rotations
 logger.info("Begin Volume reconstruction")
 
 # Assign the estimated rotations to the class averages
-avgs.rotations = rots_est
+avgs = avgs.update(rotations=rots_est)
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((img_size,) * 3, dtype=src.dtype)

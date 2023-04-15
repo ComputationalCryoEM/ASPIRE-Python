@@ -70,7 +70,7 @@ src = RelionSource(
 
 # Downsample the images
 logger.info(f"Set the resolution to {img_size} X {img_size}")
-src.downsample(img_size)
+src = src.downsample(img_size)
 
 # Peek
 if interactive:
@@ -78,11 +78,11 @@ if interactive:
 
 # Use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
-src.phase_flip()
+src = src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
-src.whiten(aiso_noise_estimator)
+src = src.whiten(aiso_noise_estimator)
 
 # Plot the noise profile for inspection
 if interactive:
@@ -96,7 +96,7 @@ if interactive:
 # # Optionally invert image contrast, depends on data convention.
 # # This is not needed for 10028, but included anyway.
 # logger.info("Invert the global density contrast")
-# src.invert_contrast()
+# src = src.invert_contrast()
 
 # %%
 # Optional: CWF Denoising
@@ -174,7 +174,7 @@ rots_est = orient_est.rotations
 logger.info("Begin Volume reconstruction")
 
 # Assign the estimated rotations to the class averages
-avgs.rotations = rots_est
+avgs = avgs.update(rotations=rots_est)
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((img_size,) * 3, dtype=src.dtype)

@@ -31,25 +31,25 @@ print('Obtain original images')
 imgs_od = source.images[:nimgs_ext]
 
 print('Perform phase flip to input images')
-source.phase_flip()
+source = source.phase_flip()
 imgs_pf = source.images[:nimgs_ext]
 
 max_resolution = 60
 print(f'Downsample resolution to {max_resolution} X {max_resolution}')
-source.downsample(max_resolution)
+source = source.downsample(max_resolution)
 imgs_ds = source.images[:nimgs_ext]
 
 print('Normalize images to noise background')
-source.normalize_background()
+source = source.normalize_background()
 imgs_nb = source.images[:nimgs_ext]
 
 print('Whiten noise of images')
 noise_estimator = WhiteNoiseEstimator(source)
-source.whiten(noise_estimator)
+source = source.whiten(noise_estimator)
 imgs_wt = source.images[:nimgs_ext]
 
 print('Invert global density contrast')
-source.invert_contrast()
+source = source.invert_contrast()
 imgs_rc = source.images[:nimgs_ext]
 
 # plot the first images

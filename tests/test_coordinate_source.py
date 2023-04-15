@@ -9,7 +9,6 @@ from unittest import TestCase
 import mrcfile
 import numpy as np
 from click.testing import CliRunner
-from pandas import DataFrame
 
 import tests.saved_test_data
 from aspire.commands.extract_particles import extract_particles
@@ -189,11 +188,7 @@ class CoordinateSourceTestCase(TestCase):
         x_coords = [center[0] for center in centers]
         y_coords = [center[1] for center in centers]
         blocks = OrderedDict(
-            {
-                "coordinates": DataFrame(
-                    {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
-                )
-            }
+            {"coordinates": {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}}
         )
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
@@ -244,11 +239,7 @@ class CoordinateSourceTestCase(TestCase):
         x_coords = [str(center[0]) + ".000" for center in centers]
         y_coords = [str(center[1]) + ".000" for center in centers]
         blocks = OrderedDict(
-            {
-                "coordinates": DataFrame(
-                    {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
-                )
-            }
+            {"coordinates": {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}}
         )
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
@@ -269,9 +260,7 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnVoltage": 500 + index,
             "_rlnMicrographPixelSize": 400 + index,
         }
-        blocks = OrderedDict(
-            {"root": DataFrame([params_dict], columns=params_dict.keys())}
-        )
+        blocks = OrderedDict({"root": params_dict})
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
 
@@ -300,7 +289,7 @@ class CoordinateSourceTestCase(TestCase):
         if reverse_optics_block_rows:
             optics_block = optics_block[::-1]
 
-        blocks["optics"] = DataFrame(optics_block, columns=optics_columns)
+        blocks["optics"] = dict(zip(optics_columns, zip(*optics_block)))
 
         micrographs_columns = [
             "_rlnMicrographName",
@@ -314,9 +303,7 @@ class CoordinateSourceTestCase(TestCase):
             [self.all_mrc_paths[0], 1, 1000.0, 900.0, 800.0],
             [self.all_mrc_paths[0], 2, 1001.0, 901.0, 801.0],
         ]
-        blocks["micrographs"] = DataFrame(
-            micrographs_block, columns=micrographs_columns
-        )
+        blocks["micrographs"] = dict(zip(micrographs_columns, zip(*micrographs_block)))
 
         star = StarFile(blocks=blocks)
         star.write(star_fp)
@@ -392,9 +379,9 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
 
     def testCached(self):
-        src_cached = BoxesCoordinateSource(self.files_box)
+        src = BoxesCoordinateSource(self.files_box)
         src_uncached = BoxesCoordinateSource(self.files_box)
-        src_cached.cache()
+        src_cached = src.cache()
         self.assertTrue(
             np.array_equal(
                 src_cached.images[:].asnumpy(), src_uncached.images[:].asnumpy()
@@ -494,14 +481,14 @@ class CoordinateSourceTestCase(TestCase):
         # we want to read the saved mrcs file from the STAR file
         image_name_column = saved_star.get_block_by_index(0)["_rlnImageName"]
         # we're reading a string of the form 0000X@mrcs_path.mrcs
-        _particle, mrcs_path = image_name_column.iloc[0].split("@")
+        _particle, mrcs_path = image_name_column[0].split("@")
         saved_mrcs_stack = mrcfile.open(os.path.join(self.data_folder, mrcs_path)).data
         # assert that the particles saved are correct
         for i in range(10):
             self.assertTrue(np.array_equal(imgs.asnumpy()[i], saved_mrcs_stack[i]))
         # assert that the star file has the correct metadata
         self.assertEqual(
-            saved_star[""].columns.tolist(),
+            list(saved_star[""].keys()),
             ["_rlnImageName", "_rlnCoordinateX", "_rlnCoordinateY"],
         )
         # assert that all the correct coordinates were saved
@@ -517,11 +504,11 @@ class CoordinateSourceTestCase(TestCase):
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
         src = BoxesCoordinateSource(self.files_box, max_rows=5)
-        src.downsample(60)
-        src.normalize_background()
+        src = src.downsample(60)
+        src = src.normalize_background()
         noise_estimator = WhiteNoiseEstimator(src)
-        src.whiten(noise_estimator)
-        src.invert_contrast()
+        src = src.whiten(noise_estimator)
+        src = src.invert_contrast()
         # call .images() to ensure the filters are applied
         # and not just added to pipeline
         src.images[:5]

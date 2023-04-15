@@ -167,7 +167,7 @@ class SimTestCase(TestCase):
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
         )
-        sim_cached.cache()
+        sim_cached = sim_cached.cache()
         self.assertTrue(
             np.array_equal(sim_cached.images[:].asnumpy(), self.sim.images[:].asnumpy())
         )
@@ -185,7 +185,7 @@ class SimTestCase(TestCase):
 
     def testSimulationImagesDownsample(self):
         # The simulation already generates images of size 8 x 8; Downsampling to resolution 8 should thus have no effect
-        self.sim.downsample(8)
+        self.sim = self.sim.downsample(8)
         images = self.sim.clean_images[:512].asnumpy()
         self.assertTrue(
             np.allclose(
@@ -203,7 +203,7 @@ class SimTestCase(TestCase):
         self.assertTrue(images.shape, (8, 8, 25))
 
     def testSimulationImagesDownsampleShape(self):
-        self.sim.downsample(6)
+        self.sim = self.sim.downsample(6)
         first_image = self.sim.images[0].asnumpy()[0]
         self.assertEqual(first_image.shape, (6, 6))
 

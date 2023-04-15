@@ -352,7 +352,7 @@ src.images[:4].show()
 
 # %%
 # Phase flip the images.
-src.phase_flip()
+src = src.phase_flip()
 src.images[:4].show()
 
 # %%
@@ -375,11 +375,11 @@ src = RelionSource(
     max_rows=10000,
     data_folder="../data",
 )
-src.downsample(64)  # easier to visualize
+src = src.downsample(64)  # easier to visualize
 src.images[:3].show()
 
 # Phase flip
-src.phase_flip()
+src = src.phase_flip()
 src.images[:3].show()
 
 

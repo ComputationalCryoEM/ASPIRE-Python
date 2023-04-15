@@ -520,7 +520,7 @@ aiso_noise_estimator = AnisotropicNoiseEstimator(sim)
 # dramatic change.
 
 # Whiten based on the estimated noise.
-sim.whiten(aiso_noise_estimator)
+sim = sim.whiten(aiso_noise_estimator)
 
 # %%
 # What do the whitened images look like?
@@ -623,13 +623,13 @@ src = RelionSource(
 
 # %%
 # Add downsampling to the ``src`` pipeline.
-src.downsample(img_size)
+src = src.downsample(img_size)
 
 # %%
 # ``RelionSource`` will auto-populate ``CTFFilter`` instances from the
 # STAR file metadata when available. Having these filters allows us to
 # perform a phase flipping correction.
-src.phase_flip()
+src = src.phase_flip()
 
 # %%
 # Display the experimental data images.

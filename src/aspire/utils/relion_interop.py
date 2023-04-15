@@ -49,17 +49,25 @@ relion_metadata_fields = {
 }
 
 
-def df_to_relion_types(df):
+def dict_to_relion_types(d):
     """
-    Convert STAR file strings to data type for each field in a DataFrame loaded via
+    Convert STAR file strings to data type for each field in a dict loaded via
     `aspire.storage.StarFile`. Columns without a specified data type are read as
-    `dtype=object`.
+    `dtype=str`.
 
-    :param df: A `StarFile` block represented as a Pandas DataFrame.
-    :return: The data frame with types converted where possible.
+    :param d: A `StarFile` block represented as a dictionary.
+    :return: A dict with types converted where possible.
     """
-    column_types = {name: relion_metadata_fields.get(name, str) for name in df.columns}
-    return df.astype(column_types)
+    column_types = {name: relion_metadata_fields.get(name, str) for name in d}
+    # look at values to detect if we're dealing with iterables
+    multiple_rows = isinstance(d, dict) and all(
+        not isinstance(v, str) and hasattr(v, "__iter__") for v in d.values()
+    )
+    if multiple_rows:
+        retval = dict(zip(d, [np.array(list(map(column_types[k], d[k]))) for k in d]))
+    else:
+        retval = {k: column_types[k](d[k]) for k in d}
+    return retval
 
 
 class RelionStarFile(StarFile):
@@ -89,7 +97,7 @@ class RelionStarFile(StarFile):
         # validate 3.0 STAR file
         if len(self.blocks) == 1:
             data_block = self.get_block_by_index(0)
-            columns = data_block.columns.to_list()
+            columns = list(data_block.keys())
             if not any(
                 col in columns
                 for col in ["_rlnImageName", "_rlnMicrographName", "_rlnMovieName"]
@@ -120,7 +128,7 @@ class RelionStarFile(StarFile):
 
             data_block = self[self.data_block_name]
             # lastly, data block must contain a column identifying the type of data as well
-            columns = data_block.columns.to_list()
+            columns = list(data_block.keys())
             if not any(
                 col in columns
                 for col in ["_rlnImageName", "_rlnMicrographName", "_rlnMovieName"]
@@ -140,21 +148,18 @@ class RelionStarFile(StarFile):
 
     def _convert_dtypes(self):
         """
-        For data blocks that are Pandas DataFrames, convert known Relion columns
-        to sensible types.
+        For data blocks, convert known Relion columns to sensible types.
         """
         _blocks = OrderedDict()
         for block_name, block in self.blocks.items():
-            # generic StarFile blocks can be DataFrame or dict
-            if not isinstance(block, dict):
-                _blocks[block_name] = df_to_relion_types(block)
+            _blocks[block_name] = dict_to_relion_types(block)
         self.blocks = _blocks
 
     def get_merged_data_block(self):
         """
-        Return the DataFrame containing particle/micrograph/movie information for this STAR file.
+        Return the dictionary containing particle/micrograph/movie information for this STAR file.
 
-        :return: A Pandas DataFrame containing the data from this RELION STAR file.
+        :return: A dictionary containing the data from this RELION STAR file.
         """
 
         if self.relion_version == "3.0":
@@ -165,13 +170,20 @@ class RelionStarFile(StarFile):
             # merge the parameters in the optics block as new columns in the data block
             # based on the corresponding optics group number (returns a new dataframe)
             data_block = self.data_block.copy()
+            # Create a dict from optics_group to individual optics properties
+            optics = self.optics_block
+            optics_props_by_group_id = dict(
+                (k, {_k: optics[_k][i] for _k in optics})
+                for i, k in enumerate(optics["_rlnOpticsGroup"])
+            )
             # get a NumPy array of optics indices for each row of data
-            optics_indices = self.data_block["_rlnOpticsGroup"].astype(int).to_numpy()
-            for _, row in self.optics_block.iterrows():
-                optics_index = row["_rlnOpticsGroup"]
-                # find row indices with this optics index
-                match = np.nonzero(optics_indices == optics_index)[0]  # returns 1-tuple
-                for param in self.optics_block.columns:
-                    data_block.loc[match, param] = getattr(row, param)
+            optics_indices = self.data_block["_rlnOpticsGroup"].astype(int)
+            for k in optics:
+                data_block[k] = np.array(
+                    [
+                        optics_props_by_group_id[optic_index][k]
+                        for optic_index in optics_indices
+                    ]
+                )
 
             return data_block

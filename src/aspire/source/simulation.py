@@ -176,6 +176,9 @@ class Simulation(ImageSource):
 
         self.noise_adder = noise_adder
 
+        # Any further operations should not mutate this instance.
+        self._mutable = False
+
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
         # metadata based on the CTF filters by hand and set the values

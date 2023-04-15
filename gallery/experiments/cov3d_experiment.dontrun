@@ -32,7 +32,7 @@ source = RelionSource(
 # Downsample the images
 print(f"Set the resolution to {MAX_RESOLUTION} X {MAX_RESOLUTION}")
 if MAX_RESOLUTION < source.L:
-    source.downsample(MAX_RESOLUTION)
+    source = source.downsample(MAX_RESOLUTION)
 
 # Estimate the noise of images
 print("Estimate the noise of images using anisotropic method")
@@ -40,7 +40,7 @@ noise_estimator = AnisotropicNoiseEstimator(source, batchSize=512)
 
 # Whiten the noise of images
 print("Whiten the noise of images from the noise estimator")
-source.whiten(noise_estimator)
+source = source.whiten(noise_estimator)
 # Estimate the noise variance. This is needed for the covariance estimation step below.
 noise_variance = noise_estimator.estimate()
 print(f"Noise Variance = {noise_variance}")

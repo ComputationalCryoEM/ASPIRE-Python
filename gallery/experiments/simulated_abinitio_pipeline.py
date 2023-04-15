@@ -113,11 +113,11 @@ if interactive:
 
 # Use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
-src.phase_flip()
+src = src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
-src.whiten(aiso_noise_estimator)
+src = src.whiten(aiso_noise_estimator)
 
 # Plot the noise profile for inspection
 if interactive:
@@ -129,7 +129,7 @@ if interactive:
     src.images[:10].show()
 
 # Cache to memory for some speedup
-src.cache()
+src = src.cache()
 
 # %%
 # Optional: CWF Denoising
@@ -215,7 +215,7 @@ logger.info(
 logger.info("Begin Volume reconstruction")
 
 # Assign the estimated rotations to the class averages
-avgs.rotations = rots_est
+avgs = avgs.update(rotations=rots_est)
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((v.resolution,) * 3, dtype=v.dtype)
