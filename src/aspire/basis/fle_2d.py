@@ -724,3 +724,37 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             a[self.idx_list[i]] = y[i]
 
         return a.flatten()
+
+    def filter_to_basis_mat(self, f, matrix_type=None):
+        # These form a circular dependence, import locally until time to clean up.
+        from aspire.basis.basis_utils import lgwt
+
+        # Get the filter's evaluate function.
+        h_fun = f.evaluate
+
+        # Set same dimensions as basis object
+        n_k = self.n_r
+        n_theta = self.n_theta
+        radial = self.get_radial()
+
+        # get 2D grid in polar coordinate
+        k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
+        k, theta = np.meshgrid(
+            k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
+        )
+
+        # Get function values in polar 2D grid and average out angle contribution
+        # NOTE: should probably just let the ctf objects handle this...
+        omegax = k * np.cos(theta)
+        omegay = k * np.sin(theta)
+        omega = 2 * np.pi * np.vstack((omegax.flatten("C"), omegay.flatten("C")))
+        h_vals2d = h_fun(omega).reshape(n_k, n_theta).astype(self.dtype)
+        h_vals = np.sum(h_vals2d, axis=1) / n_theta
+
+        radial_fb = np.zeros(self.count), dtype=self.dtype)
+
+        # For now just handle 1D (stack of one ctf)
+        for j in range(self.ell_p_max + 1):
+            radial_fb[self.idx_list[j]] = self.A3[j] @ h_vals
+
+        return radial_fb
