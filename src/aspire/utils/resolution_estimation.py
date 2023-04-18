@@ -197,16 +197,41 @@ class _FourierCorrelation:
         # TODO, should we use an internal tool (Polar2D?) for this
         r = np.linspace(0, np.pi, self.L, endpoint=False, dtype=self.dtype)
         phi = np.linspace(0, 2 * np.pi, 2 * self.L, endpoint=False, dtype=self.dtype)
-        x = r[:, np.newaxis] * np.cos(phi[np.newaxis, :])
-        y = r[:, np.newaxis] * np.sin(phi[np.newaxis, :])
-        fourier_pts = np.vstack((x.flatten(), y.flatten()))
+        if self.dim == 2:
+            x = r[:, np.newaxis] * np.cos(phi[np.newaxis, :])
+            y = r[:, np.newaxis] * np.sin(phi[np.newaxis, :])
+            fourier_pts = np.vstack((x.flatten(), y.flatten()))
+            # result_frame_shape = (len(r), len(phi))
+        elif self.dim == 3:
+            theta = np.linspace(0, np.pi, self.L, endpoint=False, dtype=self.dtype)
+            x = (
+                r[:, np.newaxis, np.newaxis]
+                * np.sin(theta[np.newaxis, :, np.newaxis])
+                * np.cos(phi[np.newaxis, np.newaxis, :])
+            )
+            y = (
+                r[:, np.newaxis, np.newaxis]
+                * np.sin(theta[np.newaxis, :, np.newaxis])
+                * np.cos(phi[np.newaxis, np.newaxis, :])
+            )
+            z = (
+                r[:, np.newaxis, np.newaxis]
+                * np.cos(theta[np.newaxis, :, np.newaxis])
+                * np.ones((1, 1, 2 * self.L), dtype=self.dtype)
+            )
+            fourier_pts = np.vstack((x.flatten(), y.flatten(), z.flatten()))
+            # result_frame_shape = (len(r), len(theta)*len(phi))
+        else:
+            raise NotImplementedError(
+                "`nufft` based correlations only implemented for dimensions 2 and 3."
+            )
 
         # Stack signal data.  Note, we want a complex result.
         signal = np.vstack((self._a, self._b))
         # Compute NUFFT and unpack as two 1D stacks of the polar grid
         # points, one for each image.
         f1, f2 = nufft(signal, fourier_pts, real=False).reshape(
-            2, self._a.shape[0], len(r), len(phi)
+            2, self._a.shape[0], len(r), -1
         )
 
         # Compute the Fourier correlations
@@ -295,7 +320,8 @@ class _FourierCorrelation:
         """
 
         # Construct x-axis labels
-        x_inds = np.arange(self.L // 2)
+        # x_inds = np.arange(self.L // 2)
+        x_inds = np.arange(self.correlations.shape[-1])
         freqs = self._freq(x_inds)
         # TODO: handle zero freq better
         with np.errstate(divide="ignore"):
