@@ -240,7 +240,7 @@ class _FourierCorrelation:
         norm1 = np.sqrt(np.sum(np.abs(f1) ** 2, -1))
         norm2 = np.sqrt(np.sum(np.abs(f2) ** 2, -1))
 
-        correlations = np.mean(cov / (norm1 * norm2), 0)
+        correlations = cov / (norm1 * norm2)
 
         # Then unpack the a and b shapes.
         return correlations.reshape(*self._a_stack_shape, *self._b_stack_shape, r.shape[-1])
