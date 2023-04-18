@@ -195,7 +195,8 @@ class _FourierCorrelation:
         """
 
         # TODO, should we use an internal tool (Polar2D?) for this
-        r = np.linspace(0, np.pi, self.L, endpoint=False, dtype=self.dtype)
+        # For now use L//2 for compatibility with cartesian.
+        r = np.linspace(0, np.pi, self.L//2, endpoint=False, dtype=self.dtype)
         phi = np.linspace(0, 2 * np.pi, 2 * self.L, endpoint=False, dtype=self.dtype)
         if self.dim == 2:
             x = r[:, np.newaxis] * np.cos(phi[np.newaxis, :])
@@ -242,7 +243,7 @@ class _FourierCorrelation:
         correlations = np.mean(cov / (norm1 * norm2), 0)
 
         # Then unpack the a and b shapes.
-        return correlations.reshape(*self._a_stack_shape, *self._b_stack_shape, self.L)
+        return correlations.reshape(*self._a_stack_shape, *self._b_stack_shape, r.shape[-1])
 
     @property
     def estimated_resolution(self):
