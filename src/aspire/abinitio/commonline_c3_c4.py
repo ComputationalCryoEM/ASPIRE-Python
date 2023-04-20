@@ -373,7 +373,9 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             # Q is a rank-1 Hermitian matrix.
             eig_vals, eig_vecs = eigh(Q)
             leading_eig_vec = eig_vecs[:, -1]
-            logger.info(f"Top 5 eigenvalues of Q are {str(eig_vals[-5:][::-1])}.")
+            logger.info(
+                f"Top 3 eigenvalues of Q (rank-1) are {str(eig_vals[-3:][::-1])}."
+            )
 
             # Calculate R_thetas.
             R_thetas = Rotation.about_axis(
@@ -493,10 +495,10 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             # cos_diff should be <= 0.5, but due to discretization that might be violated.
             if np.max(cos_diff) > 0.5:
                 bad_diffs = np.count_nonzero(cos_diff > 0.5)
-                logger.warning(
+                logger.debug(
                     "cos(angular_diff) should be < 0.5."
                     f"Found {bad_diffs} estimates exceeding 0.5, with maximum {np.max(cos_diff)}."
-                    "Setting all bad estimates to 0.5."
+                    " Setting all bad estimates to 0.5."
                 )
                 cos_diff[cos_diff > 0.5] = 0.5
             euler_y2 = np.arccos(cos_diff / (1 - cos_diff))
@@ -504,10 +506,10 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             # cos_diff should be <= 0, but due to discretization that might be violated.
             if np.max(cos_diff) > 0:
                 bad_diffs = np.count_nonzero(cos_diff > 0)
-                logger.warning(
+                logger.debug(
                     "cos(angular_diff) should be < 0."
-                    f"Found {bad_diffs} estimates exceeding 0, with maximum {np.max(cos_diff)}"
-                    "Setting all bad estimates to 0."
+                    f"Found {bad_diffs} estimates exceeding 0, with maximum {np.max(cos_diff)}."
+                    " Setting all bad estimates to 0."
                 )
                 cos_diff[cos_diff > 0] = 0
             euler_y2 = np.arccos((1 + cos_diff) / (1 - cos_diff))
@@ -680,16 +682,16 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         itr = 0
 
         # Power method iterations
+        logger.info("Initiating Power Method.")
         while itr < max_iters and residual > epsilon:
             itr += 1
             vec_new = self._signs_times_v(vijs, vec)
             vec_new = vec_new / norm(vec_new)
             residual = norm(vec_new - vec)
             vec = vec_new
-
-        logger.info(
-            f"Power method used {itr} iterations. Maximum iterations set to {max_iters}."
-        )
+            logger.info(
+                f"Iteration {itr}, residual {round(residual, 5)} (target {epsilon})"
+            )
 
         # We need only the signs of the eigenvector
         J_sync = np.sign(vec)
