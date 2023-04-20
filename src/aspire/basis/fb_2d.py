@@ -23,6 +23,8 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
     """
 
+    matrix_type = BlkDiagMatrix
+
     # TODO: Methods that return dictionaries should return useful objects instead
     def __init__(self, size, ell_max=None, dtype=np.float32):
         """

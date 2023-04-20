@@ -14,6 +14,7 @@ from aspire.basis.fle_2d_utils import (
 )
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft
+from aspire.operators import BlkDiagMatrix, DiagMatrix
 from aspire.utils import complex_type, grid_2d
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
     https://arxiv.org/pdf/2207.13674.pdf
     """
+
+    matrix_type = DiagMatrix
 
     def __init__(
         self, size, bandlimit=None, epsilon=1e-10, dtype=np.float32, match_fb=True
@@ -733,9 +736,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         h_fun = f.evaluate
 
         # Set same dimensions as basis object
-        n_k = self.n_r
-        n_theta = self.n_theta
-        radial = self.get_radial()
+        n_k = 2 * self.num_radial_nodes  # self.n_r
+        n_theta = self.num_angular_nodes  # self.n_theta
+        # radial = self.get_radial()
 
         # get 2D grid in polar coordinate
         k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
@@ -751,10 +754,20 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         h_vals2d = h_fun(omega).reshape(n_k, n_theta).astype(self.dtype)
         h_vals = np.sum(h_vals2d, axis=1) / n_theta
 
-        radial_fb = np.zeros(self.count), dtype=self.dtype)
-
+        h_basis = np.zeros(self.count, dtype=self.dtype)
         # For now just handle 1D (stack of one ctf)
         for j in range(self.ell_p_max + 1):
-            radial_fb[self.idx_list[j]] = self.A3[j] @ h_vals
+            h_basis[self.idx_list[j]] = self.A3[j] @ h_vals
 
-        return radial_fb
+        return h_basis
+
+        # blk_h_basis = BlkDiagMatrix.empty(2 * self.ell_max + 1, dtype=self.dtype)
+
+        # # HACK, pack into block diagonal
+        # ind = 0
+        # for j in range(self.ell_p_max+1):
+        #     k_max = len(self.idx_list[j])
+        #     blk_h_basis[j] = np.diag(h_basis[ind:k_max])
+        #     ind += k_max
+
+        # return blk_h_basis

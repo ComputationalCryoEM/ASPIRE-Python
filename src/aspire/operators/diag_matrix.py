@@ -9,6 +9,8 @@ from scipy.linalg import block_diag
 
 from aspire.utils.cell import Cell2D
 
+from .blk_diag_matrix import BlkDiagMatrix
+
 
 class DiagMatrix:
     """
@@ -115,12 +117,12 @@ class DiagMatrix:
     # # Manually overload get/set methods,
     # #   This is just for syntax which allows us to reference self[i] etc
     # #     instead of writing self._data all the time. You may use either.
-    # def __getitem__(self, key):
-    #     """
-    #     Convenience wrapper, getter on self._data.
-    #     """
+    def __getitem__(self, key):
+        """
+        Convenience wrapper, getter on self._data.
+        """
 
-    #     return self._data[key]
+        return self._data[key]
 
     # def __setitem__(self, key, value):
     #     """
@@ -266,9 +268,18 @@ class DiagMatrix:
         :return: Returns `self` @ `other`, as type of `other`
         """
         if isinstance(other, DiagMatrix):
-            return self.mul(other, inplace=inplace)
+            res = self.mul(other, inplace=inplace)
+        elif isinstance(other, BlkDiagMatrix):
+            res = BlkDiagMatrix.zeros_like(other)
 
-        if isinstance(other, np.ndarray):
+            ind = 0
+            for b, blk in enumerate(other):
+                i = len(blk)
+
+                res[b] = np.diag(self._data[ind : ind + i]) * blk
+                ind += i
+
+        elif isinstance(other, np.ndarray):
             # inplace infeasable, as the result will be dense.
             if inplace:
                 raise RuntimeError(
@@ -288,7 +299,9 @@ class DiagMatrix:
             # and means to scale the row A_i by d_i in D.
             # This can be accomplished by broadcasting an elemental multiply.
 
-            return D[..., np.newaxis] * A
+            res = self._data[..., np.newaxis] * other
+
+        return res
 
     def __matmul__(self, other):
         """
@@ -331,7 +344,7 @@ class DiagMatrix:
         # and means to scale the column A_j by d_j in D.
         # This can be accomplished by broadcasting an elemental multiply.
 
-        return A * D[np.newaxis]
+        return A * self._data[np.newaxis]
 
     def __imatmul__(self, other):
         """
@@ -358,7 +371,11 @@ class DiagMatrix:
             else:
                 res = DiagMatrix(self._data * other._data)
         elif isinstance(other, np.ndarray):
-            raise NotImplementedError("todo")
+            res = self * DiagMatrix(other)
+        elif isinstance(other, BlkDiagMatrix):
+            raise NotImplementedError("not yet")
+        else:  # scalar
+            res = DiagMatrix(self._data * other)
 
         return res
 
@@ -380,8 +397,10 @@ class DiagMatrix:
         """
         Convenience function, elementwise rmul commutes to mul.
         """
-
-        return self.mul(other)
+        if isinstance(other, BlkDiagMatrix):
+            raise NotImplementedError("todo")
+        else:
+            return self.mul(other)
 
     def neg(self):
         """
@@ -499,14 +518,14 @@ class DiagMatrix:
 
     def apply(self, X):
         """
-        Define the apply option of a block diagonal matrix with a matrix of
+        Define the apply option of a diagonal matrix with a matrix of
         coefficient vectors.
 
         :param X: Coefficient matrix, each column is a coefficient vector.
         :return: A matrix with new coefficient vectors.
         """
 
-        raise NotImplementedError
+        return self * X
 
     def rapply(self, X):
         """
@@ -588,3 +607,30 @@ class DiagMatrix:
         """
 
         return DiagMatrix.ones(n, dtype=dtype)
+
+    def as_blk_diag(self, partition):
+        B = BlkDiagMatrix(partition, dtype=self.dtype)
+        ind = 0
+        for b, p in enumerate(partition):
+            assert p[0] == p[1]
+            j = p[0]
+            B[b] = np.diag(self._data[ind : ind + j])
+            ind += j
+
+        return B
+
+    def yunpeng(self, partition, weights=None):
+        if weights is None:
+            weights = np.ones(self.n, dtype=self.dtype)
+
+        B = BlkDiagMatrix(partition, dtype=self.dtype)
+        ind = 0
+        for b, p in enumerate(partition):
+            assert p[0] == p[1]
+            j = p[0]
+            Ai = self._data[ind : ind + j].reshape(-1, 1)
+            wi = weights[ind : ind + j]
+            B[b] = wi * Ai * Ai.T
+            ind += j
+
+        return B

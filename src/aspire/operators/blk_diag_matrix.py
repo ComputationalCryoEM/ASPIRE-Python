@@ -145,7 +145,7 @@ class BlkDiagMatrix:
         if np.any(self.partition != other.partition):
             # be helpful and find the first one as an example
             for _i, (a, b) in enumerate(zip(self.partition, other.partition)):
-                if any(a != b):
+                if np.any(a != b):
                     break
             raise RuntimeError(
                 "Block i={} of BlkDiagMatrix instances are "
@@ -246,8 +246,12 @@ class BlkDiagMatrix:
             to self + other.
         """
 
+        from .diag_matrix import DiagMatrix
+
         if self._is_scalar_type(other):
             return self.__scalar_add(other, inplace=inplace)
+        elif isinstance(other, DiagMatrix):
+            return self.add(other.as_blk_diag(self.partition), inplace=inplace)
 
         self.__check_compatible(other)
 
@@ -396,7 +400,11 @@ class BlkDiagMatrix:
             otherwise return a new instance (default).
         :return: A BlkDiagMatrix of self @ other.
         """
+        from .diag_matrix import DiagMatrix
 
+        if isinstance(other, DiagMatrix):
+            # hack
+            return (other.T @ self.T).T
         if not isinstance(other, BlkDiagMatrix):
             if inplace:
                 raise RuntimeError(
@@ -923,3 +931,32 @@ class BlkDiagMatrix:
             A.data[i] = np.array(blk_diag[i], dtype=dtype)
 
         return A
+
+    def __truediv__(self, val):
+        """
+        Operator overload for BlkDiagMatrix scalar multiply.
+        """
+
+        return self.div(val)
+
+    def div(self, other):
+        """
+        Compute the elementwise division of two BlkDiagMatrix instances.
+
+        :param other: The rhs BlkDiagMatrix instance.
+        :return: A BlkDiagMatrix of self * other.
+        """
+
+        if isinstance(other, BlkDiagMatrix):
+            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+
+            for i in range(self.nblocks):
+                C[i] = self[i] / other[i]
+
+        elif self._is_scalar_type(other):
+            C = BlkDiagMatrix(self.partition, dtype=self.dtype)
+
+            for i in range(self.nblocks):
+                C[i] = self[i] * other
+
+        return C

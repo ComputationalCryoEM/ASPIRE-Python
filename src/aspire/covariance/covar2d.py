@@ -4,8 +4,8 @@ import numpy as np
 from numpy.linalg import eig, inv
 from scipy.linalg import solve, sqrtm
 
-from aspire.basis import Coef
-from aspire.operators import BlkDiagMatrix, RadialCTFFilter
+from aspire.basis import Coef, FFBBasis2D
+from aspire.operators import BlkDiagMatrix, DiagMatrix, RadialCTFFilter
 from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import make_symmat
 from aspire.utils.matlab_compat import m_reshape
@@ -101,6 +101,26 @@ class RotCov2D:
         self.dtype = self.basis.dtype
         assert basis.ndim == 2, "Only two-dimensional basis functions are needed."
 
+        # Abstract the basis matrix type (BlkDiagMatrix/DiagMatrix)
+        self.ctf_matrix_type = self.basis.matrix_type
+
+    def _cov_blk_mat_shape(self):
+        # hack to get the blk partitions, make nice later.
+        ffb = FFBBasis2D(self.basis.nres)  # L
+        mat = ffb.filter_to_basis_mat(RadialCTFFilter())
+        return mat.partition
+
+    def _ctf_identity_mat(self):
+        if self.basis.matrix_type == DiagMatrix:
+            return DiagMatrix.ones(
+                len(self.basis.filter_to_basis_mat(RadialCTFFilter())), dtype=self.dtype
+            )
+        else:
+            # BlkDiag
+            return BlkDiagMatrix.eye_like(
+                self.basis.filter_to_basis_mat(RadialCTFFilter())
+            )
+
     def _get_mean(self, coeffs):
         """
         Calculate the mean vector from the expansion coefficients of 2D images without CTF information.
@@ -181,7 +201,7 @@ class RotCov2D:
 
         return covar_coeff
 
-    def get_mean(self, coeffs, ctf_basis=None, ctf_idx=None):
+    def _get_mean_blk(self, coeffs, ctf_basis=None, ctf_idx=None):
         """
         Calculate the mean vector from the expansion coefficients with CTF information.
 
@@ -191,17 +211,6 @@ class RotCov2D:
             If ctf_basis or ctf_idx is None, the identity filter will be applied.
         :return: The mean value vector for all images.
         """
-
-        if not isinstance(coeffs, Coef):
-            raise TypeError(
-                f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
-            )
-
-        # TODO: Redundant, remove?
-        if coeffs.size == 0:
-            raise RuntimeError("The coefficients need to be calculated!")
-
-        coeffs = coeffs.asnumpy()
 
         # should assert we require none or both...
         if (ctf_basis is None) or (ctf_idx is None):
@@ -228,6 +237,37 @@ class RotCov2D:
 
         mean_coeff = A.solve(b)
         return mean_coeff
+
+    def _get_mean_diag(self, coeffs, ctf_basis=None, ctf_idx=None):
+        raise NotImplementedError
+
+    def get_mean(self, coeffs, ctf_basis=None, ctf_idx=None):
+        """
+        Calculate the mean vector from the expansion coefficients with CTF information.
+
+        :param coeffs: A coefficient vector (or an array of coefficient vectors) to be averaged.
+        :param ctf_basis: The CFT functions in the BASIS expansion.
+        :param ctf_idx: An array of the CFT function indices for all 2D images.
+            If ctf_basis or ctf_idx is None, the identity filter will be applied.
+        :return: The mean value vector for all images.
+        """
+
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
+            )
+
+        # TODO: Redundant, remove?
+        if coeffs.size == 0:
+            raise RuntimeError("The coefficients need to be calculated!")
+
+        coeffs = coeffs.asnumpy()
+
+        method = self._get_mean_blk
+        if isinstance(self.basis, FLEBasis2D):
+            method = self._get_mean_diag
+
+        return method(coeffs, ctf_basis=ctf_basis, ctf_idx=ctf_idx)
 
     def get_covar(
         self,
@@ -269,6 +309,34 @@ class RotCov2D:
         if coeffs.size == 0:
             raise RuntimeError("The coefficients need to be calculated!")
 
+        coeffs = coeffs.asnumpy()
+
+        method = self._get_cover_blk
+        if isinstance(self.basis, FLEBasis2D):
+            method = self._get_covar_diag
+
+        return method(
+            coeffs,
+            ctf_basis=ctf_basis,
+            ctf_idx=ctf_idx,
+            mean_coeff=mean_coeff,
+            do_refl=do_refl,
+            noise_var=noise_var,
+            covar_est_opt=covar_est_opt,
+            make_psd=make_psd,
+        )
+
+    def _get_covar_blk(
+        self,
+        coeffs,
+        ctf_basis=None,
+        ctf_idx=None,
+        mean_coeff=None,
+        do_refl=True,
+        noise_var=0,
+        covar_est_opt=None,
+        make_psd=True,
+    ):
         if (ctf_basis is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
             ctf_basis = [
@@ -384,6 +452,19 @@ class RotCov2D:
                 covar_coeff = covar_coeff.make_psd()
 
         return covar_coeff
+
+    def _get_covar_diag(
+        self,
+        coeffs,
+        ctf_basis=None,
+        ctf_idx=None,
+        mean_coeff=None,
+        do_refl=True,
+        noise_var=0,
+        covar_est_opt=None,
+        make_psd=True,
+    ):
+        raise NotImplementedError
 
     def shrink_covar_backward(self, b, b_noise, n, noise_var, shrinker):
         """
@@ -532,11 +613,8 @@ class BatchedRotCov2D(RotCov2D):
             logger.info("CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
-            self.ctf_basis = [
-                BlkDiagMatrix.eye_like(
-                    self.basis.filter_to_basis_mat(RadialCTFFilter())
-                )
-            ]
+            self.ctf_basis = [self._ctf_identity_mat()]
+
         else:
             logger.info("Represent CTF filters in basis")
             unique_filters = src.unique_filters
@@ -554,7 +632,9 @@ class BatchedRotCov2D(RotCov2D):
 
         b_mean = [np.zeros(basis.count, dtype=self.dtype) for _ in ctf_basis]
 
-        b_covar = BlkDiagMatrix.zeros_like(ctf_basis[0])
+        # b_covar = BlkDiagMatrix.zeros_like(ctf_basis[0])
+        # testing hack
+        b_covar = BlkDiagMatrix.zeros(self._cov_blk_mat_shape())
 
         for start in range(0, src.n, self.batch_size):
             batch = np.arange(start, min(start + self.batch_size, src.n))
@@ -578,6 +658,7 @@ class BatchedRotCov2D(RotCov2D):
                 covar_coeff_k = self._get_covar(coeff_k, zero_coeff)
 
                 b_covar_k = ctf_basis_k_t @ covar_coeff_k
+
                 b_covar_k = b_covar_k @ ctf_basis_k
                 b_covar_k *= weight
 
@@ -592,9 +673,10 @@ class BatchedRotCov2D(RotCov2D):
         ctf_basis = self.ctf_basis
         ctf_idx = self.ctf_idx
 
-        A_mean = BlkDiagMatrix.zeros_like(ctf_basis[0])
+        # A_mean = BlkDiagMatrix.zeros_like(ctf_basis[0])
+        A_mean = BlkDiagMatrix.zeros(self._cov_blk_mat_shape(), self.dtype)
         A_covar = [None for _ in ctf_basis]
-        M_covar = BlkDiagMatrix.zeros_like(ctf_basis[0])
+        M_covar = BlkDiagMatrix.zeros_like(A_mean)
 
         for k in np.unique(ctf_idx):
             weight = np.count_nonzero(ctf_idx == k) / src.n
@@ -604,9 +686,11 @@ class BatchedRotCov2D(RotCov2D):
 
             ctf_basis_k_sq = ctf_basis_k_t @ ctf_basis_k
             A_mean_k = weight * ctf_basis_k_sq
+            # blk + diag
             A_mean += A_mean_k
-
-            A_covar_k = np.sqrt(weight) * ctf_basis_k_sq
+            # why is rmul returning an array?!
+            # A_covar_k = np.sqrt(weight) * ctf_basis_k_sq
+            A_covar_k = ctf_basis_k_sq * np.sqrt(weight)
             A_covar[k] = A_covar_k
 
             M_covar += A_covar_k
@@ -621,7 +705,8 @@ class BatchedRotCov2D(RotCov2D):
         ctf_basis = self.ctf_basis
         ctf_idx = self.ctf_idx
 
-        partition = ctf_basis[0].partition
+        # partition = ctf_basis[0].partition
+        partition = self._cov_blk_mat_shape()
 
         # Note: If we don't do this, we'll be modifying the stored `b_covar`
         # since the operations below are in-place.
@@ -661,6 +746,31 @@ class BatchedRotCov2D(RotCov2D):
         return b_covar
 
     def _solve_covar(self, A_covar, b_covar, M, covar_est_opt):
+        method = self._solve_covar_cg
+        if self.basis.matrix_type == DiagMatrix:
+            method = self._solve_covar_direct
+
+        return method(A_covar, b_covar, M, covar_est_opt)
+
+    def _solve_covar_direct(self, A_covar, b_covar, M, covar_est_opt):
+        # A_covar is a list of Diags, ctf in basis
+        # b_covar is a blk diag
+        # M is a blk diag
+
+        #  # A_covar is (CTF.T * CTF)  (weighted a**2 from chalkboard)
+        #  most similar to wr_k2 from Yunpeng's code
+
+        # maybe need to unweight A
+        A_covar = DiagMatrix(np.concatenate([x.asnumpy() for x in A_covar]))
+        A2i = A_covar * A_covar
+
+        L = A2i.yunpeng(b_covar.partition)
+
+        return b_covar / L
+
+        # M is sum of weighted A squared, only for cg, ignore
+
+    def _solve_covar_cg(self, A_covar, b_covar, M, covar_est_opt):
         ctf_basis = self.ctf_basis
 
         def precond_fun(S, x):
@@ -681,7 +791,9 @@ class BatchedRotCov2D(RotCov2D):
             return y
 
         cg_opt = covar_est_opt
-        covar_coeff = BlkDiagMatrix.zeros_like(ctf_basis[0])
+        # testing hack
+        covar_coeff = BlkDiagMatrix.zeros(self._cov_blk_mat_shape(), dtype=self.dtype)
+        # covar_coeff = BlkDiagMatrix.zeros_like(ctf_basis[0])
 
         for ell in range(0, len(b_covar)):
             A_ell = []
