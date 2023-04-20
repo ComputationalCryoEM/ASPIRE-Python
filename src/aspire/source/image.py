@@ -674,7 +674,8 @@ class ImageSource(ABC):
 
         ds_factor = self.L / L
         self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
-        self.offsets /= ds_factor
+        # Using long form division to prevent casting float to int
+        self.offsets = self.offsets / ds_factor
 
         self.L = L
 
