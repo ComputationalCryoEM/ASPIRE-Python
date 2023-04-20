@@ -1489,9 +1489,8 @@ class OrientedSource(IndexedSource):
             indices=indices,
         )
 
-        # Flags to not repeat orientation estimation and debug message.
+        # Flag for lazy eval of orientation estimation.
         self._oriented = False
-        self._warned = False
 
         if orientation_estimator is None:
             orientation_estimator = CLSyncVoting(src)
@@ -1504,27 +1503,29 @@ class OrientedSource(IndexedSource):
             )
 
     def _orient(self):
+        """
+        Perform orientation estimation if not already done.
+        """
+
+        # Short circuit
+        if self._oriented:
+            logger.debug(f"{self.__class__.__name__} already oriented, skipping")
+            return
+
+        logger.info(
+            f"Estimating rotations for {self.src} using {self.orientation_estimator}."
+        )
         self.orientation_estimator.estimate_rotations()
         self.rotations = self.orientation_estimator.rotations
         self._oriented = True
 
     def _images(self, indices):
         """
-        Lazily performs orientation estimation and returns images from `self.src` corresponding to `indices`.
+        Returns images from `self.src` corresponding to `indices`.
 
         :param indices: A 1-D NumPy array of indices.
         :return: An `Image` object.
         """
-
-        if not self._oriented:
-            logger.info(
-                f"Estimating rotations for {self.src} using {self.orientation_estimator}."
-            )
-            self._orient()
-
-        if not self._warned:
-            logger.debug(f"{self.__class__.__name__} arleady oriented, skipping")
-            self._warned = True
 
         return super()._images(indices)
 
@@ -1536,30 +1537,21 @@ class OrientedSource(IndexedSource):
 
         :return: Rotation matrices as a n x 3 x 3 array
         """
-        if not self._oriented:
-            logger.info(
-                f"Estimating rotations for {self.src} using {self.orientation_estimator}."
-            )
-            self._orient()
+
+        self._orient()
 
         return self._rotations.matrices.astype(self.dtype)
 
     def _angles(self):
-        if not self._oriented:
-            logger.info(
-                f"Estimating rotations for {self.src} using {self.orientation_estimator}."
-            )
-            self._orient()
-
+        self._orient()
         return super()._angles()
 
     def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
-        if not self._oriented:
-            self._orient()
+        self._orient()
         return super().save_metadata(starfile_filepath, batch_size=512, save_mode=None)
 
     def __repr__(self):
-        return f"{self.__class__.__name__} for initial source {self.src.__class__.__name__}."
+        return f"{self.__class__.__name__} for origin source {self.src.__class__.__name__}."
 
 
 class ArrayImageSource(ImageSource):
