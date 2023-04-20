@@ -188,9 +188,7 @@ class ImageSource(ABC):
                     )
                 )
 
-        # Populate symmetry_group attribute from metadata if possible.
         self._populate_symmetry_group()
-
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
