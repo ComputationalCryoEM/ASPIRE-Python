@@ -1502,6 +1502,9 @@ class OrientedSource(IndexedSource):
                 f" found {self.orientation_estimator}."
             )
 
+        # Any further operations should not mutate this instance.
+        self._mutable = False
+
     def _orient(self):
         """
         Perform orientation estimation if not already done.
