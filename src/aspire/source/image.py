@@ -1519,7 +1519,12 @@ class OrientedSource(IndexedSource):
             f"Estimating rotations for {self.src} using {self.orientation_estimator}."
         )
         self.orientation_estimator.estimate_rotations()
+
+        # Allow mutability to set rotations.
+        self._mutable = True
         self.rotations = self.orientation_estimator.rotations
+        self._mutable = False
+
         self._oriented = True
 
     def _images(self, indices):
