@@ -500,7 +500,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                     f"Found {bad_diffs} estimates exceeding 0.5, with maximum {np.max(cos_diff)}."
                     " Setting all bad estimates to 0.5."
                 )
-                cos_diff[cos_diff > 0.5] = 0.5
+                cos_diff = np.maximum(cos_diff, 0.5)
             euler_y2 = np.arccos(cos_diff / (1 - cos_diff))
         else:
             # cos_diff should be <= 0, but due to discretization that might be violated.
@@ -511,7 +511,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                     f"Found {bad_diffs} estimates exceeding 0, with maximum {np.max(cos_diff)}."
                     " Setting all bad estimates to 0."
                 )
-                cos_diff[cos_diff > 0] = 0
+                cos_diff = np.maximum(cos_diff, 0)
             euler_y2 = np.arccos((1 + cos_diff) / (1 - cos_diff))
 
         # Calculate remaining Euler angles in ZYZ convention.
