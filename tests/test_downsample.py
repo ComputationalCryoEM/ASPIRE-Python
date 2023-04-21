@@ -42,6 +42,10 @@ class DownsampleTestCase(TestCase):
         # check signal energy is conserved
         self.assertTrue(self.checkSignalEnergy(vols_org, vols_ds))
 
+    def testIntegerOffsets(self):
+        sim = Simulation(offsets=0)
+        _ = sim.downsample(3)
+
     def checkCenterPoint(self, data_org, data_ds):
         # Check that center point is the same after ds
         L = data_org.shape[-1]
