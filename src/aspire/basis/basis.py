@@ -246,3 +246,7 @@ class Basis:
         v = v.reshape((*sz_roll, self.count))
 
         return Coef(self, v)
+
+    @property
+    def blk_diag_cov_shape(self):
+        raise NotImplementedError

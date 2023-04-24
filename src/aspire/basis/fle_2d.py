@@ -760,14 +760,3 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             h_basis[self.idx_list[j]] = self.A3[j] @ h_vals
 
         return h_basis
-
-        # blk_h_basis = BlkDiagMatrix.empty(2 * self.ell_max + 1, dtype=self.dtype)
-
-        # # HACK, pack into block diagonal
-        # ind = 0
-        # for j in range(self.ell_p_max+1):
-        #     k_max = len(self.idx_list[j])
-        #     blk_h_basis[j] = np.diag(h_basis[ind:k_max])
-        #     ind += k_max
-
-        # return blk_h_basis

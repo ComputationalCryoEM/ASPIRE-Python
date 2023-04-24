@@ -104,22 +104,19 @@ class RotCov2D:
         # Abstract the basis matrix type (BlkDiagMatrix/DiagMatrix)
         self.ctf_matrix_type = self.basis.matrix_type
 
-    def _cov_blk_mat_shape(self):
-        # hack to get the blk partitions, make nice later.
-        ffb = FFBBasis2D(self.basis.nres)  # L
-        mat = ffb.filter_to_basis_mat(RadialCTFFilter())
-        return mat.partition
-
     def _ctf_identity_mat(self):
+        """
+        Returns CTF identity corresponding to the `matrix_type` of `self.basis`.
+
+        :return: Identity BlkDiagMatrix or DiagMatrix
+        """
         if self.basis.matrix_type == DiagMatrix:
+            # TODO: compute this without computing filter/ctf
             return DiagMatrix.ones(
                 len(self.basis.filter_to_basis_mat(RadialCTFFilter())), dtype=self.dtype
             )
         else:
-            # BlkDiag
-            return BlkDiagMatrix.eye_like(
-                self.basis.filter_to_basis_mat(RadialCTFFilter())
-            )
+            return BlkDiagMatrix.eye(self.basis.blk_diag_cov_shape)
 
     def _get_mean(self, coeffs):
         """
@@ -215,12 +212,7 @@ class RotCov2D:
         # should assert we require none or both...
         if (ctf_basis is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
-            # TODO, we should be able to construct this shape without actually making a CTFFilter.
-            ctf_basis = [
-                BlkDiagMatrix.eye_like(
-                    self.basis.filter_to_basis_mat(RadialCTFFilter()), dtype=self.dtype
-                )
-            ]
+            ctf_basis = [self._ctf_identity_mat()]
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
@@ -339,11 +331,7 @@ class RotCov2D:
     ):
         if (ctf_basis is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
-            ctf_basis = [
-                BlkDiagMatrix.eye_like(
-                    self.basis.filter_to_basis_mat(RadialCTFFilter()), dtype=self.dtype
-                )
-            ]
+            ctf_basis = [self._ctf_identity_mat()]
 
         def identity(x):
             return x
@@ -632,9 +620,7 @@ class BatchedRotCov2D(RotCov2D):
 
         b_mean = [np.zeros(basis.count, dtype=self.dtype) for _ in ctf_basis]
 
-        # b_covar = BlkDiagMatrix.zeros_like(ctf_basis[0])
-        # testing hack
-        b_covar = BlkDiagMatrix.zeros(self._cov_blk_mat_shape())
+        b_covar = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape)
 
         for start in range(0, src.n, self.batch_size):
             batch = np.arange(start, min(start + self.batch_size, src.n))
@@ -673,8 +659,7 @@ class BatchedRotCov2D(RotCov2D):
         ctf_basis = self.ctf_basis
         ctf_idx = self.ctf_idx
 
-        # A_mean = BlkDiagMatrix.zeros_like(ctf_basis[0])
-        A_mean = BlkDiagMatrix.zeros(self._cov_blk_mat_shape(), self.dtype)
+        A_mean = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape, self.dtype)
         A_covar = [None for _ in ctf_basis]
         M_covar = BlkDiagMatrix.zeros_like(A_mean)
 
@@ -706,7 +691,7 @@ class BatchedRotCov2D(RotCov2D):
         ctf_idx = self.ctf_idx
 
         # partition = ctf_basis[0].partition
-        partition = self._cov_blk_mat_shape()
+        partition = self.basis.blk_diag_cov_shape
 
         # Note: If we don't do this, we'll be modifying the stored `b_covar`
         # since the operations below are in-place.
@@ -791,9 +776,9 @@ class BatchedRotCov2D(RotCov2D):
             return y
 
         cg_opt = covar_est_opt
-        # testing hack
-        covar_coeff = BlkDiagMatrix.zeros(self._cov_blk_mat_shape(), dtype=self.dtype)
-        # covar_coeff = BlkDiagMatrix.zeros_like(ctf_basis[0])
+        covar_coeff = BlkDiagMatrix.zeros(
+            self.basis.blk_diag_cov_shape, dtype=self.dtype
+        )
 
         for ell in range(0, len(b_covar)):
             A_ell = []

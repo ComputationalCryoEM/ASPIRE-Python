@@ -406,3 +406,7 @@ class PSWFBasis2D(SteerableBasis2D):
         _complex_coef = _complex_coef * np.exp(-1j * ks * radians)
 
         return _complex_coef
+
+    @property
+    def blk_diag_cov_shape(self):
+        raise NotImplementedError("Not yet implemented for {F}PSWF.")

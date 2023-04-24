@@ -26,6 +26,7 @@ class SteerableBasis2D(Basis):
         self._zero_angular_inds = self.angular_indices == 0
         self._pos_angular_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
         self._neg_angular_inds = self.signs_indices == -1
+        self._blk_diag_cov_shape = None
 
     def calculate_bispectrum(
         self, complex_coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
@@ -344,3 +345,21 @@ class SteerableBasis2D(Basis):
         :return: `BlkDiagMatrix` or `DiagMatrix` instance
             representation using `basis` expansion.
         """
+
+    @property
+    def blk_diag_cov_shape(self):
+        # Compute the _blk_diag_cov_shape as needed.
+        if self._blk_diag_cov_shape is None:
+            blks = []
+            for ell in range(self.ell_max + 1):
+                sgns = (1,) if ell == 0 else (1, -1)
+                for _ in sgns:
+                    blks.append(
+                        [
+                            self.k_max[ell],
+                        ]
+                        * 2
+                    )
+            self._blk_diag_cov_shape = np.array(blks)
+
+        return self._blk_diag_cov_shape
