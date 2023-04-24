@@ -75,7 +75,7 @@ src = RelionSource(
 
 # Downsample the images
 logger.info(f"Set the resolution to {img_size} X {img_size}")
-src.downsample(img_size)
+src = src.downsample(img_size)
 
 src = src.cache()
 
