@@ -214,21 +214,29 @@ src.images[0:10].show()
 # %%
 # Orientation Estimation
 # ----------------------
-# We initialize a ``CLSyncVoting`` class instance for estimating the
-# orientations of the images.  The estimation employs the common lines
-# method with synchronization and voting.
+# We create an ``OrientedSource`` which consumes an ``ImageSource``, in this
+# case ``avgs``, and an orientation estimator, in this case a ``CLSyncVoting``
+# class instance. This estimation employs the common lines method with
+# synchronization and voting.
 
+from aspire.source import OrientedSource
 from aspire.abinitio import CLSyncVoting
 
 # Stash true rotations for later comparison
 true_rotations = src.rotations[:n_classes]
 
-# Run orientation estimation on ``avgs``.
+# For this low resolution example we will customize the ``CLSyncVoting``
+# instance to use fewer theta points ``n_theta`` then the default value of 360.
 orient_est = CLSyncVoting(avgs, n_theta=72)
 
+# Instantiate an ``OrientedSource``.
+oriented_src = OrientedSource(
+    avgs,
+    orientation_estimator=orient_est,
+)
+
 # Get the estimated rotations
-orient_est.estimate_rotations()
-rots_est = orient_est.rotations
+rots_est = oriented_src.rotations
 
 
 # %%
@@ -261,20 +269,11 @@ mse_reg
 from aspire.basis import FFBBasis3D
 from aspire.reconstruction import MeanEstimator
 
-# Assign the estimated rotations to the class averages
-avgs = avgs.update(rotations=rots_est)
-
-# %%
-# .. note::
-#     Outside of internal operations during ``ImageSource``
-#     construction, mutating meta data will return a new source
-#     object.
-
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D(res, dtype=vol.dtype)
 
 # Setup an estimator to perform the back projection.
-estimator = MeanEstimator(avgs, basis)
+estimator = MeanEstimator(oriented_src, basis)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()

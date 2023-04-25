@@ -26,7 +26,7 @@ from aspire.denoising import DefaultClassAvgSource, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
-from aspire.source import Simulation
+from aspire.source import OrientedSource, Simulation
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     get_rots_mse,
@@ -193,9 +193,13 @@ true_rotations = src.rotations[indices]
 
 # Run orientation estimation on ``avgs``.
 orient_est = CLSyncVoting(avgs, n_theta=180)
-# Get the estimated rotations
-orient_est.estimate_rotations()
-rots_est = orient_est.rotations
+
+# Initialize an ``OrientedSource`` class instance and get the estimated rotations
+oriented_src = OrientedSource(
+    avgs,
+    orientation_estimator=orient_est,
+)
+rots_est = oriented_src.rotations
 
 logger.info("Compare with known rotations")
 # Compare with known true rotations
@@ -214,14 +218,11 @@ logger.info(
 
 logger.info("Begin Volume reconstruction")
 
-# Assign the estimated rotations to the class averages
-avgs = avgs.update(rotations=rots_est)
-
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((v.resolution,) * 3, dtype=v.dtype)
 
 # Setup an estimator to perform the back projection.
-estimator = MeanEstimator(avgs, basis)
+estimator = MeanEstimator(oriented_src, basis)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
