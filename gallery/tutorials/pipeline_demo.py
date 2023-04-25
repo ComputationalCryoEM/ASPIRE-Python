@@ -219,8 +219,8 @@ src.images[0:10].show()
 # class instance. This estimation employs the common lines method with
 # synchronization and voting.
 
-from aspire.source import OrientedSource
 from aspire.abinitio import CLSyncVoting
+from aspire.source import OrientedSource
 
 # Stash true rotations for later comparison
 true_rotations = src.rotations[:n_classes]
