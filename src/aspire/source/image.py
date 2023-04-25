@@ -390,7 +390,9 @@ class ImageSource(ABC):
 
     @offsets.setter
     def offsets(self, values):
-        return self.set_metadata(["_rlnOriginX", "_rlnOriginY"], np.array(values, dtype=self.dtype))
+        return self.set_metadata(
+            ["_rlnOriginX", "_rlnOriginY"], np.array(values, dtype=self.dtype)
+        )
 
     @property
     def amplitudes(self):
@@ -398,7 +400,7 @@ class ImageSource(ABC):
 
     @amplitudes.setter
     def amplitudes(self, values):
-        return self.set_metadata("_rlnAmplitude", values)
+        return self.set_metadata("_rlnAmplitude", np.array(values, dtype=self.dtype))
 
     @property
     def angles(self):
