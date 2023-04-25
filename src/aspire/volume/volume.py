@@ -230,7 +230,7 @@ class Volume:
         """
         return otherL * Volume(1.0 / self._data)
 
-    def project(self, vol_idx, rot_matrices):
+    def project(self, rot_matrices):
         """
         Using the stack of rot_matrices,
         project images of Volume[vol_idx].
@@ -239,11 +239,6 @@ class Volume:
         :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
         :return: `Image` instance.
         """
-        # See Issue #727
-        if self.stack_ndim > 1:
-            raise NotImplementedError(
-                "`project` is currently limited to 1D Volume stacks."
-            )
 
         # If we are an ASPIRE Rotation, get the numpy representation.
         if isinstance(rot_matrices, Rotation):
@@ -257,9 +252,10 @@ class Volume:
                 " In the future this will raise an error."
             )
 
-        data = self[vol_idx].asnumpy()
-
         n = rot_matrices.shape[0]
+        return_stack_shape = self.stack_shape + (n,)
+
+        data = self.stack_reshape(-1)._data
 
         pts_rot = rotated_grids(self.resolution, rot_matrices)
 
@@ -275,8 +271,9 @@ class Volume:
             im_f[:, :, 0] = 0
 
         im_f = xp.asnumpy(fft.centered_ifft2(xp.asarray(im_f)))
+        im = aspire.image.Image(np.real(im_f)).stack_reshape(return_stack_shape)
 
-        return aspire.image.Image(np.real(im_f))
+        return im
 
     def to_vec(self):
         """Returns an N x resolution ** 3 array."""
