@@ -390,7 +390,7 @@ class ImageSource(ABC):
 
     @offsets.setter
     def offsets(self, values):
-        return self.set_metadata(["_rlnOriginX", "_rlnOriginY"], values)
+        return self.set_metadata(["_rlnOriginX", "_rlnOriginY"], np.array(values, dtype=self.dtype))
 
     @property
     def amplitudes(self):
@@ -674,8 +674,7 @@ class ImageSource(ABC):
 
         ds_factor = self.L / L
         self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
-        # Using long form division to prevent casting float to int
-        self.offsets = self.offsets / ds_factor
+        self.offsets /= ds_factor
 
         self.L = L
 
