@@ -13,7 +13,7 @@ import numpy as np
 
 from aspire.abinitio import CLSyncVoting
 from aspire.operators import RadialCTFFilter
-from aspire.source.simulation import Simulation
+from aspire.source import OrientedSource, Simulation
 from aspire.utils import get_aligned_rotations, get_rots_mse, register_rotations
 from aspire.volume import Volume
 
@@ -86,11 +86,15 @@ rots_true = sim.rotations
 # Estimate Orientation and Rotation Angles
 # ----------------------------------------
 
-# Initialize an orientation estimation object and perform view angle estimation
+# Initialize an orientation estimation object and create an ``OrientedSource`` object
+# to perform viewing angle estimation
 logger.info("Estimate rotation angles using synchronization matrix and voting method.")
 orient_est = CLSyncVoting(sim, n_theta=36)
-orient_est.estimate_rotations()
-rots_est = orient_est.rotations
+oriented_src = OrientedSource(
+    sim,
+    orientation_estimator=orient_est,
+)
+rots_est = oriented_src.rotations
 
 # %%
 # Mean Squared Error
