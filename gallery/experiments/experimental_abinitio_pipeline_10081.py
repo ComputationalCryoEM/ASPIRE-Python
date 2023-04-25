@@ -30,7 +30,7 @@ from aspire.basis import FFBBasis3D
 from aspire.denoising import DefaultClassAvgSource
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
-from aspire.source import RelionSource
+from aspire.source import OrientedSource, RelionSource
 
 logger = logging.getLogger(__name__)
 
@@ -107,26 +107,26 @@ logger.info("Begin Orientation Estimation")
 
 # Run orientation estimation on  ``avgs``.
 orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=72, max_shift=0)
-# Get the estimated rotations
-orient_est.estimate_rotations()
-rots_est = orient_est.rotations
+# Create an ``OrientedSource`` class instance and get the estimated rotations.
+oriented_src = OrientedSource(
+    avgs,
+    orientation_estimator=orient_est,
+)
+rots_est = oriented_src.rotations
 
 # %%
 # Volume Reconstruction
 # ----------------------
 #
-# Using the estimated rotations, attempt to reconstruct a volume.
+# Using the oriented source, attempt to reconstruct a volume.
 
 logger.info("Begin Volume reconstruction")
-
-# Assign the estimated rotations to the class averages
-avgs = avgs.update(rotations=rots_est)
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((img_size,) * 3, dtype=src.dtype)
 
 # Setup an estimator to perform the back projection.
-estimator = MeanEstimator(avgs, basis)
+estimator = MeanEstimator(oriented_src, basis)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
