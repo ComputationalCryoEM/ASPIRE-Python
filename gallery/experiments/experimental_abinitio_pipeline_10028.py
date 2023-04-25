@@ -166,7 +166,7 @@ logger.info("Begin Orientation Estimation")
 
 # Run orientation estimation on ``avgs``.
 orient_est = CLSyncVoting(avgs, n_theta=72)
-# Get the estimated rotations
+# Create an ``OrientedSource`` class instance and get the estimated rotations.
 oriented_src = OrientedSource(
     avgs,
     orientation_estimator=orient_est,
@@ -177,7 +177,7 @@ rots_est = oriented_src.rotations
 # Volume Reconstruction
 # ----------------------
 #
-# Using the estimated rotations, attempt to reconstruct a volume.
+# Using the oriented source, attempt to reconstruct a volume.
 
 logger.info("Begin Volume reconstruction")
 
