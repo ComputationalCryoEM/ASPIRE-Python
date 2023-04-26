@@ -116,7 +116,7 @@ class RotCov2D:
                 len(self.basis.filter_to_basis_mat(RadialCTFFilter())), dtype=self.dtype
             )
         else:
-            return BlkDiagMatrix.eye(self.basis.blk_diag_cov_shape)
+            return BlkDiagMatrix.eye(self.basis.blk_diag_cov_shape, dtype=self.dtype)
 
     def _get_mean(self, coeffs):
         """
@@ -620,7 +620,7 @@ class BatchedRotCov2D(RotCov2D):
 
         b_mean = [np.zeros(basis.count, dtype=self.dtype) for _ in ctf_basis]
 
-        b_covar = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape)
+        b_covar = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape, dtype=self.dtype)
 
         for start in range(0, src.n, self.batch_size):
             batch = np.arange(start, min(start + self.batch_size, src.n))
