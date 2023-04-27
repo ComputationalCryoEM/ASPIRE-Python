@@ -72,7 +72,6 @@ class MrcStatsTestCase(TestCase):
             with mrcfile.new_mmap(
                 files[0], shape=(self.n, self.n), mrc_mode=2, overwrite=True
             ) as mrc:
-
                 mrc.data[:, :] = self.a
                 mrc.update_header_from_data()
                 self.stats.update_header(mrc)
@@ -82,7 +81,6 @@ class MrcStatsTestCase(TestCase):
             with mrcfile.new_mmap(
                 files[1], shape=(self.n, self.n), mrc_mode=2, overwrite=True
             ) as mrc:
-
                 mrc.set_data(self.a.astype(np.float32))
                 mrc.header.time = epoch
                 mrc.header.label[0] = label

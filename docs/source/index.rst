@@ -1,4 +1,4 @@
-Aspire v0.10.1
+Aspire v0.11.0
 ==============
 
 Algorithms for Single Particle Reconstruction
@@ -16,6 +16,7 @@ linear and nonlinear dimensionality reduction, randomized algorithms in numerica
 
    installation
    quickstart
+   class_source
    modules
    authors
 

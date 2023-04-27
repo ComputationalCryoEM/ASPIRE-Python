@@ -280,7 +280,6 @@ class RotCov2D:
         M = BlkDiagMatrix.zeros_like(ctf_fb[0])
 
         for k in np.unique(ctf_idx[:]):
-
             coeff_k = coeffs[ctf_idx == k].astype(self.dtype)
             weight = coeff_k.shape[0] / coeffs.shape[0]
 

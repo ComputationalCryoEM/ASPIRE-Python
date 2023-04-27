@@ -51,6 +51,11 @@ class PolarBasis2D(Basis):
             # try to use the same number as Fast FB basis
             self.ntheta = 8 * self.nrad
 
+        if self.ntheta % 2 == 1:
+            msg = "Only even values for ntheta are supported."
+            logger.error(msg)
+            raise NotImplementedError(msg)
+
         self.count = self.nrad * self.ntheta
         self._sz_prod = self.sz[0] * self.sz[1]
 

@@ -11,7 +11,7 @@ import aspire
 from aspire.exceptions import handle_exception
 
 # version in maj.min.bld format
-__version__ = "0.10.1"
+__version__ = "0.11.0"
 
 
 # Setup `confuse` config
@@ -63,6 +63,7 @@ if config["logging"]["log_exceptions"].get(int):
     import sys
 
     sys.excepthook = handle_exception
+
 
 __all__ = []
 for _, modname, _ in pkgutil.iter_modules(aspire.__path__):

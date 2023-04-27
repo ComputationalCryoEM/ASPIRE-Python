@@ -4,7 +4,7 @@ Abinitio Pipeline - Simulated Data
 
 This notebook introduces a selection of
 components corresponding to generating realistic
-simulated Cryo-EM data and running key ASPIRE-Python
+simulated cryo-EM data and running key ASPIRE-Python
 Abinitio model components as a pipeline.
 """
 
@@ -21,9 +21,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.abinitio import CLSyncVoting
-from aspire.basis import FFBBasis2D, FFBBasis3D
-from aspire.classification import BFSReddyChatterjiAverager2D, RIRClass2D
-from aspire.denoising import DenoiserCov2D
+from aspire.basis import FFBBasis3D
+from aspire.denoising import DefaultClassAvgSource, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
@@ -114,11 +113,11 @@ if interactive:
 
 # Use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
-src.phase_flip()
+src = src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
-src.whiten(aiso_noise_estimator.filter)
+src = src.whiten(aiso_noise_estimator)
 
 # Plot the noise profile for inspection
 if interactive:
@@ -130,7 +129,7 @@ if interactive:
     src.images[:10].show()
 
 # Cache to memory for some speedup
-src.cache()
+src = src.cache()
 
 # %%
 # Optional: CWF Denoising
@@ -147,7 +146,6 @@ src.cache()
 # you may remove this code block and associated variables.
 
 classification_src = src
-custom_averager = None
 if do_cov2d:
     # Use CWF denoising
     cwf_denoiser = DenoiserCov2D(src)
@@ -157,35 +155,27 @@ if do_cov2d:
     if interactive:
         classification_src.images[:10].show()
 
-    # Use regular `src` for the alignment and composition (averaging).
-    composite_basis = FFBBasis2D((src.L,) * 2, dtype=src.dtype)
-    custom_averager = BFSReddyChatterjiAverager2D(composite_basis, src, dtype=src.dtype)
-
-
 # %%
 # Class Averaging
 # ----------------------
 #
 # Now perform classification and averaging for each class.
+# This also demonstrates the potential to use a different source for classification and averaging.
 
-logger.info("Begin Class Averaging")
-
-rir = RIRClass2D(
-    classification_src,  # Source used for classification
-    fspca_components=400,
-    bispectrum_components=300,  # Compressed Features after last PCA stage.
+avgs = DefaultClassAvgSource(
+    classification_src,
     n_nbor=n_nbor,
-    n_classes=n_classes,
-    large_pca_implementation="legacy",
-    nn_implementation="sklearn",
-    bispectrum_implementation="legacy",
-    averager=custom_averager,
+    averager_src=src,
+    num_procs=None,  # Automatically configure parallel processing
 )
+# We'll continue our pipeline with the first ``n_classes`` from ``avgs``.
+avgs = avgs[:n_classes]
 
-classes, reflections, distances = rir.classify()
-avgs = rir.averages(classes, reflections, distances)
 if interactive:
     avgs.images[:10].show()
+
+# Save off the set of class average images.
+avgs.save("simulated_abinitio_pipeline_class_averages.star", overwrite=True)
 
 # %%
 # Common Line Estimation
@@ -196,11 +186,13 @@ if interactive:
 
 logger.info("Begin Orientation Estimation")
 
-# Stash true rotations for later comparison,
-#   note this line only works with naive class selection...
-true_rotations = src.rotations[:n_classes]
+# Stash true rotations for later comparison.
+# Note class selection re-ordered our images, so we remap the indices back to the original source.
+indices = avgs.index_map  # Also available from avgs.src.selection_indices[:n_classes]
+true_rotations = src.rotations[indices]
 
-orient_est = CLSyncVoting(avgs, n_theta=36)
+# Run orientation estimation on ``avgs``.
+orient_est = CLSyncVoting(avgs, n_theta=180)
 # Get the estimated rotations
 orient_est.estimate_rotations()
 rots_est = orient_est.rotations
@@ -223,7 +215,7 @@ logger.info(
 logger.info("Begin Volume reconstruction")
 
 # Assign the estimated rotations to the class averages
-avgs.rotations = rots_est
+avgs = avgs.update(rotations=rots_est)
 
 # Create a reasonable Basis for the 3d Volume
 basis = FFBBasis3D((v.resolution,) * 3, dtype=v.dtype)
@@ -238,5 +230,5 @@ estimated_volume.save(fn, overwrite=True)
 
 # Peek at result
 if interactive:
-    plt.imshow(np.sum(estimated_volume[0], axis=-1))
+    plt.imshow(np.sum(estimated_volume.asnumpy()[0], axis=-1))
     plt.show()

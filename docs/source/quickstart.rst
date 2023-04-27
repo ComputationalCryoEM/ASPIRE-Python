@@ -1,5 +1,5 @@
-Getting Started
-===============
+Getting Started - CLI
+=====================
 
 After installing ASPIRE, the module can be invoked as a script, allowing you to perform several actions on a stack of
 CRYO projections (MRC files).
@@ -8,7 +8,7 @@ CRYO projections (MRC files).
 
     aspire <command>
 
-Running the ``aspire`` module as a script allows one to run different stages of the Cryo-EM data pipeline.
+Running the ``aspire`` module as a script allows one to run different stages of the cryo-EM data pipeline.
 Substitute ``<command>`` with one of the available ``aspire`` commands. Use ``aspire --help`` to display all available commands and ``aspire <command> --help`` to display configurable options for a particular ``<command>``.
 
 Currently, the following operations can be run with ASPIRE:

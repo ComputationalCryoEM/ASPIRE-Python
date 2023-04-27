@@ -7,8 +7,7 @@ from ray.util.multiprocessing import Pool
 
 from aspire import config
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
-from aspire.image import Image
-from aspire.source import ArrayImageSource
+from aspire.image import Image, ImageStacker, MeanImageStacker
 from aspire.utils import trange
 from aspire.utils.coor_trans import grid_2d
 from aspire.utils.multiprocessing import num_procs_suggestion
@@ -80,18 +79,19 @@ class Averager2D(ABC):
 
         Should return an Image source of synthetic class averages.
 
-        :param classes: class indices, refering to src. (n_classes, n_nbor).
+        :param classes: class indices, refering to src. (src.n, n_nbor).
         :param reflections: Bool representing whether to reflect image in `classes`.
             (n_clases, n_nbor)
         :param coefs: Optional basis coefs (could avoid recomputing).
-            (n_classes, coef_count)
+            (src.n, coef_count)
         :return: Stack of synthetic class average images as Image instance.
         """
 
     def _cls_images(self, cls, src=None):
         """
-        Util to return images as an array for class k (provided as array `cls` ),
-        preserving the class/nbor order.
+        Util to return images as an array for class k (provided as
+        array `cls` ), preserving the class/nbor order.  Note, Images
+        will be a read-only view, copy if mutations required.
 
         :param cls: An iterable (0/1-D array or list) that holds the indices of images to align.
             In class averaging, this would be a class.
@@ -108,12 +108,20 @@ class AligningAverager2D(Averager2D):
     """
 
     def __init__(
-        self, composite_basis, src, alignment_basis=None, num_procs=None, dtype=None
+        self,
+        composite_basis,
+        src,
+        alignment_basis=None,
+        image_stacker=None,
+        num_procs=None,
+        dtype=None,
     ):
         """
         :param composite_basis:  Basis to be used during class average composition (eg hi res Cartesian/FFB2D).
         :param src: Source of original images.
         :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA).
+        :param image_stacker: Optional, provide a user defined `ImageStacker` instance,
+            used during image stacking (averaging).  Defaults to MeanImageStacker.
         :param num_procs: Number of processes to use.
             `None` will attempt computing a suggestion based on machine resources.
             Note some underlying code may already use threading.
@@ -128,6 +136,11 @@ class AligningAverager2D(Averager2D):
         )
         # If alignment_basis is None, use composite_basis
         self.alignment_basis = alignment_basis or self.composite_basis
+
+        # If image_stacker is None, use mean
+        self.image_stacker = image_stacker or MeanImageStacker()
+        if not isinstance(self.image_stacker, ImageStacker):
+            raise ValueError("`image_stacker` should be subclass of ImageStacker.")
 
         if not hasattr(self.composite_basis, "rotate"):
             raise RuntimeError(
@@ -144,22 +157,22 @@ class AligningAverager2D(Averager2D):
         During this process `rotations`, `reflections`, `shifts` and
         `correlations` properties will be computed for aligners.
 
-        `rotations` is an (n_classes, n_nbor) array of angles,
+        `rotations` is an (src.n, n_nbor) array of angles,
         which should represent the rotations needed to align images within
         that class. `rotations` is measured in CCW radians.
 
-        `shifts` is None or an (n_classes, n_nbor) array of 2D shifts
+        `shifts` is None or an (src.n, n_nbor) array of 2D shifts
         which should represent the translation needed to best align the images
         within that class.
 
-        `correlations` is an (n_classes, n_nbor) array representing
+        `correlations` is an (src.n, n_nbor) array representing
         a correlation like measure between classified images and their base
         image (image index 0).
 
         Subclasses of should implement and extend this method.
 
-        :param classes: (n_classes, n_nbor) integer array of img indices.
-        :param reflections: (n_classes, n_nbor) bool array of corresponding reflections,
+        :param classes: (src.n, n_nbor) integer array of img indices.
+        :param reflections: (src.n, n_nbor) bool array of corresponding reflections,
         :param basis_coefficients: (n_img, self.alignment_basis.count) basis coefficients,
 
         :returns: (rotations, shifts, correlations)
@@ -174,6 +187,9 @@ class AligningAverager2D(Averager2D):
         """
         This subclass assumes we get alignment details from `align` method. Otherwise. see Averager2D.average
         """
+
+        classes = np.atleast_2d(classes)
+        reflections = np.atleast_2d(reflections)
 
         self.rotations, self.shifts, self.correlations = self.align(
             classes, reflections, coefs
@@ -191,7 +207,7 @@ class AligningAverager2D(Averager2D):
 
                 # Do shifts
                 if self.shifts is not None:
-                    neighbors_imgs.shift(self.shifts[i])
+                    neighbors_imgs = neighbors_imgs.shift(self.shifts[i])
 
                 neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
@@ -209,7 +225,7 @@ class AligningAverager2D(Averager2D):
             )
 
             # Averaging in composite_basis
-            return np.mean(neighbors_coefs, axis=0)
+            return self.image_stacker(neighbors_coefs)
 
         if self.num_procs <= 1:
             for i in trange(n_classes):
@@ -232,7 +248,7 @@ class AligningAverager2D(Averager2D):
                 b_avgs[i] = result
 
         # Now we convert the averaged images from Basis to Cartesian.
-        return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
+        return self.composite_basis.evaluate(b_avgs)
 
     def _shift_search_grid(self, L, radius, roll_zero=False):
         """
@@ -312,25 +328,28 @@ class BFRAverager2D(AligningAverager2D):
         correlations = np.empty(classes.shape, dtype=self.dtype)
 
         def _innerloop(k):
-
-            _correlations = np.empty((n_nbor, self.n_angles))
+            _correlations = np.full((n_nbor, self.n_angles), fill_value=-np.inf)
+            _correlations[0, 0] = 1  # Set this now so we can skip it in the loop.
             # Get the coefs for these neighbors
             if basis_coefficients is None:
                 # Retrieve relevant images
-                neighbors_imgs = Image(self._cls_images(classes[k]))
+                neighbors_imgs = self._cls_images(classes[k]).copy()
 
                 # We optionally can shift the base image by `_base_image_shift`
                 # Shift in real space to avoid extra conversions
                 if self._base_image_shift is not None:
                     neighbors_imgs[0] = (
-                        Image(neighbors_imgs[0]).shift(self._base_image_shift).asnumpy()
+                        Image(neighbors_imgs[0])
+                        .shift(self._base_image_shift)
+                        .asnumpy()[0]
                     )
 
                 # Evaluate_t into basis
-                nbr_coef = self.composite_basis.evaluate_t(neighbors_imgs)
+                nbr_coef = self.composite_basis.evaluate_t(Image(neighbors_imgs))
             else:
                 nbr_coef = basis_coefficients[classes[k]]
 
+            norm_0 = np.linalg.norm(nbr_coef[0])
             for i, angle in enumerate(test_angles):
                 # Rotate the set of neighbors by angle,
                 rotated_nbrs = self.alignment_basis.rotate(
@@ -339,9 +358,15 @@ class BFRAverager2D(AligningAverager2D):
 
                 # then store dot between class base image (0) and each nbor
                 for j, nbor in enumerate(rotated_nbrs):
-                    _correlations[j, i] = np.dot(nbr_coef[0], nbor)
+                    # Skip the base image.
+                    if j == 0:
+                        continue
+                    norm_nbor = np.linalg.norm(nbor)
+                    _correlations[j, i] = np.dot(nbr_coef[0], nbor) / (
+                        norm_nbor * norm_0
+                    )
 
-            # Now along each class, find the index of the angle reporting highest correlation
+            # Now find the index of the angle reporting highest correlation
             angle_idx = np.argmax(_correlations, axis=1)
 
             # Take the correlation corresponding to angle_idx
@@ -402,7 +427,7 @@ class BFSRAverager2D(BFRAverager2D):
 
         :params n_angles: Number of brute force rotations to attempt, defaults 360.
         :param radius: Brute force translation search radius.
-            Defaults to src.L//8.
+            Defaults to src.L//16.
         """
         super().__init__(
             composite_basis,
@@ -413,7 +438,7 @@ class BFSRAverager2D(BFRAverager2D):
             dtype=dtype,
         )
 
-        self.radius = radius if radius is not None else src.L // 8
+        self.radius = radius if radius is not None else src.L // 16
 
         # Each shift will require calling the parent BFRAverager2D.align
         self._bfr_align = super().align
@@ -449,7 +474,7 @@ class BFSRAverager2D(BFRAverager2D):
         #  because we will mutate them with shifts in the loop.
         if basis_coefficients is None:
             original_coef = self.composite_basis.evaluate_t(
-                self._cls_images(classes[:, 0], src=self.src)
+                Image(self._cls_images(classes[:, 0], src=self.src))
             )
         else:
             original_coef = basis_coefficients[classes[:, 0], :].copy()
@@ -629,7 +654,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         b_avgs = np.empty((n_classes, self.composite_basis.count), dtype=self.src.dtype)
 
         def _innerloop(i):
-
             # Get coefs in Composite_Basis if not provided as an argument.
             if coefs is None:
                 # Retrieve relevant images directly from source.
@@ -652,7 +676,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 )
 
             # Averaging in composite_basis
-            return np.mean(neighbors_coefs, axis=0)
+            return self.image_stacker(neighbors_coefs)
 
         if self.num_procs <= 1:
             for i in trange(n_classes):
@@ -675,7 +699,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 b_avgs[i] = result
 
         # Now we convert the averaged images from Basis to Cartesian.
-        return ArrayImageSource(self.composite_basis.evaluate(b_avgs))
+        return self.composite_basis.evaluate(b_avgs)
 
 
 class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):

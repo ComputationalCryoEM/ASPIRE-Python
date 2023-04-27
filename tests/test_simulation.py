@@ -10,7 +10,9 @@ from aspire.operators import RadialCTFFilter
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
 from aspire.utils.types import utest_tolerance
-from aspire.volume import Volume
+from aspire.volume import LegacyVolume, Volume
+
+from .test_utils import matplotlib_dry_run
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -27,6 +29,18 @@ class SingleSimTestCase(TestCase):
     def testImage(self):
         """Test we can get an Image from a length 1 Sim."""
         _ = self.sim.images[0]
+
+    @matplotlib_dry_run
+    def testImageShow(self):
+        self.sim.images[:].show()
+
+    @matplotlib_dry_run
+    def testCleanImagesShow(self):
+        self.sim.clean_images[:].show()
+
+    @matplotlib_dry_run
+    def testProjectionsShow(self):
+        self.sim.projections[:].show()
 
 
 class SimVolTestCase(TestCase):
@@ -89,15 +103,24 @@ class SimVolTestCase(TestCase):
 
 class SimTestCase(TestCase):
     def setUp(self):
+        self.n = 1024
+        self.L = 8
+        self.dtype = np.float32
+
+        self.vols = LegacyVolume(
+            L=self.L,
+            dtype=self.dtype,
+        ).generate()
+
         self.sim = Simulation(
-            n=1024,
-            L=8,
+            n=self.n,
+            L=self.L,
+            vols=self.vols,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
-            seed=0,
             noise_adder=WhiteNoiseAdder(var=1),
-            dtype="single",
+            dtype=self.dtype,
         )
 
     def tearDown(self):
@@ -135,16 +158,16 @@ class SimTestCase(TestCase):
 
     def testSimulationCached(self):
         sim_cached = Simulation(
-            n=1024,
-            L=8,
+            n=self.n,
+            L=self.L,
+            vols=self.vols,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
-            seed=0,
             noise_adder=WhiteNoiseAdder(var=1),
-            dtype="single",
+            dtype=self.dtype,
         )
-        sim_cached.cache()
+        sim_cached = sim_cached.cache()
         self.assertTrue(
             np.array_equal(sim_cached.images[:].asnumpy(), self.sim.images[:].asnumpy())
         )
@@ -162,7 +185,7 @@ class SimTestCase(TestCase):
 
     def testSimulationImagesDownsample(self):
         # The simulation already generates images of size 8 x 8; Downsampling to resolution 8 should thus have no effect
-        self.sim.downsample(8)
+        self.sim = self.sim.downsample(8)
         images = self.sim.clean_images[:512].asnumpy()
         self.assertTrue(
             np.allclose(
@@ -180,15 +203,15 @@ class SimTestCase(TestCase):
         self.assertTrue(images.shape, (8, 8, 25))
 
     def testSimulationImagesDownsampleShape(self):
-        self.sim.downsample(6)
-        first_image = self.sim.images[0][0]
+        self.sim = self.sim.downsample(6)
+        first_image = self.sim.images[0].asnumpy()[0]
         self.assertEqual(first_image.shape, (6, 6))
 
     def testSimulationEigen(self):
         eigs_true, lambdas_true = self.sim.eigs()
         self.assertTrue(
             np.allclose(
-                eigs_true[0, :, :, 2],
+                eigs_true.asnumpy()[0, :, :, 2],
                 np.array(
                     [
                         [
@@ -362,7 +385,7 @@ class SimTestCase(TestCase):
                         0.01210055,
                     ],
                 ],
-                mean_vol[0, :, :, 4],
+                mean_vol.asnumpy()[0, :, :, 4],
             )
         )
 

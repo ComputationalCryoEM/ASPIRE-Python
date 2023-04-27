@@ -101,14 +101,12 @@ class SteerableBasis2D(Basis):
         logger.info(f"Calculating bispectrum matrix with shape {B.shape}.")
 
         for ind1 in range(self.complex_count):
-
             k1 = angular_indices[ind1]
             if freq_cutoff and k1 > freq_cutoff:
                 continue
             coef1 = complex_coef[ind1]
 
             for ind2 in range(self.complex_count):
-
                 k2 = angular_indices[ind2]
                 if freq_cutoff and k2 > freq_cutoff:
                     continue
@@ -166,7 +164,9 @@ class SteerableBasis2D(Basis):
                 )
         # else: radians can be a constant
 
-        assert self.count == coef.shape[-1]
+        assert (
+            self.count == coef.shape[-1]
+        ), "Number of coefficients must match self.count."
 
         # self.angular_indices are `ks`
         # For all coef in stack,

@@ -97,24 +97,24 @@ def preprocess(
 
     if flip_phase:
         logger.info("Perform phase flip to input images")
-        source.phase_flip()
+        source = source.phase_flip()
 
     if downsample and downsample < source.L:
         logger.info(f"Downsample resolution to {downsample} X {downsample}")
-        source.downsample(downsample)
+        source = source.downsample(downsample)
 
     if normalize_bg:
         logger.info("Normalize images to noise background")
-        source.normalize_background()
+        source = source.normalize_background()
 
     if whiten:
         logger.info("Whiten noise of images")
         noise_estimator = WhiteNoiseEstimator(source)
-        source.whiten(noise_estimator.filter)
+        source = source.whiten(noise_estimator)
 
     if invert_contrast:
         logger.info("Invert global density contrast")
-        source.invert_contrast()
+        source = source.invert_contrast()
 
     source.save(
         starfile_out, batch_size=batch_size, save_mode=save_mode, overwrite=overwrite

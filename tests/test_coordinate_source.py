@@ -9,14 +9,13 @@ from unittest import TestCase
 import mrcfile
 import numpy as np
 from click.testing import CliRunner
-from pandas import DataFrame
 
 import tests.saved_test_data
 from aspire.commands.extract_particles import extract_particles
 from aspire.noise import WhiteNoiseEstimator
 from aspire.source import BoxesCoordinateSource, CentersCoordinateSource
 from aspire.storage import StarFile
-from aspire.utils import importlib_path
+from aspire.utils import RelionStarFile, importlib_path
 
 
 class CoordinateSourceTestCase(TestCase):
@@ -129,6 +128,7 @@ class CoordinateSourceTestCase(TestCase):
 
         self.ctf_files = sorted(glob(os.path.join(self.data_folder, "ctf*.star")))
         self.relion_ctf_file = self.createTestRelionCtfFile()
+        self.relion_legacy_ctf_file = self.createTestRelionLegacyCtfFile()
 
     def tearDown(self):
         self.tmpdir.cleanup()
@@ -188,11 +188,7 @@ class CoordinateSourceTestCase(TestCase):
         x_coords = [center[0] for center in centers]
         y_coords = [center[1] for center in centers]
         blocks = OrderedDict(
-            {
-                "coordinates": DataFrame(
-                    {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
-                )
-            }
+            {"coordinates": {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}}
         )
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
@@ -243,11 +239,7 @@ class CoordinateSourceTestCase(TestCase):
         x_coords = [str(center[0]) + ".000" for center in centers]
         y_coords = [str(center[1]) + ".000" for center in centers]
         blocks = OrderedDict(
-            {
-                "coordinates": DataFrame(
-                    {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}
-                )
-            }
+            {"coordinates": {"_rlnCoordinateX": x_coords, "_rlnCoordinateY": y_coords}}
         )
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
@@ -266,15 +258,13 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnSphericalAberration": 700 + index,
             "_rlnAmplitudeContrast": 600 + index,
             "_rlnVoltage": 500 + index,
-            "_rlnDetectorPixelSize": 400 + index,
+            "_rlnMicrographPixelSize": 400 + index,
         }
-        blocks = OrderedDict(
-            {"root": DataFrame([params_dict], columns=params_dict.keys())}
-        )
+        blocks = OrderedDict({"root": params_dict})
         starfile = StarFile(blocks=blocks)
         starfile.write(star_fp)
 
-    def createTestRelionCtfFile(self):
+    def createTestRelionCtfFile(self, reverse_optics_block_rows=False):
         """
         Creates example RELION-generated CTF file for a set of micrographs.
         """
@@ -294,7 +284,12 @@ class CoordinateSourceTestCase(TestCase):
             ["opticsGroup1", 1, 500.0, 700.0, 600.0, 400.0],
             ["opticsGroup2", 2, 501.0, 701.0, 601.0, 401.0],
         ]
-        blocks["optics"] = DataFrame(optics_block, columns=optics_columns)
+        # Since optics block rows are self-contained,
+        # reversing their order should have no affect anywhere.
+        if reverse_optics_block_rows:
+            optics_block = optics_block[::-1]
+
+        blocks["optics"] = dict(zip(optics_columns, zip(*optics_block)))
 
         micrographs_columns = [
             "_rlnMicrographName",
@@ -308,13 +303,23 @@ class CoordinateSourceTestCase(TestCase):
             [self.all_mrc_paths[0], 1, 1000.0, 900.0, 800.0],
             [self.all_mrc_paths[0], 2, 1001.0, 901.0, 801.0],
         ]
-        blocks["micrographs"] = DataFrame(
-            micrographs_block, columns=micrographs_columns
-        )
+        blocks["micrographs"] = dict(zip(micrographs_columns, zip(*micrographs_block)))
 
         star = StarFile(blocks=blocks)
         star.write(star_fp)
         return star_fp
+
+    def createTestRelionLegacyCtfFile(self):
+        # create a Relion 3.0 format CTF file by loading the 3.1 file,
+        # and applying the optics block CTF parameters to the data block,
+        # creating a single df saved back to a new star file
+        legacy_star_fp = os.path.join(self.data_folder, "micrographs_ctf_legacy.star")
+        star = RelionStarFile(self.relion_ctf_file)
+        df = star.get_merged_data_block()
+        # save as a new star file containing identical information but in 3.0 format
+        legacy_star = StarFile(blocks=OrderedDict({"": df}))
+        legacy_star.write(legacy_star_fp)
+        return legacy_star_fp
 
     def testLoadFromBox(self):
         # ensure successful loading from box files
@@ -374,9 +379,9 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
 
     def testCached(self):
-        src_cached = BoxesCoordinateSource(self.files_box)
+        src = BoxesCoordinateSource(self.files_box)
         src_uncached = BoxesCoordinateSource(self.files_box)
-        src_cached.cache()
+        src_cached = src.cache()
         self.assertTrue(
             np.array_equal(
                 src_cached.images[:].asnumpy(), src_uncached.images[:].asnumpy()
@@ -476,14 +481,14 @@ class CoordinateSourceTestCase(TestCase):
         # we want to read the saved mrcs file from the STAR file
         image_name_column = saved_star.get_block_by_index(0)["_rlnImageName"]
         # we're reading a string of the form 0000X@mrcs_path.mrcs
-        _particle, mrcs_path = image_name_column.iloc[0].split("@")
+        _particle, mrcs_path = image_name_column[0].split("@")
         saved_mrcs_stack = mrcfile.open(os.path.join(self.data_folder, mrcs_path)).data
         # assert that the particles saved are correct
         for i in range(10):
-            self.assertTrue(np.array_equal(imgs[i], saved_mrcs_stack[i]))
+            self.assertTrue(np.array_equal(imgs.asnumpy()[i], saved_mrcs_stack[i]))
         # assert that the star file has the correct metadata
         self.assertEqual(
-            saved_star[""].columns.tolist(),
+            list(saved_star[""].keys()),
             ["_rlnImageName", "_rlnCoordinateX", "_rlnCoordinateY"],
         )
         # assert that all the correct coordinates were saved
@@ -499,11 +504,11 @@ class CoordinateSourceTestCase(TestCase):
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
         src = BoxesCoordinateSource(self.files_box, max_rows=5)
-        src.downsample(60)
-        src.normalize_background()
+        src = src.downsample(60)
+        src = src.normalize_background()
         noise_estimator = WhiteNoiseEstimator(src)
-        src.whiten(noise_estimator.filter)
-        src.invert_contrast()
+        src = src.whiten(noise_estimator)
+        src = src.invert_contrast()
         # call .images() to ensure the filters are applied
         # and not just added to pipeline
         src.images[:5]
@@ -512,17 +517,32 @@ class CoordinateSourceTestCase(TestCase):
         # trying to give 3 CTF files to a source with 2 micrographs should error
         with self.assertRaises(ValueError):
             src = BoxesCoordinateSource(self.files_box)
-            src.import_ctf(["badfile", "badfile", "badfile"])
+            src.import_aspire_ctf(["badfile", "badfile", "badfile"])
 
     def testImportCtfFromList(self):
         src = BoxesCoordinateSource(self.files_box)
-        src.import_ctf(self.ctf_files)
+        src.import_aspire_ctf(self.ctf_files)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
     def testImportCtfFromRelion(self):
         src = BoxesCoordinateSource(self.files_box)
-        src.import_ctf(self.relion_ctf_file)
+        src.import_relion_ctf(self.relion_ctf_file)
+        self._testCtfFilters(src)
+        self._testCtfMetadata(src)
+
+    def testImportCtfFromRelionReverseOpticsGroup(self):
+        self.relion_ctf_file = self.createTestRelionCtfFile(
+            reverse_optics_block_rows=True
+        )
+        src = BoxesCoordinateSource(self.files_box)
+        src.import_relion_ctf(self.relion_ctf_file)
+        self._testCtfFilters(src)
+        self._testCtfMetadata(src)
+
+    def testImportCtfFromRelionLegacy(self):
+        src = BoxesCoordinateSource(self.files_box)
+        src.import_relion_ctf(self.relion_legacy_ctf_file)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
@@ -534,30 +554,44 @@ class CoordinateSourceTestCase(TestCase):
         # based on the arbitrary values we added to the CTF files
         # note these values are not realistic
         filter0 = src.unique_filters[0]
-        self.assertEqual(
-            (1000.0, 900.0, 800.0, 700.0, 600.0, 500.0, 400.0),
-            (
-                filter0.defocus_u,
-                filter0.defocus_v,
-                filter0.defocus_ang,
-                filter0.Cs,
-                filter0.alpha,
-                filter0.voltage,
-                filter0.pixel_size,
-            ),
+        self.assertTrue(
+            np.allclose(
+                np.array(
+                    [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, 400.0],
+                    dtype=src.dtype,
+                ),
+                np.array(
+                    [
+                        filter0.defocus_u,
+                        filter0.defocus_v,
+                        filter0.defocus_ang,
+                        filter0.Cs,
+                        filter0.alpha,
+                        filter0.voltage,
+                        filter0.pixel_size,
+                    ]
+                ),
+            )
         )
         filter1 = src.unique_filters[1]
-        self.assertEqual(
-            (1001.0, 901.0, 801.0, 701.0, 601.0, 501.0, 401.0),
-            (
-                filter1.defocus_u,
-                filter1.defocus_v,
-                filter1.defocus_ang,
-                filter1.Cs,
-                filter1.alpha,
-                filter1.voltage,
-                filter1.pixel_size,
-            ),
+        self.assertTrue(
+            np.allclose(
+                np.array(
+                    [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, 401.0],
+                    dtype=src.dtype,
+                ),
+                np.array(
+                    [
+                        filter1.defocus_u,
+                        filter1.defocus_v,
+                        filter1.defocus_ang,
+                        filter1.Cs,
+                        filter1.alpha,
+                        filter1.voltage,
+                        filter1.pixel_size,
+                    ]
+                ),
+            )
         )
         # the first 200 particles should correspond to the first filter
         # since they came from the first micrograph
@@ -598,10 +632,15 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnSphericalAberration",
             "_rlnAmplitudeContrast",
             "_rlnVoltage",
+            "_rlnMicrographPixelSize",
         ]
-        ctf_metadata = np.zeros((src.n, len(ctf_cols)), dtype=np.float64)
-        ctf_metadata[:200] = np.array([1000.0, 900.0, 800.0, 700.0, 600.0, 500.0])
-        ctf_metadata[200:400] = np.array([1001.0, 901.0, 801.0, 701.0, 601.0, 501.0])
+        ctf_metadata = np.zeros((src.n, len(ctf_cols)), dtype=src.dtype)
+        ctf_metadata[:200] = np.array(
+            [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, 400.0]
+        )
+        ctf_metadata[200:400] = np.array(
+            [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, 401.0]
+        )
         self.assertTrue(np.array_equal(ctf_metadata, src.get_metadata(ctf_cols)))
 
     def testCommand(self):

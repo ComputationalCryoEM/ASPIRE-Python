@@ -5,12 +5,7 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 from aspire.basis import FSPCABasis
-from aspire.classification import (
-    BFSReddyChatterjiAverager2D,
-    Class2D,
-    ClassSelector,
-    RandomClassSelector,
-)
+from aspire.classification import Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
 from aspire.utils import trange
@@ -26,18 +21,14 @@ class RIRClass2D(Class2D):
         pca_basis=None,
         fspca_components=None,
         alpha=1 / 3,
-        sample_n=4000,
+        sample_n=4000,  # Paper had 4000, but MATLAB code suggested 50000
         bispectrum_components=300,
         n_nbor=100,
-        n_classes=50,
         bispectrum_freq_cutoff=None,
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
-        selector=None,
-        num_procs=None,
         batch_size=512,
-        averager=None,
         dtype=None,
         seed=None,
     ):
@@ -54,8 +45,7 @@ class RIRClass2D(Class2D):
         Z. Zhao, Y. Shkolnisky, A. Singer, Rotationally Invariant Image Representation
         for Viewing Direction Classification in Cryo-EM. (2014)
 
-        :param src: Source instance.  Note it is possible to use one `source` for classification (ie CWF),
-            and a different `source` for stacking in the `averager`.
+        :param src: Source instance, for classification.
         :param pca_basis: Optional FSPCA Basis instance
         :param fspca_components: Optinally set number of components (top eigvals) to keep from full FSCPA.
             Default value of None will infer from `pca_basis` when provided, otherwise defaults to 400.
@@ -63,16 +53,11 @@ class RIRClass2D(Class2D):
         :param sample_n: Threshold for random sampling of bispectrum coefs. Default 4000,
             high values such as 50000 reduce random sampling.
         :param n_nbor: Number of nearest neighbors to compute.
-        :param n_classes: Number of class averages to return.
         :param bispectrum_freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
         :param large_pca_implementation: See `pca`.
         :param nn_implementation: See `nn_classification`.
         :param bispectrum_implementation: See `bispectrum`.
-        :param selector: A ClassSelector subclass. Defaults to RandomClassSelector.
-        :param num_procs: Number of processes to use.
-            `None` will attempt computing a suggestion based on machine resources.
         :param batch_size: Chunk size (typically number of images) for batched methods.
-        :param averager: An Averager2D subclass. Defaults to BFSReddyChatterjiAverager2D.
         :param dtype: Optional dtype, otherwise taken from src.
         :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
@@ -81,11 +66,9 @@ class RIRClass2D(Class2D):
         super().__init__(
             src=src,
             n_nbor=n_nbor,
-            n_classes=n_classes,
             seed=seed,
             dtype=dtype,
         )
-        self.num_procs = num_procs
         self.batch_size = int(batch_size)
 
         # Implementation Checks
@@ -129,13 +112,6 @@ class RIRClass2D(Class2D):
             )
         self._bispectrum = bispectrum_implementations[bispectrum_implementation]
 
-        # Setup class selection
-        if selector is None:
-            selector = RandomClassSelector(seed=self.seed)
-        elif not isinstance(selector, ClassSelector):
-            raise RuntimeError("`selector` must be subclass of `ClassSelector`")
-        self.selector = selector
-
         # For now, only run with FSPCA basis
         if pca_basis and not isinstance(pca_basis, FSPCABasis):
             raise NotImplementedError(
@@ -175,7 +151,6 @@ class RIRClass2D(Class2D):
         self.sample_n = sample_n
         self.alpha = alpha
         self.bispectrum_freq_cutoff = bispectrum_freq_cutoff
-        self.averager = averager
 
         if self.src.n < self.bispectrum_components:
             raise RuntimeError(
@@ -202,21 +177,6 @@ class RIRClass2D(Class2D):
         # For convenience, assign the fb_basis used in the pca_basis.
         self.fb_basis = self.pca_basis.basis
 
-        # When not provided by a user, the averager is instantiated after
-        #  we are certain our pca_basis has been constructed.
-        if self.averager is None:
-            self.averager = BFSReddyChatterjiAverager2D(
-                self.fb_basis, self.src, num_procs=self.num_procs, dtype=self.dtype
-            )
-        else:
-            # When user provides `averager` and `num_procs`
-            #   we should warn when `num_procs` mismatched.
-            if self.num_procs is not None and self.averager.num_procs != self.num_procs:
-                logger.warning(
-                    f"{self.__class__.__name__} intialized with num_procs={self.num_procs} does not"
-                    f" match provided {self.averager.__class__.__name__}.{self.averager.num_procs}"
-                )
-
         # Get the expanded coefs in the compressed FSPCA space.
         self.fspca_coef = self.pca_basis.spca_coef
 
@@ -225,37 +185,23 @@ class RIRClass2D(Class2D):
 
         # # Stage 2: Compute Nearest Neighbors
         logger.info(f"Calculate Nearest Neighbors using {self._nn_implementation}.")
-        classes, reflections, distances = self.nn_classification(coef_b, coef_b_r)
+        self.classes, self.reflections, self.distances = self.nn_classification(
+            coef_b, coef_b_r
+        )
 
         if diagnostics:
             # Lets peek at the distribution of distances
             # zero index is self, distance 0, ignored
-            plt.hist(distances[:, 1:].flatten(), bins="auto")
+            plt.hist(self.distances[:, 1:].flatten(), bins="auto")
             plt.show()
 
             # Report some information about reflections
             logger.info(
-                f"Count reflected: {np.sum(reflections)}"
-                f" {100 * np.mean(reflections) } %"
+                f"Count reflected: {np.sum(self.reflections)}"
+                f" {100 * np.mean(self.reflections) } %"
             )
 
-        return classes, reflections, distances
-
-    def averages(self, classes, reflections, distances):
-        # # Stage 3: Class Selection
-        # This is an area open to active research.
-        logger.info(f"Select {self.n_classes} Classes from Nearest Neighbors")
-        self.selection = selection = self.selector.select(
-            self.n_classes, classes, reflections, distances
-        )
-        classes, reflections = classes[selection], reflections[selection]
-
-        # # Stage 4: Averager
-        logger.info(
-            f"Begin Averaging of {classes.shape[0]} Classes using {self.averager}."
-        )
-
-        return self.averager.average(classes, reflections)
+        return self.classes, self.reflections, self.distances
 
     def pca(self, M):
         """
@@ -281,7 +227,7 @@ class RIRClass2D(Class2D):
         each having shape (n_img, features)
         where features = min(self.bispectrum_components, n_img).
 
-        Result is array (n_img, n_nbor) with entry `i` reprsenting
+        Result is array (n_img, n_nbor) with entry `i` representing
         index `i` into class input img array (src).
 
         To extend with an additonal Nearest Neighbor algo,
@@ -371,22 +317,33 @@ class RIRClass2D(Class2D):
 
         classes = np.zeros((n_im, n_nbor), dtype=int)
         distances = np.zeros((n_im, n_nbor), dtype=self.dtype)
+
         for i in trange(num_batches):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, n_im)
-            corr = np.real(
-                np.dot(np.conjugate(coeff_b[:, start:finish]).T, concat_coeff)
-            )
+            batch = np.conjugate(coeff_b[:, start:finish])
+            corr = np.real(np.dot(batch.T, concat_coeff))
+
+            assert np.all(
+                np.abs(corr) <= 1.01  # Allow some numerical wiggle
+            ), f"Corr out of [-1,1] bounds {np.min(corr)} {np.max(corr)}."
+            # Clamp
+            corr = np.maximum(corr, -1)
+            corr = np.minimum(corr, 1)
+
             # Note legacy did not include the original image?
             # classes[start:finish] = np.argsort(-corr, axis=1)[:, 1 : n_nbor + 1]
             # This now does include the original image
             # (Matches sklean implementation.)
-            # Check with Joakim about preference.
-            # I (GBW) think class[i] should have class[i][0] be the original image index.
-            classes[start:finish] = np.argsort(-corr, axis=1)[:, :n_nbor]
+            #
+            # Also we've converted from correlation to distance=1-correlation
+            # https://github.com/ComputationalCryoEM/ASPIRE-Python/discussions/867
+            dist = np.sqrt(2.0 - 2.0 * corr)
+
+            classes[start:finish] = np.argsort(dist, axis=1)[:, :n_nbor]
             # Store the corr values for the n_nbors in this batch
             distances[start:finish] = np.take_along_axis(
-                corr, classes[start:finish], axis=1
+                dist, classes[start:finish], axis=1
             )
 
         # There were two sets of vectors each n_img long.
@@ -407,7 +364,7 @@ class RIRClass2D(Class2D):
 
         # ### The following was from legacy code. Be careful wrt order.
         M = M.T
-        u, s, v = pca_y(M, self.bispectrum_components)
+        u, s, v = pca_y(M, self.bispectrum_components, seed=self.seed)
 
         # Contruct coefficients
         coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
@@ -511,13 +468,16 @@ class RIRClass2D(Class2D):
 
         return coef_b, coef_b_r
 
-    def _legacy_bispectrum(self, coef):
+    def _legacy_bispectrum(self, coef, retry_attempts=3):
         """
         This code was ported to Python by an unkown author,
         and is the closest viable reference material.
 
-        It is copied here to compare while
-        fresh code is developed for this class.
+        :param coef: Real valued basis coefficients.
+        :param retry_attempts: Optional, max attempts to retry randomized
+            bispec_2drot_large.  Defaults to 3.
+
+        :return: Compressed feature and reflected feature vectors.
         """
 
         # The legacy code expects the complex representation
@@ -526,12 +486,31 @@ class RIRClass2D(Class2D):
             self.pca_basis.complex_count
         )  # flatten
 
-        coef_b, coef_b_r = bispec_2drot_large(
-            coeff=coef.T,  # Note F style tranpose here and in return
-            freqs=self.pca_basis.complex_angular_indices,
-            eigval=complex_eigvals,
-            alpha=self.alpha,
-            sample_n=self.sample_n,
-        )
+        # bispec_2drot_large has a random selection component.
+        # Sometimes this can fail to return a complete feature vector.
+        # In this case we can retry, but if not successful raise an error.
+        # This seems to occur more frequently at very low resolutions (<=32),
+        # and likely requires tuning other RIR parameters for small problems.
+        attempt = 0
+        while attempt < retry_attempts:
+            attempt += 1
+            coef_b, coef_b_r = bispec_2drot_large(
+                coeff=coef.T,  # Note F style transpose here and in return
+                freqs=self.pca_basis.complex_angular_indices,
+                eigval=complex_eigvals,
+                alpha=self.alpha,
+                sample_n=self.sample_n,
+                seed=self.seed,
+            )
+            # If we have produced a feature vector
+            if coef_b.size != 0:
+                break  # Return feature vector.
+
+        # while-else: we've exceeded retry attempts.
+        else:
+            raise RuntimeError(
+                "bispec_2drot_large failed to return valid feature vector."
+                f" Returned {coef_b.shape} after {attempt} attempts."
+            )
 
         return coef_b.T, coef_b_r.T

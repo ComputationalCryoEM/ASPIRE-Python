@@ -28,11 +28,16 @@ logger.info(
 # -------------------
 
 # Load the images from NumPy array, 10 images of 70S Ribosome with size 129 x 129
-DATA_DIR = "data"
-org_images = np.load(os.path.join(DATA_DIR, "example_data_np_array.npy")).T
+file_path = os.path.join(
+    os.path.dirname(os.getcwd()), "data", "example_data_np_array.npy"
+)
+# Here the images were saved in Fortran order. Transpose from (129,
+# 129, 10) to (10, 129, 129) so that the stack axis is the slowest
+# moving axis.
+org_images = np.load(file_path).T
 
 # Set the sizes of images (129, 129)
-img_size = 129
+img_size = org_images.shape[-1]
 
 # %%
 # Expand Images with Normal Fourier-Bessel Basis Method
@@ -95,11 +100,11 @@ dtime = tstop - tstart
 logger.info(f"Finish fast FB expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on fast FB basis
-ffb_images = ffb_basis.evaluate(ffb_coeffs)
+ffb_images = ffb_basis.evaluate(ffb_coeffs).asnumpy()
 logger.info("Finish reconstruction of images from fast FB expansion coefficients.")
 
 # Calculate the mean value of maximum differences between the fast FB estimated images to the original images
-diff = (ffb_images - org_images).asnumpy()
+diff = ffb_images - org_images
 ffb_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between FFB estimated images and original images: {ffb_meanmax}"
@@ -139,11 +144,11 @@ dtime = tstop - tstart
 logger.info(f"Finish direct PSWF expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
-pswf_images = pswf_basis.evaluate(pswf_coeffs)
+pswf_images = pswf_basis.evaluate(pswf_coeffs).asnumpy()
 logger.info("Finish reconstruction of images from direct PSWF expansion coefficients.")
 
 # Calculate the mean value of maximum differences between direct PSWF estimated images and original images
-diff = (pswf_images - org_images).asnumpy()
+diff = pswf_images - org_images
 pswf_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between PSWF estimated images and original images: {pswf_meanmax}"
@@ -183,11 +188,11 @@ dtime = tstop - tstart
 logger.info(f"Finish fast PSWF expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
-fpswf_images = fpswf_basis.evaluate(fpswf_coeffs)
+fpswf_images = fpswf_basis.evaluate(fpswf_coeffs).asnumpy()
 logger.info("Finish reconstruction of images from fast PSWF expansion coefficients.")
 
 # Calculate mean value of maximum differences between the fast PSWF estimated images and the original images
-diff = (fpswf_images - org_images).asnumpy()
+diff = fpswf_images - org_images
 fpswf_meanmax = np.mean(np.max(abs(diff), axis=(1, 2)))
 logger.info(
     f"Mean value of maximum differences between FPSWF estimated images and original images: {fpswf_meanmax}"

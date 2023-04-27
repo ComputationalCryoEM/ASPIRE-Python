@@ -12,16 +12,14 @@ from collections import OrderedDict
 import mrcfile
 import numpy as np
 from numpy import linalg as npla
-from pandas import DataFrame
 from scipy.optimize import linprog
 from scipy.signal.windows import dpss
 
 from aspire.basis.ffb_2d import FFBBasis2D
 from aspire.image import Image
 from aspire.numeric import fft
-from aspire.operators import voltage_to_wavelength
 from aspire.storage import StarFile
-from aspire.utils import abs2, complex_type, grid_1d, grid_2d
+from aspire.utils import abs2, complex_type, grid_1d, grid_2d, voltage_to_wavelength
 
 logger = logging.getLogger(__name__)
 
@@ -144,8 +142,14 @@ class CtfEstimator:
         # verify block_size is even
         assert block_size % 2 == 0
 
-        size_x = micrograph.shape[1]
-        size_y = micrograph.shape[0]
+        if micrograph.ndim == 3:
+            assert (
+                micrograph.shape[0] == 1
+            ), f"micrograph should be 2D or stack of 1 2D image: {micrograph.shape}"
+            micrograph = micrograph[0]
+
+        size_x = micrograph.shape[-1]
+        size_y = micrograph.shape[-2]
 
         step_size = block_size // 2
         range_y = size_y // step_size - 1
@@ -279,17 +283,16 @@ class CtfEstimator:
         return psd, noise
 
     def background_subtract_1d(
-        self, amplitude_spectrum, linprog_method="interior-point", n_low_freq_cutoffs=14
+        self, amplitude_spectrum, linprog_method="highs", n_low_freq_cutoffs=14
     ):
         """
         Estimate and subtract the background from the power spectrum
 
         :param amplitude_spectrum: Estimated power spectrum
-        :param linprog_method: Method passed to linear progam solver (scipy.optimize.linprog).  Defaults to 'interior-point'.
+        :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
         :param n_low_freq_cutoffs: Low frequency cutoffs (loop iterations).
         :return: 2-tuple of NumPy arrays (PSD after noise subtraction and estimated noise)
         """
-
         # compute radial average
         center = amplitude_spectrum.shape[-1] // 2
 
@@ -304,7 +307,7 @@ class CtfEstimator:
                 f"Invalid ndimension for amplitude_spectrum {amplitude_spectrum.shape}"
             )
 
-        amplitude_spectrum = amplitude_spectrum[center, center:]
+        amplitude_spectrum = amplitude_spectrum.asnumpy()[0, center, center:]
         amplitude_spectrum = amplitude_spectrum[
             0 : 3 * amplitude_spectrum.shape[-1] // 4
         ]
@@ -352,20 +355,22 @@ class CtfEstimator:
                 axis=0,
             )
 
-            x_bound_lst = [
-                (signal[i], signal[i], -1 * np.inf, np.inf)
-                for i in range(signal.shape[0])
-            ]
-            x_bound = np.asarray(x_bound_lst, A.dtype)
-            x_bound = np.concatenate((x_bound[:, :2], x_bound[:, 2:]), axis=0)
+            # The original code used `bounds`,
+            #   but for many problems, linprog reports infeasable constraints.
+            # In practice for a micrograph from the paper, and our tutorial,
+            #   the code seems to work better without it...
+            # ASPIRE #417
 
             x = linprog(
                 f,
                 A_ub=A,
                 b_ub=np.zeros(A.shape[0]),
-                bounds=x_bound,
                 method=linprog_method,
             )
+
+            if not x.success:
+                raise RuntimeError("Linear program did not succeed. Halting")
+
             background = x.x[N:]
 
             bs_psd = signal - background
@@ -496,7 +501,7 @@ class CtfEstimator:
         X = grid["x"]
         Y = grid["y"]
 
-        signal -= np.min(signal)
+        signal = signal - np.min(signal)
 
         rad_sq_min = N * pixel_size / g_min
         rad_sq_max = N * pixel_size / g_max
@@ -687,9 +692,8 @@ class CtfEstimator:
         data_block["_rlnAmplitudeContrast"] = params_dict["amplitude_contrast"]
         data_block["_rlnVoltage"] = params_dict["voltage"]
         data_block["_rlnMicrographPixelSize"] = params_dict["pixel_size"]
-        df = DataFrame([data_block])
         blocks = OrderedDict()
-        blocks["root"] = df
+        blocks["root"] = data_block
         star = StarFile(blocks=blocks)
         star.write(os.path.join(output_dir, os.path.splitext(name)[0]) + ".star")
 
@@ -760,8 +764,10 @@ def estimate_ctf(
 
         # Optionally changing to: linprog_method='simplex',
         # will more deterministically repro results in exchange for speed.
+        # linprog_method was changed from 'interior-point' to 'highs' due to
+        # "interior-point' being deprecated.
         signal_1d, background_1d = ctf_object.background_subtract_1d(
-            amplitude_spectrum, linprog_method="interior-point"
+            amplitude_spectrum, linprog_method="highs"
         )
 
         avg_defocus, low_freq_skip = ctf_object.opt1d(
@@ -839,7 +845,7 @@ def estimate_ctf(
                 os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc"),
                 overwrite=True,
             ) as mrc:
-                mrc.set_data(background_2d[0].astype(np.float32))
+                mrc.set_data(background_2d.asnumpy()[0].astype(np.float32))
                 mrc.voxel_size = pixel_size
 
         if save_ctf_images:
@@ -858,7 +864,7 @@ def estimate_ctf(
             )
             ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
             ctf_signal[: ctf_im.shape[0] // 2, :] = ctf_im[: ctf_im.shape[0] // 2, :]
-            ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal[
+            ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal.asnumpy()[
                 :, :, ctf_im.shape[0] // 2 + 1
             ]
 

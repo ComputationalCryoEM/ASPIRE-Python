@@ -1,50 +1,13 @@
 import inspect
 import logging
-import math
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-from aspire.utils import grid_2d
+from aspire.utils import grid_2d, voltage_to_wavelength
 from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
 
 logger = logging.getLogger(__name__)
-
-
-def voltage_to_wavelength(voltage):
-    """
-    Convert from electron voltage to wavelength.
-
-    :param voltage: float, The electron voltage in kV.
-    :return: float, The electron wavelength in angstroms.
-    """
-    # We use de Broglie's relativistic formula for wavelength given by:
-    # wavelength = h / np.sqrt(2 * m * q * V * (1 + q * V / (2 * m * c**2))),
-    # where
-    # h = float(6.62607015e-34) is Planck's constant
-    # q = float(1.602176634e-19) is elementary charge
-    # m = float(9.1093837015e-31) is electron mass
-    # c = float(299792458) is speed of light
-
-    # We precalculate a = 1e10 * a / np.sqrt(2*m*q) and b = 1e6 * q / (2*m*c^2).
-    # 1e10 and 1e6 are conversions from meters to angstroms and volts to kilovolts, respectively.
-    a = float(12.264259661581491)
-    b = float(0.9784755917869367)
-
-    return a / math.sqrt(voltage * 1e3 + b * voltage**2)
-
-
-def wavelength_to_voltage(wavelength):
-    """
-    Convert from electron voltage to wavelength.
-
-    :param wavelength: float, The electron wavelength in angstroms.
-    :return: float, The electron voltage in kV.
-    """
-    a = float(12.264259661581491)
-    b = float(0.9784755917869367)
-
-    return (-1e3 + math.sqrt(1e6 + 4 * a**2 * b / wavelength**2)) / (2 * b)
 
 
 def evaluate_src_filters_on_grid(src):
@@ -320,7 +283,6 @@ class ArrayFilter(Filter):
         self.xfer_fn_array = xfer_fn_array
 
     def _evaluate(self, omega):
-
         _input_pts = tuple(np.linspace(1, x, x) for x in self.xfer_fn_array.shape)
 
         # TODO: This part could do with some documentation - not intuitive!
@@ -441,7 +403,7 @@ class CTFFilter(Filter):
         self.defocus_diff = 0.5 * (self.defocus_u - self.defocus_v)
 
     def _evaluate(self, omega):
-        om_x, om_y = np.vsplit(omega / (2 * np.pi * self.pixel_size), 2)
+        om_y, om_x = np.vsplit(omega / (2 * np.pi * self.pixel_size), 2)
 
         eps = np.finfo(np.pi).eps
         ind_nz = (np.abs(om_x) > eps) | (np.abs(om_y) > eps)
@@ -458,6 +420,11 @@ class CTFFilter(Filter):
         r4 = r2**2
         gamma = c2 * r2 + c4 * r4
         h = np.sqrt(1 - self.alpha**2) * np.sin(gamma) - self.alpha * np.cos(gamma)
+
+        # For historical reference, below is a translated formula from the legacy MATLAB code.
+        # The two implementations seem to agree for odd images, but the original MATLAB code
+        # behaves differently for even image sizes.
+        # h = np.sin(c2*r2 + c4*r2*r2 - self.alpha)
 
         if self.B:
             h *= np.exp(-self.B * r2)

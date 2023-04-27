@@ -11,7 +11,6 @@ from aspire.utils import (
     all_triplets,
     anorm,
     cyclic_rotations,
-    pairs_to_linear,
     tqdm,
     trange,
 )
@@ -75,6 +74,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             shift_step=shift_step,
         )
 
+        self._check_symmetry(symmetry)
+        self.epsilon = epsilon
+        self.max_iters = max_iters
+        self.degree_res = degree_res
+        self.seed = seed
+
+    def _check_symmetry(self, symmetry):
         if symmetry is None:
             raise NotImplementedError(
                 "Symmetry type not supplied. Please indicate C3 or C4 symmetry."
@@ -86,10 +92,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
                     f"Only C3 and C4 symmetry supported. {symmetry} was supplied."
                 )
             self.order = int(symmetry[1])
-        self.epsilon = epsilon
-        self.max_iters = max_iters
-        self.degree_res = degree_res
-        self.seed = seed
 
     def estimate_rotations(self):
         """
@@ -97,8 +99,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
-        logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-        vijs, viis = self._estimate_relative_viewing_directions_c3_c4()
+        vijs, viis = self._estimate_relative_viewing_directions()
 
         logger.info("Performing global handedness synchronization.")
         vijs, viis = self._global_J_sync(vijs, viis)
@@ -115,12 +116,12 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
     # Primary Methods                         #
     ###########################################
 
-    def _estimate_relative_viewing_directions_c3_c4(self):
+    def _estimate_relative_viewing_directions(self):
         """
         Estimate the relative viewing directions vij = vi*vj^T, i<j, and vii = vi*vi^T, where
         vi is the third row of the i'th rotation matrix Ri.
         """
-
+        logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
         # Step 1: Detect a single pair of common-lines between each pair of images
         self.build_clmatrix()
         clmatrix = self.clmatrix
@@ -169,20 +170,21 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
         # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all
         # previously synchronized v_ij to get a consensus on the handedness of v_ii.
+        _, pairs_to_linear = all_pairs(n_img, return_map=True)
         for i in range(n_img):
             vii = viis[i]
             vii_J = J_conjugate(vii)
             J_consensus = 0
             for j in range(n_img):
                 if j < i:
-                    idx = pairs_to_linear(n_img, j, i)
+                    idx = pairs_to_linear[j, i]
                     vji = vijs[idx]
 
                     err1 = norm(vji @ vii - vji)
                     err2 = norm(vji @ vii_J - vji)
 
                 elif j > i:
-                    idx = pairs_to_linear(n_img, i, j)
+                    idx = pairs_to_linear[i, j]
                     vij = vijs[idx]
 
                     err1 = norm(vii @ vij - vij)
@@ -279,7 +281,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # Step 3: Compute the correlation over all shifts.
         # Generate shifts.
-        r_max = pf.shape[0]
+        r_max = pf.shape[-1]
         shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
             r_max, max_shift_1d, shift_step
         )
@@ -291,10 +293,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # and theta_i in [0, 2pi/order) is the in-plane rotation angle for the i'th image.
         Q = np.zeros((n_img, n_img), dtype=complex)
 
-        # Transpose pf and reconstruct the full polar Fourier for use in correlation.
-        # self.pf only consists of rays in the range [180, 360) and is in column major order,
-        # ie. self.pf has shape (n_rad-1, n_theta//2, n_img).
-        pf = pf.T
+        # Reconstruct the full polar Fourier for use in correlation. self.pf only consists of
+        # rays in the range [180, 360), with shape (n_img, n_theta//2, n_rad-1).
         pf = np.concatenate((pf, np.conj(pf)), axis=1)
 
         # Normalize rays.
@@ -435,17 +435,15 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # Compute the correlation over all shifts.
         # Generate Shifts.
-        r_max = pf.shape[0]
+        r_max = pf.shape[-1]
         shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
             r_max, max_shift_1d, shift_step
         )
         n_shifts = len(shifts)
         all_shift_phases = shift_phases.T
 
-        # Transpose pf and reconstruct the full polar Fourier for use in correlation.
-        # self.pf only consists of rays in the range [180, 360) and is in column major order,
-        # ie. self.pf has shape (n_rad-1, n_theta//2, n_img).
-        pf = pf.T
+        # Reconstruct the full polar Fourier for use in correlation. self.pf only consists of
+        # rays in the range [180, 360), with shape (n_img, n_theta//2, n_rad-1).
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
 
         # The self-common-lines matrix holds two indices per image that represent
@@ -728,6 +726,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # All pairs (i,j) and triplets (i,j,k) where i<j<k
         n_img = self.n_img
         triplets = all_triplets(n_img)
+        pairs, pairs_to_linear = all_pairs(n_img, return_map=True)
 
         # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
         # 'conjugate' expresses which node of the triplet must be conjugated (True) to achieve synchronization.
@@ -754,10 +753,10 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # condition. Finally, we the multiply the 'edge_signs' by the cooresponding entries of 'vec'.
         v = vijs
         new_vec = np.zeros_like(vec)
-        for (i, j, k) in triplets:
-            ij = pairs_to_linear(n_img, i, j)
-            jk = pairs_to_linear(n_img, j, k)
-            ik = pairs_to_linear(n_img, i, k)
+        for i, j, k in triplets:
+            ij = pairs_to_linear[i, j]
+            jk = pairs_to_linear[j, k]
+            ik = pairs_to_linear[i, k]
             vij, vjk, vik = v[ij], v[jk], v[ik]
             vij_J = J_conjugate(vij)
             vjk_J = J_conjugate(vjk)
@@ -850,7 +849,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         pairs = all_pairs(n_img)
 
-        for (i, j) in pairs:
+        for i, j in pairs:
             Ri = rots[i]
             Rj = rots[j]
             Rij = Ri.T @ Rj

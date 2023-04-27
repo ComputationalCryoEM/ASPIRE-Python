@@ -75,10 +75,68 @@ class SimTestCase(TestCase):
         )
         # Get value of metadata fields for indices 0, 1, 2, 3
         values = self.sim.get_metadata(["rand_value1", "rand_value2"], [0, 1, 2, 3])
+        # values that we didn't specify in get_metadata get initialized as 'missing'
+        # according to the detected dtype of input, in this case, np.iinfo(int).min
         self.assertTrue(
             np.allclose(
-                np.column_stack([[11, 12, np.nan, 13], [21, 22, np.nan, 23]]),
+                np.column_stack(
+                    [
+                        [11, 12, np.iinfo(int).min, 13],
+                        [21, 22, np.iinfo(int).min, 23],
+                    ]
+                ),
                 values,
                 equal_nan=True,
             )
         )
+
+    def test_get_metadata_all(self):
+        """
+        Test we can get the entire metadata table.
+        """
+
+        # Get the metadata via our API.
+        metadata_api = self.sim.get_metadata()
+
+        # Access the metadata directly in the frame.
+        metadata_array = np.vstack(
+            [self.sim._metadata[k] for k in self.sim._metadata.keys()]
+        ).T
+
+        # Assert we've returned the entire table.
+        self.assertTrue(np.all(metadata_api == metadata_array))
+
+    def test_get_metadata_index_slice(self):
+        """
+        Test we can get all columns for a selection of rows.
+        """
+        # Test rows
+        rows = [0, 1, 42]
+
+        # Get the metadata from our API.
+        metadata_api = self.sim.get_metadata(indices=rows)
+
+        # Access the metadata directly in the frame.
+        metadata_df = np.vstack(
+            [self.sim._metadata[k] for k in self.sim._metadata.keys()]
+        ).T[rows]
+
+        # Assert we've returned the rows
+        self.assertTrue(np.all(metadata_api == metadata_df))
+
+    def test_update_properties(self):
+        """
+        Test to see if updating certain key properties that modify metadata give us a new sim,
+        leaving the original untouched
+        """
+        metadata_before = self.sim.get_metadata().copy()
+
+        sim = self.sim.update(rotations=np.zeros_like(self.sim.rotations))
+        metadata_after = self.sim.get_metadata().copy()
+        assert np.all(metadata_before == metadata_after)
+        assert np.allclose(sim.rotations, np.zeros_like(self.sim.rotations))
+
+        sim = self.sim.update(amplitudes=np.ones_like(self.sim.amplitudes))
+        metadata_after = self.sim.get_metadata().copy()
+        assert np.all(metadata_before == metadata_after)
+        assert np.allclose(sim.amplitudes, np.ones_like(self.sim.amplitudes))

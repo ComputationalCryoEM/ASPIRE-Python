@@ -9,7 +9,6 @@ from aspire.operators import BlkDiagMatrix
 
 class BlkDiagMatrixTestCase(TestCase):
     def setUp(self):
-
         self.num_blks = 10
 
         self.blk_partition = [(i, i) for i in range(self.num_blks, 0, -1)]
@@ -57,7 +56,7 @@ class BlkDiagMatrixTestCase(TestCase):
 
     def allallfunc(self, A, B, func=np.allclose):
         """Checks assertTrue(func()) as it iterates through A, B."""
-        for (a, b) in zip(A, B):
+        for a, b in zip(A, B):
             self.assertTrue(func(a, b))
 
     def allallid(self, A, B_ids, func=np.allclose):
@@ -368,7 +367,6 @@ class IrrBlkDiagMatrixTestCase(TestCase):
     """
 
     def setUp(self):
-
         partition = [[4, 5], [2, 3], [1, 1]]
         self.X = X = [(1 + np.arange(np.prod(p))).reshape(p) for p in partition]
         self.XT = XT = [x.T for x in X]
@@ -378,7 +376,7 @@ class IrrBlkDiagMatrixTestCase(TestCase):
 
     def allallfunc(self, A, B, func=np.allclose):
         """Checks assertTrue(func()) as it iterates through A, B."""
-        for (a, b) in zip(A, B):
+        for a, b in zip(A, B):
             self.assertTrue(func(a, b))
 
     def testAdd(self):

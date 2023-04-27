@@ -5,7 +5,6 @@ from unittest import TestCase
 
 import mrcfile
 import numpy as np
-from pandas import DataFrame
 
 from aspire.image import Image
 from aspire.source import RelionSource
@@ -48,7 +47,7 @@ class LoadImagesTestCase(TestCase):
                 starfile_loop.append(f"{j+1:06d}@{mrcs_fn}")
 
         # save starfile
-        starfile_data[""] = DataFrame(starfile_loop, columns=starfile_keys)
+        starfile_data[""] = {k: np.array(starfile_loop) for k in starfile_keys}
         StarFile(blocks=starfile_data).write(self.starfile_path)
 
         # create source
@@ -100,11 +99,31 @@ class LoadImagesTestCase(TestCase):
         from_mrc = self.getParticlesFromIndices([self.n - 1])
         self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
 
-    def testRelionSourceNegSlice(self):
+    def testRelionSourceNegPosSlice(self):
         from_src = self.src.images[-100:100]
         from_mrc = self.getParticlesFromIndices(
             [i for i in range(900, 1000)] + [i for i in range(0, 100)]
         )
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionSourceNegNegSlice(self):
+        from_src = self.src.images[-200:-100]
+        from_mrc = self.getParticlesFromIndices([i for i in range(800, 900)])
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionStrideSlice(self):
+        from_src = self.src.images[0:100:10]
+        from_mrc = self.getParticlesFromIndices(list(range(0, 100, 10)))
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionNegSlice(self):
+        from_src = self.src.images[-100:]
+        from_mrc = self.getParticlesFromIndices(list(range(900, 1000)))
+        self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
+
+    def testRelionStrideNegNegSlice(self):
+        from_src = self.src.images[-200:-100:10]
+        from_mrc = self.getParticlesFromIndices(list(range(800, 900, 10)))
         self.assertTrue(np.array_equal(from_src.asnumpy(), from_mrc.asnumpy()))
 
     def testRelionSourceMaxStop(self):
@@ -179,7 +198,7 @@ class LoadImagesTestCase(TestCase):
 
     def testRelionSourceCached(self):
         src_cached = RelionSource(self.starfile_path, data_folder=self.data_folder)
-        src_cached.cache()
+        src_cached = src_cached.cache()
         self.assertTrue(
             np.array_equal(src_cached.images[:].asnumpy(), self.src.images[:].asnumpy())
         )

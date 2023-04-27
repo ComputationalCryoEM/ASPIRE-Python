@@ -5,14 +5,13 @@ from itertools import zip_longest
 from unittest import TestCase
 
 import numpy as np
-from pandas import DataFrame
 from scipy import misc
 
 import tests.saved_test_data
 from aspire.image import Image
 from aspire.source import ArrayImageSource
 from aspire.storage import StarFile, StarFileError
-from aspire.utils import importlib_path
+from aspire.utils import RelionStarFile, importlib_path
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -38,7 +37,14 @@ class StarFileTestCase(TestCase):
     def setUp(self):
         with importlib_path(tests.saved_test_data, "sample_data_model.star") as path:
             self.starfile = StarFile(path)
-
+        with importlib_path(
+            tests.saved_test_data, "sample_particles_relion30.star"
+        ) as path:
+            self.particles30 = path
+        with importlib_path(
+            tests.saved_test_data, "sample_particles_relion31.star"
+        ) as path:
+            self.particles31 = path
         # Independent Image object for testing Image source methods
         L = 768
         self.im = Image(misc.face(gray=True).astype("float64")[:L, :L])
@@ -63,15 +69,14 @@ class StarFileTestCase(TestCase):
 
     def testLength(self):
         # StarFile is an iterable that gives us blocks
-        # blocks are pandas DataFrames
+        # blocks are dicts of iterables
         # We have 6 blocks in our sample starfile.
         self.assertEqual(6, len(self.starfile))
 
     def testIteration(self):
-        # A StarFile can be iterated over, yielding DataFrames for loops
-        # or dictionaries for pairs
+        # A StarFile can be iterated over, yielding dictionaries for pairs or loops
         for _, block in self.starfile:
-            self.assertTrue(isinstance(block, DataFrame) or isinstance(block, dict))
+            self.assertTrue(isinstance(block, dict))
 
     def testBlockByIndex(self):
         # We can use get_block_by_index to retrieve the blocks in
@@ -80,10 +85,10 @@ class StarFileTestCase(TestCase):
         block0 = self.starfile.get_block_by_index(0)
         self.assertTrue(isinstance(block0, dict))
         self.assertEqual(block0["_rlnReferenceDimensionality"], "3")
-        # our second block is a loop, represented by a DataFrame
+        # our second block is a loop, represented by a dict
         block1 = self.starfile.get_block_by_index(1)
-        self.assertTrue(isinstance(block1, DataFrame))
-        self.assertEqual(block1.at[0, "_rlnClassDistribution"], "1.000000")
+        self.assertTrue(isinstance(block1, dict))
+        self.assertEqual(block1["_rlnClassDistribution"][0], "1.000000")
 
     def testBlockByName(self):
         # Indexing a StarFile with a string gives us a block with that name
@@ -94,17 +99,15 @@ class StarFileTestCase(TestCase):
         self.assertEqual(len(block0), 22)
         # the block at index 1 has name 'model_classes'
         block1 = self.starfile["model_classes"]
-        # This block is a loop/DF with one row
-        self.assertEqual(len(block1), 1)
+        # This block is a loop with one row
+        self.assertEqual(len(list(block1.values())[0]), 1)
 
     def testData(self):
         df = self.starfile["model_class_1"]
-        self.assertEqual(76, len(df))
-        self.assertEqual(8, len(df.columns))
+        self.assertEqual(76, len(list(df.values())[0]))
+        self.assertEqual(8, len(df))
         # Note that no typecasting of values is performed at io.StarFile level
-        self.assertEqual(
-            "0.000000", df[df["_rlnSpectralIndex"] == "0"].iloc[0]["_rlnResolution"]
-        )
+        self.assertEqual("0.000000", df["_rlnResolution"][0])
 
     def testFileNotFound(self):
         with self.assertRaises(FileNotFoundError):
@@ -114,8 +117,7 @@ class StarFileTestCase(TestCase):
         # Save the StarFile object to a .star file
         # Read it back for object equality
         # Note that __eq__ is supported for the class
-        # it checks the equality of the underlying OrderedDicts of DataFrames
-        # using pd.DataFrame.equals()
+        # it checks the equality of the underlying dict of iterables
         test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
         self.starfile.write(test_outfile)
         starfile2 = StarFile(test_outfile)
@@ -128,7 +130,7 @@ class StarFileTestCase(TestCase):
         test_outfile = os.path.join(self.tmpdir, "sample_saved.star")
         test_outfile2 = os.path.join(self.tmpdir, "sampled_saved2.star")
 
-        # create a new StarFile object directly via an OrderedDict of DataFrames
+        # create a new StarFile object directly via an OrderedDict
         # not by reading a file
         data = OrderedDict()
         # note that GEMMI requires the names of the fields to start with _
@@ -137,13 +139,20 @@ class StarFileTestCase(TestCase):
         # initialize a single-row loop. we want this to be distinct from a
         # set of key-value pairs
         block1_dict = {"_field1": 31, "_field2": 32, "_field3": 33}
-        block1 = DataFrame([block1_dict], columns=block1_dict.keys())
         block2_keys = ["_field4", "_field5", "_field6"]
         block2_arr = [[f"{x}{y}" for x in range(3)] for y in range(3)]
-        # initialize a loop data block with a list of lists
-        block2 = DataFrame(block2_arr, columns=block2_keys)
+        # initialize a loop data block with a dict of lists
+        block2 = dict(
+            zip(
+                block2_keys,
+                [
+                    [block2_arr[i][j] for i in range(len(block2_arr))]
+                    for j in range(len(block2_arr[0]))
+                ],
+            )
+        )
         data["pair"] = block0
-        data["single_row"] = block1
+        data["single_row"] = block1_dict
         data["loops"] = block2
         # initialize with blocks kwarg
         original = StarFile(blocks=data)
@@ -165,7 +174,7 @@ class StarFileTestCase(TestCase):
     def testArgsError(self):
         with self.assertRaises(StarFileError):
             _blocks = OrderedDict()
-            _blocks[""] = DataFrame(["test", "data"])
+            _blocks[""] = {"test": [], "data": []}
             with importlib_path(
                 tests.saved_test_data, "sample_data_model.star"
             ) as path:
@@ -175,3 +184,32 @@ class StarFileTestCase(TestCase):
         empty = StarFile()
         self.assertTrue(isinstance(empty.blocks, OrderedDict))
         self.assertEqual(len(empty.blocks), 0)
+
+    def testRelionStarFile(self):
+        # these starfiles represent Relion particles according to
+        # the legacy 3.0 format and the current 3.1/4.0 format, respectively
+        star_legacy = RelionStarFile(self.particles30)
+        star_current = RelionStarFile(self.particles31)
+        data_block_legacy = star_legacy.get_merged_data_block()
+        data_block_current = star_current.get_merged_data_block()
+
+        # in the current format, CTF parameters are stored in the optics group block
+        # RelionDataStarFile provides a method to flatten all the data into one
+        # table, representable as ASPIRE metadata
+        # make sure they were applied correctly
+        ctf_params = [
+            "_rlnVoltage",
+            "_rlnDefocusU",
+            "_rlnDefocusV",
+            "_rlnDefocusAngle",
+            "_rlnSphericalAberration",
+        ]
+
+        n = len(data_block_current["_rlnVoltage"])
+        _ctf_current = np.vstack(
+            [np.array([data_block_current[c][i] for c in ctf_params]) for i in range(n)]
+        )
+        _ctf_legacy = np.vstack(
+            [np.array([data_block_legacy[c][i] for c in ctf_params]) for i in range(n)]
+        )
+        self.assertTrue(np.all(_ctf_current == _ctf_legacy))

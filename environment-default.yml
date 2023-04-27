@@ -1,0 +1,17 @@
+name: 'aspire'
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - fftw
+  # There is a potential pyFFTW bug, pin to 0.12
+  #   https://github.com/pyFFTW/pyFFTW/issues/294
+  - pyfftw=0.12
+  - pip
+  - python=3.8
+  - numpy=1.23.5
+  - scipy=1.9.3
+  - scikit-learn
+  - scikit-image

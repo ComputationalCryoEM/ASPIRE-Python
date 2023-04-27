@@ -4,6 +4,7 @@ Miscellaneous Utilities that relate to logging.
 import logging
 import os.path
 import subprocess
+from collections import defaultdict
 
 import tqdm as _tqdm
 
@@ -149,3 +150,52 @@ def getFileLoggingLevel():
     # handler list is ordered according to logging.conf
     file_handler = logging.getLogger().handlers[1]
     return logging.getLevelName(file_handler.level)
+
+
+class LogFilterByCount:
+    """
+    Provide a context manager for filtering repetitive log messages.
+    """
+
+    # msg_cache is intentionally shared by all instances of class.
+    # msg_cache is map hash(str(msg)) ~~> count.
+    msg_cache = defaultdict(int)
+
+    def __init__(self, logger: logging.Logger, max_count: int):
+        """
+        Initialize context manager based on `logger` and `max_count`.
+
+        :param logger: `Logger` instance.
+        :param max_count: Global limit for count of each message
+            encountered inside context.
+        """
+
+        self._logger = logger
+        self._max_count = max_count
+
+    def filter(self, record):
+        """
+        Increment msg_cache for `record`.
+
+        `filter` returns True when `seen` <= `count` for this context.
+        True implies the logger will pass the message.
+
+        :param record: Log record.  Will be reduced by hash(str()),
+        :return: Boolean
+        """
+
+        # Log messages can be arbitrarily long,
+        #   convert to a hash(str())
+        msg = hash(str(record.msg))
+
+        # Increment seen count in cache.
+        self.msg_cache[msg] += 1
+        seen = self.msg_cache[msg]
+
+        return seen <= self._max_count
+
+    def __enter__(self):
+        self._logger.addFilter(self)
+
+    def __exit__(self, *args):
+        self._logger.removeFilter(self)

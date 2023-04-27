@@ -4,6 +4,8 @@ Starfile
 
 """
 
+import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -20,15 +22,19 @@ from aspire.source import RelionSource
 # They are intended to handle batching data conversion/prep behind the scenes.
 # Here we load a ".star" file using the RelionSource class
 
+data_folder = os.path.join(os.path.dirname(os.getcwd()), "data")
+file_path = os.path.join(data_folder, "sample_relion_data.star")
+
 source = RelionSource(
-    "data/sample_relion_data.star",
+    file_path,
     pixel_size=1.338,
     max_rows=10000,
+    data_folder=data_folder,
 )
 
 # Reduce the resolution
 L = 12  # You may try 16 but it takes a significant amount of time.
-source.downsample(L)
+source = source.downsample(L)
 
 # %%
 # Noise Estimation and Whitening
@@ -37,7 +43,7 @@ source.downsample(L)
 # Estimate noise in the ImageSource instance
 noise_estimator = AnisotropicNoiseEstimator(source)
 # Apply whitening to ImageSource
-source.whiten(noise_estimator.filter)
+source = source.whiten(noise_estimator)
 
 # Display subset of the images
 images = source.images[:10]
@@ -61,7 +67,7 @@ mean_est = mean_estimator.estimate()
 #   which is wrapper on an ndarray representing a stack of one or more 3d volumes.
 # We will visualize the data via orthogonal projections along the three axes.
 
-vol = mean_est[0]
+vol = mean_est.asnumpy()[0]
 # Visualize volume
 L = vol.shape[0]
 # Plots

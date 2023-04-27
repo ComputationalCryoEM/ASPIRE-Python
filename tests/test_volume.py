@@ -26,7 +26,8 @@ class VolumeTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
         self.n = n = 3
-        self.data_1 = np.arange(n * self.res**3, dtype=self.dtype).reshape(
+        # Note, range shifted by one to avoid zero division errors.
+        self.data_1 = np.arange(1, 1 + n * self.res**3, dtype=self.dtype).reshape(
             n, self.res, self.res, self.res
         )
         self.data_2 = 123 * self.data_1.copy()
@@ -154,6 +155,22 @@ class VolumeTestCase(TestCase):
         self.assertTrue(np.all(result == self.data_2))
         self.assertTrue(isinstance(result, Volume))
 
+    def testScalarDiv(self):
+        result = self.vols_2 / 123
+        self.assertTrue(np.allclose(result, self.vols_1))
+
+    def testRightScalarDiv(self):
+        result = 123 / self.vols_2
+        self.assertTrue(np.allclose(result, 1 / self.data_1))
+
+    def testDiv(self):
+        result = self.vols_2 / self.vols_1
+        self.assertTrue(np.allclose(result, 123))
+
+    def testRightDiv(self):
+        result = self.data_2 / self.vols_1
+        self.assertTrue(np.allclose(result, 123))
+
     def testSaveLoad(self):
         # Create a tmpdir in a context. It will be cleaned up on exit.
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -188,10 +205,10 @@ class VolumeTestCase(TestCase):
 
         for r in range(len(r_stack)):
             # Get result of test projection at center of Image.
-            prj_along_axis = img_stack[r][21, 21]
+            prj_along_axis = img_stack.asnumpy()[r][21, 21]
 
             # For Volume, take mean along the axis of rotation.
-            vol_along_axis = np.mean(self.vols_1[vol_id], axis=r % 3)
+            vol_along_axis = np.mean(self.vols_1.asnumpy()[vol_id], axis=r % 3)
             # Volume is uncentered, take the mean of a 2x2 window.
             vol_along_axis = np.mean(vol_along_axis[20:22, 20:22])
 
@@ -359,8 +376,8 @@ class VolumeTestCase(TestCase):
         # check gridpoints
         self.assertTrue(
             np.allclose(
-                vols[:, res // 2, res // 2, res // 2],
-                result[:, ds_res // 2, ds_res // 2, ds_res // 2],
+                vols.asnumpy()[:, res // 2, res // 2, res // 2],
+                result.asnumpy()[:, ds_res // 2, ds_res // 2, ds_res // 2],
                 atol=1e-4,
             )
         )
@@ -446,3 +463,16 @@ class VolumeTestCase(TestCase):
         X = self.data_12 + self.data_1
         self.assertTrue(np.allclose(X[0], 2 * self.data_1))
         self.assertTrue(np.allclose(X[1], self.data_1 + self.data_2))
+
+
+def test_asnumpy_readonly():
+    """
+    Attempting assignment should raise an error.
+    """
+    ary = np.random.random((3, 8, 8, 8))
+    im = Volume(ary)
+    vw = im.asnumpy()
+
+    # Attempt assignment
+    with raises(ValueError, match=r".*destination is read-only.*"):
+        vw[0, 0, 0, 0] = 123

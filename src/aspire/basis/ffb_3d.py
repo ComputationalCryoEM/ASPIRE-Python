@@ -235,7 +235,6 @@ class FFBBasis3D(FBBasis3D):
                 sgns = (1, -1)
 
             for sgn in sgns:
-
                 end = np.size(u_even, 0)
                 u_m_even = u_even[end - n_even_ell : end, :, self.ell_max + sgn * m, :]
                 end = np.size(u_odd, 0)

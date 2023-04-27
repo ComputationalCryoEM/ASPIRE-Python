@@ -2,6 +2,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Iterable
 from math import floor
 
 import mrcfile
@@ -11,7 +12,7 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source.image import ImageSource
 from aspire.storage import StarFile
-from aspire.utils.relion_interop import RlnOpticsGroup
+from aspire.utils import RelionStarFile
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,7 @@ class CoordinateSource(ImageSource, ABC):
         # keep this list to identify micrograph paths by index rather than
         # storing many copies of the same string
         self.mrc_paths = mrc_paths
+        self.num_micrographs = len(self.mrc_paths)
 
         # The internal representation of micrographs and their picked coords
         # is a list of tuples (index of micrograph, coordinate), where
@@ -62,7 +64,7 @@ class CoordinateSource(ImageSource, ABC):
         # [lower left X, lower left Y, size X, size Y].
         # The micrograph's filepath can be recovered from self.mrc_paths
         self.particles = []
-        self._populate_particles(len(mrc_paths), coord_paths)
+        self._populate_particles(coord_paths)
 
         # Read shapes of all micrographs
         self.mrc_shapes = self._get_mrc_shapes()
@@ -93,7 +95,7 @@ class CoordinateSource(ImageSource, ABC):
 
         # total micrographs and particles represented by source (info)
         logger.info(
-            f"{self.__class__.__name__} from {os.path.dirname(self.mrc_paths[0])} contains {len(mrc_paths)} micrographs, {len(self.particles)} picked particles."
+            f"{self.__class__.__name__} from {os.path.dirname(self.mrc_paths[0])} contains {self.num_micrographs} micrographs, {len(self.particles)} picked particles."
         )
         # report different mrc shapes
         logger.info(f"Micrographs have the following shapes: {*set(self.mrc_shapes),}")
@@ -125,19 +127,46 @@ class CoordinateSource(ImageSource, ABC):
 
         ImageSource.__init__(self, L=L, n=n, dtype=dtype)
 
+        # map mrc indices to particle indices
+        # i'th element contains a list of particle indices corresponding to i'th mrc
+        self.mrc_index_to_particles = []
+        for mrc_idx in range(self.num_micrographs):
+            self.mrc_index_to_particles.append(
+                [
+                    particle_idx
+                    for particle_idx, particle in enumerate(self.particles)
+                    if particle[0] == mrc_idx
+                ]
+            )
+
         # CTF envelope decay factor
         self.B = B
         # set CTF metadata to defaults
         # this can be updated with import_ctf()
         self.filter_indices = np.zeros(self.n, dtype=int)
         self.unique_filters = [IdentityFilter()]
+        self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
 
-    def _populate_particles(self, num_micrographs, coord_paths):
+        # populate __mrc_filename and __mrc_index
+        for mrc_index, particle_indices in enumerate(self.mrc_index_to_particles):
+            self.set_metadata(
+                "__mrc_index",
+                mrc_index,
+                particle_indices,
+            )
+            self.set_metadata(
+                "__mrc_filepath", self.mrc_paths[mrc_index], particle_indices
+            )
+
+        # Any further operations should not mutate this instance.
+        self._mutable = False
+
+    def _populate_particles(self, coord_paths):
         """
         All subclasses create mrc_paths and coord_paths lists and pass them to
         this method.
         """
-        for i in range(num_micrographs):
+        for i in range(self.num_micrographs):
             # read in all coordinates for the given mrc using subclass's
             # method of reading the corresponding coord file
             self.particles += [
@@ -196,8 +225,9 @@ class CoordinateSource(ImageSource, ABC):
         return a list of coordinates in box format.
         :param star_file: A path to a STAR file containing particle centers
         """
-        df = StarFile(star_file).get_block_by_index(0).astype(float)
-        coords = list(zip(df["_rlnCoordinateX"], df["_rlnCoordinateY"]))
+        data_block = StarFile(star_file).get_block_by_index(0)
+        coords = list(zip(data_block["_rlnCoordinateX"], data_block["_rlnCoordinateY"]))
+        coords = [(float(x), float(y)) for x, y in coords]
         return [
             self._box_coord_from_center(coord, self.particle_size) for coord in coords
         ]
@@ -273,170 +303,106 @@ class CoordinateSource(ImageSource, ABC):
 
         return mrc_shapes
 
-    def import_ctf(self, ctf):
+    def import_aspire_ctf(self, ctf):
         """
-        Given a RELION CTF STAR file, or list of CTF STAR files--one for each micrograph--, this function adds
-        corresponding CTFFilter objects to the `CoordinateSource`'s unique
-        filter list, and also populates the metadata.
+        Import CTF information from STAR file(s) generated by ASPIRE's CTF Estimator.
+
+        :param ctf: A path or iterable of paths to STAR files from ASPIRE's CTF Estimator.
+            Note that number of files provided must match number of micrographs in this
+            `CoordinateSource`.
         """
-        self._ctf_cols = [
+        if not isinstance(ctf, Iterable):
+            ctf = [ctf]
+        if not len(ctf) == self.num_micrographs:
+            raise ValueError(
+                "Number of CTF STAR files must match number of micrographs."
+            )
+
+        # merge dicts from CTF files
+        data_blocks = defaultdict(list)
+        for f in ctf:
+            # ASPIRE's CTF Estimator produces legacy (=< 3.0) STAR files containing one row
+            star = RelionStarFile(f)
+            data_block = star.data_block
+            for k, v in data_block.items():
+                data_blocks[k].append(v)
+
+        self._extract_ctf(data_blocks)
+
+    def import_relion_ctf(self, ctf):
+        """
+        Import CTF information Relion micrograph STAR files containing CTF information.
+
+        :param ctf: Path to a Relion micrograph STAR file containing CTF information.
+            Note that number of files provided must match number of micrographs in this
+            `CoordinateSource`.
+        """
+        data_block = RelionStarFile(ctf).get_merged_data_block()
+
+        # data_block is a dict containing the micrographs
+        if not len(list(data_block.values())[0]) == self.num_micrographs:
+            raise ValueError(
+                f"{ctf} has CTF information for {len(data_block)}",
+                f" micrographs but this source has {self.num_micrographs} micrographs.",
+            )
+
+        self._extract_ctf(data_block)
+
+    def _extract_ctf(self, data_block):
+        """
+        Receives a dict containing micrograph CTF information, and populates
+            the Source's CTF Filters, filter indices, and metadata.
+        """
+        # required CTF params excluding pixel size
+        CTF_params = [
             "_rlnVoltage",
             "_rlnDefocusU",
             "_rlnDefocusV",
             "_rlnDefocusAngle",
             "_rlnSphericalAberration",
             "_rlnAmplitudeContrast",
+            "_rlnMicrographPixelSize",
         ]
 
-        # attributes to be populated by the different CTF's
-        self._unique_filters = []
-        self._filter_indices = np.zeros(self.n, dtype=int)
+        # get unique ctfs from the data block
+        # i'th entry of `indices` contains the index of `filter_params` with corresponding CTF params
+        ctf_data = np.stack([data_block[c] for c in CTF_params]).astype(self.dtype).T
+        filter_params, indices = np.unique(
+            ctf_data,
+            return_inverse=True,
+            axis=0,
+        )
 
-        # select method based on input type
-        if isinstance(ctf, str):
-            populate_ctf = self._populate_ctf_from_relion
-        elif isinstance(ctf, list):
-            populate_ctf = self._populate_ctf_from_list
-        else:
-            raise ValueError(
-                "Argument to import_ctf() must be a path or a list of paths"
-            )
-        # populate_ctf will update the arrays above
-        populate_ctf(ctf)
+        # convert defocus_ang from degrees to radians
+        filter_params[:, 3] *= np.pi / 180.0
 
-        # populate filters and metadata
-        self.unique_filters = self._unique_filters
-        self.filter_indices = self._filter_indices
-
-    def _populate_ctf_from_relion(self, ctf_starfile):
-        """
-        Populates CTF filters and metadata based on a .star file with CTF parameters
-        in RELION format.
-        :param ctf_starfile: A RELION .star file containing CTF parameters for micrographs.
-        (Note: number of micrographs must match number of micrographs in CoordinateSource)
-        """
-        # RELION star files store CTF data in two separate blocks
-        star = StarFile(ctf_starfile)
-        optics = star["optics"]
-        micrographs = star["micrographs"]
-
-        # optics groups
-        optics_groups = [None]  # start indexing at 1
-        for _, row in optics.iterrows():
-            optics_groups.append(RlnOpticsGroup(row))
-
-        # micrographs
-        if not len(micrographs) == len(self.mrc_paths):
-            raise ValueError(
-                f"{ctf_starfile} has CTF information for {len(micrographs)}",
-                f" micrographs but this source has {len(self.mrc_paths)} micrographs.",
-            )
-
-        for mrc_idx, row in micrographs.iterrows():
-            # extract parameters not in the optics groups
-            params = {}
-            params["defocus_u"], params["defocus_v"], params["defocus_angle"] = (
-                float(row._rlnDefocusU),
-                float(row._rlnDefocusV),
-                float(row._rlnDefocusAngle),
-            )
-            # get parameters from corresponding optics group
-            optics_group = optics_groups[int(row._rlnOpticsGroup)]
-            # set the rest of the CTF parameters
-            (
-                params["voltage"],
-                params["cs"],
-                params["amplitude_contrast"],
-                params["pixel_size"],
-            ) = (
-                optics_group.voltage,
-                optics_group.cs,
-                optics_group.amplitude_contrast,
-                optics_group.pixel_size,
-            )
-            self._process_each_ctf(params, mrc_idx)
-
-    def _populate_ctf_from_list(
-        self,
-        ctf_files,
-    ):
-        """
-        Populates CTF filters and metadata based on a list of .star files containing CTF parameters..
-        :param ctf_files: A list of .star files containing CTF parameters for micrographs.
-        (Note: number of files must match number of micrographs in CoordinateSource)
-        """
-        if not len(ctf_files) == len(self.mrc_paths):
-            raise ValueError(
-                "Number of CTF STAR files must match number of micrographs."
-            )
-
-        for mrc_idx, ctf_file in enumerate(ctf_files):
-            params = self._read_ctf_star(ctf_file)
-            self._process_each_ctf(params, mrc_idx)
-
-    def _process_each_ctf(self, params, mrc_idx):
-        """
-        Given a unique set of CTF parameters, create a CTFFilter and populate source metadata.
-        :param params: Dictionary of CTF parameters.
-        :param mrc_idx: Index of the micrograph corresponding to these CTF parameters.
-        """
-        # find particle indices corresponding to this micrograph
-        indices = [
-            idx for idx, particle in enumerate(self.particles) if particle[0] == mrc_idx
-        ]
-        # add CTF filter to unique filters
-        self._unique_filters.append(
+        # construct filters
+        self.unique_filters = [
             CTFFilter(
-                pixel_size=params["pixel_size"],
-                voltage=params["voltage"],
-                defocus_u=params["defocus_u"],
-                defocus_v=params["defocus_v"],
-                defocus_ang=params["defocus_angle"],
-                Cs=params["cs"],
-                alpha=params["amplitude_contrast"],
+                pixel_size=filter_params[i, 6],
+                voltage=filter_params[i, 0],
+                defocus_u=filter_params[i, 1],
+                defocus_v=filter_params[i, 2],
+                defocus_ang=filter_params[i, 3],
+                Cs=filter_params[i, 4],
+                alpha=filter_params[i, 5],
                 B=self.B,
             )
-        )
+            for i in range(len(filter_params))
+        ]
 
-        # assign filter indices
-        self._filter_indices[indices] = mrc_idx
-        # populate CTF metadata
-        self.set_metadata(
-            self._ctf_cols,
-            np.array(
-                [
-                    [
-                        params["voltage"],
-                        params["defocus_u"],
-                        params["defocus_v"],
-                        params["defocus_angle"],
-                        params["cs"],
-                        params["amplitude_contrast"],
-                    ]
-                ]
-                * len(indices)
-            ),
-            indices,
-        )
-        # other ASPIRE metadata parameters
-        self.set_metadata("__mrc_filepath", self.mrc_paths[mrc_idx], indices)
-        self.set_metadata("__mrc_index", mrc_idx, indices)
-
-    def _read_ctf_star(self, ctf_file):
-        """
-        Reads a CTF STAR file generated by Relion or ASPIRE for a single
-        micrograph and returns a dictionary of CTF parameters and values.
-        """
-        df = StarFile(ctf_file).get_block_by_index(0)
-        return {
-            "defocus_u": float(df["_rlnDefocusU"][0]),
-            "defocus_v": float(df["_rlnDefocusV"][0]),
-            "defocus_angle": float(df["_rlnDefocusAngle"][0]),
-            "cs": float(df["_rlnSphericalAberration"][0]),
-            "amplitude_contrast": float(df["_rlnAmplitudeContrast"][0]),
-            "voltage": float(df["_rlnVoltage"][0]),
-            "pixel_size": float(df["_rlnDetectorPixelSize"][0]),
-        }
+        # set metadata
+        for mrc_idx, filter_index in enumerate(indices):
+            particle_indices_this_mrc = self.mrc_index_to_particles[mrc_idx]
+            num_particles_this_mrc = len(particle_indices_this_mrc)
+            self.set_metadata(
+                CTF_params,
+                np.vstack((filter_params[filter_index],) * num_particles_this_mrc),
+                particle_indices_this_mrc,
+            )
+            self.set_metadata(
+                "__filter_indices", filter_index, particle_indices_this_mrc
+            )
 
     @staticmethod
     def _crop_micrograph(data, coord):
@@ -467,7 +433,7 @@ class CoordinateSource(ImageSource, ABC):
         if self._cached_im is not None:
             logger.info("Loading images from cache")
             return self.generation_pipeline.forward(
-                Image(self._cached_im[indices, :, :]), indices
+                self._cached_im[indices, :, :], indices
             )
 
         logger.info(f"Loading {len(indices)} images from micrographs")
@@ -599,7 +565,7 @@ class BoxesCoordinateSource(CoordinateSource):
                         "Particle size must be consistent."
                     )
 
-    def _populate_particles(self, num_micrographs, coord_paths):
+    def _populate_particles(self, coord_paths):
         # overrides CoordinateSource._populate_particles because of the
         # possibility that force_new_particle_size will be called,
         # which requires self.particles to be populated already.
@@ -611,7 +577,7 @@ class BoxesCoordinateSource(CoordinateSource):
             self._validate_box_file(coord_path, global_particle_size)
 
         # populate self.particles
-        super()._populate_particles(num_micrographs, coord_paths)
+        super()._populate_particles(coord_paths)
 
         # if particle size set by user, we have to re-do the coordinates
         if self.particle_size:
@@ -680,22 +646,22 @@ class CentersCoordinateSource(CoordinateSource):
         """
         Ensures that a STAR file contains numeric particle centers.
         """
-        df = StarFile(coord_file).get_block_by_index(0)
+        data_block = StarFile(coord_file).get_block_by_index(0)
         # We're looking for specific columns for the X and Y coordinates
-        if not all(col in df.columns for col in ["_rlnCoordinateX", "_rlnCoordinateY"]):
+        if not all(col in data_block for col in ["_rlnCoordinateX", "_rlnCoordinateY"]):
             logger.error(f"Problem with coordinate file: {coord_file}")
             raise ValueError(
                 "STAR file does not contain _rlnCoordinateX, _rlnCoordinateY columns."
             )
         # check that all values in each column are numeric
         if not all(
-            all(df[col].apply(self._is_number))
+            all(map(self._is_number, data_block[col]))
             for col in ["_rlnCoordinateX", "_rlnCoordinateY"]
         ):
             logger.error(f"Problem with coordinate file: {coord_file}")
             raise ValueError("STAR file contains non-numeric coordinate values.")
 
-    def _populate_particles(self, num_micrographs, coord_paths):
+    def _populate_particles(self, coord_paths):
         # overrides CoordinateSource._populate_particles() in order
         # to validate coordinate files
         for coord_file in coord_paths:
@@ -704,7 +670,7 @@ class CentersCoordinateSource(CoordinateSource):
             else:
                 # assume text/.coord format
                 self._validate_centers_file(coord_file)
-        super()._populate_particles(num_micrographs, coord_paths)
+        super()._populate_particles(coord_paths)
 
     def _coords_list_from_file(self, coord_file):
         """

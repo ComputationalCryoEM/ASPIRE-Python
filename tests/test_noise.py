@@ -5,7 +5,13 @@ import os.path
 import numpy as np
 import pytest
 
-from aspire.noise import CustomNoiseAdder, WhiteNoiseAdder, WhiteNoiseEstimator
+from aspire.image import Image
+from aspire.noise import (
+    AnisotropicNoiseEstimator,
+    CustomNoiseAdder,
+    WhiteNoiseAdder,
+    WhiteNoiseEstimator,
+)
 from aspire.operators import FunctionFilter, ScalarFilter
 from aspire.source.simulation import Simulation
 from aspire.volume import AsymmetricVolume
@@ -36,7 +42,8 @@ def sim_fixture(request):
     # ie, clean centered projections.
     return Simulation(
         vols=AsymmetricVolume(L=resolution, C=1, dtype=dtype).generate(),
-        n=16,
+        n=128,
+        amplitudes=1,
         offsets=0,
         dtype=dtype,
     )
@@ -51,6 +58,17 @@ def sim_fixture(request):
 )
 def adder(request):
     return request.param
+
+
+# Create the custom noise function and associated Filter
+def _pinkish_spectrum(x, y):
+    """
+    Util method for generating a pink like noise spectrum.
+    """
+    s = x[-1] - x[-2]
+    f = 2 * s / (np.hypot(x, y) + s)
+    m = np.mean(f)
+    return f / m
 
 
 def test_white_noise_estimator_clean_corners(sim_fixture):
@@ -112,14 +130,9 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
     by generating a sample of the noise.
     """
 
-    # Create the custom noise function and associated Filter
-    def pinkish_spectrum(x, y):
-        s = x[-1] - x[-2]
-        f = 2 * s / (np.hypot(x, y) + s)
-        m = np.mean(f)
-        return f * target_noise_variance / m
-
-    custom_filter = FunctionFilter(f=pinkish_spectrum)
+    custom_filter = FunctionFilter(f=_pinkish_spectrum) * ScalarFilter(
+        value=target_noise_variance
+    )
 
     # Create the CustomNoiseAdder
     sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
@@ -130,3 +143,127 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
     # Check we are achieving an estimate near the target
     logger.debug(f"Estimated Noise Variance {estimated_noise_var}")
     assert np.isclose(estimated_noise_var, target_noise_variance, rtol=0.1)
+
+    # Check sampling yields an estimate near target.
+    sample_n = 16
+    sample_res = 32
+    im_zeros = Image(np.zeros((sample_n, sample_res, sample_res)))
+    im_noise_sample = sim_fixture.noise_adder._forward(im_zeros, range(sample_n))
+    sampled_noise_var = np.var(im_noise_sample.asnumpy())
+
+    logger.debug(f"Sampled Noise Variance {sampled_noise_var}")
+    assert np.isclose(sampled_noise_var, target_noise_variance, rtol=0.1)
+
+
+@pytest.mark.parametrize(
+    "target_noise_variance", VARS, ids=lambda param: f"var={param}"
+)
+def test_from_snr_white(sim_fixture, target_noise_variance):
+    """
+    Test that prescribing noise directly by var and  by `from_snr`,
+    are close for a variety of paramaters.
+    """
+
+    # First add an explicit amount of noise to the base simulation,
+    sim_fixture.noise_adder = WhiteNoiseAdder(var=target_noise_variance)
+    # and compute the resulting snr of the sim.
+    target_snr = sim_fixture.estimate_snr()
+
+    # Compute the `true_snr` of the sim.
+    computed_true_snr = sim_fixture.true_snr()
+    # Compare the `estimate_snr()` with `true_snr()`
+    assert np.isclose(target_snr, computed_true_snr, rtol=0.05)
+
+    # Attempt to create a new simulation at this `target_snr`
+    # For unit testing, we will use `sim_fixture`'s volume,
+    #   but the new Simulation instance should yield different projections.
+    sim_from_snr = Simulation(
+        vols=sim_fixture.vols,  # Force the previously generated volume.
+        n=sim_fixture.n,
+        offsets=0,
+        amplitudes=1.0,
+        noise_adder=WhiteNoiseAdder.from_snr(target_snr),
+    )
+
+    # Check we're within 5% of explicit target
+    logger.info(
+        "sim_from_snr.noise_adder.noise_var, target_noise_variance ="
+        f" {sim_from_snr.noise_adder.noise_var}, {target_noise_variance}"
+    )
+    assert np.isclose(
+        sim_from_snr.noise_adder.noise_var, target_noise_variance, rtol=0.05
+    )
+
+    # Compare with WhiteNoiseEstimator consuming sim_from_snr
+    noise_estimator = WhiteNoiseEstimator(sim_from_snr, batchSize=512)
+    est_noise_variance = noise_estimator.estimate()
+    logger.info(
+        "est_noise_variance, target_noise_variance ="
+        f" {est_noise_variance}, {target_noise_variance}"
+    )
+
+    # Check we're within 5%
+    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)
+
+
+@pytest.mark.parametrize(
+    "target_noise_variance", VARS, ids=lambda param: f"var={param}"
+)
+def test_pink_iso_noise_estimation(sim_fixture, target_noise_variance):
+    """
+    Test that prescribing isotropic pink-ish noise
+    is close to target for a variety of paramaters.
+    """
+
+    custom_filter = FunctionFilter(f=_pinkish_spectrum) * ScalarFilter(
+        value=target_noise_variance
+    )
+
+    # Create the CustomNoiseAdder
+    sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
+
+    # TODO, potentially remove or change to Isotropic after #842
+    # Compare with AnisotropicNoiseEstimator consuming sim_from_snr
+    noise_estimator = AnisotropicNoiseEstimator(sim_fixture, batchSize=512)
+    est_noise_variance = noise_estimator.estimate()
+    logger.info(
+        "est_noise_variance, target_noise_variance ="
+        f" {est_noise_variance}, {target_noise_variance}"
+    )
+
+    # Check we're within 5%
+    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)
+
+
+@pytest.mark.parametrize(
+    "target_noise_variance", VARS, ids=lambda param: f"var={param}"
+)
+def test_pink_aniso_noise_estimation(sim_fixture, target_noise_variance):
+    """
+    Test that prescribing anisotropic pink-ish noise
+    is close to target for a variety of paramaters.
+    """
+
+    # Create the custom noise function and associated Filter
+    def aniso_spectrum(x, y):
+        s = x[-1] - x[-2]
+        f = 4 * s / (np.hypot(x, 2 * y) + s)
+        m = np.mean(f)
+        return f * target_noise_variance / m
+
+    custom_filter = FunctionFilter(f=aniso_spectrum)
+
+    # Create the CustomNoiseAdder
+    sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
+
+    # TODO, potentially remove after #842
+    # Compare with AnisotropicNoiseEstimator consuming sim_from_snr
+    noise_estimator = AnisotropicNoiseEstimator(sim_fixture, batchSize=512)
+    est_noise_variance = noise_estimator.estimate()
+    logger.info(
+        "est_noise_variance, target_noise_variance ="
+        f" {est_noise_variance}, {target_noise_variance}"
+    )
+
+    # Check we're within 5%
+    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)

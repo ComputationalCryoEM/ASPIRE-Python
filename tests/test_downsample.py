@@ -56,8 +56,8 @@ class DownsampleTestCase(TestCase):
             # indeterminacy for 3D
             tolerance = 5e-2
         return np.allclose(
-            data_org[(..., *center_org)],
-            data_ds[(..., *center_ds)],
+            data_org.asnumpy()[(..., *center_org)],
+            data_ds.asnumpy()[(..., *center_ds)],
             atol=tolerance,
         )
 
@@ -91,7 +91,7 @@ class DownsampleTestCase(TestCase):
         imgs_org = sim.images[: self.n]
 
         # get images after downsample
-        sim.downsample(L_ds)
+        sim = sim.downsample(L_ds)
         imgs_ds = sim.images[: self.n]
 
         return imgs_org, imgs_ds

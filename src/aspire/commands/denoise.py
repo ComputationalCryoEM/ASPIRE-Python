@@ -75,10 +75,10 @@ def denoise(
     logger.info(f"Set the resolution to {max_resolution} X {max_resolution}")
     if max_resolution < source.L:
         # Downsample the images
-        source.downsample(max_resolution)
+        source = source.downsample(max_resolution)
     else:
         logger.warn(f"Unable to downsample to {max_resolution}, using {source.L}")
-    source.cache()
+    source = source.cache()
 
     # Specify the fast FB basis method for expending the 2D images
     basis = FFBBasis2D((source.L, source.L))
@@ -96,7 +96,7 @@ def denoise(
 
     # Whiten the noise of images
     logger.info("Whiten the noise of images from the noise estimator")
-    source.whiten(noise_estimator.filter)
+    source = source.whiten(noise_estimator)
 
     if denoise_method == "CWF":
         logger.info("Denoise the images using CWF cov2D method.")

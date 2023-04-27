@@ -19,7 +19,7 @@ from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils import eigs
 from aspire.utils.random import Random
-from aspire.volume import Volume
+from aspire.volume import LegacyVolume, Volume
 
 logger = logging.getLogger(__name__)
 
@@ -31,15 +31,25 @@ logger = logging.getLogger(__name__)
 img_size = 8  # image size in square
 num_imgs = 1024  # number of images
 num_eigs = 16  # number of eigen-vectors to keep
+dtype = np.float32
+
+# Generate a ``Volume`` object for use in the simulation. Here we use a ``LegacyVolume`` which
+# by default generates 2 unique random volumes.
+vols = LegacyVolume(
+    L=img_size,
+    dtype=dtype,
+).generate()
 
 # Create a simulation object with specified filters
 sim = Simulation(
     L=img_size,
     n=num_imgs,
+    vols=vols,
     unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
+    dtype=dtype,
 )
 
-# By default, a Simulation object is created using 2 volumes.
+# The Simulation object was created using 2 volumes.
 num_vols = sim.C
 
 # Specify the normal FB basis method for expending the 2D images
@@ -82,7 +92,7 @@ eigs_est = Volume(np.transpose(eigs_est, (3, 0, 1, 2)))
 # Truncate the eigendecomposition. Since we know the true rank of the
 # covariance matrix, we enforce it here.
 
-eigs_est_trunc = Volume(eigs_est[: num_vols - 1])
+eigs_est_trunc = eigs_est[: num_vols - 1]
 lambdas_est_trunc = lambdas_est[: num_vols - 1, : num_vols - 1]
 
 # Estimate the coordinates in the eigenbasis. Given the images, we find the

@@ -4,6 +4,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.utils import (
+    best_rank1_approximation,
     fix_signs,
     im_to_vec,
     mat_to_vec,
@@ -301,6 +302,17 @@ class MatrixTestCase(TestCase):
                 ),
             )
         )
+
+    def testRank1Approximation(self):
+        A = np.arange(3 * 4).reshape(3, 4)
+        A_rank1 = best_rank1_approximation(A)
+        s = np.linalg.svd(A_rank1, compute_uv=False)
+
+        # Check return shape.
+        self.assertTrue(A.shape == A_rank1.shape)
+
+        # Check return is rank-1.
+        self.assertTrue(np.allclose(s[1:], 0))
 
     def testFixSigns(self):
         """

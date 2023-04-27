@@ -24,17 +24,18 @@ from .misc import (  # isort:skip
     importlib_path,
     inverse_r,
     J_conjugate,
-    pairs_to_linear,
     powerset,
     sha256sum,
+    support_mask,
     fuzzy_mask,
 )
 
-from .logging import get_full_version, tqdm, trange
+from .logging import LogFilterByCount, get_full_version, tqdm, trange
 from .matrix import (
     acorr,
     ainner,
     anorm,
+    best_rank1_approximation,
     eigs,
     fix_signs,
     im_to_vec,
@@ -62,5 +63,7 @@ from .multiprocessing import (
     virtual_core_cpu_suggestion,
 )
 from .random import Random, choice, rand, randi, randn, random
+from .relion_interop import RelionStarFile, relion_metadata_fields
 from .rotation import Rotation
 from .types import complex_type, real_type, utest_tolerance
+from .units import ratio_to_decibel, voltage_to_wavelength, wavelength_to_voltage

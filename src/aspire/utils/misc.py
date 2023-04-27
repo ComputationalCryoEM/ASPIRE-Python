@@ -301,28 +301,26 @@ def fuzzy_mask(L, r0, risetime, origin=None):
     return m
 
 
-def all_pairs(n):
+def all_pairs(n, return_map=False):
     """
-    All pairs indexing (i,j) for i<j.
+    All pairs indexing (i,j) for i<j and a pairs-to-linear index mapping.
 
     :param n: The number of items to be indexed.
-    :return: All n-choose-2 pairs (i,j), i<j.
+    :param return_map: Option to return pairs-to-linear index map.
+        Default is False.
+    :returns:
+        - n x 2 array of pairs (i, j), i<j.
+        - n x n array with pairs-to-linear index map.
     """
-    pairs = [(i, j) for i in range(n) for j in range(n) if i < j]
+    pairs = np.column_stack(np.triu_indices(n, 1)).astype(np.uint16)
+
+    if return_map:
+        pairs_to_linear_map = np.empty((n, n), dtype="int")
+        for index, pair in enumerate(pairs):
+            pairs_to_linear_map[pair[0], pair[1]] = index
+        return pairs, pairs_to_linear_map
 
     return pairs
-
-
-def pairs_to_linear(n, i, j):
-    """
-    Converts from all_pairs indexing (i, j), where i<j, to linear indexing.
-    ie. (0, 1) --> 0 and (n-2, n-1) --> n * (n - 1)/2 - 1
-    """
-    assert i < j < n, "i must be less than j, and both must be less than n."
-
-    linear_index = n * (n - 1) // 2 - (n - i) * (n - i - 1) // 2 + j - i - 1
-
-    return linear_index
 
 
 def all_triplets(n):
@@ -332,9 +330,7 @@ def all_triplets(n):
     :param n: The number of items to be indexed.
     :returns: All 3-tuples (i,j,k), i<j<k.
     """
-    triplets = [
-        (i, j, k) for i in range(n) for j in range(n) for k in range(n) if i < j < k
-    ]
+    triplets = np.fromiter(combinations(range(n), 3), dtype="int,int,int")
 
     return triplets
 
@@ -346,9 +342,9 @@ def J_conjugate(A):
     :param A: A 3x3 matrix.
     :return: J*A*J
     """
-    J = np.diag((-1, -1, 1))
+    J = np.array([[1, 1, -1], [1, 1, -1], [-1, -1, 1]], dtype=A.dtype)
 
-    return J @ A @ J
+    return A * J
 
 
 def cyclic_rotations(order, dtype=np.float64):
@@ -363,3 +359,42 @@ def cyclic_rotations(order, dtype=np.float64):
     rots_symm = Rotation.from_euler(angles)
 
     return rots_symm
+
+
+# Potentially cache this in the future.
+def support_mask(L, support_radius=None, dtype=np.float64):
+    """
+    Return a mask selecting values within `support_radius`.
+
+    This mask is hard cutoff, boolean type.
+    For a soft cutoff, see `fuzzy_mask`
+
+    Use for selecting signal.
+    Alternatively the mask inverse (~) can be used to select background.
+    Combinations can be used to create bands.
+
+    :param L: Resolution in pixels.
+    :param support_radius: Radius of mask in pixels.
+        Defaults to L // 2.
+    :param dtype: Dtype used for mask construction and comparison.
+    :return: Boolean mask as (L,L) array.
+    """
+
+    if support_radius is None:
+        support_radius = L // 2
+
+    elif support_radius == -1:
+        # Disables mask, here to reduce code duplication.
+        return np.full((L, L), fill_value=True, dtype=bool)
+
+    elif not 0 < support_radius <= L // 2 * np.sqrt(2):
+        raise ValueError(
+            "support_radius should be"
+            f" `(0, L*sqrt(2)={L*np.sqrt(2)}]` or -1 to disable."
+            f" passed {support_radius}."
+        )
+
+    g2d = grid_2d(L, indexing="yx", normalized=False, dtype=dtype)
+    mask = g2d["r"] < support_radius
+
+    return mask

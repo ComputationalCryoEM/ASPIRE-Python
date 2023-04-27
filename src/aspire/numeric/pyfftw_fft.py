@@ -113,7 +113,6 @@ class PyfftwFFT(FFT):
         return b
 
     def fftn(self, a, axes=None, workers=-1):
-
         axes = axes or tuple(range(a.ndim))
         comp_type = complex_type(a.dtype)
 
@@ -131,7 +130,6 @@ class PyfftwFFT(FFT):
         return b
 
     def ifftn(self, a, axes=None, workers=-1):
-
         axes = axes or tuple(range(a.ndim))
 
         # FFTW_BACKWARD requires complex input array, cast as needed.

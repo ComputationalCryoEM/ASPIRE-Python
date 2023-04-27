@@ -12,7 +12,6 @@ class Cell2D:
     """
 
     def __init__(self, rows, cols, dtype=np.float32):
-
         self.dtype = np.dtype(dtype)
         self.dtype = dtype
         self.rows = rows

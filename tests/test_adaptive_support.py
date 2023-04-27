@@ -16,7 +16,6 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class AdaptiveSupportTest(TestCase):
     def setUp(self):
-
         self.size = 1025
         self.sigma = 16
         self.n_disc = 10
