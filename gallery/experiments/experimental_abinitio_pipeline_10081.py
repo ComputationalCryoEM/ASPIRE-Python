@@ -75,6 +75,9 @@ src.phase_flip()
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
 src.whiten(aiso_noise_estimator.filter)
 
+# Caching is used for speeding up large datasets on high memory machines.
+src = src.cache()
+
 # %%
 # Class Averaging
 # ----------------------

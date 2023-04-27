@@ -98,6 +98,9 @@ if interactive:
 # logger.info("Invert the global density contrast")
 # src = src.invert_contrast()
 
+# Caching is used for speeding up large datasets on high memory machines.
+src = src.cache()
+
 # %%
 # Optional: CWF Denoising
 # -----------------------
@@ -119,6 +122,8 @@ if do_cov2d:
     cwf_denoiser = DenoiserCov2D(src)
     # Use denoised src for classification
     classification_src = cwf_denoiser.denoise()
+    # Cache for speedup.  Avoids recomputing.
+    classification_src = classification_src.cache()
     # Peek, what do the denoised images look like...
     if interactive:
         classification_src.images[:10].show()
