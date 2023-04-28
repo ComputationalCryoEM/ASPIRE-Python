@@ -9,7 +9,7 @@ from numpy import pi
 from parameterized import parameterized
 from pytest import raises, skip
 
-from aspire.utils import Rotation, powerset
+from aspire.utils import Rotation, gaussian_3d, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
 from aspire.volume import Volume
@@ -223,6 +223,35 @@ class VolumeTestCase(TestCase):
         rots = np.moveaxis(rots, 2, 0)
         imgs_clean = vols.project(rots).asnumpy()
         self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
+
+    def testProjectBroadcast(self):
+        L = 32
+
+        # Create stack of Volume with Gaussians stretched along varying axes.
+        blob_x = gaussian_3d(L, sigma=(3, 2, 1), dtype=self.dtype)
+        blob_y = gaussian_3d(L, sigma=(1, 3, 2), dtype=self.dtype)
+        blob_z = gaussian_3d(L, sigma=(1, 2, 3), dtype=self.dtype)
+        vols = Volume(np.vstack((blob_x, blob_y, blob_z)).reshape(3, L, L, L))
+
+        # Create singleton and stacks of identity Rotations.
+        I = np.eye(3, dtype=self.dtype)
+        eye = Rotation(I)
+        eyes_2 = Rotation(np.vstack((I,) * 2).reshape(2, 3, 3))
+        eyes_3 = Rotation(np.vstack((I,) * 3).reshape(3, 3, 3))
+
+        # Broadcast Volume stack with singleton Rotation.
+        ims_3_1 = vols.project(eye)
+
+        # Broadcast Volume stack with Rotation stack of same size.
+        ims_3_3 = vols.project(eyes_3)
+
+        # These image stacks should be identical.
+        self.assertTrue(np.allclose(ims_3_1, ims_3_3))
+
+        # Check we raise an error for incompatible stacks.
+        msg = "Cannot broadcast with 2 Rotations and 3 Volumes."
+        with raises(NotImplementedError, match=msg):
+            _ = vols.project(eyes_2)
 
     # Parameterize over even and odd resolutions
     @parameterized.expand([(res,), (res - 1,)])
