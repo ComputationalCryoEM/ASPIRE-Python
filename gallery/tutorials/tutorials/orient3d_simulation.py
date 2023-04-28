@@ -90,10 +90,7 @@ rots_true = sim.rotations
 # to perform viewing angle estimation
 logger.info("Estimate rotation angles using synchronization matrix and voting method.")
 orient_est = CLSyncVoting(sim, n_theta=36)
-oriented_src = OrientedSource(
-    sim,
-    orientation_estimator=orient_est,
-)
+oriented_src = OrientedSource(sim, orient_est)
 rots_est = oriented_src.rotations
 
 # %%
