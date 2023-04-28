@@ -856,7 +856,7 @@ class ImageSource(ABC):
         if vol.dtype != self.dtype:
             logger.warning(f"Volume.dtype {vol.dtype} inconsistent with {self.dtype}")
 
-        im = vol.project(0, self.rotations[all_idx, :, :])
+        im = vol.project(self.rotations[all_idx, :, :])
         im = self._apply_source_filters(im, all_idx)
         im = im.shift(self.offsets[all_idx, :])
         im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]

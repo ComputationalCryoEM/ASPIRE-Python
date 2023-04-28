@@ -201,7 +201,7 @@ class VolumeTestCase(TestCase):
 
         # Project a Volume with all the test rotations
         vol_id = 1  # select a volume from Volume stack
-        img_stack = self.vols_1.project(vol_id, r_stack)
+        img_stack = self.vols_1[vol_id].project(r_stack)
 
         for r in range(len(r_stack)):
             # Get result of test projection at center of Image.
@@ -221,7 +221,7 @@ class VolumeTestCase(TestCase):
         vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")))
         rots = np.load(os.path.join(DATA_DIR, "rand_rot_matrices32.npy"))
         rots = np.moveaxis(rots, 2, 0)
-        imgs_clean = vols.project(0, rots).asnumpy()
+        imgs_clean = vols.project(rots).asnumpy()
         self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
 
     # Parameterize over even and odd resolutions
