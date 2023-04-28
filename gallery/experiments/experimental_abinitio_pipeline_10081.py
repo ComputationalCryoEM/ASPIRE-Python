@@ -105,13 +105,11 @@ avgs.save("experimental_10081_class_averages.star", overwrite=True)
 
 logger.info("Begin Orientation Estimation")
 
-# Run orientation estimation on  ``avgs``.
+# Create a custom orientation estimation object for ``avgs``.
 orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=72, max_shift=0)
+
 # Create an ``OrientedSource`` class instance and get the estimated rotations.
-oriented_src = OrientedSource(
-    avgs,
-    orientation_estimator=orient_est,
-)
+oriented_src = OrientedSource(avgs, orient_est)
 rots_est = oriented_src.rotations
 
 # %%
