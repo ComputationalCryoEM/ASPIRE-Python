@@ -157,7 +157,7 @@ class ImageTestCase(TestCase):
         """
 
         # Construct the source for testing
-        src = ArrayImageSource(self.im)
+        src = ArrayImageSource(self.im, angles=self.sim.angles)
 
         # Get some random angles, can use from sim.
         angles = self.sim.angles
