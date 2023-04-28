@@ -234,10 +234,10 @@ class VolumeTestCase(TestCase):
         vols = Volume(np.vstack((blob_x, blob_y, blob_z)).reshape(3, L, L, L))
 
         # Create singleton and stacks of identity Rotations.
-        I = np.eye(3, dtype=self.dtype)
-        eye = Rotation(I)
-        eyes_2 = Rotation(np.vstack((I,) * 2).reshape(2, 3, 3))
-        eyes_3 = Rotation(np.vstack((I,) * 3).reshape(3, 3, 3))
+        identity = np.eye(3, dtype=self.dtype)
+        eye = Rotation(identity)
+        eyes_2 = Rotation(np.vstack((identity,) * 2).reshape(2, 3, 3))
+        eyes_3 = Rotation(np.vstack((identity,) * 3).reshape(3, 3, 3))
 
         # Broadcast Volume stack with singleton Rotation.
         ims_3_1 = vols.project(eye)
