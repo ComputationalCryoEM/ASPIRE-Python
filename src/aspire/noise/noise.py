@@ -198,10 +198,11 @@ class BlueNoiseAdder(WhiteNoiseAdder):
         """
         Builds underlying Filter for this NoiseAdder.
         """
-        blue_filter = BlueFilter(value=self.noise_var)
 
         # Call the __init__ from parent of WhiteNoiseAdder.
-        super(WhiteNoiseAdder, self).__init__(noise_filter=blue_filter, seed=self.seed)
+        super(WhiteNoiseAdder, self).__init__(
+            noise_filter=BlueFilter(value=self.noise_var), seed=self.seed
+        )
 
 
 class PinkNoiseAdder(WhiteNoiseAdder):
@@ -213,10 +214,11 @@ class PinkNoiseAdder(WhiteNoiseAdder):
         """
         Builds underlying Filter for this NoiseAdder.
         """
-        pink_filter = PinkFilter(value=self.noise_var)
 
         # Call the __init__ from parent of WhiteNoiseAdder.
-        super(WhiteNoiseAdder, self).__init__(noise_filter=pink_filter, seed=self.seed)
+        super(WhiteNoiseAdder, self).__init__(
+            noise_filter=PinkFilter(value=self.noise_var), seed=self.seed
+        )
 
 
 class NoiseEstimator:
