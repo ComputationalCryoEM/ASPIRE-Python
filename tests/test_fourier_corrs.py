@@ -5,6 +5,7 @@ import tempfile
 import numpy as np
 import pytest
 
+from aspire.image import Image
 from aspire.noise import BlueNoiseAdder
 from aspire.numeric import fft
 from aspire.source import Simulation
@@ -139,7 +140,7 @@ def test_frc_noise(image_fixture, method):
 
 def test_frc_plot(image_fixture, method):
     """
-    Smoke test the plots.
+    Smoke test the plot.
 
     Also tests resetting the cutoff.
     """
@@ -151,6 +152,9 @@ def test_frc_plot(image_fixture, method):
 
     with matplotlib_no_gui():
         frc.plot()
+
+        # Reset cutoff, then plot again
+        frc.cutoff = 0.143
 
         with tempfile.TemporaryDirectory() as tmp_input_dir:
             file_path = os.path.join(tmp_input_dir, "frc_curve.png")
@@ -181,9 +185,7 @@ def test_fsc_trunc(volume_fixture, method):
 
 def test_fsc_plot(volume_fixture, method):
     """
-    Smoke test the plots.
-
-    Also tests resetting the cutoff.
+    Smoke test the plot.
     """
     vol_a, vol_b = volume_fixture
 
@@ -194,9 +196,83 @@ def test_fsc_plot(volume_fixture, method):
     with matplotlib_no_gui():
         fsc.plot()
 
-        # Reset cutoff
-        fsc.cutoff = 0.143
-
         with tempfile.TemporaryDirectory() as tmp_input_dir:
             file_path = os.path.join(tmp_input_dir, "fsc_curve.png")
             fsc.plot(save_to_file=file_path)
+
+
+# Check the error checks.
+
+
+def test_dtype_mismatch():
+    a = np.empty((8, 8), dtype=np.float32)
+    b = a.astype(np.float64)
+
+    with pytest.raises(TypeError, match=r"Mismatched input types"):
+        _ = FourierRingCorrelation(a, b)
+
+
+def test_type_mismatch():
+    a = np.empty((8, 8), dtype=np.float32)
+    b = a.tolist()
+
+    with pytest.raises(TypeError, match=r".*is not a Numpy array"):
+        _ = FourierRingCorrelation(a, b)
+
+
+def test_data_shape_mismatch():
+    a = np.empty((8, 8), dtype=np.float32)
+    b = np.empty((8, 9), dtype=np.float32)
+
+    with pytest.raises(RuntimeError, match=r".*different data axis shapes"):
+        _ = FourierRingCorrelation(a, b)
+
+
+def test_method_na():
+    a = np.empty((8, 8), dtype=np.float32)
+
+    with pytest.raises(
+        RuntimeError, match=r"Requested method.*not in available methods"
+    ):
+        _ = FourierRingCorrelation(a, a, method="man")
+
+
+def test_cutoff_range():
+    a = np.empty((8, 8), dtype=np.float32)
+
+    with pytest.raises(ValueError, match=r"Supplied correlation `cutoff` not in"):
+        _ = FourierRingCorrelation(a, a, cutoff=2)
+
+
+def test_2d_stack_plot_raise():
+    a = np.random.random((2, 3, 8, 8)).astype(np.float32)
+
+    with pytest.raises(
+        RuntimeError, match=r"Unable to plot figure tables with more than 2 dim"
+    ):
+        FourierRingCorrelation(a, a).plot()
+
+
+def test_multiple_stack_plot_raise():
+    a = np.random.random((3, 8, 8)).astype(np.float32)
+
+    with pytest.raises(
+        RuntimeError, match=r"Unable to plot figure tables with more than 1 figure"
+    ):
+        FourierRingCorrelation(a, a).plot()
+
+
+def test_img_type_mismatch():
+    a = Image(np.empty((8, 8), dtype=np.float32))
+    b = a.asnumpy()
+
+    with pytest.raises(TypeError, match=r"`other` image must be an `Image` instance"):
+        _ = a.frc(b, pixel_size=1)
+
+
+def test_vol_type_mismatch():
+    a = Volume(np.empty((8, 8, 8), dtype=np.float32))
+    b = a.asnumpy()
+
+    with pytest.raises(TypeError, match=r"`other` volume must be an `Volume` instance"):
+        _ = a.fsc(b, pixel_size=1)
