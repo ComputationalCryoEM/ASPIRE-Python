@@ -293,7 +293,7 @@ from aspire.source import ArrayImageSource
 # Get projections from the estimated volume using the estimated
 # orientations.  We instantiate the projections as an
 # ``ArrayImageSource`` to access the ``Image.show()`` method.
-projections_est = ArrayImageSource(estimated_volume.project(0, rots_est))
+projections_est = ArrayImageSource(estimated_volume.project(rots_est))
 
 # We view the first 10 projections of the estimated volume.
 projections_est.images[0:10].show()
