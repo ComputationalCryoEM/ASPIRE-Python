@@ -6,8 +6,9 @@ import numpy as np
 import pytest
 
 from aspire.noise import BlueNoiseAdder
+from aspire.numeric import fft
 from aspire.source import Simulation
-from aspire.utils import FourierShellCorrelation, Rotation
+from aspire.utils import FourierRingCorrelation, FourierShellCorrelation, Rotation
 from aspire.volume import Volume
 
 from .test_utils import matplotlib_no_gui
@@ -96,19 +97,19 @@ def volume_fixture(img_size, dtype):
         np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")), dtype=dtype
     ).downsample(img_size)
 
-    # Instantiate ASPIRE's Rotation class with a set of angles.
-    thetas = [0.12]
-    rots = Rotation.about_axis("z", thetas, dtype=dtype)
+    # Invert correlation for some high frequency content
+    #   Convert volume to Fourier space.
+    vol_trunc_f = fft.centered_fftn(vol.asnumpy()[0])
+    #   Get a frequency index.
+    trunc_frq = img_size // 3
+    #   Negate the power for some frequencies higher than `trunc_frq`.
+    vol_trunc_f[-trunc_frq:, :, :] *= -1.0
+    vol_trunc_f[:, -trunc_frq:, :] *= -1.0
+    vol_trunc_f[:, :, -trunc_frq:] *= -1.0
+    #   Convert volume from Fourier space to real space Volume.
+    vol_trunc = Volume(fft.centered_ifftn(vol_trunc_f).real)
 
-    vol_rot = vol.rotate(rots)
-
-    # Add some noise to the volume
-    noise = np.random.normal(
-        loc=0, scale=np.cbrt(vol.asnumpy().var()), size=vol.shape
-    ).astype(dtype, copy=False)
-    vol_noise = vol + noise
-
-    return vol, vol_rot, vol_noise
+    return vol, vol_trunc
 
 
 # FRC
@@ -136,29 +137,46 @@ def test_frc_noise(image_fixture, method):
     assert np.isclose(frc_resolution[0][0], 3.5 / 2, rtol=0.2)
 
 
+def test_frc_plot(image_fixture, method):
+    """
+    Smoke test the plots.
+
+    Also tests resetting the cutoff.
+    """
+    img_a, img_b, _ = image_fixture
+
+    frc = FourierRingCorrelation(
+        img_a.asnumpy(), img_b.asnumpy(), pixel_size=1, method=method, cutoff=0.5
+    )
+
+    with matplotlib_no_gui():
+        frc.plot()
+
+        with tempfile.TemporaryDirectory() as tmp_input_dir:
+            file_path = os.path.join(tmp_input_dir, "frc_curve.png")
+            frc.plot(save_to_file=file_path)
+
+
 # FSC
 
 
 def test_fsc_id(volume_fixture, method):
-    vol, _, _ = volume_fixture
+    vol, _ = volume_fixture
 
     fsc_resolution, fsc = vol.fsc(vol, pixel_size=1, method=method)
     assert np.isclose(fsc_resolution[0][0], 1, rtol=0.02)
     assert np.allclose(fsc, 1)
 
 
-def test_fsc_rot(volume_fixture, method):
-    vol_a, vol_b, _ = volume_fixture
+def test_fsc_trunc(volume_fixture, method):
+    vol_a, vol_b = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, method=method)
-    assert np.isclose(fsc_resolution[0][0], 3.225 / 2, rtol=0.01)
+    assert fsc_resolution[0][0] > 1.5
 
-
-def test_fsc_noise(volume_fixture, method):
-    vol_a, _, vol_n = volume_fixture
-
-    fsc_resolution, fsc = vol_a.fsc(vol_n, pixel_size=1, method=method)
-    assert fsc_resolution[0][0] > 4
+    # The follow should correspond to the test_fsc_plot below.
+    fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, method=method, cutoff=0.5)
+    assert fsc_resolution[0][0] > 2.0
 
 
 def test_fsc_plot(volume_fixture, method):
@@ -167,13 +185,11 @@ def test_fsc_plot(volume_fixture, method):
 
     Also tests resetting the cutoff.
     """
-    vol_a, vol_b, _ = volume_fixture
+    vol_a, vol_b = volume_fixture
 
     fsc = FourierShellCorrelation(
         vol_a.asnumpy(), vol_b.asnumpy(), pixel_size=1, method=method, cutoff=0.5
     )
-    # test
-    fsc.plot()
 
     with matplotlib_no_gui():
         fsc.plot()

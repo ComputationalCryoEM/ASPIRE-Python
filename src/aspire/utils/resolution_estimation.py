@@ -171,7 +171,7 @@ class _FourierCorrelation:
             r1 = ring_mask * f1
             r2 = ring_mask * f2
 
-            # Compute FRC
+            # Compute FC
             num = np.real(np.sum(r1 * np.conj(r2), axis=self._fourier_axes))
             den = np.sqrt(
                 np.sum(np.abs(r1) ** 2, axis=self._fourier_axes)
@@ -196,7 +196,7 @@ class _FourierCorrelation:
 
         # TODO, should we use an internal tool (Polar2D?) for this
         # For now use L//2 for compatibility with cartesian.
-        r = np.linspace(0, np.pi, self.L//2, endpoint=False, dtype=self.dtype)
+        r = np.linspace(0, np.pi, self.L // 2, endpoint=False, dtype=self.dtype)
         phi = np.linspace(0, 2 * np.pi, 2 * self.L, endpoint=False, dtype=self.dtype)
         if self.dim == 2:
             x = r[:, np.newaxis] * np.cos(phi[np.newaxis, :])
@@ -213,7 +213,7 @@ class _FourierCorrelation:
             y = (
                 r[:, np.newaxis, np.newaxis]
                 * np.sin(theta[np.newaxis, :, np.newaxis])
-                * np.cos(phi[np.newaxis, np.newaxis, :])
+                * np.sin(phi[np.newaxis, np.newaxis, :])
             )
             z = (
                 r[:, np.newaxis, np.newaxis]
@@ -221,7 +221,6 @@ class _FourierCorrelation:
                 * np.ones((1, 1, 2 * self.L), dtype=self.dtype)
             )
             fourier_pts = np.vstack((x.flatten(), y.flatten(), z.flatten()))
-            # result_frame_shape = (len(r), len(theta)*len(phi))
         else:
             raise NotImplementedError(
                 "`nufft` based correlations only implemented for dimensions 2 and 3."
@@ -243,7 +242,9 @@ class _FourierCorrelation:
         correlations = cov / (norm1 * norm2)
 
         # Then unpack the a and b shapes.
-        return correlations.reshape(*self._a_stack_shape, *self._b_stack_shape, r.shape[-1])
+        return correlations.reshape(
+            *self._a_stack_shape, *self._b_stack_shape, r.shape[-1]
+        )
 
     @property
     def estimated_resolution(self):
