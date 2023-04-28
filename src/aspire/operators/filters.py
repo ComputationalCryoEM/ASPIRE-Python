@@ -470,7 +470,7 @@ class BlueFilter(Filter):
         self.value = value
 
     def __repr__(self):
-        return f"BlueFilter (dim={self.dim}, value={self.value})"
+        return f"BlueFilter(dim={self.dim}, value={self.value})"
 
     def _evaluate(self, omega):
         f = np.sqrt(omega[0])
@@ -490,7 +490,7 @@ class PinkFilter(Filter):
         self.value = value
 
     def __repr__(self):
-        return f"PinkFilter (dim={self.dim}, value={self.value})"
+        return f"PinkFilter(dim={self.dim}, value={self.value})"
 
     def _evaluate(self, omega):
         step = np.abs(np.subtract(*omega[0][:2]))

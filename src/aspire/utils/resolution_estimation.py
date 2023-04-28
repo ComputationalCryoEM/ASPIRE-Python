@@ -12,6 +12,9 @@ from aspire.utils import grid_2d
 
 logger = logging.getLogger(__name__)
 
+# _FourierCorrelation holds a single implementation for both FSC and
+# FRC based on dimension `dim`.
+
 
 class _FourierCorrelation:
     r"""
@@ -45,7 +48,7 @@ class _FourierCorrelation:
             raise RuntimeError("Subclass must assign `dim`")
         for x in (a, b):
             if not isinstance(x, np.ndarray):
-                raise TypeError(f"`{x.__name__}` is not a Numpy array.")
+                raise TypeError(f"`{x}` is not a Numpy array.")
 
         if not a.dtype == b.dtype:
             raise TypeError(
@@ -63,7 +66,7 @@ class _FourierCorrelation:
         methods = {"fft": self._fft_correlations, "nufft": self._nufft_correlations}
         if method not in methods:
             raise RuntimeError(
-                f"Requested method {method} not in available methods {methods}."
+                f"Requested method {method} not in available methods {list(methods.keys())}."
             )
         self.method = method
         self._correlation_method = methods[self.method]
@@ -133,12 +136,11 @@ class _FourierCorrelation:
 
         :return: Numpy array
         """
-        # There is no need to run this twice if we assume inputs are immutable.
-        if self._correlations is not None:
-            return self._correlations
-
-        # Compute the correlations
-        self._correlations = self._correlation_method()
+        # Cache _correlations.
+        # There is no need to run this twice assuming inputs are immutable.
+        if self._correlations is None:
+            # Compute the correlations
+            self._correlations = self._correlation_method()
 
         return self._correlations
 
@@ -150,8 +152,7 @@ class _FourierCorrelation:
         # Compute shells from 2D grid.
         radii = grid_2d(self.L, shifted=True, normalized=False, dtype=self.dtype)["r"]
 
-        # Compute centered Fourier transforms,
-        #   upcasting when nessecary.
+        # Compute centered Fourier transforms.
         f1 = fft.centered_fftn(self._a, axes=self._fourier_axes)
         f2 = fft.centered_fftn(self._b, axes=self._fourier_axes)
 
@@ -171,7 +172,7 @@ class _FourierCorrelation:
             r1 = ring_mask * f1
             r2 = ring_mask * f2
 
-            # Compute FC
+            # Compute Fourier Correlations
             num = np.real(np.sum(r1 * np.conj(r2), axis=self._fourier_axes))
             den = np.sqrt(
                 np.sum(np.abs(r1) ** 2, axis=self._fourier_axes)
@@ -184,26 +185,30 @@ class _FourierCorrelation:
 
         # Repack the table as (_a, _b, L//2)
         correlations = np.swapaxes(correlations, 0, 2)
-        # Then unpack the a and b shapes.
+        # Then unpack the original a and b shapes.
         return correlations.reshape(
             *self._a_stack_shape, *self._b_stack_shape, self.L // 2
         )
 
     def _nufft_correlations(self):
         """
-        Computes Fourier Correlations using the NUFFT on polar grid.
+        Computes Fourier Correlations using the NUFFT on a polar grid.
         """
 
-        # TODO, should we use an internal tool (Polar2D?) for this
-        # For now use L//2 for compatibility with cartesian.
+        # TODO, we could use an internal tool (Polar2D?) for this.
+        # L//2 is intentionally used for compatibility with cartesian grid.
+        #   This avoids having to have multiple methods for computing resolutions later.
         r = np.linspace(0, np.pi, self.L // 2, endpoint=False, dtype=self.dtype)
         phi = np.linspace(0, 2 * np.pi, 2 * self.L, endpoint=False, dtype=self.dtype)
         if self.dim == 2:
+            # 2D Polar points
             x = r[:, np.newaxis] * np.cos(phi[np.newaxis, :])
             y = r[:, np.newaxis] * np.sin(phi[np.newaxis, :])
+            # Because the values will be summed later, ordering does not matter.
             fourier_pts = np.vstack((x.flatten(), y.flatten()))
-            # result_frame_shape = (len(r), len(phi))
+
         elif self.dim == 3:
+            # 3D Spherical points
             theta = np.linspace(0, np.pi, self.L, endpoint=False, dtype=self.dtype)
             x = (
                 r[:, np.newaxis, np.newaxis]
@@ -220,28 +225,30 @@ class _FourierCorrelation:
                 * np.cos(theta[np.newaxis, :, np.newaxis])
                 * np.ones((1, 1, 2 * self.L), dtype=self.dtype)
             )
+            # Because the values will be summed later, ordering does not matter.
             fourier_pts = np.vstack((x.flatten(), y.flatten(), z.flatten()))
         else:
             raise NotImplementedError(
                 "`nufft` based correlations only implemented for dimensions 2 and 3."
             )
 
-        # Stack signal data.  Note, we want a complex result.
+        # Stack signal data to create a larger NUFFT problem (better performance).
+        #   Note, we want a complex result.
         signal = np.vstack((self._a, self._b))
-        # Compute NUFFT and unpack as two 1D stacks of the polar grid
+        # Compute NUFFT, then unpack as two 1D stacks of the polar grid
         # points, one for each image.
         f1, f2 = nufft(signal, fourier_pts, real=False).reshape(
             2, self._a.shape[0], len(r), -1
         )
 
-        # Compute the Fourier correlations
+        # Compute the Fourier correlations.
         cov = np.sum(f1 * np.conj(f2), -1).real
         norm1 = np.sqrt(np.sum(np.abs(f1) ** 2, -1))
         norm2 = np.sqrt(np.sum(np.abs(f2) ** 2, -1))
 
         correlations = cov / (norm1 * norm2)
 
-        # Then unpack the a and b shapes.
+        # Then unpack the original a and b shapes.
         return correlations.reshape(
             *self._a_stack_shape, *self._b_stack_shape, r.shape[-1]
         )
@@ -260,6 +267,9 @@ class _FourierCorrelation:
         """
         Convert from the Fourier Correlations to frequencies and resolution.
         """
+        # `_analyzed` attribute in conjunction with `cutoff` allow a
+        # user to try different cutoffs without recomputing the
+        # correlations (FFT/NUFFT calls).
         if self._analyzed:
             return
 
@@ -269,21 +279,16 @@ class _FourierCorrelation:
         #   set index of highest sampled frequency.
         c_inds[np.min(self.correlations, axis=-1) > self.cutoff] = self.L // 2
 
-        # # All correlations are below cutoff,
-        # #   set index to 0
-        # elif np.max(correlations) < cutoff:
-        #     c_ind = 0
-        # else:
-
         # Correlations cross the cutoff.
         # Find the first index of a correlation at `cutoff`.
+        # Should return 0 if not found, which corresponded to the case
+        # where all correlations are below cutoff.
         c_ind = np.maximum(c_inds, np.argmax(self.correlations <= self.cutoff, axis=-1))
 
         # Convert indices to frequency (as 1/Angstrom)
         frequencies = self._freq(c_ind)
 
         # Convert to resolution in Angstrom, smaller is higher frequency.
-        # TODO: handle 0 freq
         self._resolutions = 1 / frequencies
 
     def _freq(self, k):
@@ -304,7 +309,7 @@ class _FourierCorrelation:
         # (pixels/voxels), each with a `pixel_size` in Angstrom, we can
         # compute the width of a Fourier space bin to be the `Bandwidth
         # / L = (2*(1/pixel_size)) / L`.  Thus the frequency at an index
-        # `k` is `freq_k = k * 2 * (1 / pixel_size) / L = 2*k /
+        # `k` is `freq_k = k * 2 * (1 / pixel_size) / L = k * 2 /
         # (pixel_size * L)
 
         # _freq(k) Units: 1 / (pixels * (Angstrom / pixel) = 1 / Angstrom
@@ -322,7 +327,6 @@ class _FourierCorrelation:
         """
 
         # Construct x-axis labels
-        # x_inds = np.arange(self.L // 2)
         x_inds = np.arange(self.correlations.shape[-1])
         freqs = self._freq(x_inds)
         # TODO: handle zero freq better
@@ -365,6 +369,11 @@ class _FourierCorrelation:
             plt.savefig(save_to_file)
 
         plt.show()
+
+
+# The following are user facing classes, and simply wrap
+# `_FourierCorrelation` after assigning dimension `dim` and any
+# dimension specific variables.
 
 
 class FourierRingCorrelation(_FourierCorrelation):
