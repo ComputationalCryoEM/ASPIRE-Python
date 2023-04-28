@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from aspire.abinitio import CLSymmetryC3C4
-from aspire.utils import all_pairs
+from aspire.utils import J_conjugate, all_pairs
 from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
@@ -189,7 +189,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         Rijs, Rijgs = self._estimate_all_Rijs_c2(clmatrix)
 
         # Step 3: Inner J-synchronization
-        vijs, viis = self._local_J_sync_c2(Rijs, Rijgs)
+        Rijs_sync, Rijgs_sync = self._local_J_sync_c2(Rijs, Rijgs)
 
         return vijs, viis
 
@@ -211,10 +211,32 @@ class CLSymmetryC2(CLSymmetryC3C4):
                 clmatrix[0], i, j, np.arange(n_img), n_theta
             )
             Rijgs[idx] = self._syncmatrix_ij_vote_3n(
-                clmatrix[0], i, j, np.arange(n_img), n_theta
+                clmatrix[1], i, j, np.arange(n_img), n_theta
             )
 
         return Rijs, Rijgs
 
-    def _local_J_sync_c2(Rijs, Rijgs):
-        pass
+    def _local_J_sync_c2(self, Rijs, Rijgs):
+        """
+        Local J-synchronization of all relative rotations.
+        """
+        Rijgs_sync = np.zeros_like(Rijgs)
+        e1 = np.array([1, 0, 0], dtype=self.dtype)
+        pairs = all_pairs(self.n_img)
+        for idx, (i, j) in enumerate(pairs):
+            Rij = Rijs[idx]
+            Rijg = Rijgs[idx]
+
+            # Rij + Rij_g must be rank-1. If not, J-conjugate either of them.
+            vij = (Rij + Rijg) / 2
+            vij_J = (J_conjugate(Rij) + Rijg) / 2
+
+            s = np.linalg.svd(vij, compute_uv=False)
+            s_J = np.linalg.svd(vij_J, compute_uv=False)
+
+            if np.linalg.norm(s_J - e1) < np.linalg.norm(s - e1):
+                Rijgs_sync[idx] = J_conjugate(Rijg)
+            else:
+                Rijgs_sync[idx] = Rijg
+
+        return Rijs, Rijgs_sync
