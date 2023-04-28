@@ -514,6 +514,11 @@ class ImageSource(ABC):
         if np.issubdtype(values.dtype, np.str_):
             values = values.astype("object")
             fill_value = ""
+        elif np.issubdtype(values.dtype, np.integer):
+            # For integers, we'll use the minimal value.
+            # This will be a large negative value when signed,
+            # and zero for unsigned integers.
+            fill_value = np.iinfo(values.dtype).min
         else:
             fill_value = np.nan
 
