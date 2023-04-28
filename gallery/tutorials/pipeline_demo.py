@@ -230,10 +230,7 @@ true_rotations = src.rotations[:n_classes]
 orient_est = CLSyncVoting(avgs, n_theta=72)
 
 # Instantiate an ``OrientedSource``.
-oriented_src = OrientedSource(
-    avgs,
-    orientation_estimator=orient_est,
-)
+oriented_src = OrientedSource(avgs, orient_est)
 
 # Get the estimated rotations
 rots_est = oriented_src.rotations

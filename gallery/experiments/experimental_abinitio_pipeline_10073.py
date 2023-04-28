@@ -134,13 +134,11 @@ avgs.save("experimental_10073_class_averages_global.star", overwrite=True)
 
 logger.info("Begin Orientation Estimation")
 
-# Run orientation estimation on ``avgs``.
+# Create a custom orientation estimation object for ``avgs``.
 orient_est = CLSyncVoting(avgs, n_theta=72)
+
 # Create an ``OrientedSource`` class instance and get the estimated rotations.
-oriented_src = OrientedSource(
-    avgs,
-    orientation_estimator=orient_est,
-)
+oriented_src = OrientedSource(avgs, orient_est)
 rots_est = oriented_src.rotations
 
 # %%
