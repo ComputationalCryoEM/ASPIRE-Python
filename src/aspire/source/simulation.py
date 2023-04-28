@@ -240,7 +240,7 @@ class Simulation(ImageSource):
             idx_k = np.where(states == k)[0]
             rot = self.rotations[indices[idx_k], :, :]
 
-            im_k = self.vols.project(vol_idx=k - 1, rot_matrices=rot)
+            im_k = self.vols[k - 1].project(rot_matrices=rot)
             im[idx_k, :, :] = im_k.asnumpy()
 
         return Image(im)

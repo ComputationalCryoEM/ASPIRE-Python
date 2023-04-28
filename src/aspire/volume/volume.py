@@ -232,13 +232,18 @@ class Volume:
 
     def project(self, rot_matrices):
         """
-        Using the stack of rot_matrices,
-        project images of Volume[vol_idx].
+        Using the stack of rot_matrices, project images of Volume. When projecting
+        over a stack of volumes, a singleton Rotation or a Rotation with stack size
+        self.n_vols must be used.
 
-        :param vol_idx: Volume index
         :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
         :return: `Image` instance.
         """
+        # See Issue #727
+        if self.stack_ndim > 1:
+            raise NotImplementedError(
+                "`project` is currently limited to 1D Volume stacks."
+            )
 
         # If we are an ASPIRE Rotation, get the numpy representation.
         if isinstance(rot_matrices, Rotation):
@@ -252,17 +257,26 @@ class Volume:
                 " In the future this will raise an error."
             )
 
-        n = rot_matrices.shape[0]
-        return_stack_shape = self.stack_shape + (n,)
+        data = self._data
+        n_rots = rot_matrices.shape[0]
 
-        data = self.stack_reshape(-1)._data
+        if not ((n_rots == self.n_vols) or (n_rots == 1) or (self.n_vols == 1)):
+            raise NotImplementedError(
+                f"Cannot broadcast with {n_rots} Rotations and {self.n_vols} Volumes."
+            )
 
         pts_rot = rotated_grids(self.resolution, rot_matrices)
 
-        # TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = pts_rot.reshape((3, n * self.resolution**2))
-
-        im_f = nufft(data, pts_rot) / self.resolution
+        if n_rots == self.n_vols:
+            im_f = np.empty(
+                (self.n_vols, self.resolution**2), dtype=complex_type(self.dtype)
+            )
+            pts_rot = pts_rot.reshape((3, n_rots, self.resolution**2))
+            for i in range(self.n_vols):
+                im_f[i] = nufft(data[i], pts_rot[:, i]) / self.resolution
+        else:
+            pts_rot = pts_rot.reshape((3, n_rots * self.resolution**2))
+            im_f = nufft(data, pts_rot) / self.resolution
 
         im_f = im_f.reshape(-1, self.resolution, self.resolution)
 
@@ -271,9 +285,8 @@ class Volume:
             im_f[:, :, 0] = 0
 
         im_f = xp.asnumpy(fft.centered_ifft2(xp.asarray(im_f)))
-        im = aspire.image.Image(np.real(im_f)).stack_reshape(return_stack_shape)
 
-        return im
+        return aspire.image.Image(np.real(im_f))
 
     def to_vec(self):
         """Returns an N x resolution ** 3 array."""

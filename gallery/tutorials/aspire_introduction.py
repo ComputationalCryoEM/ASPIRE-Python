@@ -212,9 +212,9 @@ print(rots)
 print(rots.matrices)
 
 # %%
-# Using the zero-th (and in this case, only) volume, compute
+# Using the ``Volume.project()`` method we compute
 # projections using the stack of rotations:
-projections = vol.project(0, rots)
+projections = vol.project(rots)
 print(projections)
 
 # %%
