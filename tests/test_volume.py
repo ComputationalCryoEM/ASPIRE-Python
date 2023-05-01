@@ -233,25 +233,30 @@ class VolumeTestCase(TestCase):
         blob_z = gaussian_3d(L, sigma=(1, 2, 3), dtype=self.dtype)
         vols = Volume(np.vstack((blob_x, blob_y, blob_z)).reshape(3, L, L, L))
 
-        # Create singleton and stacks of identity Rotations.
-        identity = np.eye(3, dtype=self.dtype)
-        eye = Rotation(identity)
-        eyes_2 = Rotation(np.vstack((identity,) * 2).reshape(2, 3, 3))
-        eyes_3 = Rotation(np.vstack((identity,) * 3).reshape(3, 3, 3))
+        # Create a singleton and stack of Rotations.
+        rot = Rotation.about_axis("z", np.pi / 6, dtype=self.dtype)
+        rots = Rotation.about_axis(
+            "z", [np.pi / 4, np.pi / 3, np.pi / 2], dtype=self.dtype
+        )
 
-        # Broadcast Volume stack with singleton Rotation.
-        ims_3_1 = vols.project(eye)
+        # Broadcast Volume stack with singleton Rotation and compare with manual projection.
+        projs_3_1 = vols.project(rot)
+        vols_rot_3_1 = vols.rotate(rot)
+        manual_projs_3_1 = np.sum(vols_rot_3_1, axis=-1) / L
+        self.assertTrue(projs_3_1.shape[0] == 3)
+        self.assertTrue(np.allclose(projs_3_1, manual_projs_3_1))
 
-        # Broadcast Volume stack with Rotation stack of same size.
-        ims_3_3 = vols.project(eyes_3)
-
-        # These image stacks should be identical.
-        self.assertTrue(np.allclose(ims_3_1, ims_3_3))
+        # Broadcast Volume stack with Rotation stack of same size and compare with manual projections.
+        projs_3_3 = vols.project(rots)
+        vols_rot_3_3 = vols.rotate(rots)
+        manual_projs_3_3 = np.sum(vols_rot_3_3, axis=-1) / L
+        self.assertTrue(projs_3_3.shape[0] == 3)
+        self.assertTrue(np.allclose(projs_3_3, manual_projs_3_3))
 
         # Check we raise an error for incompatible stacks.
         msg = "Cannot broadcast with 2 Rotations and 3 Volumes."
         with raises(NotImplementedError, match=msg):
-            _ = vols.project(eyes_2)
+            _ = vols.project(rots[:2])
 
     # Parameterize over even and odd resolutions
     @parameterized.expand([(res,), (res - 1,)])
