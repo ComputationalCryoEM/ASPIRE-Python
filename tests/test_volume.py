@@ -236,9 +236,7 @@ class VolumeTestCase(TestCase):
 
         # Create a singleton and stack of Rotations.
         rot = Rotation.about_axis("z", np.pi / 6, dtype=dtype)
-        rots = Rotation.about_axis(
-            "z", [np.pi / 4, np.pi / 3, np.pi / 2], dtype=dtype
-        )
+        rots = Rotation.about_axis("z", [np.pi / 4, np.pi / 3, np.pi / 2], dtype=dtype)
 
         # Broadcast Volume stack with singleton Rotation and compare with manual projection.
         projs_3_1 = vols.project(rot)
