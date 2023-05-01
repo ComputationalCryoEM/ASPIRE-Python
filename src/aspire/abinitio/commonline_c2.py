@@ -13,7 +13,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
     def __init__(
         self,
         src,
-        symmetry=None,
         n_rad=None,
         n_theta=None,
         max_shift=0.15,
@@ -26,7 +25,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
     ):
         super().__init__(
             src,
-            symmetry=symmetry,
+            symmetry="C2",
             n_rad=n_rad,
             n_theta=n_theta,
             max_shift=max_shift,
@@ -38,7 +37,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
         )
 
         self.min_dist_cls = min_dist_cls
-        self._check_symmetry(symmetry)
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.degree_res = degree_res
@@ -181,7 +179,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         vi is the third row of the i'th rotation matrix Ri.
         """
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-        # Step 1: Detect a single pair of common-lines between each pair of images
+        # Step 1: Detect the two pairs of mutual common-lines between each pair of images
         self.build_clmatrix()
         clmatrix = self.clmatrix
 
@@ -189,9 +187,12 @@ class CLSymmetryC2(CLSymmetryC3C4):
         Rijs, Rijgs = self._estimate_all_Rijs_c2(clmatrix)
 
         # Step 3: Inner J-synchronization
-        Rijs_sync, Rijgs_sync = self._local_J_sync_c2(Rijs, Rijgs)
+        Rijs, Rijgs = self._local_J_sync_c2(Rijs, Rijgs)
 
-        return vijs, viis
+        # Step 4: Global J-synchronization
+        vijs, Rijs, Rijgs = self._global_J_sync(Rijs, Rijgs)
+
+        return vijs, Rijs, Rijgs
 
     #################################################
     # Secondary Methods for computing outer product #
@@ -220,10 +221,9 @@ class CLSymmetryC2(CLSymmetryC3C4):
         """
         Local J-synchronization of all relative rotations.
         """
-        Rijgs_sync = np.zeros_like(Rijgs)
         e1 = np.array([1, 0, 0], dtype=self.dtype)
         pairs = all_pairs(self.n_img)
-        for idx, (i, j) in enumerate(pairs):
+        for idx, _ in enumerate(pairs):
             Rij = Rijs[idx]
             Rijg = Rijgs[idx]
 
@@ -235,8 +235,24 @@ class CLSymmetryC2(CLSymmetryC3C4):
             s_J = np.linalg.svd(vij_J, compute_uv=False)
 
             if np.linalg.norm(s_J - e1) < np.linalg.norm(s - e1):
-                Rijgs_sync[idx] = J_conjugate(Rijg)
-            else:
-                Rijgs_sync[idx] = Rijg
+                Rijgs[idx] = J_conjugate(Rijg)
 
-        return Rijs, Rijgs_sync
+        return Rijs, Rijgs
+
+    def _global_J_sync(self, Rijs, Rijgs):
+        """
+        Global handedness synchronization of relative rotations.
+        """
+        vijs = (Rijs + Rijgs) / 2
+
+        # Determine relative handedness of vijs.
+        sign_ij_J = self._J_sync_power_method(vijs)
+
+        # Synchronize relative rotations
+        for i, sign in enumerate(sign_ij_J):
+            if sign == -1:
+                vijs[i] = J_conjugate(vijs[i])
+                Rijs[i] = J_conjugate(Rijs[i])
+                Rijgs[i] = J_conjugate(Rijgs[i])
+
+        return vijs, Rijs, Rijgs
