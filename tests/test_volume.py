@@ -224,19 +224,20 @@ class VolumeTestCase(TestCase):
         imgs_clean = vols.project(rots).asnumpy()
         self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
 
-    def testProjectBroadcast(self):
+    @parameterized.expand([(np.float32,), (np.float64)])
+    def testProjectBroadcast(self, dtype):
         L = 32
 
         # Create stack of Volume with Gaussians stretched along varying axes.
-        blob_x = gaussian_3d(L, sigma=(3, 2, 1), dtype=self.dtype)
-        blob_y = gaussian_3d(L, sigma=(1, 3, 2), dtype=self.dtype)
-        blob_z = gaussian_3d(L, sigma=(1, 2, 3), dtype=self.dtype)
+        blob_x = gaussian_3d(L, sigma=(3, 2, 1), dtype=dtype)
+        blob_y = gaussian_3d(L, sigma=(1, 3, 2), dtype=dtype)
+        blob_z = gaussian_3d(L, sigma=(1, 2, 3), dtype=dtype)
         vols = Volume(np.vstack((blob_x, blob_y, blob_z)).reshape(3, L, L, L))
 
         # Create a singleton and stack of Rotations.
-        rot = Rotation.about_axis("z", np.pi / 6, dtype=self.dtype)
+        rot = Rotation.about_axis("z", np.pi / 6, dtype=dtype)
         rots = Rotation.about_axis(
-            "z", [np.pi / 4, np.pi / 3, np.pi / 2], dtype=self.dtype
+            "z", [np.pi / 4, np.pi / 3, np.pi / 2], dtype=dtype
         )
 
         # Broadcast Volume stack with singleton Rotation and compare with manual projection.
