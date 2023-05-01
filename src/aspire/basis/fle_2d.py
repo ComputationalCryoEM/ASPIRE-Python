@@ -47,11 +47,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
               be set to that of `FBBasis2D`, and the FLE frequency thresholding procedure to reduce the
               number of functions will not be carried out. This means the number of basis functions for
               a given image size will be identical across the two bases.
-            - The signs of basis functions and coefficients with `sgn == 1` will be flipped relative to
-              the original FLE implementation, to match FB.
-            - The basis functions returned will be reordered according to the FB ordering, that is, first
-              by `ell`s, then by `sgn`s, then by `k`s.
-
         """
         if isinstance(size, int):
             size = (size, size)
@@ -102,6 +97,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.angular_indices = np.abs(self.ells)
         self.radial_indices = self.ks - 1
         self.signs_indices = np.sign(self.ells)
+        # Use the FB2D ells sign convention of `1` for `ell=0`
+        self.signs_indices[self.ells == 0] = 1
 
     def indices(self):
         """
@@ -115,14 +112,13 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
     def _generate_fb_compat_indices(self):
         """
-        Generate indices to shuffle basis function ordering and flip signs in order
-            to match `FBBasis2D`.
+        Generate indices to shuffle basis function ordering.
         """
         ind = self.indices()
-        # basis function ordering
-        self.fb_compat_indices = np.lexsort((ind["ks"], ind["sgns"], ind["ells"]))
-        # flip signs
-        self.flip_sign_indices = np.where(self.signs_indices == 1)
+        # basis function ordering (used during evaluate_t output)
+        self.fle_to_fb_indices = np.lexsort((ind["ks"], ind["sgns"], ind["ells"]))
+        # store the reverse mapping (used during evaluate input)
+        self.fb_to_fle_indices = np.argsort(self.fle_to_fb_indices)
 
     def _precomp(self):
         """
@@ -460,11 +456,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             be evaluated. The last dimension must be equal to `self.count`
         :return: An Image object containing the corresponding images.
         """
-        if self.match_fb:
-            # sign of basis functions with positive indices flipped relative to FB2d
-            coeffs[self.flip_sign_indices] *= -1.0
-            # reorder coefficients by FB2d ordering
-            coeffs = coeffs[self.fb_compat_indices]
+        # convert from FB order
+        coeffs = coeffs[..., self.fb_to_fle_indices]
+        inds = (self.signs_indices == 1) & (self.ells != 0)
+        coeffs[..., inds] = coeffs[..., inds] * -1
 
         # See Remark 3.3 and Section 3.4
         betas = self._step3(coeffs)
@@ -486,10 +481,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         z = self._step1_t(imgs)
         b = self._step2_t(z)
         coeffs = self._step3_t(b)
-        if self.match_fb:
-            coeffs[:, self.flip_sign_indices] *= -1.0
-            coeffs = coeffs[:, self.fb_compat_indices]
-        return coeffs.astype(self.coefficient_dtype)
+
+        # return in FB order
+        inds = (self.signs_indices == 1) & (self.ells != 0)
+        coeffs[..., inds] = coeffs[..., inds] * -1
+        coeffs = coeffs[..., self.fle_to_fb_indices]
+        return coeffs.astype(self.coefficient_dtype, copy=False)
 
     def _step1_t(self, im):
         """
@@ -636,9 +633,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         B = B.reshape(self.nres**2, self.count)
         B = transform_complex_to_real(np.conj(B), self.ells)
         B = B.reshape(self.nres**2, self.count)
-        if self.match_fb:
-            B[:, self.flip_sign_indices] *= -1.0
-            B = B[:, self.fb_compat_indices]
+        inds = (self.signs_indices == 1) & (self.ells != 0)
+        B[..., inds] = B[..., inds] * -1
+        B = B[..., self.fle_to_fb_indices]
         return B
 
     def lowpass(self, coeffs, bandlimit):
