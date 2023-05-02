@@ -224,7 +224,7 @@ class VolumeTestCase(TestCase):
         imgs_clean = vols.project(rots).asnumpy()
         self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
 
-    @parameterized.expand([(np.float32,), (np.float64)])
+    @parameterized.expand([(np.float32,), (np.float64,)])
     def testProjectBroadcast(self, dtype):
         L = 32
 
