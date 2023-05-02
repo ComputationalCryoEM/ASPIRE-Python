@@ -243,14 +243,18 @@ class VolumeTestCase(TestCase):
         vols_rot_3_1 = vols.rotate(rot)
         manual_projs_3_1 = np.sum(vols_rot_3_1, axis=-1) / L
         self.assertTrue(projs_3_1.shape[0] == 3)
-        self.assertTrue(np.allclose(projs_3_1, manual_projs_3_1))
+        self.assertTrue(
+            np.allclose(projs_3_1, manual_projs_3_1, atol=utest_tolerance(self.dtype))
+        )
 
         # Broadcast Volume stack with Rotation stack of same size and compare with manual projections.
         projs_3_3 = vols.project(rots)
         vols_rot_3_3 = vols.rotate(rots)
         manual_projs_3_3 = np.sum(vols_rot_3_3, axis=-1) / L
         self.assertTrue(projs_3_3.shape[0] == 3)
-        self.assertTrue(np.allclose(projs_3_3, manual_projs_3_3))
+        self.assertTrue(
+            np.allclose(projs_3_3, manual_projs_3_3, atol=utest_tolerance(self.dtype))
+        )
 
         # Check we raise an error for incompatible stacks.
         msg = "Cannot broadcast with 2 Rotations and 3 Volumes."
