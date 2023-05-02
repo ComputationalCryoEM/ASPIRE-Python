@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from aspire.abinitio import CLSymmetryC3C4
-from aspire.utils import J_conjugate, all_pairs
+from aspire.utils import J_conjugate, Rotation, all_pairs
 from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
@@ -169,6 +169,30 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
         return arr * mask
 
+    def estimate_rotations(self):
+        """
+        Estimate rotation matrices for molecules with C2 symmetry.
+
+        :return: Array of rotation matrices, size n_imgx3x3.
+        """
+        Rijs, Rijgs = self._estimate_relative_viewing_directions()
+
+        logger.info("Performing global handedness synchronization.")
+        vijs, Rijs, Rijgs = self._global_J_sync(Rijs, Rijgs)
+
+        logger.info("Estimating third rows of rotation matrices.")
+        # The diagonal blocks of the 3n x 3n block matrix of relative rotations are
+        # the identity since vi.T @ vi = I.
+        viis = np.vstack((np.eye(3, dtype=self.dtype),) * self.n_img).reshape(
+            self.n_img, 3, 3
+        )
+        vis = self._estimate_third_rows(vijs, viis)
+
+        logger.info("Estimating in-plane rotations and rotations matrices.")
+        Ris = self._estimate_inplane_rotations(vis, Rijs, Rijgs)
+
+        self.rotations = Ris
+
     ###########################################
     # Primary Methods                         #
     ###########################################
@@ -189,10 +213,70 @@ class CLSymmetryC2(CLSymmetryC3C4):
         # Step 3: Inner J-synchronization
         Rijs, Rijgs = self._local_J_sync_c2(Rijs, Rijgs)
 
-        # Step 4: Global J-synchronization
-        vijs, Rijs, Rijgs = self._global_J_sync(Rijs, Rijgs)
+        return Rijs, Rijgs
+
+    def _global_J_sync(self, Rijs, Rijgs):
+        """
+        Global handedness synchronization of relative rotations.
+        """
+        vijs = (Rijs + Rijgs) / 2
+
+        # Determine relative handedness of vijs.
+        sign_ij_J = self._J_sync_power_method(vijs)
+
+        # Synchronize relative rotations
+        for i, sign in enumerate(sign_ij_J):
+            if sign == -1:
+                vijs[i] = J_conjugate(vijs[i])
+                Rijs[i] = J_conjugate(Rijs[i])
+                Rijgs[i] = J_conjugate(Rijgs[i])
 
         return vijs, Rijs, Rijgs
+
+    def _estimate_inplane_rotations(self, vis, Rijs, Rijgs):
+        """
+        Estimate rotation matrices for each image by first constructing arbitrary rotations with
+        the given third rows, vis, then applying in-plane rotations found with an angular
+        synchronization procedure.
+        """
+        H = np.zeros((self.n_img, self.n_img), dtype=complex)
+        # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
+        # the corresponding third rows vis.
+        Ris_tilde = np.array([self._complete_third_row_to_rot(vi) for vi in vis])
+
+        pairs = all_pairs(self.n_img)
+        for idx, (i, j) in enumerate(pairs):
+            # Uij and Uijg below are xy-in-plane rotations.
+            Uij = Ris_tilde[i] @ Rijs[idx] @ Ris_tilde[j].T
+            u, _, v = np.linalg.svd(Uij[0:2, 0:2])
+            Uij = u @ v.T
+
+            Uijg = Ris_tilde[i] @ Rijgs[idx] @ Ris_tilde[j].T
+            u, _, v = np.linalg.svd(Uijg[0:2, 0:2])
+            Uijg = u @ v.T
+
+            U = (Uij @ Uij + Uijg @ Uijg) / 2
+            u, _, v = np.linalg.svd(U)
+            U = u @ v.T
+
+            H[i, j] = U[0, 0] - 1j * U[1, 0]
+
+        # Populate the lower triangle and diagonal of H.
+        # Diagonals are 1 since e^{i*0}=1.
+        H += np.conj(H).T + np.eye(self.n_img)
+
+        # H is a rank-1 Hermitian matrix.
+        eig_vals, eig_vecs = np.linalg.eigh(H)
+        leading_eig_vec = eig_vecs[:, -1]
+        logger.info(f"Top 5 eigenvalues of H are {str(eig_vals[-5:][::-1])}.")
+
+        # Calculate R_thetas.
+        R_thetas = Rotation.about_axis("z", np.angle(np.sqrt(leading_eig_vec)))
+
+        # Form rotation matrices Ris.
+        Ris = R_thetas @ Ris_tilde
+
+        return Ris
 
     #################################################
     # Secondary Methods for computing outer product #
@@ -238,21 +322,3 @@ class CLSymmetryC2(CLSymmetryC3C4):
                 Rijgs[idx] = J_conjugate(Rijg)
 
         return Rijs, Rijgs
-
-    def _global_J_sync(self, Rijs, Rijgs):
-        """
-        Global handedness synchronization of relative rotations.
-        """
-        vijs = (Rijs + Rijgs) / 2
-
-        # Determine relative handedness of vijs.
-        sign_ij_J = self._J_sync_power_method(vijs)
-
-        # Synchronize relative rotations
-        for i, sign in enumerate(sign_ij_J):
-            if sign == -1:
-                vijs[i] = J_conjugate(vijs[i])
-                Rijs[i] = J_conjugate(Rijs[i])
-                Rijgs[i] = J_conjugate(Rijgs[i])
-
-        return vijs, Rijs, Rijgs
