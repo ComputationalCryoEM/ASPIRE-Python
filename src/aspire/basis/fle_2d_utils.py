@@ -87,7 +87,7 @@ def precomp_transform_complex_to_real(ells):
 
     A = sparse.csr_matrix((vals, (idx, jdx)), shape=(count, count), dtype=np.complex128)
 
-    return A
+    return A.conjugate()
 
 
 def barycentric_interp_sparse(target_points, known_points, numsparse):

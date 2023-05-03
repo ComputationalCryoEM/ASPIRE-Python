@@ -90,15 +90,29 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Steerable basis indices
         self._build_indices()
 
-        # FB compatability indices
-        self._generate_fb_compat_indices()
-
     def _build_indices(self):
-        self.angular_indices = np.abs(self.ells)
-        self.radial_indices = self.ks - 1
-        self.signs_indices = np.sign(self.ells)
+        # FLE internal indices
+        self._fle_angular_indices = np.abs(self._ells)
+        self._fle_radial_indices = self._ks - 1
+        self._fle_signs_indices = np.sign(self._ells)
         # Use the FB2D ells sign convention of `1` for `ell=0`
-        self.signs_indices[self.ells == 0] = 1
+        self._fle_signs_indices[self._ells == 0] = 1
+
+        # basis function ordering (used during evaluate_t output)
+        self._fle_to_fb_indices = np.lexsort(
+            (
+                self._fle_radial_indices,
+                self._fle_signs_indices,
+                self._fle_angular_indices,
+            )
+        )
+        # store the reverse mapping (used during evaluate input)
+        self._fb_to_fle_indices = np.argsort(self._fle_to_fb_indices)
+
+        #
+        self.angular_indices = self._fle_angular_indices[self._fle_to_fb_indices]
+        self.radial_indices = self._fle_radial_indices[self._fle_to_fb_indices]
+        self.signs_indices = self._fle_signs_indices[self._fle_to_fb_indices]
 
     def indices(self):
         """
@@ -109,16 +123,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             "ks": self.radial_indices,
             "sgns": self.signs_indices,
         }
-
-    def _generate_fb_compat_indices(self):
-        """
-        Generate indices to shuffle basis function ordering.
-        """
-        ind = self.indices()
-        # basis function ordering (used during evaluate_t output)
-        self.fle_to_fb_indices = np.lexsort((ind["ks"], ind["sgns"], ind["ells"]))
-        # store the reverse mapping (used during evaluate input)
-        self.fb_to_fle_indices = np.argsort(self.fle_to_fb_indices)
 
     def _precomp(self):
         """
@@ -133,22 +137,22 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Some important constants
         self.smallest_lambda = np.min(self.bessel_zeros)
         self.greatest_lambda = np.max(self.bessel_zeros)
-        self.max_ell = np.max(np.abs(self.ells))
+        self.max_ell = np.max(np.abs(self._ells))
         self.h = 1 / (self.nres / 2)
 
         # give each ell a positive index increasing first in |ell|
         # then in sign, e.g. 0->1, -1->2, 1->3, -2->4, 2->5, etc.
-        self.ells_p = 2 * np.abs(self.ells) - (self.ells < 0)
-        self.ell_p_max = np.max(self.ells_p)
+        self._ells_p = 2 * np.abs(self._ells) - (self._ells < 0)
+        self.ell_p_max = np.max(self._ells_p)
         # idx_list[k] contains the indices j of ells_p where ells_p[j] = k
         idx_list = [[] for i in range(self.ell_p_max + 1)]
         for i in range(self.count):
-            ellp = self.ells_p[i]
+            ellp = self._ells_p[i]
             idx_list[ellp].append(i)
         self.idx_list = idx_list
 
         # real <-> complex
-        self.c2r = precomp_transform_complex_to_real(self.ells)
+        self.c2r = precomp_transform_complex_to_real(self._ells)
         self.r2c = sparse.csr_matrix(self.c2r.transpose().conj())
 
         # create an ordered list of the original ell values
@@ -319,27 +323,27 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # 0 frequency plus pos and negative frequencies for each bessel function
         # num functions per frequency
         num_ells = 1 + 2 * max_ell
-        self.ells = np.zeros((num_ells, max_k), dtype=int)
-        self.ks = np.zeros((num_ells, max_k), dtype=int)
+        self._ells = np.zeros((num_ells, max_k), dtype=int)
+        self._ks = np.zeros((num_ells, max_k), dtype=int)
         self.bessel_zeros = np.ones((num_ells, max_k), dtype=np.float64) * np.Inf
 
         # keep track of which order Bessel function we're on
-        self.ells[0, :] = 0
+        self._ells[0, :] = 0
         # bessel_roots[0, m] is the m'th zero of J_0
         self.bessel_zeros[0, :] = besselj_zeros(0, max_k)
         # table of values of which zero of J_0 we are finding
-        self.ks[0, :] = np.arange(max_k) + 1
+        self._ks[0, :] = np.arange(max_k) + 1
 
         # add roots of J_ell for ell>0 twice with +k and -k (frequencies)
         # iterate over Bessel function order
         for ell in range(1, max_ell + 1):
-            self.ells[2 * ell - 1, :] = -ell
-            self.ks[2 * ell - 1, :] = np.arange(max_k) + 1
+            self._ells[2 * ell - 1, :] = -ell
+            self._ks[2 * ell - 1, :] = np.arange(max_k) + 1
 
             self.bessel_zeros[2 * ell - 1, :max_k] = besselj_zeros(ell, max_k)
 
-            self.ells[2 * ell, :] = ell
-            self.ks[2 * ell, :] = self.ks[2 * ell - 1, :]
+            self._ells[2 * ell, :] = ell
+            self._ks[2 * ell, :] = self._ks[2 * ell - 1, :]
             self.bessel_zeros[2 * ell, :] = self.bessel_zeros[2 * ell - 1, :]
 
         # Reshape the arrays and order by the size of the Bessel function zeros
@@ -353,30 +357,30 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
     def _flatten_and_sort_bessel_zeros(self):
         """
-        Reshapes arrays self.ells, self.ks, and self.bessel_zeros
+        Reshapes arrays self._ells, self._ks, and self.bessel_zeros
         """
         # flatten list of zeros, ells and ks:
-        self.ells = self.ells.flatten()
-        self.ks = self.ks.flatten()
+        self._ells = self._ells.flatten()
+        self._ks = self._ks.flatten()
         self.bessel_zeros = self.bessel_zeros.flatten()
 
         idx = np.argsort(self.bessel_zeros)
-        self.ells = self.ells[idx]
-        self.ks = self.ks[idx]
+        self._ells = self._ells[idx]
+        self._ks = self._ks[idx]
         self.bessel_zeros = self.bessel_zeros[idx]
 
         # sort complex conjugate pairs: -ell first, +ell second
         idx = np.arange(self.max_basis_functions + 1)
         for i in range(self.max_basis_functions + 1):
-            if self.ells[i] >= 0:
+            if self._ells[i] >= 0:
                 continue
             if np.abs(self.bessel_zeros[i] - self.bessel_zeros[i + 1]) < 1e-14:
                 continue
             idx[i - 1] = i
             idx[i] = i - 1
 
-        self.ells = self.ells[idx]
-        self.ks = self.ks[idx]
+        self._ells = self._ells[idx]
+        self._ks = self._ks[idx]
         self.bessel_zeros = self.bessel_zeros[idx]
 
     def _threshold_basis_functions(self):
@@ -402,12 +406,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                     _final_num_basis_functions -= 1
 
         # potentially subtract one to keep complex conjugate pairs
-        if self.ells[_final_num_basis_functions - 1] < 0:
+        if self._ells[_final_num_basis_functions - 1] < 0:
             _final_num_basis_functions -= 1
 
         # discard zeros above the threshold
-        self.ells = self.ells[:_final_num_basis_functions]
-        self.ks = self.ks[:_final_num_basis_functions]
+        self._ells = self._ells[:_final_num_basis_functions]
+        self._ks = self._ks[:_final_num_basis_functions]
         self.bessel_zeros = self.bessel_zeros[:_final_num_basis_functions]
 
         return _final_num_basis_functions
@@ -420,7 +424,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         basis_functions = [None] * self.count
         for i in range(self.count):
             # parameters defining the basis function: bessel order and which bessel root
-            ell = self.ells[i]
+            ell = self._ells[i]
             bessel_zero = self.bessel_zeros[i]
 
             # compute normalization constant
@@ -457,9 +461,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :return: An Image object containing the corresponding images.
         """
         # convert from FB order
-        coeffs = coeffs[..., self.fb_to_fle_indices]
-        inds = (self.signs_indices == 1) & (self.ells != 0)
-        coeffs[..., inds] = coeffs[..., inds] * -1
+        coeffs = coeffs[..., self._fb_to_fle_indices]
 
         # See Remark 3.3 and Section 3.4
         betas = self._step3(coeffs)
@@ -483,9 +485,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         coeffs = self._step3_t(b)
 
         # return in FB order
-        inds = (self.signs_indices == 1) & (self.ells != 0)
-        coeffs[..., inds] = coeffs[..., inds] * -1
-        coeffs = coeffs[..., self.fle_to_fb_indices]
+        coeffs = coeffs[..., self._fle_to_fb_indices]
         return coeffs.astype(self.coefficient_dtype, copy=False)
 
     def _step1_t(self, im):
@@ -631,11 +631,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         for i in range(self.count):
             B[:, :, i] = self.basis_functions[i](self.rs, ts) * self.h
         B = B.reshape(self.nres**2, self.count)
-        B = transform_complex_to_real(np.conj(B), self.ells)
+        B = transform_complex_to_real(B, self._ells)
         B = B.reshape(self.nres**2, self.count)
-        inds = (self.signs_indices == 1) & (self.ells != 0)
-        B[..., inds] = B[..., inds] * -1
-        B = B[..., self.fle_to_fb_indices]
+        B = B[..., self._fle_to_fb_indices]
+
         return B
 
     def lowpass(self, coeffs, bandlimit):
@@ -662,6 +661,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return coeffs
 
+    def rotate(self, coef, radians, refl=None):
+        return super().rotate(coef, -1 * radians, refl)
+
     def radial_convolve(self, coeffs, radial_img):
         """
         Convolve a stack of FLE coefficients with a 2D radial function.
@@ -671,6 +673,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         num_img = coeffs.shape[0]
         coeffs_conv = np.zeros(coeffs.shape)
+
+        # Convert to internal FLE indices ordering
+        coeffs = coeffs[..., self._fb_to_fle_indices]
+
         for k in range(num_img):
             _coeffs = coeffs[k, :]
             z = self._step1_t(radial_img)
@@ -679,6 +685,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             b = weights / (self.h**2)
             b = b.reshape(self.count)
             coeffs_conv[k, :] = np.real(self.c2r @ (b * (self.r2c @ _coeffs).flatten()))
+
+        # Convert from internal FLE ordering to FB convention
+        coeffs_conv = coeffs_conv[..., self._fle_to_fb_indices]
 
         return coeffs_conv
 
