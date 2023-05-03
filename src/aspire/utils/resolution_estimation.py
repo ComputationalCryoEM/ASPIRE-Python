@@ -87,7 +87,7 @@ class _FourierCorrelation:
     @property
     def _fourier_axes(self):
         """
-        Returns tuple representing the axis containing signal data
+        Returns tuple representing the axes containing signal data
         based on dimension `dim`.
         """
         return tuple(range(-self.dim, 0))
