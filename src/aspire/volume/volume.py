@@ -494,7 +494,7 @@ class Volume:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
         return cls(loaded_data.astype(dtype))
 
-    def fsc(self, other, pixel_size, cutoff=0.143, eps=1e-4, method="fft"):
+    def fsc(self, other, pixel_size, cutoff=0.143, eps=1e-4, method="fft", plot=False):
         r"""
         Compute the Fourier shell correlation between two volumes.
 
@@ -514,6 +514,9 @@ class Volume:
         :param eps: Epsilon past boundary values, defaults 1e-4.
         :param method: Selects either 'fft' (on cartesian grid),
             or 'nufft' (on polar grid). Defaults to 'fft'.
+        :param plot: Optionally plot to screen or file.
+            Defaults to `False`.  `True` plots to screen.
+            Passing a filepath as a string will attempt to save to file.
 
         :return: tuple(estimated_resolution,  FSC),
             where `estimated_resolution` is in Angstrom
@@ -533,6 +536,11 @@ class Volume:
             eps=eps,
             method=method,
         )
+
+        if plot is True:
+            fsc.plot()
+        elif plot:
+            fsc.plot(save_to_file=plot)
 
         return fsc.estimated_resolution, fsc.correlations
 

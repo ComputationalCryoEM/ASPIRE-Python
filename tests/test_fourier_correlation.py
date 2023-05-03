@@ -126,6 +126,23 @@ def test_frc_noise(image_fixture, method):
     assert np.isclose(frc_resolution[0][0], 1.75, rtol=0.2)
 
 
+def test_frc_img_plot(image_fixture):
+    """
+    Smoke test Image.frc(plot=) passthrough.
+    """
+    img_a, _, img_n = image_fixture
+
+    # Plot to screen
+    with matplotlib_no_gui():
+        _ = img_a.frc(img_n, pixel_size=1, plot=True)
+
+    # Plot to file
+    with tempfile.TemporaryDirectory() as tmp_input_dir:
+        file_path = os.path.join(tmp_input_dir, "img_frc_curve.png")
+        img_a.frc(img_n, pixel_size=1, plot=file_path)
+        assert os.path.exists(file_path)
+
+
 def test_frc_plot(image_fixture, method):
     """
     Smoke test the plot.
@@ -141,12 +158,12 @@ def test_frc_plot(image_fixture, method):
     with matplotlib_no_gui():
         frc.plot()
 
-        # Reset cutoff, then plot again
-        frc.cutoff = 0.143
+    # Reset cutoff, then plot again
+    frc.cutoff = 0.143
 
-        with tempfile.TemporaryDirectory() as tmp_input_dir:
-            file_path = os.path.join(tmp_input_dir, "frc_curve.png")
-            frc.plot(save_to_file=file_path)
+    with tempfile.TemporaryDirectory() as tmp_input_dir:
+        file_path = os.path.join(tmp_input_dir, "frc_curve.png")
+        frc.plot(save_to_file=file_path)
 
 
 # FSC
@@ -171,6 +188,23 @@ def test_fsc_trunc(volume_fixture, method):
     assert fsc_resolution[0][0] > 2.0
 
 
+def test_fsc_vol_plot(volume_fixture):
+    """
+    Smoke test Image.frc(plot=) passthrough.
+    """
+    vol_a, vol_b = volume_fixture
+
+    # Plot to screen
+    with matplotlib_no_gui():
+        _ = vol_a.fsc(vol_b, pixel_size=1, plot=True)
+
+    # Plot to file
+    with tempfile.TemporaryDirectory() as tmp_input_dir:
+        file_path = os.path.join(tmp_input_dir, "img_fsc_curve.png")
+        vol_a.fsc(vol_b, pixel_size=1, plot=file_path)
+        assert os.path.exists(file_path)
+
+
 def test_fsc_plot(volume_fixture, method):
     """
     Smoke test the plot.
@@ -184,9 +218,9 @@ def test_fsc_plot(volume_fixture, method):
     with matplotlib_no_gui():
         fsc.plot()
 
-        with tempfile.TemporaryDirectory() as tmp_input_dir:
-            file_path = os.path.join(tmp_input_dir, "fsc_curve.png")
-            fsc.plot(save_to_file=file_path)
+    with tempfile.TemporaryDirectory() as tmp_input_dir:
+        file_path = os.path.join(tmp_input_dir, "fsc_curve.png")
+        fsc.plot(save_to_file=file_path)
 
 
 # Check the error checks.

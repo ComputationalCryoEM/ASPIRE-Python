@@ -477,7 +477,7 @@ class Image:
 
             plt.show()
 
-    def frc(self, other, pixel_size, cutoff=0.143, eps=1e-4, method="fft"):
+    def frc(self, other, pixel_size, cutoff=0.143, eps=1e-4, method="fft", plot=False):
         r"""
         Compute the Fourier ring correlation between two images.
 
@@ -497,6 +497,9 @@ class Image:
         :param eps: Epsilon past boundary values, defaults 1e-4.
         :param method: Selects either 'fft' (on cartesian grid),
             or 'nufft' (on polar grid). Defaults to 'fft'.
+        :param plot: Optionally plot to screen or file.
+            Defaults to `False`.  `True` plots to screen.
+            Passing a filepath as a string will attempt to save to file.
 
         :return: tuple(estimated_resolution,  FRC),
             where `estimated_resolution` is in Angstrom
@@ -516,6 +519,11 @@ class Image:
             eps=eps,
             method=method,
         )
+
+        if plot is True:
+            frc.plot()
+        elif plot:
+            frc.plot(save_to_file=plot)
 
         return frc.estimated_resolution, frc.correlations
 

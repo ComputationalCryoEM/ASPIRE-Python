@@ -367,8 +367,8 @@ class _FourierCorrelation:
 
         if save_to_file:
             plt.savefig(save_to_file)
-
-        plt.show()
+        else:
+            plt.show()
 
 
 # The following are user facing classes, and simply wrap
