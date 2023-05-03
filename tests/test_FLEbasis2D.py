@@ -156,6 +156,7 @@ def testMatchFBDenseEvaluate(basis):
 
     # Matrix column reording in match_fb mode flips signs of some of the basis functions
     assert np.allclose(np.abs(fb_images), np.abs(fle_images), atol=1e-3)
+    assert np.allclose(fb_images, fle_images, atol=1e-3)
 
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
