@@ -12,11 +12,11 @@ from aspire.utils import grid_2d
 
 logger = logging.getLogger(__name__)
 
-# _FourierCorrelation holds a single implementation for both FSC and
+# FourierCorrelation holds a single implementation for both FSC and
 # FRC based on dimension `dim`.
 
 
-class _FourierCorrelation:
+class FourierCorrelation:
     r"""
     Compute the Fourier correlations between two arrays.
 
@@ -372,22 +372,22 @@ class _FourierCorrelation:
 
 
 # The following are user facing classes, and simply wrap
-# `_FourierCorrelation` after assigning dimension `dim` and any
+# `FourierCorrelation` after assigning dimension `dim` and any
 # dimension specific variables.
 
 
-class FourierRingCorrelation(_FourierCorrelation):
+class FourierRingCorrelation(FourierCorrelation):
     """
-    See `_FourierCorrelation`.
+    See `FourierCorrelation`.
     """
 
     dim = 2
     _plot_title = "Fourier Ring Correlation"
 
 
-class FourierShellCorrelation(_FourierCorrelation):
+class FourierShellCorrelation(FourierCorrelation):
     """
-    See `_FourierCorrelation`.
+    See `FourierCorrelation`.
     """
 
     dim = 3
