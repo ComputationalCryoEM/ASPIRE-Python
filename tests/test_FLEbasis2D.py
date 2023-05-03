@@ -299,7 +299,7 @@ def testRotate45():
     dtype = np.float64
 
     L = 128
-    fb_basis = FBBasis2D(L, dtype=dtype)
+    fb_basis = FFBBasis2D(L, dtype=dtype)
     basis = FLEBasis2D(L, match_fb=True, dtype=dtype)
 
     # sample image
