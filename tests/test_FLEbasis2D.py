@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import pytest
 
-from aspire.basis import FBBasis2D, FLEBasis2D
+from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D
 from aspire.image import Image
 from aspire.nufft import backend_available
 from aspire.numeric import fft
@@ -290,6 +290,34 @@ def testRotate():
         match="Input a stack of coefficients of dimension",
     ):
         _ = basis.lowpass(np.zeros((3, 3, 3)), np.pi)
+
+
+def testRotate45():
+    # test ability to accurately rotate images via
+    # FLE coefficients
+    dtype = np.float64
+
+    L = 128
+    fb_basis = FBBasis2D(L, dtype=dtype)
+    basis = FLEBasis2D(L, match_fb=True, dtype=dtype)
+
+    # sample image
+    ims = create_images(L, 1)
+
+    # get FLE coefficients
+    fb_coeffs = fb_basis.evaluate_t(ims)
+    coeffs = basis.evaluate_t(ims)
+
+    # rotate original image in FLE space using Steerable rotate method
+    fb_coeffs_rot = fb_basis.rotate(fb_coeffs, np.pi / 4)
+    coeffs_rot = basis.rotate(coeffs, np.pi / 4)
+
+    # back to cartesian
+    fb_ims_rot = fb_basis.evaluate(fb_coeffs_rot)
+    ims_rot = basis.evaluate(coeffs_rot)
+
+    # test close
+    assert np.allclose(ims_rot[0], fb_ims_rot[0], atol=1e-4)
 
 
 def testRadialConvolution():
