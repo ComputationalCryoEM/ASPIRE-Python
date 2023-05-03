@@ -22,7 +22,7 @@ Developers of the Python and Matlab collection of ASPIRE codes are listed below.
    +------------------+-----------------+---------------------------+-----------------------------------+
    | Ayelet Heimowitz | ayeltg          | ayeleth@ariel.ac.il       | Ariel University                  |
    +------------------+-----------------+---------------------------+-----------------------------------+
-   | Chris Langfield  | chris-langfield | langfield@princeton.edu   | Princeton University              |
+   | Chris Langfield  | chris-langfield | cal2254@columbia.edu      | Columbia University               |
    +------------------+-----------------+---------------------------+-----------------------------------+
    | Amit Moscovich   | mosco           | mosco@tauex.tau.ac.il     | Tel Aviv University               |
    +------------------+-----------------+---------------------------+-----------------------------------+
@@ -36,7 +36,7 @@ Developers of the Python and Matlab collection of ASPIRE codes are listed below.
    +------------------+-----------------+---------------------------+-----------------------------------+
    | Garrett Wright   | garrettwrong    | gbwright@princeton.edu    | Princeton University              |
    +------------------+-----------------+---------------------------+-----------------------------------+
-   | Junchao Xia      | junchaoxia      | junchao.xia@princeton.edu | Princeton University              |
+   | Junchao Xia      | junchaoxia      | junchaoxiacn@gmail.com    | OpenEye                           |
    +------------------+-----------------+---------------------------+-----------------------------------+
 
 |
