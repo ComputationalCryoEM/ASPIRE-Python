@@ -59,19 +59,6 @@ def image_fixture(img_size, dtype):
     rots = Rotation.about_axis("z", thetas, dtype=dtype)
 
     # Contruct the Simulation source.
-    src = Simulation(
-        L=img_size,
-        n=2,
-        vols=v,
-        offsets=0,
-        amplitudes=1,
-        C=1,
-        angles=rots.angles,
-        dtype=dtype,
-    )
-
-    img, img_rot = src.images[:]
-
     noisy_src = Simulation(
         L=img_size,
         n=2,
@@ -80,9 +67,10 @@ def image_fixture(img_size, dtype):
         amplitudes=1,
         C=1,
         angles=rots.angles,
-        noise_adder=BlueNoiseAdder(var=np.var(img.asnumpy() * 0.5)),
+        noise_adder=BlueNoiseAdder.from_snr(2),
         dtype=dtype,
     )
+    img, img_rot = noisy_src.clean_images[:]
     img_noisy = noisy_src.images[0]
 
     return img, img_rot, img_noisy
@@ -128,14 +116,14 @@ def test_frc_rot(image_fixture, method):
     img_a, img_b, _ = image_fixture
     assert img_a.dtype == img_b.dtype
     frc_resolution, frc = img_a.frc(img_b, pixel_size=1, method=method)
-    assert np.isclose(frc_resolution[0][0], 3.78 / 2, rtol=0.1)
+    assert np.isclose(frc_resolution[0][0], 1.89, rtol=0.1)
 
 
 def test_frc_noise(image_fixture, method):
     img_a, _, img_n = image_fixture
 
     frc_resolution, frc = img_a.frc(img_n, pixel_size=1, method=method)
-    assert np.isclose(frc_resolution[0][0], 3.5 / 2, rtol=0.2)
+    assert np.isclose(frc_resolution[0][0], 1.75, rtol=0.2)
 
 
 def test_frc_plot(image_fixture, method):
