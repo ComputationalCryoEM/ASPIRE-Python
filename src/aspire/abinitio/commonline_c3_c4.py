@@ -682,7 +682,9 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         itr = 0
 
         # Power method iterations
-        logger.info("Initiating Power Method.")
+        logger.info(
+            "Initiating power method to estimate J-synchronization matrix eigenvector."
+        )
         while itr < max_iters and residual > epsilon:
             itr += 1
             vec_new = self._signs_times_v(vijs, vec)
