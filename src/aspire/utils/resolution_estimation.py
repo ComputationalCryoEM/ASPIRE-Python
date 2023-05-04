@@ -35,7 +35,7 @@ class FourierCorrelation:
         """
         :param a: Input array a, shape(..., *dim).
         :param b: Input array b, shape(..., *dim).
-        :param pixel_size: Pixel size in Angstrom.
+        :param pixel_size: Pixel size in angstrom.
             Defaults to 1.
         :param cutoff: Cutoff value, traditionally `.143`.
         :param eps: Epsilon past boundary values, defaults 1e-4.
@@ -57,9 +57,9 @@ class FourierCorrelation:
         # TODO, check-math/avoid complex inputs.
 
         # Shape checks
-        if not a.shape[-1] == b.shape[-1]:
+        if not a.shape[-self.dim:] == b.shape[-self.dim:]:
             raise RuntimeError(
-                f"`a` and `b` appear to have different data axis shapes, {a.shape[-1]} {b.shape[-1]}"
+                f"`a` and `b` appear to have different data axis shapes, {a.shape} {b.shape}"
             )
 
         # Method selection
@@ -285,10 +285,10 @@ class FourierCorrelation:
         # where all correlations are below cutoff.
         c_ind = np.maximum(c_inds, np.argmax(self.correlations <= self.cutoff, axis=-1))
 
-        # Convert indices to frequency (as 1/Angstrom)
+        # Convert indices to frequency (as 1/angstrom)
         frequencies = self._freq(c_ind)
 
-        # Convert to resolution in Angstrom, smaller is higher frequency.
+        # Convert to resolution in angstrom, smaller is higher frequency.
         self._resolutions = 1 / frequencies
 
     def _freq(self, k):
@@ -297,7 +297,7 @@ class FourierCorrelation:
         length 1/A).
 
         :param k: Frequency index, integer or Numpy array of ints.
-        :return: Frequency in 1/Angstrom.
+        :return: Frequency in 1/angstrom.
         """
 
         # From Shannon-Nyquist, for a given pixel-size, sampling theorem
@@ -306,13 +306,13 @@ class FourierCorrelation:
         # total bandwidth is `2*(1/pixel_size)`.
 
         # Given a real space signal observed with `L` bins
-        # (pixels/voxels), each with a `pixel_size` in Angstrom, we can
+        # (pixels/voxels), each with a `pixel_size` in angstrom, we can
         # compute the width of a Fourier space bin to be the `Bandwidth
         # / L = (2*(1/pixel_size)) / L`.  Thus the frequency at an index
         # `k` is `freq_k = k * 2 * (1 / pixel_size) / L = k * 2 /
         # (pixel_size * L)
 
-        # _freq(k) Units: 1 / (pixels * (Angstrom / pixel) = 1 / Angstrom
+        # _freq(k) Units: 1 / (pixels * (angstrom / pixel) = 1 / angstrom
         # Similar idea to wavenumbers (cm-1).  Larger is higher frequency.
         return k * 2 / (self.L * self.pixel_size)
 
@@ -346,7 +346,7 @@ class FourierCorrelation:
 
         plt.figure(figsize=(8, 6))
         plt.title(self._plot_title)
-        plt.xlabel("Resolution (Angstrom)")
+        plt.xlabel("Resolution (angstrom)")
         plt.ylabel("Correlation")
         plt.ylim([0, 1.1])
         plt.plot(freqs_angstrom, self.correlations[0][0])
