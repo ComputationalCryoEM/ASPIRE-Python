@@ -107,7 +107,7 @@ def volume_fixture(img_size, dtype):
 def test_frc_id(image_fixture, method):
     img, _, _ = image_fixture
 
-    frc_resolution, frc = img.frc(img, pixel_size=1, method=method)
+    frc_resolution, frc = img.frc(img, pixel_size=1, cutoff=0.143, method=method)
     assert np.isclose(frc_resolution[0][0], 1, rtol=0.02)
     assert np.allclose(frc, 1)
 
@@ -115,14 +115,14 @@ def test_frc_id(image_fixture, method):
 def test_frc_rot(image_fixture, method):
     img_a, img_b, _ = image_fixture
     assert img_a.dtype == img_b.dtype
-    frc_resolution, frc = img_a.frc(img_b, pixel_size=1, method=method)
+    frc_resolution, frc = img_a.frc(img_b, pixel_size=1, cutoff=0.143, method=method)
     assert np.isclose(frc_resolution[0][0], 1.89, rtol=0.1)
 
 
 def test_frc_noise(image_fixture, method):
     img_a, _, img_n = image_fixture
 
-    frc_resolution, frc = img_a.frc(img_n, pixel_size=1, method=method)
+    frc_resolution, frc = img_a.frc(img_n, pixel_size=1, cutoff=0.143, method=method)
     assert np.isclose(frc_resolution[0][0], 1.75, rtol=0.2)
 
 
@@ -134,12 +134,12 @@ def test_frc_img_plot(image_fixture):
 
     # Plot to screen
     with matplotlib_no_gui():
-        _ = img_a.frc(img_n, pixel_size=1, plot=True)
+        _ = img_a.frc(img_n, pixel_size=1, cutoff=0.143, plot=True)
 
     # Plot to file
     with tempfile.TemporaryDirectory() as tmp_input_dir:
         file_path = os.path.join(tmp_input_dir, "img_frc_curve.png")
-        img_a.frc(img_n, pixel_size=1, plot=file_path)
+        img_a.frc(img_n, pixel_size=1, cutoff=0.143, plot=file_path)
         assert os.path.exists(file_path)
 
 
@@ -152,18 +152,15 @@ def test_frc_plot(image_fixture, method):
     img_a, img_b, _ = image_fixture
 
     frc = FourierRingCorrelation(
-        img_a.asnumpy(), img_b.asnumpy(), pixel_size=1, method=method, cutoff=0.5
+        img_a.asnumpy(), img_b.asnumpy(), pixel_size=1, method=method
     )
 
     with matplotlib_no_gui():
-        frc.plot()
-
-    # Reset cutoff, then plot again
-    frc.cutoff = 0.143
+        frc.plot(cutoff=0.5)
 
     with tempfile.TemporaryDirectory() as tmp_input_dir:
         file_path = os.path.join(tmp_input_dir, "frc_curve.png")
-        frc.plot(save_to_file=file_path)
+        frc.plot(cutoff=0.143, save_to_file=file_path)
 
 
 # FSC
@@ -172,7 +169,7 @@ def test_frc_plot(image_fixture, method):
 def test_fsc_id(volume_fixture, method):
     vol, _ = volume_fixture
 
-    fsc_resolution, fsc = vol.fsc(vol, pixel_size=1, method=method)
+    fsc_resolution, fsc = vol.fsc(vol, pixel_size=1, cutoff=0.143, method=method)
     assert np.isclose(fsc_resolution[0][0], 1, rtol=0.02)
     assert np.allclose(fsc, 1)
 
@@ -180,11 +177,11 @@ def test_fsc_id(volume_fixture, method):
 def test_fsc_trunc(volume_fixture, method):
     vol_a, vol_b = volume_fixture
 
-    fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, method=method)
+    fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, cutoff=0.143, method=method)
     assert fsc_resolution[0][0] > 1.5
 
     # The follow should correspond to the test_fsc_plot below.
-    fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, method=method, cutoff=0.5)
+    fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, cutoff=0.5, method=method)
     assert fsc_resolution[0][0] > 2.0
 
 
@@ -196,12 +193,12 @@ def test_fsc_vol_plot(volume_fixture):
 
     # Plot to screen
     with matplotlib_no_gui():
-        _ = vol_a.fsc(vol_b, pixel_size=1, plot=True)
+        _ = vol_a.fsc(vol_b, pixel_size=1, cutoff=0.5, plot=True)
 
     # Plot to file
     with tempfile.TemporaryDirectory() as tmp_input_dir:
         file_path = os.path.join(tmp_input_dir, "img_fsc_curve.png")
-        vol_a.fsc(vol_b, pixel_size=1, plot=file_path)
+        vol_a.fsc(vol_b, pixel_size=1, cutoff=0.143, plot=file_path)
         assert os.path.exists(file_path)
 
 
@@ -212,15 +209,15 @@ def test_fsc_plot(volume_fixture, method):
     vol_a, vol_b = volume_fixture
 
     fsc = FourierShellCorrelation(
-        vol_a.asnumpy(), vol_b.asnumpy(), pixel_size=1, method=method, cutoff=0.5
+        vol_a.asnumpy(), vol_b.asnumpy(), pixel_size=1, method=method
     )
 
     with matplotlib_no_gui():
-        fsc.plot()
+        fsc.plot(cutoff=0.5)
 
     with tempfile.TemporaryDirectory() as tmp_input_dir:
         file_path = os.path.join(tmp_input_dir, "fsc_curve.png")
-        fsc.plot(save_to_file=file_path)
+        fsc.plot(cutoff=0.143, save_to_file=file_path)
 
 
 # Check the error checks.
@@ -263,7 +260,7 @@ def test_cutoff_range():
     a = np.empty((8, 8), dtype=np.float32)
 
     with pytest.raises(ValueError, match=r"Supplied correlation `cutoff` not in"):
-        _ = FourierRingCorrelation(a, a, cutoff=2)
+        _ = FourierRingCorrelation(a, a).analyze_correlations(cutoff=2)
 
 
 def test_2d_stack_plot_raise():
@@ -272,7 +269,7 @@ def test_2d_stack_plot_raise():
     with pytest.raises(
         RuntimeError, match=r"Unable to plot figure tables with more than 2 dim"
     ):
-        FourierRingCorrelation(a, a).plot()
+        FourierRingCorrelation(a, a).plot(cutoff=0.143)
 
 
 def test_multiple_stack_plot_raise():
@@ -281,7 +278,7 @@ def test_multiple_stack_plot_raise():
     with pytest.raises(
         RuntimeError, match=r"Unable to plot figure tables with more than 1 figure"
     ):
-        FourierRingCorrelation(a, a).plot()
+        FourierRingCorrelation(a, a).plot(cutoff=0.143)
 
 
 def test_img_type_mismatch():
@@ -289,7 +286,7 @@ def test_img_type_mismatch():
     b = a.asnumpy()
 
     with pytest.raises(TypeError, match=r"`other` image must be an `Image` instance"):
-        _ = a.frc(b, pixel_size=1)
+        _ = a.frc(b, pixel_size=1, cutoff=0.143)
 
 
 def test_vol_type_mismatch():
@@ -297,4 +294,4 @@ def test_vol_type_mismatch():
     b = a.asnumpy()
 
     with pytest.raises(TypeError, match=r"`other` volume must be an `Volume` instance"):
-        _ = a.fsc(b, pixel_size=1)
+        _ = a.fsc(b, pixel_size=1, cutoff=0.143)

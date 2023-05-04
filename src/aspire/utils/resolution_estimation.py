@@ -31,13 +31,12 @@ class FourierCorrelation:
 .
     """
 
-    def __init__(self, a, b, pixel_size=1, cutoff=0.143, method="fft"):
+    def __init__(self, a, b, pixel_size=1, method="fft"):
         """
         :param a: Input array a, shape(..., *dim).
         :param b: Input array b, shape(..., *dim).
         :param pixel_size: Pixel size in angstrom.
             Defaults to 1.
-        :param cutoff: Cutoff value, traditionally `.143`.
         :param method: Selects either 'fft' (on Cartesian grid),
             or 'nufft' (on polar grid). Defaults to 'fft'.
         """
@@ -75,8 +74,6 @@ class FourierCorrelation:
         self._a, self._a_stack_shape = self._reshape(a)
         self._b, self._b_stack_shape = self._reshape(b)
 
-        self._analyzed = False
-        self.cutoff = cutoff
         self.pixel_size = float(pixel_size)
         self._correlations = None
         self.L = self._a.shape[-1]
@@ -103,28 +100,6 @@ class FourierCorrelation:
         original_stack_shape = x.shape[: -self.dim]
         x = x.reshape(-1, *x.shape[-self.dim :])
         return x, original_stack_shape
-
-    @property
-    def cutoff(self):
-        """
-        Returns `cutoff` value.
-        """
-        return self._cutoff
-
-    @cutoff.setter
-    def cutoff(self, cutoff):
-        """
-        Sets `cutoff` value, and resets analysis, which is dependent
-        on `cutoff` values.
-
-        :param cutoff: Float
-        """
-        self._cutoff = float(cutoff)
-        if not (0 <= self._cutoff <= 1):
-            raise ValueError(
-                "Supplied correlation `cutoff` not in [0,1], {self._cutoff}"
-            )
-        self._analyzed = False  # reset analysis
 
     @property
     def correlations(self):
@@ -258,43 +233,35 @@ class FourierCorrelation:
             *self._a_stack_shape, *self._b_stack_shape, r.shape[-1]
         )
 
-    @property
-    def estimated_resolution(self):
-        """
-        Return estimated resolution of stacks `a` cross `b`.
-
-        :return: Numpy array.
-        """
-        self.analyze_correlations()
-        return self._resolutions
-
-    def analyze_correlations(self):
+    def analyze_correlations(self, cutoff):
         """
         Convert from the Fourier correlations to frequencies and resolution.
+        :param cutoff: Cutoff value, traditionally `.143`.
         """
-        # `_analyzed` attribute in conjunction with `cutoff` allow a
-        # user to try different cutoffs without recomputing the
-        # correlations (FFT/NUFFT calls).
-        if self._analyzed:
-            return
+
+        cutoff = float(cutoff)
+        if not (0 <= cutoff <= 1):
+            raise ValueError("Supplied correlation `cutoff` not in [0,1], {cutoff}")
 
         c_inds = np.zeros(self.correlations.shape[:-1], dtype=int)
 
         # All correlations are above cutoff,
         #   set index of highest sampled frequency.
-        c_inds[np.min(self.correlations, axis=-1) > self.cutoff] = self.L // 2
+        c_inds[np.min(self.correlations, axis=-1) > cutoff] = self.L // 2
 
         # Correlations cross the cutoff.
         # Find the first index of a correlation at `cutoff`.
         # Should return 0 if not found, which corresponded to the case
         # where all correlations are below cutoff.
-        c_ind = np.maximum(c_inds, np.argmax(self.correlations <= self.cutoff, axis=-1))
+        c_ind = np.maximum(c_inds, np.argmax(self.correlations <= cutoff, axis=-1))
 
         # Convert indices to frequency (as 1/angstrom)
         frequencies = self._freq(c_ind)
 
         # Convert to resolution in angstrom, smaller is higher frequency.
         self._resolutions = 1 / frequencies
+
+        return self._resolutions
 
     def _freq(self, k):
         """
@@ -321,15 +288,19 @@ class FourierCorrelation:
         # Similar idea to wavenumbers (cm-1).  Larger is higher frequency.
         return k * 2 / (self.L * self.pixel_size)
 
-    def plot(self, save_to_file=False):
+    def plot(self, cutoff, save_to_file=False):
         """
         Generates a Fourier correlation plot.
 
+        :param cutoff: Cutoff value, traditionally `.143`.
         :param save_to_file: Optionally, save plot to file.
             Defaults False, enabled by providing a string filename.
             User is responsible for providing reasonable filename.
             See `https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html`.
         """
+        cutoff = float(cutoff)
+        if not (0 <= cutoff <= 1):
+            raise ValueError("Supplied correlation `cutoff` not in [0,1], {cutoff}")
 
         # Construct x-axis labels
         x_inds = np.arange(self.correlations.shape[-1])
@@ -356,15 +327,15 @@ class FourierCorrelation:
         plt.ylim([0, 1.1])
         plt.plot(freqs_angstrom, self.correlations[0][0])
         # Display cutoff
-        plt.axhline(
-            y=self.cutoff, color="r", linestyle="--", label=f"cutoff={self.cutoff}"
-        )
+        plt.axhline(y=cutoff, color="r", linestyle="--", label=f"cutoff={cutoff}")
+        estimated_resolution = self.analyze_correlations(cutoff)[0][0]
+
         # Display resolution
         plt.axvline(
-            x=self.estimated_resolution[0][0],
+            x=estimated_resolution,
             color="b",
             linestyle=":",
-            label=f"Resolution={self.estimated_resolution[0][0]:.3f}",
+            label=f"Resolution={estimated_resolution:.3f}",
         )
         # x-axis in decreasing
         plt.gca().invert_xaxis()
