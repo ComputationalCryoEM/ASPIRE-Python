@@ -139,7 +139,6 @@ orient_est = CLSyncVoting(avgs, n_theta=72)
 
 # Create an ``OrientedSource`` class instance and get the estimated rotations.
 oriented_src = OrientedSource(avgs, orient_est)
-rots_est = oriented_src.rotations
 
 # %%
 # Volume Reconstruction

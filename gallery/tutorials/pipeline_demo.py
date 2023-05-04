@@ -232,9 +232,6 @@ orient_est = CLSyncVoting(avgs, n_theta=72)
 # Instantiate an ``OrientedSource``.
 oriented_src = OrientedSource(avgs, orient_est)
 
-# Get the estimated rotations
-rots_est = oriented_src.rotations
-
 
 # %%
 # Mean Squared Error
@@ -250,8 +247,8 @@ from aspire.utils.coor_trans import (
 )
 
 # Compare with known true rotations
-Q_mat, flag = register_rotations(rots_est, true_rotations)
-regrot = get_aligned_rotations(rots_est, Q_mat, flag)
+Q_mat, flag = register_rotations(oriented_src.rotations, true_rotations)
+regrot = get_aligned_rotations(oriented_src.rotations, Q_mat, flag)
 mse_reg = get_rots_mse(regrot, true_rotations)
 mse_reg
 
@@ -289,7 +286,7 @@ from aspire.source import ArrayImageSource
 # Get projections from the estimated volume using the estimated
 # orientations.  We instantiate the projections as an
 # ``ArrayImageSource`` to access the ``Image.show()`` method.
-projections_est = ArrayImageSource(estimated_volume.project(rots_est))
+projections_est = ArrayImageSource(estimated_volume.project(oriented_src.rotations))
 
 # We view the first 10 projections of the estimated volume.
 projections_est.images[0:10].show()

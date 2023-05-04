@@ -110,7 +110,6 @@ orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=72, max_shift=0)
 
 # Create an ``OrientedSource`` class instance and get the estimated rotations.
 oriented_src = OrientedSource(avgs, orient_est)
-rots_est = oriented_src.rotations
 
 # %%
 # Volume Reconstruction
