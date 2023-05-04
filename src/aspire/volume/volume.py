@@ -494,7 +494,7 @@ class Volume:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
         return cls(loaded_data.astype(dtype))
 
-    def fsc(self, other, pixel_size, cutoff=0.143, method="fft", plot=False):
+    def fsc(self, other, pixel_size, cutoff, method="fft", plot=False):
         r"""
         Compute the Fourier shell correlation between two volumes.
 
@@ -531,16 +531,15 @@ class Volume:
             a=self.asnumpy(),
             b=other.asnumpy(),
             pixel_size=pixel_size,
-            cutoff=cutoff,
             method=method,
         )
 
         if plot is True:
-            fsc.plot()
+            fsc.plot(cutoff=cutoff)
         elif plot:
-            fsc.plot(save_to_file=plot)
+            fsc.plot(cutoff=cutoff, save_to_file=plot)
 
-        return fsc.estimated_resolution, fsc.correlations
+        return fsc.analyze_correlations(cutoff), fsc.correlations
 
 
 class CartesianVolume(Volume):
