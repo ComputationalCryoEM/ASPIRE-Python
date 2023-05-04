@@ -38,7 +38,7 @@ class FourierCorrelation:
         :param pixel_size: Pixel size in angstrom.
             Defaults to 1.
         :param cutoff: Cutoff value, traditionally `.143`.
-        :param method: Selects either 'fft' (on cartesian grid),
+        :param method: Selects either 'fft' (on Cartesian grid),
             or 'nufft' (on polar grid). Defaults to 'fft'.
         """
 
@@ -144,7 +144,7 @@ class FourierCorrelation:
 
     def _fft_correlations(self):
         """
-        Computes Fourier Correlations using the FFT on a cartesian grid.
+        Computes Fourier correlations using the FFT on a Cartesian grid.
         """
 
         # Compute shells from 2D grid.
@@ -177,7 +177,7 @@ class FourierCorrelation:
             r1 = ring_mask * f1
             r2 = ring_mask * f2
 
-            # Compute Fourier Correlations
+            # Compute Fourier correlations
             num = np.real(np.sum(r1 * np.conj(r2), axis=self._fourier_axes))
             den = np.sqrt(
                 np.sum(np.abs(r1) ** 2, axis=self._fourier_axes)
@@ -197,11 +197,11 @@ class FourierCorrelation:
 
     def _nufft_correlations(self):
         """
-        Computes Fourier Correlations using the NUFFT on a polar grid.
+        Computes Fourier correlations using the NUFFT on a polar grid.
         """
 
         # TODO, we could use an internal tool (Polar2D?) for this.
-        # L//2 is intentionally used for compatibility with cartesian grid.
+        # L//2 is intentionally used for compatibility with Cartesian grid.
         #   This avoids having to have multiple methods for computing resolutions later.
         r = np.linspace(0, np.pi, self.L // 2, endpoint=False, dtype=self.dtype)
         phi = np.linspace(0, 2 * np.pi, 2 * self.L, endpoint=False, dtype=self.dtype)
@@ -270,7 +270,7 @@ class FourierCorrelation:
 
     def analyze_correlations(self):
         """
-        Convert from the Fourier Correlations to frequencies and resolution.
+        Convert from the Fourier correlations to frequencies and resolution.
         """
         # `_analyzed` attribute in conjunction with `cutoff` allow a
         # user to try different cutoffs without recomputing the
