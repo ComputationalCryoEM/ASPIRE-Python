@@ -230,28 +230,38 @@ class ImageSource(ABC):
 
     @property
     def symmetry_group(self):
+        """
+        A SymmetryGroup instance associated with the symmetry type, `str(symmetry_group)`,
+        of the ImageSource object. Access rotation matrices of the symmetry_group via
+        `symmetry_group.rotations`.
+        """
         return self._symmetry_group
 
     @symmetry_group.setter
     def symmetry_group(self, value):
+        """
+        Set the `symmetry_group` for the `src`.
+
+        :param value: A `SymmetryGroup` instance
+        """
         if not isinstance(value, SymmetryGroup):
-            raise ValueError(
-                "`value` must be an instance of the SymmetryGroup class"
-            )
-        self._symmetry_group = value
-        self.set_metadata(["_rlnSymmetryGroup"], str(value))
+            raise ValueError("`value` must be an instance of the SymmetryGroup class")
+        if self._mutable:
+            self._symmetry_group = value
+            self.set_metadata(["_rlnSymmetryGroup"], str(value))
+        else:
+            raise NotImplementedError("`symmetry_group` is an immutable property.")
 
     def _populate_symmetry_group(self):
         # Populate symmetry_group attribute from metadata if possible.
         if self.has_metadata(["_rlnSymmetryGroup"]):
-            self._symmetry_group = SymmetryParser(
+            self.symmetry_group = SymmetryParser(
                 symmetry=self.get_metadata(["_rlnSymmetryGroup"])[0],
                 dtype=self.dtype,
             ).symmetry_group
-        # If not, we default to C1 symmetry and set the metadata accordingly.
+        # If not, we default to C1 symmetry.
         else:
-            self._symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
-            self.set_metadata(["_rlnSymmetryGroup"], str(self._symmetry_group))
+            self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
 
     def __getitem__(self, indices):
         """
