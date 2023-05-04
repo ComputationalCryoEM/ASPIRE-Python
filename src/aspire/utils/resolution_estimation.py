@@ -57,7 +57,7 @@ class FourierCorrelation:
         # TODO, check-math/avoid complex inputs.
 
         # Shape checks
-        if not a.shape[-self.dim:] == b.shape[-self.dim:]:
+        if not a.shape[-self.dim :] == b.shape[-self.dim :]:
             raise RuntimeError(
                 f"`a` and `b` appear to have different data axis shapes, {a.shape} {b.shape}"
             )
@@ -153,9 +153,11 @@ class FourierCorrelation:
         if self.dim == 2:
             grid_function = grid_2d
         elif self.dim == 3:
-            grid_function = grid_3d            
+            grid_function = grid_3d
 
-        radii = grid_function(self.L, shifted=True, normalized=False, dtype=self.dtype)["r"]
+        radii = grid_function(self.L, shifted=True, normalized=False, dtype=self.dtype)[
+            "r"
+        ]
 
         # Compute centered Fourier transforms.
         f1 = fft.centered_fftn(self._a, axes=self._fourier_axes)
