@@ -465,19 +465,19 @@ class BlueFilter(Filter):
     Filter where power increases with frequency.
     """
 
-    def __init__(self, dim=None, value=1):
+    def __init__(self, dim=None, power=1):
         super().__init__(dim=dim, radial=True)
-        self.value = value
+        self.power = power
 
     def __repr__(self):
-        return f"BlueFilter(dim={self.dim}, value={self.value})"
+        return f"BlueFilter(dim={self.dim}, power={self.power})"
 
     def _evaluate(self, omega):
         f = np.sqrt(omega[0])
         m = np.mean(f)
         f = f / m
 
-        return self.value * f
+        return self.power * f
 
 
 class PinkFilter(Filter):
@@ -485,12 +485,12 @@ class PinkFilter(Filter):
     Filter where power decreases with frequency.
     """
 
-    def __init__(self, dim=None, value=1):
+    def __init__(self, dim=None, power=1):
         super().__init__(dim=dim, radial=True)
-        self.value = value
+        self.power = power
 
     def __repr__(self):
-        return f"PinkFilter(dim={self.dim}, value={self.value})"
+        return f"PinkFilter(dim={self.dim}, power={self.power})"
 
     def _evaluate(self, omega):
         step = np.abs(np.subtract(*omega[0][:2]))
@@ -499,4 +499,4 @@ class PinkFilter(Filter):
         m = np.mean(f)
         f = f / m
 
-        return self.value * f
+        return self.power * f
