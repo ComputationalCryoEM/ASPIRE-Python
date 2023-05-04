@@ -237,8 +237,8 @@ def testHighResFFBBasis2D(L, dtype):
 
     # Round trip
     coeff = basis.evaluate_t(im)
-    FB_im = basis.evaluate(coeff)
+    im_ffb = basis.evaluate(coeff)
 
     # Mask to compare inside disk of radius 1.
     mask = grid_2d(L, normalized=True)["r"] < 1
-    assert np.allclose(FB_im.asnumpy()[0][mask], im.asnumpy()[0][mask], atol=1e-4)
+    assert np.allclose(im_ffb.asnumpy()[0][mask], im.asnumpy()[0][mask], atol=1e-4)

@@ -158,9 +158,9 @@ def testHighResFBBasis2D(L, dtype):
     im = sim.images[0]
 
     # Round trip
-    coeff = basis.evaluate_t(im)
-    FB_im = basis.evaluate(coeff)
+    coeff = basis.expand(im)
+    im_fb = basis.evaluate(coeff)
 
     # Mask to compare inside disk of radius 1.
     mask = grid_2d(L, normalized=True)["r"] < 1
-    assert np.allclose(FB_im.asnumpy()[0][mask], im.asnumpy()[0][mask], atol=3e-3)
+    assert np.allclose(im_fb.asnumpy()[0][mask], im.asnumpy()[0][mask], atol=2e-5)
