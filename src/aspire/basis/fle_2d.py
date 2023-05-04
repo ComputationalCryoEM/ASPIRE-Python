@@ -94,7 +94,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # FLE internal indices
         self._fle_angular_indices = np.abs(self._ells)
         self._fle_radial_indices = self._ks - 1
-        self._fle_signs_indices = np.sign(self._ells)
+        # Negate all signs from FLE implementation
+        self._fle_signs_indices = -np.sign(self._ells)
         # Use the FB2D ells sign convention of `1` for `ell=0`
         self._fle_signs_indices[self._ells == 0] = 1
 
@@ -102,7 +103,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self._fle_to_fb_indices = np.lexsort(
             (
                 self._fle_radial_indices,
-                self._fle_signs_indices,
+                # Reverse sign sorting order so +1 first,
+                #   match `sgns = (1,) if ell == 0 else (1, -1)` from fb_2d.py
+                -self._fle_signs_indices,
                 self._fle_angular_indices,
             )
         )
@@ -112,6 +115,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # User facing indices, should follow FB ordering.
         self.angular_indices = self._fle_angular_indices[self._fle_to_fb_indices]
         self.radial_indices = self._fle_radial_indices[self._fle_to_fb_indices]
+        # Note we negate the FLE signs?
         self.signs_indices = self._fle_signs_indices[self._fle_to_fb_indices]
 
     def indices(self):
@@ -660,9 +664,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         coeffs[:, k + 1 :] = 0
 
         return coeffs
-
-    def rotate(self, coef, radians, refl=None):
-        return super().rotate(coef, -1 * radians, refl)
 
     def radial_convolve(self, coeffs, radial_img):
         """
