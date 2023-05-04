@@ -31,14 +31,13 @@ class FourierCorrelation:
 .
     """
 
-    def __init__(self, a, b, pixel_size=1, cutoff=0.143, eps=1e-4, method="fft"):
+    def __init__(self, a, b, pixel_size=1, cutoff=0.143, method="fft"):
         """
         :param a: Input array a, shape(..., *dim).
         :param b: Input array b, shape(..., *dim).
         :param pixel_size: Pixel size in angstrom.
             Defaults to 1.
         :param cutoff: Cutoff value, traditionally `.143`.
-        :param eps: Epsilon past boundary values, defaults 1e-4.
         :param method: Selects either 'fft' (on cartesian grid),
             or 'nufft' (on polar grid). Defaults to 'fft'.
         """
@@ -79,7 +78,6 @@ class FourierCorrelation:
         self._analyzed = False
         self.cutoff = cutoff
         self.pixel_size = float(pixel_size)
-        self.eps = float(eps)
         self._correlations = None
         self.L = self._a.shape[-1]
         self.dtype = self._a.dtype
@@ -168,10 +166,10 @@ class FourierCorrelation:
             (self.L // 2, self._a.shape[0], self._b.shape[0]), dtype=self.dtype
         )
 
-        inner_diameter = 0.5 + self.eps
+        inner_diameter = 0.5
         for i in range(0, self.L // 2):
             # Compute ring mask
-            outer_diameter = 0.5 + (i + 1) + self.eps
+            outer_diameter = 0.5 + (i + 1)
             ring_mask = (radii > inner_diameter) & (radii < outer_diameter)
             logger.debug(f"Shell, Elements:  {i}, {np.sum(ring_mask)}")
 
