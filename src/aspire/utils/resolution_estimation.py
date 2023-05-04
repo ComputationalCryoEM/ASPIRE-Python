@@ -8,7 +8,7 @@ import numpy as np
 
 from aspire.nufft import nufft
 from aspire.numeric import fft
-from aspire.utils import grid_2d
+from aspire.utils import grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +150,12 @@ class FourierCorrelation:
         """
 
         # Compute shells from 2D grid.
-        radii = grid_2d(self.L, shifted=True, normalized=False, dtype=self.dtype)["r"]
+        if self.dim == 2:
+            grid_function = grid_2d
+        elif self.dim == 3:
+            grid_function = grid_3d            
+
+        radii = grid_function(self.L, shifted=True, normalized=False, dtype=self.dtype)["r"]
 
         # Compute centered Fourier transforms.
         f1 = fft.centered_fftn(self._a, axes=self._fourier_axes)
