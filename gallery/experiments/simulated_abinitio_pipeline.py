@@ -196,12 +196,11 @@ orient_est = CLSyncVoting(avgs, n_theta=180)
 
 # Initialize an ``OrientedSource`` class instance and get the estimated rotations
 oriented_src = OrientedSource(avgs, orient_est)
-rots_est = oriented_src.rotations
 
 logger.info("Compare with known rotations")
 # Compare with known true rotations
-Q_mat, flag = register_rotations(rots_est, true_rotations)
-regrot = get_aligned_rotations(rots_est, Q_mat, flag)
+Q_mat, flag = register_rotations(oriented_src.rotations, true_rotations)
+regrot = get_aligned_rotations(oriented_src.rotations, Q_mat, flag)
 mse_reg = get_rots_mse(regrot, true_rotations)
 logger.info(
     f"MSE deviation of the estimated rotations using register_rotations : {mse_reg}\n"

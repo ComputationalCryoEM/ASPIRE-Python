@@ -1469,8 +1469,6 @@ class OrientedSource(IndexedSource):
         :param src: Source used for orientation estimation
         :param orientation_estimator: CLOrient3D subclass used for orientation estimation.
             Default uses the CLSyncVoting method.
-        :param symmetry_group: A SymmetryGroup object denoting the symmetry of the
-            underlying molecule.
         """
 
         self.src = src
