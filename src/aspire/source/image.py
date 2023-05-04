@@ -234,7 +234,10 @@ class ImageSource(ABC):
 
     @symmetry_group.setter
     def symmetry_group(self, value):
-        assert isinstance(value, SymmetryGroup)
+        if not isinstance(value, SymmetryGroup):
+            raise ValueError(
+                "`value` must be an instance of the SymmetryGroup class"
+            )
         self._symmetry_group = value
         self.set_metadata(["_rlnSymmetryGroup"], str(value))
 
