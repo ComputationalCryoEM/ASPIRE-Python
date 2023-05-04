@@ -109,7 +109,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # store the reverse mapping (used during evaluate input)
         self._fb_to_fle_indices = np.argsort(self._fle_to_fb_indices)
 
-        #
+        # User facing indices, should follow FB ordering.
         self.angular_indices = self._fle_angular_indices[self._fle_to_fb_indices]
         self.radial_indices = self._fle_radial_indices[self._fle_to_fb_indices]
         self.signs_indices = self._fle_signs_indices[self._fle_to_fb_indices]
