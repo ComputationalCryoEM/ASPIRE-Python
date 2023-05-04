@@ -201,7 +201,7 @@ class BlueNoiseAdder(WhiteNoiseAdder):
 
         # Call the __init__ from parent of WhiteNoiseAdder.
         super(WhiteNoiseAdder, self).__init__(
-            noise_filter=BlueFilter(value=self.noise_var), seed=self.seed
+            noise_filter=BlueFilter(power=self.noise_var), seed=self.seed
         )
 
 
@@ -217,7 +217,7 @@ class PinkNoiseAdder(WhiteNoiseAdder):
 
         # Call the __init__ from parent of WhiteNoiseAdder.
         super(WhiteNoiseAdder, self).__init__(
-            noise_filter=PinkFilter(value=self.noise_var), seed=self.seed
+            noise_filter=PinkFilter(power=self.noise_var), seed=self.seed
         )
 
 
