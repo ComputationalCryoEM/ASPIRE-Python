@@ -77,6 +77,8 @@ class FourierCorrelation:
         # To support arbitrary broadcasting simply,
         # we'll force all shapes to be (-1, *(L,)*dim)
         # and keep track of the stack shapes.
+        self.a = a
+        self.b = b
         self._a, self._a_stack_shape = self._reshape(a)
         self._b, self._b_stack_shape = self._reshape(b)
         self._result_stack_shape = np.broadcast_shapes(
@@ -142,8 +144,8 @@ class FourierCorrelation:
         ]
 
         # Compute centered Fourier transforms.
-        f1 = fft.centered_fftn(self._a, axes=self._fourier_axes)
-        f2 = fft.centered_fftn(self._b, axes=self._fourier_axes)
+        f1 = fft.centered_fftn(self.a, axes=self._fourier_axes)
+        f2 = fft.centered_fftn(self.b, axes=self._fourier_axes)
 
         # Construct an output table of correlations
         correlations = np.zeros(
@@ -323,7 +325,12 @@ class FourierCorrelation:
             )
         if np.prod(stack) > 1:
             raise RuntimeError(
-                f"Unable to plot figure tables with more than 1 figures, stack shape {stack}. Try reducing to a simpler request."
+                f"Unable to plot figure tables with more than 1 reference figures, stack shape {stack}. Try reducing to a simpler request."
+            )
+        breakpoint()
+        if self._a_stack_shape[0] > 1 and self._a_stack_shape != self._b_stack_shape:
+            raise RuntimeError(
+                f"Unable to plot figure tables with more than 1 reference figures, stack shape {stack}. Try reducing to a simpler request."
             )
 
         plt.figure(figsize=(8, 6))
