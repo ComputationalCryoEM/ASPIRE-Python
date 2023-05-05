@@ -296,3 +296,61 @@ def test_vol_type_mismatch():
 
     with pytest.raises(TypeError, match=r"`other` volume must be an `Volume` instance"):
         _ = a.fsc(b, pixel_size=1, cutoff=0.143)
+
+
+# Broadcasting
+
+
+def test_frc_id_bcast(image_fixture, method):
+    img, _, _ = image_fixture
+
+    k = 3
+    img_b = Image(np.tile(img, (3, 1, 1)))
+
+    frc_resolution, frc = img.frc(img_b, pixel_size=1, cutoff=0.143, method=method)
+    assert np.allclose(
+        frc_resolution,
+        [
+            1.0,
+        ]
+        * k,
+        rtol=0.02,
+    )
+    assert np.allclose(frc, 1.0)
+
+
+def test_fsc_id_bcast(volume_fixture, method):
+    vol, _ = volume_fixture
+
+    k = 3
+    vol_b = Volume(np.tile(vol.asnumpy(), (3, 1, 1, 1)))
+
+    fsc_resolution, fsc = vol.fsc(vol_b, pixel_size=1, cutoff=0.143, method=method)
+    assert np.allclose(
+        fsc_resolution,
+        [
+            1.0,
+        ]
+        * k,
+        rtol=0.02,
+    )
+    assert np.allclose(fsc, 1.0)
+
+
+def test_frc_img_plot_bcast(image_fixture):
+    """
+    Smoke test Image.frc(plot=) passthrough.
+    """
+    img_a, img_b, img_n = image_fixture
+
+    img_b = Image(np.vstack((img_a, img_b, img_n)))
+
+    # Plot to screen
+    with matplotlib_no_gui():
+        _ = img_a.frc(img_b, pixel_size=1, cutoff=0.143, plot=True)
+
+    # Plot to file
+    with tempfile.TemporaryDirectory() as tmp_input_dir:
+        file_path = os.path.join(tmp_input_dir, "img_frc_curve.png")
+        img_a.frc(img_b, pixel_size=1, cutoff=0.143, plot=file_path)
+        assert os.path.exists(file_path)
