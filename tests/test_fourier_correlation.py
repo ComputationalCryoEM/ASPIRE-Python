@@ -345,12 +345,34 @@ def test_frc_img_plot_bcast(image_fixture):
 
     img_b = Image(np.vstack((img_a, img_b, img_n)))
 
-    # Plot to screen
+    # Plot to screen, one:many
     with matplotlib_no_gui():
         _ = img_a.frc(img_b, pixel_size=1, cutoff=0.143, plot=True)
 
-    # Plot to file
+    # Plot to file, many elementwise
     with tempfile.TemporaryDirectory() as tmp_input_dir:
         file_path = os.path.join(tmp_input_dir, "img_frc_curve.png")
-        img_a.frc(img_b, pixel_size=1, cutoff=0.143, plot=file_path)
+        img_b.frc(img_b, pixel_size=1, cutoff=0.143, plot=file_path)
         assert os.path.exists(file_path)
+
+
+def test_plot_bad_bcast(image_fixture):
+    """
+    When reference is a stack, we should raise when attempting to plot
+    anything other than 1:1 elementwise.
+    """
+    img_a, img_b, img_n = image_fixture
+    img_b = np.vstack((img_a, img_b, img_n))
+
+    # many:many, all pairs for (3,) x (2,1)
+    with pytest.raises(RuntimeError, match="Unable to plot figure tables"):
+        FourierRingCorrelation(img_b, img_b[:2].reshape(2, 1, *img_b.shape[-2:])).plot(
+            cutoff=0.143
+        )
+
+    # many:one
+    with pytest.raises(RuntimeError, match="Unable to plot figure tables"):
+        FourierRingCorrelation(
+            img_b,
+            img_a.asnumpy(),
+        ).plot(cutoff=0.143)
