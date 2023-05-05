@@ -160,9 +160,6 @@ class Simulation(ImageSource):
         self.offsets = offsets
         self.amplitudes = amplitudes
 
-        # Set symmetry group metadata
-        self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
-
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
 

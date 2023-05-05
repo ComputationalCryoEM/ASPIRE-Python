@@ -13,16 +13,12 @@ class SymmetryGroup(ABC):
     Base class for symmetry groups.
     """
 
-    def __init__(self, dtype=None):
+    def __init__(self, dtype=np.float32):
         """
         :param dtype: Numpy dtype to be used for rotation matrices.
+            Defaults to numpy.float32.
         """
-
-        if dtype is None:
-            raise RuntimeError("You must supply a dtype for rotations.")
-        else:
-            self.dtype = np.dtype(dtype)
-
+        self.dtype = np.dtype(dtype)
         self._rotations = None
         self.rotations = self.generate_rotations()
 
@@ -55,6 +51,39 @@ class SymmetryGroup(ABC):
 
     def __str__(self):
         return f"{self.symmetry_type}"
+
+    @staticmethod
+    def symmetry_parser(symmetry, dtype):
+        """
+        Takes a string, ie. 'C1', 'C7', 'D3', 'T', 'O', and returns a concrete
+        SymmetryGroup object.
+
+        :param symmetry: A string indicating the symmetry of a molecule.
+        :param dtype: dtype for rotation matrices.
+        :return: Concrete SymmetryGroup object.
+        """
+
+        symmetry = symmetry.upper()
+        symmetry_type = symmetry[0]
+        symmetric_order = symmetry[1:]
+
+        map_to_sym_group = {
+            "C": CyclicSymmetryGroup,
+            "D": DihedralSymmetryGroup,
+            "T": TetrahedralSymmetryGroup,
+            "O": OctahedralSymmetryGroup,
+        }
+        if symmetry_type not in map_to_sym_group.keys():
+            raise ValueError(
+                f"Symmetry type {symmetry_type} not supported. Try: {*map_to_sym_group.keys(),}."
+            )
+
+        symmetry_group = map_to_sym_group[symmetry_type]
+        group_kwargs = dict(dtype=dtype)
+        if symmetric_order:
+            group_kwargs["order"] = int(symmetric_order)
+
+        return symmetry_group(**group_kwargs)
 
 
 class CyclicSymmetryGroup(SymmetryGroup):
@@ -198,7 +227,7 @@ class OctahedralSymmetryGroup(SymmetryGroup):
 
     def __init__(self, dtype):
         """
-        `TetrahedralSymmetryGroup` instance that serves up a `Rotation` object
+        `OctahedralSymmetryGroup` instance that serves up a `Rotation` object
         containing rotation matrices of the symmetry group (including
         the Identity) accessed via the `matrices` attribute.
 
@@ -256,39 +285,3 @@ class OctahedralSymmetryGroup(SymmetryGroup):
 
         # Return rotations.
         return Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
-
-
-class SymmetryParser:
-    def __init__(self, symmetry, dtype):
-        """
-        Takes a string, ie. 'C1', 'C7', 'D3', 'T', 'O', and returns a concrete
-        SymmetryGroup object.
-
-        :param symmetry: A string indicating the symmetry of a molecule.
-        :param dtype: dtype for rotation matrices.
-        :return: Concrete SymmetryGroup object.
-        """
-
-        symmetry = symmetry.upper()
-        symmetry_type = symmetry[0]
-        symmetric_order = symmetry[1:]
-
-        supported_types = ["C", "D", "T", "O"]
-        if symmetry_type not in supported_types:
-            raise ValueError(
-                f"Symmetry type {symmetry_type} not supported. Try: {*supported_types,}."
-            )
-
-        map_to_sym_group = {
-            "C": CyclicSymmetryGroup,
-            "D": DihedralSymmetryGroup,
-            "T": TetrahedralSymmetryGroup,
-            "O": OctahedralSymmetryGroup,
-        }
-
-        symmetry_group = map_to_sym_group[symmetry_type]
-        group_kwargs = dict(dtype=dtype)
-        if symmetric_order:
-            group_kwargs["order"] = int(symmetric_order)
-
-        self.symmetry_group = symmetry_group(**group_kwargs)
