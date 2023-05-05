@@ -3,7 +3,6 @@ from .symmetry_groups import (
     DihedralSymmetryGroup,
     OctahedralSymmetryGroup,
     SymmetryGroup,
-    SymmetryParser,
     TetrahedralSymmetryGroup,
 )
 from .volume import Volume, qr_vols_forward, rotated_grids, rotated_grids_3d
