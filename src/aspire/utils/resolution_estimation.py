@@ -28,7 +28,12 @@ class FourierCorrelation:
 
        c(i) = \frac{ \operatorname{Re}( \sum_i{ \mathcal{F}_1(i) * {\mathcal{F}^{*}_2(i) } } ) }{\
          \sqrt{ \sum_i { | \mathcal{F}_1(i) |^2 } * \sum_i{| \mathcal{F}^{*}_2}(i) |^2 } }
-.
+
+    This implementation supports Numpy style broadcasting resulting in
+    up to two stack dimensions.  For example, to compute all pairs
+    supply signal with stack shapes (m,1) and (1,n) to yield an (m,n)
+    table of results. Note that plotting is limited to a single
+    reference signal.
     """
 
     def __init__(self, a, b, pixel_size=1, method="fft"):
@@ -71,8 +76,12 @@ class FourierCorrelation:
 
         # To support arbitrary broadcasting simply,
         # we'll force all shapes to be (-1, *(L,)*dim)
+        # and keep track of the stack shapes.
         self._a, self._a_stack_shape = self._reshape(a)
         self._b, self._b_stack_shape = self._reshape(b)
+        self._result_stack_shape = np.broadcast_shapes(
+            self._a_stack_shape, self._b_stack_shape
+        )
 
         self.pixel_size = float(pixel_size)
         self._correlations = None
@@ -138,7 +147,7 @@ class FourierCorrelation:
 
         # Construct an output table of correlations
         correlations = np.zeros(
-            (self.L // 2, self._a.shape[0], self._b.shape[0]), dtype=self.dtype
+            (self.L // 2, *self._result_stack_shape), dtype=self.dtype
         )
 
         inner_diameter = 0.5
@@ -163,12 +172,9 @@ class FourierCorrelation:
             # Update ring
             inner_diameter = outer_diameter
 
-        # Repack the table as (_a, _b, L//2)
-        correlations = np.swapaxes(correlations, 0, 2)
-        # Then unpack the original a and b shapes.
-        return correlations.reshape(
-            *self._a_stack_shape, *self._b_stack_shape, self.L // 2
-        )
+        # Repack the table as (..., L//2)
+        correlations = np.swapaxes(correlations, 0, -1)
+        return correlations
 
     def _nufft_correlations(self):
         """
@@ -215,11 +221,11 @@ class FourierCorrelation:
         # Stack signal data to create a larger NUFFT problem (better performance).
         #   Note, we want a complex result.
         signal = np.vstack((self._a, self._b))
-        # Compute NUFFT, then unpack as two 1D stacks of the polar grid
-        # points, one for each image.
-        f1, f2 = nufft(signal, fourier_pts, real=False).reshape(
-            2, self._a.shape[0], len(r), -1
-        )
+        # Compute one large NUFFT for all the signal frames,
+        f = nufft(signal, fourier_pts, real=False)
+        # then unpack as two 1D stacks of the polar grid points, one for _a and _b.
+        f = f.reshape(self._a.shape[0] + self._b.shape[0], len(r), -1)
+        f1, f2 = np.split(f, self._a.shape[0])
 
         # Compute the Fourier correlations.
         cov = np.sum(f1 * np.conj(f2), -1).real
@@ -325,10 +331,10 @@ class FourierCorrelation:
         plt.xlabel("Resolution (angstrom)")
         plt.ylabel("Correlation")
         plt.ylim([0, 1.1])
-        plt.plot(freqs_angstrom, self.correlations[0][0])
+        plt.plot(freqs_angstrom, self.correlations[0])
         # Display cutoff
         plt.axhline(y=cutoff, color="r", linestyle="--", label=f"cutoff={cutoff}")
-        estimated_resolution = self.analyze_correlations(cutoff)[0][0]
+        estimated_resolution = self.analyze_correlations(cutoff)[0]
 
         # Display resolution
         plt.axvline(
