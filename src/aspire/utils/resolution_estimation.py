@@ -331,7 +331,12 @@ class FourierCorrelation:
         plt.xlabel("Resolution (angstrom)")
         plt.ylabel("Correlation")
         plt.ylim([0, 1.1])
-        plt.plot(freqs_angstrom, self.correlations[0])
+        for i, line in enumerate(self.correlations):
+            _label = None
+            if len(self.correlations) > 1:
+                _label = f"{i}"
+            plt.plot(freqs_angstrom, line, label=_label)
+
         # Display cutoff
         plt.axhline(y=cutoff, color="r", linestyle="--", label=f"cutoff={cutoff}")
         estimated_resolution = self.analyze_correlations(cutoff)[0]
