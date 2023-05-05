@@ -499,12 +499,12 @@ params = [pytest.param(256, np.float32, marks=pytest.mark.expensive)]
 def testHighResFFBbasis3D(L, dtype):
     seed = 42
     basis = FFBBasis3D(L, dtype=dtype)
-    vol_0 = AsymmetricVolume(L=L, C=1, K=64, dtype=dtype, seed=seed).generate()
+    vol = AsymmetricVolume(L=L, C=1, K=64, dtype=dtype, seed=seed).generate()
 
     # Round trip
-    coeff_0 = basis.evaluate_t(vol_0)
-    vol_1 = basis.evaluate(coeff_0)
+    coeff = basis.evaluate_t(vol)
+    vol_ffb = basis.evaluate(coeff)
 
     # Mask to compare inside sphere of radius 1.
     mask = grid_3d(L, normalized=True)["r"] < 1
-    assert np.allclose(vol_1.asnumpy()[0][mask], vol_0.asnumpy()[0][mask], atol=1e-3)
+    assert np.allclose(vol_ffb.asnumpy()[0][mask], vol.asnumpy()[0][mask], atol=1e-3)
