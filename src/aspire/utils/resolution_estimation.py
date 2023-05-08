@@ -327,7 +327,7 @@ class FourierCorrelation:
             raise RuntimeError(
                 f"Unable to plot figure tables with more than 1 reference figures, stack shape {stack}. Try reducing to a simpler request."
             )
-        breakpoint()
+
         if self._a_stack_shape[0] > 1 and self._a_stack_shape != self._b_stack_shape:
             raise RuntimeError(
                 f"Unable to plot figure tables with more than 1 reference figures, stack shape {stack}. Try reducing to a simpler request."
