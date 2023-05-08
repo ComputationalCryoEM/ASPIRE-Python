@@ -268,6 +268,15 @@ def test_2d_stack_plot_raise():
     a = np.random.random((2, 3, 8, 8)).astype(np.float32)
 
     with pytest.raises(
+        RuntimeError, match=r"Unable to plot figure tables with more than 1 reference"
+    ):
+        FourierRingCorrelation(a, a).plot(cutoff=0.143)
+
+
+def test_3d_stack_plot_raise():
+    a = np.random.random((2, 3, 4, 8, 8)).astype(np.float32)
+
+    with pytest.raises(
         RuntimeError, match=r"Unable to plot figure tables with more than 2 dim"
     ):
         FourierRingCorrelation(a, a).plot(cutoff=0.143)
@@ -275,11 +284,12 @@ def test_2d_stack_plot_raise():
 
 def test_multiple_stack_plot_raise():
     a = np.random.random((3, 8, 8)).astype(np.float32)
+    b = np.reshape(a, (3, 1, 8, 8))
 
     with pytest.raises(
-        RuntimeError, match=r"Unable to plot figure tables with more than 1 figure"
+        RuntimeError, match=r"Unable to plot figure tables with more than 1 reference"
     ):
-        FourierRingCorrelation(a, a).plot(cutoff=0.143)
+        FourierRingCorrelation(a, b).plot(cutoff=0.143)
 
 
 def test_img_type_mismatch():
@@ -302,6 +312,9 @@ def test_vol_type_mismatch():
 
 
 def test_frc_id_bcast(image_fixture, method):
+    """
+    Test FRC for (1) x (3),  (1) x (1,3) , (1) x (3,1).
+    """
     img, _, _ = image_fixture
 
     k = 3
@@ -317,6 +330,37 @@ def test_frc_id_bcast(image_fixture, method):
         rtol=0.02,
     )
     assert np.allclose(frc, 1.0)
+    assert frc_resolution.shape == (3,)
+
+    # (1) x (1,3)
+    img_b = img_b.stack_reshape(1, 3)
+
+    frc_resolution, frc = img.frc(img_b, pixel_size=1, cutoff=0.143, method=method)
+    assert np.allclose(
+        frc_resolution,
+        [
+            1.0,
+        ]
+        * k,
+        rtol=0.02,
+    )
+    assert np.allclose(frc, 1.0)
+    assert frc_resolution.shape == (1, 3)
+
+    # (1) x (3,1)
+    img_b = img_b.stack_reshape(3, 1)
+
+    frc_resolution, frc = img.frc(img_b, pixel_size=1, cutoff=0.143, method=method)
+    assert np.allclose(
+        frc_resolution,
+        [
+            1.0,
+        ]
+        * k,
+        rtol=0.02,
+    )
+    assert np.allclose(frc, 1.0)
+    assert frc_resolution.shape == (3, 1)
 
 
 def test_fsc_id_bcast(volume_fixture, method):
@@ -376,3 +420,22 @@ def test_plot_bad_bcast(image_fixture):
             img_b,
             img_a.asnumpy(),
         ).plot(cutoff=0.143)
+
+
+def test_plot_labels(image_fixture):
+    """
+    When reference is a stack, we should raise when attempting to plot
+    anything other than 1:1 elementwise.
+    """
+    img_a, img_b, img_n = image_fixture
+    img_b = np.vstack((img_a, img_b, img_n))
+
+    frc = FourierRingCorrelation(img_a.asnumpy(), img_b)
+    with matplotlib_no_gui():
+        frc.plot(cutoff=0.143, labels=["abc", "easyas", "123"])
+
+    with pytest.raises(ValueError, match="Check `labels`"):
+        frc.plot(cutoff=0.143, labels=["abc", "easyas", "123", "toomany"])
+
+    with pytest.raises(ValueError, match="Check `labels`"):
+        frc.plot(cutoff=0.143, labels=["toofew"])
