@@ -248,7 +248,13 @@ class Volume:
         # If we are an ASPIRE Rotation, get the numpy representation.
         if isinstance(rot_matrices, Rotation):
             rot_matrices = rot_matrices.matrices
-        elif rot_matrices.ndim == 2:
+        elif rot_matrices.shape[-2:] != (3, 3):
+            raise NotImplementedError(
+                f"`rot_matrices` must be a stack of 3x3 rotation matrices, found shape {rot_matrices.shape}."
+            )
+
+        # If singleton rotation array, expand to have stack format.
+        if rot_matrices.ndim == 2:
             rot_matrices = np.expand_dims(rot_matrices, axis=0)
 
         if rot_matrices.dtype != self.dtype:
