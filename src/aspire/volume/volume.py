@@ -248,6 +248,8 @@ class Volume:
         # If we are an ASPIRE Rotation, get the numpy representation.
         if isinstance(rot_matrices, Rotation):
             rot_matrices = rot_matrices.matrices
+        elif rot_matrices.ndim == 2:
+            rot_matrices = np.expand_dims(rot_matrices, axis=0)
 
         if rot_matrices.dtype != self.dtype:
             logger.warning(
@@ -259,24 +261,25 @@ class Volume:
 
         data = self._data
         n_rots = rot_matrices.shape[0]
-
-        if not ((n_rots == self.n_vols) or (n_rots == 1) or (self.n_vols == 1)):
-            raise NotImplementedError(
-                f"Cannot broadcast with {n_rots} Rotations and {self.n_vols} Volumes."
-            )
-
         pts_rot = rotated_grids(self.resolution, rot_matrices)
 
         if n_rots == self.n_vols:
+            # Apply rotations to Volumes element-wise.
             im_f = np.empty(
                 (self.n_vols, self.resolution**2), dtype=complex_type(self.dtype)
             )
             pts_rot = pts_rot.reshape((3, n_rots, self.resolution**2))
             for i in range(self.n_vols):
                 im_f[i] = nufft(data[i], pts_rot[:, i]) / self.resolution
-        else:
+        elif (n_rots == 1) or (self.n_vols == 1):
+            # Broadcast stack with singleton.
             pts_rot = pts_rot.reshape((3, n_rots * self.resolution**2))
             im_f = nufft(data, pts_rot) / self.resolution
+        else:
+            # Currently not supporting broadcasting n Volumes with m rotations.
+            raise NotImplementedError(
+                f"Cannot broadcast with {n_rots} Rotations and {self.n_vols} Volumes."
+            )
 
         im_f = im_f.reshape(-1, self.resolution, self.resolution)
 
