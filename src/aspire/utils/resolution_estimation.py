@@ -38,13 +38,13 @@ class FourierCorrelation:
 
     def __init__(self, a, b, pixel_size=1, method="fft"):
         """
-        :param a: Input array a, shape(..., *dim).
-        :param b: Input array b, shape(..., *dim).
-        :param pixel_size: Pixel size in angstrom.
-            Defaults to 1.
-        :param method: Selects either 'fft' (on Cartesian grid),
-            or 'nufft' (on polar grid). Defaults to 'fft'.
-        """
+                :param a: Input array a, shape(..., *dim).
+                :param b: Input array b, shape(..., *dim).
+                :param pixel_size: Pixel size in angstrom.
+                    Defaults to 1.
+                :param method: Selects either 'fft' (on Cartesian grid),
+                    or 'nufft' (on polar grid). Defaults to 'fft'.
+        7"""
 
         # Sanity checks
         if not hasattr(self, "dim"):
@@ -176,7 +176,7 @@ class FourierCorrelation:
 
         # Repack the table as (..., L//2)
         correlations = np.swapaxes(correlations, 0, -1)
-        return correlations
+        return correlations.reshape(*self._result_stack_shape, self.L // 2)
 
     def _nufft_correlations(self):
         """
@@ -227,7 +227,7 @@ class FourierCorrelation:
         f = nufft(signal, fourier_pts, real=False)
         # then unpack as two 1D stacks of the polar grid points, one for _a and _b.
         f = f.reshape(self._a.shape[0] + self._b.shape[0], len(r), -1)
-        f1, f2 = np.split(f, self._a.shape[0])
+        f1, f2 = np.vsplit(f, [self._a.shape[0]])
 
         # Compute the Fourier correlations.
         cov = np.sum(f1 * np.conj(f2), -1).real
@@ -236,10 +236,8 @@ class FourierCorrelation:
 
         correlations = cov / (norm1 * norm2)
 
-        # Then unpack the original a and b shapes.
-        return correlations.reshape(
-            *self._a_stack_shape, *self._b_stack_shape, r.shape[-1]
-        )
+        # Then unpack as original a and b broadcasted shapes.
+        return correlations.reshape(*self._result_stack_shape, r.shape[-1])
 
     def analyze_correlations(self, cutoff):
         """
@@ -296,7 +294,7 @@ class FourierCorrelation:
         # Similar idea to wavenumbers (cm-1).  Larger is higher frequency.
         return k * 2 / (self.L * self.pixel_size)
 
-    def plot(self, cutoff, save_to_file=False):
+    def plot(self, cutoff, save_to_file=False, labels=None):
         """
         Generates a Fourier correlation plot.
 
@@ -318,20 +316,25 @@ class FourierCorrelation:
             freqs_angstrom = 1 / freqs
 
         # Check we're asking for a reasonable plot.
-        stack = self.correlations.shape[: -self.dim]
+        stack = self.correlations.shape[:-1]
         if len(stack) > 2:
             raise RuntimeError(
                 f"Unable to plot figure tables with more than 2 dim, stack shape {stack}. Try reducing to a simpler request."
             )
-        if np.prod(stack) > 1:
+
+        if (
+            self._a_stack_shape[0] > 1 and self._a_stack_shape != self._b_stack_shape
+        ) or (len(stack) == 2 and 1 not in stack):
             raise RuntimeError(
                 f"Unable to plot figure tables with more than 1 reference figures, stack shape {stack}. Try reducing to a simpler request."
             )
 
-        if self._a_stack_shape[0] > 1 and self._a_stack_shape != self._b_stack_shape:
-            raise RuntimeError(
-                f"Unable to plot figure tables with more than 1 reference figures, stack shape {stack}. Try reducing to a simpler request."
-            )
+        # Check `labels` length when provided.
+        if labels is not None:
+            if len(labels) != len(self.correlations):
+                raise ValueError(
+                    f"Check `labels`. Provided len(labels) != len(self.correlations): {len(labels)} != {len(self.correlations)}."
+                )
 
         plt.figure(figsize=(8, 6))
         plt.title(self._plot_title)
@@ -342,6 +345,8 @@ class FourierCorrelation:
             _label = None
             if len(self.correlations) > 1:
                 _label = f"{i}"
+                if labels is not None:
+                    _label = labels[i]
             plt.plot(freqs_angstrom, line, label=_label)
 
         # Display cutoff
