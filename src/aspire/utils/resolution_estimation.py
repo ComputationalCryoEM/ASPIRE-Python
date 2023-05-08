@@ -278,21 +278,9 @@ class FourierCorrelation:
         :return: Frequency in 1/angstrom.
         """
 
-        # From Shannon-Nyquist, for a given pixel-size, sampling theorem
-        # limits us to the sampled frequency 1/pixel_size.  Thus the
-        # Bandwidth ranges from `[-1/pixel_size, 1/pixel_size]`, so the
-        # total bandwidth is `2*(1/pixel_size)`.
-
-        # Given a real space signal observed with `L` bins
-        # (pixels/voxels), each with a `pixel_size` in angstrom, we can
-        # compute the width of a Fourier space bin to be the `Bandwidth
-        # / L = (2*(1/pixel_size)) / L`.  Thus the frequency at an index
-        # `k` is `freq_k = k * 2 * (1 / pixel_size) / L = k * 2 /
-        # (pixel_size * L)
-
         # _freq(k) Units: 1 / (pixels * (angstrom / pixel) = 1 / angstrom
-        # Similar idea to wavenumbers (cm-1).  Larger is higher frequency.
-        return k * 2 / (self.L * self.pixel_size)
+        # Similar to wavenumbers.  Larger is higher frequency.
+        return k / (self.L * self.pixel_size)
 
     def plot(self, cutoff, save_to_file=False, labels=None):
         """
