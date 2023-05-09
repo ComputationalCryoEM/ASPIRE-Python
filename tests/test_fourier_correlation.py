@@ -9,7 +9,12 @@ from aspire.image import Image
 from aspire.noise import BlueNoiseAdder
 from aspire.numeric import fft
 from aspire.source import Simulation
-from aspire.utils import FourierRingCorrelation, FourierShellCorrelation, Rotation
+from aspire.utils import (
+    FourierRingCorrelation,
+    FourierShellCorrelation,
+    Rotation,
+    grid_3d,
+)
 from aspire.volume import Volume
 
 from .test_utils import matplotlib_no_gui
@@ -89,12 +94,10 @@ def volume_fixture(img_size, dtype):
     # Invert correlation for some high frequency content
     #   Convert volume to Fourier space.
     vol_trunc_f = fft.centered_fftn(vol.asnumpy()[0])
-    #   Get a frequency index.
-    trunc_frq = img_size // 3
-    #   Negate the power for some frequencies higher than `trunc_frq`.
-    vol_trunc_f[-trunc_frq:, :, :] *= -1.0
-    vol_trunc_f[:, -trunc_frq:, :] *= -1.0
-    vol_trunc_f[:, :, -trunc_frq:] *= -1.0
+    #   Get high frequency indices
+    trunc_frq = grid_3d(img_size, normalized=True)["r"] > 1 / 2
+    #   Negate the power for high freq content
+    vol_trunc_f[trunc_frq] *= -1.0
     #   Convert volume from Fourier space to real space Volume.
     vol_trunc = Volume(fft.centered_ifftn(vol_trunc_f).real)
 
@@ -182,7 +185,7 @@ def test_fsc_trunc(volume_fixture, method):
 
     # The follow should correspond to the test_fsc_plot below.
     fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, cutoff=0.5, method=method)
-    assert fsc_resolution[0] > 4.0
+    assert fsc_resolution[0] > 3.9
 
 
 def test_fsc_vol_plot(volume_fixture):
