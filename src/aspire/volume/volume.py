@@ -494,7 +494,7 @@ class Volume:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
         return cls(loaded_data.astype(dtype))
 
-    def fsc(self, other, pixel_size, cutoff, method="fft", plot=False):
+    def fsc(self, other, cutoff, pixel_size=None, method="fft", plot=False):
         r"""
         Compute the Fourier shell correlation between two volumes.
 
@@ -508,9 +508,9 @@ class Volume:
              \sqrt{ \sum_i { | \mathcal{F}_1(i) |^2 } * \sum_i{| \mathcal{F}^{*}_2}(i) |^2 } }
 
         :param other: `Volume` instance to compare.
-        :param pixel_size: Pixel size in Angstrom.
-            For synthetic data, 1 is a reasonable value.
         :param cutoff: Cutoff value, traditionally `.143`.
+        :param pixel_size: Pixel size in angstrom.  Default `None`
+            implies unit in pixels, equivalent to pixel_size=1.
         :param method: Selects either 'fft' (on cartesian grid),
             or 'nufft' (on polar grid). Defaults to 'fft'.
         :param plot: Optionally plot to screen or file.

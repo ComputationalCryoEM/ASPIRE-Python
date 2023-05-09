@@ -179,7 +179,7 @@ def test_fsc_trunc(volume_fixture, method):
     vol_a, vol_b = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, cutoff=0.143, method=method)
-    assert fsc_resolution[0] > 3.
+    assert fsc_resolution[0] > 3.0
 
     # The follow should correspond to the test_fsc_plot below.
     fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, cutoff=0.5, method=method)
