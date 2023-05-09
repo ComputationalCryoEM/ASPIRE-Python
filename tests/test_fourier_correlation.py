@@ -20,14 +20,13 @@ logger = logging.getLogger(__name__)
 
 IMG_SIZES = [
     64,
-    #    65,
+    65,
 ]
 DTYPES = [
     np.float64,
-    #    np.float32,
+    np.float32,
 ]
-# METHOD = ["fft", "nufft"]
-METHOD = ["fft"]
+METHOD = ["fft", "nufft"]
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
