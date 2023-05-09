@@ -12,7 +12,7 @@ from aspire.source import Simulation
 from aspire.utils import (
     FourierRingCorrelation,
     FourierShellCorrelation,
-    Rotation,
+    grid_2d,
     grid_3d,
 )
 from aspire.volume import Volume
@@ -60,25 +60,31 @@ def image_fixture(img_size, dtype):
     ).downsample(img_size)
 
     # Instantiate ASPIRE's Rotation class with a set of angles.
-    thetas = [0, 0.123]
-    rots = Rotation.about_axis("z", thetas, dtype=dtype)
-
     # Contruct the Simulation source.
     noisy_src = Simulation(
         L=img_size,
-        n=2,
+        n=1,
         vols=v,
         offsets=0,
         amplitudes=1,
         C=1,
-        angles=rots.angles,
         noise_adder=BlueNoiseAdder.from_snr(2),
         dtype=dtype,
     )
-    img, img_rot = noisy_src.clean_images[:]
+    img = noisy_src.clean_images[0]
     img_noisy = noisy_src.images[0]
 
-    return img, img_rot, img_noisy
+    # Invert correlation for some high frequency content
+    #   Convert image to Fourier space.
+    img_trunc_f = fft.centered_fftn(img.asnumpy()[0])
+    #   Get high frequency indices
+    trunc_frq = grid_2d(img_size, normalized=True)["r"] > 1 / 2
+    #   Negate the power for high freq content
+    img_trunc_f[trunc_frq] *= -1.0
+    #   Convert imgume from Fourier space to real space Imgume.
+    img_trunc = Image(fft.centered_ifftn(img_trunc_f).real)
+
+    return img, img_trunc, img_noisy
 
 
 @pytest.fixture
@@ -115,18 +121,18 @@ def test_frc_id(image_fixture, method):
     assert np.allclose(frc, 1)
 
 
-def test_frc_rot(image_fixture, method):
+def test_frc_trunc(image_fixture, method):
     img_a, img_b, _ = image_fixture
     assert img_a.dtype == img_b.dtype
     frc_resolution, frc = img_a.frc(img_b, pixel_size=1, cutoff=0.143, method=method)
-    assert np.isclose(frc_resolution[0], 3.78, rtol=0.1)
+    assert frc_resolution[0] > 3.0
 
 
 def test_frc_noise(image_fixture, method):
     img_a, _, img_n = image_fixture
 
     frc_resolution, frc = img_a.frc(img_n, pixel_size=1, cutoff=0.143, method=method)
-    assert np.isclose(frc_resolution[0], 3.5, rtol=0.2)
+    assert frc_resolution[0] > 3.5
 
 
 def test_frc_img_plot(image_fixture):
