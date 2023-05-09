@@ -59,8 +59,7 @@ def image_fixture(img_size, dtype):
         np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")), dtype=dtype
     ).downsample(img_size)
 
-    # Instantiate ASPIRE's Rotation class with a set of angles.
-    # Contruct the Simulation source.
+    # Contruct the Simulation source to generate a noisy image.
     noisy_src = Simulation(
         L=img_size,
         n=1,
