@@ -9,10 +9,10 @@ from numpy import pi
 from parameterized import parameterized
 from pytest import raises, skip
 
-from aspire.utils import Rotation, gaussian_3d, powerset
+from aspire.utils import Rotation, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
-from aspire.volume import Volume
+from aspire.volume import AsymmetricVolume, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -228,17 +228,14 @@ class VolumeTestCase(TestCase):
     def testProjectBroadcast(self, dtype):
         L = 32
 
-        # Create stack of Volume with Gaussians stretched along varying axes.
-        blob_x = gaussian_3d(L, sigma=(3, 2, 1), dtype=dtype)
-        blob_y = gaussian_3d(L, sigma=(1, 3, 2), dtype=dtype)
-        blob_z = gaussian_3d(L, sigma=(1, 2, 3), dtype=dtype)
-        vols = Volume(np.vstack((blob_x, blob_y, blob_z)).reshape(3, L, L, L))
+        # Create stack of 3 Volumes.
+        vols = AsymmetricVolume(L=L, C=3, dtype=dtype).generate()
 
         # Create a singleton and stack of Rotations.
         rot = Rotation.about_axis("z", np.pi / 6, dtype=dtype)
         rots = Rotation.about_axis("z", [np.pi / 4, np.pi / 3, np.pi / 2], dtype=dtype)
 
-        # Broadcast Volume stack with singleton Rotation and compare with manual projection.
+        # Broadcast Volume stack with singleton Rotation and compare with manually generated projection.
         projs_3_1 = vols.project(rot)
         vols_rot_3_1 = vols.rotate(rot)
         manual_projs_3_1 = np.sum(vols_rot_3_1, axis=-1) / L
@@ -247,7 +244,7 @@ class VolumeTestCase(TestCase):
             np.allclose(projs_3_1, manual_projs_3_1, atol=utest_tolerance(self.dtype))
         )
 
-        # Broadcast Volume stack with Rotation stack of same size and compare with manual projections.
+        # Broadcast Volume stack with Rotation stack of same size and compare with manually generated projections.
         projs_3_3 = vols.project(rots)
         vols_rot_3_3 = vols.rotate(rots)
         manual_projs_3_3 = np.sum(vols_rot_3_3, axis=-1) / L
@@ -256,7 +253,7 @@ class VolumeTestCase(TestCase):
             np.allclose(projs_3_3, manual_projs_3_3, atol=utest_tolerance(self.dtype))
         )
 
-        # Check we raise an error for incompatible stacks.
+        # Check we raise an error for incompatible stack sizes.
         msg = "Cannot broadcast with 2 Rotations and 3 Volumes."
         with raises(NotImplementedError, match=msg):
             _ = vols.project(rots[:2])
