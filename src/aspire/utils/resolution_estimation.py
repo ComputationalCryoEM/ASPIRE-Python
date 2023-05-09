@@ -36,12 +36,12 @@ class FourierCorrelation:
     reference signal.
     """
 
-    def __init__(self, a, b, pixel_size=1, method="fft"):
+    def __init__(self, a, b, pixel_size=None, method="fft"):
         """
                 :param a: Input array a, shape(..., *dim).
                 :param b: Input array b, shape(..., *dim).
                 :param pixel_size: Pixel size in angstrom.
-                    Defaults to 1.
+                    Default `None` implies "pixel" units.
                 :param method: Selects either 'fft' (on Cartesian grid),
                     or 'nufft' (on polar grid). Defaults to 'fft'.
         7"""
@@ -85,7 +85,13 @@ class FourierCorrelation:
             self._a_stack_shape, self._b_stack_shape
         )
 
+        # Handle `pixel_size` and `pixel_mode`
+        self._pixel_units = "angstrom"
+        if pixel_size is None:
+            pixel_size = 1.0
+            self._pixel_units = "pixels"
         self.pixel_size = float(pixel_size)
+
         self._correlations = None
         self.L = self._a.shape[-1]
         self.dtype = self._a.dtype
@@ -301,7 +307,7 @@ class FourierCorrelation:
         freqs = self._freq(x_inds)
         # TODO: handle zero freq better
         with np.errstate(divide="ignore"):
-            freqs_angstrom = 1 / freqs
+            freqs_units = 1 / freqs
 
         # Check we're asking for a reasonable plot.
         stack = self.correlations.shape[:-1]
@@ -326,7 +332,7 @@ class FourierCorrelation:
 
         plt.figure(figsize=(8, 6))
         plt.title(self._plot_title)
-        plt.xlabel("Resolution (angstrom)")
+        plt.xlabel(f"Resolution ({self._pixel_units})")
         plt.ylabel("Correlation")
         plt.ylim([0, 1.1])
         for i, line in enumerate(self.correlations):
@@ -335,7 +341,7 @@ class FourierCorrelation:
                 _label = f"{i}"
                 if labels is not None:
                     _label = labels[i]
-            plt.plot(freqs_angstrom, line, label=_label)
+            plt.plot(freqs_units, line, label=_label)
 
         # Display cutoff
         plt.axhline(y=cutoff, color="r", linestyle="--", label=f"cutoff={cutoff}")
@@ -348,7 +354,7 @@ class FourierCorrelation:
             linestyle=":",
             label=f"Resolution={estimated_resolution:.3f}",
         )
-        # x-axis in decreasing
+        # x-axis decreasing
         plt.gca().invert_xaxis()
         plt.legend(title=f"Method: {self.method}")
 
