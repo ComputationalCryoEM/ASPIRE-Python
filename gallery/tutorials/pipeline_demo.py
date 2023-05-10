@@ -31,7 +31,7 @@ def download(url, save_path, chunk_size=1024 * 1024):
             fd.write(chunk)
 
 
-file_path = os.path.join(os.getcwd(), "data", "emd_2660.map")
+file_path = os.path.join(os.getcwd(), "emd_2660.map")
 if not os.path.exists(file_path):
     url = "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2660/map/emd_2660.map.gz"
     download(url, file_path)
