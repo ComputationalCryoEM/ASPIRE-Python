@@ -107,7 +107,6 @@ from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 
 # set parameters
-res = 41
 n_imgs = 2500
 
 # SNR target for white gaussian noise.
@@ -170,7 +169,7 @@ src.images[0:10].show()
 # practice, the selection is done by sorting class averages based on
 # some configurable notion of quality.
 
-from aspire.classification import RIRClass2D, TopClassSelector
+from aspire.classification import RIRClass2D
 
 # set parameters
 n_classes = 200
