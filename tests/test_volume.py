@@ -495,14 +495,18 @@ def testProjectBroadcast(dtype):
     vols_rot_3_1 = vols.rotate(rot)
     manual_projs_3_1 = np.sum(vols_rot_3_1, axis=-1) / L
     assert projs_3_1.shape[0] == 3
-    assert np.allclose(projs_3_1.asnumpy(), manual_projs_3_1, atol=utest_tolerance(dtype))
+    assert np.allclose(
+        projs_3_1.asnumpy(), manual_projs_3_1, atol=utest_tolerance(dtype)
+    )
 
     # Broadcast Volume stack with Rotation stack of same size and compare with manually generated projections.
     projs_3_3 = vols.project(rots)
     vols_rot_3_3 = vols.rotate(rots)
     manual_projs_3_3 = np.sum(vols_rot_3_3, axis=-1) / L
     assert projs_3_3.shape[0] == 3
-    assert np.allclose(projs_3_3.asnumpy(), manual_projs_3_3, atol=utest_tolerance(dtype))
+    assert np.allclose(
+        projs_3_3.asnumpy(), manual_projs_3_3, atol=utest_tolerance(dtype)
+    )
 
     # Check we raise an error for incompatible stack sizes.
     msg = "Cannot broadcast with 2 Rotations and 3 Volumes."
