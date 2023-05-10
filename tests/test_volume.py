@@ -5,6 +5,7 @@ from itertools import product
 from unittest import TestCase
 
 import numpy as np
+import pytest
 from numpy import pi
 from parameterized import parameterized
 from pytest import raises, skip
@@ -223,40 +224,6 @@ class VolumeTestCase(TestCase):
         rots = np.moveaxis(rots, 2, 0)
         imgs_clean = vols.project(rots).asnumpy()
         self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
-
-    @parameterized.expand([(np.float32,), (np.float64,)])
-    def testProjectBroadcast(self, dtype):
-        L = 32
-
-        # Create stack of 3 Volumes.
-        vols = AsymmetricVolume(L=L, C=3, dtype=dtype).generate()
-
-        # Create a singleton and stack of Rotations.
-        rot = Rotation.about_axis("z", np.pi / 6, dtype=dtype)
-        rots = Rotation.about_axis("z", [np.pi / 4, np.pi / 3, np.pi / 2], dtype=dtype)
-
-        # Broadcast Volume stack with singleton Rotation and compare with manually generated projection.
-        projs_3_1 = vols.project(rot)
-        vols_rot_3_1 = vols.rotate(rot)
-        manual_projs_3_1 = np.sum(vols_rot_3_1, axis=-1) / L
-        self.assertTrue(projs_3_1.shape[0] == 3)
-        self.assertTrue(
-            np.allclose(projs_3_1, manual_projs_3_1, atol=utest_tolerance(self.dtype))
-        )
-
-        # Broadcast Volume stack with Rotation stack of same size and compare with manually generated projections.
-        projs_3_3 = vols.project(rots)
-        vols_rot_3_3 = vols.rotate(rots)
-        manual_projs_3_3 = np.sum(vols_rot_3_3, axis=-1) / L
-        self.assertTrue(projs_3_3.shape[0] == 3)
-        self.assertTrue(
-            np.allclose(projs_3_3, manual_projs_3_3, atol=utest_tolerance(self.dtype))
-        )
-
-        # Check we raise an error for incompatible stack sizes.
-        msg = "Cannot broadcast with 2 Rotations and 3 Volumes."
-        with raises(NotImplementedError, match=msg):
-            _ = vols.project(rots[:2])
 
     # Parameterize over even and odd resolutions
     @parameterized.expand([(res,), (res - 1,)])
@@ -510,3 +477,34 @@ def test_asnumpy_readonly():
     # Attempt assignment
     with raises(ValueError, match=r".*destination is read-only.*"):
         vw[0, 0, 0, 0] = 123
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def testProjectBroadcast(dtype):
+    L = 32
+
+    # Create stack of 3 Volumes.
+    vols = AsymmetricVolume(L=L, C=3, dtype=dtype).generate()
+
+    # Create a singleton and stack of Rotations.
+    rot = Rotation.about_axis("z", np.pi / 6, dtype=dtype)
+    rots = Rotation.about_axis("z", [np.pi / 4, np.pi / 3, np.pi / 2], dtype=dtype)
+
+    # Broadcast Volume stack with singleton Rotation and compare with manually generated projection.
+    projs_3_1 = vols.project(rot)
+    vols_rot_3_1 = vols.rotate(rot)
+    manual_projs_3_1 = np.sum(vols_rot_3_1, axis=-1) / L
+    assert projs_3_1.shape[0] == 3
+    assert np.allclose(projs_3_1, manual_projs_3_1, atol=utest_tolerance(dtype))
+
+    # Broadcast Volume stack with Rotation stack of same size and compare with manually generated projections.
+    projs_3_3 = vols.project(rots)
+    vols_rot_3_3 = vols.rotate(rots)
+    manual_projs_3_3 = np.sum(vols_rot_3_3, axis=-1) / L
+    assert projs_3_3.shape[0] == 3
+    assert np.allclose(projs_3_3, manual_projs_3_3, atol=utest_tolerance(dtype))
+
+    # Check we raise an error for incompatible stack sizes.
+    msg = "Cannot broadcast with 2 Rotations and 3 Volumes."
+    with raises(NotImplementedError, match=msg):
+        _ = vols.project(rots[:2])
