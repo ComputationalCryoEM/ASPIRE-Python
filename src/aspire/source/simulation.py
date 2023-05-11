@@ -48,6 +48,7 @@ class Simulation(ImageSource):
         seed=0,
         memory=None,
         noise_adder=None,
+        symmetry_group=None,
     ):
         """
         A `Simulation` object that supplies images along with other parameters for image manipulation.
@@ -76,6 +77,7 @@ class Simulation(ImageSource):
             If None is given, no caching is performed.
         :param noise_adder: Optionally append instance of `NoiseAdder`
             to generation pipeline.
+        :param symmetry_group: An instance of SymmetryGroup indicating symmetry of the molecule.
 
         :return: A Simulation object.
         """
@@ -105,13 +107,21 @@ class Simulation(ImageSource):
         if not isinstance(self.vols, Volume):
             raise RuntimeError("`vols` should be a Volume instance or `None`.")
 
+        if symmetry_group and self.vols.symmetry_group:
+            logger.warning(
+                f"Overriding {str(self.vols.symmetry_group)} symmetry group inherited "
+                f"from `vols`, with user provided symmetry group: {str(symmetry_group)}."
+            )
+        symmetry_group = symmetry_group or self.vols.symmetry_group
+
         # Infer the details from volume when possible.
         super().__init__(
-            L=self.vols.resolution, n=n, dtype=self.vols.dtype, memory=memory
+            L=self.vols.resolution,
+            n=n,
+            dtype=self.vols.dtype,
+            memory=memory,
+            symmetry_group=symmetry_group,
         )
-
-        # Set symmetry group.
-        self.symmetry_group = self.vols.symmetry_group
 
         # If a user provides both `L` and `vols`, resolution should match.
         if L is not None and L != self.L:

@@ -32,6 +32,7 @@ class RelionSource(ImageSource):
         B=0,
         n_workers=-1,
         max_rows=None,
+        symmetry_group=None,
         memory=None,
     ):
         """
@@ -46,6 +47,7 @@ class RelionSource(ImageSource):
         :param max_rows: Maximum number of rows in STAR file to read. If None, all rows are read.
             Note that this refers to the max number of images to load, not the max. number of .mrcs files (which may be
             equal to or less than the number of images).
+        :param symmetry_group: A `SymmetryGroup` object corresponding to the symmetry of the molecule.
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         """
@@ -92,7 +94,13 @@ class RelionSource(ImageSource):
         self._original_resolution = L
 
         ImageSource.__init__(
-            self, L=L, n=n, dtype=dtype, metadata=metadata, memory=memory
+            self,
+            L=L,
+            n=n,
+            dtype=dtype,
+            metadata=metadata,
+            symmetry_group=symmetry_group,
+            memory=memory,
         )
 
         # CTF estimation parameters coming from Relion
