@@ -303,11 +303,7 @@ class RotCov2D:
 
         coeffs = coeffs.asnumpy()
 
-        method = self._get_cover_blk
-        if isinstance(self.basis, FLEBasis2D):
-            method = self._get_covar_diag
-
-        return method(
+        return self._get_covar(
             coeffs,
             ctf_basis=ctf_basis,
             ctf_idx=ctf_idx,
