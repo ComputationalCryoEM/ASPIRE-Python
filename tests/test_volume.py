@@ -484,7 +484,7 @@ def testProjectBroadcast(dtype):
     L = 32
 
     # Create stack of 3 Volumes.
-    vols = AsymmetricVolume(L=L, C=3, dtype=dtype).generate()
+    vols = AsymmetricVolume(L=L, C=3, K=16, dtype=dtype).generate()
 
     # Create a singleton and stack of Rotations.
     rot = Rotation.about_axis("z", np.pi / 6, dtype=dtype)
