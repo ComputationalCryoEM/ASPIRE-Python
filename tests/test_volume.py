@@ -484,29 +484,28 @@ def testProjectBroadcast(dtype):
     L = 32
 
     # Create stack of 3 Volumes.
-    vols = AsymmetricVolume(L=L, C=3, K=16, dtype=dtype).generate()
+    n_vols = 3
+    vols = AsymmetricVolume(L=L, C=n_vols, dtype=dtype).generate()
 
     # Create a singleton and stack of Rotations.
     rot = Rotation.about_axis("z", np.pi / 6, dtype=dtype)
     rots = Rotation.about_axis("z", [np.pi / 4, np.pi / 3, np.pi / 2], dtype=dtype)
 
-    # Broadcast Volume stack with singleton Rotation and compare with manually generated projection.
+    # Broadcast Volume stack with singleton Rotation and compare with individually generated projections.
     projs_3_1 = vols.project(rot)
-    vols_rot_3_1 = vols.rotate(rot)
-    manual_projs_3_1 = np.sum(vols_rot_3_1, axis=-1) / L
-    assert projs_3_1.shape[0] == 3
-    assert np.allclose(
-        projs_3_1.asnumpy(), manual_projs_3_1, atol=utest_tolerance(dtype)
-    )
+    for i in range(n_vols):
+        proj_i = vols[i].project(rot)
+        assert np.allclose(projs_3_1[i], proj_i, atol=utest_tolerance(dtype))
 
-    # Broadcast Volume stack with Rotation stack of same size and compare with manually generated projections.
+    assert projs_3_1.shape[0] == n_vols
+
+    # Broadcast Volume stack with Rotation stack of same size and compare with individually generated projections.
     projs_3_3 = vols.project(rots)
-    vols_rot_3_3 = vols.rotate(rots)
-    manual_projs_3_3 = np.sum(vols_rot_3_3, axis=-1) / L
-    assert projs_3_3.shape[0] == 3
-    assert np.allclose(
-        projs_3_3.asnumpy(), manual_projs_3_3, atol=utest_tolerance(dtype)
-    )
+    for i in range(n_vols):
+        proj_i = vols[i].project(rots[i])
+        assert np.allclose(projs_3_3[i], proj_i, atol=utest_tolerance(dtype))
+
+    assert projs_3_3.shape[0] == n_vols
 
     # Check we raise an error for incompatible stack sizes.
     msg = "Cannot broadcast with 2 Rotations and 3 Volumes."

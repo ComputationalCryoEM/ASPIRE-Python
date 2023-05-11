@@ -236,7 +236,7 @@ class Volume:
         over a stack of volumes, a singleton Rotation or a Rotation with stack size
         self.n_vols must be used.
 
-        :param rot_matrices: Stack of rotations. Rotation or kx3x3 ndarray instance.
+        :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
         :return: `Image` instance.
         """
         # See Issue #727
@@ -256,6 +256,10 @@ class Volume:
                 f" != self.dtype {self.dtype}."
                 " In the future this will raise an error."
             )
+
+        # Handle singletons. `rotated_grids` expect shape kx3x3.
+        if rot_matrices.ndim == 2:
+            rot_matrices = np.expand_dims(rot_matrices, axis=0)
 
         data = self._data
         n_rots = rot_matrices.shape[0]
