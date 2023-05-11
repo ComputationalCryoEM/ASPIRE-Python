@@ -13,13 +13,11 @@ class SymmetryGroup(ABC):
     Base class for symmetry groups.
     """
 
-    def __init__(self, dtype=np.float32):
+    def __init__(self, dtype):
         """
         :param dtype: Numpy dtype to be used for rotation matrices.
-            Defaults to numpy.float32.
         """
         self.dtype = np.dtype(dtype)
-        self._rotations = None
         self.rotations = self.generate_rotations()
 
     @abstractmethod
@@ -27,16 +25,6 @@ class SymmetryGroup(ABC):
         """
         Method for generating a Rotation object for the symmetry group.
         """
-
-    @property
-    def rotations(self):
-        return self._rotations
-
-    @rotations.setter
-    def rotations(self, value):
-        if self._rotations is not None:
-            raise RuntimeError("Rotations are read-only.")
-        self._rotations = value
 
     @property
     def matrices(self):

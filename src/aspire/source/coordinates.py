@@ -46,7 +46,7 @@ class CoordinateSource(ImageSource, ABC):
     This also allows the CoordinateSource to be saved to an `.mrcs` stack.
     """
 
-    def __init__(self, files, particle_size, max_rows, B):
+    def __init__(self, files, particle_size, max_rows, B, symmetry_group):
         mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
         # and is used in self._populate_particles
@@ -125,7 +125,7 @@ class CoordinateSource(ImageSource, ABC):
         # total particles loaded (specific to this instance)
         logger.info(f"CoordinateSource object contains {n} particles.")
 
-        ImageSource.__init__(self, L=L, n=n, dtype=dtype)
+        ImageSource.__init__(self, L=L, n=n, dtype=dtype, symmetry_group=symmetry_group)
 
         # map mrc indices to particle indices
         # i'th element contains a list of particle indices corresponding to i'th mrc
@@ -503,14 +503,18 @@ class BoxesCoordinateSource(CoordinateSource):
         particle_size=None,
         max_rows=None,
         B=0,
+        symmetry_group=None,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
         :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
+        :param symmetry_group: A `SymmetryGroup` object corresponding to the symmetry of the molecule.
         """
         # instantiate super
-        CoordinateSource.__init__(self, files, particle_size, max_rows, B)
+        CoordinateSource.__init__(
+            self, files, particle_size, max_rows, B, symmetry_group
+        )
 
     def _extract_box_size(self, box_file):
         with open(box_file, "r") as box:
@@ -613,15 +617,18 @@ class CentersCoordinateSource(CoordinateSource):
     Represents a data source consisting of micrographs and coordinate files specifying particle centers only. Files can be text (.coord) or STAR files.
     """
 
-    def __init__(self, files, particle_size, max_rows=None, B=0):
+    def __init__(self, files, particle_size, max_rows=None, B=0, symmetry_group=None):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
         :particle_size: Desired size of cropped particles (mandatory)
         :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
+        :param symmetry_group: A `SymmetryGroup` object corresponding to the symmetry of the molecule.
         """
         # instantiate super
-        CoordinateSource.__init__(self, files, particle_size, max_rows, B)
+        CoordinateSource.__init__(
+            self, files, particle_size, max_rows, B, symmetry_group
+        )
 
     def _validate_centers_file(self, coord_file):
         """

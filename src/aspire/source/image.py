@@ -146,7 +146,9 @@ class ImageSource(ABC):
     # disable _mutable as the last step in __init__.
     _mutable = True
 
-    def __init__(self, L, n, dtype="double", metadata=None, memory=None):
+    def __init__(
+        self, L, n, dtype="double", metadata=None, memory=None, symmetry_group=None
+    ):
         """
         A cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.
 
@@ -156,6 +158,7 @@ class ImageSource(ABC):
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
+        :param symmetry_group: A SymmetryGroup instance indicating the underlying symmetry of the molecule.
         """
 
         # Instantiate the accessor for the `images` property
@@ -188,7 +191,8 @@ class ImageSource(ABC):
                     )
                 )
 
-        self._populate_symmetry_group()
+        self._populate_symmetry_group(symmetry_group)
+
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
@@ -237,31 +241,27 @@ class ImageSource(ABC):
         """
         return self._symmetry_group
 
-    @symmetry_group.setter
-    def symmetry_group(self, value):
-        """
-        Set the `symmetry_group` for the `src`.
-
-        :param value: A `SymmetryGroup` instance
-        """
-        if not isinstance(value, SymmetryGroup):
-            raise ValueError("`value` must be an instance of the SymmetryGroup class")
-        if self._mutable:
-            self._symmetry_group = value
-            self.set_metadata(["_rlnSymmetryGroup"], str(value))
-        else:
-            raise NotImplementedError("`symmetry_group` is an immutable property.")
-
-    def _populate_symmetry_group(self):
-        # Populate symmetry_group attribute from metadata if possible.
-        if self.has_metadata(["_rlnSymmetryGroup"]):
-            self.symmetry_group = SymmetryGroup.symmetry_parser(
-                symmetry=self.get_metadata(["_rlnSymmetryGroup"])[0],
-                dtype=self.dtype,
+    def _populate_symmetry_group(self, symmetry_group):
+        if symmetry_group and not isinstance(symmetry_group, SymmetryGroup):
+            raise ValueError(
+                "`symmetry_group` must be an instance of the SymmetryGroup class"
             )
-        # If not, we default to C1 symmetry.
-        else:
-            self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
+
+        if self.has_metadata(["_rlnSymmetryGroup"]):
+            if symmetry_group:
+                raise logger.warning(
+                    f"Overriding metadata with supplied symmetry group {symmetry_group}"
+                )
+            else:
+                symmetry_group = SymmetryGroup.symmetry_parser(
+                    symmetry=self.get_metadata(["_rlnSymmetryGroup"])[0],
+                    dtype=self.dtype,
+                )
+
+        C1_symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
+        self._symmetry_group = symmetry_group or C1_symmetry_group
+
+        self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
 
     def __getitem__(self, indices):
         """
@@ -1581,7 +1581,7 @@ class ArrayImageSource(ImageSource):
     if available, is consulted directly by the parent class, bypassing `_images`.
     """
 
-    def __init__(self, im, metadata=None, angles=None):
+    def __init__(self, im, metadata=None, angles=None, symmetry_group=None):
         """
         Initialize from an `Image` object.
 
@@ -1589,6 +1589,8 @@ class ArrayImageSource(ImageSource):
             In the case of a Numpy array, attempts to create an 'Image' object.
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
+        :param symmetry_group: A `SymmetryGroup` object corresponding to the symmetry of volume represented
+            by this `ImageSource`.
         """
 
         if not isinstance(im, Image):
@@ -1607,6 +1609,7 @@ class ArrayImageSource(ImageSource):
             dtype=im.dtype,
             metadata=metadata,
             memory=None,
+            symmetry_group=symmetry_group,
         )
 
         self._cached_im = im
