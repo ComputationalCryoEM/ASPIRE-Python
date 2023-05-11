@@ -494,16 +494,16 @@ def testProjectBroadcast(dtype):
     # Broadcast Volume stack with singleton Rotation and compare with individually generated projections.
     projs_3_1 = vols.project(rot)
     for i in range(n_vols):
-        proj_i = vols[i].project(rot)
-        assert np.allclose(projs_3_1[i], proj_i, atol=utest_tolerance(dtype))
+        proj_i = vols[i].project(rot).asnumpy()
+        assert np.allclose(projs_3_1[i].asnumpy(), proj_i, atol=utest_tolerance(dtype))
 
     assert projs_3_1.shape[0] == n_vols
 
     # Broadcast Volume stack with Rotation stack of same size and compare with individually generated projections.
     projs_3_3 = vols.project(rots)
     for i in range(n_vols):
-        proj_i = vols[i].project(rots[i])
-        assert np.allclose(projs_3_3[i], proj_i, atol=utest_tolerance(dtype))
+        proj_i = vols[i].project(rots[i]).asnumpy()
+        assert np.allclose(projs_3_3[i].asnumpy(), proj_i, atol=utest_tolerance(dtype))
 
     assert projs_3_3.shape[0] == n_vols
 
