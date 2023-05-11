@@ -10,7 +10,7 @@ from numpy import pi
 from parameterized import parameterized
 from pytest import raises, skip
 
-from aspire.utils import Rotation, powerset
+from aspire.utils import Rotation, grid_2d, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
 from aspire.volume import AsymmetricVolume, Volume
@@ -491,11 +491,18 @@ def testProjectBroadcast(dtype):
     rot = Rotation.about_axis("z", np.pi / 6, dtype=dtype)
     rots = Rotation.about_axis("z", [np.pi / 4, np.pi / 3, np.pi / 2], dtype=dtype)
 
+    # Test mask.
+    mask = grid_2d(L)["r"] < 1
+
     # Broadcast Volume stack with singleton Rotation and compare with individually generated projections.
     projs_3_1 = vols.project(rot)
     for i in range(n_vols):
         proj_i = vols[i].project(rot).asnumpy()
-        assert np.allclose(projs_3_1[i].asnumpy(), proj_i, atol=utest_tolerance(dtype))
+        assert np.allclose(
+            projs_3_1[i].asnumpy()[0][mask],
+            proj_i[0][mask],
+            atol=utest_tolerance(dtype),
+        )
 
     assert projs_3_1.shape[0] == n_vols
 
@@ -503,7 +510,11 @@ def testProjectBroadcast(dtype):
     projs_3_3 = vols.project(rots)
     for i in range(n_vols):
         proj_i = vols[i].project(rots[i]).asnumpy()
-        assert np.allclose(projs_3_3[i].asnumpy(), proj_i, atol=utest_tolerance(dtype))
+        assert np.allclose(
+            projs_3_3[i].asnumpy()[0][mask],
+            proj_i[0][mask],
+            atol=utest_tolerance(dtype),
+        )
 
     assert projs_3_3.shape[0] == n_vols
 
