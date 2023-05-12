@@ -241,6 +241,21 @@ class ImageSource(ABC):
         """
         return self._symmetry_group
 
+    @symmetry_group.setter
+    def symmetry_group(self, value):
+        """
+        Set the `symmetry_group` for `src`.
+
+        :param value: A `SymmetryGroup` instance
+        """
+        if self._mutable:
+            self._symmetry_group = value
+            self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
+        else:
+            raise RuntimeError(
+                f"This source is no longer mutable. Try new_source = source.update(symmetry_group='{value}')."
+            )
+
     def _populate_symmetry_group(self, symmetry_group):
         if symmetry_group and not isinstance(symmetry_group, SymmetryGroup):
             raise ValueError(
@@ -259,9 +274,7 @@ class ImageSource(ABC):
                 )
 
         C1_symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
-        self._symmetry_group = symmetry_group or C1_symmetry_group
-
-        self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
+        self.symmetry_group = symmetry_group or C1_symmetry_group
 
     def __getitem__(self, indices):
         """
@@ -351,15 +364,18 @@ class ImageSource(ABC):
             "amplitudes",
             "angles",
             "rotations",
+            "symmetry_group",
         )
 
         cp = copy.deepcopy(self)
+        cp._mutable = True
         for prop in updateable_props:
             if prop in kwargs:
                 setattr(cp, prop, kwargs.pop(prop))
 
         if kwargs:
             logger.warning(f"Unhandled arguments = {kwargs.keys()}")
+        cp._mutable = False
 
         return cp
 
