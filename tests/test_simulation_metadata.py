@@ -29,7 +29,7 @@ class SimTestCase(TestCase):
 
     def testMetadata1(self):
         # A new metadata column 'greeting' added to all images in the simulation, with the value 'hello'
-        self.sim.set_metadata("greeting", "hello")
+        self.sim._set_metadata("greeting", "hello")
         # Get value of a metadata field for all images
         values = self.sim.get_metadata("greeting")
         # We get back 'hello' 1024 times
@@ -37,8 +37,8 @@ class SimTestCase(TestCase):
 
     def testMetadata2(self):
         # Same as above, except that we set metadata twice in a row
-        self.sim.set_metadata("greeting", "hello")
-        self.sim.set_metadata("greeting", "goodbye")
+        self.sim._set_metadata("greeting", "hello")
+        self.sim._set_metadata("greeting", "goodbye")
         # Get value of a metadata field for all images
         values = self.sim.get_metadata("greeting")
         # We get back 'hello' 1024 times
@@ -47,7 +47,7 @@ class SimTestCase(TestCase):
     def testMetadata3(self):
         # A new metadata column 'rand_value' added to all images in the simulation, with random values
         rand_values = np.random.rand(1024)
-        self.sim.set_metadata("rand_value", rand_values)
+        self.sim._set_metadata("rand_value", rand_values)
         # Get value of a metadata field for all images
         values = self.sim.get_metadata("rand_value")
         self.assertTrue(np.allclose(rand_values, values))
@@ -58,7 +58,7 @@ class SimTestCase(TestCase):
         rand_values2 = np.random.rand(1024)
         new_data = np.column_stack([rand_values1, rand_values2])
         self.assertFalse(self.sim.has_metadata(["rand_value1", "rand_value2"]))
-        self.sim.set_metadata(["rand_value1", "rand_value2"], new_data)
+        self.sim._set_metadata(["rand_value1", "rand_value2"], new_data)
         self.assertTrue(self.sim.has_metadata(["rand_value2", "rand_value1"]))
         # Get value of metadata fields for all images
         values = self.sim.get_metadata(["rand_value1", "rand_value2"])
@@ -70,7 +70,7 @@ class SimTestCase(TestCase):
         values2 = [21, 22, 23]
         new_data = np.column_stack([values1, values2])
         # Set value of metadata fields for indices 0, 1, 3
-        self.sim.set_metadata(
+        self.sim._set_metadata(
             ["rand_value1", "rand_value2"], new_data, indices=[0, 1, 3]
         )
         # Get value of metadata fields for indices 0, 1, 2, 3

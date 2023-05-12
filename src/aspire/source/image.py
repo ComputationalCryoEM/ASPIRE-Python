@@ -371,7 +371,7 @@ class ImageSource(ABC):
 
     @states.setter
     def states(self, values):
-        return self.set_metadata("_rlnClassNumber", values)
+        return self._set_metadata("_rlnClassNumber", values)
 
     @property
     def filter_indices(self):
@@ -380,7 +380,7 @@ class ImageSource(ABC):
     @filter_indices.setter
     def filter_indices(self, indices):
         # create metadata of filters for all images
-        return self.set_metadata(["__filter_indices"], indices)
+        return self._set_metadata(["__filter_indices"], indices)
 
     @property
     def offsets(self):
@@ -390,7 +390,7 @@ class ImageSource(ABC):
 
     @offsets.setter
     def offsets(self, values):
-        return self.set_metadata(
+        return self._set_metadata(
             ["_rlnOriginX", "_rlnOriginY"], np.array(values, dtype=self.dtype)
         )
 
@@ -400,7 +400,7 @@ class ImageSource(ABC):
 
     @amplitudes.setter
     def amplitudes(self, values):
-        return self.set_metadata("_rlnAmplitude", np.array(values, dtype=self.dtype))
+        return self._set_metadata("_rlnAmplitude", np.array(values, dtype=self.dtype))
 
     @property
     def angles(self):
@@ -447,7 +447,7 @@ class ImageSource(ABC):
 
         values = values.astype(self.dtype)
         self._rotations = Rotation.from_euler(values)
-        self.set_metadata(
+        self._set_metadata(
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"], np.rad2deg(values)
         )
 
@@ -462,12 +462,12 @@ class ImageSource(ABC):
 
         values = values.astype(self.dtype)
         self._rotations = Rotation.from_matrix(values)
-        self.set_metadata(
+        self._set_metadata(
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"],
             np.rad2deg(self._rotations.angles),
         )
 
-    def set_metadata(self, metadata_fields, values, indices=None):
+    def _set_metadata(self, metadata_fields, values, indices=None):
         """
         Modify metadata field information of this ImageSource for selected indices
 
@@ -482,7 +482,7 @@ class ImageSource(ABC):
         # This breaks lots of things, maybe not something we want to rush out.
         # # Check if we're in an immutable state.
         # if not self._mutable:
-        #     raise RuntimeError("This source is no longer mutable, try using `update` instead of `set_metadata`")
+        #     raise RuntimeError("This source is no longer mutable, try using `update` instead of `_set_metadata`")
 
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]

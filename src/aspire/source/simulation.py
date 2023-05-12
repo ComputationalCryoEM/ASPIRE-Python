@@ -202,7 +202,7 @@ class Simulation(ImageSource):
             ]
         # set the corresponding Relion metadata values that we would expect
         # from a STAR file
-        self.set_metadata(
+        self._set_metadata(
             [
                 "_rlnVoltage",
                 "_rlnDefocusU",

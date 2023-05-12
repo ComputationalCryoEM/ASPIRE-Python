@@ -145,16 +145,16 @@ class CoordinateSource(ImageSource, ABC):
         # this can be updated with import_ctf()
         self.filter_indices = np.zeros(self.n, dtype=int)
         self.unique_filters = [IdentityFilter()]
-        self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
+        self._set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
 
         # populate __mrc_filename and __mrc_index
         for mrc_index, particle_indices in enumerate(self.mrc_index_to_particles):
-            self.set_metadata(
+            self._set_metadata(
                 "__mrc_index",
                 mrc_index,
                 particle_indices,
             )
-            self.set_metadata(
+            self._set_metadata(
                 "__mrc_filepath", self.mrc_paths[mrc_index], particle_indices
             )
 
@@ -239,14 +239,14 @@ class CoordinateSource(ImageSource, ABC):
         :return: A list of the names of the columns added.
         """
         # Insert stored particle coordinates (centers) into metadata
-        self.set_metadata(
+        self._set_metadata(
             "_rlnCoordinateX",
             [
                 self._center_from_box_coord(particle[1])[0]
                 for particle in self.particles
             ],
         )
-        self.set_metadata(
+        self._set_metadata(
             "_rlnCoordinateY",
             [
                 self._center_from_box_coord(particle[1])[1]
@@ -395,12 +395,12 @@ class CoordinateSource(ImageSource, ABC):
         for mrc_idx, filter_index in enumerate(indices):
             particle_indices_this_mrc = self.mrc_index_to_particles[mrc_idx]
             num_particles_this_mrc = len(particle_indices_this_mrc)
-            self.set_metadata(
+            self._set_metadata(
                 CTF_params,
                 np.vstack((filter_params[filter_index],) * num_particles_this_mrc),
                 particle_indices_this_mrc,
             )
-            self.set_metadata(
+            self._set_metadata(
                 "__filter_indices", filter_index, particle_indices_this_mrc
             )
 
