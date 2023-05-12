@@ -77,7 +77,7 @@ class Simulation(ImageSource):
             If None is given, no caching is performed.
         :param noise_adder: Optionally append instance of `NoiseAdder`
             to generation pipeline.
-        :param symmetry_group: An instance of SymmetryGroup indicating symmetry of the molecule.
+        :param symmetry_group: A SymmetryGroup instance or string indicating symmetry of the molecule.
 
         :return: A Simulation object.
         """
