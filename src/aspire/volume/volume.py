@@ -58,7 +58,7 @@ class Volume:
     Volume is an (N1 x ...) x L x L x L array, along with associated utility methods.
     """
 
-    def __init__(self, data, dtype=None):
+    def __init__(self, data, dtype=None, symmetry_group=None):
         """
         A stack of one or more volumes.
 
@@ -76,6 +76,7 @@ class Volume:
             `(..., resolution, resolution, resolution)`.
         :param dtype: Optionally cast `data` to this dtype.
             Defaults to `data.dtype`.
+        :param symmetry_group: A SymmetryGroup instance or string indicating symmetry of the Volume.
 
         :return: A Volume instance holding `data`.
         """
@@ -108,7 +109,13 @@ class Volume:
         self.size = self._data.size
 
         # Set symmetry_group to 'C1' by default. Can be overriden by synthetic volumes.
-        self.symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
+        if isinstance(symmetry_group, str):
+            symmetry_group = SymmetryGroup.symmetry_parser(
+                symmetry_group, dtype=self.dtype
+            )
+        self.symmetry_group = symmetry_group or CyclicSymmetryGroup(
+            order=1, dtype=self.dtype
+        )
 
         # Numpy interop
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
@@ -499,7 +506,7 @@ class Volume:
             logger.info(f"Volume with dtype {self.dtype} saved with dtype float32")
 
     @classmethod
-    def load(cls, filename, permissive=True, dtype=np.float32):
+    def load(cls, filename, permissive=True, dtype=np.float32, symmetry_group=None):
         """
         Load an mrc file as a Volume instance.
 
@@ -507,6 +514,7 @@ class Volume:
         :param permissive: Allows problematic files to load with warning when True.
             Defaults to permissive=True.
         :param dtype: Optionally specifiy data type. Defaults to dtype=np.float32.
+        :param symmetry_group: A SymmetryGroup instance or string indicating symmetry of the Volume.
 
         :return: Volume instance.
         """
@@ -514,7 +522,7 @@ class Volume:
             loaded_data = mrc.data
         if loaded_data.dtype != dtype:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
-        return cls(loaded_data.astype(dtype))
+        return cls(loaded_data.astype(dtype), symmetry_group=symmetry_group)
 
     def fsc(self, other, cutoff, pixel_size=None, method="fft", plot=False):
         r"""
