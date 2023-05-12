@@ -2,6 +2,7 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+import pytest
 
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
@@ -29,27 +30,34 @@ class SimTestCase(TestCase):
 
     def testMetadata1(self):
         # A new metadata column 'greeting' added to all images in the simulation, with the value 'hello'
-        self.sim._set_metadata("greeting", "hello")
+        with pytest.raises(RuntimeError, match="This source is no longer mutable"):
+            self.sim._set_metadata("greeting", "hello")
+        sim = self.sim.update(greeting="hello")
+
+        # Check the original self.sim does not have `greeting`
+        self.assertFalse(self.sim.has_metadata("greeting"))
+
         # Get value of a metadata field for all images
-        values = self.sim.get_metadata("greeting")
+        values = sim.get_metadata("greeting")
         # We get back 'hello' 1024 times
         self.assertTrue(np.all(np.equal(np.repeat("hello", 1024), values)))
 
     def testMetadata2(self):
         # Same as above, except that we set metadata twice in a row
-        self.sim._set_metadata("greeting", "hello")
-        self.sim._set_metadata("greeting", "goodbye")
+        sim = self.sim.update(greeting="hello")
+        sim = sim.update(greeting="goodbye")
         # Get value of a metadata field for all images
-        values = self.sim.get_metadata("greeting")
-        # We get back 'hello' 1024 times
+        values = sim.get_metadata("greeting")
+        # We get back 'goodbye' 1024 times
         self.assertTrue(np.all(np.equal(np.repeat("goodbye", 1024), values)))
 
     def testMetadata3(self):
         # A new metadata column 'rand_value' added to all images in the simulation, with random values
         rand_values = np.random.rand(1024)
-        self.sim._set_metadata("rand_value", rand_values)
+        sim = self.sim.update(rand_value=rand_values)
         # Get value of a metadata field for all images
-        values = self.sim.get_metadata("rand_value")
+        self.assertFalse(self.sim.has_metadata("rand_value"))
+        values = sim.get_metadata("rand_value")
         self.assertTrue(np.allclose(rand_values, values))
 
     def testMetadata4(self):
@@ -58,10 +66,12 @@ class SimTestCase(TestCase):
         rand_values2 = np.random.rand(1024)
         new_data = np.column_stack([rand_values1, rand_values2])
         self.assertFalse(self.sim.has_metadata(["rand_value1", "rand_value2"]))
-        self.sim._set_metadata(["rand_value1", "rand_value2"], new_data)
-        self.assertTrue(self.sim.has_metadata(["rand_value2", "rand_value1"]))
+        sim = self.sim.update(rand_value1=new_data[:, 0], rand_value2=new_data[:, 1])
+        self.assertFalse(self.sim.has_metadata(["rand_value2", "rand_value1"]))
+        self.assertTrue(sim.has_metadata(["rand_value2", "rand_value1"]))
+
         # Get value of metadata fields for all images
-        values = self.sim.get_metadata(["rand_value1", "rand_value2"])
+        values = sim.get_metadata(["rand_value1", "rand_value2"])
         self.assertTrue(np.allclose(new_data, values))
 
     def testMetadata5(self):
@@ -70,6 +80,9 @@ class SimTestCase(TestCase):
         values2 = [21, 22, 23]
         new_data = np.column_stack([values1, values2])
         # Set value of metadata fields for indices 0, 1, 3
+        self.sim._mutable = (
+            True  # This indexed feature currently requires we're mutable.
+        )
         self.sim._set_metadata(
             ["rand_value1", "rand_value2"], new_data, indices=[0, 1, 3]
         )

@@ -214,7 +214,9 @@ class ImageSource(ABC):
         # by reference, not by value (as it should). A deepcopy will make a copy of the singleton,
         # and thus comparison by reference will fail. Till this bug in 'finufft' is removed, we assign
         # self.dtype to dtype
+        cp._mutable = True
         cp.dtype = self.dtype
+        cp._mutable = False
 
         # --------------------------------------
 
@@ -306,11 +308,24 @@ class ImageSource(ABC):
         Update properties that modify the underlying metadata, and return a new ImageSource
         object with the new properties. The original object is unchanged.
         """
+        updateable_props = (
+            "states",
+            "filter_indices",
+            "offsets",
+            "amplitudes",
+            "angles",
+            "rotations",
+        )
 
         cp = copy.deepcopy(self)
         cp._mutable = True
         for name, value in kwargs.items():
             setattr(cp, name, value)
+            # Pass through to set_metadata if attribute isn't exposed through our API
+            # If we disallow this, it would force only properties we allow...
+            if name not in updateable_props:
+                cp._set_metadata(name, value)
+
         cp._mutable = False
 
         return cp
@@ -457,15 +472,14 @@ class ImageSource(ABC):
             np.rad2deg(self._rotations.angles),
         )
 
-    def __set_attr__(self, name, value):
+    def __setattr__(self, name, value):
         """
         Check that instance is not trying to be immutable before
         setting attributes.
         """
-
         # This method avoids having to have all setters duplicate check,
         # or forcing implementation of unneeded setters.
-        if not self._mutable:
+        if name not in ("_mutable", "__deepcopy__") and not self._mutable:
             raise RuntimeError(
                 f"Attempting to set {name}, but currently immutable."
                 "Try using `src = src.update({name}=)`."
@@ -473,7 +487,7 @@ class ImageSource(ABC):
 
         # Otherwise, attempt setting attribute directly,
         #   which should be picked up by our API.
-        super().__setattr__(self, name, value)
+        super().__setattr__(name, value)
 
     def _set_metadata(self, metadata_fields, values, indices=None):
         """
@@ -490,7 +504,9 @@ class ImageSource(ABC):
         # This breaks lots of things, maybe not something we want to rush out.
         # # Check if we're in an immutable state.
         if not self._mutable:
-            raise RuntimeError("This source is no longer mutable, try using `update` instead of `_set_metadata`")
+            raise RuntimeError(
+                "This source is no longer mutable, try using `update` instead of `_set_metadata`"
+            )
 
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]
