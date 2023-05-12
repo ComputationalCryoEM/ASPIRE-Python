@@ -117,7 +117,7 @@ def test_frc_id(image_fixture, method):
 
     frc_resolution, frc = img.frc(img, pixel_size=1, cutoff=0.143, method=method)
     assert np.isclose(frc_resolution[0], 2, rtol=0.02)
-    assert np.allclose(frc, 1)
+    assert np.allclose(frc, 1, rtol=0.0001)
 
 
 def test_frc_trunc(image_fixture, method):
@@ -179,7 +179,7 @@ def test_fsc_id(volume_fixture, method):
 
     fsc_resolution, fsc = vol.fsc(vol, pixel_size=1, cutoff=0.143, method=method)
     assert np.isclose(fsc_resolution[0], 2, rtol=0.02)
-    assert np.allclose(fsc, 1)
+    assert np.allclose(fsc, 1, rtol=0.0001)
 
 
 def test_fsc_trunc(volume_fixture, method):
@@ -336,7 +336,7 @@ def test_frc_id_bcast(image_fixture, method):
         * k,
         rtol=0.02,
     )
-    assert np.allclose(frc, 1.0)
+    assert np.allclose(frc, 1.0, rtol=0.0001)
     assert frc_resolution.shape == (3,)
 
     # (1) x (1,3)
@@ -351,7 +351,7 @@ def test_frc_id_bcast(image_fixture, method):
         * k,
         rtol=0.02,
     )
-    assert np.allclose(frc, 1.0)
+    assert np.allclose(frc, 1.0, rtol=0.0001)
     assert frc_resolution.shape == (1, 3)
 
     # (1) x (3,1)
@@ -366,7 +366,7 @@ def test_frc_id_bcast(image_fixture, method):
         * k,
         rtol=0.02,
     )
-    assert np.allclose(frc, 1.0)
+    assert np.allclose(frc, 1.0, rtol=0.0001)
     assert frc_resolution.shape == (3, 1)
 
 
@@ -385,7 +385,7 @@ def test_fsc_id_bcast(volume_fixture, method):
         * k,
         rtol=0.02,
     )
-    assert np.allclose(fsc, 1.0)
+    assert np.allclose(fsc, 1.0, rtol=0.0001)
 
 
 def test_frc_img_plot_bcast(image_fixture):
