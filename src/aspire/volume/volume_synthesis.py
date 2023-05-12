@@ -50,6 +50,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         self.K = int(K)
         self.alpha = float(alpha)
         super().__init__(L=L, C=C, seed=seed, dtype=dtype)
+        self._set_symmetry_group()
 
     @abc.abstractproperty
     def n_blobs(self):
@@ -59,11 +60,12 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         which have been duplicated during `_symmetrize_gaussians`.
         """
 
-    @abc.abstractproperty
+    @property
     def symmetry_group(self):
         """
         This property will be implemented by each subclass.
         """
+        return self._symmetry_group
 
     def generate(self):
         """
@@ -185,13 +187,12 @@ class CnSymmetricVolume(GaussianBlobsVolume):
                 f"For a {self.__class__.__name__} the cyclic order must be greater than 1. Provided order was {self.order}"
             )
 
+    def _set_symmetry_group(self):
+        self._symmetry_group = CyclicSymmetryGroup(order=self.order, dtype=self.dtype)
+
     @property
     def n_blobs(self):
         return self.order * self.K
-
-    @property
-    def symmetry_group(self):
-        return CyclicSymmetryGroup(order=self.order, dtype=self.dtype)
 
 
 class DnSymmetricVolume(CnSymmetricVolume):
@@ -199,13 +200,12 @@ class DnSymmetricVolume(CnSymmetricVolume):
     A Volume object with n-fold dihedral symmetry constructed of random 3D Gaussian blobs.
     """
 
+    def _set_symmetry_group(self):
+        self._symmetry_group = DihedralSymmetryGroup(order=self.order, dtype=self.dtype)
+
     @property
     def n_blobs(self):
         return 2 * self.order * self.K
-
-    @property
-    def symmetry_group(self):
-        return DihedralSymmetryGroup(order=self.order, dtype=self.dtype)
 
 
 class TSymmetricVolume(GaussianBlobsVolume):
@@ -213,13 +213,12 @@ class TSymmetricVolume(GaussianBlobsVolume):
     A Volume object with tetrahedral symmetry constructed of random 3D Gaussian blobs.
     """
 
+    def _set_symmetry_group(self):
+        self._symmetry_group = TetrahedralSymmetryGroup(dtype=self.dtype)
+
     @property
     def n_blobs(self):
         return 12 * self.K
-
-    @property
-    def symmetry_group(self):
-        return TetrahedralSymmetryGroup(dtype=self.dtype)
 
 
 class OSymmetricVolume(GaussianBlobsVolume):
@@ -227,13 +226,12 @@ class OSymmetricVolume(GaussianBlobsVolume):
     A Volume object with octahedral symmetry constructed of random 3D Gaussian blobs.
     """
 
+    def _set_symmetry_group(self):
+        self._symmetry_group = OctahedralSymmetryGroup(dtype=self.dtype)
+
     @property
     def n_blobs(self):
         return 24 * self.K
-
-    @property
-    def symmetry_group(self):
-        return OctahedralSymmetryGroup(dtype=self.dtype)
 
 
 class AsymmetricVolume(CnSymmetricVolume):
