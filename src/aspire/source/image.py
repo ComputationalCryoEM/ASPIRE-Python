@@ -489,8 +489,8 @@ class ImageSource(ABC):
 
         # This breaks lots of things, maybe not something we want to rush out.
         # # Check if we're in an immutable state.
-        # if not self._mutable:
-        #     raise RuntimeError("This source is no longer mutable, try using `update` instead of `_set_metadata`")
+        if not self._mutable:
+            raise RuntimeError("This source is no longer mutable, try using `update` instead of `_set_metadata`")
 
         if isinstance(metadata_fields, str):
             metadata_fields = [metadata_fields]
