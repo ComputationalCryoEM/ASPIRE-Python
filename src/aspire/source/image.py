@@ -303,25 +303,15 @@ class ImageSource(ABC):
 
     def update(self, **kwargs):
         """
-        Update certain properties that modify the underlying metadata, and return a new ImageSource
+        Update properties that modify the underlying metadata, and return a new ImageSource
         object with the new properties. The original object is unchanged.
         """
-        updateable_props = (
-            "states",
-            "filter_indices",
-            "offsets",
-            "amplitudes",
-            "angles",
-            "rotations",
-        )
 
         cp = copy.deepcopy(self)
-        for prop in updateable_props:
-            if prop in kwargs:
-                setattr(cp, prop, kwargs.pop(prop))
-
-        if kwargs:
-            logger.warning(f"Unhandled arguments = {kwargs.keys()}")
+        cp._mutable = True
+        for name, value in kwargs.items():
+            setattr(cp, name, value)
+        cp._mutable = False
 
         return cp
 
@@ -466,6 +456,24 @@ class ImageSource(ABC):
             ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"],
             np.rad2deg(self._rotations.angles),
         )
+
+    def __set_attr__(self, name, value):
+        """
+        Check that instance is not trying to be immutable before
+        setting attributes.
+        """
+
+        # This method avoids having to have all setters duplicate check,
+        # or forcing implementation of unneeded setters.
+        if not self._mutable:
+            raise RuntimeError(
+                f"Attempting to set {name}, but currently immutable."
+                "Try using `src = src.update({name}=)`."
+            )
+
+        # Otherwise, attempt setting attribute directly,
+        #   which should be picked up by our API.
+        super().__setattr__(self, name, value)
 
     def _set_metadata(self, metadata_fields, values, indices=None):
         """
