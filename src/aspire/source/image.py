@@ -158,7 +158,7 @@ class ImageSource(ABC):
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
-        :param symmetry_group: A SymmetryGroup instance indicating the underlying symmetry of the molecule.
+        :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
         """
 
         # Instantiate the accessor for the `images` property
@@ -246,9 +246,15 @@ class ImageSource(ABC):
         """
         Set the `symmetry_group` for `src`.
 
-        :param value: A `SymmetryGroup` instance
+        :param value: A `SymmetryGroup` instance or string indicating symmetry, ie. "C5", "D7", "T", etc.
         """
         if self._mutable:
+            if isinstance(value, str):
+                value = SymmetryGroup.symmetry_parser(value, dtype=self.dtype)
+            if not isinstance(value, SymmetryGroup):
+                raise ValueError(
+                    "`symmetry_group` must be an instance of the SymmetryGroup class"
+                )
             self._symmetry_group = value
             self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
         else:
@@ -257,11 +263,10 @@ class ImageSource(ABC):
             )
 
     def _populate_symmetry_group(self, symmetry_group):
-        if symmetry_group and not isinstance(symmetry_group, SymmetryGroup):
-            raise ValueError(
-                "`symmetry_group` must be an instance of the SymmetryGroup class"
-            )
-
+        """
+        Populates the symmetry_group attribute with user provided symmetry_group or metadata.
+        If neither exist, defaults to C1 symmetry.
+        """
         if self.has_metadata(["_rlnSymmetryGroup"]):
             if symmetry_group:
                 raise logger.warning(
@@ -1605,8 +1610,7 @@ class ArrayImageSource(ImageSource):
             In the case of a Numpy array, attempts to create an 'Image' object.
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
-        :param symmetry_group: A `SymmetryGroup` object corresponding to the symmetry of volume represented
-            by this `ImageSource`.
+        :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
         """
 
         if not isinstance(im, Image):
