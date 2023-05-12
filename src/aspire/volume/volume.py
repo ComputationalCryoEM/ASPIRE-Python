@@ -108,7 +108,7 @@ class Volume:
         self.resolution = self._data.shape[-1]
         self.size = self._data.size
 
-        # Set symmetry_group to 'C1' by default. Can be overriden by synthetic volumes.
+        # Set symmetry_group. If None, default to 'C1'.
         if isinstance(symmetry_group, str):
             symmetry_group = SymmetryGroup.symmetry_parser(
                 symmetry_group, dtype=self.dtype
