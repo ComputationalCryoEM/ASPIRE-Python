@@ -26,10 +26,6 @@ ORDERS = [2, 3, 4, 5]
 DTYPES = [np.float32, np.float64]
 PARAMS_ORDER = list(itertools.product(GROUPS_WITH_ORDER, DTYPES, ORDERS))
 PARAMS = list(itertools.product(GROUPS_WITHOUT_ORDER, DTYPES))
-# @pytest.fixture(params=DTYPES)
-# def dtype_fixture(request):
-#     dtype = request.param
-#     return dtype
 
 
 def group_fixture_id(params):
@@ -65,7 +61,8 @@ def test_group_repr(group_fixture):
 
 def test_group_str(group_fixture):
     """Test SymmetryGroup str"""
-    _ = str(group_fixture)
+    sym_string = str(group_fixture)
+    logger.debug(f"String for {group_fixture}: {sym_string}.")
 
 
 def test_group_rotations(group_fixture):
