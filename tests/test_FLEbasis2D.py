@@ -22,7 +22,7 @@ def show_fle_params(basis):
 
 
 def gpu_ci_skip():
-    pytest.skip("1e-7 precision for FLEBasis2D.evaluate()")
+    pytest.skip("1e-7 precision for FLEBasis2D")
 
 
 fle_params = [
@@ -71,6 +71,9 @@ def relerr(base, approx):
 class TestFLEBasis2D(UniversalBasisMixin):
     # check closeness guarantees for fast vs dense matrix method
     def testFastVDense_T(self, basis):
+        if backend_available("cufinufft") and basis.epsilon == 1e-7:
+            gpu_ci_skip()
+
         dense_b = basis._create_dense_matrix()
 
         # create sample particle
@@ -157,6 +160,9 @@ def testMatchFBDenseEvaluate(basis):
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
 def testMatchFBEvaluate_t(basis):
+    if backend_available("cufinufft") and basis.epsilon == 1e-7:
+        gpu_ci_skip()
+
     # ensure that coefficients are the same when evaluating images
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
