@@ -63,7 +63,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
     @property
     def symmetry_group(self):
         """
-        This property will be implemented by each subclass.
+        SymmetryGroup object corresponding to the symmetry of the Volume.
         """
         return self._symmetry_group
 
