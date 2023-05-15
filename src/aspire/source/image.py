@@ -1519,6 +1519,9 @@ class OrientedSource(IndexedSource):
             indices=indices,
         )
 
+        # Remove any orientation information passed in by original source.
+        self._reset_orientation()
+
         # Flag for lazy eval of orientation estimation.
         self._oriented = False
 
@@ -1540,7 +1543,7 @@ class OrientedSource(IndexedSource):
         Perform orientation estimation if not already done.
         """
 
-        # Short circuit
+        # Short circuit.
         if self._oriented:
             logger.debug(f"{self.__class__.__name__} already oriented, skipping")
             return
@@ -1557,6 +1560,16 @@ class OrientedSource(IndexedSource):
 
         self._oriented = True
 
+    def _reset_orientation(self):
+        """
+        Remove orientation information passed in by original source.
+        """
+        rot_keys = ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]
+        if self.has_metadata(rot_keys):
+            logger.info(f"Removing orientation information passed by {self.src}.")
+            for key in rot_keys:
+                del self._metadata[key]
+
     def _images(self, indices):
         """
         Returns images from `self.src` corresponding to `indices`.
@@ -1564,7 +1577,7 @@ class OrientedSource(IndexedSource):
         :param indices: A 1-D NumPy array of indices.
         :return: An `Image` object.
         """
-
+        self._orient()
         return super()._images(indices)
 
     def _rots(self):
@@ -1577,7 +1590,6 @@ class OrientedSource(IndexedSource):
         """
 
         self._orient()
-
         return self._rotations.matrices.astype(self.dtype)
 
     def _angles(self):
@@ -1587,6 +1599,20 @@ class OrientedSource(IndexedSource):
     def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
         self._orient()
         return super().save_metadata(starfile_filepath, batch_size=512, save_mode=None)
+
+    def get_metadata(
+        self, metadata_fields=None, indices=None, default_value=None, as_dict=False
+    ):
+        # get_metadata is used for instantiation, so only orient if the oriented_source
+        # is already initialized, ie. when no longer mutable.
+        if not self._mutable:
+            self._orient()
+        return super().get_metadata(
+            metadata_fields=metadata_fields,
+            indices=indices,
+            default_value=default_value,
+            as_dict=as_dict,
+        )
 
     def __repr__(self):
         return f"{self.__class__.__name__} for origin source {self.src.__class__.__name__}."
