@@ -109,10 +109,6 @@ class Volume:
         self.size = self._data.size
 
         # Set symmetry_group. If None, default to 'C1'.
-        if isinstance(symmetry_group, str):
-            symmetry_group = SymmetryGroup.symmetry_parser(
-                symmetry_group, dtype=self.dtype
-            )
         self.symmetry_group = symmetry_group or CyclicSymmetryGroup(
             order=1, dtype=self.dtype
         )
@@ -157,6 +153,35 @@ class Volume:
     def __setitem__(self, key, value):
         self._check_key_dims(key)
         self._data[key] = value
+
+    @property
+    def symmetry_group(self):
+        """
+        A SymmetryGroup instance associated with the symmetry of the volume.
+        Access rotation matrices of the symmetry_group via `symmetry_group.rotations`.
+        """
+        return self._symmetry_group
+
+    @symmetry_group.setter
+    def symmetry_group(self, value):
+        """
+        Set the `symmetry_group` for the Volume.
+
+        :param value: A `SymmetryGroup` instance or string indicating symmetry, ie. "C5", "D7", "T", etc.
+        """
+        if hasattr(self, "symmetry_group"):
+            raise RuntimeError(
+                "The symmetry_group attribute cannot be reset."
+                f" Volume symmetry already set to: {self.symmetry_group}."
+            )
+        else:
+            if isinstance(value, str):
+                value = SymmetryGroup.symmetry_parser(value, dtype=self.dtype)
+            if not isinstance(value, SymmetryGroup):
+                raise ValueError(
+                    "`symmetry_group` must be an instance of the SymmetryGroup class"
+                )
+            self._symmetry_group = value
 
     def stack_reshape(self, *args):
         """
