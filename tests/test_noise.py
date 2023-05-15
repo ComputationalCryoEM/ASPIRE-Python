@@ -104,6 +104,7 @@ def test_white_noise_adder(sim_fixture, target_noise_variance):
     for a variety of variances, resolutions and dtypes.
     """
 
+    sim_fixture._mutable = True  # To assign `noise_adder` for testing purposes.
     sim_fixture.noise_adder = WhiteNoiseAdder(var=target_noise_variance)
 
     # Assert we have passed through the var exactly
@@ -132,6 +133,7 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
     )
 
     # Create the CustomNoiseAdder
+    sim_fixture._mutable = True  # To assign `noise_adder` for testing purposes.
     sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
 
     # Estimate the noise_variance
@@ -162,6 +164,7 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
     """
 
     # First add an explicit amount of noise to the base simulation,
+    sim_fixture._mutable = True  # To assign `noise_adder` for testing purposes.
     sim_fixture.noise_adder = WhiteNoiseAdder(var=target_noise_variance)
     # and compute the resulting snr of the sim.
     target_snr = sim_fixture.estimate_snr()
@@ -213,6 +216,7 @@ def test_blue_iso_noise_estimation(sim_fixture, target_noise_variance):
     """
 
     # Create the CustomNoiseAdder
+    sim_fixture._mutable = True  # To assign `noise_adder` for testing purposes.
     sim_fixture.noise_adder = BlueNoiseAdder(var=target_noise_variance)
 
     # TODO, potentially remove or change to Isotropic after #842
@@ -238,6 +242,7 @@ def test_pink_iso_noise_estimation(sim_fixture, target_noise_variance):
     """
 
     # Create the CustomNoiseAdder
+    sim_fixture._mutable = True  # To assign `noise_adder` for testing purposes.
     sim_fixture.noise_adder = PinkNoiseAdder(var=target_noise_variance)
 
     # TODO, potentially remove or change to Isotropic after #842
@@ -272,6 +277,7 @@ def test_pink_aniso_noise_estimation(sim_fixture, target_noise_variance):
     custom_filter = FunctionFilter(f=aniso_spectrum)
 
     # Create the CustomNoiseAdder
+    sim_fixture._mutable = True  # To assign `noise_adder` for testing purposes.
     sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
 
     # TODO, potentially remove after #842

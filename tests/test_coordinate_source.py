@@ -517,17 +517,17 @@ class CoordinateSourceTestCase(TestCase):
         # trying to give 3 CTF files to a source with 2 micrographs should error
         with self.assertRaises(ValueError):
             src = BoxesCoordinateSource(self.files_box)
-            src.import_aspire_ctf(["badfile", "badfile", "badfile"])
+            src = src.import_aspire_ctf(["badfile", "badfile", "badfile"])
 
     def testImportCtfFromList(self):
         src = BoxesCoordinateSource(self.files_box)
-        src.import_aspire_ctf(self.ctf_files)
+        src = src.import_aspire_ctf(self.ctf_files)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
     def testImportCtfFromRelion(self):
         src = BoxesCoordinateSource(self.files_box)
-        src.import_relion_ctf(self.relion_ctf_file)
+        src = src.import_relion_ctf(self.relion_ctf_file)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
@@ -536,13 +536,13 @@ class CoordinateSourceTestCase(TestCase):
             reverse_optics_block_rows=True
         )
         src = BoxesCoordinateSource(self.files_box)
-        src.import_relion_ctf(self.relion_ctf_file)
+        src = src.import_relion_ctf(self.relion_ctf_file)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
     def testImportCtfFromRelionLegacy(self):
         src = BoxesCoordinateSource(self.files_box)
-        src.import_relion_ctf(self.relion_legacy_ctf_file)
+        src = src.import_relion_ctf(self.relion_legacy_ctf_file)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 

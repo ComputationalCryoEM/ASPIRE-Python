@@ -114,7 +114,9 @@ def as_copy(func):
     def wrapper(self, *args, **kwargs):
         obj_copy = copy.deepcopy(self)
         func_copy = copy.deepcopy(func)
+        obj_copy._mutable = True
         func_copy(obj_copy, *args, **kwargs)
+        obj_copy._mutable = False
         return obj_copy
 
     return wrapper
@@ -315,6 +317,7 @@ class ImageSource(ABC):
             "amplitudes",
             "angles",
             "rotations",
+            "unique_filters",
         )
 
         cp = copy.deepcopy(self)

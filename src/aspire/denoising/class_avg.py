@@ -112,13 +112,15 @@ class ClassAvgSource(ImageSource):
         if self._classified:
             logger.debug(f"{self.__class__.__name__} already classified, skipping")
             return
-
+        # Allow the assignment of the following internal attributes
+        self._mutable = True
         (
             self._nn_classes,
             self._nn_reflections,
             self._nn_distances,
         ) = self.classifier.classify()
         self._classified = True
+        self._mutable = False
 
     @property
     def selection_indices(self):
@@ -197,6 +199,8 @@ class ClassAvgSource(ImageSource):
             self._classify()
 
         # Perform class selection
+        # Allow the assignment of the following internal attributes
+        self._mutable = True
         self._selection_indices = self.class_selector.select(
             self._nn_classes,
             self._nn_reflections,
@@ -213,6 +217,8 @@ class ClassAvgSource(ImageSource):
         self.n = len(self._selection_indices)
 
         self._selected = True
+        # Restore mutation guard
+        self._mutable = False
 
     def _images(self, indices):
         """

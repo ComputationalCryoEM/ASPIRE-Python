@@ -167,8 +167,11 @@ class ImageTestCase(TestCase):
         rotations = Rotation.from_euler(angles).matrices
         self.assertTrue(rotations.shape == (src.n, 3, 3))
 
-        # Excercise the setter
-        src.rotations = rotations
+        # Excercise the update setter path
+        src = src.update(rotations=rotations)
+        # Check mutating raises
+        with raises(RuntimeError):
+            src.rotations = rotations
 
         # Test Rotations Getter
         self.assertTrue(
