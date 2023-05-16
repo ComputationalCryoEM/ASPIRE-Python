@@ -518,6 +518,8 @@ def testProjectBroadcast(dtype):
 
     assert projs_3_3.shape[0] == n_vols
 
+    # Note: The test case for a single Volume and a stack of Rotations is covered above in testProject.
+
     # Check we raise an error for incompatible stack sizes.
     msg = "Cannot broadcast with 2 Rotations and 3 Volumes."
     with raises(NotImplementedError, match=msg):
