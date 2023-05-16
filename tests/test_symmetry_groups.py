@@ -9,6 +9,7 @@ from aspire.volume import (
     CyclicSymmetryGroup,
     DihedralSymmetryGroup,
     OctahedralSymmetryGroup,
+    SymmetryGroup,
     TetrahedralSymmetryGroup,
 )
 
@@ -68,3 +69,11 @@ def test_group_str(group_fixture):
 def test_group_rotations(group_fixture):
     rotations = group_fixture.rotations
     assert isinstance(rotations, Rotation)
+
+
+def test_symmetry_parser_error():
+    junk_symmetry = "P12"
+    with pytest.raises(
+        ValueError, match=f"Symmetry type {junk_symmetry[0]} not supported.*"
+    ):
+        _ = SymmetryGroup.symmetry_parser(junk_symmetry, dtype=np.float32)
