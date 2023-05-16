@@ -13,7 +13,7 @@ from pytest import raises, skip
 from aspire.utils import Rotation, grid_2d, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
-from aspire.volume import AsymmetricVolume, Volume
+from aspire.volume import AsymmetricVolume, CyclicSymmetryGroup, SymmetryGroup, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -524,3 +524,46 @@ def testProjectBroadcast(dtype):
     msg = "Cannot broadcast with 2 Rotations and 3 Volumes."
     with raises(NotImplementedError, match=msg):
         _ = vols.project(rots[:2])
+
+def test_symmetry_group_set_get():
+    L = 8
+    dtype = np.float32
+    order = 5
+    data = np.arange(L**3, dtype=dtype).reshape(L, L, L)
+    sym_group = CyclicSymmetryGroup(order=order, dtype=dtype)
+    vol_from_group = Volume(data, symmetry_group=sym_group, dtype=dtype)
+    vol_from_string = Volume(data, symmetry_group="C9", dtype=dtype)
+    vol_default_sym = Volume(data, dtype=dtype)
+
+    # Check getter for `vol_from_group`.
+    assert vol_from_group.symmetry_group == sym_group
+
+    # Check getter for `vol_from_string`.
+    assert isinstance(vol_from_string.symmetry_group, CyclicSymmetryGroup)
+    assert str(vol_from_string.symmetry_group) == "C9"
+
+    # Check Volume with default symmetry (should be "C1").
+    assert isinstance(vol_default_sym.symmetry_group, CyclicSymmetryGroup)
+    assert str(vol_default_sym.symmetry_group) == "C1"
+
+    # Check that symmetry_group is immutable.
+    with raises(RuntimeError, match=r"The symmetry_group attribute cannot be reset.*"):
+        vol_from_group.symmetry_group = "D7"
+
+    # Check for expected error when symmetry_group is not a SymmetryGroup object.
+    with raises(
+        ValueError,
+        match=r"`symmetry_group` must be an instance of the SymmetryGroup class.*",
+    ):
+        _ = Volume(data, symmetry_group=123, dtype=dtype)
+
+
+def test_volume_load_with_symmetry():
+    # Check we can load a Volume with symmetry_group.
+    vol = Volume(
+        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")),
+        symmetry_group="C3",
+    )
+    assert isinstance(vol.symmetry_group, CyclicSymmetryGroup)
+    assert str(vol.symmetry_group) == "C3"
+
