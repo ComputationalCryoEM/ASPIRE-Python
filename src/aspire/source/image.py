@@ -235,9 +235,8 @@ class ImageSource(ABC):
     @property
     def symmetry_group(self):
         """
-        A SymmetryGroup instance associated with the symmetry type, `str(symmetry_group)`,
-        of the ImageSource object. Access rotation matrices of the symmetry_group via
-        `symmetry_group.rotations`.
+        A SymmetryGroup instance associated with the symmetry type of the ImageSource object.
+        Access rotation matrices of the symmetry_group via `symmetry_group.matrices`.
         """
         return self._symmetry_group
 
