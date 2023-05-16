@@ -234,7 +234,9 @@ class Volume:
         """
         Using the stack of rot_matrices, project images of Volume. When projecting
         over a stack of volumes, a singleton Rotation or a Rotation with stack size
-        self.n_vols must be used.
+        self.n_vols must be used. In the case of a singleton Rotation, each Volume in
+        the stack will be projected using the single Rotation. In the case of a Volume stack
+        and a Rotation stack, the i'th Volume will be projected using the i'th Rotation.
 
         :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
         :return: `Image` instance.
