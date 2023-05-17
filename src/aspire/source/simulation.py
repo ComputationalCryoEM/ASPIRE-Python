@@ -107,7 +107,7 @@ class Simulation(ImageSource):
         if not isinstance(self.vols, Volume):
             raise RuntimeError("`vols` should be a Volume instance or `None`.")
 
-        if symmetry_group and self.vols.symmetry_group:
+        if symmetry_group and (str(symmetry_group) != str(self.vols.symmetry_group)):
             logger.warning(
                 f"Overriding {str(self.vols.symmetry_group)} symmetry group inherited "
                 f"from `vols`, with user provided symmetry group: {str(symmetry_group)}."
