@@ -72,7 +72,7 @@ def test_angles(src_fixture):
 
 def test_symmetry_group(src_fixture):
     og_src, oriented_src = src_fixture
-    assert type(og_src.symmetry_group) == type(oriented_src.symmetry_group)
+    assert str(og_src.symmetry_group) == str(oriented_src.symmetry_group)
 
 
 def test_default_estimator(src_fixture):
