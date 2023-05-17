@@ -1,3 +1,4 @@
+import logging
 import os.path
 import tempfile
 from unittest import TestCase
@@ -10,7 +11,7 @@ from aspire.operators import RadialCTFFilter
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
 from aspire.utils.types import utest_tolerance
-from aspire.volume import LegacyVolume, Volume
+from aspire.volume import LegacyVolume, SymmetryGroup, Volume
 
 from .test_utils import matplotlib_dry_run
 
@@ -608,3 +609,29 @@ class SimTestCase(TestCase):
             imgs_sav = relion_src.images[:1024]
             # Compare original images with saved images
             self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))
+
+
+def test_default_symmetry_group():
+    # Check that default is "C1".
+    sim = Simulation()
+    assert isinstance(sim.symmetry_group, SymmetryGroup)
+    assert str(sim.symmetry_group) == "C1"
+
+
+def test_symmetry_group_inheritence():
+    # Check SymmetryGroup inheritence from Volume.
+    data = np.arange(8**3, dtype=np.float32).reshape(8, 8, 8)
+    vol = Volume(data, symmetry_group="T")
+    sim = Simulation(vols=vol)
+    assert isinstance(sim.symmetry_group, SymmetryGroup)
+    assert str(sim.symmetry_group) == "T"
+
+
+def test_symmetry_group_errors(caplog):
+    # Check that providing a symmetry different than vols logs warning.
+    caplog.clear()
+    msg = "Overriding C1 symmetry group inherited"
+    caplog.set_level(logging.WARN)
+    assert msg not in caplog.text
+    _ = Simulation(symmetry_group="D11")
+    assert msg in caplog.text
