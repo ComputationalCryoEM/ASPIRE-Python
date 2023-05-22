@@ -39,6 +39,7 @@ dependencies = [
     "packaging",
     "psutil",
     "pyfftw",
+    "pymanopt",
     "PyWavelets",
     "pillow",
     "ray",
