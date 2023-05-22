@@ -6,7 +6,7 @@
 import numpy as np
 import pymanopt
 from numpy.linalg import norm
-import wemd
+from aspire.operators import wemd_embed
 import mrcfile
 import warnings
 from aspire.utils.rotation import Rotation
@@ -130,7 +130,7 @@ def align_BO(vol0,vol_given,para,reflect=False):
     if loss_type=='wemd':
         lengthscale=0.75;
         warnings.filterwarnings("ignore"); wavelet='sym3'; level=6; 
-        embed_0=wemd.embed(vol0_ds._data[0],wavelet,level);
+        embed_0=wemd_embed(vol0_ds._data[0],wavelet,level);
     if loss_type=='eu':
         lengthscale=1;
     
@@ -140,7 +140,7 @@ def align_BO(vol0,vol_given,para,reflect=False):
             return norm(vol0_ds-v_rot)
         if loss_type=='wemd':
             warnings.filterwarnings("ignore")
-            embed_rot=wemd.embed(v_rot, wavelet, level); 
+            embed_rot=wemd_embed(v_rot, wavelet, level); 
             return norm(embed_rot-embed_0,ord=1)  
     
     def cf(x1,x2):
