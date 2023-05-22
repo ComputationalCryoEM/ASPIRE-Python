@@ -1,17 +1,14 @@
 import warnings
 
-import mrcfile
 import numpy as np
 import pymanopt
 from numpy import pi
 from numpy.linalg import norm
-from numpy.random import normal
 from scipy.ndimage import shift
 from scipy.optimize import minimize
 
 from aspire.operators import wemd_embed
 from aspire.utils.rotation import Rotation
-from aspire.volume import Volume
 
 
 def RR():
@@ -100,20 +97,6 @@ def q_to_rot(q):
     R[2, 2] = q[0] ** 2 - q[1] ** 2 - q[2] ** 2 + q[3] ** 2
 
     return R
-
-
-def generate_data(data_name, inv_SNR):
-    with mrcfile.open("data/" + data_name) as mrc:
-        template = Volume(mrc.data)
-    L = template.shape[1]
-    shape = (L, L, L)
-    ns_std = np.sqrt(inv_SNR * norm(template) ** 2 / L**3)
-    vol0 = template + np.float32(normal(0, ns_std, shape))
-    r = Rotation.generate_random_rotations(1)
-    R_true = r._matrices[0]
-    vol_given = template.rotate(r) + np.float32(normal(0, ns_std, shape))
-
-    return vol0, vol_given, L, R_true
 
 
 def center(vol, order_shift, threshold=-np.inf):
