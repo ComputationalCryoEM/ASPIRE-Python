@@ -1602,8 +1602,9 @@ class OrientedSource(IndexedSource):
     def get_metadata(
         self, metadata_fields=None, indices=None, default_value=None, as_dict=False
     ):
-        # get_metadata is used for instantiation, so only orient if the oriented_source
-        # is already initialized, ie. when no longer mutable.
+        # get_metadata is used during ImageSource instantiation, so only perform lazy
+        # orientation estimation if the oriented_source is already initialized,
+        # ie. when no longer mutable.
         if not self._mutable:
             self._orient()
         return super().get_metadata(
