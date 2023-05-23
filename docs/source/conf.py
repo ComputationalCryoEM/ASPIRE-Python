@@ -39,6 +39,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.mathjax",
     "sphinxcontrib.bibtex",
+    "sphinxcontrib.jquery",
     "sphinxcontrib.mermaid",
     "sphinx.ext.napoleon",
     "sphinx_gallery.gen_gallery",
@@ -47,14 +48,20 @@ bibtex_bibfiles = ["references.bib"]
 
 # Sphinx-Gallery Configuration
 sphinx_gallery_conf = {
-     'examples_dirs': ['../../gallery/tutorials', '../../gallery/experiments'],   # path to your example scripts
-     'gallery_dirs': ['auto_tutorials', 'auto_experiments'],  # path to where to save gallery generated output
-     'download_all_examples': False,
-     'plot_gallery': 'True',
-     'remove_config_comments': True,
-     'notebook_images': True,
-     'within_subsection_order': ExampleTitleSortKey,
-     'filename_pattern': r'/tutorials/.*\.py',  # Parse all gallery python files, but only execute tutorials.
+    "examples_dirs": [
+        "../../gallery/tutorials",
+        "../../gallery/experiments",
+    ],  # path to your example scripts
+    "gallery_dirs": [
+        "auto_tutorials",
+        "auto_experiments",
+    ],  # path to where to save gallery generated output
+    "download_all_examples": False,
+    "plot_gallery": "True",
+    "remove_config_comments": True,
+    "notebook_images": True,
+    "within_subsection_order": ExampleTitleSortKey,
+    "filename_pattern": r"/tutorials/.*\.py",  # Parse all gallery python files, but only execute tutorials.
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -86,7 +93,7 @@ release = version = "0.11.0"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = 'en'
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
