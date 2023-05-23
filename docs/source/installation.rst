@@ -1,9 +1,17 @@
 Installation
 ============
 
-ASPIRE comes with an ``environment-default.yml`` for reproducing a working Conda environment based on Python 3.8 to run the package.
-The package is tested on Linux/Windows/Mac OS X. Pre-built binaries are available for all platform-specific components. No manual
-compilation should be needed.
+The package is tested on Linux/Windows/Mac OS X. Pre-built binaries should be available for platform-specific dependencies. No manual compilation should be needed.
+
+For end users who simply want to use or run scripts depending on ASPIRE, simply installing the ``aspire`` package from PyPI is sufficient to use ASPIRE.
+
+.. note::
+    Installing the package installs ASPIRE to the ``site-packages`` folder of your active environment.
+    This is only desirable if you are not going to be doing any development on ASPIRE,
+    but simply want to run scripts that depend on the ASPIRE package.
+
+For those who wish to develop, we recommend starting with the instructions on our README. Additionally some more advanced instructions are provided for installing with software and hardware optimizations.  For developers and users not confident in software management, we strongly encourage the use of ``conda``.
+
 
 Install Conda
 *************
@@ -16,75 +24,24 @@ distribution to view Conda's installation instructions.
 .. note::
    If you're not sure which distribution is right for you, go with `Miniconda <https://conda.io/miniconda.html>`__
 
-Install and Activate the environment
+Getting Started
 ************************************
 
-For most end users, simply installing the package is sufficient to use ASPIRE.
-The commands in this section should install ASPIRE directly from the ``Python Package Index`` into your activated environment.
-This does not require checking out source code.
-If you are interested in checking out and working with the source code, running tests, or a different flavor of install,
-then skip to the next section now instead.
-
-Once ``conda`` is installed and available on the path, we can create a fresh ``conda`` environment.
-Here we have chosen to name it ``aspire_env``, but you may choose any name you like so long as that name is used consistently in the following step.
-After creating the environment, we activate it.
-Finally, we install the ``aspire`` package inside the activated environment. This should install all supporting Python software required.
-
 ::
 
-   conda create --name aspire_env python=3.8 pip
-   conda activate aspire_env
-   pip install aspire
-
-.. note::
-    Installing the package installs ASPIRE to the ``site-packages`` folder of your active environment.
-    This is only desirable if you are not going to be doing any development on ASPIRE,
-    but simply want to run scripts that depend on the ASPIRE package.
-
-
-Alternative Developer Installations
-***********************************
-
-Developers are expected to be able to manage their own code and environments.
-However, for consistency and newcomers, we recommend the following procedure using `conda`.
-Note that here the name ``aspire_dev`` was chosen, but you may choose any name for the ``conda`` environment.
-Some people use different environment names for different features,
-but this is personal preference and will largely depend on what type of changes you are making.
-For example, if you are making changes to dependent package versions for testing,
-you would probably want to keep that in a seperate environment.
-
-::
-
-   # Acquire the code.
-   git clone -b develop https://github.com/ComputationalCryoEM/ASPIRE-Python
+   # Clone the code
+   git clone https://github.com/ComputationalCryoEM/ASPIRE-Python.git
    cd ASPIRE-Python
 
-   # Create's the conda environment and installs base dependencies.
-   conda env create -f environment-default.yml --name aspire_dev
+   # Create a fresh environment
+   conda create --name aspire python=3.8 pip
 
-   # Activate the environment
-   conda activate aspire_dev
+   # Enable the environment
+   conda activate aspire
 
-   # Command to install the aspire package, along with developer extensions, in a locally editable way:
+   # Install the ``aspire`` package from the checked out code,
+   # and additionally installs extra developer tools:
    pip install -e ".[dev]"
-
-We recommend using ``conda`` or a ``virtualenv`` environment managing solutions because ASPIRE may have conflicts or change installed versions of Python packages on your system.
-
-Again, we recommend the above for consistency.
-However, ASPIRE is a ``pip`` package,
-so you can attempt to install it using standard ``pip`` or ``setup.py`` commands.  There are methods such as ``pip --no-deps`` that can leave your other packages undisturbed, but this is left to the developer.
-ASPIRE should generally be compatible with newer version of Python, and newer dependent packages. We are currently testing 3.7, 3.8, 3.9, and 3.10 base Python as configured by ASPIRE, and with upgrading packages to the latest for each of those bases.
-If you encounter an issue with a custom pip install, we will try to help, but you may be on your own for support of this method of installation.
-
-::
-
-   # Standard pip site-packages installation command
-   cd path/to/aspire-repo
-   pip install .
-
-   # Standard pip developer installation
-   cd path/to/aspire-repo
-   pip install -e .
 
 
 Test the package
@@ -94,17 +51,61 @@ Make sure all unit tests run correctly by doing:
 
 ::
 
-    cd /path/to/git/clone/folder
     pytest
 
-Tests currently take around 5 minutes to run, but this depends on your specific machine's resources.
+Tests currently take around 15 minutes to run, but this depends on
+your specific machine's resources and configuration.
+
+Optimized Numerical Backends
+****************************
+
+For advanced users, ``conda`` provides optimized numerical backends
+that offer significant performance improvements on appropriate
+machines.  The backends accelerate the performance of ``numpy``,
+``scipy``, and ``scikit`` packages.  ASPIRE ships several
+``environment*.yml`` files which define tested package versions along
+with these optimized numerical installations.
+
+The default ``environment-default.yml`` does not force a specific
+backend, instead relying on ``conda`` to select something reasonable.
+In the case of an Intel machine, the default ``conda`` install will
+automatically install some optimizations for you.  However, these
+files can be used to specify a specific setup or as the basis for your
+own customized ``conda`` environment.
+
+.. list-table:: Suggested Conda Environments
+   :widths: 25 25
+   :header-rows: 1
+
+   * - Architecture
+     - Recommended Environment File
+   * - Default
+     - environment-default.yml
+   * - Intel x86_64
+     - environment-intel.yml
+   * - AMD x86_64
+     - environment-openblas.yml
+   * - Apple M1
+     - environment-accelerate.yml
+
+Using any of these environments follows the same pattern outlined
+below.  As an example to specify using the ``accelerate`` backend on
+an M1 laptop:
+
+::
+
+   cd ASPIRE-Python
+   conda env create -f environment-accelerate.yml --name aspire_acc
+   conda activate aspire_acc
+   pip install -e ".[dev]"
 
 Installing GPU Extensions
 *************************
 
-GPU extensions can be installed using pip.
-Extensions are grouped based on CUDA versions.
-To find the CUDA driver version, run ``nvidia-smi``.
+ASPIRE does support GPUs, depending on several external packages.  The
+collection of GPU extensions can be installed using ``pip``.
+Extensions are grouped based on CUDA versions.  To find the CUDA
+driver version, run ``nvidia-smi`` on the intended system.
 
 .. list-table:: CUDA GPU Extension Versions
    :widths: 25 25
@@ -132,62 +133,30 @@ the command below would install GPU packages required for ASPIRE.
     # From a local git repo
     pip install -e ".[gpu_11x]"
     
-By default if GPU extensions are correctly installed,
+By default if the required GPU extensions are correctly installed,
 ASPIRE should automatically begin using the GPU for select components
 (such as those using ``nufft``).
+
+Because GPU extensions depend on several third party packages and
+libraries, we can only offer limited support if one of the packages
+has a problem on your system.
 
 Generating Documentation
 ************************
 
-Sphinx Documentation of the source (a local copy of what you're looking at right now) can be generated using:
+Sphinx Documentation of the source (a local copy of what you're
+looking at right now) can be generated by using the following commands
+from the root of the code repository.
+
+The ``make html`` command runs and renders the ``gallery/tutorials``
+examples, which takes several minutes.
 
 ::
 
-    cd /path/to/git/clone/folder/docs
+    cd docs
     sphinx-apidoc -f -o ./source ../src -H Modules
     make clean
-    make html
+    make html-noplot  # Generate only documentation
+    make html         # Generate documentation and gallery examples
 
-The built html files can be found at ``/path/to/git/clone/folder/docs/build/html``
-
-
-Optimized Numerical Backends
-****************************
-
-Conda provides optimized numerical backends that can provide significant
-performance improvements on appropriate machines.  The backends accelerate
-the performance of ``numpy``, ``scipy``, and ``scikit`` packages.
-ASPIRE ships several ``environment*.yml`` files which define tested package
-versions along with these optimized numerical installations.
-
-The default ``environment-default.yml`` does not force a specific backend,
-instead relying on ``conda`` to select something reasonable.
-In the case of an Intel machine, the default ``conda`` install
-will automatically install some optimizations for you.
-However, these files can be used to specify a specific setup
-or as the basis for your own customized ``conda`` environment.
-
-.. list-table:: Suggested Conda Environments
-   :widths: 25 25
-   :header-rows: 1
-
-   * - Architecture
-     - Recommended Environment File
-   * - Default
-     - environment-default.yml
-   * - Intel x86_64
-     - environment-intel.yml
-   * - AMD x86_64
-     - environment-openblas.yml
-   * - Apple M1
-     - environment-accelerate.yml
-
-Using any of these environments follows the same pattern outlined above in the developer's section.
-As an example to specify using the ``accelerate`` backend on an M1 laptop:
-
-::
-
-   cd ASPIRE-Python
-   conda env create -f environment-accelerate.yml --name aspire_acc
-   conda activate aspire_acc
-   pip install -e ".[dev]"
+The resulting html files can be found at ``docs/build/html``.
