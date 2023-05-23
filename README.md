@@ -26,8 +26,8 @@ ComputationalCryoEM/ASPIRE-Python: v0.11.0 https://doi.org/10.5281/zenodo.565728
 
 ## Installation Instructions
 
-Getting Started
----------------
+Getting Started - Installation
+------------------------------
 
 ASPIRE is a pip-installable package for Linux/Mac/Windows, and
 requires Python 3.7-3.10. The recommended method of installation for
@@ -42,9 +42,6 @@ distribution is recommended.
 Assuming you have `conda` and a compatible system, the following steps
 will checkout current code release, create an environment, and install
 ASPIRE.
-
-Python 3.8 is used as an example, but the same procedure should work
-for any of our supported Python versions.
 
 ```
 # Clone the code
