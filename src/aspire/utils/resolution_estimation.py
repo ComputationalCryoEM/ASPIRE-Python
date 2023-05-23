@@ -360,6 +360,7 @@ class FourierCorrelation:
 
         if save_to_file:
             plt.savefig(save_to_file)
+            plt.close()
         else:
             plt.show()
 
