@@ -1,31 +1,45 @@
 Installation
 ============
 
-The package is tested on Linux/Windows/Mac OS X. Pre-built binaries should be available for platform-specific dependencies. No manual compilation should be needed.
+This package is tested on Linux/Windows/Mac OS X. Pre-built binaries
+should be available for platform-specific dependencies. No manual
+compilation should be needed.
 
-For end users who simply want to use or run scripts depending on ASPIRE, simply installing the ``aspire`` package from PyPI is sufficient to use ASPIRE.
+For end users who simply want to use or run scripts depending on
+ASPIRE, installing the ``aspire`` package from PyPI is sufficient.
 
-.. note::
-    Installing the package installs ASPIRE to the ``site-packages`` folder of your active environment.
-    This is only desirable if you are not going to be doing any development on ASPIRE,
-    but simply want to run scripts that depend on the ASPIRE package.
+.. note:: Installing the package installs ASPIRE to the
+    ``site-packages`` folder of your active environment.  This is only
+    desirable if you are not going to be doing any development on
+    ASPIRE, and only intend to run scripts that depend on the ASPIRE
+    package.
 
-For those who wish to develop, we recommend starting with the instructions on our README. Additionally some more advanced instructions are provided for installing with software and hardware optimizations.  For developers and users not confident in software management, we strongly encourage the use of ``conda``.
+For those who wish to develop, we recommend starting with the
+instructions on our README (copied below). Additionally some more
+advanced instructions are provided here for installing with software
+and hardware optimizations.  Although not explicitly required, For
+developers and users not confident in software management the use of
+``conda`` is strongly encouraged.
 
 
 Install Conda
 *************
 
-To follow the suggested installation, you will need to install Conda for **Python3**, either
-`Anaconda <https://www.anaconda.com/download/#linux>`__ or
-`Miniconda <https://conda.io/miniconda.html>`__, click on the right
-distribution to view Conda's installation instructions.
+To follow the suggested installation, you will need to install Conda
+for **Python3**, either `Anaconda
+<https://www.anaconda.com/download/#linux>`__ or `Miniconda
+<https://conda.io/miniconda.html>`__, click on the right distribution
+to view Conda's installation instructions.
 
-.. note::
-   If you're not sure which distribution is right for you, go with `Miniconda <https://conda.io/miniconda.html>`__
+.. note:: If you're not sure which distribution is right for you, go
+   with `Miniconda <https://conda.io/miniconda.html>`__
 
-Getting Started
+Getting Started - Installation
 ************************************
+
+Python 3.8 is used as an example, but the same procedure should work
+for any of our supported Python versions 3.7-3.10.
+
 
 ::
 
@@ -127,11 +141,12 @@ the command below would install GPU packages required for ASPIRE.
 
 ::
 
-    # From PyPI
-    pip install -e "aspire[gpu_11x]"
-
     # From a local git repo
     pip install -e ".[gpu_11x]"
+
+    # From PyPI
+    pip install "aspire[gpu_11x]"
+
     
 By default if the required GPU extensions are correctly installed,
 ASPIRE should automatically begin using the GPU for select components
