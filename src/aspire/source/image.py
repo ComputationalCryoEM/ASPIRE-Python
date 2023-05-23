@@ -1309,6 +1309,13 @@ class IndexedSource(ImageSource):
     Map into another into ImageSource.
     """
 
+    _indexed_attrs = [
+        "selection_indices",
+        "class_indices",
+        "class_refl",
+        "class_distances",
+    ]
+
     def __init__(self, src, indices, memory=None):
         """
         Instantiates a new source along given `indices`.
@@ -1349,6 +1356,21 @@ class IndexedSource(ImageSource):
 
         # Any further operations should not mutate this instance.
         self._mutable = False
+
+    def __getattribute__(self, name):
+        """
+        Overrides attribute getter to remap attributes listed in `_indexed_attrs`.
+
+        :param name: Attribute name
+        """
+
+        # Avoid recursion
+        if name in super().__getattribute__("_indexed_attrs"):
+            # The attribute should be remapped from prior src
+            return getattr(self.src, name)[self.index_map]
+
+        # Otherwise passthrough.
+        return super().__getattribute__(name)
 
     def _images(self, indices):
         """
