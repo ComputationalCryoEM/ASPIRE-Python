@@ -26,49 +26,50 @@ ComputationalCryoEM/ASPIRE-Python: v0.11.0 https://doi.org/10.5281/zenodo.565728
 
 ## Installation Instructions
 
-For end-users
--------------
+Getting Started
+---------------
 
-ASPIRE is a pip-installable package that works on Linux/Mac/Windows, and requires Python 3.7-3.10. The recommended method of installation is to use Anaconda 64-bit for your platform to install Python 3.8 and `pip`, and then use `pip` to install `aspire` in that environment.
+ASPIRE is a pip-installable package for Linux/Mac/Windows, and
+requires Python 3.7-3.10. The recommended method of installation for
+getting started is to use Anaconda (64-bit) for your platform to
+install Python. Python's package manager `pip` can then be used to
+install `aspire` safely in that environment.
+
+If you are unfamiliar with `conda`, the
+[Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+distribution is recommended.
+
+Assuming you have `conda` and a compatible system, the following steps
+will checkout current code release, create an environment, and install
+ASPIRE.
+
+Python 3.8 is used as an example, but the same procedure should work
+for any of our supported Python versions.
 
 ```
-conda create -n aspire_env python=3.8 pip
-conda activate aspire_env
-pip install aspire
-```
+# Clone the code
+git clone https://github.com/ComputationalCryoEM/ASPIRE-Python.git
+cd ASPIRE-Python
 
-The final step above should install any dependent packages from `pip` automatically. To see what packages are required, browse `setup.py`.
-
-Note that this step installs the base `aspire` package for you to work with, but not the unit tests/documentation. If you need to install ASPIRE for development purposes, read on.
-
-For developers
---------------
-
-After cloning this repo, the simplest option is to use Anaconda 64-bit for your platform, and use the provided `environment.yml` file to build a Conda environment to run ASPIRE. This is very similar to above except you will be based off of your local checkout, and you are free to rename `aspire_dev` used in the commands below. The `pip` line will install aspire in a locally editable mode, and is equivalent to `python setup.py develop`:
-
-```
-cd /path/to/git/clone/folder
-
-# Creates the conda environment and installs base dependencies.
-conda env create -f environment-default.yml --name aspire_dev
+# Create a fresh environment
+conda create --name aspire python=3.8 pip
 
 # Enable the environment
-conda activate aspire_dev
+conda activate aspire
 
-# Install the aspire package in a locally editable way,
-# and additionally installs the developer tools extras:
+# Install the `aspire` package from the checked out code,
+# and additionally installs extra developer tools:
 pip install -e ".[dev]"
-
 ```
 
-If you prefer not to use Anaconda, or want to manage environments yourself, you should be able to use `pip` with Python >= 3.7.
-Please see the full documentation for details.
+If you prefer not to use Anaconda, or have other preferences for managing environments, you should be able to directly use `pip` with Python >= 3.7 from the local checkout or via PyPI.
+Please see the full documentation for details and advanced instructions.
 
-### Make sure everything works
+### Installation Testing
 
-Once ASPIRE is installed, make sure the unit tests run correctly on your platform by doing:
+To check the installation, a unit test suite is provided,
+taking approximate 15 minutes on an average machine.
 
 ```
-cd /path/to/git/clone/folder
 pytest
 ```
