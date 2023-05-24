@@ -54,7 +54,7 @@ for any of our supported Python versions 3.7-3.10.
    conda activate aspire
 
    # Install the ``aspire`` package from the checked out code,
-   # and additionally installs extra developer tools:
+   # and additional developer tools:
    pip install -e ".[dev]"
 
 
