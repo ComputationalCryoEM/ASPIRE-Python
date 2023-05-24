@@ -194,7 +194,8 @@ true_rotations = src.rotations[indices]
 # Create a custom orientation estimation object for ``avgs``.
 orient_est = CLSyncVoting(avgs, n_theta=180)
 
-# Initialize an ``OrientedSource`` class instance and get the estimated rotations
+# Initialize an ``OrientedSource`` class instance that performs orientation
+# estimation in a lazy fashion upon request of images or rotations.
 oriented_src = OrientedSource(avgs, orient_est)
 
 logger.info("Compare with known rotations")

@@ -108,7 +108,8 @@ logger.info("Begin Orientation Estimation")
 # Create a custom orientation estimation object for ``avgs``.
 orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=72, max_shift=0)
 
-# Create an ``OrientedSource`` class instance and get the estimated rotations.
+# Create an ``OrientedSource`` class instance that performs orientation
+# estimation in a lazy fashion upon request of images or rotations.
 oriented_src = OrientedSource(avgs, orient_est)
 
 # %%
