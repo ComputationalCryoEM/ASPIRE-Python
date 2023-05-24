@@ -1,8 +1,6 @@
 import logging
 import os
 
-import matplotlib.pyplot as plt
-import mrcfile
 import numpy as np
 import pytest
 from numpy.linalg import norm
