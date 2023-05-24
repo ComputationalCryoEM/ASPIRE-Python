@@ -1,154 +1,103 @@
-import time
+import logging
+import os
 
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
+import pytest
 from numpy.linalg import norm
 from numpy.random import normal
 
-from aspire.utils.bot_align import align_BO, get_angle
+from aspire.utils.bot_align import align_BO
 from aspire.utils.rotation import Rotation
 from aspire.volume import Volume
 
 
-def generate_data(mrc_file, snr):
+def generate_data(snr, dtype):
     """
     Generates test data from MRC file.
 
-    :param mrc_file: File path for input MRC file.
     :param snr: Signal to noise ratio (0, float('inf') ).
         float('inf') would represent a clean image.
     :return: Reference Volume, Test Volume, size (pixels), True rotation
     """
-    with mrcfile.open(mrc_file) as mrc:
-        v = Volume(mrc.data)
+
+    # Original author tested the code with `emd-3683.mrc`,
+    #     and those should be within 1 degree up to 0.1 SNR.
+    # v = Volume(mrcfile.open('emd-3683.mrc').data, dtype=dtype)
+    # We will use a smaller volume already shipped with ASPIRE instead and looser constraints.
+    vol_path = os.path.join(
+        os.path.dirname(__file__), "saved_test_data", "clean70SRibosome_vol.npy"
+    )
+    v = Volume(np.load(vol_path), dtype=dtype)
     L = v.resolution
     shape = (L, L, L)
-    ns_std = np.sqrt(norm(v) ** 2 / (L**3 * snr))
-    reference_vol = v + np.float32(normal(0, ns_std, shape))
-    r = Rotation.generate_random_rotations(1)
-    R_true = r._matrices[0]
-    test_vol = v.rotate(r) + np.float32(normal(0, ns_std, shape))
+    ns_std = np.sqrt(norm(v) ** 2 / (L**3 * snr)).astype(v.dtype)
+    reference_vol = v + normal(0, ns_std, shape)
+    r = Rotation.generate_random_rotations(1, dtype=v.dtype)
+    R_true = r.matrices[0]
+    test_vol = v.rotate(r) + normal(0, ns_std, shape)
 
     return reference_vol, test_vol, L, R_true
 
 
 def angular_dist_degrees(R1, R2):
-    return Rotation.angle_dist(R1, R2) * (180) / pi
+    return Rotation.angle_dist(R1, R2) * (180) / np.pi
 
 
-"""
-specify the test volume and inverse SNR
-"""
-mrc_file = "emd-3683.mrc"
-snr = float("inf")
+# Test the following parameters:
+# loss type ('wemd' or 'eu')
+# downsampling level (32 or 64 recommended)
+# total number of iterations (150 or 200 recommended)
+
+ALGO_PARAMS = [
+    ["wemd", 32, 200],
+    ["wemd", 64, 150],
+    ["eu", 32, 200],
+    ["eu", 64, 150],
+]
+
+SNRS = [float("inf"), 0.5]
+DTYPES = [np.float32, np.float64]
 
 
-"""
-The BOTalign algorithm takes in four parameters:
-(1) loss type ('wemd' or 'eu')
-(2) downsampling level (32 or 64 recommended)
-(3) total number of iterations (150 or 200 recommended)
-(4) whether refinement is performed
-
-Below we compare the performance for four combinations of the parameters.
-The experiments are repeated ntrial times and the results will be shown as boxplots.
-"""
-npara = 4
-para = [None] * npara
-ntrial = 1
-para[0] = ["wemd", 32, 200, True]
-para[1] = ["wemd", 64, 150, True]
-para[2] = ["eu", 32, 200, True]
-para[3] = ["eu", 64, 150, True]
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+def dtype(request):
+    return request.param
 
 
-angle_init = np.zeros((npara, ntrial))
-angle_rec = np.zeros((npara, ntrial))
-comp_time = np.zeros((npara, ntrial))
-
-for trial in range(ntrial):
-    print(trial)
-    [vol0, vol_given, L, R_true] = generate_data(mrc_file, snr)
-
-    for n in range(npara):
-        tic = time.perf_counter()
-        [R_init, R_rec] = align_BO(vol0, vol_given, para[n])
-        toc = time.perf_counter()
-        comp_time[n, trial] = toc - tic
-        # Recovery without refinement (degrees)
-        angle_init[n, trial] = angular_dist_degrees(R_init, R_true.T)
-        # Recovery with refinement (degrees)
-        angle_rec[n, trial] = angular_dist_degrees(R_rec, R_true.T)
+@pytest.fixture(params=SNRS, ids=lambda x: f"SNR={x}")
+def snr(request):
+    return request.param
 
 
-"""
-plot the results
-"""
-fig = plt.figure()
-ax = fig.add_subplot(111, frameon=False)
-ax.spines["top"].set_color("none")
-ax.spines["bottom"].set_color("none")
-ax.spines["left"].set_color("none")
-ax.spines["right"].set_color("none")
-ax.tick_params(labelcolor="w", top=False, bottom=False, left=False, right=False)
-fig.supylabel("Rotation recovery error (degrees)")
-fig.supxlabel("Average run time (seconds)")
+@pytest.fixture
+def vol_data_fixture(snr, dtype):
+    return generate_data(snr, dtype)
 
 
-ax1 = fig.add_subplot(121)
-ax1.set_title("WEMD loss")
-ax1.boxplot(
-    angle_rec[0],
-    positions=[0],
-    notch=True,
-    widths=0.5,
-    patch_artist=True,
-    boxprops=dict(facecolor="C0"),
-)
-ax1.boxplot(
-    angle_rec[1],
-    positions=[1],
-    notch=True,
-    widths=0.5,
-    patch_artist=True,
-    boxprops=dict(facecolor="C1"),
-)
-ax1.set_xticklabels(["%1.1f" % np.mean(comp_time[0]), "%1.1f" % np.mean(comp_time[1])])
-ax1.xaxis.grid(True, linestyle="-", which="major", color="lightgrey", alpha=0.5)
-ax1.yaxis.grid(True, linestyle="-", which="major", color="lightgrey", alpha=0.5)
-plt.ylim([-0.3, 2])
+def algo_params_id(params):
+    return (
+        f"loss_type={params[0]}, downsampling_level={params[1]}, max_iters={params[2]}"
+    )
 
-ax2 = fig.add_subplot(122)
-ax2.set_title("$L^2$ loss")
-ax2.boxplot(
-    angle_rec[0],
-    positions=[0],
-    notch=True,
-    widths=0.5,
-    patch_artist=True,
-    boxprops=dict(facecolor="C0"),
-)
-ax2.boxplot(
-    angle_rec[1],
-    positions=[1],
-    notch=True,
-    widths=0.5,
-    patch_artist=True,
-    boxprops=dict(facecolor="C1"),
-)
-ax2.set_xticklabels(["%1.1f" % np.mean(comp_time[2]), "%1.1f" % np.mean(comp_time[3])])
-ax2.xaxis.grid(True, linestyle="-", which="major", color="lightgrey", alpha=0.5)
-ax2.yaxis.grid(True, linestyle="-", which="major", color="lightgrey", alpha=0.5)
-plt.ylim([-0.3, 2])
-plt.tick_params(
-    axis="y",
-    labelcolor="none",
-    which="both",
-    top=False,
-    bottom=False,
-    left=False,
-    right=False,
-)
 
-plt.show()
+@pytest.mark.parametrize("algo_params", ALGO_PARAMS, ids=algo_params_id)
+def test_bot_align(algo_params, vol_data_fixture):
+    vol0, vol_given, L, R_true = vol_data_fixture
+
+    R_init, R_rec = align_BO(
+        vol0,
+        vol_given,
+        loss_type=algo_params[0],
+        downsampling_level=algo_params[1],
+        max_iters=algo_params[2],
+        dtype=np.float32,
+    )
+    # Recovery without refinement (degrees)
+    angle_init = angular_dist_degrees(R_init, R_true.T)
+    # Recovery with refinement (degrees)
+    angle_rec = angular_dist_degrees(R_rec, R_true.T)
+    logging.debug(f"angle_init: {angle_init}, angle_rec: {angle_rec}")
+    # Check we're within a degree.
+    assert angle_rec < 2.0
