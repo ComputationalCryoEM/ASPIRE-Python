@@ -159,7 +159,7 @@ class ImageSource(ABC):
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
-            Defaults to a C1 symmetry_group, which represents an asymmetric particle, if none provided. 
+            Defaults to a C1 symmetry_group, which represents an asymmetric particle, if none provided.
         """
 
         # Instantiate the accessor for the `images` property
@@ -248,19 +248,18 @@ class ImageSource(ABC):
 
         :param value: A `SymmetryGroup` instance or string indicating symmetry, ie. "C5", "D7", "T", etc.
         """
-        if self._mutable:
-            if isinstance(value, str):
-                value = SymmetryGroup.symmetry_parser(value, dtype=self.dtype)
-            if not isinstance(value, SymmetryGroup):
-                raise ValueError(
-                    "`symmetry_group` must be an instance of the SymmetryGroup class"
-                )
-            self._symmetry_group = value
-            self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
-        else:
+        if not self._mutable:
             raise RuntimeError(
                 f"This source is no longer mutable. Try new_source = source.update(symmetry_group='{value}')."
             )
+        if isinstance(value, str):
+            value = SymmetryGroup.symmetry_parser(value, dtype=self.dtype)
+        if not isinstance(value, SymmetryGroup):
+            raise ValueError(
+                "`symmetry_group` must be an instance of the SymmetryGroup class"
+            )
+        self._symmetry_group = value
+        self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
 
     def _populate_symmetry_group(self, symmetry_group):
         """
