@@ -38,7 +38,12 @@ Getting Started - Installation
 ************************************
 
 Python 3.8 is used as an example, but the same procedure should work
-for any of our supported Python versions 3.7-3.10.
+for any of our supported Python versions 3.7-3.10. Below we pip install
+the ``aspire`` package using the ``-e`` flag to install the project in
+editable mode. The ``".[dev]"`` command installs ``aspire`` from the local
+path with additional development tools such as pytest and Jupyter Notebook.
+See the `pip documentation <https://pip.pypa.io/en/stable/cli/pip_install/#options>`__
+for more details on using pip install.
 
 
 ::
@@ -53,8 +58,8 @@ for any of our supported Python versions 3.7-3.10.
    # Enable the environment
    conda activate aspire
 
-   # Install the ``aspire`` package from the checked out code,
-   # and additional developer tools:
+   # Install the ``aspire`` package from the checked out code
+   # with the additional ``dev`` extension.
    pip install -e ".[dev]"
 
 
