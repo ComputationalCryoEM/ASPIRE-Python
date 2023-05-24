@@ -214,10 +214,11 @@ src.images[0:10].show()
 # %%
 # Orientation Estimation
 # ----------------------
-# We create an ``OrientedSource`` which consumes an ``ImageSource``, in this
-# case ``avgs``, and an orientation estimator, in this case a ``CLSyncVoting``
-# class instance. This estimation employs the common lines method with
-# synchronization and voting.
+# We create an ``OrientedSource``, which consumes an ``ImageSource`` object, an
+# orientation estimator, and returns a new source which lazily estimates orientations.
+# In this case we supply ``avgs`` for our source and a ``CLSyncVoting``
+# class instance for our orientation estimator. The ``CLSyncVoting`` algorithm employs
+# a common-lines method with synchronization and voting.
 
 from aspire.abinitio import CLSyncVoting
 from aspire.source import OrientedSource
