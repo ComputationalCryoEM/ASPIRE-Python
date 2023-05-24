@@ -352,12 +352,12 @@ class Rotation:
 
         :return: The angular distance between r1 and r2 in radians.
         """
-        
+
         dtype = np.dtype(dtype or r1.dtype)
-        
+
         r = r1 @ r2.T
         tr_r = np.trace(r, dtype=dtype)
-        if abs(tr_r - 3.) <= np.finfo(dtype).resolution:
+        if abs(tr_r - 3.0) <= np.finfo(dtype).resolution:
             dist = 0
         else:
             theta = (tr_r - 1) / 2
