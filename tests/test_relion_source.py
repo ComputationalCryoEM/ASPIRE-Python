@@ -4,7 +4,6 @@ import os
 import pytest
 
 from aspire.source import RelionSource
-from aspire.utils import importlib_path
 from aspire.volume import SymmetryGroup
 
 from .test_starfile_stack import StarFileTestCase
