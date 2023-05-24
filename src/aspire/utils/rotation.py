@@ -2,6 +2,7 @@
 Define a Rotation Class for customized rotation operations used by ASPIRE.
 """
 
+import math
 import warnings
 
 import numpy as np
@@ -339,20 +340,24 @@ class Rotation:
         return Rotation.from_euler(angles, dtype=dtype)
 
     @staticmethod
-    def angle_dist(r1, r2, dtype=np.float32):
+    def angle_dist(r1, r2, dtype=None):
         """
         Find the angular distance between two rotation matrices. We first compute
         the rotation between the two rotation matrices, r = r1 @ r2.T. Then using
         the axis-angle representation of r we find the angle between r1 and r2.
 
         :param r1: A 3x3 rotation matrix
-        :paran r2: A 3x3 rotation matrix
+        :param r2: A 3x3 rotation matrix
+        :param dtype: Computation datatype. Default `None` infers from `r1`.
 
         :return: The angular distance between r1 and r2 in radians.
         """
+        
+        dtype = np.dtype(dtype or r1.dtype)
+        
         r = r1 @ r2.T
         tr_r = np.trace(r, dtype=dtype)
-        if np.allclose(tr_r, 3):
+        if abs(tr_r - 3.) <= np.finfo(dtype).resolution:
             dist = 0
         else:
             theta = (tr_r - 1) / 2
