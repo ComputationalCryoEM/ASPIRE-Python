@@ -159,6 +159,7 @@ class ImageSource(ABC):
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
+            Defaults to a C1 symmetry_group, which represents an asymmetric particle, if none provided. 
         """
 
         # Instantiate the accessor for the `images` property
