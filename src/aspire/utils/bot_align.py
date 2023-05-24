@@ -11,20 +11,14 @@ from aspire.operators import wemd_embed
 from aspire.utils.rotation import Rotation
 
 
-def RR():
-    return Rotation.generate_random_rotations(1)._matrices[0]
-
-
-def get_angle(R1, R2):
-    cos_theta = (np.trace(R1 @ R2.T) - 1) / 2
-    if cos_theta > 1:
-        cos_theta = 1
-    if cos_theta < -1:
-        cos_theta = -1
-    return np.arccos(cos_theta) * (180) / pi
-
-
 def u_to_rot(u):
+    """
+    What does this do?
+
+    :param u: what is u
+    :return: what does this return
+    """
+
     v = np.sqrt(u[0] ** 2 + u[1] ** 2 + u[2] ** 2)
     if v == 0:
         q = np.array([1, 0, 0, 0])
@@ -51,6 +45,12 @@ def u_to_rot(u):
 
 
 def rot_to_u(R):
+    """
+    What does this do?
+
+    :param R: what is R
+    :return: what does this return
+    """
     q = np.zeros(4)
     if R[1, 1] > -R[2, 2] and R[0, 0] > -R[1, 1] and R[0, 0] > -R[2, 2]:
         q[0] = np.sqrt(1 + R[0, 0] + R[1, 1] + R[2, 2])
@@ -85,6 +85,12 @@ def rot_to_u(R):
 
 
 def q_to_rot(q):
+    """
+    What does this do?
+
+    :param q: what is q
+    :return: what does this return
+    """
     R = np.zeros((3, 3))
     R[0, 0] = q[0] ** 2 + q[1] ** 2 - q[2] ** 2 - q[3] ** 2
     R[0, 1] = 2 * (q[1] * q[2] - q[0] * q[3])
@@ -100,6 +106,15 @@ def q_to_rot(q):
 
 
 def center(vol, order_shift, threshold=-np.inf):
+    """
+    What does this do?
+
+    :param vol: ?
+    :param order_shift: ?
+    :param threshold: ?
+    :return: what does this return
+    """
+
     v = np.copy(vol)
     v.setflags(write=1)
     v[v < threshold] = 0
@@ -119,6 +134,16 @@ def center(vol, order_shift, threshold=-np.inf):
 
 
 def align_BO(vol0, vol_given, para, reflect=False):
+    """
+    What does this do?
+
+    :param vol0: ?
+    :param vol_given: ?
+    :param para: ?
+    :param reflect: ?
+    :return: what does this return
+    """
+
     loss_type = para[0]
     ds = para[1]
     Niter = para[2]
