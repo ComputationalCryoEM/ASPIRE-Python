@@ -1,8 +1,6 @@
 import numpy as np
 import pymanopt
-from numpy import pi
 from numpy.linalg import norm
-from scipy.ndimage import shift
 from scipy.optimize import minimize
 
 from aspire.operators import wemd_embed
@@ -101,34 +99,6 @@ def q_to_rot(q):
     R[2, 2] = q[0] ** 2 - q[1] ** 2 - q[2] ** 2 + q[3] ** 2
 
     return R
-
-
-def center(vol, order_shift, threshold=-np.inf):
-    """
-    What does this do?
-
-    :param vol: ?
-    :param order_shift: ?
-    :param threshold: ?
-    :return: what does this return
-    """
-
-    v = np.copy(vol)
-    v.setflags(write=1)
-    v[v < threshold] = 0
-    v = v / v.sum()
-    L = vol.shape[1]
-    X = np.zeros(L, dtype=X.dtype)
-    mid = int(L / 2)
-    for i in range(L):
-        X[i] = i - mid
-
-    vx = np.sum(v, axis=(1, 2))
-    vy = np.sum(v, axis=(0, 2))
-    vz = np.sum(v, axis=(0, 1))
-    m = np.array([X @ vx, X @ vy, X @ vz])
-    vol_b = shift(vol, -m, order=order_shift, mode="constant")
-    return vol_b
 
 
 def align_BO(
@@ -230,13 +200,13 @@ def align_BO(
         q = np.linalg.solve(C[:t, :t] + tau * np.eye(t, dtype=dtype), y[:t])
 
         @pymanopt.function.numpy(manifold)
-        def cost(new):
+        def cost(new, t=t, q=q):
             kx = np.array([cf(new.astype(dtype, copy=False), R[j]) for j in range(t)])
             mu = kx @ q
             return mu
 
         @pymanopt.function.numpy(manifold)
-        def eu_grad(new):
+        def eu_grad(new, t=t, q=q):
             kx_grad = np.array(
                 [cf_grad(new.astype(dtype, copy=False), R[j]) for j in range(t)]
             )

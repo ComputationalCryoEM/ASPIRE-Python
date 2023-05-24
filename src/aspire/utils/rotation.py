@@ -2,7 +2,6 @@
 Define a Rotation Class for customized rotation operations used by ASPIRE.
 """
 
-import math
 import warnings
 
 import numpy as np
