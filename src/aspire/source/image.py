@@ -268,7 +268,7 @@ class ImageSource(ABC):
         """
         if self.has_metadata(["_rlnSymmetryGroup"]):
             if symmetry_group:
-                raise logger.warning(
+                logger.warning(
                     f"Overriding metadata with supplied symmetry group {symmetry_group}"
                 )
             else:
