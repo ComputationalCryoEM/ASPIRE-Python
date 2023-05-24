@@ -55,7 +55,7 @@ conda create --name aspire python=3.8 pip
 conda activate aspire
 
 # Install the `aspire` package from the checked out code,
-# and additionally installs extra developer tools:
+# and additional developer tools:
 pip install -e ".[dev]"
 ```
 
