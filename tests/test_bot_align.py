@@ -11,25 +11,37 @@ from aspire.utils.rotation import Rotation
 from aspire.volume import Volume
 
 
-def generate_data(data_name, inv_SNR):
-    with mrcfile.open(data_name) as mrc:
-        template = Volume(mrc.data)
-    L = template.shape[1]
+def generate_data(mrc_file, snr):
+    """
+    Generates test data from MRC file.
+
+    :param mrc_file: File path for input MRC file.
+    :param snr: Signal to noise ratio (0, float('inf') ).
+        float('inf') would represent a clean image.
+    :return: Reference Volume, Test Volume, size (pixels), True rotation
+    """
+    with mrcfile.open(mrc_file) as mrc:
+        v = Volume(mrc.data)
+    L = v.resolution
     shape = (L, L, L)
-    ns_std = np.sqrt(inv_SNR * norm(template) ** 2 / L**3)
-    vol0 = template + np.float32(normal(0, ns_std, shape))
+    ns_std = np.sqrt(norm(v) ** 2 / (L**3 * snr))
+    reference_vol = v + np.float32(normal(0, ns_std, shape))
     r = Rotation.generate_random_rotations(1)
     R_true = r._matrices[0]
-    vol_given = template.rotate(r) + np.float32(normal(0, ns_std, shape))
+    test_vol = v.rotate(r) + np.float32(normal(0, ns_std, shape))
 
-    return vol0, vol_given, L, R_true
+    return reference_vol, test_vol, L, R_true
+
+
+def angular_dist_degrees(R1, R2):
+    return Rotation.angle_dist(R1, R2) * (180) / pi
 
 
 """
 specify the test volume and inverse SNR
 """
-data_name = "emd-3683.mrc"
-inv_SNR = 0
+mrc_file = "emd-3683.mrc"
+snr = float("inf")
 
 
 """
@@ -57,7 +69,7 @@ comp_time = np.zeros((npara, ntrial))
 
 for trial in range(ntrial):
     print(trial)
-    [vol0, vol_given, L, R_true] = generate_data(data_name, inv_SNR)
+    [vol0, vol_given, L, R_true] = generate_data(mrc_file, snr)
 
     for n in range(npara):
         tic = time.perf_counter()
@@ -65,9 +77,9 @@ for trial in range(ntrial):
         toc = time.perf_counter()
         comp_time[n, trial] = toc - tic
         # Recovery without refinement (degrees)
-        angle_init[n, trial] = get_angle(R_init, R_true.T)
+        angle_init[n, trial] = angular_dist_degrees(R_init, R_true.T)
         # Recovery with refinement (degrees)
-        angle_rec[n, trial] = get_angle(R_rec, R_true.T)
+        angle_rec[n, trial] = angular_dist_degrees(R_rec, R_true.T)
 
 
 """
