@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pymanopt
 from numpy import pi
@@ -21,7 +19,7 @@ def u_to_rot(u):
 
     v = np.sqrt(u[0] ** 2 + u[1] ** 2 + u[2] ** 2)
     if v == 0:
-        q = np.array([1, 0, 0, 0])
+        q = np.array([1, 0, 0, 0], dtype=u.dtype)
     else:
         q = np.array(
             [
@@ -31,7 +29,7 @@ def u_to_rot(u):
                 np.sin(v / 2) / v * u[2],
             ]
         )
-    R = np.zeros((3, 3), dtype=np.float32)
+    R = np.zeros((3, 3), dtype=u.dtype)
     R[0, 0] = q[0] ** 2 + q[1] ** 2 - q[2] ** 2 - q[3] ** 2
     R[0, 1] = 2 * q[1] * q[2] - 2 * q[0] * q[3]
     R[0, 2] = 2 * q[0] * q[2] + 2 * q[1] * q[3]
@@ -51,7 +49,7 @@ def rot_to_u(R):
     :param R: what is R
     :return: what does this return
     """
-    q = np.zeros(4)
+    q = np.zeros(4, dtype=R.dtype)
     if R[1, 1] > -R[2, 2] and R[0, 0] > -R[1, 1] and R[0, 0] > -R[2, 2]:
         q[0] = np.sqrt(1 + R[0, 0] + R[1, 1] + R[2, 2])
         q[1] = (R[2, 1] - R[1, 2]) / q[0]
@@ -79,7 +77,7 @@ def rot_to_u(R):
     q = q / 2
     v = 2 * np.arccos(q[0])
     if v == 0:
-        return np.zeros(3)
+        return np.zeros(3, R.dtype)
     else:
         return v / np.sin(v / 2) * q[1:4]
 
@@ -91,7 +89,7 @@ def q_to_rot(q):
     :param q: what is q
     :return: what does this return
     """
-    R = np.zeros((3, 3))
+    R = np.zeros((3, 3), q.dtype)
     R[0, 0] = q[0] ** 2 + q[1] ** 2 - q[2] ** 2 - q[3] ** 2
     R[0, 1] = 2 * (q[1] * q[2] - q[0] * q[3])
     R[0, 2] = 2 * (q[1] * q[3] + q[0] * q[2])
@@ -120,7 +118,7 @@ def center(vol, order_shift, threshold=-np.inf):
     v[v < threshold] = 0
     v = v / v.sum()
     L = vol.shape[1]
-    X = np.zeros(L)
+    X = np.zeros(L, dtype=X.dtype)
     mid = int(L / 2)
     for i in range(L):
         X[i] = i - mid
@@ -133,96 +131,127 @@ def center(vol, order_shift, threshold=-np.inf):
     return vol_b
 
 
-def align_BO(vol0, vol_given, para, reflect=False):
+def align_BO(
+    vol_ref,
+    vol_given,
+    loss_type="wemd",
+    downsampling_level=32,
+    max_iters=200,
+    refine=True,
+    reflect=False,
+    ninit=1,
+    tau=1e-3,
+    man_max_iter=500,
+    man_min_grad=0.1,
+    man_min_sz=0.1,
+    verbosity=0,
+    dtype=None,
+):
     """
     What does this do?
 
-    :param vol0: ?
+    :param vol_ref: ?
     :param vol_given: ?
-    :param para: ?
+    :param loss_type: 'wemd' or 'eu'. Default 'wemd'.
+    :param downsampling_level: Downsampling (pixels)
+    :param max_iters: Maximum iterations
+    :param refine: Boolean, defaults True.
     :param reflect: ?
+    :param ninit: ? 1
+    :param tau: ? 1e-3
+    :param max_iter: 500
+    :param min_grad: ? 0.1
+    :param min_sz: ?  0.1
+    :param verbosity: ? 0
+    :param dtype: Numeric dtype to perform computations with.
+        Default `None` infers dtype from `vol_ref`.
     :return: what does this return
     """
+    # Infer dtype
+    dtype = np.dtype(dtype or vol_ref.dtype)
 
-    loss_type = para[0]
-    ds = para[1]
-    Niter = para[2]
-    refine = para[3]
+    # Convert volume data dtype if needed.
+    vol_ref = vol_ref.astype(dtype, copy=False)
+    vol_given = vol_given.astype(dtype, copy=False)
 
-    vol0_ds = vol0.downsample(ds)
-    vol_given_ds = vol_given.downsample(ds)
+    # Store parameters specific to each loss_type.
+    LOSS_TYPES = {
+        "wemd": dict(lengthscale=0.75, wavelet="sym3", level=6),
+        "eu": dict(lengthscale=1),
+    }
+    loss_type = loss_type.lower()
+    if loss_type not in LOSS_TYPES.keys():
+        raise ValueError(f"BOTalign `loss_type` must be one of {LOSS_TYPES.keys()}")
+
+    # Lookup our params
+    loss_params = LOSS_TYPES[loss_type]
+
+    # Downsample Volumes
+    vol_ref_ds = vol_ref.downsample(downsampling_level)
+    vol_given_ds = vol_given.downsample(downsampling_level)
+
     if loss_type == "wemd":
-        lengthscale = 0.75
-        warnings.filterwarnings("ignore")
-        wavelet = "sym3"
-        level = 6
-        embed_0 = wemd_embed(vol0_ds._data[0], wavelet, level)
-    if loss_type == "eu":
-        lengthscale = 1
+        embed_0 = wemd_embed(
+            vol_ref_ds.asnumpy()[0], loss_params["wavelet"], loss_params["level"]
+        )
 
     def loss(R):
-        v_rot = vol_given_ds.rotate(Rotation(R))._data[0]
+        v = vol_given_ds.rotate(Rotation(R)).asnumpy()[0]
         if loss_type == "eu":
-            return norm(vol0_ds - v_rot)
-        if loss_type == "wemd":
-            warnings.filterwarnings("ignore")
-            embed_rot = wemd_embed(v_rot, wavelet, level)
-            return norm(embed_rot - embed_0, ord=1)
+            return norm(v - vol_ref_ds)
+        elif loss_type == "wemd":
+            embed_v = wemd_embed(v, loss_params["wavelet"], loss_params["level"])
+            return norm(embed_v - embed_0, ord=1)
 
     def cf(x1, x2):
-        d = norm(x1 - x2) / lengthscale
-        return np.exp(-(d**2) / 2)
+        d = norm(x1 - x2) / loss_params["lengthscale"]
+        return np.exp(-(d**2) / 2, dtype=dtype)
 
     def cf_grad(x1, x2):
-        return cf(x1, x2) * (x2 - x1) / lengthscale**2
+        return cf(x1, x2) * (x2 - x1) / loss_params["lengthscale"] ** 2
 
-    R = np.zeros((Niter, 3, 3), dtype="float32")
-    ninit = 1
-    R[0] = np.float32(np.eye(3))
+    R = np.zeros((max_iters, 3, 3), dtype=dtype)
+    R[0] = np.eye(3, dtype=dtype)
     if reflect:
         manifold = pymanopt.manifolds.Stiefel(3, 3)
     else:
         manifold = pymanopt.manifolds.SpecialOrthogonalGroup(3)
 
-    C = np.zeros((Niter, Niter))
+    C = np.zeros((max_iters, max_iters), dtype=dtype)
     for i in range(ninit):
         for j in range(ninit):
             C[i, j] = cf(R[i], R[j])
 
-    y = np.zeros(Niter)
+    y = np.zeros(max_iters, dtype=dtype)
     for i in range(ninit):
         y[i] = loss(R[i])
 
-    tau = 1e-3
-    max_iter = 500
-    min_grad = 0.1
-    min_sz = 0.1
-    verb = 0
-
-    for t in range(ninit, Niter):
-        q = np.linalg.solve(C[:t, :t] + tau * np.eye(t), y[:t])
+    for t in range(ninit, max_iters):
+        q = np.linalg.solve(C[:t, :t] + tau * np.eye(t, dtype=dtype), y[:t])
 
         @pymanopt.function.numpy(manifold)
         def cost(new):
-            kx = np.array([cf(new, R[j]) for j in range(t)])
+            kx = np.array([cf(new.astype(dtype, copy=False), R[j]) for j in range(t)])
             mu = kx @ q
             return mu
 
         @pymanopt.function.numpy(manifold)
         def eu_grad(new):
-            kx_grad = np.array([cf_grad(new, R[j]) for j in range(t)])
+            kx_grad = np.array(
+                [cf_grad(new.astype(dtype, copy=False), R[j]) for j in range(t)]
+            )
             grad = np.einsum("ijk,i", kx_grad, q)
             return grad
 
         problem = pymanopt.Problem(manifold, cost, euclidean_gradient=eu_grad)
         optimizer = pymanopt.optimizers.SteepestDescent(
-            max_iterations=max_iter,
-            min_gradient_norm=min_grad,
-            min_step_size=min_sz,
-            verbosity=verb,
+            max_iterations=man_max_iter,
+            min_gradient_norm=man_min_grad,
+            min_step_size=man_min_sz,
+            verbosity=verbosity,
         )
         result = optimizer.run(problem)
-        R_new = np.float32(result.point)
+        R_new = result.point.astype(dtype, copy=False)
 
         y[t] = loss(R_new)
         R[t] = R_new
@@ -233,16 +262,17 @@ def align_BO(vol0, vol_given, para, reflect=False):
     idx = y.argmin(0)
     R_init = R[idx]
 
-    if ds > 32:
-        vol0_ds = vol0_ds.downsample(32)
+    if downsampling_level > 32:
+        vol_ref_ds = vol_ref_ds.downsample(32)
         vol_given_ds = vol_given_ds.downsample(32)
     if refine:
         sign = np.sign(np.linalg.det(R_init))
 
         def loss_u(u):
+            u = u.astype(dtype, copy=False)
             R = sign * u_to_rot(u)
-            v_rot = vol_given_ds.rotate(Rotation(R))._data[0]
-            return norm(vol0_ds - v_rot)
+            v_rot = vol_given_ds.rotate(Rotation(R)).asnumpy()[0]
+            return norm(vol_ref_ds - v_rot)
 
         x0 = rot_to_u(sign * R_init)
         result = minimize(loss_u, x0, method="nelder-mead", options={"disp": False})
