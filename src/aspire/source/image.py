@@ -1563,11 +1563,14 @@ class OrientedSource(IndexedSource):
         """
         Remove orientation information passed in by original source.
         """
+        _info_removed = False
         rot_keys = ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]
-        if self.has_metadata(rot_keys):
-            logger.info(f"Removing orientation information passed by {self.src}.")
-            for key in rot_keys:
+        for key in rot_keys:
+            if self.has_metadata(key):
                 del self._metadata[key]
+                _info_removed = True
+        if _info_removed:
+            logger.info(f"Removing orientation information passed by {self.src}.")
 
     def _images(self, indices):
         """
