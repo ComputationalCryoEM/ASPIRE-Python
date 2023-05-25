@@ -17,7 +17,6 @@ from aspire.utils import (
     mat_to_vec,
     vec_to_mat,
 )
-from aspire.utils.types import complex_type
 from aspire.volume import CyclicSymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
