@@ -60,48 +60,36 @@ class CLSymmetryC2(CLSymmetryC3C4):
             logger.error(msg)
             raise NotImplementedError(msg)
 
-        # need to do a copy to prevent modifying self.pf for other functions
+        # need to do a copy to prevent modifying self.pf for other functions.
         pf = self.pf.copy()
 
-        # clmatrix[i,j] contains the index in image i of the common line with image j.
-        # -1 means there is no common line such as clmatrix[i,i].
+        # clmatrix contains the index in image i of the common line with image j
+        # for the two sets of mutual common lines.
         clmatrix = -np.ones((2, n_img, n_img), dtype=self.dtype)
 
-        # When cl_dist[i, j] is not -1, it stores the maximum value
-        # of correlation between image i and j for all possible 1D shifts.
-        # We will use cl_dist[i, j] = -1 (including j<=i) to
-        # represent that there is no need to check common line
-        # between i and j. Since it is symmetric,
-        # only above the diagonal entries are necessary.
+        # cl_dist stores the maximum correlation between i'th and j'th images over all shifts
+        # for each set of mutual common lines.
         cl_dist = -np.ones((2, n_img, n_img), dtype=self.dtype)
 
-        # Allocate variables used for shift estimation
-
-        # set maximum value of 1D shift (in pixels) to search
-        # between common-lines.
-        max_shift = self.max_shift
-        # Set resolution of shift estimation in pixels.
-        shift_step = self.shift_step
-        # 1D shift between common-lines
+        # 1D shift between common-lines.
         shifts_1d = np.zeros((2, n_img, n_img))
 
-        # Prepare the shift phases and generate filter for common-line detection
+        # Prepare the shift phases and generate filter for common-line detection.
         r_max = pf.shape[2]
         shifts, shift_phases, h = self._generate_shift_phase_and_filter(
-            r_max, max_shift, shift_step
+            r_max, self.max_shift, self.shift_step
         )
         all_shift_phases = shift_phases.T
+        n_shifts = len(shifts)
 
-        # Apply bandpass filter, normalize each ray of each image
-        # Note that only use half of each ray
+        # Apply bandpass filter, normalize each ray of each image.
+        # Note that only use half of each ray.
         pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
 
         # Search for common lines between [i, j] pairs of images.
         # The random selection is implemented.
         for i in range(n_img - 1):
             p1 = pf[i]
-            p1_real = np.real(p1)
-            p1_imag = np.imag(p1)
 
             # build the subset of j images if n_check < n_img
             n_remaining = n_img - i - 1
@@ -111,32 +99,32 @@ class CLSymmetryC2(CLSymmetryC3C4):
             for j in subset_j:
                 p2_flipped = np.conj(pf[j])
 
-                for shift in range(len(shifts)):
+                for shift in range(n_shifts):
                     shift_phases = all_shift_phases[shift]
-                    p2_shifted_flipped = (shift_phases * p2_flipped).T
+                    p2_shifted_flipped = shift_phases * p2_flipped
 
-                    # Compute correlations in the positive and negative r directions
-                    part1 = p1_real.dot(np.real(p2_shifted_flipped))
-                    part2 = p1_imag.dot(np.imag(p2_shifted_flipped))
-                    c1 = part1 - part2
-                    c2 = part1 + part2
-                    C = np.concatenate((c1, c2), axis=0)
+                    corr = self.compute_correlations(p1, p2_shifted_flipped)
 
-                    s_ind = C.argmax()
-                    first_cl1, first_cl2 = np.unravel_index(s_ind, C.shape)
-                    s_val = C[first_cl1, first_cl2]
+                    # Highest correlation over all shifts corresponds to 1st set
+                    # of mutual common-lines.
+                    s_ind = corr.argmax()
+                    first_cl1, first_cl2 = np.unravel_index(s_ind, corr.shape)
+                    s_val = corr[first_cl1, first_cl2]
                     if s_val > cl_dist[0, i, j]:
                         clmatrix[0, i, j] = first_cl1
                         clmatrix[0, j, i] = first_cl2
                         cl_dist[0, i, j] = s_val
                         shifts_1d[0, i, j] = shifts[shift]
 
-                    # Mask cl_dist to find second highest correlation.
+                    # Mask corr to find second highest correlation, which corresponds
+                    # to 2nd set of mutual common-lines.
                     mask_dist = self.min_dist_cls * 2 * self.n_theta // 360
-                    C_masked = self.square_mask(C, first_cl1, first_cl2, mask_dist)
-                    sidx = C_masked.argmax()
-                    second_cl1, second_cl2 = np.unravel_index(sidx, C.shape)
-                    s_val_2 = C[second_cl1, second_cl2]
+                    corr_masked = self.square_mask(
+                        corr, first_cl1, first_cl2, mask_dist
+                    )
+                    sidx = corr_masked.argmax()
+                    second_cl1, second_cl2 = np.unravel_index(sidx, corr.shape)
+                    s_val_2 = corr[second_cl1, second_cl2]
                     if s_val_2 > cl_dist[1, i, j]:
                         clmatrix[1, i, j] = second_cl1
                         clmatrix[1, j, i] = second_cl2
@@ -145,6 +133,22 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
         self.clmatrix = clmatrix
         self.shifts_1d = shifts_1d
+
+    @staticmethod
+    def compute_correlations(a, b):
+        """
+        Compute the correlation between arrays a and b.
+        """
+        part1 = np.real(a) @ np.real(b).T
+        part2 = np.imag(a) @ np.imag(b).T
+
+        # Compute corrrelations in the positive and negative r directions.
+        corr_pos = part1 - part2
+        corr_neg = part1 + part2
+
+        corr = np.concatenate((corr_pos, corr_neg), axis=0)
+
+        return corr
 
     @staticmethod
     def square_mask(arr, x, y, dist):
