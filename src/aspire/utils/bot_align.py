@@ -124,21 +124,21 @@ def align_BO(
     :param loss_type: 'wemd' or 'eu'. Default 'wemd'.
         If the heterogeneity between vol_ref and vol_given is high, 'eu' is recommended.
     :param downsampling_level: Downsampling (pixels). Integer, defaults 32.
-        If alignment fails try larger values. 
+        If alignment fails try larger values.
     :param max_iters: Maximum iterations. Integer, defaults 200.
-        If alignment fails try larger values. 
+        If alignment fails try larger values.
     :param refine: Whether to perform refinement. Boolean, defaults True.
     :param reflect: Whether to address handedness. Boolean, defaults False.
-        If set true, increase max_iters to 350~400. 
-    :param tau: Regularization parameter for surrogate problems. Numeric, defaults 1e-3. 
+        If set true, increase max_iters to 350~400.
+    :param tau: Regularization parameter for surrogate problems. Numeric, defaults 1e-3.
     :param man_max_iter: Stopping criterion for surrogate problems--maximum iterations. Interger, defaults 500.
     :param man_min_grad: Stopping criterion for surrogate problems--minimum gradient norm. Numeric, defaults 0.1.
     :param man_min_sz: Stopping criterion for surrogate problems--minimum step size. Numeric, defaults 0.1.
-    :param verbosity: Whether to print surrogate problem optimization details. Boolean, defaults 0. 
+    :param verbosity: Whether to print surrogate problem optimization details. Boolean, defaults 0.
     :param dtype: Numeric dtype to perform computations with.
         Default `None` infers dtype from `vol_ref`.
     :return: two rotation matrices R_init (without refinement) and R_est (with refinement).
-        If refine = False, then R_est is set equal to R_init.  
+        If refine = False, then R_est is set equal to R_init.
     """
     # Infer dtype
     dtype = np.dtype(dtype or vol_ref.dtype)
@@ -181,7 +181,7 @@ def align_BO(
 
     def cf(x1, x2):
         """
-        The squared exponential covariance function over SO(3). 
+        The squared exponential covariance function over SO(3).
         """
         d = norm(x1 - x2) / loss_params["lengthscale"]
         return np.exp(-(d**2) / 2, dtype=dtype)
@@ -211,7 +211,7 @@ def align_BO(
         @pymanopt.function.numpy(manifold)
         def cost(new, t=t, q=q):
             """
-            Loss function for surrogate problems. 
+            Loss function for surrogate problems.
             """
             kx = np.array([cf(new.astype(dtype, copy=False), R[j]) for j in range(t)])
             mu = kx @ q
