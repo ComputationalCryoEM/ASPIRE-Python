@@ -93,29 +93,6 @@ def rot_to_u(R):
 
 
 # TODO, complete docs.
-# TODO, consider if this is something we generally want (then move it) or add unit test to `test_bot_align`.
-def q_to_rot(q):
-    """
-    What does this do?
-
-    :param q: what is q
-    :return: what does this return
-    """
-    R = np.zeros((3, 3), q.dtype)
-    R[0, 0] = q[0] ** 2 + q[1] ** 2 - q[2] ** 2 - q[3] ** 2
-    R[0, 1] = 2 * (q[1] * q[2] - q[0] * q[3])
-    R[0, 2] = 2 * (q[1] * q[3] + q[0] * q[2])
-    R[1, 0] = 2 * (q[1] * q[2] + q[0] * q[3])
-    R[1, 1] = q[0] ** 2 - q[1] ** 2 + q[2] ** 2 - q[3] ** 2
-    R[1, 2] = 2 * (q[2] * q[3] - q[0] * q[1])
-    R[2, 0] = 2 * (q[1] * q[3] - q[0] * q[2])
-    R[2, 1] = 2 * (q[2] * q[3] + q[0] * q[1])
-    R[2, 2] = q[0] ** 2 - q[1] ** 2 - q[2] ** 2 + q[3] ** 2
-
-    return R
-
-
-# TODO, complete docs.
 def align_BO(
     vol_ref,
     vol_given,
