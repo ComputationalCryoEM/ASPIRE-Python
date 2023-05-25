@@ -1,3 +1,11 @@
+"""
+This code is an ASPIRE port of Ruiyi Yang's `Bayesian Optimal Transport Alignment`.
+
+`https://github.com/RuiyiYang/BOTalign`
+
+`https://arxiv.org/pdf/2305.12310.pdf`
+"""
+
 import numpy as np
 import pymanopt
 from numpy.linalg import norm
@@ -7,6 +15,8 @@ from aspire.operators import wemd_embed
 from aspire.utils.rotation import Rotation
 
 
+# TODO, complete docs.
+# TODO, consider if this is something we generally want (then move it) or add unit test to `test_bot_align`.
 def u_to_rot(u):
     """
     What does this do?
@@ -40,6 +50,8 @@ def u_to_rot(u):
     return R
 
 
+# TODO, complete docs.
+# TODO, consider if this is something we generally want (then move it) or add unit test to `test_bot_align`.
 def rot_to_u(R):
     """
     What does this do?
@@ -80,6 +92,8 @@ def rot_to_u(R):
         return v / np.sin(v / 2) * q[1:4]
 
 
+# TODO, complete docs.
+# TODO, consider if this is something we generally want (then move it) or add unit test to `test_bot_align`.
 def q_to_rot(q):
     """
     What does this do?
@@ -101,6 +115,7 @@ def q_to_rot(q):
     return R
 
 
+# TODO, complete docs.
 def align_BO(
     vol_ref,
     vol_given,
@@ -129,9 +144,9 @@ def align_BO(
     :param reflect: ?
     :param ninit: ? 1
     :param tau: ? 1e-3
-    :param max_iter: 500
-    :param min_grad: ? 0.1
-    :param min_sz: ?  0.1
+    :param man_max_iter: 500
+    :param man_min_grad: ? 0.1
+    :param man_min_sz: ?  0.1
     :param verbosity: ? 0
     :param dtype: Numeric dtype to perform computations with.
         Default `None` infers dtype from `vol_ref`.
@@ -166,6 +181,9 @@ def align_BO(
         )
 
     def loss(R):
+        """
+        docstring
+        """
         v = vol_given_ds.rotate(Rotation(R)).asnumpy()[0]
         if loss_type == "eu":
             return norm(v - vol_ref_ds)
@@ -174,10 +192,16 @@ def align_BO(
             return norm(embed_v - embed_0, ord=1)
 
     def cf(x1, x2):
+        """
+        docstring
+        """
         d = norm(x1 - x2) / loss_params["lengthscale"]
         return np.exp(-(d**2) / 2, dtype=dtype)
 
     def cf_grad(x1, x2):
+        """
+        docstring
+        """
         return cf(x1, x2) * (x2 - x1) / loss_params["lengthscale"] ** 2
 
     R = np.zeros((max_iters, 3, 3), dtype=dtype)
@@ -201,12 +225,18 @@ def align_BO(
 
         @pymanopt.function.numpy(manifold)
         def cost(new, t=t, q=q):
+            """
+            docstring
+            """
             kx = np.array([cf(new.astype(dtype, copy=False), R[j]) for j in range(t)])
             mu = kx @ q
             return mu
 
         @pymanopt.function.numpy(manifold)
         def eu_grad(new, t=t, q=q):
+            """
+            docstring
+            """
             kx_grad = np.array(
                 [cf_grad(new.astype(dtype, copy=False), R[j]) for j in range(t)]
             )
@@ -239,6 +269,9 @@ def align_BO(
         sign = np.sign(np.linalg.det(R_init))
 
         def loss_u(u):
+            """
+            docstring
+            """
             u = u.astype(dtype, copy=False)
             R = sign * u_to_rot(u)
             v_rot = vol_given_ds.rotate(Rotation(R)).asnumpy()[0]
