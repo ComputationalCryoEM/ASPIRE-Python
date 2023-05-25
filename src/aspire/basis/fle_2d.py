@@ -40,13 +40,14 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             resolution of the basis.
         :param epsilon: Relative precision between FLE fast method and dense matrix multiplication.
         :param dtype: Datatype of images and coefficients represented.
-        :param match_fb:
-              With this flag set the following will ensure that the basis functions are
-              identical to `FBBasis2D`:
-            - The initial heuristic for the number of basis functions, based on the resolution, will
-              be set to that of `FBBasis2D`, and the FLE frequency thresholding procedure to reduce the
-              number of functions will not be carried out. This means the number of basis functions for
-              a given image size will be identical across the two bases.
+        :param match_fb: This flag constructs basis functions
+            identical to `FBBasis2D`. The initial heuristic for the
+            number of basis functions, based on the image size, will
+            be set to that of `FBBasis2D`, and the FLE frequency
+            thresholding procedure to reduce the number of functions
+            will not be carried out. This means the number of basis
+            functions for a given image size will be identical across
+            the two bases.
         """
         if isinstance(size, int):
             size = (size, size)
