@@ -17,12 +17,24 @@ from aspire.utils.rotation import Rotation
 
 # TODO, complete docs.
 # TODO, consider if this is something we generally want (then move it) or add unit test to `test_bot_align`.
+
+"""
+The two functions "u_to_rot" and "rot_to_u" below perform the conversion between a rotation matrix and its representation 
+as a vector in \mathbb{R}^3, by enforsing the quaternion representation of the rotation matrix to have unit norm. 
+This is based on the following paper 
+"Terzakis, George, Phil Culverhouse, Guido Bugmann, Sanjay Sharma, and Robert Sutton. A recipe on the parameterization of rotation matrices 
+for non-linear optimization using quaternions. Tech. Rep. 004, School of Marine Science and Engineering. Plymouth University, 2012."
+
+PS: This conversion is needed in my algorithm to transform an optimization over the rotation matrix space to \mathbb{R}^3. This might be 
+something we generally want, but I haven't seen it show up elsewhere. Most conversions I've seen are between rotation matrices and quaternions alone. 
+"""
 def u_to_rot(u):
     """
     What does this do?
+    This function converts a vector u in \mathbb{R}^3 to a rotation matrix R. 
 
-    :param u: what is u
-    :return: what does this return
+    :param u: a vector in \mathbb{R}^3
+    :return: a rotation matrix R
     """
 
     v = np.sqrt(u[0] ** 2 + u[1] ** 2 + u[2] ** 2)
@@ -55,9 +67,10 @@ def u_to_rot(u):
 def rot_to_u(R):
     """
     What does this do?
+    This function converts a rotation matrix R to a vector u in \mathbb{R}^3. 
 
-    :param R: what is R
-    :return: what does this return
+    :param R: a rotation matrix
+    :return: a vector u in \mathbb{R}^3
     """
     q = np.zeros(4, dtype=R.dtype)
     if R[1, 1] > -R[2, 2] and R[0, 0] > -R[1, 1] and R[0, 0] > -R[2, 2]:
@@ -111,23 +124,24 @@ def align_BO(
 ):
     """
     What does this do?
+    This function returns a rotation matrix R that best aligns vol_ref with the R-rotated version of vol_given. 
 
-    :param vol_ref: ?
-    :param vol_given: ?
-    :param loss_type: 'wemd' or 'eu'. Default 'wemd'.
-    :param downsampling_level: Downsampling (pixels)
-    :param max_iters: Maximum iterations
-    :param refine: Boolean, defaults True.
-    :param reflect: ?
-    :param ninit: ? 1
-    :param tau: ? 1e-3
-    :param man_max_iter: 500
-    :param man_min_grad: ? 0.1
-    :param man_min_sz: ?  0.1
-    :param verbosity: ? 0
+    :param vol_ref: the reference volume 
+    :param vol_given: the volumed to be aligned
+    :param loss_type: 'wemd' or 'eu'. Default 'wemd'. If the heterogeneity between vol_ref and vol_given is high, 'eu' is recommended. 
+    :param downsampling_level: Downsampling (pixels). Integer, defaults 32. If alignment fails try larger values. 
+    :param max_iters: Maximum iterations. Integer, defaults 200. If alignment fails try larger values. 
+    :param refine: Whether to perform refinement. Boolean, defaults True.
+    :param reflect: Whether to address handedness. Boolean, defaults False. If set true, increase max_iters to 350~400. 
+    :param ninit: Number of initial candidates. Currently ninit must be 1. 
+    :param tau: Regularization parameter for surrogate problems. Numeric, defaults 1e-3. 
+    :param man_max_iter: Stopping criterion for surrogate problems--maximum iterations. Interger, defaults 500.
+    :param man_min_grad: Stopping criterion for surrogate problems--minimum gradient norm. Numeric, defaults 0.1.
+    :param man_min_sz: Stopping criterion for surrogate problems--minimum step size. Numeric, defaults 0.1.
+    :param verbosity: Whether to print surrogate problem optimization details. Boolean, defaults 0. 
     :param dtype: Numeric dtype to perform computations with.
         Default `None` infers dtype from `vol_ref`.
-    :return: what does this return
+    :return: two rotation matrices R_init (without refinement) and R_est (with refinement). If refine = False, then R_est is set equal to R_init.  
     """
     # Infer dtype
     dtype = np.dtype(dtype or vol_ref.dtype)
@@ -160,6 +174,7 @@ def align_BO(
     def loss(R):
         """
         docstring
+        Define the alignment loss function. 
         """
         v = vol_given_ds.rotate(Rotation(R)).asnumpy()[0]
         if loss_type == "eu":
@@ -171,6 +186,7 @@ def align_BO(
     def cf(x1, x2):
         """
         docstring
+        Define the squared exponential covariance function over SO(3). 
         """
         d = norm(x1 - x2) / loss_params["lengthscale"]
         return np.exp(-(d**2) / 2, dtype=dtype)
@@ -178,6 +194,7 @@ def align_BO(
     def cf_grad(x1, x2):
         """
         docstring
+        Define the gradient of the squared exponential covariance function.
         """
         return cf(x1, x2) * (x2 - x1) / loss_params["lengthscale"] ** 2
 
@@ -204,6 +221,7 @@ def align_BO(
         def cost(new, t=t, q=q):
             """
             docstring
+            Define the loss function for surrogate problems. 
             """
             kx = np.array([cf(new.astype(dtype, copy=False), R[j]) for j in range(t)])
             mu = kx @ q
@@ -213,6 +231,7 @@ def align_BO(
         def eu_grad(new, t=t, q=q):
             """
             docstring
+            Define the gradient of the loss function for surrogate problems
             """
             kx_grad = np.array(
                 [cf_grad(new.astype(dtype, copy=False), R[j]) for j in range(t)]
@@ -248,6 +267,7 @@ def align_BO(
         def loss_u(u):
             """
             docstring
+            Convert the alignment loss function over SO(3) to be over \mathbb{R}^3. 
             """
             u = u.astype(dtype, copy=False)
             R = sign * u_to_rot(u)
