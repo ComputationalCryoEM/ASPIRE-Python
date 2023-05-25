@@ -11,12 +11,57 @@ from aspire.utils.rotation import Rotation
 from aspire.volume import Volume
 
 
-def generate_data(snr, dtype):
+def _angular_dist_degrees(R1, R2):
+    """
+    Util wrapper computig angular distance as degrees.
+
+    :param R1: 3x3 rotation matrix
+    :param R2: 3x3 rotation matrix
+    :return: Angular distance between R1 and R2 in degrees.
+    """
+    return Rotation.angle_dist(R1, R2) * 180 / np.pi
+
+
+# Original author suggests testing with the following parameters:
+#     loss type ('wemd' or 'eu')
+#     downsampling level (32 or 64 recommended)
+#     total number of iterations (150 or 200 recommended)
+
+ALGO_PARAMS = [
+    ["wemd", 32, 200],
+    ["wemd", 64, 150],
+    ["eu", 32, 200],
+    ["eu", 64, 150],
+]
+
+SNRS = [float("inf"), 0.5]
+DTYPES = [np.float32, np.float64]
+
+
+def algo_params_id(params):
+    return (
+        f"loss_type={params[0]}, downsampling_level={params[1]}, max_iters={params[2]}"
+    )
+
+
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture(params=SNRS, ids=lambda x: f"SNR={x}")
+def snr(request):
+    return request.param
+
+
+@pytest.fixture
+def vol_data_fixture(snr, dtype):
     """
     Generates test data from MRC file.
 
     :param snr: Signal to noise ratio (0, float('inf') ).
         float('inf') would represent a clean image.
+    :param dtype: Datatype of generated data.
     :return: Reference Volume, Test Volume, size (pixels), True rotation
     """
 
@@ -39,49 +84,13 @@ def generate_data(snr, dtype):
     return reference_vol, test_vol, L, R_true
 
 
-def angular_dist_degrees(R1, R2):
-    return Rotation.angle_dist(R1, R2) * (180) / np.pi
-
-
-# Test the following parameters:
-# loss type ('wemd' or 'eu')
-# downsampling level (32 or 64 recommended)
-# total number of iterations (150 or 200 recommended)
-
-ALGO_PARAMS = [
-    ["wemd", 32, 200],
-    ["wemd", 64, 150],
-    ["eu", 32, 200],
-    ["eu", 64, 150],
-]
-
-SNRS = [float("inf"), 0.5]
-DTYPES = [np.float32, np.float64]
-
-
-@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
-def dtype(request):
-    return request.param
-
-
-@pytest.fixture(params=SNRS, ids=lambda x: f"SNR={x}")
-def snr(request):
-    return request.param
-
-
-@pytest.fixture
-def vol_data_fixture(snr, dtype):
-    return generate_data(snr, dtype)
-
-
-def algo_params_id(params):
-    return (
-        f"loss_type={params[0]}, downsampling_level={params[1]}, max_iters={params[2]}"
-    )
-
-
 @pytest.mark.parametrize("algo_params", ALGO_PARAMS, ids=algo_params_id)
 def test_bot_align(algo_params, vol_data_fixture):
+    """
+    Tests the BOT alignment algorithm for a given set of
+    parameters and volume data.
+    """
+
     vol0, vol_given, L, R_true = vol_data_fixture
 
     R_init, R_rec = align_BO(
@@ -93,9 +102,9 @@ def test_bot_align(algo_params, vol_data_fixture):
         dtype=np.float32,
     )
     # Recovery without refinement (degrees)
-    angle_init = angular_dist_degrees(R_init, R_true.T)
+    angle_init = _angular_dist_degrees(R_init, R_true.T)
     # Recovery with refinement (degrees)
-    angle_rec = angular_dist_degrees(R_rec, R_true.T)
+    angle_rec = _angular_dist_degrees(R_rec, R_true.T)
     logging.debug(f"angle_init: {angle_init}, angle_rec: {angle_rec}")
     # Check we're within a degree.
     assert angle_rec < 2.0
