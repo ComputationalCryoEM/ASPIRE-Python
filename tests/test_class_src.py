@@ -144,11 +144,9 @@ def test_basic_averaging(class_sim_fixture, test_src_cls):
 
     # Check we can slice the source and retrieve remapped attributes
     src2 = test_src[::3]
-    # Check we match selection between hidden and manual slice.
+    # Check we match selection between automatic and manual slice.
     np.testing.assert_equal(src2.selection_indices, test_src.selection_indices[::3])
-    # Check we match class indices between hidden and manual slice.
-    #   Note that the class selection counts can be different under repulsion,
-    #   so we will compare the subset that exists in both sources.
+    # Check we match class indices between automatic and manual slice.
     k = len(src2.class_indices)
     np.testing.assert_equal(src2.class_indices, test_src.class_indices[::3][:k])
 
