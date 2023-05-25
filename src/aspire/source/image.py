@@ -467,6 +467,63 @@ class ImageSource(ABC):
             np.rad2deg(self._rotations.angles),
         )
 
+    @property
+    def class_indices(self):
+        """
+        Returns table of class image indices as `(src.n, n_nbors)`
+        Numpy array.
+
+        Each row reprsents a class, with the columns ordered by
+        smallest `class_distances` from the reference image (zeroth
+        columm).
+
+        Note `n_nbors` is managed by `self.classifier` and used here
+        for documentation.
+
+        :return: Numpy array, integers.
+        """
+        res = self.get_metadata(["class_indices"])
+        return np.vstack([np.array(row.split(","), dtype=int) for row in res])
+
+    @property
+    def selection_indices(self):
+        return self.get_metadata(["selection_indices"])
+
+    @property
+    def class_refl(self):
+        """
+        Returns table of class image reflections as `(src.n, n_nbors)`
+        Numpy array.
+
+        Follows same layout as `class_indices` but holds booleans that
+        are True when the image should be reflected before averaging.
+
+        Note `n_nbors` is managed by `self.classifier` and used here
+        for documentation.
+
+        :return: Numpy array, boolean.
+        """
+        res = self.get_metadata(["class_refl"])
+        return np.vstack([np.array(row.split(","), dtype=bool) for row in res])
+
+    @property
+    def class_distances(self):
+        """
+        Returns table of class image distances as `(src.n, n_nbors)`
+        Numpy array.
+
+        Follows same layout as `class_indices` but holds floats
+        representing the distance (returned by classifier) to the
+        zeroth image in each class.
+
+        Note `n_nbors` is managed by `self.classifier` and used here
+        for documentation.
+
+        :return: Numpy array, self.dtype.
+        """
+        res = self.get_metadata(["class_distances"])
+        return np.vstack([np.array(row.split(","), dtype=self.dtype) for row in res])
+
     def set_metadata(self, metadata_fields, values, indices=None):
         """
         Modify metadata field information of this ImageSource for selected indices
@@ -1309,13 +1366,6 @@ class IndexedSource(ImageSource):
     Map into another into ImageSource.
     """
 
-    _indexed_attrs = [
-        "selection_indices",
-        "class_indices",
-        "class_refl",
-        "class_distances",
-    ]
-
     def __init__(self, src, indices, memory=None):
         """
         Instantiates a new source along given `indices`.
@@ -1356,21 +1406,6 @@ class IndexedSource(ImageSource):
 
         # Any further operations should not mutate this instance.
         self._mutable = False
-
-    def __getattribute__(self, name):
-        """
-        Overrides attribute getter to remap attributes listed in `_indexed_attrs`.
-
-        :param name: Attribute name
-        """
-
-        # Avoid recursion
-        if name in super().__getattribute__("_indexed_attrs"):
-            # The attribute should be remapped from prior src
-            return getattr(self.src, name)[self.index_map]
-
-        # Otherwise passthrough.
-        return super().__getattribute__(name)
 
     def _images(self, indices):
         """
