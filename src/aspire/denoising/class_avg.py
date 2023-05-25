@@ -64,12 +64,7 @@ class ClassAvgSource(ImageSource):
                 f"`averager` should be instance of `Averager2D`, found {self.averager}."
             )
 
-        self._nn_classes = None
-        self._nn_reflections = None
-        self._nn_distances = None
-
         # Flag for lazy eval, we'll classify once, on first touch.
-        # We could use self._nn_* vars, but might lose some flexibility later.
         self._classified = False
         self._selected = False
 
@@ -114,16 +109,20 @@ class ClassAvgSource(ImageSource):
             return
 
         (
-            self._nn_classes,
-            self._nn_reflections,
-            self._nn_distances,
+            self.class_indices,
+            self.class_refl,
+            self.class_distances,
         ) = self.classifier.classify()
         self._classified = True
 
     @property
     def selection_indices(self):
         self._class_select()
-        return self._selection_indices
+        return super().selection_indices
+
+    @selection_indices.setter
+    def selection_indices(self, value):
+        self.set_metadata(["selection_indices"], value)
 
     @property
     def class_indices(self):
@@ -141,7 +140,11 @@ class ClassAvgSource(ImageSource):
         :return: Numpy array, integers.
         """
         self._classify()
-        return self._nn_classes
+        return super().class_indices
+
+    @class_indices.setter
+    def class_indices(self, table):
+        self.set_metadata(["class_indices"], [",".join(map(str, row)) for row in table])
 
     @property
     def class_refl(self):
@@ -158,7 +161,11 @@ class ClassAvgSource(ImageSource):
         :return: Numpy array, boolean.
         """
         self._classify()
-        return self._nn_reflections
+        return super().class_refl
+
+    @class_refl.setter
+    def class_refl(self, table):
+        self.set_metadata(["class_refl"], [",".join(map(str, row)) for row in table])
 
     @property
     def class_distances(self):
@@ -176,7 +183,13 @@ class ClassAvgSource(ImageSource):
         :return: Numpy array, self.dtype.
         """
         self._classify()
-        return self._nn_distances
+        return super().class_distances
+
+    @class_distances.setter
+    def class_distances(self, table):
+        self.set_metadata(
+            ["class_distances"], [",".join(map(str, row)) for row in table]
+        )
 
     def _class_select(self):
         """
@@ -197,22 +210,23 @@ class ClassAvgSource(ImageSource):
             self._classify()
 
         # Perform class selection
-        self._selection_indices = self.class_selector.select(
-            self._nn_classes,
-            self._nn_reflections,
-            self._nn_distances,
+        _selection_indices = self.class_selector.select(
+            self.class_indices,
+            self.class_refl,
+            self.class_distances,
         )
 
         # Override the initial self.n
         # Some selectors will (dramatically) reduce the space of classes.
-        if len(self._selection_indices) != self.n:
+        if len(_selection_indices) != self.n:
             logger.info(
-                f"After selection process, updating maximum {len(self._selection_indices)} classes from {self.n}."
+                f"After selection process, updating maximum {len(_selection_indices)} classes from {self.n}."
             )
         # Note, setter should be inherited from base ImageSource.
-        self.n = len(self._selection_indices)
+        self.n = len(_selection_indices)
 
         self._selected = True
+        self.selection_indices = _selection_indices
 
     def _images(self, indices):
         """
@@ -296,9 +310,9 @@ class ClassAvgSource(ImageSource):
 
         else:
             # Perform image averaging for the requested images (classes)
-            logger.debug(f"Averaging {len(indices)} images from source")
+            logger.debug(f"Averaging {len(_indices)} images from source")
             im = self.averager.average(
-                self._nn_classes[indices], self._nn_reflections[indices]
+                self.class_indices[_indices], self.class_refl[_indices]
             )
 
         # Finally, apply transforms to resulting Images
