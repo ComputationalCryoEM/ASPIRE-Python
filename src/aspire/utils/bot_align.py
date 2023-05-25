@@ -14,8 +14,6 @@ from scipy.optimize import minimize
 from aspire.operators import wemd_embed
 from aspire.utils.rotation import Rotation
 
-
-
 # The following two functions `u_to_rot` and `rot_to_u` below perform
 # the conversion between a rotation matrix and its representation as a
 # vector in R^3, by enforsing the quaternion representation of the
@@ -26,13 +24,13 @@ from aspire.utils.rotation import Rotation
 #     Terzakis, George, Phil Culverhouse, Guido Bugmann, Sanjay Sharma, and Robert Sutton.
 #     A recipe on the parameterization of rotation matrices for non-linear optimization using quaternions.
 #     Tech. Rep. 004, School of Marine Science and Engineering. Plymouth University, 2012.
-#
+
 
 def u_to_rot(u):
     """
     This function converts a vector u in R^3 to a rotation matrix R.
 
-    :param u: a vector in \mathbb{R}^3
+    :param u: a vector in R^3
     :return: a rotation matrix R
     """
 
@@ -66,7 +64,7 @@ def rot_to_u(R):
     This function converts a rotation matrix R to a vector u in R^3.
 
     :param R: a rotation matrix
-    :return: a vector u in \mathbb{R}^3
+    :return: a vector u in R^3
     """
     q = np.zeros(4, dtype=R.dtype)
     if R[1, 1] > -R[2, 2] and R[0, 0] > -R[1, 1] and R[0, 0] > -R[2, 2]:
