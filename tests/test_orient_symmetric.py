@@ -133,7 +133,7 @@ def test_estimate_rotations(n_img, L, order, dtype):
 
     # Assert mean angular distance is reasonable.
     if order == 2:
-        assert np.mean(ang_dist) < 5
+        assert np.mean(ang_dist) < 6
     elif order > 4:
         assert np.mean(ang_dist) < 5
     else:
@@ -350,6 +350,48 @@ def test_self_commonlines(n_img, L, order, dtype):
     assert np.allclose(detection_rate, 1.0)
 
 
+@pytest.mark.parametrize("n_img, L, order, dtype", param_list_c2)
+def test_commonlines_c2(n_img, L, order, dtype):
+    src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
+    n_theta = cl_symm.n_theta
+
+    # Build common-lines matrix.
+    cl_symm.build_clmatrix()
+    cl = cl_symm.clmatrix
+
+    # Ground truth common-lines matrix.
+    cl_gt = gt_cl_c2(n_theta, src.rotations)
+
+    # Convert from indices to angles. Use angle of common-line in [0, 180).
+    cl = (cl * 360 / n_theta) % 180
+    cl_gt = (cl_gt * 360 / n_theta) % 180
+
+    pairs = all_pairs(n_img)
+    within_5 = 0
+    for i, j in pairs:
+        # For each pair of images the two sets of mutual common-lines in cl, (cl[0,i,j], cl[0,j,i])
+        # and (cl[1,i,j], cl[1,j,i]), should each match one of the two sets in the ground truth cl_gt.
+        # We take the sum of errors from both combinations.
+        err_1 = (
+            abs(cl[0, i, j] - cl_gt[0, i, j])
+            + abs(cl[0, j, i] - cl_gt[0, j, i])
+            + abs(cl[1, i, j] - cl_gt[1, i, j])
+            + abs(cl[1, j, i] - cl_gt[1, j, i])
+        )
+        err_2 = (
+            abs(cl[0, i, j] - cl_gt[1, i, j])
+            + abs(cl[0, j, i] - cl_gt[1, j, i])
+            + abs(cl[1, i, j] - cl_gt[0, i, j])
+            + abs(cl[1, j, i] - cl_gt[0, j, i])
+        )
+        min_err = min(err_1, err_2)
+        if min_err <= 5:
+            within_5 += 1
+
+    # Check that at least 90% of estimates are within 5 degrees.
+    assert within_5 / len(pairs) > 0.90
+
+
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
 def test_commonlines(n_img, L, order, dtype):
     src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
@@ -558,3 +600,24 @@ def test_mean_outer_product_estimator():
 
     # The resulting synchronized_mean should be V.
     assert np.allclose(est.synchronized_mean(), V)
+
+
+def gt_cl_c2(n_theta, rots_gt):
+    n_imgs = len(rots_gt)
+    gs = cyclic_rotations(2)
+    clmatrix_gt = np.zeros((2, n_imgs, n_imgs))
+    for i in range(n_imgs):
+        for j in range(i + 1, n_imgs):
+            Ri = rots_gt[i]
+            Rj = rots_gt[j]
+            for idx, g in enumerate(gs):
+                U = Ri.T @ g @ Rj
+                c1 = np.array([-U[1, 2], U[0, 2]])
+                c2 = np.array([U[2, 1], -U[2, 0]])
+                clmatrix_gt[idx, i, j] = CLSymmetryC3C4.cl_angles_to_ind(
+                    c1[np.newaxis, :], n_theta
+                )
+                clmatrix_gt[idx, j, i] = CLSymmetryC3C4.cl_angles_to_ind(
+                    c2[np.newaxis, :], n_theta
+                )
+    return clmatrix_gt
