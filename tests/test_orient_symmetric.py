@@ -3,7 +3,7 @@ import pytest
 from numpy import pi, random
 from numpy.linalg import det, norm
 
-from aspire.abinitio import CLSymmetryC3C4, CLSymmetryCn
+from aspire.abinitio import CLSymmetryC2, CLSymmetryC3C4, CLSymmetryCn
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
 from aspire.source import Simulation
 from aspire.utils import Rotation, utest_tolerance
@@ -14,6 +14,8 @@ from aspire.volume import CnSymmetricVolume
 
 # A set of these parameters are marked expensive to reduce testing time.
 # Each tuple holds the parameters (n_img, resolution "L", cyclic order "order", dtype).
+param_list_c2 = [(36, 44, 2, np.float32)]
+
 param_list_c3_c4 = [
     (24, 44, 3, np.float32),
     (24, 45, 4, np.float64),
@@ -77,21 +79,29 @@ def source_orientation_objs(n_img, L, order, dtype):
         seed=seed,
     )
 
-    if order in [3, 4]:
-        CLclass = CLSymmetryC3C4
-    else:
-        CLclass = CLSymmetryCn
-    orient_est = CLclass(
-        src,
-        symmetry=f"C{order}",
+    cl_kwargs = dict(
+        src=src,
         n_theta=360,
-        max_shift=1 / L,  # set to 1 pixel
+        max_shift=1 / L,
         seed=seed,
     )
+
+    if order in [3, 4]:
+        CLclass = CLSymmetryC3C4
+        cl_kwargs["symmetry"] = f"C{order}"
+    elif order == 2:
+        CLclass = CLSymmetryC2
+    else:
+        CLclass = CLSymmetryCn
+        cl_kwargs["symmetry"] = f"C{order}"
+    orient_est = CLclass(**cl_kwargs)
+
     return src, orient_est
 
 
-@pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4 + param_list_cn)
+@pytest.mark.parametrize(
+    "n_img, L, order, dtype", param_list_c2 + param_list_c3_c4 + param_list_cn
+)
 def test_estimate_rotations(n_img, L, order, dtype):
     src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
 
@@ -122,7 +132,9 @@ def test_estimate_rotations(n_img, L, order, dtype):
         )
 
     # Assert mean angular distance is reasonable.
-    if order > 4:
+    if order == 2:
+        assert np.mean(ang_dist) < 5
+    elif order > 4:
         assert np.mean(ang_dist) < 5
     else:
         assert np.mean(ang_dist) < 2
