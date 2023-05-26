@@ -67,10 +67,12 @@ class StarFile:
             # populated if this block as a loop
             loop_tags = []
             loop_data = []
-            # correct for GEMMI default behavior
-            # if a block is called 'data_' in the .star file, GEMMI names it '#'
-            # but we want to name it '' for consistency
-            if gemmi_block.name == "#":
+            # Correct for GEMMI default behavior.
+            # If a block is called 'data_' in the .star file:
+            #   gemmi>=0.6.2 names it ' '
+            #   gemmi<0.6.2 names it '#'
+            # Rename it '' consistently.
+            if gemmi_block.name in (" ", "#"):
                 gemmi_block.name = ""
             for gemmi_item in gemmi_block:
                 if gemmi_item.pair is not None:
