@@ -290,10 +290,10 @@ class ClassAvgSource(ImageSource):
             # Recursively call `_images`.
             # `heap_inds` set should be empty in the recursive call,
             # and compute only remaining images (those not in heap).
-            _indices = list(indices_to_compute.keys())
+            _compute_indices = list(indices_to_compute.keys())
             # Skip when empty (everything requested in heap).
-            if len(_indices):
-                _imgs = self._images(_indices)
+            if len(_compute_indices):
+                _imgs = self._images(_compute_indices)
 
                 # Pack images computed from `_images` recursive call.
                 _inds = list(indices_to_compute.values())
