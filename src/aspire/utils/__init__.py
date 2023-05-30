@@ -68,3 +68,5 @@ from .relion_interop import RelionStarFile, relion_metadata_fields
 from .resolution_estimation import FourierRingCorrelation, FourierShellCorrelation
 from .rotation import Rotation
 from .units import ratio_to_decibel, voltage_to_wavelength, wavelength_to_voltage
+
+from .bot_align import align_BO  # isort:skip
