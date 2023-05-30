@@ -133,7 +133,10 @@ def test_estimate_rotations(n_img, L, order, dtype):
 
     # Assert mean angular distance is reasonable.
     if order == 2:
-        assert np.mean(ang_dist) < 6
+        # For small n-img, we get some bad estimates so checking the
+        # mean gets poor results with some runs. Instead we'll check that
+        # we get high percentage of good estimates.
+        assert np.count_nonzero(ang_dist < 5) / len(ang_dist) > 0.80
     elif order > 4:
         assert np.mean(ang_dist) < 5
     else:
