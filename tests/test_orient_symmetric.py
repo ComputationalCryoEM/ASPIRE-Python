@@ -14,7 +14,7 @@ from aspire.volume import CnSymmetricVolume
 
 # A set of these parameters are marked expensive to reduce testing time.
 # Each tuple holds the parameters (n_img, resolution "L", cyclic order "order", dtype).
-param_list_c2 = [(36, 44, 2, np.float32)]
+param_list_c2 = [(45, 44, 2, np.float32)]
 
 param_list_c3_c4 = [
     (24, 44, 3, np.float32),
@@ -91,6 +91,7 @@ def source_orientation_objs(n_img, L, order, dtype):
         cl_kwargs["symmetry"] = f"C{order}"
     elif order == 2:
         CLclass = CLSymmetryC2
+        cl_kwargs["min_dist_cls"] = 8
     else:
         CLclass = CLSymmetryCn
         cl_kwargs["symmetry"] = f"C{order}"
