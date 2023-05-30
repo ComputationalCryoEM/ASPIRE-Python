@@ -504,8 +504,8 @@ class ImageSource(ABC):
         :return: Numpy array, boolean.
         """
         res = self.get_metadata(["class_refl"])
-        return np.vstack(
-            [np.array(row.split(",")) == "True" for row in res], dtype=bool
+        return np.vstack([np.array(row.split(",")) == "True" for row in res]).astype(
+            bool
         )
 
     @property
