@@ -504,7 +504,9 @@ class ImageSource(ABC):
         :return: Numpy array, boolean.
         """
         res = self.get_metadata(["class_refl"])
-        return np.vstack([np.array(row.split(","), dtype=bool) for row in res])
+        return np.vstack(
+            [np.array(row.split(",")) == "True" for row in res], dtype=bool
+        )
 
     @property
     def class_distances(self):
