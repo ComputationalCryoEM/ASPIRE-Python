@@ -6,8 +6,7 @@ import pytest
 from numpy.linalg import norm
 from numpy.random import normal
 
-from aspire.utils.bot_align import align_BO
-from aspire.utils.rotation import Rotation
+from aspire.utils import Rotation, align_BO
 from aspire.volume import Volume
 
 
