@@ -14,7 +14,7 @@ from scipy.optimize import minimize
 from aspire.operators import wemd_embed
 from aspire.utils.rotation import Rotation
 
-# The following two functions `u_to_rot` and `rot_to_u` below perform
+# The following two functions `_u_to_rot` and `_rot_to_u` below perform
 # the conversion between a rotation matrix and its representation as a
 # vector in R^3, by enforsing the quaternion representation of the
 # rotation matrix to have unit norm. This conversion is used in the
@@ -26,7 +26,7 @@ from aspire.utils.rotation import Rotation
 #     Tech. Rep. 004, School of Marine Science and Engineering. Plymouth University, 2012.
 
 
-def u_to_rot(u):
+def _u_to_rot(u):
     """
     This function converts a vector u in R^3 to a rotation matrix R.
 
@@ -59,7 +59,7 @@ def u_to_rot(u):
     return R
 
 
-def rot_to_u(R):
+def _rot_to_u(R):
     """
     This function converts a rotation matrix R to a vector u in R^3.
 
@@ -256,14 +256,14 @@ def align_BO(
             Convert the alignment loss function over SO(3) to be over R^3.
             """
             u = u.astype(dtype, copy=False)
-            R = sign * u_to_rot(u)
+            R = sign * _u_to_rot(u)
             v_rot = vol_given_ds.rotate(Rotation(R)).asnumpy()[0]
             return norm(vol_ref_ds - v_rot)
 
-        x0 = rot_to_u(sign * R_init)
+        x0 = _rot_to_u(sign * R_init)
         result = minimize(loss_u, x0, method="nelder-mead", options={"disp": False})
         u_est = result.x
-        R_est = sign * u_to_rot(u_est)
+        R_est = sign * _u_to_rot(u_est)
 
     else:
         R_est = R_init
