@@ -165,7 +165,11 @@ class ClassAvgSource(ImageSource):
 
     @class_refl.setter
     def class_refl(self, table):
-        self.set_metadata(["class_refl"], [",".join(map(str, row)) for row in table])
+        # Convert boolean to (O, 1) integers.
+        array_int = np.array(table, dtype=int)
+        self.set_metadata(
+            ["class_refl"], [",".join(map(str, row)) for row in array_int]
+        )
 
     @property
     def class_distances(self):
