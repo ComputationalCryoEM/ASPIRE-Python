@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 class CLSymmetryC2(CLSymmetryC3C4):
+    """
+    Define a class to estimate 3D orientations using common lines methods for molecules with C2 cyclic symmetry.
+    """
+
     def __init__(
         self,
         src,
@@ -23,6 +27,20 @@ class CLSymmetryC2(CLSymmetryC3C4):
         min_dist_cls=25,
         seed=None,
     ):
+        """
+        Initialize object for estimating 3D orientations for molecules with C2 symmetry.
+
+        :param src: The source object of 2D denoised or class-averaged images with metadata
+        :param n_rad: The number of points in the radial direction
+        :param n_theta: The number of points in the theta direction
+        :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
+        :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
+        :param epsilon: Tolerance for the power method.
+        :param max_iter: Maximum iterations for the power method.
+        :param degree_res: Degree resolution for estimating in-plane rotations.
+        :param min_dist_cls: Minimum distance between mutual common-lines. Default = 25 degrees.
+        :param seed: Optional seed for RNG.
+        """
         super().__init__(
             src,
             symmetry="C2",
@@ -49,7 +67,8 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
     def build_clmatrix(self):
         """
-        Build common-lines matrix from Fourier stack of 2D images.
+        Build common-lines matrix for molecules with C2 symmetry from Fourier stack of 2D images.
+        This consists of finding for each pair of images the two common-lines induced by the 2-fold symmetry.
         """
 
         n_img = self.n_img
@@ -137,7 +156,12 @@ class CLSymmetryC2(CLSymmetryC3C4):
     @staticmethod
     def compute_correlations(a, b):
         """
-        Compute the correlation between arrays a and b.
+        Compute the correlation between complex Polar Fourier images a and b.
+
+        :param a: 2D array size n_theta_a x radial_points.
+        :param b: 2D array size n_theta_b x radial_points.
+
+        :return: Correlation array of size n_theta_a x n_theta_b.
         """
         part1 = np.real(a) @ np.real(b).T
         part2 = np.imag(a) @ np.imag(b).T
@@ -154,6 +178,13 @@ class CLSymmetryC2(CLSymmetryC3C4):
     def square_mask(arr, x, y, dist):
         """
         Mask input array around the point (x, y) with a square mask of half-length `dist`.
+
+        :param arr: 2D array to mask
+        :param x: x-coordinate for center of mask.
+        :param y: y-coordinate for center of mask.
+        :param dist: The distance from center to mask off.
+
+        :return: Input array with square mask around (x, y).
         """
         left = max(0, x - dist)
         right = min(len(arr), x + dist)
@@ -168,10 +199,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         """
         Estimate rotation matrices for molecules with C2 symmetry.
         """
-        Rijs, Rijgs = self._estimate_relative_viewing_directions()
-
-        logger.info("Performing global handedness synchronization.")
-        vijs, Rijs, Rijgs = self._global_J_sync(Rijs, Rijgs)
+        vijs, Rijs, Rijgs = self._estimate_relative_viewing_directions()
 
         logger.info("Estimating third rows of rotation matrices.")
         # The diagonal blocks of the 3n x 3n block matrix of relative rotations are
@@ -206,11 +234,23 @@ class CLSymmetryC2(CLSymmetryC3C4):
         # Step 3: Inner J-synchronization
         Rijs, Rijgs = self._local_J_sync_c2(Rijs, Rijgs)
 
-        return Rijs, Rijgs
+        # Step 4: Global J-synchronization.
+        logger.info("Performing global handedness synchronization.")
+        vijs, Rijs, Rijgs = self._global_J_sync(Rijs, Rijgs)
+
+        return vijs, Rijs, Rijgs
 
     def _global_J_sync(self, Rijs, Rijgs):
         """
-        Global handedness synchronization of relative rotations.
+        Global handedness synchronization of relative rotations, Rijs and Rijgs,
+        and relative viewing directions vijs.
+
+        :param Rijs: Relative rotations between pairs of images, shape n_pairs x 3 x 3.
+        :param Rijgs: Second set of relative rotations between pairs of images, shape n_pairs 3 x 3.
+        :returns:
+            - vijs - Globally synchronized relative viewing directions.
+            - Rijs - Globally synchronized relative rotations.
+            - Rijgs - Globally synchronized 2nd set of relative rotations.
         """
         vijs = (Rijs + Rijgs) / 2
 
@@ -231,6 +271,11 @@ class CLSymmetryC2(CLSymmetryC3C4):
         Estimate rotation matrices for each image by first constructing arbitrary rotations with
         the given third rows, vis, then applying in-plane rotations found with an angular
         synchronization procedure.
+
+        :param vis: Estimated third rows of orientation matrices, shape n_img x 3.
+        :param Rijs: First set of J-synchronized relative rotations, shape n_pairs x 3 x 3.
+        :param Rijgs: Second set of J-synchronized relative rotations, shape n_pairs x 3 x 3.
+        :return: Estimated rotations, Ris, shape n_img x 3 x 3.
         """
         H = np.zeros((self.n_img, self.n_img), dtype=complex)
         # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
@@ -277,7 +322,12 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
     def _estimate_all_Rijs_c2(self, clmatrix):
         """
-        Estimate Rijs using the voting method.
+        Estimate the two sets of relative rotations, Rijs and Rijgs, between pairs
+        of images using the voting method.
+
+        :param clmatrix: 2 x n_img x n_img array holding two sets of mutual common-lines
+            between pairs of images.
+        :return: Relative rotations, Rijs and Rijgs.
         """
         n_img = self.n_img
         n_theta = self.n_theta
@@ -296,7 +346,12 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
     def _local_J_sync_c2(self, Rijs, Rijgs):
         """
-        Local J-synchronization of all relative rotations.
+        For each pair of images J-synchronize the two corresponding relative rotations.
+
+        :param Rijs: First set of relative rotations.
+        :param Rijgs: Second set of relative rotations.
+
+        Return: Pairwise J-synchronized relative rotations, Rijs and Rijgs.
         """
         e1 = np.array([1, 0, 0], dtype=self.dtype)
         pairs = all_pairs(self.n_img)
