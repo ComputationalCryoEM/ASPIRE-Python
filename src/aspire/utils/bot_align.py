@@ -14,90 +14,6 @@ from scipy.optimize import minimize
 from aspire.operators import wemd_embed
 from aspire.utils.rotation import Rotation
 
-# The following two functions `_u_to_rot` and `_rot_to_u` below perform
-# the conversion between a rotation matrix and its representation as a
-# vector in R^3, by enforcing the quaternion representation of the
-# rotation matrix to have unit norm. This conversion is used in the
-# BOT algorithm to transform an optimization over the rotation matrix
-# space to R^3.  This is based on the following paper:
-#
-#     Terzakis, George, Phil Culverhouse, Guido Bugmann, Sanjay Sharma, and Robert Sutton.
-#     A recipe on the parameterization of rotation matrices for non-linear optimization using quaternions.
-#     Tech. Rep. 004, School of Marine Science and Engineering. Plymouth University, 2012.
-
-
-def _u_to_rot(u):
-    """
-    This function converts a vector u in R^3 to a rotation matrix R.
-
-    :param u: a vector in R^3
-    :return: a rotation matrix R
-    """
-
-    v = np.sqrt(u[0] ** 2 + u[1] ** 2 + u[2] ** 2)
-    if v == 0:
-        return np.eye(3, dtype=u.dtype)
-
-    q = np.array(
-        [
-            np.cos(v / 2),
-            np.sin(v / 2) / v * u[0],
-            np.sin(v / 2) / v * u[1],
-            np.sin(v / 2) / v * u[2],
-        ]
-    )
-    R = np.zeros((3, 3), dtype=u.dtype)
-    R[0, 0] = q[0] ** 2 + q[1] ** 2 - q[2] ** 2 - q[3] ** 2
-    R[0, 1] = 2 * q[1] * q[2] - 2 * q[0] * q[3]
-    R[0, 2] = 2 * q[0] * q[2] + 2 * q[1] * q[3]
-    R[1, 0] = 2 * q[1] * q[2] + 2 * q[0] * q[3]
-    R[1, 1] = q[0] ** 2 - q[1] ** 2 + q[2] ** 2 - q[3] ** 2
-    R[1, 2] = -2 * q[0] * q[1] + 2 * q[2] * q[3]
-    R[2, 0] = -2 * q[0] * q[2] + 2 * q[1] * q[3]
-    R[2, 1] = 2 * q[0] * q[1] + 2 * q[2] * q[3]
-    R[2, 2] = q[0] ** 2 - q[1] ** 2 - q[2] ** 2 + q[3] ** 2
-    return R
-
-
-def _rot_to_u(R):
-    """
-    This function converts a rotation matrix R to a vector u in R^3.
-
-    :param R: a rotation matrix
-    :return: a vector u in R^3
-    """
-    q = np.zeros(4, dtype=R.dtype)
-    if R[1, 1] > -R[2, 2] and R[0, 0] > -R[1, 1] and R[0, 0] > -R[2, 2]:
-        q[0] = np.sqrt(1 + R[0, 0] + R[1, 1] + R[2, 2])
-        q[1] = (R[2, 1] - R[1, 2]) / q[0]
-        q[2] = (R[0, 2] - R[2, 0]) / q[0]
-        q[3] = (R[1, 0] - R[0, 1]) / q[0]
-
-    elif R[1, 1] < -R[2, 2] and R[0, 0] > R[1, 1] and R[0, 0] > R[2, 2]:
-        q[1] = np.sqrt(1 + R[0, 0] - R[1, 1] - R[2, 2])
-        q[0] = (R[2, 1] - R[1, 2]) / q[1]
-        q[2] = (R[1, 0] + R[0, 1]) / q[1]
-        q[3] = (R[2, 0] + R[0, 2]) / q[1]
-
-    elif R[1, 1] > R[2, 2] and R[0, 0] < R[1, 1] and R[0, 0] < -R[2, 2]:
-        q[2] = np.sqrt(1 - R[0, 0] + R[1, 1] - R[2, 2])
-        q[0] = (R[0, 2] - R[2, 0]) / q[2]
-        q[1] = (R[1, 0] + R[0, 1]) / q[2]
-        q[3] = (R[2, 1] + R[1, 2]) / q[2]
-
-    elif R[1, 1] < R[2, 2] and R[0, 0] < -R[1, 1] and R[0, 0] < R[2, 2]:
-        q[3] = np.sqrt(1 - R[0, 0] - R[1, 1] + R[2, 2])
-        q[0] = (R[1, 0] - R[0, 1]) / q[3]
-        q[1] = (R[2, 0] + R[0, 2]) / q[3]
-        q[2] = (R[2, 1] + R[1, 2]) / q[3]
-
-    q = q / 2
-    v = 2 * np.arccos(q[0])
-    if v == 0:
-        return np.zeros(3, R.dtype)
-    else:
-        return v / np.sin(v / 2) * q[1:4]
-
 
 def align_BO(
     vol_ref,
@@ -256,14 +172,14 @@ def align_BO(
             Convert the alignment loss function over SO(3) to be over R^3.
             """
             u = u.astype(dtype, copy=False)
-            R = sign * _u_to_rot(u)
+            R = sign * Rotation.from_rotvec(u).matrices[0]
             v_rot = vol_given_ds.rotate(Rotation(R)).asnumpy()[0]
             return norm(vol_ref_ds - v_rot)
 
-        x0 = _rot_to_u(sign * R_init)
+        x0 = Rotation(sign * R_init).as_rotvec()[0]
         result = minimize(loss_u, x0, method="nelder-mead", options={"disp": False})
         u_est = result.x
-        R_est = sign * _u_to_rot(u_est)
+        R_est = sign * Rotation.from_rotvec(u_est).matrices[0]
 
     else:
         R_est = R_init

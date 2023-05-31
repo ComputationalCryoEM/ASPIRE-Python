@@ -285,6 +285,16 @@ class Rotation:
             rot._about_z = True
         return rot
 
+    def as_rotvec(self):
+        """
+        Return self as a rotation vector.
+
+        See `from_rotvec`.
+
+        :return: (..., 3) array
+        """
+        return sp_rot.from_matrix(self.matrices).as_rotvec()
+
     @staticmethod
     def from_rotvec(vec, dtype=np.float32):
         """
