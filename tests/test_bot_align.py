@@ -12,7 +12,7 @@ from aspire.volume import Volume
 
 def _angular_dist_degrees(R1, R2):
     """
-    Util wrapper computig angular distance as degrees.
+    Util wrapper computing angular distance as degrees.
 
     :param R1: 3x3 rotation matrix
     :param R2: 3x3 rotation matrix
@@ -80,7 +80,7 @@ def vol_data_fixture(snr, dtype):
     R_true = r.matrices[0]
     test_vol = v.rotate(r) + normal(0, ns_std, shape)
 
-    return reference_vol, test_vol, L, R_true
+    return reference_vol, test_vol, R_true
 
 
 @pytest.mark.parametrize("algo_params", ALGO_PARAMS, ids=algo_params_id)
@@ -90,7 +90,7 @@ def test_bot_align(algo_params, vol_data_fixture):
     parameters and volume data.
     """
 
-    vol0, vol_given, L, R_true = vol_data_fixture
+    vol0, vol_given, R_true = vol_data_fixture
 
     R_init, R_rec = align_BO(
         vol0,
