@@ -16,7 +16,7 @@ from aspire.utils.rotation import Rotation
 
 # The following two functions `_u_to_rot` and `_rot_to_u` below perform
 # the conversion between a rotation matrix and its representation as a
-# vector in R^3, by enforsing the quaternion representation of the
+# vector in R^3, by enforcing the quaternion representation of the
 # rotation matrix to have unit norm. This conversion is used in the
 # BOT algorithm to transform an optimization over the rotation matrix
 # space to R^3.  This is based on the following paper:
@@ -36,16 +36,16 @@ def _u_to_rot(u):
 
     v = np.sqrt(u[0] ** 2 + u[1] ** 2 + u[2] ** 2)
     if v == 0:
-        q = np.array([1, 0, 0, 0], dtype=u.dtype)
-    else:
-        q = np.array(
-            [
-                np.cos(v / 2),
-                np.sin(v / 2) / v * u[0],
-                np.sin(v / 2) / v * u[1],
-                np.sin(v / 2) / v * u[2],
-            ]
-        )
+        return np.eye(3, dtype=u.dtype)
+
+    q = np.array(
+        [
+            np.cos(v / 2),
+            np.sin(v / 2) / v * u[0],
+            np.sin(v / 2) / v * u[1],
+            np.sin(v / 2) / v * u[2],
+        ]
+    )
     R = np.zeros((3, 3), dtype=u.dtype)
     R[0, 0] = q[0] ** 2 + q[1] ** 2 - q[2] ** 2 - q[3] ** 2
     R[0, 1] = 2 * q[1] * q[2] - 2 * q[0] * q[3]
