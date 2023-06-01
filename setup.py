@@ -79,6 +79,7 @@ setup(
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     package_data={"aspire": ["config_default.yaml"]},
+    python_requires=">3.8.0",
     zip_safe=True,
     test_suite="tests",
     classifiers=[
