@@ -87,15 +87,18 @@ def source_orientation_objs(n_img, L, order, dtype):
     )
 
     if order in [3, 4]:
-        CLclass = CLSymmetryC3C4
+        cl_class = CLSymmetryC3C4
         cl_kwargs["symmetry"] = f"C{order}"
     elif order == 2:
-        CLclass = CLSymmetryC2
+        cl_class = CLSymmetryC2
+        # Setting minimum distance between mutual common-lines to 8 degrees
+        # yeilded the best results for orientation estimation in this setting.
+        # Matlab code uses 25 degrees which is the default for this param.
         cl_kwargs["min_dist_cls"] = 8
     else:
-        CLclass = CLSymmetryCn
+        cl_class = CLSymmetryCn
         cl_kwargs["symmetry"] = f"C{order}"
-    orient_est = CLclass(**cl_kwargs)
+    orient_est = cl_class(**cl_kwargs)
 
     return src, orient_est
 
@@ -393,7 +396,7 @@ def test_commonlines_c2(n_img, L, order, dtype):
             within_5 += 1
 
     # Check that at least 90% of estimates are within 5 degrees.
-    assert within_5 / len(pairs) > 0.90
+    assert within_5 / len(pairs) > 0.95
 
 
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
