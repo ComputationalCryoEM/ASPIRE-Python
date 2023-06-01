@@ -1,5 +1,6 @@
 import logging
 import os
+import tempfile
 from heapq import heappush, heappushpop
 from itertools import product, repeat
 
@@ -25,7 +26,7 @@ from aspire.classification import (
 from aspire.classification.class_selection import _HeapItem
 from aspire.denoising import DebugClassAvgSource, DefaultClassAvgSource
 from aspire.image import Image
-from aspire.source import Simulation
+from aspire.source import RelionSource, Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
 
@@ -116,9 +117,11 @@ def class_sim_fixture(dtype, img_size):
     return src
 
 
-@pytest.mark.parametrize(
-    "test_src_cls", CLS_SRCS, ids=lambda param: f"ClassSource={param.__class__}"
-)
+@pytest.fixture(params=CLS_SRCS, ids=lambda param: f"ClassSource={param.__class__}")
+def test_src_cls(request):
+    return request.param
+
+
 def test_basic_averaging(class_sim_fixture, test_src_cls):
     """
     Test that the default `ClassAvgSource` implementations return
@@ -272,3 +275,29 @@ def test_contrast_selector(dtype):
     # Compare indices and scores.
     assert np.all(selection == ref_class_ids)
     assert np.allclose(selector._quality_scores, ref_scores)
+
+
+def test_avg_src_starfileio(class_sim_fixture, test_src_cls):
+    src = test_src_cls(src=class_sim_fixture, num_procs=NUM_PROCS)
+
+    # Save and load the source as a STAR file.
+    # Saving should force classification and selection to occur,
+    #   and the attributes will be checked below.
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "test.star")
+
+        # Save
+        src.save(path, overwrite=True)
+
+        # Load
+        saved_src = RelionSource(path)
+
+    # Get entire metadata table
+    a = src.get_metadata(as_dict=True)
+    b = saved_src.get_metadata(as_dict=True)
+
+    # Ensuring src has attributes following classification and selection.
+    for attr in ("_class_indices", "_class_refl", "_class_distances"):
+        assert attr in a.keys(), f"Attribute {attr} not in test Source."
+        assert attr in b.keys(), f"Attribute {attr} not in Source read from disk."
+        assert all(a[attr] == b[attr]), f"Attribute {attr} does not match."

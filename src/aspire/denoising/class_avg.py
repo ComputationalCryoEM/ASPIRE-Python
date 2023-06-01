@@ -122,7 +122,7 @@ class ClassAvgSource(ImageSource):
 
     @selection_indices.setter
     def selection_indices(self, value):
-        self.set_metadata(["selection_indices"], value)
+        self.set_metadata(["_selection_indices"], value)
 
     @property
     def class_indices(self):
@@ -144,7 +144,9 @@ class ClassAvgSource(ImageSource):
 
     @class_indices.setter
     def class_indices(self, table):
-        self.set_metadata(["class_indices"], [",".join(map(str, row)) for row in table])
+        self.set_metadata(
+            ["_class_indices"], [",".join(map(str, row)) for row in table]
+        )
 
     @property
     def class_refl(self):
@@ -168,7 +170,7 @@ class ClassAvgSource(ImageSource):
         # Convert boolean to (O, 1) integers.
         array_int = np.array(table, dtype=int)
         self.set_metadata(
-            ["class_refl"], [",".join(map(str, row)) for row in array_int]
+            ["_class_refl"], [",".join(map(str, row)) for row in array_int]
         )
 
     @property
@@ -192,7 +194,7 @@ class ClassAvgSource(ImageSource):
     @class_distances.setter
     def class_distances(self, table):
         self.set_metadata(
-            ["class_distances"], [",".join(map(str, row)) for row in table]
+            ["_class_distances"], [",".join(map(str, row)) for row in table]
         )
 
     def _class_select(self):
@@ -232,6 +234,18 @@ class ClassAvgSource(ImageSource):
         self._selected = True
         self.selection_indices = _selection_indices
 
+    def save(self, *args, **kwargs):
+        """
+        Save metadata to STAR file.
+
+        See `ImageSource.save` for documentation.
+        """
+        # Evaluate any lazy actions.
+        # This should populate relevant metadata.
+        self._class_select()
+        # Call parent `save` method.
+        return super().save(*args, **kwargs)
+
     def _images(self, indices):
         """
         Output images
@@ -241,8 +255,20 @@ class ClassAvgSource(ImageSource):
         if not self._selected:
             self._class_select()
 
+        # Truncate the request if nessecary,
+        # ie, when selection reduces `self.n`.
+        indices = np.array(indices, dtype=int)
+        selected = indices[indices < self.n]
+
+        if len(indices) != len(selected):
+            deselected = indices[indices >= self.n]
+            logger.debug(
+                f"Dropping requested indices {deselected} following to selection process."
+            )
+        indices = selected
+
         # Remap to the selected ordering
-        _indices = indices.copy()  # Store original request
+        _indices = indices.copy()  # Store original mapping
         indices = self.selection_indices[indices]
 
         # Check if there is a cache available from class selection component.
