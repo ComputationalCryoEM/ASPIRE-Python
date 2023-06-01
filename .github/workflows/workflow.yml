@@ -14,7 +14,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.7'
+        python-version: '3.8'
     - name: Install dependencies
       run: |
         pip install tox tox-gh-actions
@@ -28,15 +28,15 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}    
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.8', '3.9', '3.10', '3.11']
         pyenv: [pip]
         exclude:
-          # Exclude 3.7-pip so we can add pre/post tasks to that environment.
-          - python-version: '3.7'
+          # Exclude 3.8-pip so we can add pre/post tasks to that environment.
+          - python-version: '3.8'
             pyenv: pip
         include:
-          # Re-include 3.7 with additional tox tasks.
-          - python-version: '3.7'
+          # Re-include 3.8 with additional tox tasks.
+          - python-version: '3.8'
             pyenv: pip,docs
 
 
