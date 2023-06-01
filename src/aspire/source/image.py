@@ -482,12 +482,12 @@ class ImageSource(ABC):
 
         :return: Numpy array, integers.
         """
-        res = self.get_metadata(["class_indices"])
+        res = self.get_metadata(["_class_indices"])
         return np.vstack([np.array(row.split(","), dtype=int) for row in res])
 
     @property
     def selection_indices(self):
-        return self.get_metadata(["selection_indices"])
+        return self.get_metadata(["_selection_indices"])
 
     @property
     def class_refl(self):
@@ -503,7 +503,7 @@ class ImageSource(ABC):
 
         :return: Numpy array, boolean.
         """
-        res = self.get_metadata(["class_refl"])
+        res = self.get_metadata(["_class_refl"])
         # Read table of (0, 1) integers, cast to `bool`.
         return np.vstack([np.array(row.split(","), dtype=int) for row in res]).astype(
             bool
@@ -524,7 +524,7 @@ class ImageSource(ABC):
 
         :return: Numpy array, self.dtype.
         """
-        res = self.get_metadata(["class_distances"])
+        res = self.get_metadata(["_class_distances"])
         return np.vstack([np.array(row.split(","), dtype=self.dtype) for row in res])
 
     def set_metadata(self, metadata_fields, values, indices=None):
@@ -930,7 +930,7 @@ class ImageSource(ABC):
         overwrite=False,
     ):
         """
-        Save the output metadata to STAR file and/or images to MRCS file
+        Save the output metadata to STAR file and/or images to MRCS file.
 
         :param starfile_filepath: Path to STAR file where we want to
             save metadata of image_source
