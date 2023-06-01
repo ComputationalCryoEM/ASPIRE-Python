@@ -1,0 +1,105 @@
+[project]
+name = "aspire"
+version = "0.11.0"
+description = "Algorithms for Single Particle Reconstruction"
+readme = "README.md" # Optional
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+
+authors = [
+	{name = "Joakim Anden"},
+	{name = "Vineet Bansal"},
+	{name = "Josh Carmichael"},
+	{name = "Chris Langfield"},
+	{name = "Ayelet Heimowitz"},
+	{name = "Yoel Shkolnisky"},
+	{name = "Amit Singer"},
+	{name = "Garrett Wright"},
+	{name = "Junchao Xia"}
+]
+
+classifiers = [ 
+     "Development Status :: 3 - Alpha",
+     "Programming Language :: Python",
+     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"
+]
+
+dependencies = [
+    "click",
+    "confuse >= 2.0.0",
+    "finufft",
+    "gemmi >= 0.4.8",
+    "grpcio <= 1.48.2",
+    "joblib",
+    "matplotlib >= 3.2.0",
+    "mrcfile",
+    "numpy>=1.21.5",
+    "packaging",
+    "psutil",
+    "pyfftw",
+    "PyWavelets",
+    "pillow",
+    "ray",
+    "scipy >= 1.7.3",
+    "scikit-learn",
+    "scikit-image",
+    "setuptools >= 0.41",
+    "tqdm",
+]    
+
+[project.urls]
+"Homepage" = "http://spr.math.princeton.edu/"
+"Bug Reports" = "https://github.com/ComputationalCryoEM/ASPIRE-Python/issues"
+"Source" = "https://github.com/ComputationalCryoEM/ASPIRE-Python"
+
+
+[project.optional-dependencies]
+gpu_102 = ["pycuda", "cupy-cuda102", "cufinufft==1.2"]
+gpu_110 = ["pycuda", "cupy-cuda110", "cufinufft==1.2"]
+gpu_111 = ["pycuda", "cupy-cuda111", "cufinufft==1.2"]
+gpu_11x = ["pycuda", "cupy-cuda11x", "cufinufft==1.2"]
+dev = [
+    "black",
+    "bumpversion",
+    "check-manifest",
+    "flake8 >= 3.7.0",
+    "isort",
+    "jupyter",
+    "pyflakes",
+    "pydocstyle",
+    "parameterized",
+    "pytest",
+    "pytest-cov",
+    "pytest-random-order",
+    "pytest-xdist",
+    "requests",
+    "sphinxcontrib-bibtex",
+    "sphinxcontrib-mermaid",
+    "sphinx-gallery",
+    "sphinx-rtd-theme >= 0.4.2",
+    "snakeviz",
+    "tox",
+    "twine",]
+
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+# [options]
+# package_dir =
+#      = src
+# packages = find:
+# zip_safe = True
+# #install_requires =
+
+# include_package_data = True
+# test_suite = tests
+
+# [options.entry_points]
+# console_scripts = aspire = aspire.__main__:main_entry
+# [options.package_data]
+# aspire = config_default.yaml
+
+# [project.scripts]  # Optional
+# aspire = "aspire:__main__:main_entry"
