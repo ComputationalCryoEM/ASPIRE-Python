@@ -29,15 +29,15 @@ def _angular_dist_degrees(R1, R2):
 # We additionally add a fourth param to test with reflections enabled.
 
 ALGO_PARAMS = [
-    ["wemd", 32, 200, False],
+    pytest.param(["wemd", 32, 200, False], marks=pytest.mark.expensive),
     ["wemd", 64, 150, False],
     ["eu", 32, 200, False],
-    ["eu", 64, 150, False],
-    ["wemd", 31, 400, True],
+    pytest.param(["eu", 64, 150, False], marks=pytest.mark.expensive),
+    pytest.param(["wemd", 31, 400, True], marks=pytest.mark.expensive),
 ]
 
-SNRS = [float("inf"), 0.5]
-DTYPES = [np.float32, np.float64]
+SNRS = [pytest.param(float("inf"), marks=pytest.mark.expensive), 0.5]
+DTYPES = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
 
 
 def algo_params_id(params):
