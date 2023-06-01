@@ -86,10 +86,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
         # for the two sets of mutual common lines.
         clmatrix = -np.ones((2, n_img, n_img), dtype=self.dtype)
 
-        # cl_dist stores the maximum correlation between i'th and j'th images over all shifts
-        # for each set of mutual common lines.
-        cl_dist = -np.ones((2, n_img, n_img), dtype=self.dtype)
-
         # 1D shift between common-lines.
         shifts_1d = np.zeros((2, n_img, n_img))
 
@@ -105,6 +101,14 @@ class CLSymmetryC2(CLSymmetryC3C4):
         # Note that only use half of each ray.
         pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
 
+        # Pre-compute conjugated and shifted pf's.
+        pf_shifted_flipped = (np.conj(pf) * all_shift_phases[:, None, None]).swapaxes(
+            0, 1
+        )
+        pf_shifted_flipped = pf_shifted_flipped.reshape(
+            (self.n_img, n_shifts * (self.n_theta // 2), r_max)
+        )
+
         # Search for common lines between [i, j] pairs of images.
         # The random selection is implemented.
         for i in range(n_img - 1):
@@ -116,39 +120,30 @@ class CLSymmetryC2(CLSymmetryC3C4):
             subset_j = np.sort(choice(n_remaining, n_j, replace=False) + i + 1)
 
             for j in subset_j:
-                p2_flipped = np.conj(pf[j])
+                p2 = pf_shifted_flipped[j]
+                corr = self.compute_correlations(p1, p2)
+                corr = corr.reshape(self.n_theta, n_shifts, self.n_theta // 2)
 
-                for shift in range(n_shifts):
-                    shift_phases = all_shift_phases[shift]
-                    p2_shifted_flipped = shift_phases * p2_flipped
+                # Find first set of common-lines between the pair of images.
+                first_cl1, first_shift, first_cl2 = np.unravel_index(
+                    corr.argmax(), corr.shape
+                )
+                clmatrix[0, i, j] = first_cl1
+                clmatrix[0, j, i] = first_cl2
+                shifts_1d[0, i, j] = shifts[first_shift]
 
-                    corr = self.compute_correlations(p1, p2_shifted_flipped)
+                # Mask corr around first set of common-lines to search for
+                # second set of mutual common-lines.
+                mask_dist = self.min_dist_cls * 2 * self.n_theta // 360
+                corr_masked = self.square_mask(corr, first_cl1, first_cl2, mask_dist, 1)
 
-                    # Highest correlation over all shifts corresponds to 1st set
-                    # of mutual common-lines.
-                    s_ind = corr.argmax()
-                    first_cl1, first_cl2 = np.unravel_index(s_ind, corr.shape)
-                    s_val = corr[first_cl1, first_cl2]
-                    if s_val > cl_dist[0, i, j]:
-                        clmatrix[0, i, j] = first_cl1
-                        clmatrix[0, j, i] = first_cl2
-                        cl_dist[0, i, j] = s_val
-                        shifts_1d[0, i, j] = shifts[shift]
-
-                    # Mask corr to find second highest correlation, which corresponds
-                    # to 2nd set of mutual common-lines.
-                    mask_dist = self.min_dist_cls * 2 * self.n_theta // 360
-                    corr_masked = self.square_mask(
-                        corr, first_cl1, first_cl2, mask_dist
-                    )
-                    sidx = corr_masked.argmax()
-                    second_cl1, second_cl2 = np.unravel_index(sidx, corr.shape)
-                    s_val_2 = corr[second_cl1, second_cl2]
-                    if s_val_2 > cl_dist[1, i, j]:
-                        clmatrix[1, i, j] = second_cl1
-                        clmatrix[1, j, i] = second_cl2
-                        cl_dist[1, i, j] = s_val_2
-                        shifts_1d[1, i, j] = shifts[shift]
+                # Find second set of mutual common-lines.
+                second_cl1, second_shift, second_cl2 = np.unravel_index(
+                    corr_masked.argmax(), corr.shape
+                )
+                clmatrix[1, i, j] = second_cl1
+                clmatrix[1, j, i] = second_cl2
+                shifts_1d[1, i, j] = shifts[second_shift]
 
         self.clmatrix = clmatrix
         self.shifts_1d = shifts_1d
@@ -156,7 +151,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
     @staticmethod
     def compute_correlations(a, b):
         """
-        Compute the correlation between complex Polar Fourier images a and b.
+        Compute the correlation between Polar Fourier images a and b.
 
         :param a: 2D array size n_theta_a x radial_points.
         :param b: 2D array size n_theta_b x radial_points.
@@ -175,25 +170,36 @@ class CLSymmetryC2(CLSymmetryC3C4):
         return corr
 
     @staticmethod
-    def square_mask(arr, x, y, dist):
+    def square_mask(arr, x, y, dist, shift_axis):
         """
-        Mask input array around the point (x, y) with a square mask of half-length `dist`.
+        Mask correlation array along shift_axis around the point (x, y)
+        with a square mask of half-length `dist`.
 
         :param arr: 2D array to mask
         :param x: x-coordinate for center of mask.
         :param y: y-coordinate for center of mask.
         :param dist: The distance from center to mask off.
+        :param shift_axis: Shift axis of correlation array.
 
         :return: Input array with square mask around (x, y).
         """
+        n_shifts = arr.shape[shift_axis]
+
+        # Take slice to compute square mask
+        arr_slice = arr.take(0, axis=shift_axis)
+
+        # Build mask.
         left = max(0, x - dist)
-        right = min(len(arr), x + dist)
+        right = min(len(arr_slice), x + dist)
         bottom = max(0, y - dist)
-        top = min(len(arr[0]), y + dist)
-        mask = np.ones_like(arr)
+        top = min(len(arr_slice[0]), y + dist)
+        mask = np.ones_like(arr_slice)
         mask[left:right, bottom:top] = 0
 
-        return arr * mask
+        # Expand along shift axis.
+        mask = np.repeat(mask, n_shifts, axis=0).reshape(arr.shape)
+
+        return mask * arr
 
     def estimate_rotations(self):
         """
