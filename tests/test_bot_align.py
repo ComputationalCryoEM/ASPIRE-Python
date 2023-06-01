@@ -25,12 +25,15 @@ def _angular_dist_degrees(R1, R2):
 #     loss type ('wemd' or 'eu')
 #     downsampling level (32 or 64 recommended)
 #     total number of iterations (150 or 200 recommended)
+#
+# We additionally add a fourth param to test with reflections enabled.
 
 ALGO_PARAMS = [
-    ["wemd", 32, 200],
-    ["wemd", 64, 150],
-    ["eu", 32, 200],
-    ["eu", 64, 150],
+    ["wemd", 32, 200, False],
+    ["wemd", 64, 150, False],
+    ["eu", 32, 200, False],
+    ["eu", 64, 150, False],
+    ["wemd", 31, 400, True],
 ]
 
 SNRS = [float("inf"), 0.5]
@@ -38,9 +41,7 @@ DTYPES = [np.float32, np.float64]
 
 
 def algo_params_id(params):
-    return (
-        f"loss_type={params[0]}, downsampling_level={params[1]}, max_iters={params[2]}"
-    )
+    return f"loss_type={params[0]}, downsampling_level={params[1]}, max_iters={params[2]}, reflections={params[3]}"
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
@@ -92,18 +93,35 @@ def test_bot_align(algo_params, vol_data_fixture):
 
     vol0, vol_given, R_true = vol_data_fixture
 
+    # For reflection mode, flip the volume.
+    # There should be a corresponding action applied to `R_true`.
+    if algo_params[3]:
+        vol_given = vol_given.flip(-3)
+
     R_init, R_rec = align_BO(
         vol0,
         vol_given,
         loss_type=algo_params[0],
         downsampling_level=algo_params[1],
         max_iters=algo_params[2],
+        reflect=algo_params[3],
         dtype=np.float32,
     )
+
+    if algo_params[3]:
+        assert np.linalg.det(R_rec) < 0
+        # Reflect the `R_true` rotation initially applied to `vol_given` before flipping.
+        R_true = R_true @ np.array(
+            [[-1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=R_true.dtype
+        )
+    else:
+        assert np.linalg.det(R_rec) > 0
+
     # Recovery without refinement (degrees)
     angle_init = _angular_dist_degrees(R_init, R_true.T)
     # Recovery with refinement (degrees)
     angle_rec = _angular_dist_degrees(R_rec, R_true.T)
     logging.debug(f"angle_init: {angle_init}, angle_rec: {angle_rec}")
-    # Check we're within a degree.
+
+    # Check we're close
     assert angle_rec < 2.0
