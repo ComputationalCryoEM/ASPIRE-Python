@@ -287,7 +287,12 @@ class Rotation:
 
     def as_rotvec(self):
         """
-        Return self as a rotation vector.
+        Return this `Rotation` object as a rotation vector.
+
+        A rotation vector is a 3D vector which is co-directional to
+        the axis of rotation and whose norm gives the angle of
+        rotation in radians. The angle of rotation is
+        counter-clockwise about the axis.
 
         See `from_rotvec`.
 
