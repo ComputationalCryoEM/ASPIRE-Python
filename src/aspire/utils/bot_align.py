@@ -22,7 +22,6 @@ def align_BO(
     downsampling_level=32,
     max_iters=200,
     refine=True,
-    reflect=False,
     tau=1e-3,
     man_max_iter=500,
     man_min_grad=0.1,
@@ -42,8 +41,6 @@ def align_BO(
     :param max_iters: Maximum iterations. Integer, defaults 200.
         If alignment fails try larger values.
     :param refine: Whether to perform refinement. Boolean, defaults True.
-    :param reflect: Whether to address handedness. Boolean, defaults False.
-        If set true, increase max_iters to 350~400.
     :param tau: Regularization parameter for surrogate problems. Numeric, defaults 1e-3.
     :param man_max_iter: Stopping criterion for surrogate problems--maximum iterations. Interger, defaults 500.
     :param man_min_grad: Stopping criterion for surrogate problems--minimum gradient norm. Numeric, defaults 0.1.
@@ -108,10 +105,7 @@ def align_BO(
 
     R = np.zeros((max_iters, 3, 3), dtype=dtype)
     R[0] = np.eye(3, dtype=dtype)
-    if reflect:
-        manifold = pymanopt.manifolds.Stiefel(3, 3)
-    else:
-        manifold = pymanopt.manifolds.SpecialOrthogonalGroup(3)
+    manifold = pymanopt.manifolds.SpecialOrthogonalGroup(3)
 
     C = np.zeros((max_iters, max_iters), dtype=dtype)
     C[0, 0] = cf(R[0], R[0])
