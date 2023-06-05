@@ -62,6 +62,8 @@ for more details on using pip install.
    # with the additional ``dev`` extension.
    pip install -e ".[dev]"
 
+.. note:: Required dependent packages supporting Python 3.11 are currently only supported on Linux.
+
 
 Test the package
 ****************
