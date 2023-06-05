@@ -1,4 +1,4 @@
-qinclude *.md
+include *.md
 include *.rst
 include *.yml
 include .bumpversion.cfg
