@@ -38,7 +38,7 @@ Getting Started - Installation
 ************************************
 
 Python 3.8 is used as an example, but the same procedure should work
-for any of our supported Python versions 3.7-3.10. Below we pip install
+for any of our supported Python versions 3.8-3.11. Below we pip install
 the ``aspire`` package using the ``-e`` flag to install the project in
 editable mode. The ``".[dev]"`` command installs ``aspire`` from the local
 path with additional development tools such as pytest and Jupyter Notebook.
