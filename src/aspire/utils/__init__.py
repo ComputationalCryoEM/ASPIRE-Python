@@ -12,25 +12,7 @@ from .coor_trans import (  # isort:skip
     uniform_random_angles,
 )
 
-from .misc import (  # isort:skip
-    all_pairs,
-    all_triplets,
-    abs2,
-    bump_3d,
-    circ,
-    cyclic_rotations,
-    gaussian_1d,
-    gaussian_2d,
-    gaussian_3d,
-    importlib_path,
-    inverse_r,
-    J_conjugate,
-    powerset,
-    sha256sum,
-    support_mask,
-    fuzzy_mask,
-)
-
+from .data_fetcher import emdb_2660
 from .logging import LogFilterByCount, get_full_version, tqdm, trange
 from .matrix import (
     acorr,
@@ -70,3 +52,22 @@ from .rotation import Rotation
 from .units import ratio_to_decibel, voltage_to_wavelength, wavelength_to_voltage
 
 from .bot_align import align_BO  # isort:skip
+from .misc import (  # isort:skip
+    all_pairs,
+    all_triplets,
+    abs2,
+    bump_3d,
+    circ,
+    cyclic_rotations,
+    gaussian_1d,
+    gaussian_2d,
+    gaussian_3d,
+    importlib_path,
+    inverse_r,
+    J_conjugate,
+    powerset,
+    sha256sum,
+    support_mask,
+    fuzzy_mask,
+)
+
