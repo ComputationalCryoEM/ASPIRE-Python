@@ -5,7 +5,9 @@ description = "Algorithms for Single Particle Reconstruction"
 readme = "README.md" # Optional
 requires-python = ">=3.8"
 license = {file = "LICENSE"}
-
+maintainers = [
+  {name = "ASPIRE Developers", email = "ASPIRE-DEVS@princeton.edu"}
+]
 authors = [
 	{name = "Joakim Anden"},
 	{name = "Vineet Bansal"},
