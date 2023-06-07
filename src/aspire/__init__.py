@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import confuse
+import pooch
 
 import aspire
 from aspire.exceptions import handle_exception
@@ -57,6 +58,10 @@ logging.debug(
 
 # Dump the config at `aspire` import time to our log.
 logging.debug(f"Resolved config.yaml:\n{aspire.config.dump()}\n")
+
+# Set cache location for ASPIRE example data.
+if not config["common"]["cache_dir"].get():
+    config["common"]["cache_dir"] = pooch.os_cache("ASPIRE-data").as_posix()
 
 # Implements some code that writes out exceptions to 'aspire.err.log'.
 if config["logging"]["log_exceptions"].get(int):

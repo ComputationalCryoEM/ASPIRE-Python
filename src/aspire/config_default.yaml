@@ -5,6 +5,14 @@ common:
     # fft backend to use - one of pyfftw/scipy/cupy/mkl
     fft: pyfftw
 
+    # Set cache directory for ASPIRE example data.
+    # By default the cache location will be set by pooch.os_cache(),
+    # which sets cache based on operating system as follows:
+    # Mac: ~/Library/Caches/<AppName>
+    # Unix: ~/.cache/<AppName> or the value of the XDG_CACHE_HOME environment variable, if defined.
+    # Windows: C:\Users\<user>\AppData\Local\<AppAuthor>\<AppName>\Cache
+    cache_dir: ""
+
 logging:
     # Set log_dir to a relative or absolute directory
     # Default is a subfolder `logs` in your current working directory.
