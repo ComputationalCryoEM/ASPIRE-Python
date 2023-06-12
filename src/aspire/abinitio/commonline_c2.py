@@ -104,7 +104,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
         # clmatrix contains the index in image i of the common line with image j
         # for the two sets of mutual common lines.
-        clmatrix = -np.ones((2, n_img, n_img), dtype=self.dtype)
+        clmatrix = -np.ones((2, n_img, n_img), dtype=int)
 
         # 1D shift between common-lines.
         shifts_1d = np.zeros((2, n_img, n_img))
