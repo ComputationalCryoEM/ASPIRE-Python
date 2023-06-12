@@ -12,6 +12,23 @@ logger = logging.getLogger(__name__)
 class CLSymmetryC2(CLSymmetryC3C4):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with C2 cyclic symmetry.
+
+    The related publications are listed below:
+    X. Cheng,
+    Random Matrices in High-dimensional Data Analysis,
+    PhD thesis, Princeton University, (2013).
+
+    G. Pragier and Y. Shkolnisky,
+    A Common Lines Approach for Abinitio Modeling of Cyclically Symmetric Molecules,
+    Inverse Problems, 35, 124005, (2019).
+
+    Y. Shkolnisky, and A. Singer,
+    Viewing Direction Estimation in Cryo-EM Using Synchronization,
+    SIAM J. Imaging Sciences, 5, 1088-1110 (2012).
+
+    A. Singer, R. R. Coifman, F. J. Sigworth, D. W. Chester, Y. Shkolnisky,
+    Detecting Consistent Common Lines in Cryo-EM by Voting,
+    Journal of Structural Biology, 169, 312-322 (2010).
     """
 
     def __init__(
