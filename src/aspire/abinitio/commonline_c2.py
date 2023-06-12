@@ -122,9 +122,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
 
         # Pre-compute conjugated and shifted pf's.
-        pf_shifted_flipped = (np.conj(pf) * all_shift_phases[:, None, None]).swapaxes(
-            0, 1
-        )
+        pf_shifted_flipped = np.conj(pf)[:, None] * all_shift_phases[:, None]
         pf_shifted_flipped = pf_shifted_flipped.reshape(
             (self.n_img, n_shifts * (self.n_theta // 2), r_max)
         )
