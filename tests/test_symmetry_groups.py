@@ -71,9 +71,9 @@ def test_group_rotations(group_fixture):
     assert isinstance(rotations, Rotation)
 
 
-def test_symmetry_parser_error():
+def test_from_string_error():
     junk_symmetry = "P12"
     with pytest.raises(
         ValueError, match=f"Symmetry type {junk_symmetry[0]} not supported.*"
     ):
-        _ = SymmetryGroup.symmetry_parser(junk_symmetry, dtype=np.float32)
+        _ = SymmetryGroup.from_string(junk_symmetry, dtype=np.float32)
