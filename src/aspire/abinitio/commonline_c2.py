@@ -79,8 +79,11 @@ class CLSymmetryC2(CLSymmetryC3C4):
         self.order = 2
 
     def _check_symmetry(self, symmetry):
-        # `symmetry` is not configurable for `CLSymmetryC2`
-        pass
+        symmetry = symmetry.upper()
+        if symmetry != "C2":
+            raise NotImplementedError(
+                f"Only C2 symmetry supported. {symmetry} was supplied."
+            )
 
     def build_clmatrix(self):
         """
