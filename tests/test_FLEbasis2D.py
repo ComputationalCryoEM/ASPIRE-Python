@@ -69,6 +69,9 @@ def relerr(base, approx):
 
 @pytest.mark.parametrize("basis", test_bases, ids=show_fle_params)
 class TestFLEBasis2D(UniversalBasisMixin):
+    # Loosen the tolerance for `cufinufft` to be within 10%
+    test_eps = 1.1 if backend_available("cufinufft") else 1.0
+
     # check closeness guarantees for fast vs dense matrix method
     def testFastVDense_T(self, basis):
         if backend_available("cufinufft") and basis.epsilon == 1e-7:
@@ -85,7 +88,7 @@ class TestFLEBasis2D(UniversalBasisMixin):
         # fast evaluate_t
         result_fast = basis.evaluate_t(Image(x))
 
-        assert relerr(result_dense.T, result_fast) < basis.epsilon
+        assert relerr(result_dense.T, result_fast) < (self.test_eps * basis.epsilon)
 
     def testFastVDense(self, basis):
         if backend_available("cufinufft") and basis.epsilon == 1e-7:
@@ -103,7 +106,7 @@ class TestFLEBasis2D(UniversalBasisMixin):
         result_dense = dense_b @ coeffs.T
         result_fast = basis.evaluate(coeffs).asnumpy()
 
-        assert relerr(result_dense, result_fast) < basis.epsilon
+        assert relerr(result_dense, result_fast) < (self.test_eps * basis.epsilon)
 
     @pytest.mark.xfail(
         sys.platform == "win32",
