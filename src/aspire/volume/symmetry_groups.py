@@ -34,11 +34,11 @@ class SymmetryGroup(ABC):
         return f"{self.__class__.__name__}, {self.__dict__}"
 
     @abstractproperty
-    def symmetry_type(self):
+    def to_string(self):
         """String denoting the symmetry type."""
 
     def __str__(self):
-        return f"{self.symmetry_type}"
+        return f"{self.to_string}"
 
     @staticmethod
     def from_string(symmetry, dtype):
@@ -93,7 +93,7 @@ class CyclicSymmetryGroup(SymmetryGroup):
         super().__init__(dtype=dtype)
 
     @property
-    def symmetry_type(self):
+    def to_string(self):
         return "C" + str(self.order)
 
     def generate_rotations(self):
@@ -130,7 +130,7 @@ class DihedralSymmetryGroup(SymmetryGroup):
         super().__init__(dtype=dtype)
 
     @property
-    def symmetry_type(self):
+    def to_string(self):
         return "D" + str(self.order)
 
     def generate_rotations(self):
@@ -171,7 +171,7 @@ class TetrahedralSymmetryGroup(SymmetryGroup):
         super().__init__(dtype=dtype)
 
     @property
-    def symmetry_type(self):
+    def to_string(self):
         return "T"
 
     def generate_rotations(self):
@@ -226,7 +226,7 @@ class OctahedralSymmetryGroup(SymmetryGroup):
         self._symmetry_group = self.generate_rotations()
 
     @property
-    def symmetry_type(self):
+    def to_string(self):
         return "O"
 
     def generate_rotations(self):
