@@ -175,7 +175,7 @@ class Volume:
             )
         else:
             if isinstance(value, str):
-                value = SymmetryGroup.symmetry_parser(value, dtype=self.dtype)
+                value = SymmetryGroup.from_string(value, dtype=self.dtype)
             if not isinstance(value, SymmetryGroup):
                 raise ValueError(
                     "`symmetry_group` must be an instance of the SymmetryGroup class"
