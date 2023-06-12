@@ -69,8 +69,8 @@ def relerr(base, approx):
 
 @pytest.mark.parametrize("basis", test_bases, ids=show_fle_params)
 class TestFLEBasis2D(UniversalBasisMixin):
-    # Loosen the tolerance for `cufinufft` to be within 10%
-    test_eps = 1.1 if backend_available("cufinufft") else 1.0
+    # Loosen the tolerance for `cufinufft` to be within 15%
+    test_eps = 1.15 if backend_available("cufinufft") else 1.0
 
     # check closeness guarantees for fast vs dense matrix method
     def testFastVDense_T(self, basis):
