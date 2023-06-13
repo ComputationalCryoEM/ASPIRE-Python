@@ -1572,16 +1572,6 @@ class OrientedSource(IndexedSource):
         if _info_removed:
             logger.info(f"Removing orientation information passed by {self.src}.")
 
-    def _images(self, indices):
-        """
-        Returns images from `self.src` corresponding to `indices`.
-
-        :param indices: A 1-D NumPy array of indices.
-        :return: An `Image` object.
-        """
-        self._orient()
-        return super()._images(indices)
-
     def _rots(self):
         """
         Converts internal `_rotations` representation to expected matrix form.
