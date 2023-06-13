@@ -59,7 +59,7 @@ class SymmetryGroup(ABC):
             "C": CnSymmetryGroup,
             "D": DnSymmetryGroup,
             "T": TSymmetryGroup,
-            "O": OctahedralSymmetryGroup,
+            "O": OSymmetryGroup,
         }
         if symmetry_type not in map_to_sym_group.keys():
             raise ValueError(
@@ -207,14 +207,14 @@ class TSymmetryGroup(SymmetryGroup):
         return Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
 
 
-class OctahedralSymmetryGroup(SymmetryGroup):
+class OSymmetryGroup(SymmetryGroup):
     """
     Octahedral Symmetry Group.
     """
 
     def __init__(self, dtype):
         """
-        `OctahedralSymmetryGroup` instance that serves up a `Rotation` object
+        `OSymmetryGroup` instance that serves up a `Rotation` object
         containing rotation matrices of the symmetry group (including
         the Identity) accessed via the `matrices` attribute.
 
