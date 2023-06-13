@@ -9,7 +9,7 @@ from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
     OctahedralSymmetryGroup,
-    TetrahedralSymmetryGroup,
+    TSymmetryGroup,
     Volume,
 )
 
@@ -214,7 +214,7 @@ class TSymmetricVolume(GaussianBlobsVolume):
     """
 
     def _set_symmetry_group(self):
-        self._symmetry_group = TetrahedralSymmetryGroup(dtype=self.dtype)
+        self._symmetry_group = TSymmetryGroup(dtype=self.dtype)
 
     @property
     def n_blobs(self):
