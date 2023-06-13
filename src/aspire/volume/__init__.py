@@ -1,6 +1,6 @@
 from .symmetry_groups import (
     CnSymmetryGroup,
-    DihedralSymmetryGroup,
+    DnSymmetryGroup,
     OctahedralSymmetryGroup,
     SymmetryGroup,
     TetrahedralSymmetryGroup,

@@ -57,7 +57,7 @@ class SymmetryGroup(ABC):
 
         map_to_sym_group = {
             "C": CnSymmetryGroup,
-            "D": DihedralSymmetryGroup,
+            "D": DnSymmetryGroup,
             "T": TetrahedralSymmetryGroup,
             "O": OctahedralSymmetryGroup,
         }
@@ -107,17 +107,17 @@ class CnSymmetryGroup(SymmetryGroup):
         :return: Rotation object containing the Cn symmetry group and the identity.
         """
         angles = 2 * np.pi * np.arange(self.order) / self.order
-        return Rotation.about_axis('z', angles, dtype=self.dtype)
+        return Rotation.about_axis("z", angles, dtype=self.dtype)
 
 
-class DihedralSymmetryGroup(SymmetryGroup):
+class DnSymmetryGroup(SymmetryGroup):
     """
     Dihedral Symmetry Group.
     """
 
     def __init__(self, order, dtype):
         """
-        `DihedralSymmetryGroup` instance that serves up a `Rotation` object
+        `DnSymmetryGroup` instance that serves up a `Rotation` object
         containing rotation matrices of the symmetry group (including
         the Identity) accessed via the `matrices` attribute.
 

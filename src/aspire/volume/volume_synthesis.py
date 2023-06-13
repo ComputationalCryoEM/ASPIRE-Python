@@ -7,7 +7,7 @@ from aspire.utils import bump_3d, grid_3d
 from aspire.utils.random import Random, randn
 from aspire.volume import (
     CnSymmetryGroup,
-    DihedralSymmetryGroup,
+    DnSymmetryGroup,
     OctahedralSymmetryGroup,
     TetrahedralSymmetryGroup,
     Volume,
@@ -201,7 +201,7 @@ class DnSymmetricVolume(CnSymmetricVolume):
     """
 
     def _set_symmetry_group(self):
-        self._symmetry_group = DihedralSymmetryGroup(order=self.order, dtype=self.dtype)
+        self._symmetry_group = DnSymmetryGroup(order=self.order, dtype=self.dtype)
 
     @property
     def n_blobs(self):
