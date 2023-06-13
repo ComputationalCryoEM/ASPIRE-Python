@@ -148,7 +148,7 @@ class DnSymmetryGroup(SymmetryGroup):
         rot_perp = Rotation.about_axis("y", np.pi, dtype=self.dtype).matrices
 
         # Full set of rotations.
-        rots = np.concatenate((rot_z, rot_z @ rot_perp[0].T), dtype=self.dtype)
+        rots = np.concatenate((rot_z, rot_z @ rot_perp[0]), dtype=self.dtype)
 
         return Rotation(rots)
 
