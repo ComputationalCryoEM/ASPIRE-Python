@@ -6,7 +6,7 @@ from numpy.linalg import qr
 from aspire.utils import bump_3d, grid_3d
 from aspire.utils.random import Random, randn
 from aspire.volume import (
-    CyclicSymmetryGroup,
+    CnSymmetryGroup,
     DihedralSymmetryGroup,
     OctahedralSymmetryGroup,
     TetrahedralSymmetryGroup,
@@ -188,7 +188,7 @@ class CnSymmetricVolume(GaussianBlobsVolume):
             )
 
     def _set_symmetry_group(self):
-        self._symmetry_group = CyclicSymmetryGroup(order=self.order, dtype=self.dtype)
+        self._symmetry_group = CnSymmetryGroup(order=self.order, dtype=self.dtype)
 
     @property
     def n_blobs(self):

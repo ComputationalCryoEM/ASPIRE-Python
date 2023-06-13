@@ -6,7 +6,7 @@ import pytest
 
 from aspire.utils import Rotation
 from aspire.volume import (
-    CyclicSymmetryGroup,
+    CnSymmetryGroup,
     DihedralSymmetryGroup,
     OctahedralSymmetryGroup,
     SymmetryGroup,
@@ -16,7 +16,7 @@ from aspire.volume import (
 logger = logging.getLogger(__name__)
 
 GROUPS_WITH_ORDER = [
-    CyclicSymmetryGroup,
+    CnSymmetryGroup,
     DihedralSymmetryGroup,
 ]
 GROUPS_WITHOUT_ORDER = [

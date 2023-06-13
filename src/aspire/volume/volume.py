@@ -17,7 +17,7 @@ from aspire.utils import (
     mat_to_vec,
     vec_to_mat,
 )
-from aspire.volume import CyclicSymmetryGroup, SymmetryGroup
+from aspire.volume import CnSymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,7 @@ class Volume:
         self.size = self._data.size
 
         # Set symmetry_group. If None, default to 'C1'.
-        self.symmetry_group = symmetry_group or CyclicSymmetryGroup(
+        self.symmetry_group = symmetry_group or CnSymmetryGroup(
             order=1, dtype=self.dtype
         )
 
