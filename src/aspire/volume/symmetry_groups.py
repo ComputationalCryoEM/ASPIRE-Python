@@ -56,7 +56,7 @@ class SymmetryGroup(ABC):
         symmetric_order = symmetry[1:]
 
         map_to_sym_group = {
-            "C": CyclicSymmetryGroup,
+            "C": CnSymmetryGroup,
             "D": DihedralSymmetryGroup,
             "T": TetrahedralSymmetryGroup,
             "O": OctahedralSymmetryGroup,
@@ -74,16 +74,16 @@ class SymmetryGroup(ABC):
         return symmetry_group(**group_kwargs)
 
 
-class CyclicSymmetryGroup(SymmetryGroup):
+class CnSymmetryGroup(SymmetryGroup):
     """
     Cyclic Symmetry Group.
     """
 
     def __init__(self, order, dtype):
         """
-        `CyclicSymmetryGroup` instance that serves up a `Rotation` object
+        `CnSymmetryGroup` instance that serves up a `Rotation` object
         containing rotation matrices of the symmetry group (including
-        the Identity) accessed via the `matrices` attribute.
+        the identity) accessed via the `matrices` attribute.
 
         :param order: The cyclic order for the symmetry group (int).
         :param dtype: Numpy dtype to be used for rotation matrices.
@@ -106,9 +106,8 @@ class CyclicSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Cn symmetry group and the identity.
         """
-        angles = np.zeros((self.order, 3), dtype=self.dtype)
-        angles[:, 2] = 2 * np.pi * np.arange(self.order) / self.order
-        return Rotation.from_euler(angles, dtype=self.dtype)
+        angles = 2 * np.pi * np.arange(self.order) / self.order
+        return Rotation.about_axis('z', angles, dtype=self.dtype)
 
 
 class DihedralSymmetryGroup(SymmetryGroup):

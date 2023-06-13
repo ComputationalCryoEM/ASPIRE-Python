@@ -29,7 +29,7 @@ from aspire.operators import (
 )
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import Rotation, grid_2d, support_mask, trange
-from aspire.volume import CyclicSymmetryGroup, SymmetryGroup
+from aspire.volume import CnSymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -277,7 +277,7 @@ class ImageSource(ABC):
                     dtype=self.dtype,
                 )
 
-        C1_symmetry_group = CyclicSymmetryGroup(order=1, dtype=self.dtype)
+        C1_symmetry_group = CnSymmetryGroup(order=1, dtype=self.dtype)
         self.symmetry_group = symmetry_group or C1_symmetry_group
 
     def __getitem__(self, indices):

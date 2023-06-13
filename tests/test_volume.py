@@ -13,7 +13,7 @@ from pytest import raises, skip
 from aspire.utils import Rotation, grid_2d, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
-from aspire.volume import AsymmetricVolume, CyclicSymmetryGroup, SymmetryGroup, Volume
+from aspire.volume import AsymmetricVolume, CnSymmetryGroup, SymmetryGroup, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -554,6 +554,6 @@ def test_volume_load_with_symmetry():
         np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")),
         symmetry_group="C3",
     )
-    assert isinstance(vol.symmetry_group, CyclicSymmetryGroup)
+    assert isinstance(vol.symmetry_group, CnSymmetryGroup)
     assert str(vol.symmetry_group) == "C3"
 

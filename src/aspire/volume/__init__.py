@@ -1,5 +1,5 @@
 from .symmetry_groups import (
-    CyclicSymmetryGroup,
+    CnSymmetryGroup,
     DihedralSymmetryGroup,
     OctahedralSymmetryGroup,
     SymmetryGroup,
