@@ -179,6 +179,7 @@ class Volume:
             if not isinstance(value, SymmetryGroup):
                 raise ValueError(
                     "`symmetry_group` must be an instance of the SymmetryGroup class"
+                    " or a string indicating the symmetry, for example: 'C3', 'D2', 'T', 'O', etc."
                 )
             self._symmetry_group = value
 
