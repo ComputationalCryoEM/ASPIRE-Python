@@ -8,7 +8,7 @@ from aspire.utils.random import Random, randn
 from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
-    OctahedralSymmetryGroup,
+    OSymmetryGroup,
     TSymmetryGroup,
     Volume,
 )
@@ -227,7 +227,7 @@ class OSymmetricVolume(GaussianBlobsVolume):
     """
 
     def _set_symmetry_group(self):
-        self._symmetry_group = OctahedralSymmetryGroup(dtype=self.dtype)
+        self._symmetry_group = OSymmetryGroup(dtype=self.dtype)
 
     @property
     def n_blobs(self):

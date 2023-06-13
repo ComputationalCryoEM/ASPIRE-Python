@@ -8,7 +8,7 @@ from aspire.utils import Rotation
 from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
-    OctahedralSymmetryGroup,
+    OSymmetryGroup,
     SymmetryGroup,
     TSymmetryGroup,
 )
@@ -21,7 +21,7 @@ GROUPS_WITH_ORDER = [
 ]
 GROUPS_WITHOUT_ORDER = [
     TSymmetryGroup,
-    OctahedralSymmetryGroup,
+    OSymmetryGroup,
 ]
 ORDERS = [2, 3, 4, 5]
 DTYPES = [np.float32, np.float64]
