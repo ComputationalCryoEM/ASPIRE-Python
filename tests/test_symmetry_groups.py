@@ -10,7 +10,7 @@ from aspire.volume import (
     DnSymmetryGroup,
     OctahedralSymmetryGroup,
     SymmetryGroup,
-    TetrahedralSymmetryGroup,
+    TSymmetryGroup,
 )
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ GROUPS_WITH_ORDER = [
     DnSymmetryGroup,
 ]
 GROUPS_WITHOUT_ORDER = [
-    TetrahedralSymmetryGroup,
+    TSymmetryGroup,
     OctahedralSymmetryGroup,
 ]
 ORDERS = [2, 3, 4, 5]
