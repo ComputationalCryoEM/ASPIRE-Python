@@ -189,9 +189,9 @@ class TSymmetryGroup(SymmetryGroup):
         )
         axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
         angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3], dtype=self.dtype)
-        rot_vecs_C3 = np.array(
+        rot_vecs_C3 = np.concatenate(
             [angle * axes_C3 for angle in angles_C3], dtype=self.dtype
-        ).reshape((8, 3))
+        )
 
         # C2 rotation vectors.
         axes_C2 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=self.dtype)
