@@ -108,9 +108,7 @@ class Volume:
         self.size = self._data.size
 
         # Set symmetry_group. If None, default to 'C1'.
-        self.symmetry_group = symmetry_group or CnSymmetryGroup(
-            order=1, dtype=self.dtype
-        )
+        self._set_symmetry_group(symmetry_group)
 
         # Numpy interop
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
@@ -161,27 +159,22 @@ class Volume:
         """
         return self._symmetry_group
 
-    @symmetry_group.setter
-    def symmetry_group(self, value):
+    def _set_symmetry_group(self, value):
         """
         Set the `symmetry_group` for the Volume.
 
         :param value: A `SymmetryGroup` instance or string indicating symmetry, ie. "C5", "D7", "T", etc.
         """
-        if hasattr(self, "symmetry_group"):
-            raise RuntimeError(
-                "The symmetry_group attribute cannot be reset."
-                f" Volume symmetry already set to: {self.symmetry_group}."
+        # If value not provided set symmetry to C1.
+        value = value or CnSymmetryGroup(order=1, dtype=self.dtype)
+        if isinstance(value, str):
+            value = SymmetryGroup.from_string(value, dtype=self.dtype)
+        if not isinstance(value, SymmetryGroup):
+            raise ValueError(
+                "`symmetry_group` must be an instance of the SymmetryGroup class"
+                " or a string indicating the symmetry, ie. 'C5', 'D7', 'T', etc."
             )
-        else:
-            if isinstance(value, str):
-                value = SymmetryGroup.from_string(value, dtype=self.dtype)
-            if not isinstance(value, SymmetryGroup):
-                raise ValueError(
-                    "`symmetry_group` must be an instance of the SymmetryGroup class"
-                    " or a string indicating the symmetry, for example: 'C3', 'D2', 'T', 'O', etc."
-                )
-            self._symmetry_group = value
+        self._symmetry_group = value
 
     def stack_reshape(self, *args):
         """
