@@ -76,7 +76,7 @@ class SymmetryGroup(ABC):
 
 class CnSymmetryGroup(SymmetryGroup):
     """
-    Cyclic Symmetry Group.
+    Cyclic symmetry group.
     """
 
     def __init__(self, order, dtype):
@@ -112,7 +112,7 @@ class CnSymmetryGroup(SymmetryGroup):
 
 class DnSymmetryGroup(SymmetryGroup):
     """
-    Dihedral Symmetry Group.
+    Dihedral symmetry group.
     """
 
     def __init__(self, order, dtype):
@@ -155,7 +155,7 @@ class DnSymmetryGroup(SymmetryGroup):
 
 class TSymmetryGroup(SymmetryGroup):
     """
-    Tetrahedral Symmetry Group.
+    Tetrahedral symmetry group.
     """
 
     def __init__(self, dtype):
@@ -209,7 +209,7 @@ class TSymmetryGroup(SymmetryGroup):
 
 class OSymmetryGroup(SymmetryGroup):
     """
-    Octahedral Symmetry Group.
+    Octahedral symmetry group.
     """
 
     def __init__(self, dtype):
