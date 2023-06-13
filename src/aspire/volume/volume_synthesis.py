@@ -73,9 +73,8 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         to give compact support within the unit sphere.
         """
         vol = self._gaussian_blob_vols()
-
         bump_mask = bump_3d(self.L, spread=5, dtype=self.dtype)
-        return Volume(np.multiply(bump_mask, vol), symmetry_group=self.symmetry_group)
+        return Volume(bump_mask * vol, symmetry_group=self.symmetry_group)
 
     def _gaussian_blob_vols(self):
         """
