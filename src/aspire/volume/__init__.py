@@ -1,7 +1,7 @@
 from .symmetry_groups import (
     CnSymmetryGroup,
     DnSymmetryGroup,
-    OctahedralSymmetryGroup,
+    OSymmetryGroup,
     SymmetryGroup,
     TSymmetryGroup,
 )
