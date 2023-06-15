@@ -13,7 +13,13 @@ from pytest import raises, skip
 from aspire.utils import Rotation, grid_2d, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
-from aspire.volume import AsymmetricVolume, CnSymmetryGroup, SymmetryGroup, TSymmetryGroup, Volume
+from aspire.volume import (
+    AsymmetricVolume,
+    CnSymmetryGroup,
+    SymmetryGroup,
+    TSymmetryGroup,
+    Volume,
+)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -525,10 +531,12 @@ def testProjectBroadcast(dtype):
     with raises(NotImplementedError, match=msg):
         _ = vols.project(rots[:2])
 
+
 # SYM_GROUP_PARAMS consists of (initializing method, string representation).
 # Testing just the basic cases of setting the symmetry group from
 # a SymmetryGroup instance, a string, and the default.
 SYM_GROUP_PARAMS = [(TSymmetryGroup(np.float32), "T"), ("D2", "D2"), (None, "C1")]
+
 
 @pytest.mark.parametrize("sym_group, sym_string", SYM_GROUP_PARAMS)
 def test_symmetry_group_set_get(sym_group, sym_string):
@@ -557,4 +565,3 @@ def test_volume_load_with_symmetry():
     )
     assert isinstance(vol.symmetry_group, CnSymmetryGroup)
     assert str(vol.symmetry_group) == "C3"
-
