@@ -58,6 +58,10 @@ class CLOrient3D:
             self.n_rad = math.ceil(0.5 * self.n_res)
         if self.n_check is None:
             self.n_check = self.n_img
+        if not (0 < self.n_check <= self.n_img):
+            msg = "n_check must be in (0, n_img]"
+            logger.error(msg)
+            raise NotImplementedError(msg)
         if self.n_theta % 2 == 1:
             msg = "n_theta must be even"
             logger.error(msg)

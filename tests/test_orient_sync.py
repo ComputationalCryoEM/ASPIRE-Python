@@ -7,7 +7,7 @@ import numpy as np
 from click.testing import CliRunner
 from pytest import raises
 
-from aspire.abinitio import CLSyncVoting
+from aspire.abinitio import CLOrient3D, CLSyncVoting
 from aspire.commands.orient3d import orient3d
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
@@ -101,6 +101,13 @@ class OrientSyncTestCase(TestCase):
         # Test we raise with expected error.
         with raises(NotImplementedError, match=r"n_theta must be even*"):
             _ = CLSyncVoting(self.sim, 16, 35)
+
+    def testNCheckError(self):
+        """Test we get expected error when n_check is out of range."""
+        with raises(NotImplementedError, match=r"n_check must be in*"):
+            _ = CLOrient3D(self.sim, n_check=-2)
+        with raises(NotImplementedError, match=r"n_check must be in*"):
+            _ = CLOrient3D(self.sim, n_check=self.sim.n + 1)
 
     def testCommandLine(self):
         # Ensure that the command line tool works as expected
