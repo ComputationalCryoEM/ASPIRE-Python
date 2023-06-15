@@ -153,7 +153,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
                 # Mask corr around first set of common-lines to search for
                 # second set of mutual common-lines.
                 mask_dist = self.min_dist_cls * 2 * self.n_theta // 360
-                corr_masked = self.square_mask(corr, first_cl1, first_cl2, mask_dist, 1)
+                corr_masked = corr * self._square_mask(corr, first_cl1, first_cl2, mask_dist)
 
                 # Find second set of mutual common-lines.
                 second_cl1, second_shift, second_cl2 = np.unravel_index(
@@ -180,44 +180,39 @@ class CLSymmetryC2(CLSymmetryC3C4):
         part2 = np.imag(a) @ np.imag(b).T
 
         # Compute corrrelations in the positive and negative r directions.
-        corr_pos = part1 - part2
-        corr_neg = part1 + part2
-
-        corr = np.concatenate((corr_pos, corr_neg), axis=0)
+        corr = np.zeros((2 * len(part1), len(part1[0])), dtype=part1.dtype)
+        corr[0:len(part1)] = part1 - part2
+        corr[len(part1):] = part1 + part2
 
         return corr
 
     @staticmethod
-    def square_mask(arr, x, y, dist, shift_axis):
+    def _square_mask(corr, x, y, dist):
         """
-        Mask correlation array along shift_axis around the point (x, y)
+        For masking correlation array along shift_axis around the point (x, y)
         with a square mask of half-length `dist`.
 
-        :param arr: 2D array to mask
+        :param corr: Correlation array of shape (n_theta, n_shifts, n_theta // 2)
         :param x: x-coordinate for center of mask.
         :param y: y-coordinate for center of mask.
         :param dist: The distance from center to mask off.
-        :param shift_axis: Shift axis of correlation array.
 
-        :return: Input array with square mask around (x, y).
+        :return: Mask with square hole around (x, y) with shape = corr.shape.
         """
-        n_shifts = arr.shape[shift_axis]
-
-        # Take slice to compute square mask
-        arr_slice = arr.take(0, axis=shift_axis)
+        x_len, n_shifts, y_len = corr.shape
 
         # Build mask.
         left = max(0, x - dist)
-        right = min(len(arr_slice), x + dist)
+        right = min(x_len, x + dist)
         bottom = max(0, y - dist)
-        top = min(len(arr_slice[0]), y + dist)
-        mask = np.ones_like(arr_slice)
+        top = min(y_len, y + dist)
+        mask = np.ones((x_len, y_len), dtype=int)
         mask[left:right, bottom:top] = 0
 
         # Expand along shift axis.
-        mask = np.repeat(mask, n_shifts, axis=0).reshape(arr.shape)
+        mask = np.repeat(mask, n_shifts, axis=0).reshape(corr.shape)
 
-        return mask * arr
+        return mask
 
     def estimate_rotations(self):
         """
