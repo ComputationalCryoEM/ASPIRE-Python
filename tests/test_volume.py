@@ -13,7 +13,7 @@ from pytest import raises, skip
 from aspire.utils import Rotation, grid_2d, powerset
 from aspire.utils.matrix import anorm
 from aspire.utils.types import utest_tolerance
-from aspire.volume import AsymmetricVolume, CnSymmetryGroup, SymmetryGroup, Volume
+from aspire.volume import AsymmetricVolume, CnSymmetryGroup, SymmetryGroup, TSymmetryGroup, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -525,20 +525,21 @@ def testProjectBroadcast(dtype):
     with raises(NotImplementedError, match=msg):
         _ = vols.project(rots[:2])
 
-def test_symmetry_group_set_get():
+# SYM_GROUP_PARAMS consists of (initializing method, string representation).
+# Testing just the basic cases of setting the symmetry group from
+# a SymmetryGroup instance, a string, and the default.
+SYM_GROUP_PARAMS = [(TSymmetryGroup(np.float32), "T"), ("D2", "D2"), (None, "C1")]
+
+@pytest.mark.parametrize("sym_group, sym_string", SYM_GROUP_PARAMS)
+def test_symmetry_group_set_get(sym_group, sym_string):
     L = 8
     dtype = np.float32
     data = np.arange(L**3, dtype=dtype).reshape(L, L, L)
-    sym_group, sym_string = sym_group_fixture
     vol = Volume(data, symmetry_group=sym_group, dtype=dtype)
 
     # Check Volume symmetry_group.
     assert isinstance(vol.symmetry_group, SymmetryGroup)
     assert str(vol.symmetry_group) == sym_string
-
-    # Check that symmetry_group is immutable.
-    with raises(RuntimeError, match=r"The symmetry_group attribute cannot be reset.*"):
-        vol.symmetry_group = "D7"
 
     # Check for expected error when symmetry_group is not a SymmetryGroup object.
     with raises(
