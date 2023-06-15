@@ -139,7 +139,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
             for j in subset_j:
                 p2 = pf_shifted_flipped[j]
-                corr = self.compute_correlations(p1, p2)
+                corr = self._compute_correlations(p1, p2)
                 corr = corr.reshape(self.n_theta, n_shifts, self.n_theta // 2)
 
                 # Find first set of common-lines between the pair of images.
@@ -167,7 +167,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         self.shifts_1d = shifts_1d
 
     @staticmethod
-    def compute_correlations(a, b):
+    def _compute_correlations(a, b):
         """
         Compute the correlation between Polar Fourier images a and b.
 
