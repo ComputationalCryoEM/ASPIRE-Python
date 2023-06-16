@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+from scipy.linalg import eigh
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.utils import J_conjugate, Rotation, all_pairs
@@ -245,10 +246,9 @@ class CLSymmetryC2(CLSymmetryC3C4):
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
         # Step 1: Detect the two pairs of mutual common-lines between each pair of images
         self.build_clmatrix()
-        clmatrix = self.clmatrix
 
         # Step 2: Calculate relative rotations associated with both mutual common lines.
-        Rijs, Rijgs = self._estimate_all_Rijs_c2(clmatrix)
+        Rijs, Rijgs = self._estimate_all_Rijs_c2(self.clmatrix)
 
         # Step 3: Inner J-synchronization
         Rijs, Rijgs = self._local_J_sync_c2(Rijs, Rijgs)
@@ -323,9 +323,9 @@ class CLSymmetryC2(CLSymmetryC3C4):
         H += np.conj(H).T + np.eye(self.n_img)
 
         # H is a rank-1 Hermitian matrix.
-        eig_vals, eig_vecs = np.linalg.eigh(H)
+        eig_vals, eig_vecs = eigh(H, subset_by_index=[self.n_img - 5, self.n_img - 1])
         leading_eig_vec = eig_vecs[:, -1]
-        logger.info(f"Top 5 eigenvalues of H are {str(eig_vals[-5:][::-1])}.")
+        logger.info(f"Top 5 eigenvalues of H are {str(eig_vals[::-1])}.")
 
         # Calculate R_thetas.
         R_thetas = Rotation.about_axis("z", np.angle(np.sqrt(leading_eig_vec)))
