@@ -367,7 +367,7 @@ def test_commonlines_c2(n_img, L, order, dtype):
     cl = cl_symm.clmatrix
 
     # Ground truth common-lines matrix.
-    cl_gt = gt_cl_c2(n_theta, src.rotations)
+    cl_gt = _gt_cl_c2(n_theta, src.rotations)
 
     # Convert from indices to angles. Use angle of common-line in [0, 180).
     cl = (cl * 360 / n_theta) % 180
@@ -609,13 +609,34 @@ def test_mean_outer_product_estimator():
     assert np.allclose(est.synchronized_mean(), V)
 
 
-def gt_cl_c2(n_theta, rots_gt):
+def test_square_mask():
+    n_shifts = 2
+    x_len = 4
+    y_len = 4
+    data = np.ones((x_len, n_shifts, y_len), dtype=np.float32)
+
+    # Test centered mask.
+    ref = np.array([[1, 1, 1, 1], [1, 0, 0, 1], [1, 0, 0, 1], [1, 1, 1, 1]], dtype=int)
+    x, y = x_len // 2, y_len // 2
+    mask = CLSymmetryC2._square_mask(data, x, y, dist=1)
+    for shift in range(n_shifts):
+        assert np.array_equal(mask[:, shift], ref)
+
+    # Test mask near edge of box.
+    ref = np.array([[0, 0, 1, 1], [0, 0, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], dtype=int)
+    x, y = 0, 0
+    mask = CLSymmetryC2._square_mask(data, x, y, dist=2)
+    for shift in range(n_shifts):
+        assert np.array_equal(mask[:, shift], ref)
+
+
+def _gt_cl_c2(n_theta, rots_gt):
     n_imgs = len(rots_gt)
     gs = cyclic_rotations(2)
     clmatrix_gt = np.zeros((2, n_imgs, n_imgs))
     for i in range(n_imgs):
+        Ri = rots_gt[i]
         for j in range(i + 1, n_imgs):
-            Ri = rots_gt[i]
             Rj = rots_gt[j]
             for idx, g in enumerate(gs):
                 U = Ri.T @ g @ Rj
