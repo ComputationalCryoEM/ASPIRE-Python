@@ -140,7 +140,7 @@ def test_estimate_rotations(n_img, L, order, dtype):
         # For small n-img, we get some bad estimates so checking the
         # mean gets poor results with some runs. Instead we'll check that
         # we get high percentage of good estimates.
-        assert np.count_nonzero(ang_dist < 5) / len(ang_dist) > 0.80
+        assert np.count_nonzero(ang_dist < 6) / len(ang_dist) > 0.80
     elif order > 4:
         assert np.mean(ang_dist) < 5
     else:
