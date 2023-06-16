@@ -37,6 +37,7 @@ dependencies = [
     "mrcfile",
     "numpy>=1.21.5",
     "packaging",
+    "pooch>=1.7.0",
     "psutil",
     "pyfftw",
     "pymanopt",
