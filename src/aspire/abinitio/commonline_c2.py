@@ -154,7 +154,9 @@ class CLSymmetryC2(CLSymmetryC3C4):
                 # Mask corr around first set of common-lines to search for
                 # second set of mutual common-lines.
                 mask_dist = self.min_dist_cls * 2 * self.n_theta // 360
-                corr_masked = corr * self._square_mask(corr, first_cl1, first_cl2, mask_dist)
+                corr_masked = corr * self._square_mask(
+                    corr, first_cl1, first_cl2, mask_dist
+                )
 
                 # Find second set of mutual common-lines.
                 second_cl1, second_shift, second_cl2 = np.unravel_index(
@@ -182,8 +184,8 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
         # Compute corrrelations in the positive and negative r directions.
         corr = np.zeros((2 * len(part1), len(part1[0])), dtype=part1.dtype)
-        corr[0:len(part1)] = part1 - part2
-        corr[len(part1):] = part1 + part2
+        corr[0 : len(part1)] = part1 - part2
+        corr[len(part1) :] = part1 + part2
 
         return corr
 
@@ -348,18 +350,14 @@ class CLSymmetryC2(CLSymmetryC3C4):
             between pairs of images.
         :return: Relative rotations, Rijs and Rijgs.
         """
-        n_img = self.n_img
+        k_list = np.arange(self.n_img)
         n_theta = self.n_theta
-        pairs = all_pairs(n_img)
-        Rijs = np.zeros((len(pairs), 3, 3))
-        Rijgs = np.zeros((len(pairs), 3, 3))
+        pairs = all_pairs(self.n_img)
+        Rijs = np.zeros((len(pairs), 3, 3), dtype=self.dtype)
+        Rijgs = np.zeros((len(pairs), 3, 3), dtype=self.dtype)
         for idx, (i, j) in enumerate(pairs):
-            Rijs[idx] = self._syncmatrix_ij_vote_3n(
-                clmatrix[0], i, j, np.arange(n_img), n_theta
-            )
-            Rijgs[idx] = self._syncmatrix_ij_vote_3n(
-                clmatrix[1], i, j, np.arange(n_img), n_theta
-            )
+            Rijs[idx] = self._syncmatrix_ij_vote_3n(clmatrix[0], i, j, k_list, n_theta)
+            Rijgs[idx] = self._syncmatrix_ij_vote_3n(clmatrix[1], i, j, k_list, n_theta)
 
         return Rijs, Rijgs
 
@@ -373,19 +371,16 @@ class CLSymmetryC2(CLSymmetryC3C4):
         Return: Pairwise J-synchronized relative rotations, Rijs and Rijgs.
         """
         e1 = np.array([1, 0, 0], dtype=self.dtype)
-        pairs = all_pairs(self.n_img)
-        for idx, _ in enumerate(pairs):
-            Rij = Rijs[idx]
-            Rijg = Rijgs[idx]
+        vijs = (Rijs + Rijgs) / 2
+        vijs_J = (J_conjugate(Rijs) + Rijgs) / 2
 
-            # Rij + Rij_g must be rank-1. If not, J-conjugate either of them.
-            vij = (Rij + Rijg) / 2
-            vij_J = (J_conjugate(Rij) + Rijg) / 2
+        s = np.linalg.svd(vijs, compute_uv=False)
+        s_J = np.linalg.svd(vijs_J, compute_uv=False)
 
-            s = np.linalg.svd(vij, compute_uv=False)
-            s_J = np.linalg.svd(vij_J, compute_uv=False)
-
-            if np.linalg.norm(s_J - e1) < np.linalg.norm(s - e1):
-                Rijgs[idx] = J_conjugate(Rijg)
+        # Indices to conjugate.
+        ind_to_conj = np.argwhere(
+            np.linalg.norm(s_J - e1, axis=1) < np.linalg.norm(s - e1, axis=1)
+        )
+        Rijgs[ind_to_conj] = J_conjugate(Rijgs[ind_to_conj])
 
         return Rijs, Rijgs
