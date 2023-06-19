@@ -16,6 +16,9 @@ reconstruction pipeline using synthetic data generated with ASPIRE's
 # ASPIRE's data downloading utility by using the following import.
 
 from aspire.utils import emdb_2660
+# sphinx_gallery_start_ignore
+# flake8: noqa
+# sphinx_gallery_end_ignore
 
 # %%
 # Load a Volume
