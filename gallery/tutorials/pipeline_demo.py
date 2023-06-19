@@ -12,39 +12,21 @@ reconstruction pipeline using synthetic data generated with ASPIRE's
 # -----------------
 # We begin by downloading a high resolution volume map of the 80S
 # Ribosome, sourced from EMDB: https://www.ebi.ac.uk/emdb/EMD-2660.
+# This is one of several volume maps that can be downloaded with
+# ASPIRE's data downloading utility by using the following import.
 
-import logging
-import os
-
-import numpy as np
-import requests
-
-
-# sphinx_gallery_start_ignore
-# flake8: noqa
-# sphinx_gallery_end_ignore
-# Download volume
-def download(url, save_path, chunk_size=1024 * 1024):
-    r = requests.get(url, stream=True)
-    with open(save_path, "wb") as fd:
-        for chunk in r.iter_content(chunk_size=chunk_size):
-            fd.write(chunk)
-
-
-file_path = os.path.join(os.getcwd(), "emd_2660.map")
-if not os.path.exists(file_path):
-    url = "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2660/map/emd_2660.map.gz"
-    download(url, file_path)
+from aspire.utils import emdb_2660
 
 # %%
 # Load a Volume
 # -------------
 # We use ASPIRE's ``Volume`` class to load and downsample the volume.
 
+import numpy as np
 from aspire.volume import Volume
 
 # Load 80s Ribosome
-original_vol = Volume.load(file_path, dtype=np.float32)
+original_vol = Volume.load(emdb_2660(), dtype=np.float32)
 
 # Downsample the volume
 res = 41
