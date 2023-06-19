@@ -56,6 +56,7 @@ def emdb_2660():
     """
     return fetch_data("emdb_2660.map")
 
+
 def emdb_8012():
     """
     Downloads the EMDB-8012 volume map and returns the file path.
