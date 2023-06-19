@@ -304,7 +304,9 @@ class CLSymmetryC2(CLSymmetryC3C4):
         H = np.zeros((self.n_img, self.n_img), dtype=complex)
         # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
         # the corresponding third rows vis.
-        Ris_tilde = np.array([self._complete_third_row_to_rot(vi) for vi in vis])
+        Ris_tilde = np.zeros((self.n_img, 3, 3), dtype=vis.dtype)
+        for i, vi in enumerate(vis):
+            Ris_tilde[i] = self._complete_third_row_to_rot(vi)
 
         pairs = all_pairs(self.n_img)
         for idx, (i, j) in enumerate(pairs):
