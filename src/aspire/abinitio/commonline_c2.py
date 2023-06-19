@@ -273,6 +273,9 @@ class CLSymmetryC2(CLSymmetryC3C4):
             - Rijs - Globally synchronized relative rotations.
             - Rijgs - Globally synchronized 2nd set of relative rotations.
         """
+        # Here we use the fact that the mean over the set of relative rotations induced
+        # by the cyclic symmetry gives us the outer product of the third rows of the rotations
+        # from the i'th and j'th images. See corollary 6.2 (G. Pragier) for more details.
         vijs = (Rijs + Rijgs) / 2
 
         # Determine relative handedness of vijs.
@@ -306,6 +309,9 @@ class CLSymmetryC2(CLSymmetryC3C4):
         pairs = all_pairs(self.n_img)
         for idx, (i, j) in enumerate(pairs):
             # Uij and Uijg below are xy-in-plane rotations.
+            # We use svd to find the in-plane rotation which is closest to
+            # Ris_tilde[i] @ Rijs[idx] @ Ris_tilde[j].T.
+            # See section 8.3.1 (X. Cheng) for more details.
             Uij = Ris_tilde[i] @ Rijs[idx] @ Ris_tilde[j].T
             u, _, v = np.linalg.svd(Uij[0:2, 0:2])
             Uij = u @ v.T
