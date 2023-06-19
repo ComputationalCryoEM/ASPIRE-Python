@@ -12,7 +12,7 @@ from .coor_trans import (  # isort:skip
     uniform_random_angles,
 )
 
-from .data_fetcher import emdb_2660
+from .data_fetcher import emdb_2660, emdb_8012
 from .logging import LogFilterByCount, get_full_version, tqdm, trange
 from .matrix import (
     acorr,
