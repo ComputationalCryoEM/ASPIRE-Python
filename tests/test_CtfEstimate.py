@@ -20,8 +20,8 @@ class CtfEstimatorTestCase(TestCase):
         self.test_input_fn = "sample.mrc"
         # These values are from CTFFIND4
         self.test_output = {
-            "defocus_u": 34914.63,  # Angstrom
-            "defocus_v": 33944.32,  # Angstrom
+            "defocus_u": 34914.63,  # angstrom
+            "defocus_v": 33944.32,  # angstrom
             "defocus_ang": -65.26,  # Degree wrt some axis
             "cs": 2.0,
             "voltage": 300.0,
