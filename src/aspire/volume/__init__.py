@@ -1,6 +1,7 @@
 from .symmetry_groups import (
     CnSymmetryGroup,
     DnSymmetryGroup,
+    IdentitySymmetryGroup,
     OSymmetryGroup,
     SymmetryGroup,
     TSymmetryGroup,
