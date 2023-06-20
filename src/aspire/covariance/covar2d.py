@@ -137,67 +137,6 @@ class RotCov2D:
 
         return mean_coeff
 
-    def _get_covar(self, coeffs, mean_coeff=None, do_refl=True):
-        """
-        Calculate the covariance matrix from the expansion coefficients without CTF information.
-
-        :param coeffs: A coefficient vector (or an array of coefficient vectors) calculated from 2D images.
-        :param mean_coeff: The mean vector calculated from the `coeffs`.
-        :param do_refl: If true, enforce invariance to reflection (default false).
-        :return: The covariance matrix of coefficients for all images.
-        """
-        if coeffs.size == 0:
-            raise RuntimeError("The coefficients need to be calculated first!")
-        if mean_coeff is None:
-            mean_coeff = self._get_mean(coeffs)
-
-        # Initialize a totally empty BlkDiagMatrix, build incrementally.
-        covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
-        ell = 0
-
-        # mask = self.basis._indices["ells"] == ell
-        mask = self.basis.indices_mask(angular=ell)
-
-        coeff_ell = coeffs[..., mask] - mean_coeff[mask]
-        covar_ell = np.array(coeff_ell.T @ coeff_ell / coeffs.shape[0])
-        covar_coeff.append(covar_ell)
-
-        for ell in range(1, self.basis.ell_max + 1):
-            # mask_ell = self.basis._indices["ells"] == ell
-            mask_ell = self.basis.indices_mask(angular=ell)
-            # mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
-            # mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
-            mask_pos = mask_ell & (self.basis.indices_mask(signs=1))
-            mask_neg = mask_ell & (self.basis.indices_mask(signs=-1))
-
-            covar_ell_diag = np.array(
-                coeffs[:, mask_pos].T @ coeffs[:, mask_pos]
-                + coeffs[:, mask_neg].T @ coeffs[:, mask_neg]
-            ) / (2 * coeffs.shape[0])
-
-            if do_refl:
-                covar_coeff.append(covar_ell_diag)
-                covar_coeff.append(covar_ell_diag)
-            else:
-                covar_ell_off = np.array(
-                    (
-                        coeffs[:, mask_pos] @ coeffs[:, mask_neg].T / coeffs.shape[0]
-                        - coeffs[:, mask_pos].T @ coeffs[:, mask_neg]
-                    )
-                    / (2 * coeffs.shape[0])
-                )
-
-                hsize = covar_ell_diag.shape[0]
-                covar_coeff_blk = np.zeros((2, hsize, 2, hsize))
-
-                covar_coeff_blk[0:2, :, 0:2, :] = covar_ell_diag[:hsize, :hsize]
-                covar_coeff_blk[0, :, 1, :] = covar_ell_off[:hsize, :hsize]
-                covar_coeff_blk[1, :, 0, :] = covar_ell_off.T[:hsize, :hsize]
-
-                covar_coeff.append(covar_coeff_blk.reshape(2 * hsize, 2 * hsize))
-
-        return covar_coeff
-
     def _get_mean_blk(self, coeffs, ctf_basis=None, ctf_idx=None):
         """
         Calculate the mean vector from the expansion coefficients with CTF information.
@@ -261,6 +200,7 @@ class RotCov2D:
 
         return method(coeffs, ctf_basis=ctf_basis, ctf_idx=ctf_idx)
 
+    # outer wrapper
     def get_covar(
         self,
         coeffs,
@@ -314,7 +254,70 @@ class RotCov2D:
             make_psd=make_psd,
         )
 
-    def _get_covar_blk(
+    # old _get_covar
+    def __get_covar(self, coeffs, mean_coeff=None, do_refl=True):
+        """
+        Calculate the covariance matrix from the expansion coefficients without CTF information.
+
+        :param coeffs: A coefficient vector (or an array of coefficient vectors) calculated from 2D images.
+        :param mean_coeff: The mean vector calculated from the `coeffs`.
+        :param do_refl: If true, enforce invariance to reflection (default false).
+        :return: The covariance matrix of coefficients for all images.
+        """
+        if coeffs.size == 0:
+            raise RuntimeError("The coefficients need to be calculated first!")
+        if mean_coeff is None:
+            mean_coeff = self._get_mean(coeffs)
+
+        # Initialize a totally empty BlkDiagMatrix, build incrementally.
+        covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
+        ell = 0
+
+        # mask = self.basis._indices["ells"] == ell
+        mask = self.basis.indices_mask(angular=ell)
+
+        coeff_ell = coeffs[..., mask] - mean_coeff[mask]
+        covar_ell = np.array(coeff_ell.T @ coeff_ell / coeffs.shape[0])
+        covar_coeff.append(covar_ell)
+
+        for ell in range(1, self.basis.ell_max + 1):
+            # mask_ell = self.basis._indices["ells"] == ell
+            mask_ell = self.basis.indices_mask(angular=ell)
+            # mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
+            # mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
+            mask_pos = mask_ell & (self.basis.indices_mask(signs=1))
+            mask_neg = mask_ell & (self.basis.indices_mask(signs=-1))
+
+            covar_ell_diag = np.array(
+                coeffs[:, mask_pos].T @ coeffs[:, mask_pos]
+                + coeffs[:, mask_neg].T @ coeffs[:, mask_neg]
+            ) / (2 * coeffs.shape[0])
+
+            if do_refl:
+                covar_coeff.append(covar_ell_diag)
+                covar_coeff.append(covar_ell_diag)
+            else:
+                covar_ell_off = np.array(
+                    (
+                        coeffs[:, mask_pos] @ coeffs[:, mask_neg].T / coeffs.shape[0]
+                        - coeffs[:, mask_pos].T @ coeffs[:, mask_neg]
+                    )
+                    / (2 * coeffs.shape[0])
+                )
+
+                hsize = covar_ell_diag.shape[0]
+                covar_coeff_blk = np.zeros((2, hsize, 2, hsize))
+
+                covar_coeff_blk[0:2, :, 0:2, :] = covar_ell_diag[:hsize, :hsize]
+                covar_coeff_blk[0, :, 1, :] = covar_ell_off[:hsize, :hsize]
+                covar_coeff_blk[1, :, 0, :] = covar_ell_off.T[:hsize, :hsize]
+
+                covar_coeff.append(covar_coeff_blk.reshape(2 * hsize, 2 * hsize))
+
+        return covar_coeff
+
+    
+    def _get_covar(
         self,
         coeffs,
         ctf_basis=None,
@@ -346,9 +349,8 @@ class RotCov2D:
         covar_est_opt = fill_struct(covar_est_opt, default_est_opt)
 
         if mean_coeff is None:
-            mean_coeff = self.get_mean(coeffs, ctf_basis, ctf_idx)
+            mean_coeff = self.get_mean(Coef(self.basis, coeffs), ctf_basis, ctf_idx)
 
-        coeffs = coeffs.asnumpy()
         b_coeff = BlkDiagMatrix.zeros_like(ctf_basis[0])
         b_noise = BlkDiagMatrix.zeros_like(ctf_basis[0])
         A = []
@@ -364,7 +366,7 @@ class RotCov2D:
             ctf_basis_k = ctf_basis[k]
             ctf_basis_k_t = ctf_basis_k.T
             mean_coeff_k = ctf_basis_k.apply(mean_coeff)
-            covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
+            covar_coeff_k = self.__get_covar(coeff_k, mean_coeff_k)
 
             b_coeff += weight * (ctf_basis_k_t @ covar_coeff_k @ ctf_basis_k)
 
@@ -436,19 +438,6 @@ class RotCov2D:
                 covar_coeff = covar_coeff.make_psd()
 
         return covar_coeff
-
-    def _get_covar_diag(
-        self,
-        coeffs,
-        ctf_basis=None,
-        ctf_idx=None,
-        mean_coeff=None,
-        do_refl=True,
-        noise_var=0,
-        covar_est_opt=None,
-        make_psd=True,
-    ):
-        raise NotImplementedError
 
     def shrink_covar_backward(self, b, b_noise, n, noise_var, shrinker):
         """
