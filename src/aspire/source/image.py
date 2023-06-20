@@ -29,7 +29,7 @@ from aspire.operators import (
 )
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import Rotation, grid_2d, support_mask, trange
-from aspire.volume import CnSymmetryGroup, SymmetryGroup
+from aspire.volume import IdentitySymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -159,7 +159,7 @@ class ImageSource(ABC):
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
-            Defaults to a C1 symmetry_group, which represents an asymmetric particle, if none provided.
+            Defaults to the `IdentitySymmetryGroup`, which represents an asymmetric particle, if none provided.
         """
 
         # Instantiate the accessor for the `images` property
@@ -277,8 +277,7 @@ class ImageSource(ABC):
                     dtype=self.dtype,
                 )
 
-        C1_symmetry_group = CnSymmetryGroup(order=1, dtype=self.dtype)
-        self.symmetry_group = symmetry_group or C1_symmetry_group
+        self.symmetry_group = symmetry_group or IdentitySymmetryGroup(dtype=self.dtype)
 
     def __getitem__(self, indices):
         """
