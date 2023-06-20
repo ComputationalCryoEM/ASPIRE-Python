@@ -42,7 +42,7 @@ class CtfEstimator:
         """
         Instantiate a CtfEstimator instance.
 
-        :param pixel_size: Size of the pixel in \u212b (Angstrom).
+        :param pixel_size: Size of the pixel in \u212b (angstrom).
         :param cs: Spherical aberration in mm.
         :param amplitude_contrast: Amplitude contrast.
         :param voltage: Voltage of electron microscope.
@@ -57,7 +57,7 @@ class CtfEstimator:
         self.voltage = voltage
         self.psd_size = psd_size
         self.num_tapers = num_tapers
-        self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert Angstrom to nm
+        self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert angstrom to nm
         self.dtype = np.dtype(dtype)
 
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=self.dtype)
@@ -396,9 +396,9 @@ class CtfEstimator:
         Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
         :param amplitude_spectrum: Estimated power specrtum.
-        :param pixel_size: Pixel size in \u212b (Angstrom).
+        :param pixel_size: Pixel size in \u212b (angstrom).
         :param cs: Spherical aberration in mm.
-        :param lmbd: Electron wavelength \u212b (Angstrom).
+        :param lmbd: Electron wavelength \u212b (angstrom).
         :param w: Amplitude contrast.
         :param N: Number of rows (or columns) in the estimate power spectrum.
         :param min_defocus: Start of defocus loop scan.
@@ -481,7 +481,7 @@ class CtfEstimator:
         """
 
         :param signal: Estimated power spectrum.
-        :param pixel_size: Pixel size in \u212b (Angstrom).
+        :param pixel_size: Pixel size in \u212b (angstrom).
         :param g_min: Inverse of minimun resolution for PSD.
         :param g_max: Inverse of maximum resolution for PSD.
         :return: ratio.
@@ -556,11 +556,11 @@ class CtfEstimator:
         :param angle_ast: Angle between df1 and the x-axis, Radians.
         :param r: Magnitude of spatial frequencies.
         :param theta: Phase of spatial frequencies.
-        :param pixel_size: Pixel size in \u212b (Angstrom).
+        :param pixel_size: Pixel size in \u212b (angstrom).
         :param g_min: Inverse of minimun resolution for PSD.
         :param g_max: Inverse of maximum resolution for PSD.
         :param amplitude_contrast: Amplitude contrast.
-        :param lmbd: Electron wavelength \u212b (Angstrom).
+        :param lmbd: Electron wavelength \u212b (angstrom).
         :param cs: Spherical aberration in mm.
         :return: Optimal defocus parameters
         """
@@ -732,7 +732,7 @@ def estimate_ctf(
         amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
 
-    lmbd = voltage_to_wavelength(voltage) / 10  # Convert from Angstrom to nm
+    lmbd = voltage_to_wavelength(voltage) / 10  # Convert from angstrom to nm
 
     ctf_object = CtfEstimator(
         pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
@@ -774,7 +774,7 @@ def estimate_ctf(
             signal_1d,
             pixel_size,
             cs,
-            lmbd,  # (Angstrom)
+            lmbd,  # (angstrom)
             amplitude_contrast,
             signal_observed.shape[-1],
         )
@@ -814,7 +814,7 @@ def estimate_ctf(
                 g_min,
                 g_max,
                 amplitude_contrast,
-                lmbd,  # (Angstrom)
+                lmbd,  # (angstrom)
                 cs,
             )
 
@@ -849,8 +849,8 @@ def estimate_ctf(
                 mrc.voxel_size = pixel_size
 
         if save_ctf_images:
-            ctf_object.set_df1(cc_array[ml, 0])  # Angstrom
-            ctf_object.set_df2(cc_array[ml, 1])  # Angstrom
+            ctf_object.set_df1(cc_array[ml, 0])  # angstrom
+            ctf_object.set_df2(cc_array[ml, 1])  # angstrom
             ctf_object.set_angle(cc_array[ml, 2])  # Radians
             ctf_object.generate_ctf()
             df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(

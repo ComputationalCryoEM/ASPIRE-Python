@@ -40,9 +40,9 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, RadialCTFFilter
 
 radial_ctf_filter = RadialCTFFilter(
-    pixel_size=1,  # Angstrom
+    pixel_size=1,  # angstrom
     voltage=200,  # kV
-    defocus=10000,  # Angstrom, 10000A = 1um
+    defocus=10000,  # angstrom, 10000A = 1um
     Cs=2.26,  # Spherical aberration constant
     alpha=0.07,  # Amplitude contrast phase in radians
     B=0,  # Envelope decay in inverse square angstrom (default 0)
@@ -66,9 +66,9 @@ plt.show()
 # and the values more typically differ by a few percent.
 
 ctf_filter = CTFFilter(
-    pixel_size=1,  # Angstrom
+    pixel_size=1,  # angstrom
     voltage=200,  # kV
-    defocus_u=15000,  # Angstrom, 10000A = 1um
+    defocus_u=15000,  # angstrom, 10000A = 1um
     defocus_v=10000,
     defocus_ang=np.pi / 6,  # Radians
     Cs=2.26,  # Spherical aberration constant

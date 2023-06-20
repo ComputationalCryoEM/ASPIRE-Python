@@ -57,6 +57,6 @@ im.downsample(80).show()
 # CTF Filter
 # ----------
 
-# pixel_size/defous_u/defocus_v in Angstrom, voltage in kV
+# pixel_size/defous_u/defocus_v in angstrom, voltage in kV
 filter = CTFFilter(pixel_size=1, voltage=100, defocus_u=1500, defocus_v=2000)
 im.filter(filter).show()
