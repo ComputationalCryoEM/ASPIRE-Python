@@ -43,6 +43,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         max_iters=1000,
         degree_res=1,
         min_dist_cls=25,
+        n_check=None,
         seed=None,
     ):
         """
@@ -57,6 +58,9 @@ class CLSymmetryC2(CLSymmetryC3C4):
         :param max_iter: Maximum iterations for the power method.
         :param degree_res: Degree resolution for estimating in-plane rotations.
         :param min_dist_cls: Minimum distance between mutual common-lines. Default = 25 degrees.
+        :param n_check: For each image/projection find its common-lines with
+            n_check images. If n_check is less than the total number of images,
+            a random subset of n_check images is used.
         :param seed: Optional seed for RNG.
         """
         super().__init__(
@@ -69,6 +73,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
             epsilon=epsilon,
             max_iters=max_iters,
             degree_res=degree_res,
+            n_check=n_check,
             seed=seed,
         )
 
