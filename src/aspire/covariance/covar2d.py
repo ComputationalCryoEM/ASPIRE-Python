@@ -577,8 +577,6 @@ class BatchedRotCov2D(RotCov2D):
         src = self.src
 
         if self.basis is None:
-            from aspire.basis import FFBBasis2D
-
             self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
         if not src.unique_filters:
@@ -740,8 +738,6 @@ class BatchedRotCov2D(RotCov2D):
         # M is sum of weighted A squared, only for cg, ignore
 
     def _solve_covar_cg(self, A_covar, b_covar, M, covar_est_opt):
-        ctf_basis = self.ctf_basis
-
         def precond_fun(S, x):
             p = np.size(S, 0)
             assert np.size(x) == p * p, "The sizes of S and x are not consistent."

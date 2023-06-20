@@ -4,10 +4,6 @@ diagonal matrices as used by ASPIRE.
 """
 
 import numpy as np
-from numpy.linalg import norm, solve
-from scipy.linalg import block_diag
-
-from aspire.utils.cell import Cell2D
 
 from .blk_diag_matrix import BlkDiagMatrix
 
@@ -283,7 +279,7 @@ class DiagMatrix:
             # inplace infeasable, as the result will be dense.
             if inplace:
                 raise RuntimeError(
-                    f"Inplace infeasable between DiagMatrix and dense ndarray matrix."
+                    "Inplace infeasable between DiagMatrix and dense ndarray matrix."
                 )
             # For now, lets just interop with 2D `other` arrays,
             # assumed to represent matrices.
@@ -325,16 +321,11 @@ class DiagMatrix:
         if not isinstance(lhs, np.ndarray):
             raise RuntimeError("__rmatmul__ only defined for np.ndarray @ DiagMatrix.")
 
-        # inplace infeasable, as the result will be dense.
-        if inplace:
-            raise RuntimeError(
-                f"Inplace infeasable between DiagMatrix and dense ndarray matrix."
-            )
         # For now, lets just interop with 2D `other` arrays,
         # assumed to represent matrices.
-        if other.ndim != 2:
+        if lhs.ndim != 2:
             raise ValueError(
-                f"DiagMatrix.matmul of ndarray only supports 2D, received {other.shape}."
+                f"DiagMatrix.matmul of ndarray only supports 2D, received {lhs.shape}."
             )
 
         # Then the mathematical `AD` for diag D and matrix A,
@@ -343,8 +334,9 @@ class DiagMatrix:
         # The operation `AD` is known as Right Scaling,
         # and means to scale the column A_j by d_j in D.
         # This can be accomplished by broadcasting an elemental multiply.
+        # In this case A is the variable `lhs`
 
-        return A * self._data[np.newaxis]
+        return lhs * self._data[np.newaxis]
 
     def __imatmul__(self, other):
         """

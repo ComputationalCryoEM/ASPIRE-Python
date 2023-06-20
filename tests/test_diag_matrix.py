@@ -81,13 +81,13 @@ def test_dtype_conversion():
     d_np = np.arange(42).reshape(1, 42)
     diag = DiagMatrix(d_np).dense
     for i, d in enumerate(d_np):
-        np.testing.assert_allclose(diag[i], np.diag(d_np[i]))
+        np.testing.assert_allclose(diag[i], np.diag(d))
 
     # One Dimension stack
     d_np = np.arange(2 * 42).reshape(2, 42)
     diag = DiagMatrix(d_np).dense
     for i, d in enumerate(d_np):
-        np.testing.assert_allclose(diag[i], np.diag(d_np[i]))
+        np.testing.assert_allclose(diag[i], np.diag(d))
 
     # Two Dimension stack
     stack_shape = (2, 3)
@@ -192,12 +192,4 @@ def test_empty(diag_matrix_fixture):
     _, _, d_np = diag_matrix_fixture
     d = DiagMatrix.empty(d_np.shape)
 
-    np.testing.assert_equal(d.shape, d_np.shape)
-
-
-def test_ones(diag_matrix_fixture):
-    _, _, d_np = diag_matrix_fixture
-    d = DiagMatrix.ones(d_np.shape)
-
-    np.testing.assert_allclose(d, 1)
     np.testing.assert_equal(d.shape, d_np.shape)

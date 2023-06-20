@@ -14,7 +14,7 @@ from aspire.basis.fle_2d_utils import (
 )
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft
-from aspire.operators import BlkDiagMatrix, DiagMatrix
+from aspire.operators import DiagMatrix
 from aspire.utils import complex_type, grid_2d
 
 logger = logging.getLogger(__name__)
