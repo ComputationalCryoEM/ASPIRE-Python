@@ -255,7 +255,7 @@ class RotCov2D:
         )
 
     # old _get_covar
-    def __get_covar(self, coeffs, mean_coeff=None, do_refl=True):
+    def _old_get_covar(self, coeffs, mean_coeff=None, do_refl=True):
         """
         Calculate the covariance matrix from the expansion coefficients without CTF information.
 
@@ -316,7 +316,6 @@ class RotCov2D:
 
         return covar_coeff
 
-    
     def _get_covar(
         self,
         coeffs,
@@ -366,7 +365,7 @@ class RotCov2D:
             ctf_basis_k = ctf_basis[k]
             ctf_basis_k_t = ctf_basis_k.T
             mean_coeff_k = ctf_basis_k.apply(mean_coeff)
-            covar_coeff_k = self.__get_covar(coeff_k, mean_coeff_k)
+            covar_coeff_k = self._old_get_covar(coeff_k, mean_coeff_k)
 
             b_coeff += weight * (ctf_basis_k_t @ covar_coeff_k @ ctf_basis_k)
 
@@ -626,7 +625,7 @@ class BatchedRotCov2D(RotCov2D):
 
                 b_mean[k] += b_mean_k
 
-                covar_coeff_k = self._get_covar(coeff_k, zero_coeff)
+                covar_coeff_k = self._old_get_covar(coeff_k, zero_coeff)
 
                 b_covar_k = ctf_basis_k_t @ covar_coeff_k
 
