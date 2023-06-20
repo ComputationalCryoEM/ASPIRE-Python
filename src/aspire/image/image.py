@@ -501,7 +501,7 @@ class Image:
             Passing a filepath as a string will attempt to save to file.
 
         :return: tuple(estimated_resolution,  FRC),
-            where `estimated_resolution` is in Angstrom
+            where `estimated_resolution` is in angstrom
             and FRC is a Numpy array of correlations.
         """
 

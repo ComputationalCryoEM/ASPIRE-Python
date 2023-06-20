@@ -535,7 +535,7 @@ class Volume:
             Passing a filepath as a string will attempt to save to file.
 
         :return: tuple(estimated_resolution,  FSC),
-            where `estimated_resolution` is in Angstrom
+            where `estimated_resolution` is in angstrom
             and FSC is a Numpy array of correlations.
         """
 
