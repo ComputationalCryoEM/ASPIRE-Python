@@ -40,7 +40,7 @@ data_model_class_1
 loop_ 
 _rlnSpectralIndex #1 
 _rlnResolution #2 
-_rlnangstromResolution #3 
+_rlnAngstromResolution #3 
 _rlnSsnrMap #4 
 _rlnGoldStandardFsc #5 
 _rlnReferenceSigma2 #6 
