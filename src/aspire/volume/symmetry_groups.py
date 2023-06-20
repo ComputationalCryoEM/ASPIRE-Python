@@ -110,6 +110,22 @@ class CnSymmetryGroup(SymmetryGroup):
         return Rotation.about_axis("z", angles, dtype=self.dtype)
 
 
+class IdentitySymmetryGroup(CnSymmetryGroup):
+    """
+    The identity symmetry group.
+    """
+
+    def __init__(self, dtype):
+        """
+        `IdentitySymmetryGroup` instance that serves up a `Rotation` object
+        containing the identity matrix.
+
+        :param dtype: Numpy dtype to be used for rotation matrices.
+        """
+
+        super().__init__(order=1, dtype=dtype)
+
+
 class DnSymmetryGroup(SymmetryGroup):
     """
     Dihedral symmetry group.

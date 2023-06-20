@@ -17,7 +17,7 @@ from aspire.utils import (
     mat_to_vec,
     vec_to_mat,
 )
-from aspire.volume import CnSymmetryGroup, SymmetryGroup
+from aspire.volume import IdentitySymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -165,8 +165,8 @@ class Volume:
 
         :param value: A `SymmetryGroup` instance or string indicating symmetry, ie. "C5", "D7", "T", etc.
         """
-        # If value not provided set symmetry to C1.
-        value = value or CnSymmetryGroup(order=1, dtype=self.dtype)
+        # If value not provided set symmetry to the `IdentitySymmetryGroup`.
+        value = value or IdentitySymmetryGroup(dtype=self.dtype)
         if isinstance(value, str):
             value = SymmetryGroup.from_string(value, dtype=self.dtype)
         if not isinstance(value, SymmetryGroup):
