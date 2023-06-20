@@ -16,9 +16,12 @@ reconstruction pipeline using synthetic data generated with ASPIRE's
 # ASPIRE's data downloading utility by using the following import.
 
 from aspire.utils import emdb_2660
+
 # sphinx_gallery_start_ignore
 # flake8: noqa
 # sphinx_gallery_end_ignore
+# Download the volume map
+file_path = emdb_2660()
 
 # %%
 # Load a Volume
@@ -26,10 +29,11 @@ from aspire.utils import emdb_2660
 # We use ASPIRE's ``Volume`` class to load and downsample the volume.
 
 import numpy as np
+
 from aspire.volume import Volume
 
 # Load 80s Ribosome
-original_vol = Volume.load(emdb_2660(), dtype=np.float32)
+original_vol = Volume.load(file_path, dtype=np.float32)
 
 # Downsample the volume
 res = 41
