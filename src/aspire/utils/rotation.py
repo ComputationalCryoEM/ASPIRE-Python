@@ -240,30 +240,35 @@ class Rotation:
         return ell_ij, ell_ji
 
     @staticmethod
-    def from_euler(values, dtype=np.float32):
+    def from_euler(values, dtype=None):
         """
         build rotation object from Euler angles in radians
 
-        :param dtype:  data type for rotational angles and matrices
         :param values: Rotation angles in radians, as a n x 3 array
+        :param dtype: Optional output dtype.  Infers from `values` by default when possible,
+            otherwise defaults to `float32`.
+
         :return: new Rotation object
         """
+        dtype = dtype or getattr(values, "dtype", np.float32)
         rotations = sp_rot.from_euler("ZYZ", values, degrees=False)
-        matrices = rotations.as_matrix().astype(dtype)
+        matrices = rotations.as_matrix().astype(dtype, copy=False)
         return Rotation(matrices)
 
     @staticmethod
-    def about_axis(axis, angles, dtype=np.float32):
+    def about_axis(axis, angles, dtype=None):
         """
         Build rotation object from axis and angles of rotation.
 
         :param axis: A string denoting the axis of rotation. "x", "y", or "z".
         :param angles: Rotation angles in radians. `angles` can be a single value,
             or an array of shape (N,) or (N,1).
-        :param dtype: Data type for rotation matrices.
+        :param dtype: Optional output dtype.  Infers from `angles` by default when possible,
+            otherwise defaults to `float32`.
 
         :return: Rotation object
         """
+        dtype = dtype or getattr(angles, "dtype", np.float32)
         axes = ["x", "y", "z"]
         if axis.lower() not in axes:
             raise ValueError("`axis` must be 'x', 'y', or 'z'.")
@@ -301,7 +306,7 @@ class Rotation:
         return sp_rot.from_matrix(self.matrices).as_rotvec()
 
     @staticmethod
-    def from_rotvec(vec, dtype=np.float32):
+    def from_rotvec(vec, dtype=None):
         """
         Build a Rotation object from rotation vectors. A rotation vector is a
         3D vector which is co-directional to the axis of rotation and whose norm
@@ -309,22 +314,25 @@ class Rotation:
         about the axis.
 
         :param vec: array_like, shape (N, 3) or (3,)
+        :param dtype: Optional output dtype.  Infers from `vec` by default.
         :return: Rotation object
         """
+        dtype = dtype or vec.dtype
         rots = sp_rot.from_rotvec(vec)
-        matrices = rots.as_matrix().astype(dtype)
+        matrices = rots.as_matrix().astype(dtype, copy=False)
         return Rotation(matrices)
 
     @staticmethod
-    def from_matrix(values, dtype=np.float32):
+    def from_matrix(values, dtype=None):
         """
         build rotation object from rotational matrices
 
-        :param dtype:  data type for rotational angles and matrices
+        :param dtype: Optional output dtype.  Infers from `values` by default.
         :param values: Rotation matrices, as a n x 3 x 3 array
         :return: new Rotation object
         """
-        return Rotation(values.astype(dtype))
+        dtype = dtype or values.dtype
+        return Rotation(values.astype(dtype, copy=False))
 
     @staticmethod
     def generate_random_rotations(
