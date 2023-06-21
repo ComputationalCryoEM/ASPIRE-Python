@@ -68,7 +68,7 @@ plt.show()
 ctf_filter = CTFFilter(
     pixel_size=1,  # angstrom
     voltage=200,  # kV
-    defocus_u=15000,  # angstrom, 10000A = 1um
+    defocus_u=15000,  # angstrom, 10000 A = 1 um
     defocus_v=10000,
     defocus_ang=np.pi / 6,  # Radians
     Cs=2.26,  # Spherical aberration constant
