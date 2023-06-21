@@ -22,15 +22,15 @@ def _angular_dist_degrees(R1, R2):
 
 
 # Original author suggests testing with the following parameters:
-#     loss type ('wemd' or 'eu')
+#     loss type ('wemd' or 'euclidean')
 #     downsampling level (32 or 64 recommended)
 #     total number of iterations (150 or 200 recommended)
 
 ALGO_PARAMS = [
     pytest.param(["wemd", 32, 200], marks=pytest.mark.expensive),
     ["wemd", 64, 150],
-    ["eu", 32, 200],
-    pytest.param(["eu", 64, 150], marks=pytest.mark.expensive),
+    ["euclidean", 32, 200],
+    pytest.param(["euclidean", 64, 150], marks=pytest.mark.expensive),
     pytest.param(["wemd", 31, 400], marks=pytest.mark.expensive),
 ]
 
@@ -39,9 +39,7 @@ DTYPES = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
 
 
 def algo_params_id(params):
-    return (
-        f"loss_type={params[0]}, downsampling_level={params[1]}, max_iters={params[2]}"
-    )
+    return f"loss_type={params[0]}, downsampled_size={params[1]}, max_iters={params[2]}"
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
@@ -97,9 +95,8 @@ def test_bot_align(algo_params, vol_data_fixture):
         vol0,
         vol_given,
         loss_type=algo_params[0],
-        downsampling_level=algo_params[1],
+        downsampled_size=algo_params[1],
         max_iters=algo_params[2],
-        dtype=np.float32,
     )
 
     # Recovery without refinement (degrees)
