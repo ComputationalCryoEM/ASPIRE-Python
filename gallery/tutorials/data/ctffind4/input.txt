@@ -51,12 +51,12 @@ Timings
  Total                : 00:00:48
 
 
-Estimated defocus values        : 9982.50 , 9982.50 angstroms
+Estimated defocus values        : 9982.50 , 9982.50 Angstroms
 Estimated azimuth of astigmatism: 0.00 degrees
 Additional phase shift          : 2.020 degrees (0.035 radians) (0.011 PIf)
 Score                           : 0.56568
-Pixel size for fitting          : 1.400 angstroms
-Thon rings with good fit up to  : 2.0 angstroms
+Pixel size for fitting          : 1.400 Angstroms
+Thon rings with good fit up to  : 2.0 Angstroms
 Did not detect CTF aliasing
 
 
