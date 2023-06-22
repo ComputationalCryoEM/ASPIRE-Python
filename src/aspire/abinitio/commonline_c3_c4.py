@@ -49,7 +49,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         epsilon=1e-3,
         max_iters=1000,
         degree_res=1,
-        n_check=None,
         seed=None,
     ):
         """
@@ -64,9 +63,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param degree_res: Degree resolution for estimating in-plane rotations.
-        :param n_check: For each image/projection find its common-lines with
-            n_check images. If n_check is less than the total number of images,
-            a random subset of n_check images is used.
         :param seed: Optional seed for RNG.
         """
 
@@ -76,7 +72,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             n_theta=n_theta,
             max_shift=max_shift,
             shift_step=shift_step,
-            n_check=n_check,
         )
 
         self._check_symmetry(symmetry)
