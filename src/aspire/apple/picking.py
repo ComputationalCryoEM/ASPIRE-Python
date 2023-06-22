@@ -479,7 +479,7 @@ class Picker:
         particles = particle_windows.astype(int)
         non_noise = non_noise_windows.astype(int)
 
-        idx = np.argsort(-np.reshape(score, (np.prod(score.shape)), "F"))
+        idx = np.argsort(-np.reshape(score, (np.prod(score.shape)), "F"), kind="stable")
         x, y = np.unravel_index(idx, score.shape)
         bw_mask_p = np.zeros((micro_img.shape[0], micro_img.shape[1]))
         qs = self.query_size // 2
