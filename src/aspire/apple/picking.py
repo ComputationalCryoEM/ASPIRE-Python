@@ -479,6 +479,8 @@ class Picker:
         particles = particle_windows.astype(int)
         non_noise = non_noise_windows.astype(int)
 
+        # Note, argsort kind set to 'stable' for cross platform consistency.
+        # For NumPy >= 1.25 'quicksort' returns argsort ties in a different order with AVX-512.
         idx = np.argsort(-np.reshape(score, (np.prod(score.shape)), "F"), kind="stable")
         x, y = np.unravel_index(idx, score.shape)
         bw_mask_p = np.zeros((micro_img.shape[0], micro_img.shape[1]))

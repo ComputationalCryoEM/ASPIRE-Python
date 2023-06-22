@@ -18,7 +18,7 @@ class ApplePickerTestCase(TestCase):
         pass
 
     def testPickCenters(self):
-        # 461 particles with the following centers
+        # 487 particles with the following centers
         centers = {
             (149, 621),
             (151, 3887),
