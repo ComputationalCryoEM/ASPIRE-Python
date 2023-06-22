@@ -5,7 +5,6 @@ from scipy.linalg import eigh
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.utils import J_conjugate, Rotation, all_pairs
-from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +42,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
         max_iters=1000,
         degree_res=1,
         min_dist_cls=25,
-        n_check=None,
         seed=None,
     ):
         """
@@ -58,9 +56,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
         :param max_iter: Maximum iterations for the power method.
         :param degree_res: Degree resolution for estimating in-plane rotations.
         :param min_dist_cls: Minimum distance between mutual common-lines. Default = 25 degrees.
-        :param n_check: For each image/projection find its common-lines with
-            n_check images. If n_check is less than the total number of images,
-            a random subset of n_check images is used.
         :param seed: Optional seed for RNG.
         """
         super().__init__(
@@ -73,7 +68,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
             epsilon=epsilon,
             max_iters=max_iters,
             degree_res=degree_res,
-            n_check=n_check,
             seed=seed,
         )
 
@@ -98,7 +92,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
         """
 
         n_img = self.n_img
-        n_check = self.n_check
 
         if self.n_theta % 2 == 1:
             msg = "n_theta must be even"
@@ -137,13 +130,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         # The random selection is implemented.
         for i in range(n_img - 1):
             p1 = pf[i]
-
-            # build the subset of j images if n_check < n_img
-            n_remaining = n_img - i - 1
-            n_j = min(n_remaining, n_check)
-            subset_j = np.sort(choice(n_remaining, n_j, replace=False) + i + 1)
-
-            for j in subset_j:
+            for j in range(i + 1, n_img):
                 p2 = pf_shifted_flipped[j]
                 corr = self._compute_correlations(p1, p2)
                 corr = corr.reshape(self.n_theta, n_shifts, self.n_theta // 2)
