@@ -135,7 +135,8 @@ class DnSymmetryGroup(SymmetryGroup):
         """
         `DnSymmetryGroup` instance that serves up a `Rotation` object
         containing rotation matrices of the symmetry group (including
-        the Identity) accessed via the `matrices` attribute.
+        the Identity) accessed via the `matrices` attribute. Note, this
+        is the chiral dihedral symmetry group which does contain reflections.
 
         :param order: The cyclic order for the symmetry group (int).
         :param dtype: Numpy dtype to be used for rotation matrices.
@@ -177,8 +178,9 @@ class TSymmetryGroup(SymmetryGroup):
     def __init__(self, dtype):
         """
         `TSymmetryGroup` instance that serves up a `Rotation` object
-        containing rotation matrices of the symmetry group (including
-        the Identity) accessed via the `matrices` attribute.
+        containing rotation matrices of the symmetry group (including the
+        Identity) accessed via the `matrices` attribute. Note, this is the
+        chiral tetrahedral symmetry group which does not contain reflections.
 
         :param dtype: Numpy dtype to be used for rotation matrices.
         """
@@ -231,8 +233,9 @@ class OSymmetryGroup(SymmetryGroup):
     def __init__(self, dtype):
         """
         `OSymmetryGroup` instance that serves up a `Rotation` object
-        containing rotation matrices of the symmetry group (including
-        the Identity) accessed via the `matrices` attribute.
+        containing rotation matrices of the symmetry group (including the
+        Identity) accessed via the `matrices` attribute. Note, this is the
+        chiral octahedral symmetry group which does not contain reflections.
 
         :param dtype: Numpy dtype to be used for rotation matrices.
         """
