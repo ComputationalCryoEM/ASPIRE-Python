@@ -27,6 +27,8 @@ from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, Simulation
+from aspire.source import Simulation
+from aspire.utils import emdb_2660
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     get_rots_mse,
@@ -57,10 +59,9 @@ noise_variance = 5e-7  # Set a target noise variance
 # %%
 # Simulation Data
 # ---------------
-# Start with a fairly hi-res volume available from EMPIAR/EMDB.
-# https://www.ebi.ac.uk/emdb/EMD-2660
-# https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2660/map/emd_2660.map.gz
-og_v = Volume.load("emd_2660.map", dtype=np.float64)
+# Start with the hi-res volume map EMDB-2660 sourced from EMPIAR/EMDB,
+# https://www.ebi.ac.uk/emdb/EMD-2660, and dowloaded via ASPIRE's download utility.
+og_v = Volume.load(emdb_2660(), dtype=np.float64)
 logger.info("Original volume map data" f" shape: {og_v.shape} dtype:{og_v.dtype}")
 
 logger.info(f"Downsampling to {(img_size,)*3}")
