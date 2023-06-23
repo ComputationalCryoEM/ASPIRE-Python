@@ -112,9 +112,6 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         self.angular_indices = indices_ells
         self.radial_indices = indices_ks
         self.signs_indices = indices_sgns
-        # Relating to paper: a[i] = a_ell_ks = a_angularindices[i]_radialindices[i]
-        self.complex_angular_indices = indices_ells[self._pos]  # k
-        self.complex_radial_indices = indices_ks[self._pos]  # q
 
     def indices(self):
         """

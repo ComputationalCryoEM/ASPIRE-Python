@@ -26,7 +26,14 @@ class SteerableBasis2D(Basis):
         self._zero_angular_inds = self.angular_indices == 0
         self._pos_angular_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
         self._neg_angular_inds = self.signs_indices == -1
+        self._non_neg_angular_inds = self.signs_indices >= 0
         self._blk_diag_cov_shape = None
+
+        # Try to centralize inds between FB/FFB and FLE in SteerableBasis2D
+        self._indices = self.indices()
+        self.complex_count = self.count - sum(self._neg_angular_inds)
+        self.complex_angular_indices = self.angular_indices[self._non_neg_angular_inds]
+        self.complex_radial_indices = self.radial_indices[self._non_neg_angular_inds]
 
     def calculate_bispectrum(
         self, complex_coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None

@@ -155,6 +155,17 @@ class PSWFBasis2D(SteerableBasis2D):
         # the column dimension of samples_conj_transpose is the number of basis coefficients
         self.count = self.samples_conj_transpose.shape[1]
 
+    # for tmp compat, probably can remove `indices` or clean it up later.
+    def indices(self):
+        """
+        Return the precomputed indices for each basis function.
+        """
+        return {
+            "ells": self.angular_indices,
+            "ks": self.radial_indices,
+            "sgns": self.signs_indices,
+        }
+
     def _evaluate_t(self, images):
         """
         Evaluate coefficient vectors in PSWF basis using the direct method
