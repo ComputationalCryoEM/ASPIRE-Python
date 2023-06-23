@@ -7,7 +7,7 @@ registry = {
 }
 
 registry_urls = {
-    "emdb_2660.map": "https://zenodo.org/record/7730530/files/emd_2660.map.gz",
+    "emdb_2660.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2660/map/emd_2660.map.gz",
     "emdb_8012.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-8012/map/emd_8012.map.gz",
 }
 
