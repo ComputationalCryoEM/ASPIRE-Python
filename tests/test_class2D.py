@@ -1,3 +1,4 @@
+import itertools
 import logging
 import os
 from unittest import TestCase
@@ -6,7 +7,7 @@ import numpy as np
 import pytest
 from sklearn import datasets
 
-from aspire.basis import Coef, FFBBasis2D, FSPCABasis
+from aspire.basis import Coef, FFBBasis2D, FLEBasis2D, FSPCABasis
 from aspire.classification import RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.noise import WhiteNoiseAdder
@@ -23,373 +24,402 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 SEED = 42
 
 
-class FSPCATestCase(TestCase):
-    def setUp(self):
-        self.resolution = 16
-        self.dtype = np.float32
+IMG_SIZES = [16]
+DTYPES = [np.float32]
 
-        # Get a volume
-        v = Volume(
-            np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
-                self.dtype
+
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture(params=IMG_SIZES, ids=lambda x: f"img_size={x}")
+def img_size(request):
+    return request.param
+
+
+@pytest.fixture
+def volume(dtype, img_size):
+    # Get a volume
+    v = Volume(
+        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(dtype)
+    )
+
+    return v.downsample(img_size)
+
+
+@pytest.fixture
+def sim_fixture(volume, img_size, dtype):
+    # Create a src from the volume
+    src = Simulation(L=img_size, n=321, vols=volume, dtype=dtype, seed=SEED)
+    src = src.cache()  # Precompute image stack
+
+    # Calculate some projection images
+    imgs = src.images[:]
+
+    # Configure an FSPCA basis
+    fspca_basis = FSPCABasis(src, noise_var=0)
+
+    return imgs, src, fspca_basis
+
+
+def test_expand_eval(sim_fixture):
+    imgs, _, fspca_basis = sim_fixture
+    coef = fspca_basis.expand_from_image_basis(imgs)
+    recon = fspca_basis.evaluate_to_image_basis(coef)
+
+    # Check recon is close to imgs
+    rmse = np.sqrt(np.mean(np.square(imgs.asnumpy() - recon.asnumpy())))
+    logger.info(f"FSPCA Expand Eval Image Round True RMSE: {rmse}")
+    assert rmse < utest_tolerance(fspca_basis.dtype)
+
+
+def test_complex_conversions_errors(sim_fixture):
+    """
+    Test we raise when passed incorrect dtypes.
+
+    Also checks we can handle 0d vector in `to_real`.
+
+    Most other cases covered by classification unit tests.
+    """
+    imgs, _, fspca_basis = sim_fixture
+
+    with pytest.raises(TypeError, match="coef provided to to_complex should be real."):
+        _ = fspca_basis.to_complex(
+            Coef(
+                fspca_basis,
+                np.arange(fspca_basis.count),
+                dtype=np.complex64,
             )
         )
-        v = v.downsample(self.resolution)
 
-        # Create a src from the volume
-        self.src = Simulation(
-            L=self.resolution, n=321, vols=v, dtype=self.dtype, seed=SEED
+    with pytest.raises(TypeError, match="coef provided to to_real should be complex."):
+        _ = fspca_basis.to_real(
+            np.arange(fspca_basis.count, dtype=np.float32).flatten()
         )
-        self.src = self.src.cache()  # Precompute image stack
 
-        # Calculate some projection images
-        self.imgs = self.src.images[:]
 
+def test_rotate(sim_fixture):
+    """
+    Trivial test of rotation in FSPCA Basis.
+
+    Also covers to_real and to_complex conversions in FSPCA Basis.
+    """
+    imgs, _, fspca_basis = sim_fixture
+
+    coef = fspca_basis.expand_from_image_basis(imgs)
+    # rotate by pi
+    rot_coef = fspca_basis.rotate(coef, radians=np.pi)
+    rot_imgs = fspca_basis.evaluate_to_image_basis(rot_coef)
+
+    for i, img in enumerate(imgs):
+        rmse = np.sqrt(np.mean(np.square(np.flip(img) - rot_imgs[i])))
+        assert rmse < 10 * utest_tolerance(fspca_basis.dtype)
+
+
+def test_basis_too_small(sim_fixture):
+    """
+    When number of components is more than basis functions raise with descriptive error.
+    """
+    imgs, src, fspca_basis = sim_fixture
+
+    # fb_basis = FFBBasis2D((src.L, src.L), dtype=src.dtype)
+    fb_basis = FLEBasis2D((src.L, src.L), dtype=src.dtype)
+
+    with pytest.raises(ValueError, match=r".*Reduce components.*"):
         # Configure an FSPCA basis
-        self.fspca_basis = FSPCABasis(self.src, noise_var=0)
-
-    def testExpandEval(self):
-        coef = self.fspca_basis.expand_from_image_basis(self.imgs)
-        recon = self.fspca_basis.evaluate_to_image_basis(coef)
-
-        # Check recon is close to imgs
-        rmse = np.sqrt(np.mean(np.square(self.imgs.asnumpy() - recon.asnumpy())))
-        logger.info(f"FSPCA Expand Eval Image Round True RMSE: {rmse}")
-        self.assertTrue(rmse < utest_tolerance(self.dtype))
-
-    def testComplexConversionErrors(self):
-        """
-        Test we raise when passed incorrect dtypes.
-
-        Also checks we can handle 0d vector in `to_real`.
-
-        Most other cases covered by classification unit tests.
-        """
-
-        with pytest.raises(
-            TypeError, match="coef provided to to_complex should be real."
-        ):
-            _ = self.fspca_basis.to_complex(
-                Coef(
-                    self.fspca_basis,
-                    np.arange(self.fspca_basis.count),
-                    dtype=np.complex64,
-                )
-            )
-
-        with pytest.raises(
-            TypeError, match="coef provided to to_real should be complex."
-        ):
-            _ = self.fspca_basis.to_real(
-                np.arange(self.fspca_basis.count, dtype=np.float32).flatten()
-            )
-
-    def testRotate(self):
-        """
-        Trivial test of rotation in FSPCA Basis.
-
-        Also covers to_real and to_complex conversions in FSPCA Basis.
-        """
-        coef = self.fspca_basis.expand_from_image_basis(self.imgs)
-        # rotate by pi
-        rot_coef = self.fspca_basis.rotate(coef, radians=np.pi)
-        rot_imgs = self.fspca_basis.evaluate_to_image_basis(rot_coef)
-
-        for i, img in enumerate(self.imgs):
-            rmse = np.sqrt(np.mean(np.square(np.flip(img) - rot_imgs[i])))
-            self.assertTrue(rmse < 10 * utest_tolerance(self.dtype))
-
-    def testBasisTooSmall(self):
-        """
-        When number of components is more than basis functions raise with descriptive error.
-        """
-        fb_basis = FFBBasis2D((self.resolution, self.resolution), dtype=self.dtype)
-
-        with pytest.raises(ValueError, match=r".*Reduce components.*"):
-            # Configure an FSPCA basis
-            _ = FSPCABasis(
-                self.src, basis=fb_basis, components=fb_basis.count * 2, noise_var=0
-            )
+        _ = FSPCABasis(src, basis=fb_basis, components=fb_basis.count * 2, noise_var=0)
 
 
-class RIRClass2DTestCase(TestCase):
-    def setUp(self):
-        self.n_classes = 5
-        self.resolution = 16
-        self.dtype = np.float64
-        self.n_img = 150
+# xxx param this later
+@pytest.fixture
+def basis(img_size, dtype):
+    # Setup a Basis
+    basis = FFBBasis2D((img_size, img_size), dtype=dtype)
+    # basis = FLEBasis2D((img_size, img_size), dtype=dtype)
+    return basis
 
-        # Create some projections
-        v = Volume(
-            np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
-                self.dtype
-            )
-        )
-        v = v.downsample(self.resolution)
 
-        # Clean
-        self.clean_src = Simulation(
-            L=self.resolution, n=self.n_img, vols=v, dtype=self.dtype, seed=SEED
-        )
+@pytest.fixture
+def sim_fixture2(volume, basis, img_size, dtype):
+    n_img = 150
 
-        # With Noise
-        noise_var = 0.01 * np.var(np.sum(v[0], axis=0))
-        noise_adder = WhiteNoiseAdder(var=noise_var)
-        self.noisy_src = Simulation(
-            L=self.resolution,
-            n=self.n_img,
-            vols=v,
-            dtype=self.dtype,
-            noise_adder=noise_adder,
-            seed=SEED,
-        )
+    # Clean
+    clean_src = Simulation(L=img_size, n=n_img, vols=volume, dtype=dtype, seed=SEED)
 
-        # Set up FFB
-        # Setup a Basis
-        self.basis = FFBBasis2D((self.resolution, self.resolution), dtype=self.dtype)
+    # With Noise
+    noise_var = 0.01 * np.var(np.sum(volume[0], axis=0))
+    noise_adder = WhiteNoiseAdder(var=noise_var)
+    noisy_src = Simulation(
+        L=img_size,
+        n=n_img,
+        vols=volume,
+        dtype=dtype,
+        noise_adder=noise_adder,
+        seed=SEED,
+    )
 
-        # Create Basis, use precomputed Basis
-        self.clean_fspca_basis = FSPCABasis(
-            self.clean_src, self.basis, noise_var=0
-        )  # Note noise_var assigned zero, skips eigval filtering.
+    # Create Basis, use precomputed Basis
+    clean_fspca_basis = FSPCABasis(
+        clean_src, basis, noise_var=0
+    )  # Note noise_var assigned zero, skips eigval filtering.
 
-        self.clean_fspca_basis_compressed = FSPCABasis(
-            self.clean_src, self.basis, components=101, noise_var=0
-        )  # Note noise_var assigned zero, skips eigval filtering.
+    clean_fspca_basis_compressed = FSPCABasis(
+        clean_src, basis, components=101, noise_var=0
+    )  # Note noise_var assigned zero, skips eigval filtering.
 
-        # Ceate another fspca_basis, use autogeneration FFB2D Basis
-        self.noisy_fspca_basis = FSPCABasis(self.noisy_src)
+    # Ceate another fspca_basis, use autogeneration Basis
+    noisy_fspca_basis = FSPCABasis(noisy_src)
 
-    def testSourceTooSmall(self):
-        """
-        When number of images in source is less than requested bispectrum components,
-        raise with descriptive error.
-        """
+    return (
+        clean_src,
+        noisy_src,
+        clean_fspca_basis,
+        clean_fspca_basis_compressed,
+        noisy_fspca_basis,
+    )
 
-        with pytest.raises(
-            RuntimeError, match=r".*Increase number of images or reduce components.*"
-        ):
-            _ = RIRClass2D(
-                self.clean_src,
-                fspca_components=self.clean_src.n * 4,
-                bispectrum_components=self.clean_src.n * 2,
-            )
 
-    def testIncorrectComponents(self):
-        """
-        Check we raise with inconsistent configuration of FSPCA components.
-        """
+def test_source_too_small(sim_fixture2):
+    """
+    When number of images in source is less than requested bispectrum components,
+    raise with descriptive error.
+    """
+    clean_src = sim_fixture2[0]
 
-        with pytest.raises(
-            RuntimeError, match=r"`pca_basis` components.*provided by user."
-        ):
-            _ = RIRClass2D(
-                self.clean_src,
-                self.clean_fspca_basis,  # 400 components
-                fspca_components=100,
-                large_pca_implementation="legacy",
-                nn_implementation="legacy",
-                bispectrum_implementation="legacy",
-            )
-
-        # Explicitly providing the same number should be okay.
+    with pytest.raises(
+        RuntimeError, match=r".*Increase number of images or reduce components.*"
+    ):
         _ = RIRClass2D(
-            self.clean_src,
-            self.clean_fspca_basis,  # 400 components
-            fspca_components=self.clean_fspca_basis.components,
-            bispectrum_components=100,
+            clean_src,
+            fspca_components=clean_src.n * 4,
+            bispectrum_components=clean_src.n * 2,
+        )
+
+
+def test_incorrect_components(sim_fixture2):
+    """
+    Check we raise with inconsistent configuration of FSPCA components.
+    """
+    clean_src, clean_fspca_basis = sim_fixture2[0], sim_fixture2[2]
+
+    with pytest.raises(
+        RuntimeError, match=r"`pca_basis` components.*provided by user."
+    ):
+        _ = RIRClass2D(
+            clean_src,
+            clean_fspca_basis,  # 400 components
+            fspca_components=100,
             large_pca_implementation="legacy",
             nn_implementation="legacy",
             bispectrum_implementation="legacy",
-            seed=SEED,
         )
 
-    def testRIRLegacy(self):
-        """
-        Currently just tests for runtime errors.
-        """
+    # Explicitly providing the same number should be okay.
+    _ = RIRClass2D(
+        clean_src,
+        clean_fspca_basis,  # 400 components
+        fspca_components=clean_fspca_basis.components,
+        bispectrum_components=100,
+        large_pca_implementation="legacy",
+        nn_implementation="legacy",
+        bispectrum_implementation="legacy",
+        seed=SEED,
+    )
 
-        clean_fspca_basis = FSPCABasis(
-            self.clean_src, self.basis, noise_var=0, components=100
-        )  # Note noise_var assigned zero, skips eigval filtering.
 
-        rir = RIRClass2D(
-            self.clean_src,
+def test_RIR_legacy(basis, sim_fixture2):
+    """
+    Currently just tests for runtime errors.
+    """
+    clean_src = sim_fixture2[0]
+
+    clean_fspca_basis = FSPCABasis(
+        clean_src, basis, noise_var=0, components=100
+    )  # Note noise_var assigned zero, skips eigval filtering.
+
+    rir = RIRClass2D(
+        clean_src,
+        clean_fspca_basis,
+        bispectrum_components=42,
+        large_pca_implementation="legacy",
+        nn_implementation="legacy",
+        bispectrum_implementation="legacy",
+        seed=SEED,
+    )
+
+    _ = rir.classify()
+
+
+def test_RIR_devel_disp(sim_fixture2):
+    """
+    Currently just tests for runtime errors.
+    """
+    clean_src, clean_fspca_basis = sim_fixture2[0], sim_fixture2[2]
+
+    # Use the basis class setup, only requires a Source.
+    rir = RIRClass2D(
+        clean_src,
+        fspca_components=clean_fspca_basis.components,
+        bispectrum_components=clean_fspca_basis.components - 1,
+        large_pca_implementation="legacy",
+        nn_implementation="legacy",
+        bispectrum_implementation="devel",
+    )
+
+    _ = rir.classify()
+
+
+def test_RIR_sk(sim_fixture2):
+    """
+    Excercises the eigenvalue based filtering,
+    along with other swappable components.
+
+    Currently just tests for runtime errors.
+    """
+    noisy_src, noisy_fspca_basis = sim_fixture2[1], sim_fixture2[4]
+
+    rir = RIRClass2D(
+        noisy_src,
+        noisy_fspca_basis,
+        bispectrum_components=100,
+        sample_n=42,
+        large_pca_implementation="sklearn",
+        nn_implementation="sklearn",
+        bispectrum_implementation="devel",
+        seed=SEED,
+    )
+
+    _ = rir.classify()
+
+
+def test_eigein_images(sim_fixture2):
+    """
+    Test we can return eigenimages.
+    """
+    clean_fspca_basis, clean_fspca_basis_compressed = sim_fixture2[2], sim_fixture2[3]
+
+    # Get the eigenimages from an FSPCA basis for testing
+    eigimg_uncompressed = clean_fspca_basis.eigen_images()
+
+    # Get the eigenimages from a compressed FSPCA basis for testing
+    eigimg_compressed = clean_fspca_basis_compressed.eigen_images()
+
+    # Check they are close.
+    # Note it is expected the compression reorders the eigvecs,
+    #  and thus the eigimages.
+    # We sum over all the eigimages to yield an "average" for comparison
+    assert np.allclose(
+        np.sum(eigimg_uncompressed.asnumpy(), axis=0),
+        np.sum(eigimg_compressed.asnumpy(), axis=0),
+    )
+
+
+def test_component_size(sim_fixture2):
+    """
+    Tests we raise when number of components are too small.
+
+    Also tests dtype mismatch behavior.
+    """
+    clean_src, clean_fspca_basis = sim_fixture2[0], sim_fixture2[2]
+
+    with pytest.raises(RuntimeError, match=r".*Reduce bispectrum_components.*"):
+        _ = RIRClass2D(
+            clean_src,
             clean_fspca_basis,
-            bispectrum_components=42,
-            large_pca_implementation="legacy",
-            nn_implementation="legacy",
+            bispectrum_components=clean_src.n + 1,
+            dtype=np.float64,
+        )
+
+
+def test_implementations(basis, sim_fixture2):
+    """
+    Test optional implementations handle bad inputs with a descriptive error.
+    """
+    clean_src, clean_fspca_basis = sim_fixture2[0], sim_fixture2[2]
+
+    # Nearest Neighbhor component
+    with pytest.raises(ValueError, match=r"Provided nn_implementation.*"):
+        _ = RIRClass2D(
+            clean_src,
+            clean_fspca_basis,
+            bispectrum_components=int(0.75 * clean_fspca_basis.basis.count),
+            nn_implementation="badinput",
+        )
+
+    # Large PCA component
+    with pytest.raises(ValueError, match=r"Provided large_pca_implementation.*"):
+        _ = RIRClass2D(
+            clean_src,
+            clean_fspca_basis,
+            large_pca_implementation="badinput",
+        )
+
+    # Bispectrum component
+    with pytest.raises(ValueError, match=r"Provided bispectrum_implementation.*"):
+        _ = RIRClass2D(
+            clean_src,
+            clean_fspca_basis,
+            bispectrum_implementation="badinput",
+        )
+
+    # Legacy Bispectrum implies legacy bispectrum (they're integrated).
+    with pytest.raises(
+        ValueError, match=r'"legacy" bispectrum_implementation implies.*'
+    ):
+        _ = RIRClass2D(
+            clean_src,
+            clean_fspca_basis,
             bispectrum_implementation="legacy",
-            seed=SEED,
-        )
-
-        _ = rir.classify()
-
-    def testRIRDevelBisp(self):
-        """
-        Currently just tests for runtime errors.
-        """
-
-        # Use the basis class setup, only requires a Source.
-        rir = RIRClass2D(
-            self.clean_src,
-            fspca_components=self.clean_fspca_basis.components,
-            bispectrum_components=self.clean_fspca_basis.components - 1,
-            large_pca_implementation="legacy",
-            nn_implementation="legacy",
-            bispectrum_implementation="devel",
-        )
-
-        _ = rir.classify()
-
-    def testRIRsk(self):
-        """
-        Excercises the eigenvalue based filtering,
-        along with other swappable components.
-
-        Currently just tests for runtime errors.
-        """
-        rir = RIRClass2D(
-            self.noisy_src,
-            self.noisy_fspca_basis,
-            bispectrum_components=100,
-            sample_n=42,
             large_pca_implementation="sklearn",
-            nn_implementation="sklearn",
-            bispectrum_implementation="devel",
-            seed=SEED,
         )
 
-        _ = rir.classify()
-
-    def testEigenImages(self):
-        """
-        Test we can return eigenimages.
-        """
-
-        # Get the eigenimages from an FSPCA basis for testing
-        eigimg_uncompressed = self.clean_fspca_basis.eigen_images()
-
-        # Get the eigenimages from a compressed FSPCA basis for testing
-        eigimg_compressed = self.clean_fspca_basis_compressed.eigen_images()
-
-        # Check they are close.
-        # Note it is expected the compression reorders the eigvecs,
-        #  and thus the eigimages.
-        # We sum over all the eigimages to yield an "average" for comparison
-        self.assertTrue(
-            np.allclose(
-                np.sum(eigimg_uncompressed.asnumpy(), axis=0),
-                np.sum(eigimg_compressed.asnumpy(), axis=0),
-            )
-        )
-
-    def testComponentSize(self):
-        """
-        Tests we raise when number of components are too small.
-
-        Also tests dtype mismatch behavior.
-        """
-
-        with pytest.raises(RuntimeError, match=r".*Reduce bispectrum_components.*"):
-            _ = RIRClass2D(
-                self.clean_src,
-                self.clean_fspca_basis,
-                bispectrum_components=self.clean_src.n + 1,
-                dtype=np.float64,
-            )
-
-    def testImplementations(self):
-        """
-        Test optional implementations handle bad inputs with a descriptive error.
-        """
-
-        # Nearest Neighbhor component
-        with pytest.raises(ValueError, match=r"Provided nn_implementation.*"):
-            _ = RIRClass2D(
-                self.clean_src,
-                self.clean_fspca_basis,
-                bispectrum_components=int(0.75 * self.clean_fspca_basis.basis.count),
-                nn_implementation="badinput",
-            )
-
-        # Large PCA component
-        with pytest.raises(ValueError, match=r"Provided large_pca_implementation.*"):
-            _ = RIRClass2D(
-                self.clean_src,
-                self.clean_fspca_basis,
-                large_pca_implementation="badinput",
-            )
-
-        # Bispectrum component
-        with pytest.raises(ValueError, match=r"Provided bispectrum_implementation.*"):
-            _ = RIRClass2D(
-                self.clean_src,
-                self.clean_fspca_basis,
-                bispectrum_implementation="badinput",
-            )
-
-        # Legacy Bispectrum implies legacy bispectrum (they're integrated).
-        with pytest.raises(
-            ValueError, match=r'"legacy" bispectrum_implementation implies.*'
-        ):
-            _ = RIRClass2D(
-                self.clean_src,
-                self.clean_fspca_basis,
-                bispectrum_implementation="legacy",
-                large_pca_implementation="sklearn",
-            )
-
-        # Currently we only FSPCA Basis in RIRClass2D
-        with pytest.raises(
-            RuntimeError,
-            match="RIRClass2D has currently only been developed for pca_basis as a FSPCABasis.",
-        ):
-            _ = RIRClass2D(self.clean_src, self.basis)
+    # Currently we only FSPCA Basis in RIRClass2D
+    with pytest.raises(
+        RuntimeError,
+        match="RIRClass2D has currently only been developed for pca_basis as a FSPCABasis.",
+    ):
+        _ = RIRClass2D(clean_src, basis)
 
 
-class LegacyImplementationTestCase(TestCase):
+# Cover branches of Legacy code not taken by the classification unit tests.
+
+
+def test_pca_y():
     """
-    Cover branches of Legacy code not taken by the classification unit tests.
+    We want to check that real inputs and differing input matrix shapes work.
+
+    Most of pca_y is covered by the classificiation unit tests.
     """
 
-    def setUp(self):
-        pass
+    # The iris dataset is a small 150 sample by 5 feature dataset in float64
+    iris = datasets.load_iris()
 
-    def test_pca_y(self):
-        """
-        We want to check that real inputs and differing input matrix shapes work.
+    # Extract the data matrix, run once as is (150, 5),
+    # and once tranposed  so shape[0] < shape[1] (5, 150)
+    for x in (iris.data, iris.data.T):
+        # Run pca_y and check reconstruction holds
+        lsvec, svals, rsvec = pca_y(x, 5)
 
-        Most of pca_y is covered by the classificiation unit tests.
-        """
+        # svd ~~> A = U S V = (U S) V
+        recon = np.dot(lsvec * svals, rsvec)
 
-        # The iris dataset is a small 150 sample by 5 feature dataset in float64
-        iris = datasets.load_iris()
+        assert np.allclose(x, recon)
 
-        # Extract the data matrix, run once as is (150, 5),
-        # and once tranposed  so shape[0] < shape[1] (5, 150)
-        for x in (iris.data, iris.data.T):
-            # Run pca_y and check reconstruction holds
-            lsvec, svals, rsvec = pca_y(x, 5)
 
-            # svd ~~> A = U S V = (U S) V
-            recon = np.dot(lsvec * svals, rsvec)
+def test_bispect_overflow():
+    """
+    A zero value coeff will cause a div0 error in log call.
+    Check it is raised.
+    """
 
-            self.assertTrue(np.allclose(x, recon))
-
-    def testBispectOverflow(self):
-        """
-        A zero value coeff will cause a div0 error in log call.
-        Check it is raised.
-        """
-
-        with pytest.raises(ValueError, match="coeff_norm should not be -inf"):
-            # This should emit a warning before raising
-            with self.assertWarns(RuntimeWarning):
-                bispec_2drot_large(
-                    coeff=np.arange(10),
-                    freqs=np.arange(1, 11),
-                    eigval=np.arange(10),
-                    alpha=1 / 3,
-                    sample_n=4000,
-                )
+    with pytest.raises(ValueError, match="coeff_norm should not be -inf"):
+        # This should emit a warning before raising
+        with pytest.warns(RuntimeWarning):
+            bispec_2drot_large(
+                coeff=np.arange(10),
+                freqs=np.arange(1, 11),
+                eigval=np.arange(10),
+                alpha=1 / 3,
+                sample_n=4000,
+            )
