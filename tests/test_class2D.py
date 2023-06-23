@@ -1,7 +1,5 @@
-import itertools
 import logging
 import os
-from unittest import TestCase
 
 import numpy as np
 import pytest
@@ -26,6 +24,8 @@ SEED = 42
 
 IMG_SIZES = [16]
 DTYPES = [np.float32]
+# Basis used in FSPCA for class averaging.
+BASIS = [FFBBasis2D, FLEBasis2D]
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
@@ -61,6 +61,14 @@ def sim_fixture(volume, img_size, dtype):
     fspca_basis = FSPCABasis(src, noise_var=0)
 
     return imgs, src, fspca_basis
+
+
+@pytest.fixture(params=BASIS, ids=lambda x: f"basis={x}")
+def basis(request, img_size, dtype):
+    cls = request.param
+    # Setup a Basis
+    basis = cls(img_size, dtype=dtype)
+    return basis
 
 
 def test_expand_eval(sim_fixture):
@@ -129,15 +137,6 @@ def test_basis_too_small(sim_fixture):
     with pytest.raises(ValueError, match=r".*Reduce components.*"):
         # Configure an FSPCA basis
         _ = FSPCABasis(src, basis=fb_basis, components=fb_basis.count * 2, noise_var=0)
-
-
-# xxx param this later
-@pytest.fixture
-def basis(img_size, dtype):
-    # Setup a Basis
-    basis = FFBBasis2D((img_size, img_size), dtype=dtype)
-    # basis = FLEBasis2D((img_size, img_size), dtype=dtype)
-    return basis
 
 
 @pytest.fixture
@@ -312,6 +311,7 @@ def test_eigein_images(sim_fixture2):
     assert np.allclose(
         np.sum(eigimg_uncompressed.asnumpy(), axis=0),
         np.sum(eigimg_compressed.asnumpy(), axis=0),
+        atol=utest_tolerance(clean_fspca_basis.dtype),
     )
 
 
