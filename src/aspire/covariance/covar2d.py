@@ -293,7 +293,7 @@ class RotCov2D:
 
         cg_opt = covar_est_opt
 
-        covar_coeff = BlkDiagMatrix.zeros_like(self.basis.blk_diag_cov_shape)
+        covar_coeff = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape)
 
         def precond_fun(S, x):
             p = np.size(S, 0)
