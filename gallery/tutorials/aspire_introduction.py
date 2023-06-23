@@ -149,15 +149,19 @@ file_path = os.path.join(os.getcwd(), "data", "clean70SRibosome_vol_65p.mrc")
 vol = Volume.load(file_path)
 
 # %%
-# More interesting data requires downloading locally.  A common
-# starting dataset can be downloaded from EMDB at
-# `<https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.  After
-# downloading the associated `map` file, unzip in local directory.  To
-# simplify things, this notebook defaults to a small low-resolution
-# sample file instead.  Unfortunately real data can be quite large so
-# we do not ship it with the repo.
+# More interesting data requires downloading locally. A few common
+# starting datasets can be downloaded from EMDB using ASPIRE's downloading
+# utility. The note below demonstrates how to download EMDB-2660, sourced from 
+# `<https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_. To simplify things,
+# this notebook defaults to a small low-resolution sample file instead.
+# Unfortunately real data can be quite large so we do not ship it with the repo.
 
-# vol = Volume.load("path/to/EMD-2660/map/emd_2660.map")
+# %%
+# .. note::
+#     Download EMDB-2660 and load as a ``Volume``::
+#
+#         from aspire.utils import emdb_2660
+#         vol = Volume.load(emdb_2660())
 
 # %%
 # Downsample Volume
