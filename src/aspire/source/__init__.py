@@ -7,6 +7,7 @@ from aspire.source.image import (
     IndexedSource,
     OrientedSource,
 )
+from aspire.source.micrograph import MicrographSource
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
 
