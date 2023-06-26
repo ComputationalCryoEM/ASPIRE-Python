@@ -272,7 +272,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
         # the corresponding third rows vis.
-        Ri_tildes = np.array([self._complete_third_row_to_rot(vi) for vi in vis])
+        Ri_tildes = self._complete_third_row_to_rot(vis)
 
         # Step 2: Construct all in-plane rotation matrices, R_theta_ijs.
         max_angle = (360 // order) * order
