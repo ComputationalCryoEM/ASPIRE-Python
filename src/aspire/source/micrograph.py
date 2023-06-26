@@ -1,3 +1,10 @@
+import numpy as np
+
+from aspire.image import Image
+from aspire.source import Simulation
+from aspire.source.image import _ImageAccessor
+
+
 class MicrographSource:
     def __init__(
         self,
@@ -78,7 +85,7 @@ class MicrographSource:
                 y_bound = (
                     self.micrograph_size - (2 * self.L)
                 ) * np.random.rand() + self.L
-                if self.boundaries == False:
+                if self.boundaries is False:
                     x_bound = (
                         self.micrograph_size + (self.L)
                     ) * np.random.rand() - self.L
@@ -98,12 +105,12 @@ class MicrographSource:
                             center_y,
                             collision_distance,
                         )
-                        == False
+                        is False
                     ):
                         collisions = True
 
                 # If there are no collisions, add new center and increase center count
-                if collisions == False:
+                if collisions is False:
                     centers[i] = np.array([center_x, center_y])
                     count += max_counts
                 count += 1
@@ -119,8 +126,10 @@ class MicrographSource:
         return self._micrographs_accessor
 
     def _micrographs(self, indices):
-        # Add noise code here
-        return self._clean_micrographs(indices)
+        micrograph = self._clean_micrographs(indices)
+        if self.noise_adder:
+            micrograph = self.noise_adder.forward(micrograph)
+        return micrograph
 
     def _clean_micrographs(self, indices):
         # Initialize empty micrograph
@@ -139,7 +148,7 @@ class MicrographSource:
                 ]
                 + image
             )
-        return clean_micrograph
+        return Image(clean_micrograph)
 
     def _images(self, indices):
         return self.simulation.images[indices].asnumpy()[0]
