@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import eig, inv
 from scipy.linalg import solve, sqrtm
 
-from aspire.basis import Coef, FFBBasis2D, FLEBasis2D
+from aspire.basis import Coef, FFBBasis2D
 from aspire.operators import BlkDiagMatrix, DiagMatrix, RadialCTFFilter
 from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import make_symmat
