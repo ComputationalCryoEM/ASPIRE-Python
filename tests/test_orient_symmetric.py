@@ -506,20 +506,23 @@ def test_estimate_third_rows(dtype):
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_complete_third_row(dtype):
-    # Complete third row that coincides with z-axis
-    z = np.array([0, 0, 1], dtype=dtype)
-    Rz = CLSymmetryC3C4._complete_third_row_to_rot(z)
+    # Build random third rows.
+    r3 = randn(10, 3, seed=123).astype(dtype)
+    r3 /= norm(r3, axis=1)[..., np.newaxis]
 
-    # Complete random third row.
-    r3 = randn(3, seed=123).astype(dtype)
-    r3 /= norm(r3)
+    # Set first row to be identical with z-axis.
+    r3[0] = np.array([0, 0, 1], dtype=dtype)
+
+    # Generate rotations.
     R = CLSymmetryC3C4._complete_third_row_to_rot(r3)
 
-    # Assert that Rz is the identity matrix.
-    assert np.allclose(Rz, np.eye(3, dtype=dtype))
+    # Assert that first rotation is the identity matrix.
+    assert np.allclose(R[0], np.eye(3, dtype=dtype))
 
-    # Assert that R is orthogonal with determinant 1.
-    assert np.allclose(R @ R.T, np.eye(3, dtype=dtype), atol=utest_tolerance(dtype))
+    # Assert that each rotation is orthogonal with determinant 1.
+    assert np.allclose(
+        R @ R.transpose((0, 2, 1)), np.eye(3, dtype=dtype), atol=utest_tolerance(dtype)
+    )
     assert np.allclose(det(R), 1)
 
 
