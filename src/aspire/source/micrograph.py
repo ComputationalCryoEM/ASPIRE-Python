@@ -56,7 +56,9 @@ class MicrographSource:
         for i in range(n):
             self.centers[i] = self._create_centers()
 
-        self._clean_micrographs_accessor = _ImageAccessor(self._clean_micrographs, self.n)
+        self._clean_micrographs_accessor = _ImageAccessor(
+            self._clean_micrographs, self.n
+        )
         self._micrographs_accessor = _ImageAccessor(self._micrographs, self.n)
         self.clean_micrographs = self.clean_micrographs()
         self.micrographs = self.micrographs()
@@ -129,7 +131,7 @@ class MicrographSource:
 
     def micrographs(self):
         return self._micrographs_accessor
-    
+
     def _micrographs(self, indices):
         micrograph = self._clean_micrographs(indices)
         if self.noise_adder:
@@ -142,7 +144,7 @@ class MicrographSource:
         # Get centers
         centers = self.centers[indices][0]
         for i in range(centers.shape[0]):
-            image = self.simulation.clean_images[self.ppm*indices + i].asnumpy()
+            image = self.simulation.clean_images[self.ppm * indices + i].asnumpy()
             clean_micrograph[
                 centers[i][0] - self.L // 2 : centers[i][0] + self.L // 2,
                 centers[i][1] - self.L // 2 : centers[i][1] + self.L // 2,
@@ -159,16 +161,16 @@ class MicrographSource:
         return self.simulation.images[indices].asnumpy()[0]
 
     def get_micrograph(self, id):
-        '''
+        """
         :param id: Global ID of the particle
-        '''
-        micrograph_id = id//self.ppm
-        particle_id = id%self.ppm
+        """
+        micrograph_id = id // self.ppm
+        particle_id = id % self.ppm
         return (micrograph_id, particle_id)
-        
+
     def get_particle(self, micrograph_id, particle_id):
-        '''
+        """
         :param micrograph_id: ID of the microgram
         :param particle_id: Local ID of the particle
-        '''
+        """
         return micrograph_id * self.ppm + particle_id
