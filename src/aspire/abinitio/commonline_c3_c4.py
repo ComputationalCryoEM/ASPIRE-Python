@@ -791,31 +791,51 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
     @staticmethod
     def _complete_third_row_to_rot(r3):
         """
-        Construct a rotation matrix whose third row is equal to the given row vector.
+        Construct rotation matrices whose third rows are equal to the given row vectors.
         For vector r3 = [a, b, c], where [a, b, c] != [0, 0, 1], we return the matrix
         with rows r1, r2, r3, given by:
 
         r1 = 1/sqrt(a^2 + b^2)[b, -a, 0],
         r2 = 1/sqrt(a^2 + b^2)[ac, bc, -(a^2 + b^2)].
 
-        :param r3: A 1x3 vector of norm 1.
-        :return: A 3x3 rotation matrix whose third row is r3.
+        :param r3: A nx3 array where each row vector has norm 1.
+        :return: An nx3x3 array of rotation matrices whose third rows are r3.
         """
 
+        # Handle singleton vector.
+        singleton = False
+        if r3.shape == (3,):
+            r3 = np.expand_dims(r3, axis=0)
+            singleton = True
+
+        # Initialize output rotation matrices.
+        rots = np.zeros((len(r3), 3, 3), dtype=r3.dtype)
+
+        # Populate 3rd rows.
+        rots[:, 2] = r3
+
+        # Mask for third rows that coincide with the z-axis.
+        mask = np.linalg.norm(r3 - [0, 0, 1], axis=1) < 1e-5
+
         # If the third row coincides with the z-axis we return the identity matrix.
-        if norm(r3 - [0, 0, 1]) < 1e-5:
-            return np.eye(3)
+        rots[mask] = np.eye(3, dtype=r3.dtype)
 
-        # 'norm_fac' is non-zero since r3 does not coincide with the z-axis.
-        norm_12 = np.sqrt(r3[0] ** 2 + r3[1] ** 2)
+        # 'norm_12' is non-zero since r3 does not coincide with the z-axis.
+        norm_12 = np.sqrt(r3[~mask, 0] ** 2 + r3[~mask, 1] ** 2)
 
-        # Construct an orthogonal row vector of norm 1.
-        r1 = np.array([r3[1] / norm_12, -r3[0] / norm_12, 0])
+        # Populate 1st rows with vector orthogonal to row 3.
+        rots[~mask, 0, 0] = r3[~mask, 1] / norm_12
+        rots[~mask, 0, 1] = -r3[~mask, 0] / norm_12
 
-        # Construct r2 so that r3 = r1xr2
-        r2 = np.array([r3[0] * r3[2] / norm_12, r3[1] * r3[2] / norm_12, -norm_12])
+        # Populate 2nd rows such that r3 = r1 x r2
+        rots[~mask, 1, 0] = r3[~mask, 0] * r3[~mask, 2] / norm_12
+        rots[~mask, 1, 1] = r3[~mask, 1] * r3[~mask, 2] / norm_12
+        rots[~mask, 1, 2] = -norm_12
 
-        return np.vstack((r1, r2, r3))
+        if singleton:
+            rots = rots.reshape(3, 3)
+
+        return rots
 
     @staticmethod
     def cl_angles_to_ind(cl_angles, n_theta):
