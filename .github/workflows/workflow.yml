@@ -168,7 +168,7 @@ jobs:
       - name: Create Cache
         uses: actions/cache@v3
         with:
-          path: ~/cached-data
+          path: ~/.cache/ASPIRE-data
           key: ${{ runner.os }}-cached-data-
       - name: Download EMDB 2660
         run: |
