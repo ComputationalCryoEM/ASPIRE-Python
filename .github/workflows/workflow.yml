@@ -174,7 +174,7 @@ jobs:
         run: |
           python -c \
           "from aspire.utils import emdb_2660; emdb_2660()"
-          ls cached-data
+          ls ~/cached-data
 
   # Build branch's docs and gallery.
   docs:
