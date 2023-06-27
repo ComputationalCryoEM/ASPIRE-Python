@@ -15,6 +15,9 @@ from aspire.operators import wemd_embed
 from aspire.utils.rotation import Rotation
 
 # Store parameters specific to each loss_type.
+# `lengthscale` is used to scale the modeled covariance
+# functions, corresponding to equations 7 through 9 in the paper.
+# `wavelet` and `level` are passed directly to `wemd_embed`.
 loss_types = {
     "wemd": dict(lengthscale=0.75, wavelet="sym3", level=6),
     "euclidean": dict(lengthscale=1),
@@ -108,8 +111,10 @@ def align_BO(
 
     def cov_fun_grad(x1, x2):
         """
-        Gradient of the squared exponential covariance function.
+        Surrogate gradient of the squared exponential covariance function,
+        with respect to `x1`.
         """
+        # Corresponds to equation 11 in the paper.
         return cov_fun(x1, x2) * (x2 - x1) / loss_params["lengthscale"] ** 2
 
     R = np.zeros((max_iters, 3, 3), dtype=dtype)
@@ -123,6 +128,7 @@ def align_BO(
     loss[0] = loss_fun(R[0])
 
     for t in range(1, max_iters):
+        # See discussion 3.2 and equation 10 in the paper.
         q = np.linalg.solve(cov[:t, :t] + tau * np.eye(t, dtype=dtype), loss[:t])
 
         @pymanopt.function.numpy(manifold)
@@ -139,8 +145,9 @@ def align_BO(
         @pymanopt.function.numpy(manifold)
         def euclidean_grad(new, t=t, q=q):
             """
-            Gradient of the loss function for surrogate problems
+            Gradient of the loss function for surrogate problems.
             """
+            # Corresponds to equation 11 in the paper.
             kx_grad = np.array(
                 [cov_fun_grad(new.astype(dtype, copy=False), R[j]) for j in range(t)]
             )
