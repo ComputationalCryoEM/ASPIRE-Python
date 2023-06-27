@@ -151,6 +151,27 @@ jobs:
     - name: Cleanup
       run: rm -rf ${{ env.WORK_DIR }}
 
+  # Create cache and download data.
+  data-cache:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+      - name: Create Cache
+        uses: actions/cache@v3
+        with:
+	  path: cached-data
+	  key: ${{ runner.os }}-cached-data-
+      - name: Download EMDB 2660
+        run: |
+	  python -c \
+	  "from aspire.utils import emdb_2660; emdb_2660()"
+          ls cached-data
+
   # Build branch's docs and gallery.
   docs:
     needs: check
