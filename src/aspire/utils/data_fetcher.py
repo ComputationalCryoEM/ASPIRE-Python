@@ -1,3 +1,5 @@
+import pooch
+
 from aspire import config
 
 # dataset registry for ASPIRE example data.
@@ -17,23 +19,17 @@ method_files_map = {
 }
 
 
-try:
-    import pooch
-except ImportError:
-    pooch = None
-    data_fetcher = None
-else:
-    data_fetcher = pooch.create(
-        # Use the default cache folder for the operating system
-        # Pooch uses appdirs (https://github.com/ActiveState/appdirs) to
-        # select an appropriate directory for the cache on each platform.
-        path=config["common"]["cache_dir"].as_filename(),
-        # The remote data is on Zenodo base_url is a required param,
-        # even though we override using individual urls in the registry.
-        base_url="https://zenodo.org/communities/computationalcryoem/",
-        registry=registry,
-        urls=registry_urls,
-    )
+data_fetcher = pooch.create(
+    # Use the default cache folder for the operating system
+    # Pooch uses appdirs (https://github.com/ActiveState/appdirs) to
+    # select an appropriate directory for the cache on each platform.
+    path=config["common"]["cache_dir"].as_filename(),
+    # The remote data is on Zenodo base_url is a required param,
+    # even though we override using individual urls in the registry.
+    base_url="https://zenodo.org/communities/computationalcryoem/",
+    registry=registry,
+    urls=registry_urls,
+)
 
 
 def fetch_data(dataset_name):
