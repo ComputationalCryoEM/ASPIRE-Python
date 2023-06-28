@@ -34,11 +34,11 @@ to view Conda's installation instructions.
 .. note:: If you're not sure which distribution is right for you, go
    with `Miniconda <https://conda.io/miniconda.html>`__
 
-.. note:: For Apple silicon to use the `osx-arm` platform will
+.. note:: For Apple silicon to use the ``osx-arm`` platform will
    currently require patching and building some dependencies from
-   source.  The Intel `osx-64` install is still preferred even for
-   Apple silicon users, otherwise [notes are
-   provided.](https://github.com/ComputationalCryoEM/ASPIRE-Python/discussions/969)
+   source.  The Intel ``osx-64`` install is still preferred even for
+   Apple silicon users, otherwise `notes are
+   provided. <https://github.com/ComputationalCryoEM/ASPIRE-Python/discussions/969>`_
 
 Getting Started - Installation
 ************************************
