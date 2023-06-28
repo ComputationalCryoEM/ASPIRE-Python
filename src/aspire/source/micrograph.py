@@ -17,7 +17,8 @@ class MicrographSource:
         seed=0,
         noise_adder=None,
         collisions=False,
-        boundaries=True,
+        boundary=None,
+        interparticle_distance=None,
     ):
         """
         A cryo-EM MicrographSource object that supplies micrographs.
@@ -30,7 +31,8 @@ class MicrographSource:
         :param seed: Random seed
         :param noise_adder: Optionally append instance of NoiseAdder to generation pipeline
         :param collisions: Optionally allow collisions
-        :param boundaries: Optionally allow boundaries
+        :param boundary: Optionally set boundaries
+        :param interparticle_distance: Optionally set distance between particles
         :return: A MicrographSource object
         """
         self.micrograph_size = micrograph_size
@@ -42,7 +44,16 @@ class MicrographSource:
         self.seed = seed
         self.noise_adder = noise_adder
         self.collisions = collisions
-        self.boundaries = boundaries
+        if boundary is None:
+            self.boundary = self.L // 2
+        else:
+            if boundary < (0 - L // 2) or boundary > self.micrograph_size // 2:
+                raise RuntimeError("Illegal boundary value.")
+            self.boundary = boundary
+        if interparticle_distance is None:
+            self.interparticle_distance = np.sqrt(2) * self.L
+        else:
+            self.interparticle_distance = interparticle_distance
         self.simulation = Simulation(
             L=self.L,
             n=self.n * self.ppm,
@@ -64,63 +75,69 @@ class MicrographSource:
         self.micrographs = self.micrographs()
 
         self.images = _ImageAccessor(self._images, self.n * self.ppm)
-        # np.zeros((self.n, self.ppm, self.L, self.L))
 
     def not_colliding(self, x1, y1, x2, y2, distance):
         return np.sqrt(np.square(x1 - x2) + np.square(y1 - y2)) > distance
 
-    def _create_centers(self) -> list((int, int)):
+    def _create_centers(self):
         # initilize root2 for calculating sqrt(2) for Euclidean distance, and max_counts for attempts at randomizing points
-        root2 = np.sqrt(2)
-        collision_distance = self.L * root2
-        if self.collisions:
-            collision_distance = 0
         max_counts = 2500
 
-        centers = np.zeros((self.ppm, 2))
+        centers = np.ones((self.ppm, 2)) * -9999
         for i in range(self.ppm):
             # Initialize center coordinates and attempt count
             center_x, center_y, count = 0, 0, 0
             while count < max_counts:
                 # Generate random coordinate within bounds
-                x_bound = (
-                    self.micrograph_size - (2 * self.L)
-                ) * np.random.rand() + self.L
-                y_bound = (
-                    self.micrograph_size - (2 * self.L)
-                ) * np.random.rand() + self.L
-                if self.boundaries is False:
-                    x_bound = (
-                        self.micrograph_size + (self.L)
-                    ) * np.random.rand() - self.L
-                    y_bound = (
-                        self.micrograph_size + (self.L)
-                    ) * np.random.rand() - self.L
-                center_x, center_y = int(x_bound), int(y_bound)
+                center_x, center_y = self._generate_center()
 
-                collisions = False
+                good_center = True
                 # Check if new center is in the radial bounds of an existing center, make collisions var true if so.
                 for j in range(i):
-                    if (
-                        self.not_colliding(
-                            centers[j][0],
-                            centers[j][1],
-                            center_x,
-                            center_y,
-                            collision_distance,
-                        )
-                        is False
-                    ):
-                        collisions = True
+                    if not self.not_colliding(
+                        centers[j][0],
+                        centers[j][1],
+                        center_x,
+                        center_y,
+                        self.interparticle_distance,
+                    ) or not self._in_boundary(center_x, center_y):
+                        good_center = False
 
-                # If there are no collisions, add new center and increase center count
-                if collisions is False:
+                # If there are no collisions or collisions are allowed, add new center and increase center count
+                if self.collisions or good_center:
                     centers[i] = np.array([center_x, center_y])
                     count += max_counts
                 count += 1
-            # if count == max_counts:
-            # raise RuntimeError('Error: Too many particles requested')
+        # Check for zeroes
+        zero_count = 0
+        for center in centers:
+            if center[0] == -9999 and center[1] == -9999:
+                zero_count += 1
+        if zero_count > 0:
+            raise RuntimeError("Not enough centers generated.")
         return centers
+
+    def _generate_center(self):
+        parity = (self.boundary + 1) % 2
+        x = (
+            (self.micrograph_size - 2 * self.boundary - parity) * np.random.rand()
+            + self.boundary
+            + parity
+        )
+        y = (
+            (self.micrograph_size - 2 * self.boundary - parity) * np.random.rand()
+            + self.boundary
+            + parity
+        )
+        return (int(x), int(y))
+
+    def _in_boundary(self, x, y):
+        return (
+            x - self.L // 2 > self.boundary
+            and x + self.L // 2 < self.micrograph_size - self.boundary
+            and y - self.L // 2 > self.boundary
+            and y + self.L // 2 < self.micrograph_size - self.boundary
+        )
 
     def __len__(self):
         """ """
@@ -141,20 +158,30 @@ class MicrographSource:
     def _clean_micrographs(self, indices):
         # Initialize empty micrograph
         clean_micrograph = np.zeros((self.micrograph_size, self.micrograph_size))
+        pad = 0
+        if self.boundary < 0:
+            pad = self.L
+            clean_micrograph = np.pad(
+                clean_micrograph, pad, "constant", constant_values=(0)
+            )
         # Get centers
         centers = self.centers[indices][0]
+        parity = self.L % 2
         for i in range(centers.shape[0]):
             image = self.simulation.clean_images[self.ppm * indices + i].asnumpy()
-            clean_micrograph[
-                centers[i][0] - self.L // 2 : centers[i][0] + self.L // 2,
-                centers[i][1] - self.L // 2 : centers[i][1] + self.L // 2,
-            ] = (
-                clean_micrograph[
-                    centers[i][0] - self.L // 2 : centers[i][0] + self.L // 2,
-                    centers[i][1] - self.L // 2 : centers[i][1] + self.L // 2,
-                ]
-                + image
+            x_left = centers[i][0] - self.L // 2 + pad
+            x_right = centers[i][0] + self.L // 2 + parity + pad
+            y_left = centers[i][1] - self.L // 2 + pad
+            y_right = centers[i][1] + self.L // 2 + parity + pad
+            clean_micrograph[x_left:x_right, y_left:y_right] = (
+                clean_micrograph[x_left:x_right, y_left:y_right] - image
             )
+
+        if self.boundary < 0:
+            clean_micrograph = clean_micrograph[
+                pad : self.micrograph_size + parity + pad,
+                pad : self.micrograph_size + parity + pad,
+            ]
         return Image(clean_micrograph)
 
     def _images(self, indices):
@@ -164,6 +191,8 @@ class MicrographSource:
         """
         :param id: Global ID of the particle
         """
+        if id >= self.ppm * self.n:
+            raise RuntimeError("ID out of bounds")
         micrograph_id = id // self.ppm
         particle_id = id % self.ppm
         return (micrograph_id, particle_id)
@@ -173,4 +202,8 @@ class MicrographSource:
         :param micrograph_id: ID of the microgram
         :param particle_id: Local ID of the particle
         """
+        if micrograph_id >= self.n or micrograph_id < 0:
+            raise RuntimeError("Out of bounds for micrograph")
+        if particle_id >= self.ppm or particle_id < 0:
+            raise RuntimeError("Out of bounds for particle")
         return micrograph_id * self.ppm + particle_id
