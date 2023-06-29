@@ -814,23 +814,23 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # Populate 3rd rows.
         rots[:, 2] = r3
 
-        # Mask for third rows that coincide with the z-axis.
-        mask = np.linalg.norm(r3 - [0, 0, 1], axis=1) < 1e-5
+        # Mask for third rows that do not coincide with the z-axis.
+        mask = np.linalg.norm(r3 - [0, 0, 1], axis=1) >= 1e-5
 
         # If the third row coincides with the z-axis we return the identity matrix.
-        rots[mask] = np.eye(3, dtype=r3.dtype)
+        rots[~mask] = np.eye(3, dtype=r3.dtype)
 
         # 'norm_12' is non-zero since r3 does not coincide with the z-axis.
-        norm_12 = np.sqrt(r3[~mask, 0] ** 2 + r3[~mask, 1] ** 2)
+        norm_12 = np.sqrt(r3[mask, 0] ** 2 + r3[mask, 1] ** 2)
 
         # Populate 1st rows with vector orthogonal to row 3.
-        rots[~mask, 0, 0] = r3[~mask, 1] / norm_12
-        rots[~mask, 0, 1] = -r3[~mask, 0] / norm_12
+        rots[mask, 0, 0] = r3[mask, 1] / norm_12
+        rots[mask, 0, 1] = -r3[mask, 0] / norm_12
 
         # Populate 2nd rows such that r3 = r1 x r2
-        rots[~mask, 1, 0] = r3[~mask, 0] * r3[~mask, 2] / norm_12
-        rots[~mask, 1, 1] = r3[~mask, 1] * r3[~mask, 2] / norm_12
-        rots[~mask, 1, 2] = -norm_12
+        rots[mask, 1, 0] = r3[mask, 0] * r3[mask, 2] / norm_12
+        rots[mask, 1, 1] = r3[mask, 1] * r3[mask, 2] / norm_12
+        rots[mask, 1, 2] = -norm_12
 
         if singleton:
             rots = rots.reshape(3, 3)
