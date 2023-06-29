@@ -148,7 +148,6 @@ class CLOrient3D:
         shifts, shift_phases, h = self._generate_shift_phase_and_filter(
             r_max, max_shift, shift_step
         )
-        all_shift_phases = shift_phases.T
 
         # Apply bandpass filter, normalize each ray of each image
         # Note that only use half of each ray
@@ -171,8 +170,8 @@ class CLOrient3D:
                 p2_flipped = np.conj(pf[j])
 
                 for shift in range(len(shifts)):
-                    shift_phases = all_shift_phases[shift]
-                    p2_shifted_flipped = (shift_phases * p2_flipped).T
+                    shift_phase = shift_phases[shift]
+                    p2_shifted_flipped = (shift_phase * p2_flipped).T
                     # Compute correlations in the positive r direction
                     part1 = p1_real.dot(np.real(p2_shifted_flipped))
                     # Compute correlations in the negative r direction
@@ -337,8 +336,8 @@ class CLOrient3D:
 
             # apply the shifts to images
             pf_i_flipped = np.conj(pf_i)
-            pf_i_stack = np.einsum("i, ij -> ij", pf_i, shift_phases)
-            pf_i_flipped_stack = np.einsum("i, ij -> ij", pf_i_flipped, shift_phases)
+            pf_i_stack = np.einsum("i, ij -> ij", pf_i, shift_phases.T)
+            pf_i_flipped_stack = np.einsum("i, ij -> ij", pf_i_flipped, shift_phases.T)
 
             c1 = 2 * np.real(np.dot(np.conj(pf_i_stack.T), pf_j))
             c2 = 2 * np.real(np.dot(np.conj(pf_i_flipped_stack.T), pf_j))
@@ -450,7 +449,7 @@ class CLOrient3D:
 
         # Generate all shift phases
         shifts = -max_shift + shift_step * np.arange(n_shifts)
-        shift_phases = np.exp(np.outer(-2 * np.pi * 1j * rk / (2 * r_max + 1), shifts))
+        shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
         # Set filter for common-line detection
         h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
         return shifts, shift_phases, h
