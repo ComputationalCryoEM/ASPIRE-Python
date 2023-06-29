@@ -43,9 +43,7 @@ class CommonlineSDP(CLOrient3D):
         S = self.construct_S(self.clmatrix)
         A, b = self.sdp_prep()
         Gram = self.compute_Gram_matrix(S, A, b)
-        import pdb
-
-        pdb.set_trace()
+        return Gram
 
     def construct_S(self, clmatrix):
         """
