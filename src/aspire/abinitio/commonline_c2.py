@@ -127,7 +127,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
         )
 
         # Search for common lines between [i, j] pairs of images.
-        # The random selection is implemented.
         for i in range(n_img - 1):
             p1 = pf[i]
             for j in range(i + 1, n_img):
