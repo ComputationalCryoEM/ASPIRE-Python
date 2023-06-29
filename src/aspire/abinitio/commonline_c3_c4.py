@@ -286,7 +286,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             r_max, max_shift_1d, shift_step
         )
         n_shifts = len(shifts)
-        all_shift_phases = shift_phases.T
 
         # Q is the n_img x n_img  Hermitian matrix defined by Q = q*q^H,
         # where q = (exp(i*order*theta_0), ..., exp(i*order*theta_{n_img-1}))^H,
@@ -310,7 +309,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
                 # Generate shifted versions of images.
                 pf_i_shifted = np.array(
-                    [pf_i * shift_phase for shift_phase in all_shift_phases]
+                    [pf_i * shift_phase for shift_phase in shift_phases]
                 )
 
                 Ri_tilde = Ri_tildes[i]
@@ -442,7 +441,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             r_max, max_shift_1d, shift_step
         )
         n_shifts = len(shifts)
-        all_shift_phases = shift_phases.T
 
         # Reconstruct the full polar Fourier for use in correlation. self.pf only consists of
         # rays in the range [180, 360), with shape (n_img, n_theta//2, n_rad-1).
@@ -458,7 +456,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
             # Generate shifted versions of images.
             pf_i_shifted = np.array(
-                [pf_i * shift_phase for shift_phase in all_shift_phases]
+                [pf_i * shift_phase for shift_phase in shift_phases]
             )
             pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
 
