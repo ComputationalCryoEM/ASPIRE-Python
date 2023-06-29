@@ -1,7 +1,6 @@
 import numpy as np
 
 from aspire.image import Image
-from aspire.operators import CTFFilter, RadialCTFFilter
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
 
