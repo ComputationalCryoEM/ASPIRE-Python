@@ -113,7 +113,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
         shifts, shift_phases, h = self._generate_shift_phase_and_filter(
             r_max, self.max_shift, self.shift_step
         )
-        all_shift_phases = shift_phases.T
         n_shifts = len(shifts)
 
         # Apply bandpass filter, normalize each ray of each image.
@@ -121,7 +120,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
 
         # Pre-compute conjugated and shifted pf's.
-        pf_shifted_flipped = np.conj(pf)[:, None] * all_shift_phases[:, None]
+        pf_shifted_flipped = np.conj(pf)[:, None] * shift_phases[:, None]
         pf_shifted_flipped = pf_shifted_flipped.reshape(
             (self.n_img, n_shifts * (self.n_theta // 2), r_max)
         )

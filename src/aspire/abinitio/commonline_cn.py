@@ -120,14 +120,13 @@ class CLSymmetryCn(CLSymmetryC3C4):
             r_max, self.max_shift, self.shift_step
         )
         n_shifts = len(shifts)
-        all_shift_phases = shift_phases.T
 
         # Reconstruct full polar Fourier for use in correlation.
         pf /= norm(pf, axis=2)[..., np.newaxis]  # Normalize each ray.
         pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
 
         # Pre-compute shifted pf's.
-        pf_shifted = (pf * all_shift_phases[:, None, None]).swapaxes(0, 1)
+        pf_shifted = (pf * shift_phases[:, None, None]).swapaxes(0, 1)
         pf_shifted = pf_shifted.reshape(
             (self.n_img, n_shifts * (self.n_theta // 2), r_max)
         )
