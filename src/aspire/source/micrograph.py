@@ -1,9 +1,10 @@
 import numpy as np
 
 from aspire.image import Image
+from aspire.operators import CTFFilter, RadialCTFFilter
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
-from aspire.operators import CTFFilter, RadialCTFFilter
+
 
 class MicrographSource:
     def __init__(
@@ -36,12 +37,14 @@ class MicrographSource:
         """
         self.seed = seed
         np.random.seed(self.seed)
-        
+
         self.micrograph_size = micrograph_size
         self.micrograph_count = micrograph_count
         self.particle_box_size = particle_box_size
         self.particles_per_micrograph = particles_per_micrograph
-        self.total_particle_count = self.micrograph_count * self.particles_per_micrograph
+        self.total_particle_count = (
+            self.micrograph_count * self.particles_per_micrograph
+        )
         if unique_filters is None:
             unique_filters = []
         else:
@@ -53,7 +56,10 @@ class MicrographSource:
         if boundary is None:
             self.boundary = self.particle_box_size // 2
         else:
-            if boundary < (0 - particle_box_size // 2) or boundary > self.micrograph_size // 2:
+            if (
+                boundary < (0 - particle_box_size // 2)
+                or boundary > self.micrograph_size // 2
+            ):
                 raise RuntimeError("Illegal boundary value.")
             self.boundary = boundary
 
@@ -71,19 +77,23 @@ class MicrographSource:
             seed=self.seed,
         )
 
-        self.centers = np.zeros((self.micrograph_count, self.particles_per_micrograph, 2), dtype=int)
+        self.centers = np.zeros(
+            (self.micrograph_count, self.particles_per_micrograph, 2), dtype=int
+        )
         for i in range(self.micrograph_count):
             self.centers[i] = self._create_centers()
 
         self._clean_micrographs_accessor = _ImageAccessor(
             self._clean_micrographs, self.micrograph_count
         )
-        self._micrographs_accessor = _ImageAccessor(self._micrographs, self.micrograph_count)
+        self._micrographs_accessor = _ImageAccessor(
+            self._micrographs, self.micrograph_count
+        )
 
         self.images = _ImageAccessor(self._images, self.total_particle_count)
 
     def not_colliding(self, x1, y1, x2, y2, distance):
-        return np.hypot(x1-x2, y1-y2) > distance
+        return np.hypot(x1 - x2, y1 - y2) > distance
 
     def _create_centers(self):
         # initilize root2 for calculating sqrt(2) for Euclidean distance, and max_counts for attempts at randomizing points
@@ -175,7 +185,9 @@ class MicrographSource:
         centers = self.centers[indices][0]
         parity = self.particle_box_size % 2
         for i in range(centers.shape[0]):
-            image = self.simulation.clean_images[self.particles_per_micrograph * indices + i].asnumpy()
+            image = self.simulation.clean_images[
+                self.particles_per_micrograph * indices + i
+            ].asnumpy()
             x_left = centers[i][0] - self.particle_box_size // 2 + pad
             x_right = centers[i][0] + self.particle_box_size // 2 + parity + pad
             y_left = centers[i][1] - self.particle_box_size // 2 + pad
