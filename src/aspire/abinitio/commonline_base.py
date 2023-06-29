@@ -336,8 +336,8 @@ class CLOrient3D:
 
             # apply the shifts to images
             pf_i_flipped = np.conj(pf_i)
-            pf_i_stack = np.einsum("i, ij -> ij", pf_i, shift_phases.T)
-            pf_i_flipped_stack = np.einsum("i, ij -> ij", pf_i_flipped, shift_phases.T)
+            pf_i_stack = np.einsum("i, ji -> ij", pf_i, shift_phases)
+            pf_i_flipped_stack = np.einsum("i, ji -> ij", pf_i_flipped, shift_phases)
 
             c1 = 2 * np.real(np.dot(np.conj(pf_i_stack.T), pf_j))
             c2 = 2 * np.real(np.dot(np.conj(pf_i_flipped_stack.T), pf_j))
