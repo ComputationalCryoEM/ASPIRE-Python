@@ -74,6 +74,7 @@ class MicrographSource:
             C=1,
             dtype=self.dtype,
             seed=self.seed,
+            unique_filters=self.unique_filters,
         )
 
         self.centers = np.zeros(
