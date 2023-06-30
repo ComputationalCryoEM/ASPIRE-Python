@@ -19,9 +19,9 @@ class MicrographSource:
     ):
         """
         A cryo-EM MicrographSource object that supplies micrographs.
-        
+
         dtype and particle_box_size are inferred from simulation
-        
+
         :param simulation: Simulation instance
         :param micrograph_size: Size of micrograph
         :param micrograph_count: Number of micrographs to generate (integer)
@@ -33,9 +33,9 @@ class MicrographSource:
         :return: A MicrographSource object
         """
         if not isinstance(simulation, Simulation):
-            raise TypeError('Simulation should be of type Simulation')
+            raise TypeError("Simulation should be of type Simulation")
         self.simulation = simulation
-        
+
         self.seed = seed
         np.random.seed(self.seed)
 
@@ -65,7 +65,6 @@ class MicrographSource:
             self.interparticle_distance = np.sqrt(2) * self.particle_box_size
         else:
             self.interparticle_distance = interparticle_distance
-        
 
         self.centers = np.zeros(
             (self.micrograph_count, self.particles_per_micrograph, 2), dtype=int
