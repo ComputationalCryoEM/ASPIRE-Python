@@ -44,10 +44,6 @@ class MicrographSource:
         self.total_particle_count = (
             self.micrograph_count * self.particles_per_micrograph
         )
-        if unique_filters is None:
-            unique_filters = []
-        else:
-            self.unique_filters = unique_filters
         self.dtype = dtype
 
         self.noise_adder = noise_adder
@@ -74,7 +70,7 @@ class MicrographSource:
             C=1,
             dtype=self.dtype,
             seed=self.seed,
-            unique_filters=self.unique_filters,
+            unique_filters=unique_filters,
         )
 
         self.centers = np.zeros(
