@@ -107,8 +107,6 @@ class MicrographSource:
                 center_x, center_y = self._generate_center()
 
                 good_center = True
-                print(center_x, center_y)
-                # Check if new center is in the radial bounds of an existing center, make collisions var true if so.
                 for j in range(i):
                     if not self.not_colliding(
                         centers[j][0],
