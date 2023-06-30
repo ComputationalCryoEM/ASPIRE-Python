@@ -8,13 +8,10 @@ from aspire.source.image import _ImageAccessor
 class MicrographSource:
     def __init__(
         self,
+        simulation,
         micrograph_size=4096,
-        particle_box_size=300,
         micrograph_count=1,
         particles_per_micrograph=10,
-        unique_filters=None,
-        filter_indices=None,
-        dtype=None,
         seed=0,
         noise_adder=None,
         boundary=None,
@@ -22,29 +19,35 @@ class MicrographSource:
     ):
         """
         A cryo-EM MicrographSource object that supplies micrographs.
+        
+        dtype and particle_box_size are inferred from simulation
+        
+        :param simulation: Simulation instance
         :param micrograph_size: Size of micrograph
-        :param particle_box_size: Image size for picked particle images
         :param micrograph_count: Number of micrographs to generate (integer)
         :param particles_per_micrograph: The amount of particles generated for each micrograph
-        :param unique_filters: A list of Filter objects to be applied to micrograph
-        :param dtype: dtype for picked particle Simulation
         :param seed: Random seed
         :param noise_adder: Optionally append instance of NoiseAdder to generation pipeline
         :param boundary: Optionally set boundaries for particle centers. Defaults to particle_box_size // 2, positive values move the boundary inward
         :param interparticle_distance: Optionally set minimum distance between particle centers. Defaults to particle_box_size * sqrt(2) to avoid collisions
         :return: A MicrographSource object
         """
+        if not isinstance(simulation, Simulation):
+            raise TypeError('Simulation should be of type Simulation')
+        self.simulation = simulation
+        
         self.seed = seed
         np.random.seed(self.seed)
 
         self.micrograph_size = micrograph_size
         self.micrograph_count = micrograph_count
-        self.particle_box_size = particle_box_size
+        # Check if particle count times micrograph count <= simulation.n
+        self.particle_box_size = simulation.L
         self.particles_per_micrograph = particles_per_micrograph
         self.total_particle_count = (
             self.micrograph_count * self.particles_per_micrograph
         )
-        self.dtype = dtype
+        self.dtype = simulation.dtype
 
         self.noise_adder = noise_adder
 
@@ -52,7 +55,7 @@ class MicrographSource:
             self.boundary = self.particle_box_size // 2
         else:
             if (
-                boundary < (0 - particle_box_size // 2)
+                boundary < (0 - self.particle_box_size // 2)
                 or boundary > self.micrograph_size // 2
             ):
                 raise RuntimeError("Illegal boundary value.")
@@ -62,16 +65,7 @@ class MicrographSource:
             self.interparticle_distance = np.sqrt(2) * self.particle_box_size
         else:
             self.interparticle_distance = interparticle_distance
-
-        self.simulation = Simulation(
-            L=self.particle_box_size,
-            n=self.total_particle_count,
-            offsets=0,
-            C=1,
-            dtype=self.dtype,
-            seed=self.seed,
-            unique_filters=unique_filters,
-        )
+        
 
         self.centers = np.zeros(
             (self.micrograph_count, self.particles_per_micrograph, 2), dtype=int
