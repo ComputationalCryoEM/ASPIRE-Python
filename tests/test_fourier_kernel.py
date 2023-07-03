@@ -12,7 +12,6 @@ class FourierKernelTestCase(TestCase):
     def setUp(self):
         self.kernel = FourierKernel(
             np.load(os.path.join(DATA_DIR, "fourier_kernel_16_16_16.npy")),
-            centered=False,
         )
 
     def tearDown(self):

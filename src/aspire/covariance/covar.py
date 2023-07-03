@@ -83,7 +83,7 @@ class CovarianceEstimator(Estimator):
         # Kernel is always symmetric in spatial domain and therefore real in Fourier
         kernel_f = np.real(kernel_f)
 
-        return FourierKernel(kernel_f, centered=False)
+        return FourierKernel(kernel_f)
 
     def estimate(self, mean_vol, noise_variance, tol=1e-5, regularizer=0):
         logger.info("Running Covariance Estimator")

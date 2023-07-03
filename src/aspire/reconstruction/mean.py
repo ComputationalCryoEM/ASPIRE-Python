@@ -9,7 +9,7 @@ from aspire import config
 from aspire.nufft import anufft
 from aspire.numeric import fft
 from aspire.operators import evaluate_src_filters_on_grid
-from aspire.reconstruction import Estimator, FourierKernel, FourierKernelMat
+from aspire.reconstruction import Estimator, FourierKernel, FourierKernelMatrix
 from aspire.volume import Volume, rotated_grids
 
 logger = logging.getLogger(__name__)
@@ -55,8 +55,8 @@ class WeightedVolumesEstimator(Estimator):
         if name == "precond_kernel":
             if self.preconditioner == "circulant":
                 # TODO: Discuss precond plans.
-                # self.precond_kernel = FourierKernelMat(
-                #     1.0 / self.kernel.circularize(), centered=True
+                # self.precond_kernel = FourierKernelMatrix(
+                #     1.0 / self.kernel.circularize()
                 # )
                 raise NotImplementedError(
                     "Circulant preconditioner not implemented for WeightedVolumesEstimator."
@@ -133,7 +133,7 @@ class WeightedVolumesEstimator(Estimator):
                 kernel_f = np.real(kernel_f)
                 kermat_f[k, j] = kernel_f
 
-        return FourierKernelMat(kermat_f, centered=False)
+        return FourierKernelMatrix(kermat_f)
 
     def src_backward(self):
         """
@@ -144,7 +144,7 @@ class WeightedVolumesEstimator(Estimator):
         """
 
         # src_vols_wt_backward
-        mean_b = Volume(
+        vol_rhs = Volume(
             np.zeros((self.r, self.src.L, self.src.L, self.src.L), dtype=self.dtype)
         )
 
@@ -152,25 +152,25 @@ class WeightedVolumesEstimator(Estimator):
             for i in range(0, self.src.n, self.batch_size):
                 im = self.src.images[i : i + self.batch_size]
 
-                batch_mean_b = (
+                batch_vol_rhs = (
                     self.src.im_backward(im, i, self.weights[:, k]) / self.src.n
                 )
-                mean_b[k] += batch_mean_b.astype(self.dtype)
+                vol_rhs[k] += batch_vol_rhs.astype(self.dtype)
 
-        res = np.sqrt(self.src.n) * self.basis.evaluate_t(mean_b)
+        res = np.sqrt(self.src.n) * self.basis.evaluate_t(vol_rhs)
         logger.info(f"Determined weighted adjoint mappings. Shape = {res.shape}")
 
         return res
 
     def conj_grad(self, b_coeff, tol=1e-5, regularizer=0):
-        n = b_coeff.shape[-1]  # 0???
+        count = b_coeff.shape[-1]  # b_coef should be (r, basis.count)
         kernel = self.kernel
 
         if regularizer > 0:
             kernel += regularizer
 
         operator = LinearOperator(
-            (self.r * n, self.r * n),
+            (self.r * count, self.r * count),
             matvec=partial(self.apply_kernel, kernel=kernel),
             dtype=self.dtype,
         )
@@ -181,7 +181,7 @@ class WeightedVolumesEstimator(Estimator):
             if regularizer > 0:
                 precond_kernel += regularizer
             M = LinearOperator(
-                (self.r * n, self.r * n),
+                (self.r * count, self.r * count),
                 matvec=partial(self.apply_kernel, kernel=precond_kernel),
                 dtype=self.dtype,
             )
@@ -199,8 +199,6 @@ class WeightedVolumesEstimator(Estimator):
         if info != 0:
             raise RuntimeError("Unable to converge!")
 
-        # Thinking might be clearer if r x ... but would need to mess with roll/unroll in FBB.
-        # return x.reshape(self.r, -1)
         return x.reshape(self.r, self.basis.count)
 
     def apply_kernel(self, vol_coeff, kernel=None):
@@ -291,4 +289,4 @@ class MeanEstimator(WeightedVolumesEstimator):
         kernel_f = fft.fftn(kernel, axes=(0, 1, 2))
         kernel_f = np.real(kernel_f)
 
-        return FourierKernel(kernel_f, centered=False)
+        return FourierKernel(kernel_f)
