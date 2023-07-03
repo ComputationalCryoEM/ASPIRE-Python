@@ -20,17 +20,22 @@ class WeightedVolumesEstimator(Estimator):
         """
         Weighted mean volume estimation.
 
-        This is best considered as an r x r matrix of volumes;
-        each volume is a weighted mean least-squares estimator kernel (MeanEstimator).
-        Convolution with each of these kernels is equivalent
-        to performing a projection/backprojection on a volume,
-        with the appropriate amplitude modifiers and CTF,
-        and also a weighting term;
-        the r^2 volumes are each of pairwise products between the weighting vectors given by the columns of wts.
+        This class holds the `FourierKernelMatrix`, stored as a r x r
+        matrix of volumes.  The problem being solved here is the
+        minimization given by eq. (14) in the paper, rewritten as the
+        normal equations in eq. (20) and more compactly in eq. (23).
 
-        Note that this is a non-centered Fourier transform, so the zero frequency is found at index 0.
+        Convolution with each of these kernels is equivalent to
+        performing a projection/backprojection on a volume, with the
+        appropriate amplitude modifiers and CTF, and also a weighting
+        term; the r^2 volumes are each of pairwise products between
+        the weighting vectors given by the columns of wts.
 
-        Formulas and conventions used for Volume estimation are described in:
+        Note that this is a non-centered Fourier transform, so the
+        zero frequency is found at index 0.
+
+        Formulas and conventions used for Volume estimation are
+        described in:
 
         “Structural Variability from Noisy Tomographic Projections.”
         Andén, Joakim, and Amit Singer.
