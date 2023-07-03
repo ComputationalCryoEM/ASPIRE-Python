@@ -59,12 +59,8 @@ class WeightedVolumesEstimator(Estimator):
     def __getattr__(self, name):
         if name == "precond_kernel":
             if self.preconditioner == "circulant":
-                # TODO: Discuss precond plans.
-                # self.precond_kernel = FourierKernelMatrix(
-                #     1.0 / self.kernel.circularize()
-                # )
-                raise NotImplementedError(
-                    "Circulant preconditioner not implemented for WeightedVolumesEstimator."
+                self.precond_kernel = FourierKernelMatrix(
+                    1.0 / self.kernel.circularize()
                 )
             else:
                 if self.preconditioner.lower() not in (None, "none"):

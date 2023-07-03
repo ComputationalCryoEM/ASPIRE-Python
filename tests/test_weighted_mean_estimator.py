@@ -3,7 +3,6 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
-import pytest
 
 from aspire.basis import FBBasis3D
 from aspire.operators import RadialCTFFilter
@@ -461,7 +460,6 @@ class WeightedVolumesEstimatorTestCase(TestCase):
         logger.info(f"max abs diff: {np.max(np.abs(x.flatten() - ref))}")
         self.assertTrue(np.allclose(x.flatten(), ref, atol=1e-4))
 
-    # @pytest.mark.xfail(reason="No Implemented Yet", raises=NotImplementedError)
     def testOptimize2(self):
         mean_b_coeff = np.array(
             [
@@ -569,12 +567,11 @@ class WeightedVolumesEstimatorTestCase(TestCase):
             * self.r
         )
 
-        # Circulant Preconditioner is not currently implemented for kernel matrix.
-        with pytest.raises(NotImplementedError):
-            x = self.estimator_with_preconditioner.conj_grad(mean_b_coeff)
-            self.assertTrue(
-                np.allclose(
-                    x,
+        x = self.estimator_with_preconditioner.conj_grad(mean_b_coeff)
+        self.assertTrue(
+            np.allclose(
+                x,
+                [
                     [
                         1.24325149e01,
                         4.06481998e00,
@@ -675,10 +672,11 @@ class WeightedVolumesEstimatorTestCase(TestCase):
                         -1.26116949e-01,
                         9.82006976e-02,
                     ]
-                    * self.r,
-                    atol=1e-4,
-                )
+                ]
+                * self.r,
+                atol=1e-4,
             )
+        )
 
     def testNegativeWeightedEstimates(self):
         """
