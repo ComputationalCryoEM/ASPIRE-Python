@@ -84,9 +84,9 @@ class WeightedVolumesEstimator(Estimator):
         kernel = np.zeros((self.r, self.r, _2L, _2L, _2L), dtype=self.dtype)
         sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
-        for k in range(self.r):
-            for j in range(k + 1):
-                for i in range(0, self.src.n, self.batch_size):
+        for i in range(0, self.src.n, self.batch_size):
+            for k in range(self.r):
+                for j in range(k + 1):
                     _range = np.arange(
                         i, min(self.src.n, i + self.batch_size), dtype=int
                     )
@@ -149,8 +149,8 @@ class WeightedVolumesEstimator(Estimator):
             np.zeros((self.r, self.src.L, self.src.L, self.src.L), dtype=self.dtype)
         )
 
-        for k in range(self.r):
-            for i in range(0, self.src.n, self.batch_size):
+        for i in range(0, self.src.n, self.batch_size):
+            for k in range(self.r):
                 im = self.src.images[i : i + self.batch_size]
 
                 batch_vol_rhs = (
