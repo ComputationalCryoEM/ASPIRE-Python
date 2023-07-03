@@ -5,7 +5,7 @@ from concurrent import futures
 
 import mrcfile
 import numpy as np
-from PIL import Image
+from PIL import Image as PILImage
 from scipy import ndimage, signal
 from scipy.ndimage import (
     binary_dilation,
@@ -77,8 +77,7 @@ class Picker:
         self.response_thresh_norm_factor = response_thresh_norm_factor
         self.conv_map_nthreads = conv_map_nthreads
 
-        self.original_im = None  # populated in read_mrc()
-        self.im = self.read_mrc()
+        self.im = self.read_micrograph()
 
         if model_opts is None:
             model_opts = dict()
@@ -139,12 +138,64 @@ class Picker:
                 class_weight="balanced",
             )
 
+    def read_micrograph(self):
+        """
+        Utility wrapper to read supported micrograph file extensions.
+
+        Applies binning and a low-pass filter.
+        """
+
+        # Map file extensions to their respective readers
+        type_to_reader = {
+            ".mrc": self.read_mrc,
+            ".tif": self.read_tiff,
+            ".tiff": self.read_tiff,
+        }
+
+        # Get the file extension
+        ext = os.path.splitext(self.filename)[1]
+
+        # On unsupported extension, raise with suggested file types
+        if ext not in type_to_reader:
+            raise RuntimeError(
+                f"Attempting to open unsupported file extension '{ext}', try {type_to_reader.keys()}."
+            )
+
+        # Call the appropriate file reader
+        self.original_im = type_to_reader[ext]()
+
+        # Discard outer pixels
+        im = self.original_im[
+            self.mrc_margin_top : -self.mrc_margin_bottom,
+            self.mrc_margin_left : -self.mrc_margin_right,
+        ]
+
+        # Make square
+        side_length = min(im.shape)
+        im = im[:side_length, :side_length]
+
+        size = tuple((np.array(im.shape) / self.mrc_shrink_factor).astype(int))
+
+        # Note, float64 required for signal.correlate call accuracy.
+        im = np.asarray(
+            PILImage.fromarray(im).resize(size, PILImage.Resampling.BICUBIC)
+        ).astype(np.float64, copy=False)
+
+        im = signal.correlate(
+            im,
+            PickerHelper.gaussian_filter(
+                self.mrc_gauss_filter_size, self.mrc_gauss_filter_sigma
+            ),
+            "same",
+        )
+
+        return im
+
     def read_mrc(self):
         """
-        Reads the micrograph.
-        Applies binning and a low-pass filter.
+        Reads `mrc` micrograph.
 
-        :return: Micrograph image
+        :return: Micrograph image as array.
         """
 
         # mrcfile tends to yield many warnings about EMPIAR datasets being corrupt
@@ -175,34 +226,17 @@ class Picker:
                     f" APPLE will attempt to continue processing {self.filename}"
                 )
 
-        self.original_im = im
-
-        # Discard outer pixels
-        im = im[
-            self.mrc_margin_top : -self.mrc_margin_bottom,
-            self.mrc_margin_left : -self.mrc_margin_right,
-        ]
-
-        # Make square
-        side_length = min(im.shape)
-        im = im[:side_length, :side_length]
-
-        size = tuple((np.array(im.shape) / self.mrc_shrink_factor).astype(int))
-
-        # Note, float64 required for signal.correlate call accuracy.
-        im = np.asarray(
-            Image.fromarray(im).resize(size, Image.Resampling.BICUBIC)
-        ).astype(np.float64, copy=False)
-
-        im = signal.correlate(
-            im,
-            PickerHelper.gaussian_filter(
-                self.mrc_gauss_filter_size, self.mrc_gauss_filter_sigma
-            ),
-            "same",
-        )
-
         return im
+
+    def read_tiff(self):
+        """
+        Reads `tiff` micrograph.
+
+        :return: Micrograph image as array.
+        """
+
+        # Use PIL to open `filename` and attempt casting to `dtype`
+        return np.array(PILImage.open(self.filename), dtype=self.dtype)
 
     def query_score(self):
         """
