@@ -14,14 +14,11 @@ class Kernel:
 
 
 class FourierKernel(Kernel):
-    def __init__(self, kernel, centered):
+    def __init__(self, kernel):
         self.ndim = kernel.ndim
         self.kernel = kernel
         self.M = kernel.shape[0]
         self.dtype = kernel.dtype
-
-        # TODO: `centered` should be populated based on how the object is constructed, not explicitly
-        self._centered = centered
 
     def __add__(self, delta):
         """
@@ -36,10 +33,7 @@ class FourierKernel(Kernel):
             with the underlying 'kernel' attribute tweaked with a regularization parameter.
         """
         new_kernel = self.kernel + delta
-        return FourierKernel(new_kernel, self._centered)
-
-    def is_centered(self):
-        return self._centered
+        return FourierKernel(new_kernel)
 
     def circularize(self):
         logger.info("Circularizing kernel")
@@ -170,8 +164,8 @@ class FourierKernel(Kernel):
         return A
 
 
-class FourierKernelMat(FourierKernel):
-    def __init__(self, kermat, centered):
+class FourierKernelMatrix(FourierKernel):
+    def __init__(self, kermat):
         self.ndim = kermat.ndim - 2
         self.kermat = kermat
         self.r = kermat.shape[0]
@@ -179,23 +173,16 @@ class FourierKernelMat(FourierKernel):
         self.dtype = kermat.dtype
         self.M = kermat.shape[-1]
 
-        self._centered = centered
-
     def __add__(self, delta):
         new_kermat = self.kermat + delta
-        return FourierKernelMat(new_kermat, self._centered)
-
-    def is_centered(self):
-        return self._centered
+        return FourierKernelMatrix(new_kermat)
 
     def circularize(self):
         _L = self.M // 2
         xx = np.empty((self.r, self.r, _L, _L, _L))
         for k in range(self.r):
             for j in range(self.r):
-                xx[k, j] = FourierKernel(
-                    self.kermat[k, j], centered=self._centered
-                ).circularize()
+                xx[k, j] = FourierKernel(self.kermat[k, j]).circularize()
         return xx
 
     def convolve_volume(self, x, k, j, in_place=False):
@@ -241,8 +228,6 @@ class FourierKernelMat(FourierKernel):
         Amat = np.empty((self.r, self.r, self.L, self.L, self.L))
         for k in range(self.r):
             for j in range(self.r):
-                Amat[k, j] = FourierKernel(
-                    self.kermat[k, j], centered=self._centered
-                ).toeplitz(L)
+                Amat[k, j] = FourierKernel(self.kermat[k, j]).toeplitz(L)
 
         return Amat

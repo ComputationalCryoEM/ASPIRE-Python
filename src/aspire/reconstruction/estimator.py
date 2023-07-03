@@ -46,7 +46,7 @@ class Estimator:
             if self.preconditioner == "circulant":
                 logger.info("Computing Preconditioner kernel")
                 precond_kernel = self.precond_kernel = FourierKernel(
-                    1.0 / self.kernel.circularize(), centered=True
+                    1.0 / self.kernel.circularize()
                 )
             else:
                 precond_kernel = self.precond_kernel = None
