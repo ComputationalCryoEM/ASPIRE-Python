@@ -77,12 +77,24 @@ class FourierKernel(Kernel):
         :return: Volume instance convolved by the kernel with the same dimensions as before.
         """
 
+        kernel_f = self.kernel[..., np.newaxis]
+        return self._convolve_volume(x, kernel_f, in_place=in_place)
+
+    def _convolve_volume(self, x, kernel_f, in_place=False):
+        """
+        Private method for convolving volume with kernel_f.
+
+        :param x: A Volume instance
+        :param kernel_f: Kernel as numpy array.
+        :param in_plane: Operate on Volume `x` in place.  Optional bool, defaults False.
+            This saves memory in exchange for mutating the input data.
+        :return: Volume instance convolved by the kernel with the same dimensions as before.
+        """
+
         if not isinstance(x, Volume):
             x = Volume(x)
 
         N = x.resolution
-
-        kernel_f = self.kernel[..., np.newaxis]
         N_ker = kernel_f.shape[0]
 
         assert kernel_f.shape[3] == 1, "Convolution kernel must be cubic"
@@ -186,37 +198,19 @@ class FourierKernelMatrix(FourierKernel):
         return xx
 
     def convolve_volume(self, x, k, j, in_place=False):
-        if not isinstance(x, Volume):
-            x = Volume(x)
+        """
+        Convolve volume with kernel
 
-        N = x.resolution
+        :param x: A Volume instance
+        :param k: Kernel matrix index
+        :param j: Kernel matrix index
+        :param in_plane: Operate on Volume `x` in place.  Optional bool, defaults False.
+            This saves memory in exchange for mutating the input data.
+        :return: Volume instance convolved by the kernel with the same dimensions as before.
+        """
+
         kernel_f = self.kermat[k, j, ..., np.newaxis]
-        N_ker = kernel_f.shape[0]
-
-        assert kernel_f.shape[3] == 1, "Convolution kernel must be cubic"
-        assert len(set(kernel_f.shape[:3])) == 1, "Convolution kernel must be cubic"
-
-        is_singleton = len(x) == 1
-
-        if is_singleton:
-            pad_width = [(0, N_ker - N)] * 3
-            _x = np.pad(x.asnumpy()[0], pad_width)
-            x_f = fft.fftn(_x)[..., np.newaxis]
-        else:
-            raise NotImplementedError("not yet")
-
-        x_f = x_f * kernel_f
-
-        # `in_place` mutates the original volume
-        if not in_place:
-            x = Volume.empty_like(x)
-
-        if is_singleton:
-            x[0] = np.real(fft.ifftn(x_f[..., 0])[:N, :N, :N])
-        else:
-            raise NotImplementedError("not yet")
-
-        return x
+        return self._convolve_volume(x, kernel_f, in_place=in_place)
 
     def convolve_volume_matrix(self, x):
         raise NotImplementedError("Not implemented for Fourier Kernel Matrix")
