@@ -82,7 +82,6 @@ class WeightedVolumesEstimator(Estimator):
         _2L = 2 * self.src.L
         # Note, because we're iteratively summing it is critical we zero this array.
         kernel = np.zeros((self.r, self.r, _2L, _2L, _2L), dtype=self.dtype)
-        sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
         for i in range(0, self.src.n, self.batch_size):
             for k in range(self.r):
@@ -93,8 +92,9 @@ class WeightedVolumesEstimator(Estimator):
                     pts_rot = rotated_grids(
                         self.src.L, self.src.rotations[_range, :, :]
                     )
-                    weights = sq_filters_f[:, :, _range]
-                    weights *= self.src.amplitudes[_range] ** 2
+
+                    sq_filters_f = evaluate_src_filters_on_grid(self.src, _range) ** 2
+                    weights = sq_filters_f * self.src.amplitudes[_range] ** 2
 
                     if self.src.L % 2 == 0:
                         weights[0, :, :] = 0
@@ -259,13 +259,13 @@ class MeanEstimator(WeightedVolumesEstimator):
     def compute_kernel(self):
         _2L = 2 * self.src.L
         kernel = np.zeros((_2L, _2L, _2L), dtype=self.dtype)
-        sq_filters_f = np.square(evaluate_src_filters_on_grid(self.src))
 
         for i in range(0, self.src.n, self.batch_size):
             _range = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
             pts_rot = rotated_grids(self.src.L, self.src.rotations[_range, :, :])
-            weights = sq_filters_f[:, :, _range]
-            weights *= self.src.amplitudes[_range] ** 2
+
+            sq_filters_f = evaluate_src_filters_on_grid(self.src, _range) ** 2
+            weights = sq_filters_f * self.src.amplitudes[_range] ** 2
 
             if self.src.L % 2 == 0:
                 weights[0, :, :] = 0
