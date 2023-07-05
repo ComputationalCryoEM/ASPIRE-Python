@@ -347,6 +347,16 @@ class Image:
 
     @staticmethod
     def load(filepath, dtype=None):
+        """
+        Load raw data from supported files.
+
+        Currently MRC and TIFF are supported.
+
+        :param dtype: Optionally force cast to `dtype`.
+             Default dtype is inferred from the file contents.
+        :return: numpy array of image data.
+        """
+
         # Map file extensions to their respective readers
         ext_to_loader = {
             ".mrc": Image._load_mrc,
