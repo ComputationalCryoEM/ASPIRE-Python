@@ -2,7 +2,6 @@ import logging
 import os
 from concurrent import futures
 
-import mrcfile
 import numpy as np
 from PIL import Image as PILImage
 from scipy import ndimage, signal
