@@ -559,7 +559,8 @@ class ApplePickerTestCase(TestCase):
 
             # Check the message prefix
             self.assertTrue(
-                "APPLE.picking mrcfile reporting 1 corruptions" in logs.output[0]
+                f"Image.load of {bad_mrc_path} reporting 1 corruptions"
+                in logs.output[0]
             )
 
             # Check the message contains the file path

@@ -1,6 +1,5 @@
 import logging
 import os
-import warnings
 from concurrent import futures
 
 import mrcfile
@@ -16,6 +15,7 @@ from scipy.ndimage import (
 from sklearn import preprocessing, svm
 
 from aspire.apple.helper import PickerHelper
+from aspire.image import Image
 from aspire.numeric import fft, xp
 from aspire.utils import tqdm
 
@@ -145,24 +145,9 @@ class Picker:
         Applies binning and a low-pass filter.
         """
 
-        # Map file extensions to their respective readers
-        type_to_reader = {
-            ".mrc": self.read_mrc,
-            ".tif": self.read_tiff,
-            ".tiff": self.read_tiff,
-        }
-
-        # Get the file extension
-        ext = os.path.splitext(self.filename)[1]
-
-        # On unsupported extension, raise with suggested file types
-        if ext not in type_to_reader:
-            raise RuntimeError(
-                f"Attempting to open unsupported file extension '{ext}', try {type_to_reader.keys()}."
-            )
-
-        # Call the appropriate file reader
-        self.original_im = type_to_reader[ext]()
+        # Load mircrograph data
+        # TODO, "float" is from legacy APPLE.  dtype handling should be improved
+        self.original_im = Image.load(self.filename, "float").asnumpy()[0]
 
         # Discard outer pixels
         im = self.original_im[
@@ -190,53 +175,6 @@ class Picker:
         )
 
         return im
-
-    def read_mrc(self):
-        """
-        Reads `mrc` micrograph.
-
-        :return: Micrograph image as array.
-        """
-
-        # mrcfile tends to yield many warnings about EMPIAR datasets being corrupt
-        # These warnings generally seem benign, and the message could be clearer
-        # The following code handles the warnings via ASPIRE's logger
-        with warnings.catch_warnings(record=True) as ws:
-            # Cause all warnings to always be triggered in this context
-            warnings.simplefilter("always")
-
-            # Try to open the mrcfile
-            with mrcfile.open(self.filename, mode="r", permissive=True) as mrc:
-                im = mrc.data.astype("float")
-
-            # Log each mrcfile warning to debug log, noting the associated file
-            for w in ws:
-                logger.debug(
-                    "In APPLE.picking mrcfile.open reports corruption for"
-                    f" {self.filename} warning: {w.message}"
-                )
-
-            # Log a single warning to user
-            # Give context and note assocated filename
-            if len(ws) > 0:
-                logger.warning(
-                    f"APPLE.picking mrcfile reporting {len(ws)} corruptions."
-                    " Most likely this is a problem with the header contents."
-                    " Details written to debug log."
-                    f" APPLE will attempt to continue processing {self.filename}"
-                )
-
-        return im
-
-    def read_tiff(self):
-        """
-        Reads `tiff` micrograph.
-
-        :return: Micrograph image as array.
-        """
-
-        # Use PIL to open `filename` and attempt casting to `dtype`
-        return np.array(PILImage.open(self.filename), dtype=self.dtype)
 
     def query_score(self):
         """
