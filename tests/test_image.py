@@ -5,6 +5,7 @@ import tempfile
 import mrcfile
 import numpy as np
 import pytest
+from PIL import Image as PILImage
 from pytest import raises
 from scipy import misc
 
@@ -336,3 +337,60 @@ def test_corrupt_mrc_load(caplog):
 
     # Check the message contains the file path
     assert mrc_path in caplog.text
+
+
+def test_load_mrc():
+    """
+    Test `Image.load` round-trip.
+    """
+
+    # `sample.mrc` is single precision
+    filepath = os.path.join(DATA_DIR, "sample.mrc")
+
+    # Load data from file
+    im = Image.load(filepath)
+    im_64 = Image.load(filepath, dtype=np.float64)
+
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        test_filepath = os.path.join(tmpdir_name, "test.mrc")
+        test_filepath_64 = os.path.join(tmpdir_name, "test_64.mrc")
+
+        im.save(test_filepath)
+        im_64.save(test_filepath_64)
+
+        im2 = Image.load(test_filepath)
+        im2_64 = Image.load(test_filepath_64, dtype=np.float64)
+
+    # Check the single precision round-trip
+    assert np.array_equal(im, im2)
+    assert im2.dtype == np.float32
+
+    # check the double precision round-trip
+    assert np.array_equal(im_64, im2_64)
+    assert im2_64.dtype == np.float64
+
+
+def test_load_tiff():
+    """
+    Test `Image.load` with a TIFF file
+    """
+
+    # `sample.mrc` is single precision
+    filepath = os.path.join(DATA_DIR, "sample.mrc")
+
+    # Load data from file
+    im = Image.load(filepath)
+
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        test_filepath = os.path.join(tmpdir_name, "test.tiff")
+
+        # Write image data as TIFF
+        PILImage.fromarray(im.asnumpy()[0]).save(test_filepath)
+
+        # Load TIFF into Image
+        im2 = Image.load(test_filepath)
+
+    # Check contents
+    assert np.array_equal(im, im2)
