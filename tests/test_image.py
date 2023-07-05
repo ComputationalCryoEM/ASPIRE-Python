@@ -1,6 +1,8 @@
 import logging
 import os.path
+import tempfile
 
+import mrcfile
 import numpy as np
 import pytest
 from pytest import raises
@@ -305,3 +307,32 @@ def test_asnumpy_readonly():
     # Attempt assignment
     with raises(ValueError, match=r".*destination is read-only.*"):
         vw[0, 0, 0] = 123
+
+
+def test_corrupt_mrc_load(caplog):
+    """
+    Test that corrupt mrc files are logged as expected.
+    """
+
+    caplog.set_level(logging.WARNING)
+
+    # Create a tmp dir for this test output
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        mrc_path = os.path.join(tmpdir_name, "bad.mrc")
+
+        # Create and save image
+        Image(np.empty((1, 8, 8), dtype=np.float32)).save(mrc_path)
+
+        # Open mrc file and soft corrupt it
+        with mrcfile.open(mrc_path, "r+") as fh:
+            fh.header.map = -1
+
+        # Check that we get a WARNING
+        _ = Image.load(mrc_path)
+
+    # Check the message prefix
+    assert f"Image.load of {mrc_path} reporting 1 corruptions" in caplog.text
+
+    # Check the message contains the file path
+    assert mrc_path in caplog.text
