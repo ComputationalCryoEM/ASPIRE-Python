@@ -12,7 +12,7 @@ class MicrographSource:
         micrograph_size=4096,
         micrograph_count=1,
         particles_per_micrograph=10,
-        seed=0,
+        seed=None,
         noise_adder=None,
         boundary=None,
         interparticle_distance=None,
@@ -51,7 +51,7 @@ class MicrographSource:
             raise ValueError(
                 "The micrograph size must be larger or equal to the simulation's image size."
             )
-        
+
         self.particle_box_size = simulation.L
         self.particles_per_micrograph = particles_per_micrograph
         self.total_particle_count = (
