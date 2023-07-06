@@ -759,4 +759,4 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         for j in range(self.ell_p_max + 1):
             h_basis[self.idx_list[j]] = self.A3[j] @ h_vals
 
-        return h_basis
+        return DiagMatrix(h_basis)

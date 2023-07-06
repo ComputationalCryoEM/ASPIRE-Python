@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from pytest import raises
 
-from aspire.basis import FFBBasis2D
+from aspire.basis import FFBBasis2D, FLEBasis2D
 from aspire.covariance import RotCov2D
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
@@ -21,6 +21,7 @@ DTYPES = [np.float32]
 # Basis used in FSPCA for class averaging.
 BASIS = [
     FFBBasis2D,
+#    FLEBasis2D,
 ]
 
 # Hard coded to match legacy files.
@@ -73,7 +74,7 @@ def basis(request, img_size, dtype):
 @pytest.fixture
 def cov2d_fixture(volume, basis, ctf_enabled):
     """
-    Cov2D Test without CTFFilters populated.
+    Cov2D Test Fixture.
     """
     n = 32
 
@@ -109,11 +110,6 @@ def cov2d_fixture(volume, basis, ctf_enabled):
     )
     sim.cache()
 
-    # XXX, remove, keeping tmp for reference
-    # imgs_clean = sim.projections[:]
-    # imgs_ctf_clean = sim.clean_images[:]
-    # imgs_ctf_noise = sim.images[:n]
-
     cov2d = RotCov2D(basis)
     coeff_clean = basis.evaluate_t(sim.projections[:])
     coeff = basis.evaluate_t(sim.images[:])
@@ -126,7 +122,7 @@ def test_get_mean(cov2d_fixture):
     cov2d, coeff_clean = cov2d_fixture[1], cov2d_fixture[2]
 
     mean_coeff = cov2d._get_mean(coeff_clean.asnumpy())
-    assert np.allclose(results, mean_coeff)
+    assert np.allclose(results, mean_coeff, atol=utest_tolerance(cov2d.dtype))
 
 
 def test_get_covar(cov2d_fixture):

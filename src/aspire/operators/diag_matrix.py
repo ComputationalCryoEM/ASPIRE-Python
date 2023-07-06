@@ -626,3 +626,10 @@ class DiagMatrix:
             ind += j
 
         return B
+
+    def solve(self, b):
+        """
+        Solve a x = b for `x`, given diagonal matrix `b`.
+        """
+
+        return b / self[:, None]

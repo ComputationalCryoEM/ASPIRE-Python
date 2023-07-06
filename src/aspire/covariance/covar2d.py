@@ -267,7 +267,11 @@ class RotCov2D:
             ctf_basis_k_sq = ctf_basis_k_t @ ctf_basis_k
             b_noise += weight * ctf_basis_k_sq
 
-            A[k] = np.sqrt(weight) * ctf_basis_k_sq
+            A_k = np.sqrt(weight) * ctf_basis_k_sq
+            if not isinstance(A_k, BlkDiagMatrix):
+                A_k = DiagMatrix(A_k).as_blk_diag(self.basis.blk_diag_cov_shape)
+
+            A[k] = A_k
             M += A[k]
 
         if not b_coeff.check_psd():
