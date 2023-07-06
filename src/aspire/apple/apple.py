@@ -1,7 +1,7 @@
-import glob
 import logging
 import os
 from concurrent import futures
+from glob import glob
 
 import numpy as np
 from PIL import Image
@@ -156,8 +156,11 @@ class Apple:
         ), f"Particle size ({self.particle_size}) must exceed query image size ({self.query_image_size})!"
 
     def process_folder(self, folder, create_jpg=False):
-        filenames = glob.glob("{}/*.mrc".format(folder))
-        logger.info(f"converting {len(filenames)} mrc files")
+        # Gather matches for multiple possible file types.
+        filenames = []
+        for ext in (".mrc", ".tif", "tiff"):
+            filenames.extend(glob(f"{folder}/*{ext}"))
+        logger.info(f"converting {len(filenames)} input files")
         logger.info(f"launching {self.n_processes} processes")
 
         pbar = tqdm(total=len(filenames))
