@@ -142,10 +142,8 @@ class PSWFBasis2D(SteerableBasis2D):
         self.max_ns = max_ns
 
         self.samples = self._evaluate_pswf2d_all(self._r_disk, self._theta_disk, max_ns)
-        self.angular_indices = np.repeat(np.arange(len(max_ns)), max_ns).astype("float")
-        self.radial_indices = np.concatenate([range(1, i + 1) for i in max_ns]).astype(
-            "float"
-        )
+        self.angular_indices = np.repeat(np.arange(len(max_ns), dtype=int), max_ns))
+        self.radial_indices = np.concatenate([np.arange(1, i + 1, dtype=int) for i in max_ns])
 
         # Added to support subclassing SteerableBasis
         self.signs_indices = np.sign(self.angular_indices)
