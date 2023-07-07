@@ -4,7 +4,6 @@ import logging
 import numpy as np
 import pytest
 
-from aspire.image import Image
 from aspire.source import MicrographSource, Simulation
 
 logger = logging.getLogger(__name__)
@@ -63,7 +62,7 @@ def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
 def test_micrograph_raises_error_image_size(sim_fixture):
     with pytest.raises(Exception) as e_info:
         s = sim_fixture
-        mic = MicrographSource(
+        _ = MicrographSource(
             s,
             micrograph_size=s.L - 1,
             particles_per_micrograph=10,
@@ -79,9 +78,9 @@ def test_micrograph_raises_error_image_size(sim_fixture):
 def test_micrograph_raises_error_collisions(sim_fixture):
     with pytest.raises(Exception) as e_info:
         s = sim_fixture
-        mic = MicrographSource(
+        _ = MicrographSource(
             s,
-            micrograph_size=sL * 10,
+            micrograph_size=s.L * 10,
             particles_per_microgaph=20,
             interparticle_distance=10,
         )
