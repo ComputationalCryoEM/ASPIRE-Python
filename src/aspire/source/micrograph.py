@@ -66,7 +66,7 @@ class MicrographSource:
         else:
             if (
                 boundary < (0 - self.particle_box_size // 2)
-                or boundary > self.micrograph_size // 2
+                or boundary > self.particle_box_size
             ):
                 raise RuntimeError("Illegal boundary value.")
             self.boundary = boundary
