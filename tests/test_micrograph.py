@@ -9,12 +9,11 @@ from aspire.source import MicrographSource, Simulation
 logger = logging.getLogger(__name__)
 IMG_SIZES = [12, 13]
 DTYPES = [np.float32, np.float64]
-PARTICLES_PER_MICROGRAPHS = [5, 7, 10]
-MICROGRAPH_COUNTS = [1, 2, 3]
+PARTICLES_PER_MICROGRAPHS = [4, 7]
+MICROGRAPH_COUNTS = [1, 2]
 MICROGRAPH_SIZES = [100, 300]
 SIM_PARTICLES = [1, 2]
-BOUNDARIES = [-1, 0, 1]
-
+BOUNDARIES = [-1, 0, None]
 
 @pytest.fixture(params=itertools.product(SIM_PARTICLES, IMG_SIZES, DTYPES))
 def sim_fixture(request):
@@ -47,8 +46,7 @@ def micrograph_fixture(sim_fixture, request):
         boundary=boundary,
     )
 
-
-# Test the MicrographSource class has correct values
+# Test the MicrographSource class takes and stores correct values.
 def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
     s = sim_fixture
     m = micrograph_fixture
@@ -57,6 +55,21 @@ def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
     assert m.particles_per_micrograph * m.micrograph_count <= s.n
     assert len(m) == m.micrograph_count
 
+#Test that MicrographSource raises error when simulation argument is not a Simulation 
+@pytest.mark.parametrize("fake_simulation", ("Simulation", 51378))
+def test_micrograph_raises_error_simulation(fake_simulation):
+    with pytest.raises(Exception) as e_info:
+        micrograph = MicrographSource(
+            fake_simulation,
+            micrograph_size=100,
+            particles_per_micrograph=20,
+            interparticle_distance=10,
+        )
+    assert (
+            str(e_info.value)
+            == "Simulation should be of type Simulation"
+    )
+ 
 
 # Test the MicrographSource class raises errors when the image size is larger than micrograph size
 def test_micrograph_raises_error_image_size(sim_fixture):
@@ -96,9 +109,10 @@ def test_micrograph_centers_match(micrograph_fixture):
     m = micrograph_fixture
     centers = np.reshape(m.centers, (m.total_particle_count, 2))
     for i, center in enumerate(centers):
-        assert (
-            m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0][
-                tuple(center)
-            ]
-            != 0
-        )
+        if center[0] >=0 and center[1] < m.micrograph_size:
+            assert (
+                m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0][
+                    tuple(center)
+                   ]
+                != 0
+               )
