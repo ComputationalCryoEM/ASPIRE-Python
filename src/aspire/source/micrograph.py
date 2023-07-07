@@ -173,27 +173,39 @@ class MicrographSource:
 
     def _clean_micrographs(self, indices):
         # Initialize empty micrograph
-        clean_micrograph = np.zeros((self.micrograph_size, self.micrograph_size))
+        n_micrographs = len(indices)
+        clean_micrograph = np.zeros((n_micrographs, self.micrograph_size, self.micrograph_size), dtype=self.dtype)
         pad = self.particle_box_size
         clean_micrograph = np.pad(
-            clean_micrograph, pad, "constant", constant_values=(0)
+            clean_micrograph,((0, 0), (pad, pad), (pad, pad)), "constant", constant_values=(0)
         )
         # Get centers
-        centers = self.centers[indices][0]
         parity = self.particle_box_size % 2
-        for i in range(centers.shape[0]):
-            image = self.simulation.clean_images[
-                self.particles_per_micrograph * indices + i
-            ].asnumpy()
-            x_left = centers[i][0] - self.particle_box_size // 2 + pad
-            x_right = centers[i][0] + self.particle_box_size // 2 + parity + pad
-            y_left = centers[i][1] - self.particle_box_size // 2 + pad
-            y_right = centers[i][1] + self.particle_box_size // 2 + parity + pad
-            clean_micrograph[x_left:x_right, y_left:y_right] = (
-                clean_micrograph[x_left:x_right, y_left:y_right] - image
-            )
-
-        clean_micrograph = clean_micrograph[
+        for m in range(n_micrographs):
+            global_id = indices[m]
+            image = self.simulation.clean_images[self.get_particle(global_id)]
+            centers = self.centers[global_id]
+            x_lefts = centers[:, 0] - self.particle_box_size // 2 + pad
+            x_rights = centers[:, 0] + self.particle_box_size // 2 + parity + pad
+            y_lefts = centers[:, 1] - self.particle_box_size //	2 + pad
+            y_rights = centers[:, 1] + self.particle_box_size // 2 + parity + pad
+            
+            #for p in range(self.particles_per_micrograph):
+             #   image = self.simulation.clean_images[
+              #      self.get_particle(global_id, p)
+               # ].asnumpy()
+                #center = self.centers[global_id][p]
+                #x_left = center[0] - self.particle_box_size // 2 + pad
+                #x_right = center[0] + self.particle_box_size // 2 + parity + pad
+                #y_left = center[1] - self.particle_box_size // 2 + pad
+                #y_right = center[1] + self.particle_box_size // 2 + parity + pad
+                #clean_micrograph[m][x_left:x_right, y_left:y_right] = (
+                #    clean_micrograph[m][x_left:x_right, y_left:y_right] - image
+                #)
+#            breakpoint()
+            for p in range(self.particles_per_micrograph):
+                clean_micrograph[m][x_lefts[p]:x_rights[p], y_lefts[p]:y_rights[p]] = clean_micrograph[m][x_lefts[p]:x_rights[p], y_lefts[p]:y_rights[p]] - image[p] 
+        clean_micrograph = clean_micrograph[:,
             pad : self.micrograph_size + parity + pad,
             pad : self.micrograph_size + parity + pad,
         ]
@@ -210,13 +222,15 @@ class MicrographSource:
             raise RuntimeError("ID out of bounds")
         return divmod(particle_id, self.particles_per_micrograph)
 
-    def get_particle(self, micrograph_id, particle_id):
+    def get_particle(self, micrograph_id, particle_id=None):
         """
         :param micrograph_id: ID of the microgram
         :param particle_id: Local ID of the particle
         """
         if micrograph_id >= self.micrograph_count or micrograph_id < 0:
             raise RuntimeError("Out of bounds for micrograph")
+        if particle_id is None:
+            return np.arange(micrograph_id * self.particles_per_micrograph,(micrograph_id + 1) * self.particles_per_micrograph)
         if particle_id >= self.particles_per_micrograph or particle_id < 0:
             raise RuntimeError("Out of bounds for particle")
         return micrograph_id * self.particles_per_micrograph + particle_id
