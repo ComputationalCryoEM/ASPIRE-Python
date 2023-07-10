@@ -7,11 +7,11 @@ This tutorial will demonstrate how to set up and use ASPIRE's ``MicrographSource
 """
 
 import numpy as np
+
 from aspire.image import Image
-from aspire.source import Simulation
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
-from aspire.source import MicrographSource
+from aspire.source import MicrographSource, Simulation
 
 # %%
 # Creating a Micrograph Source
