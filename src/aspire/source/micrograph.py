@@ -204,6 +204,9 @@ class MicrographSource:
                     ]
                     - image[p]
                 )
+            # Normalize micrographs
+            min_value = np.abs(np.min(clean_micrograph[m]))
+            clean_micrograph[m] = clean_micrograph[m] + min_value
         clean_micrograph = clean_micrograph[
             :,
             pad : self.micrograph_size + parity + pad,

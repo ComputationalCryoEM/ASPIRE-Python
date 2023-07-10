@@ -139,26 +139,28 @@ outbound_micrograph.micrographs[:5].show()
 # ------------
 # Each particle comes from the simulation, and has its own ID relative to its ``Simulation`` and micrograph
 
-# Let's choose 4 random numbers, as our global (Simulation) particle IDs from the first micrograph                            
+# Let's choose 4 random numbers, as our global (Simulation) particle IDs from the first micrograph
 global_particle_ids = np.random.choice(colliding_micrograph.particles_per_micrograph, 4)
 
-# %%                                                                                                                         
-# We can obtain the actual projection images from the ``Simulation``.                                                        
+# %%
+# We can obtain the actual projection images from the ``Simulation``.
 colliding_sim.images[global_particle_ids].show()
 
-# %%                                                                                                                         
-# Now, we'll use the ``MicrographSource.get_micrograph()`` method to find the particle's micrograph and ID relative to the micrograph.                                                                                                                   
+# %%
+# Now, we'll use the ``MicrographSource.get_micrograph()`` method to find the particle's micrograph and ID relative to the micrograph.
 # We can use these values to find the particle's center.
 
-micrograph_ids, local_particle_ids = np.zeros((4), dtype = int), np.zeros((4), dtype = int)
+micrograph_ids, local_particle_ids = np.zeros((4), dtype=int), np.zeros((4), dtype=int)
 for i, particle in enumerate(global_particle_ids):
-    micrograph_ids[i], local_particle_ids[i] = colliding_micrograph.get_micrograph(particle)
+    micrograph_ids[i], local_particle_ids[i] = colliding_micrograph.get_micrograph(
+        particle
+    )
 
 # Print the values and make sure they're all from the first micrograph.
 print(f"Micrographs: {list(micrograph_ids)}, Particles: {list(local_particle_ids)}")
 
 # Get the particle centers
-centers = np.zeros((4, 2), dtype = int)
+centers = np.zeros((4, 2), dtype=int)
 for i in range(local_particle_ids.shape[0]):
     centers[i] = colliding_micrograph.centers[micrograph_ids[i]][local_particle_ids[i]]
 print(f"Centers: {list(centers)}")
@@ -166,20 +168,26 @@ print(f"Centers: {list(centers)}")
 # %%
 # Let's use the particle's size and center compare the simulation's images to the actual micrographs.
 p_size = colliding_micrograph.particle_box_size
-micrograph_squares = np.zeros((4, colliding_micrograph.particle_box_size, colliding_micrograph.particle_box_size))
+micrograph_squares = np.zeros(
+    (4, colliding_micrograph.particle_box_size, colliding_micrograph.particle_box_size)
+)
 for i, center in enumerate(centers):
     x, y = center[0], center[1]
     # Calculate the square of the particle
-    p_square = colliding_micrograph.clean_micrographs[micrograph_ids[i]].asnumpy()[0][x - p_size//2: x + p_size//2, y - p_size//2: y + p_size//2]
+    p_square = colliding_micrograph.clean_micrographs[micrograph_ids[i]].asnumpy()[0][
+        x - p_size // 2 : x + p_size // 2, y - p_size // 2 : y + p_size // 2
+    ]
     micrograph_squares[i] = p_square
-    
+
 # Plot the squares
 Image(micrograph_squares)[:].show()
 
 # %%
 # We can see that the particles match up!
 # By using the ``MicrographSource.get_particle()`` method, we can find the global (Simulation) ID of the particles.
-simulation_ids = np.zeros((4), dtype = int)
+simulation_ids = np.zeros((4), dtype=int)
 for i in range(4):
-    simulation_ids[i] = colliding_micrograph.get_particle(micrograph_ids[i], local_particle_ids[i])
+    simulation_ids[i] = colliding_micrograph.get_particle(
+        micrograph_ids[i], local_particle_ids[i]
+    )
 print(f"Simulation Particle IDs: {simulation_ids}")
