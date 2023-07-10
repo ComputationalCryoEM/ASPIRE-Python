@@ -109,11 +109,14 @@ def test_micrograph_centers_match(micrograph_fixture):
     m = micrograph_fixture
     centers = np.reshape(m.centers, (m.total_particle_count, 2))
     for i, center in enumerate(centers):
-        if center[0] >= 0 and center[0] < m.micrograph_size and center[1] >= 0 and center[1] < m.micrograph_size:
-            print(m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0].shape)
-            assert (
-                m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0][
-                    tuple(center)
-                ]
-                != np.max(m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0])
+        if (
+            center[0] >= 0
+            and center[0] < m.micrograph_size
+            and center[1] >= 0
+            and center[1] < m.micrograph_size
+        ):
+            assert m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0][
+                tuple(center)
+            ] != np.max(
+                m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0]
             )
