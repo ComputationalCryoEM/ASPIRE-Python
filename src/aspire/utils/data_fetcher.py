@@ -1,3 +1,4 @@
+import os
 import shutil
 
 import pooch
@@ -93,6 +94,26 @@ def clear_downloads():
     Purge the downloads directory.
     """
     shutil.rmtree(data_fetcher.abspath)
+
+
+def available_downloads():
+    """
+    List all available downloads
+    """
+    return list(file_to_method_map.values())
+
+
+def show_downloads():
+    """
+    List all currently downloaded datasets.
+    """
+
+    data_dir = data_fetcher.abspath
+    datasets = [
+        f for f in os.listdir(data_dir) if os.path.isfile(os.path.join(data_dir, f))
+    ]
+
+    return datasets
 
 
 def emdb_2660():
