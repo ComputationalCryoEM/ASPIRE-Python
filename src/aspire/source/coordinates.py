@@ -87,7 +87,7 @@ class CoordinateSource(ImageSource, ABC):
                 dtype = dtypes[mode]
 
         # Read shapes of all micrographs
-        self.mrc_shapes = self._get_shapes()
+        self.mrc_shapes = self._get_mrc_shapes()
 
         # look at first coord to get the particle size
         # this was either provided by the user or read from a .box file
@@ -294,7 +294,7 @@ class CoordinateSource(ImageSource, ABC):
 
         return len(out_of_range)
 
-    def _get_shapes(self):
+    def _get_mrc_shapes(self):
         """
         Iterate through self.mrc_paths and read the dimensions of each micrograph.
 
