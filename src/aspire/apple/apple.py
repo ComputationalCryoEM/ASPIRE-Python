@@ -158,7 +158,7 @@ class Apple:
     def process_folder(self, folder, create_jpg=False):
         # Gather matches for multiple possible file types.
         filenames = []
-        for ext in (".mrc", ".tif", "tiff"):
+        for ext in Image.extensions:
             filenames.extend(glob(f"{folder}/*{ext}"))
         logger.info(f"converting {len(filenames)} input files")
         logger.info(f"launching {self.n_processes} processes")
