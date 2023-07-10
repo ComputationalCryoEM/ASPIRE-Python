@@ -1,3 +1,5 @@
+import shutil
+
 import pooch
 
 from aspire import config
@@ -84,6 +86,13 @@ def download_all():
         file_paths[name] = path
 
     return file_paths
+
+
+def clear_downloads():
+    """
+    Purge the downloads directory.
+    """
+    shutil.rmtree(data_fetcher.abspath)
 
 
 def emdb_2660():
