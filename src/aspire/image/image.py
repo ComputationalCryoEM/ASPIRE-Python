@@ -74,7 +74,64 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     return (imgs - mean) / std
 
 
+def load_mrc(filepath):
+    """
+    Private method to load raw data from `.mrc`.
+
+    :param filepath: File path (string).
+    :return: numpy array of image data.
+    """
+
+    # mrcfile tends to yield many warnings about EMPIAR datasets being corrupt
+    # These warnings generally seem benign, and the message could be clearer
+    # The following code handles the warnings via ASPIRE's logger
+    with catch_warnings(record=True) as ws:
+        # Cause all warnings to always be triggered in this context
+        simplefilter("always")
+
+        with mrcfile.open(filepath, mode="r", permissive=True) as mrc:
+            im = mrc.data
+
+        # Log each mrcfile warning to debug log, noting the associated file
+        for w in ws:
+            logger.debug(
+                "In `Image.load` mrcfile.open reports corruption for"
+                f" {filepath} warning: {w.message}"
+            )
+
+        # Log a single warning to user
+        # Give context and note assocated filepath
+        if len(ws) > 0:
+            logger.warning(
+                f"Image.load of {filepath} reporting {len(ws)} corruptions."
+                " Most likely this is a problem with the header contents."
+                " Details written to debug log."
+                f" Will attempt to continue processing {filepath}"
+            )
+
+    return im
+
+
+def load_tiff(filepath):
+    """
+    Private method to reads `tiff` image.
+
+    :param filepath: File path (string).
+    :return: numpy array of image data.
+    """
+
+    # Use PIL to open `filepath` and cast to numpy array.
+    return np.array(PILImage.open(filepath))
+
+
 class Image:
+    # Map file extensions to their respective readers
+    extensions = {
+        ".mrc": load_mrc,
+        ".tif": load_tiff,
+        ".tiff": load_tiff,
+    }
+
     def __init__(self, data, dtype=None):
         """
         A stack of one or more images.
@@ -357,24 +414,17 @@ class Image:
         :return: numpy array of image data.
         """
 
-        # Map file extensions to their respective readers
-        ext_to_loader = {
-            ".mrc": Image._load_mrc,
-            ".tif": Image._load_tiff,
-            ".tiff": Image._load_tiff,
-        }
-
         # Get the file extension
         ext = os.path.splitext(filepath)[1]
 
         # On unsupported extension, raise with suggested file types
-        if ext not in ext_to_loader:
+        if ext not in Image.extensions:
             raise RuntimeError(
-                f"Attempting to open unsupported file extension '{ext}', try {ext_to_loader.keys()}."
+                f"Attempting to open unsupported file extension '{ext}', try {list(Image.extensions.keys())}."
             )
 
         # Call the appropriate file reader
-        im = ext_to_loader[ext](filepath)
+        im = Image.extensions[ext](filepath)
 
         # Attempt casting if user
         if dtype is not None:
@@ -382,54 +432,6 @@ class Image:
 
         # Return as Image instance
         return Image(im)
-
-    @staticmethod
-    def _load_mrc(filepath):
-        """
-        Private method to load raw data from `.mrc`.
-
-        :return: numpy array of image data.
-        """
-
-        # mrcfile tends to yield many warnings about EMPIAR datasets being corrupt
-        # These warnings generally seem benign, and the message could be clearer
-        # The following code handles the warnings via ASPIRE's logger
-        with catch_warnings(record=True) as ws:
-            # Cause all warnings to always be triggered in this context
-            simplefilter("always")
-
-            with mrcfile.open(filepath, mode="r", permissive=True) as mrc:
-                im = mrc.data
-
-            # Log each mrcfile warning to debug log, noting the associated file
-            for w in ws:
-                logger.debug(
-                    "In `Image.load` mrcfile.open reports corruption for"
-                    f" {filepath} warning: {w.message}"
-                )
-
-            # Log a single warning to user
-            # Give context and note assocated filepath
-            if len(ws) > 0:
-                logger.warning(
-                    f"Image.load of {filepath} reporting {len(ws)} corruptions."
-                    " Most likely this is a problem with the header contents."
-                    " Details written to debug log."
-                    f" Will attempt to continue processing {filepath}"
-                )
-
-        return im
-
-    @staticmethod
-    def _load_tiff(filepath):
-        """
-        Private method to reads `tiff` image.
-
-        :return: numpy array of image data.
-        """
-
-        # Use PIL to open `filepath` and cast to numpy array.
-        return np.array(PILImage.open(filepath))
 
     def _im_translate(self, shifts):
         """
