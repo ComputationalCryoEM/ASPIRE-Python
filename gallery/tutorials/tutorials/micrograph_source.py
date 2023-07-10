@@ -5,9 +5,6 @@ Micrograph Source
 This tutorial will demonstrate how to set up and use ASPIRE's ``MicrographSource`` class.
 """
 
-import aspire
-import numpy as np
-
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.noise import WhiteNoiseAdder
@@ -90,7 +87,7 @@ colliding_micrograph.micrographs[:2].show()
 # Positive values move the boundaries inward, while negative values move the boundaries outward.
 
 # Create a micrograph with a positive boundary, pushing the particles inward.
-inbound_micrograph = MicrographSource(colliding_sim, boundary = 100, interparticle_distance = 1, noise_adder = noise, particles_per_micrograph=20, micrograph_size = 500, micrograph_count=1, seed=1234)
+inbound_micrograph = MicrographSource(colliding_sim, boundary = 20, interparticle_distance = 1, noise_adder = noise, particles_per_micrograph=20, micrograph_size = 500, micrograph_count=1, seed=1234)
 
 # Create a micrograph with a negative boundary, allowing particles to generate outward.
 outbound_micrograph = MicrographSource(colliding_sim, boundary = -20, interparticle_distance = 1, noise_adder = noise, particles_per_micrograph=20, micrograph_size = 500, micrograph_count=1, seed=1234)
