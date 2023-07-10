@@ -76,7 +76,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
 
 def load_mrc(filepath):
     """
-    Private method to load raw data from `.mrc`.
+    Load raw data from `.mrc` into an array.
 
     :param filepath: File path (string).
     :return: numpy array of image data.
@@ -114,7 +114,7 @@ def load_mrc(filepath):
 
 def load_tiff(filepath):
     """
-    Private method to reads `tiff` image.
+    Load raw data from `.tiff` into an array.
 
     :param filepath: File path (string).
     :return: numpy array of image data.
