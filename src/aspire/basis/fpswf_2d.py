@@ -123,7 +123,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         # Accumulate coefficients
         coefficients = self._pswf_integration(nfft_res)
 
-        return coefficients
+        return self.to_real(coefficients).asnumpy()
 
     def _generate_pswf_quad(
         self, n, bandlimit, phi_approximate_error, lambda_max, epsilon
@@ -299,11 +299,11 @@ class FPSWFBasis2D(PSWFBasis2D):
         r_quad_indices.extend(num_angular_pts)
         r_quad_indices = np.cumsum(r_quad_indices, dtype="int")
 
-        n_max = int(max(self.angular_indices) + 1)
+        n_max = int(max(self.complex_angular_indices) + 1)
 
         numel_for_n = np.zeros(n_max, dtype="int")
         for i in range(n_max):
-            numel_for_n[i] = np.count_nonzero(self.angular_indices == i)
+            numel_for_n[i] = np.count_nonzero(self.complex_angular_indices == i)
 
         indices_for_n = [0]
         indices_for_n.extend(numel_for_n)
@@ -352,7 +352,8 @@ class FPSWFBasis2D(PSWFBasis2D):
             (len(self.radial_quad_pts) * self.n_max, num_images), order="F"
         )
         coeff_vec_quad = np.zeros(
-            (num_images, len(self.angular_indices)), dtype=complex_type(self.dtype)
+            (num_images, len(self.complex_angular_indices)),
+            dtype=complex_type(self.dtype),
         )
         m = self.pswf_radial_quad.shape[1]
         for i in range(self.n_max):
