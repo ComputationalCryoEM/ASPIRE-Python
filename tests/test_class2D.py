@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from sklearn import datasets
 
-from aspire.basis import Coef, FFBBasis2D, FLEBasis2D, FSPCABasis
+from aspire.basis import Coef, FFBBasis2D, FLEBasis2D, FPSWFBasis2D, FSPCABasis
 from aspire.classification import RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.noise import WhiteNoiseAdder
@@ -25,7 +25,7 @@ SEED = 42
 IMG_SIZES = [16]
 DTYPES = [np.float32]
 # Basis used in FSPCA for class averaging.
-BASIS = [FFBBasis2D, FLEBasis2D]
+BASIS = [FFBBasis2D, FLEBasis2D, FPSWFBasis2D]
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")

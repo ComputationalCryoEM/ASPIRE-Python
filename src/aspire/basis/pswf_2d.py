@@ -12,6 +12,7 @@ from aspire.basis.basis_utils import (
     t_x_mat,
 )
 from aspire.basis.pswf_utils import BNMatrix
+from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, real_type
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,8 @@ class PSWFBasis2D(SteerableBasis2D):
         and approximation of two-dimensional bandlimited functions", Appl.
         Comput. Harmon. Anal. 22, 235-256 (2007).
     """
+
+    matrix_type = BlkDiagMatrix
 
     def __init__(self, size, gamma_trunc=1.0, beta=1.0, dtype=np.float32):
         """
@@ -463,10 +466,6 @@ class PSWFBasis2D(SteerableBasis2D):
     #     _complex_coef = _complex_coef * np.exp(-1j * ks * radians)
 
     #     return _complex_coef
-
-    @property
-    def blk_diag_cov_shape(self):
-        raise NotImplementedError("Not yet implemented for {F}PSWF.")
 
     def to_real(self, complex_coef):
         """
