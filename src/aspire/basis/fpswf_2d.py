@@ -97,7 +97,9 @@ class FPSWFBasis2D(PSWFBasis2D):
             n_max,
         ) = self._pswf_integration_sub_routine()
 
-        self.us_fft_pts = us_fft_pts
+        self.us_fft_pts = us_fft_pts.astype(
+            self.dtype, copy=False
+        )  # xxx find where this is incorrect
         self.blk_r = blk_r
         self.num_angular_pts = num_angular_pts
         self.r_quad_indices = r_quad_indices
@@ -214,7 +216,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         if k % 2 == 0:
             k = k + 1
 
-        range_array = np.arange(approx_length).reshape((1, approx_length))
+        range_array = np.arange(approx_length, dtype=self.dtype).reshape(
+            (1, approx_length)
+        )
 
         idx_for_quad_nodes = int((k + 1) / 2)
         num_quad_pts = idx_for_quad_nodes - 1
@@ -277,14 +281,13 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         fun_vec = phi_for_quad_nodes(x)
         sign_flipping_vec = np.where(np.sign(fun_vec[:-1]) != np.sign(fun_vec[1:]))[0]
-        phi_zeros = np.zeros(idx_for_quad_nodes - 1)
+        phi_zeros = np.zeros(idx_for_quad_nodes - 1, dtype=self.dtype)
 
         tmp = phi_for_quad_nodes(x)
         for i, j in enumerate(sign_flipping_vec[: idx_for_quad_nodes - 1]):
             new_zero = x[j] - tmp[j] * (x[j + 1] - x[j]) / (tmp[j + 1] - tmp[j])
             phi_zeros[i] = new_zero
 
-        phi_zeros = np.array(phi_zeros)
         return phi_zeros
 
     def _sum_minus_cumsum_smaller_eps(self, x, eps):
@@ -309,7 +312,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         indices_for_n.extend(numel_for_n)
         indices_for_n = np.cumsum(indices_for_n, dtype="int")
 
-        blk_r = [0] * n_max
+        blk_r = [0] * n_max  # xxx array?
         temp_const = self.bandlimit / (2 * np.pi * self.rcut)
         for i in range(n_max):
             blk_r[i] = (

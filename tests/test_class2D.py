@@ -5,7 +5,15 @@ import numpy as np
 import pytest
 from sklearn import datasets
 
-from aspire.basis import Coef, FFBBasis2D, FLEBasis2D, FPSWFBasis2D, FSPCABasis
+from aspire.basis import (
+    Coef,
+    FBBasis2D,
+    FFBBasis2D,
+    FLEBasis2D,
+    FPSWFBasis2D,
+    FSPCABasis,
+    PSWFBasis2D,
+)
 from aspire.classification import RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.noise import WhiteNoiseAdder
@@ -25,7 +33,13 @@ SEED = 42
 IMG_SIZES = [16]
 DTYPES = [np.float32]
 # Basis used in FSPCA for class averaging.
-BASIS = [FFBBasis2D, FLEBasis2D, FPSWFBasis2D]
+BASIS = [
+    FFBBasis2D,
+    FLEBasis2D,
+    FPSWFBasis2D,
+    pytest.param(PSWFBasis2D, marks=pytest.mark.expensive),
+    pytest.param(FBBasis2D, marks=pytest.mark.expensive),
+]
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
@@ -125,18 +139,15 @@ def test_rotate(sim_fixture):
         assert rmse < 10 * utest_tolerance(fspca_basis.dtype)
 
 
-def test_basis_too_small(sim_fixture):
+def test_basis_too_small(sim_fixture, basis):
     """
     When number of components is more than basis functions raise with descriptive error.
     """
-    imgs, src, fspca_basis = sim_fixture
-
-    # fb_basis = FFBBasis2D((src.L, src.L), dtype=src.dtype)
-    fb_basis = FLEBasis2D((src.L, src.L), dtype=src.dtype)
+    src = sim_fixture[1]
 
     with pytest.raises(ValueError, match=r".*Reduce components.*"):
         # Configure an FSPCA basis
-        _ = FSPCABasis(src, basis=fb_basis, components=fb_basis.count * 2, noise_var=0)
+        _ = FSPCABasis(src, basis=basis, components=basis.count * 2, noise_var=0)
 
 
 @pytest.fixture
@@ -254,13 +265,13 @@ def test_RIR_devel_disp(sim_fixture2):
     """
     Currently just tests for runtime errors.
     """
-    clean_src, clean_fspca_basis = sim_fixture2[0], sim_fixture2[2]
+    clean_src, fspca_basis = sim_fixture2[0], sim_fixture2[3]
 
     # Use the basis class setup, only requires a Source.
     rir = RIRClass2D(
         clean_src,
-        fspca_components=clean_fspca_basis.components,
-        bispectrum_components=clean_fspca_basis.components - 1,
+        fspca_components=fspca_basis.components,
+        bispectrum_components=fspca_basis.components - 1,
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="devel",
@@ -321,14 +332,13 @@ def test_component_size(sim_fixture2):
 
     Also tests dtype mismatch behavior.
     """
-    clean_src, clean_fspca_basis = sim_fixture2[0], sim_fixture2[2]
+    clean_src, compressed_fspca_basis = sim_fixture2[0], sim_fixture2[3]
 
     with pytest.raises(RuntimeError, match=r".*Reduce bispectrum_components.*"):
         _ = RIRClass2D(
             clean_src,
-            clean_fspca_basis,
+            compressed_fspca_basis,
             bispectrum_components=clean_src.n + 1,
-            dtype=np.float64,
         )
 
 

@@ -138,7 +138,9 @@ class PSWFBasis2D(SteerableBasis2D):
                 alpha_all.extend(alpha[:n_end])
                 m += 1
 
-        self.alpha_nn = np.array(alpha_all).reshape(-1, 1)
+        self.alpha_nn = np.array(alpha_all, dtype=complex_type(self.dtype)).reshape(
+            -1, 1
+        )
         self.max_ns = max_ns
 
         self.samples = self._evaluate_pswf2d_all(self._r_disk, self._theta_disk, max_ns)
@@ -323,7 +325,7 @@ class PSWFBasis2D(SteerableBasis2D):
             d_vec = self.d_vec_all[i]
 
             phase_part = np.exp(1j * i * theta) / np.sqrt(2 * np.pi)
-            range_array = np.arange(len(d_vec))
+            range_array = np.arange(len(d_vec), dtype=self.dtype)
             r_radial_part_mat = t_radial_part_mat(r, i, range_array, len(d_vec)).dot(
                 d_vec[:, :max_n]
             )
@@ -428,7 +430,7 @@ class PSWFBasis2D(SteerableBasis2D):
 
         d_vec, _ = BNMatrix(big_n, bandlimit, approx_length).get_eig_vectors()
 
-        range_array = np.array(range(approx_length))
+        range_array = np.array(range(approx_length), dtype=self.dtype)
         return d_vec, approx_length, range_array
 
     # # For now, hack in rotation.
