@@ -122,6 +122,7 @@ class MicrographSource:
                     centers[i] = np.array([center_x, center_y])
                     count += max_counts
                 count += 1
+
         # Check for zeroes
         zero_count = 0
         for center in centers:
