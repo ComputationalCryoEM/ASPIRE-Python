@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from pytest import raises
 
-from aspire.basis import FFBBasis2D, FLEBasis2D
+from aspire.basis import FFBBasis2D
 from aspire.covariance import RotCov2D
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
@@ -21,7 +21,6 @@ DTYPES = [np.float32]
 # Basis used in FSPCA for class averaging.
 BASIS = [
     FFBBasis2D,
-#    FLEBasis2D,
 ]
 
 # Hard coded to match legacy files.
