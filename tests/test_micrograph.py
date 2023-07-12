@@ -1,3 +1,4 @@
+
 import itertools
 import logging
 
@@ -15,18 +16,29 @@ MICROGRAPH_SIZES = [100, 101]
 SIM_PARTICLES = [1, 2]
 BOUNDARIES = [-1, 0, None]
 
+def sim_fixture_id(params):
+    sim_particles = params[0]
+    img_size = params[1]
+    dtype = params[2]
+    return f"number of volumes={sim_particles}, image size={img_size}, dtype={dtype.__name__}"
 
-@pytest.fixture(params=itertools.product(SIM_PARTICLES, IMG_SIZES, DTYPES))
+@pytest.fixture(params=itertools.product(SIM_PARTICLES, IMG_SIZES, DTYPES), ids=sim_fixture_id)
 def sim_fixture(request):
     sim_particles, img_size, dtype = request.param
     simulation = Simulation(C=sim_particles, L=img_size, dtype=dtype)
     return simulation
 
+def micrograph_fixture_id(params):
+    particles_per_micrograph = params[0]
+    micrograph_count = params[1]
+    micrograph_size = params[2]
+    boundary = params[3]
+    return f"particles per micrograph={particles_per_micrograph}, micrograph count={micrograph_count}, micrograph size={micrograph_size}, boundary={boundary}"
 
 @pytest.fixture(
     params=itertools.product(
         PARTICLES_PER_MICROGRAPHS, MICROGRAPH_COUNTS, MICROGRAPH_SIZES, BOUNDARIES
-    )
+    ), ids=micrograph_fixture_id
 )
 def micrograph_fixture(sim_fixture, request):
     """
@@ -51,7 +63,7 @@ def micrograph_fixture(sim_fixture, request):
 
 def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
     """
-    Test the Micrograph size matches expectations.
+    Test the MicrographSource has the correct values from arguments.
     """
     s = sim_fixture
     m = micrograph_fixture
@@ -59,14 +71,14 @@ def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
     assert s == m.simulation
     assert m.particles_per_micrograph * m.micrograph_count <= s.n
     assert len(m) == m.micrograph_count
+    assert m.clean_micrographs[0].shape[1] == m.micrograph_size
 
 
-
-def test_micrograph_raises_error_simulation(fake_simulation):
+def test_micrograph_raises_error_simulation():
     """
     Test that MicrographSource raises error when simulation argument is not a Simulation
     """
-    for fake_simulation in ["Simulation", 513.747104]]:
+    for fake_simulation in ["Simulation", 513.747104]:
         with pytest.raises(Exception) as e_info:
             _ = MicrographSource(
                 fake_simulation,
