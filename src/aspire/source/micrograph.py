@@ -122,7 +122,7 @@ class MicrographSource:
                     centers[i] = np.array([center_x, center_y])
                     count += max_counts
                 count += 1
-
+            
         # Check for zeroes
         zero_count = 0
         for center in centers:
@@ -210,8 +210,8 @@ class MicrographSource:
             clean_micrograph[m] = clean_micrograph[m] + min_value
         clean_micrograph = clean_micrograph[
             :,
-            pad : self.micrograph_size + parity + pad,
-            pad : self.micrograph_size + parity + pad,
+            pad : self.micrograph_size + pad,
+            pad : self.micrograph_size + pad,
         ]
         return Image(clean_micrograph)
 
