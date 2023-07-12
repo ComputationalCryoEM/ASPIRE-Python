@@ -433,42 +433,6 @@ class PSWFBasis2D(SteerableBasis2D):
         range_array = np.array(range(approx_length), dtype=self.dtype)
         return d_vec, approx_length, range_array
 
-    # # For now, hack in rotation.
-    # # TODO: Come back and deal with the details after we get cov2d and class avg working as well.
-    # def rotate(self, coef, radians, refl=None):
-    #     return self.to_real(self.complex_rotate(coef, radians, refl).asnumpy())
-
-    # def complex_rotate(self, complex_coef, radians, refl=None):
-    #     """ """
-
-    #     # Covert radians to a broadcastable shape
-    #     if isinstance(radians, np.ndarray):
-    #         if len(radians) != len(complex_coef):
-    #             raise RuntimeError(
-    #                 "`rotate` call `radians` length cannot broadcast with"
-    #                 f" `complex_coef` {len(complex_coef)} != {len(radians)}"
-    #             )
-    #         radians = radians.reshape(-1, 1)
-    #     # else: radians can be a constant
-
-    #     ks = self.complex_angular_indices
-    #     assert len(ks) == complex_coef.shape[-1]
-
-    #     # Don't mutate the input coef array (danger)
-    #     _complex_coef = complex_coef.copy()
-
-    #     # refl
-    #     if refl is not None:
-    #         if isinstance(refl, np.ndarray):
-    #             assert len(refl) == len(complex_coef)
-    #         # else: refl can be a constant
-    #         # get the coefs corresponding to -ks , aka "ells"
-    #         _complex_coef[refl] = np.conj(complex_coef[refl])
-
-    #     _complex_coef = _complex_coef * np.exp(-1j * ks * radians)
-
-    #     return _complex_coef
-
     def to_real(self, complex_coef):
         """
         Return real valued representation of complex coefficients.
