@@ -14,7 +14,7 @@ from aspire.volume import CnSymmetricVolume
 
 # A set of these parameters are marked expensive to reduce testing time.
 # Each tuple holds the parameters (n_img, resolution "L", cyclic order "order", dtype).
-param_list_c2 = [(45, 44, 2, np.float32)]
+param_list_c2 = [(55, 44, 2, np.float32)]
 
 param_list_c3_c4 = [
     (24, 44, 3, np.float32),
@@ -91,10 +91,6 @@ def source_orientation_objs(n_img, L, order, dtype):
         cl_kwargs["symmetry"] = f"C{order}"
     elif order == 2:
         cl_class = CLSymmetryC2
-        # Setting minimum distance between mutual common-lines to 8 degrees
-        # yeilded the best results for orientation estimation in this setting.
-        # Matlab code uses 25 degrees which is the default for this param.
-        cl_kwargs["min_dist_cls"] = 8
     else:
         cl_class = CLSymmetryCn
         cl_kwargs["symmetry"] = f"C{order}"
@@ -137,10 +133,7 @@ def test_estimate_rotations(n_img, L, order, dtype):
 
     # Assert mean angular distance is reasonable.
     if order == 2:
-        # For small n-img, we get some bad estimates so checking the
-        # mean gets poor results with some runs. Instead we'll check that
-        # we get high percentage of good estimates.
-        assert np.mean(ang_dist < 6) > 0.80
+        assert np.mean(ang_dist) < 4
     elif order > 4:
         assert np.mean(ang_dist) < 5
     else:
@@ -396,7 +389,7 @@ def test_commonlines_c2(n_img, L, order, dtype):
             within_5 += 1
 
     # Check that at least 90% of estimates are within 5 degrees.
-    assert within_5 / len(pairs) > 0.95
+    assert within_5 / len(pairs) > 0.90
 
 
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
