@@ -94,9 +94,13 @@ class WeightedVolumesEstimator(Estimator):
 
             pts_rot = rotated_grids(self.src.L, self.src.rotations[_range, :, :])
             pts_rot = pts_rot.reshape((3, -1))
+            assert pts_rot.dtype == self.dtype
 
             sq_filters_f = evaluate_src_filters_on_grid(self.src, _range) ** 2
-            amplitudes_sq = self.src.amplitudes[_range] ** 2
+
+            amplitudes_sq = (self.src.amplitudes[_range] ** 2).astype(
+                self.dtype, copy=False
+            )
 
             for k in range(self.r):
                 for j in range(k + 1):
