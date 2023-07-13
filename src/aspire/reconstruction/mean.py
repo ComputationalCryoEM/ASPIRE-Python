@@ -76,6 +76,12 @@ class WeightedVolumesEstimator(Estimator):
 
     def compute_kernel(self):
         """
+        Compute and return FourierKernelMatrix instance.
+        """
+        return FourierKernelMatrix(self._compute_kernel())
+
+    def _compute_kernel(self):
+        """
         :return: r x r matrix of volumes, shaped (r, r, 2L, 2L, 2L).
         """
 
@@ -84,17 +90,17 @@ class WeightedVolumesEstimator(Estimator):
         kernel = np.zeros((self.r, self.r, _2L, _2L, _2L), dtype=self.dtype)
 
         for i in range(0, self.src.n, self.batch_size):
+            _range = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
+
+            pts_rot = rotated_grids(self.src.L, self.src.rotations[_range, :, :])
+            pts_rot = pts_rot.reshape((3, -1))
+
+            sq_filters_f = evaluate_src_filters_on_grid(self.src, _range) ** 2
+            amplitudes_sq = self.src.amplitudes[_range] ** 2
+
             for k in range(self.r):
                 for j in range(k + 1):
-                    _range = np.arange(
-                        i, min(self.src.n, i + self.batch_size), dtype=int
-                    )
-                    pts_rot = rotated_grids(
-                        self.src.L, self.src.rotations[_range, :, :]
-                    )
-
-                    sq_filters_f = evaluate_src_filters_on_grid(self.src, _range) ** 2
-                    weights = sq_filters_f * self.src.amplitudes[_range] ** 2
+                    weights = sq_filters_f * amplitudes_sq
 
                     if self.src.L % 2 == 0:
                         weights[0, :, :] = 0
@@ -104,12 +110,11 @@ class WeightedVolumesEstimator(Estimator):
                         self.weights[_range, j] * self.weights[_range, k]
                     ).reshape(1, 1, len(_range))
 
-                    pts_rot = pts_rot.reshape((3, -1))
                     weights = np.transpose(weights, (2, 0, 1)).flatten()
 
                     batch_kernel = (
                         1
-                        / (2 * self.src.L**4)
+                        / (self.r * self.src.L**4)
                         * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
                     )
                     kernel[k, j] += batch_kernel
@@ -134,7 +139,7 @@ class WeightedVolumesEstimator(Estimator):
                 kernel_f = np.real(kernel_f)
                 kermat_f[k, j] = kernel_f
 
-        return FourierKernelMatrix(kermat_f)
+        return kermat_f
 
     def src_backward(self):
         """
@@ -257,37 +262,8 @@ class MeanEstimator(WeightedVolumesEstimator):
         return super(WeightedVolumesEstimator, self).apply_kernel(*args, **kwargs)
 
     def compute_kernel(self):
-        _2L = 2 * self.src.L
-        kernel = np.zeros((_2L, _2L, _2L), dtype=self.dtype)
-
-        for i in range(0, self.src.n, self.batch_size):
-            _range = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
-            pts_rot = rotated_grids(self.src.L, self.src.rotations[_range, :, :])
-
-            sq_filters_f = evaluate_src_filters_on_grid(self.src, _range) ** 2
-            weights = sq_filters_f * self.src.amplitudes[_range] ** 2
-
-            if self.src.L % 2 == 0:
-                weights[0, :, :] = 0
-                weights[:, 0, :] = 0
-
-            pts_rot = pts_rot.reshape((3, -1))
-            weights = np.transpose(weights, (2, 0, 1)).flatten()
-
-            kernel += (
-                1
-                / (self.src.n * self.src.L**4)
-                * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
-            )
-
-        # Ensure symmetric kernel
-        kernel[0, :, :] = 0
-        kernel[:, 0, :] = 0
-        kernel[:, :, 0] = 0
-
-        logger.info("Computing non-centered Fourier Transform")
-        kernel = fft.mdim_ifftshift(kernel, range(0, 3))
-        kernel_f = fft.fftn(kernel, axes=(0, 1, 2))
-        kernel_f = np.real(kernel_f)
-
-        return FourierKernel(kernel_f)
+        """
+        Compute and return `FourierKernel` instance.
+        """
+        # Note for the r=1 we select and return a single kernel.
+        return FourierKernel(self._compute_kernel()[0][0])
