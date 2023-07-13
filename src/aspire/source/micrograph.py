@@ -1,5 +1,6 @@
 import numpy as np
 
+from aspire.utils import grid_2d
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
@@ -72,15 +73,22 @@ class MicrographSource:
             self.boundary = boundary
 
         if interparticle_distance is None:
-            self.interparticle_distance = np.sqrt(2) * self.particle_box_size
+            self.interparticle_distance = self.particle_box_size
         else:
             self.interparticle_distance = interparticle_distance
 
+        g2d = grid_2d(int(self.interparticle_distance*2), normalized = False)
+        radial_mask = g2d['r'] <= self.interparticle_distance
+        self.grid_x = g2d['x'].astype(int)[radial_mask]
+        self.grid_y = g2d['y'].astype(int)[radial_mask]
+            
+        self.mask = np.ones((self.micrograph_count, int(self.micrograph_size), int(self.micrograph_size)), dtype=int)
+                
         self.centers = np.zeros(
             (self.micrograph_count, self.particles_per_micrograph, 2), dtype=int
         )
         for i in range(self.micrograph_count):
-            self.centers[i] = self._create_centers()
+            self.centers[i] = self._create_centers(i)
 
         self._clean_micrographs_accessor = _ImageAccessor(
             self._clean_micrographs, self.micrograph_count
@@ -91,68 +99,41 @@ class MicrographSource:
 
         self.images = _ImageAccessor(self._images, self.total_particle_count)
 
+        
     def not_colliding(self, x1, y1, x2, y2, distance):
         return np.hypot(x1 - x2, y1 - y2) > distance
 
-    def _create_centers(self):
-        # initilize root2 for calculating sqrt(2) for Euclidean distance, and max_counts for attempts at randomizing points
-        max_counts = 2500
-
-        centers = np.ones((self.particles_per_micrograph, 2)) * -9999
+    def _create_centers(self, micrograph):
+        centers = np.zeros((self.particles_per_micrograph, 2))
         for i in range(self.particles_per_micrograph):
-            # Initialize center coordinates and attempt count
-            center_x, center_y, count = 0, 0, 0
-            while count < max_counts:
-                # Generate random coordinate within bounds
-                center_x, center_y = self._generate_center()
-
-                good_center = True
-                for j in range(i):
-                    if not self.not_colliding(
-                        centers[j][0],
-                        centers[j][1],
-                        center_x,
-                        center_y,
-                        self.interparticle_distance,
-                    ) or not self._in_boundary(center_x, center_y):
-                        good_center = False
-
-                # If there are no collisions or collisions are allowed, add new center and increase center count
-                if good_center:
-                    centers[i] = np.array([center_x, center_y])
-                    count += max_counts
-                count += 1
-            
-        # Check for zeroes
-        zero_count = 0
-        for center in centers:
-            if center[0] == -9999 and center[1] == -9999:
-                zero_count += 1
-        if zero_count > 0:
-            raise RuntimeError("Not enough centers generated.")
+            x, y = self._generate_center(micrograph)
+            #if zero_count > 0:
+        #    raise RuntimeError("Not enough centers generated.")
+            centers[i] = np.array([x, y])
         return centers
 
-    def _generate_center(self):
-        parity = (self.boundary + 1) % 2
-        x = (
-            (self.micrograph_size - 2 * self.boundary - parity) * np.random.rand()
-            + self.boundary
-            + parity
+    def _generate_center(self, micrograph):
+        '''
+        Helper method to generate centers using a mask
+        '''
+        center_space = np.transpose(np.where(self.mask[micrograph]==1))
+        if center_space.shape[0] == 0:
+            raise RuntimeError("Not enough centers generated.")
+        random_index = np.random.choice(center_space.shape[0])
+        x, y = center_space[random_index]
+        pad = int(2*self.interparticle_distance)
+        self.mask = np.pad(
+            self.mask,
+            ((0, 0), (pad, pad), (pad, pad)),
+            "constant",
+            constant_values=(0),
         )
-        y = (
-            (self.micrograph_size - 2 * self.boundary - parity) * np.random.rand()
-            + self.boundary
-            + parity
-        )
-        return (int(x), int(y))
+        x_vals = self.grid_x + x + pad
+        y_vals = self.grid_y + y + pad
+        self.mask[micrograph][x_vals, y_vals] = 0
+        self.mask = self.mask[:, pad:self.micrograph_size + pad, pad:self.micrograph_size + pad]
+        return x, y
 
-    def _in_boundary(self, x, y):
-        return (
-            x - self.particle_box_size // 2 > self.boundary
-            and x + self.particle_box_size // 2 < self.micrograph_size - self.boundary
-            and y - self.particle_box_size // 2 > self.boundary
-            and y + self.particle_box_size // 2 < self.micrograph_size - self.boundary
-        )
 
     def __len__(self):
         """ """
