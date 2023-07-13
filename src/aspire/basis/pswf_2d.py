@@ -13,7 +13,7 @@ from aspire.basis.basis_utils import (
 )
 from aspire.basis.pswf_utils import BNMatrix
 from aspire.operators import BlkDiagMatrix
-from aspire.utils import complex_type, real_type
+from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -237,7 +237,7 @@ class PSWFBasis2D(SteerableBasis2D):
         """
 
         # hack, convert to complex
-        coefficients = self.to_complex(coefficients)
+        coefficients = self.to_complex(Coef(self, coefficients))
 
         # Handle a single coefficient vector or stack of vectors.
         coefficients = np.atleast_2d(coefficients)
@@ -432,101 +432,3 @@ class PSWFBasis2D(SteerableBasis2D):
 
         range_array = np.array(range(approx_length), dtype=self.dtype)
         return d_vec, approx_length, range_array
-
-    def to_real(self, complex_coef):
-        """
-        Return real valued representation of complex coefficients.
-        This can be useful when comparing or implementing methods
-        from literature.
-
-        There is a corresponding method, to_complex.
-
-        :param complex_coef: Complex coefficients from this basis.
-        :return: Real coefficent representation from this basis.
-        """
-
-        if complex_coef.ndim == 1:
-            complex_coef = complex_coef.reshape(1, -1)
-
-        if complex_coef.dtype not in (np.complex128, np.complex64):
-            raise TypeError("coef provided to to_real should be complex.")
-
-        # Pass through dtype precisions, but check and warn if mismatched.
-        dtype = real_type(complex_coef.dtype)
-        if dtype != self.dtype:
-            logger.warning(
-                f"Complex coef dtype {complex_coef.dtype} does not match precision of basis.dtype {self.dtype}, returning {dtype}."
-            )
-
-        coef = np.zeros((complex_coef.shape[0], self.count), dtype=dtype)
-
-        ind = 0
-        idx = np.arange(self.k_max[0], dtype=int)
-        ind += np.size(idx)
-        ind_pos = ind
-
-        coef[:, idx] = complex_coef[:, idx].real
-
-        for ell in range(1, self.ell_max + 1):
-            idx = ind + np.arange(self.k_max[ell], dtype=int)
-            idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=int)
-            idx_neg = idx_pos + self.k_max[ell]
-
-            c = complex_coef[:, idx]
-            coef[:, idx_pos] = 2.0 * np.real(c)
-            coef[:, idx_neg] = -2.0 * np.imag(c)
-
-            ind += np.size(idx)
-            ind_pos += 2 * self.k_max[ell]
-
-        return Coef(self, coef)
-
-    def to_complex(self, coef):
-        """
-        Return complex valued representation of coefficients.
-        This can be useful when comparing or implementing methods
-        from literature.
-
-        There is a corresponding method, to_real.
-
-        :param coef: Coefficients from this basis.
-        :return: Complex coefficent representation from this basis.
-        """
-
-        if not isinstance(coef, Coef):
-            coef = Coef(self, coef)
-            # raise TypeError(
-            #     f"coef should be instanace of `Coef`, received {type(coef)}."
-            # )
-
-        if coef.dtype not in (np.float64, np.float32):
-            raise TypeError("coef provided to to_complex should be real.")
-
-        # Pass through dtype precions, but check and warn if mismatched.
-        dtype = complex_type(coef.dtype)
-        if coef.dtype != self.dtype:
-            logger.warning(
-                f"coef dtype {coef.dtype} does not match precision of basis.dtype {self.dtype}, returning {dtype}."
-            )
-
-        # Return the same precision as coef
-        imaginary = dtype(1j)
-
-        ccoef = np.zeros((*coef.stack_shape, self.complex_count), dtype=dtype)
-        coef = coef.asnumpy()
-
-        ind = 0
-        idx = np.arange(self.k_max[0], dtype=int)
-        ind += np.size(idx)
-
-        ccoef[..., idx] = coef[..., idx]
-
-        for ell in range(1, self.ell_max + 1):
-            idx = ind + np.arange(self.k_max[ell], dtype=int)
-            ccoef[..., idx] = (
-                coef[..., self._pos[idx]] - imaginary * coef[..., self._neg[idx]]
-            ) / 2.0
-
-            ind += np.size(idx)
-
-        return ccoef
