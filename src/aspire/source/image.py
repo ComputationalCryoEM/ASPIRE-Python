@@ -1466,8 +1466,8 @@ class IndexedSource(ImageSource):
 
         # Create filter indices, these are required to pass unharmed through filter eval code
         #   that is potentially called by other methods later.
-        self.filter_indices = self.src.filter_indices[indices]
-        self.unique_filters = self.src.unique_filters
+        self.filter_indices = np.zeros(self.n, dtype=int)
+        self.unique_filters = [IdentityFilter()]
 
         # Any further operations should not mutate this instance.
         self._mutable = False
