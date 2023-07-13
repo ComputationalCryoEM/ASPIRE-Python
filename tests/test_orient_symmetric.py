@@ -134,10 +134,10 @@ def test_estimate_rotations(n_img, L, order, dtype):
     # Assert mean angular distance is reasonable.
     if order == 2:
         assert np.mean(ang_dist) < 4
-    elif order > 4:
-        assert np.mean(ang_dist) < 5
-    else:
+    elif order == 3 or order == 4:
         assert np.mean(ang_dist) < 2
+    else:
+        assert np.mean(ang_dist) < 5
 
 
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
