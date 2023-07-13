@@ -81,8 +81,9 @@ class MicrographSource:
         radial_mask = g2d['r'] <= self.interparticle_distance
         self.grid_x = g2d['x'].astype(int)[radial_mask]
         self.grid_y = g2d['y'].astype(int)[radial_mask]
-            
-        self.mask = np.ones((self.micrograph_count, int(self.micrograph_size), int(self.micrograph_size)), dtype=int)
+
+        self.mask_pad = int(2*self.interparticle_distance)
+        self.mask = np.ones((self.micrograph_count, int(self.micrograph_size+2*self.mask_pad), int(self.micrograph_size+2*self.mask_pad)), dtype=int)
                 
         self.centers = np.zeros(
             (self.micrograph_count, self.particles_per_micrograph, 2), dtype=int
@@ -104,6 +105,9 @@ class MicrographSource:
         return np.hypot(x1 - x2, y1 - y2) > distance
 
     def _create_centers(self, micrograph):
+        '''
+        Creates centers for the given micrograph
+        '''
         centers = np.zeros((self.particles_per_micrograph, 2))
         for i in range(self.particles_per_micrograph):
             x, y = self._generate_center(micrograph)
@@ -114,29 +118,29 @@ class MicrographSource:
 
     def _generate_center(self, micrograph):
         '''
-        Helper method to generate centers using a mask
+        Helper method to generate centers using the mask
         '''
-        center_space = np.transpose(np.where(self.mask[micrograph]==1))
+        mask_min = self.mask_pad + self.boundary
+        mask_max = self.micrograph_size + self.mask_pad - self.boundary
+        adjusted_mask = self.mask[micrograph][mask_min:mask_max, mask_min:mask_max]
+#        print(mask_min, mask_max, self.mask.shape)
+#        Image(adjusted_mask).show()
+        center_space = np.transpose(np.where(adjusted_mask == 1))
+#        print(center_space)
         if center_space.shape[0] == 0:
             raise RuntimeError("Not enough centers generated.")
         random_index = np.random.choice(center_space.shape[0])
         x, y = center_space[random_index]
-        pad = int(2*self.interparticle_distance)
-        self.mask = np.pad(
-            self.mask,
-            ((0, 0), (pad, pad), (pad, pad)),
-            "constant",
-            constant_values=(0),
-        )
-        x_vals = self.grid_x + x + pad
-        y_vals = self.grid_y + y + pad
+        x_vals = self.grid_x + x + self.mask_pad + self.boundary
+        y_vals = self.grid_y + y + self.mask_pad + self.boundary
         self.mask[micrograph][x_vals, y_vals] = 0
-        self.mask = self.mask[:, pad:self.micrograph_size + pad, pad:self.micrograph_size + pad]
-        return x, y
+        return x + self.boundary, y + self.boundary
 
 
     def __len__(self):
-        """ """
+        """
+        Returns the number of micrographs
+        """
         return self.micrograph_count
 
     @property
@@ -154,6 +158,8 @@ class MicrographSource:
         return micrographs
 
     def _clean_micrographs(self, indices):
+        '''
+        '''
         # Initialize empty micrograph
         n_micrographs = len(indices)
         clean_micrograph = np.zeros(
