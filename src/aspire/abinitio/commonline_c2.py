@@ -163,19 +163,20 @@ class CLSymmetryC2(CLSymmetryC3C4):
     def _compute_correlations(a, b):
         """
         Compute the correlation between all pairs of lines in the polar Fourier images a and b.
+        It is assumed that the polar Fourier images a and b include only half of the full set of
+        rays, ie. in the range [0, 180) degrees. The correlation is expanded by computing the
+        correlation with b and conj(b) to include the full set of rays associated with image b.
 
         :param a: 2D array size n_theta_a x radial_points.
         :param b: 2D array size n_theta_b x radial_points.
 
         :return: Correlation array of size n_theta_a x n_theta_b.
         """
-        part1 = np.real(a) @ np.real(b).T
-        part2 = np.imag(a) @ np.imag(b).T
 
         # Compute corrrelations in the positive and negative r directions.
-        corr = np.zeros((2 * len(part1), len(part1[0])), dtype=part1.dtype)
-        corr[0 : len(part1)] = part1 - part2
-        corr[len(part1) :] = part1 + part2
+        corr = np.zeros((2 * len(a), len(b)), dtype=a.dtype)
+        corr[0 : len(a)] = np.real(a @ b.T)
+        corr[len(a) :] = np.real(a @ np.conj(b).T)
 
         return corr
 
