@@ -180,26 +180,26 @@ class CLSymmetryC2(CLSymmetryC3C4):
         return corr
 
     @staticmethod
-    def _square_mask(corr, x, y, dist):
+    def _square_mask(corr, theta_1, theta_2, dist):
         """
-        For masking correlation array along shift_axis around the point (x, y)
+        For each shift we mask the correlation around the point (theta_1, theta_2)
         with a square mask of half-length `dist`.
 
         :param corr: Correlation array of shape (n_theta, n_shifts, n_theta // 2)
-        :param x: x-coordinate for center of mask.
-        :param y: y-coordinate for center of mask.
+        :param theta_1: theta_1-coordinate for center of mask.
+        :param theta_2: theta_2-coordinate for center of mask.
         :param dist: The distance from center to mask off.
 
-        :return: Mask with square hole around (x, y) with shape = corr.shape.
+        :return: Mask with square hole centered at (theta_1, theta_2) with shape = corr.shape.
         """
-        x_len, n_shifts, y_len = corr.shape
+        n_theta, n_shifts, n_theta_half = corr.shape
 
         # Build mask.
-        left = max(0, x - dist)
-        right = min(x_len, x + dist)
-        bottom = max(0, y - dist)
-        top = min(y_len, y + dist)
-        mask = np.ones((x_len, y_len), dtype=int)
+        left = max(0, theta_1 - dist)
+        right = min(n_theta, theta_1 + dist)
+        bottom = max(0, theta_2 - dist)
+        top = min(n_theta_half, theta_2 + dist)
+        mask = np.ones((n_theta, n_theta_half), dtype=int)
         mask[left:right, bottom:top] = 0
 
         # Expand along shift axis.
