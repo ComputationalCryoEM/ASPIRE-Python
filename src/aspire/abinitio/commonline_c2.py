@@ -162,7 +162,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
     @staticmethod
     def _compute_correlations(a, b):
         """
-        Compute the correlation between Polar Fourier images a and b.
+        Compute the correlation between all pairs of lines in the polar Fourier images a and b.
 
         :param a: 2D array size n_theta_a x radial_points.
         :param b: 2D array size n_theta_b x radial_points.
