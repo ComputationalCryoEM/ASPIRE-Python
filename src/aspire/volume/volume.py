@@ -538,6 +538,8 @@ class Volume:
         """
         with mrcfile.open(filename, permissive=permissive) as mrc:
             loaded_data = mrc.data
+        if dtype is None:
+            dtype = loaded_data.dtype
         if loaded_data.dtype != dtype:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
         return cls(loaded_data.astype(dtype), symmetry_group=symmetry_group)
