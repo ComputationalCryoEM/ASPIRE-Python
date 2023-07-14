@@ -173,7 +173,7 @@ jobs:
       - name: Download EMDB 2660
         run: |
           python -c \
-          "from aspire.utils import emdb_2660; emdb_2660()"
+          "from aspire.downloader import emdb_2660; emdb_2660()"
 
   # Build branch's docs and gallery.
   docs:
