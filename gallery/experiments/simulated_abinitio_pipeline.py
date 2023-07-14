@@ -23,12 +23,12 @@ import numpy as np
 from aspire.abinitio import CLSyncVoting
 from aspire.basis import FFBBasis3D
 from aspire.denoising import DefaultClassAvgSource, DenoiserCov2D
+from aspire.downloader import emdb_2660
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, Simulation
 from aspire.source import Simulation
-from aspire.utils import emdb_2660
 from aspire.utils.coor_trans import (
     get_aligned_rotations,
     get_rots_mse,
@@ -60,8 +60,8 @@ noise_variance = 5e-7  # Set a target noise variance
 # Simulation Data
 # ---------------
 # Start with the hi-res volume map EMDB-2660 sourced from EMPIAR/EMDB,
-# https://www.ebi.ac.uk/emdb/EMD-2660, and dowloaded via ASPIRE's download utility.
-og_v = Volume.load(emdb_2660(), dtype=np.float64)
+# https://www.ebi.ac.uk/emdb/EMD-2660, and dowloaded via ASPIRE's downloader utility.
+og_v = emdb_2660()
 logger.info("Original volume map data" f" shape: {og_v.shape} dtype:{og_v.dtype}")
 
 logger.info(f"Downsampling to {(img_size,)*3}")
