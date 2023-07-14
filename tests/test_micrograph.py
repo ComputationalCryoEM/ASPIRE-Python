@@ -9,9 +9,12 @@ from aspire.source import MicrographSource, Simulation
 logger = logging.getLogger(__name__)
 IMG_SIZES = [12, 13]
 DTYPES = [np.float32, np.float64]
-PARTICLES_PER_MICROGRAPHS = [4, 7]
-MICROGRAPH_COUNTS = [1, 2]
-MICROGRAPH_SIZES = [100, 101]
+# Default for particles_per_micrographs is 10 (even value)
+PARTICLES_PER_MICROGRAPHS = [7, None]
+# Default for micrograph_count is 1 (odd value)
+MICROGRAPH_COUNTS = [2, None]
+#Default for micrograph_size is 4096 (even value)
+MICROGRAPH_SIZES = [101, None]
 SIM_PARTICLES = [1, 2]
 BOUNDARIES = [-1, 0, None]
 
@@ -77,7 +80,7 @@ def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
     assert m.particles_per_micrograph * m.micrograph_count <= s.n
     assert len(m) == m.micrograph_count
     assert m.clean_micrographs[0].shape[1] == m.micrograph_size
-
+    assert repr(m) == f"{m.micrograph_count} {m.dtype.name} micrographs of size {m.micrograph_size}x{m.micrograph_size}"
 
 def test_micrograph_raises_error_simulation():
     """
@@ -149,3 +152,98 @@ def test_micrograph_centers_match(micrograph_fixture):
             ] != np.max(
                 m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0]
             )
+
+def test_micrograph_raises_error_when_out_of_bounds():
+    """
+    Test that the Micrograph raises an error when illegal boundary values are given.
+    """
+    for boundary_value in [-100, 1000]:
+        with pytest.raises(Exception) as e_info:
+            s = Simulation(
+                L = 64,
+                n = 20*1,
+                C=1,
+                amplitudes=1,
+                offsets=0,
+            )
+            _ = MicrographSource(
+                s,
+                micrograph_size= 500,
+                particles_per_microgaph=20,
+                micrograph_count=1,
+                interparticle_distance=10,
+                boundary = boundary_value
+               )
+            assert (str(e_info.value)== "Illegal boundary value.")
+
+def test_micrograph_raises_error_when_too_dense():
+    with pytest.raises(Exception) as e_info:
+        s = Simulation(
+            L =	64,
+            n =	400,
+            C=1,
+            amplitudes=1,
+            offsets=0,
+	)
+        _ = MicrographSource(
+            s,
+            micrograph_size= 500,
+            particles_per_microgaph=400,
+            micrograph_count=1,
+            interparticle_distance=10,
+            boundary = boundary_value
+        )
+        assert (str(e_info.value)== "Not enough centers generated.")
+
+def test_id_returns_correct_values():
+    s = Simulation(
+        L = 64,
+        n = 10,
+        C=1,
+        amplitudes=1,
+        offsets=0,
+    )
+    m = MicrographSource(
+        s,
+        micrograph_size= 500,
+        particles_per_microgaph=10,
+        micrograph_count=1,
+    )
+    particle_id = 5
+    assert m.get_micrograph(5) == (0, 5)
+    assert m.get_particle(0, 5) == 5
+    assert m.get_particle(0) == np.arange(m.particles_per_micrograph)
+
+def test_id_functions_raise_errors():
+    s = Simulation(
+        L = 64,
+        n = 10,
+        C=1,
+        amplitudes=1,
+        offsets=0,
+    )
+    m = MicrographSource(
+        s,
+        micrograph_size= 500,
+        particles_per_microgaph=10,
+        micrograph_count=1,
+    )
+    with pytest.raises(Exception) as e_info:
+        m.get_particle(1)
+        assert (str(e_info.value)== ("Out of bounds for micrograph.")
+    with pytest.raises(Exception) as e_info:
+	m.get_particle(-1)
+        assert (str(e_info.value)== ("Out of bounds for micrograph.")
+    with pytest.raises(Exception) as e_info:
+	m.get_micrograph(11)
+        assert (str(e_info.value)== "ID out of bounds.")
+    with pytest.raises(Exception) as e_info:
+        m.get_micrograph(-1)
+        assert (str(e_info.value)== "ID out of bounds.")
+    with pytest.raises(Exception) as e_info:
+	m.get_particle(500)
+        assert (str(e_info.value)== "Out of bounds for particle.")
+    with pytest.raises(Exception) as e_info:
+        m.get_particle(-1)
+        assert (str(e_info.value)== "Out of bounds for particle.")
+
