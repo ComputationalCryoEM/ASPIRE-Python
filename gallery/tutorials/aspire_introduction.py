@@ -160,8 +160,8 @@ vol = Volume.load(file_path)
 # .. note::
 #     Download EMDB-2660 and load as a ``Volume``::
 #
-#         from aspire.utils import emdb_2660
-#         vol = Volume.load(emdb_2660())
+#         from aspire.downloader import emdb_2660
+#         vol = emdb_2660()
 
 # %%
 # Downsample Volume
