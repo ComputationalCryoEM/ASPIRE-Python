@@ -276,7 +276,7 @@ class MicrographSource:
         :return: The micrograph ID and the local ID of the particle.
         """
         if particle_id >= self.total_particle_count or particle_id < 0:
-            raise RuntimeError("ID out of bounds")
+            raise RuntimeError("ID out of bounds.")
         return divmod(particle_id, self.particles_per_micrograph)
 
     def get_particle(self, micrograph_id, particle_id=None):
