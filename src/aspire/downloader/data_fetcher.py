@@ -60,12 +60,16 @@ def available_downloads():
 def show_downloads():
     """
     List all currently downloaded datasets.
+
+    :return: Dictionary with key/value pairs file/filepath.
     """
 
     data_dir = data_fetcher.abspath
-    datasets = [
-        f for f in os.listdir(data_dir) if os.path.isfile(os.path.join(data_dir, f))
-    ]
+    datasets = {
+        f: os.path.join(data_dir, f)
+        for f in os.listdir(data_dir)
+        if os.path.isfile(os.path.join(data_dir, f))
+    }
 
     return datasets
 
