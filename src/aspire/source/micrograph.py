@@ -17,6 +17,7 @@ class MicrographSource:
         noise_adder=None,
         boundary=None,
         interparticle_distance=None,
+        pass_threshold=0.1,
     ):
         """
         A cryo-EM MicrographSource object that supplies micrographs.
@@ -30,7 +31,8 @@ class MicrographSource:
         :param seed: Random seed
         :param noise_adder: Optionally append instance of NoiseAdder to generation pipeline
         :param boundary: Optionally set boundaries for particle centers. Defaults to particle_box_size // 2, positive values move the boundary inward
-        :param interparticle_distance: Optionally set minimum distance between particle centers. Defaults to particle_box_size * sqrt(2) to avoid collisions
+        :param interparticle_distance: Optionally set minimum distance between particle centers. Defaults to particle_box_size
+        :param pass_threshold: Optionally set the amount of micrographs that is allowed to fail and attempt a new micrographas a percent of the total micrographs. Defaults to 0.1 (10%)
         :return: A MicrographSource object
         """
         if not isinstance(simulation, Simulation):
@@ -67,7 +69,7 @@ class MicrographSource:
         else:
             if (
                 boundary < (0 - self.particle_box_size // 2)
-                or boundary > self.particle_box_size
+                or boundary > self.micrograph_size // 2
             ):
                 raise RuntimeError("Illegal boundary value.")
             self.boundary = boundary
@@ -77,17 +79,24 @@ class MicrographSource:
         else:
             self.interparticle_distance = interparticle_distance
 
-        g2d = grid_2d(int(self.interparticle_distance*2), normalized = False)
+        # Create the radial mask for each center
+        g2d = grid_2d(int(2*self.interparticle_distance), normalized = False)
         radial_mask = g2d['r'] <= self.interparticle_distance
         self.grid_x = g2d['x'].astype(int)[radial_mask]
         self.grid_y = g2d['y'].astype(int)[radial_mask]
 
-        self.mask_pad = int(2*self.interparticle_distance)
-        self.mask = np.ones((self.micrograph_count, int(self.micrograph_size+2*self.mask_pad), int(self.micrograph_size+2*self.mask_pad)), dtype=int)
-                
+        # Calculate the proper padding and create the mask
+        self.pad = int(max(self.particle_box_size, self.interparticle_distance))
+        self.mask = np.full((self.micrograph_count, int(self.micrograph_size+2*self.pad), int(self.micrograph_size+2*self.pad)), False, dtype=bool)
+        self.mask_boundary = self.pad + self.boundary
+        self.mask[:, self.mask_boundary:-1*self.mask_boundary, self.mask_boundary:-1*self.mask_boundary] = True
+
+        # Create the centers
         self.centers = np.zeros(
             (self.micrograph_count, self.particles_per_micrograph, 2), dtype=int
         )
+        self.fail_limit = pass_threshold * self.micrograph_count
+        self.fail_count = 0
         for i in range(self.micrograph_count):
             self.centers[i] = self._create_centers(i)
 
@@ -100,42 +109,53 @@ class MicrographSource:
 
         self.images = _ImageAccessor(self._images, self.total_particle_count)
 
-        
-    def not_colliding(self, x1, y1, x2, y2, distance):
-        return np.hypot(x1 - x2, y1 - y2) > distance
 
     def _create_centers(self, micrograph):
-        '''
-        Creates centers for the given micrograph
-        '''
-        centers = np.zeros((self.particles_per_micrograph, 2))
-        for i in range(self.particles_per_micrograph):
-            x, y = self._generate_center(micrograph)
-            #if zero_count > 0:
-        #    raise RuntimeError("Not enough centers generated.")
-            centers[i] = np.array([x, y])
-        return centers
+        """
+        Creates centers for the given micrograph if the fail threshold isn't met.
+
+        param micrograph: The ID of the micrograph
+        return: A numpy array containing the generated centers
+        """
+        while self.fail_count < self.fail_limit:
+            try:
+                centers = np.zeros((self.particles_per_micrograph, 2))
+                for i in range(self.particles_per_micrograph):
+                    x, y = self._generate_center(micrograph)
+                    centers[i] = np.array([x, y])
+                return centers
+            except:
+                self.fail_count += 1
+        else:
+            print(self.fail_count, self.fail_limit)
+            raise RuntimeError("Not enough centers generated.")    
 
     def _generate_center(self, micrograph):
-        '''
+        """
         Helper method to generate centers using the mask
-        '''
-        mask_min = self.mask_pad + self.boundary
-        mask_max = self.micrograph_size + self.mask_pad - self.boundary
-        adjusted_mask = self.mask[micrograph][mask_min:mask_max, mask_min:mask_max]
-#        print(mask_min, mask_max, self.mask.shape)
-#        Image(adjusted_mask).show()
-        center_space = np.transpose(np.where(adjusted_mask == 1))
-#        print(center_space)
+
+        param micrograph: The ID of the micrograph
+        return: The x-y coordinate values of the generated center
+        """
+        center_space = np.transpose(np.where(self.mask[micrograph]))
         if center_space.shape[0] == 0:
+            # Resets mask and raises error if mask has no valid centers
+            self.mask[micrograph] = np.full((int(self.micrograph_size+2*self.pad), int(self.micrograph_size+2*self.mask_pad)), False, dtype=bool)
+            self.mask[micrograph, self.mask_boundary:-1*self.mask_boundary, self.mask_boundary:-1*self.mask_boundary] = True
+            self.fail_count += 1
             raise RuntimeError("Not enough centers generated.")
         random_index = np.random.choice(center_space.shape[0])
         x, y = center_space[random_index]
-        x_vals = self.grid_x + x + self.mask_pad + self.boundary
-        y_vals = self.grid_y + y + self.mask_pad + self.boundary
-        self.mask[micrograph][x_vals, y_vals] = 0
-        return x + self.boundary, y + self.boundary
+        x_vals = self.grid_x + x
+        y_vals = self.grid_y + y
+        self.mask[micrograph][x_vals, y_vals] = False
+        return x - self.pad, y - self.pad
 
+    def __repr__(self):
+        """
+        String representation of the MicrographSource
+        """
+        return f"{self.micrograph_count} {self.dtype.name} micrographs of size {self.micrograph_size}x{self.micrograph_size}"
 
     def __len__(self):
         """
@@ -145,31 +165,45 @@ class MicrographSource:
 
     @property
     def clean_micrographs(self):
+        """
+        Returns the micrographs without any noise
+        """
         return self._clean_micrographs_accessor
 
     @property
     def micrographs(self):
+        """
+        Returns the micrographs with any added noise
+        """
         return self._micrographs_accessor
 
     def _micrographs(self, indices):
+        """
+        Accesses and returns micrographs with any added noise                                                                                                                                                       
+        :param indices: A 1-D NumPy array of integer indices.                                                                                         
+        :return: An `Image` object representing the clean micrograph                                                                                          """
         micrographs = self._clean_micrographs(indices)
         if self.noise_adder:
             micrographs = self.noise_adder.forward(micrographs)
         return micrographs
 
     def _clean_micrographs(self, indices):
-        '''
-        '''
+        """
+        Accesses and returns micrographs without any added noise
+        
+        :param indices: A 1-D NumPy array of integer indices.                                                                                         
+        :return: An `Image` object representing the clean micrograph 
+        """
         # Initialize empty micrograph
         n_micrographs = len(indices)
         clean_micrograph = np.zeros(
             (n_micrographs, self.micrograph_size, self.micrograph_size),
             dtype=self.dtype,
         )
-        pad = self.particle_box_size
+        # Pad the micrograph
         clean_micrograph = np.pad(
             clean_micrograph,
-            ((0, 0), (pad, pad), (pad, pad)),
+            ((0, 0), (self.pad, self.pad), (self.pad, self.pad)),
             "constant",
             constant_values=(0),
         )
@@ -179,10 +213,11 @@ class MicrographSource:
             global_id = indices[m]
             image = self.simulation.clean_images[self.get_particle(global_id)]
             centers = self.centers[global_id]
-            x_lefts = centers[:, 0] - self.particle_box_size // 2 + pad
-            x_rights = centers[:, 0] + self.particle_box_size // 2 + parity + pad
-            y_lefts = centers[:, 1] - self.particle_box_size // 2 + pad
-            y_rights = centers[:, 1] + self.particle_box_size // 2 + parity + pad
+            x_lefts = centers[:, 0] - self.particle_box_size // 2 + self.pad
+            x_rights = centers[:, 0] + self.particle_box_size // 2 + parity + self.pad
+            y_lefts = centers[:, 1] - self.particle_box_size // 2 + self.pad
+            y_rights = centers[:, 1] + self.particle_box_size // 2 + parity + self.pad
+            # Subtract image from the micrograph using the particle's bounding box and center
             for p in range(self.particles_per_micrograph):
                 clean_micrograph[m][
                     x_lefts[p] : x_rights[p], y_lefts[p] : y_rights[p]
@@ -197,17 +232,26 @@ class MicrographSource:
             clean_micrograph[m] = clean_micrograph[m] + min_value
         clean_micrograph = clean_micrograph[
             :,
-            pad : self.micrograph_size + pad,
-            pad : self.micrograph_size + pad,
+            self.pad : self.micrograph_size + self.pad,
+            self.pad : self.micrograph_size + self.pad,
         ]
         return Image(clean_micrograph)
 
     def _images(self, indices):
-        return self.simulation.images[indices].asnumpy()[0]
+        """
+        Accesses and returns the projections from the Simulation
+
+        :param indices: A 1-D NumPy array of integer indices.
+        :return: An `Image` object
+        """
+        return self.simulation.images[indices]
 
     def get_micrograph(self, particle_id):
         """
+        Using the global ID of the particle, returns the micrograph ID and the local particle ID
+        
         :param particle_id: Global ID of the particle
+        :return: The micrograph ID and the local ID of the particle
         """
         if particle_id >= self.total_particle_count or particle_id < 0:
             raise RuntimeError("ID out of bounds")
@@ -215,8 +259,11 @@ class MicrographSource:
 
     def get_particle(self, micrograph_id, particle_id=None):
         """
+        Using the micrograph ID, returns every global particle ID from that micrograph. Returns specific global IDs if the local IDs are given.
+
         :param micrograph_id: ID of the microgram
         :param particle_id: Local ID of the particle
+        :return: The global ID of the particle
         """
         if micrograph_id >= self.micrograph_count or micrograph_id < 0:
             raise RuntimeError("Out of bounds for micrograph")
