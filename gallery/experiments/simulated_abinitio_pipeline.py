@@ -34,7 +34,6 @@ from aspire.utils.coor_trans import (
     get_rots_mse,
     register_rotations,
 )
-from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
