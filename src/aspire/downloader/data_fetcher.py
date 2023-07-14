@@ -70,14 +70,14 @@ def show_downloads():
     return datasets
 
 
-def emdb_2660(dtype=None):
+def emdb_2660(dtype=np.float32):
     """
     Downloads the EMDB-2660 volume map and returns a `Volume` instance.
 
     Cryo-EM structure of the Plasmodium falciparum 80S ribosome
     bound to the anti-protozoan drug emetine.
 
-    :param dtype: Optionally set dtype for the `Volume`. Defaults to dtype of the volume map.
+    :param dtype: Optionally set dtype for the `Volume`. Defaults to float32.
     :return: A `Volume` instance.
     """
     file_path = fetch_data("emdb_2660.map")
