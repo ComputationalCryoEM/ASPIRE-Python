@@ -1,3 +1,7 @@
+# isort: off
+from .registry import file_to_method_map, registry, registry_urls
+
+# isort: on
 from .data_fetcher import (
     emdb_2484,
     emdb_2660,
@@ -13,4 +17,3 @@ from .data_fetcher import (
     emdb_10835,
     emdb_14621,
 )
-from .registry import file_to_method_map, registry, registry_urls
