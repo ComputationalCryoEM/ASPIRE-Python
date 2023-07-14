@@ -70,18 +70,17 @@ def show_downloads():
     return datasets
 
 
-def emdb_2660(dtype=np.float32):
+def emdb_2660():
     """
     Downloads the EMDB-2660 volume map and returns a `Volume` instance.
 
     Cryo-EM structure of the Plasmodium falciparum 80S ribosome
     bound to the anti-protozoan drug emetine.
 
-    :param dtype: Optionally set dtype for the `Volume`. Defaults to float32.
     :return: A `Volume` instance.
     """
     file_path = fetch_data("emdb_2660.map")
-    vol = Volume.load(file_path, dtype=dtype)
+    vol = Volume.load(file_path, dtype=np.float32)
 
     return vol
 
@@ -91,8 +90,13 @@ def emdb_8012():
     Downloads the EMDB-8012 volume map and returns the file path.
 
     The overall structure of the yeast spliceosomal U4/U6.U5 tri-snRNP at 3.7 Angstrom.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_8012.map")
+    file_path = fetch_data("emdb_8012.map")
+    vol = Volume.load(file_path, dtype=np.float32)
+
+    return vol
 
 
 def emdb_2984():
@@ -101,8 +105,13 @@ def emdb_2984():
 
     2.2 A resolution cryo-EM structure of beta-galactosidase in complex with a cell-permeant inhibitor.
     This molecule exhibits D2 symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_2984.map")
+    file_path = fetch_data("emdb_2984.map")
+    vol = Volume.load(file_path, symmetry_group="D2")
+
+    return vol
 
 
 def emdb_8511():
@@ -111,8 +120,13 @@ def emdb_8511():
 
     Structure of the human HCN1 hyperpolarization-activated cyclic nucleotide-gated ion channel.
     This molecule exhibits C4 symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_8511.map")
+    file_path = fetch_data("emdb_8511.map")
+    vol = Volume.load(file_path, symmetry_group="C4")
+
+    return vol
 
 
 def emdb_3645():
@@ -121,8 +135,13 @@ def emdb_3645():
 
     CryoEM density of TcdA1 in prepore state (SPHIRE tutorial).
     This molecule exhibits C5 symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_3645.map")
+    file_path = fetch_data("emdb_3645.map")
+    vol = Volume.load(file_path, symmetry_group="C5")
+
+    return vol
 
 
 def emdb_4905():
@@ -131,8 +150,13 @@ def emdb_4905():
 
     3D structure of horse spleen apoferritin determined using multifunctional
     graphene supports for electron cryomicroscopy. This molecule exhibits octahedral symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_4905.map")
+    file_path = fetch_data("emdb_4905.map")
+    vol = Volume.load(file_path, symmetry_group="O")
+
+    return vol
 
 
 def emdb_10835():
@@ -141,8 +165,13 @@ def emdb_10835():
 
     High resolution cryo-EM structure of urease from the pathogen Yersinia enterocolitica.
     This molecule exhibits tetrahedral symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_10835.map")
+    file_path = fetch_data("emdb_10835.map")
+    vol = Volume.load(file_path, symmetry_group="T")
+
+    return vol
 
 
 def emdb_5778():
@@ -151,8 +180,13 @@ def emdb_5778():
 
     Structure of the capsaicin receptor, TRPV1, determined by single particle electron cryo-microscopy.
     This molecule exhibits C4 symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_5778.map")
+    file_path = fetch_data("emdb_5778.map")
+    vol = Volume.load(file_path, symmetry_group="C4")
+
+    return vol
 
 
 def emdb_6287():
@@ -161,8 +195,13 @@ def emdb_6287():
 
     2.8 Angstrom resolution reconstruction of the T20S proteasome.
     This molecule exhibits D7 symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_6287.map")
+    file_path = fetch_data("emdb_6287.map")
+    vol = Volume.load(file_path, symmetry_group="D7")
+
+    return vol
 
 
 def emdb_2824():
@@ -171,8 +210,13 @@ def emdb_2824():
 
     Beta-galactosidase reconstruction.
     This molecule exhibits C2 symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_2824.map")
+    file_path = fetch_data("emdb_2824.map")
+    vol = Volume.load(file_path, symmetry_group="C2")
+
+    return vol
 
 
 def emdb_14621():
@@ -181,8 +225,13 @@ def emdb_14621():
 
     Map of SARSCoV2 spike protein.
     This molecule exhibits C3 symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_14621.map")
+    file_path = fetch_data("emdb_14621.map")
+    vol = Volume.load(file_path, symmetry_group="C3")
+
+    return vol
 
 
 def emdb_2484():
@@ -191,8 +240,13 @@ def emdb_2484():
 
     Pre-fusion structure of trimeric HIV-1 envelope glycoprotein determined by cryo-electron microscopy.
     This molecule exhibits C3 symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_2484.map")
+    file_path = fetch_data("emdb_2484.map")
+    vol = Volume.load(file_path, symmetry_group="C3")
+
+    return vol
 
 
 def emdb_6458():
@@ -201,5 +255,10 @@ def emdb_6458():
 
     Cryo-EM Structure of the Activated NAIP2/NLRC4 Inflammasome Reveals Nucleated Polymerization.
     This molecule exhibits C11 symmetry.
+
+    :return: A 'Volume' instance.
     """
-    return fetch_data("emdb_6458.map")
+    file_path = fetch_data("emdb_6458.map")
+    vol = Volume.load(file_path, symmetry_group="C11")
+
+    return vol
