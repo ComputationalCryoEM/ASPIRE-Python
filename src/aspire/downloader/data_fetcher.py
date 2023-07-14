@@ -1,6 +1,7 @@
 import os
 import shutil
 
+import numpy as np
 import pooch
 
 from aspire import config
@@ -69,15 +70,18 @@ def show_downloads():
     return datasets
 
 
-def emdb_2660():
+def emdb_2660(dtype=None):
     """
     Downloads the EMDB-2660 volume map and returns a `Volume` instance.
 
     Cryo-EM structure of the Plasmodium falciparum 80S ribosome
     bound to the anti-protozoan drug emetine.
+
+    :param dtype: Optionally set dtype for the `Volume`. Defaults to dtype of the volume map.
+    :return: A `Volume` instance.
     """
     file_path = fetch_data("emdb_2660.map")
-    vol = Volume.load(file_path)
+    vol = Volume.load(file_path, dtype=dtype)
 
     return vol
 
