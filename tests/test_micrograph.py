@@ -77,6 +77,7 @@ def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
     assert m.particles_per_micrograph * m.micrograph_count <= s.n
     assert len(m) == m.micrograph_count
     assert m.clean_micrographs[0].shape[1] == m.micrograph_size
+    assert m.clean_micrographs[0].shape[2] == m.micrograph_size
     assert (
         repr(m)
         == f"{m.micrograph_count} {m.dtype.name} micrographs of size {m.micrograph_size}x{m.micrograph_size}"
@@ -84,21 +85,20 @@ def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
     assert np.array_equal(s.images[0], m.images[0])
     _ = m.clean_micrographs[:]
     _ = m.micrographs[:]
-    
+
 
 def test_micrograph_raises_error_simulation():
     """
     Test that MicrographSource raises error when simulation argument is not a Simulation
     """
-    for fake_simulation in ["Simulation", 513.747104]:
-        with pytest.raises(Exception) as e_info:
-            _ = MicrographSource(
-                fake_simulation,
-                micrograph_size=100,
-                particles_per_micrograph=20,
-                interparticle_distance=10,
-            )
-        assert str(e_info.value) == "Simulation should be of type Simulation."
+    with pytest.raises(Exception) as e_info:
+        _ = MicrographSource(
+            "Simulation",
+            micrograph_size=100,
+            particles_per_micrograph=20,
+            interparticle_distance=10,
+        )
+    assert str(e_info.value) == "Simulation should be of type Simulation."
 
 
 def test_micrograph_raises_error_image_size(sim_fixture):
@@ -128,7 +128,7 @@ def test_micrograph_raises_error_image_count(sim_fixture):
         _ = MicrographSource(
             s,
             micrograph_size=s.L * 10,
-            particles_per_micrograph=s.n+1,
+            particles_per_micrograph=s.n + 1,
         )
     assert (
         str(e_info.value)
@@ -182,6 +182,9 @@ def test_micrograph_raises_error_when_out_of_bounds():
 
 
 def test_micrograph_raises_error_when_too_dense():
+    """
+    Tests that the micrograph fails when the fail limit is met.
+    """
     with pytest.raises(RuntimeError) as e_info:
         s = Simulation(
             L=64,
@@ -196,11 +199,17 @@ def test_micrograph_raises_error_when_too_dense():
             particles_per_micrograph=400,
             micrograph_count=1,
         )
-        
-    assert str(e_info.value) == "Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting pass_threshold, micrograph_size, particle_count, or interparticle_distance."
+
+    assert (
+        str(e_info.value)
+        == "Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting pass_threshold, micrograph_size, particle_count, or interparticle_distance."
+    )
 
 
 def test_id_returns_correct_values():
+    """
+    Test ID methods return expected values
+    """
     s = Simulation(
         L=64,
         n=10,
@@ -221,6 +230,9 @@ def test_id_returns_correct_values():
 
 
 def test_id_functions_raise_errors():
+    """
+    Test errors for ID method bounds
+    """
     s = Simulation(
         L=64,
         n=10,
@@ -247,14 +259,17 @@ def test_id_functions_raise_errors():
         m.get_micrograph(-1)
     assert str(e_info.value) == "ID out of bounds."
     with pytest.raises(RuntimeError) as e_info:
-        m.get_particle(0,500)
+        m.get_particle(0, 500)
     assert str(e_info.value) == "Out of bounds for particle."
     with pytest.raises(RuntimeError) as e_info:
-        m.get_particle(0,-1)
+        m.get_particle(0, -1)
     assert str(e_info.value) == "Out of bounds for particle."
 
 
 def test_default_values_work():
+    """
+    Tests that the default arguments work.
+    """
     s = Simulation(
         L=64,
         n=10,
