@@ -138,7 +138,7 @@ class MicrographSource:
             except RuntimeError:
                 self.fail_count += 1
         else:
-            raise RuntimeError("Not enough centers generated.")
+            raise RuntimeError("Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting pass_threshold, micrograph_size, particle_count, or interparticle_distance.")
 
     def _generate_center(self, micrograph):
         """
@@ -153,7 +153,7 @@ class MicrographSource:
             self.mask[micrograph] = np.full(
                 (
                     int(self.micrograph_size + 2 * self.pad),
-                    int(self.micrograph_size + 2 * self.mask_pad),
+                    int(self.micrograph_size + 2 * self.pad),
                 ),
                 False,
                 dtype=bool,
