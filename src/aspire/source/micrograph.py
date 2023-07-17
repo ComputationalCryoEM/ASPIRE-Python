@@ -25,13 +25,13 @@ class MicrographSource:
          `dtype` and `particle_box_size` are inferred from `simulation`.
 
         :param simulation: Simulation instance.
-        :param micrograph_size: Size of micrograph, defaults to 4096.
+        :param micrograph_size: Size of micrograph in pixels, defaults to 4096.
         :param micrograph_count: Number of micrographs to generate (integer). Defaults to 1.
         :param particles_per_micrograph: The amount of particles generated for each micrograph. Defaults to 10.
         :param seed: Random seed.
         :param noise_adder: Append instance of NoiseAdder to generation pipeline
         :param boundary: Set boundaries for particle centers, positive values move the boundary inward. Defaults to particle_box_size // 2.
-        :param interparticle_distance: Set minimum distance between particle centers. Defaults to particle_box_size.
+        :param interparticle_distance: Set minimum distance between particle centers, in pixels. Defaults to particle_box_size.
         :param pass_threshold: Set the amount of micrographs that is allowed to fail and attempt a new micrographas a percent of the total micrographs. Defaults to 0.1 (10%).
         :return: A MicrographSource object.
         """
