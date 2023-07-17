@@ -18,5 +18,4 @@ from .data_fetcher import (
     emdb_8511,
     emdb_10835,
     emdb_14621,
-    show_downloads,
 )
