@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import pytest
 
+from aspire.noise import WhiteNoiseAdder
 from aspire.source import MicrographSource, Simulation
 
 logger = logging.getLogger(__name__)
@@ -284,3 +285,23 @@ def test_default_values_work():
     assert m.micrograph_size == 4096
     assert m.particles_per_micrograph == 10
     assert m.interparticle_distance == m.particle_box_size
+
+
+def test_noise_works():
+    s = Simulation(
+        L=20,
+        n=10,
+        C=1,
+        amplitudes=1,
+        offsets=0,
+    )
+    noise = WhiteNoiseAdder(1e-3)
+    m = MicrographSource(
+        s,
+        noise_adder=noise,
+        micrograph_count=1,
+        particles_per_micrograph=4,
+        micrograph_size=200,
+    )
+    noisy_micrograph = noise.forward(m.clean_micrographs[:], [0])
+    assert np.array_equal(m.micrographs[0], noisy_micrograph[0])
