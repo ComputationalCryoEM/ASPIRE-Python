@@ -87,28 +87,26 @@ class MicrographSource:
 
         # Calculate the proper padding and create the mask
         self.pad = int(max(self.particle_box_size, self.interparticle_distance))
-        self.mask = np.full(
+        self._mask = np.full(
             (
-                self.micrograph_count,
                 int(self.micrograph_size + 2 * self.pad),
                 int(self.micrograph_size + 2 * self.pad),
             ),
             False,
             dtype=bool,
         )
-        self.mask_boundary = self.pad + self.boundary
-        self.mask[
-            :,
-            self.mask_boundary : -1 * self.mask_boundary,
-            self.mask_boundary : -1 * self.mask_boundary,
+        self._mask_boundary = self.pad + self.boundary
+        self._mask[
+            self._mask_boundary : -1 * self._mask_boundary,
+            self._mask_boundary : -1 * self._mask_boundary,
         ] = True
 
         # Create the centers
         self.centers = np.zeros(
             (self.micrograph_count, self.particles_per_micrograph, 2), dtype=int
         )
-        self.fail_limit = pass_threshold * self.micrograph_count
-        self.fail_count = 0
+        self._fail_limit = pass_threshold * self.micrograph_count
+        self._fail_count = 0
         for i in range(self.micrograph_count):
             self.centers[i] = self._create_centers(i)
 
@@ -128,17 +126,20 @@ class MicrographSource:
         param micrograph: The ID of the micrograph.
         return: A numpy array containing the generated centers.
         """
-        while self.fail_count < self.fail_limit:
+        while self._fail_count < self._fail_limit:
             try:
+                self._reset_mask()
                 centers = np.zeros((self.particles_per_micrograph, 2))
                 for i in range(self.particles_per_micrograph):
                     x, y = self._generate_center(micrograph)
                     centers[i] = np.array([x, y])
                 return centers
             except RuntimeError:
-                self.fail_count += 1
+                self._fail_count += 1
         else:
-            raise RuntimeError("Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting pass_threshold, micrograph_size, particle_count, or interparticle_distance.")
+            raise RuntimeError(
+                "Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting pass_threshold, micrograph_size, particle_count, or interparticle_distance."
+            )
 
     def _generate_center(self, micrograph):
         """
@@ -147,30 +148,36 @@ class MicrographSource:
         param micrograph: The ID of the micrograph.
         return: The x-y coordinate values of the generated center.
         """
-        center_space = np.transpose(np.where(self.mask[micrograph]))
-        if center_space.shape[0] == 0:
-            # Resets mask and raises error if mask has no valid centers
-            self.mask[micrograph] = np.full(
-                (
-                    int(self.micrograph_size + 2 * self.pad),
-                    int(self.micrograph_size + 2 * self.pad),
-                ),
-                False,
-                dtype=bool,
-            )
-            self.mask[
-                micrograph,
-                self.mask_boundary : -1 * self.mask_boundary,
-                self.mask_boundary : -1 * self.mask_boundary,
-            ] = True
-            self.fail_count += 1
+        available_centers = np.transpose(np.where(self._mask))
+
+        # Reset mask and raise errors if there aren't any valid centers
+        if available_centers.shape[0] == 0:
+            self._fail_count += 1
             raise RuntimeError("Not enough centers generated.")
-        random_index = np.random.choice(center_space.shape[0])
-        x, y = center_space[random_index]
+
+        random_index = np.random.choice(available_centers.shape[0])
+        x, y = available_centers[random_index]
         x_vals = self.grid_x + x
         y_vals = self.grid_y + y
-        self.mask[micrograph][x_vals, y_vals] = False
+        self._mask[x_vals, y_vals] = False
         return x - self.pad, y - self.pad
+
+    def _reset_mask(self):
+        """
+        Helper method to reset the mask.
+        """
+        self._mask = np.full(
+            (
+                int(self.micrograph_size + 2 * self.pad),
+                int(self.micrograph_size + 2 * self.pad),
+            ),
+            False,
+            dtype=bool,
+        )
+        self._mask[
+            self._mask_boundary : -1 * self._mask_boundary,
+            self._mask_boundary : -1 * self._mask_boundary,
+        ] = True
 
     def __repr__(self):
         """
