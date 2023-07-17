@@ -97,11 +97,11 @@ noisy_micrograph = MicrographSource(
 )
 
 # Plot the micrographs
-noisy_micrograph.micrographs[:5].show()
+noisy_micrograph.micrographs[:].show()
 
 # %%
 # We can also plot the un-noisy micrographs using the ``clean_micrographs`` accessor
-noisy_micrograph.clean_micrographs[:5].show()
+noisy_micrograph.clean_micrographs[:].show()
 
 # %%
 # Interparticle Distance
