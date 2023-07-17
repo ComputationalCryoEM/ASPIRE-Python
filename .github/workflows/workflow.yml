@@ -136,7 +136,7 @@ jobs:
         mkdir -p ${CI_TMP_DIR}
         chmod g+rwx  ${CI_TMP_DIR}
         CI_CACHE_DIR=${CI_TMP_DIR}/cache
-        mkdir -p ${CI_CAHCE_DIR}
+        mkdir -p ${CI_CACHE_DIR}
         chmod g+rwx  ${CI_CACHE_DIR}
         echo "Create and assign a unique temp dir to hold our config."
         WORK_DIR=$(mktemp -d -p "${CI_TMP_DIR}")
