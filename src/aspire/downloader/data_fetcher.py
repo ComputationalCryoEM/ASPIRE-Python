@@ -84,7 +84,7 @@ def emdb_2660():
     :return: A `Volume` instance.
     """
     file_path = fetch_data("emdb_2660.map")
-    vol = Volume.load(file_path, dtype=np.float32)
+    vol = Volume.load(file_path)
 
     return vol
 
