@@ -3,7 +3,7 @@ import numpy as np
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
-from aspire.utils import choice, grid_2d
+from aspire.utils import Random, grid_2d
 
 
 class MicrographSimulation:
@@ -95,8 +95,10 @@ class MicrographSimulation:
         # Set pass threshold here
         self._fail_limit = 0.1 * self.micrograph_count
         self._fail_count = 0
-        for i in range(self.micrograph_count):
-            self.centers[i] = self._create_centers(i)
+
+        with Random(seed=self.seed) as _:
+            for i in range(self.micrograph_count):
+                self.centers[i] = self._create_centers(i)
 
         self._clean_images_accessor = _ImageAccessor(
             self._clean_images, self.micrograph_count
@@ -137,7 +139,7 @@ class MicrographSimulation:
             self._fail_count += 1
             raise RuntimeError("Not enough centers generated.")
 
-        random_index = choice(available_centers.shape[0], seed=self.seed)
+        random_index = np.random.choice(available_centers.shape[0])
         x, y = available_centers[random_index]
         x_vals = self.grid_x + x
         y_vals = self.grid_y + y
