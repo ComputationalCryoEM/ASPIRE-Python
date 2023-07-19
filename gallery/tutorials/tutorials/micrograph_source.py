@@ -43,7 +43,7 @@ src = MicrographSimulation(
 )
 
 # Plot the Micrographs
-src.micrographs[:].show()
+src.images[:].show()
 
 # %%
 # CTF Filters
@@ -74,7 +74,7 @@ src = MicrographSimulation(
 )
 
 # Plot the micrographs
-src.micrographs[:].show()
+src.images[:].show()
 
 # %%
 # Noise
@@ -95,11 +95,11 @@ src = MicrographSimulation(
 )
 
 # Plot the micrographs
-src.micrographs[:].show()
+src.images[:].show()
 
 # %%
 # We can also plot the un-noisy micrographs using the ``clean_micrographs`` accessor
-src.clean_micrographs[:].show()
+src.clean_images[:].show()
 
 # %%
 # Interparticle Distance
@@ -133,7 +133,7 @@ src = MicrographSimulation(
 )
 
 # Plot the micrographs
-src.micrographs[:].show()
+src.images[:].show()
 
 # %%
 # Boundary
@@ -154,7 +154,7 @@ out_src = MicrographSimulation(
 )
 
 # Plot the micrographs
-out_src.micrographs[:].show()
+out_src.images[:].show()
 
 # %%
 # Particle Indices
@@ -185,7 +185,7 @@ micrograph_picked_particles = np.zeros(
 for i, center in enumerate(centers):
     x, y = center[0], center[1]
     # Calculate the square of the particle
-    particle = src.clean_micrographs[test_micrograph].asnumpy()[0][
+    particle = src.clean_images[test_micrograph].asnumpy()[0][
         x - p_size // 2 : x + p_size // 2, y - p_size // 2 : y + p_size // 2
     ]
     micrograph_picked_particles[i] = particle
