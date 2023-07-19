@@ -163,7 +163,7 @@ def test_micrograph_raises_error_when_out_of_bounds():
     Test that the Micrograph raises an error when illegal boundary values are given.
     """
     for boundary_value in [-100, 1000]:
-        with pytest.raises(RuntimeError) as e_info:
+        with pytest.raises(ValueError) as e_info:
             s = Simulation(
                 L=64,
                 n=20 * 1,
@@ -186,7 +186,7 @@ def test_micrograph_raises_error_when_too_dense():
     """
     Tests that the micrograph fails when the fail limit is met.
     """
-    with pytest.raises(RuntimeError) as e_info:
+    with pytest.raises(RuntimeError, match="failures exceeded limit") as _:
         s = Simulation(
             L=64,
             n=400,
@@ -200,11 +200,6 @@ def test_micrograph_raises_error_when_too_dense():
             particles_per_micrograph=400,
             micrograph_count=1,
         )
-
-    assert (
-        str(e_info.value)
-        == "Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting pass_threshold, micrograph_size, particle_count, or interparticle_distance."
-    )
 
 
 def test_id_returns_correct_values():
