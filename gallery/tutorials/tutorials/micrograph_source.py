@@ -133,7 +133,7 @@ src = MicrographSource(
 )
 
 # Plot the micrographs
-colliding_micrograph.micrographs[:].show()
+src.micrographs[:].show()
 
 # %%
 # Boundary
@@ -143,7 +143,7 @@ colliding_micrograph.micrographs[:].show()
 # Positive values (measured in pixels) move the boundaries inward, while negative values move the boundaries outward.
 
 # Create a micrograph with a negative boundary, allowing particles to generate outward.
-src = MicrographSource(
+out_src = MicrographSource(
     sim,
     boundary=-20,
     interparticle_distance=1,
@@ -154,7 +154,7 @@ src = MicrographSource(
 )
 
 # Plot the micrographs
-src.micrographs[:].show()
+out_src.micrographs[:].show()
 
 # %%
 # Particle IDs
@@ -196,23 +196,19 @@ Image(micrograph_picked_particles)[:].show()
 # %%
 # The simulated particles are inverted from the MRC due to convention, as we're trying to measure interference.
 # Let's find the images from the ``Simulation`` using the ``get_particle`` method to retrieve their global IDs.
-global_particle_ids = (np.zeros(n_particles), dtype=int)
+global_particle_ids = np.zeros((n_particles), dtype=int)
 for i in range(n_particles):
-    global_particle_ids[i] = src.get_particle(
-        test_micrograph, local_particle_ids[i]
-    )
+    global_particle_ids[i] = src.get_particle(test_micrograph, local_particle_ids[i])
 
 # Plot the simulation's images
 sim.images[global_particle_ids].show()
 
 # %%
 # We can check if these global IDs match our local particle IDs with the ``get_micrograph`` method.
-check_local_ids = np.zeros(n_particles), dtype=int)
+check_local_ids = np.zeros((n_particles), dtype=int)
 for i in range(n_particles):
     # Get each particle's corresponding micrograph ID and local particle ID
-    micrograph_id, check_local_ids[i] = src.get_micrograph(
-        global_particle_ids[i]
-    )
+    micrograph_id, check_local_ids[i] = src.get_micrograph(global_particle_ids[i])
     assert micrograph_id == 1
 np.testing.assert_array_equal(local_particle_ids, check_local_ids)
 print(f"Local particle IDs: {check_local_ids}")
