@@ -3,7 +3,7 @@ import numpy as np
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
-from aspire.utils import grid_2d
+from aspire.utils import grid_2d, choice
 
 
 class MicrographSimulation:
@@ -38,7 +38,6 @@ class MicrographSimulation:
         self.simulation = simulation
 
         self.seed = seed
-        np.random.seed(self.seed)
 
         self.micrograph_size = micrograph_size
         self.micrograph_count = micrograph_count
@@ -143,7 +142,7 @@ class MicrographSimulation:
             self._fail_count += 1
             raise RuntimeError("Not enough centers generated.")
 
-        random_index = np.random.choice(available_centers.shape[0])
+        random_index = choice(available_centers.shape[0], seed=self.seed)
         x, y = available_centers[random_index]
         x_vals = self.grid_x + x
         y_vals = self.grid_y + y
