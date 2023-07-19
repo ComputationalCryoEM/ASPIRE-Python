@@ -18,22 +18,22 @@ from aspire.source import MicrographSimulation, Simulation
 # ----------------------------
 # A ``MicrographSimulation`` is populated with particle projections via a ``Simulation``, so we'll begin by creating a ``Simulation`` and passing it into our ``MicrographSimulation``
 
-# Let's create our Simulation with a particle box size of 64 and one volume.
-n_particles_per_micrograph = 4
+# Let's create our Simulation with a particle box size of 100 and one volume.
+n_particles_per_micrograph = 10
 n_micrographs = 4
 
 sim = Simulation(
-    L=64,
+    L=100,
     n=n_particles_per_micrograph * n_micrographs,
-    seed=1234,
     C=1,
     amplitudes=1,
     offsets=0,
+    seed=1234,
 )
 
 # %%
 # We'll pass our ``Simulation`` as an argument and give our ``MicrographSimulation`` other arguments.
-# In this example, our MicrographSimulation has 4 micrographs of size 500, each with 4 particles.
+# In this example, our MicrographSimulation has 4 micrographs of size 500, each with 10 particles.
 src = MicrographSimulation(
     sim,
     particles_per_micrograph=n_particles_per_micrograph,
@@ -55,9 +55,9 @@ ctfs = [
     RadialCTFFilter(pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0),
 ]
 
-# Pass the CTFs into the Simulation, and create a MicrographSimulation using the same arguments as before
+# Pass our CTF into the Simulation, and create a MicrographSimulation using the same arguments as before
 sim = Simulation(
-    L=64,
+    L=100,
     n=n_particles_per_micrograph * n_micrographs,
     C=1,
     amplitudes=1,
@@ -82,13 +82,13 @@ src.images[:].show()
 # By default, no noise corruption is configured. To apply noise, we have to pass them as arguments to the ``MicrographSimulation``
 
 # Create our noise using WhiteNoiseAdder
-noise = WhiteNoiseAdder(1e-3, seed=1234)
+noise = WhiteNoiseAdder(4e-3, seed=1234)
 
 # Let's add noise to our MicrographSimulation using the noise_adder argument
 src = MicrographSimulation(
     sim,
     noise_adder=noise,
-    particles_per_micrograph=4,
+    particles_per_micrograph=n_particles_per_micrograph,
     micrograph_size=500,
     micrograph_count=4,
     seed=1234,
@@ -110,7 +110,7 @@ src.clean_images[:].show()
 
 # Let's increase the number of particles to show overlap.
 # Create a new simulation to meet the minimum required amount of projections.
-n_particles_per_micrograph = 20
+n_particles_per_micrograph = 50
 
 sim = Simulation(
     L=64,
