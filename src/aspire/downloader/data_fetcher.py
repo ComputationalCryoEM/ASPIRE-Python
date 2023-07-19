@@ -23,9 +23,16 @@ data_fetcher = pooch.create(
 
 def fetch_data(dataset_name):
     """
-    The "fetch" method returns the full path to the downloaded data file.
+    The `fetch_data` method returns the full path to the downloaded data file.
 
-    :param dataset_name: The file name to fetch from local storage.
+    If it’s not in the local storage, it will be downloaded. If the hash of the
+    file in local storage doesn’t match the one in the registry, will download a
+    new copy of the file. This is considered a sign that the file was updated in
+    the remote storage. If the hash of the downloaded file still doesn’t match the
+    one in the registry, will raise an exception to warn of possible file corruption.
+
+    :param dataset_name: The file name (as appears in the registry) to
+        fetch from local storage.
     :return: The absolute path (including the file name) of the file in
         local stroage.
     """
