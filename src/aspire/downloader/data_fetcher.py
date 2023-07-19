@@ -24,6 +24,10 @@ data_fetcher = pooch.create(
 def fetch_data(dataset_name):
     """
     The "fetch" method returns the full path to the downloaded data file.
+
+    :param dataset_name: The file name to fetch from local storage.
+    :return: The absolute path (including the file name) of the file in
+        local stroage.
     """
     return data_fetcher.fetch(dataset_name)
 
@@ -31,6 +35,8 @@ def fetch_data(dataset_name):
 def download_all():
     """
     Download all ASPIRE example data and return a dictionary of filepaths.
+
+    :return: A dictionary of file names and file paths.
     """
 
     file_paths = {}
@@ -51,7 +57,9 @@ def clean_downloads():
 
 def available_downloads():
     """
-    List all available downloads
+    List all available downloads.
+
+    :return: A list of method names for downloadable files.
     """
     return list(file_to_method_map.values())
 
