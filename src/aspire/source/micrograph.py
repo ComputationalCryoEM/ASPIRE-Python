@@ -68,7 +68,7 @@ class MicrographSimulation:
             self.boundary = self.particle_box_size // 2
         else:
             if (
-                boundary < (-1 * self.particle_box_size // 2)
+                boundary < (-self.particle_box_size // 2)
                 or boundary > self.micrograph_size // 2
             ):
                 raise ValueError("Illegal boundary value.")
@@ -163,8 +163,8 @@ class MicrographSimulation:
             dtype=bool,
         )
         self._mask[
-            self._mask_boundary : -1 * self._mask_boundary,
-            self._mask_boundary : -1 * self._mask_boundary,
+            self._mask_boundary : -self._mask_boundary,
+            self._mask_boundary : -self._mask_boundary,
         ] = True
 
     def __repr__(self):
@@ -237,7 +237,7 @@ class MicrographSimulation:
         parity = self.particle_box_size % 2
         for m in range(n_micrographs):
             global_id = indices[m]
-            image = self.simulation.clean_images[self.get_particle(global_id)]
+            image = self.simulation.clean_images[self.get_particle_indices(global_id)]
             centers = self.centers[global_id]
             x_lefts = centers[:, 0] - self.particle_box_size // 2 + self.pad
             x_rights = centers[:, 0] + self.particle_box_size // 2 + parity + self.pad
@@ -272,18 +272,18 @@ class MicrographSimulation:
         """
         return self.simulation.images[indices]
 
-    def get_micrograph(self, particle_id):
+    def get_micrograph_index(self, particle_index):
         """
         Using the global ID of the particle, returns the micrograph ID and the local particle ID.
 
         :param particle_id: Global ID of the particle.
         :return: The micrograph ID and the local ID of the particle.
         """
-        if particle_id >= self.total_particle_count or particle_id < 0:
-            raise RuntimeError("ID out of bounds.")
-        return divmod(particle_id, self.particles_per_micrograph)
+        if particle_index >= self.total_particle_count or particle_index < 0:
+            raise RuntimeError("Index out of bounds.")
+        return divmod(particle_index, self.particles_per_micrograph)
 
-    def get_particle(self, micrograph_id, particle_id=None):
+    def get_particle_indices(self, micrograph_index, particle_index=None):
         """
         Using the micrograph ID, returns every global particle ID from that micrograph. Returns specific global IDs if the local IDs are given.
 
@@ -291,13 +291,13 @@ class MicrographSimulation:
         :param particle_id: Local ID of the particle.
         :return: The global ID of the particle.
         """
-        if micrograph_id >= self.micrograph_count or micrograph_id < 0:
-            raise RuntimeError("Out of bounds for micrograph.")
-        if particle_id is None:
+        if micrograph_index >= self.micrograph_count or micrograph_index < 0:
+            raise RuntimeError("Index out of bounds for micrograph.")
+        if particle_index is None:
             return np.arange(
-                micrograph_id * self.particles_per_micrograph,
-                (micrograph_id + 1) * self.particles_per_micrograph,
+                micrograph_index * self.particles_per_micrograph,
+                (micrograph_index + 1) * self.particles_per_micrograph,
             )
-        if particle_id >= self.particles_per_micrograph or particle_id < 0:
-            raise RuntimeError("Out of bounds for particle.")
-        return micrograph_id * self.particles_per_micrograph + particle_id
+        if particle_index >= self.particles_per_micrograph or particle_index < 0:
+            raise RuntimeError("Index out of bounds for particle.")
+        return micrograph_index * self.particles_per_micrograph + particle_index
