@@ -107,11 +107,11 @@ class MicrographSimulation:
 
         self.images = _ImageAccessor(self._images, self.total_particle_count)
 
-    def _create_centers(self, micrograph):
+    def _create_centers(self, micrograph_index):
         """
         Creates centers for the given micrograph if the fail threshold isn't met.
 
-        param micrograph: The ID of the micrograph.
+        param micrograph_index: The ID of the micrograph.
         return: A numpy array containing the generated centers.
         """
         while self._fail_count < self._fail_limit:
@@ -119,7 +119,7 @@ class MicrographSimulation:
                 self._set_mask()
                 centers = np.zeros((self.particles_per_micrograph, 2))
                 for i in range(self.particles_per_micrograph):
-                    x, y = self._generate_center(micrograph)
+                    x, y = self._generate_center()
                     centers[i] = np.array([x, y])
                 return centers
             except RuntimeError:
@@ -129,11 +129,10 @@ class MicrographSimulation:
                 "Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting pass_threshold, micrograph_size, particles_per_micrograph, or interparticle_distance."
             )
 
-    def _generate_center(self, micrograph):
+    def _generate_center(self):
         """
         Helper method to generate centers using the mask.
 
-        param micrograph: The ID of the micrograph.
         return: The x-y coordinate values of the generated center.
         """
         available_centers = np.transpose(np.where(self._mask))
