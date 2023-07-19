@@ -138,8 +138,8 @@ src.micrographs[:].show()
 # %%
 # Boundary
 # --------
-# By default, the boundary is set to half of the particle width , which will completely contain every particle inside the micrograph.
-# Setting ``boundary=0`` will allow particle centers to generate along the edges.
+# By default, the boundary is set to half of the particle width, which will completely contain every particle inside the micrograph.
+# Setting ``boundary=0`` will allow particles to be placed along the edges.
 # Positive values (measured in pixels) move the boundaries inward, while negative values move the boundaries outward.
 
 # Create a micrograph with a negative boundary, allowing particles to generate outward.
@@ -194,7 +194,6 @@ for i, center in enumerate(centers):
 Image(micrograph_picked_particles)[:].show()
 
 # %%
-# The simulated particles are inverted from the MRC due to convention, as we're trying to measure interference.
 # Let's find the images from the ``Simulation`` using the ``get_particle_indices`` method to retrieve their global indices.
 global_particle_indices = np.zeros((n_particles), dtype=int)
 for i in range(n_particles):

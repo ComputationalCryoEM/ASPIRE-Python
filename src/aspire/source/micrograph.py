@@ -17,7 +17,6 @@ class MicrographSimulation:
         noise_adder=None,
         boundary=None,
         interparticle_distance=None,
-        pass_threshold=0.1,
     ):
         """
         A cryo-EM MicrographSimulation object that supplies micrographs.
@@ -32,7 +31,6 @@ class MicrographSimulation:
         :param noise_adder: Append instance of NoiseAdder to generation pipeline.
         :param boundary: Set boundaries for particle centers, positive values move the boundary inward from the edge of the micrograph. Defaults to half of the particle size (particle_box_size // 2).
         :param interparticle_distance: Set minimum distance between particle centers, in pixels. Defaults to particle_box_size.
-        :param pass_threshold: Set the ratio of micrographs that is allowed to fail and attempt a new micrographs a percent of the total micrographs. Defaults to 0.1 (10%).
         :return: A MicrographSimulation object.
         """
         if not isinstance(simulation, Simulation):
@@ -94,7 +92,9 @@ class MicrographSimulation:
         self.centers = np.zeros(
             (self.micrograph_count, self.particles_per_micrograph, 2), dtype=int
         )
-        self._fail_limit = pass_threshold * self.micrograph_count
+
+        # Set pass threshold here
+        self._fail_limit = 0.1 * self.micrograph_count
         self._fail_count = 0
         for i in range(self.micrograph_count):
             self.centers[i] = self._create_centers(i)
@@ -251,11 +251,8 @@ class MicrographSimulation:
                     clean_micrograph[m][
                         x_lefts[p] : x_rights[p], y_lefts[p] : y_rights[p]
                     ]
-                    - image[p]
+                    + image[p]
                 )
-            # Normalize micrographs
-            min_value = np.abs(np.min(clean_micrograph[m]))
-            clean_micrograph[m] = clean_micrograph[m] + min_value
         clean_micrograph = clean_micrograph[
             :,
             self.pad : self.micrograph_size + self.pad,
