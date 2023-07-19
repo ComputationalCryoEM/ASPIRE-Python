@@ -153,7 +153,7 @@ def test_micrograph_centers_match(micrograph_fixture):
         ):
             assert m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0][
                 tuple(center)
-            ] != np.max(
+            ] != np.min(
                 m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0]
             )
 
