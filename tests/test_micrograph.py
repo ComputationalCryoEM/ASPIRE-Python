@@ -202,9 +202,9 @@ def test_micrograph_raises_error_when_too_dense():
         )
 
 
-def test_id_returns_correct_values():
+def test_index_returns_correct_values():
     """
-    Test ID methods return expected values
+    Test index methods return expected values
     """
     s = Simulation(
         L=64,
@@ -220,14 +220,16 @@ def test_id_returns_correct_values():
         micrograph_count=1,
     )
     particle_id = 5
-    assert m.get_micrograph(particle_id) == (0, particle_id)
-    assert m.get_particle(0, particle_id) == particle_id
-    assert np.array_equal(m.get_particle(0), np.arange(m.particles_per_micrograph))
+    assert m.get_micrograph_index(particle_id) == (0, particle_id)
+    assert m.get_particle_indices(0, particle_id) == particle_id
+    assert np.array_equal(
+        m.get_particle_indices(0), np.arange(m.particles_per_micrograph)
+    )
 
 
-def test_id_functions_raise_errors():
+def test_index_functions_raise_errors():
     """
-    Test errors for ID method bounds
+    Test errors for index method bounds
     """
     s = Simulation(
         L=64,
@@ -243,23 +245,23 @@ def test_id_functions_raise_errors():
         micrograph_count=1,
     )
     with pytest.raises(RuntimeError) as e_info:
-        m.get_particle(1)
-    assert str(e_info.value) == "Out of bounds for micrograph."
+        m.get_particle_indices(1)
+    assert str(e_info.value) == "Index out of bounds for micrograph."
     with pytest.raises(RuntimeError) as e_info:
-        m.get_particle(-1)
-    assert str(e_info.value) == "Out of bounds for micrograph."
+        m.get_particle_indices(-1)
+    assert str(e_info.value) == "Index out of bounds for micrograph."
     with pytest.raises(RuntimeError) as e_info:
-        m.get_micrograph(11)
-    assert str(e_info.value) == "ID out of bounds."
+        m.get_micrograph_index(11)
+    assert str(e_info.value) == "Index out of bounds."
     with pytest.raises(RuntimeError) as e_info:
-        m.get_micrograph(-1)
-    assert str(e_info.value) == "ID out of bounds."
+        m.get_micrograph_index(-1)
+    assert str(e_info.value) == "Index out of bounds."
     with pytest.raises(RuntimeError) as e_info:
-        m.get_particle(0, 500)
-    assert str(e_info.value) == "Out of bounds for particle."
+        m.get_particle_indices(0, 500)
+    assert str(e_info.value) == "Index out of bounds for particle."
     with pytest.raises(RuntimeError) as e_info:
-        m.get_particle(0, -1)
-    assert str(e_info.value) == "Out of bounds for particle."
+        m.get_particle_indices(0, -1)
+    assert str(e_info.value) == "Index out of bounds for particle."
 
 
 def test_default_values_work():
