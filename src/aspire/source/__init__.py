@@ -11,7 +11,7 @@ from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
 
 # isort: off
-from aspire.source.micrograph import MicrographSource
+from aspire.source.micrograph import MicrographSimulation
 
 # isort: on
 logger = logging.getLogger(__name__)

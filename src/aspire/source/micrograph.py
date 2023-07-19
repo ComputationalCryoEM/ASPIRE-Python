@@ -6,7 +6,7 @@ from aspire.source.image import _ImageAccessor
 from aspire.utils import grid_2d
 
 
-class MicrographSource:
+class MicrographSimulation:
     def __init__(
         self,
         simulation,
@@ -20,7 +20,7 @@ class MicrographSource:
         pass_threshold=0.1,
     ):
         """
-        A cryo-EM MicrographSource object that supplies micrographs.
+        A cryo-EM MicrographSimulation object that supplies micrographs.
 
         `dtype` and `particle_box_size` are inferred from `simulation`, where `dtype` is the data type of the micrographs and `particle_box_size` is the size of the particles.
 
@@ -33,7 +33,7 @@ class MicrographSource:
         :param boundary: Set boundaries for particle centers, positive values move the boundary inward from the edge of the micrograph. Defaults to half of the particle size (particle_box_size // 2).
         :param interparticle_distance: Set minimum distance between particle centers, in pixels. Defaults to particle_box_size.
         :param pass_threshold: Set the ratio of micrographs that is allowed to fail and attempt a new micrographs a percent of the total micrographs. Defaults to 0.1 (10%).
-        :return: A MicrographSource object.
+        :return: A MicrographSimulation object.
         """
         if not isinstance(simulation, Simulation):
             raise TypeError("Simulation should be of type Simulation.")
@@ -169,7 +169,7 @@ class MicrographSource:
 
     def __repr__(self):
         """
-        String representation of the MicrographSource.
+        String representation of the MicrographSimulation.
 
         :return: Returns a string containing the number of micrographs, dtype, and dimension.
         """

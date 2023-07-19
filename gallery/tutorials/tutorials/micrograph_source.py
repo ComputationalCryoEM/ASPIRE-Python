@@ -3,7 +3,7 @@
 Micrograph Source
 =================
 
-This tutorial will demonstrate how to set up and use ASPIRE's ``MicrographSource`` class.
+This tutorial will demonstrate how to set up and use ASPIRE's ``MicrographSimulation`` class.
 """
 
 import numpy as np
@@ -11,12 +11,12 @@ import numpy as np
 from aspire.image import Image
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
-from aspire.source import MicrographSource, Simulation
+from aspire.source import MicrographSimulation, Simulation
 
 # %%
 # Creating a Micrograph Source
 # ----------------------------
-# A ``MicrographSource`` is populated with particle projections via a ``Simulation``, so we'll begin by creating a ``Simulation`` and passing it into our ``MicrographSource``
+# A ``MicrographSimulation`` is populated with particle projections via a ``Simulation``, so we'll begin by creating a ``Simulation`` and passing it into our ``MicrographSimulation``
 
 # Let's create our Simulation with a particle box size of 64 and one volume.
 n_particles_per_micrograph = 4
@@ -32,9 +32,9 @@ sim = Simulation(
 )
 
 # %%
-# We'll pass our ``Simulation`` as an argument and give our ``MicrographSource`` other arguments.
-# In this example, our MicrographSource has 4 micrographs of size 500, each with 4 particles.
-src = MicrographSource(
+# We'll pass our ``Simulation`` as an argument and give our ``MicrographSimulation`` other arguments.
+# In this example, our MicrographSimulation has 4 micrographs of size 500, each with 4 particles.
+src = MicrographSimulation(
     sim,
     particles_per_micrograph=n_particles_per_micrograph,
     micrograph_size=500,
@@ -55,7 +55,7 @@ ctfs = [
     RadialCTFFilter(pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0),
 ]
 
-# Pass the CTFs into the Simulation, and create a MicrographSource using the same arguments as before
+# Pass the CTFs into the Simulation, and create a MicrographSimulation using the same arguments as before
 sim = Simulation(
     L=64,
     n=n_particles_per_micrograph * n_micrographs,
@@ -65,7 +65,7 @@ sim = Simulation(
     unique_filters=ctfs,
     seed=1234,
 )
-src = MicrographSource(
+src = MicrographSimulation(
     sim,
     particles_per_micrograph=n_particles_per_micrograph,
     micrograph_size=500,
@@ -79,13 +79,13 @@ src.micrographs[:].show()
 # %%
 # Noise
 # -----
-# By default, no noise corruption is configured. To apply noise, we have to pass them as arguments to the ``MicrographSource``
+# By default, no noise corruption is configured. To apply noise, we have to pass them as arguments to the ``MicrographSimulation``
 
 # Create our noise using WhiteNoiseAdder
 noise = WhiteNoiseAdder(1e-3, seed=1234)
 
-# Let's add noise to our MicrographSource using the noise_adder argument
-src = MicrographSource(
+# Let's add noise to our MicrographSimulation using the noise_adder argument
+src = MicrographSimulation(
     sim,
     noise_adder=noise,
     particles_per_micrograph=4,
@@ -123,7 +123,7 @@ sim = Simulation(
 
 
 # Set the interparticle distance to 1, which adds at least one pixel of separation between center and allows particles to collide.
-src = MicrographSource(
+src = MicrographSimulation(
     sim,
     interparticle_distance=1,
     noise_adder=noise,
@@ -143,7 +143,7 @@ src.micrographs[:].show()
 # Positive values (measured in pixels) move the boundaries inward, while negative values move the boundaries outward.
 
 # Create a micrograph with a negative boundary, allowing particles to generate outward.
-out_src = MicrographSource(
+out_src = MicrographSimulation(
     sim,
     boundary=-20,
     interparticle_distance=1,
@@ -167,7 +167,7 @@ local_particle_ids = np.random.choice(n_particles_per_micrograph, n_particles)
 print(f"Local particle IDS: {local_particle_ids}")
 
 # %%
-# We can obtain the images from our MicrographSource by retrieving their centers and plotting the boundary boxes.
+# We can obtain the images from our MicrographSimulation by retrieving their centers and plotting the boundary boxes.
 centers = np.zeros((n_particles, 2), dtype=int)
 for i in range(n_particles):
     centers[i] = src.centers[test_micrograph][local_particle_ids[i]]
