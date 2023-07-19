@@ -69,7 +69,7 @@ vol = downloader.emdb_2660()
 vol
 
 # %%
-# A View of the Data
+# View the Data
 # ------------------
 # We can take a peek at this data by viewing some projections of the volume.
 import numpy as np
