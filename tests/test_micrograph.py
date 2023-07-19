@@ -77,15 +77,15 @@ def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
     assert s == m.simulation
     assert m.particles_per_micrograph * m.micrograph_count <= s.n
     assert len(m) == m.micrograph_count
-    assert m.clean_micrographs[0].shape[1] == m.micrograph_size
-    assert m.clean_micrographs[0].shape[2] == m.micrograph_size
+    assert m.clean_images[0].shape[1] == m.micrograph_size
+    assert m.clean_images[0].shape[2] == m.micrograph_size
     assert (
         repr(m)
         == f"{m.micrograph_count} {m.dtype.name} micrographs of size {m.micrograph_size}x{m.micrograph_size}"
     )
-    assert np.array_equal(s.images[0], m.images[0])
-    _ = m.clean_micrographs[:]
-    _ = m.micrographs[:]
+    assert np.array_equal(s.images[0], m.simulation.images[0])
+    _ = m.clean_images[:]
+    _ = m.images[:]
 
 
 def test_micrograph_raises_error_simulation():
@@ -151,11 +151,9 @@ def test_micrograph_centers_match(micrograph_fixture):
             and center[1] >= 0
             and center[1] < m.micrograph_size
         ):
-            assert m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0][
+            assert m.clean_images[i // m.particles_per_micrograph].asnumpy()[0][
                 tuple(center)
-            ] != np.min(
-                m.clean_micrographs[i // m.particles_per_micrograph].asnumpy()[0]
-            )
+            ] != np.min(m.clean_images[i // m.particles_per_micrograph].asnumpy()[0])
 
 
 def test_micrograph_raises_error_when_out_of_bounds():
@@ -300,5 +298,5 @@ def test_noise_works():
         particles_per_micrograph=4,
         micrograph_size=200,
     )
-    noisy_micrograph = noise.forward(m.clean_micrographs[:], [0])
-    assert np.array_equal(m.micrographs[0], noisy_micrograph[0])
+    noisy_micrograph = noise.forward(m.clean_images[:], [0])
+    assert np.array_equal(m.images[0], noisy_micrograph[0])
