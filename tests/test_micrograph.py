@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from aspire.noise import WhiteNoiseAdder
-from aspire.source import MicrographSource, Simulation
+from aspire.source import MicrographSimulation, Simulation
 
 logger = logging.getLogger(__name__)
 IMG_SIZES = [12, 13]
@@ -49,7 +49,7 @@ def micrograph_fixture_id(params):
 )
 def micrograph_fixture(sim_fixture, request):
     """
-    Construct a MicrographSource.
+    Construct a MicrographSimulation.
     """
     (
         particles_per_micrograph,
@@ -57,7 +57,7 @@ def micrograph_fixture(sim_fixture, request):
         micrograph_size,
         boundary,
     ) = request.param
-    return MicrographSource(
+    return MicrographSimulation(
         simulation=sim_fixture,
         interparticle_distance=0,
         particles_per_micrograph=particles_per_micrograph,
@@ -69,7 +69,7 @@ def micrograph_fixture(sim_fixture, request):
 
 def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
     """
-    Test the MicrographSource has the correct values from arguments.
+    Test the MicrographSimulation has the correct values from arguments.
     """
     s = sim_fixture
     m = micrograph_fixture
@@ -90,10 +90,10 @@ def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
 
 def test_micrograph_raises_error_simulation():
     """
-    Test that MicrographSource raises error when simulation argument is not a Simulation
+    Test that MicrographSimulation raises error when simulation argument is not a Simulation
     """
     with pytest.raises(Exception) as e_info:
-        _ = MicrographSource(
+        _ = MicrographSimulation(
             "Simulation",
             micrograph_size=100,
             particles_per_micrograph=20,
@@ -104,11 +104,11 @@ def test_micrograph_raises_error_simulation():
 
 def test_micrograph_raises_error_image_size(sim_fixture):
     """
-    Test the MicrographSource class raises errors when the image size is larger than micrograph size.
+    Test the MicrographSimulation class raises errors when the image size is larger than micrograph size.
     """
     with pytest.raises(ValueError) as e_info:
         s = sim_fixture
-        _ = MicrographSource(
+        _ = MicrographSimulation(
             s,
             micrograph_size=s.L - 1,
             particles_per_micrograph=10,
@@ -122,11 +122,11 @@ def test_micrograph_raises_error_image_size(sim_fixture):
 
 def test_micrograph_raises_error_image_count(sim_fixture):
     """
-    Test the MicrographSource class raises errors when there aren't enough images.
+    Test the MicrographSimulation class raises errors when there aren't enough images.
     """
     with pytest.raises(ValueError) as e_info:
         s = sim_fixture
-        _ = MicrographSource(
+        _ = MicrographSimulation(
             s,
             micrograph_size=s.L * 10,
             particles_per_micrograph=s.n + 1,
@@ -171,7 +171,7 @@ def test_micrograph_raises_error_when_out_of_bounds():
                 amplitudes=1,
                 offsets=0,
             )
-            _ = MicrographSource(
+            _ = MicrographSimulation(
                 s,
                 micrograph_size=500,
                 particles_per_micrograph=20,
@@ -194,7 +194,7 @@ def test_micrograph_raises_error_when_too_dense():
             amplitudes=1,
             offsets=0,
         )
-        _ = MicrographSource(
+        _ = MicrographSimulation(
             s,
             micrograph_size=500,
             particles_per_micrograph=400,
@@ -213,7 +213,7 @@ def test_id_returns_correct_values():
         amplitudes=1,
         offsets=0,
     )
-    m = MicrographSource(
+    m = MicrographSimulation(
         s,
         micrograph_size=500,
         particles_per_micrograph=10,
@@ -236,7 +236,7 @@ def test_id_functions_raise_errors():
         amplitudes=1,
         offsets=0,
     )
-    m = MicrographSource(
+    m = MicrographSimulation(
         s,
         micrograph_size=500,
         particles_per_micrograph=10,
@@ -268,17 +268,17 @@ def test_default_values_work():
     """
     s = Simulation(
         L=64,
-        n=10,
+        n=100,
         C=1,
         amplitudes=1,
         offsets=0,
     )
-    m = MicrographSource(
+    m = MicrographSimulation(
         s,
     )
     assert m.micrograph_count == 1
     assert m.micrograph_size == 4096
-    assert m.particles_per_micrograph == 10
+    assert m.particles_per_micrograph == 100
     assert m.interparticle_distance == m.particle_box_size
 
 
@@ -291,7 +291,7 @@ def test_noise_works():
         offsets=0,
     )
     noise = WhiteNoiseAdder(1e-3)
-    m = MicrographSource(
+    m = MicrographSimulation(
         s,
         noise_adder=noise,
         micrograph_count=1,
