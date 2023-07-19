@@ -157,20 +157,20 @@ out_src = MicrographSimulation(
 out_src.micrographs[:].show()
 
 # %%
-# Particle IDs
-# ------------
-# Each particle comes from the simulation, and has its own ID relative to its ``Simulation`` and micrograph.
-# Let's choose 4 random numbers, as our global (Simulation) particle IDs from ``test_micrograph=1``.
+# Particle Indices
+# ----------------
+# Each particle comes from the simulation, and has its own index relative to its ``Simulation`` and micrograph.
+# Let's choose four random numbers as our global (Simulation) particle indices from ``test_micrograph=1``.
 test_micrograph = 1
 n_particles = 4
-local_particle_ids = np.random.choice(n_particles_per_micrograph, n_particles)
-print(f"Local particle IDS: {local_particle_ids}")
+local_particle_indices = np.random.choice(n_particles_per_micrograph, n_particles)
+print(f"Local particle indices: {local_particle_indices}")
 
 # %%
 # We can obtain the images from our MicrographSimulation by retrieving their centers and plotting the boundary boxes.
 centers = np.zeros((n_particles, 2), dtype=int)
 for i in range(n_particles):
-    centers[i] = src.centers[test_micrograph][local_particle_ids[i]]
+    centers[i] = src.centers[test_micrograph][local_particle_indices[i]]
 
 # Let's use the particles' centers and sizes to perform "perfect particle picking" on this test micrograph.
 p_size = src.particle_box_size
@@ -195,20 +195,24 @@ Image(micrograph_picked_particles)[:].show()
 
 # %%
 # The simulated particles are inverted from the MRC due to convention, as we're trying to measure interference.
-# Let's find the images from the ``Simulation`` using the ``get_particle`` method to retrieve their global IDs.
-global_particle_ids = np.zeros((n_particles), dtype=int)
+# Let's find the images from the ``Simulation`` using the ``get_particle_indices`` method to retrieve their global indices.
+global_particle_indices = np.zeros((n_particles), dtype=int)
 for i in range(n_particles):
-    global_particle_ids[i] = src.get_particle(test_micrograph, local_particle_ids[i])
+    global_particle_indices[i] = src.get_particle_indices(
+        test_micrograph, local_particle_indices[i]
+    )
 
 # Plot the simulation's images
-sim.images[global_particle_ids].show()
+sim.images[global_particle_indices].show()
 
 # %%
-# We can check if these global IDs match our local particle IDs with the ``get_micrograph`` method.
-check_local_ids = np.zeros((n_particles), dtype=int)
+# We can check if these global indices match our local particle indices with the ``get_micrograph_index`` method.
+check_local_indices = np.zeros((n_particles), dtype=int)
 for i in range(n_particles):
-    # Get each particle's corresponding micrograph ID and local particle ID
-    micrograph_id, check_local_ids[i] = src.get_micrograph(global_particle_ids[i])
-    assert micrograph_id == 1
-np.testing.assert_array_equal(local_particle_ids, check_local_ids)
-print(f"Local particle IDs: {check_local_ids}")
+    # Get each particle's corresponding micrograph index and local particle index
+    micrograph_index, check_local_indices[i] = src.get_micrograph_index(
+        global_particle_indices[i]
+    )
+    assert micrograph_index == 1
+np.testing.assert_array_equal(local_particle_indices, check_local_indices)
+print(f"Local particle indices: {check_local_indices}")
