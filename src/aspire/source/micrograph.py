@@ -12,7 +12,7 @@ class MicrographSource:
         simulation,
         micrograph_size=4096,
         micrograph_count=1,
-        particles_per_micrograph=10,
+        particles_per_micrograph=100,
         seed=None,
         noise_adder=None,
         boundary=None,
@@ -22,17 +22,17 @@ class MicrographSource:
         """
         A cryo-EM MicrographSource object that supplies micrographs.
 
-         `dtype` and `particle_box_size` are inferred from `simulation`.
+        `dtype` and `particle_box_size` are inferred from `simulation`, where `dtype` is the data type of the micrographs and `particle_box_size` is the size of the particles.
 
         :param simulation: Simulation instance.
         :param micrograph_size: Size of micrograph in pixels, defaults to 4096.
         :param micrograph_count: Number of micrographs to generate (integer). Defaults to 1.
         :param particles_per_micrograph: The amount of particles generated for each micrograph. Defaults to 10.
         :param seed: Random seed.
-        :param noise_adder: Append instance of NoiseAdder to generation pipeline
-        :param boundary: Set boundaries for particle centers, positive values move the boundary inward. Defaults to particle_box_size // 2.
+        :param noise_adder: Append instance of NoiseAdder to generation pipeline.
+        :param boundary: Set boundaries for particle centers, positive values move the boundary inward from the edge of the micrograph. Defaults to half of the particle size (particle_box_size // 2).
         :param interparticle_distance: Set minimum distance between particle centers, in pixels. Defaults to particle_box_size.
-        :param pass_threshold: Set the amount of micrographs that is allowed to fail and attempt a new micrographas a percent of the total micrographs. Defaults to 0.1 (10%).
+        :param pass_threshold: Set the ratio of micrographs that is allowed to fail and attempt a new micrographs a percent of the total micrographs. Defaults to 0.1 (10%).
         :return: A MicrographSource object.
         """
         if not isinstance(simulation, Simulation):
@@ -68,10 +68,10 @@ class MicrographSource:
             self.boundary = self.particle_box_size // 2
         else:
             if (
-                boundary < (0 - self.particle_box_size // 2)
+                boundary < (-1 * self.particle_box_size // 2)
                 or boundary > self.micrograph_size // 2
             ):
-                raise RuntimeError("Illegal boundary value.")
+                raise ValueError("Illegal boundary value.")
             self.boundary = boundary
 
         if interparticle_distance is None:
@@ -85,21 +85,10 @@ class MicrographSource:
         self.grid_x = g2d["x"].astype(int)[radial_mask]
         self.grid_y = g2d["y"].astype(int)[radial_mask]
 
-        # Calculate the proper padding and create the mask
+        # Calculate the proper padding for the micrograph borders and create the micrograph mask
         self.pad = int(max(self.particle_box_size, self.interparticle_distance))
-        self._mask = np.full(
-            (
-                int(self.micrograph_size + 2 * self.pad),
-                int(self.micrograph_size + 2 * self.pad),
-            ),
-            False,
-            dtype=bool,
-        )
         self._mask_boundary = self.pad + self.boundary
-        self._mask[
-            self._mask_boundary : -1 * self._mask_boundary,
-            self._mask_boundary : -1 * self._mask_boundary,
-        ] = True
+        self._set_mask()
 
         # Create the centers
         self.centers = np.zeros(
@@ -128,7 +117,7 @@ class MicrographSource:
         """
         while self._fail_count < self._fail_limit:
             try:
-                self._reset_mask()
+                self._set_mask()
                 centers = np.zeros((self.particles_per_micrograph, 2))
                 for i in range(self.particles_per_micrograph):
                     x, y = self._generate_center(micrograph)
@@ -138,7 +127,7 @@ class MicrographSource:
                 self._fail_count += 1
         else:
             raise RuntimeError(
-                "Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting pass_threshold, micrograph_size, particle_count, or interparticle_distance."
+                "Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting pass_threshold, micrograph_size, particles_per_micrograph, or interparticle_distance."
             )
 
     def _generate_center(self, micrograph):
@@ -150,7 +139,6 @@ class MicrographSource:
         """
         available_centers = np.transpose(np.where(self._mask))
 
-        # Reset mask and raise errors if there aren't any valid centers
         if available_centers.shape[0] == 0:
             self._fail_count += 1
             raise RuntimeError("Not enough centers generated.")
@@ -162,9 +150,9 @@ class MicrographSource:
         self._mask[x_vals, y_vals] = False
         return x - self.pad, y - self.pad
 
-    def _reset_mask(self):
+    def _set_mask(self):
         """
-        Helper method to reset the mask.
+        Helper method to set the mask.
         """
         self._mask = np.full(
             (
@@ -182,12 +170,16 @@ class MicrographSource:
     def __repr__(self):
         """
         String representation of the MicrographSource.
+
+        :return: Returns a string containing the number of micrographs, dtype, and dimension.
         """
         return f"{self.micrograph_count} {self.dtype.name} micrographs of size {self.micrograph_size}x{self.micrograph_size}"
 
     def __len__(self):
         """
         Returns the number of micrographs.
+
+        :return: Returns the micrograph count
         """
         return self.micrograph_count
 
@@ -195,6 +187,8 @@ class MicrographSource:
     def clean_micrographs(self):
         """
         Returns the micrographs without any noise.
+
+        :return: An `ImageAccessor` for the unnoisy micrographs.
         """
         return self._clean_micrographs_accessor
 
@@ -202,14 +196,17 @@ class MicrographSource:
     def micrographs(self):
         """
         Returns the micrographs with any added noise.
+
+        return: An `ImageAccessor` for the noisy micrographs.
         """
         return self._micrographs_accessor
 
     def _micrographs(self, indices):
         """
         Accesses and returns micrographs with any added noise.
+
         :param indices: A 1-D NumPy array of integer indices.
-        :return: An `Image` object representing the clean micrograph.
+        :return: An `Image` object representing the noisy micrograph.
         """
         micrographs = self._clean_micrographs(indices)
         if self.noise_adder:
@@ -290,7 +287,7 @@ class MicrographSource:
         """
         Using the micrograph ID, returns every global particle ID from that micrograph. Returns specific global IDs if the local IDs are given.
 
-        :param micrograph_id: ID of the microgram.
+        :param micrograph_id: ID of the micrograph.
         :param particle_id: Local ID of the particle.
         :return: The global ID of the particle.
         """
