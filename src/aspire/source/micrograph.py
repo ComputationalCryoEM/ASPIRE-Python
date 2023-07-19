@@ -3,7 +3,7 @@ import numpy as np
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
-from aspire.utils import grid_2d, choice
+from aspire.utils import choice, grid_2d
 
 
 class MicrographSimulation:
@@ -98,14 +98,10 @@ class MicrographSimulation:
         for i in range(self.micrograph_count):
             self.centers[i] = self._create_centers(i)
 
-        self._clean_micrographs_accessor = _ImageAccessor(
-            self._clean_micrographs, self.micrograph_count
+        self._clean_images_accessor = _ImageAccessor(
+            self._clean_images, self.micrograph_count
         )
-        self._micrographs_accessor = _ImageAccessor(
-            self._micrographs, self.micrograph_count
-        )
-
-        self.images = _ImageAccessor(self._images, self.total_particle_count)
+        self._images_accessor = _ImageAccessor(self._images, self.micrograph_count)
 
     def _create_centers(self, micrograph_index):
         """
@@ -182,36 +178,36 @@ class MicrographSimulation:
         return self.micrograph_count
 
     @property
-    def clean_micrographs(self):
+    def clean_images(self):
         """
         Returns the micrographs without any noise.
 
         :return: An `ImageAccessor` for the unnoisy micrographs.
         """
-        return self._clean_micrographs_accessor
+        return self._clean_images_accessor
 
     @property
-    def micrographs(self):
+    def images(self):
         """
         Returns the micrographs with any added noise.
 
         return: An `ImageAccessor` for the noisy micrographs.
         """
-        return self._micrographs_accessor
+        return self._images_accessor
 
-    def _micrographs(self, indices):
+    def _images(self, indices):
         """
         Accesses and returns micrographs with any added noise.
 
         :param indices: A 1-D NumPy array of integer indices.
         :return: An `Image` object representing the noisy micrograph.
         """
-        micrographs = self._clean_micrographs(indices)
+        micrographs = self._clean_images(indices)
         if self.noise_adder:
             micrographs = self.noise_adder.forward(micrographs)
         return micrographs
 
-    def _clean_micrographs(self, indices):
+    def _clean_images(self, indices):
         """
         Accesses and returns micrographs without any added noise.
 
@@ -258,15 +254,6 @@ class MicrographSimulation:
         ]
         return Image(clean_micrograph)
 
-    def _images(self, indices):
-        """
-        Accesses and returns the projections from the Simulation.
-
-        :param indices: A 1-D NumPy array of integer indices.
-        :return: An `Image` object.
-        """
-        return self.simulation.images[indices]
-
     def get_micrograph_index(self, particle_index):
         """
         Using the global ID of the particle, returns the micrograph ID and the local particle ID.
@@ -282,8 +269,8 @@ class MicrographSimulation:
         """
         Using the micrograph ID, returns every global particle ID from that micrograph. Returns specific global IDs if the local IDs are given.
 
-        :param micrograph_id: ID of the micrograph.
-        :param particle_id: Local ID of the particle.
+        :param micrograph_index: ID of the micrograph.
+        :param particle_index: Local ID of the particle.
         :return: The global ID of the particle.
         """
         if micrograph_index >= self.micrograph_count or micrograph_index < 0:
