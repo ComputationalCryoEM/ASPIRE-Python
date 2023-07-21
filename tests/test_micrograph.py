@@ -283,6 +283,9 @@ def test_default_values_work():
 
 
 def test_noise_works():
+    """
+    Tests that adding noise works by comparing to a micrograph with noise manually applied.
+    """
     s = Simulation(
         L=20,
         n=10,
@@ -300,3 +303,23 @@ def test_noise_works():
     )
     noisy_micrograph = noise.forward(m.clean_images[:], [0])
     assert np.array_equal(m.images[0], noisy_micrograph[0])
+
+
+def test_nonzero_offsets_logger_works():
+    """
+    Tests that nonzero offsets will still work but will give a logger warning. Using nonzero default for offset.
+    """
+    s = Simulation(
+        L=20,
+        n=10,
+        C=1,
+        amplitudes=1,
+    )
+    noise = WhiteNoiseAdder(1e-3)
+    _ = MicrographSimulation(
+        s,
+        noise_adder=noise,
+        micrograph_count=1,
+        particles_per_micrograph=4,
+        micrograph_size=200,
+    )

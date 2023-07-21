@@ -1,9 +1,13 @@
+import logging
+
 import numpy as np
 
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
 from aspire.utils import Random, grid_2d
+
+logger = logging.getLogger(__name__)
 
 
 class MicrographSimulation:
@@ -36,6 +40,11 @@ class MicrographSimulation:
         if not isinstance(simulation, Simulation):
             raise TypeError("Simulation should be of type Simulation.")
         self.simulation = simulation
+
+        if not np.allclose(self.simulation.offsets, 0):
+            logger.warning(
+                "We recommend simulating offsets of 0 for generating micrographs. Nonzero offsets will work but produce incomplete particles and other irregularities."
+            )
 
         self.seed = seed
 
@@ -124,7 +133,7 @@ class MicrographSimulation:
                 self._fail_count += 1
         else:
             raise RuntimeError(
-                "Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting pass_threshold, micrograph_size, particles_per_micrograph, or interparticle_distance."
+                "Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting micrograph_size, particles_per_micrograph, or interparticle_distance."
             )
 
     def _generate_center(self):
@@ -233,7 +242,7 @@ class MicrographSimulation:
         parity = self.particle_box_size % 2
         for m in range(n_micrographs):
             global_id = indices[m]
-            image = self.simulation.clean_images[self.get_particle_indices(global_id)]
+            images = self.simulation.clean_images[self.get_particle_indices(global_id)]
             centers = self.centers[global_id]
             x_lefts = centers[:, 0] - self.particle_box_size // 2 + self.pad
             x_rights = centers[:, 0] + self.particle_box_size // 2 + parity + self.pad
@@ -247,7 +256,7 @@ class MicrographSimulation:
                     clean_micrograph[m][
                         x_lefts[p] : x_rights[p], y_lefts[p] : y_rights[p]
                     ]
-                    + image[p]
+                    + images[p]
                 )
         clean_micrograph = clean_micrograph[
             :,
