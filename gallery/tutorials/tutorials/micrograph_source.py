@@ -33,7 +33,7 @@ sim = Simulation(
 
 # %%
 # We'll pass our ``Simulation`` as an argument and give our ``MicrographSimulation`` other arguments.
-# In this example, our MicrographSimulation has 4 micrographs of size 500, each with 10 particles.
+# In this example, our ``MicrographSimulation`` has 4 micrographs of size 500, each with 10 particles.
 src = MicrographSimulation(
     sim,
     particles_per_micrograph=n_particles_per_micrograph,
@@ -42,13 +42,13 @@ src = MicrographSimulation(
     seed=1234,
 )
 
-# Plot the Micrographs
+# Plot the micrographs
 src.images[:].show()
 
 # %%
 # CTF Filters
 # -----------
-# By default, no CTF corruption is configured. To apply CTF filters, we have to pass them as arguments to the Simulation.
+# By default, no CTF corruption is configured. To apply CTF filters, we have to pass them as arguments to the ``Simulation``.
 
 # Create our CTF Filter and add it to a list
 ctfs = [
