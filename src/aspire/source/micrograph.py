@@ -43,7 +43,7 @@ class MicrographSimulation:
 
         if not np.allclose(self.simulation.offsets, 0):
             logger.warning(
-                "We recommend simulating offsets of 0 for generating micrographs. Nonzero offsets will work but produce incomplete particles and other irregularities."
+                "We recommend setting simulation offsets to 0 for generating micrographs. Nonzero offsets will work but produce incomplete particles and other irregularities."
             )
 
         self.seed = seed
