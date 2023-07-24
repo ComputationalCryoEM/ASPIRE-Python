@@ -316,6 +316,11 @@ def test_nonzero_offsets_logger_works(caplog):
         amplitudes=1,
     )
     noise = WhiteNoiseAdder(1e-3)
+    assert (
+        "We recommend setting simulation offsets to 0 for generating micrographs. Nonzero offsets will work but produce \
+incomplete particles and other irregularities."
+        not in caplog.text
+    )
     with caplog.at_level(logging.WARNING):
         _ = MicrographSimulation(
             s,
