@@ -305,7 +305,7 @@ def test_noise_works():
     assert np.array_equal(m.images[0], noisy_micrograph[0])
 
 
-def test_nonzero_offsets_logger_works():
+def test_nonzero_offsets_logger_works(caplog):
     """
     Tests that nonzero offsets will still work but will give a logger warning. Using nonzero default for offset.
     """
@@ -316,10 +316,15 @@ def test_nonzero_offsets_logger_works():
         amplitudes=1,
     )
     noise = WhiteNoiseAdder(1e-3)
-    _ = MicrographSimulation(
-        s,
-        noise_adder=noise,
-        micrograph_count=1,
-        particles_per_micrograph=4,
-        micrograph_size=200,
+    with caplog.at_level(logging.WARNING):
+        _ = MicrographSimulation(
+            s,
+            noise_adder=noise,
+            micrograph_count=1,
+            particles_per_micrograph=4,
+            micrograph_size=200,
+        )
+    assert (
+        "We recommend setting simulation offsets to 0 for generating micrographs. Nonzero offsets will work but produce incomplete particles and other irregularities."
+        in caplog.text
     )
