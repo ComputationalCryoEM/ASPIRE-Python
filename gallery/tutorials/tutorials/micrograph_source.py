@@ -1,7 +1,7 @@
 """
-=================
-Micrograph Source
-=================
+=====================
+Micrograph Simulation
+=====================
 
 This tutorial will demonstrate how to set up and use ASPIRE's ``MicrographSimulation`` class.
 """
@@ -14,8 +14,8 @@ from aspire.operators import RadialCTFFilter
 from aspire.source import MicrographSimulation, Simulation
 
 # %%
-# Creating a Micrograph Source
-# ----------------------------
+# Creating a Micrograph Simulation
+# --------------------------------
 # A ``MicrographSimulation`` is populated with particle projections via a ``Simulation``, so we'll begin by creating a ``Simulation`` and passing it into our ``MicrographSimulation``
 
 # Let's create our Simulation with a particle box size of 100 and one volume.
