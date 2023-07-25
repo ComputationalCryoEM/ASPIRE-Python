@@ -409,6 +409,7 @@ class Image:
 
         Currently MRC and TIFF are supported.
 
+        :param filepath: File path (string).
         :param dtype: Optionally force cast to `dtype`.
              Default dtype is inferred from the file contents.
         :return: numpy array of image data.
@@ -426,7 +427,7 @@ class Image:
         # Call the appropriate file reader
         im = Image.extensions[ext](filepath)
 
-        # Attempt casting if user
+        # Attempt casting when user provides dtype
         if dtype is not None:
             im = im.astype(dtype, copy=False)
 
