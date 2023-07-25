@@ -2,9 +2,12 @@ import logging
 
 import cvxpy as cp
 import numpy as np
+from scipy import io
 from scipy.sparse import csr_array
 
 from aspire.abinitio import CLOrient3D
+from aspire.utils import eigs
+from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +46,8 @@ class CommonlineSDP(CLOrient3D):
         S = self.construct_S(self.clmatrix)
         A, b = self.sdp_prep()
         Gram = self.compute_Gram_matrix(S, A, b)
-        return Gram
+        rotations = self.deterministic_rounding(Gram)
+        self.rotations = rotations
 
     def construct_S(self, clmatrix):
         """
@@ -96,9 +100,11 @@ class CommonlineSDP(CLOrient3D):
             b.append(np.ones(1, dtype=self.dtype))
 
         for i in range(self.n_img):
-            data = np.ones(2, dtype=self.dtype)
-            row_ind = np.array([i, self.n_img + i])
-            col_ind = np.array([self.n_img + i, i])
+            data = np.ones(1, dtype=self.dtype)
+            # row_ind = np.array([i, self.n_img + i])
+            # col_ind = np.array([self.n_img + i, i])
+            row_ind = np.array([i])
+            col_ind = np.array([self.n_img + i])
             A_i = csr_array((data, (row_ind, col_ind)), shape=(n, n), dtype=self.dtype)
             A.append(A_i)
             b.append(np.zeros(1, dtype=self.dtype))
@@ -122,3 +128,86 @@ class CommonlineSDP(CLOrient3D):
         Gram = G.value
 
         return Gram
+
+    def deterministic_rounding(self, Gram):
+        """
+        Deterministic rounding procedure to recover the rotations from the Gram matrix.
+
+        :param Gram: A 2n_img x 2n_img Gram matrix.
+
+        :return: An n_img x 3 x 3 stack of rotation matrices.
+        """
+
+        # Obtain top eigenvectors from Gram matrix.
+        d, v = stable_eigsh(Gram, 5)
+        sort_idx = np.argsort(-d)
+        logger.info(f"Top 5 eigenvalues from Gram matrix: {d[sort_idx]}")
+
+        # Only need the top 3 eigen-vectors.
+        v = v[:, sort_idx[:3]]
+
+        # According to the structure of the Gram matrix, the first `n_img` rows, denoted v1,
+        # correspond to the linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of
+        # column 1 of all rotation matrices. Similarly, the second `n_img` rows of v,
+        # denoted v2, are linear combinations of R_{i}^{2}, i=1,...,K, that is, the second
+        # column of all rotation matrices.
+        v1 = v[: self.n_img].T.copy()
+        v2 = v[self.n_img : 2 * self.n_img].T.copy()
+
+        # Use a least-squares method to get A.T*A and a Cholesky decomposition to find A.
+        A = self._ATA_solver(v1, v2, self.n_img)
+
+        # Recover the rotations. The first two columns of all rotation
+        # matrices are given by unmixing V1 and V2 using A. The third
+        # column is the cross product of the first two.
+        r1 = np.dot(A.T, v1)
+        r2 = np.dot(A.T, v2)
+        r3 = np.cross(r1, r2, axis=0)
+
+        rotations = np.empty((self.n_img, 3, 3), dtype=self.dtype)
+        rotations[:, :, 0] = r1.T
+        rotations[:, :, 1] = r2.T
+        rotations[:, :, 2] = r3.T
+        # Make sure that we got rotations by enforcing R to be
+        # a rotation (in case the error is large)
+        u, _, v = np.linalg.svd(rotations)
+        np.einsum("ijk, ikl -> ijl", u, v, out=rotations)
+
+        return rotations
+
+    @staticmethod
+    def _ATA_solver(v1, v2, n_img):
+        # We look for a linear transformation (3 x 3 matrix) A such that
+        # A*V1'=R1 and A*V2=R2 are the columns of the rotations matrices.
+        # Therefore:
+        # v1 * A'*A v1' = 1
+        # v2 * A'*A v2' = 1
+        # v1 * A'*A v2' = 0
+        # These are 3*K linear equations for 9 matrix entries of A'*A
+        # Actually, there are only 6 unknown variables, because A'*A is symmetric.
+        # So we will truncate from 9 variables to 6 variables corresponding
+        # to the upper half of the matrix A'*A
+        truncated_equations = np.zeros((3 * n_img, 9), dtype=v1.dtype)
+        k = 0
+        for i in range(3):
+            for j in range(3):
+                truncated_equations[0::3, k] = v1[i] * v1[j]
+                truncated_equations[1::3, k] = v2[i] * v2[j]
+                truncated_equations[2::3, k] = v1[i] * v2[j]
+                k += 1
+
+        # b = [1 1 0 1 1 0 ...]' is the right hand side vector
+        b = np.ones(3 * n_img)
+        b[2::3] = 0
+
+        # Find the least squares approximation of A'*A in vector form
+        ATA_vec = np.linalg.lstsq(truncated_equations, b, rcond=None)[0]
+
+        # Construct the matrix A'*A from the vectorized matrix.
+        # Note, this is only the lower triangle of A'*A.
+        ATA = ATA_vec.reshape(3, 3)
+
+        # The Cholesky decomposition of A'*A gives A (lower triangle).
+        A = np.linalg.cholesky(ATA)
+
+        return A
