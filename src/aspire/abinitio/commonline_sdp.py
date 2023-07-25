@@ -2,11 +2,9 @@ import logging
 
 import cvxpy as cp
 import numpy as np
-from scipy import io
 from scipy.sparse import csr_array
 
 from aspire.abinitio import CLOrient3D
-from aspire.utils import eigs
 from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
