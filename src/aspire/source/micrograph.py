@@ -202,7 +202,7 @@ class MicrographSimulation:
         """
         Returns the micrographs with any added noise.
 
-        return: An `ImageAccessor` for the noisy micrographs.
+        :return: An `ImageAccessor` for the noisy micrographs.
         """
         return self._images_accessor
 
