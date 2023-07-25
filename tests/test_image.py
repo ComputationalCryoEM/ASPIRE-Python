@@ -310,6 +310,7 @@ def test_asnumpy_readonly():
         vw[0, 0, 0] = 123
 
 
+@pytest.mark.xfail(reason="Ray logging issue ray#37711", strict=False)
 def test_corrupt_mrc_load(caplog):
     """
     Test that corrupt mrc files are logged as expected.
