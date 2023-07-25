@@ -67,7 +67,6 @@ def testRepr():
 
 
 def testNonSquare():
-    # don't need to parametrize this test
     """Test that an irregular Image array raises."""
     with raises(ValueError, match=r".* square .*"):
         _ = Image(np.empty((4, 5)))
@@ -338,6 +337,14 @@ def test_corrupt_mrc_load(caplog):
 
     # Check the message contains the file path
     assert mrc_path in caplog.text
+
+
+def test_load_bad_ext():
+    """
+    Check error raised when attempting to load unsupported file.
+    """
+    with raises(RuntimeError, match=r".*unsupported file extension.*"):
+        _ = Image.load("bad.ext")
 
 
 def test_load_mrc():
