@@ -40,7 +40,9 @@ class CommonlineSDP(CLOrient3D):
         """
         perform estimation of orientations
         """
+        logger.info("Computing the common lines matrix.")
         self.build_clmatrix()
+
         S = self.construct_S(self.clmatrix)
         A, b = self.sdp_prep()
         Gram = self.compute_Gram_matrix(S, A, b)
