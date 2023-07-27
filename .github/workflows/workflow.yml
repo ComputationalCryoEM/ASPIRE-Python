@@ -185,9 +185,7 @@ jobs:
 
   # Build branch's docs and gallery.
   docs:
-    needs:
-      - check
-      - cached-data
+    needs: [check, cached-data]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
