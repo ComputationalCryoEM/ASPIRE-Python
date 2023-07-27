@@ -159,7 +159,7 @@ jobs:
     - name: Cleanup
       run: rm -rf ${{ env.WORK_DIR }}
 
-  # Create cache and download data.
+  # Create cache and download data for Github Actions CI.
   data-cache:
     needs: check
     runs-on: ubuntu-latest
@@ -177,7 +177,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/ASPIRE-data
-          key: ${{ runner.os }}-cached-data-
+          key: ${{ runner.os }}-cached-data
       - name: Download EMDB 2660
         run: |
           python -c \
@@ -185,7 +185,9 @@ jobs:
 
   # Build branch's docs and gallery.
   docs:
-    needs: check
+    needs:
+      - check
+      - cached-data
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -201,7 +203,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/ASPIRE-data
-          key: ${{ runner.os }}-cached-data-
+          key: ${{ runner.os }}-cached-data
       - name: Build Sphinx docs
         run: |
           make distclean
