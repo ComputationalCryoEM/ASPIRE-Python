@@ -3,7 +3,7 @@ name: ASPIRE Python Long Running Test Suite
 on:
   push:
     branches:
-      - 'master'
+      - 'main'
       - 'develop'
 
 jobs:

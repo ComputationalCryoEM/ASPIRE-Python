@@ -98,9 +98,9 @@ jobs:
         # -n runs test in parallel using pytest-xdist
         pytest -n2 --durations=50 -s
 
-  # Build and Deploy production (master) docs.
+  # Build and Deploy production (main) docs.
   docs_deploy:
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
