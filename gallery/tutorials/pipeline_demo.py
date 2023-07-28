@@ -17,8 +17,6 @@ reconstruction pipeline using synthetic data generated with ASPIRE's
 # sphinx_gallery_start_ignore
 # flake8: noqa
 # sphinx_gallery_end_ignore
-import numpy as np
-
 from aspire.downloader import emdb_2660
 
 # Load 80s Ribosome as a ``Volume`` object.
@@ -55,6 +53,8 @@ vol = original_vol.downsample(res)
 # filters with various defocus values.
 
 # Create CTF filters
+import numpy as np
+
 from aspire.operators import RadialCTFFilter
 
 # Radial CTF Filter
