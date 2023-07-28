@@ -34,7 +34,7 @@ Please submit any Pull Requests (PR) against the `develop` branch.
 
 ![Gitflow Diagram](https://wac-cdn.atlassian.com/dam/jcr:61ccc620-5249-4338-be66-94d563f2843c/05%20(2).svg?cdnVersion=357)
 
-The basic idea is that we have `feature` branches,  `develop` as an integration focused branch, and `master` for releases.
+The basic idea is that we have `feature` branches,  `develop` as an integration focused branch, and `main` for releases.
 We do not currently have a need for a dedicated release or staging branch; in our case `develop` also serves this purpose.
 Generally feature branches should branch off of the latest `develop` branch.
 
@@ -44,8 +44,8 @@ When `develop` is at a milestone where we want to cut a release,
 following the controls below we will commit with a
 [PEP440](https://www.python.org/dev/peps/pep-0440/)
 compliant `Major.Minor` version scheme
-and complete a reviewed merge to `master`.
-Once in `master` a formal Git (version) tag can be applied to the commit,
+and complete a reviewed merge to `main`.
+Once in `main` a formal Git (version) tag can be applied to the commit,
 and at this point the release would be a candidate to upload to PyPI.
 
 The process for these steps will be documented in a Google Doc.
@@ -69,8 +69,8 @@ This is both for code quality and so CI maintenance is not overlooked.
 
 All of these controls will be managed automatically by the GitHub server.
 
-Releases and merges to `master` should be coordinated between developers and the project PI.
-This will be documented with an additional required review from the PI when merging into `master`.
+Releases and merges to `main` should be coordinated between developers and the project PI.
+This will be documented with an additional required review from the PI when merging into `main`.
 
 ### Git Workflow Courtesy
 
