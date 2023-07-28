@@ -1,6 +1,5 @@
 import shutil
 
-import numpy as np
 import pooch
 
 from aspire import config
