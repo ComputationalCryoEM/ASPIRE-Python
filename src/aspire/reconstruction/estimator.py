@@ -81,5 +81,5 @@ class Estimator:
 
         vol = self.basis.evaluate(vol_coeff)  # returns a Volume
         vol = kernel.convolve_volume(vol)  # returns a Volume
-        vol_coef = self.basis.evaluate_t(vol)
+        vol_coef = Coef(self.basis, vol_coeff).evaluate()
         return vol_coef
