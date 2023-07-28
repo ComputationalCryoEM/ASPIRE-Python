@@ -14,7 +14,7 @@ MAT586.
 # ASPIRE can generally install on Linux, Mac, and Windows under
 # Anaconda Python, by following the instructions in the README.  `The
 # instructions for developers is the most comprehensive
-# <https://github.com/ComputationalCryoEM/ASPIRE-Python/blob/master/README.md#for-developers>`_.
+# <https://github.com/ComputationalCryoEM/ASPIRE-Python/blob/main/README.md#for-developers>`_.
 # Windows is provided, but generally Linux and MacOS are recommended,
 # with Linux being the most diversely tested platform.
 #
