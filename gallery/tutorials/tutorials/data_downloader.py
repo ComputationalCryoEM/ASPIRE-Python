@@ -41,7 +41,7 @@ downloader.available_downloads()
 
 # %%
 # The cache location is configurable and can be overridden by creating a custom
-# ``config.yaml``. For example, to change the cache folder to ``tmp/ASPIRE-data`` create
+# ``config.yaml``. For example, to change the cache folder to ``/tmp/ASPIRE-data`` create
 # ``$HOME/.config/ASPIRE/config.yaml`` with the following contents:
 #
 #    .. code-block:: yaml
