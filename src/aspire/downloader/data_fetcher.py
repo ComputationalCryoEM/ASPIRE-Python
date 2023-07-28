@@ -9,11 +9,12 @@ from aspire.volume import Volume
 
 # Initialize pooch data fetcher instance.
 data_fetcher = pooch.create(
-    # Use the default cache folder for the operating system.
+    # Set the cache path defined in the config. By default, the cache
+    # folder operating system dependent, set by `pooch.os_cache`.
     # Pooch uses appdirs (https://github.com/ActiveState/appdirs) to
     # select an appropriate directory for the cache on each platform.
     path=config["common"]["cache_dir"].as_filename(),
-    # The remote data is on Zenodo base_url is a required param,
+    # The remote data is on Zenodo, `base_url` is a required param,
     # even though we override using individual urls in the registry.
     base_url="https://zenodo.org/communities/computationalcryoem/",
     registry=registry,
@@ -43,7 +44,7 @@ def download_all():
     """
     Download all ASPIRE example data and return a dictionary of filepaths.
 
-    :return: A dictionary of file names and file paths.
+    :return: A dictionary of method names and associated file paths.
     """
 
     file_paths = {}
@@ -95,7 +96,7 @@ def emdb_8012():
     :return: A 'Volume' instance.
     """
     file_path = fetch_data("emdb_8012.map")
-    vol = Volume.load(file_path, dtype=np.float32)
+    vol = Volume.load(file_path)
 
     return vol
 
