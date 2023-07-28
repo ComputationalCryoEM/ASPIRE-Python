@@ -544,7 +544,7 @@ class Image:
 
         # We never need more columns than images.
         columns = min(columns, self.n_images)
-        rows = -(self.n_images // -columns)
+        rows = (self.n_images + columns - 1) // columns  # ceiling divide.
 
         # Create an empty colorbar options dictionary as needed.
         colorbar_opts = colorbar if isinstance(colorbar, dict) else dict()
