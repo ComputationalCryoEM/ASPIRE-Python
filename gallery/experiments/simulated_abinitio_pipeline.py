@@ -57,7 +57,7 @@ noise_variance = 5e-7  # Set a target noise variance
 # %%
 # Simulation Data
 # ---------------
-# Start with the hi-res volume map EMDB-2660 sourced from EMPIAR/EMDB,
+# Start with the hi-res volume map EMDB-2660 sourced from EMDB,
 # https://www.ebi.ac.uk/emdb/EMD-2660, and dowloaded via ASPIRE's downloader utility.
 og_v = emdb_2660()
 logger.info("Original volume map data" f" shape: {og_v.shape} dtype:{og_v.dtype}")
