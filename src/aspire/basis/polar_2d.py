@@ -16,7 +16,10 @@ class PolarBasis2D(Basis):
 
     def __init__(self, size, nrad=None, ntheta=None, dtype=np.float32):
         """
-        Initialize an object for the 2D polar Fourier grid class
+        Initialize an object for the 2D polar Fourier grid class. `PolarBasis2D` expects that
+        images are real and uses only half of the `ntheta` values. Downstream algorithms should
+        take advantage of the conjugate symmetry the polar Fourier coefficients if the full
+        set is needed.
 
         :param size: The shape of the vectors for which to define the grid.
             May be a 2-tuple or an integer, in which case a square basis is assumed.
@@ -56,7 +59,7 @@ class PolarBasis2D(Basis):
             logger.error(msg)
             raise NotImplementedError(msg)
 
-        self.count = self.nrad * self.ntheta
+        self.count = self.nrad * (self.ntheta // 2)
         self._sz_prod = self.sz[0] * self.sz[1]
 
         # precompute the basis functions in 2D grids
@@ -70,7 +73,7 @@ class PolarBasis2D(Basis):
         dtheta = 2 * np.pi / self.ntheta
 
         # only need half size of ntheta
-        freqs = np.zeros((2, self.nrad * self.ntheta // 2), dtype=self.dtype)
+        freqs = np.zeros((2, self.nrad * (self.ntheta // 2)), dtype=self.dtype)
         for i in range(self.ntheta // 2):
             freqs[0, i * self.nrad : (i + 1) * self.nrad] = np.arange(
                 self.nrad
@@ -92,13 +95,12 @@ class PolarBasis2D(Basis):
         :return x: Image instance in standard 2D coordinate basis with
             resolution of `self.sz`.
         """
-        v = v.reshape(-1, self.ntheta, self.nrad)
+        half_size = self.ntheta // 2
+        v = v.reshape(-1, half_size, self.nrad)
 
         nimgs = v.shape[0]
 
-        half_size = self.ntheta // 2
-
-        v = v[:, :half_size, :] + v[:, half_size:, :].conj()
+        v = v + v.conj()
 
         v = v.reshape(nimgs, self.nrad * half_size)
 
@@ -122,8 +124,7 @@ class PolarBasis2D(Basis):
 
         pf = nufft(x, self.freqs)
 
-        pf = pf.reshape((nimgs, self.nrad, half_size))
-        v = np.concatenate((pf, pf.conj()), axis=1)
+        pf = pf.reshape((nimgs, half_size, self.nrad))
 
         # return v coefficients with the last dimension size of self.count
         v = v.reshape(nimgs, -1)
