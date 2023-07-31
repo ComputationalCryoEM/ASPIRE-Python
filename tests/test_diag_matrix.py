@@ -11,6 +11,7 @@ from aspire.operators import DiagMatrix
 
 MATRIX_SIZE = [
     32,
+    33,
 ]
 
 DTYPES = [
@@ -57,6 +58,9 @@ def diag_matrix_fixture(stack, matrix_size, dtype):
 
 # Explicit Tests (non parameterized).
 def test_dtype_passthrough():
+    """
+    Test that the datatype is inferred correctly.
+    """
     for dtype in (int, np.float32, np.float64, np.complex64, np.complex128):
         d_np = np.empty(42, dtype=dtype)
         d = DiagMatrix(d_np)
@@ -64,16 +68,22 @@ def test_dtype_passthrough():
 
 
 def test_dtype_cast():
+    """
+    Test that a datatype is cast when overridden.
+    """
     for dtype in (int, np.float32, np.float64, np.complex64, np.complex128):
         d_np = np.empty(42, dtype=np.float16)
         d = DiagMatrix(d_np, dtype)
         assert d.dtype == dtype
 
 
-def test_dtype_conversion():
+def test_conversion():
+    """
+    Test conversion between iterating over DiagMatrix.dense vs `np.diag`.
+    """
     # Zero Dimension stack
-    d_np = np.arange(42)
-    A_np = np.diag(d_np)
+    d_np = np.arange(42)  # defaults double
+    A_np = np.diag(d_np)  # make dense with numpy
     # hrmm singleton
     np.testing.assert_allclose(DiagMatrix(d_np).dense, A_np)
 
@@ -98,24 +108,40 @@ def test_dtype_conversion():
 
 
 def test_diag_diag_add(diag_matrix_fixture):
+    """
+    Test addition.
+    """
     d1, d2, d_np = diag_matrix_fixture
 
     np.testing.assert_allclose(d1 + d2, np.sum(d_np, axis=0))
 
 
 def test_diag_diag_sub(diag_matrix_fixture):
+    """
+    Test subtraction.
+    """
     d1, d2, d_np = diag_matrix_fixture
 
     np.testing.assert_allclose(d1 - d2, np.subtract(*d_np))
 
 
 def test_diag_diag_mul(diag_matrix_fixture):
+    """
+    Test element-wise multiply of two `DiagMatrix` instances.
+    """
     d1, d2, d_np = diag_matrix_fixture
 
     np.testing.assert_allclose(d1 * d2, np.multiply(*d_np))
 
 
 def test_diag_diag_matmul(diag_matrix_fixture):
+    """
+    Test matrix multiply of two `DiagMatrix` instances.
+
+    Note, this should be the equivalent of expanding to full dense
+    matrices and computing the matrix multiply.  This is tested in a
+    loop over the stack axes.
+    """
     d1, d2, d_np = diag_matrix_fixture
 
     # compute the matmuls
@@ -129,12 +155,18 @@ def test_diag_diag_matmul(diag_matrix_fixture):
 
 
 def test_neg(diag_matrix_fixture):
+    """
+    Test negation.
+    """
     d1, _, d_np = diag_matrix_fixture
 
     np.testing.assert_allclose(-d1, -d_np[0])
 
 
 def test_pow(diag_matrix_fixture):
+    """
+    Test element-wise exponentiation.
+    """
     d1, _, d_np = diag_matrix_fixture
 
     ref = d_np[0] ** 2
@@ -148,6 +180,9 @@ def test_pow(diag_matrix_fixture):
 
 
 def test_norm(diag_matrix_fixture):
+    """
+    Test the `norm` compared to Numpy.
+    """
     d1, _, d_np = diag_matrix_fixture
 
     # Expand to dense matrix and compute norm
@@ -160,7 +195,10 @@ def test_norm(diag_matrix_fixture):
 
 def test_transpose(diag_matrix_fixture):
     """
-    silly?
+    Test the transpose operations.
+
+    Note the transpose operation is implemented for only for
+    interoperability with other operators (ie `BlkDiagMatrix`).
     """
     d1, _, d_np = diag_matrix_fixture
 
@@ -173,6 +211,9 @@ def test_transpose(diag_matrix_fixture):
 
 
 def test_ones(diag_matrix_fixture):
+    """
+    Test constructing a `DiagMatrix` initialized with ones.
+    """
     _, _, d_np = diag_matrix_fixture
     d = DiagMatrix.ones(d_np.shape)
 
@@ -181,6 +222,9 @@ def test_ones(diag_matrix_fixture):
 
 
 def test_zeros(diag_matrix_fixture):
+    """
+    Test constructing a `DiagMatrix` initialized with zeros.
+    """
     _, _, d_np = diag_matrix_fixture
     d = DiagMatrix.zeros(d_np.shape)
 
@@ -189,6 +233,9 @@ def test_zeros(diag_matrix_fixture):
 
 
 def test_empty(diag_matrix_fixture):
+    """
+    Test constructing an uninitialized (empty) `DiagMatrix`.
+    """
     _, _, d_np = diag_matrix_fixture
     d = DiagMatrix.empty(d_np.shape)
 
