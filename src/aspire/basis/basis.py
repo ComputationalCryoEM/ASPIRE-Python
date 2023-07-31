@@ -99,8 +99,10 @@ class Basis:
         stack_shape = v.shape[:-1]
         v = v.reshape(-1, self.count)
         # Compute the transform
+
         x = self._evaluate(v)
         # Restore stack shape
+
         x = x.reshape(*stack_shape, *self.sz)
 
         # Return the appropriate class
