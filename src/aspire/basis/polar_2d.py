@@ -110,6 +110,13 @@ class PolarBasis2D(Basis):
             Fourier grid. This is an array of vectors whose first dimension
             corresponds to `x.shape[0]`, and last dimension equals `self.count`.
         """
+        # We expect the Iamge `x` to be real in order to take advantage of the conjugate
+        # symmetry of Fourier transform of a real valued image.
+        if not np.isreal(x).all():
+            raise TypeError(
+                f"The Image `x` must be real valued. Found dtype {x.dtype}."
+            )
+
         nimgs = x.shape[0]
 
         half_size = self.ntheta // 2
