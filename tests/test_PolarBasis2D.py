@@ -492,24 +492,24 @@ class PolarBasis2DTestCase(TestCase, UniversalBasisMixin):
         # (y, A*x) = (A^t*y, x) = (B*y, x)
         x = randn(self.basis.count, seed=self.seed).astype(self.dtype)
 
-        x = m_reshape(x, (self.basis.nrad, self.basis.ntheta))
+        #x = np.reshape(x, (self.basis.ntheta // 2, self.basis.nrad))
 
-        x = (
-            1 / 2 * x[:, : self.basis.ntheta // 2]
-            + 1 / 2 * x[:, : self.basis.ntheta // 2].conj()
-        )
+        # x = (
+        #     1 / 2 * x
+        #     + 1 / 2 * x.conj()
+        # )
 
-        x = np.concatenate((x, x.conj()), axis=1)
+        # x = np.concatenate((x, x.conj()), axis=1)
 
-        x = m_reshape(x, (self.basis.nrad * self.basis.ntheta,))
+        # x = m_reshape(x, (self.basis.nrad * self.basis.ntheta,))
 
         x_t = self.basis.evaluate(x).asnumpy()
         y = randn(np.prod(self.basis.sz), seed=self.seed).astype(self.dtype)
         y_t = self.basis.evaluate_t(
-            Image(m_reshape(y, self.basis.sz)[np.newaxis, :])
+            Image(np.reshape(y, self.basis.sz))
         )  # RCOPT
 
-        lhs = np.dot(y, m_reshape(x_t, (np.prod(self.basis.sz),)))
+        lhs = np.dot(y, np.reshape(x_t, (np.prod(self.basis.sz),)))
         rhs = np.real(np.dot(y_t, x))
         logging.debug(
             f"lhs: {lhs} rhs: {rhs} absdiff: {np.abs(lhs-rhs)} atol: {utest_tolerance(self.dtype)}"
