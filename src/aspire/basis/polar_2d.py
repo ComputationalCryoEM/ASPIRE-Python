@@ -95,14 +95,6 @@ class PolarBasis2D(Basis):
         :return x: Image instance in standard 2D coordinate basis with
             resolution of `self.sz`.
         """
-        half_size = self.ntheta // 2
-        v = v.reshape(-1, half_size, self.nrad)
-
-        nimgs = v.shape[0]
-
-        v = v + v.conj()
-
-        v = v.reshape(nimgs, self.nrad * half_size)
 
         x = anufft(v, self.freqs, self.sz, real=True)
 
@@ -124,8 +116,4 @@ class PolarBasis2D(Basis):
 
         pf = nufft(x, self.freqs)
 
-        pf = pf.reshape((nimgs, half_size, self.nrad))
-
-        # return v coefficients with the last dimension size of self.count
-        v = v.reshape(nimgs, -1)
-        return v
+        return pf.reshape(nimgs, -1)
