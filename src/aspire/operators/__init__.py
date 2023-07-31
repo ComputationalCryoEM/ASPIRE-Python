@@ -1,4 +1,5 @@
 from .blk_diag_matrix import BlkDiagMatrix
+from .diag_matrix import DiagMatrix
 from .filters import (
     ArrayFilter,
     BlueFilter,
