@@ -2,12 +2,10 @@ import logging
 import os
 import tempfile
 from shutil import copyfile
-from unittest import TestCase
 
 import mrcfile
 import numpy as np
 import pytest
-from parameterized import parameterized
 
 from aspire.ctf import estimate_ctf
 
@@ -15,17 +13,18 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
-TEST_INPUT_FN  = "sample.mrc"
+TEST_INPUT_FN = "sample.mrc"
 # These values are from CTFFIND4
 TEST_OUTPUT = {
-        "defocus_u": 34914.63,  # angstrom
-        "defocus_v": 33944.32,  # angstrom
-        "defocus_ang": -65.26,  # Degree wrt some axis
-        "cs": 2.0,
-        "voltage": 300.0,
-        "pixel_size": 1.77,  # EMPIAR 10017
-        "amplitude_contrast": 0.07,
-    }
+    "defocus_u": 34914.63,  # angstrom
+    "defocus_v": 33944.32,  # angstrom
+    "defocus_ang": -65.26,  # Degree wrt some axis
+    "cs": 2.0,
+    "voltage": 300.0,
+    "pixel_size": 1.77,  # EMPIAR 10017
+    "amplitude_contrast": 0.07,
+}
+
 
 def test_estimate_CTF():
     with tempfile.TemporaryDirectory() as tmp_input_dir:
@@ -64,7 +63,7 @@ def test_estimate_CTF():
                     TEST_OUTPUT["defocus_u"],
                     rtol=0.05,
                 )
-                
+
                 # defocusV
                 assert np.allclose(
                     result["defocus_v"],
@@ -90,12 +89,14 @@ def test_estimate_CTF():
 
                 for param in ["cs", "amplitude_contrast", "voltage", "pixel_size"]:
                     assert np.allclose(result[param], TEST_OUTPUT[param])
-    
+
+
 # we are chopping the micrograph into a vertical and a horizontal rectangle
 # as small as possible to save testing duration
-@pytest.mark.parametrize("slice_range", [((slice(0, 128), slice(0, 64))), ((slice(0, 64), slice(0, 128)))])
+@pytest.mark.parametrize(
+    "slice_range", [((slice(0, 128), slice(0, 64))), ((slice(0, 64), slice(0, 128)))]
+)
 def testRectangularMicrograph(slice_range):
-    print(slice_range)
     with tempfile.TemporaryDirectory() as tmp_input_dir:
         # copy input file
         copyfile(
@@ -106,7 +107,6 @@ def testRectangularMicrograph(slice_range):
         with mrcfile.open(
             os.path.join(tmp_input_dir, "rect_" + TEST_INPUT_FN), "r+"
         ) as mrc_in:
-            print(mrc_in.data.shape)
             data = mrc_in.data[slice_range]
             mrc_in.set_data(data)
         # make sure we can estimate with no errors
