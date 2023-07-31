@@ -1,6 +1,5 @@
 """
-Define a DiagMatrix module which implements operations for
-diagonal matrices as used by ASPIRE.
+Implements operations for diagonal matrices as used by ASPIRE.
 """
 
 import numpy as np
@@ -10,36 +9,25 @@ from .blk_diag_matrix import BlkDiagMatrix
 
 class DiagMatrix:
     """
-    Define a DiagMatrix class which implements operations for
-    diagonal matrices as used by ASPIRE.
+    Implements operations for diagonal matrices as used by ASPIRE.
 
     Currently DiagMatrix is implemented as the equivalent of square
     matrices.  In the future it can be extended to support
     applications with rectangular shapes.
     """
 
-    # # # Check, do we need this here like i did for blkdiag?
-    # # Developers' Note:
-    # # All instances of this class should have priority over ndarray ops
-    # #   because we implement them here ourselves.
-    # # This is a more np current implementation of __array_priority__
-    # #   operator precedence schedule.
-    # # Mainly this effects rmul, radd, rsub eg:
-    # #   blk_y = scalar_a + ( scalar_b * blk_x)
-    # __array_ufunc__ = None
-
     def __init__(self, data, dtype=None):
         """
-        Instantiate a `DiagMatrix` with `data`.
+        Instantiate a `DiagMatrix` with Numpy `data` shaped (...., self.n),
+        where `self.n` is the length of one diagonal vector.
 
-        `DiagMatrix` size corresponds to the last (fast) moving axis.
         Slower axes are taken to be stack axes.
         Inputs of zero or one dimension are taken to be a stack of one.
 
         :param data: Diagonal matrix entries.
         :param dtype: Datatype. Default of `None` will attempt
         passthrough of `data.dtype`.  When explicitly provided, will
-        attempt casting `adata` as needed.
+        attempt casting `data` as needed.
         :return: `DiagMatrix` instance.
         """
 
@@ -87,13 +75,6 @@ class DiagMatrix:
         view.flags.writeable = False
         return view
 
-    # def isfinite(self):
-    #     """
-    #     Check entries are finite.
-    #     Supports Numpy interoperability.
-    #     """
-    #     return np.isfinite(self.asnumpy())
-
     def __repr__(self):
         """
         String represention describing instance.
@@ -109,24 +90,12 @@ class DiagMatrix:
 
         return DiagMatrix(self._data.copy())
 
-    # Not sure if I want these on the stack only, or generic yet.
-    # # Manually overload get/set methods,
-    # #   This is just for syntax which allows us to reference self[i] etc
-    # #     instead of writing self._data all the time. You may use either.
     def __getitem__(self, key):
         """
         Convenience wrapper, getter on self._data.
         """
 
         return self._data[key]
-
-    # def __setitem__(self, key, value):
-    #     """
-    #     Convenience wrapper, setter on self._data.
-    #     """
-
-    #     self._data[key] = value
-    #     self.reset_cache()
 
     def __len__(self):
         """
@@ -258,14 +227,20 @@ class DiagMatrix:
         """
         Compute the matrix multiplication of two DiagMatrix instances.
 
-        :param other: The rhs `DiagMatrix`, or 2d dense Numpy array.
+        :param other: The rhs `DiagMatrix`, `BlkDiagMatrix` or 2d dense Numpy array.
         :param inplace: Boolean, when set to True change values in place,
             otherwise return a new instance (default).
         :return: Returns `self` @ `other`, as type of `other`
         """
         if isinstance(other, DiagMatrix):
             res = self.mul(other, inplace=inplace)
+
         elif isinstance(other, BlkDiagMatrix):
+            # inplace infeasable, as the result will not be DiagMatrix.
+            if inplace:
+                raise RuntimeError(
+                    "Inplace infeasable between DiagMatrix and BlkDiagMatrix matrix."
+                )
             res = BlkDiagMatrix.zeros_like(other)
 
             ind = 0
@@ -276,11 +251,12 @@ class DiagMatrix:
                 ind += i
 
         elif isinstance(other, np.ndarray):
-            # inplace infeasable, as the result will be dense.
+            # inplace infeasable, as the result will not be DiagMatrix.
             if inplace:
                 raise RuntimeError(
                     "Inplace infeasable between DiagMatrix and dense ndarray matrix."
                 )
+
             # For now, lets just interop with 2D `other` arrays,
             # assumed to represent matrices.
             if other.ndim != 2:
@@ -362,8 +338,8 @@ class DiagMatrix:
                 res = self
             else:
                 res = DiagMatrix(self._data * other._data)
-        elif isinstance(other, np.ndarray):
-            res = self * DiagMatrix(other)
+        # elif isinstance(other, np.ndarray):
+        #     res = self * DiagMatrix(other)
         elif isinstance(other, BlkDiagMatrix):
             raise NotImplementedError("not yet")
         else:  # scalar
@@ -468,13 +444,14 @@ class DiagMatrix:
         #   and the norm is equal to the largest singular value.
         return np.abs(self._data).max(axis=-1)
 
+    # Transpose methods are provided for reasons of interoperability
+    # in code that also uses with BlkDiagMatrix.
     def transpose(self):
         """
         Get the transpose matrix of a DiagMatrix instance.
 
         :return: The corresponding transpose form as a DiagMatrix.
         """
-        # This is sort of silly no?
         return self.copy()
 
     @property
@@ -538,13 +515,14 @@ class DiagMatrix:
         #  per FSPCA/RIR classification.
         return self.T.apply(X.T).T
 
+    # `eigval` method is provided for reasons of interoperability
+    # in code that also uses with `BlkDiagMatrix`.
     def eigvals(self):
         """
-        Compute the eigenvalues of a DiagMatrix.
-        :return: Array of eigvals, with length equal to the fully expanded matrix diagonal.
+        Compute the eigenvalues of a `DiagMatrix`.
 
+        :return: Array of eigvals, with length equal to the fully expanded matrix diagonal.
         """
-        # this might be silly too.
         return self._data.asnumpy()
 
     @staticmethod
@@ -587,11 +565,11 @@ class DiagMatrix:
 
         return DiagMatrix(np.ones(n, dtype=dtype))
 
-    # Silly?
     @staticmethod
     def eye(n, dtype=np.float32):
         """
         Build a DiagMatrix eye (identity) matrix.
+        This is simply an alias for `ones`.
 
         :param n: Length of diagonal.
         :param dtype: Datatype, defaults to np.float32.
@@ -601,6 +579,11 @@ class DiagMatrix:
         return DiagMatrix.ones(n, dtype=dtype)
 
     def as_blk_diag(self, partition):
+        """
+        Express `DiagMatrix` as a `BlkDiagMatrix` using `partition`.
+
+        :return: `BlkDiagMatrix`
+        """
         B = BlkDiagMatrix(partition, dtype=self.dtype)
         ind = 0
         for b, p in enumerate(partition):
@@ -616,13 +599,14 @@ class DiagMatrix:
             weights = np.ones(self.n, dtype=self.dtype)
 
         B = BlkDiagMatrix(partition, dtype=self.dtype)
+
         ind = 0
-        for b, p in enumerate(partition):
-            assert p[0] == p[1]
+        for block, p in enumerate(partition):
+            assert p[0] == p[1]  # squareness
             j = p[0]
             Ai = self._data[ind : ind + j].reshape(-1, 1)
             wi = weights[ind : ind + j]
-            B[b] = wi * Ai * Ai.T
+            B[block] = wi * Ai * Ai.T
             ind += j
 
         return B
@@ -630,6 +614,9 @@ class DiagMatrix:
     def solve(self, b):
         """
         Solve a x = b for `x`, given diagonal matrix `b`.
+
+        :param b: `DiagMatrix`, right hand side.
+        :return: `DiagMatrix`, solution.
         """
 
         return b / self[:, None]
