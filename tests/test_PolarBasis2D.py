@@ -492,22 +492,9 @@ class PolarBasis2DTestCase(TestCase, UniversalBasisMixin):
         # (y, A*x) = (A^t*y, x) = (B*y, x)
         x = randn(self.basis.count, seed=self.seed).astype(self.dtype)
 
-        #x = np.reshape(x, (self.basis.ntheta // 2, self.basis.nrad))
-
-        # x = (
-        #     1 / 2 * x
-        #     + 1 / 2 * x.conj()
-        # )
-
-        # x = np.concatenate((x, x.conj()), axis=1)
-
-        # x = m_reshape(x, (self.basis.nrad * self.basis.ntheta,))
-
         x_t = self.basis.evaluate(x).asnumpy()
         y = randn(np.prod(self.basis.sz), seed=self.seed).astype(self.dtype)
-        y_t = self.basis.evaluate_t(
-            Image(np.reshape(y, self.basis.sz))
-        )  # RCOPT
+        y_t = self.basis.evaluate_t(Image(np.reshape(y, self.basis.sz)))
 
         lhs = np.dot(y, np.reshape(x_t, (np.prod(self.basis.sz),)))
         rhs = np.real(np.dot(y_t, x))
