@@ -1,16 +1,15 @@
-
 import logging
+import os
+import tempfile
 import warnings
 from contextlib import contextmanager
-from unittest import TestCase
-from unittest.mock import patch
 
 import matplotlib
 import numpy as np
-from parameterized import parameterized
 import pytest
 from pytest import raises
 
+import aspire
 from aspire import __version__
 from aspire.utils import (
     LogFilterByCount,
@@ -75,49 +74,59 @@ def test_log_filter_by_count(caplog):
         assert msg in caplog.text
         caplog.clear()
 
+
 def test_get_full_version():
     """
     Test typical version string response is coherent with package.
     """
     assert get_full_version().startswith(__version__)
 
-def test_get_full_version_path():
-    """
-    Test not isdir case of get_full_version.
-    """
-    with patch("os.path.isdir") as m:
-        m.return_value = False
-        assert get_full_version() == __version__
 
-def test_get_full_version_src():
+def test_get_full_version_path(monkeypatch):
+    """
+    Test when the directory doesn't exist, use the version of the package.
+    """
+    with monkeypatch.context() as m:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "fake")
+            m.setattr(aspire, "__path__", [path])
+            assert get_full_version() == __version__
+
+
+def test_get_full_version_src(monkeypatch):
     """
     Test subprocess exception case of get_full_version.
     """
-    with patch("subprocess.check_output") as m:
-        m.side_effect = FileNotFoundError
-        assert get_full_version() == __version__ + ".src"
-        
-def test_get_full_version_unexpected():
+    with monkeypatch.context() as m:
+        with tempfile.TemporaryDirectory() as tmp:
+            m.setattr(aspire, "__path__", [tmp])
+            assert get_full_version() == __version__ + ".src"
+
+
+def test_get_full_version_unexpected(monkeypatch):
     """
     Test unexpected exception case of get_full_version.
     """
-    with patch("subprocess.check_output") as m:
-        m.side_effect = RuntimeError
+    with monkeypatch.context() as m:
+        m.setattr("subprocess.check_output", lambda: RuntimeError)
         assert get_full_version() == __version__ + ".x"
+
 
 def test_power_set():
     ref = sorted([(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)])
     s = range(1, 4)
     assert sorted(list(powerset(s))) == ref
-    
+
+
 def test_get_test_tol():
     assert 1e-8 == utest_tolerance(np.float64)
     assert 1e-5 == utest_tolerance(np.float32)
     with raises(TypeError):
         utest_tolerance(int)
 
+
 @pytest.mark.parametrize("indexing", ["yx", "xy"])
-def test_gaussian_2d(indexing):    
+def test_gaussian_2d(indexing):
     L = 100
     # Note, `mu` and `sigma` are in (x, y) order.
     mu = (7, -3)
@@ -150,8 +159,9 @@ def test_gaussian_2d(indexing):
     with raises(ValueError, match="`sigma` must be*"):
         gaussian_2d(L, mu=mu, sigma=(1, 2, 3), indexing=indexing)
 
+
 @pytest.mark.parametrize("indexing", ["zyx", "xyz"])
-def test_gaussian_2d(indexing):
+def test_gaussian_3d(indexing):
     L = 100
     # Note, `mu` and `sigma` are in (x, y, z) order.
     mu = (0, 5, 10)
@@ -188,6 +198,7 @@ def test_gaussian_2d(indexing):
     with raises(ValueError, match="`sigma` must be*"):
         gaussian_3d(L, mu=mu, sigma=(1, 2), indexing=indexing)
 
+
 def test_all_pairs():
     n = 25
     pairs, pairs_to_linear = all_pairs(n, return_map=True)
@@ -201,12 +212,14 @@ def test_all_pairs():
     # Test the pairs_to_linear index mapping.
     assert (pairs_to_linear[pairs[:, 0], pairs[:, 1]] == np.arange(nchoose2)).all()
 
+
 def test_all_triplets():
     n = 25
     triplets = all_triplets(n)
     nchoose3 = n * (n - 1) * (n - 2) // 6
     assert len(triplets) == nchoose3
     assert len(triplets[0]) == 3
+
 
 def test_gaussian_scalar_param():
     L = 100
@@ -224,6 +237,7 @@ def test_gaussian_scalar_param():
 
     assert np.allclose(g_2d, g_2d_scalar)
     assert np.allclose(g_3d, g_3d_scalar)
+
 
 @pytest.mark.parametrize("L", [29, 30])
 def test_bump_3d(L):
@@ -249,6 +263,7 @@ def test_bump_3d(L):
 
     # Test that the center is still 1
     assert np.allclose(bumped_volume[(L // 2,) * 3], 1)
+
 
 def test_fuzzy_mask():
     results = np.array(
@@ -338,6 +353,7 @@ def test_fuzzy_mask():
     fmask = fuzzy_mask((8, 8), 2, 2)
     assert np.allclose(results, fmask, atol=1e-7)
 
+
 def test_multiprocessing_utils():
     """
     Smoke tests.
@@ -346,7 +362,8 @@ def test_multiprocessing_utils():
     assert isinstance(physical_core_cpu_suggestion(), int)
     assert isinstance(virtual_core_cpu_suggestion(), int)
     assert isinstance(num_procs_suggestion(), int)
-        
+
+
 @contextmanager
 def matplotlib_no_gui():
     """
