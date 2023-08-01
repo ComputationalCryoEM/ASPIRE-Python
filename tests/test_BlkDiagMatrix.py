@@ -4,7 +4,14 @@ import numpy as np
 import pytest
 from numpy.linalg import norm, solve
 
-from aspire.operators import BlkDiagMatrix
+from aspire.operators import BlkDiagMatrix, is_scalar_type
+
+
+def test_is_scalar_type():
+    assert is_scalar_type(1) is True
+    assert is_scalar_type([1, 2, 3]) is False
+    assert is_scalar_type(np.empty(3)) is False
+    assert is_scalar_type(lambda x: x) is False
 
 
 class BlkDiagMatrixTestCase(TestCase):

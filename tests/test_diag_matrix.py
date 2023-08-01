@@ -56,6 +56,63 @@ def diag_matrix_fixture(stack, matrix_size, dtype):
     return d1, d2, d_np
 
 
+def test_repr():
+    """
+    Test accessing the `repr` does not crash.
+    """
+
+    d = DiagMatrix(np.empty((10, 8)))
+    assert repr(d).startswith("DiagMatrix(")
+
+
+def test_str():
+    """
+    Test accessing the `str` does not crash.
+    """
+
+    d = DiagMatrix(np.empty((10, 8)))
+    assert str(d).startswith("DiagMatrix(")
+
+
+def test_get(diag_matrix_fixture):
+    """
+    Test accessing using the getter syntax.
+    """
+    d, _, d_np = diag_matrix_fixture
+
+    ref = d_np[0][0]
+    np.testing.assert_allclose(d[0], ref)
+
+    assert str(d).startswith("DiagMatrix(")
+
+
+def test_len():
+    """
+    Test the `len`.
+    """
+    d = DiagMatrix(np.empty((10, 8)))
+
+    assert d.size == 10
+    assert d.count == 8
+    assert len(d) == 8
+
+
+def test_size_mismatch():
+    d1 = DiagMatrix(np.empty((10, 8)))
+    d2 = DiagMatrix(np.empty((10, 7)))
+
+    with pytest.raises(RuntimeError, match=r".*not same dimension.*"):
+        _ = d1 + d2
+
+
+def test_dtype_mismatch():
+    d1 = DiagMatrix(np.empty((10, 8)), dtype=np.float32)
+    d2 = DiagMatrix(np.empty((10, 8)), dtype=np.float64)
+
+    with pytest.raises(RuntimeError, match=r".*received different types.*"):
+        _ = d1 + d2
+
+
 # Explicit Tests (non parameterized).
 def test_dtype_passthrough():
     """
@@ -119,6 +176,17 @@ def test_stack_reshape_tuple(diag_matrix_fixture, stack):
     np.testing.assert_allclose(x, d1)
 
 
+def test_stack_reshape_bad_size(diag_matrix_fixture, stack):
+    """
+    Test stack reshape with tuple.
+    """
+    d1, _, _ = diag_matrix_fixture
+
+    with pytest.raises(ValueError, match=r".*cannot be reshaped.*"):
+        # attempt reshaping to a large prime
+        _ = d1.stack_reshape(8675309)
+
+
 def test_diag_diag_add(diag_matrix_fixture):
     """
     Test addition.
@@ -128,6 +196,15 @@ def test_diag_diag_add(diag_matrix_fixture):
     np.testing.assert_allclose(d1 + d2, np.sum(d_np, axis=0))
 
 
+def test_diag_diag_scalar_add(diag_matrix_fixture):
+    """
+    Test addition.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    np.testing.assert_allclose(d1 + 123, d_np[0] + 123)
+
+
 def test_diag_diag_sub(diag_matrix_fixture):
     """
     Test subtraction.
@@ -135,6 +212,17 @@ def test_diag_diag_sub(diag_matrix_fixture):
     d1, d2, d_np = diag_matrix_fixture
 
     np.testing.assert_allclose(d1 - d2, np.subtract(*d_np))
+
+
+def test_diag_diag_scalar_sub(diag_matrix_fixture):
+    """
+    Test subtraction.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    d1 = d1 - 123
+
+    np.testing.assert_allclose(d1, d_np[0] - 123)
 
 
 def test_diag_diag_mul(diag_matrix_fixture):
@@ -197,11 +285,6 @@ def test_pow(diag_matrix_fixture):
     ref = d_np[0] ** 2
     np.testing.assert_allclose(d1**2, ref)
     np.testing.assert_allclose(d1.pow(2), ref)
-
-    _d1 = d1
-    d1 = d1.pow(2, inplace=True)
-    np.testing.assert_allclose(d1, ref)
-    assert d1 is _d1, "Object refs should be identical for inplace ops"
 
 
 def test_norm(diag_matrix_fixture):

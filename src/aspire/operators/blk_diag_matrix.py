@@ -11,6 +11,26 @@ from aspire.utils import make_psd
 from aspire.utils.cell import Cell2D
 
 
+def is_scalar_type(x):
+    """
+    Helper function checking scalar-ness for elementwise ops.
+
+    Essentially we are checking for a single numeric object, as opposed to
+    something like an `ndarray` or `BlkDiagMatrix`. We do this by
+    checking `numpy.isscalar(x)`.
+
+    In the future this check may require extension to include ASPIRE or
+    other third party types beyond what is provided by numpy, so we
+    implement it now as a method.
+
+    :param x: Value to check
+
+    :return: bool.
+    """
+
+    return np.isscalar(x)
+
+
 class BlkDiagMatrix:
     """
     Define a BlkDiagMatrix class which implements operations for
@@ -114,25 +134,6 @@ class BlkDiagMatrix:
         """
 
         return self.nblocks
-
-    def _is_scalar_type(self, x):
-        """
-        Internal helper function checking scalar-ness for elementwise ops.
-
-        Essentially we are checking for a single numeric object, as opposed to
-        something like an `ndarray` or `BlkDiagMatrix`. We do this by
-        checking `numpy.isscalar(x)`.
-
-        In the future this check may require extension to include ASPIRE or
-        other third party types beyond what is provided by numpy, so we
-        implement it now as a class method.
-
-        :param x: Value to check
-
-        :return: bool.
-        """
-
-        return np.isscalar(x)
 
     def __check_size_compatible_add(self, other):
         """
@@ -246,7 +247,7 @@ class BlkDiagMatrix:
             to self + other.
         """
 
-        if self._is_scalar_type(other):
+        if is_scalar_type(other):
             return self.__scalar_add(other, inplace=inplace)
 
         self.__check_compatible(other)
@@ -296,7 +297,7 @@ class BlkDiagMatrix:
             to self + other.
         """
 
-        assert self._is_scalar_type(scalar)
+        assert is_scalar_type(scalar)
 
         if inplace:
             C = self
@@ -319,7 +320,7 @@ class BlkDiagMatrix:
             self - other.
         """
 
-        if self._is_scalar_type(other):
+        if is_scalar_type(other):
             return self.__scalar_sub(other, inplace=inplace)
 
         self.__check_compatible(other)
@@ -349,7 +350,7 @@ class BlkDiagMatrix:
         Operator overloading for in-place subtraction.
         """
 
-        if self._is_scalar_type(other):
+        if is_scalar_type(other):
             return self.__scalar_sub(other, inplace=True)
 
         return self.sub(other, inplace=True)
@@ -375,7 +376,7 @@ class BlkDiagMatrix:
             self + other.
         """
 
-        assert self._is_scalar_type(scalar)
+        assert is_scalar_type(scalar)
 
         if inplace:
             C = self
@@ -470,7 +471,7 @@ class BlkDiagMatrix:
                 "BlkDiagMatrix instances, try (matmul,@)."
             )
 
-        elif not self._is_scalar_type(val):
+        elif not is_scalar_type(val):
             raise RuntimeError(
                 "Attempt numeric multiplication (*,mul) of a "
                 "BlkDiagMatrix and {}.".format(type(val))
