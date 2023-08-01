@@ -25,7 +25,7 @@ def fetch_data(dataset_name):
     """
     The `fetch_data` method returns the full path to the downloaded data file.
 
-    If it’s not in the local storage, it will be downloaded. If the hash of the
+    If it is not in the local storage, it will be downloaded. If the hash of the
     file in local storage doesn’t match the one in the registry, will download a
     new copy of the file. This is considered a sign that the file was updated in
     the remote storage. If the hash of the downloaded file still doesn’t match the
