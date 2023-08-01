@@ -2,12 +2,10 @@ import logging
 import os
 import tempfile
 from itertools import product
-from unittest import TestCase
 
 import numpy as np
 import pytest
 from numpy import pi
-from parameterized import parameterized
 from pytest import raises, skip
 
 from aspire.utils import Rotation, grid_2d, powerset
@@ -25,451 +23,498 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 logger = logging.getLogger(__name__)
 
+RES = 42
+DTYPE = np.float32
+N = 3
 
-class VolumeTestCase(TestCase):
-    # res is at this scope to be picked up by parameterization in testRotate.
-    res = 42
 
-    def setUp(self):
-        self.dtype = np.float32
-        self.n = n = 3
-        # Note, range shifted by one to avoid zero division errors.
-        self.data_1 = np.arange(1, 1 + n * self.res**3, dtype=self.dtype).reshape(
-            n, self.res, self.res, self.res
-        )
-        self.data_2 = 123 * self.data_1.copy()
-        self.data_12 = np.concatenate([self.data_1, self.data_2], axis=0).reshape(
-            2, *self.data_1.shape
-        )
-        self.vols_1 = Volume(self.data_1)
-        self.vols_2 = Volume(self.data_2)
-        self.vols_12 = Volume(self.data_12)
-        self.random_data = np.random.randn(self.res, self.res, self.res).astype(
-            self.dtype
-        )
-        self.vec = self.data_1.reshape(n, self.res**3)
+# Note, range shifted by one to avoid zero division errors.
+@pytest.fixture
+def data_1():
+    return np.arange(1, 1 + N * RES**3, dtype=DTYPE).reshape(N, RES, RES, RES)
 
-    def tearDown(self):
-        pass
 
-    def testRepr(self):
-        r = repr(self.vols_12)
-        logger.info(f"Volume repr:\n{r}")
+@pytest.fixture
+def data_2(data_1):
+    return 123 * data_1.copy()
 
-    def testNonCube(self):
-        """Test that an irregular Volume array raises."""
-        with raises(ValueError, match=r".* cubed .*"):
-            _ = Volume(np.empty((4, 5, 6), dtype=self.dtype))
 
-    def testAsNumpy(self):
-        self.assertTrue(np.all(self.data_1 == self.vols_1.asnumpy()))
+@pytest.fixture
+def data_12(data_1, data_2):
+    return np.concatenate([data_1, data_2], axis=0).reshape(2, *data_1.shape)
 
-    def testAsType(self):
-        if self.dtype == np.float64:
-            new_dtype = np.float32
-        elif self.dtype == np.float32:
-            new_dtype = np.float64
+
+@pytest.fixture
+def vols_1(data_1):
+    return Volume(data_1)
+
+
+@pytest.fixture
+def vols_2(data_2):
+    return Volume(data_2)
+
+
+@pytest.fixture
+def vols_12(data_12):
+    return Volume(data_12)
+
+
+@pytest.fixture
+def random_data():
+    return np.random.randn(RES, RES, RES).astype(DTYPE)
+
+
+@pytest.fixture
+def vec(data_1):
+    return data_1.reshape(N, RES**3)
+
+
+def test_repr(vols_12):
+    r = repr(vols_12)
+    logger.info(f"Volume repr:\n{r}")
+
+
+def test_noncube():
+    """Test that an irregular Volume array raises."""
+    with raises(ValueError, match=r".* cubed .*"):
+        _ = Volume(np.empty((4, 5, 6), dtype=DTYPE))
+
+
+def test_asnumpy(data_1, vols_1):
+    assert np.all(data_1 == vols_1.asnumpy())
+
+
+def test_astype(vols_1):
+    if DTYPE == np.float64:
+        new_dtype = np.float32
+    elif DTYPE == np.float32:
+        new_dtype = np.float64
+    else:
+        skip("Skip numerically comparing non float types.")
+
+    v2 = vols_1.astype(new_dtype)
+    assert isinstance(v2, Volume)
+    assert np.allclose(v2.asnumpy(), vols_1.asnumpy())
+    assert v2.dtype == new_dtype
+
+
+def test_astype_copy(vols_1):
+    """
+    `astype(copy=False)` is an optimization partially mimicked from numpy.
+    """
+    # Same dtype, copy=False
+    v2 = vols_1.astype(vols_1.dtype, copy=False)
+    # Details should match,
+    assert isinstance(v2, Volume)
+    assert np.allclose(v2.asnumpy(), vols_1.asnumpy())
+    assert v2.dtype == vols_1.dtype
+    # and they should share the same memory (np.ndarray.base).
+    assert v2.asnumpy().base is vols_1.asnumpy().base
+
+    # Same dtype, default copy=True
+    v2 = vols_1.astype(vols_1.dtype)
+    # Details should match,
+    assert isinstance(v2, Volume)
+    assert np.allclose(v2.asnumpy(), vols_1.asnumpy())
+    assert v2.dtype == vols_1.dtype
+    # but they should not share the same memory (np.ndarray.base)
+    assert v2.asnumpy().base is not vols_1.asnumpy().base
+
+
+def test_getter(vols_1, data_1):
+    k = np.random.randint(N)
+    assert np.all(vols_1[k] == data_1[k])
+
+
+def test_setter(vols_1, random_data):
+    k = np.random.randint(N)
+    ref = vols_1.asnumpy().copy()
+    # Set one entry in the stack with new data
+    vols_1[k] = random_data
+
+    # Assert we have updated the kth volume
+    assert np.allclose(vols_1[k], random_data)
+
+    # Assert the other volumes are not updated.
+    inds = np.arange(N) != k
+    assert np.all(vols_1[inds] == ref[inds])
+
+
+def testLen(vols_1, random_data):
+    assert len(vols_1) == N
+
+    # Also test a single volume
+    assert len(Volume(random_data)) == 1
+
+
+def test_add(vols_1, vols_2, data_1, data_2):
+    result = vols_1 + vols_2
+    assert np.all(result == data_1 + data_2)
+    assert isinstance(result, Volume)
+
+
+def test_scalar_add(vols_1, data_1):
+    result = vols_1 + 42
+    assert np.all(result == data_1 + 42)
+    assert isinstance(result, Volume)
+
+
+def test_scalar_r_add(vols_1, data_1):
+    result = 42 + vols_1
+    assert np.all(result == data_1 + 42)
+    isinstance(result, Volume)
+
+
+def test_sub(vols_1, vols_2, data_1, data_2):
+    result = vols_1 - vols_2
+    assert np.all(result == data_1 - data_2)
+    assert isinstance(result, Volume)
+
+
+def test_scalar_sub(vols_1, data_1):
+    result = vols_1 - 42
+    np.all(result == data_1 - 42)
+    assert isinstance(result, Volume)
+
+
+def test_scalar_r_sub(vols_1, data_1):
+    result = 42 - vols_1
+    assert np.all(result == 42 - data_1)
+    assert isinstance(result, Volume)
+
+
+def test_scalar_mul(vols_1, data_2):
+    result = vols_1 * 123
+    assert np.all(result == data_2)
+    assert isinstance(result, Volume)
+
+
+def test_scalar_r_mul(vols_1, data_2):
+    result = 123 * vols_1
+    assert np.all(result == data_2)
+    assert isinstance(result, Volume)
+
+
+def test_scalar_div(vols_2, vols_1):
+    result = vols_2 / 123
+    assert np.allclose(result, vols_1)
+
+
+def test_right_scalar_div(vols_2, data_1):
+    result = 123 / vols_2
+    assert np.allclose(result, 1 / data_1)
+
+
+def test_div(vols_2, vols_1):
+    result = vols_2 / vols_1
+    assert np.allclose(result, 123)
+
+
+def test_right_div(data_2, vols_1):
+    result = data_2 / vols_1
+    np.allclose(result, 123)
+
+
+def testSaveLoad(vols_1):
+    # Create a tmpdir in a context. It will be cleaned up on exit.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Save the Volume object into an MRC files
+        mrcs_filepath = os.path.join(tmpdir, "test.mrc")
+        vols_1.save(mrcs_filepath)
+
+        # Load saved MRC file as a Volume of dtypes single and double.
+        vols_loaded_single = Volume.load(mrcs_filepath, dtype=np.float32)
+        vols_loaded_double = Volume.load(mrcs_filepath, dtype=np.float64)
+
+        # Check that loaded data are Volume instances and compare to original volume.
+        assert isinstance(vols_loaded_single, Volume)
+        assert np.allclose(vols_1, vols_loaded_single)
+        assert isinstance(vols_loaded_double, Volume)
+        assert np.allclose(vols_1, vols_loaded_double)
+
+
+def testProject(vols_1):
+    # first test with synthetic data
+    # Create a stack of rotations to test.
+    r_stack = np.empty((12, 3, 3), dtype=DTYPE)
+    for r, ax in enumerate(["x", "y", "z"]):
+        r_stack[r] = Rotation.about_axis(ax, 0).matrices
+        # We'll consider the multiples of pi/2.
+        r_stack[r + 3] = Rotation.about_axis(ax, pi / 2).matrices
+        r_stack[r + 6] = Rotation.about_axis(ax, pi).matrices
+        r_stack[r + 9] = Rotation.about_axis(ax, 3 * pi / 2).matrices
+
+    # Project a Volume with all the test rotations
+    vol_id = 1  # select a volume from Volume stack
+    img_stack = vols_1[vol_id].project(r_stack)
+
+    for r in range(len(r_stack)):
+        # Get result of test projection at center of Image.
+        prj_along_axis = img_stack.asnumpy()[r][21, 21]
+
+        # For Volume, take mean along the axis of rotation.
+        vol_along_axis = np.mean(vols_1.asnumpy()[vol_id], axis=r % 3)
+        # Volume is uncentered, take the mean of a 2x2 window.
+        vol_along_axis = np.mean(vol_along_axis[20:22, 20:22])
+
+        # The projection and Volume should be equivalent
+        #  centered along the rotation axis for multiples of pi/2.
+        assert np.allclose(vol_along_axis, prj_along_axis)
+
+    # test with saved ribosome data
+    results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_down8_imgs32.npy"))
+    vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")))
+    rots = np.load(os.path.join(DATA_DIR, "rand_rot_matrices32.npy"))
+    rots = np.moveaxis(rots, 2, 0)
+    imgs_clean = vols.project(rots).asnumpy()
+    assert np.allclose(results, imgs_clean, atol=1e-7)
+
+
+# Parameterize over even and odd resolutions
+@pytest.mark.parametrize("L", [RES, RES - 1])
+def test_rotate(L):
+    # In this test we instantiate Volume instance `vol`, containing a single nonzero
+    # voxel in the first octant, and rotate it by multiples of pi/2 about each axis.
+    # We then compare to reference volumes containing appropriately located nonzero voxel.
+
+    # Create a Volume instance to rotate.
+    # This volume has a value of 1 in the first octant at (1, 1, 1) and zeros elsewhere.
+    data = np.zeros((L, L, L), dtype=DTYPE)
+    data[L // 2 + 1, L // 2 + 1, L // 2 + 1] = 1
+    vol = Volume(data)
+
+    # Create a dict with map from axis and angle of rotation to new location of nonzero voxel.
+    ref_pts = {
+        ("x", 0): (1, 1, 1),
+        ("x", pi / 2): (1, 1, -1),
+        ("x", pi): (1, -1, -1),
+        ("x", 3 * pi / 2): (1, -1, 1),
+        ("y", 0): (1, 1, 1),
+        ("y", pi / 2): (-1, 1, 1),
+        ("y", pi): (-1, 1, -1),
+        ("y", 3 * pi / 2): (1, 1, -1),
+        ("z", 0): (1, 1, 1),
+        ("z", pi / 2): (1, -1, 1),
+        ("z", pi): (-1, -1, 1),
+        ("z", 3 * pi / 2): (-1, 1, 1),
+    }
+
+    center = np.array([L // 2] * 3)
+
+    # Rotate Volume 'vol' and test against reference volumes.
+    axes = ["x", "y", "z"]
+    angles = [0, pi / 2, pi, 3 * pi / 2]
+    for axis, angle in product(axes, angles):
+        # Build rotation matrices
+        rot_mat = Rotation.about_axis(axis, angle, dtype=DTYPE)
+
+        # Rotate Volume 'vol' by rotations 'rot_mat'
+        rot_vol = vol.rotate(rot_mat, zero_nyquist=False)
+
+        # Build reference volumes using dict 'ref_pts'
+        ref_vol = np.zeros((L, L, L), dtype=DTYPE)
+        # Assign the location of non zero voxel
+        loc = center + np.array(ref_pts[axis, angle])
+        ref_vol[tuple(loc)] = 1
+
+        # Test that rotated volumes align with reference volumes
+        assert np.allclose(ref_vol, rot_vol, atol=utest_tolerance(DTYPE))
+
+
+def test_rotate_broadcast_unicast(vols_1):
+    # Build `Rotation` objects. A singleton for broadcasting and a stack for unicasting.
+    # The stack consists of copies of the singleton.
+    angles = np.array([pi, pi / 2, 0], dtype=DTYPE)
+    angles = np.tile(angles, (3, 1))
+    rot_mat = Rotation.from_euler(angles, dtype=DTYPE).matrices
+    rot = Rotation(rot_mat[0])
+    rots = Rotation(rot_mat)
+
+    # Broadcast the singleton `Rotation` across the `Volume` stack.
+    vols_broadcast = vols_1.rotate(rot)
+
+    # Unicast the `Rotation` stack across the `Volume` stack.
+    vols_unicast = vols_1.rotate(rots)
+
+    for i in range(N):
+        assert np.allclose(vols_broadcast[i], vols_unicast[i])
+
+
+def to_vec(vols_1, vec):
+    """Compute the to_vec method and compare."""
+    result = vols_1.to_vec()
+    assert result == vec
+    assert isinstance(result, np.ndarray)
+
+
+def test_from_vec(vec, vols_1):
+    """Compute Volume from_vec method and compare."""
+    vol = Volume.from_vec(vec)
+    assert np.allclose(vol, vols_1)
+    assert isinstance(vol, Volume)
+
+
+def test_vec_id1(vols_1):
+    """Test composition of from_vec(to_vec)."""
+    # Construct vec
+    vec = vols_1.to_vec()
+
+    # Convert back to Volume and compare
+    assert np.allclose(Volume.from_vec(vec), vols_1)
+
+
+def test_vec_id2(vec):
+    """Test composition of to_vec(from_vec)."""
+    # Construct Volume
+    vol = Volume.from_vec(vec)
+
+    # # Convert back to vec and compare
+    assert np.all(vol.to_vec() == vec)
+
+
+def test_transpose(data_1, vols_1):
+    data_t = np.transpose(data_1, (0, 3, 2, 1))
+
+    result = vols_1.transpose()
+    assert np.all(result == data_t)
+    assert isinstance(result, Volume)
+
+    result = vols_1.T
+    assert np.all(result == data_t)
+    assert isinstance(result, Volume)
+
+
+def test_flatten(vols_1, data_1):
+    result = vols_1.flatten()
+    assert np.all(result == data_1.flatten())
+    assert isinstance(result, np.ndarray)
+
+
+def test_flip(vols_1, data_1):
+    # Test over all sane axis.
+    for axis in powerset(range(1, 4)):
+        if not axis:
+            # test default
+            result = vols_1.flip()
+            axis = 1
         else:
-            skip("Skip numerically comparing non float types.")
-
-        v2 = self.vols_1.astype(new_dtype)
-        self.assertTrue(isinstance(v2, Volume))
-        self.assertTrue(np.allclose(v2.asnumpy(), self.vols_1.asnumpy()))
-        self.assertTrue(v2.dtype == new_dtype)
-
-    def testAsTypeCopy(self):
-        """
-        `astype(copy=False)` is an optimization partially mimicked from numpy.
-        """
-        # Same dtype, copy=False
-        v2 = self.vols_1.astype(self.vols_1.dtype, copy=False)
-        # Details should match,
-        self.assertTrue(isinstance(v2, Volume))
-        self.assertTrue(np.allclose(v2.asnumpy(), self.vols_1.asnumpy()))
-        self.assertTrue(v2.dtype == self.vols_1.dtype)
-        # and they should share the same memory (np.ndarray.base).
-        self.assertTrue(v2.asnumpy().base is self.vols_1.asnumpy().base)
-
-        # Same dtype, default copy=True
-        v2 = self.vols_1.astype(self.vols_1.dtype)
-        # Details should match,
-        self.assertTrue(isinstance(v2, Volume))
-        self.assertTrue(np.allclose(v2.asnumpy(), self.vols_1.asnumpy()))
-        self.assertTrue(v2.dtype == self.vols_1.dtype)
-        # but they should not share the same memory (np.ndarray.base)
-        self.assertTrue(v2.asnumpy().base is not self.vols_1.asnumpy().base)
-
-    def testGetter(self):
-        k = np.random.randint(self.n)
-        self.assertTrue(np.all(self.vols_1[k] == self.data_1[k]))
-
-    def testSetter(self):
-        k = np.random.randint(self.n)
-        ref = self.vols_1.asnumpy().copy()
-        # Set one entry in the stack with new data
-        self.vols_1[k] = self.random_data
-
-        # Assert we have updated the kth volume
-        self.assertTrue(np.allclose(self.vols_1[k], self.random_data))
-
-        # Assert the other volumes are not updated.
-        inds = np.arange(self.n) != k
-        self.assertTrue(np.all(self.vols_1[inds] == ref[inds]))
-
-    def testLen(self):
-        self.assertTrue(len(self.vols_1) == self.n)
-
-        # Also test a single volume
-        self.assertTrue(len(Volume(self.random_data)) == 1)
-
-    def testAdd(self):
-        result = self.vols_1 + self.vols_2
-        self.assertTrue(np.all(result == self.data_1 + self.data_2))
-        self.assertTrue(isinstance(result, Volume))
-
-    def testScalarAdd(self):
-        result = self.vols_1 + 42
-        self.assertTrue(np.all(result == self.data_1 + 42))
-        self.assertTrue(isinstance(result, Volume))
-
-    def testScalarRAdd(self):
-        result = 42 + self.vols_1
-        self.assertTrue(np.all(result == self.data_1 + 42))
-        self.assertTrue(isinstance(result, Volume))
-
-    def testSub(self):
-        result = self.vols_1 - self.vols_2
-        self.assertTrue(np.all(result == self.data_1 - self.data_2))
-        self.assertTrue(isinstance(result, Volume))
-
-    def testScalarSub(self):
-        result = self.vols_1 - 42
-        self.assertTrue(np.all(result == self.data_1 - 42))
-        self.assertTrue(isinstance(result, Volume))
-
-    def testScalarRSub(self):
-        result = 42 - self.vols_1
-        self.assertTrue(np.all(result == 42 - self.data_1))
-        self.assertTrue(isinstance(result, Volume))
-
-    def testScalarMul(self):
-        result = self.vols_1 * 123
-        self.assertTrue(np.all(result == self.data_2))
-        self.assertTrue(isinstance(result, Volume))
-
-    def testScalarRMul(self):
-        result = 123 * self.vols_1
-        self.assertTrue(np.all(result == self.data_2))
-        self.assertTrue(isinstance(result, Volume))
-
-    def testScalarDiv(self):
-        result = self.vols_2 / 123
-        self.assertTrue(np.allclose(result, self.vols_1))
-
-    def testRightScalarDiv(self):
-        result = 123 / self.vols_2
-        self.assertTrue(np.allclose(result, 1 / self.data_1))
-
-    def testDiv(self):
-        result = self.vols_2 / self.vols_1
-        self.assertTrue(np.allclose(result, 123))
-
-    def testRightDiv(self):
-        result = self.data_2 / self.vols_1
-        self.assertTrue(np.allclose(result, 123))
-
-    def testSaveLoad(self):
-        # Create a tmpdir in a context. It will be cleaned up on exit.
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # Save the Volume object into an MRC files
-            mrcs_filepath = os.path.join(tmpdir, "test.mrc")
-            self.vols_1.save(mrcs_filepath)
-
-            # Load saved MRC file as a Volume of dtypes single and double.
-            vols_loaded_single = Volume.load(mrcs_filepath, dtype=np.float32)
-            vols_loaded_double = Volume.load(mrcs_filepath, dtype=np.float64)
-
-            # Check that loaded data are Volume instances and compare to original volume.
-            self.assertTrue(isinstance(vols_loaded_single, Volume))
-            self.assertTrue(np.allclose(self.vols_1, vols_loaded_single))
-            self.assertTrue(isinstance(vols_loaded_double, Volume))
-            self.assertTrue(np.allclose(self.vols_1, vols_loaded_double))
-
-    def testProject(self):
-        # first test with synthetic data
-        # Create a stack of rotations to test.
-        r_stack = np.empty((12, 3, 3), dtype=self.dtype)
-        for r, ax in enumerate(["x", "y", "z"]):
-            r_stack[r] = Rotation.about_axis(ax, 0).matrices
-            # We'll consider the multiples of pi/2.
-            r_stack[r + 3] = Rotation.about_axis(ax, pi / 2).matrices
-            r_stack[r + 6] = Rotation.about_axis(ax, pi).matrices
-            r_stack[r + 9] = Rotation.about_axis(ax, 3 * pi / 2).matrices
-
-        # Project a Volume with all the test rotations
-        vol_id = 1  # select a volume from Volume stack
-        img_stack = self.vols_1[vol_id].project(r_stack)
-
-        for r in range(len(r_stack)):
-            # Get result of test projection at center of Image.
-            prj_along_axis = img_stack.asnumpy()[r][21, 21]
-
-            # For Volume, take mean along the axis of rotation.
-            vol_along_axis = np.mean(self.vols_1.asnumpy()[vol_id], axis=r % 3)
-            # Volume is uncentered, take the mean of a 2x2 window.
-            vol_along_axis = np.mean(vol_along_axis[20:22, 20:22])
-
-            # The projection and Volume should be equivalent
-            #  centered along the rotation axis for multiples of pi/2.
-            self.assertTrue(np.allclose(vol_along_axis, prj_along_axis))
-
-        # test with saved ribosome data
-        results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_down8_imgs32.npy"))
-        vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")))
-        rots = np.load(os.path.join(DATA_DIR, "rand_rot_matrices32.npy"))
-        rots = np.moveaxis(rots, 2, 0)
-        imgs_clean = vols.project(rots).asnumpy()
-        self.assertTrue(np.allclose(results, imgs_clean, atol=1e-7))
-
-    # Parameterize over even and odd resolutions
-    @parameterized.expand([(res,), (res - 1,)])
-    def testRotate(self, L):
-        # In this test we instantiate Volume instance `vol`, containing a single nonzero
-        # voxel in the first octant, and rotate it by multiples of pi/2 about each axis.
-        # We then compare to reference volumes containing appropriately located nonzero voxel.
-
-        # Create a Volume instance to rotate.
-        # This volume has a value of 1 in the first octant at (1, 1, 1) and zeros elsewhere.
-        data = np.zeros((L, L, L), dtype=self.dtype)
-        data[L // 2 + 1, L // 2 + 1, L // 2 + 1] = 1
-        vol = Volume(data)
-
-        # Create a dict with map from axis and angle of rotation to new location of nonzero voxel.
-        ref_pts = {
-            ("x", 0): (1, 1, 1),
-            ("x", pi / 2): (1, 1, -1),
-            ("x", pi): (1, -1, -1),
-            ("x", 3 * pi / 2): (1, -1, 1),
-            ("y", 0): (1, 1, 1),
-            ("y", pi / 2): (-1, 1, 1),
-            ("y", pi): (-1, 1, -1),
-            ("y", 3 * pi / 2): (1, 1, -1),
-            ("z", 0): (1, 1, 1),
-            ("z", pi / 2): (1, -1, 1),
-            ("z", pi): (-1, -1, 1),
-            ("z", 3 * pi / 2): (-1, 1, 1),
-        }
-
-        center = np.array([L // 2] * 3)
-
-        # Rotate Volume 'vol' and test against reference volumes.
-        axes = ["x", "y", "z"]
-        angles = [0, pi / 2, pi, 3 * pi / 2]
-        for axis, angle in product(axes, angles):
-            # Build rotation matrices
-            rot_mat = Rotation.about_axis(axis, angle, dtype=self.dtype)
-
-            # Rotate Volume 'vol' by rotations 'rot_mat'
-            rot_vol = vol.rotate(rot_mat, zero_nyquist=False)
-
-            # Build reference volumes using dict 'ref_pts'
-            ref_vol = np.zeros((L, L, L), dtype=self.dtype)
-            # Assign the location of non zero voxel
-            loc = center + np.array(ref_pts[axis, angle])
-            ref_vol[tuple(loc)] = 1
-
-            # Test that rotated volumes align with reference volumes
-            self.assertTrue(
-                np.allclose(ref_vol, rot_vol, atol=utest_tolerance(self.dtype))
-            )
-
-    def testRotateBroadcastUnicast(self):
-        # Build `Rotation` objects. A singleton for broadcasting and a stack for unicasting.
-        # The stack consists of copies of the singleton.
-        angles = np.array([pi, pi / 2, 0], dtype=self.dtype)
-        angles = np.tile(angles, (3, 1))
-        rot_mat = Rotation.from_euler(angles, dtype=self.dtype).matrices
-        rot = Rotation(rot_mat[0])
-        rots = Rotation(rot_mat)
-
-        # Broadcast the singleton `Rotation` across the `Volume` stack.
-        vols_broadcast = self.vols_1.rotate(rot)
-
-        # Unicast the `Rotation` stack across the `Volume` stack.
-        vols_unicast = self.vols_1.rotate(rots)
-
-        for i in range(self.n):
-            self.assertTrue(np.allclose(vols_broadcast[i], vols_unicast[i]))
-
-    def to_vec(self):
-        """Compute the to_vec method and compare."""
-        result = self.vols_1.to_vec()
-        self.assertTrue(result == self.vec)
-        self.assertTrue(isinstance(result, np.ndarray))
-
-    def testFromVec(self):
-        """Compute Volume from_vec method and compare."""
-        vol = Volume.from_vec(self.vec)
-        self.assertTrue(np.allclose(vol, self.vols_1))
-        self.assertTrue(isinstance(vol, Volume))
-
-    def testVecId1(self):
-        """Test composition of from_vec(to_vec)."""
-        # Construct vec
-        vec = self.vols_1.to_vec()
-
-        # Convert back to Volume and compare
-        self.assertTrue(np.allclose(Volume.from_vec(vec), self.vols_1))
-
-    def testVecId2(self):
-        """Test composition of to_vec(from_vec)."""
-        # Construct Volume
-        vol = Volume.from_vec(self.vec)
-
-        # # Convert back to vec and compare
-        self.assertTrue(np.all(vol.to_vec() == self.vec))
-
-    def testTranspose(self):
-        data_t = np.transpose(self.data_1, (0, 3, 2, 1))
-
-        result = self.vols_1.transpose()
-        self.assertTrue(np.all(result == data_t))
-        self.assertTrue(isinstance(result, Volume))
-
-        result = self.vols_1.T
-        self.assertTrue(np.all(result == data_t))
-        self.assertTrue(isinstance(result, Volume))
-
-    def testFlatten(self):
-        result = self.vols_1.flatten()
-        self.assertTrue(np.all(result == self.data_1.flatten()))
-        self.assertTrue(isinstance(result, np.ndarray))
-
-    def testFlip(self):
-        # Test over all sane axis.
-        for axis in powerset(range(1, 4)):
-            if not axis:
-                # test default
-                result = self.vols_1.flip()
-                axis = 1
-            else:
-                result = self.vols_1.flip(axis)
-            self.assertTrue(np.all(result == np.flip(self.data_1, axis)))
-            self.assertTrue(isinstance(result, Volume))
-
-        # Test axis 0 raises
-        msg = r"Cannot flip axis 0: stack axis."
-        with raises(ValueError, match=msg):
-            _ = self.vols_1.flip(axis=0)
-
-        with raises(ValueError, match=msg):
-            _ = self.vols_1.flip(axis=(0, 1))
-
-    def testDownsample(self):
-        vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")))
-        result = vols.downsample(8)
-        res = vols.resolution
-        ds_res = result.resolution
-
-        # check signal energy
-        self.assertTrue(
-            np.allclose(
-                anorm(vols.asnumpy(), axes=(1, 2, 3)) / res,
-                anorm(result.asnumpy(), axes=(1, 2, 3)) / ds_res,
-                atol=1e-3,
-            )
-        )
-
-        # check gridpoints
-        self.assertTrue(
-            np.allclose(
-                vols.asnumpy()[:, res // 2, res // 2, res // 2],
-                result.asnumpy()[:, ds_res // 2, ds_res // 2, ds_res // 2],
-                atol=1e-4,
-            )
-        )
-
-    def testShape(self):
-        self.assertEqual(self.vols_1.shape, (self.n, self.res, self.res, self.res))
-        self.assertEqual(self.vols_1.stack_shape, (self.n,))
-        self.assertEqual(self.vols_1.stack_ndim, 1)
-        self.assertEqual(self.vols_1.n_vols, self.n)
-
-    def testMultiDimShape(self):
-        self.assertEqual(self.vols_12.shape, (2, self.n, self.res, self.res, self.res))
-        self.assertEqual(self.vols_12.stack_shape, (2, self.n))
-        self.assertEqual(self.vols_12.stack_ndim, 2)
-        self.assertEqual(self.vols_12.n_vols, 2 * self.n)
-
-    def testBadKey(self):
-        with self.assertRaisesRegex(ValueError, "slice length must be"):
-            _ = self.vols_12[tuple(range(self.vols_12.ndim + 1))]
-
-    def testMultiDimGets(self):
-        self.assertTrue(np.allclose(self.vols_12[0], self.data_1))
-        # Test a slice
-        self.assertTrue(np.allclose(self.vols_12[1, 1:], self.data_2[1:]))
-
-    def testMultiDimSets(self):
-        self.vols_12[0, 1] = 123
-        # Check the values changed
-        self.assertTrue(np.allclose(self.vols_12[0, 1], 123))
-        # and only those values changed
-        self.assertTrue(np.allclose(self.vols_12[0, 0], self.data_1[0]))
-        self.assertTrue(np.allclose(self.vols_12[0, 2:], self.data_1[2:]))
-        self.assertTrue(np.allclose(self.vols_12[1, :], self.data_2))
-
-    def testMultiDimSetsSlice(self):
-        self.vols_12[0, 1:] = 456
-        # Check the values changed
-        self.assertTrue(np.allclose(self.vols_12[0, 1:], 456))
-        # and only those values changed
-        self.assertTrue(np.allclose(self.vols_12[0, 0], self.data_1[0]))
-        self.assertTrue(np.allclose(self.vols_12[1, :], self.data_2))
-
-    def testMultiDimReshape(self):
-        X = self.vols_12.stack_reshape(self.n, 2)
-        # Compare with np.reshape of stack axes of ndarray
-        self.assertTrue(
-            np.allclose(
-                X, self.data_12.reshape(self.n, 2, self.res, self.res, self.res)
-            )
-        )
-        # and as tuples
-        Y = self.vols_12.stack_reshape((self.n, 2))
-        self.assertTrue(np.allclose(X, Y))
-
-    def testMultiDimFlattens(self):
-        X = self.vols_12.stack_reshape(2 * self.n)
-        self.assertTrue(
-            np.allclose(X, self.data_12.reshape(-1, self.res, self.res, self.res))
-        )
-        # and as tuples
-        Y = self.vols_12.stack_reshape((2 * self.n,))
-        self.assertTrue(np.allclose(X, Y))
-
-    def testMultiDimFlattensTrick(self):
-        X = self.vols_12.stack_reshape(-1)
-        self.assertTrue(
-            np.allclose(X, self.data_12.reshape(-1, self.res, self.res, self.res))
-        )
-        # and as tuples
-        Y = self.vols_12.stack_reshape((-1,))
-        self.assertTrue(np.allclose(X, Y))
-
-    def testMultiDimBadReshape(self):
-        # Incorrect flat shape
-        with self.assertRaisesRegex(ValueError, "Number of volumes"):
-            _ = self.vols_12.stack_reshape(8675309)
-
-        # Incorrect mdin shape
-        with self.assertRaisesRegex(ValueError, "Number of volumes"):
-            _ = self.vols_12.stack_reshape(42, 8675309)
-
-    def testMultiDimBroadcast(self):
-        X = self.data_12 + self.data_1
-        self.assertTrue(np.allclose(X[0], 2 * self.data_1))
-        self.assertTrue(np.allclose(X[1], self.data_1 + self.data_2))
+            result = vols_1.flip(axis)
+        assert np.all(result == np.flip(data_1, axis))
+        assert isinstance(result, Volume)
+
+    # Test axis 0 raises
+    msg = r"Cannot flip axis 0: stack axis."
+    with raises(ValueError, match=msg):
+        _ = vols_1.flip(axis=0)
+
+    with raises(ValueError, match=msg):
+        _ = vols_1.flip(axis=(0, 1))
+
+
+def test_downsample():
+    vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")))
+    result = vols.downsample(8)
+    res = vols.resolution
+    ds_res = result.resolution
+
+    # check signal energy
+    assert np.allclose(
+        anorm(vols.asnumpy(), axes=(1, 2, 3)) / res,
+        anorm(result.asnumpy(), axes=(1, 2, 3)) / ds_res,
+        atol=1e-3,
+    )
+
+    # check gridpoints
+    assert np.allclose(
+        vols.asnumpy()[:, res // 2, res // 2, res // 2],
+        result.asnumpy()[:, ds_res // 2, ds_res // 2, ds_res // 2],
+        atol=1e-4,
+    )
+
+
+def test_shape(vols_1):
+    assert vols_1.shape == (N, RES, RES, RES)
+    assert vols_1.stack_shape == (N,)
+    assert vols_1.stack_ndim == 1
+    assert vols_1.n_vols == N
+
+
+def test_multi_dim_shape(vols_12):
+    assert vols_12.shape == (2, N, RES, RES, RES)
+    assert vols_12.stack_shape == (2, N)
+    assert vols_12.stack_ndim == 2
+    assert vols_12.n_vols == 2 * N
+
+
+def test_bad_key(vols_12):
+    with raises(ValueError, match=r"slice length must be"):
+        _ = vols_12[tuple(range(vols_12.ndim + 1))]
+
+
+def test_multi_dim_gets(vols_12, data_1, data_2):
+    assert np.allclose(vols_12[0], data_1)
+    # Test a slice
+    assert np.allclose(vols_12[1, 1:], data_2[1:])
+
+
+def test_multi_dim_sets(vols_12, data_1, data_2):
+    vols_12[0, 1] = 123
+    # Check the values changed
+    assert np.allclose(vols_12[0, 1], 123)
+    # and only those values changed
+    assert np.allclose(vols_12[0, 0], data_1[0])
+    assert np.allclose(vols_12[0, 2:], data_1[2:])
+    assert np.allclose(vols_12[1, :], data_2)
+
+
+def test_multi_dim_sets_slice(vols_12, data_1, data_2):
+    vols_12[0, 1:] = 456
+    # Check the values changed
+    assert np.allclose(vols_12[0, 1:], 456)
+    # and only those values changed
+    assert np.allclose(vols_12[0, 0], data_1[0])
+    assert np.allclose(vols_12[1, :], data_2)
+
+
+def test_multi_dim_reshape(vols_12, data_12):
+    X = vols_12.stack_reshape(N, 2)
+    # Compare with np.reshape of stack axes of ndarray
+    assert np.allclose(X, data_12.reshape(N, 2, RES, RES, RES))
+    # and as tuples
+    Y = vols_12.stack_reshape((N, 2))
+    assert np.allclose(X, Y)
+
+
+def test_multi_dim_flattens(vols_12, data_12):
+    X = vols_12.stack_reshape(2 * N)
+    assert np.allclose(X, data_12.reshape(-1, RES, RES, RES))
+    # and as tuples
+    Y = vols_12.stack_reshape((2 * N,))
+    np.allclose(X, Y)
+
+
+def test_multi_dim_flattens_trick(vols_12, data_12):
+    X = vols_12.stack_reshape(-1)
+    assert np.allclose(X, data_12.reshape(-1, RES, RES, RES))
+    # and as tuples
+    Y = vols_12.stack_reshape((-1,))
+    assert np.allclose(X, Y)
+
+
+def test_multi_dim_bad_reshape(vols_12):
+    # Incorrect flat shape
+    with raises(ValueError, match=r"Number of volumes"):
+        _ = vols_12.stack_reshape(8675309)
+
+    # Incorrect mdin shape
+    with raises(ValueError, match=r"Number of volumes"):
+        _ = vols_12.stack_reshape(42, 8675309)
+
+
+def test_multi_dim_broadcast(data_12, data_1, data_2):
+    X = data_12 + data_1
+    assert np.allclose(X[0], 2 * data_1)
+    assert np.allclose(X[1], data_1 + data_2)
 
 
 def test_asnumpy_readonly():
@@ -486,7 +531,7 @@ def test_asnumpy_readonly():
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def testProjectBroadcast(dtype):
+def test_project_broadcast(dtype):
     L = 32
 
     # Create stack of 3 Volumes.
