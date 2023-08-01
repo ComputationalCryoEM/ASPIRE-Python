@@ -4,7 +4,7 @@ Implements operations for diagonal matrices as used by ASPIRE.
 
 import numpy as np
 
-from .blk_diag_matrix import BlkDiagMatrix
+from .blk_diag_matrix import BlkDiagMatrix, is_scalar_type
 
 
 class DiagMatrix:
@@ -116,24 +116,13 @@ class DiagMatrix:
 
         return self.count
 
-    def _is_scalar_type(self, x):
+    def __check_compatible(self, other):
         """
-        Internal helper function checking scalar-ness for elementwise ops.
-
-        Essentially we are checking for a single numeric object, as opposed to
-        something like an `ndarray` or `DiagMatrix`. We do this by
-        checking `numpy.isscalar(x)`.
-
-        In the future this check may require extension to include ASPIRE or
-        other third party types beyond what is provided by numpy, so we
-        implement it now as a class method.
-
-        :param x: Value to check
-
-        :return: bool.
+        Sanity check two `DiagMatrix` instances are compatible
         """
 
-        return np.isscalar(x)
+        self.__check_size_compatible(other)
+        self.__check_dtype_compatible(other)
 
     def __check_size_compatible(self, other):
         """
@@ -163,17 +152,20 @@ class DiagMatrix:
                 " as appropriate."
             )
 
-    def add(self, other, inplace=False):
+    def add(self, other):
         """
         Define elementwise addition of `DiagMatrix` instances
 
         :param other: The rhs `DiagMatrix` instance.
-        :param inplace: Boolean, when set to True change values in place,
-            otherwise return a new instance (default).
         :return:  `DiagMatrix` instance with elementwise sum equal
             to self + other.
         """
-        return self._data + other._data
+
+        if not is_scalar_type(other):
+            self.__check_compatible(other)
+            other = other._data
+
+        return DiagMatrix(self._data + other)
 
     def __add__(self, other):
         """
@@ -182,13 +174,6 @@ class DiagMatrix:
 
         return self.add(other)
 
-    def __iadd__(self, other):
-        """
-        Operator overloading for in-place addition.
-        """
-
-        return self.add(other, inplace=True)
-
     def __radd__(self, other):
         """
         Convenience function for elementwise scalar addition.
@@ -196,17 +181,20 @@ class DiagMatrix:
 
         return self.add(other)
 
-    def sub(self, other, inplace=False):
+    def sub(self, other):
         """
         Define the elementwise subtraction of `DiagMatrix` instance.
 
         :param other: The rhs `DiagMatrix` instance.
-        :param inplace: Boolean, when set to True change values in place,
-            otherwise return a new instance (default).
         :return: A `DiagMatrix` instance with elementwise subraction equal to
             self - other.
         """
-        return self._data - other._data
+
+        if not is_scalar_type(other):
+            self.__check_compatible(other)
+            other = other._data
+
+        return DiagMatrix(self._data - other)
 
     def __sub__(self, other):
         """
@@ -214,16 +202,6 @@ class DiagMatrix:
         """
 
         return self.sub(other)
-
-    def __isub__(self, other):
-        """
-        Operator overloading for in-place subtraction.
-        """
-
-        if self._is_scalar_type(other):
-            return self.__scalar_sub(other, inplace=True)
-
-        return self.sub(other, inplace=True)
 
     def __rsub__(self, other):
         """
@@ -236,24 +214,17 @@ class DiagMatrix:
 
         return -(self - other)
 
-    def matmul(self, other, inplace=False):
+    def matmul(self, other):
         """
         Compute the matrix multiplication of two `DiagMatrix` instances.
 
         :param other: The rhs `DiagMatrix`, `BlkDiagMatrix` or 2d dense Numpy array.
-        :param inplace: Boolean, when set to True change values in place,
-            otherwise return a new instance (default).
         :return: Returns `self` @ `other`, as type of `other`
         """
         if isinstance(other, DiagMatrix):
-            res = self.mul(other, inplace=inplace)
+            res = self.mul(other)
 
         elif isinstance(other, BlkDiagMatrix):
-            # inplace infeasable, as the result will not be DiagMatrix.
-            if inplace:
-                raise RuntimeError(
-                    "Inplace infeasable between DiagMatrix and BlkDiagMatrix matrix."
-                )
             res = BlkDiagMatrix.zeros_like(other)
 
             ind = 0
@@ -264,12 +235,6 @@ class DiagMatrix:
                 ind += i
 
         elif isinstance(other, np.ndarray):
-            # inplace infeasable, as the result will not be DiagMatrix.
-            if inplace:
-                raise RuntimeError(
-                    "Inplace infeasable between DiagMatrix and dense ndarray matrix."
-                )
-
             # For now, lets just interop with 2D `other` arrays,
             # assumed to represent matrices.
             if other.ndim != 2:
@@ -327,32 +292,18 @@ class DiagMatrix:
 
         return lhs * self._data[np.newaxis]
 
-    def __imatmul__(self, other):
-        """
-        Operator overload for in-place matrix multiply of `DiagMatrix`
-         instances.
-        """
-
-        return self.matmul(other, inplace=True)
-
-    def mul(self, other, inplace=False):
+    def mul(self, other):
         """
         Compute the elementwise multiplication of a `DiagMatrix` instance and a
         scalar or another `DiagMatrix`.
 
         :param other: The rhs in the multiplication..
-        :param inplace: Boolean, when set to True change values in place,
-            otherwise return a new instance (default).
         :return: A `DiagMatrix` of self * other.
         """
         if isinstance(other, DiagMatrix):
-            if inplace:
-                self._data *= other._data
-                res = self
-            else:
-                res = DiagMatrix(self._data * other._data)
-        # elif isinstance(other, np.ndarray):
-        #     res = self * DiagMatrix(other)
+            res = DiagMatrix(self._data * other._data)
+        elif isinstance(other, np.ndarray):
+            res = self * DiagMatrix(other)
         elif isinstance(other, BlkDiagMatrix):
             raise NotImplementedError("not yet")
         else:  # scalar
@@ -366,13 +317,6 @@ class DiagMatrix:
         """
 
         return self.mul(val)
-
-    def __imul__(self, val):
-        """
-        Operator overload for in-place `DiagMatrix` scalar multiply.
-        """
-
-        return self.mul(val, inplace=True)
 
     def __rmul__(self, other):
         """
@@ -414,38 +358,22 @@ class DiagMatrix:
 
         return self.abs()
 
-    def pow(self, val, inplace=False):
+    def pow(self, val):
         """
         Compute the elementwise power of `DiagMatrix` instance.
 
-        :param inplace: Boolean, when set to True change values in place,
-            otherwise return a new instance (default).
+        :param val: Value to exponentiate by.
         :return: A `DiagMatrix` like self.
         """
 
-        if inplace:
-            self._data[:] = self._data**val
-            res = self
-        else:
-            res = DiagMatrix(self._data**val)
-
-        return res
+        return DiagMatrix(self._data**val)
 
     def __pow__(self, val):
         """
-        Operator overload for inplace pow of `DiagMatrix` instance.
+        Operator overload pow of `DiagMatrix` instance.
         """
 
         return self.pow(val)
-
-    def __ipow__(self, val):
-        """
-        Compute the in-place elementwise power of `DiagMatrix` instance.
-
-        :return: self raised to power, elementwise.
-        """
-
-        return self.pow(val, inplace=True)
 
     @property
     def norm(self):

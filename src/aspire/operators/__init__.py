@@ -1,4 +1,4 @@
-from .blk_diag_matrix import BlkDiagMatrix
+from .blk_diag_matrix import BlkDiagMatrix, is_scalar_type
 from .diag_matrix import DiagMatrix
 from .filters import (
     ArrayFilter,
