@@ -7,7 +7,8 @@ from itertools import product
 import numpy as np
 import pytest
 
-from aspire.operators import DiagMatrix
+from aspire.operators import BlkDiagMatrix, DiagMatrix
+from aspire.utils import utest_tolerance
 
 MATRIX_SIZE = [
     32,
@@ -40,6 +41,21 @@ def matrix_size(request):
 @pytest.fixture(params=STACKS, ids=lambda x: f"stack={x}")
 def stack(request):
     return request.param
+
+
+@pytest.fixture
+def blk_diag(matrix_size, dtype):
+    """
+    Construct a BlkDiagMatrix compatible in size with diag_matrix_fixture.
+    """
+    # block sizes are not important for testing, so long as we have a few.
+    partition = [
+        (2, 2),
+    ] * (matrix_size // 2) + [
+        (1, 1),
+    ] * (matrix_size % 2)
+
+    return BlkDiagMatrix.ones(partition, dtype=dtype)
 
 
 @pytest.fixture
@@ -348,3 +364,40 @@ def test_empty(diag_matrix_fixture):
     d = DiagMatrix.empty(d_np.shape)
 
     np.testing.assert_equal(d.shape, d_np.shape)
+
+
+def test_lr_scale(diag_matrix_fixture, blk_diag):
+    """
+    Test `lr_scale` method.
+    """
+
+    d1 = diag_matrix_fixture[0]
+
+    if d1.stack_shape != ():
+        pytest.skip(reason="Not implemented yet.")
+
+    # expand A @ A.T
+    AA = d1.asnumpy()[:, None] @ d1.asnumpy()[None, :]
+    ref = AA * blk_diag.dense()  # zero out off block elem
+
+    # Test default unit weight scaling
+    x = d1.lr_scale(blk_diag.partition)
+    np.testing.assert_allclose(x.dense(), ref, atol=utest_tolerance(d1.dtype))
+
+    # Test with different weights
+    w = np.arange(d1.count, dtype=d1.dtype)
+    x = d1.lr_scale(blk_diag.partition, weights=w)
+    ref = (w * AA) * blk_diag.dense()  # zero out off block elem
+    np.testing.assert_allclose(x.dense(), ref, atol=utest_tolerance(d1.dtype))
+
+
+def test_bad_partition():
+    d = DiagMatrix(np.empty(8))
+
+    partition = [(9, 9)]
+    with pytest.raises(RuntimeError, match=r".*count.*does not match.*"):
+        _ = d.lr_scale(partition)
+
+    partition = [(4, 4), (3, 4)]
+    with pytest.raises(RuntimeError, match=r".*was not square.*"):
+        _ = d.lr_scale(partition)
