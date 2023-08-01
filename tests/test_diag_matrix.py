@@ -220,6 +220,14 @@ def test_diag_diag_scalar_add(diag_matrix_fixture):
 
     np.testing.assert_allclose(d1 + 123, d_np[0] + 123)
 
+def test_diag_diag_scalar_radd(diag_matrix_fixture):
+    """
+    Test addition.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    np.testing.assert_allclose(123 + d1 , d_np[0] + 123)
+
 
 def test_diag_diag_sub(diag_matrix_fixture):
     """
@@ -239,6 +247,16 @@ def test_diag_diag_scalar_sub(diag_matrix_fixture):
     d1 = d1 - 123
 
     np.testing.assert_allclose(d1, d_np[0] - 123)
+
+def test_diag_diag_scalar_rsub(diag_matrix_fixture):
+    """
+    Test subtraction.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    d1 = 123 - d1
+
+    np.testing.assert_allclose(d1, 123 - d_np[0])
 
 
 def test_diag_diag_mul(diag_matrix_fixture):
@@ -392,6 +410,9 @@ def test_lr_scale(diag_matrix_fixture, blk_diag):
 
 
 def test_bad_partition():
+    """
+    Test incorrect partitions raise an error.
+    """
     d = DiagMatrix(np.empty(8))
 
     partition = [(9, 9)]
@@ -401,3 +422,29 @@ def test_bad_partition():
     partition = [(4, 4), (3, 4)]
     with pytest.raises(RuntimeError, match=r".*was not square.*"):
         _ = d.lr_scale(partition)
+
+def test_as_blk_diag(matrix_size, blk_diag):
+    """
+    Test conversion from `DiagMatrix` to `BlkDiagMatrix`.
+
+    Note this relies on `BlkDiagMatrix.dense`.
+    """
+
+    # Construct via Numpy.
+    d_np = np.random.randn(matrix_size).astype(blk_diag.dtype)
+    A = np.diag(d_np)
+
+    # Create DiagMatrix then convert to BlkDiagMatrix
+    d = DiagMatrix(d_np)
+    B = d.as_blk_diag(blk_diag.partition)
+
+    # Compare the dense B with the dense A.
+    np.testing.assert_equal(B.dense(), A)
+
+def test_eigs(diag_matrix_fixture):
+    """
+    Test the `eigvals` util method.
+    """
+    d, _, d_np = diag_matrix_fixture
+
+    np.testing.assert_equal(d.eigvals(), d_np[0])
