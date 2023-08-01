@@ -21,13 +21,12 @@ class DiagMatrix:
         Instantiate a `DiagMatrix` with Numpy `data` shaped (...., self.count),
         where `self.count` is the length of one diagonal vector.
 
-        Slower axes are taken to be stack axes.
-        Inputs of zero or one dimension are taken to be a stack of one.
+        Slower axes (if present) are taken to be stack axes.
 
         :param data: Diagonal matrix entries.
         :param dtype: Datatype. Default of `None` will attempt
-        passthrough of `data.dtype`.  When explicitly provided, will
-        attempt casting `data` as needed.
+            passthrough of `data.dtype`.  When explicitly provided, will
+            attempt casting `data` as needed.
         :return: `DiagMatrix` instance.
         """
 
@@ -36,10 +35,15 @@ class DiagMatrix:
             dtype = data.dtype
         self.dtype = np.dtype(dtype)
 
+        # Assign the `data`
         self._data = data.astype(self.dtype, copy=False)
+
+        # Assign shapes from `data`
         self.count = self._data.shape[-1]
         self.stack_shape = self._data.shape[:-1]
         self.shape = self._data.shape
+        # Total number of stack elements
+        self.size = np.prod(self.stack_shape)
 
         # Numpy interop
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
@@ -52,7 +56,7 @@ class DiagMatrix:
 
         :*args: Integer(s) or tuple describing the intended shape.
 
-        :returns: DiagMatrix instance.
+        :returns: `DiagMatrix` instance.
         """
 
         # If we're passed a tuple, use that
@@ -63,14 +67,22 @@ class DiagMatrix:
             shape = args
 
         # Sanity check the size
-        if shape != (-1,) and np.prod(shape) != self.n_stack:
+        if shape != (-1,) and np.prod(shape) != self.size:
             raise ValueError(
-                f"Number of images {self.n_stack} cannot be reshaped to {shape}."
+                f"Number of images {self.size} cannot be reshaped to {shape}."
             )
 
         return DiagMatrix(self._data.reshape(*shape, self._data.shape[-1]))
 
     def asnumpy(self):
+        """
+        Return data as Numpy array.
+
+        Note this is a read-only view.
+
+        :return: Numpy array of `self.dtype`.
+        """
+
         view = self._data.view()
         view.flags.writeable = False
         return view
@@ -83,9 +95,9 @@ class DiagMatrix:
 
     def copy(self):
         """
-        Returns new DiagMatrix which is a copy of `self`.
+        Returns new `DiagMatrix` which is a copy of `self`.
 
-        :return DiagMatrix like self
+        :return `DiagMatrix` like self
         """
 
         return DiagMatrix(self._data.copy())
@@ -125,10 +137,10 @@ class DiagMatrix:
 
     def __check_size_compatible(self, other):
         """
-        Sanity check two DiagMatrix instances are compatible in size
+        Sanity check two `DiagMatrix` instances are compatible in size
         for addition operators. (Same size)
 
-        :param other: The DiagMatrix to compare with self.
+        :param other: The `DiagMatrix` to compare with self.
         """
 
         if self.count != other.count:
@@ -139,9 +151,9 @@ class DiagMatrix:
 
     def __check_dtype_compatible(self, other):
         """
-        Sanity check two DiagMatrix instances are compatible in dtype.
+        Sanity check two `DiagMatrix` instances are compatible in dtype.
 
-        :param other: The DiagMatrix to compare with self.
+        :param other: The `DiagMatrix` to compare with self.
         """
 
         if self.dtype != other.dtype:
@@ -153,12 +165,12 @@ class DiagMatrix:
 
     def add(self, other, inplace=False):
         """
-        Define elementwise addition of DiagMatrix instances
+        Define elementwise addition of `DiagMatrix` instances
 
-        :param other: The rhs DiagMatrix instance.
+        :param other: The rhs `DiagMatrix` instance.
         :param inplace: Boolean, when set to True change values in place,
             otherwise return a new instance (default).
-        :return:  DiagMatrix instance with elementwise sum equal
+        :return:  `DiagMatrix` instance with elementwise sum equal
             to self + other.
         """
         return self._data + other._data
@@ -186,12 +198,12 @@ class DiagMatrix:
 
     def sub(self, other, inplace=False):
         """
-        Define the element subtraction of DiagMatrix instance.
+        Define the elementwise subtraction of `DiagMatrix` instance.
 
-        :param other: The rhs DiagMatrix instance.
+        :param other: The rhs `DiagMatrix` instance.
         :param inplace: Boolean, when set to True change values in place,
             otherwise return a new instance (default).
-        :return: A DiagMatrix instance with elementwise subraction equal to
+        :return: A `DiagMatrix` instance with elementwise subraction equal to
             self - other.
         """
         return self._data - other._data
@@ -226,7 +238,7 @@ class DiagMatrix:
 
     def matmul(self, other, inplace=False):
         """
-        Compute the matrix multiplication of two DiagMatrix instances.
+        Compute the matrix multiplication of two `DiagMatrix` instances.
 
         :param other: The rhs `DiagMatrix`, `BlkDiagMatrix` or 2d dense Numpy array.
         :param inplace: Boolean, when set to True change values in place,
@@ -278,14 +290,14 @@ class DiagMatrix:
 
     def __matmul__(self, other):
         """
-        Operator overload for matrix multiply of DiagMatrix instances.
+        Operator overload for matrix multiply of `DiagMatrix` instances.
         """
 
         return self.matmul(other)
 
     def __rmatmul__(self, lhs):
         """
-        Compute the right matrix multiplication with a DiagMatrix instance,
+        Compute the right matrix multiplication with a `DiagMatrix` instance,
         and a numpy array, `lhs` @ `self`.
 
         :param other: The lhs Numpy instance.
@@ -317,7 +329,7 @@ class DiagMatrix:
 
     def __imatmul__(self, other):
         """
-        Operator overload for in-place matrix multiply of DiagMatrix
+        Operator overload for in-place matrix multiply of `DiagMatrix`
          instances.
         """
 
@@ -325,13 +337,13 @@ class DiagMatrix:
 
     def mul(self, other, inplace=False):
         """
-        Compute the elementwise multiplication of a DiagMatrix instance and a
-        scalar or another DiagMatrix.
+        Compute the elementwise multiplication of a `DiagMatrix` instance and a
+        scalar or another `DiagMatrix`.
 
         :param other: The rhs in the multiplication..
         :param inplace: Boolean, when set to True change values in place,
             otherwise return a new instance (default).
-        :return: A DiagMatrix of self * other.
+        :return: A `DiagMatrix` of self * other.
         """
         if isinstance(other, DiagMatrix):
             if inplace:
@@ -350,14 +362,14 @@ class DiagMatrix:
 
     def __mul__(self, val):
         """
-        Operator overload for DiagMatrix scalar multiply.
+        Operator overload for `DiagMatrix` scalar multiply.
         """
 
         return self.mul(val)
 
     def __imul__(self, val):
         """
-        Operator overload for in-place DiagMatrix scalar multiply.
+        Operator overload for in-place `DiagMatrix` scalar multiply.
         """
 
         return self.mul(val, inplace=True)
@@ -373,41 +385,42 @@ class DiagMatrix:
 
     def neg(self):
         """
-        Compute the unary negation of DiagMatrix instance.
+        Compute the unary negation of `DiagMatrix` instance.
 
-        :return: A DiagMatrix like self.
+        :return: A `DiagMatrix` like self.
         """
         return DiagMatrix(-self._data)
 
     def __neg__(self):
         """
-        Operator overload for unary negation of DiagMatrix instance.
+        Operator overload for unary negation of `DiagMatrix` instance.
         """
 
         return self.neg()
 
     def abs(self):
         """
-        Compute the elementwise absolute value of DiagMatrix instance.
+        Compute the elementwise absolute value of `DiagMatrix` instance.
 
-        :return: A DiagMatrix like self.
+        :return: A `DiagMatrix` like self.
         """
-        pass
+
+        return DiagMatrix(np.abs(self._data))
 
     def __abs__(self):
         """
-        Operator overload for absolute value of DiagMatrix instance.
+        Operator overload for absolute value of `DiagMatrix` instance.
         """
 
-        return DiagMatrix(self.abs(self._data))
+        return self.abs()
 
     def pow(self, val, inplace=False):
         """
-        Compute the elementwise power of DiagMatrix instance.
+        Compute the elementwise power of `DiagMatrix` instance.
 
         :param inplace: Boolean, when set to True change values in place,
             otherwise return a new instance (default).
-        :return: A DiagMatrix like self.
+        :return: A `DiagMatrix` like self.
         """
 
         if inplace:
@@ -420,14 +433,14 @@ class DiagMatrix:
 
     def __pow__(self, val):
         """
-        Operator overload for inplace pow of DiagMatrix instance.
+        Operator overload for inplace pow of `DiagMatrix` instance.
         """
 
         return self.pow(val)
 
     def __ipow__(self, val):
         """
-        Compute the in-place elementwise power of DiagMatrix instance.
+        Compute the in-place elementwise power of `DiagMatrix` instance.
 
         :return: self raised to power, elementwise.
         """
@@ -437,9 +450,9 @@ class DiagMatrix:
     @property
     def norm(self):
         """
-        Compute the norm of a DiagMatrix instance.
+        Compute the norm of a `DiagMatrix` instance.
 
-        :return: The norm of the DiagMatrix instance.
+        :return: The norm of the `DiagMatrix` instance.
         """
         # Elements of a diag matrix are its singular values,
         #   and the norm is equal to the largest singular value.
@@ -449,9 +462,9 @@ class DiagMatrix:
     # in code that also uses with BlkDiagMatrix.
     def transpose(self):
         """
-        Get the transpose matrix of a DiagMatrix instance.
+        Get the transpose matrix of a `DiagMatrix` instance.
 
-        :return: The corresponding transpose form as a DiagMatrix.
+        :return: The corresponding transpose form as a `DiagMatrix`.
         """
         return self.copy()
 
@@ -466,9 +479,9 @@ class DiagMatrix:
     @property
     def dense(self):
         """
-        Convert DiagMatrix instance into full matrix.
+        Convert `DiagMatrix` instance into full matrix.
 
-        :return: The DiagMatrix instance including the zero elements of
+        :return: The `DiagMatrix` instance including the zero elements of
         non-diagonal elements.
         """
 
@@ -529,13 +542,13 @@ class DiagMatrix:
     @staticmethod
     def empty(n, dtype=np.float32):
         """
-        Instantiate an empty DiagMatrix with length `n`.
+        Instantiate an empty `DiagMatrix` with length `n`.
         This corresponds to the diag(A) where A is (n,n).
         Note, like Numpy, empty values are uninitialized.
 
         :param n: Length of diagonal.
         :param dtype: Datatype, defaults to np.float32.
-        :return: DiagMatrix instance.
+        :return: `DiagMatrix` instance.
         """
 
         return DiagMatrix(np.empty(n, dtype=dtype))
@@ -543,12 +556,12 @@ class DiagMatrix:
     @staticmethod
     def zeros(n, dtype=np.float32):
         """
-        Instantiate a zero intialized DiagMatrix with length `n`.
+        Instantiate a zero intialized `DiagMatrix` with length `n`.
         This corresponds to the diag(A) where A is (n,n).
 
         :param n: Length of diagonal.
         :param dtype: Datatype, defaults to np.float32.
-        :return: DiagMatrix instance.
+        :return: `DiagMatrix` instance.
         """
 
         return DiagMatrix(np.zeros(n, dtype=dtype))
@@ -556,12 +569,12 @@ class DiagMatrix:
     @staticmethod
     def ones(n, dtype=np.float32):
         """
-        Instantiate ones intialized DiagMatrix with length `n`.
+        Instantiate ones intialized `DiagMatrix` with length `n`.
         This corresponds to the diag(A) where A is (n,n).
 
         :param n: Length of diagonal.
         :param dtype: Datatype, defaults to np.float32.
-        :return: DiagMatrix instance.
+        :return: `DiagMatrix` instance.
         """
 
         return DiagMatrix(np.ones(n, dtype=dtype))
@@ -569,12 +582,12 @@ class DiagMatrix:
     @staticmethod
     def eye(n, dtype=np.float32):
         """
-        Build a DiagMatrix eye (identity) matrix.
+        Build a `DiagMatrix` eye (identity) matrix.
         This is simply an alias for `ones`.
 
         :param n: Length of diagonal.
         :param dtype: Datatype, defaults to np.float32.
-        :return: DiagMatrix instance.
+        :return: `DiagMatrix` instance.
         """
 
         return DiagMatrix.ones(n, dtype=dtype)
