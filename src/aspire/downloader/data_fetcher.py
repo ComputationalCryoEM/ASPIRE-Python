@@ -7,7 +7,7 @@ from aspire.downloader import file_to_method_map, registry, registry_urls
 from aspire.volume import Volume
 
 # Initialize pooch data fetcher instance.
-data_fetcher = pooch.create(
+_data_fetcher = pooch.create(
     # Set the cache path defined in the config. By default, the cache
     # folder operating system dependent, set by `pooch.os_cache`.
     # Pooch uses appdirs (https://github.com/ActiveState/appdirs) to
@@ -34,9 +34,9 @@ def fetch_data(dataset_name):
     :param dataset_name: The file name (as appears in the registry) to
         fetch from local storage.
     :return: The absolute path (including the file name) of the file in
-        local stroage.
+        local storage.
     """
-    return data_fetcher.fetch(dataset_name)
+    return _data_fetcher.fetch(dataset_name)
 
 
 def download_all():
@@ -59,7 +59,7 @@ def remove_downloads():
     """
     Remove the downloads directory.
     """
-    shutil.rmtree(data_fetcher.abspath)
+    shutil.rmtree(_data_fetcher.abspath)
 
 
 def available_downloads():
