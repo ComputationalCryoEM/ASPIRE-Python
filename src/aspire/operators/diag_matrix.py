@@ -465,7 +465,7 @@ class DiagMatrix:
 
         :return: Array of eigvals, with length equal to the fully expanded matrix diagonal.
         """
-        return self._data.asnumpy()
+        return self.asnumpy()
 
     @staticmethod
     def empty(n, dtype=np.float32):
@@ -526,6 +526,11 @@ class DiagMatrix:
 
         :return: `BlkDiagMatrix`
         """
+        if self.stack_shape != ():
+            raise RuntimeError(
+                f"as_blk_diag only implemented for singletons at this time, received {self.stack_shape}."
+            )
+
         B = BlkDiagMatrix(partition, dtype=self.dtype)
         ind = 0
         for b, p in enumerate(partition):
