@@ -11,15 +11,15 @@ class DiagMatrix:
     """
     Implements operations for diagonal matrices as used by ASPIRE.
 
-    Currently DiagMatrix is implemented as the equivalent of square
+    Currently `DiagMatrix` is implemented as the equivalent of square
     matrices.  In the future it can be extended to support
     applications with rectangular shapes.
     """
 
     def __init__(self, data, dtype=None):
         """
-        Instantiate a `DiagMatrix` with Numpy `data` shaped (...., self.n),
-        where `self.n` is the length of one diagonal vector.
+        Instantiate a `DiagMatrix` with Numpy `data` shaped (...., self.count),
+        where `self.count` is the length of one diagonal vector.
 
         Slower axes are taken to be stack axes.
         Inputs of zero or one dimension are taken to be a stack of one.
@@ -37,7 +37,7 @@ class DiagMatrix:
         self.dtype = np.dtype(dtype)
 
         self._data = data.astype(self.dtype, copy=False)
-        self.n = self._data.shape[-1]
+        self.count = self._data.shape[-1]
         self.stack_shape = self._data.shape[:-1]
         self.shape = self._data.shape
 
@@ -102,7 +102,7 @@ class DiagMatrix:
         Convenience function for getting `n`.
         """
 
-        return self.n
+        return self.count
 
     def _is_scalar_type(self, x):
         """
@@ -131,9 +131,10 @@ class DiagMatrix:
         :param other: The DiagMatrix to compare with self.
         """
 
-        if self.n != other.n:
+        if self.count != other.count:
             raise RuntimeError(
-                "DiagMatrix instances are " f"not same dimension {self.n} != {other.n}"
+                "DiagMatrix instances are "
+                f"not same dimension {self.count} != {other.count}"
             )
 
     def __check_dtype_compatible(self, other):
@@ -483,7 +484,7 @@ class DiagMatrix:
         # Convert to np.array
         dense = np.concatenate(dense)
         # Reshape to original stack shape.
-        return dense.reshape(*original_stack_shape, self.n, self.n)
+        return dense.reshape(*original_stack_shape, self.count, self.count)
 
     def apply(self, X):
         """
@@ -596,7 +597,7 @@ class DiagMatrix:
 
     def yunpeng(self, partition, weights=None):
         if weights is None:
-            weights = np.ones(self.n, dtype=self.dtype)
+            weights = np.ones(self.count, dtype=self.dtype)
 
         B = BlkDiagMatrix(partition, dtype=self.dtype)
 
