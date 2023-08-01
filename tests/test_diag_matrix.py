@@ -158,24 +158,24 @@ def test_conversion():
     d_np = np.arange(42)  # defaults double
     A_np = np.diag(d_np)  # make dense with numpy
     # hrmm singleton
-    np.testing.assert_allclose(DiagMatrix(d_np).dense, A_np)
+    np.testing.assert_allclose(DiagMatrix(d_np).dense(), A_np)
 
     # One Dimension singleton
     d_np = np.arange(42).reshape(1, 42)
-    diag = DiagMatrix(d_np).dense
+    diag = DiagMatrix(d_np).dense()
     for i, d in enumerate(d_np):
         np.testing.assert_allclose(diag[i], np.diag(d))
 
     # One Dimension stack
     d_np = np.arange(2 * 42).reshape(2, 42)
-    diag = DiagMatrix(d_np).dense
+    diag = DiagMatrix(d_np).dense()
     for i, d in enumerate(d_np):
         np.testing.assert_allclose(diag[i], np.diag(d))
 
     # Two Dimension stack
     stack_shape = (2, 3)
     d_np = np.arange(np.prod(stack_shape) * 42).reshape(*stack_shape, 42)
-    stackA = DiagMatrix(d_np).dense
+    stackA = DiagMatrix(d_np).dense()
     for i, j in product(range(stack_shape[0]), range(stack_shape[1])):
         np.testing.assert_allclose(stackA[i][j], np.diag(d_np[i][j]))
 
@@ -220,13 +220,14 @@ def test_diag_diag_scalar_add(diag_matrix_fixture):
 
     np.testing.assert_allclose(d1 + 123, d_np[0] + 123)
 
+
 def test_diag_diag_scalar_radd(diag_matrix_fixture):
     """
     Test addition.
     """
     d1, _, d_np = diag_matrix_fixture
 
-    np.testing.assert_allclose(123 + d1 , d_np[0] + 123)
+    np.testing.assert_allclose(123 + d1, d_np[0] + 123)
 
 
 def test_diag_diag_sub(diag_matrix_fixture):
@@ -247,6 +248,7 @@ def test_diag_diag_scalar_sub(diag_matrix_fixture):
     d1 = d1 - 123
 
     np.testing.assert_allclose(d1, d_np[0] - 123)
+
 
 def test_diag_diag_scalar_rsub(diag_matrix_fixture):
     """
@@ -348,8 +350,8 @@ def test_transpose(diag_matrix_fixture):
     A = np.diag(d_np.reshape(-1, d_np.shape[-1])[0])
     ref = A.T.copy()
 
-    np.testing.assert_allclose(d1.stack_reshape(-1).T.dense[0], ref)
-    np.testing.assert_allclose(d1.stack_reshape(-1).transpose().dense[0], ref)
+    np.testing.assert_allclose(d1.stack_reshape(-1).T.dense()[0], ref)
+    np.testing.assert_allclose(d1.stack_reshape(-1).transpose().dense()[0], ref)
 
 
 def test_ones(diag_matrix_fixture):
@@ -391,22 +393,25 @@ def test_lr_scale(diag_matrix_fixture, blk_diag):
 
     d1 = diag_matrix_fixture[0]
 
+    # Check we raise combined stacks with BlkDiagMatrix.
+
     if d1.stack_shape != ():
-        pytest.skip(reason="Not implemented yet.")
+        with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
+            _ = d1.lr_scale(blk_diag.partition)
+    else:
+        # expand A @ A.T
+        AA = d1.asnumpy()[:, None] @ d1.asnumpy()[None, :]
+        ref = AA * blk_diag.dense()  # zero out off block elem
 
-    # expand A @ A.T
-    AA = d1.asnumpy()[:, None] @ d1.asnumpy()[None, :]
-    ref = AA * blk_diag.dense()  # zero out off block elem
+        # Test default unit weight scaling
+        x = d1.lr_scale(blk_diag.partition)
+        np.testing.assert_allclose(x.dense(), ref, atol=utest_tolerance(d1.dtype))
 
-    # Test default unit weight scaling
-    x = d1.lr_scale(blk_diag.partition)
-    np.testing.assert_allclose(x.dense(), ref, atol=utest_tolerance(d1.dtype))
-
-    # Test with different weights
-    w = np.arange(d1.count, dtype=d1.dtype)
-    x = d1.lr_scale(blk_diag.partition, weights=w)
-    ref = (w * AA) * blk_diag.dense()  # zero out off block elem
-    np.testing.assert_allclose(x.dense(), ref, atol=utest_tolerance(d1.dtype))
+        # Test with different weights
+        w = np.arange(d1.count, dtype=d1.dtype)
+        x = d1.lr_scale(blk_diag.partition, weights=w)
+        ref = (w * AA) * blk_diag.dense()  # zero out off block elem
+        np.testing.assert_allclose(x.dense(), ref, atol=utest_tolerance(d1.dtype))
 
 
 def test_bad_partition():
@@ -422,6 +427,7 @@ def test_bad_partition():
     partition = [(4, 4), (3, 4)]
     with pytest.raises(RuntimeError, match=r".*was not square.*"):
         _ = d.lr_scale(partition)
+
 
 def test_as_blk_diag(matrix_size, blk_diag):
     """
@@ -441,6 +447,7 @@ def test_as_blk_diag(matrix_size, blk_diag):
     # Compare the dense B with the dense A.
     np.testing.assert_equal(B.dense(), A)
 
+
 def test_eigs(diag_matrix_fixture):
     """
     Test the `eigvals` util method.
@@ -448,3 +455,66 @@ def test_eigs(diag_matrix_fixture):
     d, _, d_np = diag_matrix_fixture
 
     np.testing.assert_equal(d.eigvals(), d_np[0])
+
+
+def test_eye(matrix_size, dtype):
+    d = DiagMatrix.eye(matrix_size, dtype=dtype)
+
+    np.testing.assert_equal(d, np.ones(matrix_size, dtype=dtype))
+
+
+def test_apply(diag_matrix_fixture):
+    d1, _, d_np = diag_matrix_fixture
+
+    x = d1.apply(d_np)
+
+    np.testing.assert_allclose(x, d_np[0][None, :] * d_np)
+
+
+def test_rapply(diag_matrix_fixture):
+    d1, _, d_np = diag_matrix_fixture
+
+    x = d1.rapply(d_np)
+
+    np.testing.assert_allclose(x, (d_np * d_np[0]))
+
+
+def test_solve(diag_matrix_fixture):
+    """
+    Test `solve`.
+    """
+    a, _, d_np = diag_matrix_fixture
+
+    b = np.arange(a.count, dtype=a.dtype)
+
+    # Test we raise combining stacks with BlkDiagMatrix.
+    if a.stack_shape != ():
+        with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
+            _ = a.solve(b)
+
+    else:
+        x = a.solve(b)
+
+        np.testing.assert_allclose(a.dense() @ x, b, atol=utest_tolerance(a.dtype))
+
+
+def test_diag_blk_mul(diag_matrix_fixture, blk_diag):
+    """
+    Test mixing `BlkDiagMatrix` with `DiagMatrix` element-wise multiplication.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    # Test we raise combining stacks with BlkDiagMatrix.
+    if d1.stack_shape != ():
+        with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
+            _ = d1 * blk_diag
+
+    else:
+        # Compare commutation (tests rmul with blk)
+        db = d1 * blk_diag
+        bd = blk_diag * d1
+        np.testing.assert_allclose(db.dense(), bd.dense())
+
+        # Compare with numpy
+        ref = d1.dense() * blk_diag.dense()
+        np.testing.assert_allclose((d1 * blk_diag).dense(), ref)
