@@ -107,6 +107,18 @@ def test_conversion():
         np.testing.assert_allclose(stackA[i][j], np.diag(d_np[i][j]))
 
 
+def test_stack_reshape_tuple(diag_matrix_fixture, stack):
+    """
+    Test stack reshape with tuple.
+    """
+    d1, _, _ = diag_matrix_fixture
+
+    # This should be an no-op, but will excercise the code.
+    x = d1.stack_reshape(stack)
+
+    np.testing.assert_allclose(x, d1)
+
+
 def test_diag_diag_add(diag_matrix_fixture):
     """
     Test addition.
@@ -161,6 +173,19 @@ def test_neg(diag_matrix_fixture):
     d1, _, d_np = diag_matrix_fixture
 
     np.testing.assert_allclose(-d1, -d_np[0])
+
+
+def test_abs(diag_matrix_fixture):
+    """
+    Test absolute value method.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    # Compute reference via Numpy
+    ref = np.abs(d_np[0])
+
+    np.testing.assert_allclose(d1.abs(), ref)
+    np.testing.assert_allclose(abs(d1), ref)
 
 
 def test_pow(diag_matrix_fixture):
