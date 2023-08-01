@@ -55,7 +55,7 @@ def download_all():
     return file_paths
 
 
-def clean_downloads():
+def remove_downloads():
     """
     Remove the downloads directory.
     """
