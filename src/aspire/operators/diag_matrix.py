@@ -536,7 +536,25 @@ class DiagMatrix:
 
         return B
 
-    def yunpeng(self, partition, weights=None):
+    # TODO, discuss name.
+    def lr_scale(self, partition, weights=None):
+        """
+        Performs L and R scaling by this `DiagMatrix` instance
+        simultaneously, returning the result as a `BlkDiagMatrix`
+        having `partition`.
+
+        Given `weights` this computes B = w * A * A.T,
+        where A is this `DiagMatrix` instance.
+
+        :partition: Partition of output `BlkDiagMatrix`.
+        :weights: Optional weight vector, defaults to ones.
+        :return: `BlkDiagMatrix`
+        """
+        if self.stack_shape != ():
+            raise RuntimeError(
+                f"lr_scale only implemented for singletons at this time, received {self.stack_shape}."
+            )
+
         if weights is None:
             weights = np.ones(self.count, dtype=self.dtype)
 
@@ -544,12 +562,18 @@ class DiagMatrix:
 
         ind = 0
         for block, p in enumerate(partition):
-            assert p[0] == p[1]  # squareness
+            if p[0] != p[1]:
+                raise RuntimeError(f"Partition block {block} was not square {p}.")
             j = p[0]
             Ai = self._data[ind : ind + j].reshape(-1, 1)
             wi = weights[ind : ind + j]
             B[block] = wi * Ai * Ai.T
             ind += j
+
+        if ind != self.count:
+            raise RuntimeError(
+                f"Partition count {ind} does not match DiagMatrix count {self.count}."
+            )
 
         return B
 
