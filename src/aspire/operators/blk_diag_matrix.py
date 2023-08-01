@@ -465,28 +465,22 @@ class BlkDiagMatrix:
         :return: A BlkDiagMatrix of self * other.
         """
 
-        if isinstance(val, BlkDiagMatrix):
-            raise RuntimeError(
-                "Attempt numeric multiplication (*,mul) of two "
-                "BlkDiagMatrix instances, try (matmul,@)."
-            )
-
-        elif not is_scalar_type(val):
-            raise RuntimeError(
-                "Attempt numeric multiplication (*,mul) of a "
-                "BlkDiagMatrix and {}.".format(type(val))
-            )
+        # Convert scalar to reduce code branching.
+        if is_scalar_type(val):
+            val = np.full((self.nblocks), fill_value=val, dtype=self.dtype)
+        elif not isinstance(val, BlkDiagMatrix):
+            val = val.as_blk_diag(self.partition)
 
         if inplace:
             for i in range(self.nblocks):
-                self[i] *= val
+                self[i] *= val[i]
 
             C = self
         else:
             C = BlkDiagMatrix(self.partition, dtype=self.dtype)
 
             for i in range(self.nblocks):
-                C[i] = self[i] * val
+                C[i] = self[i] * val[i]
 
         return C
 

@@ -298,14 +298,18 @@ class DiagMatrix:
         scalar or another `DiagMatrix`.
 
         :param other: The rhs in the multiplication..
-        :return: A `DiagMatrix` of self * other.
+        :return: A `self` * `other` as type of `other`.
         """
         if isinstance(other, DiagMatrix):
             res = DiagMatrix(self._data * other._data)
         elif isinstance(other, np.ndarray):
             res = self * DiagMatrix(other)
         elif isinstance(other, BlkDiagMatrix):
-            raise NotImplementedError("not yet")
+            if self.stack_shape != ():
+                raise RuntimeError(
+                    f"Mixed `mul` only implemented for singletons at this time, received {self.stack_shape}."
+                )
+            res = self.as_blk_diag(other.partition) * other
         else:  # scalar
             res = DiagMatrix(self._data * other)
 
@@ -322,10 +326,8 @@ class DiagMatrix:
         """
         Convenience function, elementwise rmul commutes to mul.
         """
-        if isinstance(other, BlkDiagMatrix):
-            raise NotImplementedError("todo")
-        else:
-            return self.mul(other)
+        # `mul` will attempt all compatible multiplications.
+        return self.mul(other)
 
     def neg(self):
         """
@@ -404,7 +406,6 @@ class DiagMatrix:
 
         return self.transpose()
 
-    @property
     def dense(self):
         """
         Convert `DiagMatrix` instance into full matrix.
@@ -455,7 +456,8 @@ class DiagMatrix:
         #  Note there is an optimization opportunity here,
         #  but the current application of this method is only called once
         #  per FSPCA/RIR classification.
-        return self.T.apply(X.T).T
+        # return #self.T.apply(X.T).T
+        return X * self
 
     # `eigval` method is provided for reasons of interoperability
     # in code that also uses with `BlkDiagMatrix`.
@@ -590,4 +592,9 @@ class DiagMatrix:
         :return: `DiagMatrix`, solution.
         """
 
-        return b / self[:, None]
+        if self.stack_shape != ():
+            raise RuntimeError(
+                f"`solve` only implemented for singletons at this time, received {self.stack_shape}."
+            )
+
+        return b / self
