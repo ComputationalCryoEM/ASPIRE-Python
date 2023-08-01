@@ -55,9 +55,9 @@ downloader.available_downloads()
 
 # %%
 # .. note::
-#     All downloads can be cleared from the cache with the ``clean_downloads()`` method::
+#     All downloads can be cleared from the cache with the ``remove_downloads()`` method::
 #
-#         downloader.clean_downloads()
+#         downloader.remove_downloads()
 
 # %%
 # Download an Example Dataset

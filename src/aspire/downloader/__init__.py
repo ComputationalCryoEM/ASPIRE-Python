@@ -4,7 +4,6 @@ from .registry import file_to_method_map, registry, registry_urls
 # isort: on
 from .data_fetcher import (
     available_downloads,
-    clean_downloads,
     emdb_2484,
     emdb_2660,
     emdb_2824,
@@ -18,4 +17,5 @@ from .data_fetcher import (
     emdb_8511,
     emdb_10835,
     emdb_14621,
+    remove_downloads,
 )
