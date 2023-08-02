@@ -18,12 +18,12 @@ PARAMS = [
 ]
 
 
-def source_orientation_objs(n_img, L, dtype):
+def source_orientation_objs(n_img, L, offsets, dtype):
     src = Simulation(
         n=n_img,
         L=L,
         vols=AsymmetricVolume(L=L, C=1, K=100).generate(),
-        offsets=0,
+        offsets=offsets,
         amplitudes=1,
         seed=123,
     )
@@ -34,7 +34,8 @@ def source_orientation_objs(n_img, L, dtype):
 
 @pytest.mark.parametrize("n_img, L, dtype", PARAMS)
 def test_build_clmatrix(n_img, L, dtype):
-    src, orient_est = source_orientation_objs(n_img, L, dtype)
+    offsets = 0
+    src, orient_est = source_orientation_objs(n_img, L, offsets, dtype)
 
     # Build clmatrix estimate.
     orient_est.build_clmatrix()
@@ -52,8 +53,9 @@ def test_build_clmatrix(n_img, L, dtype):
 
 
 @pytest.mark.parametrize("n_img, L, dtype", PARAMS)
-def test_estimated_rotations(n_img, L, dtype):
-    src, orient_est = source_orientation_objs(n_img, L, dtype)
+def test_estimate_rotations(n_img, L, dtype):
+    offsets = 0
+    src, orient_est = source_orientation_objs(n_img, L, offsets, dtype)
 
     orient_est.estimate_rotations()
 
@@ -75,3 +77,15 @@ def test_estimated_rotations(n_img, L, dtype):
 
     # Assert that mean angular distance is less than 1 degree.
     assert np.mean(ang_dist) < 1
+
+
+@pytest.mark.xfail(reason="estimate_shifts bug.")
+@pytest.mark.parametrize("n_img, L, dtype", PARAMS)
+def test_estimate_shifts(n_img, L, dtype):
+    offests = None  # Use default random offsets.
+    src, orient_est = source_orientation_objs(n_img, L, offsets, dtype)
+
+    est_shifts = orient_est.estimate_shifts().T
+
+    # Assert that estimated shifts are close to src.offsets
+    assert np.allclose(est_shifts, src.offsets)
