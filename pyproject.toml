@@ -43,12 +43,12 @@ dependencies = [
     "PyWavelets",
     "pillow",
     "ray",
-    "scipy >= 1.7.3",
+    "scipy >= 1.10.0",
     "scikit-learn",
     "scikit-image",
     "setuptools >= 0.41",
     "tqdm",
-]    
+]
 
 [project.urls]
 "Homepage" = "http://spr.math.princeton.edu/"
