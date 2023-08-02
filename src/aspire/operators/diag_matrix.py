@@ -16,6 +16,15 @@ class DiagMatrix:
     applications with rectangular shapes.
     """
 
+    # Developers' Note:
+    # All instances of this class should have priority over ndarray ops
+    #   because we implement them here ourselves.
+    # This is a more np current implementation of __array_priority__
+    #   operator precedence schedule.
+    # Mainly this effects rmul, eg:
+    # np_ary @ diag_mat
+    __array_ufunc__ = None
+
     def __init__(self, data, dtype=None):
         """
         Instantiate a `DiagMatrix` with Numpy `data` shaped (...., self.count),
@@ -225,13 +234,18 @@ class DiagMatrix:
             res = self.mul(other)
 
         elif isinstance(other, BlkDiagMatrix):
+            if self.stack_shape != ():
+                raise RuntimeError(
+                    f"Mixed `matmul` only implemented for singletons at this time, received {self.stack_shape}."
+                )
+
             res = BlkDiagMatrix.zeros_like(other)
 
             ind = 0
             for b, blk in enumerate(other):
                 i = len(blk)
 
-                res[b] = np.diag(self._data[ind : ind + i]) * blk
+                res[b] = np.diag(self._data[ind : ind + i]) @ blk
                 ind += i
 
         elif isinstance(other, np.ndarray):
@@ -272,8 +286,11 @@ class DiagMatrix:
         # Note, we should only hit this method when mixing DiagMatrix with numpy.
         #   This is because if both a and b are DiagMatrix,
         #   then a@b would be handled first by a.__matmul__(b), never reaching here.
-        if not isinstance(lhs, np.ndarray):
-            raise RuntimeError("__rmatmul__ only defined for np.ndarray @ DiagMatrix.")
+        if isinstance(lhs, BlkDiagMatrix):
+            # convert
+            return lhs @ self.as_blk_diag(self.partition)
+        elif not isinstance(lhs, np.ndarray):
+            raise RuntimeError(f"__rmatmul__ not implemented for {type(lhs)}.")
 
         # For now, lets just interop with 2D `other` arrays,
         # assumed to represent matrices.
@@ -597,4 +614,4 @@ class DiagMatrix:
                 f"`solve` only implemented for singletons at this time, received {self.stack_shape}."
             )
 
-        return b / self
+        return b / self._data
