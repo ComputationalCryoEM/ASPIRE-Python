@@ -470,11 +470,9 @@ class DiagMatrix:
         :return: A matrix with new coefficient vectors.
         """
 
-        # For now do the transposes a @ b = (b.T @ a.T).T.
         #  Note there is an optimization opportunity here,
         #  but the current application of this method is only called once
         #  per FSPCA/RIR classification.
-        # return #self.T.apply(X.T).T
         return X * self
 
     # `eigval` method is provided for reasons of interoperability
@@ -604,10 +602,11 @@ class DiagMatrix:
 
     def solve(self, b):
         """
-        Solve a x = b for `x`, given diagonal matrix `b`.
+        For this `DiagMatrix` `a` and diagonal matrix `b`.
+        solve a x = b for `x`.
 
         :param b: `DiagMatrix`, right hand side.
-        :return: `DiagMatrix`, solution.
+        :return: `DiagMatrix`, solution `x`.
         """
 
         if self.stack_shape != ():
