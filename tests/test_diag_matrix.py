@@ -270,6 +270,18 @@ def test_diag_diag_mul(diag_matrix_fixture):
     np.testing.assert_allclose(d1 * d2, np.multiply(*d_np))
 
 
+def test_diag_scalar_mul(diag_matrix_fixture):
+    """
+    Test element-wise multiply of two `DiagMatrix` instances.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    # left mul
+    np.testing.assert_allclose(d1 * 123, d_np[0] * 123)
+    # right mul
+    np.testing.assert_allclose(123 * d1, 123 * d_np[0])
+
+
 def test_diag_diag_matmul(diag_matrix_fixture):
     """
     Test matrix multiply of two `DiagMatrix` instances.
@@ -288,6 +300,54 @@ def test_diag_diag_matmul(diag_matrix_fixture):
 
     for i, _d in enumerate(d.stack_reshape(-1).asnumpy()):
         np.testing.assert_allclose(_d, np.diag(np.diag(_d1[i]) @ np.diag(_d2[i])))
+
+
+def test_diag_blk_matmul(diag_matrix_fixture, blk_diag):
+    """
+    Test matrix multiply of `DiagMatrix` with `BlkDiagMatrix` instances.
+
+    Note, this should be the equivalent of expanding to full dense
+    matrices and computing the matrix multiply.
+    """
+    d, _, d_np = diag_matrix_fixture
+
+    # Test we raise combining stacks with BlkDiagMatrix.
+    if d.stack_shape != ():
+        with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
+            _ = d @ blk_diag
+
+    else:
+        # compute the matmuls
+        A = d.dense()
+        B = blk_diag.dense()
+        AB = A @ B  # left mul reference
+        BA = B @ A  # right mul reference
+
+        np.testing.assert_allclose((d @ blk_diag).dense(), AB)
+        np.testing.assert_allclose((blk_diag @ d).dense(), BA)
+
+
+def test_diag_np_matmul(diag_matrix_fixture):
+    """
+    Test matrix multiply of `DiagMatrix` with `BlkDiagMatrix` instances.
+
+    Note, this should be the equivalent of expanding to full dense
+    matrices and computing the matrix multiply.
+    """
+    d1, d2, _ = diag_matrix_fixture
+
+    if d1.stack_shape != ():
+        with pytest.raises(ValueError, match=r".*only supports 2D.*"):
+            _ = d1 @ d2.dense()
+
+    else:
+        # compute the reference matmuls
+        A = d2.dense()
+        DA = d1.dense() @ A
+        AD = A @ d1.dense()
+
+        np.testing.assert_allclose(d1 @ A, DA)
+        np.testing.assert_allclose(A @ d1, AD)
 
 
 def test_neg(diag_matrix_fixture):
@@ -446,6 +506,16 @@ def test_as_blk_diag(matrix_size, blk_diag):
 
     # Compare the dense B with the dense A.
     np.testing.assert_equal(B.dense(), A)
+
+
+def test_bad_as_blk_diag(matrix_size, blk_diag):
+    with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
+        # Construct via Numpy.
+        d_np = np.empty((2, matrix_size), dtype=blk_diag.dtype)
+
+        # Create DiagMatrix then convert to BlkDiagMatrix
+        d = DiagMatrix(d_np)
+        _ = d.as_blk_diag(blk_diag.partition)
 
 
 def test_eigs(diag_matrix_fixture):
