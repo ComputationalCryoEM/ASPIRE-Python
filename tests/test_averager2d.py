@@ -7,7 +7,7 @@ from unittest import TestCase
 import numpy as np
 import pytest
 from packaging.version import parse as parse_version
-from pkg_resources import get_distribution
+from importlib.metadata import version
 
 from aspire.basis import FFBBasis2D, PolarBasis2D
 from aspire.classification import (
@@ -41,7 +41,7 @@ def xfail_ray_dev():
     xfail = all(
         [
             importlib.util.find_spec("ray"),  # 'ray' installed
-            parse_version(get_distribution("numpy").version)
+            parse_version(version("numpy"))
             >= parse_version("1.22.0"),  # with unsupported numpy combo
             num_procs_suggestion() > 1,  # and code would attempt to use multiprocessing
         ]
