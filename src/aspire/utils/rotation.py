@@ -72,12 +72,10 @@ class Rotation:
         """
         rotations = sp_rot.from_matrix(self._matrices.astype(self.dtype))
 
-        # If `about_axis` was used to generate rotations about the z-axis
-        # turn off Gimbal lock warning.
+        # Filter Gimbal lock warnings.
         with warnings.catch_warnings():
-            if self._about_z:
-                msg = "Gimbal lock detected*"
-                warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+            msg = "Gimbal lock detected*"
+            warnings.filterwarnings("ignore", message=msg, category=UserWarning)
             euler_angles = rotations.as_euler(self._seq_order, degrees=False).astype(
                 self.dtype
             )
