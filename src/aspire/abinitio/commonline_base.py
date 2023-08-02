@@ -4,7 +4,7 @@ import math
 import numpy as np
 import scipy.sparse as sparse
 
-from aspire.basis import PolarBasis2D
+from aspire.basis import PolarFT
 from aspire.utils import common_line_from_rots
 from aspire.utils.random import choice
 
@@ -69,14 +69,13 @@ class CLOrient3D:
 
         imgs = self.src.images[:]
 
-        # Obtain coefficients in polar Fourier basis for input 2D images
-        self.basis = PolarBasis2D(
+        # Obtain coefficients of polar Fourier transform for input 2D images
+        self.pft = PolarFT(
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
-        self.pf = self.basis.evaluate_t(imgs)
-        self.pf = self.pf.reshape(self.n_img, self.n_theta, self.n_rad)
-
+        self.pf = self.pft.evaluate_t(imgs)
         n_theta_half = self.n_theta // 2
+        self.pf = self.pf.reshape(self.n_img, n_theta_half, self.n_rad)
 
         # The last two dimension of pf is of size n_theta x n_rad. We will convert pf
         # into an array of size (n_theta/2) x (n_rad-1), that is, take half of each ray
@@ -89,7 +88,7 @@ class CLOrient3D:
         # Python version we will use the size of (n_theta/2) x (n_rad-1) directly and make
         # sure every part is using it. By taking shorter correlations we can speed the
         # computation by a factor of two.
-        self.pf = np.flip(self.pf[:, n_theta_half:, 1:], 2)
+        self.pf = self.pf[:, :, 1:]
 
     def estimate_rotations(self):
         """
