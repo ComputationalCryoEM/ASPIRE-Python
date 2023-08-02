@@ -114,6 +114,9 @@ def test_len():
 
 
 def test_size_mismatch():
+    """
+    Test we raise operating on `DiagMatrix` having different counts.
+    """
     d1 = DiagMatrix(np.empty((10, 8)))
     d2 = DiagMatrix(np.empty((10, 7)))
 
@@ -122,6 +125,9 @@ def test_size_mismatch():
 
 
 def test_dtype_mismatch():
+    """
+    Test we raise operating on `DiagMatrix` having different dtypes.
+    """
     d1 = DiagMatrix(np.empty((10, 8)), dtype=np.float32)
     d2 = DiagMatrix(np.empty((10, 8)), dtype=np.float64)
 
@@ -194,7 +200,7 @@ def test_stack_reshape_tuple(diag_matrix_fixture, stack):
 
 def test_stack_reshape_bad_size(diag_matrix_fixture, stack):
     """
-    Test stack reshape with tuple.
+    Test stack reshape with incorrect size.
     """
     d1, _, _ = diag_matrix_fixture
 
@@ -205,7 +211,7 @@ def test_stack_reshape_bad_size(diag_matrix_fixture, stack):
 
 def test_diag_diag_add(diag_matrix_fixture):
     """
-    Test addition.
+    Test addition of two `DiagMatrix`.
     """
     d1, d2, d_np = diag_matrix_fixture
 
@@ -214,7 +220,7 @@ def test_diag_diag_add(diag_matrix_fixture):
 
 def test_diag_diag_scalar_add(diag_matrix_fixture):
     """
-    Test addition.
+    Test addition of `DiagMatrix` and scalar.
     """
     d1, _, d_np = diag_matrix_fixture
 
@@ -223,7 +229,7 @@ def test_diag_diag_scalar_add(diag_matrix_fixture):
 
 def test_diag_diag_scalar_radd(diag_matrix_fixture):
     """
-    Test addition.
+    Test right addition of `DiagMatrix` and scalar.
     """
     d1, _, d_np = diag_matrix_fixture
 
@@ -232,7 +238,7 @@ def test_diag_diag_scalar_radd(diag_matrix_fixture):
 
 def test_diag_diag_sub(diag_matrix_fixture):
     """
-    Test subtraction.
+    Test subtraction of two `DiagMatrix`.
     """
     d1, d2, d_np = diag_matrix_fixture
 
@@ -241,7 +247,7 @@ def test_diag_diag_sub(diag_matrix_fixture):
 
 def test_diag_diag_scalar_sub(diag_matrix_fixture):
     """
-    Test subtraction.
+    Test subtraction of `DiagMatrix` and scalar.
     """
     d1, _, d_np = diag_matrix_fixture
 
@@ -252,7 +258,7 @@ def test_diag_diag_scalar_sub(diag_matrix_fixture):
 
 def test_diag_diag_scalar_rsub(diag_matrix_fixture):
     """
-    Test subtraction.
+    Test right subtraction of `DiagMatrix` and scalar.
     """
     d1, _, d_np = diag_matrix_fixture
 
@@ -357,10 +363,7 @@ def test_diag_np_matmul(diag_matrix_fixture):
 
 def test_diag_badtype_matmul():
     """
-    Test matrix multiply of `DiagMatrix` with `BlkDiagMatrix` instances.
-
-    Note, this should be the equivalent of expanding to full dense
-    matrices and computing the matrix multiply.
+    Test matrix multiply of `DiagMatrix` with incompatible type raises.
     """
     d1 = DiagMatrix(np.empty(8))
 
@@ -532,6 +535,9 @@ def test_as_blk_diag(matrix_size, blk_diag):
 
 
 def test_bad_as_blk_diag(matrix_size, blk_diag):
+    """
+    Test unimplemented conversion raises.
+    """
     with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
         # Construct via Numpy.
         d_np = np.empty((2, matrix_size), dtype=blk_diag.dtype)
@@ -551,12 +557,19 @@ def test_eigs(diag_matrix_fixture):
 
 
 def test_eye(matrix_size, dtype):
+    """
+    Test helper for identity matrix.
+    Same as `ones` for `DiagMatrix`.
+    """
     d = DiagMatrix.eye(matrix_size, dtype=dtype)
 
     np.testing.assert_equal(d, np.ones(matrix_size, dtype=dtype))
 
 
 def test_apply(diag_matrix_fixture):
+    """
+    Test the `apply` method against numpy.
+    """
     d1, _, d_np = diag_matrix_fixture
 
     x = d1.apply(d_np)
@@ -565,6 +578,10 @@ def test_apply(diag_matrix_fixture):
 
 
 def test_rapply(diag_matrix_fixture):
+    """
+    Test the `rapply` method against numpy.
+    """
+
     d1, _, d_np = diag_matrix_fixture
 
     x = d1.rapply(d_np)
@@ -574,7 +591,7 @@ def test_rapply(diag_matrix_fixture):
 
 def test_solve(diag_matrix_fixture):
     """
-    Test `solve`.
+    Test `solve` output is a valid solution.
     """
     a, _, d_np = diag_matrix_fixture
 
