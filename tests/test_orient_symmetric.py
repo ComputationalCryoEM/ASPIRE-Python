@@ -91,6 +91,7 @@ def source_orientation_objs(n_img, L, order, dtype):
         cl_kwargs["symmetry"] = f"C{order}"
     elif order == 2:
         cl_class = CLSymmetryC2
+        cl_kwargs["min_dist_cls"] = 15
     else:
         cl_class = CLSymmetryCn
         cl_kwargs["symmetry"] = f"C{order}"
@@ -367,7 +368,7 @@ def test_commonlines_c2(n_img, L, order, dtype):
     cl_gt = (cl_gt * 360 / n_theta) % 180
 
     pairs = all_pairs(n_img)
-    within_5 = 0
+    within_2 = 0
     for i, j in pairs:
         # For each pair of images the two sets of mutual common-lines in cl, (cl[0,i,j], cl[0,j,i])
         # and (cl[1,i,j], cl[1,j,i]), should each match one of the two sets in the ground truth cl_gt.
@@ -385,11 +386,11 @@ def test_commonlines_c2(n_img, L, order, dtype):
             + abs(cl[1, j, i] - cl_gt[0, j, i])
         )
         min_err = min(err_1, err_2)
-        if min_err <= 5:
-            within_5 += 1
+        if min_err <= 2:
+            within_2 += 1
 
     # Check that at least 90% of estimates are within 5 degrees.
-    assert within_5 / len(pairs) > 0.90
+    assert within_2 / len(pairs) > 0.90
 
 
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)

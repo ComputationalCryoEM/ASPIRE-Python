@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from packaging.version import parse as parse_version
 
-from aspire.basis import FFBBasis2D, PolarBasis2D
+from aspire.basis import FFBBasis2D, PolarFT
 from aspire.classification import (
     AligningAverager2D,
     Averager2D,
@@ -209,7 +209,7 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
         Test we raise an error when our basis does not provide `rotate` method.
         """
         # DiracBasis does not provide `rotate`,
-        basis = PolarBasis2D((self.resolution, self.resolution), dtype=self.dtype)
+        basis = PolarFT((self.resolution, self.resolution), dtype=self.dtype)
 
         # and that should raise an error during instantiation.
         with pytest.raises(RuntimeError, match=r".* must provide a `rotate` method."):
