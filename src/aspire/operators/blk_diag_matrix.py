@@ -398,12 +398,15 @@ class BlkDiagMatrix:
         :return: A BlkDiagMatrix of self @ other.
         """
 
-        if not isinstance(other, BlkDiagMatrix):
-            if inplace:
-                raise RuntimeError(
-                    "`inplace` method not supported when "
-                    "mixing `BlkDiagMatrix` and `Numpy`."
-                )
+        if not isinstance(other, BlkDiagMatrix) and inplace:
+            raise RuntimeError(
+                "`inplace` method not supported when " "mixing `BlkDiagMatrix`."
+            )
+
+        # Convert scalar to reduce code branching.
+        if hasattr(other, "as_blk_diag"):
+            other = other.as_blk_diag(self.partition)
+        elif not isinstance(other, BlkDiagMatrix):
             return self.apply(other)
 
         self.__check_compatible(other, size_compat="mul")
@@ -468,8 +471,10 @@ class BlkDiagMatrix:
         # Convert scalar to reduce code branching.
         if is_scalar_type(val):
             val = np.full((self.nblocks), fill_value=val, dtype=self.dtype)
-        elif not isinstance(val, BlkDiagMatrix):
+        elif hasattr(val, "as_blk_diag"):
             val = val.as_blk_diag(self.partition)
+        elif not isinstance(val, BlkDiagMatrix):
+            raise RuntimeError(f"mul not implemented for {type(val)}.")
 
         if inplace:
             for i in range(self.nblocks):
