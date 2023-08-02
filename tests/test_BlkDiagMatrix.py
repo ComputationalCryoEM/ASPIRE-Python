@@ -185,6 +185,11 @@ class BlkDiagMatrixTestCase(TestCase):
         self.blk_a.matmul(self.blk_b)
         self.allallfunc(blk_c, result)
 
+    def testBlkDiagMultBadType(self):
+        foo = [1, 2, 3]
+        with pytest.raises(RuntimeError, match=r".*not implemented.*"):
+            _ = self.blk_a * foo
+
     def testBlkDiagMatrixScalarMult(self):
         result = [blk * 42.0 for blk in self.blk_a]
 
