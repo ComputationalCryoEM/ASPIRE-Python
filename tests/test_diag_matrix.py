@@ -337,8 +337,13 @@ def test_diag_np_matmul(diag_matrix_fixture):
     d1, d2, _ = diag_matrix_fixture
 
     if d1.stack_shape != ():
+        # matmul
         with pytest.raises(ValueError, match=r".*only supports 2D.*"):
             _ = d1 @ d2.dense()
+
+        # rmatmul
+        with pytest.raises(ValueError, match=r".*only supports 2D.*"):
+            _ = d1.dense() @ d2
 
     else:
         # compute the reference matmuls
@@ -348,6 +353,24 @@ def test_diag_np_matmul(diag_matrix_fixture):
 
         np.testing.assert_allclose(d1 @ A, DA)
         np.testing.assert_allclose(A @ d1, AD)
+
+
+def test_diag_badtype_matmul():
+    """
+    Test matrix multiply of `DiagMatrix` with `BlkDiagMatrix` instances.
+
+    Note, this should be the equivalent of expanding to full dense
+    matrices and computing the matrix multiply.
+    """
+    d1 = DiagMatrix(np.empty(8))
+
+    # matmul
+    with pytest.raises(RuntimeError, match=r".*not implemented for.*"):
+        _ = d1 @ [1, 2, 3]
+
+    # rmatmul
+    with pytest.raises(RuntimeError, match=r".*not implemented for.*"):
+        _ = [1, 2, 3] @ d1
 
 
 def test_neg(diag_matrix_fixture):

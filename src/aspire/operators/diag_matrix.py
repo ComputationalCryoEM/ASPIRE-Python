@@ -264,6 +264,8 @@ class DiagMatrix:
             # This can be accomplished by broadcasting an elemental multiply.
 
             res = self._data[..., np.newaxis] * other
+        else:
+            raise RuntimeError(f"__matmul__ not implemented for {type(other)}.")
 
         return res
 
@@ -286,10 +288,9 @@ class DiagMatrix:
         # Note, we should only hit this method when mixing DiagMatrix with numpy.
         #   This is because if both a and b are DiagMatrix,
         #   then a@b would be handled first by a.__matmul__(b), never reaching here.
-        if isinstance(lhs, BlkDiagMatrix):
-            # convert
-            return lhs @ self.as_blk_diag(self.partition)
-        elif not isinstance(lhs, np.ndarray):
+        #   If a is BlkDiagMatrix, then it will handle the conversion of DiagMatrix b.
+
+        if not isinstance(lhs, np.ndarray):
             raise RuntimeError(f"__rmatmul__ not implemented for {type(lhs)}.")
 
         # For now, lets just interop with 2D `other` arrays,
