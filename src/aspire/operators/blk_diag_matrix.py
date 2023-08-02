@@ -403,7 +403,8 @@ class BlkDiagMatrix:
                 "`inplace` method not supported when " "mixing `BlkDiagMatrix`."
             )
 
-        # Convert scalar to reduce code branching.
+        # Convert operator to BlkDiagMatrix is possible.
+        # Its possible to optimize this in the future if its too slow.
         if hasattr(other, "as_blk_diag"):
             other = other.as_blk_diag(self.partition)
         elif not isinstance(other, BlkDiagMatrix):
