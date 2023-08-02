@@ -67,6 +67,7 @@ dev = [
     "flake8 >= 3.7.0",
     "isort",
     "jupyter",
+    "pooch",
     "pyflakes",
     "pydocstyle",
     "parameterized",
