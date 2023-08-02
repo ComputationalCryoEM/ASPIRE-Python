@@ -257,8 +257,7 @@ def test_save_load(vols_1):
 
 
 def test_project(vols_1, dtype):
-    if vols_1.shape[1] == 43:
-        pytest.xfail("Need to fix odd res projections being off.")
+    L = vols_1.resolution
     # first test with synthetic data
     # Create a stack of rotations to test.
     r_stack = np.empty((12, 3, 3), dtype=dtype)
@@ -275,13 +274,17 @@ def test_project(vols_1, dtype):
 
     for r in range(len(r_stack)):
         # Get result of test projection at center of Image.
-        prj_along_axis = img_stack.asnumpy()[r][21, 21]
+        prj_along_axis = img_stack.asnumpy()[r][L // 2, L // 2]
 
         # For Volume, take mean along the axis of rotation.
         vol_along_axis = np.mean(vols_1.asnumpy()[vol_id], axis=r % 3)
-        # Volume is uncentered, take the mean of a 2x2 window.
-        vol_along_axis = np.mean(vol_along_axis[20:22, 20:22])
-
+        # If volume is centered, take middle value, else take the mean of a 2x2 window.
+        if L % 2 == 1:
+            vol_along_axis = vol_along_axis[L // 2, L // 2]
+        else:
+            vol_along_axis = np.mean(
+                vol_along_axis[L // 2 - 1 : L // 2 + 1, L // 2 - 1 : L // 2 + 1]
+            )
         # The projection and Volume should be equivalent
         #  centered along the rotation axis for multiples of pi/2.
         assert np.allclose(vol_along_axis, prj_along_axis)
