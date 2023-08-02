@@ -58,14 +58,14 @@ def test_estimate_CTF():
                 # The defocus values are set to be within 5% of CTFFIND4
 
                 # defocusU
-                assert np.allclose(
+                np.testing.assert_allclose(
                     result["defocus_u"],
                     TEST_OUTPUT["defocus_u"],
                     rtol=0.05,
                 )
 
                 # defocusV
-                assert np.allclose(
+                np.testing.assert_allclose(
                     result["defocus_v"],
                     TEST_OUTPUT["defocus_v"],
                     rtol=0.05,
@@ -74,7 +74,7 @@ def test_estimate_CTF():
                 # defocusAngle
                 defocus_ang_degrees = result["defocus_ang"] * 180 / np.pi
                 try:
-                    assert np.allclose(
+                    np.testing.assert_allclose(
                         defocus_ang_degrees,
                         TEST_OUTPUT["defocus_ang"],
                         atol=1,  # one degree
@@ -88,7 +88,7 @@ def test_estimate_CTF():
                     )
 
                 for param in ["cs", "amplitude_contrast", "voltage", "pixel_size"]:
-                    assert np.allclose(result[param], TEST_OUTPUT[param])
+                    np.testing.assert_allclose(result[param], TEST_OUTPUT[param])
 
 
 # we are chopping the micrograph into a vertical and a horizontal rectangle
