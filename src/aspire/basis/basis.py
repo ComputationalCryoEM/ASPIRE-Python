@@ -233,3 +233,9 @@ class Basis:
         # return v coefficients with the last dimension of self.count
         v = v.reshape((*sz_roll, self.count))
         return v
+
+    @property
+    def blk_diag_cov_shape(self):
+        raise NotImplementedError(
+            "This method should be implemented for any steerable 2D basis."
+        )
