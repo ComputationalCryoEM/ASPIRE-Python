@@ -1,3 +1,4 @@
+import abc
 import logging
 from collections.abc import Iterable
 
@@ -274,3 +275,17 @@ class SteerableBasis2D(Basis):
             )
 
         return self.evaluate_t(self.evaluate(coef).shift(shifts))
+
+    @abc.abstractmethod
+    def filter_to_basis_mat(self, f, matrix_type=None):
+        """
+        Convert a filter into a basis representation.
+
+        :param f: `Filter` object, usually a `CTFFilter`.
+        :param matrix_type: Optional override, Example, `BlkDiagMatrix` or
+            `DiagMatrix`. Default `None` returns the default for
+            this basis.
+
+        :return: `BlkDiagMatrix` or `DiagMatrix` instance
+            representation of filter in `basis`.
+        """
