@@ -7,7 +7,7 @@ from itertools import product, repeat
 import numpy as np
 import pytest
 
-from aspire.basis import FFBBasis2D
+from aspire.basis import FBBasis2D, FFBBasis2D
 from aspire.classification import (
     BandedSNRImageQualityFunction,
     BFRAverager2D,
@@ -47,6 +47,20 @@ DTYPES = [
 CLS_SRCS = [DebugClassAvgSource, DefaultClassAvgSource]
 # For very small problems, it usually isn't worth running in parallel.
 NUM_PROCS = 1
+
+
+BASIS = [
+    FFBBasis2D,
+    pytest.param(FBBasis2D, marks=pytest.mark.expensive),
+]
+
+
+@pytest.fixture(params=BASIS, ids=lambda x: f"basis={x}")
+def basis(request, img_size, dtype):
+    cls = request.param
+    # Setup a Basis
+    basis = cls(img_size, dtype=dtype)
+    return basis
 
 
 def sim_fixture_id(params):
@@ -234,9 +248,9 @@ QUALITY_FUNCTIONS = [
     "quality_function", QUALITY_FUNCTIONS, ids=lambda param: f"Quality Function={param}"
 )
 @pytest.mark.expensive
-def test_global_selector(class_sim_fixture, cls_fixture, selector, quality_function):
-    basis = FFBBasis2D(class_sim_fixture.L, dtype=class_sim_fixture.dtype)
-
+def test_global_selector(
+    class_sim_fixture, cls_fixture, selector, quality_function, basis
+):
     averager = BFRAverager2D(basis, class_sim_fixture, num_procs=NUM_PROCS)
 
     fun = quality_function()
