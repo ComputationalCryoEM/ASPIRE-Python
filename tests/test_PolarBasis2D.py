@@ -1,10 +1,10 @@
-import logging
+import loggingA
 from unittest import TestCase
 
 import numpy as np
 from pytest import raises
 
-from aspire.basis import PolarBasis2D
+from aspire.basis import PolarFT
 from aspire.image import Image
 from aspire.utils import complex_type, utest_tolerance
 from aspire.utils.matlab_compat import m_reshape
@@ -19,7 +19,7 @@ class PolarBasis2DTestCase(TestCase, UniversalBasisMixin):
     def setUp(self):
         self.dtype = np.float32
         self.L = 8
-        self.basis = PolarBasis2D((self.L, self.L), 4, 32, dtype=self.dtype)
+        self.basis = PolarFT((self.L, self.L), 4, 32, dtype=self.dtype)
         # Note, in practice we got a degenerate random array around 1%
         #   of the time, so we fix a seed for the randn calls.
         self.seed = 8675309
@@ -429,7 +429,7 @@ class PolarBasis2DTestCase(TestCase, UniversalBasisMixin):
         # (y, A*x) = (A^t*y, x) = (B*y, x)
         x = randn(self.basis.count, seed=self.seed).astype(self.dtype)
 
-        x_t = self.basis.evaluate(x).asnumpy()
+        x_t = self.basis._evaluate(x).asnumpy()
         y = randn(np.prod(self.basis.sz), seed=self.seed).astype(self.dtype)
         y_t = self.basis.evaluate_t(Image(np.reshape(y, self.basis.sz)))
 
