@@ -4,7 +4,8 @@ import numpy as np
 from numpy.linalg import eig, inv
 from scipy.linalg import solve, sqrtm
 
-from aspire.operators import BlkDiagMatrix, RadialCTFFilter
+from aspire.basis import FFBBasis2D
+from aspire.operators import BlkDiagMatrix, DiagMatrix, RadialCTFFilter
 from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import make_symmat
 from aspire.utils.matlab_compat import m_reshape
@@ -100,6 +101,23 @@ class RotCov2D:
         self.dtype = self.basis.dtype
         assert basis.ndim == 2, "Only two-dimensional basis functions are needed."
 
+        # Abstract the basis matrix type (BlkDiagMatrix/DiagMatrix)
+        self.ctf_matrix_type = self.basis.matrix_type
+
+    def _ctf_identity_mat(self):
+        """
+        Returns CTF identity corresponding to the `matrix_type` of `self.basis`.
+
+        :return: Identity BlkDiagMatrix or DiagMatrix
+        """
+        if self.basis.matrix_type == DiagMatrix:
+            # TODO: compute this without computing filter/ctf
+            return DiagMatrix.ones(
+                len(self.basis.filter_to_basis_mat(RadialCTFFilter())), dtype=self.dtype
+            )
+        else:
+            return BlkDiagMatrix.eye(self.basis.blk_diag_cov_shape, dtype=self.dtype)
+
     def _get_mean(self, coeffs):
         """
         Calculate the mean vector from the expansion coefficients of 2D images without CTF information.
@@ -107,104 +125,49 @@ class RotCov2D:
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be averaged.
         :return: The mean value vector for all images.
         """
+
         if coeffs.size == 0:
             raise RuntimeError("The coefficients need to be calculated first!")
+
         mask = self.basis._indices["ells"] == 0
         mean_coeff = np.zeros(self.basis.count, dtype=coeffs.dtype)
+        # Use array for manually masking, since Coef.__getitem__ tries to return a Coef.
         mean_coeff[mask] = np.mean(coeffs[..., mask], axis=0)
 
         return mean_coeff
 
-    def _get_covar(self, coeffs, mean_coeff=None, do_refl=True):
-        """
-        Calculate the covariance matrix from the expansion coefficients without CTF information.
-
-        :param coeffs: A coefficient vector (or an array of coefficient vectors) calculated from 2D images.
-        :param mean_coeff: The mean vector calculated from the `coeffs`.
-        :param do_refl: If true, enforce invariance to reflection (default false).
-        :return: The covariance matrix of coefficients for all images.
-        """
-        if coeffs.size == 0:
-            raise RuntimeError("The coefficients need to be calculated first!")
-        if mean_coeff is None:
-            mean_coeff = self._get_mean(coeffs)
-
-        # Initialize a totally empty BlkDiagMatrix, build incrementally.
-        covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
-        ell = 0
-        mask = self.basis._indices["ells"] == ell
-        coeff_ell = coeffs[..., mask] - mean_coeff[mask]
-        covar_ell = np.array(coeff_ell.T @ coeff_ell / coeffs.shape[0])
-        covar_coeff.append(covar_ell)
-
-        for ell in range(1, self.basis.ell_max + 1):
-            mask_ell = self.basis._indices["ells"] == ell
-            mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
-            mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
-
-            covar_ell_diag = np.array(
-                coeffs[:, mask_pos].T @ coeffs[:, mask_pos]
-                + coeffs[:, mask_neg].T @ coeffs[:, mask_neg]
-            ) / (2 * coeffs.shape[0])
-
-            if do_refl:
-                covar_coeff.append(covar_ell_diag)
-                covar_coeff.append(covar_ell_diag)
-            else:
-                covar_ell_off = np.array(
-                    (
-                        coeffs[:, mask_pos] @ coeffs[:, mask_neg].T / coeffs.shape[0]
-                        - coeffs[:, mask_pos].T @ coeffs[:, mask_neg]
-                    )
-                    / (2 * coeffs.shape[0])
-                )
-
-                hsize = covar_ell_diag.shape[0]
-                covar_coeff_blk = np.zeros((2, hsize, 2, hsize))
-
-                covar_coeff_blk[0:2, :, 0:2, :] = covar_ell_diag[:hsize, :hsize]
-                covar_coeff_blk[0, :, 1, :] = covar_ell_off[:hsize, :hsize]
-                covar_coeff_blk[1, :, 0, :] = covar_ell_off.T[:hsize, :hsize]
-
-                covar_coeff.append(covar_coeff_blk.reshape(2 * hsize, 2 * hsize))
-
-        return covar_coeff
-
-    def get_mean(self, coeffs, ctf_fb=None, ctf_idx=None):
+    def get_mean(self, coeffs, ctf_basis=None, ctf_idx=None):
         """
         Calculate the mean vector from the expansion coefficients with CTF information.
 
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be averaged.
-        :param ctf_fb: The CFT functions in the FB expansion.
+        :param ctf_basis: The CFT functions in the BASIS expansion.
         :param ctf_idx: An array of the CFT function indices for all 2D images.
-            If ctf_fb or ctf_idx is None, the identity filter will be applied.
+            If ctf_basis or ctf_idx is None, the identity filter will be applied.
         :return: The mean value vector for all images.
         """
 
+        # TODO: Redundant, remove?
         if coeffs.size == 0:
             raise RuntimeError("The coefficients need to be calculated!")
 
         # should assert we require none or both...
-        if (ctf_fb is None) or (ctf_idx is None):
+        if (ctf_basis is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
-            ctf_fb = [
-                BlkDiagMatrix.eye_like(
-                    RadialCTFFilter().fb_mat(self.basis), dtype=self.dtype
-                )
-            ]
+            ctf_basis = [self._ctf_identity_mat()]
 
         b = np.zeros(self.basis.count, dtype=coeffs.dtype)
 
-        A = BlkDiagMatrix.zeros_like(ctf_fb[0])
+        A = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape)
         for k in np.unique(ctf_idx[:]).T:
             coeff_k = coeffs[ctf_idx == k]
             weight = coeff_k.shape[0] / coeffs.shape[0]
             mean_coeff_k = self._get_mean(coeff_k)
 
-            ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = ctf_fb_k.T
-            b += weight * ctf_fb_k_t.apply(mean_coeff_k)
-            A += weight * (ctf_fb_k_t @ ctf_fb_k)
+            ctf_basis_k = ctf_basis[k]
+            ctf_basis_k_t = ctf_basis_k.T
+            b += weight * ctf_basis_k_t.apply(mean_coeff_k)
+            A += weight * (ctf_basis_k_t @ ctf_basis_k)
 
         mean_coeff = A.solve(b)
         return mean_coeff
@@ -212,7 +175,7 @@ class RotCov2D:
     def get_covar(
         self,
         coeffs,
-        ctf_fb=None,
+        ctf_basis=None,
         ctf_idx=None,
         mean_coeff=None,
         do_refl=True,
@@ -224,9 +187,9 @@ class RotCov2D:
         Calculate the covariance matrix from the expansion coefficients and CTF information.
 
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
-        :param ctf_fb: The CFT functions in the FB expansion.
+        :param ctf_basis: The CFT functions in the BASIS expansion.
         :param ctf_idx: An array of the CFT function indices for all 2D images.
-            If ctf_fb or ctf_idx is None, the identity filter will be applied.
+            If ctf_basis or ctf_idx is None, the identity filter will be applied.
         :param mean_coeff: The mean value vector from all images.
         :param noise_var: The estimated variance of noise. The value should be zero for `coeffs`
             from clean images of simulation data.
@@ -237,20 +200,16 @@ class RotCov2D:
             block diagonal matrices are implemented as BlkDiagMatrix instances.
             The covariance is calculated from the images represented by the coeffs array,
             along with all possible rotations and reflections. As a result, the computed covariance
-            matrix is invariant to both reflection and rotation. The effect of the filters in ctf_fb
+            matrix is invariant to both reflection and rotation. The effect of the filters in ctf_basis
             are accounted for and inverted to yield a covariance estimate of the unfiltered images.
         """
 
         if coeffs.size == 0:
             raise RuntimeError("The coefficients need to be calculated!")
 
-        if (ctf_fb is None) or (ctf_idx is None):
+        if (ctf_basis is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
-            ctf_fb = [
-                BlkDiagMatrix.eye_like(
-                    RadialCTFFilter().fb_mat(self.basis), dtype=self.dtype
-                )
-            ]
+            ctf_basis = [self._ctf_identity_mat()]
 
         def identity(x):
             return x
@@ -269,31 +228,35 @@ class RotCov2D:
         covar_est_opt = fill_struct(covar_est_opt, default_est_opt)
 
         if mean_coeff is None:
-            mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
+            mean_coeff = self.get_mean(coeffs, ctf_basis, ctf_idx)
 
-        b_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
-        b_noise = BlkDiagMatrix.zeros_like(ctf_fb[0])
+        b_coeff = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape)
+        b_noise = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape)
         A = []
-        for _ in range(len(ctf_fb)):
-            A.append(BlkDiagMatrix.zeros_like(ctf_fb[0]))
+        for _ in range(len(ctf_basis)):
+            A.append(BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape))
 
-        M = BlkDiagMatrix.zeros_like(ctf_fb[0])
+        M = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape)
 
         for k in np.unique(ctf_idx[:]):
             coeff_k = coeffs[ctf_idx == k].astype(self.dtype)
             weight = coeff_k.shape[0] / coeffs.shape[0]
 
-            ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = ctf_fb_k.T
-            mean_coeff_k = ctf_fb_k.apply(mean_coeff)
+            ctf_basis_k = ctf_basis[k]
+            ctf_basis_k_t = ctf_basis_k.T
+            mean_coeff_k = ctf_basis_k.apply(mean_coeff)
             covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
-            b_coeff += weight * (ctf_fb_k_t @ covar_coeff_k @ ctf_fb_k)
+            b_coeff += weight * (ctf_basis_k_t @ covar_coeff_k @ ctf_basis_k)
 
-            ctf_fb_k_sq = ctf_fb_k_t @ ctf_fb_k
-            b_noise += weight * ctf_fb_k_sq
+            ctf_basis_k_sq = ctf_basis_k_t @ ctf_basis_k
+            b_noise += weight * ctf_basis_k_sq
 
-            A[k] = np.sqrt(weight) * ctf_fb_k_sq
+            A_k = np.sqrt(weight) * ctf_basis_k_sq
+            if not isinstance(A_k, BlkDiagMatrix):
+                A_k = DiagMatrix(A_k).as_blk_diag(self.basis.blk_diag_cov_shape)
+
+            A[k] = A_k
             M += A[k]
 
         if not b_coeff.check_psd():
@@ -319,7 +282,7 @@ class RotCov2D:
 
         cg_opt = covar_est_opt
 
-        covar_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
+        covar_coeff = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape)
 
         def precond_fun(S, x):
             p = np.size(S, 0)
@@ -359,6 +322,63 @@ class RotCov2D:
 
         return covar_coeff
 
+    def _get_covar(self, coeffs, mean_coeff=None, do_refl=True):
+        """
+        Calculate the covariance matrix from the expansion coefficients without CTF information.
+
+        :param coeffs: A coefficient vector (or an array of coefficient vectors) calculated from 2D images.
+        :param mean_coeff: The mean vector calculated from the `coeffs`.
+        :param do_refl: If true, enforce invariance to reflection (default false).
+        :return: The covariance matrix of coefficients for all images.
+        """
+        if coeffs.size == 0:
+            raise RuntimeError("The coefficients need to be calculated first!")
+        if mean_coeff is None:
+            mean_coeff = self._get_mean(coeffs)
+
+        # Initialize a totally empty BlkDiagMatrix, build incrementally.
+        covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
+        ell = 0
+
+        mask = self.basis._indices["ells"] == ell
+
+        coeff_ell = coeffs[..., mask] - mean_coeff[mask]
+        covar_ell = np.array(coeff_ell.T @ coeff_ell / coeffs.shape[0])
+        covar_coeff.append(covar_ell)
+
+        for ell in range(1, self.basis.ell_max + 1):
+            mask_ell = self.basis._indices["ells"] == ell
+            mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
+            mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
+
+            covar_ell_diag = np.array(
+                coeffs[:, mask_pos].T @ coeffs[:, mask_pos]
+                + coeffs[:, mask_neg].T @ coeffs[:, mask_neg]
+            ) / (2 * coeffs.shape[0])
+
+            if do_refl:
+                covar_coeff.append(covar_ell_diag)
+                covar_coeff.append(covar_ell_diag)
+            else:
+                covar_ell_off = np.array(
+                    (
+                        coeffs[:, mask_pos] @ coeffs[:, mask_neg].T / coeffs.shape[0]
+                        - coeffs[:, mask_pos].T @ coeffs[:, mask_neg]
+                    )
+                    / (2 * coeffs.shape[0])
+                )
+
+                hsize = covar_ell_diag.shape[0]
+                covar_coeff_blk = np.zeros((2, hsize, 2, hsize))
+
+                covar_coeff_blk[0:2, :, 0:2, :] = covar_ell_diag[:hsize, :hsize]
+                covar_coeff_blk[0, :, 1, :] = covar_ell_off[:hsize, :hsize]
+                covar_coeff_blk[1, :, 0, :] = covar_ell_off.T[:hsize, :hsize]
+
+                covar_coeff.append(covar_coeff_blk.reshape(2 * hsize, 2 * hsize))
+
+        return covar_coeff
+
     def shrink_covar_backward(self, b, b_noise, n, noise_var, shrinker):
         """
         Apply the shrinking method to the 2D covariance of coefficients.
@@ -386,7 +406,7 @@ class RotCov2D:
     def get_cwf_coeffs(
         self,
         coeffs,
-        ctf_fb=None,
+        ctf_basis=None,
         ctf_idx=None,
         mean_coeff=None,
         covar_coeff=None,
@@ -396,9 +416,9 @@ class RotCov2D:
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
 
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
-        :param ctf_fb: The CFT functions in the FB expansion.
+        :param ctf_basis: The CFT functions in the BASIS expansion.
         :param ctf_idx: An array of the CFT function indices for all 2D images.
-            If ctf_fb or ctf_idx is None, the identity filter will be applied.
+            If ctf_basis or ctf_idx is None, the identity filter will be applied.
         :param mean_coeff: The mean value vector from all images.
         :param covar_coeff: The block diagonal covariance matrix of the clean coefficients represented by a cell array.
         :param noise_var: The estimated variance of noise. The value should be zero for `coeffs`
@@ -409,24 +429,24 @@ class RotCov2D:
         """
 
         if mean_coeff is None:
-            mean_coeff = self.get_mean(coeffs, ctf_fb, ctf_idx)
+            mean_coeff = self.get_mean(coeffs, ctf_basis, ctf_idx)
 
         if covar_coeff is None:
             covar_coeff = self.get_covar(
-                coeffs, ctf_fb, ctf_idx, mean_coeff, noise_var=noise_var
+                coeffs, ctf_basis, ctf_idx, mean_coeff, noise_var=noise_var
             )
 
         # Handle CTF arguments.
-        if (ctf_fb is None) ^ (ctf_idx is None):
+        if (ctf_basis is None) ^ (ctf_idx is None):
             raise RuntimeError(
-                "Both `ctf_fb` and `ctf_idx` should be provided,"
+                "Both `ctf_basis` and `ctf_idx` should be provided,"
                 " or both should be `None`."
-                f' Given {"ctf_fb" if ctf_idx is None else "ctf_idx"}'
+                f' Given {"ctf_basis" if ctf_idx is None else "ctf_idx"}'
             )
-        elif ctf_fb is None:
+        elif ctf_basis is None:
             # Setup defaults for CTF
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
-            ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
+            ctf_basis = [BlkDiagMatrix.eye_like(covar_coeff)]
 
         noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
 
@@ -434,20 +454,20 @@ class RotCov2D:
 
         for k in np.unique(ctf_idx[:]):
             coeff_k = coeffs[ctf_idx == k]
-            ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = ctf_fb_k.T
+            ctf_basis_k = ctf_basis[k]
+            ctf_basis_k_t = ctf_basis_k.T
 
-            mean_coeff_k = ctf_fb_k.apply(mean_coeff)
+            mean_coeff_k = ctf_basis_k.apply(mean_coeff)
             coeff_est_k = coeff_k - mean_coeff_k
 
             if noise_var == 0:
-                coeff_est_k = ctf_fb_k.solve(coeff_est_k.T).T
+                coeff_est_k = ctf_basis_k.solve(coeff_est_k.T).T
             else:
-                sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
+                sig_covar_coeff = ctf_basis_k @ covar_coeff @ ctf_basis_k_t
                 sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
                 coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
-                coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+                coeff_est_k = (covar_coeff @ ctf_basis_k_t).apply(coeff_est_k.T).T
 
             coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
@@ -492,33 +512,32 @@ class BatchedRotCov2D(RotCov2D):
         src = self.src
 
         if self.basis is None:
-            from aspire.basis import FFBBasis2D
-
             self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
         if not src.unique_filters:
             logger.info("CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
-            self.ctf_fb = [BlkDiagMatrix.eye_like(RadialCTFFilter().fb_mat(self.basis))]
+            self.ctf_basis = [self._ctf_identity_mat()]
+
         else:
-            logger.info("Represent CTF filters in FB basis")
+            logger.info("Represent CTF filters in basis")
             unique_filters = src.unique_filters
             self.ctf_idx = src.filter_indices
-            self.ctf_fb = [f.fb_mat(self.basis) for f in unique_filters]
+            self.ctf_basis = [self.basis.filter_to_basis_mat(f) for f in unique_filters]
 
     def _calc_rhs(self):
         src = self.src
         basis = self.basis
 
-        ctf_fb = self.ctf_fb
+        ctf_basis = self.ctf_basis
         ctf_idx = self.ctf_idx
 
         zero_coeff = np.zeros((basis.count,), dtype=self.dtype)
 
-        b_mean = [np.zeros(basis.count, dtype=self.dtype) for _ in ctf_fb]
+        b_mean = [np.zeros(basis.count, dtype=self.dtype) for _ in ctf_basis]
 
-        b_covar = BlkDiagMatrix.zeros_like(ctf_fb[0])
+        b_covar = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape, dtype=self.dtype)
 
         for start in range(0, src.n, self.batch_size):
             batch = np.arange(start, min(start + self.batch_size, src.n))
@@ -532,17 +551,18 @@ class BatchedRotCov2D(RotCov2D):
 
                 mean_coeff_k = self._get_mean(coeff_k)
 
-                ctf_fb_k = ctf_fb[k]
-                ctf_fb_k_t = ctf_fb_k.T
+                ctf_basis_k = ctf_basis[k]
+                ctf_basis_k_t = ctf_basis_k.T
 
-                b_mean_k = weight * ctf_fb_k_t.apply(mean_coeff_k)
+                b_mean_k = weight * ctf_basis_k_t.apply(mean_coeff_k)
 
                 b_mean[k] += b_mean_k
 
                 covar_coeff_k = self._get_covar(coeff_k, zero_coeff)
 
-                b_covar_k = ctf_fb_k_t @ covar_coeff_k
-                b_covar_k = b_covar_k @ ctf_fb_k
+                b_covar_k = ctf_basis_k_t @ covar_coeff_k
+
+                b_covar_k = b_covar_k @ ctf_basis_k
                 b_covar_k *= weight
 
                 b_covar += b_covar_k
@@ -553,24 +573,26 @@ class BatchedRotCov2D(RotCov2D):
     def _calc_op(self):
         src = self.src
 
-        ctf_fb = self.ctf_fb
+        ctf_basis = self.ctf_basis
         ctf_idx = self.ctf_idx
 
-        A_mean = BlkDiagMatrix.zeros_like(ctf_fb[0])
-        A_covar = [None for _ in ctf_fb]
-        M_covar = BlkDiagMatrix.zeros_like(ctf_fb[0])
+        A_mean = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape, self.dtype)
+        A_covar = [None for _ in ctf_basis]
+        M_covar = BlkDiagMatrix.zeros_like(A_mean)
 
         for k in np.unique(ctf_idx):
             weight = np.count_nonzero(ctf_idx == k) / src.n
 
-            ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = ctf_fb_k.T
+            ctf_basis_k = ctf_basis[k]
+            ctf_basis_k_t = ctf_basis_k.T
 
-            ctf_fb_k_sq = ctf_fb_k_t @ ctf_fb_k
-            A_mean_k = weight * ctf_fb_k_sq
+            ctf_basis_k_sq = ctf_basis_k_t @ ctf_basis_k
+            A_mean_k = weight * ctf_basis_k_sq
+            # blk + diag
             A_mean += A_mean_k
-
-            A_covar_k = np.sqrt(weight) * ctf_fb_k_sq
+            # why is rmul returning an array?!
+            # A_covar_k = np.sqrt(weight) * ctf_basis_k_sq
+            A_covar_k = ctf_basis_k_sq * np.sqrt(weight)
             A_covar[k] = A_covar_k
 
             M_covar += A_covar_k
@@ -582,10 +604,10 @@ class BatchedRotCov2D(RotCov2D):
     def _mean_correct_covar_rhs(self, b_covar, b_mean, mean_coeff):
         src = self.src
 
-        ctf_fb = self.ctf_fb
+        ctf_basis = self.ctf_basis
         ctf_idx = self.ctf_idx
 
-        partition = ctf_fb[0].partition
+        partition = self.basis.blk_diag_cov_shape
 
         # Note: If we don't do this, we'll be modifying the stored `b_covar`
         # since the operations below are in-place.
@@ -594,11 +616,11 @@ class BatchedRotCov2D(RotCov2D):
         for k in np.unique(ctf_idx):
             weight = np.count_nonzero(ctf_idx == k) / src.n
 
-            ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = ctf_fb_k.T
+            ctf_basis_k = ctf_basis[k]
+            ctf_basis_k_t = ctf_basis_k.T
 
-            mean_coeff_k = ctf_fb_k.apply(mean_coeff)
-            mean_coeff_k = ctf_fb_k_t.apply(mean_coeff_k)
+            mean_coeff_k = ctf_basis_k.apply(mean_coeff)
+            mean_coeff_k = ctf_basis_k_t.apply(mean_coeff_k)
 
             mean_coeff_k = mean_coeff_k[: partition[0][0]]
             b_mean_k = b_mean[k][: partition[0][0]]
@@ -625,8 +647,31 @@ class BatchedRotCov2D(RotCov2D):
         return b_covar
 
     def _solve_covar(self, A_covar, b_covar, M, covar_est_opt):
-        ctf_fb = self.ctf_fb
+        method = self._solve_covar_cg
+        if self.basis.matrix_type == DiagMatrix:
+            method = self._solve_covar_direct
 
+        return method(A_covar, b_covar, M, covar_est_opt)
+
+    def _solve_covar_direct(self, A_covar, b_covar, M, covar_est_opt):
+        # A_covar is a list of Diags, ctf in basis
+        # b_covar is a blk diag
+        # M is a blk diag
+
+        #  # A_covar is (CTF.T * CTF)  (weighted a**2 from chalkboard)
+        #  most similar to wr_k2 from Yunpeng's code
+
+        # maybe need to unweight A
+        A_covar = DiagMatrix(np.concatenate([x.asnumpy() for x in A_covar]))
+        A2i = A_covar * A_covar
+
+        L = A2i.lr_scale(b_covar.partition)
+
+        return b_covar / L
+
+        # M is sum of weighted A squared, only for cg, ignore
+
+    def _solve_covar_cg(self, A_covar, b_covar, M, covar_est_opt):
         def precond_fun(S, x):
             p = np.size(S, 0)
             assert np.size(x) == p * p, "The sizes of S and x are not consistent."
@@ -645,7 +690,9 @@ class BatchedRotCov2D(RotCov2D):
             return y
 
         cg_opt = covar_est_opt
-        covar_coeff = BlkDiagMatrix.zeros_like(ctf_fb[0])
+        covar_coeff = BlkDiagMatrix.zeros(
+            self.basis.blk_diag_cov_shape, dtype=self.dtype
+        )
 
         for ell in range(0, len(b_covar)):
             A_ell = []
@@ -770,15 +817,15 @@ class BatchedRotCov2D(RotCov2D):
         return covar_coeff
 
     def get_cwf_coeffs(
-        self, coeffs, ctf_fb, ctf_idx, mean_coeff, covar_coeff, noise_var=0
+        self, coeffs, ctf_basis, ctf_idx, mean_coeff, covar_coeff, noise_var=0
     ):
         """
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
 
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
-        :param ctf_fb: The CFT functions in the FB expansion.
+        :param ctf_basis: The CFT functions in the BASIS expansion.
         :param ctf_idx: An array of the CFT function indices for all 2D images.
-            If ctf_fb or ctf_idx is None, the identity filter will be applied.
+            If ctf_basis or ctf_idx is None, the identity filter will be applied.
         :param mean_coeff: The mean value vector from all images.
         :param covar_coeff: The block diagonal covariance matrix of the clean coefficients represented by a cell array.
         :param noise_var: The estimated variance of noise. The value should be zero for `coeffs`
@@ -795,16 +842,16 @@ class BatchedRotCov2D(RotCov2D):
             covar_coeff = self.get_covar(noise_var=noise_var, mean_coeff=mean_coeff)
 
         # Handle CTF arguments.
-        if (ctf_fb is None) ^ (ctf_idx is None):
+        if (ctf_basis is None) ^ (ctf_idx is None):
             raise RuntimeError(
-                "Both `ctf_fb` and `ctf_idx` should be provided,"
+                "Both `ctf_basis` and `ctf_idx` should be provided,"
                 " or both should be `None`."
-                f' Given {"ctf_fb" if ctf_idx is None else "ctf_idx"}'
+                f' Given {"ctf_basis" if ctf_idx is None else "ctf_idx"}'
             )
-        elif ctf_fb is None:
+        elif ctf_basis is None:
             # Setup defaults for CTF
             ctf_idx = np.zeros(coeffs.shape[0], dtype=int)
-            ctf_fb = [BlkDiagMatrix.eye_like(covar_coeff)]
+            ctf_basis = [BlkDiagMatrix.eye_like(covar_coeff)]
 
         noise_covar_coeff = noise_var * BlkDiagMatrix.eye_like(covar_coeff)
 
@@ -812,20 +859,20 @@ class BatchedRotCov2D(RotCov2D):
 
         for k in np.unique(ctf_idx[:]):
             coeff_k = coeffs[ctf_idx == k]
-            ctf_fb_k = ctf_fb[k]
-            ctf_fb_k_t = ctf_fb_k.T
+            ctf_basis_k = ctf_basis[k]
+            ctf_basis_k_t = ctf_basis_k.T
 
-            mean_coeff_k = ctf_fb_k.apply(mean_coeff)
+            mean_coeff_k = ctf_basis_k.apply(mean_coeff)
             coeff_est_k = coeff_k - mean_coeff_k
 
             if noise_var == 0:
-                coeff_est_k = ctf_fb_k.solve(coeff_est_k.T).T
+                coeff_est_k = ctf_basis_k.solve(coeff_est_k.T).T
             else:
-                sig_covar_coeff = ctf_fb_k @ covar_coeff @ ctf_fb_k_t
+                sig_covar_coeff = ctf_basis_k @ covar_coeff @ ctf_basis_k_t
                 sig_noise_covar_coeff = sig_covar_coeff + noise_covar_coeff
 
                 coeff_est_k = sig_noise_covar_coeff.solve(coeff_est_k.T).T
-                coeff_est_k = (covar_coeff @ ctf_fb_k_t).apply(coeff_est_k.T).T
+                coeff_est_k = (covar_coeff @ ctf_basis_k_t).apply(coeff_est_k.T).T
 
             coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
