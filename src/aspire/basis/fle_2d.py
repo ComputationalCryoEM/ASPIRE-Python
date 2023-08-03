@@ -31,6 +31,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     https://arxiv.org/pdf/2207.13674.pdf
     """
 
+    # Default matrix type for basis representation.
+    matrix_type = DiagMatrix
+
     def __init__(
         self, size, bandlimit=None, epsilon=1e-10, dtype=np.float32, match_fb=True
     ):
