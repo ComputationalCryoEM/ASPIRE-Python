@@ -332,20 +332,16 @@ class Rotation:
         return Rotation(matrices)
 
     @staticmethod
-    def from_matrix(values, dtype=None, gimble_lock_warnings=True):
+    def from_matrix(values, dtype=None):
         """
         build rotation object from rotational matrices
 
         :param dtype: Optional output dtype.  Infers from `values` by default.
         :param values: Rotation matrices, as a n x 3 x 3 array
-        :param gimble_lock_warnings: Optionally show gimble lock warnings.
-             Defaults to `True`, setting to `False` filters warnings.
         :return: new Rotation object
         """
         dtype = dtype or values.dtype
-        return Rotation(
-            values.astype(dtype, copy=False), gimble_lock_warnings=gimble_lock_warnings
-        )
+        return Rotation(values.astype(dtype, copy=False))
 
     @staticmethod
     def generate_random_rotations(
