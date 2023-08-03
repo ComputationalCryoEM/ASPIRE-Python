@@ -134,9 +134,7 @@ class SimTestCase(TestCase):
 
         ref = R.random(len(self.sim.rotations)).as_matrix()
 
-        sim = self.sim.update(
-            rotations=ref
-        )
+        sim = self.sim.update(rotations=ref)
         metadata_after = self.sim.get_metadata().copy()
         assert np.all(metadata_before == metadata_after)
         assert np.allclose(sim.rotations, ref)
