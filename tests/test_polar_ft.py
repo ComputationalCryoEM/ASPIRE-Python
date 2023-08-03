@@ -3,7 +3,7 @@ import pytest
 
 from aspire.basis import PolarFT
 from aspire.image import Image
-from aspire.utils import gaussian_2d, randn
+from aspire.utils import gaussian_2d
 from aspire.volume import AsymmetricVolume, CnSymmetricVolume
 
 # Parametrize over (resolution, dtype)
