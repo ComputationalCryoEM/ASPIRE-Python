@@ -27,7 +27,7 @@ PARAMS = [
 ]
 
 
-def source_orientation_objs(n_img, L, offsets, dtype):
+def source_orientation_objs(n_img, L, dtype, offsets=None):
     src = Simulation(
         n=n_img,
         L=L,
@@ -43,8 +43,7 @@ def source_orientation_objs(n_img, L, offsets, dtype):
 
 @pytest.mark.parametrize("n_img, L, dtype", PARAMS)
 def test_build_clmatrix(n_img, L, dtype):
-    offsets = 0
-    src, orient_est = source_orientation_objs(n_img, L, offsets, dtype)
+    src, orient_est = source_orientation_objs(n_img, L, dtype, offsets=0)
 
     # Build clmatrix estimate.
     orient_est.build_clmatrix()
@@ -63,8 +62,7 @@ def test_build_clmatrix(n_img, L, dtype):
 
 @pytest.mark.parametrize("n_img, L, dtype", PARAMS)
 def test_estimate_rotations(n_img, L, dtype):
-    offsets = 0
-    src, orient_est = source_orientation_objs(n_img, L, offsets, dtype)
+    src, orient_est = source_orientation_objs(n_img, L, dtype, offsets=0)
 
     orient_est.estimate_rotations()
 
@@ -91,8 +89,8 @@ def test_estimate_rotations(n_img, L, dtype):
 @pytest.mark.xfail(reason="Fails due to estimate_shifts bug.")
 @pytest.mark.parametrize("n_img, L, dtype", PARAMS)
 def test_estimate_shifts(n_img, L, dtype):
-    offests = None  # Use default random offsets.
-    src, orient_est = source_orientation_objs(n_img, L, offsets, dtype)
+    # Use default random offsets.
+    src, orient_est = source_orientation_objs(n_img, L, dtype)
 
     est_shifts = orient_est.estimate_shifts().T
 
