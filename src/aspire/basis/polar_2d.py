@@ -141,9 +141,8 @@ class PolarFT:
                 f"The Image `x` must be real valued. Found dtype {x.dtype}."
             )
 
-        nimgs = x.shape[0]
         resolution = x.shape[-1]
 
         pf = nufft(x, self.freqs) / resolution**2
 
-        return pf.reshape(nimgs, -1)
+        return pf.reshape(*stack_shape, -1)
