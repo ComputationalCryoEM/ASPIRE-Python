@@ -127,7 +127,9 @@ class Averager2DBase:
         )
 
         # Generate rotations to be used by `Simulation`
-        self.rotations = Rotation.about_axis("z", self.thetas, dtype=self.dtype)
+        self.rotations = Rotation.about_axis(
+            "z", self.thetas, dtype=self.dtype, gimble_lock_warnings=False
+        )
 
 
 class Averager2DTestCase(Averager2DBase, TestCase):
