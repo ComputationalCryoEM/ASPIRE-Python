@@ -17,7 +17,7 @@ class BatchedRotCov2DTestCase(TestCase):
 
     filters = None
     ctf_idx = None
-    ctf_fb = None
+    ctf_basis = None
 
     def setUp(self):
         n = 32
@@ -60,12 +60,12 @@ class BatchedRotCov2DTestCase(TestCase):
         # Test basic functionality against RotCov2D.
 
         mean_cov2d = self.cov2d.get_mean(
-            self.coeff, ctf_fb=self.ctf_fb, ctf_idx=self.ctf_idx
+            self.coeff, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
         )
         covar_cov2d = self.cov2d.get_covar(
             self.coeff,
             mean_coeff=mean_cov2d,
-            ctf_fb=self.ctf_fb,
+            ctf_basis=self.ctf_basis,
             ctf_idx=self.ctf_idx,
             noise_var=self.noise_var,
         )
@@ -88,7 +88,10 @@ class BatchedRotCov2DTestCase(TestCase):
         zero_coeff = np.zeros((self.basis.count,), dtype=self.dtype)
 
         covar_cov2d = self.cov2d.get_covar(
-            self.coeff, mean_coeff=zero_coeff, ctf_fb=self.ctf_fb, ctf_idx=self.ctf_idx
+            self.coeff,
+            mean_coeff=zero_coeff,
+            ctf_basis=self.ctf_basis,
+            ctf_idx=self.ctf_idx,
         )
 
         covar_bcov2d = self.bcov2d.get_covar(mean_coeff=zero_coeff)
@@ -102,7 +105,7 @@ class BatchedRotCov2DTestCase(TestCase):
     def testAutoMean(self):
         # Make sure it automatically calls get_mean if needed.
         covar_cov2d = self.cov2d.get_covar(
-            self.coeff, ctf_fb=self.ctf_fb, ctf_idx=self.ctf_idx
+            self.coeff, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
         )
 
         covar_bcov2d = self.bcov2d.get_covar()
@@ -127,7 +130,7 @@ class BatchedRotCov2DTestCase(TestCase):
 
         covar_cov2d = self.cov2d.get_covar(
             self.coeff,
-            ctf_fb=self.ctf_fb,
+            ctf_basis=self.ctf_basis,
             ctf_idx=self.ctf_idx,
             covar_est_opt=covar_est_opt,
         )
@@ -152,11 +155,11 @@ class BatchedRotCov2DTestCase(TestCase):
     def testCWFCoeff(self):
         # Calculate CWF coefficients using Cov2D base class
         mean_cov2d = self.cov2d.get_mean(
-            self.coeff, ctf_fb=self.ctf_fb, ctf_idx=self.ctf_idx
+            self.coeff, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
         )
         covar_cov2d = self.cov2d.get_covar(
             self.coeff,
-            ctf_fb=self.ctf_fb,
+            ctf_basis=self.ctf_basis,
             ctf_idx=self.ctf_idx,
             noise_var=self.noise_var,
             make_psd=True,
@@ -164,7 +167,7 @@ class BatchedRotCov2DTestCase(TestCase):
 
         coeff_cov2d = self.cov2d.get_cwf_coeffs(
             self.coeff,
-            self.ctf_fb,
+            self.ctf_basis,
             self.ctf_idx,
             mean_coeff=mean_cov2d,
             covar_coeff=covar_cov2d,
@@ -177,7 +180,7 @@ class BatchedRotCov2DTestCase(TestCase):
 
         coeff_bcov2d = self.bcov2d.get_cwf_coeffs(
             self.coeff,
-            self.ctf_fb,
+            self.ctf_basis,
             self.ctf_idx,
             mean_bcov2d,
             covar_bcov2d,
@@ -202,11 +205,11 @@ class BatchedRotCov2DTestCase(TestCase):
 
         # Calculate CWF coefficients using Cov2D base class
         mean_cov2d = self.cov2d.get_mean(
-            self.coeff, ctf_fb=self.ctf_fb, ctf_idx=self.ctf_idx
+            self.coeff, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
         )
         covar_cov2d = self.cov2d.get_covar(
             self.coeff,
-            ctf_fb=self.ctf_fb,
+            ctf_basis=self.ctf_basis,
             ctf_idx=self.ctf_idx,
             noise_var=self.noise_var,
             make_psd=True,
@@ -214,7 +217,7 @@ class BatchedRotCov2DTestCase(TestCase):
 
         coeff_cov2d = self.cov2d.get_cwf_coeffs(
             self.coeff,
-            self.ctf_fb,
+            self.ctf_basis,
             self.ctf_idx,
             mean_coeff=mean_cov2d,
             covar_coeff=covar_cov2d,
@@ -227,7 +230,7 @@ class BatchedRotCov2DTestCase(TestCase):
 
         coeff_bcov2d = self.bcov2d.get_cwf_coeffs(
             self.coeff,
-            self.ctf_fb,
+            self.ctf_basis,
             self.ctf_idx,
             mean_bcov2d,
             covar_bcov2d,
@@ -259,5 +262,5 @@ class BatchedRotCov2DTestCaseCTF(BatchedRotCov2DTestCase):
         return self.src.filter_indices
 
     @property
-    def ctf_fb(self):
+    def ctf_basis(self):
         return [self.basis.filter_to_basis_mat(f) for f in self.src.unique_filters]
