@@ -5,7 +5,6 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
 from aspire.utils import grid_2d, voltage_to_wavelength
-from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
 
 logger = logging.getLogger(__name__)
 
@@ -89,11 +88,15 @@ class Filter:
     def _evaluate(self, omega):
         raise NotImplementedError("Subclasses should implement this method")
 
-    def fb_mat(self, fbasis):
+    def basis_mat(self, basis):
         """
-        Represent the filter in FB basis matrix
+        Represent the filter in `basis`.
+
+        :param basis: 2D Basis.
+        :return: `basis` representation of this filter.
+            Return type will depend on `basis`.
         """
-        return filter_to_fb_mat(self.evaluate, fbasis)
+        return basis.filter_to_basis_mat(self, basis)
 
     def scale(self, c=1):
         """
