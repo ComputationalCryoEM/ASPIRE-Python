@@ -2,6 +2,7 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
@@ -131,10 +132,14 @@ class SimTestCase(TestCase):
         """
         metadata_before = self.sim.get_metadata().copy()
 
-        sim = self.sim.update(rotations=np.zeros_like(self.sim.rotations))
+        ref = R.random(len(self.sim.rotations)).as_matrix()
+
+        sim = self.sim.update(
+            rotations=ref
+        )
         metadata_after = self.sim.get_metadata().copy()
         assert np.all(metadata_before == metadata_after)
-        assert np.allclose(sim.rotations, np.zeros_like(self.sim.rotations))
+        assert np.allclose(sim.rotations, ref)
 
         sim = self.sim.update(amplitudes=np.ones_like(self.sim.amplitudes))
         metadata_after = self.sim.get_metadata().copy()
