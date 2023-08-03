@@ -30,9 +30,6 @@ class Rotation:
         self._matrices = matrices
         self._seq_order = "ZYZ"
 
-        # Attribute indicating if rotation matrices are about the z-axis,
-        # which will cause a gimbal lock warning for ZYZ convention.
-        self._about_z = False
         self.gimble_lock_warnings = bool(gimble_lock_warnings)
 
     def __str__(self):
@@ -295,8 +292,7 @@ class Rotation:
         rotation = sp_rot.from_euler(axis, angles, degrees=False)
         matrix = rotation.as_matrix().astype(dtype)
         rot = Rotation(matrix, gimble_lock_warnings=gimble_lock_warnings)
-        if axis.lower() == "z":
-            rot._about_z = True
+
         return rot
 
     def as_rotvec(self):
