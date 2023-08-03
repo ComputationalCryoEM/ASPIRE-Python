@@ -116,7 +116,7 @@ ffbbasis = FFBBasis2D((img_size, img_size), dtype=dtype)
 h_idx = sim.filter_indices
 
 # Evaluate CTF in the 8X8 FB basis
-h_ctf_fb = [filt.fb_mat(ffbbasis) for filt in ctf_filters]
+h_ctf_fb = [ffbbasis.filter_to_basis_mat(filt) for filt in ctf_filters]
 
 # Get clean images from projections of 3D map.
 logger.info("Apply CTF filters to clean images.")
