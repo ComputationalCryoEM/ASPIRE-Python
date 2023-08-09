@@ -444,13 +444,14 @@ class CLOrient3D:
         n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
 
         # only half of ray
-        rk = np.arange(-r_max, 0)
+        rk = np.arange(1, r_max + 1)
 
         # Generate all shift phases
         shifts = -max_shift + shift_step * np.arange(n_shifts)
         shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
         # Set filter for common-line detection
         h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
+
         return shifts, shift_phases, h
 
     def _generate_index_pairs(self, n_equations):
@@ -511,7 +512,9 @@ class CLOrient3D:
         # Note if we'd rather not have the dtype and casting args,
         #   we can control h.dtype instead.
         np.einsum(subscripts, pf, h, out=pf, dtype=pf.dtype, casting="same_kind")
-        pf[..., r_max - 1 : r_max + 2] = 0
+
+        # This is a low pass filter, cutting out the highest frequency.
+        pf[..., r_max - 1] = 0
         pf /= np.linalg.norm(pf, axis=-1)[..., np.newaxis]
 
         return pf

@@ -76,6 +76,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
 
         # Only need the top 3 eigen-vectors.
         v = v[:, sort_idx[:3]]
+
         # According to the structure of W^{T} above, the odd rows of V, denoted V1,
         # are a linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of
         # column 1 of all rotation matrices. Similarly, the even rows of V,
