@@ -391,3 +391,33 @@ class Rotation:
             theta = max(min(theta, 1), -1)  # Clamp theta in [-1,1]
             dist = np.arccos(theta, dtype=dtype)
         return dist
+
+    def mean_angular_distance(rots_1, rots_2):
+        """
+        Find the mean angular distance between two sets of rotation matrices.
+
+        :param rots_1: An nx3x3 array of rotation matrices.
+        :param rots_2: An nx3x3 array of rotation matrices.
+
+        :return: The mean angular distance between rotations.
+        """
+
+        dtype = rots_1.dtype
+
+        if len(rots_1) != len(rots_2):
+            raise ValueError("`rots_1` and `rots_2` must be of equal length.")
+
+        n_rots = len(rots_1)
+        ang_dist = np.zeros(n_rots, dtype=dtype)
+        for i in range(n_rots):
+            ang_dist[i] = (
+                Rotation.angle_dist(
+                    rots_1[i],
+                    rots_2[i],
+                    dtype=dtype,
+                )
+                * 180
+                / np.pi
+            )
+
+        return np.mean(ang_dist)
