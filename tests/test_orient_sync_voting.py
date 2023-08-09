@@ -43,7 +43,7 @@ def source_orientation_objs(n_img, L, dtype, offsets=None):
 
 @pytest.mark.parametrize("n_img, L, dtype", PARAMS)
 def test_build_clmatrix(n_img, L, dtype):
-    src, orient_est = source_orientation_objs(n_img, L, dtype, offsets=0)
+    src, orient_est = source_orientation_objs(n_img, L, dtype)
 
     # Build clmatrix estimate.
     orient_est.build_clmatrix()
@@ -62,7 +62,7 @@ def test_build_clmatrix(n_img, L, dtype):
 
 @pytest.mark.parametrize("n_img, L, dtype", PARAMS)
 def test_estimate_rotations(n_img, L, dtype):
-    src, orient_est = source_orientation_objs(n_img, L, dtype, offsets=0)
+    src, orient_est = source_orientation_objs(n_img, L, dtype)
 
     orient_est.estimate_rotations()
 
