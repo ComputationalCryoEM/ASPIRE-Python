@@ -91,7 +91,6 @@ def test_estimate_rotations(n_img, L, dtype):
 def test_estimate_shifts(n_img, L, dtype):
     # Use default random offsets.
     src, orient_est = source_orientation_objs(n_img, L, dtype)
-
     est_shifts = orient_est.estimate_shifts().T
 
     # Assert that estimated shifts are close to src.offsets
