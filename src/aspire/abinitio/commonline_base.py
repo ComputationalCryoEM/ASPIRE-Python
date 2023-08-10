@@ -454,7 +454,6 @@ class CLOrient3D:
         shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
         # Set filter for common-line detection
         h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
-
         return shifts, shift_phases, h
 
     def _generate_index_pairs(self, n_equations):
