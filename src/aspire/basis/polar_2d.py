@@ -42,8 +42,6 @@ class PolarFT:
 
         self._build()
 
-        self.count = self.nrad * (self.ntheta // 2)
-
         # this basis has complex coefficients
         self.coefficient_dtype = complex_type(self.dtype)
 
