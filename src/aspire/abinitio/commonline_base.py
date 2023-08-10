@@ -239,7 +239,7 @@ class CLOrient3D:
         if logging.getLogger().isEnabledFor(logging.DEBUG):
             show = True
         # Negative sign comes from using -i conversion of Fourier transformation
-        est_shifts = sparse.linalg.lsqr(shift_equations, shift_b, show=show)[0]
+        est_shifts = sparse.linalg.lsqr(shift_equations, -shift_b, show=show)[0]
         est_shifts = est_shifts.reshape((2, self.n_img), order="F")
 
         return est_shifts
