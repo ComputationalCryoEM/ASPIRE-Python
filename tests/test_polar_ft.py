@@ -100,9 +100,12 @@ def test_cyclically_symmetric_image(symmetric_image):
 
 
 def test_adjoint_property(asymmetric_image, symmetric_image):
+    """Test the adjoint property."""
     # The evaluate function should be the adjoint operator of evaluate_t.
     # Namely, if A = evaluate, B = evaluate_t, and B=A^t, we will have
-    # (y, A*x) = (A^t*y, x) = (B*y, x)
+    # (y, A*x) = (A^t*y, x) = (B*y, x).
+    # There is no significance to using asymmetric_image and symmetric_image
+    # below, other than that they are different images.
     y, By = asymmetric_image
     _, x, Ax = symmetric_image
 
