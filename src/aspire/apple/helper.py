@@ -70,7 +70,10 @@ class PickerHelper:
 
         # keep only the portion of the image that can be split into blocks with no remainder
         blocks = xp.asarray(
-            img[: -(img.shape[0] % block_size), : -(img.shape[1] % block_size)]
+            img[
+                : img.shape[0] - (img.shape[0] % block_size),
+                : img.shape[1] - (img.shape[1] % block_size),
+            ]
         )
 
         dim3_size = np.sqrt(np.prod(blocks.shape) // (block_size**2)).astype(int)

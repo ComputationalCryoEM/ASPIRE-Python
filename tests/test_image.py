@@ -1,8 +1,11 @@
 import logging
 import os.path
+import tempfile
 
+import mrcfile
 import numpy as np
 import pytest
+from PIL import Image as PILImage
 from pytest import raises
 from scipy import misc
 
@@ -64,7 +67,6 @@ def testRepr():
 
 
 def testNonSquare():
-    # don't need to parametrize this test
     """Test that an irregular Image array raises."""
     with raises(ValueError, match=r".* square .*"):
         _ = Image(np.empty((4, 5)))
@@ -305,3 +307,98 @@ def test_asnumpy_readonly():
     # Attempt assignment
     with raises(ValueError, match=r".*destination is read-only.*"):
         vw[0, 0, 0] = 123
+
+
+@pytest.mark.xfail(reason="Ray logging issue ray#37711", strict=False)
+def test_corrupt_mrc_load(caplog):
+    """
+    Test that corrupt mrc files are logged as expected.
+    """
+
+    caplog.set_level(logging.WARNING)
+
+    # Create a tmp dir for this test output
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        mrc_path = os.path.join(tmpdir_name, "bad.mrc")
+
+        # Create and save image
+        Image(np.empty((1, 8, 8), dtype=np.float32)).save(mrc_path)
+
+        # Open mrc file and soft corrupt it
+        with mrcfile.open(mrc_path, "r+") as fh:
+            fh.header.map = -1
+
+        # Check that we get a WARNING
+        _ = Image.load(mrc_path)
+
+    # Check the message prefix
+    assert f"Image.load of {mrc_path} reporting 1 corruptions" in caplog.text
+
+    # Check the message contains the file path
+    assert mrc_path in caplog.text
+
+
+def test_load_bad_ext():
+    """
+    Check error raised when attempting to load unsupported file.
+    """
+    with raises(RuntimeError, match=r".*unsupported file extension.*"):
+        _ = Image.load("bad.ext")
+
+
+def test_load_mrc():
+    """
+    Test `Image.load` round-trip.
+    """
+
+    # `sample.mrc` is single precision
+    filepath = os.path.join(DATA_DIR, "sample.mrc")
+
+    # Load data from file
+    im = Image.load(filepath)
+    im_64 = Image.load(filepath, dtype=np.float64)
+
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        test_filepath = os.path.join(tmpdir_name, "test.mrc")
+        test_filepath_64 = os.path.join(tmpdir_name, "test_64.mrc")
+
+        im.save(test_filepath)
+        im_64.save(test_filepath_64)
+
+        im2 = Image.load(test_filepath)
+        im2_64 = Image.load(test_filepath_64, dtype=np.float64)
+
+    # Check the single precision round-trip
+    assert np.array_equal(im, im2)
+    assert im2.dtype == np.float32
+
+    # check the double precision round-trip
+    assert np.array_equal(im_64, im2_64)
+    assert im2_64.dtype == np.float64
+
+
+def test_load_tiff():
+    """
+    Test `Image.load` with a TIFF file
+    """
+
+    # `sample.mrc` is single precision
+    filepath = os.path.join(DATA_DIR, "sample.mrc")
+
+    # Load data from file
+    im = Image.load(filepath)
+
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        test_filepath = os.path.join(tmpdir_name, "test.tiff")
+
+        # Write image data as TIFF
+        PILImage.fromarray(im.asnumpy()[0]).save(test_filepath)
+
+        # Load TIFF into Image
+        im2 = Image.load(test_filepath)
+
+    # Check contents
+    assert np.array_equal(im, im2)

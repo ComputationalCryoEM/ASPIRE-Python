@@ -2,27 +2,31 @@ import logging
 
 import numpy as np
 
-from aspire.basis import Basis
+from aspire.image import Image
 from aspire.nufft import anufft, nufft
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
 
 
-class PolarBasis2D(Basis):
+class PolarFT:
     """
     Define a derived class for polar Fourier representation for 2D images
     """
 
     def __init__(self, size, nrad=None, ntheta=None, dtype=np.float32):
         """
-        Initialize an object for the 2D polar Fourier grid class
+        Initialize an object for the 2D polar Fourier grid class. `PolarFT` expects that
+        images are real and uses only half of the `ntheta` values. Downstream algorithms should
+        take advantage of the conjugate symmetry of the polar Fourier coefficients if the full
+        set is needed.
 
         :param size: The shape of the vectors for which to define the grid.
             May be a 2-tuple or an integer, in which case a square basis is assumed.
             Currently only square images are supported.
         :param nrad: The number of points in the radial dimension. Default is resolution // 2.
         :param ntheta: The number of points in the angular dimension. Default is 8 * nrad.
+        :param dtype: dtype of polar Fourier grid.
         """
         if isinstance(size, int):
             size = (size, size)
@@ -30,10 +34,13 @@ class PolarBasis2D(Basis):
         assert ndim == 2, "Only two-dimensional grids are supported."
         assert len(set(size)) == 1, "Only square domains are supported."
 
+        self.ndim = ndim
+        self.sz = size
         self.nrad = nrad
         self.ntheta = ntheta
+        self.dtype = dtype
 
-        super().__init__(size, dtype=dtype)
+        self._build()
 
         # this basis has complex coefficients
         self.coefficient_dtype = complex_type(self.dtype)
@@ -45,7 +52,7 @@ class PolarBasis2D(Basis):
         logger.info("Represent 2D image in a polar Fourier grid")
 
         if self.nrad is None:
-            self.nrad = self.nres // 2
+            self.nrad = self.sz[0] // 2
 
         if self.ntheta is None:
             # try to use the same number as Fast FB basis
@@ -56,7 +63,7 @@ class PolarBasis2D(Basis):
             logger.error(msg)
             raise NotImplementedError(msg)
 
-        self.count = self.nrad * self.ntheta
+        self.count = self.nrad * (self.ntheta // 2)
         self._sz_prod = self.sz[0] * self.sz[1]
 
         # precompute the basis functions in 2D grids
@@ -70,7 +77,7 @@ class PolarBasis2D(Basis):
         dtheta = 2 * np.pi / self.ntheta
 
         # only need half size of ntheta
-        freqs = np.zeros((2, self.nrad * self.ntheta // 2), dtype=self.dtype)
+        freqs = np.zeros((2, self.nrad * (self.ntheta // 2)), dtype=self.dtype)
         for i in range(self.ntheta // 2):
             freqs[0, i * self.nrad : (i + 1) * self.nrad] = np.arange(
                 self.nrad
@@ -92,21 +99,12 @@ class PolarBasis2D(Basis):
         :return x: Image instance in standard 2D coordinate basis with
             resolution of `self.sz`.
         """
-        v = v.reshape(-1, self.ntheta, self.nrad)
 
-        nimgs = v.shape[0]
-
-        half_size = self.ntheta // 2
-
-        v = v[:, :half_size, :] + v[:, half_size:, :].conj()
-
-        v = v.reshape(nimgs, self.nrad * half_size)
-
-        x = anufft(v, self.freqs, self.sz, real=True)
+        x = anufft(v, self.freqs, self.sz, real=True) / self.count
 
         return x
 
-    def _evaluate_t(self, x):
+    def evaluate_t(self, x):
         """
         Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
 
@@ -116,15 +114,33 @@ class PolarBasis2D(Basis):
             Fourier grid. This is an array of vectors whose first dimension
             corresponds to `x.shape[0]`, and last dimension equals `self.count`.
         """
-        nimgs = x.shape[0]
+        if x.dtype != self.dtype:
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate_t"
+                f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
+            )
 
-        half_size = self.ntheta // 2
+        if not isinstance(x, Image):
+            logger.warning(
+                f"{self.__class__.__name__}::evaluate_t"
+                f" passed numpy array instead of {Image}."
+            )
+        else:
+            x = x.asnumpy()
 
-        pf = nufft(x, self.freqs)
+        # Flatten stack
+        stack_shape = x.shape[: -self.ndim]
+        x = x.reshape(-1, *x.shape[-self.ndim :])
 
-        pf = pf.reshape((nimgs, self.nrad, half_size))
-        v = np.concatenate((pf, pf.conj()), axis=1)
+        # We expect the Image `x` to be real in order to take advantage of the conjugate
+        # symmetry of the Fourier transform of a real valued image.
+        if not np.isreal(x).all():
+            raise TypeError(
+                f"The Image `x` must be real valued. Found dtype {x.dtype}."
+            )
 
-        # return v coefficients with the last dimension size of self.count
-        v = v.reshape(nimgs, -1)
-        return v
+        resolution = x.shape[-1]
+
+        pf = nufft(x, self.freqs) / resolution**2
+
+        return pf.reshape(*stack_shape, -1)

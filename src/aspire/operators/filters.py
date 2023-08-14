@@ -10,26 +10,33 @@ from aspire.utils.filter_to_fb_mat import filter_to_fb_mat
 logger = logging.getLogger(__name__)
 
 
-def evaluate_src_filters_on_grid(src):
+def evaluate_src_filters_on_grid(src, indices=None):
     """
     Given an ImageSource object, compute the source's unique filters
     at the filter_indices specified in its metadata.
+
+    :param src: Source instance
+    :param indices: Optional, subset of src indices to compute.
+        Defaults to the entire src.
 
     :return: an `src.L x src.L x len(src.filter_indices)`
         array containing the evaluated filters at each gridpoint
     """
 
+    if indices is None:
+        indices = np.arange(src.n, dtype=int)
+
     grid2d = grid_2d(src.L, indexing="yx", dtype=src.dtype)
     omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
 
-    h = np.empty((omega.shape[-1], len(src.filter_indices)), dtype=src.dtype)
+    h = np.empty((omega.shape[-1], len(indices)), dtype=src.dtype)
     for i, filt in enumerate(src.unique_filters):
-        idx_k = np.where(src.filter_indices == i)[0]
+        idx_k = np.where(src.filter_indices[indices] == i)[0]
         if len(idx_k) > 0:
             filter_values = filt.evaluate(omega)
             h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
-    h = np.reshape(h, grid2d["x"].shape + (len(src.filter_indices),))
+    h = np.reshape(h, grid2d["x"].shape + (len(indices),))
 
     return h
 

@@ -106,4 +106,4 @@ logger.info(
 )
 
 # Basic Check
-assert mse_reg < 0.06
+assert mse_reg < 0.05

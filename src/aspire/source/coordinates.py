@@ -66,21 +66,28 @@ class CoordinateSource(ImageSource, ABC):
         self.particles = []
         self._populate_particles(coord_paths)
 
-        # Read shapes of all micrographs
-        self.mrc_shapes = self._get_mrc_shapes()
-
         # get first mrc and coordinate file to report some data
         first_mrc_index, first_coord = self.particles[0]
         first_mrc = self.mrc_paths[first_mrc_index]
+        self._ext = os.path.splitext(first_mrc)[1]
+        if self._ext not in Image.extensions:
+            raise RuntimeError(f"Unsupported file type {self.ext}.")
 
-        with mrcfile.open(first_mrc) as mrc:
-            # get dtype from first micrograph
-            mode = int(mrc.header.mode)
-            dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
-            assert (
-                mode in dtypes
-            ), f"Only modes={list(dtypes.keys())} in MRC files are supported for now."
-            dtype = dtypes[mode]
+        # Default non MRC files (eg, TIFF) to single precision.
+        dtype = "float32"
+        # If file is MRC, we can get dtype from header.
+        if self._ext == ".mrc":
+            with mrcfile.open(first_mrc) as mrc:
+                # get dtype from first micrograph
+                mode = int(mrc.header.mode)
+                dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
+                assert (
+                    mode in dtypes
+                ), f"Only modes={list(dtypes.keys())} in MRC files are supported for now."
+                dtype = dtypes[mode]
+
+        # Read shapes of all micrographs
+        self.mrc_shapes = self._get_mrc_shapes()
 
         # look at first coord to get the particle size
         # this was either provided by the user or read from a .box file
@@ -98,7 +105,9 @@ class CoordinateSource(ImageSource, ABC):
             f"{self.__class__.__name__} from {os.path.dirname(self.mrc_paths[0])} contains {self.num_micrographs} micrographs, {len(self.particles)} picked particles."
         )
         # report different mrc shapes
-        logger.info(f"Micrographs have the following shapes: {*set(self.mrc_shapes),}")
+        logger.info(
+            f"Micrographs have the following shapes: {np.unique(self.mrc_shapes, axis=0)}"
+        )
 
         # remove particles whose boxes do not fit at given particle_size
         # and get number removed
@@ -287,19 +296,14 @@ class CoordinateSource(ImageSource, ABC):
 
     def _get_mrc_shapes(self):
         """
-        Iterate through self.mrc_shapes and read the dimensions of each micrograph
+        Iterate through self.mrc_paths and read the dimensions of each micrograph.
+
         :return mrc_shapes: A list of tuples representing the corresponding shapes
         """
-        mrc_shapes = [(0, 0) for mrc in self.mrc_paths]
+
+        mrc_shapes = np.zeros((self.num_micrographs, 2), dtype=int)
         for i, mrc in enumerate(self.mrc_paths):
-            with mrcfile.open(mrc) as mrc_file:
-                shape = mrc_file.data.shape
-                if len(shape) != 2:
-                    raise ValueError(
-                        f"Shape of mrc file is {shape} but expected shape of size 2."
-                        "Is this a stack of unaligned micrographs?"
-                    )
-                mrc_shapes[i] = shape
+            mrc_shapes[i, :] = Image.load(mrc).resolution
 
         return mrc_shapes
 
@@ -457,10 +461,9 @@ class CoordinateSource(ImageSource, ABC):
         # now that the particles have been grouped by
         # their origin micrograph
         for mrc_index, coord_list in grouped.items():
-            # get explicit filepath from cached list
-            fp = self.mrc_paths[mrc_index]
-            with mrcfile.open(fp) as mrc_in:
-                arr = mrc_in.data
+            # Load file as 2D numpy array.
+            arr = Image.load(self.mrc_paths[mrc_index]).asnumpy()[0]
+
             # create iterable of the coordinates in this mrc
             # we don't need to worry about exhausting this iter
             # because we know it contains the exact number of particles

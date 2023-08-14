@@ -4,7 +4,7 @@ import math
 import numpy as np
 import scipy.sparse as sparse
 
-from aspire.basis import PolarBasis2D
+from aspire.basis import PolarFT
 from aspire.utils import common_line_from_rots
 from aspire.utils.random import choice
 
@@ -58,6 +58,10 @@ class CLOrient3D:
             self.n_rad = math.ceil(0.5 * self.n_res)
         if self.n_check is None:
             self.n_check = self.n_img
+        if not (0 < self.n_check <= self.n_img):
+            msg = "n_check must be in (0, n_img]"
+            logger.error(msg)
+            raise NotImplementedError(msg)
         if self.n_theta % 2 == 1:
             msg = "n_theta must be even"
             logger.error(msg)
@@ -65,14 +69,13 @@ class CLOrient3D:
 
         imgs = self.src.images[:]
 
-        # Obtain coefficients in polar Fourier basis for input 2D images
-        self.basis = PolarBasis2D(
+        # Obtain coefficients of polar Fourier transform for input 2D images
+        self.pft = PolarFT(
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
-        self.pf = self.basis.evaluate_t(imgs)
-        self.pf = self.pf.reshape(self.n_img, self.n_theta, self.n_rad)
-
+        self.pf = self.pft.evaluate_t(imgs)
         n_theta_half = self.n_theta // 2
+        self.pf = self.pf.reshape(self.n_img, n_theta_half, self.n_rad)
 
         # The last two dimension of pf is of size n_theta x n_rad. We will convert pf
         # into an array of size (n_theta/2) x (n_rad-1), that is, take half of each ray
@@ -85,7 +88,7 @@ class CLOrient3D:
         # Python version we will use the size of (n_theta/2) x (n_rad-1) directly and make
         # sure every part is using it. By taking shorter correlations we can speed the
         # computation by a factor of two.
-        self.pf = np.flip(self.pf[:, n_theta_half:, 1:], 2)
+        self.pf = self.pf[:, :, 1:]
 
     def estimate_rotations(self):
         """
@@ -144,7 +147,6 @@ class CLOrient3D:
         shifts, shift_phases, h = self._generate_shift_phase_and_filter(
             r_max, max_shift, shift_step
         )
-        all_shift_phases = shift_phases.T
 
         # Apply bandpass filter, normalize each ray of each image
         # Note that only use half of each ray
@@ -167,8 +169,8 @@ class CLOrient3D:
                 p2_flipped = np.conj(pf[j])
 
                 for shift in range(len(shifts)):
-                    shift_phases = all_shift_phases[shift]
-                    p2_shifted_flipped = (shift_phases * p2_flipped).T
+                    shift_phase = shift_phases[shift]
+                    p2_shifted_flipped = (shift_phase * p2_flipped).T
                     # Compute correlations in the positive r direction
                     part1 = p1_real.dot(np.real(p2_shifted_flipped))
                     # Compute correlations in the negative r direction
@@ -270,6 +272,9 @@ class CLOrient3D:
 
         n_theta_half = self.n_theta // 2
         n_img = self.n_img
+
+        if self.rotations is None:
+            self.estimate_rotations()
         rotations = self.rotations
 
         pf = self.pf.copy()
@@ -333,8 +338,8 @@ class CLOrient3D:
 
             # apply the shifts to images
             pf_i_flipped = np.conj(pf_i)
-            pf_i_stack = np.einsum("i, ij -> ij", pf_i, shift_phases)
-            pf_i_flipped_stack = np.einsum("i, ij -> ij", pf_i_flipped, shift_phases)
+            pf_i_stack = np.einsum("i, ji -> ij", pf_i, shift_phases)
+            pf_i_flipped_stack = np.einsum("i, ji -> ij", pf_i_flipped, shift_phases)
 
             c1 = 2 * np.real(np.dot(np.conj(pf_i_stack.T), pf_j))
             c2 = 2 * np.real(np.dot(np.conj(pf_i_flipped_stack.T), pf_j))
@@ -442,11 +447,11 @@ class CLOrient3D:
         n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
 
         # only half of ray
-        rk = np.arange(-r_max, 0)
+        rk = np.arange(1, r_max + 1)
 
         # Generate all shift phases
         shifts = -max_shift + shift_step * np.arange(n_shifts)
-        shift_phases = np.exp(np.outer(-2 * np.pi * 1j * rk / (2 * r_max + 1), shifts))
+        shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
         # Set filter for common-line detection
         h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
         return shifts, shift_phases, h
@@ -509,7 +514,9 @@ class CLOrient3D:
         # Note if we'd rather not have the dtype and casting args,
         #   we can control h.dtype instead.
         np.einsum(subscripts, pf, h, out=pf, dtype=pf.dtype, casting="same_kind")
-        pf[..., r_max - 1 : r_max + 2] = 0
+
+        # This is a low pass filter, cutting out the highest frequency.
+        pf[..., r_max - 1] = 0
         pf /= np.linalg.norm(pf, axis=-1)[..., np.newaxis]
 
         return pf

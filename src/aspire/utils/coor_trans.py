@@ -315,7 +315,7 @@ def rots_to_clmatrix(rots, n_theta, match_cl=True):
 
     :param rots: n_rotsx3x3 array of rotation matrices.
     :param n_theta: Number of theta values fo common lines indices.
-    :param match_sv: Option to match cl_matrix convention from CLOrient3d
+    :param match_cl: Option to match cl_matrix convention from CLOrient3d
 
     :return: n_rots x n_rots common lines matrix.
     """

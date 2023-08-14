@@ -1,9 +1,11 @@
 import logging
-from warnings import catch_warnings, filterwarnings, warn
+import os
+from warnings import catch_warnings, filterwarnings, simplefilter, warn
 
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
+from PIL import Image as PILImage
 from scipy.linalg import lstsq
 
 import aspire.volume
@@ -72,7 +74,64 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     return (imgs - mean) / std
 
 
+def load_mrc(filepath):
+    """
+    Load raw data from `.mrc` into an array.
+
+    :param filepath: File path (string).
+    :return: numpy array of image data.
+    """
+
+    # mrcfile tends to yield many warnings about EMPIAR datasets being corrupt
+    # These warnings generally seem benign, and the message could be clearer
+    # The following code handles the warnings via ASPIRE's logger
+    with catch_warnings(record=True) as ws:
+        # Cause all warnings to always be triggered in this context
+        simplefilter("always")
+
+        with mrcfile.open(filepath, mode="r", permissive=True) as mrc:
+            im = mrc.data
+
+        # Log each mrcfile warning to debug log, noting the associated file
+        for w in ws:
+            logger.debug(
+                "In `Image.load` mrcfile.open reports corruption for"
+                f" {filepath} warning: {w.message}"
+            )
+
+        # Log a single warning to user
+        # Give context and note assocated filepath
+        if len(ws) > 0:
+            logger.warning(
+                f"Image.load of {filepath} reporting {len(ws)} corruptions."
+                " Most likely this is a problem with the header contents."
+                " Details written to debug log."
+                f" Will attempt to continue processing {filepath}"
+            )
+
+    return im
+
+
+def load_tiff(filepath):
+    """
+    Load raw data from `.tiff` into an array.
+
+    :param filepath: File path (string).
+    :return: numpy array of image data.
+    """
+
+    # Use PIL to open `filepath` and cast to numpy array.
+    return np.array(PILImage.open(filepath))
+
+
 class Image:
+    # Map file extensions to their respective readers
+    extensions = {
+        ".mrc": load_mrc,
+        ".tif": load_tiff,
+        ".tiff": load_tiff,
+    }
+
     def __init__(self, data, dtype=None):
         """
         A stack of one or more images.
@@ -342,6 +401,38 @@ class Image:
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)
             mrc.set_data(self._data.astype(np.float32))
+
+    @staticmethod
+    def load(filepath, dtype=None):
+        """
+        Load raw data from supported files.
+
+        Currently MRC and TIFF are supported.
+
+        :param filepath: File path (string).
+        :param dtype: Optionally force cast to `dtype`.
+             Default dtype is inferred from the file contents.
+        :return: numpy array of image data.
+        """
+
+        # Get the file extension
+        ext = os.path.splitext(filepath)[1]
+
+        # On unsupported extension, raise with suggested file types
+        if ext not in Image.extensions:
+            raise RuntimeError(
+                f"Attempting to open unsupported file extension '{ext}', try {list(Image.extensions.keys())}."
+            )
+
+        # Call the appropriate file reader
+        im = Image.extensions[ext](filepath)
+
+        # Attempt casting when user provides dtype
+        if dtype is not None:
+            im = im.astype(dtype, copy=False)
+
+        # Return as Image instance
+        return Image(im)
 
     def _im_translate(self, shifts):
         """

@@ -1,11 +1,9 @@
 import logging
 import os
-import warnings
 from concurrent import futures
 
-import mrcfile
 import numpy as np
-from PIL import Image
+from PIL import Image as PILImage
 from scipy import ndimage, signal
 from scipy.ndimage import (
     binary_dilation,
@@ -16,6 +14,7 @@ from scipy.ndimage import (
 from sklearn import preprocessing, svm
 
 from aspire.apple.helper import PickerHelper
+from aspire.image import Image
 from aspire.numeric import fft, xp
 from aspire.utils import tqdm
 
@@ -77,8 +76,7 @@ class Picker:
         self.response_thresh_norm_factor = response_thresh_norm_factor
         self.conv_map_nthreads = conv_map_nthreads
 
-        self.original_im = None  # populated in read_mrc()
-        self.im = self.read_mrc()
+        self.im = self.read_micrograph()
 
         if model_opts is None:
             model_opts = dict()
@@ -139,46 +137,19 @@ class Picker:
                 class_weight="balanced",
             )
 
-    def read_mrc(self):
+    def read_micrograph(self):
         """
-        Reads the micrograph.
+        Utility wrapper to read supported micrograph file extensions.
+
         Applies binning and a low-pass filter.
-
-        :return: Micrograph image
         """
 
-        # mrcfile tends to yield many warnings about EMPIAR datasets being corrupt
-        # These warnings generally seem benign, and the message could be clearer
-        # The following code handles the warnings via ASPIRE's logger
-        with warnings.catch_warnings(record=True) as ws:
-            # Cause all warnings to always be triggered in this context
-            warnings.simplefilter("always")
-
-            # Try to open the mrcfile
-            with mrcfile.open(self.filename, mode="r", permissive=True) as mrc:
-                im = mrc.data.astype("float")
-
-            # Log each mrcfile warning to debug log, noting the associated file
-            for w in ws:
-                logger.debug(
-                    "In APPLE.picking mrcfile.open reports corruption for"
-                    f" {self.filename} warning: {w.message}"
-                )
-
-            # Log a single warning to user
-            # Give context and note assocated filename
-            if len(ws) > 0:
-                logger.warning(
-                    f"APPLE.picking mrcfile reporting {len(ws)} corruptions."
-                    " Most likely this is a problem with the header contents."
-                    " Details written to debug log."
-                    f" APPLE will attempt to continue processing {self.filename}"
-                )
-
-        self.original_im = im
+        # Load mircrograph data
+        # TODO, "float" is from legacy APPLE.  dtype handling should be improved
+        self.original_im = Image.load(self.filename, "float").asnumpy()[0]
 
         # Discard outer pixels
-        im = im[
+        im = self.original_im[
             self.mrc_margin_top : -self.mrc_margin_bottom,
             self.mrc_margin_left : -self.mrc_margin_right,
         ]
@@ -191,7 +162,7 @@ class Picker:
 
         # Note, float64 required for signal.correlate call accuracy.
         im = np.asarray(
-            Image.fromarray(im).resize(size, Image.Resampling.BICUBIC)
+            PILImage.fromarray(im).resize(size, PILImage.Resampling.BICUBIC)
         ).astype(np.float64, copy=False)
 
         im = signal.correlate(

@@ -272,7 +272,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
         # the corresponding third rows vis.
-        Ri_tildes = np.array([self._complete_third_row_to_rot(vi) for vi in vis])
+        Ri_tildes = self._complete_third_row_to_rot(vis)
 
         # Step 2: Construct all in-plane rotation matrices, R_theta_ijs.
         max_angle = (360 // order) * order
@@ -286,7 +286,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             r_max, max_shift_1d, shift_step
         )
         n_shifts = len(shifts)
-        all_shift_phases = shift_phases.T
 
         # Q is the n_img x n_img  Hermitian matrix defined by Q = q*q^H,
         # where q = (exp(i*order*theta_0), ..., exp(i*order*theta_{n_img-1}))^H,
@@ -310,7 +309,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
                 # Generate shifted versions of images.
                 pf_i_shifted = np.array(
-                    [pf_i * shift_phase for shift_phase in all_shift_phases]
+                    [pf_i * shift_phase for shift_phase in shift_phases]
                 )
 
                 Ri_tilde = Ri_tildes[i]
@@ -442,7 +441,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             r_max, max_shift_1d, shift_step
         )
         n_shifts = len(shifts)
-        all_shift_phases = shift_phases.T
 
         # Reconstruct the full polar Fourier for use in correlation. self.pf only consists of
         # rays in the range [180, 360), with shape (n_img, n_theta//2, n_rad-1).
@@ -458,7 +456,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
             # Generate shifted versions of images.
             pf_i_shifted = np.array(
-                [pf_i * shift_phase for shift_phase in all_shift_phases]
+                [pf_i * shift_phase for shift_phase in shift_phases]
             )
             pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
 
@@ -791,31 +789,51 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
     @staticmethod
     def _complete_third_row_to_rot(r3):
         """
-        Construct a rotation matrix whose third row is equal to the given row vector.
+        Construct rotation matrices whose third rows are equal to the given row vectors.
         For vector r3 = [a, b, c], where [a, b, c] != [0, 0, 1], we return the matrix
         with rows r1, r2, r3, given by:
 
         r1 = 1/sqrt(a^2 + b^2)[b, -a, 0],
         r2 = 1/sqrt(a^2 + b^2)[ac, bc, -(a^2 + b^2)].
 
-        :param r3: A 1x3 vector of norm 1.
-        :return: A 3x3 rotation matrix whose third row is r3.
+        :param r3: A nx3 array where each row vector has norm 1.
+        :return: An nx3x3 array of rotation matrices whose third rows are r3.
         """
 
+        # Handle singleton vector.
+        singleton = False
+        if r3.shape == (3,):
+            r3 = np.expand_dims(r3, axis=0)
+            singleton = True
+
+        # Initialize output rotation matrices.
+        rots = np.zeros((len(r3), 3, 3), dtype=r3.dtype)
+
+        # Populate 3rd rows.
+        rots[:, 2] = r3
+
+        # Mask for third rows that do not coincide with the z-axis.
+        mask = np.linalg.norm(r3 - [0, 0, 1], axis=1) >= 1e-5
+
         # If the third row coincides with the z-axis we return the identity matrix.
-        if norm(r3 - [0, 0, 1]) < 1e-5:
-            return np.eye(3)
+        rots[~mask] = np.eye(3, dtype=r3.dtype)
 
-        # 'norm_fac' is non-zero since r3 does not coincide with the z-axis.
-        norm_12 = np.sqrt(r3[0] ** 2 + r3[1] ** 2)
+        # 'norm_12' is non-zero since r3 does not coincide with the z-axis.
+        norm_12 = np.sqrt(r3[mask, 0] ** 2 + r3[mask, 1] ** 2)
 
-        # Construct an orthogonal row vector of norm 1.
-        r1 = np.array([r3[1] / norm_12, -r3[0] / norm_12, 0])
+        # Populate 1st rows with vector orthogonal to row 3.
+        rots[mask, 0, 0] = r3[mask, 1] / norm_12
+        rots[mask, 0, 1] = -r3[mask, 0] / norm_12
 
-        # Construct r2 so that r3 = r1xr2
-        r2 = np.array([r3[0] * r3[2] / norm_12, r3[1] * r3[2] / norm_12, -norm_12])
+        # Populate 2nd rows such that r3 = r1 x r2
+        rots[mask, 1, 0] = r3[mask, 0] * r3[mask, 2] / norm_12
+        rots[mask, 1, 1] = r3[mask, 1] * r3[mask, 2] / norm_12
+        rots[mask, 1, 2] = -norm_12
 
-        return np.vstack((r1, r2, r3))
+        if singleton:
+            rots = rots.reshape(3, 3)
+
+        return rots
 
     @staticmethod
     def cl_angles_to_ind(cl_angles, n_theta):

@@ -1,13 +1,6 @@
 import logging
-from functools import partial
-
-import numpy as np
-import scipy.sparse.linalg
-from scipy.linalg import norm
-from scipy.sparse.linalg import LinearOperator
 
 from aspire.reconstruction.kernel import FourierKernel
-from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +46,14 @@ class Estimator:
             if self.preconditioner == "circulant":
                 logger.info("Computing Preconditioner kernel")
                 precond_kernel = self.precond_kernel = FourierKernel(
-                    1.0 / self.kernel.circularize(), centered=True
+                    1.0 / self.kernel.circularize()
                 )
             else:
                 precond_kernel = self.precond_kernel = None
             return precond_kernel
 
-        return super(Estimator, self).__getattr__(name)
+        else:
+            raise AttributeError(name)
 
     def compute_kernel(self):
         raise NotImplementedError("Subclasses must implement the compute_kernel method")
@@ -68,74 +62,14 @@ class Estimator:
         """Return an estimate as a Volume instance."""
         if b_coeff is None:
             b_coeff = self.src_backward()
-        # conj_grad expects a 1d array if n = 1
-        b_coeff = np.squeeze(b_coeff, axis=0)
         est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
         est = self.basis.evaluate(est_coeff).T
 
         return est
 
-    def src_backward(self):
-        """
-        Apply adjoint mapping to source
-
-        :return: The adjoint mapping applied to the images, averaged over the whole dataset and expressed
-            as coefficients of `basis`.
-        """
-        mean_b = Volume(
-            np.zeros((self.src.L, self.src.L, self.src.L), dtype=self.dtype)
-        )
-
-        for i in range(0, self.src.n, self.batch_size):
-            im = self.src.images[i : i + self.batch_size]
-            batch_mean_b = self.src.im_backward(im, i) / self.src.n
-            mean_b += batch_mean_b.astype(self.dtype)
-
-        res = self.basis.evaluate_t(mean_b)
-        logger.info(f"Determined adjoint mappings. Shape = {res.shape}")
-        return res
-
-    def conj_grad(self, b_coeff, tol=1e-5, regularizer=0):
-        n = b_coeff.shape[0]
-        kernel = self.kernel
-
-        if regularizer > 0:
-            kernel += regularizer
-
-        operator = LinearOperator(
-            (n, n), matvec=partial(self.apply_kernel, kernel=kernel), dtype=self.dtype
-        )
-        if self.precond_kernel is None:
-            M = None
-        else:
-            precond_kernel = self.precond_kernel
-            if regularizer > 0:
-                precond_kernel += regularizer
-            M = LinearOperator(
-                (n, n),
-                matvec=partial(self.apply_kernel, kernel=precond_kernel),
-                dtype=self.dtype,
-            )
-
-        target_residual = tol * norm(b_coeff)
-
-        def cb(xk):
-            logger.info(
-                f"Delta {norm(b_coeff - self.apply_kernel(xk))} (target {target_residual})"
-            )
-
-        x, info = scipy.sparse.linalg.cg(
-            operator, b_coeff, M=M, callback=cb, tol=tol, atol=0
-        )
-
-        if info != 0:
-            raise RuntimeError("Unable to converge!")
-        return x
-
     def apply_kernel(self, vol_coeff, kernel=None):
         """
         Applies the kernel represented by convolution
-
         :param vol_coeff: The volume to be convolved, stored in the basis coefficients.
         :param kernel: a Kernel object. If None, the kernel for this Estimator is used.
         :return: The result of evaluating `vol_coeff` in the given basis, convolving with the kernel given by
@@ -143,10 +77,7 @@ class Estimator:
         """
         if kernel is None:
             kernel = self.kernel
-        vol = self.basis.evaluate(vol_coeff)
-        # convolve_volume expects a 3-dimensional array
-        # so we remove the first dimension of the volume, which is 1
-        vol = Volume(kernel.convolve_volume(vol[0]))
-        vol = self.basis.evaluate_t(vol)
-
-        return vol
+        vol = self.basis.evaluate(vol_coeff)  # returns a Volume
+        vol = kernel.convolve_volume(vol)  # returns a Volume
+        vol_coef = self.basis.evaluate_t(vol)
+        return vol_coef

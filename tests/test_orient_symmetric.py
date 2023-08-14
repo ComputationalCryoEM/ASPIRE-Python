@@ -3,7 +3,7 @@ import pytest
 from numpy import pi, random
 from numpy.linalg import det, norm
 
-from aspire.abinitio import CLSymmetryC3C4, CLSymmetryCn
+from aspire.abinitio import CLSymmetryC2, CLSymmetryC3C4, CLSymmetryCn
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
 from aspire.source import Simulation
 from aspire.utils import Rotation, utest_tolerance
@@ -14,6 +14,8 @@ from aspire.volume import CnSymmetricVolume
 
 # A set of these parameters are marked expensive to reduce testing time.
 # Each tuple holds the parameters (n_img, resolution "L", cyclic order "order", dtype).
+param_list_c2 = [(55, 44, 2, np.float32)]
+
 param_list_c3_c4 = [
     (24, 44, 3, np.float32),
     (24, 45, 4, np.float64),
@@ -77,21 +79,30 @@ def source_orientation_objs(n_img, L, order, dtype):
         seed=seed,
     )
 
-    if order in [3, 4]:
-        CLclass = CLSymmetryC3C4
-    else:
-        CLclass = CLSymmetryCn
-    orient_est = CLclass(
-        src,
-        symmetry=f"C{order}",
+    cl_kwargs = dict(
+        src=src,
         n_theta=360,
-        max_shift=1 / L,  # set to 1 pixel
+        max_shift=1 / L,
         seed=seed,
     )
+
+    if order in [3, 4]:
+        cl_class = CLSymmetryC3C4
+        cl_kwargs["symmetry"] = f"C{order}"
+    elif order == 2:
+        cl_class = CLSymmetryC2
+        cl_kwargs["min_dist_cls"] = 15
+    else:
+        cl_class = CLSymmetryCn
+        cl_kwargs["symmetry"] = f"C{order}"
+    orient_est = cl_class(**cl_kwargs)
+
     return src, orient_est
 
 
-@pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4 + param_list_cn)
+@pytest.mark.parametrize(
+    "n_img, L, order, dtype", param_list_c2 + param_list_c3_c4 + param_list_cn
+)
 def test_estimate_rotations(n_img, L, order, dtype):
     src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
 
@@ -122,10 +133,12 @@ def test_estimate_rotations(n_img, L, order, dtype):
         )
 
     # Assert mean angular distance is reasonable.
-    if order > 4:
-        assert np.mean(ang_dist) < 5
-    else:
+    if order == 2:
+        assert np.mean(ang_dist) < 4
+    elif order == 3 or order == 4:
         assert np.mean(ang_dist) < 2
+    else:
+        assert np.mean(ang_dist) < 5
 
 
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
@@ -161,7 +174,7 @@ def test_relative_rotations(n_img, L, order, dtype):
                 Rotation.angle_dist(Rij_J, Rij_s_gt),
             )
         angular_distance[idx] = np.min(dist)
-    mean_angular_distance = np.mean(angular_distance)
+    mean_angular_distance = np.mean(angular_distance) * 180 / np.pi
 
     # Assert that the mean_angular_distance is less than 5 degrees.
     assert mean_angular_distance < 5
@@ -195,7 +208,7 @@ def test_self_relative_rotations(n_img, L, order, dtype):
         for i, estimate in enumerate(cases):
             dist[i] = Rotation.angle_dist(estimate, Rii_gt)
         angular_distance[i] = dist[np.argmin(dist)]
-    mean_angular_distance = np.mean(angular_distance)
+    mean_angular_distance = np.mean(angular_distance) * 180 / np.pi
 
     # Check that mean_angular_distance is less than 5 degrees.
     assert mean_angular_distance < 5
@@ -338,6 +351,48 @@ def test_self_commonlines(n_img, L, order, dtype):
     assert np.allclose(detection_rate, 1.0)
 
 
+@pytest.mark.parametrize("n_img, L, order, dtype", param_list_c2)
+def test_commonlines_c2(n_img, L, order, dtype):
+    src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
+    n_theta = cl_symm.n_theta
+
+    # Build common-lines matrix.
+    cl_symm.build_clmatrix()
+    cl = cl_symm.clmatrix
+
+    # Ground truth common-lines matrix.
+    cl_gt = _gt_cl_c2(n_theta, src.rotations)
+
+    # Convert from indices to angles. Use angle of common-line in [0, 180).
+    cl = (cl * 360 / n_theta) % 180
+    cl_gt = (cl_gt * 360 / n_theta) % 180
+
+    pairs = all_pairs(n_img)
+    within_2 = 0
+    for i, j in pairs:
+        # For each pair of images the two sets of mutual common-lines in cl, (cl[0,i,j], cl[0,j,i])
+        # and (cl[1,i,j], cl[1,j,i]), should each match one of the two sets in the ground truth cl_gt.
+        # We take the sum of errors from both combinations.
+        err_1 = (
+            abs(cl[0, i, j] - cl_gt[0, i, j])
+            + abs(cl[0, j, i] - cl_gt[0, j, i])
+            + abs(cl[1, i, j] - cl_gt[1, i, j])
+            + abs(cl[1, j, i] - cl_gt[1, j, i])
+        )
+        err_2 = (
+            abs(cl[0, i, j] - cl_gt[1, i, j])
+            + abs(cl[0, j, i] - cl_gt[1, j, i])
+            + abs(cl[1, i, j] - cl_gt[0, i, j])
+            + abs(cl[1, j, i] - cl_gt[0, j, i])
+        )
+        min_err = min(err_1, err_2)
+        if min_err <= 2:
+            within_2 += 1
+
+    # Check that at least 90% of estimates are within 5 degrees.
+    assert within_2 / len(pairs) > 0.90
+
+
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
 def test_commonlines(n_img, L, order, dtype):
     src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
@@ -445,20 +500,23 @@ def test_estimate_third_rows(dtype):
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_complete_third_row(dtype):
-    # Complete third row that coincides with z-axis
-    z = np.array([0, 0, 1], dtype=dtype)
-    Rz = CLSymmetryC3C4._complete_third_row_to_rot(z)
+    # Build random third rows.
+    r3 = randn(10, 3, seed=123).astype(dtype)
+    r3 /= norm(r3, axis=1)[..., np.newaxis]
 
-    # Complete random third row.
-    r3 = randn(3, seed=123).astype(dtype)
-    r3 /= norm(r3)
+    # Set first row to be identical with z-axis.
+    r3[0] = np.array([0, 0, 1], dtype=dtype)
+
+    # Generate rotations.
     R = CLSymmetryC3C4._complete_third_row_to_rot(r3)
 
-    # Assert that Rz is the identity matrix.
-    assert np.allclose(Rz, np.eye(3, dtype=dtype))
+    # Assert that first rotation is the identity matrix.
+    assert np.allclose(R[0], np.eye(3, dtype=dtype))
 
-    # Assert that R is orthogonal with determinant 1.
-    assert np.allclose(R @ R.T, np.eye(3, dtype=dtype), atol=utest_tolerance(dtype))
+    # Assert that each rotation is orthogonal with determinant 1.
+    assert np.allclose(
+        R @ R.transpose((0, 2, 1)), np.eye(3, dtype=dtype), atol=utest_tolerance(dtype)
+    )
     assert np.allclose(det(R), 1)
 
 
@@ -546,3 +604,45 @@ def test_mean_outer_product_estimator():
 
     # The resulting synchronized_mean should be V.
     assert np.allclose(est.synchronized_mean(), V)
+
+
+def test_square_mask():
+    n_shifts = 2
+    x_len = 4
+    y_len = 4
+    data = np.ones((x_len, n_shifts, y_len), dtype=np.float32)
+
+    # Test centered mask.
+    ref = np.array([[1, 1, 1, 1], [1, 0, 0, 1], [1, 0, 0, 1], [1, 1, 1, 1]], dtype=int)
+    x, y = x_len // 2, y_len // 2
+    mask = CLSymmetryC2._square_mask(data, x, y, dist=1)
+    for shift in range(n_shifts):
+        assert np.array_equal(mask[:, shift], ref)
+
+    # Test mask near edge of box.
+    ref = np.array([[0, 0, 1, 1], [0, 0, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], dtype=int)
+    x, y = 0, 0
+    mask = CLSymmetryC2._square_mask(data, x, y, dist=2)
+    for shift in range(n_shifts):
+        assert np.array_equal(mask[:, shift], ref)
+
+
+def _gt_cl_c2(n_theta, rots_gt):
+    n_imgs = len(rots_gt)
+    gs = cyclic_rotations(2)
+    clmatrix_gt = np.zeros((2, n_imgs, n_imgs))
+    for i in range(n_imgs):
+        Ri = rots_gt[i]
+        for j in range(i + 1, n_imgs):
+            Rj = rots_gt[j]
+            for idx, g in enumerate(gs):
+                U = Ri.T @ g @ Rj
+                c1 = np.array([-U[1, 2], U[0, 2]])
+                c2 = np.array([U[2, 1], -U[2, 0]])
+                clmatrix_gt[idx, i, j] = CLSymmetryC3C4.cl_angles_to_ind(
+                    c1[np.newaxis, :], n_theta
+                )
+                clmatrix_gt[idx, j, i] = CLSymmetryC3C4.cl_angles_to_ind(
+                    c2[np.newaxis, :], n_theta
+                )
+    return clmatrix_gt
