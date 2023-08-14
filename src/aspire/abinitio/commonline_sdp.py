@@ -43,16 +43,18 @@ class CommonlineSDP(CLOrient3D):
         logger.info("Computing the common lines matrix.")
         self.build_clmatrix()
 
-        S = self.construct_S(self.clmatrix)
-        A, b = self.sdp_prep()
-        Gram = self.compute_Gram_matrix(S, A, b)
-        rotations = self.deterministic_rounding(Gram)
+        S = self._construct_S(self.clmatrix)
+        A, b = self._sdp_prep()
+        Gram = self._compute_Gram_matrix(S, A, b)
+        rotations = self._deterministic_rounding(Gram)
         self.rotations = rotations
 
-    def construct_S(self, clmatrix):
+    def _construct_S(self, clmatrix):
         """
         Compute the 2*n_img x 2*n_img commonline matrix S.
         """
+        logger.info("Constructing the common line quadratic form matrix S.")
+
         S11 = np.zeros((self.n_img, self.n_img), dtype=self.dtype)
         S12 = np.zeros((self.n_img, self.n_img), dtype=self.dtype)
         S21 = np.zeros((self.n_img, self.n_img), dtype=self.dtype)
@@ -84,10 +86,12 @@ class CommonlineSDP(CLOrient3D):
 
         return S
 
-    def sdp_prep(self):
+    def _sdp_prep(self):
         """
         Prepare optimization problem constraints.
         """
+        logger.info("Preparing SDP optimization constraints.")
+
         n = 2 * self.n_img
         A = []
         b = []
@@ -111,10 +115,12 @@ class CommonlineSDP(CLOrient3D):
 
         return A, b
 
-    def compute_Gram_matrix(self, S, A, b):
+    def _compute_Gram_matrix(self, S, A, b):
         """
         Compute the Gram matrix by solving a SDP.
         """
+        logger.info("Solving SDP to approximate Gram matrix.")
+
         n = 2 * self.n_img
         # Define and solve the CVXPY problem.
         # Create a symmetric matrix variable.
@@ -129,7 +135,7 @@ class CommonlineSDP(CLOrient3D):
 
         return Gram
 
-    def deterministic_rounding(self, Gram):
+    def _deterministic_rounding(self, Gram):
         """
         Deterministic rounding procedure to recover the rotations from the Gram matrix.
 
@@ -137,11 +143,12 @@ class CommonlineSDP(CLOrient3D):
 
         :return: An n_img x 3 x 3 stack of rotation matrices.
         """
+        logger.info("Recovering rotations from Gram matrix.")
 
         # Obtain top eigenvectors from Gram matrix.
         d, v = stable_eigsh(Gram, 5)
         sort_idx = np.argsort(-d)
-        logger.info(f"Top 5 eigenvalues from Gram matrix: {d[sort_idx]}")
+        logger.info(f"Top 5 eigenvalues from (rank-3) Gram matrix: {d[sort_idx]}")
 
         # Only need the top 3 eigen-vectors.
         v = v[:, sort_idx[:3]]
