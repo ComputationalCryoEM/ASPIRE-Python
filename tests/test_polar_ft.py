@@ -113,7 +113,7 @@ def test_adjoint_property(asymmetric_image, symmetric_image):
     rhs = np.real(By.reshape(-1) @ x.reshape(-1))
 
     if y.resolution % 2 == 1:
-        pytest.skip("Currently failling for odd resolution.")
+        pytest.skip("Currently failing for odd resolution.")
 
     assert np.allclose(lhs, rhs)
 
