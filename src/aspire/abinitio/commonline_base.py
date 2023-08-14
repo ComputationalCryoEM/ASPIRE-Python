@@ -77,17 +77,9 @@ class CLOrient3D:
         n_theta_half = self.n_theta // 2
         self.pf = self.pf.reshape(self.n_img, n_theta_half, self.n_rad)
 
-        # The last two dimension of pf is of size n_theta x n_rad. We will convert pf
-        # into an array of size (n_theta/2) x (n_rad-1), that is, take half of each ray
-        # through the origin except the DC part, and also take the angles only up to PI.
-        # This is due to the fact that the original images are real, and thus each ray
-        # is conjugate symmetric. We therefore gain nothing by taking longer correlations
-        # (of length 2*n_rad-1 instead of n_rad-1). In the Matlab version, pf is converted to
-        # the size of (n_theta/2) x (2*n_rad-1) but most of the calculations of build_clmatrix
-        # and estimate_shifts below only use the size of (n_theta/2) x (n_rad-1). In the
-        # Python version we will use the size of (n_theta/2) x (n_rad-1) directly and make
-        # sure every part is using it. By taking shorter correlations we can speed the
-        # computation by a factor of two.
+        # We remove the DC the component. pf now has size (n_img) x (n_theta/2) x (n_rad-1),
+        # with pf[:, :, 0] containing low frequency content and pf[:, :, -1] containing
+        # high frequency content.
         self.pf = self.pf[:, :, 1:]
 
     def estimate_rotations(self):
