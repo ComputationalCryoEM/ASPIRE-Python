@@ -136,3 +136,14 @@ class UtilsTestCase(TestCase):
         self.assertTrue(isinstance(rotations, Rotation))
         self.assertTrue(rotations.matrices.dtype == self.dtype)
         self.assertTrue(np.allclose(rotations.matrices, ref_rots.matrices))
+
+
+def test_mean_angular_distance():
+    rots_z = Rotation.about_axis(
+        "z", [0, np.pi / 4, np.pi / 2], dtype=np.float32
+    ).matrices
+    rots_id = Rotation.about_axis("z", [0, 0, 0], dtype=np.float32).matrices
+
+    mean_ang_dist = Rotation.mean_angular_distance(rots_z, rots_id)
+
+    assert np.allclose(mean_ang_dist, np.pi / 4)
