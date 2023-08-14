@@ -19,22 +19,43 @@ from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
+RESOLUTION = [
+    32,
+    33,
+]
 
-# Parametrize over (n_img, L, dtype, offsets).
-# Note, offsets=None uses default random offsets.
-PARAMS = [
-    (50, 32, np.float32, None),
-    (51, 33, np.float64, None),
-    (50, 32, np.float32, 0),
-    (51, 33, np.float64, 0),
+OFFSETS = [
+    None,  # Defaults to random offsets.
+    0,
+]
+
+DTYPES = [
+    np.float32,
+    np.float64,
 ]
 
 
-def source_orientation_objs(n_img, L, dtype, offsets=None):
+@pytest.fixture(params=RESOLUTION, ids=lambda x: f"resolution={x}")
+def resolution(request):
+    return request.param
+
+
+@pytest.fixture(params=OFFSETS, ids=lambda x: f"offsets={x}")
+def offsets(request):
+    return request.param
+
+
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture
+def source_orientation_objs(resolution, offsets, dtype):
     src = Simulation(
-        n=n_img,
-        L=L,
-        vols=AsymmetricVolume(L=L, C=1, K=100).generate(),
+        n=50,
+        L=resolution,
+        vols=AsymmetricVolume(L=resolution, C=1, K=100).generate(),
         offsets=offsets,
         amplitudes=1,
         seed=123,
@@ -44,9 +65,8 @@ def source_orientation_objs(n_img, L, dtype, offsets=None):
     return src, orient_est
 
 
-@pytest.mark.parametrize("n_img, L, dtype, offsets", PARAMS)
-def test_build_clmatrix(n_img, L, dtype, offsets):
-    src, orient_est = source_orientation_objs(n_img, L, dtype, offsets=offsets)
+def test_build_clmatrix(source_orientation_objs):
+    src, orient_est = source_orientation_objs
 
     # Build clmatrix estimate.
     orient_est.build_clmatrix()
@@ -61,14 +81,13 @@ def test_build_clmatrix(n_img, L, dtype, offsets):
 
     # Check that at least 99% (70% with shifts) of estimates are within 5 degrees.
     tol = 0.99
-    if offsets is None:
+    if src.offsets.all() != 0:
         tol = 0.70
     assert within_5 / angle_diffs.size > tol
 
 
-@pytest.mark.parametrize("n_img, L, dtype, offsets", PARAMS)
-def test_estimate_rotations(n_img, L, dtype, offsets):
-    src, orient_est = source_orientation_objs(n_img, L, dtype, offsets=offsets)
+def test_estimate_rotations(source_orientation_objs):
+    src, orient_est = source_orientation_objs
 
     orient_est.estimate_rotations()
 
@@ -76,13 +95,13 @@ def test_estimate_rotations(n_img, L, dtype, offsets):
     # angular distance between them (in degrees).
     Q_mat, flag = register_rotations(orient_est.rotations, src.rotations)
     regrot = get_aligned_rotations(orient_est.rotations, Q_mat, flag)
-    ang_dist = np.zeros(n_img, dtype=dtype)
-    for i in range(n_img):
+    ang_dist = np.zeros(src.n, dtype=src.dtype)
+    for i in range(src.n):
         ang_dist[i] = (
             Rotation.angle_dist(
                 regrot[i],
                 src.rotations[i],
-                dtype=dtype,
+                dtype=src.dtype,
             )
             * 180
             / np.pi
@@ -90,17 +109,16 @@ def test_estimate_rotations(n_img, L, dtype, offsets):
 
     # Assert that mean angular distance is less than 1 degree (6 degrees with shifts).
     degree_tol = 1
-    if offsets is None:
+    if src.offsets.all() != 0:
         degree_tol = 6
     assert np.mean(ang_dist) < degree_tol
 
 
-@pytest.mark.parametrize("n_img, L, dtype, offsets", PARAMS)
-def test_estimate_shifts(n_img, L, dtype, offsets):
-    if offsets is None:
+def test_estimate_shifts(source_orientation_objs):
+    src, orient_est = source_orientation_objs
+    if src.offsets.all() != 0:
         pytest.xfail("Currently failing under non-zero offsets.")
 
-    src, orient_est = source_orientation_objs(n_img, L, dtype, offsets=offsets)
     est_shifts = orient_est.estimate_shifts().T
 
     # Assert that estimated shifts are close to src.offsets
