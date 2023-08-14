@@ -1,16 +1,9 @@
-import os
-
 import numpy as np
 import pytest
 
 from aspire.abinitio import CommonlineSDP
 from aspire.source import Simulation
-from aspire.utils import (
-    Rotation,
-    get_aligned_rotations,
-    register_rotations,
-    rots_to_clmatrix,
-)
+from aspire.utils import Rotation, get_aligned_rotations, register_rotations
 from aspire.volume import AsymmetricVolume
 
 RESOLUTION = [
@@ -79,7 +72,7 @@ def test_estimate_rotations(simulation_fixture):
             / np.pi
         )
 
-    # Assert that mean angular distance is less than 1 degree (6 degrees with shifts).
+    # Assert that mean angular distance is less than 1 degree (10 degrees with shifts).
     degree_tol = 1
     if src.offsets.all() != 0:
         degree_tol = 10
