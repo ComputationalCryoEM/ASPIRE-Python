@@ -174,7 +174,7 @@ def test_relative_rotations(n_img, L, order, dtype):
                 Rotation.angle_dist(Rij_J, Rij_s_gt),
             )
         angular_distance[idx] = np.min(dist)
-    mean_angular_distance = np.mean(angular_distance)
+    mean_angular_distance = np.mean(angular_distance) * 180 / np.pi
 
     # Assert that the mean_angular_distance is less than 5 degrees.
     assert mean_angular_distance < 5
@@ -208,7 +208,7 @@ def test_self_relative_rotations(n_img, L, order, dtype):
         for i, estimate in enumerate(cases):
             dist[i] = Rotation.angle_dist(estimate, Rii_gt)
         angular_distance[i] = dist[np.argmin(dist)]
-    mean_angular_distance = np.mean(angular_distance)
+    mean_angular_distance = np.mean(angular_distance) * 180 / np.pi
 
     # Check that mean_angular_distance is less than 5 degrees.
     assert mean_angular_distance < 5
