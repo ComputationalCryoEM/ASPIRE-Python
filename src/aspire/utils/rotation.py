@@ -13,11 +13,13 @@ from aspire.utils.random import Random
 
 
 class Rotation:
-    def __init__(self, matrices):
+    def __init__(self, matrices, gimble_lock_warnings=True):
         """
          Initialize a Rotation object
 
         :param matrices: Rotation matrices to initialize Rotation object.
+        :param gimble_lock_warnings: Optionally show gimble lock warnings.
+             Defaults to `True`, setting to `False` filters warnings.
         """
         if matrices.ndim == 2:
             matrices = matrices.reshape((1, 3, 3))
@@ -28,9 +30,7 @@ class Rotation:
         self._matrices = matrices
         self._seq_order = "ZYZ"
 
-        # Attribute indicating if rotation matrices are about the z-axis,
-        # which will cause a gimbal lock warning for ZYZ convention.
-        self._about_z = False
+        self.gimble_lock_warnings = bool(gimble_lock_warnings)
 
     def __str__(self):
         """
@@ -72,12 +72,16 @@ class Rotation:
         """
         rotations = sp_rot.from_matrix(self._matrices.astype(self.dtype))
 
-        # If `about_axis` was used to generate rotations about the z-axis
-        # turn off Gimbal lock warning.
+        # Filter Gimbal lock warnings.
         with warnings.catch_warnings():
-            if self._about_z:
-                msg = "Gimbal lock detected*"
-                warnings.filterwarnings("ignore", message=msg, category=UserWarning)
+            msg = "Gimbal lock detected*"
+
+            disposition = "once"
+            if not self.gimble_lock_warnings:
+                disposition = "ignore"
+
+            warnings.filterwarnings(disposition, message=msg, category=UserWarning)
+
             euler_angles = rotations.as_euler(self._seq_order, degrees=False).astype(
                 self.dtype
             )
@@ -256,7 +260,7 @@ class Rotation:
         return Rotation(matrices)
 
     @staticmethod
-    def about_axis(axis, angles, dtype=None):
+    def about_axis(axis, angles, dtype=None, gimble_lock_warnings=True):
         """
         Build rotation object from axis and angles of rotation.
 
@@ -265,6 +269,8 @@ class Rotation:
             or an array of shape (N,) or (N,1).
         :param dtype: Optional output dtype.  Infers from `angles` by default when possible,
             otherwise defaults to `float32`.
+        :param gimble_lock_warnings: Optionally show gimble lock warnings.
+             Defaults to `True`, setting to `False` filters warnings.
 
         :return: Rotation object
         """
@@ -285,9 +291,8 @@ class Rotation:
 
         rotation = sp_rot.from_euler(axis, angles, degrees=False)
         matrix = rotation.as_matrix().astype(dtype)
-        rot = Rotation(matrix)
-        if axis.lower() == "z":
-            rot._about_z = True
+        rot = Rotation(matrix, gimble_lock_warnings=gimble_lock_warnings)
+
         return rot
 
     def as_rotvec(self):
