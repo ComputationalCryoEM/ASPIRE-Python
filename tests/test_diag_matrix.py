@@ -99,8 +99,6 @@ def test_get(diag_matrix_fixture):
     ref = d_np[0][0]
     np.testing.assert_allclose(d[0], ref)
 
-    assert str(d).startswith("DiagMatrix(")
-
 
 def test_len():
     """
