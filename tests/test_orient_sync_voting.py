@@ -58,6 +58,7 @@ def source_orientation_objs(resolution, offsets, dtype):
         vols=AsymmetricVolume(L=resolution, C=1, K=100).generate(),
         offsets=offsets,
         amplitudes=1,
+        seed=0,
     )
 
     orient_est = CLSyncVoting(src)
@@ -106,10 +107,10 @@ def test_estimate_rotations(source_orientation_objs):
             / np.pi
         )
 
-    # Assert that mean angular distance is less than 1 degree (6 degrees with shifts).
+    # Assert that mean angular distance is less than 1 degree (8 degrees with shifts).
     degree_tol = 1
     if src.offsets.all() != 0:
-        degree_tol = 7
+        degree_tol = 8
     assert np.mean(ang_dist) < degree_tol
 
 

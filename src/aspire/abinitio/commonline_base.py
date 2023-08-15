@@ -438,7 +438,7 @@ class CLOrient3D:
         # Number of shifts to try
         n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
 
-        # only half of ray
+        # only half of ray, excluding the DC component.
         rk = np.arange(1, r_max + 1)
 
         # Generate all shift phases
@@ -507,8 +507,9 @@ class CLOrient3D:
         #   we can control h.dtype instead.
         np.einsum(subscripts, pf, h, out=pf, dtype=pf.dtype, casting="same_kind")
 
-        # This is a low pass filter, cutting out the highest frequency.
-        pf[..., r_max - 1] = 0
+        # This is a high pass filter, cutting out the lowest frequency
+        # (DC has already been removed).
+        pf[..., 0] = 0
         pf /= np.linalg.norm(pf, axis=-1)[..., np.newaxis]
 
         return pf
