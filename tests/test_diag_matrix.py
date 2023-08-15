@@ -628,3 +628,14 @@ def test_diag_blk_mul(diag_matrix_fixture, blk_diag):
         # Compare with numpy
         ref = d1.dense() * blk_diag.dense()
         np.testing.assert_allclose((d1 * blk_diag).dense(), ref)
+
+
+def test_non_square_as_blk_diag():
+    """
+    Test non square partition blocks raise an error in as_blk_diag.
+    """
+    d = DiagMatrix(np.empty(8))
+
+    partition = [(4, 5), (4, 3)]
+    with pytest.raises(RuntimeError, match=r".*not square.*"):
+        _ = d.as_blk_diag(partition)
