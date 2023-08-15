@@ -47,6 +47,7 @@ def simulation_fixture(resolution, offsets, dtype):
         vols=AsymmetricVolume(L=resolution, C=1, K=100).generate(),
         offsets=offsets,
         amplitudes=1,
+        seed=0,
     )
 
     return src
