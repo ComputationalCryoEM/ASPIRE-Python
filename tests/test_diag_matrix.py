@@ -554,14 +554,16 @@ def test_eigs(diag_matrix_fixture):
     np.testing.assert_equal(d.eigvals(), d_np[0])
 
 
-def test_eye(matrix_size, dtype):
+def test_eye(diag_matrix_fixture):
     """
     Test helper for identity matrix.
     Same as `ones` for `DiagMatrix`.
     """
-    d = DiagMatrix.eye(matrix_size, dtype=dtype)
+    _, _, d_np = diag_matrix_fixture
+    d = DiagMatrix.eye(d_np.shape)
 
-    np.testing.assert_equal(d, np.ones(matrix_size, dtype=dtype))
+    np.testing.assert_allclose(d, 1)
+    np.testing.assert_equal(d.shape, d_np.shape)
 
 
 def test_apply(diag_matrix_fixture):

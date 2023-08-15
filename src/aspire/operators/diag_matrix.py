@@ -486,57 +486,76 @@ class DiagMatrix:
         return self.asnumpy()
 
     @staticmethod
-    def empty(n, dtype=np.float32):
+    def empty(shape, dtype=np.float32):
         """
-        Instantiate an empty `DiagMatrix` with length `n`.
-        This corresponds to the diag(A) where A is (n,n).
+        Instantiate an empty `DiagMatrix` with `shape`.
+        When shape is an integer, this corresponds to
+        the diag(A) where A is (n,n).
         Note, like Numpy, empty values are uninitialized.
 
-        :param n: Length of diagonal.
+        :param shape: Shape of matrix.
+            When integer, corresponds to len(diag(A)).  Otherwise,
+            when a tuple (..., n), the last dimension `n` defines the
+            length of diagonal, while prior dimensions define any
+            stack axes.
         :param dtype: Datatype, defaults to np.float32.
         :return: `DiagMatrix` instance.
         """
 
-        return DiagMatrix(np.empty(n, dtype=dtype))
+        return DiagMatrix(np.empty(shape, dtype=dtype))
 
     @staticmethod
-    def zeros(n, dtype=np.float32):
+    def zeros(shape, dtype=np.float32):
         """
-        Instantiate a zero intialized `DiagMatrix` with length `n`.
-        This corresponds to the diag(A) where A is (n,n).
+        Instantiate a zero intialized `DiagMatrix`.
+        When `shape` is an integer, this corresponds to
+        the diag(A) where A is (n,n).
 
-        :param n: Length of diagonal.
+        :param shape: Shape of matrix.
+            When integer, corresponds to len(diag(A)).  Otherwise,
+            when a tuple (..., n), the last dimension `n` defines the
+            length of diagonal, while prior dimensions define any
+            stack axes.
         :param dtype: Datatype, defaults to np.float32.
         :return: `DiagMatrix` instance.
         """
 
-        return DiagMatrix(np.zeros(n, dtype=dtype))
+        return DiagMatrix(np.zeros(shape, dtype=dtype))
 
     @staticmethod
-    def ones(n, dtype=np.float32):
+    def ones(shape, dtype=np.float32):
         """
-        Instantiate ones intialized `DiagMatrix` with length `n`.
-        This corresponds to the diag(A) where A is (n,n).
+        Instantiate ones intialized `DiagMatrix`.
+        When `shape` is an integer, this corresponds to
+        the diag(A) where A is (n,n).
 
-        :param n: Length of diagonal.
+        :param shape: Shape of matrix.
+            When integer, corresponds to len(diag(A)).  Otherwise,
+            when a tuple (..., n), the last dimension `n` defines the
+            length of diagonal, while prior dimensions define any
+            stack axes.
         :param dtype: Datatype, defaults to np.float32.
         :return: `DiagMatrix` instance.
         """
 
-        return DiagMatrix(np.ones(n, dtype=dtype))
+        return DiagMatrix(np.ones(shape, dtype=dtype))
 
     @staticmethod
-    def eye(n, dtype=np.float32):
+    def eye(shape, dtype=np.float32):
         """
         Build a `DiagMatrix` eye (identity) matrix.
         This is simply an alias for `ones`.
 
-        :param n: Length of diagonal.
+        :param shape: Shape of matrix.
+            When integer, corresponds to len(diag(A)).  Otherwise,
+            when a tuple (..., n), the last dimension `n` defines the
+            length of diagonal, while prior dimensions define any
+            stack axes.
         :param dtype: Datatype, defaults to np.float32.
         :return: `DiagMatrix` instance.
         """
 
-        return DiagMatrix.ones(n, dtype=dtype)
+        return DiagMatrix.ones(shape, dtype=dtype)
 
     def as_blk_diag(self, partition):
         """
