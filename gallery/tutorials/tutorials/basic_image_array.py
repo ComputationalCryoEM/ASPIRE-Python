@@ -11,7 +11,7 @@ whiten that noise using some tools from the ASPIRE pipeline.
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import misc
+from scipy.datasets import face
 
 from aspire.image import Image
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder, WhiteNoiseAdder
@@ -25,7 +25,7 @@ from aspire.source import ArrayImageSource
 # Scipy ships with a portrait.
 
 # We'll take the grayscale representation as floating point data.
-stock_img = misc.face(gray=True).astype(np.float32)
+stock_img = face(gray=True).astype(np.float32)
 
 # Crop to a square
 n_pixels = min(stock_img.shape)

@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from PIL import Image as PILImage
 from pytest import raises
-from scipy import misc
+from scipy.datasets import face
 
 from aspire.image import Image
 from aspire.utils import powerset, utest_tolerance
@@ -27,7 +27,7 @@ mdim = 2
 def get_images(parity=0, dtype=np.float32):
     size = 768 - parity
     # numpy array for top-level functions that directly expect it
-    im_np = misc.face(gray=True).astype(dtype)[np.newaxis, :size, :size]
+    im_np = face(gray=True).astype(dtype)[np.newaxis, :size, :size]
     denom = np.max(np.abs(im_np))
     im_np /= denom  # Normalize test image data to 0,1
 

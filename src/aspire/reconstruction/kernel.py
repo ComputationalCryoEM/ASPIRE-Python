@@ -44,7 +44,7 @@ class FourierKernel(Kernel):
             logger.info(f"Circularizing dimension {dim}")
             kernel = self.circularize_1d(kernel, dim)
 
-        xx = fft.fftn(fft.mdim_ifftshift(kernel))
+        xx = fft.fftn(fft.mdim_ifftshift(kernel)).real
         return xx
 
     def circularize_1d(self, kernel, dim):
@@ -194,7 +194,7 @@ class FourierKernelMatrix(FourierKernel):
         xx = np.empty((self.r, self.r, _L, _L, _L))
         for k in range(self.r):
             for j in range(self.r):
-                xx[k, j] = FourierKernel(self.kermat[k, j]).circularize()
+                xx[k, j] = FourierKernel(self.kermat[k, j]).circularize().real
         return xx
 
     def convolve_volume(self, x, k, j, in_place=False):
