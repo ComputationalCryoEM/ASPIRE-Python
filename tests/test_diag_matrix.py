@@ -163,7 +163,7 @@ def test_conversion():
     # Zero Dimension stack
     d_np = np.arange(42)  # defaults double
     A_np = np.diag(d_np)  # make dense with numpy
-    # hrmm singleton
+    # Singleton
     np.testing.assert_allclose(DiagMatrix(d_np).dense(), A_np)
 
     # One Dimension singleton
