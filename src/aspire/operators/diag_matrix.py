@@ -608,10 +608,10 @@ class DiagMatrix:
 
     def solve(self, b):
         """
-        For this `DiagMatrix` `a` and diagonal matrix `b`.
+        For this `DiagMatrix` `a` and vector `b`.
         solve a x = b for `x`.
 
-        :param b: `DiagMatrix`, right hand side.
+        :param b: Right hand side, Numpy array.
         :return: `DiagMatrix`, solution `x`.
         """
 
@@ -620,4 +620,4 @@ class DiagMatrix:
                 f"`solve` only implemented for singletons at this time, received {self.stack_shape}."
             )
 
-        return b / self._data
+        return DiagMatrix(b / self._data)

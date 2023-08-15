@@ -605,7 +605,9 @@ def test_solve(diag_matrix_fixture):
     else:
         x = a.solve(b)
 
-        np.testing.assert_allclose(a.dense() @ x, b, atol=utest_tolerance(a.dtype))
+        np.testing.assert_allclose(
+            np.diag(a.dense() @ x.dense()), b, atol=utest_tolerance(a.dtype)
+        )
 
 
 def test_diag_blk_mul(diag_matrix_fixture, blk_diag):
