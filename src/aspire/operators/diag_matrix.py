@@ -460,7 +460,7 @@ class DiagMatrix:
     def rapply(self, X):
         """
         Right apply.  Given a matrix of coefficient vectors,
-        applies the block diagonal matrix on the right hand side.
+        applies the diagonal matrix on the right hand side.
         Example, X @ self.
 
         This is the right hand side equivalent to `apply`.
