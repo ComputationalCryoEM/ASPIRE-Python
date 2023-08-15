@@ -542,6 +542,7 @@ class DiagMatrix:
         """
         Express `DiagMatrix` as a `BlkDiagMatrix` using `partition`.
 
+        :param partition: BlkDiagMatrix partition.
         :return: `BlkDiagMatrix`
         """
         if self.stack_shape != ():
