@@ -553,7 +553,12 @@ class DiagMatrix:
         B = BlkDiagMatrix(partition, dtype=self.dtype)
         ind = 0
         for b, p in enumerate(partition):
-            assert p[0] == p[1]
+            if p[0] != p[1]:
+                raise RuntimeError(
+                    f"Block {b} of partition is not square, {p}."
+                    "Currently DiagMatrix.as_blk_diag only supports square blocks."
+                )
+
             j = p[0]
             B[b] = np.diag(self._data[ind : ind + j])
             ind += j
