@@ -470,47 +470,35 @@ def test_empty(diag_matrix_fixture):
     np.testing.assert_equal(d.shape, d_np.shape)
 
 
-def test_lr_scale(diag_matrix_fixture, blk_diag):
+def test_lr_scale(diag_matrix_fixture):
     """
     Test `lr_scale` method.
     """
 
     d1 = diag_matrix_fixture[0]
 
-    # Check we raise combined stacks with BlkDiagMatrix.
+    # Check we raise on stacks.
 
     if d1.stack_shape != ():
         with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
-            _ = d1.lr_scale(blk_diag.partition)
+            _ = d1.lr_scale()
     else:
-        # expand A @ A.T
-        AA = d1.asnumpy()[:, None] @ d1.asnumpy()[None, :]
-        ref = AA * blk_diag.dense()  # zero out off block elem
-
         # Test default unit weight scaling
-        x = d1.lr_scale(blk_diag.partition)
+        x = d1.lr_scale()
+
+        # Create reference expand A @ w @ A.T
+        # It is understood the transpose is redundant here,
+        # but the test formula is being written out intentionally.
+        w = np.ones(d1.count, dtype=d1.dtype)
+        ref = d1.dense() @ np.diag(w) @ d1.dense().T
+
         np.testing.assert_allclose(x.dense(), ref, atol=utest_tolerance(d1.dtype))
 
         # Test with different weights
         w = np.arange(d1.count, dtype=d1.dtype)
-        x = d1.lr_scale(blk_diag.partition, weights=w)
-        ref = (w * AA) * blk_diag.dense()  # zero out off block elem
+        x = d1.lr_scale(weights=w)
+        ref = d1.dense() @ np.diag(w) @ d1.dense().T
         np.testing.assert_allclose(x.dense(), ref, atol=utest_tolerance(d1.dtype))
-
-
-def test_bad_partition():
-    """
-    Test incorrect partitions raise an error.
-    """
-    d = DiagMatrix(np.empty(8))
-
-    partition = [(9, 9)]
-    with pytest.raises(RuntimeError, match=r".*count.*does not match.*"):
-        _ = d.lr_scale(partition)
-
-    partition = [(4, 4), (3, 4)]
-    with pytest.raises(RuntimeError, match=r".*was not square.*"):
-        _ = d.lr_scale(partition)
 
 
 def test_as_blk_diag(matrix_size, blk_diag):
