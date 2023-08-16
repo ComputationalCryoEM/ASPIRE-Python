@@ -584,19 +584,16 @@ class DiagMatrix:
 
         return B
 
-    # TODO, discuss name.
-    def lr_scale(self, partition, weights=None):
+    def lr_scale(self, weights=None):
         """
-        Performs L and R scaling by this `DiagMatrix` instance
-        simultaneously, returning the result as a `BlkDiagMatrix`
-        having `partition`.
+        Performs L and R scaling of `weights` by this `DiagMatrix`
+        instance simultaneously, returning a `DiagMatrix`.
 
-        Given `weights` this computes B = w * A * A.T,
+        Given `weights` this computes B = A * w * A.T via B = w * A**2
         where A is this `DiagMatrix` instance.
 
-        :partition: Partition of output `BlkDiagMatrix`.
         :weights: Optional weight vector, defaults to ones.
-        :return: `BlkDiagMatrix`
+        :return: `DiagMatrix`
         """
         if self.stack_shape != ():
             raise RuntimeError(
@@ -606,24 +603,7 @@ class DiagMatrix:
         if weights is None:
             weights = np.ones(self.count, dtype=self.dtype)
 
-        B = BlkDiagMatrix(partition, dtype=self.dtype)
-
-        ind = 0
-        for block, p in enumerate(partition):
-            if p[0] != p[1]:
-                raise RuntimeError(f"Partition block {block} was not square {p}.")
-            j = p[0]
-            Ai = self._data[ind : ind + j].reshape(-1, 1)
-            wi = weights[ind : ind + j]
-            B[block] = wi * Ai * Ai.T
-            ind += j
-
-        if ind != self.count:
-            raise RuntimeError(
-                f"Partition count {ind} does not match DiagMatrix count {self.count}."
-            )
-
-        return B
+        return weights * self**2
 
     def solve(self, b):
         """
