@@ -492,16 +492,18 @@ class RIRClass2D(Class2D):
         # This seems to occur more frequently at very low resolutions (<=32),
         # and likely requires tuning other RIR parameters for small problems.
         attempt = 0
+        # create a local seed, convert None to an integer for this method.
+        _seed = self.seed or 0
         while attempt < retry_attempts:
-            attempt += 1
             coef_b, coef_b_r = bispec_2drot_large(
                 coeff=coef.T,  # Note F style transpose here and in return
                 freqs=self.pca_basis.complex_angular_indices,
                 eigval=complex_eigvals,
                 alpha=self.alpha,
                 sample_n=self.sample_n,
-                seed=self.seed,
+                seed=_seed + attempt,
             )
+            attempt += 1
             # If we have produced a feature vector
             if coef_b.size != 0:
                 break  # Return feature vector.
