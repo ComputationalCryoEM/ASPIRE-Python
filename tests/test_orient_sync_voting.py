@@ -20,8 +20,8 @@ from aspire.volume import AsymmetricVolume
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 RESOLUTION = [
-    32,
-    33,
+    40,
+    41,
 ]
 
 OFFSETS = [
@@ -82,8 +82,8 @@ def test_build_clmatrix(source_orientation_objs):
     angle_diffs = abs(orient_est.clmatrix - gt_clmatrix) * 360 / orient_est.n_theta
 
     # Count number of estimates within 5 degrees of ground truth.
-    within_5 = np.count_nonzero(angle_diffs < 10)
-    within_5 += np.count_nonzero(angle_diffs > 350)
+    within_5 = np.count_nonzero(angle_diffs < 5)
+    within_5 += np.count_nonzero(angle_diffs > 355)
 
     # Check that at least 99% (70% with shifts) of estimates are within 5 degrees.
     tol = 0.99
@@ -113,10 +113,10 @@ def test_estimate_rotations(source_orientation_objs):
             / np.pi
         )
 
-    # Assert that mean angular distance is less than 1 degree (8 degrees with shifts).
+    # Assert that mean angular distance is less than 1 degree (5 degrees with shifts).
     degree_tol = 1
     if src.offsets.all() != 0:
-        degree_tol = 8
+        degree_tol = 5
     assert np.mean(ang_dist) < degree_tol
 
 
