@@ -55,7 +55,7 @@ def source_orientation_objs(resolution, offsets, dtype):
     src = Simulation(
         n=50,
         L=resolution,
-        vols=AsymmetricVolume(L=resolution, C=1, K=100).generate(),
+        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=0).generate(),
         offsets=offsets,
         amplitudes=1,
         seed=0,
@@ -85,10 +85,10 @@ def test_build_clmatrix(source_orientation_objs):
     within_5 = np.count_nonzero(angle_diffs < 5)
     within_5 += np.count_nonzero(angle_diffs > 355)
 
-    # Check that at least 99% (70% with shifts) of estimates are within 5 degrees.
+    # Check that at least 99% (75% with shifts) of estimates are within 5 degrees.
     tol = 0.99
     if src.offsets.all() != 0:
-        tol = 0.70
+        tol = 0.75
     assert within_5 / angle_diffs.size > tol
 
 
