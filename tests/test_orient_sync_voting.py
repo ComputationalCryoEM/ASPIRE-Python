@@ -61,7 +61,13 @@ def source_orientation_objs(resolution, offsets, dtype):
         seed=0,
     )
 
-    orient_est = CLSyncVoting(src)
+    # Search for common lines over less shifts for 0 offsets.
+    max_shift = 1 / resolution
+    if src.offsets.all() != 0:
+        max_shift = 0.25
+
+    orient_est = CLSyncVoting(src, max_shift=max_shift)
+
     return src, orient_est
 
 
