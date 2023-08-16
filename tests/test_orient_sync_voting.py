@@ -101,23 +101,13 @@ def test_estimate_rotations(source_orientation_objs):
     # angular distance between them (in degrees).
     Q_mat, flag = register_rotations(orient_est.rotations, src.rotations)
     regrot = get_aligned_rotations(orient_est.rotations, Q_mat, flag)
-    ang_dist = np.zeros(src.n, dtype=src.dtype)
-    for i in range(src.n):
-        ang_dist[i] = (
-            Rotation.angle_dist(
-                regrot[i],
-                src.rotations[i],
-                dtype=src.dtype,
-            )
-            * 180
-            / np.pi
-        )
+    mean_ang_dist = Rotation.mean_angular_distance(regrot, src.rotations) * 180 / np.pi
 
     # Assert that mean angular distance is less than 1 degree (5 degrees with shifts).
     degree_tol = 1
     if src.offsets.all() != 0:
         degree_tol = 5
-    assert np.mean(ang_dist) < degree_tol
+    assert mean_ang_dist < degree_tol
 
 
 def test_estimate_shifts(source_orientation_objs):
