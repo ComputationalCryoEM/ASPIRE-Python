@@ -89,21 +89,6 @@ class PolarFT:
         freqs *= omega0
         return freqs
 
-    def _evaluate(self, v):
-        """
-        Evaluate coefficients in standard 2D coordinate basis from those in polar Fourier basis
-
-        :param v: A coefficient vector (or an array of coefficient vectors)
-            in polar Fourier basis to be evaluated. The last dimension must equal to
-            `self.count`.
-        :return x: Image instance in standard 2D coordinate basis with
-            resolution of `self.sz`.
-        """
-
-        x = anufft(v, self.freqs, self.sz, real=True) / self.count
-
-        return x
-
     def transform(self, x):
         """
         Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
