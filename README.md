@@ -3,6 +3,7 @@
 [![Github Actions Status](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml/badge.svg)](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml)
 [![codecov](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python/branch/main/graph/badge.svg?token=3XFC4VONX0)](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5657281.svg)](https://doi.org/10.5281/zenodo.5657281)
+[![Downloads](https://static.pepy.tech/badge/aspire/month)](https://pepy.tech/project/aspire)
 
 # ASPIRE - Algorithms for Single Particle Reconstruction - v0.11.1
 
