@@ -104,7 +104,7 @@ class PolarFT:
 
         return x
 
-    def evaluate_t(self, x):
+    def transform(self, x):
         """
         Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
 
