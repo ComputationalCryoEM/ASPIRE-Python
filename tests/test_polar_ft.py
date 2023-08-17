@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from aspire.operators import PolarFT
 from aspire.image import Image
+from aspire.operators import PolarFT
 from aspire.utils import gaussian_2d, grid_2d
 from aspire.volume import AsymmetricVolume, CnSymmetricVolume
 
