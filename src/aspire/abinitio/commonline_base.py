@@ -4,7 +4,7 @@ import math
 import numpy as np
 import scipy.sparse as sparse
 
-from aspire.basis import PolarFT
+from aspire.operators import PolarFT
 from aspire.utils import common_line_from_rots
 from aspire.utils.random import choice
 
