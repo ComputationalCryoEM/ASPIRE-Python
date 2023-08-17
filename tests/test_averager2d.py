@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from packaging.version import parse as parse_version
 
-from aspire.basis import FFBBasis2D, PolarFT
+from aspire.basis import FFBBasis2D
 from aspire.classification import (
     AligningAverager2D,
     Averager2D,
@@ -18,6 +18,7 @@ from aspire.classification import (
     BFSReddyChatterjiAverager2D,
     ReddyChatterjiAverager2D,
 )
+from aspire.operators import PolarFT
 from aspire.source import Simulation
 from aspire.utils import Rotation, num_procs_suggestion
 from aspire.volume import Volume
