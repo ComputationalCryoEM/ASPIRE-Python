@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from aspire.image import Image
-from aspire.nufft import anufft, nufft
+from aspire.nufft import nufft
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
