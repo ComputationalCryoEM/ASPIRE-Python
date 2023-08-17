@@ -3,7 +3,7 @@ import pytest
 
 from aspire.basis import PolarFT
 from aspire.image import Image
-from aspire.utils import gaussian_2d
+from aspire.utils import gaussian_2d, grid_2d
 from aspire.volume import AsymmetricVolume, CnSymmetricVolume
 
 # Parametrize over (resolution, dtype)
@@ -16,6 +16,17 @@ DTYPES = [
     np.float32,
 ]
 
+RADIAL_MODES = [
+    2,
+    3,
+    4,
+    5,
+    8,
+    9,
+    16,
+    17,
+]
+
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
 def dtype(request):
@@ -24,6 +35,11 @@ def dtype(request):
 
 @pytest.fixture(params=IMG_SIZES, ids=lambda x: f"img_size={x}")
 def img_size(request):
+    return request.param
+
+
+@pytest.fixture(params=RADIAL_MODES, ids=lambda x: f"radial_mode={x}")
+def radial_mode(request):
     return request.param
 
 
@@ -59,6 +75,15 @@ def asymmetric_image(img_size, dtype):
     pf, _ = pf_transform(asymmetric_image)
 
     return asymmetric_image, pf
+
+
+@pytest.fixture
+def radial_mode_image(img_size, dtype, radial_mode):
+    g = grid_2d(img_size, dtype=dtype)
+    image = Image(np.sin(radial_mode * np.pi * g["r"]))
+    pf, _ = pf_transform(image)
+
+    return pf, radial_mode
 
 
 def pf_transform(image):
@@ -97,6 +122,21 @@ def test_cyclically_symmetric_image(symmetric_image):
     ntheta = pf.shape[0]  # ntheta is the number of rays in 180 degrees.
 
     assert np.allclose(abs(pf[: ntheta // 2]), abs(pf[ntheta // 2 :]), atol=1e-7)
+
+
+def test_radial_modes(radial_mode_image):
+    pf, mode = radial_mode_image
+
+    # Set DC compenent to zero.
+    pf[:, 0] = 0
+
+    # Check that all rays are close.
+    assert abs(np.real(pf) - np.real(pf[0])).all() < 1e-4
+
+    # Check that correct mode is most prominent.
+    # Mode could be off by a pixel depending on resolution and mode.
+    mode_window = [mode - 1, mode, mode + 1]
+    assert np.argmax(np.real(pf[3])) in mode_window
 
 
 def test_adjoint_property(asymmetric_image, symmetric_image):
