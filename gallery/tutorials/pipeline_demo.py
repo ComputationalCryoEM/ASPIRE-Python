@@ -8,43 +8,19 @@ reconstruction pipeline using synthetic data generated with ASPIRE's
 """
 
 # %%
-# Download a Volume
+# Download an Example Volume
 # -----------------
 # We begin by downloading a high resolution volume map of the 80S
 # Ribosome, sourced from EMDB: https://www.ebi.ac.uk/emdb/EMD-2660.
-
-import logging
-import os
-
-import numpy as np
-import requests
-
-
+# This is one of several volume maps that can be downloaded with
+# ASPIRE's data downloading utility by using the following import.
 # sphinx_gallery_start_ignore
 # flake8: noqa
 # sphinx_gallery_end_ignore
-# Download volume
-def download(url, save_path, chunk_size=1024 * 1024):
-    r = requests.get(url, stream=True)
-    with open(save_path, "wb") as fd:
-        for chunk in r.iter_content(chunk_size=chunk_size):
-            fd.write(chunk)
+from aspire.downloader import emdb_2660
 
-
-file_path = os.path.join(os.getcwd(), "emd_2660.map")
-if not os.path.exists(file_path):
-    url = "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2660/map/emd_2660.map.gz"
-    download(url, file_path)
-
-# %%
-# Load a Volume
-# -------------
-# We use ASPIRE's ``Volume`` class to load and downsample the volume.
-
-from aspire.volume import Volume
-
-# Load 80s Ribosome
-original_vol = Volume.load(file_path, dtype=np.float32)
+# Load 80s Ribosome as a ``Volume`` object.
+original_vol = emdb_2660()
 
 # Downsample the volume
 res = 41
@@ -77,6 +53,8 @@ vol = original_vol.downsample(res)
 # filters with various defocus values.
 
 # Create CTF filters
+import numpy as np
+
 from aspire.operators import RadialCTFFilter
 
 # Radial CTF Filter
