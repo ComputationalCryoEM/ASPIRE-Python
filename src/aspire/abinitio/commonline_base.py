@@ -73,7 +73,7 @@ class CLOrient3D:
         self.pft = PolarFT(
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
-        self.pf = self.pft.evaluate_t(imgs)
+        self.pf = self.pft.transform(imgs)
         n_theta_half = self.n_theta // 2
         self.pf = self.pf.reshape(self.n_img, n_theta_half, self.n_rad)
 
