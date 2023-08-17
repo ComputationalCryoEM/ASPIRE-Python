@@ -49,9 +49,9 @@ def gaussian(img_size, dtype):
     gauss = Image(
         gaussian_2d(img_size, sigma=(img_size // 10, img_size // 10), dtype=dtype)
     )
-    pf, _ = pf_transform(gauss)
+    pf = pf_transform(gauss)
 
-    return gauss, pf
+    return pf
 
 
 @pytest.fixture
@@ -61,10 +61,9 @@ def symmetric_image(img_size, dtype):
         img_size, C=1, order=4, K=25, seed=10, dtype=dtype
     ).generate()
     symmetric_image = symmetric_vol.project(np.eye(3, dtype=dtype))
-    pf, pft = pf_transform(symmetric_image)
-    pf_inverse = pft._evaluate(pf.reshape(-1))
+    pf = pf_transform(symmetric_image)
 
-    return symmetric_image, pf, pf_inverse
+    return pf
 
 
 @pytest.fixture
@@ -72,7 +71,7 @@ def asymmetric_image(img_size, dtype):
     """Asymetric image."""
     asymmetric_vol = AsymmetricVolume(img_size, C=1, dtype=dtype).generate()
     asymmetric_image = asymmetric_vol.project(np.eye(3, dtype=dtype))
-    pf, _ = pf_transform(asymmetric_image)
+    pf = pf_transform(asymmetric_image)
 
     return asymmetric_image, pf
 
@@ -81,7 +80,7 @@ def asymmetric_image(img_size, dtype):
 def radial_mode_image(img_size, dtype, radial_mode):
     g = grid_2d(img_size, dtype=dtype)
     image = Image(np.sin(radial_mode * np.pi * g["r"]))
-    pf, _ = pf_transform(image)
+    pf = pf_transform(image)
 
     return pf, radial_mode
 
@@ -95,7 +94,7 @@ def pf_transform(image):
     pf = pft.transform(image)
     pf = pf.reshape(ntheta // 2, nrad)
 
-    return pf, pft
+    return pf
 
 
 def test_dc_component(asymmetric_image):
@@ -109,14 +108,14 @@ def test_dc_component(asymmetric_image):
 
 def test_radially_symmetric_image(gaussian):
     """Test that all polar Fourier rays are equal for a radially symmetric image."""
-    _, pf = gaussian
+    pf = gaussian
 
     assert np.allclose(pf, pf[0])
 
 
 def test_cyclically_symmetric_image(symmetric_image):
     """Test that a symmetric image produces repeated sets of polar Fourier rays."""
-    _, pf, _ = symmetric_image
+    pf = symmetric_image
 
     # For C4 symmetry any two sets of rays seperated by 90 degrees should be equal.
     ntheta = pf.shape[0]  # ntheta is the number of rays in 180 degrees.
@@ -137,25 +136,6 @@ def test_radial_modes(radial_mode_image):
     # Mode could be off by a pixel depending on resolution and mode.
     mode_window = [mode - 1, mode, mode + 1]
     assert np.argmax(np.real(pf[3])) in mode_window
-
-
-def test_adjoint_property(asymmetric_image, symmetric_image):
-    """Test the adjoint property."""
-    # The evaluate function should be the adjoint operator of evaluate_t.
-    # Namely, if A = evaluate, B = evaluate_t, and B=A^t, we will have
-    # (y, A*x) = (A^t*y, x) = (B*y, x).
-    # There is no significance to using asymmetric_image and symmetric_image
-    # below, other than that they are different images.
-    y, By = asymmetric_image
-    _, x, Ax = symmetric_image
-
-    lhs = y.asnumpy().reshape(-1) @ Ax.reshape(-1)
-    rhs = np.real(By.reshape(-1) @ x.reshape(-1))
-
-    if y.resolution % 2 == 1:
-        pytest.skip("Currently failing for odd resolution.")
-
-    assert np.allclose(lhs, rhs)
 
 
 def test_theta_error():
