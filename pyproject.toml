@@ -16,11 +16,12 @@ authors = [
 	{name = "Ayelet Heimowitz"},
 	{name = "Yoel Shkolnisky"},
 	{name = "Amit Singer"},
+	{name = "Kris Sowattanangkul"},
 	{name = "Garrett Wright"},
 	{name = "Junchao Xia"}
 ]
 
-classifiers = [ 
+classifiers = [
      "Development Status :: 3 - Alpha",
      "Programming Language :: Python",
      "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"

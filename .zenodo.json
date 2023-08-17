@@ -27,9 +27,13 @@
 	    "name": "Josh Carmichael",
 	    "orcid": "0000-0001-9889-349X"
 	},
-        {
-            "name": "Robbie Brook"
-        },
+	{
+	    "affiliation": "University of California, Irvine",
+	    "name": "Kris Sowattanangkul"
+	},
+	{
+	    "name": "Robbie Brook"
+	},
 	{
 	    "affiliation": "Princeton University",
 	    "name": "Yunpeng Shi"
