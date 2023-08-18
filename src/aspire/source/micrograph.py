@@ -10,7 +10,52 @@ from aspire.utils import Random, grid_2d
 logger = logging.getLogger(__name__)
 
 
-class MicrographSimulation:
+class MicrographSource:
+    def __init__(self):
+        self._images_accessor = _ImageAccessor(self._images, self.micrograph_count)
+
+    @property
+    def images(self):
+        """
+        Returns the micrographs with any added noise.
+
+        :return: An `ImageAccessor` for the noisy micrographs.
+        """
+        return self._images_accessor
+
+    def _images(self, indices):
+        """
+        Accesses and returns micrographs.
+
+        :param indices: A 1-D NumPy array of integer indices.
+        :return: An `Image` object representing the micrograph.
+        """
+        pass
+
+    def __repr__(self):
+        """
+        String representation.
+
+        :return: Returns a string containing the number of micrographs, dtype, and dimension.
+        """
+        return f"{self.__class__.__name__} with {self.micrograph_count} {self.dtype.name} micrographs of size {self.micrograph_size}x{self.micrograph_size}"
+
+    def __len__(self):
+        """
+        Returns the number of micrographs.
+
+        :return: Returns the micrograph count
+        """
+        return self.micrograph_count
+
+    def save(self, file_path):
+        pass
+
+    def load(self, file_path):
+        pass
+
+
+class MicrographSimulation(MicrographSource):
     def __init__(
         self,
         simulation,
@@ -112,7 +157,7 @@ class MicrographSimulation:
         self._clean_images_accessor = _ImageAccessor(
             self._clean_images, self.micrograph_count
         )
-        self._images_accessor = _ImageAccessor(self._images, self.micrograph_count)
+        super().__init__()
 
     def _create_centers(self, micrograph_index):
         """
@@ -172,22 +217,6 @@ class MicrographSimulation:
             self._mask_boundary : -self._mask_boundary,
         ] = True
 
-    def __repr__(self):
-        """
-        String representation of the MicrographSimulation.
-
-        :return: Returns a string containing the number of micrographs, dtype, and dimension.
-        """
-        return f"{self.micrograph_count} {self.dtype.name} micrographs of size {self.micrograph_size}x{self.micrograph_size}"
-
-    def __len__(self):
-        """
-        Returns the number of micrographs.
-
-        :return: Returns the micrograph count
-        """
-        return self.micrograph_count
-
     @property
     def clean_images(self):
         """
@@ -196,15 +225,6 @@ class MicrographSimulation:
         :return: An `ImageAccessor` for the unnoisy micrographs.
         """
         return self._clean_images_accessor
-
-    @property
-    def images(self):
-        """
-        Returns the micrographs with any added noise.
-
-        :return: An `ImageAccessor` for the noisy micrographs.
-        """
-        return self._images_accessor
 
     def _images(self, indices):
         """
