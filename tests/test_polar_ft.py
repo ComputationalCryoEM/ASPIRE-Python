@@ -6,7 +6,7 @@ from aspire.operators import PolarFT
 from aspire.utils import gaussian_2d, grid_2d
 from aspire.volume import AsymmetricVolume, CnSymmetricVolume
 
-# Parametrize over (resolution, dtype)
+# Parameters
 IMG_SIZES = [
     64,
     65,
@@ -27,7 +27,15 @@ RADIAL_MODES = [
     17,
 ]
 
+ANGULAR_RADIAL_MODES = [
+    (4, 5),
+    (4, 10),
+    (8, 5),
+    (8, 10),
+]
 
+
+# Parameter Fixtures
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
 def dtype(request):
     return request.param
@@ -43,6 +51,12 @@ def radial_mode(request):
     return request.param
 
 
+@pytest.fixture(params=ANGULAR_RADIAL_MODES, ids=lambda x: f"angular_radial_mode={x}")
+def angular_radial_mode(request):
+    return request.param
+
+
+# Image and PF fixtures
 @pytest.fixture
 def gaussian(img_size, dtype):
     """Radially symmetric image."""
@@ -85,11 +99,24 @@ def radial_mode_image(img_size, dtype, radial_mode):
     return pf, radial_mode
 
 
+@pytest.fixture
+def angular_radial_mode_image(dtype, angular_radial_mode):
+    g = grid_2d(64, dtype=dtype)
+    angular_mode, radial_mode = angular_radial_mode
+    image = Image(
+        np.sin(radial_mode * np.pi * g["r"]) * np.cos(angular_mode * g["phi"])
+    )
+    pf = pf_transform(image)
+
+    return pf, angular_mode, radial_mode
+
+
+# Helper function
 def pf_transform(image):
     """Take polar Fourier transform of image."""
     img_size = image.resolution
     nrad = img_size // 2
-    ntheta = 8 * nrad
+    ntheta = 360
     pft = PolarFT(img_size, nrad=nrad, ntheta=ntheta, dtype=image.dtype)
     pf = pft.transform(image)
     pf = pf.reshape(ntheta // 2, nrad)
@@ -97,6 +124,7 @@ def pf_transform(image):
     return pf
 
 
+# Testing suite
 def test_dc_component(asymmetric_image):
     """Test that the DC component equals the mean of the signal."""
     image, pf = asymmetric_image
@@ -130,12 +158,33 @@ def test_radial_modes(radial_mode_image):
     pf[:, 0] = 0
 
     # Check that all rays are close.
-    assert abs(np.real(pf) - np.real(pf[0])).all() < 1e-4
+    assert abs(abs(pf) - abs(pf[0])).all() < 1e-4
 
     # Check that correct mode is most prominent.
     # Mode could be off by a pixel depending on resolution and mode.
+    # Since all rays are close will just test one.
     mode_window = [mode - 1, mode, mode + 1]
-    assert np.argmax(np.real(pf[3])) in mode_window
+    ray = 3
+    assert np.argmax(abs(pf[ray])) in mode_window
+
+
+def test_angular_radial_modes(angular_radial_mode_image):
+    pf, angular_mode, radial_mode = angular_radial_mode_image
+
+    # Exclude first few rays by setting to zero.
+    pf[:5] = 0
+
+    # Check that correct mode is most prominent.
+    # Mode could be off by a pixel depending on resolution and mode.
+    radial_mode_window = [radial_mode - 1, radial_mode, radial_mode + 1]
+
+    angular_mode = 2 * len(pf) // angular_mode
+    angular_mode_window = [angular_mode - 1, angular_mode, angular_mode + 1]
+
+    # Find max pixel and check that it lands in window
+    angular_hit, radial_hit = np.unravel_index(np.argmax(abs(pf)), pf.shape)
+    assert angular_hit in angular_mode_window
+    assert radial_hit in radial_mode_window
 
 
 def test_theta_error():
