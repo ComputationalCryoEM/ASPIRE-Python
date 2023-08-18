@@ -81,7 +81,7 @@ def test_micrograph_source_has_correct_values(sim_fixture, micrograph_fixture):
     assert m.clean_images[0].shape[2] == m.micrograph_size
     assert (
         repr(m)
-        == f"{m.micrograph_count} {m.dtype.name} micrographs of size {m.micrograph_size}x{m.micrograph_size}"
+        == f"{m.__class__.__name__} with {m.micrograph_count} {m.dtype.name} micrographs of size {m.micrograph_size}x{m.micrograph_size}"
     )
     assert np.array_equal(s.images[0], m.simulation.images[0])
     _ = m.clean_images[:]
