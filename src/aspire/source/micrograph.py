@@ -1,4 +1,5 @@
 import logging
+from glob import glob
 
 import numpy as np
 
@@ -11,8 +12,64 @@ logger = logging.getLogger(__name__)
 
 
 class MicrographSource:
-    def __init__(self):
-        self._images_accessor = _ImageAccessor(self._images, self.micrograph_count)
+    def __init__(self, micrographs, dtype=None):
+        """
+        Instantiate a `MicrographSource` with `micrographs`.
+
+        :param micrographs: Numpy array (count, L, L)
+            where  `L` represents the size in pixels.
+        :param dtype: Data type of returned `MicrographSource`
+            Default of `None` will attempt to infer dtype from the first micrograph.
+            Explicitly setting dtype will attempt a cast when returning micrographs.
+            Currently only `float32` and `float64` are supported.
+        :return: `MicrographSource`
+        """
+
+        if not micrographs:
+            raise RuntimeError(
+                f"Must supply valid `micrographs` argument, received {micrographs}."
+            )
+
+        # Passed Array
+        if isinstance(micrographs, np.ndarray):
+            # Ensure dimensions
+            if micrographs.ndim == 2:
+                micrographs = micrographs[None, :, :]
+            elif micrographs.ndim != 3:
+                raise RuntimeError(
+                    f"Incompatible `micrographs` shape {micrographs.shape}, expects (count, L, L)"
+                )
+
+            self.micrograph_count = micrographs.shape[0]
+            self.micrograph_size = micrographs.shape[2]
+            # Assign dtype override, or infer from `micrographs`.
+            self.dtype = dtype or micrographs.dtype
+
+            # We're already backed by an array, access it directly.
+            self._data = micrographs.astype(self.dtype, copy=False)
+            self._images_accessor = _ImageAccessor(self._images_from_files)
+
+        elif isinstance(micrographs, list):
+            self.micrograph_files = self._glob_files(micrographs)
+            # Assign count of micrograph files
+            self.micrograph_count = len(self.micrograph_files)
+
+            # Load the first micrograph to infer shape/type
+            # Size will be checked during on-the-fly loading of subsequent micrographs.
+            micrograph0 = Image.load(self.micrograph_files[0])
+
+            self.micrograph_size = micrograph0.resolution
+            # Assign dtype override, or infer from `micrograph0`.
+            self.dtype = dtype or micrograph0.dtype
+
+            # Passed files, prepare to load on the fly.
+            self._images_accessor = _ImageAccessor(
+                self._images_from_files, self.micrograph_count
+            )
+        else:
+            raise NotImplementedError(
+                "MicrographSource not implemented for {type(micrographs)}."
+            )
 
     @property
     def images(self):
@@ -23,14 +80,34 @@ class MicrographSource:
         """
         return self._images_accessor
 
-    def _images(self, indices):
+    def _images_from_array(self, indices):
+        return MicrographSource(self._data[indices])
+
+    def _images_from_files(self, indices):
         """
         Accesses and returns micrographs.
 
         :param indices: A 1-D NumPy array of integer indices.
-        :return: An `Image` object representing the micrograph.
+        :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
         """
-        pass
+        # Initialize empty result
+        n_micrographs = len(indices)
+        micrographs = np.empty(
+            (n_micrographs, self.micrograph_size, self.micrograph_size),
+            dtype=self.dtype,
+        )
+        for i, ind in enumerate(indices):
+            # Load the micrograph image from file
+            micrograph = Image.load(self.micrographs[ind])
+            # Assert size
+            if micrograph.resolution != self.micrograph_size:
+                raise RuntimeError(
+                    f"Micrograph {ind} has inconsistent shape {micrograph.resolution}, expected {self.micrograph_size}."
+                )
+            # Assign to array, performs casting to dtype
+            micrographs[i] = self._micrographs[ind]
+
+        return MicrographSource(micrographs)
 
     def __repr__(self):
         """
@@ -48,11 +125,52 @@ class MicrographSource:
         """
         return self.micrograph_count
 
-    def save(self, file_path):
-        pass
+    def save(self, path):
+        """
+        Save micrographs to `path`.
 
-    def load(self, file_path):
-        pass
+        :param path: Path to save data.
+        """
+        Image(self.as_numpy()).save(file_path)
+
+    def _glob_files(self, file_path, dtype=None):
+        """
+        Create a `MicrographSource` that loads micrograph(s) from file or directory.
+
+        :param dtype: Data type of returned `MicrographSource`
+            Default of `None` will attempt to infer dtype from files.
+            Explicitly setting dtype will attempt a cast when returning micrographs.
+            Currently only `float32` and `float64` are supported.
+        :return: `MicrographSource`
+        """
+
+        files = []
+        # Determine if directory or single file.
+        if os.path.isdir(file_path):
+            # Add all loadable images in the directory.
+            for ext in Image.extensions:
+                files.extend(sorted(glob(os.path.join(file_path, f"*.{ext}"))))
+            # Ensure we have not failed to find any micrographs in the provided directory.
+            if len(files) == 0:
+                raise RuntimeError(f"No suitable files were found at {file_path}.")
+        elif os.path.isfile(file_path):
+            # Add this file.
+            files.append(file_path)
+        else:
+            raise RuntimeError(
+                f"File path {file_path} does not appear to be a directory or a file"
+            )
+
+        return files
+
+    def as_numpy(self):
+        return self[:]._data
+
+    def show(self):
+        """
+        Helper function to display micrograph. See Image.show().
+        """
+        Image(self.as_numpy()).show(*args, **kwargs)
 
 
 class MicrographSimulation(MicrographSource):
@@ -157,7 +275,8 @@ class MicrographSimulation(MicrographSource):
         self._clean_images_accessor = _ImageAccessor(
             self._clean_images, self.micrograph_count
         )
-        super().__init__()
+
+        self._images_accessor = _ImageAccessor(self._images, self.micrograph_count)
 
     def _create_centers(self, micrograph_index):
         """
