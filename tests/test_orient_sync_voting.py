@@ -24,14 +24,15 @@ RESOLUTION = [
     41,
 ]
 
+# `None` defaults to random offsets.
 OFFSETS = [
-    None,  # Defaults to random offsets.
     0,
+    None,
 ]
 
 DTYPES = [
     np.float32,
-    np.float64,
+    pytest.param(np.float64, marks=pytest.mark.expensive),
 ]
 
 
@@ -63,10 +64,11 @@ def source_orientation_objs(resolution, offsets, dtype):
 
     # Search for common lines over less shifts for 0 offsets.
     max_shift = 1 / resolution
+    shift_step = 1
     if src.offsets.all() != 0:
-        max_shift = 0.25
-
-    orient_est = CLSyncVoting(src, max_shift=max_shift)
+        max_shift = 0.20
+        shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
+    orient_est = CLSyncVoting(src, max_shift=max_shift, shift_step=shift_step)
 
     return src, orient_est
 
@@ -85,10 +87,8 @@ def test_build_clmatrix(source_orientation_objs):
     within_5 = np.count_nonzero(angle_diffs < 5)
     within_5 += np.count_nonzero(angle_diffs > 355)
 
-    # Check that at least 99% (75% with shifts) of estimates are within 5 degrees.
-    tol = 0.99
-    if src.offsets.all() != 0:
-        tol = 0.75
+    # Check that at least 98% of estimates are within 5 degrees.
+    tol = 0.98
     assert within_5 / angle_diffs.size > tol
 
 
@@ -105,8 +105,6 @@ def test_estimate_rotations(source_orientation_objs):
 
     # Assert that mean angular distance is less than 1 degree (5 degrees with shifts).
     degree_tol = 1
-    if src.offsets.all() != 0:
-        degree_tol = 5
     assert mean_ang_dist < degree_tol
 
 
@@ -115,7 +113,7 @@ def test_estimate_shifts(source_orientation_objs):
     if src.offsets.all() != 0:
         pytest.xfail("Currently failing under non-zero offsets.")
 
-    est_shifts = orient_est.estimate_shifts().T
+    est_shifts = orient_est.estimate_shifts()
 
     # Assert that estimated shifts are close to src.offsets
     assert np.allclose(est_shifts, src.offsets)
