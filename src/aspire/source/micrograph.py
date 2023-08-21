@@ -5,7 +5,7 @@ from glob import glob
 import numpy as np
 
 from aspire.image import Image
-from aspire.source import Simulation
+from aspire.source import ArrayImageSource, Simulation
 from aspire.source.image import _ImageAccessor
 from aspire.utils import Random, grid_2d
 
@@ -151,7 +151,7 @@ class MicrographSource:
 
         :param path: Path to save data.
         """
-        Image(self.as_numpy()).save(file_path)
+        ArrayImageSource(self.asnumpy()).save(file_path, batch_size=1)
 
     def _glob_files(self, file_path, dtype=None):
         """
@@ -183,14 +183,14 @@ class MicrographSource:
 
         return files
 
-    def as_numpy(self):
+    def asnumpy(self):
         return self.images[:]._data
 
     def show(self, *args, **kwargs):
         """
         Helper function to display micrograph. See Image.show().
         """
-        Image(self.as_numpy()).show(*args, **kwargs)
+        Image(self.asnumpy()).show(*args, **kwargs)
 
 
 class MicrographSimulation(MicrographSource):
