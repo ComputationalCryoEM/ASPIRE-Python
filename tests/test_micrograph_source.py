@@ -7,7 +7,7 @@ import pytest
 from PIL import Image as PILImage
 
 from aspire.image import Image
-from aspire.source import MicrographSource
+from aspire.source import MicrographSource, RelionSource
 
 from .test_utils import matplotlib_no_gui
 
@@ -71,7 +71,7 @@ def test_array_backed_micrograph(image_data_fixture):
 
     mg_src = MicrographSource(image_data_fixture)
 
-    np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+    np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
 
 
 def test_array_backed_typed_micrograph_(image_data_fixture):
@@ -83,7 +83,7 @@ def test_array_backed_typed_micrograph_(image_data_fixture):
     for test_dtype in DTYPES:
         mg_src = MicrographSource(image_data_fixture, dtype=test_dtype)
 
-    np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+    np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
 
 
 # Test MicrographSource when loading from files.
@@ -108,7 +108,7 @@ def test_dir_backed_micrograph(image_data_fixture, file_type):
         mg_src = MicrographSource(tmp_output_dir)
 
         # Ensure contents match
-        np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+        np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
 
     # Note, the image formats are limited to single precision.
     if image_data_fixture.dtype != np.float64:
@@ -151,7 +151,7 @@ def test_file_backed_micrograph(image_data_fixture):
         mg_src = MicrographSource(file_list)
 
         # Ensure contents match
-        np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+        np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
 
     # Note, the image formats are limited to single precision.
     if image_data_fixture.dtype != np.float64:
@@ -230,7 +230,7 @@ def test_array_backed_micrograph_explicit_dtype(image_data_fixture):
         mg_src = MicrographSource(image_data_fixture, dtype=dtype)
 
         # Check contents
-        np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+        np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
         # Check types
         assert mg_src.dtype == dtype
 
@@ -250,7 +250,7 @@ def test_file_backed_micrograph_explicit_dtype(image_data_fixture):
         for dtype in DTYPES:
             mg_src = MicrographSource(tmp_output_dir, dtype=dtype)
             # Check contents
-            np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+            np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
             # Check types
             assert mg_src.dtype == dtype
 
@@ -262,3 +262,26 @@ def test_show(image_data_fixture):
     mg_src = MicrographSource(image_data_fixture)
     with matplotlib_no_gui():
         mg_src.show()
+
+
+def test_save(image_data_fixture):
+    """
+    Tests MicrographSource.save functionality.
+
+    Specifically image_data_fixture -> save to disk -> load from files.
+    """
+
+    mg_src1 = MicrographSource(image_data_fixture)
+
+    with tempfile.TemporaryDirectory() as tmp_output_dir:
+        path = os.path.join(tmp_output_dir, "test.star")
+        # Writes star and mrc
+        mg_src1.save(path)
+
+        mg_src2 = MicrographSource(tmp_output_dir)
+
+        np.testing.assert_allclose(mg_src2.asnumpy(), image_data_fixture)
+
+        # Also test we can load via STAR file.
+        mg_src3 = RelionSource(path)
+        np.testing.assert_allclose(mg_src3.images[:].asnumpy(), image_data_fixture)
