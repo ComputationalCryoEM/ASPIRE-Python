@@ -1,0 +1,264 @@
+import logging
+import os
+import tempfile
+
+import numpy as np
+import pytest
+from PIL import Image as PILImage
+
+from aspire.image import Image
+from aspire.source import MicrographSource
+
+from .test_utils import matplotlib_no_gui
+
+logger = logging.getLogger(__name__)
+
+# ====================
+# Unit test parameters
+# ====================
+
+FILE_TYPES = [".mrc", ".tiff", ".tif"]
+MICROGRAPH_COUNTS = [1, len(FILE_TYPES)]  # exercise all types
+MICROGRAPH_SIZES = [101, 100]
+DTYPES = [np.float32, np.float64]
+
+
+# ========
+# Fixtures
+# ========
+
+
+@pytest.fixture(params=DTYPES, ids=lambda x: str(x))
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture(params=MICROGRAPH_SIZES, ids=lambda x: f"Size {x}")
+def micrograph_size(request):
+    return request.param
+
+
+@pytest.fixture(params=MICROGRAPH_COUNTS, ids=lambda x: f"Count {x}")
+def micrograph_count(request):
+    return request.param
+
+
+@pytest.fixture(params=FILE_TYPES, ids=lambda x: f"File Type {x}")
+def file_type(request):
+    return request.param
+
+
+@pytest.fixture
+def image_data_fixture(micrograph_count, micrograph_size, dtype):
+    """
+    This generates a Numpy array with prescribed shape and dtype.
+    """
+    img_np = np.random.rand(micrograph_count, micrograph_size, micrograph_size)
+    return img_np.astype(dtype, copy=False)
+
+
+# =====
+# Tests
+# =====
+
+# Test MicrographSource vs Numpy Array
+
+
+def test_array_backed_micrograph(image_data_fixture):
+    """
+    Test construction of MicrographSource initialized with a Numpy array.
+    """
+
+    mg_src = MicrographSource(image_data_fixture)
+
+    np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+
+
+def test_array_backed_typed_micrograph_(image_data_fixture):
+    """
+    Test construction of MicrographSource initialized with a Numpy array,
+    with explicit dtype.
+    """
+
+    for test_dtype in DTYPES:
+        mg_src = MicrographSource(image_data_fixture, dtype=test_dtype)
+
+    np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+
+
+# Test MicrographSource when loading from files.
+def test_dir_backed_micrograph(image_data_fixture, file_type):
+    """
+    Test construction of MicrographSource initialized from directory.
+
+    This test first saves each micrograph image directly,
+    then reads them back using the MicrographSource interface.
+    """
+
+    # Note ordering is implicit to match MicrographSource glob.
+    if file_type == ".mrc":
+        imgs = [Image(img) for img in image_data_fixture]
+    else:
+        imgs = [PILImage.fromarray(img) for img in image_data_fixture]
+
+    with tempfile.TemporaryDirectory() as tmp_output_dir:
+        for i, img in enumerate(imgs):
+            fname = os.path.join(tmp_output_dir, f"{i}{file_type}")
+            img.save(fname)
+        mg_src = MicrographSource(tmp_output_dir)
+
+        # Ensure contents match
+        np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+
+    # Note, the image formats are limited to single precision.
+    if image_data_fixture.dtype != np.float64:
+        # np.float64 image save is not implemented, but we can check float32 matches.
+        assert mg_src.dtype == image_data_fixture.dtype, "Dtype mismatch"
+
+
+# Test MicrographSource when loading from files.
+def test_file_backed_micrograph(image_data_fixture):
+    """
+    Test construction of MicrographSource initialized from file list.
+
+    This test first saves each micrograph image directly,
+    then reads them back using the MicrographSource interface.
+    """
+
+    # Note ordering is explicit.
+    # We'll exercise both a single file name `str` and a `list`.
+    with tempfile.TemporaryDirectory() as tmp_output_dir:
+        if len(image_data_fixture) == 1:
+            # String case
+            fname = os.path.join(tmp_output_dir, "singleton.mrc")
+            file_list = fname
+            Image(image_data_fixture[0]).save(fname)
+
+        else:
+            # List cast
+            file_list = []
+            for i, img in enumerate(image_data_fixture):
+                # Cover all the testable file types.
+                file_type = FILE_TYPES[i % len(FILE_TYPES)]
+                fname = os.path.join(tmp_output_dir, f"{i}{file_type}")
+                if file_type == ".mrc":
+                    Image(img).save(fname)
+                else:
+                    PILImage.fromarray(img).save(fname)
+
+                file_list.append(fname)
+
+        mg_src = MicrographSource(file_list)
+
+        # Ensure contents match
+        np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+
+    # Note, the image formats are limited to single precision.
+    if image_data_fixture.dtype != np.float64:
+        # np.float64 image save is not implemented, but we can check float32 matches.
+        assert mg_src.dtype == image_data_fixture.dtype, "Dtype mismatch"
+
+
+# Test empty raises
+def test_empty_micrograph_source():
+    """
+    Test empty MicrographSource raises.
+    """
+    for x in [[], "", None]:
+        with pytest.raises(RuntimeError, match=r"Must supply non-empty.*"):
+            _ = MicrographSource(x)
+
+
+# Test empty raises
+def test_bad_input_micrograph_source():
+    """
+    Test MicrographSource raises when instantiated with something weird.
+    """
+    with pytest.raises(NotImplementedError, match=r".*not implemented.*"):
+        _ = MicrographSource(123)
+
+
+def test_wrong_dim_micrograph_source():
+    """
+    Test MicrographSource raises with incorrect dim.
+    """
+    for shape in [(49), (1, 2, 7, 7)]:
+        imgs_np = np.empty(shape)
+        with pytest.raises(RuntimeError, match=r"Incompatible.*"):
+            MicrographSource(imgs_np)
+
+
+def test_rectangular_micrograph_source_array():
+    """
+    Test non-square micrograph source raises.
+    """
+    # Test with Numpy array input
+    imgs_np = np.empty((3, 7, 8))
+    with pytest.raises(RuntimeError, match=r"Incompatible.*"):
+        MicrographSource(imgs_np)
+
+
+def test_rectangular_micrograph_source_files():
+    """
+    Test non-square micrograph source raises.
+    """
+
+    # Test inconsistent mrc files
+    imgs = [np.empty((7, 7)), np.empty((8, 8))]
+    with tempfile.TemporaryDirectory() as tmp_output_dir:
+        # Save the files
+        for i, img in enumerate(imgs):
+            fname = os.path.join(tmp_output_dir, f"{i}.mrc")
+            Image(img).save(fname)
+
+        # Load them
+        mg_src = MicrographSource(tmp_output_dir)
+
+        # Check the inconsistent shape raises when dynamically loading
+        with pytest.raises(
+            NotImplementedError, match=r"Micrograph.*has inconsistent shape.*"
+        ):
+            _ = mg_src.images[:]
+
+
+def test_array_backed_micrograph_explicit_dtype(image_data_fixture):
+    """
+    Test construction of MicrographSource with explicit dtype.
+    """
+
+    for dtype in DTYPES:
+        mg_src = MicrographSource(image_data_fixture, dtype=dtype)
+
+        # Check contents
+        np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+        # Check types
+        assert mg_src.dtype == dtype
+
+
+def test_file_backed_micrograph_explicit_dtype(image_data_fixture):
+    """
+    Test construction of MicrographSource with explicit dtype.
+    """
+
+    with tempfile.TemporaryDirectory() as tmp_output_dir:
+        # Save the files, not these will all save as np.float32 at time of writing
+        for i, img in enumerate(image_data_fixture):
+            fname = os.path.join(tmp_output_dir, f"{i}.mrc")
+            Image(img).save(fname)
+
+        # Load with explicit dtype
+        for dtype in DTYPES:
+            mg_src = MicrographSource(tmp_output_dir, dtype=dtype)
+            # Check contents
+            np.testing.assert_allclose(mg_src.as_numpy(), image_data_fixture)
+            # Check types
+            assert mg_src.dtype == dtype
+
+
+def test_show(image_data_fixture):
+    """
+    Test show doesn't crash.
+    """
+    mg_src = MicrographSource(image_data_fixture)
+    with matplotlib_no_gui():
+        mg_src.show()
