@@ -1,4 +1,5 @@
 import logging
+import os
 from glob import glob
 
 import numpy as np
@@ -25,9 +26,11 @@ class MicrographSource:
         :return: `MicrographSource`
         """
 
-        if not micrographs:
+        if (micrographs is None) or (
+            hasattr(micrographs, "__len__") and len(micrographs) == 0
+        ):
             raise RuntimeError(
-                f"Must supply valid `micrographs` argument, received {micrographs}."
+                f"Must supply non-empty `micrographs` argument, received {micrographs}."
             )
 
         # Passed Array
@@ -35,8 +38,10 @@ class MicrographSource:
             # Ensure dimensions
             if micrographs.ndim == 2:
                 micrographs = micrographs[None, :, :]
-            elif micrographs.ndim != 3:
-                raise RuntimeError(
+            elif micrographs.ndim != 3 or (
+                micrographs.shape[1] != micrographs.shape[2]
+            ):
+                raise NotImplementedError(
                     f"Incompatible `micrographs` shape {micrographs.shape}, expects (count, L, L)"
                 )
 
@@ -47,10 +52,17 @@ class MicrographSource:
 
             # We're already backed by an array, access it directly.
             self._data = micrographs.astype(self.dtype, copy=False)
-            self._images_accessor = _ImageAccessor(self._images_from_files)
+            self._images_accessor = _ImageAccessor(
+                self._images_from_array, self.micrograph_count
+            )
 
-        elif isinstance(micrographs, list):
-            self.micrograph_files = self._glob_files(micrographs)
+        elif isinstance(micrographs, list) or isinstance(micrographs, str):
+            if isinstance(micrographs, str):
+                self.micrograph_files = self._glob_files(micrographs)
+            else:
+                # Explicit list
+                self.micrograph_files = micrographs
+
             # Assign count of micrograph files
             self.micrograph_count = len(self.micrograph_files)
 
@@ -68,8 +80,14 @@ class MicrographSource:
             )
         else:
             raise NotImplementedError(
-                "MicrographSource not implemented for {type(micrographs)}."
+                f"MicrographSource not implemented for {type(micrographs)}."
             )
+
+    def __getitem__(self, key):
+        """
+        Getter utility function.
+        """
+        return self.__class__(self.images[key])
 
     @property
     def images(self):
@@ -98,14 +116,14 @@ class MicrographSource:
         )
         for i, ind in enumerate(indices):
             # Load the micrograph image from file
-            micrograph = Image.load(self.micrographs[ind])
+            micrograph = Image.load(self.micrograph_files[ind])
             # Assert size
             if micrograph.resolution != self.micrograph_size:
-                raise RuntimeError(
+                raise NotImplementedError(
                     f"Micrograph {ind} has inconsistent shape {micrograph.resolution}, expected {self.micrograph_size}."
                 )
-            # Assign to array, performs casting to dtype
-            micrographs[i] = self._micrographs[ind]
+            # Assign to array, implicitly performs casting to dtype
+            micrographs[i] = micrograph
 
         return MicrographSource(micrographs)
 
@@ -125,9 +143,11 @@ class MicrographSource:
         """
         return self.micrograph_count
 
-    def save(self, path):
+    def save(self, file_path):
         """
         Save micrographs to `path`.
+
+        Currently only support saving to `.mrc`.
 
         :param path: Path to save data.
         """
@@ -149,7 +169,7 @@ class MicrographSource:
         if os.path.isdir(file_path):
             # Add all loadable images in the directory.
             for ext in Image.extensions:
-                files.extend(sorted(glob(os.path.join(file_path, f"*.{ext}"))))
+                files.extend(sorted(glob(os.path.join(file_path, f"*{ext}"))))
             # Ensure we have not failed to find any micrographs in the provided directory.
             if len(files) == 0:
                 raise RuntimeError(f"No suitable files were found at {file_path}.")
@@ -164,9 +184,9 @@ class MicrographSource:
         return files
 
     def as_numpy(self):
-        return self[:]._data
+        return self.images[:]._data
 
-    def show(self):
+    def show(self, *args, **kwargs):
         """
         Helper function to display micrograph. See Image.show().
         """
