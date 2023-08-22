@@ -50,7 +50,6 @@ class DiagMatrix:
         # Assign shapes from `data`
         self.count = self._data.shape[-1]
         self.stack_shape = self._data.shape[:-1]
-        self.shape = self._data.shape
         # Total number of stack elements
         self.size = np.prod(self.stack_shape)
 
@@ -120,10 +119,9 @@ class DiagMatrix:
 
     def __len__(self):
         """
-        Convenience function for getting `n`.
+        Convenience function for getting length of slowest stack axis.
         """
-
-        return self.count
+        return self.stack_shape[0]
 
     def __check_compatible(self, other):
         """
@@ -313,7 +311,7 @@ class DiagMatrix:
     def mul(self, other):
         """
         Compute the elementwise multiplication of a `DiagMatrix` instance and a
-        scalar or another `DiagMatrix`.
+        scalar, `DiagMatrix`, or `BlkDiagMatrix`.
 
         :param other: The rhs in the multiplication..
         :return: A `self` * `other` as type of `other`.
@@ -327,7 +325,7 @@ class DiagMatrix:
                 raise RuntimeError(
                     f"Mixed `mul` only implemented for singletons at this time, received {self.stack_shape}."
                 )
-            res = self.as_blk_diag(other.partition) * other
+            res = self * other.diag()
         else:  # scalar
             res = DiagMatrix(self._data * other)
 
@@ -398,9 +396,9 @@ class DiagMatrix:
     @property
     def norm(self):
         """
-        Compute the norm of a `DiagMatrix` instance.
+        Compute the 2-norm of a `DiagMatrix` instance.
 
-        :return: The norm of the `DiagMatrix` instance.
+        :return: The 2-norm of the `DiagMatrix` instance.
         """
         # Elements of a diag matrix are its singular values,
         #   and the norm is equal to the largest singular value.
@@ -470,9 +468,6 @@ class DiagMatrix:
         :return: A matrix with new coefficient vectors.
         """
 
-        #  Note there is an optimization opportunity here,
-        #  but the current application of this method is only called once
-        #  per FSPCA/RIR classification.
         return X * self
 
     # `eigval` method is provided for reasons of interoperability
