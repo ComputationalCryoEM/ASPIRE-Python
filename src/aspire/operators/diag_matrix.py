@@ -144,6 +144,12 @@ class DiagMatrix:
                 "DiagMatrix instances are "
                 f"not same dimension {self.count} != {other.count}"
             )
+        try:
+            _ = np.broadcast_shapes(self.stack_shape, other.stack_shape)
+        except ValueError:
+            raise ValueError(
+                f"Attempting to broadcast incompatible shapes: {self.stack_shape} with {other.stack_shape}."
+            )
 
     def __check_dtype_compatible(self, other):
         """
@@ -337,6 +343,7 @@ class DiagMatrix:
         :return: A `self` * `other` as type of `other`.
         """
         if isinstance(other, DiagMatrix):
+            self.__check_compatible(other)
             res = DiagMatrix(self._data * other._data)
         elif isinstance(other, np.ndarray):
             res = self * DiagMatrix(other)
