@@ -372,15 +372,11 @@ class BlkDiagMatrixTestCase(TestCase):
 
         self.assertTrue(np.allclose(results[0], results[1].dense()))
 
-
     def test_blk_diag_to_diag(self):
         """
         Compare BlkDiagMatrix.diag with taking the diagonal of the dense matrix.
         """
-        self.assertTrue(np.allclose(
-            np.diag(self.blk_a.dense()),
-            self.blk_a.diag()
-        ))
+        self.assertTrue(np.allclose(np.diag(self.blk_a.dense()), self.blk_a.diag()))
 
 
 class IrrBlkDiagMatrixTestCase(TestCase):
