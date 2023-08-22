@@ -161,18 +161,28 @@ class DiagMatrix:
 
     def add(self, other):
         """
-        Define elementwise addition of `DiagMatrix` instances
+        Define elementwise addition of `DiagMatrix` instances with
+        scalars, `BlkDiagMatrix`, and `DiagMatrix`.
 
-        :param other: The rhs `DiagMatrix` instance.
+        :param other: scalar, `BlkDiagMatrix` or `DiagMatrix.
         :return:  `DiagMatrix` instance with elementwise sum equal
-            to self + other.
+            to self + other. In the case of `BlkDiagMatrix` a `BlkDiagMatrix` is returned.
         """
 
-        if not is_scalar_type(other):
+        if is_scalar_type(other):
+            res = DiagMatrix(self._data + other)
+        elif isinstance(other, DiagMatrix):
             self.__check_compatible(other)
-            other = other._data
+            res = DiagMatrix(self._data + other._data)
+        elif isinstance(other, BlkDiagMatrix):
+            # res is blk_diag_matrix
+            res = self.as_blk_diag(other.partition) + other
+        else:
+            raise NotImplementedError(
+                f"`add` operation not implemented for {type(other)}"
+            )
 
-        return DiagMatrix(self._data + other)
+        return res
 
     def __add__(self, other):
         """
@@ -190,18 +200,28 @@ class DiagMatrix:
 
     def sub(self, other):
         """
-        Define the elementwise subtraction of `DiagMatrix` instance.
+        Define elementwise subtraction of `DiagMatrix` instances by
+        scalars, `BlkDiagMatrix`, and `DiagMatrix`.
 
-        :param other: The rhs `DiagMatrix` instance.
-        :return: A `DiagMatrix` instance with elementwise subraction equal to
-            self - other.
+        :param other: scalar, `BlkDiagMatrix` or `DiagMatrix.
+        :return:  `DiagMatrix` instance with elementwise sub equal
+            to self - other. In the case of `BlkDiagMatrix` a `BlkDiagMatrix` is returned.
         """
 
-        if not is_scalar_type(other):
+        if is_scalar_type(other):
+            res = DiagMatrix(self._data - other)
+        elif isinstance(other, DiagMatrix):
             self.__check_compatible(other)
-            other = other._data
+            res = DiagMatrix(self._data - other._data)
+        elif isinstance(other, BlkDiagMatrix):
+            # res is blk_diag_matrix
+            res = self.as_blk_diag(other.partition) - other
+        else:
+            raise NotImplementedError(
+                f"`add` operation not implemented for {type(other)}"
+            )
 
-        return DiagMatrix(self._data - other)
+        return res
 
     def __sub__(self, other):
         """
