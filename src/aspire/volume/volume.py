@@ -524,23 +524,31 @@ class Volume:
             logger.info(f"Volume with dtype {self.dtype} saved with dtype float32")
 
     @classmethod
-    def load(cls, filename, permissive=True, dtype=np.float32, symmetry_group=None):
+    def load(cls, filename, permissive=True, dtype=None, symmetry_group=None):
         """
         Load an mrc file as a Volume instance.
 
         :param filename: Data filepath to load.
         :param permissive: Allows problematic files to load with warning when True.
             Defaults to permissive=True.
-        :param dtype: Optionally specifiy data type. Defaults to dtype=np.float32.
+        :param dtype: Optionally specifiy data type. Defaults to dtype of the data.
         :param symmetry_group: A SymmetryGroup instance or string indicating symmetry of the Volume.
 
         :return: Volume instance.
         """
         with mrcfile.open(filename, permissive=permissive) as mrc:
             loaded_data = mrc.data
+
+        # FINUFFT work around
+        if loaded_data.dtype == np.float32:
+            loaded_data = loaded_data.astype(np.float32)
+        elif loaded_data.dtype == np.float64:
+            loaded_data = loaded_data.astype(np.float64)
+
         if loaded_data.dtype != dtype:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
-        return cls(loaded_data.astype(dtype), symmetry_group=symmetry_group)
+
+        return cls(loaded_data, symmetry_group=symmetry_group, dtype=dtype)
 
     def fsc(self, other, cutoff, pixel_size=None, method="fft", plot=False):
         r"""

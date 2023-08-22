@@ -1,13 +1,13 @@
 ![Logo](http://spr.math.princeton.edu/sites/spr.math.princeton.edu/files/ASPIRE_1.jpg)
 
-[![Azure Build Status](https://dev.azure.com/ComputationalCryoEM/Aspire-Python/_apis/build/status/ComputationalCryoEM.ASPIRE-Python?branchName=main)](https://dev.azure.com/ComputationalCryoEM/Aspire-Python/_build/latest?definitionId=3&branchName=main)
 [![Github Actions Status](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml/badge.svg)](https://github.com/ComputationalCryoEM/ASPIRE-Python/actions/workflows/workflow.yml)
 [![codecov](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python/branch/main/graph/badge.svg?token=3XFC4VONX0)](https://codecov.io/gh/ComputationalCryoEM/ASPIRE-Python)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5657281.svg)](https://doi.org/10.5281/zenodo.5657281)
+[![Downloads](https://static.pepy.tech/badge/aspire/month)](https://pepy.tech/project/aspire)
 
 # ASPIRE - Algorithms for Single Particle Reconstruction - v0.11.1
 
-This is the Python version to supersede the [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire).
+The ASPIRE-Python project supersedes [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire).
 
 ASPIRE is an open-source software package for processing single-particle cryo-EM data to determine three-dimensional structures of biological macromolecules. The package includes advanced algorithms based on rigorous mathematics and recent developments in
 statistics and machine learning. It provides unique and improved solutions to important computational challenges of the cryo-EM

@@ -544,6 +544,7 @@ class Image:
 
         # We never need more columns than images.
         columns = min(columns, self.n_images)
+        rows = (self.n_images + columns - 1) // columns  # ceiling divide.
 
         # Create an empty colorbar options dictionary as needed.
         colorbar_opts = colorbar if isinstance(colorbar, dict) else dict()
@@ -561,7 +562,7 @@ class Image:
 
             plt.figure(figsize=figsize)
             for i, im in enumerate(self.asnumpy()):
-                plt.subplot(self.n_images // columns + 1, columns, i + 1)
+                plt.subplot(rows, columns, i + 1)
                 plt.imshow(im, cmap="gray")
                 if colorbar:
                     plt.colorbar(**colorbar_opts)
