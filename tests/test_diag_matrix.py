@@ -231,6 +231,44 @@ def test_diag_diag_scalar_add(diag_matrix_fixture):
     np.testing.assert_allclose(d1 + 123, d_np[0] + 123)
 
 
+def test_diag_blk_add(diag_matrix_fixture, blk_diag):
+    """
+    Test addition of `DiagMatrix` and `BlkDiagMatrix`.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    ref = d1.dense() + blk_diag.dense()
+
+    # Test we raise combining stacks with BlkDiagMatrix.
+    if d1.stack_shape != ():
+        with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
+            _ = d1 + blk_diag
+
+    else:
+        res = d1 + blk_diag
+        assert isinstance(res, BlkDiagMatrix)
+        np.testing.assert_allclose(res.dense(), ref)
+
+
+def test_blk_diag_add(diag_matrix_fixture, blk_diag):
+    """
+    Test addition of `BlkDiagMatrix` and `DiagMatrix`.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    ref = d1.dense() + blk_diag.dense()
+
+    # Test we raise combining stacks with BlkDiagMatrix.
+    if d1.stack_shape != ():
+        with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
+            _ = blk_diag + d1
+
+    else:
+        res = blk_diag + d1
+        assert isinstance(res, BlkDiagMatrix)
+        np.testing.assert_allclose(res.dense(), ref)
+
+
 def test_diag_diag_scalar_radd(diag_matrix_fixture):
     """
     Test right addition of `DiagMatrix` and scalar.
@@ -269,6 +307,44 @@ def test_diag_diag_scalar_rsub(diag_matrix_fixture):
     d1 = 123 - d1
 
     np.testing.assert_allclose(d1, 123 - d_np[0])
+
+
+def test_diag_blk_sub(diag_matrix_fixture, blk_diag):
+    """
+    Test subtraction of `DiagMatrix` and `BlkDiagMatrix`.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    ref = d1.dense() - blk_diag.dense()
+
+    # Test we raise combining stacks with BlkDiagMatrix.
+    if d1.stack_shape != ():
+        with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
+            _ = d1 - blk_diag
+
+    else:
+        res = d1 - blk_diag
+        assert isinstance(res, BlkDiagMatrix)
+        np.testing.assert_allclose(res.dense(), ref)
+
+
+def test_blk_diag_sub(diag_matrix_fixture, blk_diag):
+    """
+    Test subtraction of `BlkDiagMatrix` and `DiagMatrix`.
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    ref = blk_diag.dense() - d1.dense()
+
+    # Test we raise combining stacks with BlkDiagMatrix.
+    if d1.stack_shape != ():
+        with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
+            _ = blk_diag - d1
+
+    else:
+        res = blk_diag - d1
+        assert isinstance(res, BlkDiagMatrix)
+        np.testing.assert_allclose(res.dense(), ref)
 
 
 def test_diag_diag_mul(diag_matrix_fixture):

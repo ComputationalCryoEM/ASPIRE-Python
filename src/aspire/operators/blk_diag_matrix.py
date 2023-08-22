@@ -249,6 +249,8 @@ class BlkDiagMatrix:
 
         if is_scalar_type(other):
             return self.__scalar_add(other, inplace=inplace)
+        elif not isinstance(other, BlkDiagMatrix):
+            return NotImplemented
 
         self.__check_compatible(other)
 
@@ -322,6 +324,8 @@ class BlkDiagMatrix:
 
         if is_scalar_type(other):
             return self.__scalar_sub(other, inplace=inplace)
+        elif not isinstance(other, BlkDiagMatrix):
+            return NotImplemented
 
         self.__check_compatible(other)
 
