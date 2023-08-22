@@ -711,3 +711,14 @@ def test_non_square_as_blk_diag():
     partition = [(4, 5), (4, 3)]
     with pytest.raises(RuntimeError, match=r".*not square.*"):
         _ = d.as_blk_diag(partition)
+
+
+def test_bad_broadcast():
+    """
+    Test incompatible stack shapes raise appropriate error.
+    """
+    d1 = DiagMatrix(np.empty((2, 3, 8)))
+    d2 = DiagMatrix(np.empty((2, 2, 8)))
+
+    with pytest.raises(ValueError, match=r".*incompatible shapes.*"):
+        _ = d1 + d2
