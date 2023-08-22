@@ -924,3 +924,17 @@ class BlkDiagMatrix:
             A.data[i] = np.array(blk_diag[i], dtype=dtype)
 
         return A
+
+    def diag(self):
+        """
+        Return the diagonal elements of this `BlkDiagMatrix`.
+        """
+
+        # Avoid circular import
+        from .diag_matrix import DiagMatrix
+
+        diag = []
+        for blk in self:
+            diag.extend(list(np.diag(blk)))
+
+        return DiagMatrix(np.array(diag, dtype=self.dtype))

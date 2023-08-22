@@ -108,7 +108,13 @@ def test_len():
 
     assert d.size == 10
     assert d.count == 8
-    assert len(d) == 8
+    assert len(d) == 10
+
+    d = DiagMatrix(np.empty((2, 5, 8)))
+
+    assert d.size == 10
+    assert d.count == 8
+    assert len(d) == 2
 
 
 def test_size_mismatch():
@@ -446,7 +452,7 @@ def test_ones(diag_matrix_fixture):
     d = DiagMatrix.ones(d_np.shape)
 
     np.testing.assert_allclose(d, 1)
-    np.testing.assert_equal(d.shape, d_np.shape)
+    np.testing.assert_equal(d._data.shape, d_np.shape)
 
 
 def test_zeros(diag_matrix_fixture):
@@ -457,7 +463,7 @@ def test_zeros(diag_matrix_fixture):
     d = DiagMatrix.zeros(d_np.shape)
 
     np.testing.assert_allclose(d, 0)
-    np.testing.assert_equal(d.shape, d_np.shape)
+    np.testing.assert_equal(d._data.shape, d_np.shape)
 
 
 def test_empty(diag_matrix_fixture):
@@ -467,7 +473,7 @@ def test_empty(diag_matrix_fixture):
     _, _, d_np = diag_matrix_fixture
     d = DiagMatrix.empty(d_np.shape)
 
-    np.testing.assert_equal(d.shape, d_np.shape)
+    np.testing.assert_equal(d._data.shape, d_np.shape)
 
 
 def test_lr_scale(diag_matrix_fixture):
@@ -551,7 +557,7 @@ def test_eye(diag_matrix_fixture):
     d = DiagMatrix.eye(d_np.shape)
 
     np.testing.assert_allclose(d, 1)
-    np.testing.assert_equal(d.shape, d_np.shape)
+    np.testing.assert_equal(d._data.shape, d_np.shape)
 
 
 def test_apply(diag_matrix_fixture):
