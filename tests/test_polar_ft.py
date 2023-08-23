@@ -187,6 +187,15 @@ def test_angular_radial_modes(angular_radial_mode_image):
     assert radial_hit in radial_mode_window
 
 
+def test_complex_image_error():
+    """Test that we raise for complex images."""
+    img_size = 5
+    complex_image = Image(np.ones((img_size, img_size), dtype=np.complex64)) + 2j
+    pft = PolarFT(size=img_size)
+    with pytest.raises(TypeError, match=r"The Image `x` must be real valued*"):
+        _ = pft.transform(complex_image)
+
+
 def test_theta_error():
     """
     Test that `PolarFT`, when instantiated with odd value for `ntheta`,
