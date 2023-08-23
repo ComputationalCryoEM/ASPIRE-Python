@@ -1,6 +1,7 @@
 import logging
 import os
 from glob import glob
+from pathlib import Path
 
 import numpy as np
 
@@ -56,12 +57,13 @@ class MicrographSource:
                 self._images_from_array, self.micrograph_count
             )
 
-        elif isinstance(micrographs, list) or isinstance(micrographs, str):
-            if isinstance(micrographs, str):
-                self.micrograph_files = self._glob_files(micrographs)
-            else:
+        elif self._is_path_like_input(micrographs):
+            if isinstance(micrographs, list):
                 # Explicit list
                 self.micrograph_files = micrographs
+            else:
+                # `str` cast will accommodate string and Path objects
+                self.micrograph_files = self._glob_files(str(micrographs))
 
             # Assign count of micrograph files
             self.micrograph_count = len(self.micrograph_files)
@@ -82,6 +84,15 @@ class MicrographSource:
             raise NotImplementedError(
                 f"MicrographSource not implemented for {type(micrographs)}."
             )
+
+    @staticmethod
+    def _is_path_like_input(p):
+        """
+        Utility to return whether `p` should be treated as a path to micrograph(s).
+        :param p: Item to test.
+        :return: Boolean.
+        """
+        return any([isinstance(p, list), isinstance(p, str), isinstance(p, Path)])
 
     def __getitem__(self, key):
         """
