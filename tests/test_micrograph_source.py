@@ -13,12 +13,14 @@ from .test_utils import matplotlib_no_gui
 
 logger = logging.getLogger(__name__)
 
+
 # ====================
 # Unit test parameters
 # ====================
 
+
 FILE_TYPES = [".mrc", ".tiff", ".tif"]
-MICROGRAPH_COUNTS = [1, len(FILE_TYPES)]  # exercise all types
+MICROGRAPH_COUNTS = [1, len(FILE_TYPES)]  # Sized to exercise all types
 MICROGRAPH_SIZES = [101, 100]
 DTYPES = [np.float32, np.float64]
 
@@ -61,6 +63,7 @@ def image_data_fixture(micrograph_count, micrograph_size, dtype):
 # Tests
 # =====
 
+
 # Test MicrographSource vs Numpy Array
 
 
@@ -86,7 +89,23 @@ def test_array_backed_typed_micrograph_(image_data_fixture):
     np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
 
 
+def test_array_backed_micrograph_explicit_dtype(image_data_fixture):
+    """
+    Test construction of MicrographSource with explicit dtype.
+    """
+
+    for dtype in DTYPES:
+        mg_src = MicrographSource(image_data_fixture, dtype=dtype)
+
+        # Check contents
+        np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
+        # Check types
+        assert mg_src.dtype == dtype
+
+
 # Test MicrographSource when loading from files.
+
+
 def test_dir_backed_micrograph(image_data_fixture, file_type):
     """
     Test construction of MicrographSource initialized from directory.
@@ -117,6 +136,8 @@ def test_dir_backed_micrograph(image_data_fixture, file_type):
 
 
 # Test MicrographSource when loading from files.
+
+
 def test_file_backed_micrograph(image_data_fixture):
     """
     Test construction of MicrographSource initialized from file list.
@@ -159,7 +180,29 @@ def test_file_backed_micrograph(image_data_fixture):
         assert mg_src.dtype == image_data_fixture.dtype, "Dtype mismatch"
 
 
-# Test empty raises
+def test_file_backed_micrograph_explicit_dtype(image_data_fixture):
+    """
+    Test construction of MicrographSource with explicit dtype.
+    """
+
+    with tempfile.TemporaryDirectory() as tmp_output_dir:
+        # Save the files, not these will all save as np.float32 at time of writing
+        for i, img in enumerate(image_data_fixture):
+            fname = os.path.join(tmp_output_dir, f"{i}.mrc")
+            Image(img).save(fname)
+
+        # Load with explicit dtype
+        for dtype in DTYPES:
+            mg_src = MicrographSource(tmp_output_dir, dtype=dtype)
+            # Check contents
+            np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
+            # Check types
+            assert mg_src.dtype == dtype
+
+
+# Test junk inputs
+
+
 def test_empty_micrograph_source():
     """
     Test empty MicrographSource raises.
@@ -169,7 +212,6 @@ def test_empty_micrograph_source():
             _ = MicrographSource(x)
 
 
-# Test empty raises
 def test_bad_input_micrograph_source():
     """
     Test MicrographSource raises when instantiated with something weird.
@@ -221,38 +263,7 @@ def test_rectangular_micrograph_source_files():
             _ = mg_src.images[:]
 
 
-def test_array_backed_micrograph_explicit_dtype(image_data_fixture):
-    """
-    Test construction of MicrographSource with explicit dtype.
-    """
-
-    for dtype in DTYPES:
-        mg_src = MicrographSource(image_data_fixture, dtype=dtype)
-
-        # Check contents
-        np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
-        # Check types
-        assert mg_src.dtype == dtype
-
-
-def test_file_backed_micrograph_explicit_dtype(image_data_fixture):
-    """
-    Test construction of MicrographSource with explicit dtype.
-    """
-
-    with tempfile.TemporaryDirectory() as tmp_output_dir:
-        # Save the files, not these will all save as np.float32 at time of writing
-        for i, img in enumerate(image_data_fixture):
-            fname = os.path.join(tmp_output_dir, f"{i}.mrc")
-            Image(img).save(fname)
-
-        # Load with explicit dtype
-        for dtype in DTYPES:
-            mg_src = MicrographSource(tmp_output_dir, dtype=dtype)
-            # Check contents
-            np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
-            # Check types
-            assert mg_src.dtype == dtype
+# Test utilities
 
 
 def test_show(image_data_fixture):

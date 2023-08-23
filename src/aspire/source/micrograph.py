@@ -20,10 +20,14 @@ class MicrographSource:
 
         :param micrographs: Numpy array (count, L, L)
             where  `L` represents the size in pixels.
-        :param dtype: Data type of returned `MicrographSource`
+            Alternatively, `micrographs` may be a path string,
+            or list of path strings.
+        :param dtype: Data type of returned `MicrographSource`.
             Default of `None` will attempt to infer dtype from the first micrograph.
             Explicitly setting dtype will attempt a cast when returning micrographs.
             Currently only `float32` and `float64` are supported.
+            Note, due to limitations of common MRC implementations,
+            saving is limited to single precision.
         :return: `MicrographSource`
         """
 
@@ -40,14 +44,14 @@ class MicrographSource:
             if micrographs.ndim == 2:
                 micrographs = micrographs[None, :, :]
             elif micrographs.ndim != 3 or (
-                micrographs.shape[1] != micrographs.shape[2]
+                micrographs.shape[-2] != micrographs.shape[-1]
             ):
                 raise NotImplementedError(
                     f"Incompatible `micrographs` shape {micrographs.shape}, expects (count, L, L)"
                 )
 
             self.micrograph_count = micrographs.shape[0]
-            self.micrograph_size = micrographs.shape[2]
+            self.micrograph_size = micrographs.shape[-1]
             # Assign dtype override, or infer from `micrographs`.
             self.dtype = dtype or micrographs.dtype
 
@@ -76,7 +80,7 @@ class MicrographSource:
             # Assign dtype override, or infer from `micrograph0`.
             self.dtype = dtype or micrograph0.dtype
 
-            # Passed files, prepare to load on the fly.
+            # Prepare accessor to load files from disk on the fly.
             self._images_accessor = _ImageAccessor(
                 self._images_from_files, self.micrograph_count
             )
@@ -103,20 +107,26 @@ class MicrographSource:
     @property
     def images(self):
         """
-        Returns the micrographs with any added noise.
+        Returns micrographs.
 
         :return: An `ImageAccessor` for the noisy micrographs.
         """
         return self._images_accessor
 
     def _images_from_array(self, indices):
+        """
+        Accesses and returns micrographs from a Numpy array.
+
+        :param indices: A 1-D Numpy array of integer indices.
+        :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
+        """
         return MicrographSource(self._data[indices])
 
     def _images_from_files(self, indices):
         """
-        Accesses and returns micrographs.
+        Accesses and returns micrographs from disk.
 
-        :param indices: A 1-D NumPy array of integer indices.
+        :param indices: A 1-D Numpy array of integer indices.
         :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
         """
         # Initialize empty result
@@ -134,7 +144,7 @@ class MicrographSource:
                     f"Micrograph {ind} has inconsistent shape {micrograph.resolution}, expected {self.micrograph_size}."
                 )
             # Assign to array, implicitly performs casting to dtype
-            micrographs[i] = micrograph
+            micrographs[i] = micrograph.asnumpy()
 
         return MicrographSource(micrographs)
 
@@ -142,7 +152,7 @@ class MicrographSource:
         """
         String representation.
 
-        :return: Returns a string containing the number of micrographs, dtype, and dimension.
+        :return: Returns a string description of instance.
         """
         return f"{self.__class__.__name__} with {self.micrograph_count} {self.dtype.name} micrographs of size {self.micrograph_size}x{self.micrograph_size}"
 
@@ -154,7 +164,7 @@ class MicrographSource:
         """
         return self.micrograph_count
 
-    def save(self, file_path):
+    def save(self, path):
         """
         Save micrographs to `path`.
 
@@ -162,17 +172,15 @@ class MicrographSource:
 
         :param path: Path to save data.
         """
-        ArrayImageSource(self.asnumpy()).save(file_path, batch_size=1)
+        ArrayImageSource(self.asnumpy()).save(path, batch_size=1)
 
-    def _glob_files(self, file_path, dtype=None):
+    def _glob_files(self, file_path):
         """
-        Create a `MicrographSource` that loads micrograph(s) from file or directory.
+        Helper utility to glob for matching micrograph files at `file_path`.
 
-        :param dtype: Data type of returned `MicrographSource`
-            Default of `None` will attempt to infer dtype from files.
-            Explicitly setting dtype will attempt a cast when returning micrographs.
-            Currently only `float32` and `float64` are supported.
-        :return: `MicrographSource`
+        Will match on any image matching `Image.extensions` in `file_path`.
+
+        :return: List of files.
         """
 
         files = []
@@ -195,6 +203,11 @@ class MicrographSource:
         return files
 
     def asnumpy(self):
+        """
+        Return micrograph data as dense Numpy array.
+
+        :return: Numpy array.
+        """
         return self.images[:]._data
 
     def show(self, *args, **kwargs):
@@ -314,7 +327,7 @@ class MicrographSimulation(MicrographSource):
         Creates centers for the given micrograph if the fail threshold isn't met.
 
         param micrograph_index: The ID of the micrograph.
-        return: A numpy array containing the generated centers.
+        return: A Numpy array containing the generated centers.
         """
         while self._fail_count < self._fail_limit:
             try:
@@ -380,7 +393,7 @@ class MicrographSimulation(MicrographSource):
         """
         Accesses and returns micrographs with any added noise.
 
-        :param indices: A 1-D NumPy array of integer indices.
+        :param indices: A 1-D Numpy array of integer indices.
         :return: An `Image` object representing the noisy micrograph.
         """
         micrographs = self._clean_images(indices)
@@ -392,7 +405,7 @@ class MicrographSimulation(MicrographSource):
         """
         Accesses and returns micrographs without any added noise.
 
-        :param indices: A 1-D NumPy array of integer indices.
+        :param indices: A 1-D Numpy array of integer indices.
         :return: An `Image` object representing the clean micrograph
         """
         # Initialize empty micrograph
