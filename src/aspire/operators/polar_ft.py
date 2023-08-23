@@ -101,13 +101,13 @@ class PolarFT:
         """
         if x.dtype != self.dtype:
             logger.warning(
-                f"{self.__class__.__name__}::evaluate_t"
+                f"{self.__class__.__name__}::transform"
                 f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
             )
 
         if not isinstance(x, Image):
             logger.warning(
-                f"{self.__class__.__name__}::evaluate_t"
+                f"{self.__class__.__name__}::transform"
                 f" passed numpy array instead of {Image}."
             )
         else:
