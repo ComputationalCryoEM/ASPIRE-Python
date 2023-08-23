@@ -46,7 +46,7 @@ def source_orientation_objs(n_img, L, order, dtype):
     vol = CnSymmetricVolume(
         L=L,
         C=1,
-        K=25,
+        K=50,
         order=order,
         seed=65,
         dtype=dtype,
@@ -120,25 +120,10 @@ def test_estimate_rotations(n_img, L, order, dtype):
     # angular distance between them (in degrees).
     Q_mat, flag = register_rotations(rots_est, rots_gt_sync)
     regrot = get_aligned_rotations(rots_est, Q_mat, flag)
-    ang_dist = np.zeros(n_img, dtype=dtype)
-    for i in range(n_img):
-        ang_dist[i] = (
-            Rotation.angle_dist(
-                regrot[i],
-                rots_gt_sync[i],
-                dtype=dtype,
-            )
-            * 180
-            / np.pi
-        )
+    mean_ang_dist = Rotation.mean_angular_distance(regrot, rots_gt_sync) * 180 / np.pi
 
     # Assert mean angular distance is reasonable.
-    if order == 2:
-        assert np.mean(ang_dist) < 4
-    elif order == 3 or order == 4:
-        assert np.mean(ang_dist) < 2
-    else:
-        assert np.mean(ang_dist) < 5
+    assert mean_ang_dist < 3
 
 
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
@@ -207,7 +192,7 @@ def test_self_relative_rotations(n_img, L, order, dtype):
         cases = np.array([Rii, Rii.T, J_conjugate(Rii), J_conjugate(Rii.T)])
         for i, estimate in enumerate(cases):
             dist[i] = Rotation.angle_dist(estimate, Rii_gt)
-        angular_distance[i] = dist[np.argmin(dist)]
+        angular_distance[i] = min(dist)
     mean_angular_distance = np.mean(angular_distance) * 180 / np.pi
 
     # Check that mean_angular_distance is less than 5 degrees.
@@ -303,6 +288,7 @@ def test_relative_viewing_directions(n_img, L, order, dtype):
     # Check that the mean angular difference is within 2 degrees.
     angle_tol = 2 * np.pi / 180
     if order > 4:
+        breakpoint()
         angle_tol = 4 * np.pi / 180
 
     assert angular_dist_vijs < angle_tol
@@ -368,7 +354,8 @@ def test_commonlines_c2(n_img, L, order, dtype):
     cl_gt = (cl_gt * 360 / n_theta) % 180
 
     pairs = all_pairs(n_img)
-    within_2 = 0
+    angle_tol = 2  # degrees
+    within_tol = 0
     for i, j in pairs:
         # For each pair of images the two sets of mutual common-lines in cl, (cl[0,i,j], cl[0,j,i])
         # and (cl[1,i,j], cl[1,j,i]), should each match one of the two sets in the ground truth cl_gt.
@@ -386,11 +373,11 @@ def test_commonlines_c2(n_img, L, order, dtype):
             + abs(cl[1, j, i] - cl_gt[0, j, i])
         )
         min_err = min(err_1, err_2)
-        if min_err <= 2:
-            within_2 += 1
+        if min_err <= angle_tol:
+            within_tol += 1
 
-    # Check that at least 90% of estimates are within 5 degrees.
-    assert within_2 / len(pairs) > 0.90
+    # Check that at least 90% of estimates are within `angle_tol` degrees.
+    assert within_tol / len(pairs) > 0.90
 
 
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
