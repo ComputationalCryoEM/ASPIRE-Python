@@ -337,7 +337,7 @@ class DiagMatrix:
     def mul(self, other):
         """
         Compute the elementwise multiplication of a `DiagMatrix` instance and a
-        scalar, `DiagMatrix`, or `BlkDiagMatrix`.
+        scalar or `DiagMatrix`.
 
         :param other: The rhs in the multiplication..
         :return: A `self` * `other` as type of `other`.
@@ -345,16 +345,10 @@ class DiagMatrix:
         if isinstance(other, DiagMatrix):
             self.__check_compatible(other)
             res = DiagMatrix(self._data * other._data)
-        elif isinstance(other, np.ndarray):
-            res = self * DiagMatrix(other)
-        elif isinstance(other, BlkDiagMatrix):
-            if self.stack_shape != ():
-                raise RuntimeError(
-                    f"Mixed `mul` only implemented for singletons at this time, received {self.stack_shape}."
-                )
-            res = self * other.diag()
-        else:  # scalar
+        elif is_scalar_type(other):  # scalar
             res = DiagMatrix(self._data * other)
+        else:
+            raise NotImplementedError(f"mul not implemented for {type(other)}.")
 
         return res
 
@@ -480,7 +474,7 @@ class DiagMatrix:
         :return: A matrix with new coefficient vectors.
         """
 
-        return self * X
+        return self * DiagMatrix(X)
 
     def rapply(self, X):
         """
@@ -488,14 +482,17 @@ class DiagMatrix:
         applies the diagonal matrix on the right hand side.
         Example, X @ self.
 
-        This is the right hand side equivalent to `apply`.
+        This is the right hand side equivalent to `apply`,
+        which due to being diagonal, is the same as `apply`.
+        This method exists purely for interoperability with code
+        originally targeting `BlkDiagMatrix`.
 
         :param X: Coefficient matrix, each column is a coefficient vector.
 
         :return: A matrix with new coefficient vectors.
         """
 
-        return X * self
+        return self.apply(X)
 
     # `eigval` method is provided for reasons of interoperability
     # in code that also uses with `BlkDiagMatrix`.
