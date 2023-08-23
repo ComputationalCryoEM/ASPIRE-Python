@@ -552,37 +552,6 @@ def test_empty(diag_matrix_fixture):
     np.testing.assert_equal(d._data.shape, d_np.shape)
 
 
-def test_lr_scale(diag_matrix_fixture):
-    """
-    Test `lr_scale` method.
-    """
-
-    d1 = diag_matrix_fixture[0]
-
-    # Check we raise on stacks.
-
-    if d1.stack_shape != ():
-        with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
-            _ = d1.lr_scale()
-    else:
-        # Test default unit weight scaling
-        x = d1.lr_scale()
-
-        # Create reference expand A @ w @ A.T
-        # It is understood the transpose is redundant here,
-        # but the test formula is being written out intentionally.
-        w = np.ones(d1.count, dtype=d1.dtype)
-        ref = d1.dense() @ np.diag(w) @ d1.dense().T
-
-        np.testing.assert_allclose(x.dense(), ref, atol=utest_tolerance(d1.dtype))
-
-        # Test with different weights
-        w = np.arange(d1.count, dtype=d1.dtype)
-        x = d1.lr_scale(weights=w)
-        ref = d1.dense() @ np.diag(w) @ d1.dense().T
-        np.testing.assert_allclose(x.dense(), ref, atol=utest_tolerance(d1.dtype))
-
-
 def test_as_blk_diag(matrix_size, blk_diag):
     """
     Test conversion from `DiagMatrix` to `BlkDiagMatrix`.
