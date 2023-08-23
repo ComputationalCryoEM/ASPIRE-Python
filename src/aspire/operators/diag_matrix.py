@@ -606,27 +606,6 @@ class DiagMatrix:
 
         return B
 
-    def lr_scale(self, weights=None):
-        """
-        Performs L and R scaling of `weights` by this `DiagMatrix`
-        instance simultaneously, returning a `DiagMatrix`.
-
-        Given `weights` this computes B = A * w * A.T via B = w * A**2
-        where A is this `DiagMatrix` instance.
-
-        :weights: Optional weight vector, defaults to ones.
-        :return: `DiagMatrix`
-        """
-        if self.stack_shape != ():
-            raise RuntimeError(
-                f"lr_scale only implemented for singletons at this time, received {self.stack_shape}."
-            )
-
-        if weights is None:
-            weights = np.ones(self.count, dtype=self.dtype)
-
-        return weights * self**2
-
     def solve(self, b):
         """
         For this `DiagMatrix` `a` and vector `b`.
