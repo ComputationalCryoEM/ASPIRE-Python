@@ -265,6 +265,7 @@ class CLOrient3D:
         n_theta_half = self.n_theta // 2
         n_img = self.n_img
 
+        # `estimate_shifts()` requires that rotations have already been estimated.
         if self.rotations is None:
             self.estimate_rotations()
         rotations = self.rotations
