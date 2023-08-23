@@ -154,7 +154,7 @@ def test_cyclically_symmetric_image(symmetric_image):
 def test_radial_modes(radial_mode_image):
     pf, mode = radial_mode_image
 
-    # Set DC compenent to zero.
+    # Set DC component to zero.
     pf[:, 0] = 0
 
     # Check that all rays are close.
