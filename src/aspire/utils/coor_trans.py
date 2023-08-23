@@ -308,35 +308,35 @@ def common_line_from_rots(r1, r2, ell):
     return ell_ij, ell_ji
 
 
-def rots_to_clmatrix(rots, n_theta, match_cl=True):
+def rots_to_clmatrix(rots, n_theta):
     """
     Compute the common lines matrix induced by all pairs of rotation
     matrices, `rots`, provided.
 
     :param rots: n_rotsx3x3 array of rotation matrices.
-    :param n_theta: Number of theta values fo common lines indices.
-    :param match_cl: Option to match cl_matrix convention from CLOrient3d
+    :param n_theta: Number of theta values for common lines indices.
 
     :return: n_rots x n_rots common lines matrix.
     """
     n_rots = len(rots)
     cl_matrix = -np.ones((n_rots, n_rots))
     for i in range(n_rots):
+        Ri = rots[i]
+        Ri3 = Ri[:, 2]
         for j in range(i + 1, n_rots):
-            Ri = rots[i]
             Rj = rots[j]
-            Ri3 = Ri[:, 2]
             Rj3 = Rj[:, 2]
-            xij = Ri.T @ (np.cross(Ri3, Rj3) / np.linalg.norm(np.cross(Ri3, Rj3)))
-            xji = Rj.T @ (np.cross(Ri3, Rj3) / np.linalg.norm(np.cross(Ri3, Rj3)))
+            common_axis = np.cross(Ri3, Rj3) / np.linalg.norm(np.cross(Ri3, Rj3))
+            xij = Ri.T @ common_axis
+            xji = Rj.T @ common_axis
             theta_ij = np.rad2deg(np.arctan2(xij[1], xij[0])) % 360
             theta_ji = np.rad2deg(np.arctan2(xji[1], xji[0])) % 360
 
-            if theta_ij > 180 and match_cl:
+            if theta_ij > 180:
                 theta_ij -= 180
                 theta_ji -= 180
 
-            cl_matrix[i, j] = round((theta_ij % 360) * n_theta / 360)
+            cl_matrix[i, j] = round(theta_ij * n_theta / 360)
             cl_matrix[j, i] = round((theta_ji % 360) * n_theta / 360)
 
     return cl_matrix
