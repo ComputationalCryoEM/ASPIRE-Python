@@ -649,26 +649,22 @@ def test_solve(diag_matrix_fixture):
         )
 
 
-def test_diag_blk_mul(diag_matrix_fixture, blk_diag):
+def test_diag_blk_mul():
     """
-    Test mixing `BlkDiagMatrix` with `DiagMatrix` element-wise multiplication.
+    Test mixing `BlkDiagMatrix` with `DiagMatrix` element-wise multiplication raises.
     """
-    d1, _, d_np = diag_matrix_fixture
+    d = DiagMatrix(np.empty(8))
 
-    # Test we raise combining stacks with BlkDiagMatrix.
-    if d1.stack_shape != ():
-        with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
-            _ = d1 * blk_diag
+    partition = [(4, 4), (4, 4)]
+    b = BlkDiagMatrix.ones(partition, dtype=d.dtype)
 
-    else:
-        # Compare commutation (tests rmul with blk)
-        db = d1 * blk_diag
-        bd = blk_diag * d1
-        np.testing.assert_allclose(db.dense(), bd.dense())
+    # left mul
+    with pytest.raises(NotImplementedError, match=r".*mul not implemented for.*"):
+        _ = d * b
 
-        # Compare with numpy
-        ref = d1.dense() * blk_diag.dense()
-        np.testing.assert_allclose((d1 * blk_diag).dense(), ref)
+    # right mul
+    with pytest.raises(NotImplementedError, match=r".*mul not implemented for.*"):
+        _ = b * d
 
 
 def test_non_square_as_blk_diag():

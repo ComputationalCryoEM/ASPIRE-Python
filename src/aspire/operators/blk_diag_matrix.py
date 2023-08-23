@@ -476,10 +476,8 @@ class BlkDiagMatrix:
         # Convert scalar to reduce code branching.
         if is_scalar_type(val):
             val = np.full((self.nblocks), fill_value=val, dtype=self.dtype)
-        elif hasattr(val, "as_blk_diag"):
-            val = val.as_blk_diag(self.partition)
         elif not isinstance(val, BlkDiagMatrix):
-            raise RuntimeError(f"mul not implemented for {type(val)}.")
+            raise NotImplementedError(f"mul not implemented for {type(val)}.")
 
         if inplace:
             for i in range(self.nblocks):
