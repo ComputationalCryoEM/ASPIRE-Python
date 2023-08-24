@@ -6,7 +6,10 @@ from aspire.operators import PolarFT
 from aspire.utils import gaussian_2d, grid_2d
 from aspire.volume import AsymmetricVolume, CnSymmetricVolume
 
+# ==========
 # Parameters
+# ==========
+
 IMG_SIZES = [
     64,
     65,
@@ -28,7 +31,11 @@ RADIAL_MODES = [
 ]
 
 
+# ==================
 # Parameter Fixtures
+# ==================
+
+
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
 def dtype(request):
     return request.param
@@ -44,7 +51,11 @@ def radial_mode(request):
     return request.param
 
 
-# Image and PF fixtures
+# =====================
+# Image and PF Fixtures
+# =====================
+
+
 @pytest.fixture
 def gaussian(img_size, dtype):
     """Radially symmetric image."""
@@ -100,7 +111,11 @@ def pf_transform(image):
     return pf
 
 
-# Testing suite
+# =============
+# Testing Suite
+# =============
+
+
 def test_dc_component(asymmetric_image):
     """Test that the DC component equals the mean of the signal."""
     image, pf = asymmetric_image
@@ -162,3 +177,29 @@ def test_theta_error():
     # Test we raise with expected error.
     with pytest.raises(NotImplementedError, match=r"Only even values for ntheta*"):
         _ = PolarFT(size=42, ntheta=143, dtype=np.float32)
+
+
+@pytest.mark.parametrize("stack_shape", [(5,), (2, 3)])
+def test_full_transform(stack_shape):
+    """
+    Test conjugate symmetry and shape of the full polar Fourier transform.
+    """
+    img_size = 32
+    image = Image(
+        np.random.rand(*stack_shape, img_size, img_size).astype(np.float32, copy=False)
+    )
+    pft = PolarFT(size=img_size)
+    pf = pft.transform(image)
+    full_pf = pft.full(pf)
+
+    # Check shape.
+    assert full_pf.shape == (*stack_shape, pft.ntheta, pft.nrad)
+
+    # Check conjugate symmetry against pf.
+    assert np.allclose(np.conj(pf), full_pf[..., pft.ntheta // 2 :, :])
+
+    # Check conjugate symmetry against self.
+    for ray in range(pft.ntheta // 2):
+        np.testing.assert_allclose(
+            full_pf[..., ray, :], np.conj(full_pf[..., ray + pft.ntheta // 2, :])
+        )

@@ -74,10 +74,8 @@ class CLOrient3D:
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
         self.pf = self.pft.transform(imgs)
-        n_theta_half = self.n_theta // 2
-        self.pf = self.pf.reshape(self.n_img, n_theta_half, self.n_rad)
 
-        # We remove the DC the component. pf now has size (n_img) x (n_theta/2) x (n_rad-1),
+        # We remove the DC the component. pf has size (n_img) x (n_theta/2) x (n_rad-1),
         # with pf[:, :, 0] containing low frequency content and pf[:, :, -1] containing
         # high frequency content.
         self.pf = self.pf[:, :, 1:]
