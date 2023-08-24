@@ -163,9 +163,27 @@ def test_complex_image_error():
     """Test that we raise for complex images."""
     img_size = 5
     complex_image = Image(np.ones((img_size, img_size), dtype=np.complex64)) + 2j
-    pft = PolarFT(size=img_size)
+    pft = PolarFT(size=img_size, dtype=np.complex64)
     with pytest.raises(TypeError, match=r"The Image `x` must be real valued*"):
         _ = pft.transform(complex_image)
+
+
+def test_inconsistent_dtypes_error():
+    """Test that we raise for complex images."""
+    img_size = 5
+    image = np.ones((img_size, img_size), dtype=np.float32)
+    pft = PolarFT(size=img_size, dtype=np.float32)
+    with pytest.raises(TypeError, match=r"passed numpy array*"):
+        _ = pft.transform(image)
+
+
+def test_inconsistent_dtypes_error():
+    """Test that we raise for complex images."""
+    img_size = 5
+    image_np = np.ones((img_size, img_size), dtype=np.float32)
+    pft = PolarFT(size=img_size, dtype=np.float64)
+    with pytest.raises(TypeError, match=r"Inconsistent dtypes*"):
+        _ = pft.transform(image_np)
 
 
 def test_theta_error():
