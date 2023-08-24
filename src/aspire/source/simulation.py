@@ -267,19 +267,21 @@ class Simulation(ImageSource):
         return self._clean_images_accessor
 
     def _clean_images(self, indices):
-        return self._images(indices, enable_noise=False)
+        return self._images(indices, clean_images=True)
 
-    def _images(self, indices, enable_noise=True):
+    def _images(self, indices, clean_images=False):
         """
         Returns particle images when accessed via the `ImageSource.images` property.
         :param indices: A 1-D NumPy array of integer indices.
-        :param enable_noise: Only used internally, toggled off when `clean_images` requested.
+        :param clean_images: Only used internally, toggled on when `clean_images` requested.
+             Will skip accessing cache, skip noise, while applying CTF to projections.
         :return: An `Image` object.
         """
         # check for cached images first
-        if self._cached_im is not None:
+        if not clean_images and self._cached_im is not None:
             logger.debug("Loading images from cache")
             return self.generation_pipeline.forward(self._cached_im[indices], indices)
+
         im = self.projections[indices]
 
         # apply original CTF distortion to image
@@ -289,7 +291,7 @@ class Simulation(ImageSource):
 
         im *= self.amplitudes[indices].reshape(len(indices), 1, 1).astype(self.dtype)
 
-        if enable_noise and self.noise_adder is not None:
+        if not clean_images and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
 
         # Finally, apply transforms to resulting Image
