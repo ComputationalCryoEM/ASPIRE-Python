@@ -93,6 +93,7 @@ class MicrographSource:
     def _is_path_like_input(p):
         """
         Utility to return whether `p` should be treated as a path to micrograph(s).
+
         :param p: Item to test.
         :return: Boolean.
         """
@@ -141,7 +142,8 @@ class MicrographSource:
             # Assert size
             if micrograph.resolution != self.micrograph_size:
                 raise NotImplementedError(
-                    f"Micrograph {ind} has inconsistent shape {micrograph.resolution}, expected {self.micrograph_size}."
+                    f"Micrograph {ind} has inconsistent shape {micrograph.shape},"
+                    f" expected {(self.micrograph_size, self.micrograph_size)}."
                 )
             # Assign to array, implicitly performs casting to dtype
             micrographs[i] = micrograph.asnumpy()
