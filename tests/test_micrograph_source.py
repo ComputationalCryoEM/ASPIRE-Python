@@ -77,21 +77,10 @@ def test_array_backed_micrograph(image_data_fixture):
     np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
 
 
-def test_array_backed_typed_micrograph_(image_data_fixture):
+def test_array_backed_micrograph_explicit_dtype(image_data_fixture):
     """
     Test construction of MicrographSource initialized with a Numpy array,
     with explicit dtype.
-    """
-
-    for test_dtype in DTYPES:
-        mg_src = MicrographSource(image_data_fixture, dtype=test_dtype)
-
-    np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
-
-
-def test_array_backed_micrograph_explicit_dtype(image_data_fixture):
-    """
-    Test construction of MicrographSource with explicit dtype.
     """
 
     for dtype in DTYPES:
@@ -210,6 +199,21 @@ def test_empty_micrograph_source():
     for x in [[], "", None]:
         with pytest.raises(RuntimeError, match=r"Must supply non-empty.*"):
             _ = MicrographSource(x)
+
+
+def test_no_files_micrograph_source():
+    """
+    Test MicrographSource initialized with empty path raises.
+    """
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # tmp_dir should be created empty
+        with pytest.raises(RuntimeError, match=r"No suitable files were found.*"):
+            _ = MicrographSource(tmp_dir)
+
+        # create a non micrograph file, should still raise.
+        open("not_a_micrograph.txt", "a").close()
+        with pytest.raises(RuntimeError, match=r"No suitable files were found.*"):
+            _ = MicrographSource(tmp_dir)
 
 
 def test_bad_input_micrograph_source():
