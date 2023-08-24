@@ -27,7 +27,7 @@ RESOLUTION = [
 # `None` defaults to random offsets.
 OFFSETS = [
     0,
-    None,
+    pytest.param(None, marks=pytest.mark.expensive),
 ]
 
 DTYPES = [
