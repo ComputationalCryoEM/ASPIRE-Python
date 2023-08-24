@@ -100,13 +100,13 @@ class PolarFT:
             corresponds to `x.shape[0]`, and last dimension equals `self.count`.
         """
         if x.dtype != self.dtype:
-            logger.warning(
+            raise TypeError(
                 f"{self.__class__.__name__}::transform"
                 f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
             )
 
         if not isinstance(x, Image):
-            logger.warning(
+            raise TypeError(
                 f"{self.__class__.__name__}::transform"
                 f" passed numpy array instead of {Image}."
             )
