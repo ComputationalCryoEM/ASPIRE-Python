@@ -45,6 +45,9 @@ class PolarFT:
         # this basis has complex coefficients
         self.coefficient_dtype = complex_type(self.dtype)
 
+        # Store the "half" transform for use in building the full transform.
+        self._transform = None
+
     def _build(self):
         """
         Build the internal data structure to 2D polar Fourier grid
@@ -125,4 +128,17 @@ class PolarFT:
 
         pf = nufft(x, self.freqs) / resolution**2
 
-        return pf.reshape(*stack_shape, -1)
+        return pf.reshape(*stack_shape, self.ntheta // 2, self.nrad)
+
+    @staticmethod
+    def full(pf):
+        """
+        Use the conjugate symmetry of pf to construct the full polar Fourier transform
+        over all rays in [0, 360).
+
+        :param pf: The precomputed half polar Fourier transform
+            with shape (*stack_shape, ntheta//2, nrad)
+        :return: The full polar Fourier transform with shape (*stack_shape, ntheta, nrad)
+        """
+
+        return np.concatenate((pf, np.conj(pf)), axis=-2)
