@@ -635,3 +635,22 @@ def test_symmetry_group_errors(caplog):
     assert msg not in caplog.text
     _ = Simulation(symmetry_group="D11")
     assert msg in caplog.text
+
+
+def test_cached_image_accessors():
+    """
+    Test the behavior of image caching.
+    """
+    # Create a CTF
+    ctf = [RadialCTFFilter(pixel_size=5)]
+    # Create a Simulation with noise and `ctf`
+    src = Simulation(
+        L=32, n=3, C=1, noise_adder=WhiteNoiseAdder(var=0.123), unique_filters=ctf
+    )
+    # Cache the simulation
+    cached_src = src.cache()
+
+    # Compare the cached vs dynamic image sets.
+    np.testing.assert_allclose(cached_src.projections[:], src.projections[:])
+    np.testing.assert_allclose(cached_src.images[:], src.images[:])
+    np.testing.assert_allclose(cached_src.clean_images[:], src.clean_images[:])
