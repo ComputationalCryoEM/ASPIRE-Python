@@ -288,7 +288,6 @@ def test_relative_viewing_directions(n_img, L, order, dtype):
     # Check that the mean angular difference is within 2 degrees.
     angle_tol = 2 * np.pi / 180
     if order > 4:
-        breakpoint()
         angle_tol = 4 * np.pi / 180
 
     assert angular_dist_vijs < angle_tol
