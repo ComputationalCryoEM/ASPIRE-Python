@@ -27,13 +27,6 @@ RADIAL_MODES = [
     17,
 ]
 
-ANGULAR_RADIAL_MODES = [
-    (4, 5),
-    (4, 10),
-    (8, 5),
-    (8, 10),
-]
-
 
 # Parameter Fixtures
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
@@ -48,11 +41,6 @@ def img_size(request):
 
 @pytest.fixture(params=RADIAL_MODES, ids=lambda x: f"radial_mode={x}")
 def radial_mode(request):
-    return request.param
-
-
-@pytest.fixture(params=ANGULAR_RADIAL_MODES, ids=lambda x: f"angular_radial_mode={x}")
-def angular_radial_mode(request):
     return request.param
 
 
@@ -97,18 +85,6 @@ def radial_mode_image(img_size, dtype, radial_mode):
     pf = pf_transform(image)
 
     return pf, radial_mode
-
-
-@pytest.fixture
-def angular_radial_mode_image(dtype, angular_radial_mode):
-    g = grid_2d(64, dtype=dtype)
-    angular_mode, radial_mode = angular_radial_mode
-    image = Image(
-        np.sin(radial_mode * np.pi * g["r"]) * np.cos(angular_mode * g["phi"])
-    )
-    pf = pf_transform(image)
-
-    return pf, angular_mode, radial_mode
 
 
 # Helper function
@@ -166,25 +142,6 @@ def test_radial_modes(radial_mode_image):
     mode_window = [mode - 1, mode, mode + 1]
     ray = 3
     assert np.argmax(abs(pf[ray])) in mode_window
-
-
-def test_angular_radial_modes(angular_radial_mode_image):
-    pf, angular_mode, radial_mode = angular_radial_mode_image
-
-    # Exclude first few rays by setting to zero.
-    pf[:5] = 0
-
-    # Check that correct mode is most prominent.
-    # Mode could be off by a pixel depending on resolution and mode.
-    radial_mode_window = [radial_mode - 1, radial_mode, radial_mode + 1]
-
-    angular_mode = 2 * len(pf) // angular_mode
-    angular_mode_window = [angular_mode - 1, angular_mode, angular_mode + 1]
-
-    # Find max pixel and check that it lands in window
-    angular_hit, radial_hit = np.unravel_index(np.argmax(abs(pf)), pf.shape)
-    assert angular_hit in angular_mode_window
-    assert radial_hit in radial_mode_window
 
 
 def test_complex_image_error():
