@@ -16,11 +16,12 @@ authors = [
 	{name = "Ayelet Heimowitz"},
 	{name = "Yoel Shkolnisky"},
 	{name = "Amit Singer"},
+	{name = "Kris Sowattanangkul"},
 	{name = "Garrett Wright"},
 	{name = "Junchao Xia"}
 ]
 
-classifiers = [ 
+classifiers = [
      "Development Status :: 3 - Alpha",
      "Programming Language :: Python",
      "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"
@@ -38,18 +39,19 @@ dependencies = [
     "mrcfile",
     "numpy>=1.21.5",
     "packaging",
+    "pooch>=1.7.0",
     "psutil",
     "pyfftw",
     "pymanopt",
     "PyWavelets",
     "pillow",
     "ray",
-    "scipy >= 1.7.3",
+    "scipy >= 1.10.0",
     "scikit-learn",
     "scikit-image",
     "setuptools >= 0.41",
     "tqdm",
-]    
+]
 
 [project.urls]
 "Homepage" = "http://spr.math.princeton.edu/"
@@ -68,6 +70,7 @@ dev = [
     "flake8 >= 3.7.0",
     "isort",
     "jupyter",
+    "pooch",
     "pyflakes",
     "pydocstyle",
     "parameterized",

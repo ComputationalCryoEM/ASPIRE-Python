@@ -2,14 +2,14 @@ import importlib
 import logging
 import os
 import platform
+from importlib.metadata import version
 from unittest import TestCase
 
 import numpy as np
 import pytest
 from packaging.version import parse as parse_version
-from pkg_resources import get_distribution
 
-from aspire.basis import FFBBasis2D, PolarFT
+from aspire.basis import FFBBasis2D
 from aspire.classification import (
     AligningAverager2D,
     Averager2D,
@@ -18,6 +18,7 @@ from aspire.classification import (
     BFSReddyChatterjiAverager2D,
     ReddyChatterjiAverager2D,
 )
+from aspire.operators import PolarFT
 from aspire.source import Simulation
 from aspire.utils import Rotation, num_procs_suggestion
 from aspire.volume import Volume
@@ -41,7 +42,7 @@ def xfail_ray_dev():
     xfail = all(
         [
             importlib.util.find_spec("ray"),  # 'ray' installed
-            parse_version(get_distribution("numpy").version)
+            parse_version(version("numpy"))
             >= parse_version("1.22.0"),  # with unsupported numpy combo
             num_procs_suggestion() > 1,  # and code would attempt to use multiprocessing
         ]
@@ -127,7 +128,9 @@ class Averager2DBase:
         )
 
         # Generate rotations to be used by `Simulation`
-        self.rotations = Rotation.about_axis("z", self.thetas, dtype=self.dtype)
+        self.rotations = Rotation.about_axis(
+            "z", self.thetas, dtype=self.dtype, gimble_lock_warnings=False
+        )
 
 
 class Averager2DTestCase(Averager2DBase, TestCase):

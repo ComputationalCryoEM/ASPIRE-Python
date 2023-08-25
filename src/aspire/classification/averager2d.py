@@ -1,9 +1,14 @@
 import logging
+import warnings
 from abc import ABC, abstractmethod
 
 import numpy as np
-import ray
-from ray.util.multiprocessing import Pool
+
+# Ray has DeprecationWarning issues that are not related to ASPIRE.
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    import ray
+    from ray.util.multiprocessing import Pool
 
 from aspire import config
 from aspire.classification.reddy_chatterji import reddy_chatterji_register

@@ -20,18 +20,19 @@ from aspire.volume import AsymmetricVolume
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 RESOLUTION = [
-    32,
-    33,
+    40,
+    41,
 ]
 
+# `None` defaults to random offsets.
 OFFSETS = [
-    None,  # Defaults to random offsets.
     0,
+    pytest.param(None, marks=pytest.mark.expensive),
 ]
 
 DTYPES = [
     np.float32,
-    np.float64,
+    pytest.param(np.float64, marks=pytest.mark.expensive),
 ]
 
 
@@ -55,12 +56,20 @@ def source_orientation_objs(resolution, offsets, dtype):
     src = Simulation(
         n=50,
         L=resolution,
-        vols=AsymmetricVolume(L=resolution, C=1, K=100).generate(),
+        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=0).generate(),
         offsets=offsets,
         amplitudes=1,
+        seed=0,
     )
 
-    orient_est = CLSyncVoting(src)
+    # Search for common lines over less shifts for 0 offsets.
+    max_shift = 1 / resolution
+    shift_step = 1
+    if src.offsets.all() != 0:
+        max_shift = 0.20
+        shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
+    orient_est = CLSyncVoting(src, max_shift=max_shift, shift_step=shift_step)
+
     return src, orient_est
 
 
@@ -75,13 +84,11 @@ def test_build_clmatrix(source_orientation_objs):
     angle_diffs = abs(orient_est.clmatrix - gt_clmatrix) * 360 / orient_est.n_theta
 
     # Count number of estimates within 5 degrees of ground truth.
-    within_5 = np.count_nonzero(angle_diffs < 10)
-    within_5 += np.count_nonzero(angle_diffs > 350)
+    within_5 = np.count_nonzero(angle_diffs < 5)
+    within_5 += np.count_nonzero(angle_diffs > 355)
 
-    # Check that at least 99% (70% with shifts) of estimates are within 5 degrees.
-    tol = 0.99
-    if src.offsets.all() != 0:
-        tol = 0.70
+    # Check that at least 98% of estimates are within 5 degrees.
+    tol = 0.98
     assert within_5 / angle_diffs.size > tol
 
 
@@ -94,23 +101,11 @@ def test_estimate_rotations(source_orientation_objs):
     # angular distance between them (in degrees).
     Q_mat, flag = register_rotations(orient_est.rotations, src.rotations)
     regrot = get_aligned_rotations(orient_est.rotations, Q_mat, flag)
-    ang_dist = np.zeros(src.n, dtype=src.dtype)
-    for i in range(src.n):
-        ang_dist[i] = (
-            Rotation.angle_dist(
-                regrot[i],
-                src.rotations[i],
-                dtype=src.dtype,
-            )
-            * 180
-            / np.pi
-        )
+    mean_ang_dist = Rotation.mean_angular_distance(regrot, src.rotations) * 180 / np.pi
 
-    # Assert that mean angular distance is less than 1 degree (6 degrees with shifts).
+    # Assert that mean angular distance is less than 1 degree (5 degrees with shifts).
     degree_tol = 1
-    if src.offsets.all() != 0:
-        degree_tol = 7
-    assert np.mean(ang_dist) < degree_tol
+    assert mean_ang_dist < degree_tol
 
 
 def test_estimate_shifts(source_orientation_objs):
@@ -118,7 +113,7 @@ def test_estimate_shifts(source_orientation_objs):
     if src.offsets.all() != 0:
         pytest.xfail("Currently failing under non-zero offsets.")
 
-    est_shifts = orient_est.estimate_shifts().T
+    est_shifts = orient_est.estimate_shifts()
 
     # Assert that estimated shifts are close to src.offsets
     assert np.allclose(est_shifts, src.offsets)

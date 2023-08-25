@@ -11,6 +11,26 @@ from aspire.utils import make_psd
 from aspire.utils.cell import Cell2D
 
 
+def is_scalar_type(x):
+    """
+    Helper function checking scalar-ness for elementwise ops.
+
+    Essentially we are checking for a single numeric object, as opposed to
+    something like an `ndarray` or `BlkDiagMatrix`. We do this by
+    checking `numpy.isscalar(x)`.
+
+    In the future this check may require extension to include ASPIRE or
+    other third party types beyond what is provided by numpy, so we
+    implement it now as a method.
+
+    :param x: Value to check
+
+    :return: bool.
+    """
+
+    return np.isscalar(x)
+
+
 class BlkDiagMatrix:
     """
     Define a BlkDiagMatrix class which implements operations for
@@ -114,25 +134,6 @@ class BlkDiagMatrix:
         """
 
         return self.nblocks
-
-    def _is_scalar_type(self, x):
-        """
-        Internal helper function checking scalar-ness for elementwise ops.
-
-        Essentially we are checking for a single numeric object, as opposed to
-        something like an `ndarray` or `BlkDiagMatrix`. We do this by
-        checking `numpy.isscalar(x)`.
-
-        In the future this check may require extension to include ASPIRE or
-        other third party types beyond what is provided by numpy, so we
-        implement it now as a class method.
-
-        :param x: Value to check
-
-        :return: bool.
-        """
-
-        return np.isscalar(x)
 
     def __check_size_compatible_add(self, other):
         """
@@ -246,8 +247,10 @@ class BlkDiagMatrix:
             to self + other.
         """
 
-        if self._is_scalar_type(other):
+        if is_scalar_type(other):
             return self.__scalar_add(other, inplace=inplace)
+        elif not isinstance(other, BlkDiagMatrix):
+            return NotImplemented
 
         self.__check_compatible(other)
 
@@ -296,7 +299,7 @@ class BlkDiagMatrix:
             to self + other.
         """
 
-        assert self._is_scalar_type(scalar)
+        assert is_scalar_type(scalar)
 
         if inplace:
             C = self
@@ -319,8 +322,10 @@ class BlkDiagMatrix:
             self - other.
         """
 
-        if self._is_scalar_type(other):
+        if is_scalar_type(other):
             return self.__scalar_sub(other, inplace=inplace)
+        elif not isinstance(other, BlkDiagMatrix):
+            return NotImplemented
 
         self.__check_compatible(other)
 
@@ -349,7 +354,7 @@ class BlkDiagMatrix:
         Operator overloading for in-place subtraction.
         """
 
-        if self._is_scalar_type(other):
+        if is_scalar_type(other):
             return self.__scalar_sub(other, inplace=True)
 
         return self.sub(other, inplace=True)
@@ -375,7 +380,7 @@ class BlkDiagMatrix:
             self + other.
         """
 
-        assert self._is_scalar_type(scalar)
+        assert is_scalar_type(scalar)
 
         if inplace:
             C = self
@@ -397,12 +402,16 @@ class BlkDiagMatrix:
         :return: A BlkDiagMatrix of self @ other.
         """
 
-        if not isinstance(other, BlkDiagMatrix):
-            if inplace:
-                raise RuntimeError(
-                    "`inplace` method not supported when "
-                    "mixing `BlkDiagMatrix` and `Numpy`."
-                )
+        if not isinstance(other, BlkDiagMatrix) and inplace:
+            raise RuntimeError(
+                "`inplace` method not supported when " "mixing `BlkDiagMatrix`."
+            )
+
+        # Convert operator to BlkDiagMatrix is possible.
+        # Its possible to optimize this in the future if its too slow.
+        if hasattr(other, "as_blk_diag"):
+            other = other.as_blk_diag(self.partition)
+        elif not isinstance(other, BlkDiagMatrix):
             return self.apply(other)
 
         self.__check_compatible(other, size_compat="mul")
@@ -464,28 +473,22 @@ class BlkDiagMatrix:
         :return: A BlkDiagMatrix of self * other.
         """
 
-        if isinstance(val, BlkDiagMatrix):
-            raise RuntimeError(
-                "Attempt numeric multiplication (*,mul) of two "
-                "BlkDiagMatrix instances, try (matmul,@)."
-            )
-
-        elif not self._is_scalar_type(val):
-            raise RuntimeError(
-                "Attempt numeric multiplication (*,mul) of a "
-                "BlkDiagMatrix and {}.".format(type(val))
-            )
+        # Convert scalar to reduce code branching.
+        if is_scalar_type(val):
+            val = np.full((self.nblocks), fill_value=val, dtype=self.dtype)
+        elif not isinstance(val, BlkDiagMatrix):
+            raise NotImplementedError(f"mul not implemented for {type(val)}.")
 
         if inplace:
             for i in range(self.nblocks):
-                self[i] *= val
+                self[i] *= val[i]
 
             C = self
         else:
             C = BlkDiagMatrix(self.partition, dtype=self.dtype)
 
             for i in range(self.nblocks):
-                C[i] = self[i] * val
+                C[i] = self[i] * val[i]
 
         return C
 
@@ -923,3 +926,17 @@ class BlkDiagMatrix:
             A.data[i] = np.array(blk_diag[i], dtype=dtype)
 
         return A
+
+    def diag(self):
+        """
+        Return the diagonal elements of this `BlkDiagMatrix`.
+        """
+
+        # Avoid circular import
+        from .diag_matrix import DiagMatrix
+
+        diag = []
+        for blk in self:
+            diag.extend(list(np.diag(blk)))
+
+        return DiagMatrix(np.array(diag, dtype=self.dtype))

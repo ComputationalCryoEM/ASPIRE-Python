@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from aspire.image import Image
-from aspire.nufft import anufft, nufft
+from aspire.nufft import nufft
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
@@ -45,6 +45,9 @@ class PolarFT:
         # this basis has complex coefficients
         self.coefficient_dtype = complex_type(self.dtype)
 
+        # Store the "half" transform for use in building the full transform.
+        self._transform = None
+
     def _build(self):
         """
         Build the internal data structure to 2D polar Fourier grid
@@ -77,34 +80,16 @@ class PolarFT:
         dtheta = 2 * np.pi / self.ntheta
 
         # only need half size of ntheta
-        freqs = np.zeros((2, self.nrad * (self.ntheta // 2)), dtype=self.dtype)
+        freqs = np.zeros((2, self.ntheta // 2, self.nrad), dtype=self.dtype)
         for i in range(self.ntheta // 2):
-            freqs[0, i * self.nrad : (i + 1) * self.nrad] = np.arange(
-                self.nrad
-            ) * np.cos(i * dtheta)
-            freqs[1, i * self.nrad : (i + 1) * self.nrad] = np.arange(
-                self.nrad
-            ) * np.sin(i * dtheta)
+            freqs[0, i] = np.cos(i * dtheta)
+            freqs[1, i] = np.sin(i * dtheta)
 
-        freqs *= omega0
-        return freqs
+        freqs *= omega0 * np.arange(self.nrad)
 
-    def _evaluate(self, v):
-        """
-        Evaluate coefficients in standard 2D coordinate basis from those in polar Fourier basis
+        return freqs.reshape(2, -1)
 
-        :param v: A coefficient vector (or an array of coefficient vectors)
-            in polar Fourier basis to be evaluated. The last dimension must equal to
-            `self.count`.
-        :return x: Image instance in standard 2D coordinate basis with
-            resolution of `self.sz`.
-        """
-
-        x = anufft(v, self.freqs, self.sz, real=True) / self.count
-
-        return x
-
-    def evaluate_t(self, x):
+    def transform(self, x):
         """
         Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
 
@@ -115,14 +100,14 @@ class PolarFT:
             corresponds to `x.shape[0]`, and last dimension equals `self.count`.
         """
         if x.dtype != self.dtype:
-            logger.warning(
-                f"{self.__class__.__name__}::evaluate_t"
+            raise TypeError(
+                f"{self.__class__.__name__}::transform"
                 f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
             )
 
         if not isinstance(x, Image):
-            logger.warning(
-                f"{self.__class__.__name__}::evaluate_t"
+            raise TypeError(
+                f"{self.__class__.__name__}::transform"
                 f" passed numpy array instead of {Image}."
             )
         else:
@@ -143,4 +128,17 @@ class PolarFT:
 
         pf = nufft(x, self.freqs) / resolution**2
 
-        return pf.reshape(*stack_shape, -1)
+        return pf.reshape(*stack_shape, self.ntheta // 2, self.nrad)
+
+    @staticmethod
+    def full(pf):
+        """
+        Use the conjugate symmetry of pf to construct the full polar Fourier transform
+        over all rays in [0, 360).
+
+        :param pf: The precomputed half polar Fourier transform
+            with shape (*stack_shape, ntheta//2, nrad)
+        :return: The full polar Fourier transform with shape (*stack_shape, ntheta, nrad)
+        """
+
+        return np.concatenate((pf, np.conj(pf)), axis=-2)

@@ -5,7 +5,7 @@ from itertools import zip_longest
 from unittest import TestCase
 
 import numpy as np
-from scipy import misc
+from scipy.datasets import face
 
 import tests.saved_test_data
 from aspire.image import Image
@@ -47,7 +47,7 @@ class StarFileTestCase(TestCase):
             self.particles31 = path
         # Independent Image object for testing Image source methods
         L = 768
-        self.im = Image(misc.face(gray=True).astype("float64")[:L, :L])
+        self.im = Image(face(gray=True).astype("float64")[:L, :L])
         self.img_src = ArrayImageSource(self.im)
 
         # We also want to flex the stack logic.

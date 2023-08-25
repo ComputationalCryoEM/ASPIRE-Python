@@ -4,7 +4,7 @@ import math
 import numpy as np
 import scipy.sparse as sparse
 
-from aspire.basis import PolarFT
+from aspire.operators import PolarFT
 from aspire.utils import common_line_from_rots
 from aspire.utils.random import choice
 
@@ -73,11 +73,9 @@ class CLOrient3D:
         self.pft = PolarFT(
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
-        self.pf = self.pft.evaluate_t(imgs)
-        n_theta_half = self.n_theta // 2
-        self.pf = self.pf.reshape(self.n_img, n_theta_half, self.n_rad)
+        self.pf = self.pft.transform(imgs)
 
-        # We remove the DC the component. pf now has size (n_img) x (n_theta/2) x (n_rad-1),
+        # We remove the DC the component. pf has size (n_img) x (n_theta/2) x (n_rad-1),
         # with pf[:, :, 0] containing low frequency content and pf[:, :, -1] containing
         # high frequency content.
         self.pf = self.pf[:, :, 1:]
@@ -232,7 +230,7 @@ class CLOrient3D:
             show = True
         # Negative sign comes from using -i conversion of Fourier transformation
         est_shifts = sparse.linalg.lsqr(shift_equations, -shift_b, show=show)[0]
-        est_shifts = est_shifts.reshape((2, self.n_img), order="F")
+        est_shifts = est_shifts.reshape((self.n_img, 2))
 
         return est_shifts
 
@@ -265,6 +263,7 @@ class CLOrient3D:
         n_theta_half = self.n_theta // 2
         n_img = self.n_img
 
+        # `estimate_shifts()` requires that rotations have already been estimated.
         if self.rotations is None:
             self.estimate_rotations()
         rotations = self.rotations
@@ -438,7 +437,7 @@ class CLOrient3D:
         # Number of shifts to try
         n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
 
-        # only half of ray
+        # only half of ray, excluding the DC component.
         rk = np.arange(1, r_max + 1)
 
         # Generate all shift phases
@@ -446,6 +445,7 @@ class CLOrient3D:
         shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
         # Set filter for common-line detection
         h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
+
         return shifts, shift_phases, h
 
     def _generate_index_pairs(self, n_equations):
@@ -507,8 +507,9 @@ class CLOrient3D:
         #   we can control h.dtype instead.
         np.einsum(subscripts, pf, h, out=pf, dtype=pf.dtype, casting="same_kind")
 
-        # This is a low pass filter, cutting out the highest frequency.
-        pf[..., r_max - 1] = 0
+        # This is a high pass filter, cutting out the lowest frequency
+        # (DC has already been removed).
+        pf[..., 0] = 0
         pf /= np.linalg.norm(pf, axis=-1)[..., np.newaxis]
 
         return pf

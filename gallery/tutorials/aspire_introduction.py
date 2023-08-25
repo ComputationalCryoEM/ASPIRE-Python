@@ -14,7 +14,7 @@ MAT586.
 # ASPIRE can generally install on Linux, Mac, and Windows under
 # Anaconda Python, by following the instructions in the README.  `The
 # instructions for developers is the most comprehensive
-# <https://github.com/ComputationalCryoEM/ASPIRE-Python/blob/master/README.md#for-developers>`_.
+# <https://github.com/ComputationalCryoEM/ASPIRE-Python/blob/main/README.md#for-developers>`_.
 # Windows is provided, but generally Linux and MacOS are recommended,
 # with Linux being the most diversely tested platform.
 #
@@ -131,8 +131,6 @@ img.show()
 # class is a thin wrapper over Numpy arrays that provides specialized
 # methods for a stack containing one or more volumes (3D data).
 
-from aspire.volume import Volume
-
 # %%
 # Initialize Volume - ``load``
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -140,32 +138,35 @@ from aspire.volume import Volume
 # ``Image``.  Both ``Image`` and ``Volume`` provide ``save`` and
 # ``load`` methods which can be used to work with files.  For
 # ``Volumes`` ``.map`` and ``.mrc`` are currently supported.  For
-# ``.npy`` Numpy can be used.
-
-# A low-resolution example file is included in the repo as a sanity check.
-# We can instantiate this as an ASPIRE Volume instance using
-# ``Volume.load()``.
-file_path = os.path.join(os.getcwd(), "data", "clean70SRibosome_vol_65p.mrc")
-vol = Volume.load(file_path)
+# ``.npy``, Numpy can be used.
+#
+# For example, in the following note we demonstrate instantiating an ASPIRE Volume
+# instance using ``Volume.load()``:
+#
+# .. note::
+#    Instantiate an ASPIRE Volume from file::
+#
+#        from aspire.volume import Volume
+#
+#        aspire_volume = Volume.load("/path/to/volume.mrc")
 
 # %%
-# More interesting data requires downloading locally.  A common
-# starting dataset can be downloaded from EMDB at
-# `<https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.  After
-# downloading the associated `map` file, unzip in local directory.  To
-# simplify things, this notebook defaults to a small low-resolution
-# sample file instead.  Unfortunately real data can be quite large so
-# we do not ship it with the repo.
+# In addition to the ``Volume.load()`` method, a few common
+# starting datasets can be downloaded from EMDB using ASPIRE's downloading
+# utility. Below we download the high resolution volume map EMDB-2660, sourced from
+# `<https://www.ebi.ac.uk/pdbe/entry/emdb/EMD-2660>`_.
 
-# vol = Volume.load("path/to/EMD-2660/map/emd_2660.map")
+from aspire.downloader import emdb_2660
+
+vol = emdb_2660()
 
 # %%
 # Downsample Volume
 # ^^^^^^^^^^^^^^^^^
-# Here we downsample the above volume to a desired image size (32
+# Here we downsample the above volume to a desired image size (64
 # should be good).
 
-img_size = 32
+img_size = 64
 
 # Volume.downsample() returns a new Volume instance.
 #   We will use this lower resolution volume later, calling it `v2`.
