@@ -4,7 +4,12 @@ import pytest
 from aspire.abinitio import CommonlineSDP
 from aspire.nufft import backend_available
 from aspire.source import Simulation
-from aspire.utils import Rotation, get_aligned_rotations, register_rotations
+from aspire.utils import (
+    Rotation,
+    get_aligned_rotations,
+    register_rotations,
+    rots_to_clmatrix,
+)
 from aspire.volume import AsymmetricVolume
 
 RESOLUTION = [
@@ -79,3 +84,21 @@ def test_estimate_rotations(src_orient_est_fixture):
 
     # Assert that mean angular distance is less than 1 degrees.
     assert mean_ang_dist < 1
+
+
+def test_construct_S(src_orient_est_fixture):
+    src, orient_est = src_orient_est_fixture
+    gt_cl_matrix = rots_to_clmatrix(src.rotations, orient_est.n_theta)
+    S = orient_est._construct_S(gt_cl_matrix)
+
+    # Check that S is symmetric
+    assert np.allclose(S, S.T)
+
+    # For uniformly distributed rotations the top eigenvalue should have multiplicity 3.
+    # As such, we can expect that the top 3 eigenvlaues will all be close in value to their mean.
+    eigs = np.linalg.eigvalsh(S)
+    eigs = eigs[:3]
+    eigs_mean = np.mean(eigs)
+
+    # Check that the top 3 eigenvalues are all within 10% of the their mean.
+    assert (abs((eigs - eigs_mean) / eigs_mean) < 0.10).all()
