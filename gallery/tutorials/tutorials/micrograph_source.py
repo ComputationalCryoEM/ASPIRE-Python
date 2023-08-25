@@ -11,32 +11,35 @@ import numpy as np
 from aspire.image import Image
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
-from aspire.source import MicrographSimulation, Simulation
+from aspire.source import MicrographSimulation
+from aspire.volume import AsymmetricVolume
 
 # %%
 # Creating a Micrograph Simulation
 # --------------------------------
-# A ``MicrographSimulation`` is populated with particle projections via a ``Simulation``, so we'll begin by creating a ``Simulation`` and passing it into our ``MicrographSimulation``
+# A ``MicrographSimulation`` is populated with particle projections
+# from a ``Volume``, so we'll begin by generating a ``Volume`` and
+# passing it into our ``MicrographSimulation``
 
-# Let's create our Simulation with a particle box size of 100 and one volume.
+# Generate one (100,100,100) ``Volume``.
+vol = AsymmetricVolume(
+    L=100,
+    C=1,
+    seed=1234,
+    dtype=np.float32,
+).generate()
+
+# %%
+# We'll pass our ``Volumee`` as an argument and give our ``MicrographSimulation`` other arguments.
+# In this example, our ``MicrographSimulation`` has 4 micrographs of size 500, each with 10 particles.
+
 n_particles_per_micrograph = 10
 n_micrographs = 4
 
-sim = Simulation(
-    L=100,
-    n=n_particles_per_micrograph * n_micrographs,
-    C=1,
-    amplitudes=1,
-    offsets=0,
-    seed=1234,
-)
-
-# %%
-# We'll pass our ``Simulation`` as an argument and give our ``MicrographSimulation`` other arguments.
-# In this example, our ``MicrographSimulation`` has 4 micrographs of size 500, each with 10 particles.
 src = MicrographSimulation(
-    sim,
+    vol,
     particles_per_micrograph=n_particles_per_micrograph,
+    particle_amplitudes=1,
     micrograph_size=500,
     micrograph_count=n_micrographs,
     seed=1234,
@@ -48,28 +51,22 @@ src.images[:].show()
 # %%
 # CTF Filters
 # -----------
-# By default, no CTF corruption is configured. To apply CTF filters, we have to pass them as arguments to the ``Simulation``.
+# By default, no CTF corruption is configured. To apply CTF filters, we have to pass them as arguments to the ``MicrographSimulation``.
 
-# Create our CTF Filter and add it to a list
+# Create our CTF Filter and add it to a list.
+# This configuration will apply the same CTF to all particles.
+# It is possible to apply a different CTF per-micrograph or
+# per-particle by configuring a list of matching shapes.
 ctfs = [
     RadialCTFFilter(pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0),
 ]
 
-# Pass our CTF into the Simulation, and create a MicrographSimulation using the same arguments as before
-sim = Simulation(
-    L=100,
-    n=n_particles_per_micrograph * n_micrographs,
-    C=1,
-    amplitudes=1,
-    offsets=0,
-    unique_filters=ctfs,
-    seed=1234,
-)
 src = MicrographSimulation(
-    sim,
+    vol,
     particles_per_micrograph=n_particles_per_micrograph,
     micrograph_size=500,
     micrograph_count=n_micrographs,
+    ctf_filters=ctfs,
     seed=1234,
 )
 
@@ -86,11 +83,12 @@ noise = WhiteNoiseAdder(4e-3, seed=1234)
 
 # Let's add noise to our MicrographSimulation using the noise_adder argument
 src = MicrographSimulation(
-    sim,
+    vol,
     noise_adder=noise,
     particles_per_micrograph=n_particles_per_micrograph,
     micrograph_size=500,
     micrograph_count=4,
+    ctf_filters=ctfs,
     seed=1234,
 )
 
@@ -109,27 +107,18 @@ src.clean_images[:].show()
 # However, setting this argument too large may generate insufficient centers.
 
 # Let's increase the number of particles to show overlap.
-# Create a new simulation to meet the minimum required amount of projections.
+# Create a new Volume to meet the minimum required amount of projections.
 n_particles_per_micrograph = 50
-
-sim = Simulation(
-    L=64,
-    n=n_particles_per_micrograph * n_micrographs,
-    C=1,
-    amplitudes=1,
-    offsets=0,
-    unique_filters=ctfs,
-)
-
 
 # Set the interparticle distance to 1, which adds at least one pixel of separation between center and allows particles to collide.
 src = MicrographSimulation(
-    sim,
+    vol,
     interparticle_distance=1,
     noise_adder=noise,
     particles_per_micrograph=n_particles_per_micrograph,
     micrograph_size=500,
     micrograph_count=n_micrographs,
+    ctf_filters=ctfs,
 )
 
 # Plot the micrographs
@@ -144,13 +133,14 @@ src.images[:].show()
 
 # Create a micrograph with a negative boundary, allowing particles to generate outward.
 out_src = MicrographSimulation(
-    sim,
+    vol,
     boundary=-20,
     interparticle_distance=1,
     noise_adder=noise,
     particles_per_micrograph=n_particles_per_micrograph,
     micrograph_size=500,
     micrograph_count=n_micrographs,
+    ctf_filters=ctfs,
 )
 
 # Plot the micrographs
@@ -159,15 +149,21 @@ out_src.images[:].show()
 # %%
 # Particle Indices
 # ----------------
-# Each particle comes from the simulation, and has its own index relative to its ``Simulation`` and micrograph.
-# Let's choose four random numbers as our global (Simulation) particle indices from ``test_micrograph=1``.
+# Each particle comes from a ``Simulation`` internal to
+# ``MicrographSimulation``.  This simulation can be accessed directly
+# by the attribute ``MicrographSimulation.simulation``.
+# ``MicrographSimulation`` provides a map between each particle's
+# indexing relative to that ``Simulation`` and micrograph based
+# indexing.  This relationship is demonstrated below.
+
+# Let's choose four random numbers as our global (``Simulation``) particle indices from ``test_micrograph=1``.
 test_micrograph = 1
 n_particles = 4
 local_particle_indices = np.random.choice(n_particles_per_micrograph, n_particles)
 print(f"Local particle indices: {local_particle_indices}")
 
 # %%
-# We can obtain the images from our MicrographSimulation by retrieving their centers and plotting the boundary boxes.
+# We can obtain the images from our ``MicrographSimulation`` by retrieving their centers and plotting the boundary boxes.
 centers = np.zeros((n_particles, 2), dtype=int)
 for i in range(n_particles):
     centers[i] = src.centers[test_micrograph][local_particle_indices[i]]
@@ -202,7 +198,7 @@ for i in range(n_particles):
     )
 
 # Plot the simulation's images
-sim.images[global_particle_indices].show()
+src.simulation.images[global_particle_indices].show()
 
 # %%
 # We can check if these global indices match our local particle indices with the ``get_micrograph_index`` method.
