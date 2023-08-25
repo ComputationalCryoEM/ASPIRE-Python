@@ -162,7 +162,7 @@ class CommonlineSDP(CLOrient3D):
         v2 = v[self.n_img : 2 * self.n_img].T.copy()
 
         # Use a least-squares method to get A.T*A and a Cholesky decomposition to find A.
-        A = self._ATA_solver(v1, v2, self.n_img)
+        A = self._ATA_solver(v1, v2)
 
         # Recover the rotations. The first two columns of all rotation
         # matrices are given by unmixing V1 and V2 using A. The third
@@ -183,9 +183,20 @@ class CommonlineSDP(CLOrient3D):
         return rotations
 
     @staticmethod
-    def _ATA_solver(v1, v2, n_img):
+    def _ATA_solver(v1, v2):
+        """
+        Uses a least squares method to solve for the linear transformation A
+        such that A*v1'=R1 and A*v2=R2 are the columns of the rotations matrices.
+
+        :param v1: 3 x n_img array corresponding to linear combinations of the first
+            columns of all rotation matrices.
+        :param v2: 3 x n_img array corresponding to linear combinations of the second
+            columns of all rotation matrices.
+
+        :return: 3x3 linear transformation mapping v1, v2 to first two columns of rotations.
+        """
         # We look for a linear transformation (3 x 3 matrix) A such that
-        # A*V1'=R1 and A*V2=R2 are the columns of the rotations matrices.
+        # A*v1'=R1 and A*v2=R2 are the columns of the rotations matrices.
         # Therefore:
         # v1 * A'*A v1' = 1
         # v2 * A'*A v2' = 1
@@ -194,6 +205,7 @@ class CommonlineSDP(CLOrient3D):
         # Actually, there are only 6 unknown variables, because A'*A is symmetric.
         # So we will truncate from 9 variables to 6 variables corresponding
         # to the upper half of the matrix A'*A
+        n_img = v1.shape[-1]
         truncated_equations = np.zeros((3 * n_img, 9), dtype=v1.dtype)
         k = 0
         for i in range(3):

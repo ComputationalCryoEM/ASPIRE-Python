@@ -40,22 +40,31 @@ def dtype(request):
 
 
 @pytest.fixture
-def simulation_fixture(resolution, offsets, dtype):
+def src_orient_est_fixture(resolution, offsets, dtype):
+    """Fixture for simulation source and orientation estimation object."""
     src = Simulation(
         n=50,
         L=resolution,
-        vols=AsymmetricVolume(L=resolution, C=1, K=100).generate(),
+        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=0).generate(),
         offsets=offsets,
         amplitudes=1,
         seed=0,
     )
 
-    return src
+    max_shift = 1 / src.L  # sets max_shift to 1 pixel for 0 offsets.
+    shift_step = 1
+    if src.offsets.all() != 0:
+        # These parameters improve common-line detection.
+        max_shift = 0.20
+        shift_step = 0.25  # Accounts for non-integer offsets.
+
+    orient_est = CommonlineSDP(src, max_shift=max_shift, shift_step=shift_step)
+
+    return src, orient_est
 
 
-def test_estimate_rotations(simulation_fixture):
-    src = simulation_fixture
-    orient_est = CommonlineSDP(src)
+def test_estimate_rotations(src_orient_est_fixture):
+    src, orient_est = src_orient_est_fixture
 
     if backend_available("cufinufft") and src.dtype == np.float32:
         pytest.skip("CI on gpu fails for singles.")
@@ -68,8 +77,5 @@ def test_estimate_rotations(simulation_fixture):
     regrot = get_aligned_rotations(orient_est.rotations, Q_mat, flag)
     mean_ang_dist = Rotation.mean_angular_distance(regrot, src.rotations) * 180 / np.pi
 
-    # Assert that mean angular distance is less than 1 degree (10 degrees with shifts).
-    degree_tol = 1
-    if src.offsets.all() != 0:
-        degree_tol = 10
-    assert mean_ang_dist < degree_tol
+    # Assert that mean angular distance is less than 1 degrees.
+    assert mean_ang_dist < 1
