@@ -105,8 +105,7 @@ def pf_transform(image):
     nrad = img_size // 2
     ntheta = 360
     pft = PolarFT(img_size, nrad=nrad, ntheta=ntheta, dtype=image.dtype)
-    pf = pft.transform(image)
-    pf = pf.reshape(ntheta // 2, nrad)
+    pf = pft.transform(image)[0]
 
     return pf
 
