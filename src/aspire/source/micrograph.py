@@ -102,8 +102,8 @@ class MicrographSimulation:
                 or len(ctf_filters) not in acceptable_lens
             ):
                 raise TypeError(
-                    f"`ctf_filters` expects a list of len acceptable_lens[0],"
-                    f" acceptable_lens[1], or acceptable_lens[2]."
+                    f"`ctf_filters` expects a list of len {acceptable_lens[0]},"
+                    f" {acceptable_lens[1]}, or {acceptable_lens[2]}."
                 )
 
             # Generate explicit filter indices (zero-indexed).
