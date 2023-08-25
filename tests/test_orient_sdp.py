@@ -141,3 +141,27 @@ def test_Gram_matrix(src_orient_est_fixture):
     # We'll check that the RMSE is within 10% of the mean value of gt_Gram
     rmse = np.sqrt(np.mean((Gram - R @ R.T) ** 2))
     assert rmse / np.mean(gt_Gram) < 0.10
+
+
+def test_ATA_solver():
+    # Generate some rotations.
+    seed = 42
+    n_rots = 73
+    dtype = np.float32
+    rots = Rotation.generate_random_rotations(n=n_rots, seed=seed, dtype=dtype).matrices
+
+    # Create a simple reference linear transformation A that is rank-3.
+    A_ref = np.diag([1, 2, 3]).astype(dtype, copy=False)
+
+    # Create v1 and v2 such that A_ref*v1=R1 and A_ref*v2=R2, R1 and R2 are the first
+    # and second columns of all rotations.
+    R1 = rots[:, :, 0].T
+    R2 = rots[:, :, 1].T
+    v1 = np.linalg.inv(A_ref) @ R1
+    v2 = np.linalg.inv(A_ref) @ R2
+
+    # Use ATA_solver to solve for A, given v1 and v2.
+    A = CommonlineSDP._ATA_solver(v1, v2)
+
+    # Check that A is close to A_ref.
+    assert np.allclose(A, A_ref, atol=1e-7)
