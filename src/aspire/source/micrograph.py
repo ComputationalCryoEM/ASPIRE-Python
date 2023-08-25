@@ -43,7 +43,8 @@ class MicrographSource:
             # Ensure dimensions
             if micrographs.ndim == 2:
                 micrographs = micrographs[None, :, :]
-            elif micrographs.ndim != 3 or (
+
+            if micrographs.ndim != 3 or (
                 micrographs.shape[-2] != micrographs.shape[-1]
             ):
                 raise NotImplementedError(
@@ -98,12 +99,6 @@ class MicrographSource:
         :return: Boolean.
         """
         return any([isinstance(p, list), isinstance(p, str), isinstance(p, Path)])
-
-    def __getitem__(self, key):
-        """
-        Getter utility function.
-        """
-        return self.__class__(self.images[key])
 
     @property
     def images(self):
