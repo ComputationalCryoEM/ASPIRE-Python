@@ -87,18 +87,57 @@ def test_estimate_rotations(src_orient_est_fixture):
 
 
 def test_construct_S(src_orient_est_fixture):
+    """Test properties of the common-line quadratic form matrix S."""
     src, orient_est = src_orient_est_fixture
+
+    # Since we are using the ground truth cl_matrix there is no need to test with offsets.
+    if src.offsets.all() != 0:
+        pytest.skip("No need to test with offsets.")
+
+    # Construct the matrix S using ground truth common-lines.
     gt_cl_matrix = rots_to_clmatrix(src.rotations, orient_est.n_theta)
     S = orient_est._construct_S(gt_cl_matrix)
 
-    # Check that S is symmetric
+    # Check that S is symmetric.
     assert np.allclose(S, S.T)
 
     # For uniformly distributed rotations the top eigenvalue should have multiplicity 3.
-    # As such, we can expect that the top 3 eigenvlaues will all be close in value to their mean.
+    # As such, we can expect that the top 3 eigenvalues will all be close in value to their mean.
     eigs = np.linalg.eigvalsh(S)
-    eigs = eigs[:3]
-    eigs_mean = np.mean(eigs)
+    eigs_mean = np.mean(eigs[:3])
 
     # Check that the top 3 eigenvalues are all within 10% of the their mean.
-    assert (abs((eigs - eigs_mean) / eigs_mean) < 0.10).all()
+    assert (abs((eigs[:3] - eigs_mean) / eigs_mean) < 0.10).all()
+
+    # Check that the next eigenvalue is not close to the top 3, ie. multiplicity is not greater than 3.
+    assert abs((eigs[4] - eigs_mean) / eigs_mean) > 0.25
+
+
+def test_Gram_matrix(src_orient_est_fixture):
+    """Test properties of the common-line Gram matrix."""
+    src, orient_est = src_orient_est_fixture
+
+    # Since we are using the ground truth cl_matrix there is no need to test with offsets.
+    if src.offsets.all() != 0:
+        pytest.skip("No need to test with offsets.")
+
+    # Construct a ground truth S to pass into Gram computation.
+    gt_cl_matrix = rots_to_clmatrix(src.rotations, orient_est.n_theta)
+    S = orient_est._construct_S(gt_cl_matrix)
+
+    # Estimate the Gram matrix
+    A, b = orient_est._sdp_prep()
+    Gram = orient_est._compute_Gram_matrix(S, A, b)
+
+    # Construct the ground truth Gram matrix, G = R @ R.T, where R = [R1, R2]
+    # with R1 and R2 being the concatenation of the first and second columns
+    # of all ground truth rotation matrices, respectively.
+    rots = src.rotations
+    R1 = rots[:, :, 0]
+    R2 = rots[:, :, 1]
+    R = np.concatenate((R1, R2))
+    gt_Gram = R @ R.T
+
+    # We'll check that the RMSE is within 10% of the mean value of gt_Gram
+    rmse = np.sqrt(np.mean((Gram - R @ R.T) ** 2))
+    assert rmse / np.mean(gt_Gram) < 0.10
