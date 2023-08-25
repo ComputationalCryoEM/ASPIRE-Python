@@ -216,6 +216,19 @@ def test_no_files_micrograph_source():
             _ = MicrographSource(tmp_dir)
 
 
+def test_existential_crisis():
+    """
+    Test MicrographSource initialized with non existent path raises.
+    """
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # Fabricate a directory that does not exit.
+        dne_dir = os.path.join(tmp_dir, "dne")
+        with pytest.raises(
+            RuntimeError, match=r".*does not appear to be a directory or a file.*"
+        ):
+            _ = MicrographSource(dne_dir)
+
+
 def test_bad_input_micrograph_source():
     """
     Test MicrographSource raises when instantiated with something weird.
