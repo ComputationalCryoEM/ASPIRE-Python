@@ -244,6 +244,7 @@ class MicrographSimulation(MicrographSource):
         particle_amplitudes=None,
         projection_angles=None,
         seed=None,
+        ctf_filters=None,
         noise_adder=None,
         boundary=None,
         interparticle_distance=None,
@@ -266,6 +267,10 @@ class MicrographSimulation(MicrographSource):
 
         :param seed: Random seed.
         :param noise_adder: Append instance of NoiseAdder to generation pipeline.
+        :param ctf_filters: Optional list of CTF filters to apply to particles.
+            This list should be 1, n_micrographs, or particles_per_micrograph * particles_per_micrograph.
+            These will apply CTF to all particles, per-micrograph, or per-particle respectively.
+            Default `None` will not apply any CTF.
         :param boundary: Set boundaries for particle centers, positive values move the boundary inward from the edge of the micrograph. Defaults to half of the particle size (particle_box_size // 2).
         :param interparticle_distance: Set minimum distance between particle centers, in pixels. Defaults to particle_box_size.
         :return: A MicrographSimulation object.
@@ -296,13 +301,14 @@ class MicrographSimulation(MicrographSource):
                 "The micrograph size must be larger or equal to the simulation's image size."
             )
 
-        if (
-            particle_amplitudes is not None
-            and len(particle_amplitudes) != self.total_particle_count
-        ):
-            raise RuntimeError(
-                f"`len(particle_amplitudes)` {len(particle_amplitudes)} != total_particle_count {self.total_particle_count}"
-            )
+        if particle_amplitudes is not None:
+            if (
+                not isinstance(particle_amplitudes, int)
+                and len(particle_amplitudes) != self.total_particle_count
+            ):
+                raise RuntimeError(
+                    f"`len(particle_amplitudes)` must be an `int` or length {self.total_particle_count}."
+                )
         self.particle_amplitudes = particle_amplitudes
 
         if projection_angles is not None and projection_angles.shape != (
@@ -314,6 +320,25 @@ class MicrographSimulation(MicrographSource):
             )
         self.projection_angles = projection_angles
 
+        self.filter_indices = None
+        if ctf_filters is not None:
+            acceptable_lens = [1, self.micrograph_count, self.total_particle_count]
+            if (
+                not isinstance(ctf_filters, list)
+                or len(ctf_filters) not in acceptable_lens
+            ):
+                raise TypeError(
+                    f"`ctf_filters` expects a list of len acceptable_lens[0],"
+                    f" acceptable_lens[1], or acceptable_lens[2]."
+                )
+
+            # Generate explicit filter indices (zero-indexed).
+            self.filter_indices = np.arange(self.total_particle_count) % len(
+                ctf_filters
+            )
+
+        self.ctf_filters = ctf_filters
+
         self.simulation = Simulation(
             n=self.total_particle_count,
             vols=self.volume,
@@ -321,6 +346,8 @@ class MicrographSimulation(MicrographSource):
             offsets=0,
             amplitudes=self.particle_amplitudes,
             angles=self.projection_angles,
+            unique_filters=ctf_filters,
+            filter_indices=self.filter_indices,
             dtype=self.dtype,
             seed=self.seed,
         )
