@@ -16,17 +16,15 @@ class PolarFT:
 
     def __init__(self, size, nrad=None, ntheta=None, dtype=np.float32):
         """
-        Initialize an object for the 2D polar Fourier grid class. `PolarFT` expects that
-        images are real and uses only half of the `ntheta` values. Downstream algorithms should
-        take advantage of the conjugate symmetry of the polar Fourier coefficients if the full
-        set is needed.
+        Initialize an object for the polar Fourier transform class. `PolarFT` expects that
+        images are real and uses only half of the `ntheta` values.
 
-        :param size: The shape of the vectors for which to define the grid.
+        :param size: The shape of the vectors for which to define the transform.
             May be a 2-tuple or an integer, in which case a square basis is assumed.
             Currently only square images are supported.
         :param nrad: The number of points in the radial dimension. Default is resolution // 2.
         :param ntheta: The number of points in the angular dimension. Default is 8 * nrad.
-        :param dtype: dtype of polar Fourier grid.
+        :param dtype: dtype used to compute a polar frequency grid for evaluating the transform..
         """
         if isinstance(size, int):
             size = (size, size)
@@ -44,9 +42,6 @@ class PolarFT:
 
         # this basis has complex coefficients
         self.coefficient_dtype = complex_type(self.dtype)
-
-        # Store the "half" transform for use in building the full transform.
-        self._transform = None
 
     def _build(self):
         """
@@ -74,7 +69,7 @@ class PolarFT:
 
     def _precomp(self):
         """
-        Precomute the polar Fourier grid
+        Precompute the polar Fourier grid.
         """
         omega0 = 2 * np.pi / (2 * self.nrad - 1)
         dtheta = 2 * np.pi / self.ntheta
@@ -101,13 +96,13 @@ class PolarFT:
         """
         if x.dtype != self.dtype:
             raise TypeError(
-                f"{self.__class__.__name__}::transform"
+                f"{self.__class__.__name__}.transform"
                 f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
             )
 
         if not isinstance(x, Image):
             raise TypeError(
-                f"{self.__class__.__name__}::transform"
+                f"{self.__class__.__name__}.transform"
                 f" passed numpy array instead of {Image}."
             )
         else:
