@@ -186,6 +186,8 @@ def test_deterministic_rounding(src_orient_est_fixture):
     # Pass the Gram matrix into the deterministic rounding procedure to recover rotations.
     est_rots = orient_est._deterministic_rounding(gt_Gram)
 
-    # Check that the estimated rotations are close.
-    mean_ang_dist = Rotation.mean_angular_distance(est_rots, gt_rots)
-    assert mean_ang_dist < 3.0  # degrees
+    # Check that the estimated rotations are close to ground truth after global alignment.
+    Q_mat, flag = register_rotations(est_rots, gt_rots)
+    regrot = get_aligned_rotations(est_rots, Q_mat, flag)
+
+    assert np.allclose(regrot, gt_rots)
