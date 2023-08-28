@@ -394,7 +394,7 @@ class Rotation:
         # Check that shapes are compatible.
         if (r1.shape[0] != 1) and (r2.shape[0] != 1):
             if r1.shape[0] != r2.shape[0]:
-                raise ValueError(f"r1 and r2 are not broadcastable.")
+                raise ValueError(r"r1 and r2 are not broadcastable.*")
 
         dtype = np.dtype(dtype or r1.dtype)
 
