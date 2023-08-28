@@ -369,36 +369,57 @@ class Rotation:
     @staticmethod
     def angle_dist(r1, r2, dtype=None):
         """
-        Find the angular distance between two rotation matrices. We first compute
-        the rotation between the two rotation matrices, r = r1 @ r2.T. Then using
-        the axis-angle representation of r we find the angle between r1 and r2.
+        Find the angular distance between two sets of rotation matrices. We first compute
+        the rotation between the two sets of rotation matrices, r = r1 @ r2.T. Then using
+        the axis-angle representation of r we find the angle between r1 and r2. Computations
+        will broadcast in the case of a singleton rotation and a set of rotations.
 
-        :param r1: A 3x3 rotation matrix
-        :param r2: A 3x3 rotation matrix
+        :param r1: An nx3x3 array of rotation matrices, a singleton rotation,
+            or a `Rotation` object.
+        :param r2: An nx3x3 array of rotation matrices, a singleton rotation,
+            or a `Rotation` object.
         :param dtype: Computation datatype. Default `None` infers from `r1`.
 
-        :return: The angular distance between r1 and r2 in radians.
+        :return: The element-wise angular distance between r1 and r2 in radians.
         """
+        if isinstance(r1, Rotation):
+            r1 = r1.matrices
+        if isinstance(r2, Rotation):
+            r2 = r2.matrices
+
+        # Handle singletons.
+        r1 = r1.reshape(-1, 3, 3)
+        r2 = r2.reshape(-1, 3, 3)
+
+        # Check that shapes are compatible.
+        if (r1.shape[0] != 1) and (r2.shape[0] != 1):
+            if r1.shape[0] != r2.shape[0]:
+                raise ValueError(f"r1 and r2 are not broadcastable.")
 
         dtype = np.dtype(dtype or r1.dtype)
 
-        r = r1 @ r2.T
-        tr_r = np.trace(r, dtype=dtype)
-        if abs(tr_r - 3.0) <= np.finfo(dtype).resolution:
-            dist = 0
-        else:
-            theta = (tr_r - 1) / 2
-            theta = max(min(theta, 1), -1)  # Clamp theta in [-1,1]
-            dist = np.arccos(theta, dtype=dtype)
+        r2_T = np.transpose(r2, axes=(0, 2, 1))
+        r = r1 @ r2_T
+        tr_r = np.trace(r, axis1=1, axis2=2, dtype=dtype)
+
+        dist = np.zeros(max(len(r1), len(r2)), dtype=dtype)
+        non_zero_dist_ind = np.where(abs(tr_r - 3.0) > np.finfo(tr_r.dtype).resolution)
+
+        theta = (tr_r[non_zero_dist_ind] - 1) / 2
+        theta = np.maximum(np.minimum(theta, 1), -1)  # Clamp theta in [-1,1]
+        dist[non_zero_dist_ind] = np.arccos(theta, dtype=dtype)
         return dist
 
     @staticmethod
     def mean_angular_distance(rots_1, rots_2, dtype=None):
         """
-        Find the mean angular distance between two sets of rotation matrices.
+        Find the mean angular distance between two sets of rotation matrices. Computations
+        will broadcast in the case of a singleton rotations and a set of rotations.
 
-        :param rots_1: An nx3x3 array of rotation matrices.
-        :param rots_2: An nx3x3 array of rotation matrices.
+        :param rots_1: An nx3x3 array of rotation matrices, a singleton rotation,
+            or a `Rotation` object.
+        :param rots_2: An nx3x3 array of rotation matrices, a singleton rotation,
+            or a `Rotation` object.
         :param dtype: Data type for computation. Default infers dtype from `rots_1`.
 
         :return: The mean angular distance between rotations in radians.
@@ -406,16 +427,7 @@ class Rotation:
 
         dtype = np.dtype(dtype or rots_1.dtype)
 
-        if rots_1.shape != rots_2.shape:
-            raise ValueError("`rots_1` and `rots_2` must have the same shape.")
-
-        n_rots = len(rots_1)
-        ang_dist = np.zeros(n_rots, dtype=dtype)
-        for i in range(n_rots):
-            ang_dist[i] = Rotation.angle_dist(
-                rots_1[i],
-                rots_2[i],
-                dtype=dtype,
-            )
+        # Shapes will be checked by `angle_dist`.
+        ang_dist = Rotation.angle_dist(rots_1, rots_2, dtype=dtype)
 
         return np.mean(ang_dist)
