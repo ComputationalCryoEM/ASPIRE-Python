@@ -164,3 +164,29 @@ def test_ATA_solver():
 
     # Check that A is close to A_ref.
     assert np.allclose(A, A_ref, atol=1e-7)
+
+
+def test_deterministic_rounding(src_orient_est_fixture):
+    """Test deterministic rounding, which recovers rotations from a Gram matrix."""
+    src, orient_est = src_orient_est_fixture
+
+    # Since we are using the ground truth cl_matrix there is no need to test with offsets.
+    if src.offsets.all() != 0:
+        pytest.skip("No need to test with offsets.")    
+
+    # Construct the ground truth Gram matrix, G = R @ R.T, where R = [R1, R2]
+    # with R1 and R2 being the concatenation of the first and second columns
+    # of all ground truth rotation matrices, respectively.
+    gt_rots = src.rotations
+    R1 = gt_rots[:, :, 0]
+    R2 = gt_rots[:, :, 1]
+    R = np.concatenate((R1, R2))
+    gt_Gram = R @ R.T
+
+    # Pass the Gram matrix into the deterministic rounding procedure to recover rotations.
+    est_rots = orient_est._deterministic_rounding(gt_Gram)
+
+    # Check that the estimated rotations are close.
+    mean_ang_dist = Rotation.mean_angular_distance(est_rots, gt_rots)
+    assert mean_ang_dist < 3.0  # degrees
+    
