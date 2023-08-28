@@ -6,6 +6,7 @@ import pytest
 
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import MicrographSimulation, Simulation
+from aspire.volume import AsymmetricVolume
 
 logger = logging.getLogger(__name__)
 IMG_SIZES = [12, 13]
@@ -13,24 +14,23 @@ DTYPES = [np.float32, np.float64]
 PARTICLES_PER_MICROGRAPHS = [7, 10]
 MICROGRAPH_COUNTS = [1, 2]
 MICROGRAPH_SIZES = [101, 100]
-SIM_PARTICLES = [1, 2]
+SIM_VOLUMES = [1, 2]
 BOUNDARIES = [-1, 0, 20]
 
 
 def vol_fixture_id(params):
-    sim_particles = params[0]
+    sim_volumes = params[0]
     img_size = params[1]
     dtype = params[2]
-    return f"number of volumes={sim_particles}, image size={img_size}, dtype={dtype.__name__}"
+    return f"number of volumes={sim_volumes}, image size={img_size}, dtype={dtype.__name__}"
 
 
 @pytest.fixture(
-    params=itertools.product(SIM_PARTICLES, IMG_SIZES, DTYPES), ids=vol_fixture_id
+    params=itertools.product(SIM_VOLUMES, IMG_SIZES, DTYPES), ids=vol_fixture_id
 )
 def vol_fixture(request):
-    sim_particles, img_size, dtype = request.param
-    simulation = Simulation(C=sim_particles, L=img_size, dtype=dtype)
-    return simulation.vols
+    sim_volumes, img_size, dtype = request.param
+    return AsymmetricVolume(L=img_size, C=sim_volumes, dtype=dtype).generate()
 
 
 def micrograph_fixture_id(params):
