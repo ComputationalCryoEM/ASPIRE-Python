@@ -7,8 +7,9 @@ from pathlib import Path
 import numpy as np
 
 from aspire.image import Image
-from aspire.source import ArrayImageSource, Simulation
+from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
+from aspire.storage import StarFile
 from aspire.utils import Random, grid_2d
 from aspire.volume import Volume
 
@@ -40,15 +41,37 @@ class MicrographSource(ABC):
         """
         return self.micrograph_count
 
-    def save(self, path):
+    def save(self, path, name_prefix="micrograph", overwrite=True):
         """
         Save micrographs to `path`.
 
-        Currently only support saving to `.mrc`.
+        `path` should be a directory. If it does not exist, ASPIRE will attempt to create it.
 
-        :param path: Path to save data.
+        Currently saves micrographs to `.mrc`.
+
+        :param path: Directory to save data.
+        :param name_prefix: Optional, name prefix string for micrograph files.
+        :param overwrite: Optional, bool. Allow writing to existing directory,
+            and overwriting existing files.
+        :return: List of saved `.mrc` files.
         """
-        ArrayImageSource(self.asnumpy()).save(path, batch_size=1)
+
+        # Make dir if does not exist.
+        Path(path).mkdir(parents=True, exist_ok=overwrite)
+
+        output_mrc_filenames = []
+        for m in range(self.micrograph_count):
+            prefix = f"{name_prefix}_{m}"
+
+            # Get the micrograph and save it as an `mrc`
+            micrograph = self.images[m].asnumpy()
+
+            mrc_file_path = os.path.join(path, f"{prefix}.mrc")
+            Image(micrograph).save(mrc_file_path, overwrite=overwrite)
+
+            output_mrc_filenames.append(mrc_file_path)
+
+        return output_mrc_filenames
 
     def asnumpy(self):
         """
@@ -56,7 +79,7 @@ class MicrographSource(ABC):
 
         :return: Numpy array.
         """
-        return self.images[:]._micrographs
+        return self.images[:]._data
 
     def show(self, *args, **kwargs):
         """
@@ -81,7 +104,7 @@ class MicrographSource(ABC):
         :param indices: A 1-D Numpy array of integer indices.
         :return: An `ArrayMicrographSource` object representing the micrographs for `indices`.
         """
-        return ArrayMicrographSource(self._micrographs[indices])
+        return ArrayMicrographSource(self._data[indices])
 
 
 class ArrayMicrographSource(MicrographSource):
@@ -121,7 +144,7 @@ class ArrayMicrographSource(MicrographSource):
         )
 
         # We're already backed by an array, access it directly.
-        self._micrographs = micrographs.astype(self.dtype, copy=False)
+        self._data = micrographs.astype(self.dtype, copy=False)
 
     def _images(self, indices):
         """
@@ -130,7 +153,7 @@ class ArrayMicrographSource(MicrographSource):
         :param indices: A 1-D Numpy array of integer indices.
         :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
         """
-        return ArrayMicrographSource(self._micrographs[indices])
+        return ArrayMicrographSource(self._data[indices])
 
 
 class DiskMicrographSource(MicrographSource):
@@ -567,3 +590,82 @@ class MicrographSimulation(MicrographSource):
         if particle_index >= self.particles_per_micrograph or particle_index < 0:
             raise RuntimeError("Index out of bounds for particle.")
         return micrograph_index * self.particles_per_micrograph + particle_index
+
+    def save(self, path, name_prefix="micrograph", overwrite=True):
+        """
+        Save micrograph simulation to `path`.
+
+        Currently saves micrographs to `.mrc`.
+        Saves simulated centers, projection rotations, and CTF filter parameters
+        when applicable.
+
+        :param path: Directory to save data.
+        :param name_prefix: Optional, name prefix string for micrograph files.
+        :param overwrite: Optional, bool. Allow writing to existing directory,
+            and overwriting existing files.
+        :return: List of tuples [(`.mrc`, `.star`)..], compatible with CentersCoordinateSource.
+        """
+
+        _meta_fields = {
+            "ctf": [
+                "_rlnVoltage",
+                "_rlnDefocusU",
+                "_rlnDefocusV",
+                "_rlnDefocusAngle",
+                "_rlnSphericalAberration",
+                "_rlnAmplitudeContrast",
+            ],
+            "rotations": ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"],
+        }
+
+        output_mrc_filenames = super().save(
+            path=path, name_prefix=name_prefix, overwrite=overwrite
+        )
+
+        output_star_filenames = []
+        for m in range(self.micrograph_count):
+            prefix = f"{name_prefix}_{m}"
+
+            d = dict()
+
+            # Particle to micrograph
+            d["_rlnImageName"] = np.full(
+                self.particles_per_micrograph, fill_value=""
+            ).astype("object")
+            d["_rlnImageName"][:] = [
+                f"{j + 1:06}@{prefix}" for j in range(self.particles_per_micrograph)
+            ]
+            d["_rlnImageSize"] = np.full(
+                self.particles_per_micrograph, fill_value=self.particle_box_size
+            )
+
+            # Particle centers
+            y, x = zip(*self.centers[m])  # unzips
+            d["_rlnCoordinateX"] = x
+            d["_rlnCoordinateY"] = y
+
+            # Projection rotations
+            rots_metadata = self.simulation.get_metadata(
+                metadata_fields=_meta_fields["rotations"],
+                indices=self.get_particle_indices(m),
+                as_dict=True,
+            )
+
+            # CTF
+            ctf_metadata = dict()
+            if self.simulation.unique_filters:
+                ctf_metadata = self.simulation.get_metadata(
+                    metadata_fields=_meta_fields["ctf"],
+                    indices=self.get_particle_indices(m),
+                    as_dict=True,
+                )
+
+            # Union dictionaries
+            d = {**d, **rots_metadata, **ctf_metadata}
+
+            # Write STAR file for this micrograph
+            star_file_path = os.path.join(path, f"{prefix}.star")
+            StarFile(blocks={"": d}).write(star_file_path)
+            output_star_filenames.append(star_file_path)
+
+        return list(zip(output_mrc_filenames, output_star_filenames))
