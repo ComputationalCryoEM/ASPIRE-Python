@@ -2,6 +2,7 @@ import logging
 from unittest import TestCase
 
 import numpy as np
+import pytest
 from scipy.spatial.transform import Rotation as sp_rot
 
 from aspire.utils import Rotation, utest_tolerance
@@ -108,21 +109,6 @@ class UtilsTestCase(TestCase):
     def testDtype(self):
         self.assertTrue(self.dtype == self.rot_obj.dtype)
 
-    def testAngleDist(self):
-        angles = np.array([i * np.pi / 360 for i in range(360)], dtype=self.dtype)
-        rots = Rotation.about_axis("x", angles, dtype=self.dtype)
-
-        # Calculate the angular distance between the identity, rots[0],
-        # and rotations by multiples of pi/360 about the x-axis.
-        # These should be equal to `angles`.
-        angular_dist = np.zeros(360, dtype=self.dtype)
-        for i, rot in enumerate(rots):
-            angular_dist[i] = Rotation.angle_dist(rots[0], rot, self.dtype)
-
-        self.assertTrue(
-            np.allclose(angles, angular_dist, atol=utest_tolerance(self.dtype))
-        )
-
     def testFromRotvec(self):
         # Build random rotation vectors.
         axis = np.array([1, 0, 0], dtype=self.dtype)
@@ -136,6 +122,22 @@ class UtilsTestCase(TestCase):
         self.assertTrue(isinstance(rotations, Rotation))
         self.assertTrue(rotations.matrices.dtype == self.dtype)
         self.assertTrue(np.allclose(rotations.matrices, ref_rots.matrices))
+
+
+def test_angle_dist():
+    dtype = np.float32
+    angles = np.array([i * np.pi / 360 for i in range(360)], dtype=dtype)
+    rots = Rotation.about_axis("x", angles, dtype=dtype)
+
+    # Calculate the angular distance between the identity, rots[0],
+    # and rotations by multiples of pi/360 about the x-axis.
+    # These should be equal to `angles`.
+    angular_dist = Rotation.angle_dist(rots[0], rots, dtype)
+    assert np.allclose(angles, angular_dist, atol=utest_tolerance(dtype))
+
+    # Test incompatible shape error.
+    with pytest.raises(ValueError, match=r"r1 and r2 are not broadcastable*"):
+        _ = Rotation.angle_dist(rots[:3], rots[:5])
 
 
 def test_mean_angular_distance():
