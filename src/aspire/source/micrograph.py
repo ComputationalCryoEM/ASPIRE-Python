@@ -1,6 +1,6 @@
 import logging
 import os
-from abc import ABC
+from abc import ABC, abstractmethod
 from glob import glob
 from pathlib import Path
 
@@ -73,6 +73,16 @@ class MicrographSource(ABC):
         """
         return self._images_accessor
 
+    @abstractmethod
+    def _images(self, indices):
+        """
+        Accesses and returns micrographs.
+
+        :param indices: A 1-D Numpy array of integer indices.
+        :return: An `ArrayMicrographSource` object representing the micrographs for `indices`.
+        """
+        return ArrayMicrographSource(self._micrographs[indices])
+
 
 class ArrayMicrographSource(MicrographSource):
     def __init__(self, micrographs, dtype=None):
@@ -143,7 +153,7 @@ class DiskMicrographSource(MicrographSource):
                 f"{self.__class__.__name__} not implemented for {type(micrographs_path)}."
             )
 
-        if len(micrographs_path) == 0:
+        if hasattr(micrographs_path, "__len__") and len(micrographs_path) == 0:
             raise RuntimeError(
                 f"Must supply non-empty `micrographs` argument, received {micrographs_path}."
             )

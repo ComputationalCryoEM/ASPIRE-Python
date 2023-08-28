@@ -147,7 +147,9 @@ class Picker:
         # Load mircrograph data
         # TODO, "float" is from legacy APPLE.  dtype handling should be improved
         self.original_im = (
-            MicrographSource(self.filename).asnumpy()[0].astype(np.float32, copy=False)
+            DiskMicrographSource(self.filename)
+            .asnumpy()[0]
+            .astype(np.float32, copy=False)
         )
 
         # Discard outer pixels
