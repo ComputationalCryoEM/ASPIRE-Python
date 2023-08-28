@@ -7,7 +7,7 @@ import pytest
 from PIL import Image as PILImage
 
 from aspire.image import Image
-from aspire.source import MicrographSource, RelionSource
+from aspire.source import ArrayMicrographSource, DiskMicrographSource, RelionSource
 
 from .test_utils import matplotlib_no_gui
 
@@ -72,7 +72,7 @@ def test_array_backed_micrograph(image_data_fixture):
     Test construction of MicrographSource initialized with a Numpy array.
     """
 
-    mg_src = MicrographSource(image_data_fixture)
+    mg_src = ArrayMicrographSource(image_data_fixture)
 
     np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
 
@@ -84,7 +84,7 @@ def test_array_backed_micrograph_explicit_dtype(image_data_fixture):
     """
 
     for dtype in DTYPES:
-        mg_src = MicrographSource(image_data_fixture, dtype=dtype)
+        mg_src = ArrayMicrographSource(image_data_fixture, dtype=dtype)
 
         # Check contents
         np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
@@ -113,7 +113,7 @@ def test_dir_backed_micrograph(image_data_fixture, file_type):
         for i, img in enumerate(imgs):
             fname = os.path.join(tmp_output_dir, f"{i}{file_type}")
             img.save(fname)
-        mg_src = MicrographSource(tmp_output_dir)
+        mg_src = DiskMicrographSource(tmp_output_dir)
 
         # Ensure contents match
         np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
@@ -158,7 +158,7 @@ def test_file_backed_micrograph(image_data_fixture):
 
                 file_list.append(fname)
 
-        mg_src = MicrographSource(file_list)
+        mg_src = DiskMicrographSource(file_list)
 
         # Ensure contents match
         np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
@@ -182,7 +182,7 @@ def test_file_backed_micrograph_explicit_dtype(image_data_fixture):
 
         # Load with explicit dtype
         for dtype in DTYPES:
-            mg_src = MicrographSource(tmp_output_dir, dtype=dtype)
+            mg_src = DiskMicrographSource(tmp_output_dir, dtype=dtype)
             # Check contents
             np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
             # Check types
@@ -192,13 +192,22 @@ def test_file_backed_micrograph_explicit_dtype(image_data_fixture):
 # Test junk inputs
 
 
+def test_none_micrograph_source():
+    """
+    Test empty MicrographSource raises.
+    """
+    for cls in [ArrayMicrographSource, DiskMicrographSource]:
+        with pytest.raises(RuntimeError, match=r".*not implemented.*"):
+            _ = cls(None)
+
+
 def test_empty_micrograph_source():
     """
     Test empty MicrographSource raises.
     """
-    for x in [[], "", None]:
+    for x in [[], ""]:
         with pytest.raises(RuntimeError, match=r"Must supply non-empty.*"):
-            _ = MicrographSource(x)
+            _ = DiskMicrographSource(x)
 
 
 def test_no_files_micrograph_source():
@@ -208,12 +217,12 @@ def test_no_files_micrograph_source():
     with tempfile.TemporaryDirectory() as tmp_dir:
         # tmp_dir should be created empty
         with pytest.raises(RuntimeError, match=r"No suitable files were found.*"):
-            _ = MicrographSource(tmp_dir)
+            _ = DiskMicrographSource(tmp_dir)
 
         # create a non micrograph file, should still raise.
         open("not_a_micrograph.txt", "a").close()
         with pytest.raises(RuntimeError, match=r"No suitable files were found.*"):
-            _ = MicrographSource(tmp_dir)
+            _ = DiskMicrographSource(tmp_dir)
 
 
 def test_existential_crisis():
@@ -226,7 +235,7 @@ def test_existential_crisis():
         with pytest.raises(
             RuntimeError, match=r".*does not appear to be a directory or a file.*"
         ):
-            _ = MicrographSource(dne_dir)
+            _ = DiskMicrographSource(dne_dir)
 
 
 def test_bad_input_micrograph_source():
@@ -234,7 +243,10 @@ def test_bad_input_micrograph_source():
     Test MicrographSource raises when instantiated with something weird.
     """
     with pytest.raises(NotImplementedError, match=r".*not implemented.*"):
-        _ = MicrographSource(123)
+        _ = ArrayMicrographSource(123)
+
+    with pytest.raises(NotImplementedError, match=r".*not implemented.*"):
+        _ = DiskMicrographSource(123)
 
 
 def test_wrong_dim_micrograph_source():
@@ -244,7 +256,7 @@ def test_wrong_dim_micrograph_source():
     for shape in [(49), (1, 2, 7, 7)]:
         imgs_np = np.empty(shape)
         with pytest.raises(RuntimeError, match=r"Incompatible.*"):
-            MicrographSource(imgs_np)
+            ArrayMicrographSource(imgs_np)
 
 
 def test_rectangular_micrograph_source_array():
@@ -254,7 +266,7 @@ def test_rectangular_micrograph_source_array():
     # Test with Numpy array input
     imgs_np = np.empty((3, 7, 8))
     with pytest.raises(RuntimeError, match=r"Incompatible.*"):
-        MicrographSource(imgs_np)
+        ArrayMicrographSource(imgs_np)
 
 
 def test_rectangular_micrograph_source_files():
@@ -271,7 +283,7 @@ def test_rectangular_micrograph_source_files():
             Image(img).save(fname)
 
         # Load them
-        mg_src = MicrographSource(tmp_output_dir)
+        mg_src = DiskMicrographSource(tmp_output_dir)
 
         # Check the inconsistent shape raises when dynamically loading
         with pytest.raises(
@@ -287,7 +299,7 @@ def test_show(image_data_fixture):
     """
     Test show doesn't crash.
     """
-    mg_src = MicrographSource(image_data_fixture)
+    mg_src = ArrayMicrographSource(image_data_fixture)
     with matplotlib_no_gui():
         mg_src.show()
 
@@ -299,14 +311,14 @@ def test_save(image_data_fixture):
     Specifically image_data_fixture -> save to disk -> load from files.
     """
 
-    mg_src1 = MicrographSource(image_data_fixture)
+    mg_src1 = ArrayMicrographSource(image_data_fixture)
 
     with tempfile.TemporaryDirectory() as tmp_output_dir:
         path = os.path.join(tmp_output_dir, "test.star")
         # Writes star and mrc
         mg_src1.save(path)
 
-        mg_src2 = MicrographSource(tmp_output_dir)
+        mg_src2 = DiskMicrographSource(tmp_output_dir)
 
         np.testing.assert_allclose(mg_src2.asnumpy(), image_data_fixture)
 

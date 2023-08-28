@@ -15,7 +15,7 @@ from sklearn import preprocessing, svm
 
 from aspire.apple.helper import PickerHelper
 from aspire.numeric import fft, xp
-from aspire.source import MicrographSource
+from aspire.source import DiskMicrographSource
 from aspire.utils import tqdm
 
 logger = logging.getLogger(__name__)
