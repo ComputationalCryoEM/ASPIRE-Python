@@ -1,5 +1,6 @@
 import logging
 import os
+from abc import ABC
 from glob import glob
 from pathlib import Path
 
@@ -13,137 +14,14 @@ from aspire.utils import Random, grid_2d
 logger = logging.getLogger(__name__)
 
 
-class MicrographSource:
-    def __init__(self, micrographs, dtype=None):
-        """
-        Instantiate a `MicrographSource` with `micrographs`.
+class MicrographSource(ABC):
+    def __init__(self, micrograph_count, micrograph_size, dtype):
+        """ """
+        self.micrograph_count = int(micrograph_count)
+        self.micrograph_size = int(micrograph_size)
+        self.dtype = np.dtype(dtype)
 
-        :param micrographs: Numpy array (count, L, L)
-            where  `L` represents the size in pixels.
-            Alternatively, `micrographs` may be a path string,
-            or list of path strings.
-        :param dtype: Data type of returned `MicrographSource`.
-            Default of `None` will attempt to infer dtype from the first micrograph.
-            Explicitly setting dtype will attempt a cast when returning micrographs.
-            Currently only `float32` and `float64` are supported.
-            Note, due to limitations of common MRC implementations,
-            saving is limited to single precision.
-        :return: `MicrographSource`
-        """
-
-        if (micrographs is None) or (
-            hasattr(micrographs, "__len__") and len(micrographs) == 0
-        ):
-            raise RuntimeError(
-                f"Must supply non-empty `micrographs` argument, received {micrographs}."
-            )
-
-        # Passed Array
-        if isinstance(micrographs, np.ndarray):
-            # Ensure dimensions
-            if micrographs.ndim == 2:
-                micrographs = micrographs[None, :, :]
-
-            if micrographs.ndim != 3 or (
-                micrographs.shape[-2] != micrographs.shape[-1]
-            ):
-                raise NotImplementedError(
-                    f"Incompatible `micrographs` shape {micrographs.shape}, expects (count, L, L)"
-                )
-
-            self.micrograph_count = micrographs.shape[0]
-            self.micrograph_size = micrographs.shape[-1]
-            # Assign dtype override, or infer from `micrographs`.
-            self.dtype = dtype or micrographs.dtype
-
-            # We're already backed by an array, access it directly.
-            self._data = micrographs.astype(self.dtype, copy=False)
-            self._images_accessor = _ImageAccessor(
-                self._images_from_array, self.micrograph_count
-            )
-
-        elif self._is_path_like_input(micrographs):
-            if isinstance(micrographs, list):
-                # Explicit list
-                self.micrograph_files = micrographs
-            else:
-                # `str` cast will accommodate string and Path objects
-                self.micrograph_files = self._glob_files(str(micrographs))
-
-            # Assign count of micrograph files
-            self.micrograph_count = len(self.micrograph_files)
-
-            # Load the first micrograph to infer shape/type
-            # Size will be checked during on-the-fly loading of subsequent micrographs.
-            micrograph0 = Image.load(self.micrograph_files[0])
-
-            self.micrograph_size = micrograph0.resolution
-            # Assign dtype override, or infer from `micrograph0`.
-            self.dtype = dtype or micrograph0.dtype
-
-            # Prepare accessor to load files from disk on the fly.
-            self._images_accessor = _ImageAccessor(
-                self._images_from_files, self.micrograph_count
-            )
-        else:
-            raise NotImplementedError(
-                f"MicrographSource not implemented for {type(micrographs)}."
-            )
-
-    @staticmethod
-    def _is_path_like_input(p):
-        """
-        Utility to return whether `p` should be treated as a path to micrograph(s).
-
-        :param p: Item to test.
-        :return: Boolean.
-        """
-        return any([isinstance(p, list), isinstance(p, str), isinstance(p, Path)])
-
-    @property
-    def images(self):
-        """
-        Returns micrographs.
-
-        :return: An `ImageAccessor` for the noisy micrographs.
-        """
-        return self._images_accessor
-
-    def _images_from_array(self, indices):
-        """
-        Accesses and returns micrographs from a Numpy array.
-
-        :param indices: A 1-D Numpy array of integer indices.
-        :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
-        """
-        return MicrographSource(self._data[indices])
-
-    def _images_from_files(self, indices):
-        """
-        Accesses and returns micrographs from disk.
-
-        :param indices: A 1-D Numpy array of integer indices.
-        :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
-        """
-        # Initialize empty result
-        n_micrographs = len(indices)
-        micrographs = np.empty(
-            (n_micrographs, self.micrograph_size, self.micrograph_size),
-            dtype=self.dtype,
-        )
-        for i, ind in enumerate(indices):
-            # Load the micrograph image from file
-            micrograph = Image.load(self.micrograph_files[ind])
-            # Assert size
-            if micrograph.resolution != self.micrograph_size:
-                raise NotImplementedError(
-                    f"Micrograph {ind} has inconsistent shape {micrograph.shape},"
-                    f" expected {(self.micrograph_size, self.micrograph_size)}."
-                )
-            # Assign to array, implicitly performs casting to dtype
-            micrographs[i] = micrograph.asnumpy()
-
-        return MicrographSource(micrographs)
+        self._images_accessor = _ImageAccessor(self._images, self.micrograph_count)
 
     def __repr__(self):
         """
@@ -170,6 +48,134 @@ class MicrographSource:
         :param path: Path to save data.
         """
         ArrayImageSource(self.asnumpy()).save(path, batch_size=1)
+
+    def asnumpy(self):
+        """
+        Return micrograph data as dense Numpy array.
+
+        :return: Numpy array.
+        """
+        return self.images[:]._micrographs
+
+    def show(self, *args, **kwargs):
+        """
+        Helper function to display micrograph. See Image.show().
+        """
+        Image(self.asnumpy()).show(*args, **kwargs)
+
+    @property
+    def images(self):
+        """
+        Returns micrographs.
+
+        :return: An `ImageAccessor` for the noisy micrographs.
+        """
+        return self._images_accessor
+
+
+class ArrayMicrographSource(MicrographSource):
+    def __init__(self, micrographs, dtype=None):
+        """
+        Instantiate a `MicrographSource` with `micrographs`.
+
+        :param micrographs: Numpy array (count, L, L)
+            where  `L` represents the size in pixels.
+        :param dtype: Data type of returned `MicrographSource`.
+            Default of `None` will infer dtype from the array.
+            Explicitly setting dtype will attempt a cast.
+            Currently only `float32` and `float64` are supported.
+            Note, due to limitations of common MRC implementations,
+            saving is limited to single precision.
+        """
+
+        # Check micrographs is an array
+        if not isinstance(micrographs, np.ndarray):
+            raise NotImplementedError(
+                f"{self.__class__.__name__} not implemented for {type(micrographs)}."
+            )
+
+        # Ensure dimensions
+        if micrographs.ndim == 2:
+            micrographs = micrographs[None, :, :]
+
+        if micrographs.ndim != 3 or (micrographs.shape[-2] != micrographs.shape[-1]):
+            raise NotImplementedError(
+                f"Incompatible `micrographs` shape {micrographs.shape}, expects (count, L, L)"
+            )
+
+        super().__init__(
+            micrograph_count=micrographs.shape[0],
+            micrograph_size=micrographs.shape[-1],
+            dtype=dtype or micrographs.dtype,
+        )
+
+        # We're already backed by an array, access it directly.
+        self._micrographs = micrographs.astype(self.dtype, copy=False)
+
+    def _images(self, indices):
+        """
+        Accesses and returns micrographs from a Numpy array.
+
+        :param indices: A 1-D Numpy array of integer indices.
+        :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
+        """
+        return ArrayMicrographSource(self._micrographs[indices])
+
+
+class DiskMicrographSource(MicrographSource):
+    def __init__(self, micrographs_path, dtype=None):
+        """
+        Instantiate a `MicrographSource` with `micrographs_path`.
+
+        :param micrographs_path: Path string representing directory of file,
+            or list of file path strings.
+        :param dtype: Data type of returned `MicrographSource`.
+            Default of `None` will attempt to infer dtype from the first micrograph.
+            Explicitly setting dtype will attempt a cast when returning micrographs.
+            Currently only `float32` and `float64` are supported.
+            Note, due to limitations of common MRC implementations,
+            saving is limited to single precision.
+        """
+
+        if not self._is_path_like_input(micrographs_path):
+            raise NotImplementedError(
+                f"{self.__class__.__name__} not implemented for {type(micrographs_path)}."
+            )
+
+        if len(micrographs_path) == 0:
+            raise RuntimeError(
+                f"Must supply non-empty `micrographs` argument, received {micrographs_path}."
+            )
+
+        if isinstance(micrographs_path, list):
+            # Explicit list
+            self.micrograph_files = micrographs_path
+        else:
+            # `str` cast will accommodate string and Path objects
+            self.micrograph_files = self._glob_files(str(micrographs_path))
+
+        # Load the first micrograph to infer shape/type
+        # Size will be checked during on-the-fly loading of subsequent micrographs.
+        micrograph0 = Image.load(self.micrograph_files[0])
+
+        super().__init__(
+            micrograph_count=len(self.micrograph_files),
+            micrograph_size=micrograph0.resolution,
+            dtype=dtype or micrograph0.dtype,
+        )
+
+        # Prepare accessor to load files from disk on the fly.
+        self._images_accessor = _ImageAccessor(self._images, self.micrograph_count)
+
+    @staticmethod
+    def _is_path_like_input(p):
+        """
+        Utility to return whether `p` should be treated as a path to micrograph(s).
+
+        :param p: Item to test.
+        :return: Boolean.
+        """
+        return any([isinstance(p, list), isinstance(p, str), isinstance(p, Path)])
 
     def _glob_files(self, file_path):
         """
@@ -199,19 +205,32 @@ class MicrographSource:
 
         return files
 
-    def asnumpy(self):
+    def _images(self, indices):
         """
-        Return micrograph data as dense Numpy array.
+        Accesses and returns micrographs from disk.
 
-        :return: Numpy array.
+        :param indices: A 1-D Numpy array of integer indices.
+        :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
         """
-        return self.images[:]._data
+        # Initialize empty result
+        n_micrographs = len(indices)
+        micrographs = np.empty(
+            (n_micrographs, self.micrograph_size, self.micrograph_size),
+            dtype=self.dtype,
+        )
+        for i, ind in enumerate(indices):
+            # Load the micrograph image from file
+            micrograph = Image.load(self.micrograph_files[ind])
+            # Assert size
+            if micrograph.resolution != self.micrograph_size:
+                raise NotImplementedError(
+                    f"Micrograph {ind} has inconsistent shape {micrograph.shape},"
+                    f" expected {(self.micrograph_size, self.micrograph_size)}."
+                )
+            # Assign to array, implicitly performs casting to dtype
+            micrographs[i] = micrograph.asnumpy()
 
-    def show(self, *args, **kwargs):
-        """
-        Helper function to display micrograph. See Image.show().
-        """
-        Image(self.asnumpy()).show(*args, **kwargs)
+        return ArrayMicrographSource(micrographs)
 
 
 class MicrographSimulation(MicrographSource):
@@ -252,8 +271,11 @@ class MicrographSimulation(MicrographSource):
 
         self.seed = seed
 
-        self.micrograph_size = micrograph_size
-        self.micrograph_count = micrograph_count
+        super().__init__(
+            micrograph_count=micrograph_count,
+            micrograph_size=micrograph_size,
+            dtype=simulation.dtype,
+        )
 
         # Check if particle count times micrograph count <= simulation.n
         if particles_per_micrograph * micrograph_count > simulation.n:
@@ -270,7 +292,6 @@ class MicrographSimulation(MicrographSource):
         self.total_particle_count = (
             self.micrograph_count * self.particles_per_micrograph
         )
-        self.dtype = simulation.dtype
 
         self.noise_adder = noise_adder
 
@@ -338,7 +359,10 @@ class MicrographSimulation(MicrographSource):
                 self._fail_count += 1
         else:
             raise RuntimeError(
-                "Micrograph generation failures exceeded limit. This can happen if constraints are too strict. Consider adjusting micrograph_size, particles_per_micrograph, or interparticle_distance."
+                "Micrograph generation failures exceeded limit. This"
+                "can happen if constraints are too strict. Consider"
+                "adjusting micrograph_size, particles_per_micrograph,"
+                " or interparticle_distance."
             )
 
     def _generate_center(self):
@@ -458,7 +482,9 @@ class MicrographSimulation(MicrographSource):
 
     def get_particle_indices(self, micrograph_index, particle_index=None):
         """
-        Using the micrograph ID, returns every global particle ID from that micrograph. Returns specific global IDs if the local IDs are given.
+        Using the micrograph ID, returns every global particle ID from
+        that micrograph. Returns specific global IDs if the local IDs
+        are given.
 
         :param micrograph_index: ID of the micrograph.
         :param particle_index: Local ID of the particle.
