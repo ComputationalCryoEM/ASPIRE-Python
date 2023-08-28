@@ -172,7 +172,7 @@ def test_deterministic_rounding(src_orient_est_fixture):
 
     # Since we are using the ground truth cl_matrix there is no need to test with offsets.
     if src.offsets.all() != 0:
-        pytest.skip("No need to test with offsets.")    
+        pytest.skip("No need to test with offsets.")
 
     # Construct the ground truth Gram matrix, G = R @ R.T, where R = [R1, R2]
     # with R1 and R2 being the concatenation of the first and second columns
@@ -189,4 +189,3 @@ def test_deterministic_rounding(src_orient_est_fixture):
     # Check that the estimated rotations are close.
     mean_ang_dist = Rotation.mean_angular_distance(est_rots, gt_rots)
     assert mean_ang_dist < 3.0  # degrees
-    
