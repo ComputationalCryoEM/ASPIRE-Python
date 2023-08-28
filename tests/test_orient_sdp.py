@@ -24,7 +24,6 @@ OFFSETS = [
 
 DTYPES = [
     np.float32,
-    np.float64,  # Temporary for gpu testing.
     pytest.param(np.float64, marks=pytest.mark.expensive),
 ]
 
