@@ -24,7 +24,7 @@ class PolarFT:
             Currently only square images are supported.
         :param nrad: The number of points in the radial dimension. Default is resolution // 2.
         :param ntheta: The number of points in the angular dimension. Default is 8 * nrad.
-        :param dtype: dtype used to compute a polar frequency grid for evaluating the transform.
+        :param dtype: dtype used to compute a polar frequency grid for evaluating the transform..
         """
         if isinstance(size, int):
             size = (size, size)
