@@ -7,7 +7,7 @@ import pytest
 from PIL import Image as PILImage
 
 from aspire.image import Image
-from aspire.source import ArrayMicrographSource, DiskMicrographSource, RelionSource
+from aspire.source import ArrayMicrographSource, DiskMicrographSource
 
 from .test_utils import matplotlib_no_gui
 
@@ -50,7 +50,7 @@ def file_type(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture()
 def image_data_fixture(micrograph_count, micrograph_size, dtype):
     """
     This generates a Numpy array with prescribed shape and dtype.
@@ -304,9 +304,9 @@ def test_show(image_data_fixture):
         mg_src.show()
 
 
-def test_save(image_data_fixture):
+def test_mrc_save(image_data_fixture):
     """
-    Tests MicrographSource.save functionality.
+    Tests the base MicrographSource.save functionality.
 
     Specifically image_data_fixture -> save to disk -> load from files.
     """
@@ -314,14 +314,15 @@ def test_save(image_data_fixture):
     mg_src1 = ArrayMicrographSource(image_data_fixture)
 
     with tempfile.TemporaryDirectory() as tmp_output_dir:
-        path = os.path.join(tmp_output_dir)
-        # Writes star and mrc
-        res = mg_src1.save(path)
+        path = os.path.join(tmp_output_dir, "test")
 
-        mg_src2 = DiskMicrographSource(tmp_output_dir)
+        # Write MRC files
+        file_list = mg_src1.save(path)
 
+        # Test we can load from dir `path`
+        mg_src2 = DiskMicrographSource(path)
         np.testing.assert_allclose(mg_src2.asnumpy(), image_data_fixture)
 
-        # TODO # Also test we can load via STAR file.
-        # mg_src3 = CentersCoordinateSource(res, mg_src1.particle_size)
-        # np.testing.assert_allclose(mg_src3.images[:].asnumpy(), image_data_fixture)
+        # Test we can load from `file_list`
+        mg_src2 = DiskMicrographSource(file_list)
+        np.testing.assert_allclose(mg_src2.asnumpy(), image_data_fixture)
