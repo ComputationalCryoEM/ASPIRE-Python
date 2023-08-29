@@ -197,7 +197,7 @@ def test_theta_error():
 
 
 @pytest.mark.parametrize("stack_shape", [(5,), (2, 3)])
-def test_full_transform(stack_shape):
+def test_half_to_full_transform(stack_shape):
     """
     Test conjugate symmetry and shape of the full polar Fourier transform.
     """
@@ -207,7 +207,7 @@ def test_full_transform(stack_shape):
     )
     pft = PolarFT(size=img_size)
     pf = pft.transform(image)
-    full_pf = pft.full(pf)
+    full_pf = pft.half_to_full(pf)
 
     # Check shape.
     assert full_pf.shape == (*stack_shape, pft.ntheta, pft.nrad)
