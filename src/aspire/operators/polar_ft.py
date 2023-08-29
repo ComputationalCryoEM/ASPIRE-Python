@@ -126,7 +126,7 @@ class PolarFT:
         return pf.reshape(*stack_shape, self.ntheta // 2, self.nrad)
 
     @staticmethod
-    def full(pf):
+    def half_to_full(pf):
         """
         Use the conjugate symmetry of pf to construct the full polar Fourier transform
         over all rays in [0, 360).
