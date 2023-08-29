@@ -1,11 +1,19 @@
 import itertools
 import logging
+import os
+import tempfile
 
 import numpy as np
 import pytest
 
 from aspire.noise import WhiteNoiseAdder
-from aspire.source import MicrographSimulation, Simulation
+from aspire.operators import RadialCTFFilter
+from aspire.source import (
+    CentersCoordinateSource,
+    DiskMicrographSource,
+    MicrographSimulation,
+    Simulation,
+)
 from aspire.volume import AsymmetricVolume
 
 logger = logging.getLogger(__name__)
@@ -283,3 +291,63 @@ def test_noise_works():
     )
     noisy_micrograph = noise.forward(m.clean_images[:], [0])
     assert np.array_equal(m.images[0], noisy_micrograph[0])
+
+
+def test_sim_save():
+    """
+    Tests MicrographSimulation.save functionality.
+
+    Specifically tests interoperability with CentersCoordinateSource
+    """
+
+    v = AsymmetricVolume(L=16, C=1, dtype=np.float64).generate()
+    ctfs = [
+        RadialCTFFilter(
+            pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
+        )
+    ]
+
+    mg_sim = MicrographSimulation(
+        volume=v,
+        particles_per_micrograph=10,
+        micrograph_count=2,
+        micrograph_size=512,
+        ctf_filters=ctfs,
+    )
+
+    with tempfile.TemporaryDirectory() as tmp_output_dir:
+        path = os.path.join(tmp_output_dir, "test")
+
+        # Write MRC and STAR files
+        results = mg_sim.save(path)
+
+        # Test we can load from dir `path`
+        mg_src = DiskMicrographSource(path)
+        np.testing.assert_allclose(mg_src.asnumpy(), mg_sim.asnumpy())
+
+        # Test we can load via CentersCoordinateSource (STAR files)
+        img_src = CentersCoordinateSource(results, mg_sim.particle_box_size)
+        np.testing.assert_allclose(
+            img_src.images[:].asnumpy(),  # loaded image stack
+            mg_sim.simulation.images[:].asnumpy(),  # simulated image stack
+        )
+
+        # TODO, Issue #1006
+        # The following tests should pass, but are a different project.
+        # Only the basic image stack behavior above.
+        pytest.xfail(reason="CoordinateSource implementations are incomplete.")
+
+        # Test the rotations match (auto load metadata from STAR).
+        np.testing.assert_allclose(img_src.rotations, mg_sim.simulation.rotations)
+
+        # Test a CTF param matches (auto load metadata from STAR).
+        np.testing.assert_allclose(
+            img_src.get_metadata("_rlnDefocusU"),
+            mg_sim.simulation.get_metadata("_rlnDefocusU"),
+        )
+        # Alternatively, manually import CTF using the provided function, fails.
+        img_src.import_relion_ctf([r[1] for r in results])
+        np.testing.assert_allclose(
+            img_src.get_metadata("_rlnDefocusU"),
+            mg_sim.simulation.get_metadata("_rlnDefocusU"),
+        )
