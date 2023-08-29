@@ -12,8 +12,14 @@ logger = logging.getLogger(__name__)
 
 class CommonlineSDP(CLOrient3D):
     """
-    Class to estimate 3D orientations using Semi-Definite Programming
-    :cite:`DBLP:journals/siamis/SingerS11`
+    Class to estimate 3D orientations using semi-definite programming.
+
+    See the following publication for more details:
+
+    A. Singer and Y. Shkolnisky,
+    "Three-Dimensional Structure Determination from Common Lines in Cryo-EM
+        by Eigenvectors and Semidefinite Programming"
+    SIAM J. Imaging Sciences, Vol. 4, No. 2, (2011): 543-572. doi:10.1137/090767777
     """
 
     def __init__(self, src, n_rad=None, n_theta=360, max_shift=0.15, shift_step=1):
