@@ -4,6 +4,7 @@ import numpy as np
 from numpy.linalg import norm
 
 from aspire.abinitio import CLSymmetryC3C4
+from aspire.operators import PolarFT
 from aspire.utils import (
     J_conjugate,
     Rotation,
@@ -123,7 +124,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # Reconstruct full polar Fourier for use in correlation.
         pf /= norm(pf, axis=2)[..., np.newaxis]  # Normalize each ray.
-        pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
+        pf_full = PolarFT.half_to_full(pf)
 
         # Pre-compute shifted pf's.
         pf_shifted = (pf * shift_phases[:, None, None]).swapaxes(0, 1)
