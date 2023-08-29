@@ -4,6 +4,7 @@ import numpy as np
 from numpy.linalg import eigh, norm, svd
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
+from aspire.operators import PolarFT
 from aspire.utils import (
     J_conjugate,
     Rotation,
@@ -294,7 +295,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # Reconstruct the full polar Fourier for use in correlation. self.pf only consists of
         # rays in the range [180, 360), with shape (n_img, n_theta//2, n_rad-1).
-        pf = np.concatenate((pf, np.conj(pf)), axis=1)
+        pf = PolarFT.half_to_full(pf)
 
         # Normalize rays.
         pf /= norm(pf, axis=-1)[..., np.newaxis]
@@ -444,7 +445,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         # Reconstruct the full polar Fourier for use in correlation. self.pf only consists of
         # rays in the range [180, 360), with shape (n_img, n_theta//2, n_rad-1).
-        pf_full = np.concatenate((pf, np.conj(pf)), axis=1)
+        pf_full = PolarFT.half_to_full(pf)
 
         # The self-common-lines matrix holds two indices per image that represent
         # the two self common-lines in the image.
