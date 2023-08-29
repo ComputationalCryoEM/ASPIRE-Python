@@ -8,12 +8,13 @@ This tutorial will demonstrate how to set up and use ASPIRE's ``MicrographSimula
 
 import os
 import tempfile
+
 import numpy as np
 
 from aspire.image import Image
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
-from aspire.source import MicrographSimulation
+from aspire.source import ArrayMicrographSource, MicrographSimulation
 from aspire.volume import AsymmetricVolume
 
 # %%
@@ -94,7 +95,6 @@ from aspire.volume import AsymmetricVolume
 # demonstration, we'll simply use random data to initialize, then the
 # data will be saved off to be used in the next example.
 
-from aspire.source import ArrayMicrographSource
 
 # Create a (2,1024,1024) array
 # This represents two (1024,1024) micrographs.
@@ -345,11 +345,11 @@ print(f"Local particle indices: {check_local_indices}")
 from aspire.source import CentersCoordinateSource
 
 # Save the simulation
-results = src.save(os.path.join(tmp_dir.name, 'mg_sim'))
+results = src.save(os.path.join(tmp_dir.name, "mg_sim"))
 # Review the resulting files
 print(results)
 # Review the example STAR file contents
-with open(results[0][1],'r') as f:
+with open(results[0][1], "r") as f:
     print(f.read())
 
 img_src = CentersCoordinateSource(results, src.particle_box_size)
