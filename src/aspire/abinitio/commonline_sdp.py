@@ -44,7 +44,7 @@ class CommonlineSDP(CLOrient3D):
 
     def estimate_rotations(self):
         """
-        perform estimation of orientations
+        Estimate rotation matrices using the common lines method with semi-definite programming.
         """
         logger.info("Computing the common lines matrix.")
         self.build_clmatrix()
@@ -57,7 +57,12 @@ class CommonlineSDP(CLOrient3D):
 
     def _construct_S(self, clmatrix):
         """
-        Compute the 2*n_img x 2*n_img commonline matrix S.
+        Construct the 2*n_img x 2*n_img quadratic form matrix S corresponding to the common-lines
+        matrix 'clmatrix'.
+
+        :param clmatrix: n_img x n_img common-lines matrix.
+
+        :return: 2*n_img x 2*n_img quadratic form matrix S.
         """
         logger.info("Constructing the common line quadratic form matrix S.")
 
@@ -95,6 +100,14 @@ class CommonlineSDP(CLOrient3D):
     def _sdp_prep(self):
         """
         Prepare optimization problem constraints.
+
+        The constraints for the SDP optimization, max tr(SG), performed in `_compute_Gram_matrix()`
+        as min tr(-SG), are that the Gram matrix, G, is semidefinite positive and G11_ii = G22_ii = 1,
+        G12_ii = G21_ii = 0, i=1,2,...,N, for the block representation of G = [[G11, G12], [G21, G22]].
+
+        We build a corresponding constraint for CVXPY in the form of tr(A_j @ G) = b_j, j = 1,...,p.
+        For the constraint G11_ii = G22_ii = 1, we have A_j[i, i] = 1 (zeros elsewhere) and b_j = 1.
+        For the constraint G12_ii = G21_ii = 0, we have A_j[i, i] = 1 (zeros elsewhere) and b_j = 0.
         """
         logger.info("Preparing SDP optimization constraints.")
 
@@ -110,9 +123,6 @@ class CommonlineSDP(CLOrient3D):
             b.append(np.ones(1, dtype=self.dtype))
 
         for i in range(self.n_img):
-            data = np.ones(1, dtype=self.dtype)
-            # row_ind = np.array([i, self.n_img + i])
-            # col_ind = np.array([self.n_img + i, i])
             row_ind = np.array([i])
             col_ind = np.array([self.n_img + i])
             A_i = csr_array((data, (row_ind, col_ind)), shape=(n, n), dtype=self.dtype)
