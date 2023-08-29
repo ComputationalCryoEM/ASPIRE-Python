@@ -6,6 +6,8 @@ Micrograph Simulation
 This tutorial will demonstrate how to set up and use ASPIRE's ``MicrographSimulation`` class.
 """
 
+import os
+import tempfile
 import numpy as np
 
 from aspire.image import Image
@@ -13,6 +15,114 @@ from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source import MicrographSimulation
 from aspire.volume import AsymmetricVolume
+
+# %%
+# Micrograph Sources
+# ------------------
+# ``MicrographSource`` is an abstract class which provides access two three distinct subclasses.
+# The first two are ``ArrayMicrographSource`` and ``DiskMicrographSource`` which provide access to array and disk backed micrograph data respectively.  ``MicrographSimulation`` takes a volume and generates projection images which are aggregated into synthetic microgaphs.  The follow illustrates and overview of the interface, and the tutorial will go on to demonstrate common operations for each class.
+
+# %%
+#
+#  .. mermaid::
+#
+#    classDiagram
+#        class MicrographSource{
+#            micrograph_count: int
+#            micrograph_size: int
+#            dtype: np.dtype
+#            +asnumpy()
+#            +dtype
+#            +len()
+#            +repr()
+#            +images[]
+#            +micrograph_count
+#            +micrograph_size
+#            +save()
+#            +show()
+#         }
+#
+#        class ArrayMicrographSource{
+#            micrographs: np.ndarray
+#         }
+#
+#        class DiskMicrographSource{
+#            micrographs_path: str, Path, or list
+#         }
+#
+#        class MicrographSimulation{
+#            volume: Volume
+#            micrograph_size: Optional, int
+#            micrograph_count: Optional, int
+#            particles_per_micrograph: Optional, int
+#            particle_amplitudes: Optional, np.ndarray
+#            projection_angles: Optional, np.ndarray
+#            seed: Optional, int
+#            ctf_filters: Optional, list
+#            noise_adder: Optional, NoiseAdder
+#            boundary: Optional, int
+#            interparticle_distance: Optional, int
+#            +boundary
+#            +centers
+#            +ctf_filters
+#            +clean_images[]
+#            +filter_indices
+#            +get_micrograph_index()
+#            +get_particle_index()
+#            +interparticle_distance
+#            +noise_adder
+#            +simulation
+#            +particle_amplitudes
+#            +particle_box_size
+#            +particle_per_micrograph
+#            +projection_angles
+#            +total_particle_count
+#            +volume
+#         }
+#
+#         MicrographSource <|-- ArrayMicrographSource
+#         MicrographSource <|-- DiskMicrographSource
+#         MicrographSource <|-- MicrographSimulation
+#         MicrographSimulation o-- Volume
+#         MicrographSimulation *-- CTFFilter
+#         MicrographSimulation *-- NoiseAdder
+
+# %%
+# Creating an ArrayMicrographSource
+# ---------------------------------
+# An ``ArrayMicrographSource`` is populated with an array.  For this
+# demonstration, we'll simply use random data to initialize, then the
+# data will be saved off to be used in the next example.
+
+from aspire.source import ArrayMicrographSource
+
+# Create a (2,1024,1024) array
+# This represents two (1024,1024) micrographs.
+mgs_np = np.random.rand(2, 1024, 1024)
+
+src = ArrayMicrographSource(mgs_np)
+
+# Create a tmp dir for saving the data to.
+# This just for ensuring the tutorial script is portable,
+tmp_dir = tempfile.TemporaryDirectory()
+
+# Save the data as multiple MRC files
+# This method returns a file_list,
+# which might be useful for loading or other operations.
+file_list = src.save(tmp_dir.name)
+
+# Creating a DiskMicrographSource
+# -------------------------------
+# A ``DiskMicrographSource`` is populated with str or list
+# representing the location of MRC files.
+
+from aspire.source import DiskMicrographSource
+
+# Load files in directory
+src = DiskMicrographSource(tmp_dir.name)
+
+# Load files in directory
+src = DiskMicrographSource(file_list)
 
 # %%
 # Creating a Micrograph Simulation
@@ -226,3 +336,25 @@ for i in range(n_particles):
     assert micrograph_index == 1
 np.testing.assert_array_equal(local_particle_indices, check_local_indices)
 print(f"Local particle indices: {check_local_indices}")
+
+# %%
+# Simulation Saving
+# -----------------
+# In addition to saving the raw MRC files, ``MicrographSimulation`` populates a STAR file with the particle centers, particle box size (``rlnImageSize``), and projection rotations.  Additionally, CTF parameters are saved when used in the simulation.  Each micrograph will have a corresponidng STAR file.  The collection of these files are returned from ``MicrographSimulation.save`` as a list of tuples which is designed to work directly with ``CentersCoordinateSource``.
+
+from aspire.source import CentersCoordinateSource
+
+# Save the simulation
+results = src.save(os.path.join(tmp_dir.name, 'mg_sim'))
+# Review the resulting files
+print(results)
+# Review the example STAR file contents
+with open(results[0][1],'r') as f:
+    print(f.read())
+
+img_src = CentersCoordinateSource(results, src.particle_box_size)
+# Show the first five images from the image source.
+img_src.images[:5].show()
+
+# Cleanup the tmp_dir
+tmp_dir.cleanup()
