@@ -108,6 +108,8 @@ class CommonlineSDP(CLOrient3D):
         We build a corresponding constraint for CVXPY in the form of tr(A_j @ G) = b_j, j = 1,...,p.
         For the constraint G11_ii = G22_ii = 1, we have A_j[i, i] = 1 (zeros elsewhere) and b_j = 1.
         For the constraint G12_ii = G21_ii = 0, we have A_j[i, i] = 1 (zeros elsewhere) and b_j = 0.
+
+        :returns: Constraint data A, b.
         """
         logger.info("Preparing SDP optimization constraints.")
 
@@ -133,7 +135,23 @@ class CommonlineSDP(CLOrient3D):
 
     def _compute_Gram_matrix(self, S, A, b):
         """
-        Compute the Gram matrix by solving a SDP.
+        Compute the Gram matrix by solving an SDP optimization.
+
+        The Gram matrix will be of the form G = R.T @ R, where R = [R1 R2] or the concatenation
+        of the first columns of every rotation, R1, and the second columns of every rotation, R2.
+        From this Gram matrix, the rotations can be recovered using the deterministic rounding
+        procedure below.
+
+        Here we optimize over G, max tr(SG), written as min tr(-SG), subject to the constraints
+        described in `_spd_prep()`. It should be noted that tr(SG) = sum(dot(R_i @ c_ij, R_j @ c_ji)),
+        and that maximizing this objective function is equivalently to minimizing the L2 norm
+        of R_i @ c_ij -  R_j @ c_ji, ie. finding the best approximation for the rotations R_i.
+
+        :param S: The common-line quadratic form matrix of shape 2 * n_img x 2 * n_img.
+        :param A: 3 * n_img sparse arrays of constraint data.
+        :param b: 3 * n_img scalars such that tr(A_i G) = b_i.
+
+        :return: Gram matrix.
         """
         logger.info("Solving SDP to approximate Gram matrix.")
 
@@ -154,6 +172,10 @@ class CommonlineSDP(CLOrient3D):
     def _deterministic_rounding(self, Gram):
         """
         Deterministic rounding procedure to recover the rotations from the Gram matrix.
+
+        The Gram matrix contains information about the first two columns of every rotation
+        matrix. These columns are extracted and used to form the remaining column of every
+        rotation matrix.
 
         :param Gram: A 2n_img x 2n_img Gram matrix.
 
@@ -202,7 +224,7 @@ class CommonlineSDP(CLOrient3D):
     def _ATA_solver(v1, v2):
         """
         Uses a least squares method to solve for the linear transformation A
-        such that A*v1'=R1 and A*v2=R2 are the columns of the rotations matrices.
+        such that A*v1=R1 and A*v2=R2 are the columns of the rotations matrices.
 
         :param v1: 3 x n_img array corresponding to linear combinations of the first
             columns of all rotation matrices.
