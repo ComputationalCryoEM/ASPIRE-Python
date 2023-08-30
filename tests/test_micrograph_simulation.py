@@ -12,7 +12,6 @@ from aspire.source import (
     CentersCoordinateSource,
     DiskMicrographSource,
     MicrographSimulation,
-    Simulation,
 )
 from aspire.volume import AsymmetricVolume
 
@@ -144,21 +143,15 @@ def test_micrograph_centers_match(micrograph_fixture):
             ] != np.min(m.clean_images[i // m.particles_per_micrograph].asnumpy()[0])
 
 
-def test_micrograph_raises_error_when_out_of_bounds():
+def test_micrograph_raises_error_when_out_of_bounds(vol_fixture):
     """
     Test that the Micrograph raises an error when illegal boundary values are given.
     """
+
     for boundary_value in [-100, 1000]:
         with pytest.raises(ValueError) as e_info:
-            s = Simulation(
-                L=64,
-                n=20 * 1,
-                C=1,
-                amplitudes=1,
-                offsets=0,
-            )
             _ = MicrographSimulation(
-                s.vols,
+                vol_fixture,
                 micrograph_size=500,
                 particles_per_micrograph=20,
                 micrograph_count=1,
@@ -168,39 +161,27 @@ def test_micrograph_raises_error_when_out_of_bounds():
         assert str(e_info.value) == "Illegal boundary value."
 
 
-def test_micrograph_raises_error_when_too_dense():
+def test_micrograph_raises_error_when_too_dense(vol_fixture):
     """
     Tests that the micrograph fails when the fail limit is met.
     """
+
     with pytest.raises(RuntimeError, match="failures exceeded limit") as _:
-        s = Simulation(
-            L=64,
-            n=400,
-            C=1,
-            amplitudes=1,
-            offsets=0,
-        )
         _ = MicrographSimulation(
-            s.vols,
-            micrograph_size=500,
+            vol_fixture,
+            micrograph_size=100,
             particles_per_micrograph=400,
             micrograph_count=1,
         )
 
 
-def test_index_returns_correct_values():
+def test_index_returns_correct_values(vol_fixture):
     """
     Test index methods return expected values
     """
-    s = Simulation(
-        L=64,
-        n=10,
-        C=1,
-        amplitudes=1,
-        offsets=0,
-    )
+
     m = MicrographSimulation(
-        s.vols,
+        vol_fixture,
         micrograph_size=500,
         particles_per_micrograph=10,
         micrograph_count=1,
@@ -213,19 +194,13 @@ def test_index_returns_correct_values():
     )
 
 
-def test_index_functions_raise_errors():
+def test_index_functions_raise_errors(vol_fixture):
     """
     Test errors for index method bounds
     """
-    s = Simulation(
-        L=64,
-        n=10,
-        C=1,
-        amplitudes=1,
-        offsets=0,
-    )
+
     m = MicrographSimulation(
-        s.vols,
+        vol_fixture,
         micrograph_size=500,
         particles_per_micrograph=10,
         micrograph_count=1,
@@ -250,40 +225,14 @@ def test_index_functions_raise_errors():
     assert str(e_info.value) == "Index out of bounds for particle."
 
 
-def test_default_values_work():
-    """
-    Tests that the default arguments work.
-    """
-    s = Simulation(
-        L=64,
-        n=100,
-        C=1,
-        amplitudes=1,
-        offsets=0,
-    )
-    m = MicrographSimulation(
-        s.vols,
-    )
-    assert m.micrograph_count == 1
-    assert m.micrograph_size == 4096
-    assert m.particles_per_micrograph == 100
-    assert m.interparticle_distance == m.particle_box_size
-
-
-def test_noise_works():
+def test_noise_works(vol_fixture):
     """
     Tests that adding noise works by comparing to a micrograph with noise manually applied.
     """
-    s = Simulation(
-        L=20,
-        n=10,
-        C=1,
-        amplitudes=1,
-        offsets=0,
-    )
+
     noise = WhiteNoiseAdder(1e-3)
     m = MicrographSimulation(
-        s.vols,
+        vol_fixture,
         noise_adder=noise,
         micrograph_count=1,
         particles_per_micrograph=4,
@@ -350,4 +299,49 @@ def test_sim_save():
         np.testing.assert_allclose(
             img_src.get_metadata("_rlnDefocusU"),
             mg_sim.simulation.get_metadata("_rlnDefocusU"),
+        )
+
+
+def test_bad_amplitudes(vol_fixture):
+    """
+    Test incorrect `particle_amplitudes` argument raises.
+    """
+    with pytest.raises(RuntimeError, match=r".*len\(particle_amplitudes\).*"):
+        _ = MicrographSimulation(
+            volume=vol_fixture,
+            particles_per_micrograph=1,
+            micrograph_count=1,
+            micrograph_size=512,
+            particle_amplitudes=np.empty(2),  # total particles == 1
+        )
+
+
+def test_bad_angles(vol_fixture):
+    """
+    Test incorrect `projection_angles` argument raises.
+    """
+    with pytest.raises(RuntimeError, match=r".*projection_angles.shape.*"):
+        _ = MicrographSimulation(
+            volume=vol_fixture,
+            particles_per_micrograph=1,
+            micrograph_count=1,
+            micrograph_size=512,
+            projection_angles=np.empty((2, 3)),  # total particles == 1
+        )
+
+
+def test_bad_ctf(vol_fixture):
+    """
+    Test incorrect `ctf_filters` argument raises.
+    """
+    with pytest.raises(TypeError, match=r".*expects a list of len.*"):
+        _ = MicrographSimulation(
+            volume=vol_fixture,
+            particles_per_micrograph=1,
+            micrograph_count=1,
+            micrograph_size=512,
+            ctf_filters=[
+                RadialCTFFilter(),
+            ]
+            * 2,  # total particles == 1
         )

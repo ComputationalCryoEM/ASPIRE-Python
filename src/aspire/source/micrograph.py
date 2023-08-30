@@ -291,18 +291,18 @@ class MicrographSimulation(MicrographSource):
         :param micrograph_count: Number of micrographs to generate (integer). Defaults to 1.
         :param particles_per_micrograph: The amount of particles generated for each micrograph. Defaults to 10.
         :param particle_amplitudes: Optional, amplitudes to pass to `Simulation`.
-             Default None uses `Simulation` defaults.
+             Default `None` uses `Simulation` defaults.
              When provided must be array with size `particles_per_micrograph * particles_per_micrograph`.
         :param projection_angles: Optional, projection rotation angles to pass to `Simulation`.
-             Default None uses `Simulation` defaults.
+             Default `None` uses `Simulation` defaults.
              When provided must have shape `(particles_per_micrograph * particles_per_micrograph, 3)`.
 
         :param seed: Random seed.
         :param noise_adder: Append instance of NoiseAdder to generation pipeline.
-        :param ctf_filters: Optional list of CTF filters to apply to particles.
+        :param ctf_filters: Optional list of `Filter` objects to apply to particles.
             This list should be 1, n_micrographs, or particles_per_micrograph * particles_per_micrograph.
-            These will apply CTF to all particles, per-micrograph, or per-particle respectively.
-            Default `None` will not apply any CTF.
+            These will apply filters to all particles, per-micrograph, or per-particle respectively.
+            Default `None` will not apply any additional filters.
         :param boundary: Set boundaries for particle centers, positive values move the boundary inward from the edge of the micrograph. Defaults to half of the particle size (particle_box_size // 2).
         :param interparticle_distance: Set minimum distance between particle centers, in pixels. Defaults to particle_box_size.
         :return: A MicrographSimulation object.
