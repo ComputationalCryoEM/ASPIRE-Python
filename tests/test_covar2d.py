@@ -26,7 +26,7 @@ BASIS = [
 # Hard coded to match legacy files.
 NOISE_VAR = 1.3957e-4
 
-# These variables support parameterized arg checking in `test_shrinkage`
+# Cover `test_shrinkage`
 SHRINKERS = [None, "frobenius_norm", "operator_norm", "soft_threshold"]
 
 CTF_ENABLED = [True, False]
