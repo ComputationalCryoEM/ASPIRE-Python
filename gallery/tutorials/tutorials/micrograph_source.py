@@ -22,8 +22,8 @@ from aspire.source import ArrayMicrographSource
 # ``ArrayMicrographSource`` and ``DiskMicrographSource`` which provide
 # access to array and disk backed micrograph data respectively.
 # ``MicrographSimulation`` takes a volume and generates projection
-# images which are aggregated into synthetic microgaphs.  The follow
-# illustrates and overview of the interface, and the tutorial will go
+# images which are aggregated into synthetic microgaphs.  The following
+# illustrates an overview of the interfaces, and the tutorial will go
 # on to demonstrate common operations for each class.
 
 # %%
@@ -95,9 +95,9 @@ from aspire.source import ArrayMicrographSource
 # Creating an ArrayMicrographSource
 # ---------------------------------
 # An ``ArrayMicrographSource`` is populated with an array.  For this
-# demonstration, random data will be used to initialize the object,
-# then the data will be saved off to be used in the next example
-# (which loads from files.)
+# demonstration, random data will initialize the object,
+# then this data will be saved off for use in the next example
+# (which loads data from files).
 
 
 # Create an (2,512,512) array of data.
@@ -149,7 +149,7 @@ vol = AsymmetricVolume(
 
 # %%
 # We'll pass our ``Volume`` as an argument and configure our
-# ``MicrographSimulation``.  In this example, our
+# ``MicrographSimulation``.  In this example, the
 # ``MicrographSimulation`` has 4 micrographs of size 1024, each with 10
 # particles.
 
