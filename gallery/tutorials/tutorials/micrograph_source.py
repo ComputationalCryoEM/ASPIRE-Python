@@ -289,7 +289,7 @@ out_src.images[:].show()
 # Let's choose four random numbers as our global (``Simulation``)
 # particle indices from ``test_micrograph=1``.
 test_micrograph = 1
-n_particles = 4
+n_particles = 3
 local_particle_indices = np.random.choice(n_particles_per_micrograph, n_particles)
 print(f"Local particle indices: {local_particle_indices}")
 
@@ -388,7 +388,7 @@ with open(results[0][1], "r") as f:
 
 img_src = CentersCoordinateSource(results, src.particle_box_size)
 # Show the first five images from the image source.
-img_src.images[:5].show()
+img_src.images[:3].show()
 
 # Cleanup the tmp_dir
 tmp_dir.cleanup()
