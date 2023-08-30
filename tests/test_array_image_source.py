@@ -1,5 +1,7 @@
+import glob
 import logging
 import os.path
+import tempfile
 from unittest import TestCase
 
 import numpy as np
@@ -9,7 +11,7 @@ from aspire.basis import FBBasis3D
 from aspire.image import Image
 from aspire.operators import IdentityFilter
 from aspire.reconstruction import MeanEstimator
-from aspire.source import ArrayImageSource, Simulation
+from aspire.source import ArrayImageSource, RelionSource, Simulation
 from aspire.utils import Rotation, utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -199,3 +201,44 @@ class ImageTestCase(TestCase):
         wrong_dim = np.random.randn(self.n, 3, 3)
         with raises(ValueError, match=msg):
             _ = ArrayImageSource(self.im, angles=wrong_dim)
+
+    def test_save_mrc(self):
+        """
+        Test saving single batch mode (.mrc).
+        """
+
+        src = ArrayImageSource(self.im)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            star_path = os.path.join(tmp_dir, "test.star")
+            src.save(star_path, batch_size=1)
+
+            # Test the filenames are as expected
+            self.assertTrue(len(glob.glob(os.path.join(tmp_dir, "*.mrc"))) == self.n)
+            self.assertTrue(len(glob.glob(os.path.join(tmp_dir, "*.mrcs"))) == 0)
+
+            # Test the content matched when loaded
+            src2 = RelionSource(star_path)
+            np.testing.assert_allclose(src.images[:], src2.images[:])
+
+    def test_save_mrcs(self):
+        """
+        Test saving stack batch mode (.mrcs).
+        """
+        src = ArrayImageSource(self.im)
+        batch_size = 256
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            star_path = os.path.join(tmp_dir, "test.star")
+            src.save(star_path, batch_size=256)
+
+            # Test the filenames are as expected
+            self.assertTrue(len(glob.glob(os.path.join(tmp_dir, "*.mrc"))) == 0)
+            self.assertTrue(
+                len(glob.glob(os.path.join(tmp_dir, "*.mrcs")))
+                == (self.n + batch_size - 1) // batch_size
+            )
+
+            # Test the content matched when loaded
+            src2 = RelionSource(star_path)
+            np.testing.assert_allclose(src.images[:], src2.images[:])
