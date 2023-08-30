@@ -17,7 +17,7 @@ from aspire.source import ArrayMicrographSource
 # %%
 # Overview
 # --------
-# ``MicrographSource`` is an abstract class which provides access two
+# ``MicrographSource`` is an abstract class which provides access to
 # three distinct subclasses.  The first two are
 # ``ArrayMicrographSource`` and ``DiskMicrographSource`` which provide
 # access to array and disk backed micrograph data respectively.
@@ -154,7 +154,7 @@ vol = AsymmetricVolume(
 # particles.
 
 n_particles_per_micrograph = 10
-n_micrographs = 4
+n_micrographs = 3
 
 src = MicrographSimulation(
     vol,
@@ -213,7 +213,7 @@ src = MicrographSimulation(
     noise_adder=noise,
     particles_per_micrograph=n_particles_per_micrograph,
     micrograph_size=1024,
-    micrograph_count=4,
+    micrograph_count=n_micrographs,
     ctf_filters=ctfs,
     seed=1234,
 )
