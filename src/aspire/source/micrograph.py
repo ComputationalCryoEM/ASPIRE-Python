@@ -285,6 +285,7 @@ class MicrographSimulation(MicrographSource):
         A cryo-EM MicrographSimulation object that supplies micrographs.
 
         `dtype` and `particle_box_size` are inferred from `volume`, where `dtype` is the data type of the micrographs and `particle_box_size` is the size of the particle images.
+
         :param volume: `Volume` instance to be used in `Simulation`.
              An `(L,L,L)` `Volume` will generate `(L,L)` particle images.
         :param micrograph_size: Size of micrograph in pixels, defaults to 4096.
