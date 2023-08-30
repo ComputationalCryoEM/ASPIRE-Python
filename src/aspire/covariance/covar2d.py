@@ -111,10 +111,7 @@ class RotCov2D:
         :return: Identity BlkDiagMatrix or DiagMatrix
         """
         if self.basis.matrix_type == DiagMatrix:
-            # TODO: compute this without computing filter/ctf
-            return DiagMatrix.ones(
-                len(self.basis.filter_to_basis_mat(RadialCTFFilter())), dtype=self.dtype
-            )
+            return DiagMatrix.eye(self.basis.count, dtype=self.dtype)
         else:
             return BlkDiagMatrix.eye(self.basis.blk_diag_cov_shape, dtype=self.dtype)
 
@@ -140,8 +137,8 @@ class RotCov2D:
         Calculate the mean vector from the expansion coefficients with CTF information.
 
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be averaged.
-        :param ctf_basis: The CFT functions in the BASIS expansion.
-        :param ctf_idx: An array of the CFT function indices for all 2D images.
+        :param ctf_basis: The CTF functions in the Basis expansion.
+        :param ctf_idx: An array of the CTF function indices for all 2D images.
             If ctf_basis or ctf_idx is None, the identity filter will be applied.
         :return: The mean value vector for all images.
         """
@@ -186,8 +183,8 @@ class RotCov2D:
         Calculate the covariance matrix from the expansion coefficients and CTF information.
 
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
-        :param ctf_basis: The CFT functions in the BASIS expansion.
-        :param ctf_idx: An array of the CFT function indices for all 2D images.
+        :param ctf_basis: The CTF functions in the Basis expansion.
+        :param ctf_idx: An array of the CTF function indices for all 2D images.
             If ctf_basis or ctf_idx is None, the identity filter will be applied.
         :param mean_coeff: The mean value vector from all images.
         :param noise_var: The estimated variance of noise. The value should be zero for `coeffs`
@@ -415,8 +412,8 @@ class RotCov2D:
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
 
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
-        :param ctf_basis: The CFT functions in the BASIS expansion.
-        :param ctf_idx: An array of the CFT function indices for all 2D images.
+        :param ctf_basis: The CTF functions in the Basis expansion.
+        :param ctf_idx: An array of the CTF function indices for all 2D images.
             If ctf_basis or ctf_idx is None, the identity filter will be applied.
         :param mean_coeff: The mean value vector from all images.
         :param covar_coeff: The block diagonal covariance matrix of the clean coefficients represented by a cell array.
@@ -807,8 +804,8 @@ class BatchedRotCov2D(RotCov2D):
         Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.
 
         :param coeffs: A coefficient vector (or an array of coefficient vectors) to be calculated.
-        :param ctf_basis: The CFT functions in the BASIS expansion.
-        :param ctf_idx: An array of the CFT function indices for all 2D images.
+        :param ctf_basis: The CTF functions in the Basis expansion.
+        :param ctf_idx: An array of the CTF function indices for all 2D images.
             If ctf_basis or ctf_idx is None, the identity filter will be applied.
         :param mean_coeff: The mean value vector from all images.
         :param covar_coeff: The block diagonal covariance matrix of the clean coefficients represented by a cell array.
