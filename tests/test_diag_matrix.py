@@ -139,7 +139,6 @@ def test_dtype_mismatch():
         _ = d1 + d2
 
 
-# Explicit Tests (non parameterized).
 def test_dtype_passthrough():
     """
     Test that the datatype is inferred correctly.
