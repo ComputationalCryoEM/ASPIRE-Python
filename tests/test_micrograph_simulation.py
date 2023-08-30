@@ -121,7 +121,7 @@ def test_micrograph_raises_error_image_size(vol_fixture):
         )
     assert (
         str(e_info.value)
-        == "The micrograph size must be larger or equal to the simulation's image size."
+        == "The micrograph size must be larger or equal to the `particle_box_size`."
     )
 
 
@@ -306,7 +306,7 @@ def test_bad_amplitudes(vol_fixture):
     """
     Test incorrect `particle_amplitudes` argument raises.
     """
-    with pytest.raises(RuntimeError, match=r".*len\(particle_amplitudes\).*"):
+    with pytest.raises(RuntimeError, match=r".*particle_amplitudes.*"):
         _ = MicrographSimulation(
             volume=vol_fixture,
             particles_per_micrograph=1,
