@@ -293,15 +293,15 @@ class MicrographSimulation(MicrographSource):
         :param particles_per_micrograph: The amount of particles generated for each micrograph. Defaults to 10.
         :param particle_amplitudes: Optional, amplitudes to pass to `Simulation`.
              Default `None` uses `Simulation` defaults.
-             When provided must be array with size `particles_per_micrograph * particles_per_micrograph`.
+             When provided must be array with size `particles_per_micrograph * micrograph_count`.
         :param projection_angles: Optional, projection rotation angles to pass to `Simulation`.
              Default `None` uses `Simulation` defaults.
-             When provided must have shape `(particles_per_micrograph * particles_per_micrograph, 3)`.
+             When provided must have shape `(particles_per_micrograph * micrograph_count, 3)`.
 
         :param seed: Random seed.
         :param noise_adder: Append instance of NoiseAdder to generation pipeline.
         :param ctf_filters: Optional list of `Filter` objects to apply to particles.
-            This list should be 1, n_micrographs, or particles_per_micrograph * particles_per_micrograph.
+            This list should be 1, n_micrographs, or particles_per_micrograph * micrograph_count.
             These will apply filters to all particles, per-micrograph, or per-particle respectively.
             Default `None` will not apply any additional filters.
         :param boundary: Set boundaries for particle centers, positive values move the boundary inward from the edge of the micrograph. Defaults to half of the particle size (particle_box_size // 2).
@@ -331,7 +331,7 @@ class MicrographSimulation(MicrographSource):
 
         if self.particle_box_size > micrograph_size:
             raise ValueError(
-                "The micrograph size must be larger or equal to the simulation's image size."
+                "The micrograph size must be larger or equal to the `particle_box_size`."
             )
 
         if particle_amplitudes is not None:
@@ -340,7 +340,7 @@ class MicrographSimulation(MicrographSource):
                 and len(particle_amplitudes) != self.total_particle_count
             ):
                 raise RuntimeError(
-                    f"`len(particle_amplitudes)` must be an `int` or length {self.total_particle_count}."
+                    f"`particle_amplitudes` must be an `int` or length {self.total_particle_count}."
                 )
         self.particle_amplitudes = particle_amplitudes
 
