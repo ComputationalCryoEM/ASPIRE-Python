@@ -284,17 +284,14 @@ class SteerableBasis2D(Basis):
         return self.evaluate_t(self.evaluate(coef).shift(shifts))
 
     @abc.abstractmethod
-    def filter_to_basis_mat(self, f, matrix_type=None):
+    def filter_to_basis_mat(self, f):
         """
         Convert a filter into a basis representation.
 
         :param f: `Filter` object, usually a `CTFFilter`.
-        :param matrix_type: Optional override, Example, `BlkDiagMatrix` or
-            `DiagMatrix`. Default `None` returns the default for
-            this basis.
 
-        :return: `BlkDiagMatrix` or `DiagMatrix` instance
-            representation of filter in `basis`.
+        :return: Representation of filter in `basis`.
+            Return type will be based on the class's `matrix_type`.
         """
 
     @property

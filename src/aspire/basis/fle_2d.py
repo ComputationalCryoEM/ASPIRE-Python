@@ -717,7 +717,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return a.flatten()
 
-    def filter_to_basis_mat(self, f, matrix_type=None):
+    def filter_to_basis_mat(self, f):
         """
         See SteerableBasis2D.filter_to_basis_mat.
         """
