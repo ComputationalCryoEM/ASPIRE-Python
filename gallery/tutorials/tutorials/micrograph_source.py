@@ -127,7 +127,7 @@ from aspire.source import DiskMicrographSource
 # Load files in directory
 src = DiskMicrographSource(tmp_dir.name)
 
-# Load files in directory
+# Load files from a list
 src = DiskMicrographSource(file_list)
 
 # %%
