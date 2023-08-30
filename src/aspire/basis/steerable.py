@@ -30,7 +30,7 @@ class SteerableBasis2D(Basis):
         self._pos_angular_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
         self._neg_angular_inds = self.signs_indices == -1
 
-        # Cache the blk_diag shape once known.
+        # Attribute for caching the blk_diag shape once known.
         self._blk_diag_cov_shape = None
 
     def calculate_bispectrum(
@@ -299,6 +299,13 @@ class SteerableBasis2D(Basis):
 
     @property
     def blk_diag_cov_shape(self):
+        """
+        Return the `BlkDiagMatrix` partition shapes.
+
+        If the shape has already been cached,
+        returns cached value.  Otherwise, will
+        compute the shape and cache in this instance.
+        """
         # Compute the _blk_diag_cov_shape as needed.
         if self._blk_diag_cov_shape is None:
             blks = []
@@ -313,4 +320,5 @@ class SteerableBasis2D(Basis):
                     )
             self._blk_diag_cov_shape = np.array(blks)
 
+        # Return the cached shape
         return self._blk_diag_cov_shape
