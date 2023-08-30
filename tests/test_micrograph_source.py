@@ -77,6 +77,16 @@ def test_array_backed_micrograph(image_data_fixture):
     np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture)
 
 
+def test_2d_array_backed_micrograph(image_data_fixture):
+    """
+    Test construction of MicrographSource initialized with a Numpy array.
+    """
+
+    mg_src = ArrayMicrographSource(image_data_fixture[0])
+
+    np.testing.assert_allclose(mg_src.asnumpy(), image_data_fixture[0:1])
+
+
 def test_array_backed_micrograph_explicit_dtype(image_data_fixture):
     """
     Test construction of MicrographSource initialized with a Numpy array,

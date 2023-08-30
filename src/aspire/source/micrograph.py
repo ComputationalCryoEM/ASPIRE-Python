@@ -104,7 +104,6 @@ class MicrographSource(ABC):
         :param indices: A 1-D Numpy array of integer indices.
         :return: An `ArrayMicrographSource` object representing the micrographs for `indices`.
         """
-        return ArrayMicrographSource(self._data[indices])
 
 
 class ArrayMicrographSource(MicrographSource):
