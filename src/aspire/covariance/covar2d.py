@@ -131,7 +131,6 @@ class RotCov2D:
 
         mask = self.basis._indices["ells"] == 0
         mean_coeff = np.zeros(self.basis.count, dtype=coeffs.dtype)
-        # Use array for manually masking, since Coef.__getitem__ tries to return a Coef.
         mean_coeff[mask] = np.mean(coeffs[..., mask], axis=0)
 
         return mean_coeff
@@ -654,22 +653,7 @@ class BatchedRotCov2D(RotCov2D):
         return method(A_covar, b_covar, M, covar_est_opt)
 
     def _solve_covar_direct(self, A_covar, b_covar, M, covar_est_opt):
-        # A_covar is a list of Diags, ctf in basis
-        # b_covar is a blk diag
-        # M is a blk diag
-
-        #  # A_covar is (CTF.T * CTF)  (weighted a**2 from chalkboard)
-        #  most similar to wr_k2 from Yunpeng's code
-
-        # maybe need to unweight A
-        A_covar = DiagMatrix(np.concatenate([x.asnumpy() for x in A_covar]))
-        A2i = A_covar * A_covar
-
-        L = A2i.lr_scale(b_covar.partition)
-
-        return b_covar / L
-
-        # M is sum of weighted A squared, only for cg, ignore
+        raise NotImplementedError("To be implemented in future changeset.")
 
     def _solve_covar_cg(self, A_covar, b_covar, M, covar_est_opt):
         def precond_fun(S, x):
