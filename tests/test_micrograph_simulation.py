@@ -258,7 +258,8 @@ def test_sim_save():
 
     mg_sim = MicrographSimulation(
         volume=v,
-        particles_per_micrograph=10,
+        particles_per_micrograph=3,
+        interparticle_distance=v.resolution,
         micrograph_count=2,
         micrograph_size=512,
         ctf_filters=ctfs,
