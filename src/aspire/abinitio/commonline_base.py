@@ -24,7 +24,7 @@ class CLOrient3D:
         n_check=None,
         max_shift=0.15,
         shift_step=1,
-        mask=True,
+        mask=False,
     ):
         """
         Initialize an object for estimating 3D orientations using common lines
@@ -42,7 +42,7 @@ class CLOrient3D:
         :param shift_step: Resolution of shift estimation in pixels.
             Default is 1 pixel.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
-            Default, `True`, applies the mask.
+            Default, `False`, does not apply a mask.
         """
         self.src = src
         # Note dtype is inferred from self.src

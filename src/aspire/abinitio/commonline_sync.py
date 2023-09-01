@@ -23,7 +23,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
     """
 
     def __init__(
-        self, src, n_rad=None, n_theta=360, max_shift=0.15, shift_step=1, mask=True
+        self, src, n_rad=None, n_theta=360, max_shift=0.15, shift_step=1, mask=False
     ):
         """
         Initialize an object for estimating 3D orientations using synchronization matrix
@@ -36,7 +36,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
             of the resolution. Default is 0.15.
         :param shift_step: Resolution for shift estimation in pixels. Default is 1 pixel.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
-            Default, `True`, applies the mask.
+            Default, `False`, does not apply a mask.
         """
         super().__init__(
             src,

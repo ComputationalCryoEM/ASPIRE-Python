@@ -43,7 +43,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         degree_res=1,
         min_dist_cls=25,
         seed=None,
-        mask=True,
+        mask=False,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with C2 symmetry.
@@ -59,7 +59,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         :param min_dist_cls: Minimum distance between mutual common-lines. Default = 25 degrees.
         :param seed: Optional seed for RNG.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
-            Default, `True`, applies the mask.
+            Default, `False`, does not apply a mask.
         """
         super().__init__(
             src,

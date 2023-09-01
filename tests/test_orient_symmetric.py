@@ -95,7 +95,7 @@ def source_orientation_objs(n_img, L, order, dtype):
     else:
         cl_class = CLSymmetryCn
         cl_kwargs["symmetry"] = f"C{order}"
-    orient_est = cl_class(**cl_kwargs, mask=False)
+    orient_est = cl_class(**cl_kwargs)
 
     return src, orient_est
 
