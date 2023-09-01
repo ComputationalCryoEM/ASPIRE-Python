@@ -40,6 +40,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         n_points_sphere=500,
         equator_threshold=10,
         seed=None,
+        mask=True,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with Cn symmetry, n>4.
@@ -57,6 +58,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
         :param equator_threshold: Threshold for removing candidate rotations within `equator_threshold`
             degrees of being an equator image. Default is 10 degrees.
         :param seed: Optional seed for RNG.
+        :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
+            Default, `True`, applies the mask.
         """
 
         super().__init__(
@@ -70,6 +73,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
             max_iters=max_iters,
             degree_res=degree_res,
             seed=seed,
+            mask=mask,
         )
 
         self.n_points_sphere = n_points_sphere

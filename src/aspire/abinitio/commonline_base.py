@@ -55,6 +55,7 @@ class CLOrient3D:
         self.clmatrix = None
         self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
+        self.mask = mask
         self.rotations = None
 
         self._build()
@@ -77,7 +78,7 @@ class CLOrient3D:
             raise NotImplementedError(msg)
 
         imgs = self.src.images[:]
-        if mask:
+        if self.mask:
             # Apply fuzzy mask to images using Matlab default values for risetime and rad.
             risetime = np.floor(0.05 * self.n_res)
             rad = np.floor(0.45 * self.n_res)
@@ -85,6 +86,7 @@ class CLOrient3D:
             imgs = imgs * fuzz_mask
 
         # Obtain coefficients of polar Fourier transform for input 2D images
+        breakpoint()
         self.pft = PolarFT(
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
