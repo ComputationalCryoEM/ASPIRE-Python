@@ -68,7 +68,9 @@ def source_orientation_objs(resolution, offsets, dtype):
     if src.offsets.all() != 0:
         max_shift = 0.20
         shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
-    orient_est = CLSyncVoting(src, max_shift=max_shift, shift_step=shift_step)
+    orient_est = CLSyncVoting(
+        src, max_shift=max_shift, shift_step=shift_step, mask=False
+    )
 
     return src, orient_est
 

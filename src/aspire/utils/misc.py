@@ -274,7 +274,7 @@ def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
     return (peak / vals).astype(dtype)
 
 
-def fuzzy_mask(L, r0, risetime, origin=None):
+def fuzzy_mask(L, r0, risetime, dtype, origin=None):
     """
     Create a centered 1D to 3D fuzzy mask of radius r0
 
@@ -283,6 +283,7 @@ def fuzzy_mask(L, r0, risetime, origin=None):
     :param L: The sizes of image in tuple structure
     :param r0: The specified radius
     :param risetime: The rise time for `erf` function
+    :param dtype: dtype for fuzzy mask
     :param origin: The coordinates of origin
     :return: The desired fuzzy mask
     """
@@ -291,7 +292,9 @@ def fuzzy_mask(L, r0, risetime, origin=None):
     if origin is None:
         origin = center
 
-    grids = [np.arange(1 - org, ell - org + 1) for ell, org in zip(L, origin)]
+    grids = [
+        np.arange(1 - org, ell - org + 1, dtype=dtype) for ell, org in zip(L, origin)
+    ]
     XYZ = np.meshgrid(*grids, indexing="ij")
     XYZ_sq = [X**2 for X in XYZ]
     R = np.sqrt(np.sum(XYZ_sq, axis=0))
