@@ -102,7 +102,7 @@ class MicrographSource(ABC):
         Accesses and returns micrographs.
 
         :param indices: A 1-D Numpy array of integer indices.
-        :return: An `ArrayMicrographSource` object representing the micrographs for `indices`.
+        :return: An `Image` object representing the micrographs for `indices`.
         """
 
 
@@ -152,7 +152,7 @@ class ArrayMicrographSource(MicrographSource):
         :param indices: A 1-D Numpy array of integer indices.
         :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
         """
-        return ArrayMicrographSource(self._data[indices])
+        return Image(self._data[indices])
 
 
 class DiskMicrographSource(MicrographSource):
@@ -243,7 +243,7 @@ class DiskMicrographSource(MicrographSource):
         Accesses and returns micrographs from disk.
 
         :param indices: A 1-D Numpy array of integer indices.
-        :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
+        :return: An `Image` object representing the micrographs for `indices`.
         """
         # Initialize empty result
         n_micrographs = len(indices)
@@ -263,7 +263,7 @@ class DiskMicrographSource(MicrographSource):
             # Assign to array, implicitly performs casting to dtype
             micrographs[i] = micrograph.asnumpy()
 
-        return ArrayMicrographSource(micrographs)
+        return Image(micrographs)
 
 
 class MicrographSimulation(MicrographSource):
