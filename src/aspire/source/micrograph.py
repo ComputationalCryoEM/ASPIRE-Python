@@ -317,7 +317,7 @@ class MicrographSimulation(MicrographSource):
         super().__init__(
             micrograph_count=micrograph_count,
             micrograph_size=micrograph_size,
-            dtype=simulation.dtype,
+            dtype=self.volume.dtype,
         )
 
         self.particle_box_size = volume.resolution  # L
