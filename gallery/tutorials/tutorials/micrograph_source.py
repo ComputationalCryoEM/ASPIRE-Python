@@ -222,7 +222,7 @@ src = MicrographSimulation(
 src.images[:].show()
 
 # %%
-# Plot the clean micrographs using the ``clean_micrographs`` accessor.
+# Plot the clean micrographs using the ``clean_images`` accessor.
 src.clean_images[:].show()
 
 # %%
