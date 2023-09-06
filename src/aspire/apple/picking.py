@@ -14,7 +14,6 @@ from scipy.ndimage import (
 from sklearn import preprocessing, svm
 
 from aspire.apple.helper import PickerHelper
-from aspire.image import Image
 from aspire.numeric import fft, xp
 from aspire.source import DiskMicrographSource
 from aspire.utils import tqdm
