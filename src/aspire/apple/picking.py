@@ -16,6 +16,7 @@ from sklearn import preprocessing, svm
 from aspire.apple.helper import PickerHelper
 from aspire.image import Image
 from aspire.numeric import fft, xp
+from aspire.source import DiskMicrographSource
 from aspire.utils import tqdm
 
 logger = logging.getLogger(__name__)
@@ -146,7 +147,11 @@ class Picker:
 
         # Load mircrograph data
         # TODO, "float" is from legacy APPLE.  dtype handling should be improved
-        self.original_im = Image.load(self.filename, "float").asnumpy()[0]
+        self.original_im = (
+            DiskMicrographSource(self.filename)
+            .asnumpy()[0]
+            .astype(np.float32, copy=False)
+        )
 
         # Discard outer pixels
         im = self.original_im[

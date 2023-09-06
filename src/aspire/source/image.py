@@ -997,10 +997,13 @@ class ImageSource(ABC):
         :param starfile_filepath: Path to STAR file where we want to
             save metadata of image_source
         :param batch_size: Batch size of images to query.
-        :param save_mode: Whether to save all images in a single or multiple files in batch size.
-        :param overwrite: Option to overwrite the output MRCS files.
+            Note, `batch_size=1` implies single MRC extension `.mrc`,
+            while `batch_size>=1` implies stack MRC extension `.mrcs`.
+        :param save_mode: Whether to save all images in a `single` or multiple files in batch size.
+            Default is multiple, supply `'single'` for single mode.
+        :param overwrite: Option to overwrite the output MRC files.
         :return: A dictionary containing "starfile"--the path to the saved starfile-- and "mrcs", a
-            list of the saved particle stack .mrcs filenames.
+            list of the saved particle stack MRC filenames.
         """
         logger.info("save metadata into STAR file")
         filename_indices = self.save_metadata(
@@ -1048,12 +1051,17 @@ class ImageSource(ABC):
             ]
         else:
             # save all images into multiple mrc files in batch size
+            # When batch_size is >1, use the plural extension.
+            ext = ".mrcs"
+            if batch_size == 1:
+                ext = ".mrc"
+
             for i_start in np.arange(0, n, batch_size):
                 i_end = min(n, i_start + batch_size)
                 num = i_end - i_start
                 mrcs_filename = (
                     os.path.splitext(os.path.basename(starfile_filepath))[0]
-                    + f"_{i_start}_{i_end-1}.mrcs"
+                    + f"_{i_start}_{i_end-1}{ext}"
                 )
                 meta_dict["_rlnImageName"][i_start:i_end] = [
                     "{0:06}@{1}".format(j + 1, mrcs_filename) for j in range(num)
