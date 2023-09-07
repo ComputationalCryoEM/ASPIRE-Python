@@ -39,7 +39,7 @@ def src_fixture(request):
 
     # Generate an origianl source and an oriented source.
     og_src = Simulation(L=L, n=n, vols=vol, offsets=0)
-    orient_est = estimator(og_src, max_shift=1 / L, **estimator_kwargs)
+    orient_est = estimator(og_src, max_shift=1 / L, mask=False, **estimator_kwargs)
     oriented_src = OrientedSource(og_src, orient_est)
 
     return og_src, oriented_src

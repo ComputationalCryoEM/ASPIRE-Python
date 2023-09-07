@@ -84,6 +84,7 @@ def source_orientation_objs(n_img, L, order, dtype):
         n_theta=360,
         max_shift=1 / L,
         seed=seed,
+        mask=False,
     )
 
     if order in [3, 4]:
