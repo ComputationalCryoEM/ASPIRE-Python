@@ -51,6 +51,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         max_iters=1000,
         degree_res=1,
         seed=None,
+        mask=False,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with C3 and C4 symmetry.
@@ -65,6 +66,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         :param max_iter: Maximum iterations for the power method.
         :param degree_res: Degree resolution for estimating in-plane rotations.
         :param seed: Optional seed for RNG.
+        :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
+            Default, `False`, does not apply a mask.
         """
 
         super().__init__(
@@ -73,6 +76,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             n_theta=n_theta,
             max_shift=max_shift,
             shift_step=shift_step,
+            mask=mask,
         )
 
         self._check_symmetry(symmetry)
