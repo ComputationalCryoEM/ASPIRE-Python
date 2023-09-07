@@ -101,9 +101,6 @@ class RotCov2D:
         self.dtype = self.basis.dtype
         assert basis.ndim == 2, "Only two-dimensional basis functions are needed."
 
-        # Abstract the basis matrix type (BlkDiagMatrix/DiagMatrix)
-        self.ctf_matrix_type = self.basis.matrix_type
-
     def _ctf_identity_mat(self):
         """
         Returns CTF identity corresponding to the `matrix_type` of `self.basis`.
@@ -131,6 +128,63 @@ class RotCov2D:
         mean_coeff[mask] = np.mean(coeffs[..., mask], axis=0)
 
         return mean_coeff
+
+    def _get_covar(self, coeffs, mean_coeff=None, do_refl=True):
+        """
+        Calculate the covariance matrix from the expansion coefficients without CTF information.
+
+        :param coeffs: A coefficient vector (or an array of coefficient vectors) calculated from 2D images.
+        :param mean_coeff: The mean vector calculated from the `coeffs`.
+        :param do_refl: If true, enforce invariance to reflection (default false).
+        :return: The covariance matrix of coefficients for all images.
+        """
+        if coeffs.size == 0:
+            raise RuntimeError("The coefficients need to be calculated first!")
+        if mean_coeff is None:
+            mean_coeff = self._get_mean(coeffs)
+
+        # Initialize a totally empty BlkDiagMatrix, build incrementally.
+        covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
+        ell = 0
+
+        mask = self.basis._indices["ells"] == ell
+
+        coeff_ell = coeffs[..., mask] - mean_coeff[mask]
+        covar_ell = np.array(coeff_ell.T @ coeff_ell / coeffs.shape[0])
+        covar_coeff.append(covar_ell)
+
+        for ell in range(1, self.basis.ell_max + 1):
+            mask_ell = self.basis._indices["ells"] == ell
+            mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
+            mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
+
+            covar_ell_diag = np.array(
+                coeffs[:, mask_pos].T @ coeffs[:, mask_pos]
+                + coeffs[:, mask_neg].T @ coeffs[:, mask_neg]
+            ) / (2 * coeffs.shape[0])
+
+            if do_refl:
+                covar_coeff.append(covar_ell_diag)
+                covar_coeff.append(covar_ell_diag)
+            else:
+                covar_ell_off = np.array(
+                    (
+                        coeffs[:, mask_pos] @ coeffs[:, mask_neg].T / coeffs.shape[0]
+                        - coeffs[:, mask_pos].T @ coeffs[:, mask_neg]
+                    )
+                    / (2 * coeffs.shape[0])
+                )
+
+                hsize = covar_ell_diag.shape[0]
+                covar_coeff_blk = np.zeros((2, hsize, 2, hsize))
+
+                covar_coeff_blk[0:2, :, 0:2, :] = covar_ell_diag[:hsize, :hsize]
+                covar_coeff_blk[0, :, 1, :] = covar_ell_off[:hsize, :hsize]
+                covar_coeff_blk[1, :, 0, :] = covar_ell_off.T[:hsize, :hsize]
+
+                covar_coeff.append(covar_coeff_blk.reshape(2 * hsize, 2 * hsize))
+
+        return covar_coeff
 
     def get_mean(self, coeffs, ctf_basis=None, ctf_idx=None):
         """
@@ -315,63 +369,6 @@ class RotCov2D:
             if make_psd:
                 logger.info("Convert matrices to positive semidefinite.")
                 covar_coeff = covar_coeff.make_psd()
-
-        return covar_coeff
-
-    def _get_covar(self, coeffs, mean_coeff=None, do_refl=True):
-        """
-        Calculate the covariance matrix from the expansion coefficients without CTF information.
-
-        :param coeffs: A coefficient vector (or an array of coefficient vectors) calculated from 2D images.
-        :param mean_coeff: The mean vector calculated from the `coeffs`.
-        :param do_refl: If true, enforce invariance to reflection (default false).
-        :return: The covariance matrix of coefficients for all images.
-        """
-        if coeffs.size == 0:
-            raise RuntimeError("The coefficients need to be calculated first!")
-        if mean_coeff is None:
-            mean_coeff = self._get_mean(coeffs)
-
-        # Initialize a totally empty BlkDiagMatrix, build incrementally.
-        covar_coeff = BlkDiagMatrix.empty(0, dtype=coeffs.dtype)
-        ell = 0
-
-        mask = self.basis._indices["ells"] == ell
-
-        coeff_ell = coeffs[..., mask] - mean_coeff[mask]
-        covar_ell = np.array(coeff_ell.T @ coeff_ell / coeffs.shape[0])
-        covar_coeff.append(covar_ell)
-
-        for ell in range(1, self.basis.ell_max + 1):
-            mask_ell = self.basis._indices["ells"] == ell
-            mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
-            mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
-
-            covar_ell_diag = np.array(
-                coeffs[:, mask_pos].T @ coeffs[:, mask_pos]
-                + coeffs[:, mask_neg].T @ coeffs[:, mask_neg]
-            ) / (2 * coeffs.shape[0])
-
-            if do_refl:
-                covar_coeff.append(covar_ell_diag)
-                covar_coeff.append(covar_ell_diag)
-            else:
-                covar_ell_off = np.array(
-                    (
-                        coeffs[:, mask_pos] @ coeffs[:, mask_neg].T / coeffs.shape[0]
-                        - coeffs[:, mask_pos].T @ coeffs[:, mask_neg]
-                    )
-                    / (2 * coeffs.shape[0])
-                )
-
-                hsize = covar_ell_diag.shape[0]
-                covar_coeff_blk = np.zeros((2, hsize, 2, hsize))
-
-                covar_coeff_blk[0:2, :, 0:2, :] = covar_ell_diag[:hsize, :hsize]
-                covar_coeff_blk[0, :, 1, :] = covar_ell_off[:hsize, :hsize]
-                covar_coeff_blk[1, :, 0, :] = covar_ell_off.T[:hsize, :hsize]
-
-                covar_coeff.append(covar_coeff_blk.reshape(2 * hsize, 2 * hsize))
 
         return covar_coeff
 
