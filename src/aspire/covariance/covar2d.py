@@ -581,11 +581,8 @@ class BatchedRotCov2D(RotCov2D):
 
             ctf_basis_k_sq = ctf_basis_k_t @ ctf_basis_k
             A_mean_k = weight * ctf_basis_k_sq
-            # blk + diag
             A_mean += A_mean_k
-            # why is rmul returning an array?!
-            # A_covar_k = np.sqrt(weight) * ctf_basis_k_sq
-            A_covar_k = ctf_basis_k_sq * np.sqrt(weight)
+            A_covar_k = np.sqrt(weight) * ctf_basis_k_sq
             A_covar[k] = A_covar_k
 
             M_covar += A_covar_k
