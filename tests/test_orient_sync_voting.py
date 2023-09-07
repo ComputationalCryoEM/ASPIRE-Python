@@ -8,6 +8,7 @@ from click.testing import CliRunner
 
 from aspire.abinitio import CLOrient3D, CLSyncVoting
 from aspire.commands.orient3d import orient3d
+from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 from aspire.utils import (
     Rotation,
@@ -99,9 +100,7 @@ def test_estimate_rotations(source_orientation_objs):
 
     # Register estimates to ground truth rotations and compute the
     # angular distance between them (in degrees).
-    Q_mat, flag = register_rotations(orient_est.rotations, src.rotations)
-    regrot = get_aligned_rotations(orient_est.rotations, Q_mat, flag)
-    mean_ang_dist = Rotation.mean_angular_distance(regrot, src.rotations) * 180 / np.pi
+    mean_ang_dist = check_rotations(orient_est.rotations, src.rotations)
 
     # Assert that mean angular distance is less than 1 degree (5 degrees with shifts).
     degree_tol = 1
@@ -117,6 +116,37 @@ def test_estimate_shifts(source_orientation_objs):
 
     # Assert that estimated shifts are close to src.offsets
     assert np.allclose(est_shifts, src.offsets)
+
+
+def test_estimate_rotations_fuzzy_mask():
+    noisy_src = Simulation(
+        n=30,
+        vols=AsymmetricVolume(L=40, C=1, K=100, seed=0).generate(),
+        offsets=0,
+        amplitudes=1,
+        noise_adder=WhiteNoiseAdder.from_snr(snr=5),
+        seed=0,
+    )
+
+    # Orientation estimation without fuzzy_mask.
+    max_shift = 1 / noisy_src.L
+    shift_step = 1
+    orient_est = CLSyncVoting(noisy_src, max_shift=max_shift, shift_step=shift_step)
+    orient_est.estimate_rotations()
+
+    # Orientation estimation with fuzzy mask.
+    orient_est_fuzzy = CLSyncVoting(
+        noisy_src, max_shift=max_shift, shift_step=shift_step, mask=True
+    )
+    orient_est_fuzzy.estimate_rotations()
+
+    # Check that fuzzy_mask improves orientation estimation.
+    mean_angle_dist = check_rotations(orient_est.rotations, noisy_src.rotations)
+    mean_angle_dist_fuzzy = check_rotations(
+        orient_est_fuzzy.rotations, noisy_src.rotations
+    )
+
+    assert mean_angle_dist_fuzzy < mean_angle_dist
 
 
 def test_theta_error():
@@ -161,3 +191,13 @@ def test_command_line():
         )
         # check that the command completed successfully
         assert result.exit_code == 0
+
+
+def check_rotations(rots_est, rots_gt):
+    # Register estimates to ground truth rotations and compute the
+    # angular distance between them (in degrees).
+    Q_mat, flag = register_rotations(rots_est, rots_gt)
+    regrot = get_aligned_rotations(rots_est, Q_mat, flag)
+    mean_ang_dist = Rotation.mean_angular_distance(regrot, rots_gt) * 180 / np.pi
+
+    return mean_ang_dist
