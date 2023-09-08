@@ -4,7 +4,7 @@ import click
 
 from aspire.basis import FFBBasis2D
 from aspire.commands import log_level_option
-from aspire.denoising.denoiser_cov2d import DenoiserCov2D
+from aspire.denoising import DenoiserCov2D, DenoisedImageSource
 from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.source.relion import RelionSource
 from aspire.utils.logging import setConsoleLoggingLevel
@@ -101,7 +101,7 @@ def denoise(
     if denoise_method == "CWF":
         logger.info("Denoise the images using CWF cov2D method.")
         denoiser = DenoiserCov2D(source, basis)
-        denoised_src = denoiser.denoise(batch_size=512)
+        denoised_src = DenoisedImageSource(source, denoiser)
         denoised_src.save(
             starfile_out, batch_size=512, save_mode="single", overwrite=False
         )
