@@ -160,7 +160,7 @@ class DenoiserCov2D(Denoiser):
         This method should be computed once, on first `images` access.
         """
 
-        if self.cov2d_est is not None:
+        if self.covar_est is not None:
             return
 
         logger.info(f"Building mean estimate for {len(self.src)} images.")
@@ -186,8 +186,9 @@ class DenoiserCov2D(Denoiser):
 
         # Denoise requested `indices` selection of 2D images.
         imgs_noise = self.src.images[indices]
+
         coefs_noise = self.basis.evaluate_t(imgs_noise)
-        logger.debug(f"Estimating Cov2D coefficients for {len(imgs_noise)} images.")
+        logger.debug(f"Estimating Cov2D coefficients for {imgs_noise.n_images} images.")
         coefs_estim = self.cov2d.get_cwf_coefs(
             coefs_noise,
             self.cov2d.ctf_fb,
