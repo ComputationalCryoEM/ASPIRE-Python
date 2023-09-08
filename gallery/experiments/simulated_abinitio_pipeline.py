@@ -22,7 +22,7 @@ import numpy as np
 
 from aspire.abinitio import CLSyncVoting
 from aspire.basis import FFBBasis3D
-from aspire.denoising import DefaultClassAvgSource, DenoiserCov2D
+from aspire.denoising import DefaultClassAvgSource, DenoisedImageSource, DenoiserCov2D
 from aspire.downloader import emdb_2660
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
@@ -145,7 +145,7 @@ if do_cov2d:
     # Use CWF denoising
     cwf_denoiser = DenoiserCov2D(src)
     # Use denoised src for classification
-    classification_src = cwf_denoiser.denoise()
+    classification_src = DenoisedImageSource(src, cwf_denoiser)
     # Peek, what do the denoised images look like...
     if interactive:
         classification_src.images[:10].show()
