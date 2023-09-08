@@ -30,7 +30,7 @@ class Denoiser(ABC):
 
         See `_ImageAccessor`.
         """
-        self._img_accessor
+        return self._img_accessor
 
     @abstractproperty
     def _denoise(self, indices):
