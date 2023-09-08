@@ -36,8 +36,8 @@ class BatchedRotCov2DTestCase(TestCase):
         # Specify the fast FB basis method for expending the 2D images
         ffbbasis = FFBBasis2D((img_size, img_size), dtype=dtype)
         denoiser = DenoiserCov2D(sim, ffbbasis, noise_var)
-        denoised_src = denoiser.denoise(batch_size=64)
-        imgs_denoised = denoised_src.images[:]
+        imgs_denoised = denoiser.denoise[:]
+
         # Calculate the normalized RMSE of the estimated images.
         nrmse_ims = (imgs_denoised - imgs_clean).norm() / imgs_clean.norm()
 
