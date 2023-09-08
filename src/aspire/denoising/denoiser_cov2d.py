@@ -6,7 +6,6 @@ from numpy.linalg import solve
 from aspire.basis import FFBBasis2D
 from aspire.covariance import BatchedRotCov2D
 from aspire.denoising import Denoiser
-from aspire.denoising.denoised_src import DenoisedImageSource
 from aspire.noise import WhiteNoiseEstimator
 from aspire.optimization import fill_struct
 from aspire.utils import mat_to_vec
@@ -104,15 +103,19 @@ class DenoiserCov2D(Denoiser):
     Define a derived class for denoising 2D images using Cov2D method
     """
 
-    def __init__(self, src, basis=None, var_noise=None):
+    def __init__(self, src, basis=None, var_noise=None, batch_size=512, covar_opt=None):
         """
         Initialize an object for denoising 2D images using Cov2D method
 
         :param src: The source object of 2D images with metadata
         :param basis: The basis method to expand 2D images
         :param var_noise: The estimated variance of noise
+        :param batch_size: The batch size for processing images
+        :param covar_opt: The option list for building Cov2D matrix
         """
+
         super().__init__(src)
+        self.batch_size = int(batch_size)
 
         # When var_noise is not specfically over-ridden,
         #   recompute it now. See #496.
@@ -134,19 +137,6 @@ class DenoiserCov2D(Denoiser):
         self.mean_est = None
         self.covar_est = None
 
-    def denoise(self, covar_opt=None, batch_size=512):
-        """
-         Build covariance matrix of 2D images and return a new ImageSource object
-
-        :param covar_opt: The option list for building Cov2D matrix
-        :param batch_size: The batch size for processing images
-        :return: A `DenoisedImageSource` object with the specified denoising object
-        """
-
-        # Initialize the rotationally invariant covariance matrix of 2D images
-        # A fixed batch size is used to go through each image
-        self.cov2d = BatchedRotCov2D(self.src, self.basis, batch_size=batch_size)
-
         default_opt = {
             "shrinker": "frobenius_norm",
             "verbose": 0,
@@ -157,38 +147,51 @@ class DenoiserCov2D(Denoiser):
             "precision": self.dtype,
         }
 
-        covar_opt = fill_struct(covar_opt, default_opt)
-        # Calculate the mean and covariance for the rotationally invariant covariance matrix of 2D images
+        self.covar_opt = fill_struct(covar_opt, default_opt)
+
+        # Initialize the rotationally invariant covariance matrix of 2D images
+        # A fixed batch_size is used to loop through image stack.
+        self.cov2d = BatchedRotCov2D(self.src, self.basis, batch_size=batch_size)
+
+    def build_denoiser(self):
+        """
+        Build estimated mean and covariance matrix of 2D images.
+
+        This method should be computed once, on first `images` access.
+        """
+
+        if self.cov2d_est is not None:
+            return
+
+        logger.info(f"Building mean estimate for {len(self.src)} images.")
         self.mean_est = self.cov2d.get_mean()
 
+        logger.info(f"Building covariance estimates for {len(self.src)} images.")
         self.covar_est = self.cov2d.get_covar(
-            noise_var=self.var_noise, mean_coef=self.mean_est, covar_est_opt=covar_opt
+            noise_var=self.var_noise,
+            mean_coef=self.mean_est,
+            covar_est_opt=self.covar_opt,
         )
 
-        return DenoisedImageSource(self.src, self)
-
-    def images(self, istart=0, batch_size=512):
+    def _denoise(self, indices):
         """
-        Obtain a batch size of 2D images after denosing by Cov2D method
+        Compute denoised 2D images corresponding to `indices`.
 
-        :param istart: the index of starting image
-        :param batch_size: The batch size for processing images
-        :return: an `Image` object with denoised images
+        :return: `Image` object containing denoised images.
         """
-        src = self.src
 
-        # Denoise one batch size of 2D images using the SPCAs from the rotationally invariant covariance matrix
-        img_start = istart
-        img_end = min(istart + batch_size, src.n)
-        imgs_noise = src.images[img_start : img_start + batch_size]
+        # Lazy evaluate estimates on access.
+        # `build_denoiser` internally guards to compute once.
+        self.build_denoiser()
+
+        # Denoise requested `indices` selection of 2D images.
+        imgs_noise = self.src.images[indices]
         coefs_noise = self.basis.evaluate_t(imgs_noise)
-        logger.info(
-            f"Estimating Cov2D coefficients for images from {img_start} to {img_end-1}"
-        )
+        logger.debug(f"Estimating Cov2D coefficients for {len(imgs_noise)} images.")
         coefs_estim = self.cov2d.get_cwf_coefs(
             coefs_noise,
-            self.cov2d.ctf_basis,
-            self.cov2d.ctf_idx[img_start:img_end],
+            self.cov2d.ctf_fb,
+            self.cov2d.ctf_idx[indices],
             mean_coef=self.mean_est,
             covar_coef=self.covar_est,
             noise_var=self.var_noise,
