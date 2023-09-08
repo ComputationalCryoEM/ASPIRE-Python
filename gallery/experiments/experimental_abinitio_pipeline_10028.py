@@ -30,7 +30,7 @@ import numpy as np
 
 from aspire.abinitio import CLSyncVoting
 from aspire.basis import FFBBasis3D
-from aspire.denoising import DefaultClassAvgSource, DenoiserCov2D, DenoisedImageSource
+from aspire.denoising import DefaultClassAvgSource, DenoisedImageSource, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource

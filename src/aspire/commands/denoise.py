@@ -4,7 +4,7 @@ import click
 
 from aspire.basis import FFBBasis2D
 from aspire.commands import log_level_option
-from aspire.denoising import DenoiserCov2D, DenoisedImageSource
+from aspire.denoising import DenoisedImageSource, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.source.relion import RelionSource
 from aspire.utils.logging import setConsoleLoggingLevel
