@@ -87,7 +87,11 @@ rots_true = sim.rotations
 # ----------------------------------------
 
 # Initialize an orientation estimation object and create an ``OrientedSource`` object
-# to perform viewing angle estimation
+# to perform viewing angle estimation. Here, because of the small image size of the
+# ``Simulation``, we customize the ``CLSyncVoting`` method to use fewer theta values
+# when searching for common-lines between pairs of images. Additionally, since we are
+# processing images with no noise, we opt not to use a ``fuzzy_mask``, an option that
+# improves common-line detection in higher noise regimes.
 logger.info("Estimate rotation angles using synchronization matrix and voting method.")
 orient_est = CLSyncVoting(sim, n_theta=36, mask=False)
 oriented_src = OrientedSource(sim, orient_est)
