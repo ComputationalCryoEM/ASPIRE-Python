@@ -1,31 +1,42 @@
 import logging
+from abc import ABC, abstractproperty
+
+from aspire.source.image import _ImageAccessor
 
 logger = logging.getLogger(__name__)
 
 
-class Denoiser:
+class Denoiser(ABC):
     """
-    Define a base class for denoising 2D images
+    Base class for 2D image denoisers.
     """
 
     def __init__(self, src):
         """
-        Initialize an object for denoising 2D images from the image source
+        Initialize an object for denoising 2D images from `src`.
 
-        :param src: The source object of 2D images with metadata
+        :param src: `ImageSource` providing noisy images.
         """
+
         self.src = src
         self.dtype = src.dtype
-        self.nimg = src.n
+        self.n = src.n
+        self._img_accessor = _ImageAccessor(self._denoise, self.n)
 
+    @property
     def denoise(self):
         """
-        Precompute for Denoiser and DenoisedImageSource for 2D images
-        """
-        raise NotImplementedError("subclasses must implement this")
+        Subscriptable property returning 2D images after denoising.
 
-    def image(self, istart=0, batch_size=512):
+        See `_ImageAccessor`.
         """
-        Obtain a batch size of 2D images after denosing by a specified method
+        self._img_accessor
+
+    @abstractproperty
+    def _denoise(self, indices):
         """
-        raise NotImplementedError("subclasses must implement this")
+        Subclasses must implement a private `_denoise` method accepting `indices`.
+        Subclasses handle any caching as well as denoising.
+
+        See `_ImageAccessor`.
+        """
