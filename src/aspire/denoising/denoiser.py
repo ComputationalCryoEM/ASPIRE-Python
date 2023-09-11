@@ -1,5 +1,5 @@
 import logging
-from abc import ABC, abstractproperty
+from abc import ABC, abstractmethod
 
 from aspire.source.image import _ImageAccessor
 
@@ -32,7 +32,7 @@ class Denoiser(ABC):
         """
         return self._img_accessor
 
-    @abstractproperty
+    @abstractmethod
     def _denoise(self, indices):
         """
         Subclasses must implement a private `_denoise` method accepting `indices`.
