@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from aspire.basis.ffb_2d import FFBBasis2D
-from aspire.denoising.denoiser_cov2d import DenoiserCov2D
+from aspire.denoising import DenoisedImageSource, DenoiserCov2D
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators.filters import RadialCTFFilter
 from aspire.source.simulation import Simulation
@@ -42,3 +42,8 @@ class BatchedRotCov2DTestCase(TestCase):
         nrmse_ims = (imgs_denoised - imgs_clean).norm() / imgs_clean.norm()
 
         self.assertTrue(nrmse_ims < 0.25)
+
+        # Additionally test the `DenoisedImageSource` and lazy-eval-cache
+        # of the cov2d estimator.
+        src = DenoisedImageSource(sim, denoiser)
+        self.assertTrue(np.allclose(src.images[:], imgs_denoised))
