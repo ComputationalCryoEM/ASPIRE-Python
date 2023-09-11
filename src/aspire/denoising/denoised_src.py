@@ -8,15 +8,15 @@ logger = logging.getLogger(__name__)
 
 class DenoisedImageSource(ImageSource):
     """
-    ImageSource class serving denoised 2D images.
+    `ImageSource` class serving denoised 2D images.
     """
 
     def __init__(self, src, denoiser):
         """
-        Initialize a denoised ImageSource object from an ImageSource.
+        Initialize a denoised `ImageSource` object from an `ImageSource`.
 
-        :param src: Original ImageSource object storing noisy images
-        :param denoiser: A Denoiser object for specifying a method for denoising
+        :param src: Original `ImageSource` object storing noisy images
+        :param denoiser: A `Denoiser` object for specifying a method for denoising
         """
 
         super().__init__(src.L, src.n, dtype=src.dtype, metadata=src._metadata.copy())
@@ -33,7 +33,7 @@ class DenoisedImageSource(ImageSource):
         Internal function to return a set of images after denoising, when accessed via the
         `ImageSource.images` property.
 
-        :param indices: The indices of images to return as a 1-D NumPy array.
+        :param indices: The indices of images to return as a 1-D Numpy array.
         :return: an `Image` object after denoising.
         """
 
