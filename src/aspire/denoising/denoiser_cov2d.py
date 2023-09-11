@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 
 import numpy as np
 from numpy.linalg import solve
@@ -103,6 +104,16 @@ class DenoiserCov2D(Denoiser):
     Define a derived class for denoising 2D images using Cov2D method
     """
 
+    # Default options for cov2d configuration.
+    default_opt = {
+        "shrinker": "frobenius_norm",
+        "verbose": 0,
+        "max_iter": 250,
+        "iter_callback": [],
+        "store_iterates": False,
+        "rel_tolerance": 1e-12,
+    }
+
     def __init__(self, src, basis=None, var_noise=None, batch_size=512, covar_opt=None):
         """
         Initialize an object for denoising 2D images using Cov2D method
@@ -110,8 +121,10 @@ class DenoiserCov2D(Denoiser):
         :param src: The source object of 2D images with metadata
         :param basis: The basis method to expand 2D images
         :param var_noise: The estimated variance of noise
-        :param batch_size: The batch size for processing images
-        :param covar_opt: The option list for building Cov2D matrix
+        :param batch_size: Integer batch size for processing images.
+            Defaults to 512.
+        :param covar_opt: Optional dictionary of option overides for Cov2D.
+            Provided options will supersede defaults in `DenoiserCov2D.default_opt`.
         """
 
         super().__init__(src)
@@ -137,16 +150,11 @@ class DenoiserCov2D(Denoiser):
         self.mean_est = None
         self.covar_est = None
 
-        default_opt = {
-            "shrinker": "frobenius_norm",
-            "verbose": 0,
-            "max_iter": 250,
-            "iter_callback": [],
-            "store_iterates": False,
-            "rel_tolerance": 1e-12,
-            "precision": self.dtype,
-        }
-
+        # Create a local copy of the default options.
+        default_opt = deepcopy(self.default_opt)
+        # Assign the dtype corresponding to this instance.
+        default_opt["precision"] = self.dtype
+        # Apply any overrides provided by the user.
         self.covar_opt = fill_struct(covar_opt, default_opt)
 
         # Initialize the rotationally invariant covariance matrix of 2D images
