@@ -10,12 +10,7 @@ from aspire.abinitio import CLOrient3D, CLSyncVoting
 from aspire.commands.orient3d import orient3d
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
-from aspire.utils import (
-    Rotation,
-    get_aligned_rotations,
-    register_rotations,
-    rots_to_clmatrix,
-)
+from aspire.utils import Rotation, check_rotations, rots_to_clmatrix
 from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -195,13 +190,3 @@ def test_command_line():
         )
         # check that the command completed successfully
         assert result.exit_code == 0
-
-
-def check_rotations(rots_est, rots_gt):
-    # Register estimates to ground truth rotations and compute the
-    # angular distance between them (in degrees).
-    Q_mat, flag = register_rotations(rots_est, rots_gt)
-    regrot = get_aligned_rotations(rots_est, Q_mat, flag)
-    mean_ang_dist = Rotation.mean_angular_distance(regrot, rots_gt) * 180 / np.pi
-
-    return mean_ang_dist
