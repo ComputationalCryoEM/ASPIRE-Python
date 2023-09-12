@@ -730,7 +730,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Set same dimensions as basis object
         n_k = 2 * self.num_radial_nodes  # self.n_r
         n_theta = self.num_angular_nodes  # self.n_theta
-        # radial = self.get_radial()
 
         # get 2D grid in polar coordinate
         k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
