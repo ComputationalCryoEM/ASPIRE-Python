@@ -145,12 +145,14 @@ def test_get_mean_ctf(cov2d_fixture, ctf_enabled):
 
     mean_coeff_ctf = cov2d.get_mean(coeff, h_ctf_fb, h_idx)
 
+    tol = utest_tolerance(sim.dtype)
     if ctf_enabled:
         result = np.load(os.path.join(DATA_DIR, "clean70SRibosome_cov2d_meanctf.npy"))
     else:
         result = cov2d._get_mean(coeff_clean)
+        tol = 0.002
 
-    assert np.allclose(mean_coeff_ctf, result, atol=0.002)
+    np.testing.assert_allclose(mean_coeff_ctf, result, atol=tol)
 
 
 def test_get_cwf_coeffs_clean(cov2d_fixture):
@@ -179,7 +181,7 @@ def test_get_cwf_coeffs_clean_ctf(cov2d_fixture):
     # Reconstruct images from output of get_cwf_coeffs
     img_est = cov2d.basis.evaluate(coeff_cwf)
     # Compare with clean images
-    delta = np.mean(np.square((sim.projections[:] - img_est).asnumpy()))
+    delta = np.mean(np.square((sim.clean_images[:] - img_est).asnumpy()))
     assert delta < 0.02
 
 
