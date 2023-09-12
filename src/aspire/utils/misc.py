@@ -274,19 +274,24 @@ def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
     return (peak / vals).astype(dtype)
 
 
-def fuzzy_mask(L, r0, risetime, dtype):
+def fuzzy_mask(L, dtype, r0=None, risetime=None):
     """
-    Create a centered 1D to 3D fuzzy mask of radius r0
+    Create a centered 1D to 3D fuzzy mask of radius r0.
 
     Made with an error function with effective rise time.
 
-    :param L: The sizes of image in tuple structure
-    :param r0: The specified radius
-    :param risetime: The rise time for `erf` function
-    :param dtype: dtype for fuzzy mask
+    :param L: The sizes of image in tuple structure.
+    :param dtype: dtype for fuzzy mask.
+    :param r0: The specified radius. Defaults to floor(0.45 * L)
+    :param risetime: The rise time for `erf` function. Defaults to floor(0.05 * L)
 
     :return: The desired fuzzy mask
     """
+    # Note: default values for r0 and risetime are from Matlab common-lines code.
+    if r0 is None:
+        r0 = np.floor(0.45 * L[0])
+    if risetime is None:
+        risetime = np.floor(0.05 * L[0])
 
     dim = len(L)
     axes = ["x"]
