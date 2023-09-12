@@ -6,10 +6,15 @@ from numpy.linalg import det, norm
 from aspire.abinitio import CLSymmetryC2, CLSymmetryC3C4, CLSymmetryCn
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
 from aspire.source import Simulation
-from aspire.utils import Rotation, utest_tolerance
-from aspire.utils.coor_trans import get_aligned_rotations, register_rotations
-from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations
-from aspire.utils.random import randn
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    all_pairs,
+    check_rotations,
+    cyclic_rotations,
+    randn,
+    utest_tolerance,
+)
 from aspire.volume import CnSymmetricVolume
 
 # A set of these parameters are marked expensive to reduce testing time.
@@ -119,9 +124,7 @@ def test_estimate_rotations(n_img, L, order, dtype):
 
     # Register estimates to ground truth rotations and compute the
     # angular distance between them (in degrees).
-    Q_mat, flag = register_rotations(rots_est, rots_gt_sync)
-    regrot = get_aligned_rotations(rots_est, Q_mat, flag)
-    mean_ang_dist = Rotation.mean_angular_distance(regrot, rots_gt_sync) * 180 / np.pi
+    mean_ang_dist = check_rotations(rots_est, rots_gt_sync)
 
     # Assert mean angular distance is reasonable.
     assert mean_ang_dist < 3

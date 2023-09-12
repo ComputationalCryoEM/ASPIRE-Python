@@ -10,7 +10,7 @@ from aspire.abinitio import CLOrient3D, CLSyncVoting
 from aspire.commands.orient3d import orient3d
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
-from aspire.utils import Rotation, check_rotations, rots_to_clmatrix
+from aspire.utils import check_rotations, rots_to_clmatrix
 from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
