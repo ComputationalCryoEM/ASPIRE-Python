@@ -121,7 +121,7 @@ def test_get_mean(cov2d_fixture):
     cov2d, coeff_clean = cov2d_fixture[1], cov2d_fixture[2]
 
     mean_coeff = cov2d._get_mean(coeff_clean)
-    assert np.allclose(results, mean_coeff, atol=utest_tolerance(cov2d.dtype))
+    np.testing.assert_allclose(results, mean_coeff, atol=utest_tolerance(cov2d.dtype))
 
 
 def test_get_covar(cov2d_fixture):
@@ -134,7 +134,7 @@ def test_get_covar(cov2d_fixture):
     covar_coeff = cov2d._get_covar(coeff_clean)
 
     for im, mat in enumerate(results.tolist()):
-        assert np.allclose(mat, covar_coeff[im])
+        np.testing.assert_allclose(mat, covar_coeff[im], rtol=1e-05)
 
 
 def test_get_mean_ctf(cov2d_fixture, ctf_enabled):
@@ -163,7 +163,9 @@ def test_get_cwf_coeffs_clean(cov2d_fixture):
     cov2d, coeff_clean = cov2d_fixture[1], cov2d_fixture[2]
 
     coeff_cwf_clean = cov2d.get_cwf_coeffs(coeff_clean, noise_var=0)
-    assert np.allclose(results, coeff_cwf_clean, atol=utest_tolerance(cov2d.dtype))
+    np.testing.assert_allclose(
+        results, coeff_cwf_clean, atol=utest_tolerance(cov2d.dtype)
+    )
 
 
 def test_get_cwf_coeffs_clean_ctf(cov2d_fixture):
@@ -212,7 +214,9 @@ def test_shrinkage(cov2d_fixture, shrinker):
     covar_coeff = cov2d.get_covar(coeff_clean, covar_est_opt={"shrinker": shrinker})
 
     for im, mat in enumerate(results.tolist()):
-        assert np.allclose(mat, covar_coeff[im], atol=utest_tolerance(cov2d.dtype))
+        np.testing.assert_allclose(
+            mat, covar_coeff[im], atol=utest_tolerance(cov2d.dtype)
+        )
 
 
 def test_get_cwf_coeffs_ctf_args(cov2d_fixture):
@@ -248,7 +252,7 @@ def test_get_cwf_coeffs(cov2d_fixture, ctf_enabled):
 
     coeff_cwf = cov2d.get_cwf_coeffs(coeff, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
 
-    assert np.allclose(results, coeff_cwf, atol=utest_tolerance(cov2d.dtype))
+    np.testing.assert_allclose(results, coeff_cwf, atol=utest_tolerance(cov2d.dtype))
 
 
 def test_get_cwf_coeffs_without_ctf_args(cov2d_fixture, ctf_enabled):
@@ -270,7 +274,7 @@ def test_get_cwf_coeffs_without_ctf_args(cov2d_fixture, ctf_enabled):
 
     coeff_cwf = cov2d.get_cwf_coeffs(coeff, noise_var=NOISE_VAR)
 
-    assert np.allclose(results, coeff_cwf, atol=utest_tolerance(cov2d.dtype))
+    np.testing.assert_allclose(results, coeff_cwf, atol=utest_tolerance(cov2d.dtype))
 
 
 def test_get_covar_ctf(cov2d_fixture, ctf_enabled):
@@ -287,7 +291,7 @@ def test_get_covar_ctf(cov2d_fixture, ctf_enabled):
 
     covar_coeff_ctf = cov2d.get_covar(coeff, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
     for im, mat in enumerate(results.tolist()):
-        assert np.allclose(mat, covar_coeff_ctf[im])
+        np.testing.assert_allclose(mat, covar_coeff_ctf[im], rtol=1e-05, atol=1e-08)
 
 
 def test_get_covar_ctf_shrink(cov2d_fixture, ctf_enabled):
@@ -321,4 +325,4 @@ def test_get_covar_ctf_shrink(cov2d_fixture, ctf_enabled):
     )
 
     for im, mat in enumerate(results.tolist()):
-        assert np.allclose(mat, covar_coeff_ctf_shrink[im])
+        np.testing.assert_allclose(mat, covar_coeff_ctf_shrink[im])
