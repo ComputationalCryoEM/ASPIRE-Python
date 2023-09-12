@@ -274,7 +274,7 @@ def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
     return (peak / vals).astype(dtype)
 
 
-def fuzzy_mask(L, r0, risetime, dtype, origin=None):
+def fuzzy_mask(L, r0, risetime, dtype):
     """
     Create a centered 1D to 3D fuzzy mask of radius r0
 
@@ -284,19 +284,28 @@ def fuzzy_mask(L, r0, risetime, dtype, origin=None):
     :param r0: The specified radius
     :param risetime: The rise time for `erf` function
     :param dtype: dtype for fuzzy mask
-    :param origin: The coordinates of origin
+
     :return: The desired fuzzy mask
     """
 
-    center = [sz // 2 + 1 for sz in L]
-    if origin is None:
-        origin = center
+    dim = len(L)
+    axes = ["x"]
+    grid_kwargs = {"n": L[0], "shifted": False, "normalized": False, "dtype": dtype}
 
-    grids = [
-        np.arange(1 - org, ell - org + 1, dtype=dtype) for ell, org in zip(L, origin)
-    ]
-    XYZ = np.meshgrid(*grids, indexing="ij")
-    XYZ_sq = [X**2 for X in XYZ]
+    if dim == 1:
+        grid = grid_1d(**grid_kwargs)
+    elif dim == 2:
+        grid = grid_2d(**grid_kwargs)
+        axes.append("y")
+    elif dim == 3:
+        grid = grid_3d(**grid_kwargs)
+        axes.extend(["y", "z"])
+    else:
+        raise RuntimeError(
+            f"Only 1D, 2D, or 3D fuzzy_mask supported. Found {dim}-dimensional `L`."
+        )
+
+    XYZ_sq = [grid[axis] ** 2 for axis in axes]
     R = np.sqrt(np.sum(XYZ_sq, axis=0))
     k = 1.782 / risetime
     m = 0.5 * (1 - erf(k * (R - r0)))
