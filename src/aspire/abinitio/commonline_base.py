@@ -80,10 +80,7 @@ class CLOrient3D:
         imgs = self.src.images[:]
 
         if self.mask:
-            # Apply fuzzy mask to images using values for risetime and rad found in the Matlab code.
-            risetime = np.floor(0.05 * self.n_res)
-            rad = np.floor(0.45 * self.n_res)
-            fuzz_mask = fuzzy_mask((self.n_res, self.n_res), rad, risetime, self.dtype)
+            fuzz_mask = fuzzy_mask((self.n_res, self.n_res), self.dtype)
             imgs = imgs * fuzz_mask
 
         # Obtain coefficients of polar Fourier transform for input 2D images
