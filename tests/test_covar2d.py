@@ -182,7 +182,7 @@ def test_get_cwf_coeffs_clean_ctf(cov2d_fixture):
     img_est = cov2d.basis.evaluate(coeff_cwf)
     # Compare with clean images
     delta = np.mean(np.square((sim.clean_images[:] - img_est).asnumpy()))
-    assert delta < 0.02
+    np.testing.assert_array_less(delta, 0.01)
 
 
 def test_shrinker_inputs(cov2d_fixture):
