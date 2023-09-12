@@ -350,7 +350,7 @@ def test_fuzzy_mask():
             ],
         ]
     )
-    fmask = fuzzy_mask((8, 8), 2, 2, dtype=results.dtype)
+    fmask = fuzzy_mask((8, 8), dtype=results.dtype, r0=2, risetime=2)
     assert np.allclose(results, fmask, atol=1e-7)
 
 
