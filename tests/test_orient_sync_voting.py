@@ -117,11 +117,11 @@ def test_estimate_shifts(source_orientation_objs):
 
 def test_estimate_rotations_fuzzy_mask():
     noisy_src = Simulation(
-        n=30,
-        vols=AsymmetricVolume(L=40, C=1, K=100, seed=0).generate(),
+        n=35,
+        vols=AsymmetricVolume(L=128, C=1, K=400, seed=0).generate(),
         offsets=0,
         amplitudes=1,
-        noise_adder=WhiteNoiseAdder.from_snr(snr=5),
+        noise_adder=WhiteNoiseAdder.from_snr(snr=2),
         seed=0,
     )
 
@@ -145,7 +145,7 @@ def test_estimate_rotations_fuzzy_mask():
         orient_est_fuzzy.rotations, noisy_src.rotations
     )
 
-    assert mean_angle_dist_fuzzy < mean_angle_dist
+    assert mean_angle_dist_fuzzy < mean_angle_dist < 10
 
 
 def test_theta_error():
