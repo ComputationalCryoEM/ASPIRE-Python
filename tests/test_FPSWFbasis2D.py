@@ -20,20 +20,27 @@ class TestFPSWFBasis2D(UniversalBasisMixin):
             os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy")
         ).T  # RCOPT
         images = Image(img_ary)
+
         result = basis.evaluate_t(images)
-        coeffs = np.load(
+        # Historically, FPSWF returned complex values.
+        # Load and convert them for this hard coded test.
+        ccoeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
+        coeffs = basis.to_real(ccoeffs)
 
-        # make sure both real and imaginary parts are consistent.
-        assert np.allclose(np.real(result), np.real(coeffs)) and np.allclose(
-            np.imag(result) * 1j, np.imag(coeffs) * 1j
-        )
+        np.testing.assert_allclose(result, coeffs, atol=utest_tolerance(basis.dtype))
 
     def testFPSWFBasis2DEvaluate(self, basis):
-        coeffs = np.load(
+        # Historically, FPSWF returned complex values.
+        # Load and convert them for this hard coded test.
+        ccoeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
+        coeffs = basis.to_real(ccoeffs)
+        result = coeffs.evaluate()
+
         result = basis.evaluate(coeffs)
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
-        assert np.allclose(result.asnumpy(), images)
+
+        np.testing.assert_allclose(result, images)
