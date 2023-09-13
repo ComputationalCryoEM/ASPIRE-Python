@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import pytest
 
-from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D
+from aspire.basis import Coef, FBBasis2D, FFBBasis2D, FLEBasis2D
 from aspire.image import Image
 from aspire.nufft import backend_available
 from aspire.numeric import fft
@@ -103,7 +103,7 @@ class TestFLEBasis2D(UniversalBasisMixin):
             basis.nres, epsilon=1e-4, dtype=np.float64, match_fb=False
         ).evaluate_t(x)
 
-        result_dense = dense_b @ coeffs.T
+        result_dense = dense_b @ coeffs.asnumpy().T
         result_fast = basis.evaluate(coeffs).asnumpy()
 
         assert relerr(result_dense, result_fast) < (self.test_eps * basis.epsilon)
@@ -136,7 +136,7 @@ def testMatchFBEvaluate(basis):
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
     # in match_fb, count is the same for both bases
-    coeffs = np.eye(basis.count)
+    coeffs = Coef(basis, np.eye(basis.count))
 
     fb_images = fb_basis.evaluate(coeffs)
     fle_images = basis.evaluate(coeffs)
@@ -151,7 +151,7 @@ def testMatchFBDenseEvaluate(basis):
 
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
-    coeffs = np.eye(basis.count)
+    coeffs = Coef(basis, np.eye(basis.count))
 
     fb_images = fb_basis.evaluate(coeffs).asnumpy()
     fle_out = basis._create_dense_matrix() @ coeffs
@@ -171,7 +171,7 @@ def testMatchFBEvaluate_t(basis):
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
     # test images to evaluate
-    images = fb_basis.evaluate(np.eye(basis.count))
+    images = fb_basis.evaluate(Coef(basis, np.eye(basis.count)))
 
     fb_coeffs = fb_basis.evaluate_t(images)
     fle_coeffs = basis.evaluate_t(images)
@@ -188,7 +188,7 @@ def testMatchFBDenseEvaluate_t(basis):
 
     # test images to evaluate
     # gets a stack of shape (basis.count, L, L)
-    images = fb_basis.evaluate(np.eye(basis.count))
+    images = fb_basis.evaluate(Coef(basis, np.eye(basis.count)))
     # reshape to a stack of basis.count vectors of length L**2
     vec = images.asnumpy().reshape((-1, basis.nres**2))
 
@@ -213,7 +213,7 @@ def testLowPass():
     nonzero_coeffs = []
     for i in range(4):
         bandlimit = L // (2**i)
-        coeffs_lowpassed = basis.lowpass(coeffs, bandlimit)
+        coeffs_lowpassed = basis.lowpass(coeffs, bandlimit).asnumpy()
         nonzero_coeffs.append(np.sum(coeffs_lowpassed != 0))
 
     # for bandlimit == L, no frequencies should be removed
@@ -224,19 +224,6 @@ def testLowPass():
 
     # make sure you can pass in a 1-D array if you want
     _ = basis.lowpass(coeffs[0, :], L)
-
-    # cannot pass in the wrong number of coefficients
-    with pytest.raises(
-        AssertionError, match="Number of coefficients must match self.count."
-    ):
-        _ = basis.lowpass(coeffs[:, :1000], L)
-
-    # cannot pass in wrong shape
-    with pytest.raises(
-        AssertionError,
-        match="Input a stack of coefficients of dimension",
-    ):
-        _ = basis.lowpass(np.zeros((3, 3, 3)), L)
 
 
 def testRotate():
@@ -280,20 +267,7 @@ def testRotate():
     assert np.allclose(np.flipud(ims.asnumpy()[0]), ims_fle_pi[0], atol=1e-4)
 
     # make sure you can pass in a 1-D array if you want
-    _ = basis.lowpass(np.zeros((basis.count,)), np.pi)
-
-    # cannot pass in the wrong number of coefficients
-    with pytest.raises(
-        AssertionError, match="Number of coefficients must match self.count."
-    ):
-        _ = basis.rotate(np.zeros((1, 10)), np.pi)
-
-    # cannot pass in wrong shape
-    with pytest.raises(
-        AssertionError,
-        match="Input a stack of coefficients of dimension",
-    ):
-        _ = basis.lowpass(np.zeros((3, 3, 3)), np.pi)
+    _ = basis.lowpass(Coef(basis, np.zeros((basis.count,))), np.pi)
 
 
 def testRotate45():
