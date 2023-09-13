@@ -95,21 +95,22 @@ class CommonlineSDP(CLOrient3D):
 
         n = 2 * self.n_img
         A = []
-        b = []
         data = np.ones(1, dtype=self.dtype)
         for i in range(n):
             row_ind = np.array([i])
             col_ind = np.array([i])
             A_i = csr_array((data, (row_ind, col_ind)), shape=(n, n), dtype=self.dtype)
             A.append(A_i)
-            b.append(np.ones(1, dtype=self.dtype))
 
         for i in range(self.n_img):
             row_ind = np.array([i])
             col_ind = np.array([self.n_img + i])
             A_i = csr_array((data, (row_ind, col_ind)), shape=(n, n), dtype=self.dtype)
             A.append(A_i)
-            b.append(np.zeros(1, dtype=self.dtype))
+
+        b = np.concatenate(
+            (np.ones((n, 1)), np.zeros((self.n_img, 1))), dtype=self.dtype
+        )
 
         return A, b
 
@@ -145,9 +146,7 @@ class CommonlineSDP(CLOrient3D):
         prob = cp.Problem(cp.Minimize(cp.trace(-S @ G)), constraints)
         prob.solve()
 
-        Gram = G.value
-
-        return Gram
+        return G.value
 
     def _deterministic_rounding(self, Gram):
         """
