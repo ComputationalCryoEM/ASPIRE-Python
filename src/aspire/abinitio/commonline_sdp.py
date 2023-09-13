@@ -175,8 +175,8 @@ class CommonlineSDP(CLOrient3D):
         # column 1 of all rotation matrices. Similarly, the second `n_img` rows of v,
         # denoted v2, are linear combinations of R_{i}^{2}, i=1,...,K, that is, the second
         # column of all rotation matrices.
-        v1 = v[: self.n_img].T.copy()
-        v2 = v[self.n_img : 2 * self.n_img].T.copy()
+        v1 = v[: self.n_img].T
+        v2 = v[self.n_img : 2 * self.n_img].T
 
         # Use a least-squares method to get A.T*A and a Cholesky decomposition to find A.
         A = self._ATA_solver(v1, v2)

@@ -43,8 +43,6 @@ class PolarFT:
         # this basis has complex coefficients
         self.coefficient_dtype = complex_type(self.dtype)
 
-        # Store the "half" transform for use in building the full transform.
-        self._transform = None
 
     def _build(self):
         """
