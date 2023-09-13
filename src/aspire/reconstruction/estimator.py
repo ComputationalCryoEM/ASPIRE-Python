@@ -1,5 +1,6 @@
 import logging
 
+from aspire.basis import Coef
 from aspire.reconstruction.kernel import FourierKernel
 
 logger = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ class Estimator:
         if b_coeff is None:
             b_coeff = self.src_backward()
         est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
-        est = self.basis.evaluate(est_coeff).T
+        est = Coef(self.basis, est_coeff).evaluate().T
 
         return est
 
@@ -76,9 +77,11 @@ class Estimator:
         :return: The result of evaluating `vol_coeff` in the given basis, convolving with the kernel given by
             kernel, and backprojecting into the basis.
         """
+
         if kernel is None:
             kernel = self.kernel
+
         vol = self.basis.evaluate(vol_coeff)  # returns a Volume
         vol = kernel.convolve_volume(vol)  # returns a Volume
-        vol_coef = self.basis.evaluate_t(vol)
+        vol_coef = Coef(self.basis, vol_coeff).evaluate()
         return vol_coef
