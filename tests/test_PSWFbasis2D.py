@@ -23,19 +23,23 @@ class TestPSWFBasis2D(UniversalBasisMixin):
 
         result = basis.evaluate_t(images)
 
-        coeffs = np.load(
+        # Historically, PSWF returned complex values.
+        # Load and convert them for this hard coded test.
+        ccoeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
+        coeffs = basis.to_real(ccoeffs)
 
-        # make sure both real and imaginary parts are consistent.
-        assert np.allclose(np.real(result), np.real(coeffs)) and np.allclose(
-            np.imag(result) * 1j, np.imag(coeffs) * 1j
-        )
+        np.testing.assert_allclose(result, coeffs)
 
     def testPSWFBasis2DEvaluate(self, basis):
-        coeffs = np.load(
+        # Historically, PSWF returned complex values.
+        # Load and convert them for this hard coded test.
+        ccoeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
-        result = basis.evaluate(coeffs)
+        coeffs = basis.to_real(ccoeffs)
+
+        result = coeffs.evaluate()
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
         assert np.allclose(result.asnumpy(), images)
