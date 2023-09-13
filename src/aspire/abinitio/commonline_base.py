@@ -20,9 +20,9 @@ class CLOrient3D:
         self, src, n_rad=None, n_theta=360, n_check=None, max_shift=0.15, shift_step=1
     ):
         """
-        Initialize an object for estimating 3D orientations using common lines
+        Initialize an object for estimating 3D orientations using common lines.
 
-        :param src: The source object of 2D denoised or class-averaged imag
+        :param src: The source object of 2D denoised or class-averaged images.
         :param n_rad: The number of points in the radial direction. If None,
             n_rad will default to the ceiling of half the resolution of the source.
         :param n_theta: The number of points in the theta direction. This value must be even.

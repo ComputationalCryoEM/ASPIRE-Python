@@ -22,26 +22,6 @@ class CommonlineSDP(CLOrient3D):
     SIAM J. Imaging Sciences, Vol. 4, No. 2, (2011): 543-572. doi:10.1137/090767777
     """
 
-    def __init__(self, src, n_rad=None, n_theta=360, max_shift=0.15, shift_step=1):
-        """
-        Initialize an object for estimating 3D orientations using semi-definite programming.
-
-        :param src: The source object of 2D denoised or class-averaged images with metadata
-        :param n_rad: The number of points in the radial direction
-        :param n_theta: The number of points in the theta direction.
-            Default is 360.
-        :param max_shift: Determines maximum range for shifts as a proportion
-            of the resolution. Default is 0.15.
-        :param shift_step: Resolution for shift estimation in pixels. Default is 1 pixel.
-        """
-        super().__init__(
-            src,
-            n_rad=n_rad,
-            n_theta=n_theta,
-            max_shift=max_shift,
-            shift_step=shift_step,
-        )
-
     def estimate_rotations(self):
         """
         Estimate rotation matrices using the common lines method with semi-definite programming.
