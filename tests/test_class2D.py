@@ -53,6 +53,10 @@ def volume(dtype, img_size):
 
 @pytest.fixture
 def sim_fixture(volume, img_size, dtype):
+    """
+    Provides a clean simulation parameterized by `img_size` and `dtype`.
+    """
+
     # Create a src from the volume
     src = Simulation(L=img_size, n=321, vols=volume, dtype=dtype, seed=SEED)
     src = src.cache()  # Precompute image stack
@@ -137,6 +141,15 @@ def test_basis_too_small(sim_fixture, basis):
 
 @pytest.fixture
 def sim_fixture2(volume, basis, img_size, dtype):
+    """
+    Provides clean/noisy pair of smaller parameterized simulations,
+    along with corresponding clean/noisy basis and an additional
+    compressed basis.
+
+    These are slightly smaller than `sim_fixture` and support covering
+    additional code and corner cases.
+    """
+
     n_img = 150
 
     # Clean
