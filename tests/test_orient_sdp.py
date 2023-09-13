@@ -98,7 +98,7 @@ def test_construct_S(src_orient_est_fixture):
     S = orient_est._construct_S(gt_cl_matrix)
 
     # Check that S is symmetric.
-    assert np.allclose(S, S.T)
+    np.testing.assert_allclose(S, S.T)
 
     # For uniformly distributed rotations the top eigenvalue should have multiplicity 3.
     # As such, we can expect that the top 3 eigenvalues will all be close in value to their mean.
@@ -106,10 +106,10 @@ def test_construct_S(src_orient_est_fixture):
     eigs_mean = np.mean(eigs[:3])
 
     # Check that the top 3 eigenvalues are all within 10% of the their mean.
-    assert (abs((eigs[:3] - eigs_mean) / eigs_mean) < 0.10).all()
+    np.testing.assert_array_less(abs((eigs[:3] - eigs_mean) / eigs_mean), 0.10)
 
     # Check that the next eigenvalue is not close to the top 3, ie. multiplicity is not greater than 3.
-    assert abs((eigs[4] - eigs_mean) / eigs_mean) > 0.25
+    np.testing.assert_array_less(0.25, abs((eigs[4] - eigs_mean) / eigs_mean))
 
 
 def test_Gram_matrix(src_orient_est_fixture):
@@ -163,7 +163,7 @@ def test_ATA_solver():
     A = CommonlineSDP._ATA_solver(v1, v2)
 
     # Check that A is close to A_ref.
-    assert np.allclose(A, A_ref, atol=1e-7)
+    np.testing.assert_allclose(A, A_ref, atol=1e-7)
 
 
 def test_deterministic_rounding(src_orient_est_fixture):
@@ -190,4 +190,4 @@ def test_deterministic_rounding(src_orient_est_fixture):
     Q_mat, flag = register_rotations(est_rots, gt_rots)
     regrot = get_aligned_rotations(est_rots, Q_mat, flag)
 
-    assert np.allclose(regrot, gt_rots)
+    np.testing.assert_allclose(regrot, gt_rots)

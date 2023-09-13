@@ -43,7 +43,6 @@ class PolarFT:
         # this basis has complex coefficients
         self.coefficient_dtype = complex_type(self.dtype)
 
-
     def _build(self):
         """
         Build the internal data structure to 2D polar Fourier grid
