@@ -96,7 +96,7 @@ class Filter:
         :return: `basis` representation of this filter.
             Return type will depend on `basis`.
         """
-        return basis.filter_to_basis_mat(self, basis)
+        return basis.filter_to_basis_mat(self)
 
     def scale(self, c=1):
         """
