@@ -11,7 +11,7 @@ with warnings.catch_warnings():
     from ray.util.multiprocessing import Pool
 
 from aspire import config
-from aspire.basis import COef
+from aspire.basis import Coef
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image, ImageStacker, MeanImageStacker
 from aspire.utils import trange
