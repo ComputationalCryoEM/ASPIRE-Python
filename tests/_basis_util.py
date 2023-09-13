@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from aspire.basis import Coef
 from aspire.image import Image
 from aspire.utils import gaussian_2d, utest_tolerance
 from aspire.utils.coor_trans import grid_2d
@@ -96,12 +97,12 @@ class Steerable2DMixin:
         sigma = L / 8
         im = gaussian_2d(L, sigma=sigma, dtype=basis.dtype)
 
-        coef = basis.expand(im)
+        coef_np = basis.expand(im).asnumpy()
 
         ells = basis.indices()["ells"]
 
-        energy_outside = np.sum(np.abs(coef[ells != 0]) ** 2)
-        energy_total = np.sum(np.abs(coef) ** 2)
+        energy_outside = np.sum(np.abs(coef_np[..., ells != 0]) ** 2)
+        energy_total = np.sum(np.abs(coef_np) ** 2)
 
         energy_ratio = energy_outside / energy_total
 
@@ -122,12 +123,12 @@ class Steerable2DMixin:
         for trig_fun in (np.sin, np.cos):
             im1 = im * trig_fun(ell * g2d["phi"])
 
-            coef = basis.expand(im1)
+            coef_np = basis.expand(im1).asnumpy()
 
             ells = basis.indices()["ells"]
 
-            energy_outside = np.sum(np.abs(coef[ells != ell]) ** 2)
-            energy_total = np.sum(np.abs(coef) ** 2)
+            energy_outside = np.sum(np.abs(coef_np[..., ells != ell]) ** 2)
+            energy_total = np.sum(np.abs(coef_np) ** 2)
 
             energy_ratio = energy_outside / energy_total
 
@@ -135,19 +136,21 @@ class Steerable2DMixin:
 
     def testEvaluateExpand(self, basis):
         coef1 = randn(basis.count, seed=self.seed)
-        coef1 = coef1.astype(basis.dtype)
+        coef1 = Coef(basis, coef1.astype(basis.dtype))
 
         im = basis.evaluate(coef1)
         if isinstance(im, Image):
             im = im.asnumpy()
-        coef2 = basis.expand(im)[0]
+        coef2 = basis.expand(im)
 
-        assert coef1.shape == coef2.shape
+        assert (
+            coef1.shape == coef2.shape
+        ), f"shape mismatch {coef1.shape} != {coef2.shape}"
         assert np.allclose(coef1, coef2, atol=utest_tolerance(basis.dtype))
 
     def testAdjoint(self, basis):
         u = randn(basis.count, seed=self.seed)
-        u = u.astype(basis.dtype)
+        u = Coef(basis, u, dtype=basis.dtype)
 
         Au = basis.evaluate(u)
         if isinstance(Au, Image):
@@ -180,7 +183,8 @@ class UniversalBasisMixin:
         # evaluate should take a NumPy array of type basis.coefficient_dtype
         # and return an Image/Volume
         _class = self.getClass(basis)
-        result = basis.evaluate(np.zeros((basis.count), dtype=basis.coefficient_dtype))
+        coef = Coef(basis, np.zeros((basis.count)), dtype=basis.coefficient_dtype)
+        result = basis.evaluate(coef)
         assert isinstance(result, _class)
 
     def testEvaluate_t(self, basis):
@@ -190,7 +194,7 @@ class UniversalBasisMixin:
         result = basis.evaluate_t(
             _class(np.zeros((basis.nres,) * basis.ndim, dtype=basis.dtype))
         )
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, Coef)
         assert result.dtype == basis.coefficient_dtype
 
     def testExpand(self, basis):
@@ -200,7 +204,7 @@ class UniversalBasisMixin:
         result = basis.expand(
             _class(np.zeros((basis.nres,) * basis.ndim, dtype=basis.dtype))
         )
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, Coef)
         assert result.dtype == basis.coefficient_dtype
 
     def testInitWithIntSize(self, basis):
