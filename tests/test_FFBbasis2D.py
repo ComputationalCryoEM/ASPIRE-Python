@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from scipy.special import jv
 
-from aspire.basis import FFBBasis2D
+from aspire.basis import Coef, FFBBasis2D
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils.misc import grid_2d
@@ -64,7 +64,7 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         coef_ref = np.zeros(basis.count, dtype=basis.dtype)
         coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
 
-        im_ref = basis.evaluate(coef_ref).asnumpy()[0]
+        im_ref = basis.evaluate(Coef(basis, coef_ref)).asnumpy()[0]
 
         coef = basis.expand(im)
 

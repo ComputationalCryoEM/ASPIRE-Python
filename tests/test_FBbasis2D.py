@@ -5,7 +5,7 @@ import pytest
 from pytest import raises
 from scipy.special import jv
 
-from aspire.basis import FBBasis2D
+from aspire.basis import Coef, FBBasis2D
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils import complex_type, real_type
@@ -56,7 +56,7 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         coef_ref = np.zeros(basis.count, dtype=basis.dtype)
         coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
 
-        im_ref = basis.evaluate(coef_ref)
+        im_ref = basis.evaluate(Coef(basis, coef_ref))
 
         coef = basis.expand(im)
 
@@ -87,15 +87,16 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         assert np.allclose(v1, v2)
 
     def testComplexCoversionErrorsToComplex(self, basis):
-        x = randn(*basis.sz, seed=self.seed)
+        x = randn(*basis.sz, seed=self.seed).astype(basis.dtype)
 
         # Express in an FB basis
-        v1 = basis.expand(x.astype(basis.dtype))
+        v1 = basis.expand(x)
 
         # Test catching Errors
         with raises(TypeError):
             # Pass complex into `to_complex`
-            _ = basis.to_complex(v1.astype(np.complex64))
+            v1_cpx = Coef(basis, v1, dtype=np.complex64)
+            _ = basis.to_complex(v1_cpx)
 
         # Test casting case, where basis and coef don't match
         if basis.dtype == np.float32:
@@ -105,11 +106,8 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         # Result should be same precision as coef input, just complex.
         result_dtype = complex_type(test_dtype)
 
-        v3 = basis.to_complex(v1.astype(test_dtype))
+        v3 = basis.to_complex(Coef(basis, v1, dtype=test_dtype))
         assert v3.dtype == result_dtype
-
-        # Try 0d vector, should not crash.
-        _ = basis.to_complex(v1.reshape(-1))
 
     def testComplexCoversionErrorsToReal(self, basis):
         x = randn(*basis.sz, seed=self.seed)
