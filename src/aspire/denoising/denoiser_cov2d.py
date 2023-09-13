@@ -199,7 +199,7 @@ class DenoiserCov2D(Denoiser):
         logger.debug(f"Estimating Cov2D coefficients for {imgs_noise.n_images} images.")
         coefs_estim = self.cov2d.get_cwf_coefs(
             coefs_noise,
-            self.cov2d.ctf_fb,
+            self.cov2d.ctf_basis,
             self.cov2d.ctf_idx[indices],
             mean_coef=self.mean_est,
             covar_coef=self.covar_est,
