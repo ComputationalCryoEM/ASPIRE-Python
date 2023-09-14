@@ -28,7 +28,7 @@ from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
 from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, Simulation
-from aspire.utils import check_rotations
+from aspire.utils import mean_aligned_angular_distance
 
 logger = logging.getLogger(__name__)
 
@@ -194,9 +194,9 @@ orient_est = CLSyncVoting(avgs, n_theta=180)
 oriented_src = OrientedSource(avgs, orient_est)
 
 logger.info("Compare with known rotations")
-# Compare with known true rotations. ``check_rotations`` globally aligns the estimated
+# Compare with known true rotations. ``mean_aligned_angular_distance`` globally aligns the estimated
 # rotations to the ground truth and finds the mean angular distance between them.
-mean_ang_dist = check_rotations(oriented_src.rotations, true_rotations)
+mean_ang_dist = mean_aligned_angular_distance(oriented_src.rotations, true_rotations)
 logger.info(
     f"Mean angular distance between globally aligned estimates and ground truth rotations: {mean_ang_dist}\n"
 )

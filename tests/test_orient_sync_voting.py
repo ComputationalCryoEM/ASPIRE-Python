@@ -10,7 +10,7 @@ from aspire.abinitio import CLOrient3D, CLSyncVoting
 from aspire.commands.orient3d import orient3d
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
-from aspire.utils import check_rotations, rots_to_clmatrix
+from aspire.utils import mean_aligned_angular_distance, rots_to_clmatrix
 from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -97,7 +97,7 @@ def test_estimate_rotations(source_orientation_objs):
 
     # Register estimates to ground truth rotations and compute the
     # angular distance between them (in degrees).
-    mean_ang_dist = check_rotations(orient_est.rotations, src.rotations)
+    mean_ang_dist = mean_aligned_angular_distance(orient_est.rotations, src.rotations)
 
     # Assert that mean angular distance is less than 1 degree (5 degrees with shifts).
     degree_tol = 1
@@ -140,8 +140,8 @@ def test_estimate_rotations_fuzzy_mask():
     orient_est_fuzzy.estimate_rotations()
 
     # Check that fuzzy_mask improves orientation estimation.
-    mean_angle_dist = check_rotations(orient_est.rotations, noisy_src.rotations)
-    mean_angle_dist_fuzzy = check_rotations(
+    mean_angle_dist = mean_aligned_angular_distance(orient_est.rotations, noisy_src.rotations)
+    mean_angle_dist_fuzzy = mean_aligned_angular_distance(
         orient_est_fuzzy.rotations, noisy_src.rotations
     )
 

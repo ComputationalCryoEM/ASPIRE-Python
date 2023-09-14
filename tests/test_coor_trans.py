@@ -5,7 +5,7 @@ import numpy as np
 
 from aspire.utils import (
     Rotation,
-    check_rotations,
+    mean_aligned_angular_distance,
     crop_pad_2d,
     crop_pad_3d,
     get_aligned_rotations,
@@ -338,7 +338,7 @@ class UtilsTestCase(TestCase):
         self.assertTrue(np.array_equal(b[:, :, 0], -1 * np.ones((4, 4))))
 
 
-def test_check_rotations():
+def test_mean_aligned_angular_distance():
     n_rots = 10
     dtype = np.float32
     rots_gt = Rotation.generate_random_rotations(n_rots, dtype=dtype).matrices
@@ -347,4 +347,4 @@ def test_check_rotations():
     rots_est = rots_gt[0] @ rots_gt
 
     # Check that the mean angular distance is zero degrees.
-    np.testing.assert_allclose(check_rotations(rots_est, rots_gt), 0.0)
+    np.testing.assert_allclose(mean_aligned_angular_distance(rots_est, rots_gt), 0.0)
