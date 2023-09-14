@@ -62,9 +62,13 @@ class Coef:
         self.stack_size = np.prod(self.stack_shape)
         self.count = self._data.shape[-1]
 
-        if self.count != self.basis.count:
+        basis_count = self.basis.count
+        if np.iscomplexobj(data):
+            basis_count = self.basis.complex_count
+
+        if self.count != basis_count:
             raise RuntimeError(
-                f"Provided data count of {self.count} does not match basis count of {self.basis.count}."
+                f"Provided data count of {self.count} does not match basis count of {basis_count}."
             )
 
         # Numpy interop

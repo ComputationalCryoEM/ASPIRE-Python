@@ -5,6 +5,7 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
+from aspire.operators import BlkDiagMatrix
 from aspire.utils import roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
