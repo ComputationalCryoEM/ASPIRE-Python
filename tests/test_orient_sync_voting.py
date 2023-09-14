@@ -96,12 +96,9 @@ def test_estimate_rotations(source_orientation_objs):
     orient_est.estimate_rotations()
 
     # Register estimates to ground truth rotations and compute the
-    # angular distance between them (in degrees).
-    mean_ang_dist = mean_aligned_angular_distance(orient_est.rotations, src.rotations)
-
-    # Assert that mean angular distance is less than 1 degree (5 degrees with shifts).
-    degree_tol = 1
-    assert mean_ang_dist < degree_tol
+    # mean angular distance between them (in degrees).
+    # Assert that mean angular distance is less than 1 degree.
+    mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=1)
 
 
 def test_estimate_shifts(source_orientation_objs):
@@ -140,7 +137,9 @@ def test_estimate_rotations_fuzzy_mask():
     orient_est_fuzzy.estimate_rotations()
 
     # Check that fuzzy_mask improves orientation estimation.
-    mean_angle_dist = mean_aligned_angular_distance(orient_est.rotations, noisy_src.rotations)
+    mean_angle_dist = mean_aligned_angular_distance(
+        orient_est.rotations, noisy_src.rotations
+    )
     mean_angle_dist_fuzzy = mean_aligned_angular_distance(
         orient_est_fuzzy.rotations, noisy_src.rotations
     )
