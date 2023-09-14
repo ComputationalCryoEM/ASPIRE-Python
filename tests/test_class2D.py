@@ -101,12 +101,16 @@ def test_complex_conversions_errors(sim_fixture):
 
     with pytest.raises(TypeError, match="coef provided to to_complex should be real."):
         _ = fspca_basis.to_complex(
-            np.arange(fspca_basis.count),
+            Coef(
+                fspca_basis,
+                np.arange(fspca_basis.count),
+                dtype=np.complex64,
+            )
         )
 
     with pytest.raises(TypeError, match="coef provided to to_real should be complex."):
         _ = fspca_basis.to_real(
-            np.arange(fspca_basis.count, dtype=np.float32).flatten()
+            Coef(fspca_basis, np.arange(fspca_basis.count), dtype=np.float32)
         )
 
 

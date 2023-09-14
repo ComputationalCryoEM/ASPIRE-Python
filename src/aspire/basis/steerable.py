@@ -394,6 +394,11 @@ class SteerableBasis2D(Basis):
         """
         from .coef import Coef
 
+        if not isinstance(coef, Coef):
+            raise TypeError(
+                f"coef should be instanace of `Coef`, received {type(coef)}."
+            )
+
         if complex_coef.ndim == 1:
             complex_coef = complex_coef.reshape(1, -1)
 
