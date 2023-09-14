@@ -14,6 +14,7 @@ from aspire.basis.fle_2d_utils import (
 )
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft
+from aspire.operators import DiagMatrix
 from aspire.utils import complex_type, grid_2d
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
     https://arxiv.org/pdf/2207.13674.pdf
     """
+
+    # Default matrix type for basis representation.
+    matrix_type = DiagMatrix
 
     def __init__(
         self, size, bandlimit=None, epsilon=1e-10, dtype=np.float32, match_fb=True
@@ -712,3 +716,38 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             a[self.idx_list[i]] = y[i]
 
         return a.flatten()
+
+    def filter_to_basis_mat(self, f):
+        """
+        See SteerableBasis2D.filter_to_basis_mat.
+        """
+        # These form a circular dependence, import locally until time to clean up.
+        from aspire.basis.basis_utils import lgwt
+
+        # Get the filter's evaluate function.
+        h_fun = f.evaluate
+
+        # Set same dimensions as basis object
+        n_k = 2 * self.num_radial_nodes  # self.n_r
+        n_theta = self.num_angular_nodes  # self.n_theta
+
+        # get 2D grid in polar coordinate
+        k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
+        k, theta = np.meshgrid(
+            k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
+        )
+
+        # Get function values in polar 2D grid and average out angle contribution
+        # NOTE: should probably just let the ctf objects handle this...
+        omegax = k * np.cos(theta)
+        omegay = k * np.sin(theta)
+        omega = 2 * np.pi * np.vstack((omegax.flatten("C"), omegay.flatten("C")))
+        h_vals2d = h_fun(omega).reshape(n_k, n_theta).astype(self.dtype)
+        h_vals = np.sum(h_vals2d, axis=1) / n_theta
+
+        h_basis = np.zeros(self.count, dtype=self.dtype)
+        # For now we just need handle 1D (stack of one ctf)
+        for j in range(self.ell_p_max + 1):
+            h_basis[self.idx_list[j]] = self.A3[j] @ h_vals
+
+        return DiagMatrix(h_basis)

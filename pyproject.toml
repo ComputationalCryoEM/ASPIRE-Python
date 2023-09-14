@@ -73,7 +73,6 @@ dev = [
     "pooch",
     "pyflakes",
     "pydocstyle",
-    "parameterized",
     "pytest",
     "pytest-cov",
     "pytest-random-order",

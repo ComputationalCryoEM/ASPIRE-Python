@@ -1,9 +1,11 @@
+import abc
 import logging
 from collections.abc import Iterable
 
 import numpy as np
 
 from aspire.basis import Basis
+from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
@@ -15,6 +17,9 @@ class SteerableBasis2D(Basis):
     `rotation` (steerable) and `calculate_bispectrum` methods.
     """
 
+    # Default matrix type for basis representation.
+    matrix_type = BlkDiagMatrix
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -24,6 +29,9 @@ class SteerableBasis2D(Basis):
         self._zero_angular_inds = self.angular_indices == 0
         self._pos_angular_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
         self._neg_angular_inds = self.signs_indices == -1
+
+        # Attribute for caching the blk_diag shape once known.
+        self._blk_diag_cov_shape = None
 
     def calculate_bispectrum(
         self, complex_coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
@@ -274,3 +282,40 @@ class SteerableBasis2D(Basis):
             )
 
         return self.evaluate_t(self.evaluate(coef).shift(shifts))
+
+    @abc.abstractmethod
+    def filter_to_basis_mat(self, f):
+        """
+        Convert a filter into a basis representation.
+
+        :param f: `Filter` object, usually a `CTFFilter`.
+
+        :return: Representation of filter in `basis`.
+            Return type will be based on the class's `matrix_type`.
+        """
+
+    @property
+    def blk_diag_cov_shape(self):
+        """
+        Return the `BlkDiagMatrix` partition shapes.
+
+        If the shape has already been cached,
+        returns cached value.  Otherwise, will
+        compute the shape and cache in this instance.
+        """
+        # Compute the _blk_diag_cov_shape as needed.
+        if self._blk_diag_cov_shape is None:
+            blks = []
+            for ell in range(self.ell_max + 1):
+                sgns = (1,) if ell == 0 else (1, -1)
+                for _ in sgns:
+                    blks.append(
+                        [
+                            self.k_max[ell],
+                        ]
+                        * 2
+                    )
+            self._blk_diag_cov_shape = np.array(blks)
+
+        # Return the cached shape
+        return self._blk_diag_cov_shape
