@@ -131,7 +131,8 @@ def test_get_covar(cov2d_fixture):
     )
 
     cov2d, coeff_clean = cov2d_fixture[1], cov2d_fixture[2]
-    covar_coeff = cov2d._get_covar(coeff_clean)
+
+    covar_coeff = cov2d._get_covar(coeff_clean.asnumpy())
 
     for im, mat in enumerate(results.tolist()):
         np.testing.assert_allclose(mat, covar_coeff[im], rtol=1e-05)

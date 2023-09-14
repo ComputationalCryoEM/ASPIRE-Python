@@ -703,16 +703,17 @@ class BlkDiagMatrix:
         :param X: Coefficient matrix, each column is a coefficient vector.
         :return: A matrix with new coefficient vectors.
         """
+        import aspire
 
         cols = self.partition[:, 1]
-
-        if np.sum(cols) != np.size(X, 0):
-            raise RuntimeError("Sizes of matrix `self` and `X` are not compatible.")
 
         vector = False
         if np.ndim(X) == 1:
             X = X[:, np.newaxis]
             vector = True
+
+        if np.sum(cols) != np.size(X, 0):
+            raise RuntimeError("Sizes of matrix `self` and `X` are not compatible.")
 
         rows = np.array(
             [
