@@ -133,8 +133,8 @@ class RotCov2D:
         """
         Calculate the covariance matrix from the expansion coefficients without CTF information.
 
-        :param coeffs: A coefficient vector (or an array of coefficient vectors) calculated from 2D images.
-        :param mean_coeff: The mean vector calculated from the `coeffs`.
+        :param coeffs: A coefficient vector (an array of coefficient vectors) calculated from 2D images.
+        :param mean_coeff: The mean vector calculated from the `coeffs`. (array)
         :param do_refl: If true, enforce invariance to reflection (default false).
         :return: The covariance matrix of coefficients for all images.
         """
@@ -307,7 +307,7 @@ class RotCov2D:
 
             ctf_basis_k = ctf_basis[k]
             ctf_basis_k_t = ctf_basis_k.T
-            mean_coeff_k = ctf_basis_k.apply(mean_coeff)
+            mean_coeff_k = ctf_basis_k.apply(mean_coeff.asnumpy()[0])
             covar_coeff_k = self._get_covar(coeff_k, mean_coeff_k)
 
             b_coeff += weight * (ctf_basis_k_t @ covar_coeff_k @ ctf_basis_k)
@@ -383,7 +383,7 @@ class RotCov2D:
                 logger.info("Convert matrices to positive semidefinite.")
                 covar_coeff = covar_coeff.make_psd()
 
-        return Coef(self.basis, covar_coeff)
+        return covar_coeff
 
     def shrink_covar_backward(self, b, b_noise, n, noise_var, shrinker):
         """
@@ -438,7 +438,6 @@ class RotCov2D:
             raise TypeError(
                 f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
             )
-        coeffs = coeffs.asnumpy()
 
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_basis, ctf_idx)
@@ -447,6 +446,8 @@ class RotCov2D:
             covar_coeff = self.get_covar(
                 coeffs, ctf_basis, ctf_idx, mean_coeff, noise_var=noise_var
             )
+
+        coeffs = coeffs.asnumpy()
 
         # Handle CTF arguments.
         if (ctf_basis is None) ^ (ctf_idx is None):
@@ -469,7 +470,7 @@ class RotCov2D:
             ctf_basis_k = ctf_basis[k]
             ctf_basis_k_t = ctf_basis_k.T
 
-            mean_coeff_k = ctf_basis_k.apply(mean_coeff)
+            mean_coeff_k = ctf_basis_k.apply(mean_coeff.asnumpy()[0])
             coeff_est_k = coeff_k - mean_coeff_k
 
             if noise_var == 0:
@@ -628,7 +629,7 @@ class BatchedRotCov2D(RotCov2D):
             ctf_basis_k = ctf_basis[k]
             ctf_basis_k_t = ctf_basis_k.T
 
-            mean_coeff_k = ctf_basis_k.apply(mean_coeff)
+            mean_coeff_k = ctf_basis_k.apply(mean_coeff.asnumpy()[0])
             mean_coeff_k = ctf_basis_k_t.apply(mean_coeff_k)
 
             mean_coeff_k = mean_coeff_k[: partition[0][0]]
@@ -808,7 +809,7 @@ class BatchedRotCov2D(RotCov2D):
                 logger.info("Convert matrices to positive semidefinite.")
                 covar_coeff = covar_coeff.make_psd()
 
-        return Coef(self.basis, covar_coeff)
+        return covar_coeff
 
     def get_cwf_coeffs(
         self, coeffs, ctf_basis, ctf_idx, mean_coeff, covar_coeff, noise_var=0
@@ -828,6 +829,12 @@ class BatchedRotCov2D(RotCov2D):
             These are obtained using a Wiener filter with the specified covariance for the clean images
             and white noise of variance `noise_var` for the noise.
         """
+
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
+            )
+        coeffs = coeffs.asnumpy()
 
         if mean_coeff is None:
             mean_coeff = self.get_mean()
@@ -856,7 +863,7 @@ class BatchedRotCov2D(RotCov2D):
             ctf_basis_k = ctf_basis[k]
             ctf_basis_k_t = ctf_basis_k.T
 
-            mean_coeff_k = ctf_basis_k.apply(mean_coeff)
+            mean_coeff_k = ctf_basis_k.apply(mean_coeff.asnumpy()[0])
             coeff_est_k = coeff_k - mean_coeff_k
 
             if noise_var == 0:
