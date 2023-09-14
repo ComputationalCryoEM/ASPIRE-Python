@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.basis import FFBBasis2D
+from aspire.basis import Coef, FFBBasis2D
 from aspire.covariance import BatchedRotCov2D, RotCov2D
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
@@ -85,7 +85,7 @@ class BatchedRotCov2DTestCase(TestCase):
 
     def testZeroMean(self):
         # Make sure it works with zero mean (pure second moment).
-        zero_coeff = np.zeros((self.basis.count,), dtype=self.dtype)
+        zero_coeff = Coef(self.basis, np.zeros((self.basis.count,), dtype=self.dtype))
 
         covar_cov2d = self.cov2d.get_covar(
             self.coeff,
