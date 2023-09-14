@@ -120,7 +120,7 @@ def test_get_mean(cov2d_fixture):
     results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_cov2d_mean.npy"))
     cov2d, coeff_clean = cov2d_fixture[1], cov2d_fixture[2]
 
-    mean_coeff = cov2d._get_mean(coeff_clean)
+    mean_coeff = cov2d._get_mean(coeff_clean.asnumpy())
     np.testing.assert_allclose(results, mean_coeff, atol=utest_tolerance(cov2d.dtype))
 
 
@@ -149,10 +149,10 @@ def test_get_mean_ctf(cov2d_fixture, ctf_enabled):
     if ctf_enabled:
         result = np.load(os.path.join(DATA_DIR, "clean70SRibosome_cov2d_meanctf.npy"))
     else:
-        result = cov2d._get_mean(coeff_clean)
+        result = cov2d._get_mean(coeff_clean.asnumpy())
         tol = 0.002
 
-    np.testing.assert_allclose(mean_coeff_ctf, result, atol=tol)
+    np.testing.assert_allclose(mean_coeff_ctf.asnumpy()[0], result, atol=tol)
 
 
 def test_get_cwf_coeffs_clean(cov2d_fixture):
