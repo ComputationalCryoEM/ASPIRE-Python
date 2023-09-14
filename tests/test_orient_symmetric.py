@@ -10,7 +10,7 @@ from aspire.utils import (
     J_conjugate,
     Rotation,
     all_pairs,
-    check_rotations,
+    mean_aligned_angular_distance,
     cyclic_rotations,
     randn,
     utest_tolerance,
@@ -124,7 +124,7 @@ def test_estimate_rotations(n_img, L, order, dtype):
 
     # Register estimates to ground truth rotations and compute the
     # angular distance between them (in degrees).
-    mean_ang_dist = check_rotations(rots_est, rots_gt_sync)
+    mean_ang_dist = mean_aligned_angular_distance(rots_est, rots_gt_sync)
 
     # Assert mean angular distance is reasonable.
     assert mean_ang_dist < 3
