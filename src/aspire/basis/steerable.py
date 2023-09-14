@@ -1,3 +1,4 @@
+import abc
 import logging
 from collections.abc import Iterable
 
@@ -5,7 +6,7 @@ import numpy as np
 
 from aspire.basis import Basis
 from aspire.operators import BlkDiagMatrix
-from aspire.utils import complex_type
+from aspire.utils import complex_type, real_type
 
 logger = logging.getLogger(__name__)
 
@@ -394,13 +395,10 @@ class SteerableBasis2D(Basis):
         """
         from .coef import Coef
 
-        if not isinstance(coef, Coef):
+        if not isinstance(complex_coef, Coef):
             raise TypeError(
-                f"coef should be instanace of `Coef`, received {type(coef)}."
+                f"complex_coef should be instanace of `Coef`, received {type(complex_coef)}."
             )
-
-        if complex_coef.ndim == 1:
-            complex_coef = complex_coef.reshape(1, -1)
 
         if complex_coef.dtype not in (np.complex128, np.complex64):
             raise TypeError("coef provided to to_real should be complex.")
@@ -412,7 +410,8 @@ class SteerableBasis2D(Basis):
                 f"Complex coef dtype {complex_coef.dtype} does not match precision of basis.dtype {self.dtype}, returning {dtype}."
             )
 
-        coef = np.zeros((complex_coef.shape[0], self.count), dtype=dtype)
+        coef = np.zeros((*complex_coef.stack_shape, self.count), dtype=dtype)
+        complex_coef = complex_coef.asnumpy()
 
         ind = 0
         idx = np.arange(self.k_max[0], dtype=int)
@@ -453,9 +452,6 @@ class SteerableBasis2D(Basis):
                 f"coef should be instanace of `Coef`, received {type(coef)}."
             )
 
-        # if coef.ndim == 1:
-        #     coef = coef.reshape(1, -1)
-
         if coef.dtype not in (np.float64, np.float32):
             raise TypeError("coef provided to to_complex should be real.")
 
@@ -486,4 +482,4 @@ class SteerableBasis2D(Basis):
 
             ind += np.size(idx)
 
-        return ccoef
+        return Coef(self, ccoef)

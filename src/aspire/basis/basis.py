@@ -101,9 +101,8 @@ class Basis:
             # v = Coef(self, v)
             raise TypeError(f"`evaluate` should be passed a `Coef`, received {type(v)}")
 
-        # Flatten stack, ndim is wrt Basis (2 or 3)
+        # Flatten stack
         stack_shape = v.stack_shape
-        v = v.reshape(-1, self.count)
         v = v.stack_reshape(-1).asnumpy()
 
         # Compute the transform
