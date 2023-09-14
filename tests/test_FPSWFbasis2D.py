@@ -5,6 +5,7 @@ import pytest
 
 from aspire.basis import FPSWFBasis2D
 from aspire.image import Image
+from aspire.utils import utest_tolerance
 
 from ._basis_util import UniversalBasisMixin, pswf_params_2d, show_basis_params
 

@@ -113,12 +113,13 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         x = randn(*basis.sz, seed=self.seed)
 
         # Express in an FB basis
-        cv1 = basis.to_complex(basis.expand(x.astype(basis.dtype)))
+        cv = basis.expand(x.astype(basis.dtype))
+        ccv = basis.to_complex(cv)
 
         # Test catching Errors
         with raises(TypeError):
             # Pass real into `to_real`
-            _ = basis.to_real(cv1.real.astype(np.float32))
+            _ = basis.to_real(cv)
 
         # Test casting case, where basis and coef precision don't match
         if basis.dtype == np.float32:
@@ -128,11 +129,9 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         # Result should be same precision as coef input, just real.
         result_dtype = real_type(test_dtype)
 
-        v3 = basis.to_real(cv1.astype(test_dtype))
+        x = Coef(basis, ccv.asnumpy().astype(test_dtype))
+        v3 = basis.to_real(x)
         assert v3.dtype == result_dtype
-
-        # Try a 0d vector, should not crash.
-        _ = basis.to_real(cv1.reshape(-1))
 
 
 params = [pytest.param(256, np.float32, marks=pytest.mark.expensive)]
