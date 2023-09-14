@@ -5,12 +5,12 @@ import numpy as np
 
 from aspire.utils import (
     Rotation,
-    mean_aligned_angular_distance,
     crop_pad_2d,
     crop_pad_3d,
     get_aligned_rotations,
     grid_2d,
     grid_3d,
+    mean_aligned_angular_distance,
     register_rotations,
     uniform_random_angles,
 )
@@ -348,3 +348,6 @@ def test_mean_aligned_angular_distance():
 
     # Check that the mean angular distance is zero degrees.
     np.testing.assert_allclose(mean_aligned_angular_distance(rots_est, rots_gt), 0.0)
+
+    # Test internal assert using the `degree_tol` argument.
+    mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=0.1)
