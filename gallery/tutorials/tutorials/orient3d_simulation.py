@@ -14,7 +14,7 @@ import numpy as np
 from aspire.abinitio import CLSyncVoting
 from aspire.operators import RadialCTFFilter
 from aspire.source import OrientedSource, Simulation
-from aspire.utils import check_rotations
+from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -101,9 +101,9 @@ rots_est = oriented_src.rotations
 # Mean Angular Distance
 # ---------------------
 
-# ``check_rotations`` will perform global alignment of the estimated rotations
+# ``mean_aligned_angular_distance`` will perform global alignment of the estimated rotations
 # to the ground truth and find the mean angular distance between them (in degrees).
-mean_ang_dist = check_rotations(rots_est, rots_true)
+mean_ang_dist = mean_aligned_angular_distance(rots_est, rots_true)
 logger.info(
     f"Mean angular distance between estimates and ground truth: {mean_ang_dist} degrees"
 )

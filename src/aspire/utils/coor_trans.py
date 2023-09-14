@@ -284,7 +284,7 @@ def get_rots_mse(rots_reg, rots_ref):
     return mse
 
 
-def check_rotations(rots_est, rots_gt, degree_tol=None):
+def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):
     """
     Register estimates to ground truth rotations and compute the
     mean angular distance between them (in degrees).
