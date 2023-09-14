@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import eig, inv
 from scipy.linalg import solve, sqrtm
 
-from aspire.basis import FFBBasis2D
+from aspire.basis import Coef, FFBBasis2D
 from aspire.operators import BlkDiagMatrix, DiagMatrix
 from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import make_symmat
@@ -197,6 +197,13 @@ class RotCov2D:
         :return: The mean value vector for all images.
         """
 
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
+            )
+
+        coeffs = coeffs.asnumpy()
+
         # TODO: Redundant, remove?
         if coeffs.size == 0:
             raise RuntimeError("The coefficients need to be calculated!")
@@ -220,7 +227,7 @@ class RotCov2D:
             A += weight * (ctf_basis_k_t @ ctf_basis_k)
 
         mean_coeff = A.solve(b)
-        return mean_coeff
+        return Coef(self.basis, mean_coeff)
 
     def get_covar(
         self,
@@ -254,6 +261,12 @@ class RotCov2D:
             are accounted for and inverted to yield a covariance estimate of the unfiltered images.
         """
 
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
+            )
+        coeffs = coeffs.asnumpy()
+
         if coeffs.size == 0:
             raise RuntimeError("The coefficients need to be calculated!")
 
@@ -278,7 +291,7 @@ class RotCov2D:
         covar_est_opt = fill_struct(covar_est_opt, default_est_opt)
 
         if mean_coeff is None:
-            mean_coeff = self.get_mean(coeffs, ctf_basis, ctf_idx)
+            mean_coeff = self.get_mean(Coef(self.basis, coeffs), ctf_basis, ctf_idx)
 
         b_coeff = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape)
         b_noise = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape)
@@ -370,7 +383,7 @@ class RotCov2D:
                 logger.info("Convert matrices to positive semidefinite.")
                 covar_coeff = covar_coeff.make_psd()
 
-        return covar_coeff
+        return Coef(self.basis, covar_coeff)
 
     def shrink_covar_backward(self, b, b_noise, n, noise_var, shrinker):
         """
@@ -421,6 +434,12 @@ class RotCov2D:
             and white noise of variance `noise_var` for the noise.
         """
 
+        if not isinstance(coeffs, Coef):
+            raise TypeError(
+                f"`coeffs` should be instance of `Coef`, received {type(Coef)}."
+            )
+        coeffs = coeffs.asnumpy()
+
         if mean_coeff is None:
             mean_coeff = self.get_mean(coeffs, ctf_basis, ctf_idx)
 
@@ -465,7 +484,7 @@ class RotCov2D:
             coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
 
-        return coeffs_est
+        return Coef(self.basis, coeffs_est)
 
 
 class BatchedRotCov2D(RotCov2D):
@@ -536,7 +555,7 @@ class BatchedRotCov2D(RotCov2D):
             batch = np.arange(start, min(start + self.batch_size, src.n))
 
             im = src.images[batch[0] : batch[0] + len(batch)]
-            coeff = basis.evaluate_t(im)
+            coeff = basis.evaluate_t(im).asnumpy()
 
             for k in np.unique(ctf_idx[batch]):
                 coeff_k = coeff[ctf_idx[batch] == k]
@@ -701,7 +720,7 @@ class BatchedRotCov2D(RotCov2D):
         b_mean_all = np.stack(self.b_mean).sum(axis=0)
         mean_coeff = self.A_mean.solve(b_mean_all)
 
-        return mean_coeff
+        return Coef(self.basis, mean_coeff)
 
     def get_covar(
         self, noise_var=0, mean_coeff=None, covar_est_opt=None, make_psd=True
@@ -789,7 +808,7 @@ class BatchedRotCov2D(RotCov2D):
                 logger.info("Convert matrices to positive semidefinite.")
                 covar_coeff = covar_coeff.make_psd()
 
-        return covar_coeff
+        return Coef(self.basis, covar_coeff)
 
     def get_cwf_coeffs(
         self, coeffs, ctf_basis, ctf_idx, mean_coeff, covar_coeff, noise_var=0
@@ -852,4 +871,4 @@ class BatchedRotCov2D(RotCov2D):
             coeff_est_k = coeff_est_k + mean_coeff
             coeffs_est[ctf_idx == k] = coeff_est_k
 
-        return coeffs_est
+        return Coef(self.basis, coeffs_est)
