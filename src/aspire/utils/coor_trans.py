@@ -304,7 +304,6 @@ def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):
 
     if degree_tol is not None:
         np.testing.assert_array_less(mean_ang_dist, degree_tol)
-        return
 
     return mean_ang_dist
 
