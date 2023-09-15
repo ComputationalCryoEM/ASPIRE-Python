@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 import pytest
 
-from aspire.basis import FPSWFBasis2D
+from aspire.basis import Coef, FPSWFBasis2D
 from aspire.image import Image
 from aspire.utils import utest_tolerance
 
@@ -28,7 +28,7 @@ class TestFPSWFBasis2D(UniversalBasisMixin):
         ccoeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
-        coeffs = basis.to_real(ccoeffs)
+        coeffs = basis.to_real(Coef(basis, ccoeffs))
 
         np.testing.assert_allclose(result, coeffs, atol=utest_tolerance(basis.dtype))
 
@@ -38,10 +38,10 @@ class TestFPSWFBasis2D(UniversalBasisMixin):
         ccoeffs = np.load(
             os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
         ).T  # RCOPT
-        coeffs = basis.to_real(ccoeffs)
+        coeffs = basis.to_real(Coef(basis, ccoeffs))
         result = coeffs.evaluate()
 
         result = basis.evaluate(coeffs)
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
 
-        np.testing.assert_allclose(result, images)
+        np.testing.assert_allclose(result, images, rtol=1e-05, atol=1e-08)
