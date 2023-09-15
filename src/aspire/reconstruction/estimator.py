@@ -81,7 +81,7 @@ class Estimator:
         if kernel is None:
             kernel = self.kernel
 
-        vol = self.basis.evaluate(vol_coeff)  # returns a Volume
+        vol = Coef(self.basis, vol_coeff).evaluate()  # returns a Volume
         vol = kernel.convolve_volume(vol)  # returns a Volume
-        vol_coef = Coef(self.basis, vol_coeff).evaluate()
+        vol_coef = self.basis.evaluate_t(vol)
         return vol_coef
