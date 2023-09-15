@@ -240,7 +240,7 @@ class FSPCABasis(SteerableBasis2D):
         )
 
         # Compute coefficient vector of mean image at zeroth component
-        self.mean_coef_zero = self.mean_coef_est[self.angular_indices == 0]
+        self.mean_coef_zero = self.mean_coef_est.asnumpy()[0][self.angular_indices == 0]
 
         # Define mask for zero angular mode, used in loop below
         zero_ell_mask = self.basis._indices["ells"] == 0
