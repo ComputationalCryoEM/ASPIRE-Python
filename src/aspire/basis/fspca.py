@@ -512,7 +512,7 @@ class FSPCABasis(SteerableBasis2D):
         for i, k in enumerate(ccoef_d.keys()):
             ccoef[:, i] = ccoef_d[k]
 
-        return ccoef
+        return Coef(self, ccoef)
 
     def to_real(self, complex_coef):
         """
@@ -552,7 +552,7 @@ class FSPCABasis(SteerableBasis2D):
                 coef[:, pos_i] = 2.0 * complex_coef[:, i].real
                 coef[:, neg_i] = -2.0 * complex_coef[:, i].imag
 
-        return coef
+        return Coef(self, coef)
 
     def calculate_bispectrum(
         self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
