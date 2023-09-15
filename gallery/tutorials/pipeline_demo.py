@@ -223,7 +223,7 @@ from aspire.utils import mean_aligned_angular_distance
 
 # Compare with known true rotations
 mean_ang_dist = mean_aligned_angular_distance(oriented_src.rotations, true_rotations)
-mean_ang_dist
+print(f"Mean aligned angular distance: {mean_ang_dist} degrees")
 
 
 # %%
