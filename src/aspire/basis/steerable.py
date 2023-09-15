@@ -59,6 +59,14 @@ class SteerableBasis2D(Basis):
         :return: Bispectum matrix (complex valued).
         """
 
+        # Avoids circular import
+        from aspire.basis import Coef
+
+        if not isinstance(complex_coef, Coef):
+            raise TypeError(f"Expect `Coef` received {type(complex_coef)}.")
+        complex_coef = complex_coef.asnumpy()
+
+        # TODO, can clean this up after enforcing Coef.
         # Check shape
         if complex_coef.shape[0] != 1:
             raise ValueError(
