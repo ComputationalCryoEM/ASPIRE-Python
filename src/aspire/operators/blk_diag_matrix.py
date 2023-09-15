@@ -703,7 +703,6 @@ class BlkDiagMatrix:
         :param X: Coefficient matrix, each column is a coefficient vector.
         :return: A matrix with new coefficient vectors.
         """
-        import aspire
 
         cols = self.partition[:, 1]
 
