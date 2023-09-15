@@ -6,6 +6,7 @@ from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire import config
+from aspire.basis import Coef
 from aspire.nufft import anufft
 from aspire.numeric import fft
 from aspire.operators import evaluate_src_filters_on_grid
@@ -231,11 +232,13 @@ class WeightedVolumesEstimator(Estimator):
             np.zeros((self.r, self.src.L, self.src.L, self.src.L), dtype=self.dtype)
         )
 
-        vol = self.basis.evaluate(vol_coeff)
+        vol = Coef(self.basis, vol_coeff).evaluate()
 
         for k in range(self.r):
             for j in range(self.r):
-                vols_out[k] = vols_out[k] + kernel.convolve_volume(vol[j], j, k)
+                vols_out[k] = vols_out[k] + kernel.convolve_volume(
+                    vol.asnumpy()[j], j, k
+                )
                 # Note this is where we would add mask_gamma
 
         vol_coeff = self.basis.evaluate_t(vols_out)
