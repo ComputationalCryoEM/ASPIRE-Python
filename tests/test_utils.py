@@ -355,7 +355,7 @@ def test_fuzzy_mask():
 
     # Smoke test for 1D, 2D, and 3D fuzzy_mask.
     for dim in range(1, 4):
-        _ = fuzzy_mask((8,) * dim, np.float32)
+        _ = fuzzy_mask((32,) * dim, np.float32)
 
     # Check that we raise an error for bad dimension.
     with pytest.raises(RuntimeError, match=r"Only 1D, 2D, or 3D fuzzy_mask*"):
