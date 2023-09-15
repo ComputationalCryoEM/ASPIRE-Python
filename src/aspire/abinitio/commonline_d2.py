@@ -15,19 +15,20 @@ class CLSymmetryD2(CLOrient3D):
     The related publications are:
     E. Rosen and Y. Shkolnisky,
     Common lines ab-initio reconstruction of D2-symmetric molecules,
+    SIAM Journal on Imaging Sciences, volume 13-4, p. 1898-1994, 2020
     """
 
     def __init__(
-            self,
-            src,
-            n_rad=None,
-            n_theta=None,
-            max_shift=0.15,
-            shift_step=1,
-            grid_res=1200,
-            inplane_res=5,
-            eq_min_dist=7,
-            seed=None,
+        self,
+        src,
+        n_rad=None,
+        n_theta=None,
+        max_shift=0.15,
+        shift_step=1,
+        grid_res=1200,
+        inplane_res=5,
+        eq_min_dist=7,
+        seed=None,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with C3 and C4 symmetry.
@@ -58,4 +59,47 @@ class CLSymmetryD2(CLOrient3D):
         self.inplane_res = inplane_res
         self.eq_min_dist = eq_min_dist
         self.seed = seed
-        
+
+    def estimate_rotations(self):
+        """
+        Estimate rotation matrices for molecules with C3 or C4 symmetry.
+
+        :return: Array of rotation matrices, size n_imgx3x3.
+        """
+        pass
+
+    def generate_lookup_data(self):
+        """
+        Generate candidate relative rotations and corresponding common line indices.
+        """
+        pass
+
+    def saff_kuijlaars(self, N):
+        """
+        Generates N vertices on the unit sphere that are approximately evenly distributed.
+
+        This implements the recommended algorithm in spherical coordinates
+        (theta, phi) according to "Distributing many points on a sphere"
+        by E.B. Saff and A.B.J. Kuijlaars, Mathematical Intelligencer 19.1
+        (1997) 5--11.
+
+        :param N: Number of vertices to generate.
+
+        :return: Nx3 array of vertices in cartesian coordinates.
+        """
+        k = np.arange(1, N + 1)
+        h = -1 + 2 * (k - 1) / (N - 1)
+        theta = np.arccos(h)
+        phi = np.zeros(N)
+
+        for i in range(1, N - 1):
+            phi[i] = (phi[i - 1] + 3.6 / (np.sqrt(N * (1 - h[i] ** 2)))) % (2 * np.pi)
+
+        # Spherical coordinates
+        x = np.sin(theta) * np.cos(phi)
+        y = np.sin(theta) * np.sin(phi)
+        z = np.cos(theta)
+
+        mesh = np.column_stack((x, y, z))
+
+        return mesh
