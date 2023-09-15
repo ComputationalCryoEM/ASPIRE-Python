@@ -440,7 +440,7 @@ class RIRClass2D(Class2D):
 
         for i in trange(self.src.n):
             B = self.pca_basis.calculate_bispectrum(
-                coef_normed[i, np.newaxis],
+                Coef(self.pca_basis, coef_normed[i]),
                 filter_nonzero_freqs=True,
                 freq_cutoff=self.bispectrum_freq_cutoff,
             )
@@ -494,9 +494,11 @@ class RIRClass2D(Class2D):
             )
 
         # The legacy code expects the complex representation
-        coef = self.pca_basis.to_complex(coef)
-        complex_eigvals = self.pca_basis.to_complex(self.pca_basis.eigvals).reshape(
-            self.pca_basis.complex_count
+        coef = self.pca_basis.to_complex(coef).asnumpy()
+        complex_eigvals = (
+            self.pca_basis.to_complex(self.pca_basis.eigvals)
+            .asnumpy()
+            .reshape(self.pca_basis.complex_count)
         )  # flatten
 
         # bispec_2drot_large has a random selection component.
