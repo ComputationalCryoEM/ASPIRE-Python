@@ -5,6 +5,7 @@ from numpy.linalg import lstsq
 from scipy.optimize import least_squares
 from scipy.special import jn
 
+from aspire.basis import Coef
 from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
 from aspire.nufft import nufft
@@ -123,7 +124,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         nfft_res = nufft(images_disk, self.us_fft_pts)
 
         # Accumulate coefficients
-        coefficients = self._pswf_integration(nfft_res)
+        coefficients = Coef(self, self._pswf_integration(nfft_res))
 
         return self.to_real(coefficients).asnumpy()
 
