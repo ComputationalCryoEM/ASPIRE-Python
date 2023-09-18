@@ -159,7 +159,9 @@ class PSWFBasis2D(SteerableBasis2D):
         # the column dimension of samples_conj_transpose is the number of basis coefficients
         self.complex_count = self.samples_conj_transpose.shape[1]
 
-        # hack
+        # Add required real indices attributes and maps
+        # TODO, this block of code can probably be consolidated with
+        # FB basis.  For now, just get everything working together.
         nz = np.sum(self.complex_signs_indices == 0)
         nnz = self.complex_count - nz
 
@@ -170,7 +172,6 @@ class PSWFBasis2D(SteerableBasis2D):
         self.angular_indices = np.empty(self.real_count, dtype=int)
         self.signs_indices = np.empty(self.real_count, dtype=int)
 
-        # hackity hack
         self._pos = np.zeros(self.complex_count, dtype=int)
         self._neg = np.zeros(self.complex_count, dtype=int)
 
@@ -190,20 +191,17 @@ class PSWFBasis2D(SteerableBasis2D):
                 self.radial_indices[rng] = ks
                 self.signs_indices[rng] = sgn
 
-                # hackity hack
                 if sgn == 1:
                     self._pos[ci + ks] = rng
                 elif sgn == -1:
                     self._neg[ci + ks] = rng
-                # /hackity hack
 
                 i += len(ks)
 
             ci += len(ks)
 
-        # /hack
-
-    # for tmp compat, probably can remove `indices` or clean it up later.
+    # Added for compatibility.
+    # Probably can remove `indices` dict wholesale later (MATLAB holdover).
     def indices(self):
         """
         Return the precomputed indices for each basis function.
@@ -236,7 +234,7 @@ class PSWFBasis2D(SteerableBasis2D):
 
         """
 
-        # hack, convert to complex
+        # Convert real coefficient to complex.
         coefficients = self.to_complex(Coef(self, coefficients))
 
         # Handle a single coefficient vector or stack of vectors.
@@ -430,5 +428,5 @@ class PSWFBasis2D(SteerableBasis2D):
 
         d_vec, _ = BNMatrix(big_n, bandlimit, approx_length).get_eig_vectors()
 
-        range_array = np.array(range(approx_length), dtype=self.dtype)
+        range_array = np.arange(approx_length, dtype=self.dtype)
         return d_vec, approx_length, range_array
