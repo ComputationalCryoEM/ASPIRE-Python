@@ -236,9 +236,7 @@ class WeightedVolumesEstimator(Estimator):
 
         for k in range(self.r):
             for j in range(self.r):
-                vols_out[k] = vols_out[k] + kernel.convolve_volume(
-                    vol.asnumpy()[j], j, k
-                )
+                vols_out[k] = vols_out[k] + kernel.convolve_volume(vol[j], j, k)
                 # Note this is where we would add mask_gamma
 
         vol_coeff = self.basis.evaluate_t(vols_out)
