@@ -32,7 +32,7 @@ class SteerableBasis2D(Basis):
         self._non_neg_angular_inds = self.signs_indices >= 0
         self._blk_diag_cov_shape = None
 
-        # Try to centralize inds between FB/FFB and FLE in SteerableBasis2D
+        # Centralize indices attributes between FB/PSWF/FLE in SteerableBasis2D
         self._indices = self.indices()
         self.complex_count = self.count - sum(self._neg_angular_inds)
         self.complex_angular_indices = self.angular_indices[self._non_neg_angular_inds]
@@ -63,7 +63,6 @@ class SteerableBasis2D(Basis):
             raise TypeError(f"Expect `Coef` received {type(complex_coef)}.")
         complex_coef = complex_coef.asnumpy()
 
-        # TODO, can clean this up after enforcing Coef.
         # Check shape
         if complex_coef.shape[0] != 1:
             raise ValueError(
@@ -340,6 +339,7 @@ class SteerableBasis2D(Basis):
         # Return the cached shape
         return self._blk_diag_cov_shape
 
+    # This is included for completion, but is not being adopted yet.
     def indices_mask(self, **kwargs):
         """
         Given `radial=` or `angular=` expressions, return (`count`,)
@@ -389,13 +389,13 @@ class SteerableBasis2D(Basis):
     def to_real(self, complex_coef):
         """
         Return real valued representation of complex coefficients.
-        This can be useful when comparing or implementing methods
-        from literature.
+        This can be useful when comparing, prototyping, or
+        implementing methods from literature.
 
-        There is a corresponding method, to_complex.
+        There is a corresponding method, `to_complex`.
 
-        :param complex_coef: Complex coefficients from this basis.
-        :return: Real coefficent representation from this basis.
+        :param complex_coef: Complex `Coef` from this basis.
+        :return: Real `Ceof` representation from this basis.
         """
 
         if not isinstance(complex_coef, Coef):
@@ -439,14 +439,14 @@ class SteerableBasis2D(Basis):
 
     def to_complex(self, coef):
         """
-        Return complex valued representation of coefficients.
-        This can be useful when comparing or implementing methods
-        from literature.
+        Return complex valued representation of complex coefficients.
+        This can be useful when comparing, prototyping, or
+        implementing methods from literature.
 
-        There is a corresponding method, to_real.
+        There is a corresponding method, `to_real`.
 
-        :param coef: Coefficients from this basis.
-        :return: Complex coefficent representation from this basis.
+        :param coef: Real `Coef` from this basis.
+        :return: Complex `Coef` representation from this basis.
         """
 
         if not isinstance(coef, Coef):
@@ -467,21 +467,21 @@ class SteerableBasis2D(Basis):
         # Return the same precision as coef
         imaginary = dtype(1j)
 
-        ccoef = np.zeros((*coef.stack_shape, self.complex_count), dtype=dtype)
+        complex_coef = np.zeros((*coef.stack_shape, self.complex_count), dtype=dtype)
         coef = coef.asnumpy()
 
         ind = 0
         idx = np.arange(self.k_max[0], dtype=int)
         ind += np.size(idx)
 
-        ccoef[..., idx] = coef[..., idx]
+        complex_coef[..., idx] = coef[..., idx]
 
         for ell in range(1, self.ell_max + 1):
             idx = ind + np.arange(self.k_max[ell], dtype=int)
-            ccoef[..., idx] = (
+            complex_coef[..., idx] = (
                 coef[..., self._pos[idx]] - imaginary * coef[..., self._neg[idx]]
             ) / 2.0
 
             ind += np.size(idx)
 
-        return Coef(self, ccoef)
+        return Coef(self, complex_coef)
