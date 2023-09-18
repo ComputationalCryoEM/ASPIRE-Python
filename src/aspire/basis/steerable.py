@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 import numpy as np
 
-from aspire.basis import Basis
+from aspire.basis import Basis, Coef
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, real_type
 
@@ -58,9 +58,6 @@ class SteerableBasis2D(Basis):
         :param freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
         :return: Bispectum matrix (complex valued).
         """
-
-        # Avoids circular import
-        from aspire.basis import Coef
 
         if not isinstance(complex_coef, Coef):
             raise TypeError(f"Expect `Coef` received {type(complex_coef)}.")
@@ -174,7 +171,6 @@ class SteerableBasis2D(Basis):
         :param refl: Optional reflect image (about y=0) (bool)
         :return: rotated coefs.
         """
-        from .coef import Coef
 
         if not isinstance(coef, Coef):
             raise TypeError(f"`coef` must be `Coef` instance, received {type(coef)}.")
@@ -401,7 +397,6 @@ class SteerableBasis2D(Basis):
         :param complex_coef: Complex coefficients from this basis.
         :return: Real coefficent representation from this basis.
         """
-        from .coef import Coef
 
         if not isinstance(complex_coef, Coef):
             raise TypeError(
@@ -453,7 +448,6 @@ class SteerableBasis2D(Basis):
         :param coef: Coefficients from this basis.
         :return: Complex coefficent representation from this basis.
         """
-        from .coef import Coef
 
         if not isinstance(coef, Coef):
             raise TypeError(
