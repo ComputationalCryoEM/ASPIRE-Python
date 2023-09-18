@@ -100,7 +100,7 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         self.us_fft_pts = us_fft_pts.astype(
             self.dtype, copy=False
-        )  # xxx find where this is incorrect
+        )  # TODO, debug where this is incorrect dtype
         self.blk_r = blk_r
         self.num_angular_pts = num_angular_pts
         self.r_quad_indices = r_quad_indices
@@ -313,7 +313,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         indices_for_n.extend(numel_for_n)
         indices_for_n = np.cumsum(indices_for_n, dtype="int")
 
-        blk_r = [0] * n_max  # xxx array?
+        blk_r = [0] * n_max  # TODO, consider array here
         temp_const = self.bandlimit / (2 * np.pi * self.rcut)
         for i in range(n_max):
             blk_r[i] = (

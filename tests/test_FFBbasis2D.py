@@ -64,7 +64,7 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         coef_ref = np.zeros(basis.count, dtype=basis.dtype)
         coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
 
-        im_ref = basis.evaluate(Coef(basis, coef_ref)).asnumpy()[0]
+        im_ref = Coef(basis, coef_ref).evaluate().asnumpy()[0]
 
         coef = basis.expand(im)
 
