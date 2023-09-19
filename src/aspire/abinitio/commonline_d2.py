@@ -39,7 +39,7 @@ class CLSymmetryD2(CLOrient3D):
         :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
         :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param grid_res: Number of sampling points on sphere for projetion directions.
-            These are generated using the Saaf - Kuijlaars algoithm. Default value is 1200.
+            These are generated using the Saaf - Kuijlaars algorithm. Default value is 1200.
         :param inplane_res: The sampling resolution of in-plane rotations for each
             projetion direction. Default value is 5.
         :param eq_min_dist: Width of strip around equator projection directions from
@@ -72,9 +72,28 @@ class CLSymmetryD2(CLOrient3D):
         """
         Generate candidate relative rotations and corresponding common line indices.
         """
-        pass
+        # Generate uniform grid on sphere with Saff-Kuijlaars and take one quarter
+        # of sphere because of D2 symmetry redundancy.
+        sphere_grid = self.saff_kuijlaars(self.grid_res)
+        octant1_mask = np.all(sphere_grid > 0, axis=1)
+        octant2_mask = (
+            (sphere_grid[:, 0] > 0) & (sphere_grid[:, 1] > 0) & (sphere_grid[:, 2] < 0)
+        )
+        sphere_grid1 = sphere_grid[octant1_mask]
+        sphere_grid2 = sphere_grid[octant2_mask]
 
-    def saff_kuijlaars(self, N):
+        # Mark Equator Directions.
+        # Common lines between projection directions which are perpendicular to
+        # symmetry axes (equator images) have common line degeneracies. Two images
+        # taken from directions on the same great circle which is perpendicular to
+        # some symmetry axis only have 2 common lines instead of 4, and must be
+        # treated separately.
+        # We detect such directions by taking a strip of radius
+        # eq_filter_angle about the 3 great circles perpendicular to the symmetry
+        # axes of D2 (i.e to X,Y and Z axes).
+
+    @staticmethod
+    def saff_kuijlaars(N):
         """
         Generates N vertices on the unit sphere that are approximately evenly distributed.
 
@@ -103,3 +122,48 @@ class CLSymmetryD2(CLOrient3D):
         mesh = np.column_stack((x, y, z))
 
         return mesh
+
+    @staticmethod
+    def mark_equators(sphere_grid, eq_filter_angle):
+        """
+        :param sphere_grid: Nx3 array of vertices in cartesian coordinates.
+        :param eq_filter_angle: Angular distance from equator to be marked as
+            an equator point.
+
+        :return: Indices of points on sphere whose distance from one of
+            the equators is < eq_filter angle.
+        """
+        # Project each vector onto xy, xz, yz planes and measure angular distance
+        # from each plane.
+        n_rots = len(sphere_grid)
+        angular_dists = np.zeros(3, n_rots, dtype=sphere_grid.dtype)
+
+        proj_xy = sphere_grid.copy()
+        proj_xy[:, 2] = 0
+        proj_xy /= np.linalg.norm(proj_xy, axis=1)[:, None]
+        angular_dists[0] = np.sum(sphere_grid * proj_xy, axis=-1)
+
+        proj_xz = sphere_grid.copy()
+        proj_xz[:, 1] = 0
+        proj_xz /= np.linalg.norm(proj_xz, axis=1)[:, None]
+        angular_dists[1] = np.sum(sphere_grid * proj_xz, axis=-1)
+
+        proj_yz = sphere_grid.copy()
+        proj_yz[:, 0] = 0
+        proj_yz /= np.linalg.norm(proj_yz, axis=1)[:, None]
+        angular_dists[2] = np.sum(sphere_grid * proj_yz, axis=-1)
+
+        # Mark points close to equator (within eq_filter_angle).
+        eq_min_dist = np.cos(eq_filter_angle * np.pi / 180)
+        n_eqs_close = np.sum(angular_dists > eq_min_dist, axis=0)
+        eq_mask = n_eqs_close > 0
+
+        # Classify equators.
+        # 1 -> z equator
+        # 2 -> y equator
+        # 3 -> x equator
+        # 4 -> z top view, ie. both x and y equator
+        # 5 -> y top view, ie. both x and z equator
+        # 6 -> x top view, ie. both y and z equator
+        eq_class = np.zeros(n_rots)
+        top_view_mask = n_eqs_close > 1
