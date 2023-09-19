@@ -122,6 +122,26 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.radial_indices = self._fle_radial_indices[self._fle_to_fb_indices]
         # Note we negate the FLE signs?
         self.signs_indices = self._fle_signs_indices[self._fle_to_fb_indices]
+        # These map indices in complex array to pair of indices in real array
+        self.complex_count = sum(self.k_max)
+        self._pos = np.zeros(self.complex_count, dtype=int)
+        self._neg = np.zeros(self.complex_count, dtype=int)
+        i = 0
+        ci = 0
+        for ell in range(self.ell_max + 1):
+            sgns = (1,) if ell == 0 else (1, -1)
+            ks = np.arange(0, self.k_max[ell])
+
+            for sgn in sgns:
+                rng = np.arange(i, i + len(ks))
+                if sgn == 1:
+                    self._pos[ci + ks] = rng
+                elif sgn == -1:
+                    self._neg[ci + ks] = rng
+
+                i += len(ks)
+
+            ci += len(ks)
 
     def indices(self):
         """

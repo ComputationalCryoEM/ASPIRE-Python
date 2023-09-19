@@ -1,7 +1,14 @@
 import numpy as np
 import pytest
 
-from aspire.basis import Coef, FFBBasis2D
+from aspire.basis import (
+    Coef,
+    FBBasis2D,
+    FFBBasis2D,
+    FLEBasis2D,
+    FPSWFBasis2D,
+    PSWFBasis2D,
+)
 
 IMG_SIZE = [
     32,
@@ -16,6 +23,14 @@ STACKS = [
     (1,),
     (2,),
     (3, 4),
+]
+
+ALLYOURBASES = [
+    FBBasis2D,
+    FFBBasis2D,
+    PSWFBasis2D,
+    FPSWFBasis2D,
+    FLEBasis2D,
 ]
 
 
@@ -54,9 +69,6 @@ def stack(request):
     Stack dimensions.
     """
     return request.param
-
-
-ALLYOURBASES = [FFBBasis2D]
 
 
 @pytest.fixture(params=ALLYOURBASES, ids=lambda x: f"basis={x}")
@@ -247,7 +259,9 @@ def test_coef_evalute(coef_fixture, basis):
     """
     Test evaluate pass through.
     """
-    np.testing.assert_allclose(coef_fixture.evaluate(), basis.evaluate(coef_fixture))
+    np.testing.assert_allclose(
+        coef_fixture.evaluate(), basis.evaluate(coef_fixture), rtol=1e-05, atol=1e-08
+    )
 
 
 def test_coef_rotate(coef_fixture, basis):
@@ -307,3 +321,9 @@ def test_to_complex_incorrect_type(coef_fixture, basis):
     # Call to_complex with Numpy array
     with pytest.raises(TypeError, match=r".*should be instance of `Coef`.*"):
         _ = basis.to_complex(x)
+
+
+def test_real_complex_real_roundtrip(coef_fixture, basis):
+    rcoef = basis.to_real(basis.to_complex(coef_fixture))
+
+    np.testing.assert_allclose(rcoef, coef_fixture, rtol=1e-05, atol=1e-08)
