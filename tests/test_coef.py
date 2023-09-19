@@ -145,6 +145,23 @@ def test_coef_key_dims(coef_fixture):
         _ = coef_fixture[key]
 
 
+def test_incorrect_reshape(basis):
+    """
+    Confirm raises when attempting incorrect stack reshape.
+    """
+
+    # create a multi dim coef array.
+    x = np.empty((2, 3, 4, basis.count))
+    c = Coef(basis, x)
+
+    # Alter the stack shape, creating an incorrect shape.
+    shp = list(c.stack_shape)
+    shp[0] = shp[0] + 1
+
+    with pytest.raises(ValueError, match=r".*cannot be reshaped to.*"):
+        _ = c.stack_reshape(*shp)
+
+
 def test_stack_reshape(basis):
     """
     Test stack_reshape matches corresponding pure Numpy reshape.
@@ -228,6 +245,25 @@ def test_neg(basis, coef_fixture):
 
     # Perform operation as `Coef` for result
     res = -coef_fixture
+
+    # Compare result with reference
+    np.testing.assert_allclose(res, ref)
+
+
+def test_mul(basis, coef_fixture):
+    """
+    Tests multiplication operation against pure Numpy.
+    """
+    # Make array
+    x = np.random.random(size=coef_fixture.shape).astype(coef_fixture.dtype, copy=False)
+    # Construct Coef
+    c = Coef(basis, x)
+
+    # Perform operation as array for reference
+    ref = coef_fixture.asnumpy() * x
+
+    # Perform operation as `Coef` for result
+    res = coef_fixture * c
 
     # Compare result with reference
     np.testing.assert_allclose(res, ref)
