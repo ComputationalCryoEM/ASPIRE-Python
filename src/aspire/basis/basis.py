@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 
 class Coef:
     """
-    Numpy interoperable basis stacks.
+    Numpy interoperable container for stacks of coefficient vectors.
+    Each `Coef` instance has an associated `Basis`.
     """
 
     def __init__(self, basis, data, dtype=None):
@@ -33,9 +34,7 @@ class Coef:
         :return: Image instance holding `data`.
         """
 
-        if isinstance(data, Coef):
-            data = data.asnumpy()
-        elif not isinstance(data, np.ndarray):
+        if not isinstance(data, np.ndarray):
             raise ValueError("Coef should be instantiated with an ndarray")
 
         if data.ndim < 1:
@@ -64,6 +63,7 @@ class Coef:
         self.stack_size = np.prod(self.stack_shape)
         self.count = self._data.shape[-1]
 
+        # Derive count based on real/complex coefficients.
         basis_count = self.basis.count
         if np.iscomplexobj(data):
             basis_count = self.basis.complex_count
@@ -238,6 +238,7 @@ class Coef:
 
         return self.__class__(self.basis, -self._data)
 
+    @property
     def size(self):
         """
         Return np.size of underlying data.
@@ -254,11 +255,11 @@ class Coef:
 
         See `SteerableBasis.indices_mask` for argument details.
 
-        :return: `Coef` vector.
+        :return: Numpy array.
         """
 
         mask = self.basis.indices_mask(**kwargs)
-        return self._data[:, mask]
+        return self._data[..., mask]
 
 
 class Basis:
