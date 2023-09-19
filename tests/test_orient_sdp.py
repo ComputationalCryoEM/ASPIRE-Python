@@ -82,7 +82,7 @@ def test_estimate_rotations(src_orient_est_fixture):
     mean_ang_dist = Rotation.mean_angular_distance(regrot, src.rotations) * 180 / np.pi
 
     # Assert that mean angular distance is less than 1 degrees.
-    assert mean_ang_dist < 1
+    np.testing.assert_array_less(mean_ang_dist, 1)
 
 
 def test_construct_S(src_orient_est_fixture):
@@ -139,7 +139,7 @@ def test_Gram_matrix(src_orient_est_fixture):
 
     # We'll check that the RMSE is within 10% of the mean value of gt_Gram
     rmse = np.sqrt(np.mean((Gram - R @ R.T) ** 2))
-    assert rmse / np.mean(gt_Gram) < 0.10
+    np.testing.assert_array_less(rmse / np.mean(gt_Gram), 0.10)
 
 
 def test_ATA_solver():
