@@ -9,6 +9,7 @@ from aspire.basis import (
     FPSWFBasis2D,
     PSWFBasis2D,
 )
+from aspire.utils import utest_tolerance
 
 IMG_SIZE = [
     32,
@@ -296,7 +297,10 @@ def test_coef_evalute(coef_fixture, basis):
     Test evaluate pass through.
     """
     np.testing.assert_allclose(
-        coef_fixture.evaluate(), basis.evaluate(coef_fixture), rtol=1e-05, atol=1e-08
+        coef_fixture.evaluate(),
+        basis.evaluate(coef_fixture),
+        rtol=1e-05,
+        atol=utest_tolerance(basis.dtype),
     )
 
 
