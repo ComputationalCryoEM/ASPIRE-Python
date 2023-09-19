@@ -26,12 +26,13 @@ class Coef:
 
         The last axes always represents the coefficient `count`.
 
+        :param basis: `Basis` associated with `data` coefficients.
         :param data: Numpy array containing image data with shape
             `(..., count)`.
         :param dtype: Optionally cast `data` to this dtype.
             Defaults to `data.dtype`.
 
-        :return: Image instance holding `data`.
+        :return: `Coef` instance holding `data`.
         """
 
         if not isinstance(data, np.ndarray):
