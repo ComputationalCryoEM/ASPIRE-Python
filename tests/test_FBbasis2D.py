@@ -89,8 +89,8 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
     def testComplexCoversionErrorsToComplex(self, basis):
         x = randn(*basis.sz, seed=self.seed).astype(basis.dtype)
 
-        # Express in an FB basis
-        v1 = basis.expand(x)
+        # Express in an FB basis, cast to array.
+        v1 = basis.expand(x).asnumpy()
 
         # Test catching Errors
         with raises(TypeError):

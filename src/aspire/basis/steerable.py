@@ -347,8 +347,11 @@ class SteerableBasis2D(Basis):
 
         Examples:
             No args yield all indices.
-            `angular>=0` selects coefficients with non negative angular indices.
+            `angular=0 creates a mask for selecting coefficients with zero angular indices.
             `angular=1, radial=2` selects coefficients satisfying angular index of 1 _and_ radial index of 2.
+            More advanced operations can combine indices attributes.
+             `angular=self.angular_indices>=0, radial=r` selects coefficients with non negative angular indices and some radial index `r`.
+
 
 
         :return: Boolen mask of shape (`count`,).
@@ -400,7 +403,7 @@ class SteerableBasis2D(Basis):
 
         if not isinstance(complex_coef, Coef):
             raise TypeError(
-                f"complex_coef should be instanace of `Coef`, received {type(complex_coef)}."
+                f"complex_coef should be instance of `Coef`, received {type(complex_coef)}."
             )
 
         if complex_coef.dtype not in (np.complex128, np.complex64):
@@ -451,7 +454,7 @@ class SteerableBasis2D(Basis):
 
         if not isinstance(coef, Coef):
             raise TypeError(
-                f"coef should be instanace of `Coef`, received {type(coef)}."
+                f"coef should be instance of `Coef`, received {type(coef)}."
             )
 
         if coef.dtype not in (np.float64, np.float32):
