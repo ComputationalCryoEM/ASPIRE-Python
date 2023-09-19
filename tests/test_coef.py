@@ -12,12 +12,12 @@ from aspire.basis import (
 from aspire.utils import utest_tolerance
 
 IMG_SIZE = [
+    31,
     32,
-    pytest.param(31, marks=pytest.mark.expensive),
 ]
 DTYPES = [
+    np.float32,
     np.float64,
-    pytest.param(np.float32, marks=pytest.mark.expensive),
 ]
 STACKS = [
     (),
@@ -40,7 +40,7 @@ def sim_fixture_id(params):
     return f"stack={stack}, count={count}, dtype={dtype}"
 
 
-@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
 def dtype(request):
     """
     Dtypes for coef array
@@ -48,7 +48,7 @@ def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
 def basis_dtype(request):
     """
     Dtypes for basis
@@ -56,7 +56,7 @@ def basis_dtype(request):
     return request.param
 
 
-@pytest.fixture(params=IMG_SIZE, ids=lambda x: f"count={x}")
+@pytest.fixture(params=IMG_SIZE, ids=lambda x: f"count={x}", scope="module")
 def img_size(request):
     """
     Image size for basis.
@@ -64,7 +64,7 @@ def img_size(request):
     return request.param
 
 
-@pytest.fixture(params=STACKS, ids=lambda x: f"stack={x}")
+@pytest.fixture(params=STACKS, ids=lambda x: f"stack={x}", scope="module")
 def stack(request):
     """
     Stack dimensions.
@@ -72,7 +72,7 @@ def stack(request):
     return request.param
 
 
-@pytest.fixture(params=ALLYOURBASES, ids=lambda x: f"basis={x}")
+@pytest.fixture(params=ALLYOURBASES, ids=lambda x: f"basis={x}", scope="module")
 def basis(request, img_size, basis_dtype):
     """
     Parameterized `Basis` instantiation.
@@ -81,7 +81,7 @@ def basis(request, img_size, basis_dtype):
     return cls(img_size, dtype=basis_dtype)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def coef_fixture(basis, stack, dtype):
     """
     Construct parameterized testing coefficient array as `Coef`.
