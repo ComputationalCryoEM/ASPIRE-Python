@@ -424,16 +424,16 @@ class SteerableBasis2D(Basis):
         ind += np.size(idx)
         ind_pos = ind
 
-        coef[:, idx] = complex_coef[:, idx].real
+        coef[..., idx] = complex_coef[..., idx].real
 
         for ell in range(1, self.ell_max + 1):
             idx = ind + np.arange(self.k_max[ell], dtype=int)
             idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=int)
             idx_neg = idx_pos + self.k_max[ell]
 
-            c = complex_coef[:, idx]
-            coef[:, idx_pos] = 2.0 * np.real(c)
-            coef[:, idx_neg] = -2.0 * np.imag(c)
+            c = complex_coef[..., idx]
+            coef[..., idx_pos] = 2.0 * np.real(c)
+            coef[..., idx_neg] = -2.0 * np.imag(c)
 
             ind += np.size(idx)
             ind_pos += 2 * self.k_max[ell]
