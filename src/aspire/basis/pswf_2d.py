@@ -221,8 +221,8 @@ class PSWFBasis2D(SteerableBasis2D):
         :return: The evaluation of the coefficient array in the PSWF basis.
         """
         flattened_images = images[:, self._disk_mask]
-        ccoef = Coef(self, flattened_images @ self.samples_conj_transpose)
-        return self.to_real(ccoef).asnumpy()
+        complex_coef = Coef(self, flattened_images @ self.samples_conj_transpose)
+        return self.to_real(complex_coef).asnumpy()
 
     def _evaluate(self, coefficients):
         """
