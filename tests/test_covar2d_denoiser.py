@@ -45,5 +45,5 @@ class BatchedRotCov2DTestCase(TestCase):
 
         # Additionally test the `DenoisedSource` and lazy-eval-cache
         # of the cov2d estimator.
-        src = DenoisedSource(sim, denoiser)
+        src = DenoisedSource(denoiser)
         self.assertTrue(np.allclose(src.images[:], imgs_denoised))
