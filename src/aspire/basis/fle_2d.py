@@ -672,7 +672,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Apply a low-pass filter to FLE coefficients `coeffs` with threshold `bandlimit`.
 
-        :param coeffs: A NumPy array of FLE coefficients, of shape (num_images, self.count)
+        :param coeffs: A `Coef` instance containing FLE coefficients.
         :param bandlimit: Integer bandlimit (max frequency).
         :return: Band-limited coefficient array.
         """
@@ -697,7 +697,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Convolve a stack of FLE coefficients with a 2D radial function.
 
-        :param coeffs: A NumPy array of FLE coefficients of size (num_images, self.count).
+        :param coeffs: A `Coef` instance containing FLE coefficients.
         :param radial_img: A 2D NumPy array of size (self.nres, self.nres).
         :return: Convolved FLE coefficients.
         """
