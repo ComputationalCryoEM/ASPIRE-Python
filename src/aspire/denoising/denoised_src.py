@@ -6,7 +6,7 @@ from aspire.source import ImageSource
 logger = logging.getLogger(__name__)
 
 
-class DenoisedImageSource(ImageSource):
+class DenoisedSource(ImageSource):
     """
     `ImageSource` class serving denoised 2D images.
     """
