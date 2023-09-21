@@ -144,7 +144,11 @@ def test_estimate_rotations_fuzzy_mask():
         orient_est_fuzzy.rotations, noisy_src.rotations
     )
 
-    assert mean_angle_dist_fuzzy < mean_angle_dist < 10
+    # Check that the estimate is reasonable, ie. mean_angle_dist < 10 degrees.
+    np.testing.assert_array_less(mean_angle_dist, 10)
+
+    # Check that fuzzy_mask improves the estimate.
+    np.testing.assert_array_less(mean_angle_dist_fuzzy, mean_angle_dist)
 
 
 def test_theta_error():
