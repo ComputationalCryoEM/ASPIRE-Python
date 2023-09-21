@@ -132,7 +132,7 @@ class Coef:
         # Sanity check the size
         if shape != (-1,) and np.prod(shape) != self.stack_size:
             raise ValueError(
-                f"Number of images {self.stack_size} cannot be reshaped to {shape}."
+                f"Number of coefficient vectors {self.stack_size} cannot be reshaped to {shape}."
             )
 
         return self.__class__(
@@ -335,13 +335,15 @@ class Basis:
         """
         Evaluate coefficient vector in basis
 
-        :param v: A coefficient vector (or an array of coefficient vectors)
-            to be evaluated. The first dimension must correspond to the number of
-            coefficient vectors, while the second must correspond to `self.count`
+        :param v: `Coef` instance containing the coefficients to be
+            evaluated. The first dimension must correspond to the
+            number of coefficient vectors, while the second must
+            correspond to `self.count`.
         :return: The evaluation of the coefficient vector(s) `v` for this basis.
             This is an Image or a Volume object containing one image/volume for each
             coefficient vector, and of size `self.sz`.
         """
+
         if v.dtype != self.coefficient_dtype:
             logger.warning(
                 f"{self.__class__.__name__}::evaluate"
@@ -349,7 +351,6 @@ class Basis:
             )
 
         if not isinstance(v, Coef):
-            # v = Coef(self, v)
             raise TypeError(f"`evaluate` should be passed a `Coef`, received {type(v)}")
 
         # Flatten stack
