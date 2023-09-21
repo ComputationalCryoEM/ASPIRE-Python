@@ -182,7 +182,7 @@ class SteerableBasis2D(Basis):
             if radians.ndim < 2:
                 radians = radians.reshape(-1, 1)
             else:
-                radians = np.atleast_3d(radians)
+                radians = np.expand_dims(radians, axis=-1)
 
             if radians.size != np.prod(coef.shape[:-1]):
                 raise RuntimeError(
