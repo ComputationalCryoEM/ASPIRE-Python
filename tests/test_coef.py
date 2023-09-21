@@ -176,12 +176,12 @@ def test_stack_reshape(basis):
     np.testing.assert_allclose(c.stack_reshape(-1).asnumpy(), ref)
     # Test 1d flatten
     np.testing.assert_allclose(c.stack_reshape(np.prod(x.shape[:-1])).asnumpy(), ref)
-    # Test 2d flatten tuple
+    # Test 2d reshape tuple (2,3,4) ~> ((6,4))
     ref = x.reshape(np.prod(x.shape[:-2]), x.shape[-2], basis.count)
     np.testing.assert_allclose(
         c.stack_reshape((np.prod(x.shape[:-2]), x.shape[-2])).asnumpy(), ref
     )
-    # Test 2d flatten args
+    # Test 2d reshape args (2,3,4) ~> (6,4)
     ref = x.reshape(np.prod(x.shape[:-2]), x.shape[-2], basis.count)
     np.testing.assert_allclose(
         c.stack_reshape(np.prod(x.shape[:-2]), x.shape[-2]).asnumpy(), ref
