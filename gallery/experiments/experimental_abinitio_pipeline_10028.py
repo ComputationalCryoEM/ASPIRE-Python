@@ -121,7 +121,7 @@ if do_cov2d:
     # Use CWF denoising
     cwf_denoiser = DenoiserCov2D(src)
     # Use denoised src for classification
-    classification_src = DenoisedSource(src, cwf_denoiser)
+    classification_src = DenoisedSource(cwf_denoiser)
     # Cache for speedup.  Avoids recomputing.
     classification_src = classification_src.cache()
     # Peek, what do the denoised images look like...
