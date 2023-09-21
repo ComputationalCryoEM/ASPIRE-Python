@@ -145,7 +145,7 @@ if do_cov2d:
     # Use CWF denoising
     cwf_denoiser = DenoiserCov2D(src)
     # Use denoised src for classification
-    classification_src = DenoisedSource(src, cwf_denoiser)
+    classification_src = DenoisedSource(cwf_denoiser)
     # Peek, what do the denoised images look like...
     if interactive:
         classification_src.images[:10].show()
