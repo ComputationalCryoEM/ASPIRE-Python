@@ -280,7 +280,8 @@ def fuzzy_mask(L, dtype, r0=None, risetime=None):
 
     Made with an error function with effective rise time.
 
-    :param L: The sizes of image in tuple structure.
+    :param L: The sizes of image in tuple structure. Must be 1D, 2D square,
+        or 3D cube.
     :param dtype: dtype for fuzzy mask.
     :param r0: The specified radius. Defaults to floor(0.45 * L)
     :param risetime: The rise time for `erf` function. Defaults to floor(0.05 * L)
@@ -299,12 +300,19 @@ def fuzzy_mask(L, dtype, r0=None, risetime=None):
 
     if dim == 1:
         grid = grid_1d(**grid_kwargs)
+
     elif dim == 2:
+        if not (L[0] == L[1]):
+            raise ValueError(f"A 2D fuzzy_mask must be square, found L={L}.")
         grid = grid_2d(**grid_kwargs)
         axes.append("y")
+
     elif dim == 3:
+        if not (L[0] == L[1] == L[2]):
+            raise ValueError(f"A 3D fuzzy_mask must be cubic, found L={L}.")
         grid = grid_3d(**grid_kwargs)
         axes.extend(["y", "z"])
+
     else:
         raise RuntimeError(
             f"Only 1D, 2D, or 3D fuzzy_mask supported. Found {dim}-dimensional `L`."
