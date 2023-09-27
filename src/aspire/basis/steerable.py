@@ -4,7 +4,7 @@ from collections.abc import Iterable
 
 import numpy as np
 
-from aspire.basis import Basis, Coef
+from aspire.basis import Basis, Coef, ComplexCoef
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, real_type
 
@@ -401,7 +401,7 @@ class SteerableBasis2D(Basis):
         :return: Real `Ceof` representation from this basis.
         """
 
-        if not isinstance(complex_coef, Coef):
+        if not isinstance(complex_coef, ComplexCoef):
             raise TypeError(
                 f"complex_coef should be instance of `Coef`, received {type(complex_coef)}."
             )
@@ -449,7 +449,7 @@ class SteerableBasis2D(Basis):
         There is a corresponding method, `to_real`.
 
         :param coef: Real `Coef` from this basis.
-        :return: Complex `Coef` representation from this basis.
+        :return: `ComplexCoef` representation from this basis.
         """
 
         if not isinstance(coef, Coef):
@@ -487,4 +487,4 @@ class SteerableBasis2D(Basis):
 
             ind += np.size(idx)
 
-        return Coef(self, complex_coef)
+        return ComplexCoef(self, complex_coef)
