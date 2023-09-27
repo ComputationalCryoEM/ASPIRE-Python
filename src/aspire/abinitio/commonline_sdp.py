@@ -243,6 +243,8 @@ class CommonlineSDP(CLOrient3D):
         ATA = ATA_vec.reshape(3, 3)
 
         # The Cholesky decomposition of A'*A gives A (lower triangle).
+        # Note, that `np.linalg.cholesky()` only uses the lower-triangular
+        # and diagonal elements of ATA.
         A = np.linalg.cholesky(ATA)
 
         return A
