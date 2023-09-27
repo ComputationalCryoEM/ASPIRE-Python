@@ -51,13 +51,13 @@ fb_basis = FBBasis2D((img_size, img_size), dtype=org_images.dtype)
 # Get the expansion coefficients based on FB basis
 logger.info("Start normal FB expansion of original images.")
 tstart = timeit.default_timer()
-fb_coeffs = fb_basis.evaluate_t(org_images)
+fb_coefs = fb_basis.evaluate_t(org_images)
 tstop = timeit.default_timer()
 dtime = tstop - tstart
 logger.info(f"Finish normal FB expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on FB basis
-fb_images = fb_basis.evaluate(fb_coeffs).asnumpy()
+fb_images = fb_basis.evaluate(fb_coefs).asnumpy()
 logger.info("Finish reconstruction of images from normal FB expansion coefficients.")
 
 # Calculate the mean value of maximum differences between the FB estimated images and the original images
@@ -94,13 +94,13 @@ ffb_basis = FFBBasis2D((img_size, img_size), dtype=org_images.dtype)
 # Get the expansion coefficients based on fast FB basis
 logger.info("start fast FB expansion of original images.")
 tstart = timeit.default_timer()
-ffb_coeffs = ffb_basis.evaluate_t(org_images)
+ffb_coefs = ffb_basis.evaluate_t(org_images)
 tstop = timeit.default_timer()
 dtime = tstop - tstart
 logger.info(f"Finish fast FB expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on fast FB basis
-ffb_images = ffb_basis.evaluate(ffb_coeffs).asnumpy()
+ffb_images = ffb_basis.evaluate(ffb_coefs).asnumpy()
 logger.info("Finish reconstruction of images from fast FB expansion coefficients.")
 
 # Calculate the mean value of maximum differences between the fast FB estimated images to the original images
@@ -138,13 +138,13 @@ pswf_basis = PSWFBasis2D((img_size, img_size), dtype=org_images.dtype)
 # Get the expansion coefficients based on direct PSWF basis
 logger.info("Start direct PSWF expansion of original images.")
 tstart = timeit.default_timer()
-pswf_coeffs = pswf_basis.evaluate_t(org_images)
+pswf_coefs = pswf_basis.evaluate_t(org_images)
 tstop = timeit.default_timer()
 dtime = tstop - tstart
 logger.info(f"Finish direct PSWF expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
-pswf_images = pswf_basis.evaluate(pswf_coeffs).asnumpy()
+pswf_images = pswf_basis.evaluate(pswf_coefs).asnumpy()
 logger.info("Finish reconstruction of images from direct PSWF expansion coefficients.")
 
 # Calculate the mean value of maximum differences between direct PSWF estimated images and original images
@@ -182,13 +182,13 @@ fpswf_basis = FPSWFBasis2D((img_size, img_size), dtype=org_images.dtype)
 # Get the expansion coefficients based on fast PSWF basis
 logger.info("Start fast PSWF expansion of original images.")
 tstart = timeit.default_timer()
-fpswf_coeffs = fpswf_basis.evaluate_t(org_images)
+fpswf_coefs = fpswf_basis.evaluate_t(org_images)
 tstop = timeit.default_timer()
 dtime = tstop - tstart
 logger.info(f"Finish fast PSWF expansion of original images in {dtime:.4f} seconds.")
 
 # Reconstruct images from the expansion coefficients based on direct PSWF basis
-fpswf_images = fpswf_basis.evaluate(fpswf_coeffs).asnumpy()
+fpswf_images = fpswf_basis.evaluate(fpswf_coefs).asnumpy()
 logger.info("Finish reconstruction of images from fast PSWF expansion coefficients.")
 
 # Calculate mean value of maximum differences between the fast PSWF estimated images and the original images

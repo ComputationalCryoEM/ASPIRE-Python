@@ -17,7 +17,7 @@ test_bases = [PSWFBasis2D(L, dtype=dtype) for L, dtype in pswf_params_2d]
 class TestPSWFBasis2D(UniversalBasisMixin):
     def testPSWFBasis2DEvaluate_t(self, basis):
         img_ary = np.load(
-            os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy")
+            os.path.join(DATA_DIR, "ffbbasis2d_xcoef_in_8_8.npy")
         ).T  # RCOPT
         images = Image(img_ary)
 
@@ -25,21 +25,17 @@ class TestPSWFBasis2D(UniversalBasisMixin):
 
         # Historically, PSWF returned complex values.
         # Load and convert them for this hard coded test.
-        ccoeffs = np.load(
-            os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
-        ).T  # RCOPT
-        coeffs = basis.to_real(Coef(basis, ccoeffs))
+        ccoefs = np.load(os.path.join(DATA_DIR, "pswf2d_vcoefs_out_8_8.npy")).T  # RCOPT
+        coefs = basis.to_real(Coef(basis, ccoefs))
 
-        np.testing.assert_allclose(result, coeffs, rtol=1e-05, atol=1e-08)
+        np.testing.assert_allclose(result, coefs, rtol=1e-05, atol=1e-08)
 
     def testPSWFBasis2DEvaluate(self, basis):
         # Historically, PSWF returned complex values.
         # Load and convert them for this hard coded test.
-        ccoeffs = np.load(
-            os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
-        ).T  # RCOPT
-        coeffs = basis.to_real(Coef(basis, ccoeffs))
+        ccoefs = np.load(os.path.join(DATA_DIR, "pswf2d_vcoefs_out_8_8.npy")).T  # RCOPT
+        coefs = basis.to_real(Coef(basis, ccoefs))
 
-        result = coeffs.evaluate()
-        images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
+        result = coefs.evaluate()
+        images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoef_out_8_8.npy")).T  # RCOPT
         assert np.allclose(result.asnumpy(), images)

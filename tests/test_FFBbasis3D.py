@@ -356,7 +356,7 @@ class TestFFBBasis3D(UniversalBasisMixin):
         )
 
     def testFFBBasis3DEvaluate(self, basis):
-        coeffs = np.array(
+        coefs = np.array(
             [
                 1.07338590e-01,
                 1.23690941e-01,
@@ -460,29 +460,29 @@ class TestFFBBasis3D(UniversalBasisMixin):
             dtype=basis.dtype,
         )
 
-        result = Coef(basis, coeffs).evaluate()
+        result = Coef(basis, coefs).evaluate()
 
         ref = np.load(
-            os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_out_8_8_8.npy")
+            os.path.join(DATA_DIR, "ffbbasis3d_xcoef_out_8_8_8.npy")
         ).T  # RCOPT
 
         assert np.allclose(result, ref, atol=1e-2)
 
     def testFFBBasis3DEvaluate_t(self, basis):
-        x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_in_8_8_8.npy")).T  # RCOPT
+        x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoef_in_8_8_8.npy")).T  # RCOPT
         x = x.astype(basis.dtype, copy=False)
         result = basis.evaluate_t(Volume(x))
 
-        ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoeff_out_8_8_8.npy"))[..., 0]
+        ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoef_out_8_8_8.npy"))[..., 0]
 
         assert np.allclose(result, ref, atol=1e-2)
 
     def testFFBBasis3DExpand(self, basis):
-        x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoeff_in_8_8_8.npy")).T  # RCOPT
+        x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoef_in_8_8_8.npy")).T  # RCOPT
         x = x.astype(basis.dtype, copy=False)
         result = basis.expand(x)
 
-        ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoeff_out_exp_8_8_8.npy"))[
+        ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoef_out_exp_8_8_8.npy"))[
             ..., 0
         ]
 
@@ -502,8 +502,8 @@ def testHighResFFBbasis3D(L, dtype):
     vol = AsymmetricVolume(L=L, C=1, K=64, dtype=dtype, seed=seed).generate()
 
     # Round trip
-    coeff = basis.evaluate_t(vol)
-    vol_ffb = basis.evaluate(coeff)
+    coef = basis.evaluate_t(vol)
+    vol_ffb = basis.evaluate(coef)
 
     # Mask to compare inside sphere of radius 1.
     mask = grid_3d(L, normalized=True)["r"] < 1
