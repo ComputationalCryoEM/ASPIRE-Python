@@ -55,12 +55,15 @@ def src_orient_est_fixture(resolution, offsets, dtype):
         seed=0,
     )
 
-    max_shift = 1 / src.L  # sets max_shift to 1 pixel for 0 offsets.
-    shift_step = 1
-    if src.offsets.all() != 0:
-        # These parameters improve common-line detection.
-        max_shift = 0.20
-        shift_step = 0.25  # Accounts for non-integer offsets.
+    # Increase max_shift and set shift_step to be sub-pixel when using
+    # random offsets in the Simulation. This improves common-line detection.
+    max_shift = 0.20
+    shift_step = 0.25
+
+    # Set max_shift 1 pixel and shift_step to 1 pixel when using 0 offsets.
+    if src.offsets.all() == 0:
+        max_shift = 1 / src.L
+        shift_step = 1
 
     orient_est = CommonlineSDP(
         src, max_shift=max_shift, shift_step=shift_step, mask=False
