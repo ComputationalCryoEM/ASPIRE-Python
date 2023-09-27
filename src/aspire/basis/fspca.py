@@ -571,7 +571,7 @@ class FSPCABasis(SteerableBasis2D):
         """
         Return the eigenvals as a Coef instance of FSPCABasis.
         """
-        return Coef(self, self._eigvals)
+        return self._eigvals
 
     def eigen_images(self):
         """
