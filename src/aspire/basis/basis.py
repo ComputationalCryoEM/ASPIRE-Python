@@ -12,9 +12,11 @@ logger = logging.getLogger(__name__)
 
 class Coef:
     """
-    Numpy interoperable container for stacks of coefficient vectors.
+    Numpy interoperable container for stacks of real coefficient vectors.
     Each `Coef` instance has an associated `Basis`.
     """
+
+    _allowed_dtypes = (np.float32, np.float64)
 
     def __init__(self, basis, data, dtype=None):
         """
@@ -50,6 +52,9 @@ class Coef:
         else:
             self.dtype = np.dtype(dtype)
 
+        # Check real/complex dtype basis on class.
+        self._check_dtype()
+
         if not isinstance(basis, Basis):
             raise TypeError(
                 f"`basis` is required to be a `Basis` instance, received {type(basis)}"
@@ -64,10 +69,8 @@ class Coef:
         self.stack_size = np.prod(self.stack_shape)
         self.count = self._data.shape[-1]
 
-        # Derive count based on real/complex coefficients.
-        basis_count = self.basis.count
-        if np.iscomplexobj(data):
-            basis_count = self.basis.complex_count
+        # Derive count from basis.
+        basis_count = self._get_basis_count()
 
         if self.count != basis_count:
             raise RuntimeError(
@@ -78,6 +81,26 @@ class Coef:
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
         self.__array_interface__ = self.asnumpy().__array_interface__
         self.__array__ = self.asnumpy()
+
+    def _check_dtype(self):
+        """
+        Private helper method to check real/complex dtype based on class `_allowed_dtypes`.
+
+        Raises on mismatch.
+        """
+
+        if self.dtype not in self._allowed_dtypes:
+            raise TypeError(
+                f"{self.__class__.__name__} requires {self._allowed_dtypes} coefficients, attempted {self.dtype}."
+            )
+
+    def _get_basis_count(self):
+        """
+        Private helper method to return coefficient count from basis.
+
+        :return: Basis count (integer).
+        """
+        return int(self.basis.count)
 
     def __len__(self):
         """
@@ -172,7 +195,7 @@ class Coef:
         Returns coefs shifted by `shifts`.
 
         This will transform to real cartesian space, shift,
-        and transform back to Polar Fourier-Bessel space.
+        and transform back to basis space.
 
         :param coef: Basis coefs.
         :param shifts: Shifts in pixels (x,y). Shape (1,2) or (len(coef), 2).
@@ -259,6 +282,86 @@ class Coef:
 
         mask = self.basis.indices_mask(**kwargs)
         return self._data[..., mask]
+
+    def to_complex(self):
+        """
+        Return `ComplexCoef` of real coefficients.
+        """
+        return self.basis, self.basis.to_complex()
+
+    def to_real(self):
+        """
+        Not implemented for real Coef.
+        """
+        raise TypeError("Coef already real.")
+
+
+class ComplexCoef(Coef):
+    """
+    Numpy interoperable container for stacks of complex coefficient vectors.
+    Each `ComplexCoef` instance has an associated `Basis`.
+    """
+
+    _allowed_dtypes = (np.complex64, np.complex128)
+
+    def _get_basis_count(self):
+        """
+        Private helper method to return coefficient complex count from basis.
+
+        :return: Basis complex count (integer).
+        """
+
+        return int(self.basis.complex_count)
+
+    def evaluate(self):
+        """
+        Return the evaluation of coefficients in the associated `basis`.
+        """
+        super().evaluate(self.to_real())
+
+    def rotate(self, radians, refl=None):
+        """
+        Returns coefs rotated counter-clockwise by `radians`.
+
+        Raises error if underlying coef basis does not support rotations.
+
+        :param radians: Rotation in radians.
+        :param refl: Optional reflect image (about y=0) (bool)
+        :return: Rotated ComplexCoefs.
+        """
+
+        return self.basis.rotate(self.to_real(), radians, refl).to_complex()
+
+    def shift(self, shifts):
+        """
+        Returns complex coefs shifted by `shifts`.
+
+        This will transform to real cartesian space, shift,
+        and transform back to basis space.
+
+        :param coef: Basis coefs.
+        :param shifts: Shifts in pixels (x,y). Shape (1,2) or (len(coef), 2).
+        :return: Complex coefs of shifted images.
+        """
+
+        if not callable(getattr(self.basis, "shift", None)):
+            raise RuntimeError(
+                f"self.basis={self.basis} does not provide `shift` method."
+            )
+
+        return self.basis.shift(self.to_real(), shifts).to_complex()
+
+    def to_real(self):
+        """
+        Return `Coef` of complex coefficients.
+        """
+        return self.basis.to_real()
+
+    def to_complex(self):
+        """
+        Not implemented for ComplexCoef.
+        """
+        raise TypeError("Coef already complex.")
 
 
 class Basis:
