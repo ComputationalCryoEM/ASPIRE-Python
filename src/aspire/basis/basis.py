@@ -81,11 +81,9 @@ class Coef:
 
     def __len__(self):
         """
-        Return stack length.
-
-        Note this is product of all stack dimensions.
+        Return length of slowest stack axis.
         """
-        return self.stack_size
+        return self.stack_shape[0]
 
     def asnumpy(self):
         """
