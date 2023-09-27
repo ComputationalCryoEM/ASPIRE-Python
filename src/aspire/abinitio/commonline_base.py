@@ -370,7 +370,7 @@ class CLOrient3D:
             shift_b[shift_eq_idx] = dx
 
             # Compute the coefficients of the current equation
-            coeffs = np.array(
+            coefs = np.array(
                 [
                     np.sin(shift_alpha),
                     np.cos(shift_alpha),
@@ -378,7 +378,7 @@ class CLOrient3D:
                     -np.cos(shift_beta),
                 ]
             )
-            shift_eq[idx] = -1 * coeffs if is_pf_j_flipped else coeffs
+            shift_eq[idx] = -1 * coefs if is_pf_j_flipped else coefs
 
         # create sparse matrix object only containing non-zero elements
         shift_equations = sparse.csr_matrix(

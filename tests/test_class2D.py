@@ -421,15 +421,15 @@ def test_pca_y():
 
 def test_bispect_overflow():
     """
-    A zero value coeff will cause a div0 error in log call.
+    A zero value coef will cause a div0 error in log call.
     Check it is raised.
     """
 
-    with pytest.raises(ValueError, match="coeff_norm should not be -inf"):
+    with pytest.raises(ValueError, match="coef_norm should not be -inf"):
         # This should emit a warning before raising
         with pytest.warns(RuntimeWarning):
             bispec_2drot_large(
-                coeff=np.arange(10),
+                coef=np.arange(10),
                 freqs=np.arange(1, 11),
                 eigval=np.arange(10),
                 alpha=1 / 3,

@@ -59,29 +59,29 @@ class Estimator:
     def compute_kernel(self):
         raise NotImplementedError("Subclasses must implement the compute_kernel method")
 
-    def estimate(self, b_coeff=None, tol=1e-5, regularizer=0):
+    def estimate(self, b_coef=None, tol=1e-5, regularizer=0):
         """Return an estimate as a Volume instance."""
-        if b_coeff is None:
-            b_coeff = self.src_backward()
-        est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
-        est = Coef(self.basis, est_coeff).evaluate().T
+        if b_coef is None:
+            b_coef = self.src_backward()
+        est_coef = self.conj_grad(b_coef, tol=tol, regularizer=regularizer)
+        est = Coef(self.basis, est_coef).evaluate().T
 
         return est
 
-    def apply_kernel(self, vol_coeff, kernel=None):
+    def apply_kernel(self, vol_coef, kernel=None):
         """
         Applies the kernel represented by convolution
 
-        :param vol_coeff: The volume to be convolved, stored in the basis coefficients.
+        :param vol_coef: The volume to be convolved, stored in the basis coefficients.
         :param kernel: a Kernel object. If None, the kernel for this Estimator is used.
-        :return: The result of evaluating `vol_coeff` in the given basis, convolving with the kernel given by
+        :return: The result of evaluating `vol_coef` in the given basis, convolving with the kernel given by
             kernel, and backprojecting into the basis.
         """
 
         if kernel is None:
             kernel = self.kernel
 
-        vol = Coef(self.basis, vol_coeff).evaluate()  # returns a Volume
+        vol = Coef(self.basis, vol_coef).evaluate()  # returns a Volume
         vol = kernel.convolve_volume(vol)  # returns a Volume
         vol_coef = self.basis.evaluate_t(vol)
         return vol_coef

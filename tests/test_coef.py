@@ -86,7 +86,7 @@ def coef_fixture(basis, stack, dtype):
     """
     Construct parameterized testing coefficient array as `Coef`.
     """
-    # Combine the stack and coefficent counts into multidimensional
+    # Combine the stack and coeficent counts into multidimensional
     # shape.
     size = stack + (basis.count,)
 

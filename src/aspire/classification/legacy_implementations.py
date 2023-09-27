@@ -125,18 +125,18 @@ def bispec_operator_1(freqs):
     return o1, o2
 
 
-def bispec_2drot_large(coeff, freqs, eigval, alpha, sample_n, seed=None):
+def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, seed=None):
     """
     alpha 1/3
     sample_n 4000
     """
     freqs_not_zero = freqs != 0
 
-    coeff_norm = np.log(np.power(np.absolute(coeff[freqs_not_zero]), alpha))
-    if np.any(coeff_norm == float("-inf")):
-        raise ValueError("coeff_norm should not be -inf")
+    coef_norm = np.log(np.power(np.absolute(coef[freqs_not_zero]), alpha))
+    if np.any(coef_norm == float("-inf")):
+        raise ValueError("coef_norm should not be -inf")
 
-    phase = coeff[freqs_not_zero] / np.absolute(coeff[freqs_not_zero])
+    phase = coef[freqs_not_zero] / np.absolute(coef[freqs_not_zero])
     phase = np.arctan2(np.imag(phase), np.real(phase))
     eigval = eigval[freqs_not_zero]
     o1, o2 = bispec_operator_1(freqs[freqs_not_zero])
@@ -151,15 +151,15 @@ def bispec_2drot_large(coeff, freqs, eigval, alpha, sample_n, seed=None):
     m_id = np.where(x < sample_n * p_m)[0]
     o1 = o1[m_id]
     o2 = o2[m_id]
-    m = np.exp(o1 * coeff_norm + 1j * o2 * phase)
+    m = np.exp(o1 * coef_norm + 1j * o2 * phase)
 
     # svd of the reduced bispectrum
     u, s, v = pca_y(m, 300, seed=seed)
 
-    coeff_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
-    coeff_b_r = np.conjugate(u.T).dot(np.conjugate(m))
+    coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
+    coef_b_r = np.conjugate(u.T).dot(np.conjugate(m))
 
-    coeff_b = coeff_b / np.linalg.norm(coeff_b, axis=0)
-    coeff_b_r = coeff_b_r / np.linalg.norm(coeff_b_r, axis=0)
+    coef_b = coef_b / np.linalg.norm(coef_b, axis=0)
+    coef_b_r = coef_b_r / np.linalg.norm(coef_b_r, axis=0)
 
-    return coeff_b, coeff_b_r
+    return coef_b, coef_b_r

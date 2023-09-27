@@ -39,7 +39,7 @@ class BatchedRotCov2DTestCase(TestCase):
             noise_adder=noise_adder,
         )
         self.basis = FFBBasis2D((L, L), dtype=self.dtype)
-        self.coeff = self.basis.evaluate_t(self.src.images[:])
+        self.coef = self.basis.evaluate_t(self.src.images[:])
 
         self.cov2d = RotCov2D(self.basis)
         self.bcov2d = BatchedRotCov2D(self.src, self.basis, batch_size=7)
@@ -60,11 +60,11 @@ class BatchedRotCov2DTestCase(TestCase):
         # Test basic functionality against RotCov2D.
 
         mean_cov2d = self.cov2d.get_mean(
-            self.coeff, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
+            self.coef, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
         )
         covar_cov2d = self.cov2d.get_covar(
-            self.coeff,
-            mean_coeff=mean_cov2d,
+            self.coef,
+            mean_coef=mean_cov2d,
             ctf_basis=self.ctf_basis,
             ctf_idx=self.ctf_idx,
             noise_var=self.noise_var,
@@ -85,16 +85,16 @@ class BatchedRotCov2DTestCase(TestCase):
 
     def testZeroMean(self):
         # Make sure it works with zero mean (pure second moment).
-        zero_coeff = Coef(self.basis, np.zeros((self.basis.count,), dtype=self.dtype))
+        zero_coef = Coef(self.basis, np.zeros((self.basis.count,), dtype=self.dtype))
 
         covar_cov2d = self.cov2d.get_covar(
-            self.coeff,
-            mean_coeff=zero_coeff,
+            self.coef,
+            mean_coef=zero_coef,
             ctf_basis=self.ctf_basis,
             ctf_idx=self.ctf_idx,
         )
 
-        covar_bcov2d = self.bcov2d.get_covar(mean_coeff=zero_coeff)
+        covar_bcov2d = self.bcov2d.get_covar(mean_coef=zero_coef)
 
         self.assertTrue(
             self.blk_diag_allclose(
@@ -105,7 +105,7 @@ class BatchedRotCov2DTestCase(TestCase):
     def testAutoMean(self):
         # Make sure it automatically calls get_mean if needed.
         covar_cov2d = self.cov2d.get_covar(
-            self.coeff, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
+            self.coef, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
         )
 
         covar_bcov2d = self.bcov2d.get_covar()
@@ -129,7 +129,7 @@ class BatchedRotCov2DTestCase(TestCase):
         }
 
         covar_cov2d = self.cov2d.get_covar(
-            self.coeff,
+            self.coef,
             ctf_basis=self.ctf_basis,
             ctf_idx=self.ctf_idx,
             covar_est_opt=covar_est_opt,
@@ -155,22 +155,22 @@ class BatchedRotCov2DTestCase(TestCase):
     def testCWFCoeff(self):
         # Calculate CWF coefficients using Cov2D base class
         mean_cov2d = self.cov2d.get_mean(
-            self.coeff, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
+            self.coef, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
         )
         covar_cov2d = self.cov2d.get_covar(
-            self.coeff,
+            self.coef,
             ctf_basis=self.ctf_basis,
             ctf_idx=self.ctf_idx,
             noise_var=self.noise_var,
             make_psd=True,
         )
 
-        coeff_cov2d = self.cov2d.get_cwf_coeffs(
-            self.coeff,
+        coef_cov2d = self.cov2d.get_cwf_coefs(
+            self.coef,
             self.ctf_basis,
             self.ctf_idx,
-            mean_coeff=mean_cov2d,
-            covar_coeff=covar_cov2d,
+            mean_coef=mean_cov2d,
+            covar_coef=covar_cov2d,
             noise_var=self.noise_var,
         )
 
@@ -178,8 +178,8 @@ class BatchedRotCov2DTestCase(TestCase):
         mean_bcov2d = self.bcov2d.get_mean()
         covar_bcov2d = self.bcov2d.get_covar(noise_var=self.noise_var, make_psd=True)
 
-        coeff_bcov2d = self.bcov2d.get_cwf_coeffs(
-            self.coeff,
+        coef_bcov2d = self.bcov2d.get_cwf_coefs(
+            self.coef,
             self.ctf_basis,
             self.ctf_idx,
             mean_bcov2d,
@@ -188,15 +188,15 @@ class BatchedRotCov2DTestCase(TestCase):
         )
         self.assertTrue(
             self.blk_diag_allclose(
-                coeff_cov2d,
-                coeff_bcov2d,
+                coef_cov2d,
+                coef_bcov2d,
                 atol=utest_tolerance(self.dtype),
             )
         )
 
     def testCWFCoeffCleanCTF(self):
         """
-        Test case of clean images (coeff_clean and noise_var=0)
+        Test case of clean images (coef_clean and noise_var=0)
         while using a non Identity CTF.
 
         This case may come up when a developer switches between
@@ -205,22 +205,22 @@ class BatchedRotCov2DTestCase(TestCase):
 
         # Calculate CWF coefficients using Cov2D base class
         mean_cov2d = self.cov2d.get_mean(
-            self.coeff, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
+            self.coef, ctf_basis=self.ctf_basis, ctf_idx=self.ctf_idx
         )
         covar_cov2d = self.cov2d.get_covar(
-            self.coeff,
+            self.coef,
             ctf_basis=self.ctf_basis,
             ctf_idx=self.ctf_idx,
             noise_var=self.noise_var,
             make_psd=True,
         )
 
-        coeff_cov2d = self.cov2d.get_cwf_coeffs(
-            self.coeff,
+        coef_cov2d = self.cov2d.get_cwf_coefs(
+            self.coef,
             self.ctf_basis,
             self.ctf_idx,
-            mean_coeff=mean_cov2d,
-            covar_coeff=covar_cov2d,
+            mean_coef=mean_cov2d,
+            covar_coef=covar_cov2d,
             noise_var=0,
         )
 
@@ -228,8 +228,8 @@ class BatchedRotCov2DTestCase(TestCase):
         mean_bcov2d = self.bcov2d.get_mean()
         covar_bcov2d = self.bcov2d.get_covar(noise_var=self.noise_var, make_psd=True)
 
-        coeff_bcov2d = self.bcov2d.get_cwf_coeffs(
-            self.coeff,
+        coef_bcov2d = self.bcov2d.get_cwf_coefs(
+            self.coef,
             self.ctf_basis,
             self.ctf_idx,
             mean_bcov2d,
@@ -238,8 +238,8 @@ class BatchedRotCov2DTestCase(TestCase):
         )
         self.assertTrue(
             self.blk_diag_allclose(
-                coeff_cov2d,
-                coeff_bcov2d,
+                coef_cov2d,
+                coef_bcov2d,
                 atol=utest_tolerance(self.dtype),
             )
         )
