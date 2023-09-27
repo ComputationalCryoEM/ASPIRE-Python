@@ -110,18 +110,18 @@ def cov2d_fixture(volume, basis, ctf_enabled):
     sim.cache()
 
     cov2d = RotCov2D(basis)
-    coeff_clean = basis.evaluate_t(sim.projections[:])
-    coeff = basis.evaluate_t(sim.images[:])
+    coef_clean = basis.evaluate_t(sim.projections[:])
+    coef = basis.evaluate_t(sim.images[:])
 
-    return sim, cov2d, coeff_clean, coeff, h_ctf_fb, h_idx
+    return sim, cov2d, coef_clean, coef, h_ctf_fb, h_idx
 
 
 def test_get_mean(cov2d_fixture):
     results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_cov2d_mean.npy"))
-    cov2d, coeff_clean = cov2d_fixture[1], cov2d_fixture[2]
+    cov2d, coef_clean = cov2d_fixture[1], cov2d_fixture[2]
 
-    mean_coeff = cov2d._get_mean(coeff_clean.asnumpy())
-    np.testing.assert_allclose(results, mean_coeff, atol=utest_tolerance(cov2d.dtype))
+    mean_coef = cov2d._get_mean(coef_clean.asnumpy())
+    np.testing.assert_allclose(results, mean_coef, atol=utest_tolerance(cov2d.dtype))
 
 
 def test_get_covar(cov2d_fixture):
@@ -130,59 +130,59 @@ def test_get_covar(cov2d_fixture):
         allow_pickle=True,
     )
 
-    cov2d, coeff_clean = cov2d_fixture[1], cov2d_fixture[2]
+    cov2d, coef_clean = cov2d_fixture[1], cov2d_fixture[2]
 
-    covar_coeff = cov2d._get_covar(coeff_clean.asnumpy())
+    covar_coef = cov2d._get_covar(coef_clean.asnumpy())
 
     for im, mat in enumerate(results.tolist()):
-        np.testing.assert_allclose(mat, covar_coeff[im], rtol=1e-05)
+        np.testing.assert_allclose(mat, covar_coef[im], rtol=1e-05)
 
 
 def test_get_mean_ctf(cov2d_fixture, ctf_enabled):
     """
     Compare `get_mean` (no CTF args) with `_get_mean` (no CTF model).
     """
-    sim, cov2d, coeff_clean, coeff, h_ctf_fb, h_idx = cov2d_fixture
+    sim, cov2d, coef_clean, coef, h_ctf_fb, h_idx = cov2d_fixture
 
-    mean_coeff_ctf = cov2d.get_mean(coeff, h_ctf_fb, h_idx)
+    mean_coef_ctf = cov2d.get_mean(coef, h_ctf_fb, h_idx)
 
     tol = utest_tolerance(sim.dtype)
     if ctf_enabled:
         result = np.load(os.path.join(DATA_DIR, "clean70SRibosome_cov2d_meanctf.npy"))
     else:
-        result = cov2d._get_mean(coeff_clean.asnumpy())
+        result = cov2d._get_mean(coef_clean.asnumpy())
         tol = 0.002
 
-    np.testing.assert_allclose(mean_coeff_ctf.asnumpy()[0], result, atol=tol)
+    np.testing.assert_allclose(mean_coef_ctf.asnumpy()[0], result, atol=tol)
 
 
-def test_get_cwf_coeffs_clean(cov2d_fixture):
+def test_get_cwf_coefs_clean(cov2d_fixture):
     results = np.load(
-        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_cwf_coeff_clean.npy")
+        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_cwf_coef_clean.npy")
     )
 
-    cov2d, coeff_clean = cov2d_fixture[1], cov2d_fixture[2]
+    cov2d, coef_clean = cov2d_fixture[1], cov2d_fixture[2]
 
-    coeff_cwf_clean = cov2d.get_cwf_coeffs(coeff_clean, noise_var=0)
+    coef_cwf_clean = cov2d.get_cwf_coefs(coef_clean, noise_var=0)
     np.testing.assert_allclose(
-        results, coeff_cwf_clean, atol=utest_tolerance(cov2d.dtype)
+        results, coef_cwf_clean, atol=utest_tolerance(cov2d.dtype)
     )
 
 
-def test_get_cwf_coeffs_clean_ctf(cov2d_fixture):
+def test_get_cwf_coefs_clean_ctf(cov2d_fixture):
     """
-    Test case of clean images (coeff_clean and noise_var=0)
+    Test case of clean images (coef_clean and noise_var=0)
     while using a non Identity CTF.
 
     This case may come up when a developer switches between
     clean and dirty images.
     """
-    sim, cov2d, coeff_clean, _, h_ctf_fb, h_idx = cov2d_fixture
+    sim, cov2d, coef_clean, _, h_ctf_fb, h_idx = cov2d_fixture
 
-    coeff_cwf = cov2d.get_cwf_coeffs(coeff_clean, h_ctf_fb, h_idx, noise_var=0)
+    coef_cwf = cov2d.get_cwf_coefs(coef_clean, h_ctf_fb, h_idx, noise_var=0)
 
-    # Reconstruct images from output of get_cwf_coeffs
-    img_est = cov2d.basis.evaluate(coeff_cwf)
+    # Reconstruct images from output of get_cwf_coefs
+    img_est = cov2d.basis.evaluate(coef_cwf)
     # Compare with clean images
     delta = np.mean(np.square((sim.clean_images[:] - img_est).asnumpy()))
     np.testing.assert_array_less(delta, 0.01)
@@ -192,40 +192,40 @@ def test_shrinker_inputs(cov2d_fixture):
     """
     Check we raise with specific message for unsupporting shrinker arg.
     """
-    cov2d, coeff_clean = cov2d_fixture[1], cov2d_fixture[2]
+    cov2d, coef_clean = cov2d_fixture[1], cov2d_fixture[2]
 
     bad_shrinker_inputs = ["None", "notashrinker", ""]
 
     for shrinker in bad_shrinker_inputs:
         with raises(AssertionError, match="Unsupported shrink method"):
-            _ = cov2d.get_covar(coeff_clean, covar_est_opt={"shrinker": shrinker})
+            _ = cov2d.get_covar(coef_clean, covar_est_opt={"shrinker": shrinker})
 
 
 def test_shrinkage(cov2d_fixture, shrinker):
     """
     Test all the shrinkers we know about run without crashing,
     """
-    cov2d, coeff_clean = cov2d_fixture[1], cov2d_fixture[2]
+    cov2d, coef_clean = cov2d_fixture[1], cov2d_fixture[2]
 
     results = np.load(
         os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covar.npy"),
         allow_pickle=True,
     )
 
-    covar_coeff = cov2d.get_covar(coeff_clean, covar_est_opt={"shrinker": shrinker})
+    covar_coef = cov2d.get_covar(coef_clean, covar_est_opt={"shrinker": shrinker})
 
     for im, mat in enumerate(results.tolist()):
         np.testing.assert_allclose(
-            mat, covar_coeff[im], atol=utest_tolerance(cov2d.dtype)
+            mat, covar_coef[im], atol=utest_tolerance(cov2d.dtype)
         )
 
 
-def test_get_cwf_coeffs_ctf_args(cov2d_fixture):
+def test_get_cwf_coefs_ctf_args(cov2d_fixture):
     """
     Test we raise when user supplies incorrect CTF arguments,
     and that the error message matches.
     """
-    sim, cov2d, _, coeff, h_ctf_fb, _ = cov2d_fixture
+    sim, cov2d, _, coef, h_ctf_fb, _ = cov2d_fixture
 
     # When half the ctf info (h_ctf_fb) is populated,
     #   set the other ctf param (h_idx) to none.
@@ -236,32 +236,32 @@ def test_get_cwf_coeffs_ctf_args(cov2d_fixture):
 
     # Both the above situations should be an error.
     with raises(RuntimeError, match=r".*Given ctf_.*"):
-        _ = cov2d.get_cwf_coeffs(coeff, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
+        _ = cov2d.get_cwf_coefs(coef, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
 
 
-def test_get_cwf_coeffs(cov2d_fixture, ctf_enabled):
+def test_get_cwf_coefs(cov2d_fixture, ctf_enabled):
     """
-    Tests `get_cwf_coeffs` with poulated CTF.
+    Tests `get_cwf_coefs` with poulated CTF.
     """
-    _, cov2d, coeff_clean, coeff, h_ctf_fb, h_idx = cov2d_fixture
+    _, cov2d, coef_clean, coef, h_ctf_fb, h_idx = cov2d_fixture
 
     # Hard coded file expects sim with ctf.
     if not ctf_enabled:
         pytest.skip(reason="Reference file n/a.")
 
-    results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_cov2d_cwf_coeff.npy"))
+    results = np.load(os.path.join(DATA_DIR, "clean70SRibosome_cov2d_cwf_coef.npy"))
 
-    coeff_cwf = cov2d.get_cwf_coeffs(coeff, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
+    coef_cwf = cov2d.get_cwf_coefs(coef, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
 
-    np.testing.assert_allclose(results, coeff_cwf, atol=utest_tolerance(cov2d.dtype))
+    np.testing.assert_allclose(results, coef_cwf, atol=utest_tolerance(cov2d.dtype))
 
 
-def test_get_cwf_coeffs_without_ctf_args(cov2d_fixture, ctf_enabled):
+def test_get_cwf_coefs_without_ctf_args(cov2d_fixture, ctf_enabled):
     """
-    Tests `get_cwf_coeffs` with poulated CTF.
+    Tests `get_cwf_coefs` with poulated CTF.
     """
 
-    _, cov2d, _, coeff, _, _ = cov2d_fixture
+    _, cov2d, _, coef, _, _ = cov2d_fixture
 
     # Hard coded file expects sim with ctf.
     if not ctf_enabled:
@@ -270,12 +270,12 @@ def test_get_cwf_coeffs_without_ctf_args(cov2d_fixture, ctf_enabled):
     # Note, I think this file is incorrectly named...
     #   It appears to have come from operations on images with ctf applied.
     results = np.load(
-        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_cwf_coeff_noCTF.npy")
+        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_cwf_coef_noCTF.npy")
     )
 
-    coeff_cwf = cov2d.get_cwf_coeffs(coeff, noise_var=NOISE_VAR)
+    coef_cwf = cov2d.get_cwf_coefs(coef, noise_var=NOISE_VAR)
 
-    np.testing.assert_allclose(results, coeff_cwf, atol=utest_tolerance(cov2d.dtype))
+    np.testing.assert_allclose(results, coef_cwf, atol=utest_tolerance(cov2d.dtype))
 
 
 def test_get_covar_ctf(cov2d_fixture, ctf_enabled):
@@ -283,20 +283,20 @@ def test_get_covar_ctf(cov2d_fixture, ctf_enabled):
     if not ctf_enabled:
         pytest.skip(reason="Reference file n/a.")
 
-    sim, cov2d, _, coeff, h_ctf_fb, h_idx = cov2d_fixture
+    sim, cov2d, _, coef, h_ctf_fb, h_idx = cov2d_fixture
 
     results = np.load(
         os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covarctf.npy"),
         allow_pickle=True,
     )
 
-    covar_coeff_ctf = cov2d.get_covar(coeff, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
+    covar_coef_ctf = cov2d.get_covar(coef, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
     for im, mat in enumerate(results.tolist()):
-        np.testing.assert_allclose(mat, covar_coeff_ctf[im], rtol=1e-05, atol=1e-08)
+        np.testing.assert_allclose(mat, covar_coef_ctf[im], rtol=1e-05, atol=1e-08)
 
 
 def test_get_covar_ctf_shrink(cov2d_fixture, ctf_enabled):
-    sim, cov2d, _, coeff, h_ctf_fb, h_idx = cov2d_fixture
+    sim, cov2d, _, coef, h_ctf_fb, h_idx = cov2d_fixture
 
     # Hard coded file expects sim with ctf.
     if not ctf_enabled:
@@ -317,8 +317,8 @@ def test_get_covar_ctf_shrink(cov2d_fixture, ctf_enabled):
         "precision": cov2d.dtype,
     }
 
-    covar_coeff_ctf_shrink = cov2d.get_covar(
-        coeff,
+    covar_coef_ctf_shrink = cov2d.get_covar(
+        coef,
         h_ctf_fb,
         h_idx,
         noise_var=NOISE_VAR,
@@ -326,4 +326,4 @@ def test_get_covar_ctf_shrink(cov2d_fixture, ctf_enabled):
     )
 
     for im, mat in enumerate(results.tolist()):
-        np.testing.assert_allclose(mat, covar_coeff_ctf_shrink[im])
+        np.testing.assert_allclose(mat, covar_coef_ctf_shrink[im])

@@ -125,22 +125,22 @@ class BlkDiagMatrixTestCase(TestCase):
     def testBlkDiagMatrixApply(self):
         m = np.sum(self.blk_a.partition[:, 1])
         k = 3
-        coeffm = np.arange(k * m).reshape(m, k).astype(self.blk_a.dtype)
+        coefm = np.arange(k * m).reshape(m, k).astype(self.blk_a.dtype)
 
         # Manually compute
         ind = 0
-        res = np.empty_like(coeffm)
+        res = np.empty_like(coefm)
         for b, blk in enumerate(self.blk_a):
             col = self.blk_a.partition[b, 1]
-            res[ind : ind + col, :] = blk @ coeffm[ind : ind + col, :]
+            res[ind : ind + col, :] = blk @ coefm[ind : ind + col, :]
             ind += col
 
         # Check ndim 1 case
-        c = self.blk_a.apply(coeffm[:, 0])
+        c = self.blk_a.apply(coefm[:, 0])
         self.allallfunc(c, res[:, 0])
 
         # Check ndim 2 case
-        d = self.blk_a.apply(coeffm)
+        d = self.blk_a.apply(coefm)
         self.allallfunc(res, d)
 
         # Here we are checking that the ndim 2 case distributes as described.
@@ -148,33 +148,33 @@ class BlkDiagMatrixTestCase(TestCase):
         # should be equivalent to e = [A.apply(r0), ... A.apply(ri)].
         e = np.empty((m, k))
         for i in range(k):
-            e[:, i] = self.blk_a.apply(coeffm[:, i])
+            e[:, i] = self.blk_a.apply(coefm[:, i])
         self.allallfunc(e, d)
 
         # We can use syntactic sugar @ for apply as well
-        f = self.blk_a @ coeffm
+        f = self.blk_a @ coefm
         self.allallfunc(f, d)
 
         # Test the rapply is also functional
-        coeffm = coeffm.T  # matmul dimensions
-        res = coeffm @ self.blk_a.dense()
-        d = self.blk_a.rapply(coeffm)
+        coefm = coefm.T  # matmul dimensions
+        res = coefm @ self.blk_a.dense()
+        d = self.blk_a.rapply(coefm)
         self.allallfunc(res, d)
 
         # And the syntactic sugar @
-        d = coeffm @ self.blk_a
+        d = coefm @ self.blk_a
         self.allallfunc(res, d)
 
         # And test some incorrrect invocations:
         # inplace not supported for matmul of mixed classes.
         with pytest.raises(RuntimeError, match=r".*method not supported.*"):
-            self.blk_a @= coeffm
+            self.blk_a @= coefm
 
         # Test left operand of an __rmatmul__ must be an ndarray
         with pytest.raises(
             RuntimeError, match=r".*only defined for np.ndarray @ BlkDiagMatrix.*"
         ):
-            _ = list(coeffm) @ self.blk_a
+            _ = list(coefm) @ self.blk_a
 
     def testBlkDiagMatrixMatMult(self):
         result = [np.matmul(*tup) for tup in zip(self.blk_a, self.blk_b)]
@@ -285,18 +285,18 @@ class BlkDiagMatrixTestCase(TestCase):
 
         m = np.sum(self.blk_a.partition[:, 1])
         k = 3
-        coeffm = np.arange(k * m).reshape(m, k).astype(self.blk_a.dtype)
+        coefm = np.arange(k * m).reshape(m, k).astype(self.blk_a.dtype)
 
         # Manually compute
         ind = 0
-        res = np.empty_like(coeffm)
+        res = np.empty_like(coefm)
         for b, blk in enumerate(B):
             col = self.blk_a.partition[b, 1]
-            res[ind : ind + col, :] = solve(blk, coeffm[ind : ind + col, :])
+            res[ind : ind + col, :] = solve(blk, coefm[ind : ind + col, :])
             ind += col
 
-        coeff_est = B.solve(coeffm)
-        self.allallfunc(res, coeff_est)
+        coef_est = B.solve(coefm)
+        self.allallfunc(res, coef_est)
 
     def testBlkDiagMatrixTranspose(self):
         blk_c = [blk.T for blk in self.blk_a]
@@ -446,42 +446,42 @@ class IrrBlkDiagMatrixTestCase(TestCase):
         n = np.sum(self.blk_x.partition[:, 0])
         m = np.sum(self.blk_x.partition[:, 1])
         k = 3
-        coeffm = np.arange(k * m).reshape(m, k).astype(self.blk_x.dtype)
+        coefm = np.arange(k * m).reshape(m, k).astype(self.blk_x.dtype)
 
         # Manually compute
         indc = 0
         indr = 0
-        res = np.empty(shape=(n, k), dtype=coeffm.dtype)
+        res = np.empty(shape=(n, k), dtype=coefm.dtype)
         for b, blk in enumerate(self.blk_x):
             row, col = self.blk_x.partition[b]
-            res[indr : indr + row, :] = blk @ coeffm[indc : indc + col, :]
+            res[indr : indr + row, :] = blk @ coefm[indc : indc + col, :]
             indc += col
             indr += row
 
         # Check ndim 1 case
-        c = self.blk_x.apply(coeffm[:, 0])
+        c = self.blk_x.apply(coefm[:, 0])
         self.allallfunc(c, res[:, 0])
 
         # Check ndim 2 case
-        d = self.blk_x.apply(coeffm)
+        d = self.blk_x.apply(coefm)
         self.allallfunc(res, d)
 
         # Check against dense numpy matmul
-        self.allallfunc(d, self.blk_x.dense() @ coeffm)
+        self.allallfunc(d, self.blk_x.dense() @ coefm)
 
     def testSolve(self):
         """
         Test attempts to solve non square BlkDiagMatrix raise error.
         """
 
-        # Setup a dummy coeff matrix
+        # Setup a dummy coef matrix
         n = np.sum(self.blk_x.partition[:, 0])
         k = 3
-        coeffm = np.arange(n * k).reshape(n, k).astype(self.blk_x.dtype)
+        coefm = np.arange(n * k).reshape(n, k).astype(self.blk_x.dtype)
 
         with pytest.raises(
             NotImplementedError,
             match=r"BlkDiagMatrix.solve is only defined for square arrays.*",
         ):
             # Attemplt solve using the Block Diagonal implementation
-            _ = self.blk_x.solve(coeffm)
+            _ = self.blk_x.solve(coefm)

@@ -355,14 +355,14 @@ class FPSWFBasis2D(PSWFBasis2D):
         r_n_eval_mat = r_n_eval_mat.reshape(
             (len(self.radial_quad_pts) * self.n_max, num_images), order="F"
         )
-        coeff_vec_quad = np.zeros(
+        coef_vec_quad = np.zeros(
             (num_images, len(self.complex_angular_indices)),
             dtype=complex_type(self.dtype),
         )
         m = self.pswf_radial_quad.shape[1]
         for i in range(self.n_max):
-            coeff_vec_quad[
+            coef_vec_quad[
                 :, self.indices_for_n[i] + np.arange(self.numel_for_n[i])
             ] = np.dot(self.blk_r[i], r_n_eval_mat[i * m : (i + 1) * m, :]).T
 
-        return coeff_vec_quad
+        return coef_vec_quad

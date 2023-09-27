@@ -140,8 +140,8 @@ imgs_noise = sim.images[:num_imgs]
 # ``basis.evaluate_t``.
 
 logger.info("Get coefficients of clean and noisy images in FFB basis.")
-coeff_clean = ffbbasis.evaluate_t(imgs_clean)
-coeff_noise = ffbbasis.evaluate_t(imgs_noise)
+coef_clean = ffbbasis.evaluate_t(imgs_clean)
+coef_noise = ffbbasis.evaluate_t(imgs_noise)
 
 # %%
 # Create Cov2D Object and Calculate Mean and Variance for Clean Images
@@ -161,8 +161,8 @@ logger.info(
     "Get 2D covariance matrices of clean and noisy images using FB coefficients."
 )
 cov2d = RotCov2D(ffbbasis)
-mean_coeff = cov2d.get_mean(coeff_clean)
-covar_coeff = cov2d.get_covar(coeff_clean, mean_coeff, noise_var=0)
+mean_coef = cov2d.get_mean(coef_clean)
+covar_coef = cov2d.get_covar(coef_clean, mean_coef, noise_var=0)
 
 # %%
 # Estimate mean and covariance for noisy images with CTF and shrink method
@@ -184,12 +184,12 @@ covar_opt = {
     "precision": "float64",
     "preconditioner": "identity",
 }
-mean_coeff_est = cov2d.get_mean(coeff_noise, h_ctf_fb, h_idx)
-covar_coeff_est = cov2d.get_covar(
-    coeff_noise,
+mean_coef_est = cov2d.get_mean(coef_noise, h_ctf_fb, h_idx)
+covar_coef_est = cov2d.get_covar(
+    coef_noise,
     h_ctf_fb,
     h_idx,
-    mean_coeff_est,
+    mean_coef_est,
     noise_var=noise_var,
     covar_est_opt=covar_opt,
 )
@@ -203,17 +203,17 @@ covar_coeff_est = cov2d.get_covar(
 # the lowest expected mean square error out of all linear estimators.
 
 logger.info("Get the CWF coefficients of noising images.")
-coeff_est = cov2d.get_cwf_coeffs(
-    coeff_noise,
+coef_est = cov2d.get_cwf_coefs(
+    coef_noise,
     h_ctf_fb,
     h_idx,
-    mean_coeff=mean_coeff_est,
-    covar_coeff=covar_coeff_est,
+    mean_coef=mean_coef_est,
+    covar_coef=covar_coef_est,
     noise_var=noise_var,
 )
 
 # Convert Fourier-Bessel coefficients back into 2D images
-imgs_est = ffbbasis.evaluate(coeff_est)
+imgs_est = ffbbasis.evaluate(coef_est)
 
 # %%
 # Evaluate the Results
@@ -221,12 +221,12 @@ imgs_est = ffbbasis.evaluate(coeff_est)
 
 # Calculate the difference between the estimated covariance and the "true"
 # covariance estimated from the clean Fourier-Bessel coefficients.
-covar_coeff_diff = covar_coeff - covar_coeff_est
+covar_coef_diff = covar_coef - covar_coef_est
 
 # Calculate the deviation between the clean estimates and those obtained from
 # the noisy, filtered images.
-diff_mean = anorm(mean_coeff_est - mean_coeff) / anorm(mean_coeff)
-diff_covar = covar_coeff_diff.norm() / covar_coeff.norm()
+diff_mean = anorm(mean_coef_est - mean_coef) / anorm(mean_coef)
+diff_covar = covar_coef_diff.norm() / covar_coef.norm()
 
 # Calculate the normalized RMSE of the estimated images.
 nrmse_ims = (imgs_est - imgs_clean).norm() / imgs_clean.norm()

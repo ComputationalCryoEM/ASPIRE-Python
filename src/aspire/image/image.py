@@ -58,8 +58,8 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
         imgs = imgs.reshape((-1, L * L))
 
         # Fit a ramping background and apply to images
-        coeff = lstsq(ramp_mask, imgs[:, mask_reshape].T)[0]  # RCOPT
-        imgs = imgs - (ramp_all @ coeff).T  # RCOPT
+        coef = lstsq(ramp_mask, imgs[:, mask_reshape].T)[0]  # RCOPT
+        imgs = imgs - (ramp_all @ coef).T  # RCOPT
         imgs = imgs.reshape((-1, L, L))
 
     # Apply mask images and calculate mean and std values of background
