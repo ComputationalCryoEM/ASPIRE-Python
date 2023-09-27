@@ -5,7 +5,7 @@ import numpy as np
 import scipy.sparse as sparse
 
 from aspire.operators import PolarFT
-from aspire.utils import common_line_from_rots
+from aspire.utils import common_line_from_rots, fuzzy_mask
 from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,14 @@ class CLOrient3D:
     """
 
     def __init__(
-        self, src, n_rad=None, n_theta=360, n_check=None, max_shift=0.15, shift_step=1
+        self,
+        src,
+        n_rad=None,
+        n_theta=360,
+        n_check=None,
+        max_shift=0.15,
+        shift_step=1,
+        mask=True,
     ):
         """
         Initialize an object for estimating 3D orientations using common lines.
@@ -34,6 +41,8 @@ class CLOrient3D:
             of the resolution. Default is 0.15.
         :param shift_step: Resolution of shift estimation in pixels.
             Default is 1 pixel.
+        :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
+            Default, `True`, applies a mask.
         """
         self.src = src
         # Note dtype is inferred from self.src
@@ -46,6 +55,7 @@ class CLOrient3D:
         self.clmatrix = None
         self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
+        self.mask = mask
         self.rotations = None
 
         self._build()
@@ -68,6 +78,10 @@ class CLOrient3D:
             raise NotImplementedError(msg)
 
         imgs = self.src.images[:]
+
+        if self.mask:
+            fuzz_mask = fuzzy_mask((self.n_res, self.n_res), self.dtype)
+            imgs = imgs * fuzz_mask
 
         # Obtain coefficients of polar Fourier transform for input 2D images
         self.pft = PolarFT(

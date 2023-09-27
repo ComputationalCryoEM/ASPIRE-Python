@@ -6,10 +6,15 @@ from numpy.linalg import det, norm
 from aspire.abinitio import CLSymmetryC2, CLSymmetryC3C4, CLSymmetryCn
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
 from aspire.source import Simulation
-from aspire.utils import Rotation, utest_tolerance
-from aspire.utils.coor_trans import get_aligned_rotations, register_rotations
-from aspire.utils.misc import J_conjugate, all_pairs, cyclic_rotations
-from aspire.utils.random import randn
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    all_pairs,
+    cyclic_rotations,
+    mean_aligned_angular_distance,
+    randn,
+    utest_tolerance,
+)
 from aspire.volume import CnSymmetricVolume
 
 # A set of these parameters are marked expensive to reduce testing time.
@@ -84,6 +89,7 @@ def source_orientation_objs(n_img, L, order, dtype):
         n_theta=360,
         max_shift=1 / L,
         seed=seed,
+        mask=False,
     )
 
     if order in [3, 4]:
@@ -116,14 +122,9 @@ def test_estimate_rotations(n_img, L, order, dtype):
     # g-synchronize ground truth rotations.
     rots_gt_sync = cl_symm.g_sync(rots_est, order, rots_gt)
 
-    # Register estimates to ground truth rotations and compute the
-    # angular distance between them (in degrees).
-    Q_mat, flag = register_rotations(rots_est, rots_gt_sync)
-    regrot = get_aligned_rotations(rots_est, Q_mat, flag)
-    mean_ang_dist = Rotation.mean_angular_distance(regrot, rots_gt_sync) * 180 / np.pi
-
-    # Assert mean angular distance is reasonable.
-    assert mean_ang_dist < 3
+    # Register estimates to ground truth rotations and check that the
+    # mean angular distance between them is less than 3 degrees.
+    mean_aligned_angular_distance(rots_est, rots_gt_sync, degree_tol=3)
 
 
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)

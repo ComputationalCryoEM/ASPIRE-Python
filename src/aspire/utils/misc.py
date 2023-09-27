@@ -274,26 +274,51 @@ def inverse_r(size, x0=0, y0=0, peak=1, dtype=np.float64):
     return (peak / vals).astype(dtype)
 
 
-def fuzzy_mask(L, r0, risetime, origin=None):
+def fuzzy_mask(L, dtype, r0=None, risetime=None):
     """
-    Create a centered 1D to 3D fuzzy mask of radius r0
+    Create a centered 1D to 3D fuzzy mask of radius r0.
 
     Made with an error function with effective rise time.
 
-    :param L: The sizes of image in tuple structure
-    :param r0: The specified radius
-    :param risetime: The rise time for `erf` function
-    :param origin: The coordinates of origin
+    :param L: The sizes of image in tuple structure. Must be 1D, 2D square,
+        or 3D cube.
+    :param dtype: dtype for fuzzy mask.
+    :param r0: The specified radius. Defaults to floor(0.45 * L)
+    :param risetime: The rise time for `erf` function. Defaults to floor(0.05 * L)
+
     :return: The desired fuzzy mask
     """
+    # Note: default values for r0 and risetime are from Matlab common-lines code.
+    if r0 is None:
+        r0 = np.floor(0.45 * L[0])
+    if risetime is None:
+        risetime = np.floor(0.05 * L[0])
 
-    center = [sz // 2 + 1 for sz in L]
-    if origin is None:
-        origin = center
+    dim = len(L)
+    axes = ["x"]
+    grid_kwargs = {"n": L[0], "shifted": False, "normalized": False, "dtype": dtype}
 
-    grids = [np.arange(1 - org, ell - org + 1) for ell, org in zip(L, origin)]
-    XYZ = np.meshgrid(*grids, indexing="ij")
-    XYZ_sq = [X**2 for X in XYZ]
+    if dim == 1:
+        grid = grid_1d(**grid_kwargs)
+
+    elif dim == 2:
+        if not (L[0] == L[1]):
+            raise ValueError(f"A 2D fuzzy_mask must be square, found L={L}.")
+        grid = grid_2d(**grid_kwargs)
+        axes.append("y")
+
+    elif dim == 3:
+        if not (L[0] == L[1] == L[2]):
+            raise ValueError(f"A 3D fuzzy_mask must be cubic, found L={L}.")
+        grid = grid_3d(**grid_kwargs)
+        axes.extend(["y", "z"])
+
+    else:
+        raise RuntimeError(
+            f"Only 1D, 2D, or 3D fuzzy_mask supported. Found {dim}-dimensional `L`."
+        )
+
+    XYZ_sq = [grid[axis] ** 2 for axis in axes]
     R = np.sqrt(np.sum(XYZ_sq, axis=0))
     k = 1.782 / risetime
     m = 0.5 * (1 - erf(k * (R - r0)))

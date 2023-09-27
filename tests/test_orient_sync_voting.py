@@ -8,13 +8,9 @@ from click.testing import CliRunner
 
 from aspire.abinitio import CLOrient3D, CLSyncVoting
 from aspire.commands.orient3d import orient3d
+from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
-from aspire.utils import (
-    Rotation,
-    get_aligned_rotations,
-    register_rotations,
-    rots_to_clmatrix,
-)
+from aspire.utils import mean_aligned_angular_distance, rots_to_clmatrix
 from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -68,7 +64,9 @@ def source_orientation_objs(resolution, offsets, dtype):
     if src.offsets.all() != 0:
         max_shift = 0.20
         shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
-    orient_est = CLSyncVoting(src, max_shift=max_shift, shift_step=shift_step)
+    orient_est = CLSyncVoting(
+        src, max_shift=max_shift, shift_step=shift_step, mask=False
+    )
 
     return src, orient_est
 
@@ -98,14 +96,9 @@ def test_estimate_rotations(source_orientation_objs):
     orient_est.estimate_rotations()
 
     # Register estimates to ground truth rotations and compute the
-    # angular distance between them (in degrees).
-    Q_mat, flag = register_rotations(orient_est.rotations, src.rotations)
-    regrot = get_aligned_rotations(orient_est.rotations, Q_mat, flag)
-    mean_ang_dist = Rotation.mean_angular_distance(regrot, src.rotations) * 180 / np.pi
-
-    # Assert that mean angular distance is less than 1 degree (5 degrees with shifts).
-    degree_tol = 1
-    assert mean_ang_dist < degree_tol
+    # mean angular distance between them (in degrees).
+    # Assert that mean angular distance is less than 1 degree.
+    mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=1)
 
 
 def test_estimate_shifts(source_orientation_objs):
@@ -117,6 +110,45 @@ def test_estimate_shifts(source_orientation_objs):
 
     # Assert that estimated shifts are close to src.offsets
     assert np.allclose(est_shifts, src.offsets)
+
+
+def test_estimate_rotations_fuzzy_mask():
+    noisy_src = Simulation(
+        n=35,
+        vols=AsymmetricVolume(L=128, C=1, K=400, seed=0).generate(),
+        offsets=0,
+        amplitudes=1,
+        noise_adder=WhiteNoiseAdder.from_snr(snr=2),
+        seed=0,
+    )
+
+    # Orientation estimation without fuzzy_mask.
+    max_shift = 1 / noisy_src.L
+    shift_step = 1
+    orient_est = CLSyncVoting(
+        noisy_src, max_shift=max_shift, shift_step=shift_step, mask=False
+    )
+    orient_est.estimate_rotations()
+
+    # Orientation estimation with fuzzy mask.
+    orient_est_fuzzy = CLSyncVoting(
+        noisy_src, max_shift=max_shift, shift_step=shift_step
+    )
+    orient_est_fuzzy.estimate_rotations()
+
+    # Check that fuzzy_mask improves orientation estimation.
+    mean_angle_dist = mean_aligned_angular_distance(
+        orient_est.rotations, noisy_src.rotations
+    )
+    mean_angle_dist_fuzzy = mean_aligned_angular_distance(
+        orient_est_fuzzy.rotations, noisy_src.rotations
+    )
+
+    # Check that the estimate is reasonable, ie. mean_angle_dist < 10 degrees.
+    np.testing.assert_array_less(mean_angle_dist, 10)
+
+    # Check that fuzzy_mask improves the estimate.
+    np.testing.assert_array_less(mean_angle_dist_fuzzy, mean_angle_dist)
 
 
 def test_theta_error():

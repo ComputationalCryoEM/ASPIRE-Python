@@ -350,8 +350,24 @@ def test_fuzzy_mask():
             ],
         ]
     )
-    fmask = fuzzy_mask((8, 8), 2, 2)
-    assert np.allclose(results, fmask, atol=1e-7)
+    fmask = fuzzy_mask((8, 8), results.dtype, r0=2, risetime=2)
+    np.testing.assert_allclose(results, fmask, atol=1e-7)
+
+    # Smoke test for 1D, 2D, and 3D fuzzy_mask.
+    for dim in range(1, 4):
+        _ = fuzzy_mask((32,) * dim, np.float32)
+
+    # Check that we raise an error for bad dimension.
+    with pytest.raises(RuntimeError, match=r"Only 1D, 2D, or 3D fuzzy_mask*"):
+        _ = fuzzy_mask((8,) * 4, np.float32)
+
+    # Check we raise for bad 2D shape.
+    with pytest.raises(ValueError, match=r"A 2D fuzzy_mask must be square*"):
+        _ = fuzzy_mask((2, 3), np.float32)
+
+    # Check we raise for bad 3D shape.
+    with pytest.raises(ValueError, match=r"A 3D fuzzy_mask must be cubic*"):
+        _ = fuzzy_mask((2, 3, 3), np.float32)
 
 
 def test_multiprocessing_utils():

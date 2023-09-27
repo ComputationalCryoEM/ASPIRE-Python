@@ -9,6 +9,7 @@ from numpy.linalg import norm
 from scipy.linalg import svd
 
 from aspire.utils.random import Random
+from aspire.utils.rotation import Rotation
 
 
 def cart2pol(x, y):
@@ -281,6 +282,30 @@ def get_rots_mse(rots_reg, rots_ref):
         mse += diff[k] ** 2
     mse = mse / K
     return mse
+
+
+def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):
+    """
+    Register estimates to ground truth rotations and compute the
+    mean angular distance between them (in degrees).
+
+    :param rots_est: A set of estimated rotations of size nx3x3.
+    :param rots_gt: A set of ground truth rotations of size nx3x3.
+    :param degree_tol: Option to assert if the mean angular distance is
+        less than `degree_tol` degrees. If `None`, returns the mean
+        aligned angular distance.
+
+    :return: The mean angular distance between registered estimates
+        and the ground truth (in degrees).
+    """
+    Q_mat, flag = register_rotations(rots_est, rots_gt)
+    regrot = get_aligned_rotations(rots_est, Q_mat, flag)
+    mean_ang_dist = Rotation.mean_angular_distance(regrot, rots_gt) * 180 / np.pi
+
+    if degree_tol is not None:
+        np.testing.assert_array_less(mean_ang_dist, degree_tol)
+
+    return mean_ang_dist
 
 
 def common_line_from_rots(r1, r2, ell):

@@ -215,21 +215,15 @@ oriented_src = OrientedSource(avgs, orient_est)
 # %%
 # Mean Squared Error
 # ------------------
-# ASPIRE has some built-in utility functions for globally aligning the
-# estimated rotations to the true rotations and computing the mean
-# squared error.
+# ASPIRE has the built-in utility function, ``mean_aligned_angular_distance``, which globally
+# aligns the estimated rotations to the true rotations and computes the mean
+# angular distance (in degrees).
 
-from aspire.utils.coor_trans import (
-    get_aligned_rotations,
-    get_rots_mse,
-    register_rotations,
-)
+from aspire.utils import mean_aligned_angular_distance
 
 # Compare with known true rotations
-Q_mat, flag = register_rotations(oriented_src.rotations, true_rotations)
-regrot = get_aligned_rotations(oriented_src.rotations, Q_mat, flag)
-mse_reg = get_rots_mse(regrot, true_rotations)
-mse_reg
+mean_ang_dist = mean_aligned_angular_distance(oriented_src.rotations, true_rotations)
+print(f"Mean aligned angular distance: {mean_ang_dist} degrees")
 
 
 # %%

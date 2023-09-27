@@ -14,7 +14,7 @@ import numpy as np
 from aspire.abinitio import CLSyncVoting
 from aspire.operators import RadialCTFFilter
 from aspire.source import OrientedSource, Simulation
-from aspire.utils import get_aligned_rotations, get_rots_mse, register_rotations
+from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -87,23 +87,26 @@ rots_true = sim.rotations
 # ----------------------------------------
 
 # Initialize an orientation estimation object and create an ``OrientedSource`` object
-# to perform viewing angle estimation
+# to perform viewing angle estimation. Here, because of the small image size of the
+# ``Simulation``, we customize the ``CLSyncVoting`` method to use fewer theta values
+# when searching for common-lines between pairs of images. Additionally, since we are
+# processing images with no noise, we opt not to use a ``fuzzy_mask``, an option that
+# improves common-line detection in higher noise regimes.
 logger.info("Estimate rotation angles using synchronization matrix and voting method.")
-orient_est = CLSyncVoting(sim, n_theta=36)
+orient_est = CLSyncVoting(sim, n_theta=36, mask=False)
 oriented_src = OrientedSource(sim, orient_est)
 rots_est = oriented_src.rotations
 
 # %%
-# Mean Squared Error
-# ------------------
+# Mean Angular Distance
+# ---------------------
 
-# Get register rotations after performing global alignment
-Q_mat, flag = register_rotations(rots_est, rots_true)
-regrot = get_aligned_rotations(rots_est, Q_mat, flag)
-mse_reg = get_rots_mse(regrot, rots_true)
+# ``mean_aligned_angular_distance`` will perform global alignment of the estimated rotations
+# to the ground truth and find the mean angular distance between them (in degrees).
+mean_ang_dist = mean_aligned_angular_distance(rots_est, rots_true)
 logger.info(
-    f"MSE deviation of the estimated rotations using register_rotations : {mse_reg}"
+    f"Mean angular distance between estimates and ground truth: {mean_ang_dist} degrees"
 )
 
 # Basic Check
-assert mse_reg < 0.06
+assert mean_ang_dist < 10
