@@ -31,8 +31,8 @@ class CommonlineSDP(CLOrient3D):
 
         S = self._construct_S(self.clmatrix)
         A, b = self._sdp_prep()
-        Gram = self._compute_Gram_matrix(S, A, b)
-        rotations = self._deterministic_rounding(Gram)
+        gram = self._compute_gram_matrix(S, A, b)
+        rotations = self._deterministic_rounding(gram)
         self.rotations = rotations
 
     def _construct_S(self, clmatrix):
@@ -81,7 +81,7 @@ class CommonlineSDP(CLOrient3D):
         """
         Prepare optimization problem constraints.
 
-        The constraints for the SDP optimization, max tr(SG), performed in `_compute_Gram_matrix()`
+        The constraints for the SDP optimization, max tr(SG), performed in `_compute_gram_matrix()`
         as min tr(-SG), are that the Gram matrix, G, is semidefinite positive and G11_ii = G22_ii = 1,
         G12_ii = G21_ii = 0, i=1,2,...,N, for the block representation of G = [[G11, G12], [G21, G22]].
 
@@ -114,7 +114,7 @@ class CommonlineSDP(CLOrient3D):
 
         return A, b
 
-    def _compute_Gram_matrix(self, S, A, b):
+    def _compute_gram_matrix(self, S, A, b):
         """
         Compute the Gram matrix by solving an SDP optimization.
 
@@ -148,7 +148,7 @@ class CommonlineSDP(CLOrient3D):
 
         return G.value
 
-    def _deterministic_rounding(self, Gram):
+    def _deterministic_rounding(self, gram):
         """
         Deterministic rounding procedure to recover the rotations from the Gram matrix.
 
@@ -156,14 +156,14 @@ class CommonlineSDP(CLOrient3D):
         matrix. These columns are extracted and used to form the remaining column of every
         rotation matrix.
 
-        :param Gram: A 2n_img x 2n_img Gram matrix.
+        :param gram: A 2n_img x 2n_img Gram matrix.
 
         :return: An n_img x 3 x 3 stack of rotation matrices.
         """
         logger.info("Recovering rotations from Gram matrix.")
 
         # Obtain top eigenvectors from Gram matrix.
-        d, v = stable_eigsh(Gram, 5)
+        d, v = stable_eigsh(gram, 5)
         sort_idx = np.argsort(-d)
         logger.info(f"Top 5 eigenvalues from (rank-3) Gram matrix: {d[sort_idx]}")
 

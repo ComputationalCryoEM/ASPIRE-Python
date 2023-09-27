@@ -62,7 +62,9 @@ def src_orient_est_fixture(resolution, offsets, dtype):
         max_shift = 0.20
         shift_step = 0.25  # Accounts for non-integer offsets.
 
-    orient_est = CommonlineSDP(src, max_shift=max_shift, shift_step=shift_step)
+    orient_est = CommonlineSDP(
+        src, max_shift=max_shift, shift_step=shift_step, mask=False
+    )
 
     return src, orient_est
 
@@ -112,7 +114,7 @@ def test_construct_S(src_orient_est_fixture):
     np.testing.assert_array_less(0.25, abs((eigs[4] - eigs_mean) / eigs_mean))
 
 
-def test_Gram_matrix(src_orient_est_fixture):
+def test_gram_matrix(src_orient_est_fixture):
     """Test properties of the common-line Gram matrix."""
     src, orient_est = src_orient_est_fixture
 
@@ -126,7 +128,7 @@ def test_Gram_matrix(src_orient_est_fixture):
 
     # Estimate the Gram matrix
     A, b = orient_est._sdp_prep()
-    Gram = orient_est._compute_Gram_matrix(S, A, b)
+    gram = orient_est._compute_gram_matrix(S, A, b)
 
     # Construct the ground truth Gram matrix, G = R @ R.T, where R = [R1, R2]
     # with R1 and R2 being the concatenation of the first and second columns
@@ -135,11 +137,11 @@ def test_Gram_matrix(src_orient_est_fixture):
     R1 = rots[:, :, 0]
     R2 = rots[:, :, 1]
     R = np.concatenate((R1, R2))
-    gt_Gram = R @ R.T
+    gt_gram = R @ R.T
 
-    # We'll check that the RMSE is within 10% of the mean value of gt_Gram
-    rmse = np.sqrt(np.mean((Gram - R @ R.T) ** 2))
-    np.testing.assert_array_less(rmse / np.mean(gt_Gram), 0.10)
+    # We'll check that the RMSE is within 10% of the mean value of gt_gram
+    rmse = np.sqrt(np.mean((gram - R @ R.T) ** 2))
+    np.testing.assert_array_less(rmse / np.mean(gt_gram), 0.10)
 
 
 def test_ATA_solver():
@@ -181,10 +183,10 @@ def test_deterministic_rounding(src_orient_est_fixture):
     R1 = gt_rots[:, :, 0]
     R2 = gt_rots[:, :, 1]
     R = np.concatenate((R1, R2))
-    gt_Gram = R @ R.T
+    gt_gram = R @ R.T
 
     # Pass the Gram matrix into the deterministic rounding procedure to recover rotations.
-    est_rots = orient_est._deterministic_rounding(gt_Gram)
+    est_rots = orient_est._deterministic_rounding(gt_gram)
 
     # Check that the estimated rotations are close to ground truth after global alignment.
     Q_mat, flag = register_rotations(est_rots, gt_rots)
