@@ -188,11 +188,8 @@ class CommonlineSDP(CLOrient3D):
         r1 = np.dot(A.T, v1)
         r2 = np.dot(A.T, v2)
         r3 = np.cross(r1, r2, axis=0)
+        rotations = np.stack((r1.T, r2.T, r3.T), axis=-1, dtype=self.dtype)
 
-        rotations = np.empty((self.n_img, 3, 3), dtype=self.dtype)
-        rotations[:, :, 0] = r1.T
-        rotations[:, :, 1] = r2.T
-        rotations[:, :, 2] = r3.T
         # Make sure that we got rotations by enforcing R to be
         # a rotation (in case the error is large)
         u, _, v = np.linalg.svd(rotations)
