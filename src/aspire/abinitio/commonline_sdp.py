@@ -201,7 +201,8 @@ class CommonlineSDP(CLOrient3D):
     def _ATA_solver(v1, v2):
         """
         Uses a least squares method to solve for the linear transformation A
-        such that A*v1=R1 and A*v2=R2 are the columns of the rotations matrices.
+        such that A*v1=R1 and A*v2=R2 correspond to the first and second columns
+        of a sequence of rotation matrices.
 
         :param v1: 3 x n_img array corresponding to linear combinations of the first
             columns of all rotation matrices.
