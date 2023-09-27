@@ -42,7 +42,7 @@ class FSPCABasis(SteerableBasis2D):
             Default value of `None` will use `self.basis.count`.
         :param noise_var: Optionally assign noise variance.
             Default value of `None` will estimate noise with WhiteNoiseEstimator.
-            Use 0 when using clean images so cov2d skips applying noisy covar coeffs..
+            Use 0 when using clean images so cov2d skips applying noisy covar coefs..
         :param batch_size: Batch size for computing basis coefficients.
             `batch_size` is also passed to BatchedRotCov2D.
         """
@@ -162,7 +162,7 @@ class FSPCABasis(SteerableBasis2D):
         }
         self.mean_coef_est = cov2d.get_mean()
         self.covar_coef_est = cov2d.get_covar(
-            mean_coeff=self.mean_coef_est,
+            mean_coef=self.mean_coef_est,
             noise_var=self.noise_var,
             covar_est_opt=covar_opt,
         )
@@ -471,7 +471,7 @@ class FSPCABasis(SteerableBasis2D):
         There is a corresponding method, to_real.
 
         :param coef: Coefficients from this basis.
-        :return: Complex coefficent representation from this basis.
+        :return: Complex coeficent representation from this basis.
         """
         if not isinstance(coef, Coef):
             raise TypeError(f"'coef' should be `Coef` instance, received {type(coef)}.")
@@ -523,7 +523,7 @@ class FSPCABasis(SteerableBasis2D):
         There is a corresponding method, to_complex.
 
         :param complex_coef: Complex coefficients from this basis.
-        :return: Real coefficent representation from this basis.
+        :return: Real coeficent representation from this basis.
         """
 
         if complex_coef.ndim == 1:

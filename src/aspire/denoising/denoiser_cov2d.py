@@ -162,7 +162,7 @@ class DenoiserCov2D(Denoiser):
         self.mean_est = self.cov2d.get_mean()
 
         self.covar_est = self.cov2d.get_covar(
-            noise_var=self.var_noise, mean_coeff=self.mean_est, covar_est_opt=covar_opt
+            noise_var=self.var_noise, mean_coef=self.mean_est, covar_est_opt=covar_opt
         )
 
         return DenoisedImageSource(self.src, self)
@@ -181,21 +181,21 @@ class DenoiserCov2D(Denoiser):
         img_start = istart
         img_end = min(istart + batch_size, src.n)
         imgs_noise = src.images[img_start : img_start + batch_size]
-        coeffs_noise = self.basis.evaluate_t(imgs_noise)
+        coefs_noise = self.basis.evaluate_t(imgs_noise)
         logger.info(
             f"Estimating Cov2D coefficients for images from {img_start} to {img_end-1}"
         )
-        coeffs_estim = self.cov2d.get_cwf_coeffs(
-            coeffs_noise,
+        coefs_estim = self.cov2d.get_cwf_coefs(
+            coefs_noise,
             self.cov2d.ctf_basis,
             self.cov2d.ctf_idx[img_start:img_end],
-            mean_coeff=self.mean_est,
-            covar_coeff=self.covar_est,
+            mean_coef=self.mean_est,
+            covar_coef=self.covar_est,
             noise_var=self.var_noise,
         )
 
         # Convert Fourier-Bessel coefficients back into 2D images
         logger.info("Converting Cov2D coefficients back to 2D images")
-        imgs_denoised = self.basis.evaluate(coeffs_estim)
+        imgs_denoised = self.basis.evaluate(coefs_estim)
 
         return imgs_denoised

@@ -87,15 +87,15 @@ class CovarianceEstimator(Estimator):
 
     def estimate(self, mean_vol, noise_variance, tol=1e-5, regularizer=0):
         logger.info("Running Covariance Estimator")
-        b_coeff = self.src_backward(mean_vol, noise_variance)
-        est_coeff = self.conj_grad(b_coeff, tol=tol, regularizer=regularizer)
-        covar_est = self.basis.mat_evaluate(est_coeff)
+        b_coef = self.src_backward(mean_vol, noise_variance)
+        est_coef = self.conj_grad(b_coef, tol=tol, regularizer=regularizer)
+        covar_est = self.basis.mat_evaluate(est_coef)
         covar_est = vecmat_to_volmat(make_symmat(volmat_to_vecmat(covar_est)))
         return covar_est
 
-    def conj_grad(self, b_coeff, tol=1e-5, regularizer=0):
-        b_coeff = symmat_to_vec_iso(b_coeff)
-        N = b_coeff.shape[0]
+    def conj_grad(self, b_coef, tol=1e-5, regularizer=0):
+        b_coef = symmat_to_vec_iso(b_coef)
+        N = b_coef.shape[0]
         kernel = self.kernel
 
         if regularizer > 0:
@@ -118,41 +118,41 @@ class CovarianceEstimator(Estimator):
                 dtype=self.dtype,
             )
 
-        target_residual = tol * norm(b_coeff)
+        target_residual = tol * norm(b_coef)
 
         def cb(xk):
             logger.info(
-                f"Delta {norm(b_coeff - self.apply_kernel(xk, packed=True))} (target {target_residual})"
+                f"Delta {norm(b_coef - self.apply_kernel(xk, packed=True))} (target {target_residual})"
             )
 
         x, info = scipy.sparse.linalg.cg(
-            operator, b_coeff, M=M, callback=cb, tol=tol, atol=0
+            operator, b_coef, M=M, callback=cb, tol=tol, atol=0
         )
 
         if info != 0:
             raise RuntimeError("Unable to converge!")
         return vec_to_symmat_iso(x)
 
-    def apply_kernel(self, coeff, kernel=None, packed=False):
+    def apply_kernel(self, coef, kernel=None, packed=False):
         """
         Applies the kernel represented by convolution
 
-        :param coeff: The volume matrix (6 dimensions) to be convolved (but see the `packed` argument below).
+        :param coef: The volume matrix (6 dimensions) to be convolved (but see the `packed` argument below).
         :param kernel: a Kernel object. If None, the kernel for this Estimator is used.
-        :param packed: whether the `coeff` matrix represents an isometrically mapped packed vector,
-            through the `symmat_to_vec_iso` function. In this case, the function expands `coeff` into a symmetric
+        :param packed: whether the `coef` matrix represents an isometrically mapped packed vector,
+            through the `symmat_to_vec_iso` function. In this case, the function expands `coef` into a symmetric
             matrix internally, and returns a packed vector in return.
-        :return: The result of evaluating `coeff` in the given basis, convolving with the kernel given by
+        :return: The result of evaluating `coef` in the given basis, convolving with the kernel given by
             kernel, and backprojecting into the basis. If `packed` is True, then the isometrically mapped packed
             vector is returned instead.
         """
         if kernel is None:
             kernel = self.kernel
         if packed:
-            coeff = vec_to_symmat_iso(coeff)
+            coef = vec_to_symmat_iso(coef)
 
         result = self.basis.mat_evaluate_t(
-            kernel.convolve_volume_matrix(self.basis.mat_evaluate(coeff))
+            kernel.convolve_volume_matrix(self.basis.mat_evaluate(coef))
         )
         return symmat_to_vec_iso(result) if packed else result
 
@@ -182,14 +182,14 @@ class CovarianceEstimator(Estimator):
 
             covar_b += vecmat_to_volmat(im_centered_b.T @ im_centered_b) / self.src.n
 
-        covar_b_coeff = self.basis.mat_evaluate_t(covar_b)
-        return self._shrink(covar_b_coeff, noise_variance, shrink_method)
+        covar_b_coef = self.basis.mat_evaluate_t(covar_b)
+        return self._shrink(covar_b_coef, noise_variance, shrink_method)
 
-    def _shrink(self, covar_b_coeff, noise_variance, method=None):
+    def _shrink(self, covar_b_coef, noise_variance, method=None):
         """
         Shrink covariance matrix
 
-        :param covar_b_coeff: Outer products of the mean-subtracted images
+        :param covar_b_coef: Outer products of the mean-subtracted images
         :param noise_variance: Noise variance
         :param method: One of None/'frobenius_norm'/'operator_norm'/'soft_threshold'
         :return: Shrunk covariance matrix
@@ -203,8 +203,8 @@ class CovarianceEstimator(Estimator):
 
         An = self.basis.mat_evaluate_t(self.mean_kernel.toeplitz())
         if method is None:
-            covar_b_coeff -= noise_variance * An
+            covar_b_coef -= noise_variance * An
         else:
             raise NotImplementedError("Only default shrink method supported.")
 
-        return covar_b_coeff
+        return covar_b_coef
