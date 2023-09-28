@@ -317,7 +317,7 @@ class ComplexCoef(Coef):
         """
         Return the evaluation of coefficients in the associated `basis`.
         """
-        return super().evaluate(self.to_real())
+        return self.to_real().evaluate()
 
     def rotate(self, radians, refl=None):
         """
@@ -330,7 +330,7 @@ class ComplexCoef(Coef):
         :return: Rotated ComplexCoefs.
         """
 
-        return self.basis.rotate(self.to_real(), radians, refl).to_complex()
+        return self.to_real().rotate(radians, refl).to_complex()
 
     def shift(self, shifts):
         """
@@ -349,7 +349,7 @@ class ComplexCoef(Coef):
                 f"self.basis={self.basis} does not provide `shift` method."
             )
 
-        return self.basis.shift(self.to_real(), shifts).to_complex()
+        return self.to_real().shift(shifts).to_complex()
 
     def to_real(self):
         """
