@@ -287,7 +287,7 @@ class Coef:
         """
         Return `ComplexCoef` of real coefficients.
         """
-        return self.basis, self.basis.to_complex()
+        return self.basis.to_complex(self)
 
     def to_real(self):
         """
@@ -355,7 +355,7 @@ class ComplexCoef(Coef):
         """
         Return `Coef` of complex coefficients.
         """
-        return self.basis.to_real()
+        return self.basis.to_real(self)
 
     def to_complex(self):
         """

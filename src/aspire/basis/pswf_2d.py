@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from aspire.basis import Coef, SteerableBasis2D
+from aspire.basis import Coef, ComplexCoef, SteerableBasis2D
 from aspire.basis.basis_utils import (
     d_decay_approx_fun,
     k_operator,
@@ -221,8 +221,8 @@ class PSWFBasis2D(SteerableBasis2D):
         :return: The evaluation of the coefficient array in the PSWF basis.
         """
         flattened_images = images[:, self._disk_mask]
-        complex_coef = Coef(self, flattened_images @ self.samples_conj_transpose)
-        return self.to_real(complex_coef).asnumpy()
+        complex_coef = ComplexCoef(self, flattened_images @ self.samples_conj_transpose)
+        return complex_coef.to_real().asnumpy()
 
     def _evaluate(self, coefficients):
         """
@@ -235,7 +235,7 @@ class PSWFBasis2D(SteerableBasis2D):
         """
 
         # Convert real coefficient to complex.
-        coefficients = self.to_complex(Coef(self, coefficients))
+        coefficients = Coef(self, coefficients).to_complex()
 
         # Handle a single coefficient vector or stack of vectors.
         coefficients = np.atleast_2d(coefficients)
