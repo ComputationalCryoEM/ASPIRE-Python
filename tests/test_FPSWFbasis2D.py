@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 import pytest
 
-from aspire.basis import Coef, FPSWFBasis2D
+from aspire.basis import ComplexCoef, FPSWFBasis2D
 from aspire.image import Image
 from aspire.utils import utest_tolerance
 
@@ -26,7 +26,7 @@ class TestFPSWFBasis2D(UniversalBasisMixin):
         # Historically, FPSWF returned complex values.
         # Load and convert them for this hard coded test.
         ccoefs = np.load(os.path.join(DATA_DIR, "pswf2d_vcoefs_out_8_8.npy")).T  # RCOPT
-        coefs = basis.to_real(Coef(basis, ccoefs))
+        coefs = ComplexCoef(basis, ccoefs).to_real()
 
         np.testing.assert_allclose(result, coefs, atol=utest_tolerance(basis.dtype))
 
@@ -34,7 +34,7 @@ class TestFPSWFBasis2D(UniversalBasisMixin):
         # Historically, FPSWF returned complex values.
         # Load and convert them for this hard coded test.
         ccoefs = np.load(os.path.join(DATA_DIR, "pswf2d_vcoefs_out_8_8.npy")).T  # RCOPT
-        coefs = basis.to_real(Coef(basis, ccoefs))
+        coefs = ComplexCoef(basis, ccoefs).to_real()
         result = coefs.evaluate()
 
         result = basis.evaluate(coefs)

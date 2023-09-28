@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from aspire.basis import Coef, FFBBasis2D, SteerableBasis2D
+from aspire.basis import Coef, ComplexCoef, FFBBasis2D, SteerableBasis2D
 from aspire.covariance import BatchedRotCov2D
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, fix_signs, real_type
@@ -512,7 +512,7 @@ class FSPCABasis(SteerableBasis2D):
         for i, k in enumerate(ccoef_d.keys()):
             ccoef[:, i] = ccoef_d[k]
 
-        return Coef(self, ccoef)
+        return ComplexCoef(self, ccoef)
 
     def to_real(self, complex_coef):
         """

@@ -5,7 +5,7 @@ import pytest
 from pytest import raises
 from scipy.special import jv
 
-from aspire.basis import Coef, FBBasis2D
+from aspire.basis import Coef, ComplexCoef, FBBasis2D
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils import complex_type, real_type
@@ -86,6 +86,14 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         # The round trip should be equivalent up to machine precision
         assert np.allclose(v1, v2)
 
+        # Convert real FB coef to complex coef using Coef class
+        cv = v1.to_complex()
+        # then convert back to real coef representation.
+        v2 = cv.to_real()
+
+        # The round trip should be equivalent up to machine precision
+        assert np.allclose(v1, v2)
+
     def testComplexCoversionErrorsToComplex(self, basis):
         x = randn(*basis.sz, seed=self.seed).astype(basis.dtype)
 
@@ -97,6 +105,16 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
             # Pass complex into `to_complex`
             v1_cpx = Coef(basis, v1, dtype=np.complex64)
             _ = basis.to_complex(v1_cpx)
+
+        # Test catching Errors
+        with raises(TypeError):
+            # Pass complex into `to_complex`
+            v1_cpx = Coef(basis, v1, dtype=np.complex64)
+
+        with raises(TypeError):
+            # Pass complex into `to_complex`
+            v1_cpx = Coef(basis, v1).to_complex()
+            _ = v1_cpx.to_complex()
 
         # Test casting case, where basis and coef don't match
         if basis.dtype == np.float32:
@@ -114,12 +132,17 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
 
         # Express in an FB basis
         cv = basis.expand(x.astype(basis.dtype))
-        ccv = basis.to_complex(cv)
+        ccv = cv.to_complex()
 
         # Test catching Errors
         with raises(TypeError):
             # Pass real into `to_real`
             _ = basis.to_real(cv)
+
+        # Test catching Errors
+        with raises(TypeError):
+            # Pass real into `to_real`
+            _ = cv.to_real()
 
         # Test casting case, where basis and coef precision don't match
         if basis.dtype == np.float32:
@@ -129,8 +152,8 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         # Result should be same precision as coef input, just real.
         result_dtype = real_type(test_dtype)
 
-        x = Coef(basis, ccv.asnumpy().astype(test_dtype))
-        v3 = basis.to_real(x)
+        x = ComplexCoef(basis, ccv.asnumpy().astype(test_dtype))
+        v3 = x.to_real()
         assert v3.dtype == result_dtype
 
 
