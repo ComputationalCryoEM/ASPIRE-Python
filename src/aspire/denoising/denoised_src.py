@@ -25,6 +25,13 @@ class DenoisedSource(ImageSource):
         if not isinstance(denoiser, Denoiser):
             raise TypeError("`denoiser` must be subclass of `Denoiser`")
 
+        # Safety check src and self.denoiser.src are the same.
+        # See #1020
+        if src != self.denoiser.src:
+            raise NotImplementedError(
+                "Denoiser `src` and noisy image `src` must match."
+            )
+
         # Any further operations should not mutate this instance.
         self._mutable = False
 
