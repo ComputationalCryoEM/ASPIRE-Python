@@ -52,7 +52,7 @@ class Coef:
         else:
             self.dtype = np.dtype(dtype)
 
-        # Check real/complex dtype basis on class.
+        # Check real/complex dtype based on class.
         self._check_dtype()
 
         if not isinstance(basis, Basis):
@@ -285,7 +285,7 @@ class Coef:
 
     def to_complex(self):
         """
-        Return `ComplexCoef` of real coefficients.
+        Convert and return real coefficients as `ComplexCoef`.
         """
         return self.basis.to_complex(self)
 
@@ -317,7 +317,7 @@ class ComplexCoef(Coef):
         """
         Return the evaluation of coefficients in the associated `basis`.
         """
-        super().evaluate(self.to_real())
+        return super().evaluate(self.to_real())
 
     def rotate(self, radians, refl=None):
         """
@@ -353,7 +353,7 @@ class ComplexCoef(Coef):
 
     def to_real(self):
         """
-        Return `Coef` of complex coefficients.
+        Convert and return complex coefficients as `Coef`.
         """
         return self.basis.to_real(self)
 
@@ -361,7 +361,7 @@ class ComplexCoef(Coef):
         """
         Not implemented for ComplexCoef.
         """
-        raise TypeError("Coef already complex.")
+        raise TypeError("ComplexCoef already complex.")
 
 
 class Basis:
