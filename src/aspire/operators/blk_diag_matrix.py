@@ -766,7 +766,7 @@ class BlkDiagMatrix:
 
         :return: True if all blocks have non-negative eigenvalues.
         """
-        return np.alltrue(self.eigvals() > 0.0)
+        return np.all(self.eigvals() > 0.0)
 
     def make_psd(self):
         """
