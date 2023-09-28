@@ -95,6 +95,14 @@ def coef_fixture(basis, stack, dtype):
     return Coef(basis, coef_np, dtype=dtype)
 
 
+@pytest.fixture(scope="module")
+def rots(coef_fixture, dtype):
+    # Rotations
+    return np.linspace(-np.pi, np.pi, coef_fixture.stack_size).reshape(
+        coef_fixture.stack_shape
+    )
+
+
 def test_mismatch_count(basis):
     """
     Confirm raises when instantiated with incorrect coef vector len.
@@ -304,15 +312,10 @@ def test_coef_evalute(coef_fixture, basis):
     )
 
 
-def test_coef_rotate(coef_fixture, basis):
+def test_coef_rotate(coef_fixture, basis, rots):
     """
     Test rotation pass through.
     """
-
-    # Rotations
-    rots = np.linspace(-np.pi, np.pi, coef_fixture.stack_size).reshape(
-        coef_fixture.stack_shape
-    )
 
     # Refl
     refl = (
@@ -367,3 +370,77 @@ def test_real_complex_real_roundtrip(coef_fixture, basis):
     rcoef = basis.to_real(basis.to_complex(coef_fixture))
 
     np.testing.assert_allclose(rcoef, coef_fixture, rtol=1e-05, atol=1e-08)
+
+
+def test_complex_evaluate(coef_fixture):
+    """
+    Confirm using `ComplexCoef.evaluate` is equivalent to `Coef.evaluate`.
+    """
+
+    # Create a ComplexCoef
+    complex_coef = coef_fixture.to_complex()
+
+    # Compare
+    np.testing.assert_allclose(
+        complex_coef.evaluate(),
+        coef_fixture.evaluate(),
+        rtol=1e-05,
+        atol=utest_tolerance(coef_fixture.basis.dtype),
+    )
+
+
+def test_complex_rotate(coef_fixture, rots):
+    """
+    Confirm using `ComplexCoef.rotate` is equivalent to `Coef.rotate`.
+    """
+    # Create a ComplexCoef
+    complex_coef = coef_fixture.to_complex()
+
+    # Compare
+    np.testing.assert_allclose(
+        complex_coef.rotate(rots),
+        coef_fixture.rotate(rots).to_complex(),
+        rtol=1e-05,
+        atol=utest_tolerance(coef_fixture.basis.dtype),
+    )
+
+
+def test_shifts(coef_fixture, basis, rots):
+    """
+    Confirm using `Coef.shift` is equivalent to `basis.shift`.
+    """
+    if coef_fixture.stack_ndim > 1:
+        pytest.xfail(reason="Shifts currently only support 1d stack axis.")
+
+    # Create some shifts, by reusing the `rots` array.
+    shifts = np.column_stack((rots, rots[::-1]))
+
+    # Compare
+    np.testing.assert_allclose(
+        coef_fixture.shift(shifts),
+        basis.shift(coef_fixture, shifts),
+        rtol=1e-05,
+        atol=utest_tolerance(basis.dtype),
+    )
+
+
+def test_complex_shift(coef_fixture, rots):
+    """
+    Confirm using `ComplexCoef.shift` is equivalent to `Coef.shift`.
+    """
+    if coef_fixture.stack_ndim > 1:
+        pytest.xfail(reason="Shifts currently only support 1d stack axis.")
+
+    # Create a ComplexCoef
+    complex_coef = coef_fixture.to_complex()
+
+    # Create some shifts, by reusing the `rots` array.
+    shifts = np.column_stack((rots, rots[::-1]))
+
+    # Compare
+    np.testing.assert_allclose(
+        complex_coef.shift(shifts),
+        coef_fixture.shift(shifts).to_complex(),
+        rtol=1e-05,
+        atol=utest_tolerance(coef_fixture.basis.dtype),
+    )
