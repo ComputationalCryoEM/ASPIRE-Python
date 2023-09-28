@@ -7,6 +7,7 @@ from aspire.source import Simulation
 from aspire.utils import (
     Rotation,
     get_aligned_rotations,
+    mean_aligned_angular_distance,
     register_rotations,
     rots_to_clmatrix,
 )
@@ -61,7 +62,7 @@ def src_orient_est_fixture(resolution, offsets, dtype):
     shift_step = 0.25
 
     # Set max_shift 1 pixel and shift_step to 1 pixel when using 0 offsets.
-    if src.offsets.all() == 0:
+    if np.all(src.offsets == 0.0):
         max_shift = 1 / src.L
         shift_step = 1
 
@@ -82,12 +83,8 @@ def test_estimate_rotations(src_orient_est_fixture):
 
     # Register estimates to ground truth rotations and compute the
     # angular distance between them (in degrees).
-    Q_mat, flag = register_rotations(orient_est.rotations, src.rotations)
-    regrot = get_aligned_rotations(orient_est.rotations, Q_mat, flag)
-    mean_ang_dist = Rotation.mean_angular_distance(regrot, src.rotations) * 180 / np.pi
-
-    # Assert that mean angular distance is less than 1 degrees.
-    np.testing.assert_array_less(mean_ang_dist, 1)
+    # Assert that mean aligned angular distance is less than 1 degrees.
+    mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=1)
 
 
 def test_construct_S(src_orient_est_fixture):
