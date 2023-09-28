@@ -22,7 +22,7 @@ basis = FFBBasis2D((img_size, img_size), dtype=dtype)
 
 @pytest.fixture(scope="module")
 def sim():
-    """Simulation source."""
+    """Create a reusable Simulation source."""
     return Simulation(
         L=img_size,
         n=num_imgs,
@@ -35,6 +35,9 @@ def sim():
 
 
 def test_batched_rotcov2d_MSE(sim):
+    """
+    Check calling `DenoiserCov2D` via `DenoiserSource` framework yields acceptable error.
+    """
     # need larger numbers of images and higher resolution for good MSE
     imgs_clean = sim.projections[:]
 
@@ -44,7 +47,6 @@ def test_batched_rotcov2d_MSE(sim):
 
     # Calculate the normalized RMSE of the estimated images.
     nrmse_ims = (imgs_denoised - imgs_clean).norm() / imgs_clean.norm()
-
     np.testing.assert_array_less(nrmse_ims, 0.25)
 
     # Additionally test the `DenoisedSource` and lazy-eval-cache
@@ -54,10 +56,9 @@ def test_batched_rotcov2d_MSE(sim):
 
 
 def test_source_mismatch(sim):
-    """ "
+    """
     Assert mismatched sources raises an error.
     """
-
     # Create a denoiser.
     denoiser = DenoiserCov2D(sim, basis, noise_var)
 
