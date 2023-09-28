@@ -523,7 +523,7 @@ class FSPCABasis(SteerableBasis2D):
         There is a corresponding method, to_complex.
 
         :param complex_coef: Complex coefficients from this basis.
-        :return: Real coeficent representation from this basis.
+        :return: Real coefficient representation from this basis.
         """
 
         if complex_coef.ndim == 1:
