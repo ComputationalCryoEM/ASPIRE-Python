@@ -344,11 +344,6 @@ class ComplexCoef(Coef):
         :return: Complex coefs of shifted images.
         """
 
-        if not callable(getattr(self.basis, "shift", None)):
-            raise RuntimeError(
-                f"self.basis={self.basis} does not provide `shift` method."
-            )
-
         return self.to_real().shift(shifts).to_complex()
 
     def to_real(self):
