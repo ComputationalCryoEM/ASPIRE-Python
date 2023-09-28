@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 import pytest
 
-from aspire.basis import Coef, PSWFBasis2D
+from aspire.basis import ComplexCoef, PSWFBasis2D
 from aspire.image import Image
 
 from ._basis_util import UniversalBasisMixin, pswf_params_2d, show_basis_params
@@ -26,7 +26,7 @@ class TestPSWFBasis2D(UniversalBasisMixin):
         # Historically, PSWF returned complex values.
         # Load and convert them for this hard coded test.
         ccoefs = np.load(os.path.join(DATA_DIR, "pswf2d_vcoefs_out_8_8.npy")).T  # RCOPT
-        coefs = basis.to_real(Coef(basis, ccoefs))
+        coefs = ComplexCoef(basis, ccoefs).to_real()
 
         np.testing.assert_allclose(result, coefs, rtol=1e-05, atol=1e-08)
 
@@ -34,7 +34,7 @@ class TestPSWFBasis2D(UniversalBasisMixin):
         # Historically, PSWF returned complex values.
         # Load and convert them for this hard coded test.
         ccoefs = np.load(os.path.join(DATA_DIR, "pswf2d_vcoefs_out_8_8.npy")).T  # RCOPT
-        coefs = basis.to_real(Coef(basis, ccoefs))
+        coefs = ComplexCoef(basis, ccoefs).to_real()
 
         result = coefs.evaluate()
         images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoef_out_8_8.npy")).T  # RCOPT

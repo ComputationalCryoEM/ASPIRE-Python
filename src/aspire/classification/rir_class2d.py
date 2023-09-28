@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
-from aspire.basis import Coef, FSPCABasis
+from aspire.basis import Coef, ComplexCoef, FSPCABasis
 from aspire.classification import Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
@@ -411,9 +411,7 @@ class RIRClass2D(Class2D):
         coef = self.pca_basis.to_complex(coef)
         # Take just positive frequencies, corresponds to complex indices.
         # Original implementation used norm of Complex values, here abs of Real.
-        eigvals = np.abs(
-            self.pca_basis.eigvals.asnumpy()[0, self.pca_basis.signs_indices >= 0]
-        )
+        eigvals = np.abs(self.pca_basis.eigvals[self.pca_basis.signs_indices >= 0])
 
         # Legacy code included a sanity check:
         # non_zero_freqs = self.pca_basis.complex_angular_indices != 0
@@ -440,7 +438,7 @@ class RIRClass2D(Class2D):
 
         for i in trange(self.src.n):
             B = self.pca_basis.calculate_bispectrum(
-                Coef(self.pca_basis, coef_normed[i]),
+                ComplexCoef(self.pca_basis, coef_normed[i]),
                 filter_nonzero_freqs=True,
                 freq_cutoff=self.bispectrum_freq_cutoff,
             )
@@ -496,7 +494,8 @@ class RIRClass2D(Class2D):
         # The legacy code expects the complex representation
         coef = self.pca_basis.to_complex(coef).asnumpy()
         complex_eigvals = (
-            self.pca_basis.to_complex(self.pca_basis.eigvals)
+            Coef(self.pca_basis, self.pca_basis.eigvals)
+            .to_complex()
             .asnumpy()
             .reshape(self.pca_basis.complex_count)
         )  # flatten
