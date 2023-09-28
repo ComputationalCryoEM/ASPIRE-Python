@@ -569,7 +569,7 @@ class FSPCABasis(SteerableBasis2D):
     @property
     def eigvals(self):
         """
-        Return the eigenvals as a Coef instance of FSPCABasis.
+        Return the eigenvals of FSPCABasis as Numpy array.
         """
         return self._eigvals
 
