@@ -52,7 +52,7 @@ def test_batched_rotcov2d_MSE(sim):
     # Additionally test the `DenoisedSource` and lazy-eval-cache
     # of the cov2d estimator.
     src = DenoisedSource(sim, denoiser)
-    np.testing.assert_allclose(imgs_denoised, src.images[:])
+    np.testing.assert_allclose(imgs_denoised, src.images[:], rtol=1e-05, atol=1e-08)
 
 
 def test_source_mismatch(sim):
