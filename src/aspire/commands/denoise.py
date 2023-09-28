@@ -101,7 +101,7 @@ def denoise(
     if denoise_method == "CWF":
         logger.info("Denoise the images using CWF cov2D method.")
         denoiser = DenoiserCov2D(source, basis)
-        denoised_src = DenoisedSource(denoiser)
+        denoised_src = DenoisedSource(source, denoiser)
         denoised_src.save(
             starfile_out, batch_size=512, save_mode="single", overwrite=False
         )

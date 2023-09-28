@@ -11,19 +11,16 @@ class DenoisedSource(ImageSource):
     `ImageSource` class serving denoised 2D images.
     """
 
-    def __init__(self, denoiser):
+    def __init__(self, src, denoiser):
         """
         Initialize a denoised `ImageSource` object from an `ImageSource`.
 
+        :param src: Original `ImageSource` object storing noisy images
         :param denoiser: A `Denoiser` object for specifying a method for denoising
         """
-        self.src = denoiser.src
-        super().__init__(
-            self.src.L,
-            self.src.n,
-            dtype=self.src.dtype,
-            metadata=self.src._metadata.copy(),
-        )
+
+        super().__init__(src.L, src.n, dtype=src.dtype, metadata=src._metadata.copy())
+        # TODO, we can probably setup a reasonable default here.
         self.denoiser = denoiser
         if not isinstance(denoiser, Denoiser):
             raise TypeError("`denoiser` must be subclass of `Denoiser`")
