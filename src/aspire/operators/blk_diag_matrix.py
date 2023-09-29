@@ -754,6 +754,7 @@ class BlkDiagMatrix:
     def eigvals(self):
         """
         Compute the eigenvalues of a BlkDiagMatrix.
+
         :return: Array of eigvals, with length equal to the fully expanded matrix diagonal.
 
         """

@@ -197,6 +197,7 @@ class CoordinateSource(ImageSource, ABC):
         to a list
         `[lower left x, lower left y, particle_size, particle_size]`
         representing the box around the particle in box format.
+
         :param center: a list of length two representing a center
         :param particle_size: the size of the box around the particle
         """
@@ -219,6 +220,7 @@ class CoordinateSource(ImageSource, ABC):
         `[lower left x, lower left y, particle_size, particle_size]`
         representing a particle in the box format to a list
         `[x, y]` representing the particle center.
+
         :param box_coord: a list of length 4 representing the particle box
         """
         # Get lower left corner x and y coordinates
@@ -232,6 +234,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         Given a Relion STAR coordinate file (generally containing particle centers)
         return a list of coordinates in box format.
+
         :param star_file: A path to a STAR file containing particle centers
         """
         data_block = StarFile(star_file).get_block_by_index(0)
@@ -245,6 +248,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         Called during ImageSource.save(), populates metadata columns specific to
             `CoordinateSource` when saving to STAR file.
+
         :return: A list of the names of the columns added.
         """
         # Insert stored particle coordinates (centers) into metadata
@@ -268,6 +272,7 @@ class CoordinateSource(ImageSource, ABC):
         """
         Remove particles boxes which do not fit in the micrograph
         with the given `particle_size`.
+
         :return: Number of particles removed
         """
         out_of_range = []
@@ -414,6 +419,7 @@ class CoordinateSource(ImageSource, ABC):
         Crops a particle box defined by `coord` out of `data`.
         According to MRC 2014 convention, the origin represents the bottom-left
         corner of the image.
+
         :param data: A 2D numpy array representing a micrograph
         :param coord: A list of integers: (lower left X, lower left Y, X, Y)
         """
@@ -430,6 +436,7 @@ class CoordinateSource(ImageSource, ABC):
         particles were excluded due to their box not fitting into the mrc
         dimensions. Thus, the exact particles returned are a function of the
         `particle_size`.
+
         :param indices: A 1-D NumPy array of integer indices.
         :return: An `Image` object.
         """

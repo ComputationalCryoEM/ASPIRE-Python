@@ -277,6 +277,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
     def _estimate_noise_variance(self):
         """
         Any additional arguments/keyword-arguments are passed on to the Source's 'images' method
+
         :return: The estimated noise variance of the images in the Source used to create this estimator.
         TODO: How's this initial estimate of variance different from the 'estimate' method?
         """

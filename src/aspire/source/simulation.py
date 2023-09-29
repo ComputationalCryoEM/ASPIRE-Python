@@ -272,6 +272,7 @@ class Simulation(ImageSource):
     def _images(self, indices, clean_images=False):
         """
         Returns particle images when accessed via the `ImageSource.images` property.
+
         :param indices: A 1-D NumPy array of integer indices.
         :param clean_images: Only used internally, toggled on when `clean_images` requested.
              Will skip accessing cache, skip noise, while applying CTF to projections.
@@ -366,6 +367,7 @@ class Simulation(ImageSource):
     def eigs(self):
         """
         Eigendecomposition of volume covariance matrix of simulation
+
         :return: A 2-tuple:
             eigs_true: The eigenvectors of the volume covariance matrix in the form of Volume instance.
             lambdas_true: The eigenvalues of the covariance matrix in the form of a (C-1)-by-(C-1) diagonal matrix.
