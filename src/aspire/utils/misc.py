@@ -206,6 +206,7 @@ def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), indexing="zyx", dtype=np.fl
 def bump_3d(size, spread=1, dtype=np.float64):
     """
     Returns a centered 3D bump function in a (size)x(size)x(size) numpy array.
+
     :param size: The length of the dimensions of the array (pixels.
     :param spread: A factor controling the spread of the bump function.
     :param dtype: dtype of returned array

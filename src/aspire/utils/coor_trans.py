@@ -238,7 +238,6 @@ def get_aligned_rotations(rots, Q_mat, flag):
     Calculated aligned rotation matrices from the orthogonal transformation
     that best aligns the estimated rotations to the reference rotations.
 
-
     :param rots: The reference rotations to which we would like to align in
         the form of a n-by-3-by-3 array.
     :param Q_mat:  optimal orthogonal 3x3 transformation matrix

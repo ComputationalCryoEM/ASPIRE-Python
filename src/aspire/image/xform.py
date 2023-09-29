@@ -76,6 +76,7 @@ class Xform(abc.ABC):
     def enabled(self):
         """
         Enable this Xform in a context manager, regardless of its `active` attribute value.
+
         :return: A context manager in which this Xform is enabled.
         """
         return Xform.XformActiveContextManager(self, active=True)
@@ -83,6 +84,7 @@ class Xform(abc.ABC):
     def disabled(self):
         """
         Disable this Xform in a context manager, regardless of its `active` attribute value.
+
         :return: A context manager in which this Xform is disabled.
         """
         return Xform.XformActiveContextManager(self, active=False)

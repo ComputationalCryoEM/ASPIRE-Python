@@ -19,6 +19,7 @@ class SyncVotingMixin(object):
 
         Given a common lines matrix, where the index of each common line
         is in the range of n_theta and a list of good image k from voting results.
+
         :param clmatrix: The common lines matrix
         :param i: The i image
         :param j: The j image
@@ -61,6 +62,7 @@ class SyncVotingMixin(object):
         clmatrix is the common lines matrix, constructed using angular resolution,
         n_theta. k_list are the images to be used for voting of the pair of images
         (i ,j).
+
         :param clmatrix: The common lines matrix
         :param n_theta: The number of points in the theta direction (common lines)
         :param i: The i image
