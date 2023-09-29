@@ -18,6 +18,7 @@ default_plan_class = None
 def check_backends(raise_errors=True):
     """
     Check all NFFT backends in package configuration
+
     :param raise_errors: Whether to raise a RuntimeError if no backends detected.
 
     :return: On return, the global names 'backends'/'default_plan_class' have been populated
@@ -28,6 +29,7 @@ def check_backends(raise_errors=True):
     def _try_backend(backend):
         """
         This function tries out a particular NFFT backend by name.
+
         :param backend: A string representing the NFFT backend we want to try. Currently one of:
             'cufinufft'
                 The Python wrapper for the CUDA variant of FINUFFT library

@@ -17,6 +17,7 @@ class PyNfftPlan(Plan):
     def __init__(self, sz, fourier_pts, epsilon=1e-15, **kwargs):
         """
         A plan for non-uniform FFT (3D)
+
         :param sz: A tuple indicating the geometry of the signal
         :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
             arranged as a 3-by-K array. These need to be in the range [-pi, pi] in each dimension.

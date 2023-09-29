@@ -53,6 +53,7 @@ class _ImageAccessor:
         ImageAccessor can be indexed via Python slice object, 1-D NumPy array, list, or a single integer,
         corresponding to the indices of the requested images. By default, slices default to a start of 0,
         an end of self.num_imgs, and a step of 1.
+
         :return: An Image object containing the requested images.
         """
         if isinstance(indices, Iterable) and not isinstance(indices, np.ndarray):
@@ -304,6 +305,7 @@ class ImageSource(ABC):
     def _metadata_as_dict(self, metadata_fields, indices, default_value=None):
         """
         Return a dictionary of selected metadata fields at selected indices.
+
         :param metadata_fields: An iterable of strings specifying metadata fields.
         :param indices: An ndarray of 0-indexed locations we're interested in.
         :param default_value: A scalar default value to use if a metadata_field is not found.
@@ -324,6 +326,7 @@ class ImageSource(ABC):
     def _metadata_as_ndarray(self, metadata_fields, indices, default_value=None):
         """
         Return a numpy array of selected metadata fields at selected indices.
+
         :param metadata_fields: An iterable of strings specifying metadata fields.
         :param indices: An ndarray of 0-indexed locations we're interested in.
         :param default_value: A scalar default value to use if a metadata_field is not found.
@@ -1078,6 +1081,7 @@ class ImageSource(ABC):
         """
         Populate metadata columns specific to the `ImageSource` subclass being saved.
         Subclasses optionally override, but must return a list of strings.
+
         :return: A list of the names of the columns added.
         """
         return []
@@ -1687,6 +1691,7 @@ class ArrayImageSource(ImageSource):
         """
         Returns images corresponding to `indices` after being accessed via the
         `ImageSource.images` property
+
         :param indices: A 1-D NumPy array of indices.
         :return: An `Image` object.
         """

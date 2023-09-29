@@ -248,6 +248,7 @@ class FourierCorrelation:
     def analyze_correlations(self, cutoff):
         """
         Convert from the Fourier correlations to frequencies and resolution.
+
         :param cutoff: Cutoff value, traditionally `.143`.
         """
 

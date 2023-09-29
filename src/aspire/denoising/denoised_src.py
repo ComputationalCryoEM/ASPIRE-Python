@@ -34,6 +34,7 @@ class DenoisedImageSource(ImageSource):
         """
         Internal function to return a set of images after denoising, when accessed via the
         `ImageSource.images` property.
+
         :param indices: The indices of images to return as a 1-D NumPy array.
         :return: an `Image` object after denoisng.
         """
