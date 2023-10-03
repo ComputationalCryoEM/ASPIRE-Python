@@ -3,10 +3,10 @@ import logging
 import numpy as np
 from scipy.special import jv
 
-from aspire.basis import FBBasisMixin, SteerableBasis2D
+from aspire.basis import Coef, FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
-from aspire.operators import BlkDiagMatrix
-from aspire.utils import roll_dim, unroll_dim
+from aspire.operators import BlkDiagMatrix, DiagMatrix
+from aspire.utils import LogFilterByCount, grid_2d, roll_dim, trange, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
@@ -309,50 +309,33 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
     def filter_to_basis_mat(self, f):
         """
-        See SteerableBasis2D.filter_to_basis_mat.
+        Convert a filter into a basis representation.
+
+        :param f: `Filter` object, usually a `CTFFilter`.
+
+        :return: Representation of filter in `basis`.
+            Return type will be based on the class's `matrix_type`.
         """
 
-        # These form a circular dependence, import locally until time to clean up.
-        from aspire.basis.basis_utils import lgwt
+        coef = Coef(self, np.eye(self.count, dtype=self.dtype))
+        img = coef.evaluate()
 
-        # Get the filter's evaluate function.
-        h_fun = f.evaluate
+        # TODO, debug expand has convergence issues,
+        # there is a note near `cg` hinting this may relate to tolerance
+        # evaluate_t was not as accurate, but much much faster...
+        # filt = self.expand(img.filter(f))
+        # filt = self.evaluate_t(img.filter(f))
+        # return filt.asnumpy().reshape(self.count, self.count)
 
-        # Set same dimensions as basis object
-        n_k = self.n_r
-        n_theta = self.n_theta
-        radial = self.get_radial()
+        # Loop over the expanding the filtered basis vectors one by one
+        filt = np.zeros((self.count, self.count), self.dtype)
+        with LogFilterByCount(logger, 1):
+            for i in trange(self.count):
+                try:
+                    filt[i] = self.expand(img[i].filter(f)).asnumpy()[0]
+                except:
+                    logger.warning(
+                        f"Failed to expand basis vector {i} after filter {f}."
+                    )
 
-        # get 2D grid in polar coordinate
-        k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
-        k, theta = np.meshgrid(
-            k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
-        )
-
-        # Get function values in polar 2D grid and average out angle contribution
-        omegax = k * np.cos(theta)
-        omegay = k * np.sin(theta)
-        omega = 2 * np.pi * np.vstack((omegax.flatten("C"), omegay.flatten("C")))
-        h_vals2d = h_fun(omega).reshape(n_k, n_theta).astype(self.dtype)
-        h_vals = np.sum(h_vals2d, axis=1) / n_theta
-
-        # Represent 1D function values in basis
-        h_basis = BlkDiagMatrix.empty(2 * self.ell_max + 1, dtype=self.dtype)
-        ind_ell = 0
-        for ell in range(0, self.ell_max + 1):
-            k_max = self.k_max[ell]
-            rmat = 2 * k_vals.reshape(n_k, 1) * self.r0[ell][0:k_max].T
-            basis_vals = np.zeros_like(rmat)
-            ind_radial = np.sum(self.k_max[0:ell])
-            basis_vals[:, 0:k_max] = radial[ind_radial : ind_radial + k_max].T
-            h_basis_vals = basis_vals * h_vals.reshape(n_k, 1)
-            h_basis_ell = basis_vals.T @ (
-                h_basis_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1)
-            )
-            h_basis[ind_ell] = h_basis_ell
-            ind_ell += 1
-            if ell > 0:
-                h_basis[ind_ell] = h_basis[ind_ell - 1]
-                ind_ell += 1
-
-        return h_basis
+        return filt
