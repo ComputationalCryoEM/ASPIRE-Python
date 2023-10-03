@@ -8,6 +8,7 @@ from aspire.basis import FBBasis2D
 from aspire.basis.basis_utils import lgwt
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
+from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type
 from aspire.utils.matlab_compat import m_reshape
 
@@ -94,12 +95,6 @@ class FFBBasis2D(FBBasis2D):
         freqs = np.vstack((freqs_y[np.newaxis, ...], freqs_x[np.newaxis, ...]))
 
         return {"gl_nodes": r, "gl_weights": w, "radial": radial, "freqs": freqs}
-
-    def get_radial(self):
-        """
-        Return precomputed radial part
-        """
-        return self._precomp["radial"]
 
     def _evaluate(self, v):
         """
@@ -251,3 +246,56 @@ class FFBBasis2D(FBBasis2D):
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
         return v
+
+    def filter_to_basis_mat(self, f):
+        """
+        See SteerableBasis2D.filter_to_basis_mat.
+        """
+
+        # These form a circular dependence, import locally until time to clean up.
+        from aspire.basis.basis_utils import lgwt
+
+        # Get the filter's evaluate function.
+        h_fun = f.evaluate
+
+        # Set same dimensions as basis object
+        n_k = self.n_r
+        n_theta = self.n_theta
+        radial = self._precomp["radial"]
+
+        # get 2D grid in polar coordinate
+        k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
+        k, theta = np.meshgrid(
+            k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
+        )
+
+        # Get function values in polar 2D grid and average out angle contribution
+        omegax = k * np.cos(theta)
+        omegay = k * np.sin(theta)
+        omega = 2 * np.pi * np.vstack((omegax.flatten("C"), omegay.flatten("C")))
+
+        h_vals2d = h_fun(omega).reshape(n_k, n_theta).astype(self.dtype)
+        h_vals = np.sum(h_vals2d, axis=1) / n_theta
+
+        # Represent 1D function values in basis
+        h_basis = BlkDiagMatrix.empty(2 * self.ell_max + 1, dtype=self.dtype)
+        ind_ell = 0
+        for ell in range(0, self.ell_max + 1):
+            k_max = self.k_max[ell]
+            rmat = 2 * k_vals.reshape(n_k, 1) * self.r0[ell][0:k_max].T
+            basis_vals = np.zeros_like(rmat)
+            ind_radial = np.sum(self.k_max[0:ell])
+            basis_vals[:, 0:k_max] = radial[ind_radial : ind_radial + k_max].T
+            nrm = self.radial_norms[ind_radial]
+            # basis_vals /= nrm
+            h_basis_vals = basis_vals * h_vals.reshape(n_k, 1)
+            h_basis_ell = basis_vals.T @ (
+                h_basis_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1)
+            )
+            h_basis[ind_ell] = h_basis_ell
+            ind_ell += 1
+            if ell > 0:
+                h_basis[ind_ell] = h_basis[ind_ell - 1]
+                ind_ell += 1
+
+        return h_basis

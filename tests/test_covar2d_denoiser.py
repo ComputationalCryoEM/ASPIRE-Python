@@ -4,8 +4,9 @@ import pytest
 from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D, FPSWFBasis2D
 from aspire.denoising import DenoisedSource, DenoiserCov2D
 from aspire.noise import WhiteNoiseAdder
-from aspire.operators import RadialCTFFilter
+from aspire.operators import IdentityFilter, RadialCTFFilter
 from aspire.source import Simulation
+from aspire.utils import utest_tolerance
 
 # TODO, parameterize these further.
 dtype = np.float32
@@ -82,3 +83,41 @@ def test_source_mismatch(sim, basis):
     # Raise because src2 not identical to denoiser.src (sim)
     with pytest.raises(NotImplementedError, match=r".*must match.*"):
         _ = DenoisedSource(src2, denoiser)
+
+
+@pytest.skip(reason="Still in development.")
+def test_filter_to_basis_mat(sim, basis):
+    """
+    Test that `basis.filter_to_basis_mat` operator is similar to
+    manual sequence of evaluate->filter->expand.
+    """
+
+    # Generate some reference coefficients.
+    coef = basis.expand(sim.images[:3])
+
+    # IdentityFilter should produce id
+    filt = IdentityFilter()
+
+    # Apply the basis filter operator.
+    # Note transpose because `apply` expects and returns column vectors.
+    # coef_ftbm = basis.filter_to_basis_mat(filt).apply(coef.asnumpy().T).T
+    coef_ftbm = (basis.filter_to_basis_mat(filt) @ coef.asnumpy().T).T
+
+    # Apply evaluate->filter->expand manually
+    imgs = coef.evaluate()
+    imgs_manual = imgs.filter(filt)
+    coef_manual = basis.expand(imgs_manual)
+
+    # Sanity check filter_to_basis_mat of IdentityFilter is id
+    np.testing.assert_allclose(coef_ftbm, coef, atol=utest_tolerance(basis.dtype))
+
+    # Sanity check manual application of IdentityFilter is id
+    np.testing.assert_allclose(coef_manual, coef, atol=utest_tolerance(basis.dtype))
+
+    # Compare coefs from using ftbm operator with coef from eval->filter->exp
+    np.testing.assert_allclose(
+        coef_ftbm,
+        coef_manual,
+        atol=utest_tolerance(basis.dtype),
+        err_msg=f"Comparison failed for {filt}",
+    )
