@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 
-from aspire.basis.ffb_2d import FFBBasis2D
+from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D, FPSWFBasis2D
 from aspire.denoising import DenoisedSource, DenoiserCov2D
 from aspire.noise import WhiteNoiseAdder
-from aspire.operators.filters import RadialCTFFilter
-from aspire.source.simulation import Simulation
+from aspire.operators import RadialCTFFilter
+from aspire.source import Simulation
 
 # TODO, parameterize these further.
 dtype = np.float32
@@ -17,7 +17,21 @@ filters = [
     RadialCTFFilter(5, 200, defocus=d, Cs=2.0, alpha=0.1)
     for d in np.linspace(1.5e4, 2.5e4, 7)
 ]
-basis = FFBBasis2D((img_size, img_size), dtype=dtype)
+BASIS = [
+    FBBasis2D,
+    FFBBasis2D,
+    # FLEBasis2D,
+    # FPSWFBasis2D,
+]
+
+
+@pytest.fixture(params=BASIS, scope="module", ids=lambda x: f"basis={x}")
+def basis(request):
+    """
+    Construct and return a 2D Basis.
+    """
+    cls = request.param
+    return cls(img_size, dtype=dtype)
 
 
 @pytest.fixture(scope="module")
@@ -34,7 +48,7 @@ def sim():
     )
 
 
-def test_batched_rotcov2d_MSE(sim):
+def test_batched_rotcov2d_MSE(sim, basis):
     """
     Check calling `DenoiserCov2D` via `DenoiserSource` framework yields acceptable error.
     """
@@ -55,7 +69,7 @@ def test_batched_rotcov2d_MSE(sim):
     np.testing.assert_allclose(imgs_denoised, src.images[:], rtol=1e-05, atol=1e-08)
 
 
-def test_source_mismatch(sim):
+def test_source_mismatch(sim, basis):
     """
     Assert mismatched sources raises an error.
     """
