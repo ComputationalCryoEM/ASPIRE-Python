@@ -352,8 +352,6 @@ class SteerableBasis2D(Basis):
             More advanced operations can combine indices attributes.
              `angular=self.angular_indices>=0, radial=r` selects coefficients with non negative angular indices and some radial index `r`.
 
-
-
         :return: Boolen mask of shape (`count`,).
             Intended to be broadcast with `Coef` containers.
         """
