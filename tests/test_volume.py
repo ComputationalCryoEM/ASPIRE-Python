@@ -83,6 +83,12 @@ def vols_12(data_12):
 
 
 @pytest.fixture
+def asym_vols(res, dtype):
+    vols = AsymmetricVolume(L=res, C=N, dtype=dtype, seed=0).generate()
+    return vols
+
+
+@pytest.fixture
 def random_data(res, dtype):
     return np.random.randn(res, res, res).astype(dtype)
 
@@ -349,9 +355,10 @@ def test_rotate(L, dtype):
         assert np.allclose(ref_vol, rot_vol, atol=utest_tolerance(dtype))
 
 
-def test_rotate_broadcast_unicast(vols_1, dtype):
+def test_rotate_broadcast_unicast(asym_vols):
     # Build `Rotation` objects. A singleton for broadcasting and a stack for unicasting.
     # The stack consists of copies of the singleton.
+    dtype = asym_vols.dtype
     angles = np.array([pi, pi / 2, 0], dtype=dtype)
     angles = np.tile(angles, (3, 1))
     rot_mat = Rotation.from_euler(angles, dtype=dtype).matrices
@@ -359,13 +366,13 @@ def test_rotate_broadcast_unicast(vols_1, dtype):
     rots = Rotation(rot_mat)
 
     # Broadcast the singleton `Rotation` across the `Volume` stack.
-    vols_broadcast = vols_1.rotate(rot)
+    vols_broadcast = asym_vols.rotate(rot)
 
     # Unicast the `Rotation` stack across the `Volume` stack.
-    vols_unicast = vols_1.rotate(rots)
+    vols_unicast = asym_vols.rotate(rots)
 
-    for i in range(N):
-        assert np.allclose(vols_broadcast[i], vols_unicast[i])
+    # Tests that all volumes match.
+    assert np.allclose(vols_broadcast, vols_unicast, atol=utest_tolerance(dtype))
 
 
 def to_vec(vols_1, vec):
