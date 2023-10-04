@@ -2,7 +2,6 @@ import logging
 import os
 import re
 import sys
-
 from glob import glob
 
 logger = logging.getLogger(__name__)
@@ -21,31 +20,30 @@ def check_blank_line_above_param_section(file_path):
     with open(file_path, "r") as file:
         content = file.read()
 
-    docstrings = re.findall(r"\"\"\"(.*?)\"\"\"", content, re.DOTALL)
-
+    docstrings = re.finditer(r"\"\"\"(.*?)\"\"\"", content, re.DOTALL)
     for docstring in docstrings:
-        lines = docstring.split("\n")
+        lines = docstring[0].split("\n")
+
+        # Search for first occurence of either a ':param' or ':return' string.
         for i, line in enumerate(lines):
             if line.strip().startswith(r":param") or line.strip().startswith(
                 r":return"
             ):
-                body_section = "\n".join(lines[:i])
+                # If a body section exists but is not followed by exactly 1
+                # new line log an error message and add to the count.
+                body_section = "\n".join(lines[1:i])
                 if not body_section:
                     break
                 elif body_section != body_section.rstrip() + "\n":
-                    # Get line number of error.
-                    # Using `re.escape` to deal with non-alphanumeric characters.
-                    match = re.search(re.escape(body_section), content)
-                    docstring_start = match.start()
-                    line_number = content.count("\n", 0, docstring_start) + i
+                    # Get line number.
+                    line_number = content.count("\n", 0, docstring.start()) + i
 
                     # Log error message.
                     msg = "Must have exactly 1 blank line between docstring body and parameter sections."
                     logger.error(f"{file_path}: {line_number}: {msg}")
                     error_count += 1
-                    break
-                else:
-                    break
+                break
+
     return error_count
 
 
@@ -57,7 +55,7 @@ def process_directory(directory):
     :param directory: Directory path to walk.
     """
     error_count = 0
-    for file in glob(os.path.join(directory, '**/*.py'), recursive=True):
+    for file in glob(os.path.join(directory, "**/*.py"), recursive=True):
         error_count += check_blank_line_above_param_section(file)
     if error_count > 0:
         logger.error(f"Found {error_count} docstring errors.")
