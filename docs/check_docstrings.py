@@ -3,6 +3,8 @@ import os
 import re
 import sys
 
+from glob import glob
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,12 +57,8 @@ def process_directory(directory):
     :param directory: Directory path to walk.
     """
     error_count = 0
-    for root, _, files in os.walk(directory):
-        for file in files:
-            if file.endswith(".py"):
-                file_path = os.path.join(root, file)
-                logger.info(f"Processing file: {file_path}")
-                error_count += check_blank_line_above_param_section(file_path)
+    for file in glob(os.path.join(directory, '**/*.py'), recursive=True):
+        error_count += check_blank_line_above_param_section(file)
     if error_count > 0:
         logger.error(f"Found {error_count} docstring errors.")
         sys.exit(1)
