@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from scipy.special import jv
 
-from aspire.basis import FFBBasis2D
+from aspire.basis import Coef, FFBBasis2D
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils.misc import grid_2d
@@ -64,7 +64,7 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         coef_ref = np.zeros(basis.count, dtype=basis.dtype)
         coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
 
-        im_ref = basis.evaluate(coef_ref).asnumpy()[0]
+        im_ref = Coef(basis, coef_ref).evaluate().asnumpy()[0]
 
         coef = basis.expand(im)
 
@@ -86,7 +86,7 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         # Now low res (8x8) had problems;
         #  better with odd (7x7), but still not good.
         # We'll use a higher res test image.
-        # fh = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_in_8_8.npy'))[:7,:7]
+        # fh = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoef_in_8_8.npy'))[:7,:7]
         # Use a real data volume to generate a clean test image.
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
@@ -131,7 +131,7 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         # Now low res (8x8) had problems;
         #  better with odd (7x7), but still not good.
         # We'll use a higher res test image.
-        # fh = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoeff_in_8_8.npy'))[:7,:7]
+        # fh = np.load(os.path.join(DATA_DIR, 'ffbbasis2d_xcoef_in_8_8.npy'))[:7,:7]
         # Use a real data volume to generate a clean test image.
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
@@ -236,8 +236,8 @@ def testHighResFFBBasis2D(L, dtype):
     im = sim.images[0]
 
     # Round trip
-    coeff = basis.evaluate_t(im)
-    im_ffb = basis.evaluate(coeff)
+    coef = basis.evaluate_t(im)
+    im_ffb = basis.evaluate(coef)
 
     # Mask to compare inside disk of radius 1.
     mask = grid_2d(L, normalized=True)["r"] < 1

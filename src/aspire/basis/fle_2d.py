@@ -5,7 +5,7 @@ import scipy.sparse as sparse
 from scipy.fft import dct, idct
 from scipy.special import jv
 
-from aspire.basis import FBBasisMixin, SteerableBasis2D
+from aspire.basis import Coef, FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import besselj_zeros
 from aspire.basis.fle_2d_utils import (
     barycentric_interp_sparse,
@@ -122,6 +122,26 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.radial_indices = self._fle_radial_indices[self._fle_to_fb_indices]
         # Note we negate the FLE signs?
         self.signs_indices = self._fle_signs_indices[self._fle_to_fb_indices]
+        # These map indices in complex array to pair of indices in real array
+        self.complex_count = sum(self.k_max)
+        self._pos = np.zeros(self.complex_count, dtype=int)
+        self._neg = np.zeros(self.complex_count, dtype=int)
+        i = 0
+        ci = 0
+        for ell in range(self.ell_max + 1):
+            sgns = (1,) if ell == 0 else (1, -1)
+            ks = np.arange(0, self.k_max[ell])
+
+            for sgn in sgns:
+                rng = np.arange(i, i + len(ks))
+                if sgn == 1:
+                    self._pos[ci + ks] = rng
+                elif sgn == -1:
+                    self._neg[ci + ks] = rng
+
+                i += len(ks)
+
+            ci += len(ks)
 
     def indices(self):
         """
@@ -396,6 +416,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Implements the bandlimit threshold which caps the number of basis functions
         that are actually required.
+
         :return: The final overall number of basis functions to be used.
         """
         # Maximum bandlimit
@@ -461,7 +482,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.norm_constants = norm_constants
         self.basis_functions = basis_functions
 
-    def _evaluate(self, coeffs):
+    def _evaluate(self, coefs):
         """
         Evaluates FLE coefficients and return in standard 2D Cartesian coordinates.
 
@@ -470,10 +491,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :return: An Image object containing the corresponding images.
         """
         # convert from FB order
-        coeffs = coeffs[..., self._fb_to_fle_indices]
+        coefs = coefs[..., self._fb_to_fle_indices]
 
         # See Remark 3.3 and Section 3.4
-        betas = self._step3(coeffs)
+        betas = self._step3(coefs)
         z = self._step2(betas)
         im = self._step1(z)
         return im.astype(self.dtype)
@@ -491,11 +512,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         imgs[:, self.radial_mask] = 0
         z = self._step1_t(imgs)
         b = self._step2_t(z)
-        coeffs = self._step3_t(b)
+        coefs = self._step3_t(b)
 
         # return in FB order
-        coeffs = coeffs[..., self._fle_to_fb_indices]
-        return coeffs.astype(self.coefficient_dtype, copy=False)
+        coefs = coefs[..., self._fle_to_fb_indices]
+        return coefs.astype(self.coefficient_dtype, copy=False)
 
     def _step1_t(self, im):
         """
@@ -549,31 +570,31 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             betas = idct(betas, axis=1, type=2) * 2 * betas.shape[1]
         betas = np.moveaxis(betas, 0, -1)
 
-        coeffs = np.zeros((self.count, num_img), dtype=np.float64)
+        coefs = np.zeros((self.count, num_img), dtype=np.float64)
         for i in range(self.ell_p_max + 1):
-            coeffs[self.idx_list[i]] = self.A3[i] @ betas[:, i, :]
-        coeffs = coeffs.T
+            coefs[self.idx_list[i]] = self.A3[i] @ betas[:, i, :]
+        coefs = coefs.T
 
-        return coeffs * self.norm_constants / self.h
+        return coefs * self.norm_constants / self.h
 
-    def _step3(self, coeffs):
+    def _step3(self, coefs):
         """
         Adjoint of _step3_t and Step 1 of the forward transformation (coefficients
             to images).
         Uses barycenteric interpolation in reverse to compute values of Betas
             at Chebyshev nodes, given an array of FLE coefficients.
         """
-        coeffs = coeffs.copy().reshape(-1, self.count)
-        num_img = coeffs.shape[0]
-        coeffs *= self.h * self.norm_constants
-        coeffs = coeffs.T
+        coefs = coefs.copy().reshape(-1, self.count)
+        num_img = coefs.shape[0]
+        coefs *= self.h * self.norm_constants
+        coefs = coefs.T
 
         out = np.zeros(
             (self.num_interp, 2 * self.max_ell + 1, num_img),
             dtype=np.float64,
         )
         for i in range(self.ell_p_max + 1):
-            out[:, i, :] = self.A3_T[i] @ coeffs[self.idx_list[i]]
+            out[:, i, :] = self.A3_T[i] @ coefs[self.idx_list[i]]
         out = np.moveaxis(out, -1, 0)
         if self.num_interp > self.num_radial_nodes:
             out = dct(out, axis=1, type=2)
@@ -630,6 +651,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Directly computes the transformation matrix from Cartesian coordinates to
         FLE coordinates without any shortcuts.
+
         :return: A NumPy array of size `(self.nres**2, self.count)` containing the matrix
             entries.
         """
@@ -646,56 +668,71 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return B
 
-    def lowpass(self, coeffs, bandlimit):
+    def lowpass(self, coefs, bandlimit):
         """
-        Apply a low-pass filter to FLE coefficients `coeffs` with threshold `bandlimit`.
-        :param coeffs: A NumPy array of FLE coefficients, of shape (num_images, self.count)
+        Apply a low-pass filter to FLE coefficients `coefs` with threshold `bandlimit`.
+
+        :param coefs: A `Coef` instance containing FLE coefficients.
         :param bandlimit: Integer bandlimit (max frequency).
         :return: Band-limited coefficient array.
         """
-        if len(coeffs.shape) == 1:
-            coeffs = coeffs.reshape((1, coeffs.shape[0]))
-        assert (
-            len(coeffs.shape) == 2
-        ), "Input a stack of coefficients of dimension (num_images, self.count)."
-        assert (
-            coeffs.shape[1] == self.count
-        ), "Number of coefficients must match self.count."
+
+        if not isinstance(coefs, Coef):
+            raise TypeError(
+                f"`coefs` should be a `Coef` instance, received {type(coefs)}."
+            )
+
+        # Copy to mutate the coefs.
+        coefs = coefs.asnumpy().copy()
 
         k = self.count - 1
         for _ in range(self.count):
             if self.bessel_zeros[k] / (np.pi) > (bandlimit - 1) // 2:
                 k = k - 1
-        coeffs[:, k + 1 :] = 0
+        coefs[:, k + 1 :] = 0
 
-        return coeffs
+        return Coef(self, coefs)
 
-    def radial_convolve(self, coeffs, radial_img):
+    def radial_convolve(self, coefs, radial_img):
         """
         Convolve a stack of FLE coefficients with a 2D radial function.
-        :param coeffs: A NumPy array of FLE coefficients of size (num_images, self.count).
+
+        :param coefs: A `Coef` instance containing FLE coefficients.
         :param radial_img: A 2D NumPy array of size (self.nres, self.nres).
         :return: Convolved FLE coefficients.
         """
-        num_img = coeffs.shape[0]
-        coeffs_conv = np.zeros(coeffs.shape)
+
+        if not isinstance(coefs, Coef):
+            raise TypeError(
+                f"`coefs` should be a `Coef` instance, received {type(coefs)}."
+            )
+
+        if len(coefs.stack_shape) > 1:
+            raise NotImplementedError(
+                "`radial_convolve` currently only implemented for 1D stacks."
+            )
+
+        coefs = coefs.asnumpy()
+
+        num_img = coefs.shape[0]
+        coefs_conv = np.zeros(coefs.shape)
 
         # Convert to internal FLE indices ordering
-        coeffs = coeffs[..., self._fb_to_fle_indices]
+        coefs = coefs[..., self._fb_to_fle_indices]
 
         for k in range(num_img):
-            _coeffs = coeffs[k, :]
+            _coefs = coefs[k, :]
             z = self._step1_t(radial_img)
             b = self._step2_t(z)
             weights = self._radial_convolve_weights(b)
             b = weights / (self.h**2)
             b = b.reshape(self.count)
-            coeffs_conv[k, :] = np.real(self.c2r @ (b * (self.r2c @ _coeffs).flatten()))
+            coefs_conv[k, :] = np.real(self.c2r @ (b * (self.r2c @ _coefs).flatten()))
 
         # Convert from internal FLE ordering to FB convention
-        coeffs_conv = coeffs_conv[..., self._fle_to_fb_indices]
+        coefs_conv = coefs_conv[..., self._fle_to_fb_indices]
 
-        return coeffs_conv
+        return Coef(self, coefs_conv)
 
     def _radial_convolve_weights(self, b):
         """

@@ -5,7 +5,7 @@ import pytest
 from pytest import raises
 from scipy.special import jv
 
-from aspire.basis import FBBasis2D
+from aspire.basis import Coef, ComplexCoef, FBBasis2D
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils import complex_type, real_type
@@ -56,7 +56,7 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         coef_ref = np.zeros(basis.count, dtype=basis.dtype)
         coef_ref[(ells == ell) & (sgns == sgn) & (ks == k)] = 1
 
-        im_ref = basis.evaluate(coef_ref)
+        im_ref = basis.evaluate(Coef(basis, coef_ref))
 
         coef = basis.expand(im)
 
@@ -86,16 +86,35 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         # The round trip should be equivalent up to machine precision
         assert np.allclose(v1, v2)
 
-    def testComplexCoversionErrorsToComplex(self, basis):
-        x = randn(*basis.sz, seed=self.seed)
+        # Convert real FB coef to complex coef using Coef class
+        cv = v1.to_complex()
+        # then convert back to real coef representation.
+        v2 = cv.to_real()
 
-        # Express in an FB basis
-        v1 = basis.expand(x.astype(basis.dtype))
+        # The round trip should be equivalent up to machine precision
+        assert np.allclose(v1, v2)
+
+    def testComplexCoversionErrorsToComplex(self, basis):
+        x = randn(*basis.sz, seed=self.seed).astype(basis.dtype)
+
+        # Express in an FB basis, cast to array.
+        v1 = basis.expand(x).asnumpy()
 
         # Test catching Errors
         with raises(TypeError):
             # Pass complex into `to_complex`
-            _ = basis.to_complex(v1.astype(np.complex64))
+            v1_cpx = Coef(basis, v1, dtype=np.complex64)
+            _ = basis.to_complex(v1_cpx)
+
+        # Test catching Errors
+        with raises(TypeError):
+            # Pass complex into `to_complex`
+            v1_cpx = Coef(basis, v1, dtype=np.complex64)
+
+        with raises(TypeError):
+            # Pass complex into `to_complex`
+            v1_cpx = Coef(basis, v1).to_complex()
+            _ = v1_cpx.to_complex()
 
         # Test casting case, where basis and coef don't match
         if basis.dtype == np.float32:
@@ -105,22 +124,25 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         # Result should be same precision as coef input, just complex.
         result_dtype = complex_type(test_dtype)
 
-        v3 = basis.to_complex(v1.astype(test_dtype))
+        v3 = basis.to_complex(Coef(basis, v1, dtype=test_dtype))
         assert v3.dtype == result_dtype
-
-        # Try 0d vector, should not crash.
-        _ = basis.to_complex(v1.reshape(-1))
 
     def testComplexCoversionErrorsToReal(self, basis):
         x = randn(*basis.sz, seed=self.seed)
 
         # Express in an FB basis
-        cv1 = basis.to_complex(basis.expand(x.astype(basis.dtype)))
+        cv = basis.expand(x.astype(basis.dtype))
+        ccv = cv.to_complex()
 
         # Test catching Errors
         with raises(TypeError):
             # Pass real into `to_real`
-            _ = basis.to_real(cv1.real.astype(np.float32))
+            _ = basis.to_real(cv)
+
+        # Test catching Errors
+        with raises(TypeError):
+            # Pass real into `to_real`
+            _ = cv.to_real()
 
         # Test casting case, where basis and coef precision don't match
         if basis.dtype == np.float32:
@@ -130,11 +152,9 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         # Result should be same precision as coef input, just real.
         result_dtype = real_type(test_dtype)
 
-        v3 = basis.to_real(cv1.astype(test_dtype))
+        x = ComplexCoef(basis, ccv.asnumpy().astype(test_dtype))
+        v3 = x.to_real()
         assert v3.dtype == result_dtype
-
-        # Try a 0d vector, should not crash.
-        _ = basis.to_real(cv1.reshape(-1))
 
 
 params = [pytest.param(256, np.float32, marks=pytest.mark.expensive)]
@@ -158,8 +178,8 @@ def testHighResFBBasis2D(L, dtype):
     im = sim.images[0]
 
     # Round trip
-    coeff = basis.expand(im)
-    im_fb = basis.evaluate(coeff)
+    coef = basis.expand(im)
+    im_fb = basis.evaluate(coef)
 
     # Mask to compare inside disk of radius 1.
     mask = grid_2d(L, normalized=True)["r"] < 1

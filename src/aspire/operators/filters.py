@@ -52,6 +52,7 @@ class Filter:
     def __str__(self):
         """
         Show class name of Filter
+
         :return: A string of class name
         """
         return self.__class__.__name__

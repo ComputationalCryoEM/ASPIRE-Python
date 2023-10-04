@@ -140,10 +140,10 @@ class MeanEstimatorTestCase(TestCase):
         )
 
     def testAdjoint(self):
-        mean_b_coeff = self.estimator.src_backward().squeeze()
+        mean_b_coef = self.estimator.src_backward().squeeze()
         self.assertTrue(
             np.allclose(
-                mean_b_coeff,
+                mean_b_coef,
                 [
                     1.07338590e-01,
                     1.23690941e-01,
@@ -249,7 +249,7 @@ class MeanEstimatorTestCase(TestCase):
         )
 
     def testOptimize1(self):
-        mean_b_coeff = np.array(
+        mean_b_coef = np.array(
             [
                 [
                     1.07338590e-01,
@@ -354,7 +354,7 @@ class MeanEstimatorTestCase(TestCase):
             ]
         )
 
-        x = self.estimator.conj_grad(mean_b_coeff)
+        x = self.estimator.conj_grad(mean_b_coef)
         self.assertTrue(
             np.allclose(
                 x,
@@ -463,7 +463,7 @@ class MeanEstimatorTestCase(TestCase):
         )
 
     def testOptimize2(self):
-        mean_b_coeff = np.array(
+        mean_b_coef = np.array(
             [
                 [
                     1.07338590e-01,
@@ -568,7 +568,7 @@ class MeanEstimatorTestCase(TestCase):
             ]
         )
 
-        x = self.estimator_with_preconditioner.conj_grad(mean_b_coeff)
+        x = self.estimator_with_preconditioner.conj_grad(mean_b_coef)
         self.assertTrue(
             np.allclose(
                 x,

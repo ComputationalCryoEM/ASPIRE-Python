@@ -370,7 +370,7 @@ class CLOrient3D:
             shift_b[shift_eq_idx] = dx
 
             # Compute the coefficients of the current equation
-            coeffs = np.array(
+            coefs = np.array(
                 [
                     np.sin(shift_alpha),
                     np.cos(shift_alpha),
@@ -378,7 +378,7 @@ class CLOrient3D:
                     -np.cos(shift_beta),
                 ]
             )
-            shift_eq[idx] = -1 * coeffs if is_pf_j_flipped else coeffs
+            shift_eq[idx] = -1 * coefs if is_pf_j_flipped else coefs
 
         # create sparse matrix object only containing non-zero elements
         shift_equations = sparse.csr_matrix(
@@ -395,6 +395,7 @@ class CLOrient3D:
 
         The function computes total number of shift equations based on
         number of images and preselected memory factor.
+
         :param n_img:  The total number of input images
         :param equations_factor: The factor to rescale the number of shift equations
             (=1 in default)
@@ -442,6 +443,7 @@ class CLOrient3D:
         The shift phases are pre-defined in a range of max_shift that can be
         applied to maximize the common line calculation. The common-line filter
         is also applied to the radial direction for easier detection.
+
         :param r_max: Maximum index for common line detection
         :param max_shift: Maximum value of 1D shift (in pixels) to search
         :param shift_step: Resolution of shift estimation in pixels
@@ -511,6 +513,7 @@ class CLOrient3D:
 
         :subscripts: Specifies the subscripts for summation of Numpy
             `einsum` function
+
         :param pf: Fourier transform of images
         :param r_max: Maximum index for common line detection
         :param h: common lines filter

@@ -203,6 +203,7 @@ class RelionSource(ImageSource):
         """
         Returns particle images when accessed via the `ImageSource.images` property.
         Loads particle images corresponding to `indices` from StarFile and .mrcs stacks.
+
         :param indices: A 1-D NumPy array of integer indices.
         :return: An `Image` object.
         """

@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 import pytest
 
-from aspire.basis import PSWFBasis2D
+from aspire.basis import ComplexCoef, PSWFBasis2D
 from aspire.image import Image
 
 from ._basis_util import UniversalBasisMixin, pswf_params_2d, show_basis_params
@@ -17,25 +17,25 @@ test_bases = [PSWFBasis2D(L, dtype=dtype) for L, dtype in pswf_params_2d]
 class TestPSWFBasis2D(UniversalBasisMixin):
     def testPSWFBasis2DEvaluate_t(self, basis):
         img_ary = np.load(
-            os.path.join(DATA_DIR, "ffbbasis2d_xcoeff_in_8_8.npy")
+            os.path.join(DATA_DIR, "ffbbasis2d_xcoef_in_8_8.npy")
         ).T  # RCOPT
         images = Image(img_ary)
 
         result = basis.evaluate_t(images)
 
-        coeffs = np.load(
-            os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
-        ).T  # RCOPT
+        # Historically, PSWF returned complex values.
+        # Load and convert them for this hard coded test.
+        ccoefs = np.load(os.path.join(DATA_DIR, "pswf2d_vcoefs_out_8_8.npy")).T  # RCOPT
+        coefs = ComplexCoef(basis, ccoefs).to_real()
 
-        # make sure both real and imaginary parts are consistent.
-        assert np.allclose(np.real(result), np.real(coeffs)) and np.allclose(
-            np.imag(result) * 1j, np.imag(coeffs) * 1j
-        )
+        np.testing.assert_allclose(result, coefs, rtol=1e-05, atol=1e-08)
 
     def testPSWFBasis2DEvaluate(self, basis):
-        coeffs = np.load(
-            os.path.join(DATA_DIR, "pswf2d_vcoeffs_out_8_8.npy")
-        ).T  # RCOPT
-        result = basis.evaluate(coeffs)
-        images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoeff_out_8_8.npy")).T  # RCOPT
+        # Historically, PSWF returned complex values.
+        # Load and convert them for this hard coded test.
+        ccoefs = np.load(os.path.join(DATA_DIR, "pswf2d_vcoefs_out_8_8.npy")).T  # RCOPT
+        coefs = ComplexCoef(basis, ccoefs).to_real()
+
+        result = coefs.evaluate()
+        images = np.load(os.path.join(DATA_DIR, "pswf2d_xcoef_out_8_8.npy")).T  # RCOPT
         assert np.allclose(result.asnumpy(), images)

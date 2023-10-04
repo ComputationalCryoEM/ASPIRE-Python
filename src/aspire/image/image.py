@@ -58,8 +58,8 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
         imgs = imgs.reshape((-1, L * L))
 
         # Fit a ramping background and apply to images
-        coeff = lstsq(ramp_mask, imgs[:, mask_reshape].T)[0]  # RCOPT
-        imgs = imgs - (ramp_all @ coeff).T  # RCOPT
+        coef = lstsq(ramp_mask, imgs[:, mask_reshape].T)[0]  # RCOPT
+        imgs = imgs - (ramp_all @ coef).T  # RCOPT
         imgs = imgs.reshape((-1, L, L))
 
     # Apply mask images and calculate mean and std values of background
@@ -437,6 +437,7 @@ class Image:
     def _im_translate(self, shifts):
         """
         Translate image by shifts
+
         :param im: An array of size n-by-L-by-L containing images to be translated.
         :param shifts: An array of size n-by-2 specifying the shifts in pixels.
             Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
@@ -493,6 +494,7 @@ class Image:
     def backproject(self, rot_matrices):
         """
         Backproject images along rotation
+
         :param im: An Image (stack) to backproject.
         :param rot_matrices: An n-by-3-by-3 array of rotation matrices \
         corresponding to viewing directions.

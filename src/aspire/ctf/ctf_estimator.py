@@ -15,7 +15,7 @@ from numpy import linalg as npla
 from scipy.optimize import linprog
 from scipy.signal.windows import dpss
 
-from aspire.basis.ffb_2d import FFBBasis2D
+from aspire.basis import Coef, FFBBasis2D
 from aspire.image import Image
 from aspire.numeric import fft
 from aspire.storage import StarFile
@@ -266,19 +266,19 @@ class CtfEstimator:
         """
 
         # RCOPT, come back and change the indices for this method
-        coeffs_s = ffbbasis.evaluate_t(amplitude_spectrum).T
-        coeffs_n = coeffs_s.copy()
+        coefs_s = ffbbasis.evaluate_t(amplitude_spectrum).asnumpy().copy().T
+        coefs_n = coefs_s.copy()
 
-        coeffs_s[np.argwhere(ffbbasis._indices["ells"] == 1)] = 0
+        coefs_s[np.argwhere(ffbbasis._indices["ells"] == 1)] = 0
         if circular:
-            coeffs_s[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
+            coefs_s[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
             noise = amplitude_spectrum
         else:
-            coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 0)] = 0
-            coeffs_n[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
-            noise = ffbbasis.evaluate(coeffs_n.T)
+            coefs_n[np.argwhere(ffbbasis._indices["ells"] == 0)] = 0
+            coefs_n[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
+            noise = Coef(ffbbasis, coefs_n.T).evaluate()
 
-        psd = ffbbasis.evaluate(coeffs_s.T)
+        psd = Coef(ffbbasis, coefs_s.T).evaluate()
 
         return psd, noise
 

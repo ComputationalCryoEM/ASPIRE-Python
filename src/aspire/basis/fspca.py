@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 
-from aspire.basis import FFBBasis2D, SteerableBasis2D
+from aspire.basis import Coef, ComplexCoef, FFBBasis2D, SteerableBasis2D
 from aspire.covariance import BatchedRotCov2D
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, fix_signs, real_type
@@ -42,7 +42,7 @@ class FSPCABasis(SteerableBasis2D):
             Default value of `None` will use `self.basis.count`.
         :param noise_var: Optionally assign noise variance.
             Default value of `None` will estimate noise with WhiteNoiseEstimator.
-            Use 0 when using clean images so cov2d skips applying noisy covar coeffs..
+            Use 0 when using clean images so cov2d skips applying noisy covar coefs..
         :param batch_size: Batch size for computing basis coefficients.
             `batch_size` is also passed to BatchedRotCov2D.
         """
@@ -162,13 +162,13 @@ class FSPCABasis(SteerableBasis2D):
         }
         self.mean_coef_est = cov2d.get_mean()
         self.covar_coef_est = cov2d.get_covar(
-            mean_coeff=self.mean_coef_est,
+            mean_coef=self.mean_coef_est,
             noise_var=self.noise_var,
             covar_est_opt=covar_opt,
         )
 
         # Create the arrays to be packed by _compute_spca
-        self.eigvals = np.zeros(self.basis.count, dtype=self.dtype)
+        self._eigvals = np.zeros(self.basis.count, dtype=self.dtype)
 
         self.eigvecs = BlkDiagMatrix.empty(2 * self.basis.ell_max + 1, dtype=self.dtype)
 
@@ -211,7 +211,7 @@ class FSPCABasis(SteerableBasis2D):
             basis_inds.append(_basis_inds)
 
             # Store the eigvals for this block, note this is a flat array.
-            self.eigvals[_basis_inds] = eigvals_k
+            self._eigvals[_basis_inds] = eigvals_k
 
             # Store the eigvecs, note this is a BlkDiagMatrix and is assigned incrementally.
             self.eigvecs[angular_index] = eigvecs_k
@@ -231,7 +231,7 @@ class FSPCABasis(SteerableBasis2D):
         #
         # We can pass a full or truncated slice of sorted_indices to any array indexed by
         # the coefs.  This is used later for compression and index re-generation.
-        self.sorted_indices = np.argsort(-np.abs(self.eigvals))
+        self.sorted_indices = np.argsort(-np.abs(self._eigvals))
 
         compressed_indices = self._get_compressed_indices()
 
@@ -240,7 +240,7 @@ class FSPCABasis(SteerableBasis2D):
         )
 
         # Compute coefficient vector of mean image at zeroth component
-        self.mean_coef_zero = self.mean_coef_est[self.angular_indices == 0]
+        self.mean_coef_zero = self.mean_coef_est.asnumpy()[0][self.angular_indices == 0]
 
         # Define mask for zero angular mode, used in loop below
         zero_ell_mask = self.basis._indices["ells"] == 0
@@ -252,6 +252,7 @@ class FSPCABasis(SteerableBasis2D):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, self.src.n)
             batch_coef = self.basis.evaluate_t(self.src.images[start:finish])
+            batch_coef = batch_coef.asnumpy()
 
             # Make the Data matrix (A_k)
             # # Construct A_k, matrix of expansion coefficients a^i_k_q
@@ -330,13 +331,15 @@ class FSPCABasis(SteerableBasis2D):
             Fourier Bessel basis.
         :return: Stack of coefs in the FSPCABasis.
         """
+        if not isinstance(x, Coef):
+            raise TypeError(f"'x' should be `Coef` instance, received {type(x)}.")
 
         # Apply linear combination defined by FSPCA (eigvecs)
-        c_fspca = x @ self.eigvecs
+        c_fspca = x.asnumpy() @ self.eigvecs
 
         assert c_fspca.shape == (x.shape[0], self.count)
 
-        return c_fspca
+        return Coef(self, c_fspca)
 
     def evaluate_to_image_basis(self, c):
         """
@@ -346,6 +349,9 @@ class FSPCABasis(SteerableBasis2D):
         :return: The Image instance representing a stack of images in the
             standard 2D coordinate basis..
         """
+        if not isinstance(c, Coef):
+            raise TypeError(f"'c' should be `Coef` instance, received {type(c)}.")
+
         c_fb = self.evaluate(c)
 
         return self.basis.evaluate(c_fb)
@@ -358,6 +364,9 @@ class FSPCABasis(SteerableBasis2D):
         :return: The (real) coefs representing a stack of images in self.basis
         """
 
+        if not isinstance(c, Coef):
+            raise TypeError(f"'c' should be `Coef` instance, received {type(c)}.")
+
         # apply FSPCA eigenvector to coefs c, yields coefs in self.basis
         eigvecs = self.eigvecs
         if isinstance(eigvecs, BlkDiagMatrix):
@@ -368,7 +377,7 @@ class FSPCABasis(SteerableBasis2D):
         # corrected_c[:, self.angular_indices!=0] *= 2
         # return corrected_c @ eigvecs.T
 
-        return c @ eigvecs.T
+        return Coef(c.basis, c @ eigvecs.T)
 
     # TODO: Python>=3.8 @cached_property
     def _get_compressed_indices(self):
@@ -435,7 +444,7 @@ class FSPCABasis(SteerableBasis2D):
         compressed_indices = self._get_compressed_indices()
         self.count = len(compressed_indices)
 
-        self.eigvals = self.eigvals[compressed_indices]
+        self._eigvals = self._eigvals[compressed_indices]
         if isinstance(self.eigvecs, BlkDiagMatrix):
             self.eigvecs = self.eigvecs.dense()
         self.eigvecs = self.eigvecs[:, compressed_indices]
@@ -462,11 +471,11 @@ class FSPCABasis(SteerableBasis2D):
         There is a corresponding method, to_real.
 
         :param coef: Coefficients from this basis.
-        :return: Complex coefficent representation from this basis.
+        :return: Complex coeficent representation from this basis.
         """
-
-        if coef.ndim == 1:
-            coef = coef.reshape(1, -1)
+        if not isinstance(coef, Coef):
+            raise TypeError(f"'coef' should be `Coef` instance, received {type(coef)}.")
+        coef = coef.asnumpy()
 
         if coef.dtype not in (np.float64, np.float32):
             raise TypeError("coef provided to to_complex should be real.")
@@ -503,7 +512,7 @@ class FSPCABasis(SteerableBasis2D):
         for i, k in enumerate(ccoef_d.keys()):
             ccoef[:, i] = ccoef_d[k]
 
-        return ccoef
+        return ComplexCoef(self, ccoef)
 
     def to_real(self, complex_coef):
         """
@@ -514,7 +523,7 @@ class FSPCABasis(SteerableBasis2D):
         There is a corresponding method, to_complex.
 
         :param complex_coef: Complex coefficients from this basis.
-        :return: Real coefficent representation from this basis.
+        :return: Real coefficient representation from this basis.
         """
 
         if complex_coef.ndim == 1:
@@ -543,7 +552,7 @@ class FSPCABasis(SteerableBasis2D):
                 coef[:, pos_i] = 2.0 * complex_coef[:, i].real
                 coef[:, neg_i] = -2.0 * complex_coef[:, i].imag
 
-        return coef
+        return Coef(self, coef)
 
     def calculate_bispectrum(
         self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
@@ -556,6 +565,13 @@ class FSPCABasis(SteerableBasis2D):
             filter_nonzero_freqs=filter_nonzero_freqs,
             freq_cutoff=freq_cutoff,
         )
+
+    @property
+    def eigvals(self):
+        """
+        Return the eigenvals of FSPCABasis as Numpy array.
+        """
+        return self._eigvals
 
     def eigen_images(self):
         """
@@ -570,7 +586,7 @@ class FSPCABasis(SteerableBasis2D):
         if isinstance(eigvecs, BlkDiagMatrix):
             eigvecs = eigvecs.dense()
 
-        return self.basis.evaluate(eigvecs.T)
+        return Coef(self.basis, eigvecs.T).evaluate()
 
     def shift(self, coef, shifts):
         """

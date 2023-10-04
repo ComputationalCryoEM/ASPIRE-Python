@@ -6,6 +6,7 @@ from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire import config
+from aspire.basis import Coef
 from aspire.nufft import anufft
 from aspire.numeric import fft
 from aspire.operators import evaluate_src_filters_on_grid
@@ -172,8 +173,8 @@ class WeightedVolumesEstimator(Estimator):
 
         return res
 
-    def conj_grad(self, b_coeff, tol=1e-5, regularizer=0):
-        count = b_coeff.shape[-1]  # b_coef should be (r, basis.count)
+    def conj_grad(self, b_coef, tol=1e-5, regularizer=0):
+        count = b_coef.shape[-1]  # b_coef should be (r, basis.count)
         kernel = self.kernel
 
         if regularizer > 0:
@@ -197,50 +198,50 @@ class WeightedVolumesEstimator(Estimator):
             )
 
         tol = tol or config.mean.cg_tol
-        target_residual = tol * norm(b_coeff)
+        target_residual = tol * norm(b_coef)
 
         def cb(xk):
             logger.info(
-                f"Delta {norm(b_coeff - self.apply_kernel(xk))} (target {target_residual})"
+                f"Delta {norm(b_coef - self.apply_kernel(xk))} (target {target_residual})"
             )
 
-        x, info = cg(operator, b_coeff.flatten(), M=M, callback=cb, tol=tol, atol=0)
+        x, info = cg(operator, b_coef.flatten(), M=M, callback=cb, tol=tol, atol=0)
 
         if info != 0:
             raise RuntimeError("Unable to converge!")
 
         return x.reshape(self.r, self.basis.count)
 
-    def apply_kernel(self, vol_coeff, kernel=None):
+    def apply_kernel(self, vol_coef, kernel=None):
         """
         Applies the kernel represented by convolution
 
-        :param vol_coeff: The volume to be convolved, stored in the basis coefficients.
+        :param vol_coef: The volume to be convolved, stored in the basis coefficients.
         :param kernel: a Kernel object. If None, the kernel for this Estimator is used.
-        :return: The result of evaluating `vol_coeff` in the given basis, convolving with the kernel given by
+        :return: The result of evaluating `vol_coef` in the given basis, convolving with the kernel given by
             kernel, and backprojecting into the basis.
         """
         if kernel is None:
             kernel = self.kernel
 
-        assert np.size(vol_coeff) == self.r * self.basis.count
-        if vol_coeff.ndim == 1:
-            vol_coeff = vol_coeff.reshape(self.r, self.basis.count)
+        assert np.size(vol_coef) == self.r * self.basis.count
+        if vol_coef.ndim == 1:
+            vol_coef = vol_coef.reshape(self.r, self.basis.count)
 
         vols_out = Volume(
             np.zeros((self.r, self.src.L, self.src.L, self.src.L), dtype=self.dtype)
         )
 
-        vol = self.basis.evaluate(vol_coeff)
+        vol = Coef(self.basis, vol_coef).evaluate()
 
         for k in range(self.r):
             for j in range(self.r):
                 vols_out[k] = vols_out[k] + kernel.convolve_volume(vol[j], j, k)
                 # Note this is where we would add mask_gamma
 
-        vol_coeff = self.basis.evaluate_t(vols_out)
+        vol_coef = self.basis.evaluate_t(vols_out)
 
-        return vol_coeff
+        return vol_coef
 
 
 class MeanEstimator(WeightedVolumesEstimator):

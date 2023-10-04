@@ -180,6 +180,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
         Given the common lines matrix `clmatrix`, a list of images specified in k_list
         and the number of common lines n_theta, find the (i, j) rotation block (in X and Y)
         of the synchronization matrix.
+
         :param clmatrix: The common lines matrix
         :param i: The i image
         :param j: The j image

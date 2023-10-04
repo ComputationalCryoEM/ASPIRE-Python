@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
-from aspire.basis import FSPCABasis
+from aspire.basis import Coef, ComplexCoef, FSPCABasis
 from aspire.classification import Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
@@ -181,7 +181,7 @@ class RIRClass2D(Class2D):
         self.fspca_coef = self.pca_basis.spca_coef
 
         # Compute Bispectrum
-        coef_b, coef_b_r = self.bispectrum(self.fspca_coef)
+        coef_b, coef_b_r = self.bispectrum(Coef(self.pca_basis, self.fspca_coef))
 
         # # Stage 2: Compute Nearest Neighbors
         logger.info(f"Calculate Nearest Neighbors using {self._nn_implementation}.")
@@ -251,10 +251,16 @@ class RIRClass2D(Class2D):
         :param coef: complex steerable coefficients (eg. from FSPCABasis).
         :returns: tuple of arrays (coef_b, coef_b_r)
         """
+
+        if not isinstance(coef, Coef):
+            raise TypeError(
+                f"`coef` should be a `Coef` instance, received {type(coef)}"
+            )
+
         # _bispectrum is assigned during initialization.
         return self._bispectrum(coef)
 
-    def _sk_nn_classification(self, coeff_b, coeff_b_r):
+    def _sk_nn_classification(self, coef_b, coef_b_r):
         """
         Perform nearest neighbor classification using scikit learn.
 
@@ -269,10 +275,10 @@ class RIRClass2D(Class2D):
         #   so we'll pretend we have 2*n_features of real values.
         # Don't worry about the copy because NearestNeighbors wants
         #   C-contiguous anyway... (it would copy internally otherwise)
-        X = np.column_stack((coeff_b.real, coeff_b.imag))
+        X = np.column_stack((coef_b.real, coef_b.imag))
         # We'll also want to consider the neighbors under reflection.
-        #   These coefficients should be provided by coeff_b_r
-        X_r = np.column_stack((coeff_b_r.real, coeff_b_r.imag))
+        #   These coefficients should be provided by coef_b_r
+        X_r = np.column_stack((coef_b_r.real, coef_b_r.imag))
 
         # We can compare both non-reflected and reflected representations as one large set by
         #   taking care later that we store refl=True where indices>=n_img
@@ -291,7 +297,7 @@ class RIRClass2D(Class2D):
 
         return classes, refl, distances
 
-    def _legacy_nn_classification(self, coeff_b, coeff_b_r):
+    def _legacy_nn_classification(self, coef_b, coef_b_r):
         """
         Perform nearest neighbor classification using port of ASPIRE legacy MATLAB code.
 
@@ -299,8 +305,8 @@ class RIRClass2D(Class2D):
         """
 
         # Note kept ordering from legacy code (n_features, n_img)
-        coeff_b = coeff_b.T
-        coeff_b_r = coeff_b_r.T
+        coef_b = coef_b.T
+        coef_b_r = coef_b_r.T
 
         n_im = self.src.n
         # Shouldn't have more neighbors than images
@@ -311,7 +317,7 @@ class RIRClass2D(Class2D):
             )
             n_nbor = n_im - 1
 
-        concat_coeff = np.concatenate((coeff_b, coeff_b_r), axis=1)
+        concat_coef = np.concatenate((coef_b, coef_b_r), axis=1)
 
         num_batches = (n_im + self.batch_size - 1) // self.batch_size
 
@@ -321,8 +327,8 @@ class RIRClass2D(Class2D):
         for i in trange(num_batches):
             start = i * self.batch_size
             finish = min((i + 1) * self.batch_size, n_im)
-            batch = np.conjugate(coeff_b[:, start:finish])
-            corr = np.real(np.dot(batch.T, concat_coeff))
+            batch = np.conjugate(coef_b[:, start:finish])
+            corr = np.real(np.dot(batch.T, concat_coef))
 
             assert np.all(
                 np.abs(corr) <= 1.01  # Allow some numerical wiggle
@@ -432,7 +438,7 @@ class RIRClass2D(Class2D):
 
         for i in trange(self.src.n):
             B = self.pca_basis.calculate_bispectrum(
-                coef_normed[i, np.newaxis],
+                ComplexCoef(self.pca_basis, coef_normed[i]),
                 filter_nonzero_freqs=True,
                 freq_cutoff=self.bispectrum_freq_cutoff,
             )
@@ -480,10 +486,18 @@ class RIRClass2D(Class2D):
         :return: Compressed feature and reflected feature vectors.
         """
 
+        if not isinstance(coef, Coef):
+            raise TypeError(
+                f"`coef` should be a `Coef` instance, received {type(coef)}"
+            )
+
         # The legacy code expects the complex representation
-        coef = self.pca_basis.to_complex(coef)
-        complex_eigvals = self.pca_basis.to_complex(self.pca_basis.eigvals).reshape(
-            self.pca_basis.complex_count
+        coef = self.pca_basis.to_complex(coef).asnumpy()
+        complex_eigvals = (
+            Coef(self.pca_basis, self.pca_basis.eigvals)
+            .to_complex()
+            .asnumpy()
+            .reshape(self.pca_basis.complex_count)
         )  # flatten
 
         # bispec_2drot_large has a random selection component.
@@ -496,7 +510,7 @@ class RIRClass2D(Class2D):
         _seed = self.seed or 0
         while attempt < retry_attempts:
             coef_b, coef_b_r = bispec_2drot_large(
-                coeff=coef.T,  # Note F style transpose here and in return
+                coef=coef.T,  # Note F style transpose here and in return
                 freqs=self.pca_basis.complex_angular_indices,
                 eigval=complex_eigvals,
                 alpha=self.alpha,

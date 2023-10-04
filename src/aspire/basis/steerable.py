@@ -4,9 +4,9 @@ from collections.abc import Iterable
 
 import numpy as np
 
-from aspire.basis import Basis
+from aspire.basis import Basis, Coef, ComplexCoef
 from aspire.operators import BlkDiagMatrix
-from aspire.utils import complex_type
+from aspire.utils import complex_type, real_type
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,14 @@ class SteerableBasis2D(Basis):
         self._zero_angular_inds = self.angular_indices == 0
         self._pos_angular_inds = (self.signs_indices == 1) & (self.angular_indices != 0)
         self._neg_angular_inds = self.signs_indices == -1
+        self._non_neg_angular_inds = self.signs_indices >= 0
+        self._blk_diag_cov_shape = None
+
+        # Centralize indices attributes between FB/PSWF/FLE in SteerableBasis2D
+        self._indices = self.indices()
+        self.complex_count = self.count - sum(self._neg_angular_inds)
+        self.complex_angular_indices = self.angular_indices[self._non_neg_angular_inds]
+        self.complex_radial_indices = self.radial_indices[self._non_neg_angular_inds]
 
         # Attribute for caching the blk_diag shape once known.
         self._blk_diag_cov_shape = None
@@ -50,6 +58,10 @@ class SteerableBasis2D(Basis):
         :param freq_cutoff: Truncate (zero) high k frequecies above (int) value, defaults off (None).
         :return: Bispectum matrix (complex valued).
         """
+
+        if not isinstance(complex_coef, Coef):
+            raise TypeError(f"Expect `Coef` received {type(complex_coef)}.")
+        complex_coef = complex_coef.asnumpy()
 
         # Check shape
         if complex_coef.shape[0] != 1:
@@ -159,16 +171,23 @@ class SteerableBasis2D(Basis):
         :return: rotated coefs.
         """
 
-        # Enforce a stack axis to support sanity checks
-        coef = np.atleast_2d(coef)
+        if not isinstance(coef, Coef):
+            raise TypeError(f"`coef` must be `Coef` instance, received {type(coef)}.")
+
+        coef = coef.asnumpy()
 
         # Covert radians to a broadcastable shape
         if isinstance(radians, Iterable):
-            radians = np.fromiter(radians, dtype=self.dtype).reshape(-1, 1)
-            if len(radians) != len(coef):
+            radians = np.array(radians, dtype=self.dtype)
+            if radians.ndim < 2:
+                radians = radians.reshape(-1, 1)
+            else:
+                radians = np.expand_dims(radians, axis=-1)
+
+            if radians.size != np.prod(coef.shape[:-1]):
                 raise RuntimeError(
-                    "`rotate` call `radians` length cannot broadcast with"
-                    f" `coef` {len(coef)} != {len(radians)}"
+                    f"`rotate` call `radians` {radians.shape} does not match"
+                    f" `coef` {coef.shape[:-1]}."
                 )
         # else: radians can be a constant
 
@@ -180,17 +199,17 @@ class SteerableBasis2D(Basis):
         # For all coef in stack,
         #   compute the ks * radian used in the trig functions
         ks_rad = np.atleast_2d(self.angular_indices * radians)
-        ks_pos = ks_rad[:, self._pos_angular_inds]
-        ks_neg = ks_rad[:, self._neg_angular_inds]
+        ks_pos = ks_rad[..., self._pos_angular_inds]
+        ks_neg = ks_rad[..., self._neg_angular_inds]
 
         # Slice the coef on postive and negative ells
-        coef_zer = coef[:, self._zero_angular_inds]
-        coef_pos = coef[:, self._pos_angular_inds]
-        coef_neg = coef[:, self._neg_angular_inds]
+        coef_zer = coef[..., self._zero_angular_inds]
+        coef_pos = coef[..., self._pos_angular_inds]
+        coef_neg = coef[..., self._neg_angular_inds]
 
         # Handle zero case and avoid mutating the original array
         coef = np.empty_like(coef)
-        coef[:, self._zero_angular_inds] = coef_zer
+        coef[..., self._zero_angular_inds] = coef_zer
 
         # refl
         if refl is not None:
@@ -201,14 +220,14 @@ class SteerableBasis2D(Basis):
             coef_neg[refl] = coef_neg[refl] * -1
 
         # Apply formula
-        coef[:, self._pos_angular_inds] = coef_pos * np.cos(ks_pos) + coef_neg * np.sin(
-            ks_neg
-        )
-        coef[:, self._neg_angular_inds] = coef_neg * np.cos(ks_neg) - coef_pos * np.sin(
+        coef[..., self._pos_angular_inds] = coef_pos * np.cos(
             ks_pos
-        )
+        ) + coef_neg * np.sin(ks_neg)
+        coef[..., self._neg_angular_inds] = coef_neg * np.cos(
+            ks_neg
+        ) - coef_pos * np.sin(ks_pos)
 
-        return coef
+        return Coef(self, coef)
 
     def complex_rotate(self, complex_coef, radians, refl=None):
         """
@@ -319,3 +338,153 @@ class SteerableBasis2D(Basis):
 
         # Return the cached shape
         return self._blk_diag_cov_shape
+
+    # This is included for completion, but is not being adopted yet.
+    def indices_mask(self, **kwargs):
+        """
+        Given `radial=` or `angular=` expressions, return (`count`,)
+        shaped mask where values satisfying the expression are `True`.
+
+        Examples:
+            No args yield all indices.
+            `angular=0 creates a mask for selecting coefficients with zero angular indices.
+            `angular=1, radial=2` selects coefficients satisfying angular index of 1 _and_ radial index of 2.
+            More advanced operations can combine indices attributes.
+             `angular=self.angular_indices>=0, radial=r` selects coefficients with non negative angular indices and some radial index `r`.
+
+
+
+        :return: Boolen mask of shape (`count`,).
+            Intended to be broadcast with `Coef` containers.
+        """
+
+        radial = kwargs.get("radial", None)
+        angular = kwargs.get("angular", None)
+        signs = kwargs.get("signs", None)
+
+        # slowly construct the map
+        signs_mask = np.zeros(self.count, dtype=bool)
+        radial_mask = signs_mask.copy()
+        angular_mask = signs_mask.copy()
+
+        if radial is None:
+            radial_mask[:] = True
+        else:
+            for k in np.atleast_1d(radial):
+                radial_mask[self.radial_indices == k] = True
+
+        if angular is None:
+            angular_mask[:] = True
+        else:
+            for el in np.atleast_1d(angular):
+                angular_mask[self.angular_indices == el] = True
+
+        if signs is None:
+            signs_mask[:] = True
+        else:
+            for s in np.atleast_1d(signs):
+                signs_mask[self.signs_indices == s] = True
+
+        mask = radial_mask & angular_mask & signs_mask
+
+        return mask
+
+    def to_real(self, complex_coef):
+        """
+        Return real valued representation of complex coefficients.
+        This can be useful when comparing, prototyping, or
+        implementing methods from literature.
+
+        There is a corresponding method, `to_complex`.
+
+        :param complex_coef: Complex `Coef` from this basis.
+        :return: Real `Ceof` representation from this basis.
+        """
+
+        if not isinstance(complex_coef, ComplexCoef):
+            raise TypeError(
+                f"complex_coef should be instance of `Coef`, received {type(complex_coef)}."
+            )
+
+        if complex_coef.dtype not in (np.complex128, np.complex64):
+            raise TypeError("coef provided to to_real should be complex.")
+
+        # Pass through dtype precisions, but check and warn if mismatched.
+        dtype = real_type(complex_coef.dtype)
+        if dtype != self.dtype:
+            logger.warning(
+                f"Complex coef dtype {complex_coef.dtype} does not match precision of basis.dtype {self.dtype}, returning {dtype}."
+            )
+
+        coef = np.zeros((*complex_coef.stack_shape, self.count), dtype=dtype)
+        complex_coef = complex_coef.asnumpy()
+
+        ind = 0
+        idx = np.arange(self.k_max[0], dtype=int)
+        ind += np.size(idx)
+        ind_pos = ind
+
+        coef[..., idx] = complex_coef[..., idx].real
+
+        for ell in range(1, self.ell_max + 1):
+            idx = ind + np.arange(self.k_max[ell], dtype=int)
+            idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=int)
+            idx_neg = idx_pos + self.k_max[ell]
+
+            c = complex_coef[..., idx]
+            coef[..., idx_pos] = 2.0 * np.real(c)
+            coef[..., idx_neg] = -2.0 * np.imag(c)
+
+            ind += np.size(idx)
+            ind_pos += 2 * self.k_max[ell]
+
+        return Coef(self, coef)
+
+    def to_complex(self, coef):
+        """
+        Return complex valued representation of complex coefficients.
+        This can be useful when comparing, prototyping, or
+        implementing methods from literature.
+
+        There is a corresponding method, `to_real`.
+
+        :param coef: Real `Coef` from this basis.
+        :return: `ComplexCoef` representation from this basis.
+        """
+
+        if not isinstance(coef, Coef):
+            raise TypeError(
+                f"coef should be instance of `Coef`, received {type(coef)}."
+            )
+
+        if coef.dtype not in (np.float64, np.float32):
+            raise TypeError("coef provided to to_complex should be real.")
+
+        # Pass through dtype precions, but check and warn if mismatched.
+        dtype = complex_type(coef.dtype)
+        if coef.dtype != self.dtype:
+            logger.warning(
+                f"coef dtype {coef.dtype} does not match precision of basis.dtype {self.dtype}, returning {dtype}."
+            )
+
+        # Return the same precision as coef
+        imaginary = dtype(1j)
+
+        complex_coef = np.zeros((*coef.stack_shape, self.complex_count), dtype=dtype)
+        coef = coef.asnumpy()
+
+        ind = 0
+        idx = np.arange(self.k_max[0], dtype=int)
+        ind += np.size(idx)
+
+        complex_coef[..., idx] = coef[..., idx]
+
+        for ell in range(1, self.ell_max + 1):
+            idx = ind + np.arange(self.k_max[ell], dtype=int)
+            complex_coef[..., idx] = (
+                coef[..., self._pos[idx]] - imaginary * coef[..., self._neg[idx]]
+            ) / 2.0
+
+            ind += np.size(idx)
+
+        return ComplexCoef(self, complex_coef)

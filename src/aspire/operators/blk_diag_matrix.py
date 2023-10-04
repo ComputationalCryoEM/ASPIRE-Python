@@ -706,13 +706,13 @@ class BlkDiagMatrix:
 
         cols = self.partition[:, 1]
 
-        if np.sum(cols) != np.size(X, 0):
-            raise RuntimeError("Sizes of matrix `self` and `X` are not compatible.")
-
         vector = False
         if np.ndim(X) == 1:
             X = X[:, np.newaxis]
             vector = True
+
+        if np.sum(cols) != np.size(X, 0):
+            raise RuntimeError("Sizes of matrix `self` and `X` are not compatible.")
 
         rows = np.array(
             [
@@ -754,6 +754,7 @@ class BlkDiagMatrix:
     def eigvals(self):
         """
         Compute the eigenvalues of a BlkDiagMatrix.
+
         :return: Array of eigvals, with length equal to the fully expanded matrix diagonal.
 
         """
@@ -765,7 +766,7 @@ class BlkDiagMatrix:
 
         :return: True if all blocks have non-negative eigenvalues.
         """
-        return np.alltrue(self.eigvals() > 0.0)
+        return np.all(self.eigvals() > 0.0)
 
     def make_psd(self):
         """

@@ -11,6 +11,7 @@ with warnings.catch_warnings():
     from ray.util.multiprocessing import Pool
 
 from aspire import config
+from aspire.basis import Coef
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image, ImageStacker, MeanImageStacker
 from aspire.utils import trange
@@ -230,7 +231,7 @@ class AligningAverager2D(Averager2D):
             )
 
             # Averaging in composite_basis
-            return self.image_stacker(neighbors_coefs)
+            return self.image_stacker(neighbors_coefs.asnumpy())
 
         if self.num_procs <= 1:
             for i in trange(n_classes):
@@ -253,7 +254,7 @@ class AligningAverager2D(Averager2D):
                 b_avgs[i] = result
 
         # Now we convert the averaged images from Basis to Cartesian.
-        return self.composite_basis.evaluate(b_avgs)
+        return Coef(self.composite_basis, b_avgs).evaluate()
 
     def _shift_search_grid(self, L, radius, roll_zero=False):
         """
@@ -362,12 +363,12 @@ class BFRAverager2D(AligningAverager2D):
                 )
 
                 # then store dot between class base image (0) and each nbor
-                for j, nbor in enumerate(rotated_nbrs):
+                for j, nbor in enumerate(rotated_nbrs.asnumpy()):
                     # Skip the base image.
                     if j == 0:
                         continue
                     norm_nbor = np.linalg.norm(nbor)
-                    _correlations[j, i] = np.dot(nbr_coef[0], nbor) / (
+                    _correlations[j, i] = np.dot(nbr_coef.asnumpy()[0], nbor) / (
                         norm_nbor * norm_0
                     )
 
@@ -681,7 +682,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 )
 
             # Averaging in composite_basis
-            return self.image_stacker(neighbors_coefs)
+            return self.image_stacker(neighbors_coefs.asnumpy())
 
         if self.num_procs <= 1:
             for i in trange(n_classes):
@@ -704,7 +705,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 b_avgs[i] = result
 
         # Now we convert the averaged images from Basis to Cartesian.
-        return self.composite_basis.evaluate(b_avgs)
+        return Coef(self.composite_basis, b_avgs).evaluate()
 
 
 class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):

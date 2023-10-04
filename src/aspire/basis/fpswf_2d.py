@@ -5,6 +5,7 @@ from numpy.linalg import lstsq
 from scipy.optimize import least_squares
 from scipy.special import jn
 
+from aspire.basis import ComplexCoef
 from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
 from aspire.nufft import nufft
@@ -97,7 +98,9 @@ class FPSWFBasis2D(PSWFBasis2D):
             n_max,
         ) = self._pswf_integration_sub_routine()
 
-        self.us_fft_pts = us_fft_pts
+        self.us_fft_pts = us_fft_pts.astype(
+            self.dtype, copy=False
+        )  # TODO, debug where this is incorrect dtype
         self.blk_r = blk_r
         self.num_angular_pts = num_angular_pts
         self.r_quad_indices = r_quad_indices
@@ -121,9 +124,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         nfft_res = nufft(images_disk, self.us_fft_pts)
 
         # Accumulate coefficients
-        coefficients = self._pswf_integration(nfft_res)
+        coefficients = ComplexCoef(self, self._pswf_integration(nfft_res))
 
-        return coefficients
+        return coefficients.to_real().asnumpy()
 
     def _generate_pswf_quad(
         self, n, bandlimit, phi_approximate_error, lambda_max, epsilon
@@ -214,7 +217,9 @@ class FPSWFBasis2D(PSWFBasis2D):
         if k % 2 == 0:
             k = k + 1
 
-        range_array = np.arange(approx_length).reshape((1, approx_length))
+        range_array = np.arange(approx_length, dtype=self.dtype).reshape(
+            (1, approx_length)
+        )
 
         idx_for_quad_nodes = int((k + 1) / 2)
         num_quad_pts = idx_for_quad_nodes - 1
@@ -277,14 +282,13 @@ class FPSWFBasis2D(PSWFBasis2D):
 
         fun_vec = phi_for_quad_nodes(x)
         sign_flipping_vec = np.where(np.sign(fun_vec[:-1]) != np.sign(fun_vec[1:]))[0]
-        phi_zeros = np.zeros(idx_for_quad_nodes - 1)
+        phi_zeros = np.zeros(idx_for_quad_nodes - 1, dtype=self.dtype)
 
         tmp = phi_for_quad_nodes(x)
         for i, j in enumerate(sign_flipping_vec[: idx_for_quad_nodes - 1]):
             new_zero = x[j] - tmp[j] * (x[j + 1] - x[j]) / (tmp[j + 1] - tmp[j])
             phi_zeros[i] = new_zero
 
-        phi_zeros = np.array(phi_zeros)
         return phi_zeros
 
     def _sum_minus_cumsum_smaller_eps(self, x, eps):
@@ -299,17 +303,17 @@ class FPSWFBasis2D(PSWFBasis2D):
         r_quad_indices.extend(num_angular_pts)
         r_quad_indices = np.cumsum(r_quad_indices, dtype="int")
 
-        n_max = int(max(self.ang_freqs) + 1)
+        n_max = int(max(self.complex_angular_indices) + 1)
 
         numel_for_n = np.zeros(n_max, dtype="int")
         for i in range(n_max):
-            numel_for_n[i] = np.count_nonzero(self.ang_freqs == i)
+            numel_for_n[i] = np.count_nonzero(self.complex_angular_indices == i)
 
         indices_for_n = [0]
         indices_for_n.extend(numel_for_n)
         indices_for_n = np.cumsum(indices_for_n, dtype="int")
 
-        blk_r = [0] * n_max
+        blk_r = [0] * n_max  # TODO, consider array here
         temp_const = self.bandlimit / (2 * np.pi * self.rcut)
         for i in range(n_max):
             blk_r[i] = (
@@ -351,13 +355,14 @@ class FPSWFBasis2D(PSWFBasis2D):
         r_n_eval_mat = r_n_eval_mat.reshape(
             (len(self.radial_quad_pts) * self.n_max, num_images), order="F"
         )
-        coeff_vec_quad = np.zeros(
-            (num_images, len(self.ang_freqs)), dtype=complex_type(self.dtype)
+        coef_vec_quad = np.zeros(
+            (num_images, len(self.complex_angular_indices)),
+            dtype=complex_type(self.dtype),
         )
         m = self.pswf_radial_quad.shape[1]
         for i in range(self.n_max):
-            coeff_vec_quad[
+            coef_vec_quad[
                 :, self.indices_for_n[i] + np.arange(self.numel_for_n[i])
             ] = np.dot(self.blk_r[i], r_n_eval_mat[i * m : (i + 1) * m, :]).T
 
-        return coeff_vec_quad
+        return coef_vec_quad

@@ -3,7 +3,7 @@ import os.path
 import numpy as np
 import pytest
 
-from aspire.basis import FBBasis3D
+from aspire.basis import Coef, FBBasis3D
 from aspire.utils import grid_3d, utest_tolerance
 from aspire.volume import AsymmetricVolume, Volume
 
@@ -355,7 +355,7 @@ class TestFBBasis3D(UniversalBasisMixin):
         )
 
     def testFBBasis3DEvaluate(self, basis):
-        coeffs = np.array(
+        coefs = np.array(
             [
                 1.07338590e-01,
                 1.23690941e-01,
@@ -458,7 +458,7 @@ class TestFBBasis3D(UniversalBasisMixin):
             ],
             dtype=basis.dtype,
         )
-        result = basis.evaluate(coeffs)
+        result = Coef(basis, coefs).evaluate()
 
         assert np.allclose(
             result.asnumpy(),
@@ -687,7 +687,7 @@ class TestFBBasis3D(UniversalBasisMixin):
         )
 
 
-# NOTE: This test is failing for L=64. `coeff_0` has a few NANs which propogate into `vol_1`. See GH issue #923
+# NOTE: This test is failing for L=64. `coef_0` has a few NANs which propogate into `vol_1`. See GH issue #923
 params = [pytest.param(64, np.float32, marks=pytest.mark.expensive)]
 
 
@@ -702,8 +702,8 @@ def testHighResFBbasis3D(L, dtype):
     vol = AsymmetricVolume(L=L, C=1, K=64, dtype=dtype, seed=seed).generate()
 
     # Round trip
-    coeff = basis.expand(vol)
-    vol_fb = basis.evaluate(coeff)
+    coef = basis.expand(vol)
+    vol_fb = basis.evaluate(coef)
 
     # Mask to compare inside sphere of radius 1.
     mask = grid_3d(L, normalized=True)["r"] < 1

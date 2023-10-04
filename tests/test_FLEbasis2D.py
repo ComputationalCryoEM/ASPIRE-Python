@@ -4,7 +4,7 @@ import sys
 import numpy as np
 import pytest
 
-from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D
+from aspire.basis import Coef, FBBasis2D, FFBBasis2D, FLEBasis2D
 from aspire.image import Image
 from aspire.nufft import backend_available
 from aspire.numeric import fft
@@ -99,12 +99,12 @@ class TestFLEBasis2D(UniversalBasisMixin):
         # get sample coefficients
         x = create_images(basis.nres, 1)
         # hold input test data constant (would depend on epsilon parameter)
-        coeffs = FLEBasis2D(
+        coefs = FLEBasis2D(
             basis.nres, epsilon=1e-4, dtype=np.float64, match_fb=False
         ).evaluate_t(x)
 
-        result_dense = dense_b @ coeffs.T
-        result_fast = basis.evaluate(coeffs).asnumpy()
+        result_dense = dense_b @ coefs.asnumpy().T
+        result_fast = basis.evaluate(coefs).asnumpy()
 
         assert relerr(result_dense, result_fast) < (self.test_eps * basis.epsilon)
 
@@ -136,10 +136,10 @@ def testMatchFBEvaluate(basis):
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
     # in match_fb, count is the same for both bases
-    coeffs = np.eye(basis.count)
+    coefs = Coef(basis, np.eye(basis.count))
 
-    fb_images = fb_basis.evaluate(coeffs)
-    fle_images = basis.evaluate(coeffs)
+    fb_images = fb_basis.evaluate(coefs)
+    fle_images = basis.evaluate(coefs)
 
     assert np.allclose(fb_images._data, fle_images._data, atol=1e-4)
 
@@ -151,10 +151,10 @@ def testMatchFBDenseEvaluate(basis):
 
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
-    coeffs = np.eye(basis.count)
+    coefs = Coef(basis, np.eye(basis.count))
 
-    fb_images = fb_basis.evaluate(coeffs).asnumpy()
-    fle_out = basis._create_dense_matrix() @ coeffs
+    fb_images = fb_basis.evaluate(coefs).asnumpy()
+    fle_out = basis._create_dense_matrix() @ coefs
     fle_images = Image(fle_out.T.reshape(-1, basis.nres, basis.nres)).asnumpy()
 
     # Matrix column reording in match_fb mode flips signs of some of the basis functions
@@ -171,12 +171,12 @@ def testMatchFBEvaluate_t(basis):
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
 
     # test images to evaluate
-    images = fb_basis.evaluate(np.eye(basis.count))
+    images = fb_basis.evaluate(Coef(basis, np.eye(basis.count)))
 
-    fb_coeffs = fb_basis.evaluate_t(images)
-    fle_coeffs = basis.evaluate_t(images)
+    fb_coefs = fb_basis.evaluate_t(images)
+    fle_coefs = basis.evaluate_t(images)
 
-    assert np.allclose(fb_coeffs, fle_coeffs, atol=1e-4)
+    assert np.allclose(fb_coefs, fle_coefs, atol=1e-4)
 
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
@@ -188,15 +188,15 @@ def testMatchFBDenseEvaluate_t(basis):
 
     # test images to evaluate
     # gets a stack of shape (basis.count, L, L)
-    images = fb_basis.evaluate(np.eye(basis.count))
+    images = fb_basis.evaluate(Coef(basis, np.eye(basis.count)))
     # reshape to a stack of basis.count vectors of length L**2
     vec = images.asnumpy().reshape((-1, basis.nres**2))
 
-    fb_coeffs = fb_basis.evaluate_t(images)
-    fle_coeffs = basis._create_dense_matrix().T @ vec.T
+    fb_coefs = fb_basis.evaluate_t(images)
+    fle_coefs = basis._create_dense_matrix().T @ vec.T
 
     # Matrix column reording in match_fb mode flips signs of some of the basis coefficients
-    assert np.allclose(np.abs(fb_coeffs), np.abs(fle_coeffs), atol=1e-4)
+    assert np.allclose(np.abs(fb_coefs), np.abs(fle_coefs), atol=1e-4)
 
 
 def testLowPass():
@@ -208,35 +208,22 @@ def testLowPass():
 
     # sample coefficients
     ims = create_images(L, 1)
-    coeffs = basis.evaluate_t(ims)
+    coefs = basis.evaluate_t(ims)
 
-    nonzero_coeffs = []
+    nonzero_coefs = []
     for i in range(4):
         bandlimit = L // (2**i)
-        coeffs_lowpassed = basis.lowpass(coeffs, bandlimit)
-        nonzero_coeffs.append(np.sum(coeffs_lowpassed != 0))
+        coefs_lowpassed = basis.lowpass(coefs, bandlimit).asnumpy()
+        nonzero_coefs.append(np.sum(coefs_lowpassed != 0))
 
     # for bandlimit == L, no frequencies should be removed
-    assert nonzero_coeffs[0] == basis.count
+    assert nonzero_coefs[0] == basis.count
 
-    # for lower bandlimits, there should be fewer and fewer nonzero coeffs
-    assert nonzero_coeffs[0] > nonzero_coeffs[1] > nonzero_coeffs[2] > nonzero_coeffs[3]
+    # for lower bandlimits, there should be fewer and fewer nonzero coefs
+    assert nonzero_coefs[0] > nonzero_coefs[1] > nonzero_coefs[2] > nonzero_coefs[3]
 
     # make sure you can pass in a 1-D array if you want
-    _ = basis.lowpass(coeffs[0, :], L)
-
-    # cannot pass in the wrong number of coefficients
-    with pytest.raises(
-        AssertionError, match="Number of coefficients must match self.count."
-    ):
-        _ = basis.lowpass(coeffs[:, :1000], L)
-
-    # cannot pass in wrong shape
-    with pytest.raises(
-        AssertionError,
-        match="Input a stack of coefficients of dimension",
-    ):
-        _ = basis.lowpass(np.zeros((3, 3, 3)), L)
+    _ = basis.lowpass(coefs[0, :], L)
 
 
 def testRotate():
@@ -252,48 +239,35 @@ def testRotate():
     ims_90 = Image(np.rot90(ims.asnumpy(), axes=(1, 2)))
 
     # get FLE coefficients
-    coeffs = basis.evaluate_t(ims)
-    coeffs_cart_rot = basis.evaluate_t(ims_90)
+    coefs = basis.evaluate_t(ims)
+    coefs_cart_rot = basis.evaluate_t(ims_90)
 
     # rotate original image in FLE space using Steerable rotate method
-    coeffs_fle_rot = basis.rotate(coeffs, np.pi / 2)
+    coefs_fle_rot = basis.rotate(coefs, np.pi / 2)
 
     # back to cartesian
-    ims_cart_rot = basis.evaluate(coeffs_cart_rot)
-    ims_fle_rot = basis.evaluate(coeffs_fle_rot)
+    ims_cart_rot = basis.evaluate(coefs_cart_rot)
+    ims_fle_rot = basis.evaluate(coefs_fle_rot)
 
     # test rot90 close
     assert np.allclose(ims_cart_rot[0], ims_fle_rot[0], atol=1e-4)
 
     # 2Pi identity in FLE space (rotate by 2Pi)
-    coeffs_fle_2pi = basis.rotate(coeffs, 2 * np.pi)
-    ims_fle_2pi = basis.evaluate(coeffs_fle_2pi)
+    coefs_fle_2pi = basis.rotate(coefs, 2 * np.pi)
+    ims_fle_2pi = basis.evaluate(coefs_fle_2pi)
 
     # test 2Pi identity
     assert np.allclose(ims[0], ims_fle_2pi[0], atol=utest_tolerance(basis.dtype))
 
     # Reflect in FLE space (rotate by Pi)
-    coeffs_fle_pi = basis.rotate(coeffs, np.pi)
-    ims_fle_pi = basis.evaluate(coeffs_fle_pi)
+    coefs_fle_pi = basis.rotate(coefs, np.pi)
+    ims_fle_pi = basis.evaluate(coefs_fle_pi)
 
     # test reflection
     assert np.allclose(np.flipud(ims.asnumpy()[0]), ims_fle_pi[0], atol=1e-4)
 
     # make sure you can pass in a 1-D array if you want
-    _ = basis.lowpass(np.zeros((basis.count,)), np.pi)
-
-    # cannot pass in the wrong number of coefficients
-    with pytest.raises(
-        AssertionError, match="Number of coefficients must match self.count."
-    ):
-        _ = basis.rotate(np.zeros((1, 10)), np.pi)
-
-    # cannot pass in wrong shape
-    with pytest.raises(
-        AssertionError,
-        match="Input a stack of coefficients of dimension",
-    ):
-        _ = basis.lowpass(np.zeros((3, 3, 3)), np.pi)
+    _ = basis.lowpass(Coef(basis, np.zeros((basis.count,))), np.pi)
 
 
 def testRotate45():
@@ -309,16 +283,16 @@ def testRotate45():
     ims = create_images(L, 1)
 
     # get FLE coefficients
-    fb_coeffs = fb_basis.evaluate_t(ims)
-    coeffs = basis.evaluate_t(ims)
+    fb_coefs = fb_basis.evaluate_t(ims)
+    coefs = basis.evaluate_t(ims)
 
     # rotate original image in FLE space using Steerable rotate method
-    fb_coeffs_rot = fb_basis.rotate(fb_coeffs, np.pi / 4)
-    coeffs_rot = basis.rotate(coeffs, np.pi / 4)
+    fb_coefs_rot = fb_basis.rotate(fb_coefs, np.pi / 4)
+    coefs_rot = basis.rotate(coefs, np.pi / 4)
 
     # back to cartesian
-    fb_ims_rot = fb_basis.evaluate(fb_coeffs_rot)
-    ims_rot = basis.evaluate(coeffs_rot)
+    fb_ims_rot = fb_basis.evaluate(fb_coefs_rot)
+    ims_rot = basis.evaluate(coefs_rot)
 
     # test close
     assert np.allclose(ims_rot[0], fb_ims_rot[0], atol=1e-4)
@@ -337,13 +311,13 @@ def testRadialConvolution():
     # get sample images
     ims = create_images(L, 10)
     # convolve using coefficients
-    coeffs = basis.evaluate_t(ims)
-    coeffs_convolved = basis.radial_convolve(coeffs, x)
-    imgs_convolved_fle = basis.evaluate(coeffs_convolved).asnumpy()
+    coefs = basis.evaluate_t(ims)
+    coefs_convolved = basis.radial_convolve(coefs, x)
+    imgs_convolved_fle = basis.evaluate(coefs_convolved).asnumpy()
 
     # convolve using FFT
     x = basis.evaluate(basis.evaluate_t(x)).asnumpy()
-    ims = basis.evaluate(coeffs).asnumpy()
+    ims = basis.evaluate(coefs).asnumpy()
 
     imgs_convolved_slow = np.zeros((10, L, L))
     for i in range(10):

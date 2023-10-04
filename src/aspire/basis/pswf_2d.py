@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from aspire.basis import Basis
+from aspire.basis import Coef, ComplexCoef, SteerableBasis2D
 from aspire.basis.basis_utils import (
     d_decay_approx_fun,
     k_operator,
@@ -12,12 +12,13 @@ from aspire.basis.basis_utils import (
     t_x_mat,
 )
 from aspire.basis.pswf_utils import BNMatrix
+from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
 
 
-class PSWFBasis2D(Basis):
+class PSWFBasis2D(SteerableBasis2D):
     """
     Define a derived class for direct Prolate Spheroidal Wave Function (PSWF) expanding 2D images
 
@@ -32,6 +33,8 @@ class PSWFBasis2D(Basis):
         and approximation of two-dimensional bandlimited functions", Appl.
         Comput. Harmon. Anal. 22, 235-256 (2007).
     """
+
+    matrix_type = BlkDiagMatrix
 
     def __init__(self, size, gamma_trunc=1.0, beta=1.0, dtype=np.float32):
         """
@@ -57,9 +60,6 @@ class PSWFBasis2D(Basis):
         self.gmcut = gamma_trunc
         self.beta = beta
         super().__init__(size, dtype=dtype)
-
-        # this basis has complex coefficients
-        self.coefficient_dtype = complex_type(self.dtype)
 
     def _build(self):
         """
@@ -105,12 +105,12 @@ class PSWFBasis2D(Basis):
         """
         self._generate_samples()
 
-        self.non_neg_freq_inds = slice(0, len(self.ang_freqs))
+        self.non_neg_freq_inds = slice(0, len(self.complex_angular_indices))
 
-        tmp = np.nonzero(self.ang_freqs == 0)[0]
+        tmp = np.nonzero(self.complex_angular_indices == 0)[0]
         self.zero_freq_inds = slice(tmp[0], tmp[-1] + 1)
 
-        tmp = np.nonzero(self.ang_freqs > 0)[0]
+        tmp = np.nonzero(self.complex_angular_indices > 0)[0]
         self.pos_freq_inds = slice(tmp[0], tmp[-1] + 1)
 
     def _generate_samples(self):
@@ -138,18 +138,79 @@ class PSWFBasis2D(Basis):
                 alpha_all.extend(alpha[:n_end])
                 m += 1
 
-        self.alpha_nn = np.array(alpha_all).reshape(-1, 1)
+        self.alpha_nn = np.array(alpha_all, dtype=complex_type(self.dtype)).reshape(
+            -1, 1
+        )
         self.max_ns = max_ns
 
         self.samples = self._evaluate_pswf2d_all(self._r_disk, self._theta_disk, max_ns)
-        self.ang_freqs = np.repeat(np.arange(len(max_ns)), max_ns).astype("float")
-        self.rad_freqs = np.concatenate([range(1, i + 1) for i in max_ns]).astype(
-            "float"
+        self.complex_angular_indices = np.repeat(
+            np.arange(len(max_ns), dtype=int), max_ns
         )
+        self.complex_radial_indices = np.concatenate(
+            [np.arange(1, i + 1, dtype=int) for i in max_ns]
+        )
+
+        # Added to support subclassing SteerableBasis
+        self.complex_signs_indices = np.sign(self.complex_angular_indices)
+
         self.samples = (self.beta / 2.0) * self.samples * self.alpha_nn
         self.samples_conj_transpose = self.samples.conj().transpose()
         # the column dimension of samples_conj_transpose is the number of basis coefficients
-        self.count = self.samples_conj_transpose.shape[1]
+        self.complex_count = self.samples_conj_transpose.shape[1]
+
+        # Add required real indices attributes and maps
+        # TODO, this block of code can probably be consolidated with
+        # FB basis.  For now, just get everything working together.
+        nz = np.sum(self.complex_signs_indices == 0)
+        nnz = self.complex_count - nz
+
+        self.real_count = nz + 2 * nnz
+        self.count = self.real_count
+
+        self.radial_indices = np.empty(self.real_count, dtype=int)
+        self.angular_indices = np.empty(self.real_count, dtype=int)
+        self.signs_indices = np.empty(self.real_count, dtype=int)
+
+        self._pos = np.zeros(self.complex_count, dtype=int)
+        self._neg = np.zeros(self.complex_count, dtype=int)
+
+        i = 0
+        ci = 0
+        self.k_max = []
+        self.ell_max = np.max(self.complex_angular_indices)
+        for ell in range(self.ell_max + 1):
+            sgns = (1,) if ell == 0 else (1, -1)
+            k_max = np.sum(self.complex_angular_indices == ell)
+            self.k_max.append(k_max)
+            ks = np.arange(0, k_max)
+
+            for sgn in sgns:
+                rng = np.arange(i, i + len(ks))
+                self.angular_indices[rng] = ell
+                self.radial_indices[rng] = ks
+                self.signs_indices[rng] = sgn
+
+                if sgn == 1:
+                    self._pos[ci + ks] = rng
+                elif sgn == -1:
+                    self._neg[ci + ks] = rng
+
+                i += len(ks)
+
+            ci += len(ks)
+
+    # Added for compatibility.
+    # Probably can remove `indices` dict wholesale later (MATLAB holdover).
+    def indices(self):
+        """
+        Return the precomputed indices for each basis function.
+        """
+        return {
+            "ells": self.angular_indices,
+            "ks": self.radial_indices,
+            "sgns": self.signs_indices,
+        }
 
     def _evaluate_t(self, images):
         """
@@ -160,24 +221,27 @@ class PSWFBasis2D(Basis):
         :return: The evaluation of the coefficient array in the PSWF basis.
         """
         flattened_images = images[:, self._disk_mask]
-
-        return flattened_images @ self.samples_conj_transpose
+        complex_coef = ComplexCoef(self, flattened_images @ self.samples_conj_transpose)
+        return complex_coef.to_real().asnumpy()
 
     def _evaluate(self, coefficients):
         """
         Evaluate coefficients in standard 2D coordinate basis from those in PSWF basis
 
-        :param coeffcients: A coefficient vector (or an array of coefficient
+        :param coefficients: A coefficient vector (or an array of coefficient
             vectors) in PSWF basis to be evaluated. (n_image, count)
         :return : Image in standard 2D coordinate basis.
 
         """
 
+        # Convert real coefficient to complex.
+        coefficients = Coef(self, coefficients).to_complex()
+
         # Handle a single coefficient vector or stack of vectors.
         coefficients = np.atleast_2d(coefficients)
         n_images = coefficients.shape[0]
 
-        angular_is_zero = np.absolute(self.ang_freqs) == 0
+        angular_is_zero = np.absolute(self.complex_angular_indices) == 0
 
         flatten_images = coefficients[:, angular_is_zero] @ self.samples[
             angular_is_zero
@@ -259,7 +323,7 @@ class PSWFBasis2D(Basis):
             d_vec = self.d_vec_all[i]
 
             phase_part = np.exp(1j * i * theta) / np.sqrt(2 * np.pi)
-            range_array = np.arange(len(d_vec))
+            range_array = np.arange(len(d_vec), dtype=self.dtype)
             r_radial_part_mat = t_radial_part_mat(r, i, range_array, len(d_vec)).dot(
                 d_vec[:, :max_n]
             )
@@ -364,5 +428,5 @@ class PSWFBasis2D(Basis):
 
         d_vec, _ = BNMatrix(big_n, bandlimit, approx_length).get_eig_vectors()
 
-        range_array = np.array(range(approx_length))
+        range_array = np.arange(approx_length, dtype=self.dtype)
         return d_vec, approx_length, range_array

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from sklearn import datasets
 
-from aspire.basis import FBBasis2D, FFBBasis2D, FSPCABasis
+from aspire.basis import Coef, FBBasis2D, FFBBasis2D, FSPCABasis
 from aspire.classification import RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.noise import WhiteNoiseAdder
@@ -99,14 +99,18 @@ def test_complex_conversions_errors(sim_fixture):
     """
     imgs, _, fspca_basis = sim_fixture
 
-    with pytest.raises(TypeError, match="coef provided to to_complex should be real."):
+    with pytest.raises(TypeError):
         _ = fspca_basis.to_complex(
-            np.arange(fspca_basis.count),
+            Coef(
+                fspca_basis,
+                np.arange(fspca_basis.count),
+                dtype=np.complex64,
+            )
         )
 
-    with pytest.raises(TypeError, match="coef provided to to_real should be complex."):
+    with pytest.raises(TypeError):
         _ = fspca_basis.to_real(
-            np.arange(fspca_basis.count, dtype=np.float32).flatten()
+            Coef(fspca_basis, np.arange(fspca_basis.count), dtype=np.float32)
         )
 
 
@@ -417,15 +421,15 @@ def test_pca_y():
 
 def test_bispect_overflow():
     """
-    A zero value coeff will cause a div0 error in log call.
+    A zero value coef will cause a div0 error in log call.
     Check it is raised.
     """
 
-    with pytest.raises(ValueError, match="coeff_norm should not be -inf"):
+    with pytest.raises(ValueError, match="coef_norm should not be -inf"):
         # This should emit a warning before raising
         with pytest.warns(RuntimeWarning):
             bispec_2drot_large(
-                coeff=np.arange(10),
+                coef=np.arange(10),
                 freqs=np.arange(1, 11),
                 eigval=np.arange(10),
                 alpha=1 / 3,
