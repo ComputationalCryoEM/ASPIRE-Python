@@ -66,4 +66,6 @@ if __name__ == "__main__":
         sys.exit(1)
 
     target_directory = sys.argv[1]
+    if not os.path.isdir(target_directory):
+        raise RuntimeError(f"Invalid target directory path: {target_directory}")
     process_directory(target_directory)
