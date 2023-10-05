@@ -26,9 +26,7 @@ def check_blank_line_above_param_section(file_path):
 
         # Search for first occurence of either a ':param' or ':return' string.
         for i, line in enumerate(lines):
-            if line.strip().startswith(r":param") or line.strip().startswith(
-                r":return"
-            ):
+            if line.strip().startswith((r":param", r":return")):
                 # If a body section exists but is not followed by exactly 1
                 # new line log an error message and add to the count.
                 body_section = "\n".join(lines[1:i])
