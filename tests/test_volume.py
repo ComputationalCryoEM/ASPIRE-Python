@@ -360,7 +360,7 @@ def test_rotate_broadcast_unicast(asym_vols):
     # The stack consists of copies of the singleton.
     dtype = asym_vols.dtype
     rot = Rotation.generate_random_rotations(n=1, seed=1234, dtype=dtype)
-    rots = Rotation(np.broadcast_to(rot.matrices, (3, 3, 3)))
+    rots = Rotation(np.broadcast_to(rot.matrices, (asym_vols.n_vols, 3, 3)))
 
     # Broadcast the singleton `Rotation` across the `Volume` stack.
     vols_broadcast = asym_vols.rotate(rot)
