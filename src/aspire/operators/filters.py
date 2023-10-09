@@ -199,10 +199,17 @@ class PowerFilter(Filter):
 
         See `Filter.evaluate_grid` for usage.
         """
-
-        return (
+        filter_vals = (
             self._filter.evaluate_grid(L, dtype=dtype, *args, **kwargs) ** self._power
         )
+
+        # Place safeguard on values below machine epsilon.
+        if self._power < 0:
+            eps = np.finfo(filter_vals.dtype).eps
+            threshold = eps**self._power
+            filter_vals[filter_vals > threshold] = 0
+
+        return filter_vals
 
 
 class LambdaFilter(Filter):
@@ -340,7 +347,6 @@ class ArrayFilter(Filter):
 
         See Filter.evaluate_grid for usage.
         """
-
         if all(dim == L for dim in self.xfer_fn_array.shape):
             logger.debug(
                 "Size of transfer function matches evaluate_grid size L exactly,"
