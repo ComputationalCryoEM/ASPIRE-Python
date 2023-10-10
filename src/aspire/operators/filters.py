@@ -207,6 +207,11 @@ class PowerFilter(Filter):
         if self._power < 0:
             eps = np.finfo(filter_vals.dtype).eps
             threshold = eps**self._power
+            ind = np.where(filter_vals > threshold)
+            if len(ind[0]) > 0:
+                logger.warning(
+                    f"{self} setting {len(ind[0])} extremal filter value(s) to zero."
+                )
             filter_vals[filter_vals > threshold] = 0
 
         return filter_vals
