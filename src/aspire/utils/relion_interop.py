@@ -44,7 +44,7 @@ relion_metadata_fields = {
     "_rlnNrOfSignificantSamples": float,
     "_rlnNrOfFrames": int,
     "_rlnMaxValueProbDistribution": float,
-    "_rlnOpticsGroup": float,
+    "_rlnOpticsGroup": int,
     "_rlnOpticsGroupName": str,
 }
 
