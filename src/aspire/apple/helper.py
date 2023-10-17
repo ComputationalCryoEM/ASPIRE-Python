@@ -6,11 +6,11 @@ from aspire.numeric import fft, xp
 class PickerHelper:
     @classmethod
     def gaussian_filter(cls, size_filter, std):
-        """Computes low-pass filter.
+        """
+        Computes low-pass filter.
 
-        Args:
-            size_filter: Size of filter (size_filter x size_filter).
-            std: sigma value in filter.
+        :param size_filter: Size of filter (size_filter x size_filter).
+        :param std: sigma value in filter.
         """
 
         y, x = xp.mgrid[
@@ -27,15 +27,14 @@ class PickerHelper:
 
     @classmethod
     def extract_windows(cls, img, block_size):
-        """Extracts blocks of size (block_size x block_size) from the micrograph. Blocks are
+        """
+        Extracts blocks of size (block_size x block_size) from the micrograph. Blocks are
         extracted with steps of size (block_size)
 
-        Args:
-            img: Micrograph image.
-            block_size: required block size.
+        :param img: Micrograph image.
+        :param block_size: required block size.
 
-        Returns:
-            3D Matrix of blocks. For example, img[0] is the first block.
+        :return: 3D Matrix of blocks. For example, img[0] is the first block.
         """
 
         # Compute x,y boundary using block_size
@@ -57,15 +56,14 @@ class PickerHelper:
 
     @classmethod
     def extract_query(cls, img, block_size):
-        """Extract all query images from the micrograph. windows are
+        """
+        Extract all query images from the micrograph. windows are
         extracted with steps of size (block_size/2)
 
-        Args:
-            img: Micrograph image.
-            block_size: Query images must be of size (block_size x block_size).
+        :param img: Micrograph image.
+        :param block_size: Query images must be of size (block_size x block_size).
 
-        Returns:
-            4D Matrix of query images.
+        :return: 4D Matrix of query images.
         """
 
         # keep only the portion of the image that can be split into blocks with no remainder
@@ -135,16 +133,15 @@ class PickerHelper:
 
     @classmethod
     def extract_references(cls, img, query_size, container_size):
-        """Chooses and extracts reference images from the micrograph.
+        """
+        Chooses and extracts reference images from the micrograph.
 
-        Args:
-            img: Micrograph image.
-            query_size: Reference images must be of the same size of query images, i.e. (query_size x query_size).
-            container_size: Containers are large regions used to select reference images. The size of each
-                region is (container_size x container_size)
+        :param img: Micrograph image.
+        :param query_size: Reference images must be of the same size of query images, i.e. (query_size x query_size).
+        :param container_size: Containers are large regions used to select reference images. The size of each
+            region is (container_size x container_size)
 
-        Returns:
-            3D Matrix of reference images.  windows[0] is the first reference window.
+        :return: 3D Matrix of reference images.  windows[0] is the first reference window.
         """
 
         img = xp.asarray(img)
@@ -220,16 +217,15 @@ class PickerHelper:
 
     @classmethod
     def get_training_set(cls, micro_img, bw_mask_p, bw_mask_n, n):
-        """Gets training set for the SVM classifier.
+        """
+        Gets training set for the SVM classifier.
 
-        Args:
-            micro_img: Micrograph image.
-            bw_mask_p: Binary image indicating regions from which to extract examples of particles.
-            bw_mask_n: Binary image indicating regions from which to extract examples of noise.
-            n: Size of training windows.
+        :param micro_img: Micrograph image.
+        :param bw_mask_p: Binary image indicating regions from which to extract examples of particles.
+        :param bw_mask_n: Binary image indicating regions from which to extract examples of noise.
+        :param n: Size of training windows.
 
-        Returns:
-            A matrix of features and a vector of labels for the SVM training.
+        :return: A matrix of features and a vector of labels for the SVM training.
         """
 
         non_overlap = cls.extract_windows(micro_img, n)
@@ -260,15 +256,14 @@ class PickerHelper:
 
     @classmethod
     def moments(cls, img, query_size):
-        """Calculates the mean and standard deviation for each window of size (query_size x query_size)
+        """
+        Calculates the mean and standard deviation for each window of size (query_size x query_size)
         in the micrograph.
 
-        Args:
-            img: Micrograph image.
-            query_size: Size of windows for which to compute mean and std.
+        :param img: Micrograph image.
+        :param query_size: Size of windows for which to compute mean and std.
 
-        Returns:
-            A matrix of mean intensity and a matrix of variance, each containing a single
+        :return: A matrix of mean intensity and a matrix of variance, each containing a single
             entry for each possible (query_size x query_size) window in the micrograph.
         """
 
