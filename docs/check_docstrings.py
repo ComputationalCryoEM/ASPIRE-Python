@@ -20,7 +20,10 @@ def check_blank_line_above_param_section(file_path):
     with open(file_path, "r") as file:
         content = file.read()
 
-    regex = r" {4,}\"\"\"\n(?:^[^:]+?[^\n])+\n {4,}:(?:.*\n)+? {4,}\"\"\"| {4,}\"\"\"\n(?:^.*[^\n]\n)+\n\n+ {4,}:(?:.*\n)+? {4,}\"\"\""
+    regex = (
+        r" {4,}\"\"\"\n(?:^[^:]+?[^\n])+\n {4,}(:p|:r)(?:.*\n)+? {4,}\"\"\""
+        r"| {4,}\"\"\"\n(?:^[^:]+?[^\n])+\n\n\n+ {4,}(:p|:r)(?:.*\n)+? {4,}\"\"\""
+    )
 
     bad_docstrings = re.finditer(regex, content, re.MULTILINE)
     for docstring in bad_docstrings:
