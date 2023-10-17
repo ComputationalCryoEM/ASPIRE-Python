@@ -20,27 +20,16 @@ def check_blank_line_above_param_section(file_path):
     with open(file_path, "r") as file:
         content = file.read()
 
-    docstrings = re.finditer(r"\"\"\"(.*?)\"\"\"", content, re.DOTALL)
-    for docstring in docstrings:
-        lines = docstring[0].split("\n")
+    regex = r" {4,}\"\"\"\n(?:^[^:]+?[^\n])+\n {4,}:(?:.*\n)+? {4,}\"\"\"| {4,}\"\"\"\n(?:^.*[^\n]\n)+\n\n+ {4,}:(?:.*\n)+? {4,}\"\"\""
 
-        # Search for first occurence of either a ':param' or ':return' string.
-        for i, line in enumerate(lines):
-            if line.strip().startswith((r":param", r":return")):
-                # If a body section exists but is not followed by exactly 1
-                # new line log an error message and add to the count.
-                body_section = "\n".join(lines[1:i])
-                if not body_section:
-                    break
-                elif body_section != body_section.rstrip() + "\n":
-                    # Get line number.
-                    line_number = content.count("\n", 0, docstring.start()) + i
+    bad_docstrings = re.finditer(regex, content, re.MULTILINE)
+    for docstring in bad_docstrings:
+        line_number = content.count("\n", 0, docstring.start()) + 1
 
-                    # Log error message.
-                    msg = "Must have exactly 1 blank line between docstring body and parameter sections."
-                    logger.error(f"{file_path}: {line_number}: {msg}")
-                    error_count += 1
-                break
+        # Log error message.
+        msg = "Must have exactly 1 blank line between docstring body and parameter sections."
+        logger.error(f"{file_path}: {line_number}: {msg}")
+        error_count += 1
 
     return error_count
 
