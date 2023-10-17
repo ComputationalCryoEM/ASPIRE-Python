@@ -4,10 +4,12 @@ prolate spheroidal wave function (PSWF) objects.
 """
 
 import logging
+import warnings
 
 import numpy as np
 from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
+from pyshtools.expand import spharm_lm
 from scipy.special import jn, jv, sph_harm
 
 from aspire.utils import grid_2d, grid_3d
@@ -170,7 +172,29 @@ def real_sph_harmonic(j, m, theta, phi):
     """
     abs_m = abs(m)
 
-    y = sph_harm(abs_m, j, phi, theta)
+    # The `scipy` sph_harm implementation is much faster,
+    #   but incorrectly returns NaN for high orders.
+    # For higher order use `pyshtools`.
+    if j < 86:
+        y = sph_harm(abs_m, j, phi, theta)
+    else:
+        warnings.warn(
+            "Computing higher order spherical harmonics is slow."
+            "  Consider using `FFBBasis3D` or decreasing volume size.",
+            stacklevel=1,
+        )
+
+        y = spharm_lm(
+            j,
+            abs_m,
+            theta,
+            phi,
+            kind="complex",
+            degrees=False,
+            csphase=-1,
+            normalization="ortho",
+        )
+
     if m < 0:
         y = np.sqrt(2) * np.imag(y)
     elif m > 0:
