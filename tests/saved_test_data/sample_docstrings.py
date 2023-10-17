@@ -20,6 +20,17 @@ def good_fun2():
     """
 
 
+def good_fun3():
+    def nested_fun(bip):
+        """
+        This is a properly formatted docstring
+        in a nested function.
+
+        :param bip: A small bip
+        :return: A large bop
+        """
+
+
 def bad_fun1(cat, hat):
     """
     This docstring is missing a blank line
@@ -39,3 +50,13 @@ def bad_fun2(foo):
     :param foo: foo description.
     :return: bar
     """
+
+
+def bad_fun3():
+    def nested_fun(bip):
+        """
+        This is an improperly formatted docstring
+        in a nested function.
+        :param bip: A small bip
+        :return: A large bop
+        """
