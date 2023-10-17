@@ -11,12 +11,14 @@ def good_fun1(frog, dog):
     :return: A frog on a dog
     """
 
+
 def good_fun2():
     """
     This function has only a return.
 
     :return: Just a return.
     """
+
 
 def bad_fun1(cat, hat):
     """
@@ -27,6 +29,7 @@ def bad_fun1(cat, hat):
     :return: A cat in a hat.
     """
 
+
 def bad_fun2(foo):
     """
     This docstring has too many blank lines between
@@ -36,4 +39,3 @@ def bad_fun2(foo):
     :param foo: foo description.
     :return: bar
     """
-    
