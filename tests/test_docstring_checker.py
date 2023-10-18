@@ -1,32 +1,31 @@
+import logging
 import os
-import subprocess
+
+from docs import check_docstrings
 
 
-def test_check_docstrings():
-    DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
-    DOCS_CHECKER = os.path.join(
-        os.path.dirname(__file__), "..", "docs", "check_docstrings.py"
+def test_check_docstrings_new(caplog):
+    test_string = os.path.join(
+        os.path.dirname(__file__), "saved_test_data", "sample_docstrings.py"
     )
 
-    result = subprocess.run(
-        ["python", DOCS_CHECKER, DATA_DIR],
-        capture_output=True,
-        text=True,
-    )
+    caplog.clear()
+    caplog.set_level(logging.ERROR)
+    error_count = check_docstrings.check_blank_line_above_param_section(test_string)
 
+    # Line numbers of good and bad docstrings in sample_docstrings.py
     good_doc_line_nums = [2, 16, 25]
     bad_doc_line_nums = [35, 45, 57]
 
     # Check that good docstrings do not log error
     for line_num in good_doc_line_nums:
         msg = f"sample_docstrings.py: {line_num}: Must have exactly 1 blank line"
-        assert msg not in result.stderr
+        assert msg not in caplog.text
 
     # Check that bad docstrings log error
     for line_num in bad_doc_line_nums:
         msg = f"sample_docstrings.py: {line_num}: Must have exactly 1 blank line"
-        assert msg in result.stderr
+        assert msg in caplog.text
 
     # Check total error count log
-    msg = f"Found {len(bad_doc_line_nums)} docstring errors"
-    assert msg in result.stderr
+    assert error_count == len(bad_doc_line_nums)
