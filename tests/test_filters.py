@@ -1,9 +1,12 @@
+import logging
 import os.path
 from unittest import TestCase
 
 import numpy as np
+import pytest
 
 from aspire.operators import (
+    ArrayFilter,
     CTFFilter,
     FunctionFilter,
     IdentityFilter,
@@ -327,3 +330,34 @@ class SimTestCase(TestCase):
         signs = np.sign(ctf_filter.evaluate(self.omega))
         sign_filter = ctf_filter.sign
         self.assertTrue(np.allclose(sign_filter.evaluate(self.omega), signs))
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_power_filter_safeguard(dtype, caplog):
+    L = 25
+    arr = np.ones((L, L), dtype=dtype)
+
+    # Set a few values below machine epsilon.
+    num_eps = 3
+    eps = np.finfo(dtype).eps
+    arr[L // 2, L // 2 : L // 2 + num_eps] = eps / 2
+
+    # For negative powers, values below machine eps will be set to zero.
+    filt = PowerFilter(
+        filter=ArrayFilter(arr),
+        power=-0.5,
+    )
+
+    caplog.clear()
+    caplog.set_level(logging.WARN)
+    filt_vals = filt.evaluate_grid(L, dtype=dtype)
+
+    # Check that extreme values are set to zero.
+    ref = np.ones((L, L), dtype=dtype)
+    ref[L // 2, L // 2 : L // 2 + num_eps] = 0
+
+    np.testing.assert_array_equal(filt_vals, ref)
+
+    # Check caplog for warning.
+    msg = f"setting {num_eps} extremal filter value(s) to zero."
+    assert msg in caplog.text
