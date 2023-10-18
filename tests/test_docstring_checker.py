@@ -4,7 +4,7 @@ import os
 from docs import check_docstrings
 
 
-def test_check_docstrings_new(caplog):
+def test_check_blank_line(caplog):
     test_string = os.path.join(
         os.path.dirname(__file__), "saved_test_data", "sample_docstrings.py"
     )
