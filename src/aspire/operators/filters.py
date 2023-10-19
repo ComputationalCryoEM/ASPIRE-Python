@@ -199,22 +199,23 @@ class PowerFilter(Filter):
 
         See `Filter.evaluate_grid` for usage.
         """
-        filter_vals = (
-            self._filter.evaluate_grid(L, dtype=dtype, *args, **kwargs) ** self._power
-        )
+        filter_vals = self._filter.evaluate_grid(L, dtype=dtype, *args, **kwargs)
 
-        # Place safeguard on values below machine epsilon.
+        # Place safeguard on values below machine epsilon for negative powers.
         if self._power < 0:
             eps = np.finfo(filter_vals.dtype).eps
-            threshold = eps**self._power
-            ind = np.where(abs(filter_vals) > threshold)
-            if len(ind[0]) > 0:
+            condition = abs(filter_vals) < eps
+            num_less_eps = np.count_nonzero(condition)
+            if num_less_eps > 0:
                 logger.warning(
-                    f"{self} setting {len(ind[0])} extremal filter value(s) to zero."
+                    f"{self} setting {num_less_eps} extremal filter value(s) to zero."
                 )
-            filter_vals[filter_vals > threshold] = 0
 
-        return filter_vals
+            filter_vals = np.where(condition, 0, filter_vals**self._power)
+
+            return filter_vals
+
+        return filter_vals**self._power
 
 
 class LambdaFilter(Filter):
