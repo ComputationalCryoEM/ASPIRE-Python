@@ -31,6 +31,14 @@ def good_fun3():
         """
 
 
+def good_fun4(bing, bong):
+    """
+    :param bing: This docstring has no body.
+    :param bong: Should not error.
+    :return: Boom.
+    """
+
+
 def bad_fun1(cat, hat):
     """
     This docstring is missing a blank line

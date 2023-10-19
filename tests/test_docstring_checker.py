@@ -14,8 +14,8 @@ def test_check_blank_line(caplog):
     error_count = check_docstrings.check_blank_line_above_param_section(test_string)
 
     # Line numbers of good and bad docstrings in sample_docstrings.py
-    good_doc_line_nums = [2, 16, 25]
-    bad_doc_line_nums = [35, 45, 57]
+    good_doc_line_nums = [2, 16, 25, 35]
+    bad_doc_line_nums = [43, 53, 65]
 
     # Check that good docstrings do not log error
     for line_num in good_doc_line_nums:
