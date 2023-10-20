@@ -378,6 +378,14 @@ class BlkDiagMatrixTestCase(TestCase):
         """
         self.assertTrue(np.allclose(np.diag(self.blk_a.dense()), self.blk_a.diag()))
 
+    def test_from_dense(self):
+        """
+        Test truncating dense array returns correct block diagonal entries.
+        """
+        B = BlkDiagMatrix.from_dense(self.dense, self.blk_partition)
+
+        self.allallfunc(B, self.blk_a)
+
 
 class IrrBlkDiagMatrixTestCase(TestCase):
     """

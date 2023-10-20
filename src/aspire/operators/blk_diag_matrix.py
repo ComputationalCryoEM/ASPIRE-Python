@@ -941,3 +941,31 @@ class BlkDiagMatrix:
             diag.extend(list(np.diag(blk)))
 
         return DiagMatrix(np.array(diag, dtype=self.dtype))
+
+    @staticmethod
+    def from_dense(A, blk_partition):
+        """
+        Create BlkDiagMatrix with `blk_partition` from dense matrix `A`.
+
+        :param A: Dense `Numpy` array.
+        :param blk_partition: List of block partition shapes.
+        :return: BlkDiagMatrix with values from A.
+        """
+
+        # Instantiate an empty BlkDiagMatrix with `blk_partition`
+        B = BlkDiagMatrix.zeros(blk_partition, dtype=A.dtype)
+
+        # Set the data
+        inds = np.array([0, 0])
+        for i in range(B.nblocks):
+            ends = inds + B.partition[i]
+            B[i][:, :] = A[inds[0] : ends[0], inds[1] : ends[1]]
+            inds = ends
+
+        # We should reach exactly the end of A when partition was correct
+        if not np.all(inds == A.shape):
+            raise RuntimeError(
+                "Block partition appears to mismatch shape of dense matrix A."
+            )
+
+        return B
