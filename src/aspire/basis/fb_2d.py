@@ -6,7 +6,7 @@ from scipy.special import jv
 from aspire.basis import Coef, FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
 from aspire.operators import BlkDiagMatrix, DiagMatrix
-from aspire.utils import LogFilterByCount, grid_2d, roll_dim, trange, unroll_dim
+from aspire.utils import grid_2d, roll_dim, unroll_dim
 from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
@@ -316,26 +316,4 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         :return: Representation of filter in `basis`.
             Return type will be based on the class's `matrix_type`.
         """
-
-        coef = Coef(self, np.eye(self.count, dtype=self.dtype))
-        img = coef.evaluate()
-
-        # TODO, debug expand has convergence issues,
-        # there is a note near `cg` hinting this may relate to tolerance
-        # evaluate_t was not as accurate, but much much faster...
-        # filt = self.expand(img.filter(f))
-        # filt = self.evaluate_t(img.filter(f))
-        # return filt.asnumpy().reshape(self.count, self.count)
-
-        # Loop over the expanding the filtered basis vectors one by one
-        filt = np.zeros((self.count, self.count), self.dtype)
-        with LogFilterByCount(logger, 1):
-            for i in trange(self.count):
-                try:
-                    filt[i] = self.expand(img[i].filter(f)).asnumpy()[0]
-                except:
-                    logger.warning(
-                        f"Failed to expand basis vector {i} after filter {f}."
-                    )
-
-        return filt
+        return super().filter_to_basis_mat(f)

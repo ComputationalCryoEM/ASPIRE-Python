@@ -539,7 +539,10 @@ class BatchedRotCov2D(RotCov2D):
             self.ctf_idx = src.filter_indices
             self.ctf_basis = [self.basis.filter_to_basis_mat(f) for f in unique_filters]
             if isinstance(self.ctf_basis[0], np.ndarray):
-                self.ctf_basis = [BlkDiagMatrix.from_dense(f, self.basis.blk_diag_cov_shape) for f in self.ctf_basis]
+                self.ctf_basis = [
+                    BlkDiagMatrix.from_dense(f, self.basis.blk_diag_cov_shape)
+                    for f in self.ctf_basis
+                ]
 
     def _calc_rhs(self):
         src = self.src
@@ -681,7 +684,6 @@ class BatchedRotCov2D(RotCov2D):
             res.data[b] = b_covar[b] / A2i[b]
 
         return res
-
 
     def _solve_covar_cg(self, A_covar, b_covar, M, covar_est_opt):
         def precond_fun(S, x):

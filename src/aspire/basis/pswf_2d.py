@@ -417,3 +417,14 @@ class PSWFBasis2D(SteerableBasis2D):
 
         range_array = np.arange(approx_length, dtype=self.dtype)
         return d_vec, approx_length, range_array
+
+    def filter_to_basis_mat(self, f):
+        """
+        Convert a filter into a basis representation.
+
+        :param f: `Filter` object, usually a `CTFFilter`.
+
+        :return: Representation of filter in `basis`.
+            Return type will be based on the class's `matrix_type`.
+        """
+        return super().filter_to_basis_mat(f)
