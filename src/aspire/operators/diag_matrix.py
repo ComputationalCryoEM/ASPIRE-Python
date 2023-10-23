@@ -470,11 +470,11 @@ class DiagMatrix:
         Define the apply option of a diagonal matrix with a matrix of
         coefficient vectors.
 
-        :param X: Coefficient matrix, each column is a coefficient vector.
+        :param X: Coefficient matrix (ndarray), each column is a coefficient vector.
         :return: A matrix with new coefficient vectors.
         """
 
-        return self * DiagMatrix(X)
+        return (self * DiagMatrix(X.T)).asnumpy().T
 
     def rapply(self, X):
         """
