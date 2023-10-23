@@ -610,7 +610,8 @@ def test_apply(diag_matrix_fixture):
     """
     d1, _, d_np = diag_matrix_fixture
 
-    x = d1.apply(d_np)
+    # Apply is used on column vectors, transpose.
+    x = d1.apply(d_np.T).T
 
     np.testing.assert_allclose(x, d_np[0][None, :] * d_np)
 
@@ -622,9 +623,10 @@ def test_rapply(diag_matrix_fixture):
 
     d1, _, d_np = diag_matrix_fixture
 
-    x = d1.rapply(d_np)
+    # Apply is used on column vectors, transpose.
+    x = d1.rapply(d_np.T)
 
-    np.testing.assert_allclose(x, (d_np * d_np[0]))
+    np.testing.assert_allclose(x.T, (d_np * d_np[0]))
 
 
 def test_solve(diag_matrix_fixture):
