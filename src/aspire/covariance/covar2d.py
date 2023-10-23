@@ -538,6 +538,8 @@ class BatchedRotCov2D(RotCov2D):
             unique_filters = src.unique_filters
             self.ctf_idx = src.filter_indices
             self.ctf_basis = [self.basis.filter_to_basis_mat(f) for f in unique_filters]
+            if isinstance(self.ctf_basis[0], np.ndarray):
+                self.ctf_basis = [BlkDiagMatrix.from_dense(f, self.basis.blk_diag_cov_shape) for f in self.ctf_basis]
 
     def _calc_rhs(self):
         src = self.src
@@ -568,6 +570,10 @@ class BatchedRotCov2D(RotCov2D):
                 ctf_basis_k_t = ctf_basis_k.T
 
                 b_mean_k = weight * ctf_basis_k_t.apply(mean_coef_k)
+
+                if isinstance(b_mean_k, DiagMatrix):
+                    # Convert to a column vector
+                    b_mean_k = b_mean_k.asnumpy().T
 
                 b_mean[k] += b_mean_k
 
@@ -664,7 +670,18 @@ class BatchedRotCov2D(RotCov2D):
         return method(A_covar, b_covar, M, covar_est_opt)
 
     def _solve_covar_direct(self, A_covar, b_covar, M, covar_est_opt):
-        raise NotImplementedError("To be implemented in future changeset.")
+        # A_covar is a list of DiagMatrix, representing each ctf in self.basis.
+        # b_covar is a BlkDiagMatrix
+        # M is sum of weighted A squared, only used for cg, ignore here.
+        A_covar = DiagMatrix(np.concatenate([x.asnumpy() for x in A_covar]))
+        A2i = A_covar * A_covar
+
+        res = BlkDiagMatrix.empty(b_covar.nblocks, self.dtype)
+        for b in range(b_covar.nblocks):
+            res.data[b] = b_covar[b] / A2i[b]
+
+        return res
+
 
     def _solve_covar_cg(self, A_covar, b_covar, M, covar_est_opt):
         def precond_fun(S, x):
