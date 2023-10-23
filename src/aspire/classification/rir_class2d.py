@@ -174,9 +174,6 @@ class RIRClass2D(Class2D):
                 self.src, components=self.fspca_components, batch_size=self.batch_size
             )
 
-        # For convenience, assign the fb_basis used in the pca_basis.
-        self.fb_basis = self.pca_basis.basis
-
         # Get the expanded coefs in the compressed FSPCA space.
         self.fspca_coef = self.pca_basis.spca_coef
 
