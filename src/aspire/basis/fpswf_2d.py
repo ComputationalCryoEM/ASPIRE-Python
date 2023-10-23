@@ -366,3 +366,14 @@ class FPSWFBasis2D(PSWFBasis2D):
             ] = np.dot(self.blk_r[i], r_n_eval_mat[i * m : (i + 1) * m, :]).T
 
         return coef_vec_quad
+
+    def filter_to_basis_mat(self, f):
+        """
+        Convert a filter into a basis representation.
+
+        :param f: `Filter` object, usually a `CTFFilter`.
+
+        :return: Representation of filter in `basis`.
+            Return type will be based on the class's `matrix_type`.
+        """
+        return super().filter_to_basis_mat(f)
