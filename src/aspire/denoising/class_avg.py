@@ -348,6 +348,23 @@ class ClassAvgSource(ImageSource):
         # Finally, apply transforms to resulting Images
         return self.generation_pipeline.forward(im, indices)
 
+    def _get_classifier_basis(self, classifier):
+        """
+        Returns underlying basis of a classifier.
+
+        For classifiers using compressed basis,
+        returns the underlying uncompressed basis.
+
+        Defaults to `FFBBasis2D` when `pca_basis` is not found.
+
+        :param classifier: Class2D subclass to query.
+        :return: `classifier` basis
+        """
+        if hasattr(classifier, "pca_basis"):
+            basis = classifier.pca_basis.basis
+        else:
+            basis = FFBBasis2D(self.src.L, dtype=self.src.dtype)
+        return basis
 
 # The following sub classes attempt to pack sensible defaults
 #   into ClassAvgSource so that users don't need to
@@ -407,7 +424,7 @@ class DebugClassAvgSource(ClassAvgSource):
 
         if averager is None:
             averager = BFRAverager2D(
-                FFBBasis2D(src.L, dtype=src.dtype),
+                self._get_classifier_basis(classifier),
                 src,
                 num_procs=num_procs,
                 dtype=dtype,
@@ -544,7 +561,7 @@ class ClassAvgSourcev110(ClassAvgSource):
             if averager_src is None:
                 averager_src = src
 
-            basis_2d = FFBBasis2D(averager_src.L, dtype=dtype)
+            basis_2d = self._get_classifier_basis(classifier)
 
             averager = BFSRAverager2D(
                 composite_basis=basis_2d,
