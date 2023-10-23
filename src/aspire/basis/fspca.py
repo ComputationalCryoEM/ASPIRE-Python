@@ -613,3 +613,15 @@ class FSPCABasis(SteerableBasis2D):
         return self.expand_from_image_basis(
             self.evaluate_to_image_basis(coef).shift(shifts)
         )
+
+    def filter_to_basis_mat(self, f):
+        """
+        Convert a filter into a basis representation.
+
+        :param f: `Filter` object, usually a `CTFFilter`.
+
+        :return: Representation of filter in `basis`.
+            Return type will be based on the class's `matrix_type`.
+        """
+        # This is possible to implement, but there are no current use cases.
+        raise NotImplementedError("Not currently implemented for compressed basis.")
