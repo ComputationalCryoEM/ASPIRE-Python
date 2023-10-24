@@ -404,7 +404,7 @@ class BFRAverager2D(AligningAverager2D):
             for k, result in enumerate(results):
                 rotations[k], correlations[k] = result
 
-        return rotations, None, correlations
+        return -rotations, None, correlations
 
 
 class BFSRAverager2D(BFRAverager2D):
@@ -638,7 +638,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             for k, result in enumerate(results):
                 rotations[k], shifts[k], correlations[k] = result
 
-        return rotations, shifts, correlations
+        return -rotations, shifts, correlations
 
     def average(
         self,
@@ -836,7 +836,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             for k, result in enumerate(results):
                 rotations[k], shifts[k], correlations[k] = result
 
-        return rotations, shifts, correlations
+        return -rotations, shifts, correlations
 
     def average(
         self,

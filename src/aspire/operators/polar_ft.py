@@ -77,8 +77,8 @@ class PolarFT:
         # only need half size of ntheta
         freqs = np.zeros((2, self.ntheta // 2, self.nrad), dtype=self.dtype)
         for i in range(self.ntheta // 2):
-            freqs[0, i] = np.cos(i * dtheta)
-            freqs[1, i] = np.sin(i * dtheta)
+            freqs[0, i] = np.sin(i * dtheta)
+            freqs[1, i] = np.cos(i * dtheta)
 
         freqs *= omega0 * np.arange(self.nrad)
 
