@@ -487,15 +487,25 @@ class SteerableBasis2D(Basis, abc.ABC):
         return ComplexCoef(self, complex_coef)
 
     @abc.abstractmethod
-    def filter_to_basis_mat(self, f):
+    def filter_to_basis_mat(self, f, method="evaluate_t"):
         """
         Convert a filter into a basis representation.
 
         :param f: `Filter` object, usually a `CTFFilter`.
+        :param method: `evaluate_t` or `expand`.
 
         :return: Representation of filter in `basis`.
             Return type will be based on the class's `matrix_type`.
         """
+        if method == "evaluate_t":
+            expand_method = self.evaluate_t
+        elif method == "expand":
+            expand_method = self.expand
+        else:
+            raise RuntimeError(
+                "`filter_to_basis_mat` method {method} not supported."
+                "  Try `evaluate_t` or `expand`."
+            )
 
         coef = Coef(self, np.eye(self.count, dtype=self.dtype))
         img = coef.evaluate()
@@ -512,7 +522,7 @@ class SteerableBasis2D(Basis, abc.ABC):
         with LogFilterByCount(logger, 1):
             for i in trange(self.count):
                 try:
-                    filt[i] = self.expand(img[i].filter(f)).asnumpy()[0]
+                    filt[i] = expand_method(img[i].filter(f)).asnumpy()[0]
                 except:
                     logger.warning(
                         f"Failed to expand basis vector {i} after filter {f}."

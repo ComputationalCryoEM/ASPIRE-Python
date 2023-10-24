@@ -779,12 +779,16 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         omegax = k * np.cos(theta)
         omegay = k * np.sin(theta)
         omega = 2 * np.pi * np.vstack((omegax.flatten("C"), omegay.flatten("C")))
+
         h_vals2d = h_fun(omega).reshape(n_k, n_theta).astype(self.dtype)
         h_vals = np.sum(h_vals2d, axis=1) / n_theta
 
         h_basis = np.zeros(self.count, dtype=self.dtype)
-        # For now we just need handle 1D (stack of one ctf)
+        # For now we just need to handle 1D (stack of one ctf)
         for j in range(self.ell_p_max + 1):
             h_basis[self.idx_list[j]] = self.A3[j] @ h_vals
+
+        # Convert from internal FLE ordering to FB convention
+        h_basis = h_basis[self._fle_to_fb_indices]
 
         return DiagMatrix(h_basis)
