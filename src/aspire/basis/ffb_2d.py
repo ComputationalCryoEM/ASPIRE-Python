@@ -286,8 +286,6 @@ class FFBBasis2D(FBBasis2D):
             basis_vals = np.zeros_like(rmat)
             ind_radial = np.sum(self.k_max[0:ell])
             basis_vals[:, 0:k_max] = radial[ind_radial : ind_radial + k_max].T
-            nrm = self.radial_norms[ind_radial]
-            # basis_vals /= nrm
             h_basis_vals = basis_vals * h_vals.reshape(n_k, 1)
             h_basis_ell = basis_vals.T @ (
                 h_basis_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1)

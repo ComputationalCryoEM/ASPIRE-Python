@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D, FPSWFBasis2D
+from aspire.basis import FBBasis2D, FFBBasis2D
 from aspire.denoising import DenoisedSource, DenoiserCov2D
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import IdentityFilter, RadialCTFFilter
@@ -21,8 +21,6 @@ filters = [
 BASIS = [
     FBBasis2D,
     FFBBasis2D,
-    # FLEBasis2D,
-    # FPSWFBasis2D,
 ]
 
 
@@ -85,7 +83,7 @@ def test_source_mismatch(sim, basis):
         _ = DenoisedSource(src2, denoiser)
 
 
-@pytest.skip(reason="Still in development.")
+@pytest.mark.skip(reason="Still in development.")
 def test_filter_to_basis_mat(sim, basis):
     """
     Test that `basis.filter_to_basis_mat` operator is similar to
