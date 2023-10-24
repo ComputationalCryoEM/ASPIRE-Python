@@ -363,8 +363,9 @@ class ClassAvgSource(ImageSource):
         if hasattr(classifier, "pca_basis"):
             basis = classifier.pca_basis.basis
         else:
-            basis = FFBBasis2D(self.src.L, dtype=self.src.dtype)
+            basis = FFBBasis2D(self.src.L, dtype=self.dtype)
         return basis
+
 
 # The following sub classes attempt to pack sensible defaults
 #   into ClassAvgSource so that users don't need to
