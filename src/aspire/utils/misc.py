@@ -312,7 +312,8 @@ def fuzzy_mask(L, dtype, r0=None, risetime=None):
         if not (L[0] == L[1] == L[2]):
             raise ValueError(f"A 3D fuzzy_mask must be cubic, found L={L}.")
         grid = grid_3d(**grid_kwargs)
-        axes.insert(0, ["z", "y"])
+        axes.insert(0, "y")
+        axes.insert(0, "z")
 
     else:
         raise RuntimeError(
