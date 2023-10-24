@@ -20,7 +20,6 @@ IMG_SIZES = [8]
 DTYPES = [np.float32]
 # Basis used in FSPCA for class averaging.
 BASIS = [
-    FBBasis2D,
     FFBBasis2D,
 ]
 
