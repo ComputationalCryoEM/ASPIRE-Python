@@ -302,16 +302,6 @@ class SteerableBasis2D(Basis, abc.ABC):
 
         return self.evaluate_t(self.evaluate(coef).shift(shifts))
 
-    def filter_to_basis_mat(self, f):
-        """
-        Convert a filter into a basis representation.
-
-        :param f: `Filter` object, usually a `CTFFilter`.
-
-        :return: Representation of filter in `basis`.
-            Return type will be based on the class's `matrix_type`.
-        """
-
     @property
     def blk_diag_cov_shape(self):
         """
@@ -523,7 +513,7 @@ class SteerableBasis2D(Basis, abc.ABC):
             for i in trange(self.count):
                 try:
                     filt[i] = expand_method(img[i].filter(f)).asnumpy()[0]
-                except:
+                except Exception:
                     logger.warning(
                         f"Failed to expand basis vector {i} after filter {f}."
                     )

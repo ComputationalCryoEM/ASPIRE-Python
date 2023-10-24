@@ -7,7 +7,7 @@ from itertools import product, repeat
 import numpy as np
 import pytest
 
-from aspire.basis import FBBasis2D, FFBBasis2D
+from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D, FPSWFBasis2D, PSWFBasis2D
 from aspire.classification import (
     BandedSNRImageQualityFunction,
     BFRAverager2D,
@@ -52,6 +52,9 @@ NUM_PROCS = 1
 BASIS = [
     FFBBasis2D,
     pytest.param(FBBasis2D, marks=pytest.mark.expensive),
+    FLEBasis2D,
+    pytest.param(PSWFBasis2D, marks=pytest.mark.expensive),
+    pytest.param(FPSWFBasis2D, marks=pytest.mark.skip),
 ]
 
 

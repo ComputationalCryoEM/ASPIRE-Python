@@ -7,7 +7,7 @@ from scipy.linalg import solve, sqrtm
 from aspire.basis import Coef, FFBBasis2D
 from aspire.operators import BlkDiagMatrix, DiagMatrix
 from aspire.optimization import conj_grad, fill_struct
-from aspire.utils import complex_type, make_symmat
+from aspire.utils import make_symmat
 from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)

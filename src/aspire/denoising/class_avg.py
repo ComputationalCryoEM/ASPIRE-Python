@@ -360,10 +360,14 @@ class ClassAvgSource(ImageSource):
         :param classifier: Class2D subclass to query.
         :return: `classifier` basis
         """
-        if hasattr(classifier, "pca_basis"):
+
+        if hasattr(classifier, "pca_basis") and classifier.pca_basis is not None:
             basis = classifier.pca_basis.basis
         else:
-            basis = FFBBasis2D(self.src.L, dtype=self.dtype)
+            # In the cases where a basis is not defined yet,
+            #   construct a FFBBasis2D default.
+            basis = FFBBasis2D(classifier.src.L, dtype=classifier.dtype)
+
         return basis
 
 
