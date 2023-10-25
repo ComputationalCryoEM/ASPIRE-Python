@@ -264,7 +264,7 @@ def testRotate():
     ims_fle_pi = basis.evaluate(coefs_fle_pi)
 
     # test reflection
-    assert np.allclose(np.flipud(ims.asnumpy()[0]), ims_fle_pi[0], atol=1e-4)
+    assert np.allclose(np.fliplr(np.flipud(ims.asnumpy()[0])), ims_fle_pi[0], atol=1e-4)
 
     # make sure you can pass in a 1-D array if you want
     _ = basis.lowpass(Coef(basis, np.zeros((basis.count,))), np.pi)
