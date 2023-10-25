@@ -13,7 +13,7 @@ from aspire.basis.basis_utils import (
 )
 from aspire.basis.pswf_utils import BNMatrix
 from aspire.operators import BlkDiagMatrix
-from aspire.utils import complex_type
+from aspire.utils import complex_type, grid_2d
 
 logger = logging.getLogger(__name__)
 
@@ -82,21 +82,15 @@ class PSWFBasis2D(SteerableBasis2D):
     def _generate_grid(self):
         """
         Generate the 2D sampling grid
-
-        TODO: need to re-implement to use the similar grid function as FB methods.
         """
-        if self.nres % 2 == 0:
-            x_1d_grid = range(-self.rcut, self.rcut)
-        else:
-            x_1d_grid = range(-self.rcut, self.rcut + 1)
-        x_2d_grid, y_2d_grid = np.meshgrid(x_1d_grid, x_1d_grid)
-        r_2d_grid = np.sqrt(np.square(x_2d_grid) + np.square(y_2d_grid))
-        points_in_disk = r_2d_grid <= self.rcut
-        x = y_2d_grid[points_in_disk]
-        y = x_2d_grid[points_in_disk]
+        grid = grid_2d(self.nres, normalized=False)
+        points_in_disk = grid["r"] <= self.rcut
+        # yuck
+        x = grid["y"][points_in_disk]
+        y = grid["x"][points_in_disk]
         self._r_disk = np.sqrt(np.square(x) + np.square(y)) / self.rcut
         self._theta_disk = np.angle(x + 1j * y)
-        self._image_height = len(x_1d_grid)
+        self._image_height = len(grid["x"][0])
         self._disk_mask = points_in_disk
 
     def _precomp(self):
