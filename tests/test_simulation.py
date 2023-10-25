@@ -108,10 +108,13 @@ class SimTestCase(TestCase):
         self.L = 8
         self.dtype = np.float32
 
-        self.vols = LegacyVolume(
+        vols = LegacyVolume(
             L=self.L,
             dtype=self.dtype,
         ).generate()
+
+        # Note: swapping x and z axes to account for new Volume "zyx" grid convention.
+        self.vols = Volume(np.swapaxes(vols.asnumpy(), 1, 3))
 
         self.sim = Simulation(
             n=self.n,
