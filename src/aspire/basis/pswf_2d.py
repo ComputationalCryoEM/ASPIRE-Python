@@ -84,14 +84,9 @@ class PSWFBasis2D(SteerableBasis2D):
         Generate the 2D sampling grid
         """
         grid = grid_2d(self.nres, normalized=False)
-        points_in_disk = grid["r"] <= self.rcut
-        # yuck
-        x = grid["y"][points_in_disk]
-        y = grid["x"][points_in_disk]
-        self._r_disk = np.sqrt(np.square(x) + np.square(y)) / self.rcut
-        self._theta_disk = np.angle(x + 1j * y)
-        self._image_height = len(grid["x"][0])
-        self._disk_mask = points_in_disk
+        self._disk_mask = grid["r"] <= self.rcut
+        self._r_disk = grid["r"][self._disk_mask] / self.rcut
+        self._theta_disk = grid["phi"].T[self._disk_mask]
 
     def _precomp(self):
         """
@@ -243,9 +238,7 @@ class PSWFBasis2D(SteerableBasis2D):
             coefficients[:, ~angular_is_zero] @ self.samples[~angular_is_zero]
         )
 
-        images = np.zeros(
-            (n_images, self._image_height, self._image_height), dtype=self.dtype
-        )
+        images = np.zeros((n_images, self.nres, self.nres), dtype=self.dtype)
         images[:, self._disk_mask] = np.real(flatten_images)
 
         return images
