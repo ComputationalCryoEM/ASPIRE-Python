@@ -320,17 +320,17 @@ def test_rotate(L, dtype):
     # Create a dict with map from axis and angle of rotation to new location of nonzero voxel.
     ref_pts = {
         ("x", 0): (1, 1, 1),
-        ("x", pi / 2): (1, 1, -1),
-        ("x", pi): (1, -1, -1),
+        ("x", pi / 2): (-1, 1, 1),
+        ("x", pi): (-1, -1, 1),
         ("x", 3 * pi / 2): (1, -1, 1),
         ("y", 0): (1, 1, 1),
-        ("y", pi / 2): (-1, 1, 1),
+        ("y", pi / 2): (1, 1, -1),
         ("y", pi): (-1, 1, -1),
-        ("y", 3 * pi / 2): (1, 1, -1),
+        ("y", 3 * pi / 2): (-1, 1, 1),
         ("z", 0): (1, 1, 1),
         ("z", pi / 2): (1, -1, 1),
-        ("z", pi): (-1, -1, 1),
-        ("z", 3 * pi / 2): (-1, 1, 1),
+        ("z", pi): (1, -1, -1),
+        ("z", 3 * pi / 2): (1, 1, -1),
     }
 
     center = np.array([L // 2] * 3)
