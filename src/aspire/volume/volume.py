@@ -687,7 +687,7 @@ def rotated_grids_3d(L, rot_matrices):
         Frequencies are in the range [-pi, pi].
     """
 
-    grid3d = grid_3d(L, indexing="xyz", dtype=rot_matrices.dtype)
+    grid3d = grid_3d(L, indexing="zyx", dtype=rot_matrices.dtype)
     num_pts = L**3
     num_rots = rot_matrices.shape[0]
     pts = np.pi * np.vstack(
@@ -702,4 +702,4 @@ def rotated_grids_3d(L, rot_matrices):
         pts_rot[:, i, :] = rot_matrices[i, :, :] @ pts
 
     # Note we return grids as (Z,Y,X)
-    return pts_rot.reshape(3, -1)
+    return pts_rot.reshape(3, -1)[::-1]
