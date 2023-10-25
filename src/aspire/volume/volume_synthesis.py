@@ -141,7 +141,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
 
         :return: An L x L x L array.
         """
-        g = grid_3d(self.L, indexing="xyz", dtype=self.dtype)
+        g = grid_3d(self.L, indexing="zyx", dtype=self.dtype)
         coords = np.array(
             [g["x"].flatten(), g["y"].flatten(), g["z"].flatten()], dtype=self.dtype
         )
