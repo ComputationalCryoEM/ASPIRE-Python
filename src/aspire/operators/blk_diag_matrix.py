@@ -978,6 +978,7 @@ class BlkDiagMatrix:
                 warnings.warn(
                     f"BlkDiagMatrix.from_dense truncating values exceeding {warn_eps}",
                     UserWarning,
+                    stacklevel=2,
                 )
 
         return B
