@@ -10,7 +10,7 @@ from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
-from aspire.utils import rots_zyx_to_legacy_aspire, utest_tolerance
+from aspire.utils import legacy_simulation, rots_zyx_to_legacy_aspire, utest_tolerance
 from aspire.volume import LegacyVolume, SymmetryGroup, Volume
 
 from .test_utils import matplotlib_dry_run
@@ -108,16 +108,12 @@ class SimTestCase(TestCase):
         self.L = 8
         self.dtype = np.float32
 
-        vols = LegacyVolume(
+        self.vols = LegacyVolume(
             L=self.L,
             dtype=self.dtype,
         ).generate()
 
-        # Note: swapping x and z axes to compensate for new Volume "zyx" grid convention.
-        # This leaves the volume unchanged for hardcoded tests.
-        self.vols = Volume(np.swapaxes(vols.asnumpy(), 1, 3))
-
-        sim = Simulation(
+        self.sim = Simulation(
             n=self.n,
             L=self.L,
             vols=self.vols,
@@ -128,8 +124,8 @@ class SimTestCase(TestCase):
             dtype=self.dtype,
         )
 
-        # Transform rotations so hardcoded tests pass under new "zyx" grid convention.
-        self.sim = sim.update(rotations=rots_zyx_to_legacy_aspire(sim.rotations))
+        # Transform to legacy Simulation to pass hardcoded tests.
+        self.sim = legacy_simulation(self.sim)
 
     def tearDown(self):
         pass
@@ -176,10 +172,8 @@ class SimTestCase(TestCase):
             dtype=self.dtype,
         )
 
-        # Transform rotations so hardcoded tests pass under new "zyx" grid convention.
-        sim_cached = sim_cached.update(
-            rotations=rots_zyx_to_legacy_aspire(sim_cached.rotations)
-        )
+        # Transform to leagacy Simulation so hardcoded tests pass under new "zyx" grid convention.
+        sim_cached = legacy_simulation(sim_cached)
 
         sim_cached = sim_cached.cache()
         self.assertTrue(
