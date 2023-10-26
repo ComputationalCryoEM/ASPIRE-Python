@@ -10,7 +10,7 @@ from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
-from aspire.utils import J_conjugate, utest_tolerance
+from aspire.utils import rots_zyx_to_legacy_aspire, utest_tolerance
 from aspire.volume import LegacyVolume, SymmetryGroup, Volume
 
 from .test_utils import matplotlib_dry_run
@@ -113,9 +113,10 @@ class SimTestCase(TestCase):
             dtype=self.dtype,
         ).generate()
 
-        # Note: swapping x and z axes to account for new Volume "zyx" grid convention.
+        # Note: swapping x and z axes to compensate for new Volume "zyx" grid convention.
+        # This leaves the volume unchanged for hardcoded tests.
         self.vols = Volume(np.swapaxes(vols.asnumpy(), 1, 3))
-        
+
         sim = Simulation(
             n=self.n,
             L=self.L,
@@ -127,9 +128,9 @@ class SimTestCase(TestCase):
             dtype=self.dtype,
         )
 
-        flip_xy = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]], dtype=self.dtype)
-        self.sim = sim.update(rotations = sim.rotations[:, ::-1] @ flip_xy)
-        
+        # Transform rotations so hardcoded tests pass under new "zyx" grid convention.
+        self.sim = sim.update(rotations=rots_zyx_to_legacy_aspire(sim.rotations))
+
     def tearDown(self):
         pass
 
@@ -141,7 +142,7 @@ class SimTestCase(TestCase):
     def testSimulationRots(self):
         self.assertTrue(
             np.allclose(
-                self.sim.rotations[0, :, :],
+                rots_zyx_to_legacy_aspire(self.sim.rotations[0, :, :]),
                 np.array(
                     [
                         [0.91675498, 0.2587233, 0.30433956],
@@ -174,6 +175,12 @@ class SimTestCase(TestCase):
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
         )
+
+        # Transform rotations so hardcoded tests pass under new "zyx" grid convention.
+        sim_cached = sim_cached.update(
+            rotations=rots_zyx_to_legacy_aspire(sim_cached.rotations)
+        )
+
         sim_cached = sim_cached.cache()
         self.assertTrue(
             np.array_equal(sim_cached.images[:].asnumpy(), self.sim.images[:].asnumpy())
