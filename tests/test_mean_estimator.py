@@ -8,6 +8,7 @@ from aspire.basis import FBBasis3D
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import Simulation
+from aspire.utils import legacy_simulation
 from aspire.volume import LegacyVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -18,7 +19,7 @@ class MeanEstimatorTestCase(TestCase):
         self.dtype = np.float32
         self.resolution = 8
         self.vols = LegacyVolume(L=self.resolution, dtype=self.dtype).generate()
-        self.sim = sim = Simulation(
+        self.sim = Simulation(
             n=1024,
             vols=self.vols,
             unique_filters=[
@@ -26,12 +27,16 @@ class MeanEstimatorTestCase(TestCase):
             ],
             dtype=self.dtype,
         )
+
+        # Transform Simulation to Legacy Simulation for hardcoded tests.
+        self.sim = legacy_simulation(self.sim)
+
         basis = FBBasis3D((self.resolution,) * 3, dtype=self.dtype)
 
-        self.estimator = MeanEstimator(sim, basis, preconditioner="none")
+        self.estimator = MeanEstimator(self.sim, basis, preconditioner="none")
 
         self.estimator_with_preconditioner = MeanEstimator(
-            sim, basis, preconditioner="circulant"
+            self.sim, basis, preconditioner="circulant"
         )
 
     def tearDown(self):
