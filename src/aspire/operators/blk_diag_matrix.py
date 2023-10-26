@@ -3,6 +3,8 @@ Define a BlkDiagMatrix module which implements operations for
 block diagonal matrices as used by ASPIRE.
 """
 
+import warnings
+
 import numpy as np
 from numpy.linalg import norm, solve
 from scipy.linalg import block_diag
@@ -943,12 +945,14 @@ class BlkDiagMatrix:
         return DiagMatrix(np.array(diag, dtype=self.dtype))
 
     @staticmethod
-    def from_dense(A, blk_partition):
+    def from_dense(A, blk_partition, warn_eps=None):
         """
         Create BlkDiagMatrix with `blk_partition` from dense matrix `A`.
 
         :param A: Dense `Numpy` array.
         :param blk_partition: List of block partition shapes.
+        :param warn_eps: Optionally warn if off Block values from A
+            exceed `warn_eps`.  Default `None` disables warning.
         :return: BlkDiagMatrix with values from A.
         """
 
@@ -967,5 +971,13 @@ class BlkDiagMatrix:
             raise RuntimeError(
                 "Block partition appears to mismatch shape of dense matrix A."
             )
+
+        if warn_eps is not None:
+            max_diff = np.max(np.abs((A - B.dense())))
+            if max_diff > warn_eps:
+                warnings.warn(
+                    f"BlkDiagMatrix.from_dense truncating values exceeding {warn_eps}",
+                    UserWarning,
+                )
 
         return B
