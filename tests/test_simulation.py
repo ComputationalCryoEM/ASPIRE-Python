@@ -10,7 +10,7 @@ from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source.relion import RelionSource
 from aspire.source.simulation import Simulation
-from aspire.utils.types import utest_tolerance
+from aspire.utils import J_conjugate, utest_tolerance
 from aspire.volume import LegacyVolume, SymmetryGroup, Volume
 
 from .test_utils import matplotlib_dry_run
@@ -115,8 +115,8 @@ class SimTestCase(TestCase):
 
         # Note: swapping x and z axes to account for new Volume "zyx" grid convention.
         self.vols = Volume(np.swapaxes(vols.asnumpy(), 1, 3))
-
-        self.sim = Simulation(
+        
+        sim = Simulation(
             n=self.n,
             L=self.L,
             vols=self.vols,
@@ -127,6 +127,9 @@ class SimTestCase(TestCase):
             dtype=self.dtype,
         )
 
+        flip_xy = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]], dtype=self.dtype)
+        self.sim = sim.update(rotations = sim.rotations[:, ::-1] @ flip_xy)
+        
     def tearDown(self):
         pass
 
