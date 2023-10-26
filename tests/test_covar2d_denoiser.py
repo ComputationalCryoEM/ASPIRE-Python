@@ -6,7 +6,6 @@ from aspire.denoising import DenoisedSource, DenoiserCov2D
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import IdentityFilter, RadialCTFFilter
 from aspire.source import Simulation
-from aspire.utils import utest_tolerance
 
 # TODO, parameterize these further.
 dtype = np.float32
