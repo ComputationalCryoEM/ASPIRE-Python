@@ -69,6 +69,7 @@ from .multiprocessing import (
 from .random import Random, choice, rand, randi, randn, random
 from .relion_interop import (
     RelionStarFile,
+    legacy_simulation,
     relion_metadata_fields,
     rots_zyx_to_legacy_aspire,
 )
