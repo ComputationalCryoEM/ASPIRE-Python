@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from aspire.basis import FBBasis2D, FFBBasis2D
+from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D, FPSWFBasis2D, PSWFBasis2D
 from aspire.denoising import DenoisedSource, DenoiserCov2D
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import IdentityFilter, RadialCTFFilter
@@ -19,8 +19,11 @@ filters = [
     for d in np.linspace(1.5e4, 2.5e4, 7)
 ]
 BASIS = [
-    FBBasis2D,
+    pytest.param(FBBasis2D, marks=pytest.mark.expensive),
     FFBBasis2D,
+    FLEBasis2D,
+    pytest.param(PSWFBasis2D, marks=pytest.mark.expensive),
+    FPSWFBasis2D,
 ]
 
 
@@ -36,7 +39,7 @@ def basis(request):
 @pytest.fixture(scope="module")
 def sim():
     """Create a reusable Simulation source."""
-    return Simulation(
+    sim = Simulation(
         L=img_size,
         n=num_imgs,
         unique_filters=filters,
@@ -45,12 +48,29 @@ def sim():
         dtype=dtype,
         noise_adder=noise_adder,
     )
+    sim = sim.cache()
+    return sim
+
+
+@pytest.fixture(scope="module")
+def coef(sim, basis):
+    """Generate small set of reference coefficients."""
+    return basis.expand(sim.images[:3])
 
 
 def test_batched_rotcov2d_MSE(sim, basis):
     """
     Check calling `DenoiserCov2D` via `DenoiserSource` framework yields acceptable error.
     """
+    # Smoke test reference values (chosen by experimentation).
+    refs = {
+        "FBBasis2D": 0.25,
+        "FFBBasis2D": 0.25,
+        "PSWFBasis2D": 0.75,
+        "FPSWFBasis2D": 0.75,
+        "FLEBasis2D": 0.32,
+    }
+
     # need larger numbers of images and higher resolution for good MSE
     imgs_clean = sim.projections[:]
 
@@ -60,7 +80,12 @@ def test_batched_rotcov2d_MSE(sim, basis):
 
     # Calculate the normalized RMSE of the estimated images.
     nrmse_ims = (imgs_denoised - imgs_clean).norm() / imgs_clean.norm()
-    np.testing.assert_array_less(nrmse_ims, 0.25)
+    ref = refs[basis.__class__.__name__]
+    np.testing.assert_array_less(
+        nrmse_ims,
+        ref,
+        err_msg=f"Comparison failed for {basis}. Achieved: {nrmse_ims} expected: {ref}.",
+    )
 
     # Additionally test the `DenoisedSource` and lazy-eval-cache
     # of the cov2d estimator.
@@ -83,15 +108,19 @@ def test_source_mismatch(sim, basis):
         _ = DenoisedSource(src2, denoiser)
 
 
-@pytest.mark.skip(reason="Still in development.")
-def test_filter_to_basis_mat(sim, basis):
+def test_filter_to_basis_mat_id(coef, basis):
     """
-    Test that `basis.filter_to_basis_mat` operator is similar to
-    manual sequence of evaluate->filter->expand.
+    Test `basis.filter_to_basis_mat` operator performance against
+    manual sequence of evaluate->filter->expand for `IdentifyFilter`.
     """
 
-    # Generate some reference coefficients.
-    coef = basis.expand(sim.images[:3])
+    refs = {
+        "FBBasis2D": 0.025,
+        "FFBBasis2D": 8e-7,
+        "PSWFBasis2D": 0.12,
+        "FPSWFBasis2D": 0.12,
+        "FLEBasis2D": 4e-7,
+    }
 
     # IdentityFilter should produce id
     filt = IdentityFilter()
@@ -106,16 +135,48 @@ def test_filter_to_basis_mat(sim, basis):
     imgs_manual = imgs.filter(filt)
     coef_manual = basis.expand(imgs_manual)
 
-    # Sanity check filter_to_basis_mat of IdentityFilter is id
-    np.testing.assert_allclose(coef_ftbm, coef, atol=utest_tolerance(basis.dtype))
+    # Compare coefs from using ftbm operator with coef from eval->filter->exp
+    rms = np.sqrt(np.mean(np.square(coef_ftbm - coef_manual)))
+    ref = refs[basis.__class__.__name__]
+    np.testing.assert_array_less(
+        rms,
+        ref,
+        err_msg=f"Comparison failed for {basis}. Achieved: {rms} expected: {ref}",
+    )
 
-    # Sanity check manual application of IdentityFilter is id
-    np.testing.assert_allclose(coef_manual, coef, atol=utest_tolerance(basis.dtype))
+
+def test_filter_to_basis_mat_ctf(coef, basis):
+    """
+    Test `basis.filter_to_basis_mat` operator performance against
+    manual sequence of evaluate->filter->expand for `RadialCTFFilter`.
+    """
+
+    refs = {
+        "FBBasis2D": 0.11,
+        "FFBBasis2D": 0.36,
+        "PSWFBasis2D": 0.07,
+        "FPSWFBasis2D": 0.07,
+        "FLEBasis2D": 0.4,
+    }
+
+    # Create a RadialCTFFilter
+    filt = RadialCTFFilter(pixel_size=1)
+
+    # Apply the basis filter operator.
+    # Note transpose because `apply` expects and returns column vectors.
+    # coef_ftbm = basis.filter_to_basis_mat(filt).apply(coef.asnumpy().T).T
+    coef_ftbm = (basis.filter_to_basis_mat(filt) @ coef.asnumpy().T).T
+
+    # Apply evaluate->filter->expand manually
+    imgs = coef.evaluate()
+    imgs_manual = imgs.filter(filt)
+    coef_manual = basis.expand(imgs_manual)
 
     # Compare coefs from using ftbm operator with coef from eval->filter->exp
-    np.testing.assert_allclose(
-        coef_ftbm,
-        coef_manual,
-        atol=utest_tolerance(basis.dtype),
-        err_msg=f"Comparison failed for {filt}",
+    rms = np.sqrt(np.mean(np.square(coef_ftbm - coef_manual)))
+    ref = refs[basis.__class__.__name__]
+    np.testing.assert_array_less(
+        rms,
+        ref,
+        err_msg=f"Comparison failed for {basis}. Achieved: {rms} expected: {ref}",
     )
