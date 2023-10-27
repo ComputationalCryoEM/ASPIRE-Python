@@ -37,22 +37,22 @@ BASIS = [
     FFBBasis2D,
     pytest.param(FBBasis2D, marks=pytest.mark.expensive),
     FLEBasis2D,
-    PSWFBasis2D,
+    pytest.param(PSWFBasis2D, marks=pytest.mark.expensive),
     FPSWFBasis2D,
 ]
 
 
-@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
 def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=IMG_SIZES, ids=lambda x: f"img_size={x}")
+@pytest.fixture(params=IMG_SIZES, ids=lambda x: f"img_size={x}", scope="module")
 def img_size(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def volume(dtype, img_size):
     # Get a volume
     v = Volume(
@@ -62,7 +62,7 @@ def volume(dtype, img_size):
     return v.downsample(img_size)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sim_fixture(volume, img_size, dtype):
     """
     Provides a clean simulation parameterized by `img_size` and `dtype`.
@@ -81,7 +81,7 @@ def sim_fixture(volume, img_size, dtype):
     return imgs, src, fspca_basis
 
 
-@pytest.fixture(params=BASIS, ids=lambda x: f"basis={x}")
+@pytest.fixture(params=BASIS, ids=lambda x: f"basis={x}", scope="module")
 def basis(request, img_size, dtype):
     cls = request.param
     # Setup a Basis
@@ -154,7 +154,7 @@ def test_basis_too_small(sim_fixture, basis):
         _ = FSPCABasis(src, basis=basis, components=basis.count * 2, noise_var=0)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def sim_fixture2(volume, basis, img_size, dtype):
     """
     Provides clean/noisy pair of smaller parameterized simulations,
@@ -169,6 +169,7 @@ def sim_fixture2(volume, basis, img_size, dtype):
 
     # Clean
     clean_src = Simulation(L=img_size, n=n_img, vols=volume, dtype=dtype, seed=SEED)
+    clean_src = clean_src.cache()
 
     # With Noise
     noise_var = 0.01 * np.var(np.sum(volume[0], axis=0))
@@ -181,6 +182,7 @@ def sim_fixture2(volume, basis, img_size, dtype):
         noise_adder=noise_adder,
         seed=SEED,
     )
+    noisy_src = noisy_src.cache()
 
     # Create Basis, use precomputed Basis
     clean_fspca_basis = FSPCABasis(
