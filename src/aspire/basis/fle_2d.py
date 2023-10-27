@@ -5,8 +5,7 @@ import scipy.sparse as sparse
 from scipy.fft import dct, idct
 from scipy.special import jv
 
-from aspire.basis import Coef, FBBasisMixin, SteerableBasis2D
-from aspire.basis.basis_utils import besselj_zeros
+from aspire.basis import Coef, FBBasisMixin, SteerableBasis2D, besselj_zeros, lgwt
 from aspire.basis.fle_2d_utils import (
     barycentric_interp_sparse,
     precomp_transform_complex_to_real,
@@ -758,8 +757,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         See SteerableBasis2D.filter_to_basis_mat.
         """
-        # These form a circular dependence, import locally until time to clean up.
-        from aspire.basis.basis_utils import lgwt
 
         # Get the filter's evaluate function.
         h_fun = f.evaluate

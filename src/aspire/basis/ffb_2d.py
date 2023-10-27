@@ -4,8 +4,7 @@ import numpy as np
 from numpy import pi
 from scipy.special import jv
 
-from aspire.basis import FBBasis2D
-from aspire.basis.basis_utils import lgwt
+from aspire.basis import FBBasis2D, lgwt
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
 from aspire.operators import BlkDiagMatrix
@@ -251,9 +250,6 @@ class FFBBasis2D(FBBasis2D):
         """
         See SteerableBasis2D.filter_to_basis_mat.
         """
-
-        # These form a circular dependence, import locally until time to clean up.
-        from aspire.basis.basis_utils import lgwt
 
         # Get the filter's evaluate function.
         h_fun = f.evaluate
