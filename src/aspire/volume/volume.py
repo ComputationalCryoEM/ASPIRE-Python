@@ -661,6 +661,8 @@ def rotated_grids(L, rot_matrices):
     grid2d = grid_2d(L, indexing="yx", dtype=rot_matrices.dtype)
     num_pts = L**2
     num_rots = rot_matrices.shape[0]
+
+    # Frequency points flattened and placed in xyz order to apply rotations.
     pts = np.pi * np.vstack(
         [
             grid2d["x"].flatten(),
@@ -672,6 +674,7 @@ def rotated_grids(L, rot_matrices):
     for i in range(num_rots):
         pts_rot[:, i, :] = rot_matrices[i, :, :] @ pts
 
+    # Reshape rotated frequency points and convert back into zyx convention.
     pts_rot = pts_rot.reshape((3, num_rots, L, L))[::-1]
 
     return pts_rot
@@ -690,6 +693,8 @@ def rotated_grids_3d(L, rot_matrices):
     grid3d = grid_3d(L, indexing="zyx", dtype=rot_matrices.dtype)
     num_pts = L**3
     num_rots = rot_matrices.shape[0]
+
+    # Frequency points flattened and placed in xyz order to apply rotations.
     pts = np.pi * np.vstack(
         [
             grid3d["x"].flatten(),
