@@ -9,7 +9,7 @@ reconstruction pipeline using synthetic data generated with ASPIRE's
 
 # %%
 # Download an Example Volume
-# -----------------
+# --------------------------
 # We begin by downloading a high resolution volume map of the 80S
 # Ribosome, sourced from EMDB: https://www.ebi.ac.uk/emdb/EMD-2660.
 # This is one of several volume maps that can be downloaded with
@@ -213,8 +213,8 @@ oriented_src = OrientedSource(avgs, orient_est)
 
 
 # %%
-# Mean Squared Error
-# ------------------
+# Mean Error of Estimated Rotations
+# ---------------------------------
 # ASPIRE has the built-in utility function, ``mean_aligned_angular_distance``, which globally
 # aligns the estimated rotations to the true rotations and computes the mean
 # angular distance (in degrees).
