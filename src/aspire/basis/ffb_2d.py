@@ -246,10 +246,14 @@ class FFBBasis2D(FBBasis2D):
 
         return v
 
-    def filter_to_basis_mat(self, f):
+    def filter_to_basis_mat(self, f, method=None):
         """
         See SteerableBasis2D.filter_to_basis_mat.
         """
+        if method is not None:
+            raise NotImplementedError(
+                "FLEBasis2D.filter_to_basis_mat does not provide alternative `method`s"
+            )
 
         # Get the filter's evaluate function.
         h_fun = f.evaluate
