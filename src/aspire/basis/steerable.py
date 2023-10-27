@@ -479,14 +479,15 @@ class SteerableBasis2D(Basis, abc.ABC):
     @abc.abstractmethod
     def filter_to_basis_mat(self, f, method="evaluate_t"):
         """
-        Convert a filter into a basis representation.
+        Convert a filter into a basis operator representation.
 
         :param f: `Filter` object, usually a `CTFFilter`.
         :param method: `evaluate_t` or `expand`.
 
-        :return: Representation of filter in `basis`.
+        :return: Representation of filter as `basis` operator.
             Return type will be based on the class's `matrix_type`.
         """
+        # evaluate_t is not as accurate, but much much faster...
         if method == "evaluate_t":
             expand_method = self.evaluate_t
         elif method == "expand":
@@ -500,14 +501,9 @@ class SteerableBasis2D(Basis, abc.ABC):
         coef = Coef(self, np.eye(self.count, dtype=self.dtype))
         img = coef.evaluate()
 
-        # TODO, debug expand has convergence issues,
-        # there is a note near `cg` hinting this may relate to tolerance
-        # evaluate_t was not as accurate, but much much faster...
-        # filt = self.expand(img.filter(f))
-        # filt = self.evaluate_t(img.filter(f))
-        # return filt.asnumpy().reshape(self.count, self.count)
-
-        # Loop over the expanding the filtered basis vectors one by one
+        # Expansion can fail for some filters on specific basis vectors.
+        # Loop over the expanding the filtered basis vectors one by one,
+        # zero-ing failed vectors.
         filt = np.zeros((self.count, self.count), self.dtype)
         with LogFilterByCount(logger, 1):
             for i in trange(self.count):
