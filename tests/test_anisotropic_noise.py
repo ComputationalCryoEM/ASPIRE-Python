@@ -6,8 +6,8 @@ import numpy as np
 from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import RadialCTFFilter
 from aspire.source import ArrayImageSource, Simulation
-from aspire.utils import rots_zyx_to_legacy_aspire, utest_tolerance
-from aspire.volume import LegacyVolume, Volume
+from aspire.utils import legacy_simulation, utest_tolerance
+from aspire.volume import LegacyVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -15,13 +15,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class SimTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
-
-        # Note: swapping x and z axes to compensate for new Volume "zyx" grid convention.
-        # This leaves the volume unchanged for hardcoded tests.
-        vol = LegacyVolume(L=8, dtype=self.dtype).generate()
-        self.vol = Volume(np.swapaxes(vol.asnumpy(), 1, 3))
-
-        sim = Simulation(
+        self.vol = LegacyVolume(L=8, dtype=self.dtype).generate()
+        self.sim = Simulation(
             n=1024,
             vols=self.vol,
             unique_filters=[
@@ -30,8 +25,8 @@ class SimTestCase(TestCase):
             dtype=self.dtype,
         )
 
-        # Transform rotations so hardcoded tests pass under new "zyx" grid convention.
-        self.sim = sim.update(rotations=rots_zyx_to_legacy_aspire(sim.rotations))
+        # Transform Simulation to legacy Simulation for hardcoded tests.
+        self.sim = legacy_simulation(self.sim)
 
     def tearDown(self):
         pass

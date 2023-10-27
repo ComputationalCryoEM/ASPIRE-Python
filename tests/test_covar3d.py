@@ -13,7 +13,7 @@ from aspire.denoising import src_wiener_coords
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import Simulation
-from aspire.utils import eigs, rots_zyx_to_legacy_aspire
+from aspire.utils import eigs, legacy_simulation
 from aspire.utils.random import Random
 from aspire.volume import LegacyVolume, Volume
 
@@ -24,13 +24,8 @@ class Covar3DTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dtype = np.float32
-        vols = LegacyVolume(L=8, dtype=cls.dtype).generate()
-
-        # Note: swapping x and z axes to compensate for new Volume "zyx" grid convention.
-        # This leaves the volume unchanged for hardcoded tests.
-        cls.vols = Volume(np.swapaxes(vols.asnumpy(), 1, 3))
-
-        sim = Simulation(
+        cls.vols = LegacyVolume(L=8, dtype=cls.dtype).generate()
+        cls.sim = Simulation(
             n=1024,
             vols=cls.vols,
             unique_filters=[
@@ -39,8 +34,8 @@ class Covar3DTestCase(TestCase):
             dtype=cls.dtype,
         )
 
-        # Transform rotations so hardcoded tests pass under new "zyx" grid convention.
-        cls.sim = sim.update(rotations=rots_zyx_to_legacy_aspire(sim.rotations))
+        # Transform Simulation to legacy Simulation for hardcoded tests.
+        cls.sim = legacy_simulation(cls.sim)
 
         basis = FBBasis3D((8, 8, 8), dtype=cls.dtype)
         cls.noise_variance = 0.0030762743633643615
