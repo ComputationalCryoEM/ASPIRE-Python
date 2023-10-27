@@ -951,9 +951,9 @@ class BlkDiagMatrix:
 
         :param A: Dense `Numpy` array.
         :param blk_partition: List of block partition shapes.
-        :param warn_eps: Optionally warn if off Block values from A
-            exceed `warn_eps`.  Default `None` disables warning.
-        :return: BlkDiagMatrix with values from A.
+        :param warn_eps: Optionally warn if off block values from `A`
+            exceed `warn_eps`.  Default `None` disables warnings.
+        :return: `BlkDiagMatrix` with values from `A`.
         """
 
         # Instantiate an empty BlkDiagMatrix with `blk_partition`

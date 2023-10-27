@@ -54,7 +54,7 @@ BASIS = [
     pytest.param(FBBasis2D, marks=pytest.mark.expensive),
     FLEBasis2D,
     pytest.param(PSWFBasis2D, marks=pytest.mark.expensive),
-    pytest.param(FPSWFBasis2D, marks=pytest.mark.skip),
+    FPSWFBasis2D,
 ]
 
 
