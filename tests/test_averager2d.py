@@ -234,11 +234,11 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
 
         self.assertIsNone(_shifts)
         # Crude check that we are closer to known angle than the next rotation
-        self.assertTrue(check_angle_diff(_rotations, self.thetas, self.step / 2))
+        self.assertTrue(check_angle_diff(-_rotations, self.thetas, self.step / 2))
 
         # Fine check that we are within n_angles.
         self.assertTrue(
-            check_angle_diff(_rotations, self.thetas, 2 * np.pi / self.n_search_angles)
+            check_angle_diff(-_rotations, self.thetas, 2 * np.pi / self.n_search_angles)
         )
 
 
@@ -275,11 +275,11 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
         # Crude check that we are closer to known angle than the next rotation
-        self.assertTrue(check_angle_diff(_rotations, self.thetas, self.step / 2))
+        self.assertTrue(check_angle_diff(-_rotations, self.thetas, self.step / 2))
 
         # Fine check that we are within n_angles.
         self.assertTrue(
-            check_angle_diff(_rotations, self.thetas, 2 * np.pi / self.n_search_angles)
+            check_angle_diff(-_rotations, self.thetas, 2 * np.pi / self.n_search_angles)
         )
 
         # Check that we are _not_ shifting the base image
@@ -313,10 +313,10 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
         # Crude check that we are closer to known angle than the next rotation
-        self.assertTrue(check_angle_diff(_rotations, self.thetas, self.step / 2))
+        self.assertTrue(check_angle_diff(-_rotations, self.thetas, self.step / 2))
 
         # Fine check that we are within 4 degrees.
-        self.assertTrue(check_angle_diff(_rotations, self.thetas, np.pi / 45))
+        self.assertTrue(check_angle_diff(-_rotations, self.thetas, np.pi / 45))
 
         # Check that we are _not_ shifting the base image
         self.assertTrue(np.all(_shifts[0][0] == 0))
