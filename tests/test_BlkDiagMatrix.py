@@ -398,6 +398,18 @@ class BlkDiagMatrixTestCase(TestCase):
         with pytest.warns(UserWarning, match=r".*truncating values.*"):
             _ = BlkDiagMatrix.from_dense(dense, self.blk_partition, warn_eps=1e-6)
 
+    def test_from_dense_incorrect_shape(self):
+        """
+        Test truncating dense array returns correct block diagonal entries,
+        and that a warning is emitted when values outside the blocks are larger
+        than some `eps`.
+        """
+        # Pad the dense array so there will be a leftover row and column.
+        dense = np.pad(self.dense, (0, 1))
+
+        with pytest.raises(RuntimeError, match=r".*mismatch shape.*"):
+            _ = BlkDiagMatrix.from_dense(dense, self.blk_partition)
+
 
 class IrrBlkDiagMatrixTestCase(TestCase):
     """
