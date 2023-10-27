@@ -105,7 +105,7 @@ def legacy_simulation(sim):
     :param sim: Simulation object
     :return: Legacy Simulation
     """
-    # Transform original volume.
+    # Transform Volume in zyx convention to Volume in xyz convention.
     vols = sim.vols.__class__(np.swapaxes(sim.vols.asnumpy(), 1, 3))
 
     legacy_sim = sim.__class__(
@@ -121,7 +121,7 @@ def legacy_simulation(sim):
         dtype=sim.dtype,
     )
 
-    # Transform rotations so hardcoded tests pass under new "zyx" grid convention.
+    # Transform rotations to legacy rotations.
     legacy_sim = legacy_sim.update(
         rotations=rots_zyx_to_legacy_aspire(legacy_sim.rotations)
     )
