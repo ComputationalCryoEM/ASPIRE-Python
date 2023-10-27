@@ -759,7 +759,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         if method is not None:
             raise NotImplementedError(
-                "FLEBasis2D.filter_to_basis_mat does not provide alternative `method`s"
+                "`FLEBasis2D.filter_to_basis_mat` method {method} not supported."
+                "  Use `method=None`."
             )
 
         # Get the filter's evaluate function.

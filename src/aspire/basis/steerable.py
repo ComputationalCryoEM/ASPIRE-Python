@@ -493,7 +493,7 @@ class SteerableBasis2D(Basis, abc.ABC):
         elif method == "expand":
             expand_method = self.expand
         else:
-            raise RuntimeError(
+            raise NotImplementedError(
                 "`filter_to_basis_mat` method {method} not supported."
                 "  Try `evaluate_t` or `expand`."
             )
