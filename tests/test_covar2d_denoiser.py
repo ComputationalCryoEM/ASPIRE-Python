@@ -177,3 +177,50 @@ def test_filter_to_basis_mat_ctf(coef, basis):
         ref,
         err_msg=f"Comparison failed for {basis}. Achieved: {rms} expected: {ref}",
     )
+
+
+def test_filter_to_basis_mat_id_expand(coef, basis):
+    """
+    Test `basis.filter_to_basis_mat` operator performance using slower
+    `expand` method against manual sequence of
+    evaluate->filter->expand for `IdentifyFilter`.
+    """
+
+    refs = {
+        "FBBasis2D": 0.025,
+        "PSWFBasis2D": 0.12,
+        "FPSWFBasis2D": 0.12,
+    }
+
+    # IdentityFilter should produce id
+    filt = IdentityFilter()
+
+    # Some basis do not provide alternative `method`s
+    if isinstance(basis, FFBBasis2D) or isinstance(basis, FLEBasis2D):
+        with pytest.raises(NotImplementedError, match=r".*not supported.*"):
+            _ = basis.filter_to_basis_mat(filt, method="expand")
+        return
+
+    # Apply the basis filter operator.
+    # Note transpose because `apply` expects and returns column vectors.
+    coef_ftbm = (basis.filter_to_basis_mat(filt, method="expand") @ coef.asnumpy().T).T
+
+    # Apply evaluate->filter->expand manually
+    imgs = coef.evaluate()
+    imgs_manual = imgs.filter(filt)
+    coef_manual = basis.expand(imgs_manual)
+
+    # Compare coefs from using ftbm operator with coef from eval->filter->exp
+    rms = np.sqrt(np.mean(np.square(coef_ftbm - coef_manual)))
+    ref = refs[basis.__class__.__name__]
+    np.testing.assert_array_less(
+        rms,
+        ref,
+        err_msg=f"Comparison failed for {basis}. Achieved: {rms} expected: {ref}",
+    )
+
+
+def test_filter_to_basis_mat_bad(coef, basis):
+    filt = IdentityFilter()
+    with pytest.raises(NotImplementedError, match=r".*not supported.*"):
+        _ = basis.filter_to_basis_mat(filt, method="bad_method")
