@@ -155,12 +155,6 @@ class RelionSource(ImageSource):
 
         logger.info(f"Populated {self.n_ctf_filters} CTFFilters from '{filepath}'")
 
-        # NOTE: We are currently using a different grid indexing than Relion to produce images.
-        # If rotations are provided we transform them to align with ASPIRE indexing.
-        if self._rotations is not None:
-            flip_xy = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]], dtype=self.dtype)
-            self.rotations = self.rotations @ flip_xy
-
         # Any further operations should not mutate this instance.
         self._mutable = False
 
