@@ -428,12 +428,7 @@ class PSWFBasis2D(SteerableBasis2D):
 
     def rotate(self, coef, radians, refl=None):
         """
-        Returns coefs rotated counter-clockwise by `radians`.
-
-        :param coef: Basis coefs.
-        :param radians: Rotation in radians.
-        :param refl: Optional reflect image (about y=0) (bool)
-        :return: rotated coefs.
+        See `SteerableBasis2D.rotate`.
         """
         # {F}PSWF rotation convention is still CW internally.
         # This will make things consistent until that is addressed.
@@ -441,24 +436,7 @@ class PSWFBasis2D(SteerableBasis2D):
 
     def complex_rotate(self, complex_coef, radians, refl=None):
         """
-        Returns complex coefs rotated counter-clockwise by `radians`.
-
-        This implementation uses the complex exponential.
-        It is kept in the code for documentation and
-        reference purposes.
-
-        To invoke in code:
-
-        self.to_real(
-            self.complex_rotate(
-                self.to_complex(coef), radians, refl)
-            )
-        )
-
-        :param complex_coef: Basis coefs (in complex representation).
-        :param radians: Rotation in radians.
-        :param refl: Optional reflect image (about y=0) (bool)
-        :return: rotated (complex) coefs.
+        See `SteerableBasis2D.rotate`.
         """
         # {F}PSWF rotation convention is still CW internally.
         # This will make things consistent until that is addressed.
