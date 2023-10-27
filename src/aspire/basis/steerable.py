@@ -514,4 +514,7 @@ class SteerableBasis2D(Basis, abc.ABC):
                         f"Failed to expand basis vector {i} after filter {f}."
                     )
 
+        # Truncate off block elements to zero.
+        filt = BlkDiagMatrix.from_dense(filt, self.blk_diag_cov_shape, warn_eps=1e-6)
+
         return filt
