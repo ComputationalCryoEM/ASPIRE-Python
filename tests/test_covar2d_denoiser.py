@@ -126,7 +126,6 @@ def test_filter_to_basis_mat_id(coef, basis):
 
     # Apply the basis filter operator.
     # Note transpose because `apply` expects and returns column vectors.
-    # coef_ftbm = basis.filter_to_basis_mat(filt).apply(coef.asnumpy().T).T
     coef_ftbm = (basis.filter_to_basis_mat(filt) @ coef.asnumpy().T).T
 
     # Apply evaluate->filter->expand manually
@@ -163,7 +162,6 @@ def test_filter_to_basis_mat_ctf(coef, basis):
 
     # Apply the basis filter operator.
     # Note transpose because `apply` expects and returns column vectors.
-    # coef_ftbm = basis.filter_to_basis_mat(filt).apply(coef.asnumpy().T).T
     coef_ftbm = (basis.filter_to_basis_mat(filt) @ coef.asnumpy().T).T
 
     # Apply evaluate->filter->expand manually
