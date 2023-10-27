@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from aspire.basis.basis_utils import all_besselj_zeros
+from aspire.basis import all_besselj_zeros
 
 logger = logging.getLogger(__name__)
 

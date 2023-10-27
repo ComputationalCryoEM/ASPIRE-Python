@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from aspire.basis.basis_utils import (
+from aspire.basis import (
     all_besselj_zeros,
     besselj_zeros,
     lgwt,
