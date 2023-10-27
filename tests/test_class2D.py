@@ -5,7 +5,15 @@ import numpy as np
 import pytest
 from sklearn import datasets
 
-from aspire.basis import Coef, FBBasis2D, FFBBasis2D, FSPCABasis
+from aspire.basis import (
+    Coef,
+    FBBasis2D,
+    FFBBasis2D,
+    FLEBasis2D,
+    FPSWFBasis2D,
+    FSPCABasis,
+    PSWFBasis2D,
+)
 from aspire.classification import RIRClass2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.noise import WhiteNoiseAdder
@@ -28,6 +36,9 @@ DTYPES = [np.float32]
 BASIS = [
     FFBBasis2D,
     pytest.param(FBBasis2D, marks=pytest.mark.expensive),
+    FLEBasis2D,
+    PSWFBasis2D,
+    FPSWFBasis2D,
 ]
 
 
