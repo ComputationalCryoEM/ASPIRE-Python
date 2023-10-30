@@ -753,11 +753,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return a.flatten()
 
-    def filter_to_basis_mat(self, f, method=None):
+    def filter_to_basis_mat(self, f, **kwargs):
         """
         See SteerableBasis2D.filter_to_basis_mat.
         """
-        if method is not None:
+        # Note 'method' and 'truncate' not relevant for this optimized FLE code.
+        if kwargs.get("method", None) is not None:
             raise NotImplementedError(
                 "`FLEBasis2D.filter_to_basis_mat` method {method} not supported."
                 "  Use `method=None`."

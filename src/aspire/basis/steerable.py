@@ -477,12 +477,14 @@ class SteerableBasis2D(Basis, abc.ABC):
         return ComplexCoef(self, complex_coef)
 
     @abc.abstractmethod
-    def filter_to_basis_mat(self, f, method="evaluate_t"):
+    def filter_to_basis_mat(self, f, method="evaluate_t", truncate=True):
         """
         Convert a filter into a basis operator representation.
 
         :param f: `Filter` object, usually a `CTFFilter`.
         :param method: `evaluate_t` or `expand`.
+        :param truncate: Optionally, truncate dense matrix to BlkDiagMatrix.
+            Defaults to True.
 
         :return: Representation of filter as `basis` operator.
             Return type will be based on the class's `matrix_type`.
@@ -514,7 +516,10 @@ class SteerableBasis2D(Basis, abc.ABC):
                         f"Failed to expand basis vector {i} after filter {f}."
                     )
 
-        # Truncate off block elements to zero.
-        filt = BlkDiagMatrix.from_dense(filt, self.blk_diag_cov_shape, warn_eps=1e-6)
+        # Optionally truncate off block elements to zero.
+        if truncate:
+            filt = BlkDiagMatrix.from_dense(
+                filt, self.blk_diag_cov_shape, warn_eps=1e-6
+            )
 
         return filt
