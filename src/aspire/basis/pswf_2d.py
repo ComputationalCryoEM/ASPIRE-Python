@@ -420,11 +420,11 @@ class PSWFBasis2D(SteerableBasis2D):
         range_array = np.arange(approx_length, dtype=self.dtype)
         return d_vec, approx_length, range_array
 
-    def filter_to_basis_mat(self, f, method="evaluate_t"):
+    def filter_to_basis_mat(self, *args, **kwargs):
         """
         See `SteerableBasis2D.filter_to_basis_mat`.
         """
-        return super().filter_to_basis_mat(f, method=method)
+        return super().filter_to_basis_mat(*args, **kwargs)
 
     def rotate(self, coef, radians, refl=None):
         """

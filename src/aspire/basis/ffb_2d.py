@@ -246,11 +246,12 @@ class FFBBasis2D(FBBasis2D):
 
         return v
 
-    def filter_to_basis_mat(self, f, method=None):
+    def filter_to_basis_mat(self, f, **kwargs):
         """
         See SteerableBasis2D.filter_to_basis_mat.
         """
-        if method is not None:
+        # Note 'method' and 'truncate' not relevant for this optimized FFB code.
+        if kwargs.get("method", None) is not None:
             raise NotImplementedError(
                 "`FFBBasis2D.filter_to_basis_mat` method {method} not supported."
                 "  Use `method=None`."
