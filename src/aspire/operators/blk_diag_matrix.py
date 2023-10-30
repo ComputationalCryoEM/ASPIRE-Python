@@ -3,6 +3,7 @@ Define a BlkDiagMatrix module which implements operations for
 block diagonal matrices as used by ASPIRE.
 """
 
+import logging
 import warnings
 
 import numpy as np
@@ -11,6 +12,8 @@ from scipy.linalg import block_diag
 
 from aspire.utils import make_psd
 from aspire.utils.cell import Cell2D
+
+logger = logging.getLogger(__name__)
 
 
 def is_scalar_type(x):
@@ -975,10 +978,13 @@ class BlkDiagMatrix:
         if warn_eps is not None:
             max_diff = np.max(np.abs((A - B.dense())))
             if max_diff > warn_eps:
+                # Warn (once)
                 warnings.warn(
                     f"BlkDiagMatrix.from_dense truncating values exceeding {warn_eps}",
                     UserWarning,
                     stacklevel=2,
                 )
+                # Log the specifics for debugging
+                logger.debug(f"BlkDiagMatrix.from_dense truncated max value {max_diff}")
 
         return B
