@@ -376,18 +376,22 @@ def test_nearest_rotations(dtype):
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_nearest_rotations_reflection(dtype):
-    rots = Rotation.generate_random_rotations(1, seed=0, dtype=dtype).matrices
+    # Generate singleton rotation.
+    rot = Rotation.generate_random_rotations(1, seed=0, dtype=dtype).matrices[0]
 
     # Add a reflection and some noise to the rotation.
-    refl = rots @ np.diag((1, -1, 1)).astype(dtype)
+    refl = rot @ np.diag((1, -1, 1)).astype(dtype)
     noise = 1e-3 * randn(9, seed=0).astype(dtype, copy=False).reshape(3, 3)
     noisy_refl = refl + noise
 
-    # Find nearest rotations
+    # Find nearest rotation.
     nearest_rot = nearest_rotations(noisy_refl)
 
     # Check that estimates are rotation matrices.
     _is_rotation(nearest_rot, dtype)
+
+    # Check that we retain singleton shape.
+    assert nearest_rot.shape == rot.shape
 
 
 def _is_rotation(R, dtype):
