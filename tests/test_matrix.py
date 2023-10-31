@@ -355,7 +355,7 @@ def test_nearest_rotations(dtype):
     n_rots = 5
     rots = Rotation.generate_random_rotations(n_rots, seed=0, dtype=dtype).matrices
 
-    # Add some noise to the rotation.
+    # Add some noise to the rotations.
     noise = 1e-3 * randn(n_rots * 9, seed=0).astype(dtype, copy=False).reshape(
         n_rots, 3, 3
     )
@@ -387,7 +387,7 @@ def test_nearest_rotations_reflection(dtype):
     # Find nearest rotation.
     nearest_rot = nearest_rotations(noisy_refl)
 
-    # Check that estimates are rotation matrices.
+    # Check that estimate is a rotation.
     _is_rotation(nearest_rot, dtype)
 
     # Check that we retain singleton shape.
