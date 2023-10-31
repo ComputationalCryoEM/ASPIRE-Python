@@ -3,6 +3,7 @@ import logging
 import numpy as np
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
+from aspire.utils import nearest_rotations
 from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
@@ -138,8 +139,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
         rotations[:, :, 2] = r3.T
         # Make sure that we got rotations by enforcing R to be
         # a rotation (in case the error is large)
-        u, _, v = np.linalg.svd(rotations)
-        np.einsum("ijk, ikl -> ijl", u, v, out=rotations)
+        rotations = nearest_rotations(rotations)
 
         self.rotations = rotations
 
