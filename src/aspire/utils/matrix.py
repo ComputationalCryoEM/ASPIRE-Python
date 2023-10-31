@@ -458,7 +458,7 @@ def nearest_rotations(A):
     U[neg_det] = U[neg_det] @ np.diag((1, 1, -1)).astype(dtype, copy=False)
     rots = np.einsum("ijk, ikl -> ijl", U, V)
 
-    return rots
+    return rots.reshape(og_shape)
 
 
 def fix_signs(u):
