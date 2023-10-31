@@ -2,15 +2,21 @@ import os.path
 from unittest import TestCase
 
 import numpy as np
+import pytest
 
 from aspire.utils import (
+    Rotation,
     best_rank1_approximation,
     fix_signs,
     im_to_vec,
     mat_to_vec,
+    mean_aligned_angular_distance,
+    nearest_rotations,
+    randn,
     roll_dim,
     symmat_to_vec_iso,
     unroll_dim,
+    utest_tolerance,
     vec_to_im,
     vec_to_symmat,
     vec_to_symmat_iso,
@@ -342,3 +348,64 @@ class MatrixTestCase(TestCase):
         x[:, 3] = 0
         y[:, 3] = 0
         self.assertTrue(np.allclose(fix_signs(x), y))
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_nearest_rotations(dtype):
+    n_rots = 5
+    rots = Rotation.generate_random_rotations(n_rots, seed=0, dtype=dtype).matrices
+
+    # Add some noise to the rotation.
+    noise = 1e-3 * randn(n_rots * 9, seed=0).astype(dtype, copy=False).reshape(
+        n_rots, 3, 3
+    )
+    noisy_rots = rots + noise
+
+    # Find nearest rotations for stack.
+    nearest_rots = nearest_rotations(noisy_rots)
+
+    # Check that estimates are rotation matrices.
+    _is_rotation(nearest_rots, dtype)
+
+    # Check that estimates are close to original rotations.
+    mean_aligned_angular_distance(rots, nearest_rots, degree_tol=1)
+
+    # Check dtype pass-through.
+    assert nearest_rots.dtype == dtype
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_nearest_rotations_reflection(dtype):
+    rots = Rotation.generate_random_rotations(1, seed=0, dtype=dtype).matrices
+
+    # Add a reflection and some noise to the rotation.
+    refl = rots @ np.diag((1, -1, 1)).astype(dtype)
+    noise = 1e-3 * randn(9, seed=0).astype(dtype, copy=False).reshape(3, 3)
+    noisy_refl = refl + noise
+
+    # Find nearest rotations
+    nearest_rot = nearest_rotations(noisy_refl)
+
+    # Check that estimates are rotation matrices.
+    _is_rotation(nearest_rot, dtype)
+
+
+def _is_rotation(R, dtype):
+    """
+    Helper function to check if a set of 3x3 matrices are rotations
+    by checking that R.T @ R = I and det(R) = 1.
+
+    :param R: Singleton or stack of 3x3 arrays.
+    :param dtype: dtype to use for test tolerance.
+    :return: boolean indicating if all 3x3 arrays are rotations.
+    """
+    if R.ndim == 2:
+        R = R[np.newaxis]
+
+    n_rots = len(R)
+    RTR = np.einsum("ikj,ikl->ijl", R, R)
+    atol = utest_tolerance(dtype)
+    np.testing.assert_allclose(
+        RTR, np.broadcast_to(np.eye(3), (n_rots, 3, 3)), atol=atol
+    )
+    np.testing.assert_allclose(np.linalg.det(R), 1, atol=atol)
