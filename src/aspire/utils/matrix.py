@@ -452,10 +452,11 @@ def nearest_rotations(A):
         )
 
     # For the singular value decomposition A = U @ S @ V, we compute the nearest rotation
-    # matrices R = U @ V, ensuring first that det(U)*det(V) = 1.
+    # matrices R = U @ V. If det(U)*det(V) = -1, we negate the third singular value to ensure
+    # we have a rotation.
     U, _, V = np.linalg.svd(A)
-    neg_det = np.linalg.det(U) * np.linalg.det(V) < 0
-    U[neg_det] = U[neg_det] @ np.diag((1, 1, -1)).astype(dtype, copy=False)
+    neg_det_idx = np.linalg.det(U) * np.linalg.det(V) < 0
+    U[neg_det_idx] = U[neg_det_idx] @ np.diag((1, 1, -1)).astype(dtype, copy=False)
     rots = np.einsum("ijk, ikl -> ijl", U, V)
 
     return rots.reshape(og_shape)
