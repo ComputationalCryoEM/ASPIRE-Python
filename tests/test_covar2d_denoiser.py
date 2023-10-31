@@ -20,9 +20,9 @@ filters = [
 BASIS = [
     pytest.param(FBBasis2D, marks=pytest.mark.expensive),
     FFBBasis2D,
-    FLEBasis2D,
+    pytest.param(FLEBasis2D, marks=pytest.mark.expensive),
     pytest.param(PSWFBasis2D, marks=pytest.mark.expensive),
-    FPSWFBasis2D,
+    pytest.param(FPSWFBasis2D, marks=pytest.mark.expensive),
 ]
 
 
