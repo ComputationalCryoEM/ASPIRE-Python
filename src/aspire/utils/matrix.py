@@ -434,6 +434,33 @@ def best_rank1_approximation(A):
     return (U @ S_rank1 @ V).reshape(og_shape)
 
 
+def nearest_rotations(A):
+    """
+    Uses the SVD method to compute the set of nearest rotations to the set A of noisy rotations.
+
+    :param A: A 2D array or a 3D array where the first axis is the stack axis.
+    :return: ndarray of rotations of equal size to A.
+    """
+    og_shape = A.shape
+    dtype = A.dtype
+
+    if A.ndim == 2:
+        A = A[np.newaxis]
+    if A.ndim != 3 or not A.shape[1] == A.shape[2] == 3:
+        raise ValueError(
+            f"Array must be of shape (3, 3) or (n, 3, 3). Found shape {A.shape}."
+        )
+
+    # For the singular value decomposition A = U @ S @ V, we compute the nearest rotation
+    # matrices R = U @ V, ensuring first that det(U)*det(V) = 1.
+    U, _, V = np.linalg.svd(A)
+    neg_det = np.linalg.det(U) * np.linalg.det(V) < 0
+    U[neg_det] = U[neg_det] @ np.diag((1, 1, -1)).astype(dtype, copy=False)
+    rots = np.einsum("ijk, ikl -> ijl", U, V)
+
+    return rots
+
+
 def fix_signs(u):
     """
     Negates columns so the sign of the largest element in the column is positive.

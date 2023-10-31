@@ -46,6 +46,7 @@ from .matrix import (
     make_symmat,
     mat_to_vec,
     mdim_mat_fun_conj,
+    nearest_rotations,
     roll_dim,
     symmat_to_vec,
     symmat_to_vec_iso,
