@@ -52,9 +52,9 @@ NUM_PROCS = 1
 BASIS = [
     FFBBasis2D,
     pytest.param(FBBasis2D, marks=pytest.mark.expensive),
-    FLEBasis2D,
+    pytest.param(FLEBasis2D, marks=pytest.mark.expensive),
     pytest.param(PSWFBasis2D, marks=pytest.mark.expensive),
-    FPSWFBasis2D,
+    pytest.param(FPSWFBasis2D, marks=pytest.mark.expensive),
 ]
 
 
