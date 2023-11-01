@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class SteerableBasis2D(Basis, abc.ABC):
     """
-    SteerableBasis2D is an extension of Basis that is expected to have
+    `SteerableBasis2D` is an extension of Basis that is expected to have
     `rotation` (steerable) and `calculate_bispectrum` methods.
     """
 
