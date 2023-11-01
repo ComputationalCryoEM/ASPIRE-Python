@@ -755,7 +755,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
     def filter_to_basis_mat(self, f, **kwargs):
         """
-        See SteerableBasis2D.filter_to_basis_mat.
+        See `SteerableBasis2D.filter_to_basis_mat`.
         """
         # Note 'method' and 'truncate' not relevant for this optimized FLE code.
         if kwargs.get("method", None) is not None:

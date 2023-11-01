@@ -248,7 +248,7 @@ class FFBBasis2D(FBBasis2D):
 
     def filter_to_basis_mat(self, f, **kwargs):
         """
-        See SteerableBasis2D.filter_to_basis_mat.
+        See `SteerableBasis2D.filter_to_basis_mat`.
         """
         # Note 'method' and 'truncate' not relevant for this optimized FFB code.
         if kwargs.get("method", None) is not None:
