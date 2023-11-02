@@ -80,7 +80,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         """
         Generates a Volume object composed of Gaussian blobs.
 
-        :return: A Volume instance containing C Gaussian blob volumes.
+        :return: An ndarray containing C Gaussian blob volumes.
         """
         vols = np.zeros(shape=((self.C,) + (self.L,) * 3)).astype(self.dtype)
         with Random(self.seed):
@@ -88,7 +88,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
                 Q, D, mu = self._gen_gaussians()
                 Q_rot, D_sym, mu_rot = self._symmetrize_gaussians(Q, D, mu)
                 vols[c] = self._eval_gaussians(Q_rot, D_sym, mu_rot)
-        return Volume(vols)
+        return vols
 
     def _gen_gaussians(self):
         """
@@ -263,4 +263,9 @@ class LegacyVolume(AsymmetricVolume):
         """
         Generates an asymmetric volume composed of random 3D Gaussian blobs.
         """
-        return self._gaussian_blob_vols()
+        vols = self._gaussian_blob_vols()
+
+        # Swap axes to retain Legacy xyz-indexing.
+        vols = np.swapaxes(vols, 1, 3)
+
+        return Volume(vols)

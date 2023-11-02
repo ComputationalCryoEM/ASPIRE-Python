@@ -10,6 +10,7 @@ from aspire.noise import NoiseAdder
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
 from aspire.utils import (
+    Rotation,
     acorr,
     ainner,
     anorm,
@@ -148,7 +149,7 @@ class Simulation(ImageSource):
         self.states = states
 
         if angles is None:
-            angles = uniform_random_angles(n, seed=seed, dtype=self.dtype)
+            angles = self._init_angles()
         self.angles = angles
 
         if unique_filters is None:
@@ -191,6 +192,9 @@ class Simulation(ImageSource):
 
         # Any further operations should not mutate this instance.
         self._mutable = False
+
+    def _init_angles(self):
+        return uniform_random_angles(self.n, seed=self.seed, dtype=self.dtype)
 
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
@@ -532,3 +536,53 @@ class Simulation(ImageSource):
         noise_power = self.noise_adder.noise_var
         signal_power = self.true_signal_power(*args, **kwargs)
         return signal_power / noise_power
+
+
+class Legacy_Simulation(Simulation):
+    """
+    Legacy Simulation enforces the legacy grid convention for generating projection
+    images.
+
+    Note, that `angles`, and thus `rotations`, are altered upon initialization.
+    To recover the rotations associated with the input angles use the staticmethod
+    `rots_zyx_to_legacy_aspire()`.
+    """
+
+    def _init_angles(self):
+        angles = uniform_random_angles(self.n, seed=self.seed, dtype=self.dtype)
+
+        # Convert to rotations.
+        rots = Rotation.from_euler(angles).matrices
+
+        # Transform rotations to replicate legacy grid convention.
+        legacy_rots = Rotation(self.rots_zyx_to_legacy_aspire(rots))
+
+        # Convert back to angles.
+        return legacy_rots.angles.astype(self.dtype)
+
+    @staticmethod
+    def rots_zyx_to_legacy_aspire(rots):
+        """
+        Helper function to transform rotations to mimic original aspire python
+        grid indexing. Now that we are enforcing "zyx" grid indexing across the
+        code base, in particular for the rotated_grids used for volume projection,
+        we must transform rotation matrices to allow for existing hardcoded tests
+        to remain valid.
+
+        Note, this transformation is it's own inverse.
+
+        :param rots: n_rot x 3 x 3 array of rotation matrices.
+        :return: Transformed rotations.
+        """
+        dtype = rots.dtype
+
+        # Handle singletons
+        og_shape = rots.shape
+        if len(og_shape) == 2:
+            rots = np.expand_dims(rots, axis=0)
+
+        # Transform rots
+        flip_xy = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]], dtype=dtype)
+        new_rots = rots[:, ::-1] @ flip_xy
+
+        return new_rots.reshape(og_shape)
