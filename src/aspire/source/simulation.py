@@ -148,7 +148,7 @@ class Simulation(ImageSource):
             states = randi(self.C, n, seed=seed)
         self.states = states
 
-        self._init_angles(angles)
+        self.angles = self._init_angles(angles)
 
         if unique_filters is None:
             unique_filters = []
@@ -194,7 +194,7 @@ class Simulation(ImageSource):
     def _init_angles(self, angles):
         if angles is None:
             angles = uniform_random_angles(self.n, seed=self.seed, dtype=self.dtype)
-        self.angles = angles
+        return angles
 
     def _populate_ctf_metadata(self, filter_indices):
         # Since we are not reading from a starfile, we must construct
@@ -549,8 +549,7 @@ class LegacySimulation(Simulation):
     """
 
     def _init_angles(self, angles):
-        if angles is None:
-            angles = uniform_random_angles(self.n, seed=self.seed, dtype=self.dtype)
+        angles = super()._init_angles(angles)
 
         # Convert to rotations.
         rots = Rotation.from_euler(angles).matrices
@@ -559,7 +558,7 @@ class LegacySimulation(Simulation):
         legacy_rots = Rotation(self.rots_zyx_to_legacy_aspire(rots))
 
         # Convert back to angles.
-        self.angles = legacy_rots.angles.astype(self.dtype)
+        return legacy_rots.angles.astype(self.dtype)
 
     @staticmethod
     def rots_zyx_to_legacy_aspire(rots):
