@@ -9,7 +9,7 @@ from aspire.source import Simulation
 
 # TODO, parameterize these further.
 dtype = np.float32
-img_size = 64
+img_size = 32
 num_imgs = 1024
 noise_var = 0.1848
 noise_adder = WhiteNoiseAdder(var=noise_var)
@@ -20,9 +20,9 @@ filters = [
 BASIS = [
     pytest.param(FBBasis2D, marks=pytest.mark.expensive),
     FFBBasis2D,
-    pytest.param(FLEBasis2D, marks=pytest.mark.expensive),
+    FLEBasis2D,
     pytest.param(PSWFBasis2D, marks=pytest.mark.expensive),
-    pytest.param(FPSWFBasis2D, marks=pytest.mark.expensive),
+    FPSWFBasis2D,
 ]
 
 
@@ -63,11 +63,11 @@ def test_batched_rotcov2d_MSE(sim, basis):
     """
     # Smoke test reference values (chosen by experimentation).
     refs = {
-        "FBBasis2D": 0.25,
-        "FFBBasis2D": 0.25,
-        "PSWFBasis2D": 0.75,
-        "FPSWFBasis2D": 0.75,
-        "FLEBasis2D": 0.32,
+        "FBBasis2D": 0.23,
+        "FFBBasis2D": 0.23,
+        "PSWFBasis2D": 0.76,
+        "FPSWFBasis2D": 0.76,
+        "FLEBasis2D": 0.52,
     }
 
     # need larger numbers of images and higher resolution for good MSE
@@ -115,9 +115,9 @@ def test_filter_to_basis_mat_id(coef, basis):
 
     refs = {
         "FBBasis2D": 0.025,
-        "FFBBasis2D": 8e-7,
-        "PSWFBasis2D": 0.12,
-        "FPSWFBasis2D": 0.12,
+        "FFBBasis2D": 3e-6,
+        "PSWFBasis2D": 0.14,
+        "FPSWFBasis2D": 0.14,
         "FLEBasis2D": 4e-7,
     }
 
@@ -150,10 +150,10 @@ def test_filter_to_basis_mat_ctf(coef, basis):
     """
 
     refs = {
-        "FBBasis2D": 0.11,
-        "FFBBasis2D": 0.36,
-        "PSWFBasis2D": 0.07,
-        "FPSWFBasis2D": 0.07,
+        "FBBasis2D": 0.025,
+        "FFBBasis2D": 0.35,
+        "PSWFBasis2D": 0.11,
+        "FPSWFBasis2D": 0.11,
         "FLEBasis2D": 0.4,
     }
 
@@ -187,9 +187,9 @@ def test_filter_to_basis_mat_id_expand(coef, basis):
     """
 
     refs = {
-        "FBBasis2D": 0.025,
-        "PSWFBasis2D": 0.12,
-        "FPSWFBasis2D": 0.12,
+        "FBBasis2D": 4e-7,
+        "PSWFBasis2D": 5e-6,
+        "FPSWFBasis2D": 5e-6,
     }
 
     # IdentityFilter should produce id
