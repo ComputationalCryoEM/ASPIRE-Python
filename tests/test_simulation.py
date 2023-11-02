@@ -9,8 +9,8 @@ from pytest import raises
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source.relion import RelionSource
-from aspire.source.simulation import Simulation
-from aspire.utils import legacy_simulation, rots_zyx_to_legacy_aspire, utest_tolerance
+from aspire.source.simulation import Legacy_Simulation, Simulation
+from aspire.utils import utest_tolerance
 from aspire.volume import LegacyVolume, SymmetryGroup, Volume
 
 from .test_utils import matplotlib_dry_run
@@ -113,7 +113,7 @@ class SimTestCase(TestCase):
             dtype=self.dtype,
         ).generate()
 
-        self.sim = Simulation(
+        self.sim = Legacy_Simulation(
             n=self.n,
             L=self.L,
             vols=self.vols,
@@ -123,9 +123,6 @@ class SimTestCase(TestCase):
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
         )
-
-        # Transform to legacy Simulation to pass hardcoded tests.
-        self.sim = legacy_simulation(self.sim)
 
     def tearDown(self):
         pass
@@ -138,7 +135,7 @@ class SimTestCase(TestCase):
     def testSimulationRots(self):
         self.assertTrue(
             np.allclose(
-                rots_zyx_to_legacy_aspire(self.sim.rotations[0, :, :]),
+                self.sim.rots_zyx_to_legacy_aspire(self.sim.rotations[0, :, :]),
                 np.array(
                     [
                         [0.91675498, 0.2587233, 0.30433956],
@@ -146,6 +143,7 @@ class SimTestCase(TestCase):
                         [-0.00507853, 0.76938412, -0.63876622],
                     ]
                 ),
+                atol=utest_tolerance(self.dtype),
             )
         )
 
@@ -161,7 +159,7 @@ class SimTestCase(TestCase):
         )
 
     def testSimulationCached(self):
-        sim_cached = Simulation(
+        sim_cached = Legacy_Simulation(
             n=self.n,
             L=self.L,
             vols=self.vols,
@@ -171,9 +169,6 @@ class SimTestCase(TestCase):
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
         )
-
-        # Transform to leagacy Simulation so hardcoded tests pass under new "zyx" grid convention.
-        sim_cached = legacy_simulation(sim_cached)
 
         sim_cached = sim_cached.cache()
         self.assertTrue(
