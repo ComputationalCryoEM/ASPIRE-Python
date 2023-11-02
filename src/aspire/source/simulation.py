@@ -538,7 +538,7 @@ class Simulation(ImageSource):
         return signal_power / noise_power
 
 
-class Legacy_Simulation(Simulation):
+class LegacySimulation(Simulation):
     """
     Legacy Simulation enforces the legacy grid convention for generating projection
     images.

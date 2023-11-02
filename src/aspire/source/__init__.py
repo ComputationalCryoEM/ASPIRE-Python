@@ -8,7 +8,7 @@ from aspire.source.image import (
     OrientedSource,
 )
 from aspire.source.relion import RelionSource
-from aspire.source.simulation import Simulation
+from aspire.source.simulation import LegacySimulation, Simulation
 
 # isort: off
 from aspire.source.micrograph import (
