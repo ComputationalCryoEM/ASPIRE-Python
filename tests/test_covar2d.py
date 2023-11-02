@@ -9,8 +9,8 @@ from aspire.basis import FFBBasis2D
 from aspire.covariance import RotCov2D
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
-from aspire.source.simulation import Simulation
-from aspire.utils import randi, rots_zyx_to_legacy_aspire, utest_tolerance
+from aspire.source.simulation import LegacySimulation
+from aspire.utils import randi, utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -97,7 +97,7 @@ def cov2d_fixture(volume, basis, ctf_enabled):
 
     noise_adder = WhiteNoiseAdder(var=NOISE_VAR)
 
-    sim = Simulation(
+    sim = LegacySimulation(
         n=n,
         vols=volume,
         unique_filters=unique_filters,
@@ -107,9 +107,6 @@ def cov2d_fixture(volume, basis, ctf_enabled):
         dtype=volume.dtype,
         noise_adder=noise_adder,
     )
-
-    # Transform rotations so hardcoded tests pass under new "zyx" grid convention.
-    sim = sim.update(rotations=rots_zyx_to_legacy_aspire(sim.rotations))
 
     sim.cache()
 
