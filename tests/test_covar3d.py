@@ -12,8 +12,8 @@ from aspire.covariance import CovarianceEstimator
 from aspire.denoising import src_wiener_coords
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
-from aspire.source.simulation import Simulation
-from aspire.utils import eigs, legacy_simulation
+from aspire.source.simulation import LegacySimulation
+from aspire.utils import eigs
 from aspire.utils.random import Random
 from aspire.volume import LegacyVolume, Volume
 
@@ -25,7 +25,7 @@ class Covar3DTestCase(TestCase):
     def setUpClass(cls):
         cls.dtype = np.float32
         cls.vols = LegacyVolume(L=8, dtype=cls.dtype).generate()
-        cls.sim = Simulation(
+        cls.sim = LegacySimulation(
             n=1024,
             vols=cls.vols,
             unique_filters=[
@@ -33,9 +33,6 @@ class Covar3DTestCase(TestCase):
             ],
             dtype=cls.dtype,
         )
-
-        # Transform Simulation to legacy Simulation for hardcoded tests.
-        cls.sim = legacy_simulation(cls.sim)
 
         basis = FBBasis3D((8, 8, 8), dtype=cls.dtype)
         cls.noise_variance = 0.0030762743633643615
