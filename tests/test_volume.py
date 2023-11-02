@@ -8,14 +8,8 @@ import pytest
 from numpy import pi
 from pytest import raises, skip
 
-from aspire.utils import (
-    Rotation,
-    anorm,
-    grid_2d,
-    powerset,
-    rots_zyx_to_legacy_aspire,
-    utest_tolerance,
-)
+from aspire.source import LegacySimulation
+from aspire.utils import Rotation, anorm, grid_2d, powerset, utest_tolerance
 from aspire.volume import (
     AsymmetricVolume,
     CnSymmetryGroup,
@@ -306,8 +300,8 @@ def test_project(vols_1, dtype):
     rots = np.load(os.path.join(DATA_DIR, "rand_rot_matrices32.npy"))
     rots = np.moveaxis(rots, 2, 0)
 
-    # Note, transforming rotations to compensate for "zyx" grid convention.
-    rots = rots_zyx_to_legacy_aspire(rots)
+    # Note, transforming rotations to compensate for legacy grid convention used in saved data.
+    rots = LegacySimulation.rots_zyx_to_legacy_aspire(rots)
 
     imgs_clean = vols.project(rots).asnumpy()
     assert np.allclose(results, imgs_clean, atol=1e-7)
