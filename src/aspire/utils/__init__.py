@@ -67,12 +67,7 @@ from .multiprocessing import (
     virtual_core_cpu_suggestion,
 )
 from .random import Random, choice, rand, randi, randn, random
-from .relion_interop import (
-    RelionStarFile,
-    legacy_simulation,
-    relion_metadata_fields,
-    rots_zyx_to_legacy_aspire,
-)
+from .relion_interop import RelionStarFile, relion_metadata_fields
 from .resolution_estimation import FourierRingCorrelation, FourierShellCorrelation
 from .rotation import Rotation
 from .units import ratio_to_decibel, voltage_to_wavelength, wavelength_to_voltage
