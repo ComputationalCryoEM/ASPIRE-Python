@@ -29,7 +29,6 @@ class WeightedVolumesEstimatorTestCase(TestCase):
             ],
             dtype=self.dtype,
         )
-
         self.basis = FBBasis3D((L, L, L), dtype=self.dtype)
         self.weights = np.ones((self.n, self.r)) / np.sqrt(self.n)
         self.estimator = WeightedVolumesEstimator(

@@ -33,7 +33,6 @@ class Covar3DTestCase(TestCase):
             ],
             dtype=cls.dtype,
         )
-
         basis = FBBasis3D((8, 8, 8), dtype=cls.dtype)
         cls.noise_variance = 0.0030762743633643615
 
