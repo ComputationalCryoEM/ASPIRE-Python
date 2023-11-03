@@ -419,7 +419,7 @@ def _is_rotation(R, dtype):
         R = R[np.newaxis]
 
     n_rots = len(R)
-    RTR = np.transpose(R, axes=(0,2,1)) @ R
+    RTR = np.transpose(R, axes=(0, 2, 1)) @ R
     atol = utest_tolerance(dtype)
     np.testing.assert_allclose(
         RTR, np.broadcast_to(np.eye(3), (n_rots, 3, 3)), atol=atol
