@@ -457,7 +457,7 @@ def nearest_rotations(A):
     U, _, V = np.linalg.svd(A)
     neg_det_idx = np.linalg.det(U) * np.linalg.det(V) < 0
     U[neg_det_idx] = U[neg_det_idx] @ np.diag((1, 1, -1)).astype(dtype, copy=False)
-    rots = np.einsum("ijk, ikl -> ijl", U, V)
+    rots = U @ V
 
     return rots.reshape(og_shape)
 
