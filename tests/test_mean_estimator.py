@@ -26,7 +26,6 @@ class MeanEstimatorTestCase(TestCase):
             ],
             dtype=self.dtype,
         )
-
         basis = FBBasis3D((self.resolution,) * 3, dtype=self.dtype)
 
         self.estimator = MeanEstimator(self.sim, basis, preconditioner="none")
