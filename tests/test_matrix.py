@@ -396,12 +396,12 @@ def test_nearest_rotations_reflection(dtype):
 
 def test_nearest_rotations_error():
     # Check error for bad ndim.
-    A = randn(2 * 5 * 3 * 3, seed=0).reshape(2, 5, 3, 3)
+    A = np.empty((2, 5, 3, 3))
     with pytest.raises(ValueError, match="Array must be of shape"):
         _ = nearest_rotations(A)
 
     # Check error for bad shape.
-    A = randn(5 * 3 * 2, seed=0).reshape(5, 3, 2)
+    A = np.empty((5, 3, 2))
     with pytest.raises(ValueError, match="Array must be of shape"):
         _ = nearest_rotations(A)
 
@@ -419,7 +419,7 @@ def _is_rotation(R, dtype):
         R = R[np.newaxis]
 
     n_rots = len(R)
-    RTR = np.einsum("ikj,ikl->ijl", R, R)
+    RTR = np.transpose(R, axes=(0,2,1)) @ R
     atol = utest_tolerance(dtype)
     np.testing.assert_allclose(
         RTR, np.broadcast_to(np.eye(3), (n_rots, 3, 3)), atol=atol
