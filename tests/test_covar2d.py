@@ -107,7 +107,6 @@ def cov2d_fixture(volume, basis, ctf_enabled):
         dtype=volume.dtype,
         noise_adder=noise_adder,
     )
-
     sim.cache()
 
     cov2d = RotCov2D(basis)
