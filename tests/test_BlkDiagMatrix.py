@@ -388,9 +388,8 @@ class BlkDiagMatrixTestCase(TestCase):
 
     def test_from_dense_warns(self):
         """
-        Test truncating dense array returns correct block diagonal entries,
-        and that a warning is emitted when values outside the blocks are larger
-        than some `eps`.
+        Test that a warning is emitted when values outside the blocks
+        are larger than some `eps`.
         """
         # Add ones to the entire dense matrix, to exceed `warn_eps` below.
         dense = self.dense + 1
