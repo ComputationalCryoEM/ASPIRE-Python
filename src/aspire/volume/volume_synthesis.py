@@ -78,7 +78,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
 
     def _gaussian_blob_vols(self):
         """
-        Generates a Volume object composed of Gaussian blobs.
+        Generates a 4D array representing a stack of volumes composed of Gaussian blobs.
 
         :return: An ndarray containing C Gaussian blob volumes.
         """
