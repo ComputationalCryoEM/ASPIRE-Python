@@ -468,12 +468,16 @@ class DiagMatrix:
     def apply(self, X):
         """
         Define the apply option of a diagonal matrix with a matrix of
-        coefficient vectors.
+        coefficient column vectors.
 
         :param X: Coefficient matrix (ndarray), each column is a coefficient vector.
-        :return: A matrix with new coefficient vectors.
+        :return: A matrix with new coefficient column vectors.
         """
 
+        # Transpose X to become row major because,
+        # X is a coefficient matrix (ndarray), each column is a coefficient vector.
+        # Transpose the row major multiplication result back to column major, to
+        # return a matrix with new coefficient column vectors.
         return (self * DiagMatrix(X.T)).asnumpy().T
 
     def rapply(self, X):
