@@ -948,14 +948,14 @@ class BlkDiagMatrix:
         return DiagMatrix(np.array(diag, dtype=self.dtype))
 
     @staticmethod
-    def from_dense(A, blk_partition, warn_eps=None):
+    def from_dense(A, blk_partition, warn_eps=1e-3):
         """
         Create BlkDiagMatrix with `blk_partition` from dense matrix `A`.
 
         :param A: Dense `Numpy` array.
         :param blk_partition: List of block partition shapes.
         :param warn_eps: Optionally warn if off block values from `A`
-            exceed `warn_eps`.  Default `None` disables warnings.
+            exceed `warn_eps`.  `None` disables warnings.
         :return: `BlkDiagMatrix` with values from `A`.
         """
 
