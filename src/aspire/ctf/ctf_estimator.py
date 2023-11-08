@@ -1,8 +1,26 @@
 """
+Contains code supporting CTF parameter estimation.
+Generally, this is a port of ASPIRE-CTF from MATLAB.
+
+See paper:
+
+  |    "Reducing bias and variance for CTF estimation in single particle cryo-EM"
+  |    Ayelet Heimowitz, Joakim Andén, Amit Singer
+  |    Ultramicroscopy, Volume 212, 2020
+  |    https://doi.org/10.1016/j.ultramic.2020.112950.
+
+Note:
+`CtfEstimator` computes the background as a monotonically decreasing
+function of spatial frequency. This practice may lead to an inaccurate
+background estimation for experimental images produced using a K2
+camera in counting mode, as the background in this case is not
+monotonically decreasing. Despite this, CTF parameters are captured
+successfully in such situations.
+
 Created on Sep 10, 2019
 @author: Ayelet Heimowitz, Amit Moscovich
 
-Integrated into ASPIRE by Garrett Wright Feb 2021.
+Integrated into ASPIRE-Python by Garrett Wright Feb 2021.
 """
 
 import logging
