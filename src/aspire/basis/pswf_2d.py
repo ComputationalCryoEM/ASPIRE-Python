@@ -2,10 +2,8 @@ import logging
 
 import numpy as np
 
-from aspire.basis import (
-    Coef,
-    ComplexCoef,
-    SteerableBasis2D,
+from aspire.basis import Coef, ComplexCoef, SteerableBasis2D
+from aspire.basis.basis_utils import (
     d_decay_approx_fun,
     k_operator,
     lgwt,

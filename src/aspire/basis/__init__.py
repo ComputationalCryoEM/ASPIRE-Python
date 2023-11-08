@@ -2,24 +2,6 @@
 # isort: off
 
 from .basis import Basis, Coef, ComplexCoef
-from .basis_utils import (
-    lgwt,
-    check_besselj_zeros,
-    besselj_newton,
-    sph_bessel,
-    norm_assoc_legendre,
-    real_sph_harmonic,
-    besselj_zeros,
-    all_besselj_zeros,
-    unique_coords_nd,
-    d_decay_approx_fun,
-    p_n,
-    t_x_mat,
-    t_x_mat_dot,
-    t_x_derivative_mat,
-    t_radial_part_mat,
-    k_operator,
-)
 from .steerable import SteerableBasis2D
 from .fb import FBBasisMixin
 
