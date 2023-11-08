@@ -83,7 +83,7 @@ class PSWFBasis2D(SteerableBasis2D):
         """
         Generate the 2D sampling grid
         """
-        grid = grid_2d(self.nres, normalized=False, indexing="xy")
+        grid = grid_2d(self.nres, normalized=False, indexing="yx")
         self._disk_mask = grid["r"] <= self.rcut
         self._r_disk = grid["r"][self._disk_mask] / self.rcut
         self._theta_disk = grid["phi"][self._disk_mask]
