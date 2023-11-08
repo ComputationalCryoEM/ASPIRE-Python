@@ -519,7 +519,8 @@ class SteerableBasis2D(Basis, abc.ABC):
         # Optionally truncate off block elements to zero.
         if truncate:
             filt = BlkDiagMatrix.from_dense(
-                filt, self.blk_diag_cov_shape, warn_eps=1e-6
+                filt,
+                self.blk_diag_cov_shape,
             )
 
         return filt
