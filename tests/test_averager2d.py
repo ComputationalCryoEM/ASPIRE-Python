@@ -127,7 +127,9 @@ class Averager2DBase:
             0, 2 * np.pi, num=self.n_img, endpoint=False, retstep=True, dtype=self.dtype
         )
 
-        # Generate rotations to be used by `Simulation`
+        # Generate rotations to be used by `Simulation`. Since `Simulation` rotates
+        # the coordinate grid and the averager aligns by rotating the projection images,
+        # we negate the angles fed into `Simulation` for direct comparison later.
         self.rotations = Rotation.about_axis(
             "z", -self.thetas, dtype=self.dtype, gimble_lock_warnings=False
         )
