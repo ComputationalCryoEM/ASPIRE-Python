@@ -403,19 +403,3 @@ class PSWFBasis2D(SteerableBasis2D):
         See `SteerableBasis2D.filter_to_basis_mat`.
         """
         return super().filter_to_basis_mat(*args, **kwargs)
-
-    def rotate(self, coef, radians, refl=None):
-        """
-        See `SteerableBasis2D.rotate`.
-        """
-        # {F}PSWF rotation convention is still CW internally.
-        # This will make things consistent until that is addressed.
-        return super().rotate(coef, -radians, refl=refl)
-
-    def complex_rotate(self, complex_coef, radians, refl=None):
-        """
-        See `SteerableBasis2D.rotate`.
-        """
-        # {F}PSWF rotation convention is still CW internally.
-        # This will make things consistent until that is addressed.
-        return super().complex_rotate(complex_coef, -radians, refl=refl)
