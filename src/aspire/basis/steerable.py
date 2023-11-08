@@ -476,6 +476,10 @@ class SteerableBasis2D(Basis, abc.ABC):
 
         return ComplexCoef(self, complex_coef)
 
+    # `abstractmethod` enforces when a new subclass of
+    # `SteerableBasis2D` is created that this method is explicitly
+    # implemented.  This is intended to encourage future basis authors
+    # to consider this method for their application.
     @abc.abstractmethod
     def filter_to_basis_mat(self, f, method="evaluate_t", truncate=True):
         """
