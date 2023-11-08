@@ -7,7 +7,7 @@ from pytest import raises
 from aspire.basis import FBBasis3D
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
-from aspire.source.simulation import LegacySimulation
+from aspire.source.simulation import _LegacySimulation
 from aspire.volume import LegacyVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -18,7 +18,7 @@ class MeanEstimatorTestCase(TestCase):
         self.dtype = np.float32
         self.resolution = 8
         self.vols = LegacyVolume(L=self.resolution, dtype=self.dtype).generate()
-        self.sim = LegacySimulation(
+        self.sim = _LegacySimulation(
             n=1024,
             vols=self.vols,
             unique_filters=[

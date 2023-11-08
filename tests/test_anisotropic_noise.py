@@ -5,7 +5,7 @@ import numpy as np
 
 from aspire.noise import AnisotropicNoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import RadialCTFFilter
-from aspire.source import ArrayImageSource, LegacySimulation
+from aspire.source import ArrayImageSource, _LegacySimulation
 from aspire.utils import utest_tolerance
 from aspire.volume import LegacyVolume
 
@@ -16,7 +16,7 @@ class SimTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
         self.vol = LegacyVolume(L=8, dtype=self.dtype).generate()
-        self.sim = LegacySimulation(
+        self.sim = _LegacySimulation(
             n=1024,
             vols=self.vol,
             unique_filters=[
