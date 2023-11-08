@@ -177,8 +177,8 @@ class FPSWFBasis2D(PSWFBasis2D):
             ]
         )
 
-        pts_x = quad_rule_pts_r * np.cos(quad_rule_pts_theta)
-        pts_y = quad_rule_pts_r * np.sin(quad_rule_pts_theta)
+        pts_x = quad_rule_pts_r * np.sin(quad_rule_pts_theta)
+        pts_y = quad_rule_pts_r * np.cos(quad_rule_pts_theta)
 
         return (
             pts_x,
