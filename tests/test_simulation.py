@@ -8,7 +8,7 @@ from pytest import raises
 
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
-from aspire.source import LegacySimulation, RelionSource, Simulation
+from aspire.source import RelionSource, Simulation, _LegacySimulation
 from aspire.utils import utest_tolerance
 from aspire.volume import LegacyVolume, SymmetryGroup, Volume
 
@@ -112,7 +112,7 @@ class SimTestCase(TestCase):
             dtype=self.dtype,
         ).generate()
 
-        self.sim = LegacySimulation(
+        self.sim = _LegacySimulation(
             n=self.n,
             L=self.L,
             vols=self.vols,
@@ -158,7 +158,7 @@ class SimTestCase(TestCase):
         )
 
     def testSimulationCached(self):
-        sim_cached = LegacySimulation(
+        sim_cached = _LegacySimulation(
             n=self.n,
             L=self.L,
             vols=self.vols,
