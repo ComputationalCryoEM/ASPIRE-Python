@@ -7,7 +7,7 @@ import numpy as np
 from aspire.basis import FBBasis3D
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import WeightedVolumesEstimator
-from aspire.source import LegacySimulation
+from aspire.source import _LegacySimulation
 from aspire.volume import LegacyVolume
 
 logger = logging.getLogger(__name__)
@@ -21,7 +21,7 @@ class WeightedVolumesEstimatorTestCase(TestCase):
         self.n = 1024
         self.r = 2
         self.L = L = 8
-        self.sim = LegacySimulation(
+        self.sim = _LegacySimulation(
             vols=LegacyVolume(L, dtype=self.dtype).generate(),
             n=self.n,
             unique_filters=[
