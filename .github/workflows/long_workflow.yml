@@ -9,7 +9,7 @@ on:
 jobs:
   expensive_tests:
     runs-on: self-hosted
-    timeout-minutes: 720
+    timeout-minutes: 360
     steps:
     - uses: actions/checkout@v3
     - name: Install dependencies
