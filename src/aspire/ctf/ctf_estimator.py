@@ -10,7 +10,7 @@ See paper:
   |    https://doi.org/10.1016/j.ultramic.2020.112950.
 
 Note:
-`CtfEstimator` computes the background as a monotonically decreasing
+``CtfEstimator`` computes the background as a monotonically decreasing
 function of spatial frequency. This practice may lead to an inaccurate
 background estimation for experimental images produced using a K2
 camera in counting mode, as the background in this case is not
