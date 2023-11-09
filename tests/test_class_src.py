@@ -37,8 +37,8 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 IMG_SIZES = [
-    32,
-    pytest.param(31, marks=pytest.mark.expensive),
+    16,
+    pytest.param(15, marks=pytest.mark.expensive),
 ]
 DTYPES = [
     np.float64,
@@ -58,7 +58,7 @@ BASIS = [
 ]
 
 
-@pytest.fixture(params=BASIS, ids=lambda x: f"basis={x}")
+@pytest.fixture(params=BASIS, ids=lambda x: f"basis={x}", scope="module")
 def basis(request, img_size, dtype):
     cls = request.param
     # Setup a Basis
@@ -72,17 +72,17 @@ def sim_fixture_id(params):
     return f"res={res}, dtype={dtype}"
 
 
-@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
 def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=IMG_SIZES, ids=lambda x: f"img_size={x}")
+@pytest.fixture(params=IMG_SIZES, ids=lambda x: f"img_size={x}", scope="module")
 def img_size(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def class_sim_fixture(dtype, img_size):
     """
     Construct a Simulation with explicit viewing angles forming
@@ -134,12 +134,27 @@ def class_sim_fixture(dtype, img_size):
     return src
 
 
-@pytest.fixture(params=CLS_SRCS, ids=lambda param: f"ClassSource={param.__class__}")
+@pytest.fixture(
+    params=CLS_SRCS, ids=lambda param: f"ClassSource={param.__class__}", scope="module"
+)
 def test_src_cls(request):
     return request.param
 
 
-def test_basic_averaging(class_sim_fixture, test_src_cls):
+@pytest.fixture(scope="module")
+def classifier(class_sim_fixture):
+    return RIRClass2D(
+        class_sim_fixture,
+        fspca_components=123,
+        bispectrum_components=101,  # Compressed Features after last PCA stage.
+        n_nbor=10,
+        large_pca_implementation="legacy",
+        nn_implementation="legacy",
+        bispectrum_implementation="legacy",
+    )
+
+
+def test_basic_averaging(class_sim_fixture, test_src_cls, basis, classifier):
     """
     Test that the default `ClassAvgSource` implementations return
     class averages.
@@ -147,8 +162,10 @@ def test_basic_averaging(class_sim_fixture, test_src_cls):
 
     cmp_n = 5
 
-    # Classify, Select, and compute averaged images.
-    test_src = test_src_cls(src=class_sim_fixture, num_procs=NUM_PROCS)
+    test_src = test_src_cls(
+        src=class_sim_fixture, classifier=classifier, num_procs=NUM_PROCS
+    )
+
     test_imgs = test_src.images[:cmp_n]
 
     # Fetch reference images from the original source.
@@ -194,13 +211,19 @@ def test_heap_helper():
     assert popped == a, "Failed to pop min item"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def cls_fixture(class_sim_fixture):
     """
     Classifier fixture.
     """
     # Create the classifier
-    c2d = RIRClass2D(class_sim_fixture, nn_implementation="sklearn")
+    c2d = RIRClass2D(
+        class_sim_fixture,
+        fspca_components=123,
+        bispectrum_components=101,  # Compressed Features after last PCA stage.
+        n_nbor=10,
+        nn_implementation="sklearn",
+    )
     # Compute the classification
     # (classes, reflections, distances)
     return c2d.classify()
@@ -294,8 +317,10 @@ def test_contrast_selector(dtype):
     assert np.allclose(selector._quality_scores, ref_scores)
 
 
-def test_avg_src_starfileio(class_sim_fixture, test_src_cls):
-    src = test_src_cls(src=class_sim_fixture, num_procs=NUM_PROCS)
+def test_avg_src_starfileio(class_sim_fixture, test_src_cls, classifier):
+    src = test_src_cls(
+        src=class_sim_fixture, classifier=classifier, num_procs=NUM_PROCS
+    )
 
     # Save and load the source as a STAR file.
     # Saving should force classification and selection to occur,
