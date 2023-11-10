@@ -154,7 +154,7 @@ def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, seed=None):
     m = np.exp(o1 * coef_norm + 1j * o2 * phase)
 
     # svd of the reduced bispectrum
-    u, s, v = pca_y(m, 300, seed=seed)
+    u, s, v = pca_y(m, min(300, len(m)), seed=seed)
 
     coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
     coef_b_r = np.conjugate(u.T).dot(np.conjugate(m))
