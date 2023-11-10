@@ -523,7 +523,7 @@ class Basis:
         """
         return mdim_mat_fun_conj(X, len(self.sz), 1, self._evaluate_t)
 
-    def expand(self, x):
+    def expand(self, x, tol=None, atol=0):
         """
         Obtain coefficients in the basis from those in standard coordinate basis
 
@@ -565,9 +565,10 @@ class Basis:
             dtype=self.dtype,
         )
 
-        # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
-        tol = 10 * np.finfo(x.dtype).eps
-        logger.info("Expanding array in basis")
+        if tol is None:
+            # TODO: (from MATLAB implementation) - Check that this tolerance make sense for multiple columns in v
+            tol = 10 * np.finfo(x.dtype).eps
+        logger.info(f"Expanding array in basis with tol={tol} atol={atol}")
 
         # number of image samples
         n_data = x.shape[0]
@@ -576,9 +577,9 @@ class Basis:
         for isample in range(0, n_data):
             b = self.evaluate_t(self._cls(x[isample])).asnumpy().T
             # TODO: need check the initial condition x0 can improve the results or not.
-            v[isample], info = cg(operator, b, tol=tol, atol=0)
+            v[isample], info = cg(operator, b, tol=tol, atol=atol)
             if info != 0:
-                raise RuntimeError("Unable to converge!")
+                raise RuntimeError(f"Unable to converge! cg info={info}")
 
         # return v coefficients with the last dimension of self.count
         v = v.reshape((*sz_roll, self.count))
