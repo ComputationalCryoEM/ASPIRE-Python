@@ -35,6 +35,8 @@ logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
+# RNG SEED, should help small class average tests be deterministic.
+SEED = 5552368
 
 IMG_SIZES = [
     16,
@@ -151,6 +153,7 @@ def classifier(class_sim_fixture):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
+        seed=SEED,
     )
 
 
@@ -223,6 +226,7 @@ def cls_fixture(class_sim_fixture):
         bispectrum_components=101,  # Compressed Features after last PCA stage.
         n_nbor=10,
         nn_implementation="sklearn",
+        seed=SEED,
     )
     # Compute the classification
     # (classes, reflections, distances)
