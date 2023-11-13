@@ -55,7 +55,9 @@ def create_images(L, n):
         np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(np.float64)
     )
     v = v.downsample(L)
-    sim = Simulation(L=L, n=n, vols=v, dtype=v.dtype, seed=1103)
+    sim = Simulation(
+        L=L, n=n, vols=v, dtype=v.dtype, offsets=0, amplitudes=1, seed=1103
+    )
     img = sim.clean_images[:]
     return img
 
