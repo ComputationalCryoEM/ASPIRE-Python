@@ -434,10 +434,9 @@ class Volume:
 
     def rotate(self, rot_matrices, zero_nyquist=True):
         """
-        Rotate volumes using a `Rotation` object. If the `Rotation` object
-        is a single rotation, each volume will be rotated by that rotation.
-        If the `Rotation` object is a stack of rotations of length n_vols,
-        the ith volume is rotated by the ith rotation.
+        Rotate volumes, within a fixed grid, by `rot_matrices`. If `rot_matrices` is a single
+        rotation, each volume will be rotated by that rotation. If `rot_matrices` is a stack of
+        rotations of length n_vols, the ith volume will be rotated by the ith rotation.
 
         :param rot_matrices: `Rotation` object of length 1 or n_vols.
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
@@ -454,13 +453,14 @@ class Volume:
             rot_matrices, Rotation
         ), f"Argument must be an instance of the Rotation class. {type(rot_matrices)} was supplied."
 
-        # Get numpy representation of Rotation object.
-        rot_matrices = rot_matrices.matrices
+        # Invert the rotations passed to `rotated_grids_3d` and get numpy representation of Rotation object.
+        rots_inverted = rot_matrices.invert()
+        rots_inverted = rots_inverted.matrices
 
-        K = len(rot_matrices)  # Rotation stack size
+        K = len(rots_inverted)  # Rotation stack size
         assert K == self.n_vols or K == 1, "Rotation object must be length 1 or n_vols."
 
-        if rot_matrices.dtype != self.dtype:
+        if rots_inverted.dtype != self.dtype:
             logger.warning(
                 f"{self.__class__.__name__}"
                 f" rot_matrices.dtype {rot_matrices.dtype}"
@@ -470,19 +470,19 @@ class Volume:
 
         # If K = 1 we broadcast the single Rotation object across each volume.
         if K == 1:
-            pts_rot = rotated_grids_3d(self.resolution, rot_matrices)
+            pts_rot = rotated_grids_3d(self.resolution, rots_inverted)
             vol_f = nufft(self.asnumpy(), pts_rot)
             vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
         # If K = n_vols, we apply the ith rotation to ith volume.
         else:
-            rot_matrices = rot_matrices.reshape((K, 1, 3, 3))
+            rots_inverted = rots_inverted.reshape((K, 1, 3, 3))
             pts_rot = np.zeros((K, 3, self.resolution**3), dtype=self.dtype)
             vol_f = np.empty(
                 (self.n_vols, self.resolution**3), dtype=complex_type(self.dtype)
             )
             for i in range(K):
-                pts_rot[i] = rotated_grids_3d(self.resolution, rot_matrices[i])
+                pts_rot[i] = rotated_grids_3d(self.resolution, rots_inverted[i])
 
                 vol_f[i] = nufft(self[i].asnumpy(), pts_rot[i])
 

@@ -309,7 +309,7 @@ def test_project(vols_1, dtype):
 
 # Parameterize over even and odd resolutions
 @pytest.mark.parametrize("L", RES)
-def test_rotate(L, dtype):
+def test_rotate_axes(L, dtype):
     # In this test we instantiate Volume instance `vol`, containing a single nonzero
     # voxel in the first octant, and rotate it by multiples of pi/2 about each axis.
     # We then compare to reference volumes containing appropriately located nonzero voxel.
@@ -356,6 +356,54 @@ def test_rotate(L, dtype):
 
         # Test that rotated volumes align with reference volumes
         assert np.allclose(ref_vol, rot_vol, atol=utest_tolerance(dtype))
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+@pytest.mark.parametrize("L", [32, 33])
+def test_rotate(L, dtype):
+    """
+    We rotate Volumes containing random hot/cold spots by random rotations and check that
+    hot/cold spots in the rotated Volumes are in the expected locations.
+    """
+    n_vols = 5
+
+    # Generate random locations for hot/cold spots, each at a distance of approximately
+    # L // 4 from (0, 0, 0). Note, these points are considered to be in (z, y, x) order.
+    hot_cold_locs = np.random.uniform(low=-1, high=1, size=(n_vols, 2, 3))
+    hot_cold_locs = np.round(
+        (hot_cold_locs / np.linalg.norm(hot_cold_locs, axis=-1)[:, :, None]) * (L // 4)
+    ).astype("int")
+
+    # Generate Volumes, each with one hot and one cold spot.
+    vols = np.zeros((n_vols, L, L, L), dtype=dtype)
+    vol_center = np.array((L // 2, L // 2, L // 2), dtype="int")
+    for i in range(n_vols):
+        vols[i][tuple(vol_center + hot_cold_locs[i, 0])] = 1
+        vols[i][tuple(vol_center + hot_cold_locs[i, 1])] = -1
+    vols = Volume(vols)
+
+    # Generate random rotations.
+    rots = Rotation.generate_random_rotations(n=n_vols, dtype=dtype)
+    rots_mat = rots.matrices
+
+    # Expected location of hot/cold spots relative to (0, 0, 0) origin in (x, y, z) order.
+    expected_hot_cold = np.transpose(
+        rots_mat @ np.transpose(hot_cold_locs[..., ::-1], axes=(0, 2, 1)),
+        axes=(0, 2, 1),
+    )
+
+    # Expected location of hot/cold spots relative to Volume center (L/2, L/2, L/2) in (z, y, x) order.
+    expected_locs = np.round(expected_hot_cold[..., ::-1] + vol_center)
+
+    # Rotate Volumes.
+    rotated_vols = vols.rotate(rots)
+
+    # Check that new hot/cold spots are in expectecd locations.
+    for i in range(n_vols):
+        new_hot_loc = np.unravel_index(np.argmax(rotated_vols.asnumpy()[i]), (L, L, L))
+        new_cold_loc = np.unravel_index(np.argmin(rotated_vols.asnumpy()[i]), (L, L, L))
+        np.testing.assert_allclose(new_hot_spot, expected_locs[i, 0])
+        np.testing.assert_allclose(new_cold_spot, expected_locs[i, 1])
 
 
 def test_rotate_broadcast_unicast(asym_vols):
