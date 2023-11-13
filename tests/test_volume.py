@@ -320,20 +320,20 @@ def test_rotate_axes(L, dtype):
     data[L // 2 + 1, L // 2 + 1, L // 2 + 1] = 1
     vol = Volume(data)
 
-    # Create a dict with map from axis and angle of rotation to new location of nonzero voxel.
+    # Create a dict with map from axis and angle of rotation to new location (z, y, x) of nonzero voxel.
     ref_pts = {
         ("x", 0): (1, 1, 1),
-        ("x", pi / 2): (-1, 1, 1),
+        ("x", pi / 2): (1, -1, 1),
         ("x", pi): (-1, -1, 1),
-        ("x", 3 * pi / 2): (1, -1, 1),
+        ("x", 3 * pi / 2): (-1, 1, 1),
         ("y", 0): (1, 1, 1),
-        ("y", pi / 2): (1, 1, -1),
+        ("y", pi / 2): (-1, 1, 1),
         ("y", pi): (-1, 1, -1),
-        ("y", 3 * pi / 2): (-1, 1, 1),
+        ("y", 3 * pi / 2): (1, 1, -1),
         ("z", 0): (1, 1, 1),
-        ("z", pi / 2): (1, -1, 1),
+        ("z", pi / 2): (1, 1, -1),
         ("z", pi): (1, -1, -1),
-        ("z", 3 * pi / 2): (1, 1, -1),
+        ("z", 3 * pi / 2): (1, -1, 1),
     }
 
     center = np.array([L // 2] * 3)
@@ -402,8 +402,8 @@ def test_rotate(L, dtype):
     for i in range(n_vols):
         new_hot_loc = np.unravel_index(np.argmax(rotated_vols.asnumpy()[i]), (L, L, L))
         new_cold_loc = np.unravel_index(np.argmin(rotated_vols.asnumpy()[i]), (L, L, L))
-        np.testing.assert_allclose(new_hot_spot, expected_locs[i, 0])
-        np.testing.assert_allclose(new_cold_spot, expected_locs[i, 1])
+        np.testing.assert_allclose(new_hot_loc, expected_locs[i, 0])
+        np.testing.assert_allclose(new_cold_loc, expected_locs[i, 1])
 
 
 def test_rotate_broadcast_unicast(asym_vols):
