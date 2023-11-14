@@ -33,10 +33,9 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         # This is covered by the isotropic test.
         assert ell > 0
 
-        indices = basis.indices()
-        ells = indices["ells"]
-        sgns = indices["sgns"]
-        ks = indices["ks"]
+        ells = basis.angular_indices
+        sgns = basis.signs_indices
+        ks = basis.radial_indices
 
         g2d = grid_2d(basis.nres, dtype=basis.dtype)
         mask = g2d["r"] < 1
