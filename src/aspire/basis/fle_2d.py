@@ -143,16 +143,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
             ci += len(ks)
 
-    def indices(self):
-        """
-        Return the precomputed indices for each basis function.
-        """
-        return {
-            "ells": self.angular_indices,
-            "ks": self.radial_indices,
-            "sgns": self.signs_indices,
-        }
-
     def _precomp(self):
         """
         Precompute the basis functions and other objects used in the evaluation of

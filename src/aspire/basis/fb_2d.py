@@ -63,7 +63,6 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
         # generate 1D indices for basis functions
         self._compute_indices()
-        self._indices = self.indices()
 
         # get normalized factors
         self.radial_norms, self.angular_norms = self.norms()
@@ -109,16 +108,6 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         self.angular_indices = indices_ells
         self.radial_indices = indices_ks
         self.signs_indices = indices_sgns
-
-    def indices(self):
-        """
-        Return the precomputed indices for each basis function.
-        """
-        return {
-            "ells": self.angular_indices,
-            "ks": self.radial_indices,
-            "sgns": self.signs_indices,
-        }
 
     def _precomp(self):
         """

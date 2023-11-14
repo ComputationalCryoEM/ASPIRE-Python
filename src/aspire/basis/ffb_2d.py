@@ -51,7 +51,6 @@ class FFBBasis2D(FBBasis2D):
 
         # generate 1D indices for basis functions
         self._compute_indices()
-        self._indices = self.indices()
 
         # get normalized factors
         self.radial_norms, self.angular_norms = self.norms()
@@ -118,7 +117,6 @@ class FFBBasis2D(FBBasis2D):
 
         # go through  each basis function and find corresponding coefficient
         pf = np.zeros((n_data, 2 * n_theta, n_r), dtype=complex_type(self.dtype))
-        mask = self._indices["ells"] == 0
 
         ind = 0
 
@@ -126,7 +124,7 @@ class FFBBasis2D(FBBasis2D):
 
         # include the normalization factor of angular part into radial part
         radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
-        pf[:, 0, :] = v[:, mask] @ radial_norm[idx]
+        pf[:, 0, :] = v[:, self._zero_angular_indices] @ radial_norm[idx]
         ind = ind + np.size(idx)
 
         ind_pos = ind
@@ -216,11 +214,10 @@ class FFBBasis2D(FBBasis2D):
         # go through each basis function and find the corresponding coefficient
         ind = 0
         idx = ind + np.arange(self.k_max[0])
-        mask = self._indices["ells"] == 0
 
         # include the normalization factor of angular part into radial part
         radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
-        v[:, mask] = pf[:, :, 0].real @ radial_norm[idx].T
+        v[:, self._zero_angular_indices] = pf[:, :, 0].real @ radial_norm[idx].T
         ind = ind + np.size(idx)
 
         ind_pos = ind
