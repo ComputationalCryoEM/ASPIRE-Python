@@ -409,12 +409,6 @@ class Basis:
         """
         raise NotImplementedError("subclasses must implement this")
 
-    def indices(self):
-        """
-        Create the indices for each basis function
-        """
-        raise NotImplementedError("subclasses must implement this")
-
     def _precomp(self):
         """
         Precompute the basis functions at defined sample points
