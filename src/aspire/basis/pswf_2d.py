@@ -94,14 +94,6 @@ class PSWFBasis2D(SteerableBasis2D):
         """
         self._generate_samples()
 
-        self.non_neg_freq_inds = slice(0, len(self.complex_angular_indices))
-
-        tmp = np.nonzero(self.complex_angular_indices == 0)[0]
-        self.zero_freq_inds = slice(tmp[0], tmp[-1] + 1)
-
-        tmp = np.nonzero(self.complex_angular_indices > 0)[0]
-        self.pos_freq_inds = slice(tmp[0], tmp[-1] + 1)
-
     def _generate_samples(self):
         """
         Generate sample points for PSWF functions
