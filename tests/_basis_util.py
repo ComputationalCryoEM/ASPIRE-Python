@@ -45,8 +45,6 @@ class Steerable2DMixin:
         ell_max = basis.ell_max
         k_max = basis.k_max
 
-        indices = basis.indices()
-
         i = 0
 
         for ell in range(ell_max + 1):
@@ -57,9 +55,9 @@ class Steerable2DMixin:
 
             for sgn in sgns:
                 for k in range(k_max[ell]):
-                    assert indices["ells"][i] == ell
-                    assert indices["sgns"][i] == sgn
-                    assert indices["ks"][i] == k
+                    assert basis.angular_indices[i] == ell
+                    assert basis.signs_indices[i] == sgn
+                    assert basis.radial_indices[i] == k
 
                     i += 1
 
@@ -99,7 +97,7 @@ class Steerable2DMixin:
 
         coef_np = basis.expand(im).asnumpy()
 
-        ells = basis.indices()["ells"]
+        ells = basis.angular_indices
 
         energy_outside = np.sum(np.abs(coef_np[..., ells != 0]) ** 2)
         energy_total = np.sum(np.abs(coef_np) ** 2)
@@ -125,7 +123,7 @@ class Steerable2DMixin:
 
             coef_np = basis.expand(im1).asnumpy()
 
-            ells = basis.indices()["ells"]
+            ells = basis.angular_indices
 
             energy_outside = np.sum(np.abs(coef_np[..., ells != ell]) ** 2)
             energy_total = np.sum(np.abs(coef_np) ** 2)

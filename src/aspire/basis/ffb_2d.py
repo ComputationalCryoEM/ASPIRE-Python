@@ -124,7 +124,7 @@ class FFBBasis2D(FBBasis2D):
 
         # include the normalization factor of angular part into radial part
         radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
-        pf[:, 0, :] = v[:, self._zero_angular_indices] @ radial_norm[idx]
+        pf[:, 0, :] = v[:, self._zero_angular_inds] @ radial_norm[idx]
         ind = ind + np.size(idx)
 
         ind_pos = ind
@@ -217,7 +217,7 @@ class FFBBasis2D(FBBasis2D):
 
         # include the normalization factor of angular part into radial part
         radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
-        v[:, self._zero_angular_indices] = pf[:, :, 0].real @ radial_norm[idx].T
+        v[:, self._zero_angular_inds] = pf[:, :, 0].real @ radial_norm[idx].T
         ind = ind + np.size(idx)
 
         ind_pos = ind
