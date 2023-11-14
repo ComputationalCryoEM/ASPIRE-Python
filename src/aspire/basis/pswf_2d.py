@@ -181,18 +181,6 @@ class PSWFBasis2D(SteerableBasis2D):
 
             ci += len(ks)
 
-    # Added for compatibility.
-    # Probably can remove `indices` dict wholesale later (MATLAB holdover).
-    def indices(self):
-        """
-        Return the precomputed indices for each basis function.
-        """
-        return {
-            "ells": self.angular_indices,
-            "ks": self.radial_indices,
-            "sgns": self.signs_indices,
-        }
-
     def _evaluate_t(self, images):
         """
         Evaluate coefficient vectors in PSWF basis using the direct method

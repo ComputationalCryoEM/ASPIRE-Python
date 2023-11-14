@@ -33,7 +33,6 @@ class SteerableBasis2D(Basis, abc.ABC):
         self._blk_diag_cov_shape = None
 
         # Centralize indices attributes between FB/PSWF/FLE in SteerableBasis2D
-        self._indices = self.indices()
         self.complex_count = self.count - sum(self._neg_angular_inds)
         self.complex_angular_indices = self.angular_indices[self._non_neg_angular_inds]
         self.complex_radial_indices = self.radial_indices[self._non_neg_angular_inds]
