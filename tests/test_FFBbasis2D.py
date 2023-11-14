@@ -31,10 +31,9 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
     seed = 9161341
 
     def _testElement(self, basis, ell, k, sgn):
-        indices = basis.indices()
-        ells = indices["ells"]
-        sgns = indices["sgns"]
-        ks = indices["ks"]
+        ells = basis.angular_indices
+        sgns = basis.signs_indices
+        ks = basis.radial_indices
 
         g2d = grid_2d(basis.nres, dtype=basis.dtype)
         mask = g2d["r"] < 1
