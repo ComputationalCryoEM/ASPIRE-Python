@@ -287,13 +287,13 @@ class CtfEstimator:
         coefs_s = ffbbasis.evaluate_t(amplitude_spectrum).asnumpy().copy().T
         coefs_n = coefs_s.copy()
 
-        coefs_s[np.argwhere(ffbbasis._indices["ells"] == 1)] = 0
+        coefs_s[np.argwhere(ffbbasis.angular_indices == 1)] = 0
         if circular:
-            coefs_s[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
+            coefs_s[np.argwhere(ffbbasis.angular_indices == 2)] = 0
             noise = amplitude_spectrum
         else:
-            coefs_n[np.argwhere(ffbbasis._indices["ells"] == 0)] = 0
-            coefs_n[np.argwhere(ffbbasis._indices["ells"] == 2)] = 0
+            coefs_n[np.argwhere(ffbbasis.angular_indices == 0)] = 0
+            coefs_n[np.argwhere(ffbbasis.angular_indices == 2)] = 0
             noise = Coef(ffbbasis, coefs_n.T).evaluate()
 
         psd = Coef(ffbbasis, coefs_s.T).evaluate()
