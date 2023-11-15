@@ -71,7 +71,7 @@ class FSPCABasis(SteerableBasis2D):
         self.complex_count = self.basis.complex_count
         self.angular_indices = self.basis.angular_indices
         self.radial_indices = self.basis.radial_indices
-        self.signs_indices = self.basis._indices["sgns"]
+        self.signs_indices = self.basis.signs_indices
         self.complex_angular_indices = self.basis.complex_angular_indices
         self.complex_radial_indices = self.basis.complex_radial_indices
 
@@ -243,7 +243,7 @@ class FSPCABasis(SteerableBasis2D):
         self.mean_coef_zero = self.mean_coef_est.asnumpy()[0][self.angular_indices == 0]
 
         # Define mask for zero angular mode, used in loop below
-        zero_ell_mask = self.basis._indices["ells"] == 0
+        zero_ell_mask = self.basis.angular_indices == 0
 
         # Apply Data matrix batchwise
         num_batches = (self.src.n + self.batch_size - 1) // self.batch_size
@@ -275,9 +275,9 @@ class FSPCABasis(SteerableBasis2D):
             for ell in range(
                 1, self.basis.ell_max + 1
             ):  # `ell` in this code is `k` from paper
-                mask_ell = self.basis._indices["ells"] == ell
-                mask_pos = mask_ell & (self.basis._indices["sgns"] == +1)
-                mask_neg = mask_ell & (self.basis._indices["sgns"] == -1)
+                mask_ell = self.basis.angular_indices == ell
+                mask_pos = mask_ell & (self.basis.signs_indices == +1)
+                mask_neg = mask_ell & (self.basis.signs_indices == -1)
 
                 A.append(batch_coef[:, mask_pos])
                 A.append(batch_coef[:, mask_neg])
@@ -405,8 +405,8 @@ class FSPCABasis(SteerableBasis2D):
         top_components = list(ordered_components)[: self.components]
 
         # Now we need to find the locations of both the + and - sgns.
-        pos_mask = self.basis._indices["sgns"] == 1
-        neg_mask = self.basis._indices["sgns"] == -1
+        pos_mask = self.basis.signs_indices == 1
+        neg_mask = self.basis.signs_indices == -1
         compressed_indices = []
         for k, q in top_components:
             # Compute the locations of coefs we're interested in.
