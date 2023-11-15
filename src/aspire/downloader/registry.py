@@ -13,6 +13,7 @@ registry = {
     "emdb_14621.map": "b45774245c2bd5e1a44e801b8fb1705a44d5850631838d060294be42e34a6900",
     "emdb_2484.map": "6a324e23352bea101c191d5e854026162a5a9b0b8fc73ac5a085cc22038e1999",
     "emdb_6458.map": "645208af6d36bbd3d172c549e58d387b81142fd320e064bc66105be0eae540d1",
+    "simulated_channelspin.npz": "c0752674acb85417f6a77a28ac55280c1926c73fda9e25ce0a9940728b1dfcc8",
 }
 
 registry_urls = {
@@ -29,6 +30,7 @@ registry_urls = {
     "emdb_14621.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-14621/map/emd_14621.map.gz",
     "emdb_2484.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2484/map/emd_2484.map.gz",
     "emdb_6458.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-6458/map/emd_6458.map.gz",
+    "simulated_channelspin.npz": "https://zenodo.org/records/8186548/files/example_FakeKV_dataset.npz",
 }
 
 file_to_method_map = {
@@ -45,4 +47,5 @@ file_to_method_map = {
     "emdb_14621.map": "emdb_14621",
     "emdb_2484.map": "emdb_2484",
     "emdb_6458.map": "emdb_6458",
+    "simulated_channelspin.npz": "simulated_channelspin",
 }

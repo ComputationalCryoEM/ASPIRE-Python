@@ -1,5 +1,6 @@
 import shutil
 
+import numpy as np
 import pooch
 
 from aspire import config
@@ -263,3 +264,24 @@ def emdb_6458():
     vol = Volume.load(file_path, symmetry_group="C11")
 
     return vol
+
+
+def simulated_channelspin():
+    """
+    Downloads the Simulated ChannelSpin dataset and returns the file path.
+
+    This dataset includes a stack of 54 volumes sized (54,54,54)
+    and a corresponding stack of 10000 projection images (54,54).
+
+    :return: Dictionary containing  Volume and Image instances,
+        along with associated metadata fields in Numpy arrays.
+    """
+    file_path = fetch_data("simulated_channelspin.npz")
+    data = np.load(file_path)
+    ["vols", "angles", "shifts", "images", "amplitudes", "rots", "states", "weights"]
+
+    # Instantiate ASPIRE objects for the main entries.
+    data["vols"] = Volume(data["vols"])
+    data["images"] = Images(data["images"])
+
+    return data
