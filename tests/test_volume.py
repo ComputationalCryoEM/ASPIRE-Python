@@ -307,15 +307,14 @@ def test_project(vols_1, dtype):
     assert np.allclose(results, imgs_clean, atol=1e-7)
 
 
-# Parameterize over even and odd resolutions
-@pytest.mark.parametrize("L", RES)
-def test_rotate_axes(L, dtype):
+def test_rotate_axes(res, dtype):
     # In this test we instantiate Volume instance `vol`, containing a single nonzero
     # voxel in the first octant, and rotate it by multiples of pi/2 about each axis.
     # We then compare to reference volumes containing appropriately located nonzero voxel.
 
     # Create a Volume instance to rotate.
     # This volume has a value of 1 in the first octant at (1, 1, 1) and zeros elsewhere.
+    L = res
     data = np.zeros((L, L, L), dtype=dtype)
     data[L // 2 + 1, L // 2 + 1, L // 2 + 1] = 1
     vol = Volume(data)
@@ -358,13 +357,12 @@ def test_rotate_axes(L, dtype):
         assert np.allclose(ref_vol, rot_vol, atol=utest_tolerance(dtype))
 
 
-@pytest.mark.parametrize("dtype", [np.float32, np.float64])
-@pytest.mark.parametrize("L", [32, 33])
-def test_rotate(L, dtype):
+def test_rotate(res, dtype):
     """
     We rotate Volumes containing random hot/cold spots by random rotations and check that
     hot/cold spots in the rotated Volumes are in the expected locations.
     """
+    L = res
     n_vols = 5
 
     # Generate random locations for hot/cold spots, each at a distance of approximately
