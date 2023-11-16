@@ -46,6 +46,7 @@ from aspire.reconstruction import WeightedVolumesEstimator
 basis = FFBBasis3D(src.L, dtype=src.dtype)
 
 # Setup an estimator to perform the back projection.
+breakpoint()
 estimator = WeightedVolumesEstimator(weights, src, basis, preconditioner="none")
 
 # XXX
@@ -73,15 +74,15 @@ estimated_volume = Volume(np.load(fn))
 # -------------------------------------------------
 # Generate and compare several random projections between the estimated volumes and the known volumes.
 
-from aspire.utils import uniform_random_angles
+from aspire.utils import Rotation, uniform_random_angles
 
 v = 0  # Volume under comparison
 m = 3  # Number of projections
 
-angles = uniform_random_angles(m, dtype=src.dtype)
+random_rotations = Rotation.from_euler(uniform_random_angles(m, dtype=src.dtype))
 
 # Estimated volume projections
-estimated_volume[v].project(angles).show()
+estimated_volume[v].project(random_rotations).show()
 
 # Source volume projections
-vols[v].project(angles).show()
+vols[v].project(random_rotations).show()
