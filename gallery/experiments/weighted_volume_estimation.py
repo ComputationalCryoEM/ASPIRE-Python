@@ -46,7 +46,6 @@ from aspire.reconstruction import WeightedVolumesEstimator
 basis = FFBBasis3D(src.L, dtype=src.dtype)
 
 # Setup an estimator to perform the back projection.
-breakpoint()
 estimator = WeightedVolumesEstimator(weights, src, basis, preconditioner="none")
 
 # XXX
