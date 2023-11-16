@@ -532,9 +532,9 @@ class Basis:
 
         :param x: An array whose last two or three dimensions are to be expanded
             the desired basis. These dimensions must equal `self.sz`.
-        :param tol: Tolerances for convergence, `norm(residual) <= max(tol*norm(b), atol)`.
+        :param tol: Relative tolerance for convergence, `norm(residual) <= max(tol*norm(b), atol)`.
             Deafult `None` sets to dtype's `eps`*10.
-        :param atol: Tolerances for convergence, `norm(residual) <= max(tol*norm(b), atol)`.
+        :param atol: Absolute tolerance for convergence, `norm(residual) <= max(tol*norm(b), atol)`.
         :return: The coefficients of `v` expanded in the desired basis.
             The last dimension of `v` is with size of `count` and the
             first dimensions of the return value correspond to
