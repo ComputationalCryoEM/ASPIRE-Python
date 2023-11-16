@@ -295,7 +295,6 @@ def test_project(vols_hot_cold):
 
     # Generate random rotations.
     rots = Rotation.generate_random_rotations(n=vols.n_vols, dtype=dtype)
-    rots_mat = rots.matrices
 
     # To find the expected location of hot/cold spots in the projections we rotate the 3D
     # vector of locations by the transpose, ie. rots.invert(), (since our projections are
