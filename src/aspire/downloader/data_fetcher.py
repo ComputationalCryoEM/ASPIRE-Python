@@ -5,7 +5,9 @@ import pooch
 
 from aspire import config
 from aspire.downloader import file_to_method_map, registry, registry_urls
+from aspire.image import Image
 from aspire.volume import Volume
+from aspire.utils import Rotation
 
 # Initialize pooch data fetcher instance.
 _data_fetcher = pooch.create(
@@ -277,11 +279,14 @@ def simulated_channelspin():
         along with associated metadata fields in Numpy arrays.
     """
     file_path = fetch_data("simulated_channelspin.npz")
-    data = np.load(file_path)
-    ["vols", "angles", "shifts", "images", "amplitudes", "rots", "states", "weights"]
+    # Use context manager so the file handle closes.
+    with np.load(file_path) as data:
+        # Convert to dict so that the entries can be modified
+        data = dict(data)
 
-    # Instantiate ASPIRE objects for the main entries.
+    # Instantiate ASPIRE objects where appropriate
     data["vols"] = Volume(data["vols"])
-    data["images"] = Images(data["images"])
+    data["images"] = Image(data["images"])
+    data['rots'] = Rotation(data['rots'])
 
     return data
