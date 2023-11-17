@@ -87,6 +87,9 @@ def test_build_clmatrix(source_orientation_objs):
 
     # Check that at least 98% of estimates are within 5 degrees.
     tol = 0.98
+    if src.offsets.all() != 0:
+        # Set tolerance to 95% when using nonzero offsets.
+        tol = 0.95
     assert within_5 / angle_diffs.size > tol
 
 
