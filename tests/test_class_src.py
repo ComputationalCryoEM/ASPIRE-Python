@@ -150,6 +150,7 @@ def classifier(class_sim_fixture):
         fspca_components=123,
         bispectrum_components=101,  # Compressed Features after last PCA stage.
         n_nbor=10,
+        sample_n=50000,
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
@@ -225,6 +226,7 @@ def cls_fixture(class_sim_fixture):
         fspca_components=123,
         bispectrum_components=101,  # Compressed Features after last PCA stage.
         n_nbor=10,
+        sample_n=50000,
         nn_implementation="sklearn",
         seed=SEED,
     )
