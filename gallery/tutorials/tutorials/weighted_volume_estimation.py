@@ -11,8 +11,9 @@ using a published reference dataset.
 # ---------------------------
 # ASPIRE's downloader will download, cache,
 # and unpack the reference dataset.
-# More information about the dataset can be found here:
-# https://zenodo.org/records/8186548
+# More information about the dataset can be found on
+# `Zenodo <https://zenodo.org/records/8186548>`_
+# and in this `paper <https://iopscience.iop.org/article/10.1088/1361-6420/ab4f55/ampdf>`_
 
 from aspire import downloader
 
@@ -41,15 +42,14 @@ src = ArrayImageSource(imgs, angles=rots.angles)
 
 # The images are downsampled for the sake of a quicker tutorial.
 # This line can be commented out to achieve the reference size (54 pixels).
-
 src = src.downsample(24)
 
+# %%
 # .. note:
 #     This tutorial demonstrates bringing data reference data.
 #     It is also possible to just create a ``Simulation`` or use other
 #     ``ImageSource`` objects here, so long as the rotations required
 #     for backprojecting are assigned.
-
 
 # %%
 # Volume Reconstruction
@@ -70,6 +70,7 @@ estimator = WeightedVolumesEstimator(weights, src, basis, preconditioner="none")
 # Perform the estimation, returning a ``Volume`` stack.
 estimated_volume = estimator.estimate()
 
+# %%
 # .. note:
 #     The ``estimate()`` method requires a fair amount of compute time,
 #     but there should be regularly logged progress towards convergence.
@@ -79,6 +80,8 @@ estimated_volume = estimator.estimate()
 # -------------------------------------------------
 # Generate several random projections rotations, then compare these
 # projections between the estimated volumes and the known volumes.
+# If ``src`` was downsampled above, the resulting estimated volumes
+# and projections will be similarly downsampled.
 
 from aspire.utils import Rotation, uniform_random_angles
 
