@@ -7,8 +7,8 @@ from aspire import config
 from aspire.downloader import file_to_method_map, registry, registry_urls
 from aspire.image import Image
 from aspire.source import _LegacySimulation
-from aspire.volume import Volume
 from aspire.utils import Rotation
+from aspire.volume import Volume
 
 # Initialize pooch data fetcher instance.
 _data_fetcher = pooch.create(
@@ -288,7 +288,6 @@ def simulated_channelspin():
     # Instantiate ASPIRE objects where appropriate
     data["vols"] = Volume(data["vols"])
     data["images"] = Image(data["images"])
-    data['rots'] = Rotation(_LegacySimulation.rots_zyx_to_legacy_aspire(data['rots']))
+    data["rots"] = Rotation(_LegacySimulation.rots_zyx_to_legacy_aspire(data["rots"]))
 
     return data
-
