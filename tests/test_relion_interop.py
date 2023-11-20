@@ -14,7 +14,7 @@ def test_projections():
     rln_src = RelionSource(starfile)
 
     # Create Simulation source using same volume and angles.
-    # Note, Relion projections are shifted by 1 pixel cmopared to ASPIRE.
+    # Note, Relion projections are shifted by 1 pixel compared to ASPIRE.
     dtype = rln_src.dtype
     vol_path = os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")
     vol = Volume(np.load(vol_path), dtype=dtype)
@@ -29,6 +29,6 @@ def test_projections():
     # Compute the Fourier Ring Correlation.
     res, corr = rln_src.images[:].frc(sim_src.images[:], cutoff=0.143)
 
-    # Check that res is small and corr is close to 1.
+    # Check that estimated resolution is small and correlation is close to 1.
     np.testing.assert_array_less(res, 2.5)
     np.testing.assert_array_less(1 - corr[:, -2], 0.0015)
