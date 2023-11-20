@@ -46,9 +46,9 @@ src = src.downsample(24)
 
 # %%
 # .. note:
-#     This tutorial demonstrates bringing data reference data.
+#     This tutorial demonstrates bringing reference data.
 #     It is also possible to just create a ``Simulation`` or use other
-#     ``ImageSource`` objects here, so long as the rotations required
+#     ``ImageSource`` objects, so long as the rotations required
 #     for backprojecting are assigned.
 
 # %%
@@ -65,6 +65,9 @@ from aspire.reconstruction import WeightedVolumesEstimator
 basis = FFBBasis3D(src.L, dtype=src.dtype)
 
 # Setup an estimator to perform the back projections and volume estimation.
+# In this case, the ``weights`` array comes from the reference data set,
+# and is shaped to map images to volumes.
+print("`weights shape:`", weights.shape)
 estimator = WeightedVolumesEstimator(weights, src, basis, preconditioner="none")
 
 # Perform the estimation, returning a ``Volume`` stack.
@@ -81,7 +84,7 @@ estimated_volume = estimator.estimate()
 # Generate several random projections rotations, then compare these
 # projections between the estimated volumes and the known volumes.
 # If ``src`` was downsampled above, the resulting estimated volumes
-# and projections will be similarly downsampled.
+# and projections will be of similar downsampled quality.
 
 from aspire.utils import Rotation, uniform_random_angles
 
