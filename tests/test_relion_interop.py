@@ -1,8 +1,6 @@
-import logging
 import os
 
 import numpy as np
-import pytest
 
 from aspire.source import RelionSource, Simulation
 from aspire.volume import Volume
