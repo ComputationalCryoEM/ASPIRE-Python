@@ -19,22 +19,24 @@ from aspire import downloader
 
 sim_data = downloader.simulated_channelspin()
 
-# This data contains a Volume stack, an Image stack, weights and
-# corresponding parameters that were used to derive the image stack
+# This data contains a `Volume` stack, an `Image` stack, weights and
+# corresponding parameters that were used to derive images
 # from the volumes.  For example. the rotations below are the known
 # true simulation projections. In practice these would be derived from
 # an orientation estimation component.
 
-imgs = sim_data["images"]  # Simulated image stack (``Image`` object)
-rots = sim_data["rots"]  # True projection rotations (``Rotation`` object)
-weights = sim_data["weights"]  # Volume weights (``Numpy`` array)
-vols = sim_data["vols"]  # True reference volumes (``Volume`` object)
+imgs = sim_data["images"]  # Simulated image stack (`Image` object)
+rots = sim_data["rots"]  # True projection rotations (`Rotation` object)
+weights = sim_data["weights"]  # Volume weights (`Numpy` array)
+vols = sim_data["vols"]  # True reference volumes (`Volume` object)
 
 # %%
 # Create a ``ImageSource``
 # ------------------------
 # The image stack and projection rotation (Euler) angles can be
 # associated together during instantiation of an ``ImageSource``.
+# Because this example starts with a dense array of images,
+# an ``ArrayImageSource`` is used.
 
 from aspire.source import ArrayImageSource
 
@@ -45,7 +47,7 @@ src = ArrayImageSource(imgs, angles=rots.angles)
 src = src.downsample(24)
 
 # %%
-# .. note:
+# .. note::
 #     This tutorial demonstrates bringing reference data.
 #     It is also possible to just create a ``Simulation`` or use other
 #     ``ImageSource`` objects, so long as the rotations required
@@ -56,7 +58,7 @@ src = src.downsample(24)
 # ---------------------
 # Performing a weighted volume reconstruction requires defining an
 # appropriate 3D basis and supplying an associated image to volume
-# weight mapping as a ``Numpy`` array.
+# weight mapping as an array.
 
 from aspire.basis import FFBBasis3D
 from aspire.reconstruction import WeightedVolumesEstimator
@@ -65,16 +67,16 @@ from aspire.reconstruction import WeightedVolumesEstimator
 basis = FFBBasis3D(src.L, dtype=src.dtype)
 
 # Setup an estimator to perform the back projections and volume estimation.
-# In this case, the ``weights`` array comes from the reference data set,
+# In this case, the `weights` array comes from the reference data set,
 # and is shaped to map images to volumes.
 print("`weights shape:`", weights.shape)
 estimator = WeightedVolumesEstimator(weights, src, basis, preconditioner="none")
 
-# Perform the estimation, returning a ``Volume`` stack.
+# Perform the estimation, returning a `Volume` stack.
 estimated_volume = estimator.estimate()
 
 # %%
-# .. note:
+# .. note::
 #     The ``estimate()`` method requires a fair amount of compute time,
 #     but there should be regularly logged progress towards convergence.
 
