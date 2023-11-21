@@ -313,8 +313,9 @@ def test_project(vols_hot_cold):
 
     # Check that new hot/cold spots are within 1 pixel of expectecd locations.
     for i in range(vols.n_vols):
-        new_hot_loc = np.unravel_index(np.argmax(projections.asnumpy()[i]), (L, L))
-        new_cold_loc = np.unravel_index(np.argmin(projections.asnumpy()[i]), (L, L))
+        p = projections.asnumpy()[i]
+        new_hot_loc = np.unravel_index(np.argmax(p), (L, L))
+        new_cold_loc = np.unravel_index(np.argmin(p), (L, L))
         np.testing.assert_allclose(new_hot_loc, expected_locs[i, 0], atol=1)
         np.testing.assert_allclose(new_cold_loc, expected_locs[i, 1], atol=1)
 
@@ -439,8 +440,9 @@ def test_rotate(vols_hot_cold):
 
     # Check that new hot/cold spots are in expectecd locations.
     for i in range(vols.n_vols):
-        new_hot_loc = np.unravel_index(np.argmax(rotated_vols.asnumpy()[i]), (L, L, L))
-        new_cold_loc = np.unravel_index(np.argmin(rotated_vols.asnumpy()[i]), (L, L, L))
+        v = rotated_vols.asnumpy()[i]
+        new_hot_loc = np.unravel_index(np.argmax(v), (L, L, L))
+        new_cold_loc = np.unravel_index(np.argmin(v), (L, L, L))
         np.testing.assert_allclose(new_hot_loc, expected_locs[i, 0])
         np.testing.assert_allclose(new_cold_loc, expected_locs[i, 1])
 
