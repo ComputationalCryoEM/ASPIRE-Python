@@ -21,9 +21,9 @@ sim_data = downloader.simulated_channelspin()
 
 # This data contains a `Volume` stack, an `Image` stack, weights and
 # corresponding parameters that were used to derive images
-# from the volumes.  For example. the rotations below are the known
-# true simulation projections. In practice these would be derived from
-# an orientation estimation component.
+# from the volumes.  For example, the rotations below are the known
+# true simulation projection rotations. In practice these would be
+# derived from an orientation estimation component.
 
 imgs = sim_data["images"]  # Simulated image stack (`Image` object)
 rots = sim_data["rots"]  # True projection rotations (`Rotation` object)
@@ -68,7 +68,11 @@ basis = FFBBasis3D(src.L, dtype=src.dtype)
 
 # Setup an estimator to perform the back projections and volume estimation.
 # In this case, the `weights` array comes from the reference data set,
-# and is shaped to map images to volumes.
+# and is shaped to map images to spectral volumes.
+# Note that we can have many more actual/reference volumes generating
+# the image stack than spectral volumes.  In this case the input
+# images were generated from 54 volumes, but are described by 16
+# spectral volumes.
 print("`weights shape:`", weights.shape)
 estimator = WeightedVolumesEstimator(weights, src, basis, preconditioner="none")
 
@@ -84,19 +88,28 @@ estimated_volume = estimator.estimate()
 # Comparison of Estimated Volume with Source Volume
 # -------------------------------------------------
 # Generate several random projections rotations, then compare these
-# projections between the estimated volumes and the known volumes.
+# projections between the estimated spectral volumes and a known volume.
 # If ``src`` was downsampled above, the resulting estimated volumes
 # and projections will be of similar downsampled quality.
+#
+# Note that the estimated spectral volumes are treated as `Volume`
+# objects purely for convienience and are not expected to correspond
+# exactly to any particular reference volume.  The spectral volumes
+# collectively describe motion features derived from the input data.
+# However, basic visual comparison is useful as a sanity check to
+# demonstrate that we are in fact generating spectral volumes that
+# appear reasonably similar to the input volumes.
 
 from aspire.utils import Rotation, uniform_random_angles
 
-v = 0  # Volume under comparison
+reference_v = 0  # Actual volume under comparison
+spectral_v = 0  # Estimated spectral volume
 m = 3  # Number of projections
 
 random_rotations = Rotation.from_euler(uniform_random_angles(m, dtype=src.dtype))
 
 # Estimated volume projections
-estimated_volume[v].project(random_rotations).show()
+estimated_volume[spectral_v].project(random_rotations).show()
 
 # Source volume projections
-vols[v].project(random_rotations).show()
+vols[reference_v].project(random_rotations).show()
