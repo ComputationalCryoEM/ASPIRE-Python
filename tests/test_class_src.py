@@ -137,7 +137,7 @@ def class_sim_fixture(dtype, img_size):
 
 
 @pytest.fixture(
-    params=CLS_SRCS, ids=lambda param: f"ClassSource={param.__class__}", scope="module"
+    params=CLS_SRCS, ids=lambda param: f"ClassSource={param.__class__.__name__}", scope="module"
 )
 def test_src_cls(request):
     return request.param
