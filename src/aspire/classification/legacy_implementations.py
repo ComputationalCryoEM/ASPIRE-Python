@@ -138,7 +138,7 @@ def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, seed=None):
 
     phase = coef[freqs_not_zero] / np.absolute(coef[freqs_not_zero])
     phase = np.arctan2(np.imag(phase), np.real(phase))
-    eigval = np.abs(eigval[freqs_not_zero])
+    eigval = eigval[freqs_not_zero]
     o1, o2 = bispec_operator_1(freqs[freqs_not_zero])
 
     # GBW, naively handle vanishing eigvals.
