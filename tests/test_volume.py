@@ -301,10 +301,8 @@ def test_project(vols_hot_cold):
     # produced by rotating the underlying grid) and then project along the z-axis.
 
     # Expected location of hot/cold spots relative to (0, 0, 0) origin in (x, y, z) order.
-    expected_hot_cold = np.transpose(
-        rots.invert().matrices @ np.transpose(hot_cold_locs[..., ::-1], axes=(0, 2, 1)),
-        axes=(0, 2, 1),
-    )
+    # Note, we write the simpler `(x, y, z) @ rots` in place of `(rots.T @ (x, y, z).T).T`
+    expected_hot_cold = hot_cold_locs[..., ::-1] @ rots.matrices
 
     # Expected location of hot/cold spots relative to center (L/2, L/2, L/2) in (z, y, x) order.
     # Then projected along z-axis by dropping the z component.
@@ -428,13 +426,10 @@ def test_rotate(vols_hot_cold):
 
     # Generate random rotations.
     rots = Rotation.generate_random_rotations(n=vols.n_vols, dtype=dtype)
-    rots_mat = rots.matrices
 
     # Expected location of hot/cold spots relative to (0, 0, 0) origin in (x, y, z) order.
-    expected_hot_cold = np.transpose(
-        rots_mat @ np.transpose(hot_cold_locs[..., ::-1], axes=(0, 2, 1)),
-        axes=(0, 2, 1),
-    )
+    # Note, we write the simpler `(x, y, z) @ rots.T` in place of `(rots @ (x, y, z).T).T`
+    expected_hot_cold = hot_cold_locs[..., ::-1] @ rots.invert().matrices
 
     # Expected location of hot/cold spots relative to Volume center (L/2, L/2, L/2) in (z, y, x) order.
     expected_locs = np.round(expected_hot_cold[..., ::-1] + vol_center)
