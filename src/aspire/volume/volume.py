@@ -454,8 +454,7 @@ class Volume:
         ), f"Argument must be an instance of the Rotation class. {type(rot_matrices)} was supplied."
 
         # Invert the rotations passed to `rotated_grids_3d` and get numpy representation of Rotation object.
-        rots_inverted = rot_matrices.invert()
-        rots_inverted = rots_inverted.matrices
+        rots_inverted = rot_matrices.invert().matrices
 
         K = len(rots_inverted)  # Rotation stack size
         assert K == self.n_vols or K == 1, "Rotation object must be length 1 or n_vols."
