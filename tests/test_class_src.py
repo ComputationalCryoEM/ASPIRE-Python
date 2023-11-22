@@ -137,7 +137,9 @@ def class_sim_fixture(dtype, img_size):
 
 
 @pytest.fixture(
-    params=CLS_SRCS, ids=lambda param: f"ClassSource={param.__class__.__name__}", scope="module"
+    params=CLS_SRCS,
+    ids=lambda param: f"ClassSource={param.__class__.__name__}",
+    scope="module",
 )
 def test_src_cls(request):
     return request.param
@@ -147,8 +149,8 @@ def test_src_cls(request):
 def classifier(class_sim_fixture):
     return RIRClass2D(
         class_sim_fixture,
-        fspca_components=123,
-        bispectrum_components=101,  # Compressed Features after last PCA stage.
+        fspca_components=63,
+        bispectrum_components=51,  # Compressed Features after last PCA stage.
         n_nbor=10,
         sample_n=50000,
         large_pca_implementation="legacy",
@@ -223,8 +225,8 @@ def cls_fixture(class_sim_fixture):
     # Create the classifier
     c2d = RIRClass2D(
         class_sim_fixture,
-        fspca_components=123,
-        bispectrum_components=101,  # Compressed Features after last PCA stage.
+        fspca_components=63,
+        bispectrum_components=51,  # Compressed Features after last PCA stage.
         n_nbor=10,
         sample_n=50000,
         nn_implementation="sklearn",
