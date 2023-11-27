@@ -3,12 +3,11 @@ import logging
 import numpy as np
 import PIL.Image as PILImage
 import pytest
-import scipy as sp
 from scipy.spatial.transform import Rotation as sp_rot
 
 from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D, FPSWFBasis2D, PSWFBasis2D
 from aspire.image import Image
-from aspire.utils import Rotation, grid_2d, utest_tolerance
+from aspire.utils import Rotation, gaussian_2d, utest_tolerance
 
 logger = logging.getLogger(__name__)
 
@@ -221,20 +220,18 @@ def test_basis_rotation_2d(basis):
     # Set a rotation amount
     rot_radians = np.pi / 6
 
-    # Create an empty image
+    # Create an Image containing a smooth blob.
     L = basis.nres
-    img = np.zeros((L, L), dtype=basis.dtype)
-    # Set one pixel (between I and IV quadrants)
-    img[L // 2, 3 * L // 4] = 1
-    # Roundtrip using the basis. Smooths out the discontinuous pixel.
-    img = basis.expand(Image(img)).evaluate()
+    img = Image(gaussian_2d(L, mu=(L // 4, 0), dtype=basis.dtype))
 
     # Rotate with ASPIRE Steerable Basis, returning to real space.
     rot_img = basis.expand(img).rotate(rot_radians).evaluate()
 
     # Rotate image with PIL, returning to Numpy array.
     pil_rot_img = np.asarray(
-        PILImage.fromarray(img.asnumpy()[0]).rotate(rot_radians * 180 / np.pi)
+        PILImage.fromarray(img.asnumpy()[0]).rotate(
+            rot_radians * 180 / np.pi, resample=PILImage.BILINEAR
+        )
     )
 
     # Rough compare arrays.
