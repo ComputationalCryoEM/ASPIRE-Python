@@ -12,14 +12,9 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 STARFILE = ["rln_proj_65.star", "rln_proj_64.star"]
 
 
-@pytest.fixture(params=STARFILE, ids=lambda x: f"resolution={x}", scope="module")
-def starfile(request):
-    filepath = request.param
-    return os.path.join(DATA_DIR, filepath)
-
-
-@pytest.fixture(scope="module")
-def sources(starfile):
+@pytest.fixture(params=STARFILE, scope="module")
+def sources(request):
+    starfile = os.path.join(DATA_DIR, request.param)
     rln_src = RelionSource(starfile)
 
     # Generate Volume used for Relion projections.
@@ -37,6 +32,7 @@ def sources(starfile):
         n=rln_src.n,
         vols=vol,
         offsets=offsets,
+        amplitudes=1,
         angles=rln_src.angles,
         dtype=rln_src.dtype,
     )
