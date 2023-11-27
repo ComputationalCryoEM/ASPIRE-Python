@@ -109,7 +109,7 @@ class Filter:
         """
         return ScaledFilter(self, c)
 
-    def evaluate_grid(self, L, dtype=np.float32, *args, **kwargs):
+    def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
         """
         Generates a two dimensional grid with prescribed dtype,
         yielding the values (omega) which are then evaluated by
@@ -191,7 +191,7 @@ class PowerFilter(Filter):
     def _evaluate(self, omega):
         return self._filter.evaluate(omega) ** self._power
 
-    def evaluate_grid(self, L, dtype=np.float32, *args, **kwargs):
+    def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
         """
         Calls the provided filter's evaluate_grid method in case there is an optimization.
 
@@ -199,7 +199,7 @@ class PowerFilter(Filter):
 
         See `Filter.evaluate_grid` for usage.
         """
-        filter_vals = self._filter.evaluate_grid(L, dtype=dtype, *args, **kwargs)
+        filter_vals = self._filter.evaluate_grid(L, *args, dtype=dtype, **kwargs)
 
         # Place safeguard on values below machine epsilon for negative powers.
         if self._power < 0:
@@ -338,7 +338,7 @@ class ArrayFilter(Filter):
 
         return result
 
-    def evaluate_grid(self, L, dtype=np.float32, *args, **kwargs):
+    def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
         """
         Optimized evaluate_grid method for ArrayFilter.
 
@@ -361,7 +361,7 @@ class ArrayFilter(Filter):
             res = self.xfer_fn_array
         else:
             # Otherwise call parent code to generate a grid then evaluate.
-            res = super().evaluate_grid(L, dtype=dtype, *args, **kwargs)
+            res = super().evaluate_grid(L, *args, dtype=dtype, **kwargs)
         return res
 
 
