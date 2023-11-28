@@ -6,7 +6,6 @@ import pytest
 from scipy.special import jv
 
 from aspire.basis import Coef, FFBBasis2D
-from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
