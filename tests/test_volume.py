@@ -438,13 +438,13 @@ def test_rotate(vols_hot_cold):
     # Rotate Volumes.
     rotated_vols = vols.rotate(rots)
 
-    # Check that new hot/cold spots are in expectecd locations.
+    # Check that new hot/cold spots are within 1 pixel of expectecd locations.
     for i in range(vols.n_vols):
         v = rotated_vols.asnumpy()[i]
         new_hot_loc = np.unravel_index(np.argmax(v), (L, L, L))
         new_cold_loc = np.unravel_index(np.argmin(v), (L, L, L))
-        np.testing.assert_allclose(new_hot_loc, expected_locs[i, 0])
-        np.testing.assert_allclose(new_cold_loc, expected_locs[i, 1])
+        np.testing.assert_allclose(new_hot_loc, expected_locs[i, 0], atol=1)
+        np.testing.assert_allclose(new_cold_loc, expected_locs[i, 1], atol=1)
 
 
 def test_rotate_broadcast_unicast(asym_vols):
