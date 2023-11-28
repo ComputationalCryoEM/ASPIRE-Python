@@ -27,8 +27,8 @@ BASES = [
 ]
 
 IMG_SIZES = [
-    32,
-    pytest.param(31, marks=pytest.mark.expensive),
+    31,
+    pytest.param(32, marks=pytest.mark.expensive),
 ]
 
 # Fixtures
@@ -68,7 +68,7 @@ def test_basis_rotation_2d(basis):
     L = basis.nres
     img = Image(gaussian_2d(L, mu=(L // 4, 0), dtype=basis.dtype))
 
-    # Rotate with ASPIRE Steerable Basis, returning to real space.
+    # Rotate with an ASPIRE steerable basis, returning to real space.
     rot_img = basis.expand(img).rotate(rot_radians).evaluate()
 
     # Rotate image with PIL, returning to Numpy array.
@@ -93,13 +93,13 @@ def test_basis_reflection_2d(basis):
     L = basis.nres
     img = Image(gaussian_2d(L, mu=(L // 4, L // 5), dtype=basis.dtype))
 
-    # Reflect with ASPIRE Steerable Basis, returning to real space.
+    # Reflect with an ASPIRE steerable basis, returning to real space.
     refl_img = basis.expand(img).rotate(0, refl=True).evaluate()
 
     # Reflect image with Numpy.
-    # Note for odd images we can simply use Numpy,
+    # Note for odd images we can accurately use Numpy,
     #   but evens have the expected offset issue
-    #   when compared to a row/col based flip.
+    #   when compared to a purely row/col based flip.
     flip = np.flipud
     if isinstance(basis, PSWFBasis2D):
         # TODO, reconcile PSWF reflection axis
