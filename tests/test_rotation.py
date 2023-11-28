@@ -92,7 +92,9 @@ def test_register_rots(rot_obj):
 def test_register(rot_obj):
     # These will yield two more distinct sets of random rotations wrt rot_obj
     set1 = Rotation.generate_random_rotations(NUM_ROTS, dtype=rot_obj.dtype)
-    set2 = Rotation.generate_random_rotations(NUM_ROTS, dtype=rot_obj.dtype, seed=7)
+    set2 = Rotation.generate_random_rotations(
+        NUM_ROTS, dtype=rot_obj.dtype, seed=SEED + 7
+    )
     # Align both sets of random rotations to rot_obj
     aligned_rots1 = rot_obj.register(set1)
     aligned_rots2 = rot_obj.register(set2)
