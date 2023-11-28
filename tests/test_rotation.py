@@ -11,14 +11,15 @@ from aspire.utils import Rotation, gaussian_2d, utest_tolerance
 
 logger = logging.getLogger(__name__)
 
+
 # Parameters
 
 NUM_ROTS = 32
 SEED = 0
 
 DTYPES = [
-    np.float64,
     np.float32,
+    pytest.param(np.float64, marks=pytest.mark.expensive),
 ]
 
 BASES = [
