@@ -80,3 +80,38 @@ def test_basis_rotation_2d(basis):
 
     # Rough compare arrays.
     np.testing.assert_allclose(rot_img.asnumpy()[0], pil_rot_img, atol=0.25)
+
+
+def test_basis_reflection_2d(basis):
+    """
+    Test steerable basis reflection performs similar operation to Numpy flips.
+
+    Checks both orientation and rough values.
+    """
+
+    # Create an Image containing a smooth blob.
+    L = basis.nres
+    img = Image(gaussian_2d(L, mu=(L // 4, L // 5), dtype=basis.dtype))
+
+    # Reflect with ASPIRE Steerable Basis, returning to real space.
+    refl_img = basis.expand(img).rotate(0, refl=True).evaluate()
+
+    # Reflect image with Numpy.
+    # Note for odd images we can simply use Numpy,
+    #   but evens have the expected offset issue
+    #   when compared to a row/col based flip.
+    flip = np.flipud
+    if isinstance(basis, PSWFBasis2D):
+        # TODO, reconcile PSWF reflection axis
+        flip = np.fliplr
+
+    refl_img_np = flip(img.asnumpy()[0])
+
+    # Rough compare arrays.
+    atol = 0.01
+    if L % 2 == 0:
+        # Even images test is crude,
+        # but is enough ensure flipping without complicating test.
+        atol = 0.5
+
+    np.testing.assert_allclose(refl_img.asnumpy()[0], refl_img_np, atol=atol)
