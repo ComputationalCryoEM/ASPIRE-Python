@@ -4,12 +4,11 @@ import sys
 import numpy as np
 import pytest
 
-from aspire.basis import Coef, FBBasis2D, FFBBasis2D, FLEBasis2D
+from aspire.basis import Coef, FBBasis2D, FLEBasis2D
 from aspire.image import Image
 from aspire.nufft import backend_available
 from aspire.numeric import fft
 from aspire.source import Simulation
-from aspire.utils import utest_tolerance
 from aspire.volume import Volume
 
 from ._basis_util import UniversalBasisMixin
