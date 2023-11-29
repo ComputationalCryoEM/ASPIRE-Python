@@ -66,7 +66,7 @@ from aspire.reconstruction import WeightedVolumesEstimator
 # Create a reasonable Basis
 basis = FFBBasis3D(src.L, dtype=src.dtype)
 
-# Setup an estimator to perform the back projections and volume estimation.
+# Set up an estimator to perform the backprojections and volume estimation.
 # In this case, the `weights` array comes from the reference data set,
 # and is shaped to map images to spectral volumes.
 # Note that we can have many more actual/reference volumes generating
