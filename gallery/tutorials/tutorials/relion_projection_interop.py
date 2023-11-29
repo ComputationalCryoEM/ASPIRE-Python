@@ -92,12 +92,8 @@ rln_np = rln_src.images[:].asnumpy()
 sim_np = sim_src.images[:].asnumpy()
 
 # Normalize images.
-rln_np = (rln_np - np.mean(rln_np, axis=(1, 2))[:, None, None]) / np.std(
-    rln_np, axis=(1, 2)
-)[:, None, None]
-sim_np = (sim_np - np.mean(sim_np, axis=(1, 2))[:, None, None]) / np.std(
-    sim_np, axis=(1, 2)
-)[:, None, None]
+rln_np = (rln_np - np.mean(rln_np)) / np.std(rln_np)
+sim_np = (sim_np - np.mean(sim_np)) / np.std(sim_np)
 
 # Assert that error is less than 3%.
 error = np.linalg.norm(rln_np - sim_np, axis=(1, 2)) / np.linalg.norm(
