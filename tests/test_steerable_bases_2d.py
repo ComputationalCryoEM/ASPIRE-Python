@@ -66,7 +66,8 @@ def test_basis_rotation_2d(basis):
 
     # Create an Image containing a smooth blob.
     L = basis.nres
-    img = Image(gaussian_2d(L, mu=(L // 4, 0), dtype=basis.dtype))
+    img = gaussian_2d(L, mu=(L // 4, 0), dtype=basis.dtype)
+    img = Image(img / np.linalg.norm(img))  # Normalize
 
     # Rotate with an ASPIRE steerable basis, returning to real space.
     rot_img = basis.expand(img).rotate(rot_radians).evaluate()
@@ -91,7 +92,8 @@ def test_basis_reflection_2d(basis):
 
     # Create an Image containing a smooth blob.
     L = basis.nres
-    img = Image(gaussian_2d(L, mu=(L // 4, L // 5), dtype=basis.dtype))
+    img = gaussian_2d(L, mu=(L // 4, L // 5), dtype=basis.dtype)
+    img = Image(img / np.linalg.norm(img))  # Normalize
 
     # Reflect with an ASPIRE steerable basis, returning to real space.
     refl_img = basis.expand(img).rotate(0, refl=True).evaluate()
