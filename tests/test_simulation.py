@@ -515,7 +515,7 @@ class SimTestCase(TestCase):
 
         self.assertTrue(
             np.allclose(
-                result["err"][:10],
+                result["err"][0, :10],
                 [
                     1.58382394,
                     1.58382394,
