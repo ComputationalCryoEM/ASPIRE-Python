@@ -487,36 +487,49 @@ class Simulation(ImageSource):
 
         # 0-indexed states vector
         states = self.states - 1
-        coords_true = coords_true[states]
+
+        coords_true = coords_true.T[states]
         res_norms = res_norms[states]
         res_inners = res_inners[:, states]
 
-        mean_eigs_inners = (mean_vol.to_vec() @ eig_vols.to_vec().T).item()
+        if coords_est.ndim == 1:
+            coords_est = coords_est[:, None]
+            coords_true = coords_true[:, None]
+
+        mean_eigs_inners = mean_vol.to_vec() @ eig_vols.to_vec().T
         coords_err = coords_true - coords_est
 
-        err = np.hypot(res_norms, coords_err)
+        K = coords_true.shape[-1]
+        err = np.zeros((K, len(coords_true)))
+        rel_err = np.zeros((K, len(coords_true)))
+        corr = np.zeros((K, len(coords_true)))
 
-        mean_vol_norm2 = anorm(mean_vol) ** 2
-        norm_true = np.sqrt(
-            coords_true**2
-            + mean_vol_norm2
-            + 2 * res_inners
-            + 2 * mean_eigs_inners * coords_true
-        )
-        norm_true = np.hypot(res_norms, norm_true)
+        for k in range(K):
+            err[k] = np.hypot(res_norms, coords_err[:, k])
 
-        rel_err = err / norm_true
-        inner = (
-            mean_vol_norm2
-            + mean_eigs_inners * (coords_true + coords_est)
-            + coords_true * coords_est
-            + res_inners
-        )
-        norm_est = np.sqrt(
-            coords_est**2 + mean_vol_norm2 + 2 * mean_eigs_inners * coords_est
-        )
+            mean_vol_norm2 = anorm(mean_vol) ** 2
+            norm_true = np.sqrt(
+                coords_true[:, k] ** 2
+                + mean_vol_norm2
+                + 2 * res_inners
+                + 2 * mean_eigs_inners[:, k] * coords_true[:, k]
+            )
+            norm_true = np.hypot(res_norms, norm_true)
 
-        corr = inner / (norm_true * norm_est)
+            rel_err[k] = err[k] / norm_true
+            inner = (
+                mean_vol_norm2
+                + mean_eigs_inners[:, k] * (coords_true[:, k] + coords_est[:, k])
+                + coords_true[:, k] * coords_est[:, k]
+                + res_inners
+            )
+            norm_est = np.sqrt(
+                coords_est[:, k] ** 2
+                + mean_vol_norm2
+                + 2 * mean_eigs_inners[:, k] * coords_est[:, k]
+            )
+
+            corr[k] = inner / (norm_true * norm_est)
 
         return {"err": err, "rel_err": rel_err, "corr": corr}
 
