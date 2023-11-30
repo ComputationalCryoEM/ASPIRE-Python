@@ -75,12 +75,12 @@ def test_basis_rotation_2d(basis):
     # Rotate image with PIL, returning to Numpy array.
     pil_rot_img = np.asarray(
         PILImage.fromarray(img.asnumpy()[0]).rotate(
-            rot_radians * 180 / np.pi, resample=PILImage.BILINEAR
+            rot_radians * 180 / np.pi, resample=PILImage.BICUBIC
         )
     )
 
     # Rough compare arrays.
-    np.testing.assert_allclose(rot_img.asnumpy()[0], pil_rot_img, atol=0.25)
+    np.testing.assert_allclose(rot_img.asnumpy()[0], pil_rot_img, atol=0.15)
 
 
 def test_basis_reflection_2d(basis):
