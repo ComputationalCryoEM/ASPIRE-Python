@@ -33,10 +33,11 @@ num_imgs = 1024  # number of images
 num_eigs = 16  # number of eigen-vectors to keep
 dtype = np.float32
 
-# Generate a ``Volume`` object for use in the simulation. Here we use a ``LegacyVolume`` which
-# by default generates 2 unique random volumes.
+# Generate a ``Volume`` object for use in the simulation. Here we use a ``LegacyVolume`` and
+# set C = 3 to generate 3 unique random volumes.
 vols = LegacyVolume(
     L=img_size,
+    C=3,
     dtype=dtype,
 ).generate()
 
@@ -49,7 +50,7 @@ sim = Simulation(
     dtype=dtype,
 )
 
-# The Simulation object was created using 2 volumes.
+# The Simulation object was created using 3 volumes.
 num_vols = sim.C
 
 # Specify the normal FB basis method for expending the 2D images
@@ -159,6 +160,6 @@ logger.info(f'Coordinates (mean rel. error) = {coords_perf["rel_err"]}')
 logger.info(f'Coordinates (mean correlation) = {np.mean(coords_perf["corr"])}')
 
 # Basic Check
-assert covar_perf["rel_err"] <= 0.60
-assert np.mean(coords_perf["corr"]) >= 0.98
+assert covar_perf["rel_err"] <= 0.80
+assert np.mean(coords_perf["corr"]) >= 0.97
 assert clustering_accuracy >= 0.99
