@@ -477,9 +477,10 @@ class Simulation(ImageSource):
 
         :param mean_vol: A mean volume in the form of a Volume instance.
         :param eig_vols: A set of eigenvolumes in an Volume instance.
-        :param coords_est: The estimated coordinates in the affine space defined centered at `mean_vol` and spanned
-            by `eig_vols`.
-        :return:
+        :param coords_est: The estimated coordinates in the affine space defined centered
+            at `mean_vol` and spanned by `eig_vols`.
+        :return: Dictionary containing error, relative error, and correlation for each set
+            of estimated coordinates.
         """
         assert isinstance(mean_vol, Volume)
         assert isinstance(eig_vols, Volume)
