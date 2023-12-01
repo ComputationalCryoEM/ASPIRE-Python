@@ -92,8 +92,8 @@ class CLSymmetryD2(CLOrient3D):
         # We detect such directions by taking a strip of radius
         # eq_filter_angle about the 3 great circles perpendicular to the symmetry
         # axes of D2 (i.e to X,Y and Z axes).
-        eq_mask1, top_view_mask1 = self.mark_equators(sphere_grid1, self.eq_min_dist)
-        eq_mask2, top_view_mask2 = self.mark_equators(sphere_grid2, self.eq_min_dist)
+        eq_idx1, eq_class1 = self.mark_equators(sphere_grid1, self.eq_min_dist)
+        eq_idx2, eq_class2 = self.mark_equators(sphere_grid2, self.eq_min_dist)
 
         #  Mark Top View Directions.
         #  A Top view projection image is taken from the direction of one of the
@@ -109,13 +109,31 @@ class CLSymmetryD2(CLOrient3D):
         #  single common line. A top view and a regular non-equator image only have
         #  two common lines.
 
-        # Remove top views from sphere grids and update equator masks.
-        sphere_grid1 = sphere_grid1[~top_view_mask1]
-        sphere_grid2 = sphere_grid2[~top_view_mask2]
-        eq_mask1 = eq_mask1[~top_view_mask1]
-        eq_mask2 = eq_mask2[~top_view_mask2]
+        # Remove top views from sphere grids and update equator indices and classes.
+        sphere_grid1 = sphere_grid1[eq_class1 < 4]
+        sphere_grid2 = sphere_grid2[eq_class2 < 4]
+        eq_idx1 = eq_idx1[eq_class1 < 4]
+        eq_idx2 = eq_idx2[eq_class2 < 4]
+        eq_class1 = eq_class1[eq_class1 < 4]
+        eq_class2 = eq_class2[eq_class2 < 4]
 
         # Generate in-plane rotations for each grid point on the sphere.
+        inplane_rotated_grid1 = self.generate_inplane_rots(
+            sphere_grid1, self.inplane_res
+        )
+        inplane_rotated_grid2 = self.generate_inplane_rots(
+            sphere_grid2, self.inplane_res
+        )
+
+        # Generate all relative rotation candidates for maximum-likelihood method.
+        rots = self.generate_relative_rotations(
+            inplane_rotated_grid1,
+            inplane_rotated_grid1,
+            eq_idx1,
+            eq_idx1,
+            eq_class1,
+            eq_class1,
+        )
 
     @staticmethod
     def saff_kuijlaars(N):
@@ -149,7 +167,7 @@ class CLSymmetryD2(CLOrient3D):
         return mesh
 
     @staticmethod
-    def mark_equators(sphere_grid, eq_filter_angle):
+    def mark_equators1(sphere_grid, eq_filter_angle):
         """
         :param sphere_grid: Nx3 array of vertices in cartesian coordinates.
         :param eq_filter_angle: Angular distance from equator to be marked as
@@ -195,7 +213,72 @@ class CLSymmetryD2(CLOrient3D):
         x_top_view_mask = z_eq_mask & y_eq_mask
         top_view_mask = z_top_view_mask | y_top_view_mask | x_top_view_mask
 
-        return eq_mask, top_view_mask
+        masks = {
+            "eq": eq_mask,
+            "top": top_view_mask,
+            "x_eq": x_eq_mask,
+            "y_eq": y_eq_mask,
+            "z_eq": z_eq_mask,
+        }
+
+        return masks
+
+    @staticmethod
+    def mark_equators(sphere_grid, eq_filter_angle):
+        """
+        :param sphere_grid: Nx3 array of vertices in cartesian coordinates.
+        :param eq_filter_angle: Angular distance from equator to be marked as
+            an equator point.
+
+        :returns:
+            - eq_idx, a boolean mask for equator indices.
+            - eq_class, n_rots length array of values indicating equator class.
+        """
+        # Project each vector onto xy, xz, yz planes and measure angular distance
+        # from each plane.
+        n_rots = len(sphere_grid)
+        angular_dists = np.zeros((n_rots, 3), dtype=sphere_grid.dtype)
+
+        # Distance from z-axis equator.
+        proj_xy = sphere_grid.copy()
+        proj_xy[:, 2] = 0
+        proj_xy /= np.linalg.norm(proj_xy, axis=1)[:, None]
+        angular_dists[:, 0] = np.sum(sphere_grid * proj_xy, axis=-1)
+
+        # Distance from y-axis equator.
+        proj_xz = sphere_grid.copy()
+        proj_xz[:, 1] = 0
+        proj_xz /= np.linalg.norm(proj_xz, axis=1)[:, None]
+        angular_dists[:, 1] = np.sum(sphere_grid * proj_xz, axis=-1)
+
+        # Distance from x-axis equator.
+        proj_yz = sphere_grid.copy()
+        proj_yz[:, 0] = 0
+        proj_yz /= np.linalg.norm(proj_yz, axis=1)[:, None]
+        angular_dists[:, 2] = np.sum(sphere_grid * proj_yz, axis=-1)
+
+        # Mark all views close to an equator.
+        eq_min_dist = np.cos(eq_filter_angle * np.pi / 180)
+        n_eqs = np.sum(angular_dists > eq_min_dist, axis=1)
+        eq_idx = n_eqs > 0
+
+        # Classify equators.
+        # 0 -> non-equator view
+        # 1 -> z equator
+        # 2 -> y equator
+        # 3 -> x equator
+        # 4 -> z top view
+        # 5 -> y top view
+        # 6 -> x top view
+        eq_class = np.zeros(n_rots)
+        top_view_idx = n_eqs > 1
+        top_view_class = np.argmin(angular_dists[top_view_idx] > eq_min_dist)
+        eq_class[top_view_idx] = top_view_class + 4
+        eq_view_idx = n_eqs == 1
+        eq_view_class = np.argmax(angular_dists[eq_view_idx] > eq_min_dist, axis=1)
+        eq_class[eq_view_idx] = eq_view_class + 1
+
+        return eq_idx, eq_class
 
     @staticmethod
     def generate_inplane_rots(sphere_grid, d_theta):
@@ -239,3 +322,38 @@ class CLSymmetryD2(CLOrient3D):
             inplane_rotated_grid[i] = rots_grid[i] @ inplane_rots
 
         return inplane_rotated_grid
+
+    @staticmethod
+    def generate_relative_rotations(
+        Ris, Rjs, Ri_eq_idx, Rj_eq_idx, Ri_eq_class, Rj_eq_class
+    ):
+        """
+        :param Ris: First set of candidate rotations.
+        :param Rjs: Second set of candidate rotation.
+        :param Ri_eq_idx:
+        """
+        n_rots_i = len(Ris)
+        n_rots_j = len(Rjs)
+        n_theta = Ris.shape[1]  # Same for Rjs
+
+        # Generate upper triangular table of indicators of all pairs which are not
+        # equators with respect to the same symmetry axis (named unique_pairs).
+        eq_table = np.outer(Ri_eq_idx, Rj_eq_idx)
+        in_same_class = (Ri_eq_class[:, None] - Rj_eq_class.T[None]) == 0
+        eq2eq_Rij_table = np.triu(~(eq_table * in_same_class))
+
+        n_pairs = np.sum(eq2eq_Rij_table)
+        idx = 0
+        cls = np.zeros((2 * n_pairs, n_theta, n_theta // 2, 2, 4))
+
+        for i in range(n_rots_i):
+            unique_pairs_i = np.where(eq2eq_Rij_table[i])[0]
+            if len(unique_pairs_i) == 0:
+                continue
+            Ri = Ris[i]
+            for j in unique_pairs_i:
+                # Compute relative rotations candidates
+                Rj = Rjs[j, : n_theta // 2]
+                import pdb
+
+                pdb.set_trace()
