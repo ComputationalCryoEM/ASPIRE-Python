@@ -125,8 +125,8 @@ class CLSymmetryD2(CLOrient3D):
             sphere_grid2, self.inplane_res
         )
 
-        # Generate all relative rotation candidates for maximum-likelihood method.
-        rots = self.generate_relative_rotations(
+        # Generate commmon line angles induced by all relative rotation candidates.
+        cl_angles_1 = self.generate_relative_rotations(
             inplane_rotated_grid1,
             inplane_rotated_grid1,
             eq_idx1,
@@ -134,6 +134,16 @@ class CLSymmetryD2(CLOrient3D):
             eq_class1,
             eq_class1,
         )
+        cl_angles_2 = self.generate_relative_rotations(
+            inplane_rotated_grid1,
+            inplane_rotated_grid2,
+            eq_idx1,
+            eq_idx2,
+            eq_class1,
+            eq_class2,
+        )
+
+        return cl_angles_1, cl_angles_2
 
     @staticmethod
     def saff_kuijlaars(N):
@@ -165,63 +175,6 @@ class CLSymmetryD2(CLOrient3D):
         mesh = np.column_stack((x, y, z))
 
         return mesh
-
-    @staticmethod
-    def mark_equators1(sphere_grid, eq_filter_angle):
-        """
-        :param sphere_grid: Nx3 array of vertices in cartesian coordinates.
-        :param eq_filter_angle: Angular distance from equator to be marked as
-            an equator point.
-
-        :return: Indices of points on sphere whose distance from one of
-            the equators is < eq_filter angle.
-        """
-        # Project each vector onto xy, xz, yz planes and measure angular distance
-        # from each plane.
-        eq_min_dist = np.cos(eq_filter_angle * np.pi / 180)
-
-        # Mask for z-axis equator views.
-        proj_xy = sphere_grid.copy()
-        proj_xy[:, 2] = 0
-        proj_xy /= np.linalg.norm(proj_xy, axis=1)[:, None]
-        ang_dists_xy = np.sum(sphere_grid * proj_xy, axis=-1)
-        z_eq_mask = ang_dists_xy > eq_min_dist
-
-        # Mask for y-axis equator views.
-        proj_xz = sphere_grid.copy()
-        proj_xz[:, 1] = 0
-        proj_xz /= np.linalg.norm(proj_xz, axis=1)[:, None]
-        ang_dists_xz = np.sum(sphere_grid * proj_xz, axis=-1)
-        y_eq_mask = ang_dists_xz > eq_min_dist
-
-        # Mask for x-axis equator views.
-        proj_yz = sphere_grid.copy()
-        proj_yz[:, 0] = 0
-        proj_yz /= np.linalg.norm(proj_yz, axis=1)[:, None]
-        ang_dists_yz = np.sum(sphere_grid * proj_yz, axis=-1)
-        x_eq_mask = ang_dists_yz > eq_min_dist
-
-        # Mask for all views close to an equator.
-        eq_mask = z_eq_mask | y_eq_mask | x_eq_mask
-
-        # Top view masks.
-        # A top view is a view along an axis of symmetry (ie. x, y, or z).
-        # A top view is also at the intersection of the two equator views
-        # perpendicular to the axis of symmetry.
-        z_top_view_mask = y_eq_mask & x_eq_mask
-        y_top_view_mask = z_eq_mask & x_eq_mask
-        x_top_view_mask = z_eq_mask & y_eq_mask
-        top_view_mask = z_top_view_mask | y_top_view_mask | x_top_view_mask
-
-        masks = {
-            "eq": eq_mask,
-            "top": top_view_mask,
-            "x_eq": x_eq_mask,
-            "y_eq": y_eq_mask,
-            "z_eq": z_eq_mask,
-        }
-
-        return masks
 
     @staticmethod
     def mark_equators(sphere_grid, eq_filter_angle):
@@ -333,7 +286,6 @@ class CLSymmetryD2(CLOrient3D):
         :param Ri_eq_idx:
         """
         n_rots_i = len(Ris)
-        n_rots_j = len(Rjs)
         n_theta = Ris.shape[1]  # Same for Rjs
 
         # Generate upper triangular table of indicators of all pairs which are not
@@ -344,7 +296,7 @@ class CLSymmetryD2(CLOrient3D):
 
         n_pairs = np.sum(eq2eq_Rij_table)
         idx = 0
-        cls = np.zeros((2 * n_pairs, n_theta, n_theta // 2, 2, 4))
+        cls = np.zeros((2 * n_pairs, n_theta, n_theta // 2, 4, 2))
 
         for i in range(n_rots_i):
             unique_pairs_i = np.where(eq2eq_Rij_table[i])[0]
@@ -352,8 +304,65 @@ class CLSymmetryD2(CLOrient3D):
                 continue
             Ri = Ris[i]
             for j in unique_pairs_i:
-                # Compute relative rotations candidates
-                Rj = Rjs[j, : n_theta // 2]
-                import pdb
+                # Compute relative rotations candidates Rij = Ri.T @ Rj
+                Rj = Rjs[j, : (n_theta // 2)]
+                Rijs = np.transpose(Rj, axes=(0, 2, 1)) @ Ri[:, None]
 
-                pdb.set_trace()
+                # Common line indices induced by Rijs
+                cls[idx, :, :, 0, 0] = np.arctan2(Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1])
+                cls[idx, :, :, 0, 1] = np.arctan2(-Rijs[:, :, 0, 2], Rijs[:, :, 1, 2])
+                cls[idx + n_pairs, :, :, 0, 0] = np.arctan2(
+                    Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
+                )
+                cls[idx + n_pairs, :, :, 0, 1] = np.arctan2(
+                    -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
+                )
+
+                # Compute relative rotations candidates Rij = Ri.T @ g1 @ Rj,
+                # where g1 = diag(1, -1, -1).
+                g1_Rj = Rj.copy()
+                g1_Rj[:, 1:3] = -g1_Rj[:, 1:3]
+                Rijs = np.transpose(g1_Rj, axes=(0, 2, 1)) @ Ri[:, None]
+
+                cls[idx, :, :, 1, 0] = np.arctan2(Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1])
+                cls[idx, :, :, 1, 1] = np.arctan2(-Rijs[:, :, 0, 2], Rijs[:, :, 1, 2])
+                cls[idx + n_pairs, :, :, 1, 0] = np.arctan2(
+                    Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
+                )
+                cls[idx + n_pairs, :, :, 1, 1] = np.arctan2(
+                    -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
+                )
+
+                # Compute relative rotations candidates Rij = Ri.T @ g2 @ Rj,
+                # where g2 = diag(-1, 1, -1).
+                g2_Rj = Rj.copy()
+                g2_Rj[:, [0, 2]] = -g2_Rj[:, [0, 2]]
+                Rijs = np.transpose(g2_Rj, axes=(0, 2, 1)) @ Ri[:, None]
+
+                cls[idx, :, :, 2, 0] = np.arctan2(Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1])
+                cls[idx, :, :, 2, 1] = np.arctan2(-Rijs[:, :, 0, 2], Rijs[:, :, 1, 2])
+                cls[idx + n_pairs, :, :, 2, 0] = np.arctan2(
+                    Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
+                )
+                cls[idx + n_pairs, :, :, 2, 1] = np.arctan2(
+                    -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
+                )
+
+                # Compute relative rotations candidates Rij = Ri.T @ g3 @ Rj,
+                # where g3 = diag(-1, -1, 1).
+                g3_Rj = Rj.copy()
+                g3_Rj[:, 0:2] = -g3_Rj[:, 0:2]
+                Rijs = np.transpose(g3_Rj, axes=(0, 2, 1)) @ Ri[:, None]
+
+                cls[idx, :, :, 3, 0] = np.arctan2(Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1])
+                cls[idx, :, :, 3, 1] = np.arctan2(-Rijs[:, :, 0, 2], Rijs[:, :, 1, 2])
+                cls[idx + n_pairs, :, :, 3, 0] = np.arctan2(
+                    Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
+                )
+                cls[idx + n_pairs, :, :, 3, 1] = np.arctan2(
+                    -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
+                )
+
+                idx += 1
+
+        return cls
