@@ -14,7 +14,7 @@ from aspire.operators import CTFFilter
 
 file_path = os.path.join(os.path.dirname(os.getcwd()), "data", "monuments.npy")
 img_data = np.load(file_path)
-img_data.shape, img_data.dtype
+print(img_data.shape, img_data.dtype)
 
 # %%
 # Create an Image Instance
