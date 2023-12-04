@@ -395,7 +395,7 @@ def matplotlib_no_gui():
 
     # Save and restore current warnings list.
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", "Matplotlib is currently using agg")
+        warnings.filterwarnings("ignore", r"Matplotlib is currently using agg.*")
 
         yield
 
