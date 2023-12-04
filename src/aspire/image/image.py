@@ -571,7 +571,7 @@ class Image:
 
             plt.show()
 
-    def frc(self, other, cutoff, pixel_size=None, method="fft", plot=False):
+    def frc(self, other, cutoff=None, pixel_size=None, method="fft", plot=False):
         r"""
         Compute the Fourier ring correlation between two images.
 
@@ -586,6 +586,9 @@ class Image:
 
         :param other: `Image` instance to compare.
         :param cutoff: Cutoff value, traditionally `.143`.
+            Default `None` implies `cutoff=1` and excludes
+            plotting cutoff line.
+
         :param pixel_size: Pixel size in angstrom.  Default `None`
             implies unit in pixels, equivalent to pixel_size=1.
         :param method: Selects either 'fft' (on cartesian grid),
