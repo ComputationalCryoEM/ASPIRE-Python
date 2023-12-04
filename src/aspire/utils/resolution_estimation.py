@@ -250,7 +250,11 @@ class FourierCorrelation:
         Convert from the Fourier correlations to frequencies and resolution.
 
         :param cutoff: Cutoff value, traditionally `.143`.
+            Note `cutoff=None` evaluates as `cutoff=1`.
         """
+        # Handle optional cutoff plotting.
+        if cutoff is None:
+            cutoff = 1
 
         cutoff = float(cutoff)
         if not (0 <= cutoff <= 1):
@@ -289,17 +293,25 @@ class FourierCorrelation:
         # Similar to wavenumbers.  Larger is higher frequency.
         return k / (self.L * self.pixel_size)
 
-    def plot(self, cutoff, save_to_file=False, labels=None):
+    def plot(self, cutoff=None, save_to_file=False, labels=None):
         """
         Generates a Fourier correlation plot.
 
         :param cutoff: Cutoff value, traditionally `.143`.
+            Default `None` implies `cutoff=1` and excludes
+            plotting cutoff line.
         :param save_to_file: Optionally, save plot to file.
             Defaults False, enabled by providing a string filename.
             User is responsible for providing reasonable filename.
             See `https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html`.
         """
-        cutoff = float(cutoff)
+
+        # Handle optional cutoff plotting.
+        _plot_cutoff = True
+        if cutoff is None:
+            cutoff = 1
+            _plot_cutoff = False
+
         if not (0 <= cutoff <= 1):
             raise ValueError("Supplied correlation `cutoff` not in [0,1], {cutoff}")
 
@@ -344,17 +356,20 @@ class FourierCorrelation:
                     _label = labels[i]
             plt.plot(freqs_units, line, label=_label)
 
-        # Display cutoff
-        plt.axhline(y=cutoff, color="r", linestyle="--", label=f"cutoff={cutoff}")
         estimated_resolution = self.analyze_correlations(cutoff)[0]
 
-        # Display resolution
-        plt.axvline(
-            x=estimated_resolution,
-            color="b",
-            linestyle=":",
-            label=f"Resolution={estimated_resolution:.3f}",
-        )
+        # Display cutoff
+        if _plot_cutoff:
+            plt.axhline(y=cutoff, color="r", linestyle="--", label=f"cutoff={cutoff}")
+
+            # Display resolution
+            plt.axvline(
+                x=estimated_resolution,
+                color="b",
+                linestyle=":",
+                label=f"Resolution={estimated_resolution:.3f}",
+            )
+
         # x-axis decreasing
         plt.gca().invert_xaxis()
         plt.legend(title=f"Method: {self.method}")

@@ -145,9 +145,10 @@ def test_frc_img_plot(image_fixture):
         _ = img_a.frc(img_n, pixel_size=1, cutoff=0.143, plot=True)
 
     # Plot to file
+    # Also tests `cutoff=None`
     with tempfile.TemporaryDirectory() as tmp_input_dir:
         file_path = os.path.join(tmp_input_dir, "img_frc_curve.png")
-        img_a.frc(img_n, pixel_size=1, cutoff=0.143, plot=file_path)
+        img_a.frc(img_n, pixel_size=1, cutoff=None, plot=file_path)
         assert os.path.exists(file_path)
 
 
@@ -204,9 +205,10 @@ def test_fsc_vol_plot(volume_fixture):
         _ = vol_a.fsc(vol_b, pixel_size=1, cutoff=0.5, plot=True)
 
     # Plot to file
+    # Also tests `cutoff=None`
     with tempfile.TemporaryDirectory() as tmp_input_dir:
-        file_path = os.path.join(tmp_input_dir, "img_fsc_curve.png")
-        vol_a.fsc(vol_b, pixel_size=1, cutoff=0.143, plot=file_path)
+        file_path = os.path.join(tmp_input_dir, "vol_fsc_curve.png")
+        vol_a.fsc(vol_b, pixel_size=1, cutoff=None, plot=file_path)
         assert os.path.exists(file_path)
 
 
