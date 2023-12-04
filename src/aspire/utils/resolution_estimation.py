@@ -2,6 +2,7 @@
 This module contains code for estimating resolution achieved by reconstructions.
 """
 import logging
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,13 +39,13 @@ class FourierCorrelation:
 
     def __init__(self, a, b, pixel_size=None, method="fft"):
         """
-                :param a: Input array a, shape(..., *dim).
-                :param b: Input array b, shape(..., *dim).
-                :param pixel_size: Pixel size in angstrom.
-                    Default `None` implies "pixel" units.
-                :param method: Selects either 'fft' (on Cartesian grid),
-                    or 'nufft' (on polar grid). Defaults to 'fft'.
-        7"""
+        :param a: Input array a, shape(..., *dim).
+        :param b: Input array b, shape(..., *dim).
+        :param pixel_size: Pixel size in angstrom.
+            Default `None` implies "pixel" units.
+        :param method: Selects either 'fft' (on Cartesian grid),
+            or 'nufft' (on polar grid). Defaults to 'fft'.
+        """
 
         # Sanity checks
         if not hasattr(self, "dim"):
@@ -275,8 +276,12 @@ class FourierCorrelation:
         # Convert indices to frequency (as 1/angstrom)
         frequencies = self._freq(c_ind)
 
-        # Convert to resolution in angstrom, smaller is higher frequency.
-        self._resolutions = 1 / frequencies
+        with warnings.catch_warnings():
+            # When using high cutoff (eg. 1) it is possible `frequencies`
+            # contains 0; capture and ignore that division warning.
+            warnings.filterwarnings("ignore", r".*divide by zero.*")
+            # Convert to resolution in angstrom, smaller is higher frequency.
+            self._resolutions = 1 / frequencies
 
         return self._resolutions
 
