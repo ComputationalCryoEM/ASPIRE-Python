@@ -549,7 +549,7 @@ class Volume:
 
         return cls(loaded_data, symmetry_group=symmetry_group, dtype=dtype)
 
-    def fsc(self, other, cutoff, pixel_size=None, method="fft", plot=False):
+    def fsc(self, other, cutoff=None, pixel_size=None, method="fft", plot=False):
         r"""
         Compute the Fourier shell correlation between two volumes.
 
@@ -564,6 +564,8 @@ class Volume:
 
         :param other: `Volume` instance to compare.
         :param cutoff: Cutoff value, traditionally `.143`.
+            Default `None` implies `cutoff=1` and excludes
+            plotting cutoff line.
         :param pixel_size: Pixel size in angstrom.  Default `None`
             implies unit in pixels, equivalent to pixel_size=1.
         :param method: Selects either 'fft' (on cartesian grid),
