@@ -63,7 +63,7 @@ class CLSymmetryD2(CLOrient3D):
 
     def estimate_rotations(self):
         """
-        Estimate rotation matrices for molecules with C3 or C4 symmetry.
+        Estimate rotation matrices for molecules with D2 symmetry.
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
@@ -126,7 +126,7 @@ class CLSymmetryD2(CLOrient3D):
         )
 
         # Generate commmon line angles induced by all relative rotation candidates.
-        cl_angles_1 = self.generate_relative_rotations(
+        cl_angles1 = self.generate_commonline_angles(
             inplane_rotated_grid1,
             inplane_rotated_grid1,
             eq_idx1,
@@ -134,7 +134,7 @@ class CLSymmetryD2(CLOrient3D):
             eq_class1,
             eq_class1,
         )
-        cl_angles_2 = self.generate_relative_rotations(
+        cl_angles2 = self.generate_commonline_angles(
             inplane_rotated_grid1,
             inplane_rotated_grid2,
             eq_idx1,
@@ -143,7 +143,10 @@ class CLSymmetryD2(CLOrient3D):
             eq_class2,
         )
 
-        return cl_angles_1, cl_angles_2
+        cl_ind_1 = self.generate_commonline_indices(cl_angles1)
+        cl_ind_2 = self.generate_commonline_indices(cl_angles2)
+
+        return cl_angles1, cl_angles2
 
     @staticmethod
     def saff_kuijlaars(N):
@@ -277,13 +280,22 @@ class CLSymmetryD2(CLOrient3D):
         return inplane_rotated_grid
 
     @staticmethod
-    def generate_relative_rotations(
+    def generate_commonline_angles(
         Ris, Rjs, Ri_eq_idx, Rj_eq_idx, Ri_eq_class, Rj_eq_class
     ):
         """
+        Compute commonline angles induced by the 4 sets of relative rotations
+        Rij = Ri.T @ g_m @ Rj, m = 0,1,2,3, where g_m is the identity and rotations
+        about the three axes of symmetry of a D2 symmetric molecule.
+
         :param Ris: First set of candidate rotations.
         :param Rjs: Second set of candidate rotation.
-        :param Ri_eq_idx:
+        :param Ri_eq_idx: Equator index mask.
+        :param Rj_eq_idx: Equator index mask.
+        :param Ri_eq_class: Equator classification for Ris.
+        :param Rj_eq_class: Equator classification for Rjs.
+
+        :return: Commonline angles induced by relative rotation candidates.
         """
         n_rots_i = len(Ris)
         n_theta = Ris.shape[1]  # Same for Rjs
@@ -296,7 +308,7 @@ class CLSymmetryD2(CLOrient3D):
 
         n_pairs = np.sum(eq2eq_Rij_table)
         idx = 0
-        cls = np.zeros((2 * n_pairs, n_theta, n_theta // 2, 4, 2))
+        cl_angles = np.zeros((2 * n_pairs, n_theta, n_theta // 2, 4, 2))
 
         for i in range(n_rots_i):
             unique_pairs_i = np.where(eq2eq_Rij_table[i])[0]
@@ -309,12 +321,16 @@ class CLSymmetryD2(CLOrient3D):
                 Rijs = np.transpose(Rj, axes=(0, 2, 1)) @ Ri[:, None]
 
                 # Common line indices induced by Rijs
-                cls[idx, :, :, 0, 0] = np.arctan2(Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1])
-                cls[idx, :, :, 0, 1] = np.arctan2(-Rijs[:, :, 0, 2], Rijs[:, :, 1, 2])
-                cls[idx + n_pairs, :, :, 0, 0] = np.arctan2(
+                cl_angles[idx, :, :, 0, 0] = np.arctan2(
+                    Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
+                )
+                cl_angles[idx, :, :, 0, 1] = np.arctan2(
+                    -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
+                )
+                cl_angles[idx + n_pairs, :, :, 0, 0] = np.arctan2(
                     Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
                 )
-                cls[idx + n_pairs, :, :, 0, 1] = np.arctan2(
+                cl_angles[idx + n_pairs, :, :, 0, 1] = np.arctan2(
                     -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
                 )
 
@@ -324,12 +340,16 @@ class CLSymmetryD2(CLOrient3D):
                 g1_Rj[:, 1:3] = -g1_Rj[:, 1:3]
                 Rijs = np.transpose(g1_Rj, axes=(0, 2, 1)) @ Ri[:, None]
 
-                cls[idx, :, :, 1, 0] = np.arctan2(Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1])
-                cls[idx, :, :, 1, 1] = np.arctan2(-Rijs[:, :, 0, 2], Rijs[:, :, 1, 2])
-                cls[idx + n_pairs, :, :, 1, 0] = np.arctan2(
+                cl_angles[idx, :, :, 1, 0] = np.arctan2(
+                    Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
+                )
+                cl_angles[idx, :, :, 1, 1] = np.arctan2(
+                    -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
+                )
+                cl_angles[idx + n_pairs, :, :, 1, 0] = np.arctan2(
                     Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
                 )
-                cls[idx + n_pairs, :, :, 1, 1] = np.arctan2(
+                cl_angles[idx + n_pairs, :, :, 1, 1] = np.arctan2(
                     -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
                 )
 
@@ -339,12 +359,16 @@ class CLSymmetryD2(CLOrient3D):
                 g2_Rj[:, [0, 2]] = -g2_Rj[:, [0, 2]]
                 Rijs = np.transpose(g2_Rj, axes=(0, 2, 1)) @ Ri[:, None]
 
-                cls[idx, :, :, 2, 0] = np.arctan2(Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1])
-                cls[idx, :, :, 2, 1] = np.arctan2(-Rijs[:, :, 0, 2], Rijs[:, :, 1, 2])
-                cls[idx + n_pairs, :, :, 2, 0] = np.arctan2(
+                cl_angles[idx, :, :, 2, 0] = np.arctan2(
+                    Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
+                )
+                cl_angles[idx, :, :, 2, 1] = np.arctan2(
+                    -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
+                )
+                cl_angles[idx + n_pairs, :, :, 2, 0] = np.arctan2(
                     Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
                 )
-                cls[idx + n_pairs, :, :, 2, 1] = np.arctan2(
+                cl_angles[idx + n_pairs, :, :, 2, 1] = np.arctan2(
                     -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
                 )
 
@@ -354,15 +378,42 @@ class CLSymmetryD2(CLOrient3D):
                 g3_Rj[:, 0:2] = -g3_Rj[:, 0:2]
                 Rijs = np.transpose(g3_Rj, axes=(0, 2, 1)) @ Ri[:, None]
 
-                cls[idx, :, :, 3, 0] = np.arctan2(Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1])
-                cls[idx, :, :, 3, 1] = np.arctan2(-Rijs[:, :, 0, 2], Rijs[:, :, 1, 2])
-                cls[idx + n_pairs, :, :, 3, 0] = np.arctan2(
+                cl_angles[idx, :, :, 3, 0] = np.arctan2(
+                    Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
+                )
+                cl_angles[idx, :, :, 3, 1] = np.arctan2(
+                    -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
+                )
+                cl_angles[idx + n_pairs, :, :, 3, 0] = np.arctan2(
                     Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
                 )
-                cls[idx + n_pairs, :, :, 3, 1] = np.arctan2(
+                cl_angles[idx + n_pairs, :, :, 3, 1] = np.arctan2(
                     -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
                 )
 
                 idx += 1
 
-        return cls
+        return cl_angles
+
+    @staticmethod
+    def generate_commonline_indices(cl_angles):
+        # Make all angles non-negative and convert to degrees.
+        cl_angles = (cl_angles + 2 * np.pi) % (2 * np.pi)
+        cl_angles = cl_angles * 180 / np.pi
+
+        # Flatten the stack
+        og_shape = cl_angles.shape
+        cl_angles = np.reshape(cl_angles, (np.prod(og_shape[:-1]), 2))
+
+        # Fourier ray index
+        cl_ind_j = np.round(cl_angles[:, 0]).astype("int") % 360
+        cl_ind_i = np.round(cl_angles[:, 1]).astype("int") % 360
+
+        # Restrict Rj in-plane coordinates to <180 degrees.
+        is_geq_than_pi = cl_ind_j >= 180
+        cl_ind_j[is_geq_than_pi] = cl_ind_j[is_geq_than_pi] - 180
+        cl_ind_i[is_geq_than_pi] = (cl_ind_i[is_geq_than_pi] + 180) % 360
+
+        # Convert to linear indices in 360*180 correlation matrix
+        cl_ind = np.ravel_multi_index((cl_ind_i, cl_ind_j), dims=(360, 180))
+        return cl_ind
