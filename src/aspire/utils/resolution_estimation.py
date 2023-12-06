@@ -2,6 +2,7 @@
 This module contains code for estimating resolution achieved by reconstructions.
 """
 import logging
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -38,13 +39,13 @@ class FourierCorrelation:
 
     def __init__(self, a, b, pixel_size=None, method="fft"):
         """
-                :param a: Input array a, shape(..., *dim).
-                :param b: Input array b, shape(..., *dim).
-                :param pixel_size: Pixel size in angstrom.
-                    Default `None` implies "pixel" units.
-                :param method: Selects either 'fft' (on Cartesian grid),
-                    or 'nufft' (on polar grid). Defaults to 'fft'.
-        7"""
+        :param a: Input array a, shape(..., *dim).
+        :param b: Input array b, shape(..., *dim).
+        :param pixel_size: Pixel size in angstrom.
+            Default `None` implies "pixel" units.
+        :param method: Selects either 'fft' (on Cartesian grid),
+            or 'nufft' (on polar grid). Defaults to 'fft'.
+        """
 
         # Sanity checks
         if not hasattr(self, "dim"):
@@ -250,7 +251,11 @@ class FourierCorrelation:
         Convert from the Fourier correlations to frequencies and resolution.
 
         :param cutoff: Cutoff value, traditionally `.143`.
+            Note `cutoff=None` evaluates as `cutoff=1`.
         """
+        # Handle optional cutoff plotting.
+        if cutoff is None:
+            cutoff = 1
 
         cutoff = float(cutoff)
         if not (0 <= cutoff <= 1):
@@ -271,8 +276,12 @@ class FourierCorrelation:
         # Convert indices to frequency (as 1/angstrom)
         frequencies = self._freq(c_ind)
 
-        # Convert to resolution in angstrom, smaller is higher frequency.
-        self._resolutions = 1 / frequencies
+        with warnings.catch_warnings():
+            # When using high cutoff (eg. 1) it is possible `frequencies`
+            # contains 0; capture and ignore that division warning.
+            warnings.filterwarnings("ignore", r".*divide by zero.*")
+            # Convert to resolution in angstrom, smaller is higher frequency.
+            self._resolutions = 1 / frequencies
 
         return self._resolutions
 
@@ -289,17 +298,25 @@ class FourierCorrelation:
         # Similar to wavenumbers.  Larger is higher frequency.
         return k / (self.L * self.pixel_size)
 
-    def plot(self, cutoff, save_to_file=False, labels=None):
+    def plot(self, cutoff=None, save_to_file=False, labels=None):
         """
         Generates a Fourier correlation plot.
 
         :param cutoff: Cutoff value, traditionally `.143`.
+            Default `None` implies `cutoff=1` and excludes
+            plotting cutoff line.
         :param save_to_file: Optionally, save plot to file.
             Defaults False, enabled by providing a string filename.
             User is responsible for providing reasonable filename.
             See `https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html`.
         """
-        cutoff = float(cutoff)
+
+        # Handle optional cutoff plotting.
+        _plot_cutoff = True
+        if cutoff is None:
+            cutoff = 1
+            _plot_cutoff = False
+
         if not (0 <= cutoff <= 1):
             raise ValueError("Supplied correlation `cutoff` not in [0,1], {cutoff}")
 
@@ -344,17 +361,20 @@ class FourierCorrelation:
                     _label = labels[i]
             plt.plot(freqs_units, line, label=_label)
 
-        # Display cutoff
-        plt.axhline(y=cutoff, color="r", linestyle="--", label=f"cutoff={cutoff}")
         estimated_resolution = self.analyze_correlations(cutoff)[0]
 
-        # Display resolution
-        plt.axvline(
-            x=estimated_resolution,
-            color="b",
-            linestyle=":",
-            label=f"Resolution={estimated_resolution:.3f}",
-        )
+        # Display cutoff
+        if _plot_cutoff:
+            plt.axhline(y=cutoff, color="r", linestyle="--", label=f"cutoff={cutoff}")
+
+            # Display resolution
+            plt.axvline(
+                x=estimated_resolution,
+                color="b",
+                linestyle=":",
+                label=f"Resolution={estimated_resolution:.3f}",
+            )
+
         # x-axis decreasing
         plt.gca().invert_xaxis()
         plt.legend(title=f"Method: {self.method}")
