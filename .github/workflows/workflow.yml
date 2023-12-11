@@ -155,7 +155,7 @@ jobs:
     - name: Cache Data
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} python -c \
-        "import aspire; print(aspire.config['common']['cache_dir']); aspire.downloader.emdb_2660()"
+        "import aspire; print(aspire.config['common']['cache_dir']); import aspire.downloader; aspire.downloader.emdb_2660()"
     - name: Cleanup
       run: rm -rf ${{ env.WORK_DIR }}
 
