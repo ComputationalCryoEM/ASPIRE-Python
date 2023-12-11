@@ -32,7 +32,7 @@ class CLSymmetryD2(CLOrient3D):
         seed=None,
     ):
         """
-        Initialize object for estimating 3D orientations for molecules with C3 and C4 symmetry.
+        Initialize object for estimating 3D orientations for molecules with D2 symmetry.
 
         :param src: The source object of 2D denoised or class-averaged images with metadata
         :param n_rad: The number of points in the radial direction
@@ -60,6 +60,7 @@ class CLSymmetryD2(CLOrient3D):
         self.inplane_res = inplane_res
         self.eq_min_dist = eq_min_dist
         self.seed = seed
+        self._generate_gs()
 
     def estimate_rotations(self):
         """
@@ -67,7 +68,12 @@ class CLSymmetryD2(CLOrient3D):
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
-        pass
+        self.generate_lookup_data()
+        self.generate_scl_lookup_data(
+            self.inplane_rotated_grid1,
+            self.eq_idx1,
+            self.eq_class1,
+        )
 
     def generate_lookup_data(self):
         """
@@ -110,43 +116,62 @@ class CLSymmetryD2(CLOrient3D):
         #  two common lines.
 
         # Remove top views from sphere grids and update equator indices and classes.
-        sphere_grid1 = sphere_grid1[eq_class1 < 4]
-        sphere_grid2 = sphere_grid2[eq_class2 < 4]
-        eq_idx1 = eq_idx1[eq_class1 < 4]
-        eq_idx2 = eq_idx2[eq_class2 < 4]
-        eq_class1 = eq_class1[eq_class1 < 4]
-        eq_class2 = eq_class2[eq_class2 < 4]
+        self.sphere_grid1 = sphere_grid1[eq_class1 < 4]
+        self.sphere_grid2 = sphere_grid2[eq_class2 < 4]
+        self.eq_idx1 = eq_idx1[eq_class1 < 4]
+        self.eq_idx2 = eq_idx2[eq_class2 < 4]
+        self.eq_class1 = eq_class1[eq_class1 < 4]
+        self.eq_class2 = eq_class2[eq_class2 < 4]
 
         # Generate in-plane rotations for each grid point on the sphere.
-        inplane_rotated_grid1 = self.generate_inplane_rots(
-            sphere_grid1, self.inplane_res
+        self.inplane_rotated_grid1 = self.generate_inplane_rots(
+            self.sphere_grid1, self.inplane_res
         )
-        inplane_rotated_grid2 = self.generate_inplane_rots(
-            sphere_grid2, self.inplane_res
-        )
-
-        # Generate commmon line angles induced by all relative rotation candidates.
-        cl_angles1 = self.generate_commonline_angles(
-            inplane_rotated_grid1,
-            inplane_rotated_grid1,
-            eq_idx1,
-            eq_idx1,
-            eq_class1,
-            eq_class1,
-        )
-        cl_angles2 = self.generate_commonline_angles(
-            inplane_rotated_grid1,
-            inplane_rotated_grid2,
-            eq_idx1,
-            eq_idx2,
-            eq_class1,
-            eq_class2,
+        self.inplane_rotated_grid2 = self.generate_inplane_rots(
+            self.sphere_grid2, self.inplane_res
         )
 
-        cl_ind_1 = self.generate_commonline_indices(cl_angles1)
-        cl_ind_2 = self.generate_commonline_indices(cl_angles2)
+        # Generate commmonline angles induced by all relative rotation candidates.
+        self.cl_angles1 = self.generate_commonline_angles(
+            self.inplane_rotated_grid1,
+            self.inplane_rotated_grid1,
+            self.eq_idx1,
+            self.eq_idx1,
+            self.eq_class1,
+            self.eq_class1,
+        )
+        self.cl_angles2 = self.generate_commonline_angles(
+            self.inplane_rotated_grid1,
+            self.inplane_rotated_grid2,
+            self.eq_idx1,
+            self.eq_idx2,
+            self.eq_class1,
+            self.eq_class2,
+        )
 
-        return cl_angles1, cl_angles2
+        # Generate commonline indices.
+        self.cl_ind_1 = self.generate_commonline_indices(self.cl_angles1)
+        self.cl_ind_2 = self.generate_commonline_indices(self.cl_angles2)
+
+    def generate_scl_lookup_data(self, Ris, eq_idx, eq_class):
+        """
+        Generate lookup data for self-commonlines.
+
+        :param Ris: Candidate rotation matrices, (n_sphere_grid, n_inplane_rots, 3, 3).
+        :param eq_idx: Equator index mask for Ris.
+        :param eq_class: Equator classification for Ris.
+        """
+        # For each candidate rotation Ri we generate the set of 3 self-commonlines.
+        scl_angles = np.zeros((*Ris.shape[:2], 3, 2), dtype=Ris.dtype)
+        n_rots = len(Ris)
+        for i in range(n_rots):
+            Ri = Ris[i]
+            for j, g in enumerate(self.gs[1:]):
+                g_Ri = g * Ri
+                Riis = np.transpose(Ri, axes=(0, 2, 1)) @ g_Ri
+
+                scl_angles[i, :, j, 0] = np.arctan2(Riis[:, 2, 0], -Riis[:, 2, 1])
+                scl_angles[i, :, j, 1] = np.arctan2(-Riis[:, 0, 2], Riis[:, 1, 2])
 
     @staticmethod
     def saff_kuijlaars(N):
@@ -417,3 +442,16 @@ class CLSymmetryD2(CLOrient3D):
         # Convert to linear indices in 360*180 correlation matrix
         cl_ind = np.ravel_multi_index((cl_ind_i, cl_ind_j), dims=(360, 180))
         return cl_ind
+
+    def _generate_gs(self):
+        """
+        Generate analogue to D2 rotation matrices, such that element-wise
+        multiplication, `*`, by gs is equivalent to matrix multiplication,
+        `@`, by a correspopnding rotation matrix.
+        """
+        gs = np.ones((4, 3, 3), dtype=self.dtype)
+        gs[1, 1:3] = -gs[1, 1:3]
+        gs[2, [0, 2]] = -gs[2, [0, 2]]
+        gs[3, 0:2] = -gs[3, 0:2]
+
+        self.gs = gs
