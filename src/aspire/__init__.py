@@ -1,4 +1,3 @@
-import importlib
 import logging.config
 import os
 import pkgutil
@@ -73,4 +72,3 @@ if config["logging"]["log_exceptions"].get(int):
 __all__ = []
 for _, modname, _ in pkgutil.iter_modules(aspire.__path__):
     __all__.append(modname)  # Add module to __all_
-    importlib.import_module(f"aspire.{modname}")  # Import the module
