@@ -11,7 +11,6 @@ import pymanopt
 from numpy.linalg import norm
 from scipy.optimize import minimize
 
-from aspire.operators import wemd_embed
 from aspire.utils.rotation import Rotation
 
 # Store parameters specific to each loss_type.
@@ -64,6 +63,9 @@ def align_BO(
         Default `None` infers dtype from `vol_ref`.
     :return: Rotation matrix R_init (without refinement) or (R_init, R_est) (with refinement).
     """
+    # Avoid utils/operators/utils circular import
+    from aspire.operators import wemd_embed
+
     # Infer dtype
     dtype = np.dtype(dtype or vol_ref.dtype)
 
