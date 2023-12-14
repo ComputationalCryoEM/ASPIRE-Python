@@ -1,3 +1,4 @@
+import importlib
 import logging.config
 import os
 import pkgutil
@@ -68,7 +69,18 @@ if config["logging"]["log_exceptions"].get(int):
 
     sys.excepthook = handle_exception
 
+# Collect set of all module names in package
+_modules = set(item[1] for item in pkgutil.iter_modules(aspire.__path__))
 
+# Automatically add modules
 __all__ = []
-for _, modname, _ in pkgutil.iter_modules(aspire.__path__):
+for modname in _modules:
     __all__.append(modname)  # Add module to __all_
+
+
+# Dynamically load and return attributes
+def __getattr__(attr):
+    if attr in _modules:
+        return importlib.import_module(f"aspire.{attr}")
+    else:
+        raise AttributeError(f"module {__name__} has no attribute {attr}.")
