@@ -377,7 +377,7 @@ class FSPCABasis(SteerableBasis2D):
         # corrected_c[:, self.angular_indices!=0] *= 2
         # return corrected_c @ eigvecs.T
 
-        return Coef(c.basis, c @ eigvecs.T)
+        return Coef(self.basis, c @ eigvecs.T)
 
     # TODO: Python>=3.8 @cached_property
     def _get_compressed_indices(self):
