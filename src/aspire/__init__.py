@@ -83,4 +83,4 @@ def __getattr__(attr):
     if attr in _modules:
         return importlib.import_module(f"aspire.{attr}")
     else:
-        raise AttributeError(f"module {__name__} has no attribute {attr}.")
+        raise AttributeError(f"module `{__name__}` has no attribute `{attr}`.")
