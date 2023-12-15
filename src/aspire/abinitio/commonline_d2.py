@@ -166,12 +166,65 @@ class CLSymmetryD2(CLOrient3D):
         n_rots = len(Ris)
         for i in range(n_rots):
             Ri = Ris[i]
-            for j, g in enumerate(self.gs[1:]):
+            for k, g in enumerate(self.gs[1:]):
                 g_Ri = g * Ri
                 Riis = np.transpose(Ri, axes=(0, 2, 1)) @ g_Ri
 
-                scl_angles[i, :, j, 0] = np.arctan2(Riis[:, 2, 0], -Riis[:, 2, 1])
-                scl_angles[i, :, j, 1] = np.arctan2(-Riis[:, 0, 2], Riis[:, 1, 2])
+                scl_angles[i, :, k, 0] = np.arctan2(Riis[:, 2, 0], -Riis[:, 2, 1])
+                scl_angles[i, :, k, 1] = np.arctan2(-Riis[:, 0, 2], Riis[:, 1, 2])
+
+        # Prepare self commonline coordinates.
+        scl_angles = scl_angles % (2 * np.pi)
+
+        # Deal with non top view equators
+        # A non-TV equator has only one self common line. However, we clasify an
+        # equator as an image whose projection direction is at radial distance <
+        # eq_filter_angle from the great circle perpendicual to a symmetry axis,
+        # and not strcitly zero distance. Thus in most cases we get 2 common lines
+        # differing by a small difference in degrees. Actually the calculation above
+        # gives us two NEARLY antipodal lines, so we first flip one of them by
+        # adding 180 degrees to it. Then we aggregate all the rays within the range
+        # between these two resulting lines to compute the score of this self common
+        # line for this candidate. The scoring part is done in the ML function itself.
+        # Furthermore, the line perpendicular to the self common line, though not
+        # really a self common line, has the property that all its values are real
+        # and both halves of the line (rays differing by pi, emanating from the
+        # origin) have the same values, and so it 'beahves like' a self common
+        # line which we also register here and exploit in the ML function.
+        # We put the 'real' self common line at 2 first coordinates, the
+        # candidate for perpendicular line is in 3rd coordinate.
+
+        # If this is a self common line with respect to x-equator then the actual self
+        # common line(s) is given by the self relative rotations given by the y and z
+        # rotation (by 180 degrees) group members, i.e. Ri^TgyRj and Ri^TgzRj
+        scl_angles[eq_class == 1] = scl_angles[eq_class == 1][:, :, [1, 2, 0]]
+        scl_angles[eq_class == 1, :, 0] = scl_angles[eq_class == 1][:, :, 0, [1, 0]]
+
+        # If this is a self common line with respect to y-equator then the actual self
+        # common line(s) is given by the self relative rotations given by the x and z
+        # rotation (by 180 degrees) group members, i.e. Ri^TgxRj and Ri^TgzRj
+        scl_angles[eq_class == 2] = scl_angles[eq_class == 2][:, :, [0, 2, 1]]
+        scl_angles[eq_class == 2, :, 0] = scl_angles[eq_class == 2][:, :, 0, [1, 0]]
+
+        # If this is a self common line with respect to z-equator then the actual self
+        # common line(s) is given by the self relative rotations given by the x and y
+        # rotation (by 180 degrees) group members, i.e. Ri^TgxRj and Ri^TgyRj
+        # No need to rearrange entries, the "real" common lines are already in
+        # indices 1 and 2, but flip one common line to antipodal.
+        scl_angles[eq_class == 3, :, 0] = scl_angles[eq_class == 3][:, :, 0, [1, 0]]
+
+        # TODO: This section is silly! Clean up!
+        # Make sure angle range is <= 180 degrees.
+        p1 = scl_angles[eq_class > 0, :, 0] > scl_angles[eq_class > 0, :, 1]
+        p1 = p1[:, :, 0] & p1[:, :, 1]
+        p2 = scl_angles[eq_class > 0, :, 0] - scl_angles[eq_class > 0, :, 1] < -np.pi
+        p2 = p2[:, :, 0] | p2[:, :, 1]
+        p = p1 | p2
+
+        scl_angles[eq_class > 0] = (
+            scl_angles[eq_class > 0][:, :, [1, 0, 2]] * p[:, :, None, None]
+            + scl_angles[eq_class > 0] * ~p[:, :, None, None]
+        )
 
     @staticmethod
     def saff_kuijlaars(N):
@@ -304,9 +357,8 @@ class CLSymmetryD2(CLOrient3D):
 
         return inplane_rotated_grid
 
-    @staticmethod
     def generate_commonline_angles(
-        Ris, Rjs, Ri_eq_idx, Rj_eq_idx, Ri_eq_class, Rj_eq_class
+        self, Ris, Rjs, Ri_eq_idx, Rj_eq_idx, Ri_eq_class, Rj_eq_class
     ):
         """
         Compute commonline angles induced by the 4 sets of relative rotations
@@ -341,80 +393,25 @@ class CLSymmetryD2(CLOrient3D):
                 continue
             Ri = Ris[i]
             for j in unique_pairs_i:
-                # Compute relative rotations candidates Rij = Ri.T @ Rj
                 Rj = Rjs[j, : (n_theta // 2)]
-                Rijs = np.transpose(Rj, axes=(0, 2, 1)) @ Ri[:, None]
+                for k, g in enumerate(self.gs):
+                    # Compute relative rotations candidates Rij = Ri.T @ gs @ Rj
+                    g_Rj = g * Rj
+                    Rijs = np.transpose(g_Rj, axes=(0, 2, 1)) @ Ri[:, None]
 
-                # Common line indices induced by Rijs
-                cl_angles[idx, :, :, 0, 0] = np.arctan2(
-                    Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
-                )
-                cl_angles[idx, :, :, 0, 1] = np.arctan2(
-                    -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
-                )
-                cl_angles[idx + n_pairs, :, :, 0, 0] = np.arctan2(
-                    Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
-                )
-                cl_angles[idx + n_pairs, :, :, 0, 1] = np.arctan2(
-                    -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
-                )
-
-                # Compute relative rotations candidates Rij = Ri.T @ g1 @ Rj,
-                # where g1 = diag(1, -1, -1).
-                g1_Rj = Rj.copy()
-                g1_Rj[:, 1:3] = -g1_Rj[:, 1:3]
-                Rijs = np.transpose(g1_Rj, axes=(0, 2, 1)) @ Ri[:, None]
-
-                cl_angles[idx, :, :, 1, 0] = np.arctan2(
-                    Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
-                )
-                cl_angles[idx, :, :, 1, 1] = np.arctan2(
-                    -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
-                )
-                cl_angles[idx + n_pairs, :, :, 1, 0] = np.arctan2(
-                    Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
-                )
-                cl_angles[idx + n_pairs, :, :, 1, 1] = np.arctan2(
-                    -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
-                )
-
-                # Compute relative rotations candidates Rij = Ri.T @ g2 @ Rj,
-                # where g2 = diag(-1, 1, -1).
-                g2_Rj = Rj.copy()
-                g2_Rj[:, [0, 2]] = -g2_Rj[:, [0, 2]]
-                Rijs = np.transpose(g2_Rj, axes=(0, 2, 1)) @ Ri[:, None]
-
-                cl_angles[idx, :, :, 2, 0] = np.arctan2(
-                    Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
-                )
-                cl_angles[idx, :, :, 2, 1] = np.arctan2(
-                    -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
-                )
-                cl_angles[idx + n_pairs, :, :, 2, 0] = np.arctan2(
-                    Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
-                )
-                cl_angles[idx + n_pairs, :, :, 2, 1] = np.arctan2(
-                    -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
-                )
-
-                # Compute relative rotations candidates Rij = Ri.T @ g3 @ Rj,
-                # where g3 = diag(-1, -1, 1).
-                g3_Rj = Rj.copy()
-                g3_Rj[:, 0:2] = -g3_Rj[:, 0:2]
-                Rijs = np.transpose(g3_Rj, axes=(0, 2, 1)) @ Ri[:, None]
-
-                cl_angles[idx, :, :, 3, 0] = np.arctan2(
-                    Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
-                )
-                cl_angles[idx, :, :, 3, 1] = np.arctan2(
-                    -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
-                )
-                cl_angles[idx + n_pairs, :, :, 3, 0] = np.arctan2(
-                    Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
-                )
-                cl_angles[idx + n_pairs, :, :, 3, 1] = np.arctan2(
-                    -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
-                )
+                    # Common line indices induced by Rijs
+                    cl_angles[idx, :, :, k, 0] = np.arctan2(
+                        Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
+                    )
+                    cl_angles[idx, :, :, k, 1] = np.arctan2(
+                        -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
+                    )
+                    cl_angles[idx + n_pairs, :, :, k, 0] = np.arctan2(
+                        Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
+                    )
+                    cl_angles[idx + n_pairs, :, :, k, 1] = np.arctan2(
+                        -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
+                    )
 
                 idx += 1
 
