@@ -679,14 +679,24 @@ class MeanEstimatorTestCase(TestCase):
 
     def testCheckpoint(self):
         """Exercise the checkpointing and max iterations branches."""
+        test_iter = 2
         with tempfile.TemporaryDirectory() as tmp_input_dir:
-            prefix = os.path.join(tmp_input_dir, "chk")
-            estimator = MeanEstimator(self.sim, self.basis, preconditioner="none",
-                                      checkpoint_iterations=2, maxiter=2, checkpoint_prefix=prefix)
+            prefix = os.path.join(tmp_input_dir, "new", "dirs", "chk")
+            estimator = MeanEstimator(
+                self.sim,
+                self.basis,
+                preconditioner="none",
+                checkpoint_iterations=test_iter,
+                maxiter=test_iter + 1,
+                checkpoint_prefix=prefix,
+            )
 
-            _ = self.estimator.estimate()
-            # Load the checkpoint coefficients
-            b_chk = np.load(f"{prefix}_iter2")
+            # Assert we raise when reading `maxiter`.
+            with raises(RuntimeError, match="Unable to converge!"):
+                _ = estimator.estimate()
 
-            # Estimate, starting from checkpoint
-            estimate = self.estimator.estimate(b_coef=b_chk)
+            # Load the checkpoint coefficients while tmp_input_dir exists.
+            b_chk = np.load(f"{prefix}_iter{test_iter}.npy")
+
+        # Estimate, starting from checkpoint
+        estimate = self.estimator.estimate(b_coef=b_chk)
