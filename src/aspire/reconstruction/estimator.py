@@ -1,4 +1,6 @@
 import logging
+import os
+from pathlib import Path
 
 from aspire.basis import Coef
 from aspire.reconstruction.kernel import FourierKernel
@@ -7,7 +9,16 @@ logger = logging.getLogger(__name__)
 
 
 class Estimator:
-    def __init__(self, src, basis, batch_size=512, preconditioner="circulant"):
+    def __init__(
+        self,
+        src,
+        basis,
+        batch_size=512,
+        preconditioner="circulant",
+        checkpoint_iterations=10,
+        checkpoint_prefix="volume_checkpoint",
+        maxiter=100,
+    ):
         """
         An object representing a 2*L-by-2*L-by-2*L array containing the non-centered Fourier transform of the mean
         least-squares estimator kernel.
@@ -15,6 +26,24 @@ class Estimator:
         projection directions (with the appropriate amplitude multipliers and CTFs) and averaging over the whole
         dataset.
         Note that this is a non-centered Fourier transform, so the zero frequency is found at index 1.
+
+
+        :param src: `ImageSource` to be used for estimation.
+        :param basis: 3D Basis to be used during estimation.
+        :param batch_size: Optional batch size of images drawn from
+            `src` during back projection and kernel estimation steps.
+        :param preconditioner: Optional kernel preconditioner (`string`).
+        :param checkpoint_iterations: Optionally save `cg` estimated `Volume`
+            instance periodically each `checkpoint_iterations`.
+            Setting to None disables, otherwise checks for positive integer.
+        :param checkpoint_prefix: Optional path prefix for `cg`
+            checkpoint files.  If the parent directory does not exist,
+            creation is attempted.  `_iter{N}` will be appended to the
+            prefix.
+        :param maxiter: Optional max number of `cg` iterations
+            before returning.  This should be used in conjunction with
+            `checkpoint_iterations` to prevent excessive disk usage.
+            `None` disables.
         """
 
         self.src = src
@@ -23,6 +52,7 @@ class Estimator:
         self.batch_size = batch_size
         self.preconditioner = preconditioner
 
+        # dtype configuration
         if not self.dtype == self.basis.dtype:
             logger.warning(
                 f"Inconsistent types in {self.dtype} Estimator."
@@ -34,6 +64,27 @@ class Estimator:
                 "Currently require 2D source and 3D volume resolution to be the same."
                 f" Given src.L={src.L} != {basis.nres}"
             )
+
+        # Checkpoint configuration
+        if checkpoint_iterations is not None:
+            checkpoint_iterations = int(checkpoint_iterations)
+            if not checkpoint_iterations > 0:
+                raise ValueError(
+                    "`checkpoint_iterations` should be a positive integer or `None`."
+                )
+        self.checkpoint_iterations = checkpoint_iterations
+        # Create checkpointing dirs as needed
+        parent = Path(checkpoint_prefix).parent
+        if not os.path.exists(parent):
+            os.mkdirs(parents)
+        self.checkpoint_prefix = checkpoint_prefix
+
+        # Maximum iteration configuration
+        if maxiter is not None:
+            maxiter = int(maxiter)
+            if not maxiter > 0:
+                raise ValueError("`maxiter` should be a positive integer or `None`.")
+        self.maxiter = maxiter
 
     def __getattr__(self, name):
         """Lazy attributes instantiated on first-access"""
