@@ -1,4 +1,5 @@
 import os.path
+import tempfile
 from unittest import TestCase
 
 import numpy as np
@@ -26,12 +27,12 @@ class MeanEstimatorTestCase(TestCase):
             ],
             dtype=self.dtype,
         )
-        basis = FBBasis3D((self.resolution,) * 3, dtype=self.dtype)
+        self.basis = FBBasis3D((self.resolution,) * 3, dtype=self.dtype)
 
-        self.estimator = MeanEstimator(self.sim, basis, preconditioner="none")
+        self.estimator = MeanEstimator(self.sim, self.basis, preconditioner="none")
 
         self.estimator_with_preconditioner = MeanEstimator(
-            self.sim, basis, preconditioner="circulant"
+            self.sim, self.basis, preconditioner="circulant"
         )
 
     def tearDown(self):
@@ -675,3 +676,17 @@ class MeanEstimatorTestCase(TestCase):
                 atol=1e-4,
             )
         )
+
+    def testCheckpoint(self):
+        """Exercise the checkpointing and max iterations branches."""
+        with tempfile.TemporaryDirectory() as tmp_input_dir:
+            prefix = os.path.join(tmp_input_dir, "chk")
+            estimator = MeanEstimator(self.sim, self.basis, preconditioner="none",
+                                      checkpoint_iterations=2, maxiter=2, checkpoint_prefix=prefix)
+
+            _ = self.estimator.estimate()
+            # Load the checkpoint coefficients
+            b_chk = np.load(f"{prefix}_iter2")
+
+            # Estimate, starting from checkpoint
+            estimate = self.estimator.estimate(b_coef=b_chk)
