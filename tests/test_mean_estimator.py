@@ -698,5 +698,5 @@ class MeanEstimatorTestCase(TestCase):
             # Load the checkpoint coefficients while tmp_input_dir exists.
             b_chk = np.load(f"{prefix}_iter{test_iter}.npy")
 
-        # Estimate, starting from checkpoint
-        estimate = self.estimator.estimate(b_coef=b_chk)
+        # Restart estimate from checkpoint
+        _ = self.estimator.estimate(b_coef=b_chk)
