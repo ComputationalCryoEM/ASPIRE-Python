@@ -27,7 +27,6 @@ class Estimator:
         dataset.
         Note that this is a non-centered Fourier transform, so the zero frequency is found at index 1.
 
-
         :param src: `ImageSource` to be used for estimation.
         :param basis: 3D Basis to be used during estimation.
         :param batch_size: Optional batch size of images drawn from
