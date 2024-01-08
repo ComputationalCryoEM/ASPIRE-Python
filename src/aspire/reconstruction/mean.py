@@ -200,12 +200,33 @@ class WeightedVolumesEstimator(Estimator):
         tol = tol or config.mean.cg_tol
         target_residual = tol * norm(b_coef)
 
-        def cb(xk):
+        # callback setup
+        i = 0  # iteration counter
+
+        def cb(xk, i=i):
+            i += 1  # increment iteration count
+
             logger.info(
-                f"Delta {norm(b_coef - self.apply_kernel(xk))} (target {target_residual})"
+                f"[Iter {i}]: Delta {norm(b_coef - self.apply_kernel(xk))} (target {target_residual})"
             )
 
-        x, info = cg(operator, b_coef.flatten(), M=M, callback=cb, tol=tol, atol=0)
+            # Optional checkpoint
+            if self.checkpoint_iterations and (i % self.checkpoint_iterations) == 0:
+                # Construct checkpoint path
+                path = f"{self.checkpoint_prefix}_iter{i}"
+                # Write out the current solution
+                np.save(path, xk.reshape(self.r, self.basis.count))
+                logger.info("Checkpoint saved to `{path}`")
+
+        x, info = cg(
+            operator,
+            b_coef.flatten(),
+            M=M,
+            callback=cb,
+            tol=tol,
+            atol=0,
+            maxiter=self.maxiter,
+        )
 
         if info != 0:
             raise RuntimeError("Unable to converge!")
