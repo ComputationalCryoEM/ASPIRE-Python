@@ -201,22 +201,25 @@ class WeightedVolumesEstimator(Estimator):
         target_residual = tol * norm(b_coef)
 
         # callback setup
-        i = 0  # iteration counter
+        self.i = 0  # iteration counter
 
-        def cb(xk, i=i):
-            i += 1  # increment iteration count
+        def cb(xk):
+            self.i += 1  # increment iteration count
 
             logger.info(
-                f"[Iter {i}]: Delta {norm(b_coef - self.apply_kernel(xk))} (target {target_residual})"
+                f"[Iter {self.i}]: Delta {norm(b_coef - self.apply_kernel(xk))} (target {target_residual})"
             )
 
             # Optional checkpoint
-            if self.checkpoint_iterations and (i % self.checkpoint_iterations) == 0:
+            if (
+                self.checkpoint_iterations
+                and (self.i % self.checkpoint_iterations) == 0
+            ):
                 # Construct checkpoint path
-                path = f"{self.checkpoint_prefix}_iter{i}"
+                path = f"{self.checkpoint_prefix}_iter{self.i}.npy"
                 # Write out the current solution
                 np.save(path, xk.reshape(self.r, self.basis.count))
-                logger.info("Checkpoint saved to `{path}`")
+                logger.info(f"Checkpoint saved to `{path}`")
 
         x, info = cg(
             operator,

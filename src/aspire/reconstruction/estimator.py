@@ -76,7 +76,7 @@ class Estimator:
         # Create checkpointing dirs as needed
         parent = Path(checkpoint_prefix).parent
         if not os.path.exists(parent):
-            os.mkdirs(parents)
+            os.makedirs(parent)
         self.checkpoint_prefix = checkpoint_prefix
 
         # Maximum iteration configuration
