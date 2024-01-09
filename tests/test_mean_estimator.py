@@ -700,3 +700,31 @@ class MeanEstimatorTestCase(TestCase):
 
         # Restart estimate from checkpoint
         _ = self.estimator.estimate(b_coef=b_chk)
+
+    def testCheckpointArgs(self):
+        with tempfile.TemporaryDirectory() as tmp_input_dir:
+            prefix = os.path.join(tmp_input_dir, "chk")
+
+            for junk in [-1, 0, "abc"]:
+                # Junk `checkpoint_iterations` values
+                with raises(
+                    ValueError, match=r".*iterations.*should be a positive integer.*"
+                ):
+                    _ = MeanEstimator(
+                        self.sim,
+                        self.basis,
+                        preconditioner="none",
+                        checkpoint_iterations=junk,
+                        checkpoint_prefix=prefix,
+                    )
+                # Junk `maxiter` values
+                with raises(
+                    ValueError, match=r".*maxiter.*should be a positive integer.*"
+                ):
+                    _ = MeanEstimator(
+                        self.sim,
+                        self.basis,
+                        preconditioner="none",
+                        maxiter=-1,
+                        checkpoint_prefix=prefix,
+                    )

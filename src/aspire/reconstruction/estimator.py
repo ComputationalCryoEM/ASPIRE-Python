@@ -66,12 +66,18 @@ class Estimator:
 
         # Checkpoint configuration
         if checkpoint_iterations is not None:
-            checkpoint_iterations = int(checkpoint_iterations)
+            try:
+                checkpoint_iterations = int(checkpoint_iterations)
+            except ValueError:
+                # Sentinel value to emit a more descriptive message below.
+                checkpoint_iterations = -1
+
             if not checkpoint_iterations > 0:
                 raise ValueError(
                     "`checkpoint_iterations` should be a positive integer or `None`."
                 )
         self.checkpoint_iterations = checkpoint_iterations
+
         # Create checkpointing dirs as needed
         parent = Path(checkpoint_prefix).parent
         if not os.path.exists(parent):
@@ -80,7 +86,11 @@ class Estimator:
 
         # Maximum iteration configuration
         if maxiter is not None:
-            maxiter = int(maxiter)
+            try:
+                maxiter = int(maxiter)
+            except ValueError:
+                # Sentinel value to emit a more descriptive message below.
+                maxiter = -1
             if not maxiter > 0:
                 raise ValueError("`maxiter` should be a positive integer or `None`.")
         self.maxiter = maxiter
