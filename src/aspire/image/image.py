@@ -489,7 +489,7 @@ class Image:
         # probably not needed, transition
         return np.size(self._data)
 
-    def backproject(self, rot_matrices):
+    def backproject(self, rot_matrices, symmetry_group=None):
         """
         Backproject images along rotation
 
@@ -511,8 +511,21 @@ class Image:
             self.n_images == rot_matrices.shape[0]
         ), "Number of rotation matrices must match the number of images"
 
+        # Apply symmetry boosting to rotations.
+        if symmetry_group is None:
+            symmetry_rots = np.eye(3, dtype=self.dtype)[None]
+        else:
+            symmetry_rots = symmetry_group.matrices
+
+        n_sym = len(symmetry_rots)
+        boosted_rot_mats = np.zeros((n_sym * self.shape[0], 3, 3), dtype=self.dtype)
+        for i, sym_rot in enumerate(symmetry_rots):
+            boosted_rot_mats[i * self.shape[0] : (i + 1) * self.shape[0]] = (
+                sym_rot @ rot_matrices
+            )
+
         # TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = aspire.volume.rotated_grids(L, rot_matrices).astype(
+        pts_rot = aspire.volume.rotated_grids(L, boosted_rot_mats).astype(
             self.dtype, copy=False
         )
         pts_rot = pts_rot.reshape((3, -1))
@@ -522,7 +535,8 @@ class Image:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
 
-        im_f = im_f.flatten()
+        # Apply boosting to images.
+        im_f = np.concatenate((im_f.flatten(),) * n_sym)
 
         vol = anufft(im_f, pts_rot[::-1], (L, L, L), real=True) / L
 
