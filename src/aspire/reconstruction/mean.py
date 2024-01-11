@@ -164,7 +164,13 @@ class WeightedVolumesEstimator(Estimator):
                 im = self.src.images[i : i + self.batch_size]
 
                 batch_vol_rhs = (
-                    self.src.im_backward(im, i, self.weights[:, k]) / self.src.n
+                    self.src.im_backward(
+                        im,
+                        i,
+                        self.weights[:, k],
+                        symmetry_group=self.src.symmetry_group,
+                    )
+                    / self.src.n
                 )
                 vol_rhs[k] += batch_vol_rhs.astype(self.dtype)
 
