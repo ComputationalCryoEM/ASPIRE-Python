@@ -940,7 +940,7 @@ class ImageSource(ABC):
             LambdaXform(normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp)
         )
 
-    def im_backward(self, im, start, weights=None):
+    def im_backward(self, im, start, weights=None, symmetry_group=None):
         """
         Apply adjoint mapping to set of images
 
@@ -960,7 +960,9 @@ class ImageSource(ABC):
         if weights is not None:
             im *= weights[all_idx, np.newaxis, np.newaxis]
 
-        vol = im.backproject(self.rotations[start : start + num, :, :])[0]
+        vol = im.backproject(
+            self.rotations[start : start + num, :, :], symmetry_group=symmetry_group
+        )[0]
 
         return vol
 
