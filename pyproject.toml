@@ -31,7 +31,7 @@ dependencies = [
     "click",
     "confuse >= 2.0.0",
     "cvxpy",
-    "finufft",
+    "finufft>=2.2.0",
     "gemmi >= 0.4.8",
     "grpcio >= 1.54.2",
     "joblib",
