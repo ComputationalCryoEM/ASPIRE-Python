@@ -153,6 +153,9 @@ class WeightedVolumesEstimator(Estimator):
         :return: The adjoint mapping applied to the images, averaged over the whole dataset and expressed
             as coefficients of `basis`.
         """
+        symmetry_group = None
+        if self.boost:
+            symmetry_group = self.src.symmetry_group
 
         # src_vols_wt_backward
         vol_rhs = Volume(
@@ -168,7 +171,7 @@ class WeightedVolumesEstimator(Estimator):
                         im,
                         i,
                         self.weights[:, k],
-                        symmetry_group=self.src.symmetry_group,
+                        symmetry_group=symmetry_group,
                     )
                     / self.src.n
                 )
