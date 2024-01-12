@@ -517,11 +517,8 @@ class Image:
         else:
             symmetry_rots = symmetry_group.matrices
 
-        n_sym = len(symmetry_rots)
-        boosted_rot_mats = np.zeros((n_sym * self.shape[0], 3, 3), dtype=self.dtype)
-        import pdb
-
-        pdb.set_trace()
+        sym_order = len(symmetry_rots)
+        boosted_rot_mats = np.zeros((sym_order * self.shape[0], 3, 3), dtype=self.dtype)
         for i, sym_rot in enumerate(symmetry_rots):
             boosted_rot_mats[i * self.shape[0] : (i + 1) * self.shape[0]] = (
                 sym_rot @ rot_matrices
@@ -539,7 +536,7 @@ class Image:
             im_f[:, :, 0] = 0
 
         # Apply boosting to images.
-        im_f = np.concatenate((im_f.flatten(),) * n_sym)
+        im_f = np.concatenate((im_f.flatten(),) * sym_order)
 
         vol = anufft(im_f, pts_rot[::-1], (L, L, L), real=True) / L
 
