@@ -50,7 +50,7 @@ class FinufftPlan(Plan):
             n_modes_or_dim=self.sz,
             eps=self.epsilon,
             n_trans=self.ntransforms,
-            dtype=self.dtype,
+            dtype=self.complex_dtype,
         )
 
         self._adjoint_plan = finufft.Plan(
@@ -58,7 +58,7 @@ class FinufftPlan(Plan):
             n_modes_or_dim=self.sz,
             eps=self.epsilon,
             n_trans=self.ntransforms,
-            dtype=self.dtype,
+            dtype=self.complex_dtype,
         )
 
         self._transform_plan.setpts(*self.fourier_pts)
