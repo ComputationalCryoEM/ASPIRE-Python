@@ -519,6 +519,9 @@ class Image:
 
         n_sym = len(symmetry_rots)
         boosted_rot_mats = np.zeros((n_sym * self.shape[0], 3, 3), dtype=self.dtype)
+        import pdb
+
+        pdb.set_trace()
         for i, sym_rot in enumerate(symmetry_rots):
             boosted_rot_mats[i * self.shape[0] : (i + 1) * self.shape[0]] = (
                 sym_rot @ rot_matrices
