@@ -5,7 +5,7 @@ from numpy.linalg import eig, inv
 from scipy.linalg import solve, sqrtm
 
 from aspire.basis import Coef, FFBBasis2D
-from aspire.operators import BlkDiagMatrix, DiagMatrix
+from aspire.operators import BlkDiagMatrix, DiagMatrix, IdentityFilter
 from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import make_symmat
 from aspire.utils.matlab_compat import m_reshape
@@ -528,7 +528,10 @@ class BatchedRotCov2D(RotCov2D):
         if self.basis is None:
             self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
-        if not src.unique_filters:
+        if not src.unique_filters or (
+            len(src.unique_filters) == 1
+            and isinstance(src.unique_filters[0], IdentityFilter)
+        ):
             logger.info("CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
