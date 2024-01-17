@@ -12,6 +12,7 @@ import aspire.volume
 from aspire.nufft import anufft
 from aspire.numeric import fft, xp
 from aspire.utils import FourierRingCorrelation, anorm, crop_pad_2d, grid_2d
+from aspire.volume import SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -519,6 +520,10 @@ class Image:
         if symmetry_group is None:
             symmetry_rots = np.eye(3, dtype=self.dtype)[None]
         else:
+            if not isinstance(symmetry_group, SymmetryGroup):
+                raise TypeError(
+                    f"`symmetry_group` must be a `SymmetryGroup` instance. Found {type(symmetry_group)}."
+                )
             symmetry_rots = symmetry_group.matrices
 
         sym_order = len(symmetry_rots)
