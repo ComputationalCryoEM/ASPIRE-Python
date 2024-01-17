@@ -296,6 +296,19 @@ def testShow():
     im.show()
 
 
+def test_backproject_symmetry_group_error():
+    """
+    Providing non-SymmetryGroup instance to backproject should raise an error.
+    """
+    ary = np.random.random((3, 8, 8))
+    im = Image(ary)
+    rots = np.random.random((3, 3, 3))
+
+    # Attempt backproject.
+    with raises(TypeError, match=r"`symmetry_group` must be a `SymmetryGroup`*"):
+        _ = im.backproject(rots, symmetry_group="Junk")
+
+
 def test_asnumpy_readonly():
     """
     Attempting assignment should raise an error.
