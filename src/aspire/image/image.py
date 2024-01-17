@@ -491,11 +491,15 @@ class Image:
 
     def backproject(self, rot_matrices, symmetry_group=None):
         """
-        Backproject images along rotation
+        Backproject images along rotation. If a symmetry group is provided, images
+        used in back-projection are duplicated (boosted) for symmetric viewing directions.
+        Note, it is assumed that a main axis of symmetry aligns with the z-axis.
 
         :param im: An Image (stack) to backproject.
-        :param rot_matrices: An n-by-3-by-3 array of rotation matrices \
-        corresponding to viewing directions.
+        :param rot_matrices: An n-by-3-by-3 array of rotation matrices
+            corresponding to viewing directions.
+        :param symmetry_group: A SymmetryGroup instance. If supplied,
+            uses symmetry to increase number of images used in back-projeciton.
 
         :return: Volume instance corresonding to the backprojected images.
         """
