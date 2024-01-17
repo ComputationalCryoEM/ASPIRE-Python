@@ -47,7 +47,7 @@ dependencies = [
     "pydantic<2",  # Workaround for Ray<2.9
     "pyfftw",
     "pymanopt",
-    "pyshtools",
+    "pyshtools<=4.10.4",  # 4.11.7 might have a packaging bug
     "PyWavelets",
     "ray",
     "scipy >= 1.10.0",
