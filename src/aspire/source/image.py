@@ -849,20 +849,23 @@ class ImageSource(ABC):
 
         logger.info("Perform phase flip on source object")
 
-        if len(self.unique_filters) >= 1:
-            unique_xforms = [FilterXform(f.sign) for f in self.unique_filters]
-
-            logger.info("Adding Phase Flip Xform to end of generation pipeline")
-            self.generation_pipeline.add_xform(
-                IndexedXform(unique_xforms, self.filter_indices)
-            )
-
-        else:
+        if self.unique_filters is None or (
+            len(self.unique_filters) == 1
+            and isinstance(self.unique_filters[0], IdentityFilter)
+        ):
             # No CTF filters found
             logger.warning(
                 "No Filters found."
                 "  `phase_flip` is a no-op without Filters."
                 "  Confirm you have correctly populated CTFFilters."
+            )
+
+        else:
+            unique_xforms = [FilterXform(f.sign) for f in self.unique_filters]
+
+            logger.info("Adding Phase Flip Xform to end of generation pipeline")
+            self.generation_pipeline.add_xform(
+                IndexedXform(unique_xforms, self.filter_indices)
             )
 
     @as_copy

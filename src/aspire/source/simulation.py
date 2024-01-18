@@ -161,13 +161,13 @@ class Simulation(ImageSource):
         self.sim_filters = copy.deepcopy(unique_filters)
 
         # Create filter indices and fill the metadata based on unique filters
-        if unique_filters:
+        if len(unique_filters) == 1 and isinstance(unique_filters[0], IdentityFilter):
+            self.filter_indices = np.zeros(n, dtype=int)
+        else:
             if filter_indices is None:
                 filter_indices = randi(len(unique_filters), n, seed=seed) - 1
             self._populate_ctf_metadata(filter_indices)
             self.filter_indices = filter_indices
-        else:
-            self.filter_indices = np.zeros(n, dtype=int)
 
         self.offsets = offsets
         self.amplitudes = amplitudes
