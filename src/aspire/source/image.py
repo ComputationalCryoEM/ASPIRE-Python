@@ -849,7 +849,7 @@ class ImageSource(ABC):
 
         logger.info("Perform phase flip on source object")
 
-        if self.unique_filters is None or (
+        if not self.unique_filters or (
             len(self.unique_filters) == 1
             and isinstance(self.unique_filters[0], IdentityFilter)
         ):
