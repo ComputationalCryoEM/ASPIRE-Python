@@ -28,7 +28,8 @@ def evaluate_src_filters_on_grid(src, indices=None):
     grid2d = grid_2d(src.L, indexing="yx", dtype=src.dtype)
     omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
 
-    h = np.empty((omega.shape[-1], len(indices)), dtype=src.dtype)
+    # Initialize h as ones to mimic an IdentityFilter when src.unique_filters is None.
+    h = np.ones((omega.shape[-1], len(indices)), dtype=src.dtype)
     for i, filt in enumerate(src.unique_filters):
         idx_k = np.where(src.filter_indices[indices] == i)[0]
         if len(idx_k) > 0:
