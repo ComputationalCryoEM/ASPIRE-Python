@@ -7,7 +7,6 @@ from sklearn.metrics import adjusted_rand_score
 
 from aspire.image import Image
 from aspire.noise import NoiseAdder
-from aspire.operators import IdentityFilter
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
 from aspire.utils import (
@@ -152,9 +151,7 @@ class Simulation(ImageSource):
         self.angles = self._init_angles(angles)
 
         if unique_filters is None:
-            # Use IdentityFilter to pass unharmed through filter eval code
-            # that is potentially called by other methods later.
-            unique_filters = [IdentityFilter()]
+            unique_filters = []
         self.unique_filters = unique_filters
         # sim_filters must be a deep copy so that it is not changed
         # when unique_filters is changed
