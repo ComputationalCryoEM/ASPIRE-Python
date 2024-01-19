@@ -106,7 +106,7 @@ jobs:
         python-version: '3.8'
     - name: Install dependencies
       run: |
-        pip install aspire # from web
+        pip install pyshtools<=4.10.4 aspire # from web
         pip install finufft=2.2.0 pytest pytest-xdist
     - name: Test finufft
       run: |
