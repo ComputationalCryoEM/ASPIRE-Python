@@ -87,8 +87,8 @@ def estimated_volume(source):
 
 
 # MeanEstimator Tests.
-def test_mean_estimator_boosting(source, estimated_volume):
-    """Test MeanEstimator with boosting."""
+def test_fsc(source, estimated_volume):
+    """Compare estimated volume to source volume with FSC."""
     # Fourier Shell Correlation
     fsc_resolution, fsc = source.vols.fsc(estimated_volume, pixel_size=1, cutoff=0.5)
 
@@ -97,6 +97,15 @@ def test_mean_estimator_boosting(source, estimated_volume):
 
     # Check that second to last correlation value is high (>.90).
     np.testing.assert_array_less(0.90, fsc[0, -2])
+
+
+def test_mse(source, estimated_volume):
+    """Check the mean-squared error between source and estimated volumes."""
+    mse = (
+        np.sum((source.vols.asnumpy() - estimated_volume.asnumpy()) ** 2)
+        / source.L**3
+    )
+    np.testing.assert_allclose(mse, 0, atol=1e-3)
 
 
 def test_total_energy(source, estimated_volume):
