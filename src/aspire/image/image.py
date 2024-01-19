@@ -552,7 +552,7 @@ class Image:
 
         vol = anufft(im_f, pts_rot[::-1], (L, L, L), real=True) / L
 
-        return aspire.volume.Volume(vol)
+        return aspire.volume.Volume(vol, symmetry_group=symmetry_group)
 
     def show(self, columns=5, figsize=(20, 10), colorbar=True):
         """
