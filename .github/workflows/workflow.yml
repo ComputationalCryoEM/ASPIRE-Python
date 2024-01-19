@@ -115,4 +115,4 @@ jobs:
         pytest finufft.git/python/finufft/test
     - name: Test aspire
       run: |
-        pytest aspire.git
+        pytest -s aspire.git
