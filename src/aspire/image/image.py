@@ -492,15 +492,14 @@ class Image:
 
     def backproject(self, rot_matrices, symmetry_group=None):
         """
-        Backproject images along rotation. If a symmetry group is provided, images
+        Backproject images along rotations. If a symmetry group is provided, images
         used in back-projection are duplicated (boosted) for symmetric viewing directions.
         Note, it is assumed that a main axis of symmetry aligns with the z-axis.
 
-        :param im: An Image (stack) to backproject.
         :param rot_matrices: An n-by-3-by-3 array of rotation matrices
             corresponding to viewing directions.
-        :param symmetry_group: A SymmetryGroup instance. If supplied,
-            uses symmetry to increase number of images used in back-projeciton.
+        :param symmetry_group: A SymmetryGroup instance or string indicating symmetry, ie. "C3".
+            If supplied, uses symmetry to increase number of images used in back-projeciton.
 
         :return: Volume instance corresonding to the backprojected images.
         """
@@ -520,6 +519,10 @@ class Image:
         if symmetry_group is None:
             symmetry_rots = np.eye(3, dtype=self.dtype)[None]
         else:
+            if isinstance(symmetry_group, str):
+                symmetry_group = SymmetryGroup.from_string(
+                    symmetry_group, dtype=self.dtype
+                )
             if not isinstance(symmetry_group, SymmetryGroup):
                 raise TypeError(
                     f"`symmetry_group` must be a `SymmetryGroup` instance. Found {type(symmetry_group)}."
