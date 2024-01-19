@@ -86,6 +86,9 @@ jobs:
   fin:
     runs-on: windows-2019
     #runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
     steps:
     - name: Checkout finufft
       uses: actions/checkout@v4
