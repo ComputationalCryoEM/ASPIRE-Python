@@ -84,8 +84,8 @@ jobs:
           "from aspire.downloader import emdb_2660; emdb_2660()"
   fin:
     needs: check
-    #runs-on: windows-2019
-    runs-on: ubuntu-latest
+    runs-on: windows-2019
+    #runs-on: ubuntu-latest
     steps:
     - name: Checkout finufft
       uses: actions/checkout@v4
