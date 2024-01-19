@@ -10,7 +10,8 @@ from pytest import raises
 from scipy.datasets import face
 
 from aspire.image import Image
-from aspire.utils import powerset, utest_tolerance
+from aspire.utils import Rotation, powerset, utest_tolerance
+from aspire.volume import CnSymmetryGroup
 
 from .test_utils import matplotlib_dry_run
 
@@ -296,18 +297,28 @@ def testShow():
     im.show()
 
 
-def test_backproject_symmetry_group_error():
+def test_backproject_symmetry_group():
     """
     Providing non-SymmetryGroup instance to backproject should raise an error.
     """
-    ary = np.random.random((3, 8, 8))
+    ary = np.random.random((5, 8, 8))
     im = Image(ary)
-    rots = np.random.random((3, 3, 3))
-    not_a_symmetry_group = []
+    rots = Rotation.generate_random_rotations(5).matrices
 
-    # Attempt backproject.
+    # Attempt backproject with bad symmetry group.
+    not_a_symmetry_group = []
     with raises(TypeError, match=r"`symmetry_group` must be a `SymmetryGroup`*"):
         _ = im.backproject(rots, symmetry_group=not_a_symmetry_group)
+
+    # Symmetry from string.
+    vol = im.backproject(rots, symmetry_group="C3")
+    assert isinstance(vol.symmetry_group, CnSymmetryGroup)
+
+    # Symmetry from instance.
+    vol = im.backproject(
+        rots, symmetry_group=CnSymmetryGroup(order=3, dtype=np.float32)
+    )
+    assert isinstance(vol.symmetry_group, CnSymmetryGroup)
 
 
 def test_asnumpy_readonly():
