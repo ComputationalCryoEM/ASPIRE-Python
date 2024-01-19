@@ -47,7 +47,7 @@ def check_backends(raise_errors=True):
         If imports are working but the actual backend is not then we have bigger problems anyway.
         """
 
-        logger.debug(f"Trying NFFT backend {backend}")
+        logger.info(f"Trying NFFT backend {backend}")
         plan_class = None
         msg = None
         if backend == "cufinufft":
@@ -91,7 +91,7 @@ def check_backends(raise_errors=True):
     backends = {k: _try_backend(k) for k in config["nufft"]["backends"].as_str_seq()}
     try:
         default_backend = next(k for k, v in backends.items() if v is not None)
-        logger.debug(f"Selected NFFT backend = {default_backend}.")
+        logger.error(f"Selected NFFT backend = {default_backend}.")
         default_plan_class = backends[default_backend]
     except StopIteration:
         msg = "No usable NFFT backend detected."
@@ -170,7 +170,7 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
         )
 
     if sig_f.dtype != complex_type(sig_f.dtype):
-        logger.debug("anufft passed real_type for signal, converting")
+        logger.info("anufft passed real_type for signal, converting")
         sig_f = sig_f.astype(complex_type(sig_f.dtype))
 
     ntransforms = 1
@@ -208,7 +208,7 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
         )
 
     if sig_f.dtype != complex_type(sig_f.dtype):
-        logger.debug("nufft passed real_type for signal, converting")
+        logger.info("nufft passed real_type for signal, converting")
         sig_f = sig_f.astype(complex_type(sig_f.dtype))
 
     # Unpack the dimension of the signal
