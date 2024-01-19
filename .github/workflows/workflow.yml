@@ -90,11 +90,15 @@ jobs:
       run:
         shell: bash -el {0}
     steps:
+    - uses: actions/checkout@v3
     - name: Checkout finufft
       uses: actions/checkout@v4
       with:
+        path: aspire.git
+      with:
         repository: flatironinstitute/finufft
         ref: v2.2.0
+        path: finufft.git
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -105,4 +109,4 @@ jobs:
     - name: Test
       run: |
         export OMP_NUM_THREADS=2
-        pytest -n2 python/finufft/test
+        pytest -n2 finufft.git/python/finufft/test
