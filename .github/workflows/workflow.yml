@@ -86,9 +86,9 @@ jobs:
   fin:
     runs-on: windows-2019
     #runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -el {0}
+    # defaults:
+    #   run:
+    #     shell: bash -el {0}
     steps:
     - name: Checkout aspire
       uses: actions/checkout@v3
@@ -107,9 +107,10 @@ jobs:
     - name: Install dependencies
       run: |
         pip install "pyshtools<=4.10.4" aspire # from web
-        pip install "finufft==2.2.0" pytest pytest-xdist
+        pip install "finufft==2.2.0" pytest
+        # -n2 pytest-xdist
     - name: Test finufft
       run: |
-        export OMP_NUM_THREADS=2
-        pytest -n2 finufft.git/python/finufft/test
-        pytest -n2 aspire.git
+        #export OMP_NUM_THREADS=2
+        pytest finufft.git/python/finufft/test
+        pytest aspire.git
