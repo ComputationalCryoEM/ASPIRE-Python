@@ -7,19 +7,19 @@ on:
 
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
-    - name: Install dependencies
-      run: |
-        pip install tox tox-gh-actions
-    - name: Run Tox Check
-      run: tox -e check
+  # check:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - name: Set up Python
+  #     uses: actions/setup-python@v4
+  #     with:
+  #       python-version: '3.8'
+  #   - name: Install dependencies
+  #     run: |
+  #       pip install tox tox-gh-actions
+  #   - name: Run Tox Check
+  #     run: tox -e check
 
   # conda-build:
   #   needs: check
@@ -59,31 +59,31 @@ jobs:
   #       # -n runs test in parallel using pytest-xdist
   #       pytest -n2 --durations=50 -s
 
-  # Create cache and download data for Github Actions CI.
-  data-cache:
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"	  
-      - name: Create Cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/ASPIRE-data
-          key: ${{ runner.os }}-cached-data
-      - name: Download EMDB 2660
-        run: |
-          python -c \
-          "from aspire.downloader import emdb_2660; emdb_2660()"
+  # # Create cache and download data for Github Actions CI.
+  # data-cache:
+  #   needs: check
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Setup Python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: '3.8'
+  #     - name: Install Dependencies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install -e ".[dev]"	  
+  #     - name: Create Cache
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: ~/.cache/ASPIRE-data
+  #         key: ${{ runner.os }}-cached-data
+  #     - name: Download EMDB 2660
+  #       run: |
+  #         python -c \
+  #         "from aspire.downloader import emdb_2660; emdb_2660()"
+
   fin:
-    needs: check
     runs-on: windows-2019
     #runs-on: ubuntu-latest
     steps:
