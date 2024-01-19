@@ -82,9 +82,9 @@ def check_backends(raise_errors=True):
                 msg = str(e)
 
         if plan_class is None:
-            logger.debug(f"NFFT backend {backend} not usable:\n\t{msg}")
+            logger.error(f"NFFT backend {backend} not usable:\n\t{msg}")
         else:
-            logger.debug(f"NFFT backend {backend} usable.")
+            logger.info(f"NFFT backend {backend} usable.")
             return plan_class
 
     # Note this dictionary is intentionally ordered
