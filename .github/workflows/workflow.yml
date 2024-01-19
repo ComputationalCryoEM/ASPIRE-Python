@@ -82,3 +82,25 @@ jobs:
         run: |
           python -c \
           "from aspire.downloader import emdb_2660; emdb_2660()"
+  fin:
+    needs: check
+    #runs-on: windows-2019
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout finufft
+      uses: actions/checkout@v4
+      with:
+        repository: flatironinstitute/finufft
+        ref: v2.2.0
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+    - name: Install dependencies
+      run: |
+        pip install finufft pytest
+    - name: Test
+      run: |
+        pytest python/finufft/test
+
+
