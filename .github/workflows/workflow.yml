@@ -107,7 +107,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install "pyshtools<=4.10.4" aspire # from web
-        pip install finufft=2.2.0 pytest pytest-xdist
+        pip install "finufft==2.2.0" pytest pytest-xdist
     - name: Test finufft
       run: |
         export OMP_NUM_THREADS=2
