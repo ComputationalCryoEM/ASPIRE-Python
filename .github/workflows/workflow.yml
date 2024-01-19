@@ -90,6 +90,10 @@ jobs:
     #   run:
     #     shell: bash -el {0}
     steps:
+    - name: Set up MinGW
+      uses: egor-tensin/setup-mingw@v2
+      with:
+        platform: x64
     - name: Checkout aspire
       uses: actions/checkout@v3
       with:
