@@ -137,8 +137,8 @@ class Plan:
                 # If a Plan was constructed as a generic Plan(), use the default (best) Plan class
                 if default_plan_class is None:
                     # Limit log noise to once
-                    with LogFilterByCount(logger, 1):
-                        check_backends(raise_errors=True)
+#                    with LogFilterByCount(logger, 1):
+                    check_backends(raise_errors=True)
                 return super(Plan, cls).__new__(default_plan_class)
         else:
             # If a Plan-subclass was constructed directly, invoke default behavior
