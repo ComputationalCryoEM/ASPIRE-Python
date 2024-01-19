@@ -101,7 +101,7 @@ jobs:
         python-version: '3.8'
     - name: Install dependencies
       run: |
-        pip install finufft pytest
+        pip install finufft pytest pytest-xdist
     - name: Test
       run: |
         export OMP_NUM_THREADS=2
