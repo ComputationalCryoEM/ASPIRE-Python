@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from aspire.basis import FFBBasis3D
+from aspire.operators import IdentityFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source import Simulation
 from aspire.volume import (
@@ -70,6 +71,7 @@ def source(volume):
         amplitudes=1,
         seed=SEED,
         dtype=volume.dtype,
+        unique_filters=[IdentityFilter()],  # Can remove after PR 1076
     )
 
     return src
