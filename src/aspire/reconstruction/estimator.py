@@ -45,6 +45,8 @@ class Estimator:
             before returning.  This should be used in conjunction with
             `checkpoint_iterations` to prevent excessive disk usage.
             `None` disables.
+        :param boost: Option to use `src` symmetry to boost number of images used for mean estimation (Boolean).
+            Default of `True` employs symmetry boosting.
         """
 
         self.src = src
