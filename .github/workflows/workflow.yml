@@ -90,11 +90,12 @@ jobs:
       run:
         shell: bash -el {0}
     steps:
-    - uses: actions/checkout@v3
-    - name: Checkout finufft
-      uses: actions/checkout@v4
+    - name: Checkout aspire
+      uses: actions/checkout@v3
       with:
         path: aspire.git
+    - name: Checkout finufft
+      uses: actions/checkout@v4
       with:
         repository: flatironinstitute/finufft
         ref: v2.2.0
