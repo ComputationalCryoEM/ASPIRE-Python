@@ -303,10 +303,11 @@ def test_backproject_symmetry_group_error():
     ary = np.random.random((3, 8, 8))
     im = Image(ary)
     rots = np.random.random((3, 3, 3))
+    not_a_symmetry_group = []
 
     # Attempt backproject.
     with raises(TypeError, match=r"`symmetry_group` must be a `SymmetryGroup`*"):
-        _ = im.backproject(rots, symmetry_group="Junk")
+        _ = im.backproject(rots, symmetry_group=not_a_symmetry_group)
 
 
 def test_asnumpy_readonly():
