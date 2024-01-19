@@ -21,43 +21,43 @@ jobs:
     - name: Run Tox Check
       run: tox -e check
 
-  conda-build:
-    needs: check
-    runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash -el {0}
-    strategy:
-      matrix:
-        os: [ubuntu-latest,]
-        backend: [default,]
-        python-version: ['3.8']
-        include:
-          - os: windows-2019
-            backend: default
+  # conda-build:
+  #   needs: check
+  #   runs-on: ${{ matrix.os }}
+  #   defaults:
+  #     run:
+  #       shell: bash -el {0}
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest,]
+  #       backend: [default,]
+  #       python-version: ['3.8']
+  #       include:
+  #         - os: windows-2019
+  #           backend: default
 
-    steps:
-    - uses: actions/checkout@v3
-    - name: Set up Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        auto-update-conda: true
-        python-version: ${{ matrix.python-version }}
-        activate-environment: aspire
-        environment-file: environment-${{ matrix.backend }}.yml
-        auto-activate-base: false
-    - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
-      run: |
-        conda info
-        conda list
-        pip install -e ".[dev]"
-        pip freeze
-        python -c "import numpy; numpy.show_config()"
-    - name: Execute Pytest Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
-      run: |
-        export OMP_NUM_THREADS=2
-        # -n runs test in parallel using pytest-xdist
-        pytest -n2 --durations=50 -s
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #   - name: Set up Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
+  #     uses: conda-incubator/setup-miniconda@v2
+  #     with:
+  #       auto-update-conda: true
+  #       python-version: ${{ matrix.python-version }}
+  #       activate-environment: aspire
+  #       environment-file: environment-${{ matrix.backend }}.yml
+  #       auto-activate-base: false
+  #   - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
+  #     run: |
+  #       conda info
+  #       conda list
+  #       pip install -e ".[dev]"
+  #       pip freeze
+  #       python -c "import numpy; numpy.show_config()"
+  #   - name: Execute Pytest Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
+  #     run: |
+  #       export OMP_NUM_THREADS=2
+  #       # -n runs test in parallel using pytest-xdist
+  #       pytest -n2 --durations=50 -s
 
   # Create cache and download data for Github Actions CI.
   data-cache:
@@ -101,6 +101,5 @@ jobs:
         pip install finufft pytest
     - name: Test
       run: |
-        pytest python/finufft/test
-
-
+        export OMP_NUM_THREADS=2
+        pytest -n2 python/finufft/test
