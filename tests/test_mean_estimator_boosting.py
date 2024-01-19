@@ -101,10 +101,7 @@ def test_fsc(source, estimated_volume):
 
 def test_mse(source, estimated_volume):
     """Check the mean-squared error between source and estimated volumes."""
-    mse = (
-        np.sum((source.vols.asnumpy() - estimated_volume.asnumpy()) ** 2)
-        / source.L**3
-    )
+    mse = np.mean((source.vols.asnumpy() - estimated_volume.asnumpy()) ** 2)
     np.testing.assert_allclose(mse, 0, atol=1e-3)
 
 
