@@ -548,7 +548,7 @@ class Image:
             im_f[:, :, 0] = 0
 
         # Apply boosting to images.
-        im_f = np.concatenate((im_f.flatten(),) * sym_order)
+        im_f = np.tile(im_f.flatten(), sym_order)
 
         vol = anufft(im_f, pts_rot[::-1], (L, L, L), real=True) / L
 

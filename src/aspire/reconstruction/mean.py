@@ -132,7 +132,7 @@ class WeightedVolumesEstimator(Estimator):
                     weights = np.transpose(weights, (2, 0, 1)).flatten()
 
                     # Apply boosting to weights.
-                    weights = np.concatenate((weights,) * sym_order)
+                    weights = np.tile(weights, sym_order)
 
                     batch_kernel = (
                         1
