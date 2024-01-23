@@ -4,7 +4,8 @@ import pytest
 from aspire.basis import FFBBasis3D
 from aspire.operators import IdentityFilter
 from aspire.reconstruction import MeanEstimator
-from aspire.source import Simulation
+from aspire.source import ArrayImageSource, Simulation
+from aspire.utils import Rotation
 from aspire.volume import (
     AsymmetricVolume,
     CnSymmetricVolume,
@@ -47,7 +48,7 @@ def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=VOL_PARAMS, ids=lambda x: f"volume={x[0]}", scope="module")
+@pytest.fixture(params=VOL_PARAMS, ids=lambda x: f"volume={x[0]}, order={x[1]}", scope="module")
 def volume(request, resolution, dtype):
     Volume, order = request.param
     vol_kwargs = dict(
@@ -110,3 +111,26 @@ def test_total_energy(source, estimated_volume):
     og_total_energy = np.sum(source.vols)
     recon_total_energy = np.sum(estimated_volume)
     np.testing.assert_allclose(og_total_energy, recon_total_energy, rtol=1e-3)
+
+
+def test_boost_flag(source, estimated_volume):
+    """Manually boost a source and reconstruct without boosting."""
+    ims = source.projections[:]
+    rots = source.rotations
+    sym_order = len(source.symmetry_group.matrices)
+
+    # Manually boosted images and rotations.
+    ims_boosted = np.tile(ims, (sym_order, 1, 1))
+    rots_boosted = Rotation(np.tile(rots, (sym_order, 1, 1)))
+
+    # Manually boosted source.
+    boosted_source = ArrayImageSource(ims_boosted, angles=rots_boosted.angles)
+
+    # Estimate volume with boosting OFF.
+    basis = FFBBasis3D(boosted_source.L, dtype=boosted_source.dtype)
+    estimator = MeanEstimator(boosted_source, basis, boost=False)
+    est_vol = estimator.estimate()
+
+    # Check reconstructions are close.
+    mse = np.mean((estimated_volume.asnumpy() - est_vol.asnumpy()) ** 2)
+    np.testing.assert_array_less(mse, 1e-4)
