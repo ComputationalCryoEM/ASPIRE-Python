@@ -3,7 +3,7 @@ import pytest
 
 from aspire.basis import FFBBasis3D
 from aspire.operators import IdentityFilter
-from aspire.reconstruction import MeanEstimator
+from aspire.reconstruction import MeanEstimator, WeightedVolumesEstimator
 from aspire.source import ArrayImageSource, Simulation
 from aspire.utils import Rotation
 from aspire.volume import (
@@ -18,7 +18,7 @@ SEED = 23
 
 RESOLUTION = [
     32,
-    33,
+    pytest.param(33, marks=pytest.mark.expensive),
 ]
 
 DTYPE = [
@@ -48,7 +48,9 @@ def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=VOL_PARAMS, ids=lambda x: f"volume={x[0]}, order={x[1]}", scope="module")
+@pytest.fixture(
+    params=VOL_PARAMS, ids=lambda x: f"volume={x[0]}, order={x[1]}", scope="module"
+)
 def volume(request, resolution, dtype):
     Volume, order = request.param
     vol_kwargs = dict(
@@ -85,6 +87,39 @@ def estimated_volume(source):
     estimated_volume = estimator.estimate()
 
     return estimated_volume
+
+
+# Weighted volume fixture. Only tesing C1 and C4.
+@pytest.fixture(
+    params=VOL_PARAMS[:2], ids=lambda x: f"volume={x[0]}, order={x[1]}", scope="module"
+)
+def weighted_volume(request, resolution, dtype):
+    Volume, order = request.param
+    vol_kwargs = dict(
+        L=resolution,
+        C=2,
+        seed=SEED,
+        dtype=dtype,
+    )
+    if order:
+        vol_kwargs["order"] = order
+
+    return Volume(**vol_kwargs).generate()
+
+
+@pytest.fixture(scope="module")
+def weighted_source(weighted_volume):
+    src = Simulation(
+        n=400,
+        vols=weighted_volume,
+        offsets=0,
+        amplitudes=1,
+        seed=SEED,
+        dtype=weighted_volume.dtype,
+        unique_filters=[IdentityFilter(), IdentityFilter()],  # Can remove after PR 1076
+    )
+
+    return src
 
 
 # MeanEstimator Tests.
@@ -134,3 +169,28 @@ def test_boost_flag(source, estimated_volume):
     # Check reconstructions are close.
     mse = np.mean((estimated_volume.asnumpy() - est_vol.asnumpy()) ** 2)
     np.testing.assert_array_less(mse, 1e-4)
+
+
+# WeightVolumesEstimator Tests.
+def test_weighted_volumes(weighted_source):
+    src = weighted_source
+
+    # Use source states to assign weights to volumes.
+    weights = np.zeros((src.n, src.C), dtype=src.dtype)
+    weights[:, 0] = abs(src.states - 1.99)  # sends states [1, 2] to weights [.99, .01]
+    weights[:, 1] = abs(-src.states + 1.01)  # sends states [1, 2] to weights [.01, .99]
+
+    # Scale weights
+    n0 = (-src.states + 2).sum()  # number of images from vol[0]
+    n1 = (src.states - 1).sum()  # number of images from vol[1]
+    weights[:, 0] = weights[:, 0] / weights[:, 0].sum() * np.sqrt(n0)
+    weights[:, 1] = weights[:, 1] / weights[:, 1].sum() * np.sqrt(n1)
+
+    # Initialize estimator.
+    basis = FFBBasis3D(src.L, dtype=src.dtype)
+    estimator = WeightedVolumesEstimator(src=src, basis=basis, weights=weights)
+    est_vols = estimator.estimate()
+
+    # Check FSC (scaling may not be close enough to match mse)
+    _, corr = src.vols.fsc(est_vols)
+    np.testing.assert_array_less(0.95, corr[:, -2])
