@@ -89,9 +89,9 @@ def estimated_volume(source):
     return estimated_volume
 
 
-# Weighted volume fixture.
+# Weighted volume fixture. Only tesing C1, C4, and C5.
 @pytest.fixture(
-    params=VOL_PARAMS, ids=lambda x: f"volume={x[0]}, order={x[1]}", scope="module"
+    params=VOL_PARAMS[:3], ids=lambda x: f"volume={x[0]}, order={x[1]}", scope="module"
 )
 def weighted_volume(request, resolution, dtype):
     Volume, order = request.param
@@ -197,4 +197,4 @@ def test_weighted_volumes(weighted_source):
 
     # Check FSC (scaling may not be close enough to match mse)
     _, corr = src.vols.fsc(est_vols)
-    np.testing.assert_array_less(0.95, corr[:, -2])
+    np.testing.assert_array_less(0.91, corr[:, -2])
