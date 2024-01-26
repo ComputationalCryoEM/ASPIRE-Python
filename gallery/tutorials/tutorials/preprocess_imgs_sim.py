@@ -5,6 +5,7 @@ Image Preprocessing
 This script illustrates the preprocess steps implemented prior to starting the pipeline of
 reconstructing a 3D map using simulated 2D images.
 """
+
 import logging
 import os
 

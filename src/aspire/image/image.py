@@ -360,9 +360,7 @@ class Image:
         # crop 2D Fourier transform for each image
         crop_fx = np.array([crop_pad_2d(fx[i], ds_res) for i in range(self.n_images)])
         # take back to real space, discard complex part, and scale
-        out = np.real(fft.centered_ifft2(crop_fx)) * (
-            ds_res**2 / self.resolution**2
-        )
+        out = np.real(fft.centered_ifft2(crop_fx)) * (ds_res**2 / self.resolution**2)
 
         return self.__class__(out).stack_reshape(original_stack_shape)
 

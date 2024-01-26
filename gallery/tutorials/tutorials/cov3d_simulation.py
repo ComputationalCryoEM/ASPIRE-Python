@@ -5,6 +5,7 @@ Covariance 3D Estimation
 This script illustrates the example of Covariance 3D estimation using simulation images
 generated from Gaussian blob volumes.
 """
+
 import logging
 
 import numpy as np
