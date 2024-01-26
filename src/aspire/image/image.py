@@ -538,7 +538,6 @@ class Image:
         im_f = im_f.flatten()
 
         # Backproject. Apply boosting by looping over symmetry rotations.
-        sym_order = len(symmetry_rots)
         vol = np.zeros((L, L, L), dtype=self.dtype)
         for sym_rot in symmetry_rots:
             rotations = sym_rot @ rot_matrices
