@@ -94,25 +94,10 @@ class WeightedVolumesEstimator(Estimator):
         sym_rots = np.eye(3, dtype=self.dtype)[None]
         if self.boost:
             sym_rots = self.src.symmetry_group.matrices
-        sym_order = len(sym_rots)
 
         for i in range(0, self.src.n, self.batch_size):
             _range = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
-
-            # Apply symmetry to rotations.
-            n_rots_batch = len(_range)
-            rotations = np.zeros((sym_order * n_rots_batch, 3, 3), dtype=self.dtype)
-            for i, sym_rot in enumerate(sym_rots):
-                rotations[i * n_rots_batch : (i + 1) * n_rots_batch] = (
-                    sym_rot @ self.src.rotations[_range]
-                )
-
-            pts_rot = rotated_grids(self.src.L, rotations)
-            pts_rot = pts_rot.reshape((3, -1))
-            assert pts_rot.dtype == self.dtype
-
             sq_filters_f = evaluate_src_filters_on_grid(self.src, _range) ** 2
-
             amplitudes_sq = (self.src.amplitudes[_range] ** 2).astype(
                 self.dtype, copy=False
             )
@@ -131,14 +116,19 @@ class WeightedVolumesEstimator(Estimator):
 
                     weights = np.transpose(weights, (2, 0, 1)).flatten()
 
-                    # Apply boosting to weights.
-                    weights = np.tile(weights, sym_order)
+                    # Apply boosting.
+                    batch_kernel = np.zeros((_2L, _2L, _2L), dtype=self.dtype)
+                    for sym_rot in sym_rots:
+                        rotations = sym_rot @ self.src.rotations[_range]
+                        pts_rot = rotated_grids(self.src.L, rotations)
+                        pts_rot = pts_rot.reshape((3, -1))
 
-                    batch_kernel = (
-                        1
-                        / (self.r * self.src.L**4)
-                        * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
-                    )
+                        batch_kernel += (
+                            1
+                            / (self.r * self.src.L**4)
+                            * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
+                        )
+
                     kernel[k, j] += batch_kernel
 
                     # r x r symmetric
