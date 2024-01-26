@@ -74,7 +74,6 @@ def source(volume):
         amplitudes=1,
         seed=SEED,
         dtype=volume.dtype,
-        unique_filters=[IdentityFilter()],  # Can remove after PR 1076
     )
 
     return src
@@ -116,7 +115,6 @@ def weighted_source(weighted_volume):
         amplitudes=1,
         seed=SEED,
         dtype=weighted_volume.dtype,
-        unique_filters=[IdentityFilter(), IdentityFilter()],  # Can remove after PR 1076
     )
 
     return src
