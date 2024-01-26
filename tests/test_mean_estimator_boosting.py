@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 from aspire.basis import FFBBasis3D
-from aspire.operators import IdentityFilter
 from aspire.reconstruction import MeanEstimator, WeightedVolumesEstimator
 from aspire.source import ArrayImageSource, Simulation
 from aspire.utils import Rotation, utest_tolerance
