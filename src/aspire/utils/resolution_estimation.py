@@ -1,6 +1,7 @@
 """
 This module contains code for estimating resolution achieved by reconstructions.
 """
+
 import logging
 import warnings
 

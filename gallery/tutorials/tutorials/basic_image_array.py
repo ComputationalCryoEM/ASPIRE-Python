@@ -8,7 +8,6 @@ We will add noise to a stack of copies of a stock image. We will then estimate a
 whiten that noise using some tools from the ASPIRE pipeline.
 """
 
-
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.datasets import face
