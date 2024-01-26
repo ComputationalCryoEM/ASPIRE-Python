@@ -4,6 +4,7 @@ Apple Picker
 
 We demonstrate ASPIRE's particle picking methods using the ``Apple`` class.
 """
+
 import logging
 import os
 
