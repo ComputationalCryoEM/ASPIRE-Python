@@ -515,7 +515,7 @@ class Image:
             self.n_images == rot_matrices.shape[0]
         ), "Number of rotation matrices must match the number of images"
 
-        # Apply symmetry boosting to rotations.
+        # Get symmetry rotations from SymmetryGroup.
         if symmetry_group is None:
             symmetry_rots = np.eye(3, dtype=self.dtype)[None]
         else:
@@ -529,28 +529,29 @@ class Image:
                 )
             symmetry_rots = symmetry_group.matrices
 
-        sym_order = len(symmetry_rots)
-        boosted_rot_mats = np.zeros((sym_order * self.shape[0], 3, 3), dtype=self.dtype)
-        for i, sym_rot in enumerate(symmetry_rots):
-            boosted_rot_mats[i * self.shape[0] : (i + 1) * self.shape[0]] = (
-                sym_rot @ rot_matrices
-            )
-
-        # TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = aspire.volume.rotated_grids(L, boosted_rot_mats).astype(
-            self.dtype, copy=False
-        )
-        pts_rot = pts_rot.reshape((3, -1))
-
+        # Compute Fourier transform of images.
         im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self._data))) / (L**2)
         if L % 2 == 0:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
 
-        # Apply boosting to images.
-        im_f = np.tile(im_f.flatten(), sym_order)
+        im_f = im_f.flatten()
 
-        vol = anufft(im_f, pts_rot[::-1], (L, L, L), real=True) / L
+        # Backproject. Apply boosting by looping over symmetry rotations.
+        sym_order = len(symmetry_rots)
+        vol = np.zeros((L, L, L), dtype=self.dtype)
+        for sym_rot in symmetry_rots:
+            rotations = sym_rot @ rot_matrices
+
+            # TODO: rotated_grids might as well give us correctly shaped array in the first place
+            pts_rot = aspire.volume.rotated_grids(L, rotations).astype(
+                self.dtype, copy=False
+            )
+            pts_rot = pts_rot.reshape((3, -1))
+
+            vol += anufft(im_f, pts_rot[::-1], (L, L, L), real=True)
+
+        vol /= L
 
         return aspire.volume.Volume(vol, symmetry_group=symmetry_group)
 
