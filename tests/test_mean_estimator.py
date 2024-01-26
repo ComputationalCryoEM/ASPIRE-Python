@@ -725,6 +725,6 @@ class MeanEstimatorTestCase(TestCase):
                         self.sim,
                         self.basis,
                         preconditioner="none",
-                        maxiter=-1,
+                        maxiter=junk,
                         checkpoint_prefix=prefix,
                     )
