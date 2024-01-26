@@ -5,7 +5,7 @@ from aspire.basis import FFBBasis3D
 from aspire.operators import IdentityFilter
 from aspire.reconstruction import MeanEstimator, WeightedVolumesEstimator
 from aspire.source import ArrayImageSource, Simulation
-from aspire.utils import Rotation
+from aspire.utils import Rotation, utest_tolerance
 from aspire.volume import (
     AsymmetricVolume,
     CnSymmetricVolume,
@@ -89,9 +89,9 @@ def estimated_volume(source):
     return estimated_volume
 
 
-# Weighted volume fixture. Only tesing C1 and C4.
+# Weighted volume fixture.
 @pytest.fixture(
-    params=VOL_PARAMS[:2], ids=lambda x: f"volume={x[0]}, order={x[1]}", scope="module"
+    params=VOL_PARAMS, ids=lambda x: f"volume={x[0]}, order={x[1]}", scope="module"
 )
 def weighted_volume(request, resolution, dtype):
     Volume, order = request.param
@@ -152,11 +152,15 @@ def test_boost_flag(source, estimated_volume):
     """Manually boost a source and reconstruct without boosting."""
     ims = source.projections[:]
     rots = source.rotations
-    sym_order = len(source.symmetry_group.matrices)
+    sym_rots = source.symmetry_group.matrices
+    sym_order = len(sym_rots)
 
     # Manually boosted images and rotations.
     ims_boosted = np.tile(ims, (sym_order, 1, 1))
-    rots_boosted = Rotation(np.tile(rots, (sym_order, 1, 1)))
+    rots_boosted = np.zeros((sym_order * source.n, 3, 3), dtype=source.dtype)
+    for i, sym_rot in enumerate(sym_rots):
+        rots_boosted[i * source.n : (i + 1) * source.n] = sym_rot @ rots
+    rots_boosted = Rotation(rots_boosted)
 
     # Manually boosted source.
     boosted_source = ArrayImageSource(ims_boosted, angles=rots_boosted.angles)
@@ -166,9 +170,9 @@ def test_boost_flag(source, estimated_volume):
     estimator = MeanEstimator(boosted_source, basis, boost=False)
     est_vol = estimator.estimate()
 
-    # Check reconstructions are close.
+    # Check reconstructions are equal.
     mse = np.mean((estimated_volume.asnumpy() - est_vol.asnumpy()) ** 2)
-    np.testing.assert_array_less(mse, 1e-4)
+    np.testing.assert_allclose(mse, 0, atol=utest_tolerance(source.dtype))
 
 
 # WeightVolumesEstimator Tests.
