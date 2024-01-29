@@ -299,7 +299,7 @@ def testShow():
 
 def test_backproject_symmetry_group():
     """
-    Providing non-SymmetryGroup instance to backproject should raise an error.
+    Test backproject SymmetryGroup pass through and error message.
     """
     ary = np.random.random((5, 8, 8))
     im = Image(ary)
