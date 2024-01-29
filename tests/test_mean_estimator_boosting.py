@@ -174,6 +174,9 @@ def test_boost_flag(source, estimated_volume):
 
 # WeightVolumesEstimator Tests.
 def test_weighted_volumes(weighted_source):
+    """
+    Test WeightedVolumeEstimator reconstructs multiple volumes using symmetry boosting.
+    """
     src = weighted_source
 
     # Use source states to assign weights to volumes.
