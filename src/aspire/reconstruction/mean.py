@@ -210,11 +210,17 @@ class WeightedVolumesEstimator(Estimator):
                 f"[Iter {self.i}]: Delta {norm(b_coef - self.apply_kernel(xk))} (target {target_residual})"
             )
 
-            # Optional checkpoint
-            if (
+            # Do checkpoint at `checkpoint_iterations`,
+            _do_checkpoint = (
                 self.checkpoint_iterations
                 and (self.i % self.checkpoint_iterations) == 0
-            ):
+            )
+            # or the last iteration when `maxiter` provided.
+            if self.maxiter:
+                _do_checkpoint |= self.i == (self.maxiter - 1)
+
+            # Optional checkpoint
+            if _do_checkpoint:
                 # Construct checkpoint path
                 path = f"{self.checkpoint_prefix}_iter{self.i}.npy"
                 # Write out the current solution
