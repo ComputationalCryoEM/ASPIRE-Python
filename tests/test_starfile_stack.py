@@ -14,10 +14,15 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class StarFileTestCase(TestCase):
+    # Default dtype (inferred)
+    _dtype = None
+
     def setUpStarFile(self, starfile_name):
         # set up RelionSource object for tests
         with importlib_path(tests.saved_test_data, starfile_name) as starfile:
-            self.src = RelionSource(starfile, data_folder=DATA_DIR, max_rows=12)
+            self.src = RelionSource(
+                starfile, data_folder=DATA_DIR, max_rows=12, dtype=self._dtype
+            )
 
     def setUp(self):
         # this method is used by StarFileMainCase but overridden by StarFileOneImage
@@ -94,3 +99,30 @@ class StarFileSingleImage(StarFileTestCase):
         # where there is only one image in the mrcs
         single_image = self.src.images[0].asnumpy()[0]
         self.assertEqual(single_image.shape, (200, 200))
+
+
+class StarFileDtypeOverrideCase64(StarFileMainCase):
+    # Override RelionSource dtype
+    _dtype = np.float64
+
+    def testSourceDtype(self):
+        """Test source identifies as _dtype."""
+        self.assertTrue(self.src.dtype == self._dtype)
+
+    def testImageDtype(self):
+        """Test image returned as _dtype."""
+        self.assertTrue(self.src.images[0].dtype == self._dtype)
+
+    def testRotationsDtype(self):
+        """Test image returned as _dtype."""
+        self.assertTrue(self.src.rotations.dtype == self._dtype)
+
+    def testImageDownsampleDtype(self):
+        """Test downsample pipeline operation returns _dtype."""
+        _src = self.src.downsample(16)
+        self.assertTrue(_src.images[0].dtype == self._dtype)
+
+
+class StarFileDtypeOverrideCase32(StarFileMainCase):
+    # Override RelionSource dtype
+    _dtype = np.float32
