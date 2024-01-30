@@ -34,6 +34,7 @@ class RelionSource(ImageSource):
         max_rows=None,
         symmetry_group=None,
         memory=None,
+        dtype=None,
     ):
         """
         Load STAR file at given filepath
@@ -50,6 +51,9 @@ class RelionSource(ImageSource):
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
         :param memory: str or None
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
+        :param dtype: Optional datatype override.
+            Default `None` infers dtype from underlying image (MRC) files.
+            Can be used to upcast STAR files for processing in double precision.
         """
         logger.info(f"Creating ImageSource from STAR file at path {filepath}")
 
@@ -72,12 +76,19 @@ class RelionSource(ImageSource):
 
         # Get the 'mode' (data type) - TODO: There's probably a more direct way to do this.
         mode = int(mrc.header.mode)
-        dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
+        mrc_dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
         assert (
-            mode in dtypes
-        ), f"Only modes={list(dtypes.keys())} in MRC files are supported for now."
+            mode in mrc_dtypes
+        ), f"Only modes={list(mrc_dtypes.keys())} in MRC files are supported for now."
 
-        dtype = dtypes[mode]
+        mrc_dtype = mrc_dtypes[mode]
+        # Potentially over ride the inferred data type.
+        if dtype is not None and dtype != mrc_dtype:
+            logger.warning(
+                f"Overriding MRC datatype {mrc_dtype} with user supplied {dtype}."
+            )
+        elif dtype is None:
+            dtype = mrc_dtype
 
         shape = mrc.data.shape
         # the code below  accounts for the case where the first MRCS image in the STAR file has one image
