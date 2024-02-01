@@ -183,11 +183,11 @@ def test_weighted_volumes(weighted_source):
     # Use source states to assign weights to volumes.
     weights = np.zeros((src.n, src.C), dtype=src.dtype)
     weights[:, 0] = abs(src.states - 1.99)  # sends states [1, 2] to weights [.99, .01]
-    weights[:, 1] = abs(-src.states + 1.01)  # sends states [1, 2] to weights [.01, .99]
+    weights[:, 1] = 1 - weights[:, 0]  # sets weights for states [1, 2] as [.01, .99]
 
     # Scale weights
-    n0 = (-src.states + 2).sum()  # number of images from vol[0]
-    n1 = (src.states - 1).sum()  # number of images from vol[1]
+    n0 = np.count_nonzero(src.states == 1)  # number of images from vol[0]
+    n1 = np.count_nonzero(src.states == 2)  # number of images from vol[1]
     weights[:, 0] = weights[:, 0] / weights[:, 0].sum() * np.sqrt(n0)
     weights[:, 1] = weights[:, 1] / weights[:, 1].sum() * np.sqrt(n1)
 
