@@ -499,7 +499,7 @@ class Image:
         :param rot_matrices: An n-by-3-by-3 array of rotation matrices
             corresponding to viewing directions.
         :param symmetry_group: A SymmetryGroup instance or string indicating symmetry, ie. "C3".
-            If supplied, uses symmetry to increase number of images used in back-projeciton.
+            If supplied, uses symmetry to increase number of images used in back-projection.
 
         :return: Volume instance corresonding to the backprojected images.
         """
