@@ -74,6 +74,7 @@ def source(volume):
         seed=SEED,
         dtype=volume.dtype,
     )
+    src = src.cache()  # precompute images
 
     return src
 
