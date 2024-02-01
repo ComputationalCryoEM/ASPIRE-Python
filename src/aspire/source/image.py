@@ -947,7 +947,9 @@ class ImageSource(ABC):
         :param im: An Image instance to which we wish to apply the adjoint of the forward model.
         :param start: Start index of image to consider
         :param weights: Optional vector of weights to apply to images.
-        Weights should be length `self.n`.
+            Weights should be length `self.n`.
+        :param symmetry_group: A SymmetryGroup instance. If supplied, uses symmetry to increase
+             number of images used in back-projectioon.
         :return: An L-by-L-by-L volume containing the sum of the adjoint mappings applied to the start+num-1 images.
         """
         num = im.n_images
