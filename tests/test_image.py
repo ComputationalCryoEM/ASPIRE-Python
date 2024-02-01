@@ -307,7 +307,7 @@ def test_backproject_symmetry_group():
 
     # Attempt backproject with bad symmetry group.
     not_a_symmetry_group = []
-    with raises(TypeError, match=r"`symmetry_group` must be a `SymmetryGroup`*"):
+    with raises(TypeError, match=r"`symmetry_group` must be a `SymmetryGroup`"):
         _ = im.backproject(rots, symmetry_group=not_a_symmetry_group)
 
     # Symmetry from string.
