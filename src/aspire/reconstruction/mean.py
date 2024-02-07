@@ -222,7 +222,7 @@ class WeightedVolumesEstimator(Estimator):
             # Optional checkpoint
             if _do_checkpoint:
                 # Construct checkpoint path
-                path = f"{self.checkpoint_prefix}_iter{self.i}.npy"
+                path = f"{self.checkpoint_prefix}_iter{self.i:04d}.npy"
                 # Write out the current solution
                 np.save(path, xk.reshape(self.r, self.basis.count))
                 logger.info(f"Checkpoint saved to `{path}`")
