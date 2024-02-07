@@ -61,6 +61,8 @@ from aspire.image import Image
 #
 #    * - Component
 #      - Description
+#    * - ``Coef``
+#      - Utility class for stacks of 1D arrays.
 #    * - ``Image``
 #      - Utility class for stacks of 2D arrays.
 #    * - ``Volume``
