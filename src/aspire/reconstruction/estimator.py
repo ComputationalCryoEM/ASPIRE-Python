@@ -32,6 +32,7 @@ class Estimator:
         :param batch_size: Optional batch size of images drawn from
             `src` during back projection and kernel estimation steps.
         :param preconditioner: Optional kernel preconditioner (`string`).
+            Currently supported options are "circulant" or None.
         :param checkpoint_iterations: Optionally save `cg` estimated `Volume`
             instance periodically each `checkpoint_iterations`.
             Setting to None disables, otherwise checks for positive integer.
