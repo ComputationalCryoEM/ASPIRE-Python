@@ -83,7 +83,7 @@ class RelionSource(ImageSource):
 
         mrc_dtype = mrc_dtypes[mode]
         # Potentially over ride the inferred data type.
-        if dtype is not None and dtype != mrc_dtype:
+        if dtype is not None and dtype != np.dtype(mrc_dtype):
             logger.warning(
                 f"Overriding MRC datatype {mrc_dtype} with user supplied {dtype}."
             )
