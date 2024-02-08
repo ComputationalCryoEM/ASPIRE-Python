@@ -726,6 +726,28 @@ def test_symmetry_group_set_get(sym_group, sym_string):
         _ = Volume(data, symmetry_group=123, dtype=dtype)
 
 
+def test_symmetry_group_pass_through():
+    sym_group = "C5"
+    vol = Volume(
+        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")),
+        symmetry_group=sym_group,
+    )
+
+    # Chack symmetry_group pass-through for various transformations.
+    assert str(vol.astype(np.float64).symmetry_group) == sym_group  # astype
+    assert str(vol[0].symmetry_group) == sym_group  # getitem
+    assert str(vol.stack_reshape((1, 1)).symmetry_group) == sym_group  # stack_reshape
+    assert str(vol.T.symmetry_group) == sym_group  # transpose
+    assert str(vol.flip().symmetry_group) == sym_group  # flip
+    assert (
+        str(vol.downsample(vol.resolution // 2).symmetry_group) == sym_group
+    )  # downsample
+    assert (
+        str(vol.rotate(Rotation.about_axis("x", np.pi, dtype=vol.dtype)).symmetry_group)
+        == sym_group
+    )  # rotate
+
+
 def test_volume_load_with_symmetry():
     # Check we can load a Volume with symmetry_group.
     vol = Volume(
