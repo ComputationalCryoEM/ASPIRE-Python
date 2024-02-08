@@ -90,15 +90,14 @@ class WeightedVolumesEstimator(Estimator):
         # Note, because we're iteratively summing it is critical we zero this array.
         kernel = np.zeros((self.r, self.r, _2L, _2L, _2L), dtype=self.dtype)
 
+        # Handle symmetry boosting.
+        sym_rots = np.eye(3, dtype=self.dtype)[None]
+        if self.boost:
+            sym_rots = self.src.symmetry_group.matrices
+
         for i in range(0, self.src.n, self.batch_size):
             _range = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
-
-            pts_rot = rotated_grids(self.src.L, self.src.rotations[_range, :, :])
-            pts_rot = pts_rot.reshape((3, -1))
-            assert pts_rot.dtype == self.dtype
-
             sq_filters_f = evaluate_src_filters_on_grid(self.src, _range) ** 2
-
             amplitudes_sq = (self.src.amplitudes[_range] ** 2).astype(
                 self.dtype, copy=False
             )
@@ -117,11 +116,19 @@ class WeightedVolumesEstimator(Estimator):
 
                     weights = np.transpose(weights, (2, 0, 1)).flatten()
 
-                    batch_kernel = (
-                        1
-                        / (self.r * self.src.L**4)
-                        * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
-                    )
+                    # Apply boosting.
+                    batch_kernel = np.zeros((_2L, _2L, _2L), dtype=self.dtype)
+                    for sym_rot in sym_rots:
+                        rotations = sym_rot @ self.src.rotations[_range]
+                        pts_rot = rotated_grids(self.src.L, rotations)
+                        pts_rot = pts_rot.reshape((3, -1))
+
+                        batch_kernel += (
+                            1
+                            / (self.r * self.src.L**4)
+                            * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
+                        )
+
                     kernel[k, j] += batch_kernel
 
                     # r x r symmetric
@@ -153,6 +160,12 @@ class WeightedVolumesEstimator(Estimator):
         :return: The adjoint mapping applied to the images, averaged over the whole dataset and expressed
             as coefficients of `basis`.
         """
+        # Handle symmetry boosting.
+        symmetry_group = None
+        sym_order = 1
+        if self.boost:
+            symmetry_group = self.src.symmetry_group
+            sym_order = len(symmetry_group.matrices)
 
         # src_vols_wt_backward
         vol_rhs = Volume(
@@ -163,12 +176,15 @@ class WeightedVolumesEstimator(Estimator):
             for k in range(self.r):
                 im = self.src.images[i : i + self.batch_size]
 
-                batch_vol_rhs = (
-                    self.src.im_backward(im, i, self.weights[:, k]) / self.src.n
-                )
+                batch_vol_rhs = self.src.im_backward(
+                    im,
+                    i,
+                    self.weights[:, k],
+                    symmetry_group=symmetry_group,
+                ) / (self.src.n * sym_order)
                 vol_rhs[k] += batch_vol_rhs.astype(self.dtype)
 
-        res = np.sqrt(self.src.n) * self.basis.evaluate_t(vol_rhs)
+        res = np.sqrt(self.src.n * sym_order) * self.basis.evaluate_t(vol_rhs)
         logger.info(f"Determined weighted adjoint mappings. Shape = {res.shape}")
 
         return res
@@ -281,7 +297,10 @@ class MeanEstimator(WeightedVolumesEstimator):
     """
 
     def __init__(self, src, basis, **kwargs):
-        weights = np.ones((src.n, 1)) / np.sqrt(src.n)
+        # Note, Handle boosting by adjusting weights based on symmetric order.
+        weights = np.ones((src.n, 1)) / np.sqrt(
+            src.n * len(src.symmetry_group.matrices)
+        )
         super().__init__(weights, src, basis, **kwargs)
 
     def __getattr__(self, name):

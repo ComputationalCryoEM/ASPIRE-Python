@@ -12,6 +12,7 @@ import aspire.volume
 from aspire.nufft import anufft
 from aspire.numeric import fft, xp
 from aspire.utils import FourierRingCorrelation, anorm, crop_pad_2d, grid_2d
+from aspire.volume import SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -489,13 +490,16 @@ class Image:
         # probably not needed, transition
         return np.size(self._data)
 
-    def backproject(self, rot_matrices):
+    def backproject(self, rot_matrices, symmetry_group=None):
         """
-        Backproject images along rotation
+        Backproject images along rotations. If a symmetry group is provided, images
+        used in back-projection are duplicated (boosted) for symmetric viewing directions.
+        Note, it is assumed that a main axis of symmetry aligns with the z-axis.
 
-        :param im: An Image (stack) to backproject.
-        :param rot_matrices: An n-by-3-by-3 array of rotation matrices \
-        corresponding to viewing directions.
+        :param rot_matrices: An n-by-3-by-3 array of rotation matrices
+            corresponding to viewing directions.
+        :param symmetry_group: A SymmetryGroup instance or string indicating symmetry, ie. "C3".
+            If supplied, uses symmetry to increase number of images used in back-projection.
 
         :return: Volume instance corresonding to the backprojected images.
         """
@@ -511,12 +515,21 @@ class Image:
             self.n_images == rot_matrices.shape[0]
         ), "Number of rotation matrices must match the number of images"
 
-        # TODO: rotated_grids might as well give us correctly shaped array in the first place
-        pts_rot = aspire.volume.rotated_grids(L, rot_matrices).astype(
-            self.dtype, copy=False
-        )
-        pts_rot = pts_rot.reshape((3, -1))
+        # Get symmetry rotations from SymmetryGroup.
+        if symmetry_group is None:
+            symmetry_rots = np.eye(3, dtype=self.dtype)[None]
+        else:
+            if isinstance(symmetry_group, str):
+                symmetry_group = SymmetryGroup.from_string(
+                    symmetry_group, dtype=self.dtype
+                )
+            if not isinstance(symmetry_group, SymmetryGroup):
+                raise TypeError(
+                    f"`symmetry_group` must be a `SymmetryGroup` instance. Found {type(symmetry_group)}."
+                )
+            symmetry_rots = symmetry_group.matrices
 
+        # Compute Fourier transform of images.
         im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self._data))) / (L**2)
         if L % 2 == 0:
             im_f[:, 0, :] = 0
@@ -524,9 +537,22 @@ class Image:
 
         im_f = im_f.flatten()
 
-        vol = anufft(im_f, pts_rot[::-1], (L, L, L), real=True) / L
+        # Backproject. Apply boosting by looping over symmetry rotations.
+        vol = np.zeros((L, L, L), dtype=self.dtype)
+        for sym_rot in symmetry_rots:
+            rotations = sym_rot @ rot_matrices
 
-        return aspire.volume.Volume(vol)
+            # TODO: rotated_grids might as well give us correctly shaped array in the first place
+            pts_rot = aspire.volume.rotated_grids(L, rotations).astype(
+                self.dtype, copy=False
+            )
+            pts_rot = pts_rot.reshape((3, -1))
+
+            vol += anufft(im_f, pts_rot[::-1], (L, L, L), real=True)
+
+        vol /= L
+
+        return aspire.volume.Volume(vol, symmetry_group=symmetry_group)
 
     def show(self, columns=5, figsize=(20, 10), colorbar=True):
         """

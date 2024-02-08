@@ -18,6 +18,7 @@ class Estimator:
         checkpoint_iterations=10,
         checkpoint_prefix="volume_checkpoint",
         maxiter=100,
+        boost=True,
     ):
         """
         An object representing a 2*L-by-2*L-by-2*L array containing the non-centered Fourier transform of the mean
@@ -44,6 +45,8 @@ class Estimator:
             before returning.  This should be used in conjunction with
             `checkpoint_iterations` to prevent excessive disk usage.
             `None` disables.
+        :param boost: Option to use `src` symmetry to boost number of images used for mean estimation (Boolean).
+            Default of `True` employs symmetry boosting.
         """
 
         self.src = src
@@ -51,6 +54,7 @@ class Estimator:
         self.dtype = self.src.dtype
         self.batch_size = batch_size
         self.preconditioner = preconditioner
+        self.boost = boost
 
         # dtype configuration
         if not self.dtype == self.basis.dtype:
