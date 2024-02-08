@@ -233,14 +233,10 @@ print(f"Mean aligned angular distance: {mean_ang_dist} degrees")
 # estimate the mean volume by supplying the class averages and basis
 # for back projection.
 
-from aspire.basis import FFBBasis3D
 from aspire.reconstruction import MeanEstimator
 
-# Create a reasonable Basis for the 3d Volume
-basis = FFBBasis3D(res, dtype=vol.dtype)
-
 # Setup an estimator to perform the back projection.
-estimator = MeanEstimator(oriented_src, basis)
+estimator = MeanEstimator(oriented_src)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
