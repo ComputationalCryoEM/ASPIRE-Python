@@ -135,7 +135,9 @@ class Volume:
             Defaults to True.
         :return: Volume instance
         """
-        return self.__class__(self.asnumpy().astype(dtype, copy=copy))
+        return self.__class__(
+            self.asnumpy().astype(dtype, copy=copy), symmetry_group=self.symmetry_group
+        )
 
     def _check_key_dims(self, key):
         if isinstance(key, tuple) and (len(key) > self._data.ndim):
@@ -145,7 +147,7 @@ class Volume:
 
     def __getitem__(self, key):
         self._check_key_dims(key)
-        return self.__class__(self._data[key])
+        return self.__class__(self._data[key], symmetry_group=self.symmetry_group)
 
     def __setitem__(self, key, value):
         self._check_key_dims(key)
@@ -198,7 +200,10 @@ class Volume:
                 f"Number of volumes {self.n_vols} cannot be reshaped to {shape}."
             )
 
-        return self.__class__(self._data.reshape(*shape, *self._data.shape[-3:]))
+        return self.__class__(
+            self._data.reshape(*shape, *self._data.shape[-3:]),
+            symmetry_group=self.symmetry_group,
+        )
 
     def __repr__(self):
         msg = (
@@ -359,7 +364,9 @@ class Volume:
         original_stack_shape = self.stack_shape
         v = self.stack_reshape(-1)
         vt = np.transpose(v._data, (0, -1, -2, -3))
-        return self.__class__(vt).stack_reshape(original_stack_shape)
+        return self.__class__(vt, symmetry_group=self.symmetry_group).stack_reshape(
+            original_stack_shape
+        )
 
     @property
     def T(self):
@@ -400,7 +407,9 @@ class Volume:
                     f"Cannot flip axis {ax}: stack axis. Did you mean {ax-4}?"
                 )
 
-        return self.__class__(np.flip(self._data, axis))
+        return self.__class__(
+            np.flip(self._data, axis), symmetry_group=self.symmetry_group
+        )
 
     def downsample(self, ds_res, mask=None):
         """
@@ -427,7 +436,9 @@ class Volume:
             ds_res**3 / self.resolution**3
         )
         # returns a new Volume object
-        return self.__class__(np.real(out)).stack_reshape(original_stack_shape)
+        return self.__class__(
+            np.real(out), symmetry_group=self.symmetry_group
+        ).stack_reshape(original_stack_shape)
 
     def shift(self):
         raise NotImplementedError
@@ -497,7 +508,7 @@ class Volume:
             np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
         )
 
-        return self.__class__(vol)
+        return self.__class__(vol, symmetry_group=self.symmetry_group)
 
     def denoise(self):
         raise NotImplementedError
