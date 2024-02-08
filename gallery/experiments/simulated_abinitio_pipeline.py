@@ -21,7 +21,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.abinitio import CLSyncVoting
-from aspire.basis import FFBBasis3D
 from aspire.denoising import DefaultClassAvgSource, DenoisedSource, DenoiserCov2D
 from aspire.downloader import emdb_2660
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
@@ -209,11 +208,8 @@ logger.info(
 
 logger.info("Begin Volume reconstruction")
 
-# Create a reasonable Basis for the 3d Volume
-basis = FFBBasis3D((v.resolution,) * 3, dtype=v.dtype)
-
 # Setup an estimator to perform the back projection.
-estimator = MeanEstimator(oriented_src, basis)
+estimator = MeanEstimator(oriented_src)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
