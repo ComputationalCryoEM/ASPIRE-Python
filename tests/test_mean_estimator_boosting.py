@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from aspire.basis import FFBBasis3D
 from aspire.reconstruction import MeanEstimator, WeightedVolumesEstimator
 from aspire.source import ArrayImageSource, Simulation
 from aspire.utils import Rotation, utest_tolerance
@@ -81,8 +80,7 @@ def source(volume):
 
 @pytest.fixture(scope="module")
 def estimated_volume(source):
-    basis = FFBBasis3D(source.L, dtype=source.dtype)
-    estimator = MeanEstimator(source, basis)
+    estimator = MeanEstimator(source)
     estimated_volume = estimator.estimate()
 
     return estimated_volume
@@ -164,8 +162,7 @@ def test_boost_flag(source, estimated_volume):
     boosted_source = ArrayImageSource(ims_boosted, angles=rots_boosted.angles)
 
     # Estimate volume with boosting OFF.
-    basis = FFBBasis3D(boosted_source.L, dtype=boosted_source.dtype)
-    estimator = MeanEstimator(boosted_source, basis, boost=False)
+    estimator = MeanEstimator(boosted_source, boost=False)
     est_vol = estimator.estimate()
 
     # Check reconstructions are equal.
@@ -192,8 +189,7 @@ def test_weighted_volumes(weighted_source):
     weights[:, 1] = weights[:, 1] / weights[:, 1].sum() * np.sqrt(n1)
 
     # Initialize estimator.
-    basis = FFBBasis3D(src.L, dtype=src.dtype)
-    estimator = WeightedVolumesEstimator(src=src, basis=basis, weights=weights)
+    estimator = WeightedVolumesEstimator(src=src, weights=weights)
     est_vols = estimator.estimate()
 
     # Check FSC (scaling may not be close enough to match mse)
