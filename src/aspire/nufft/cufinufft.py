@@ -96,9 +96,7 @@ class CufinufftPlan(Plan):
         `(ntransforms, num_pts)`.
         """
 
-        # Check we're not forcing a dtype workaround for ASPIRE-Python/703,
-        #   then check if we have a dtype mismatch.
-        # This avoids false positive complaint for the workaround.
+        # Check dtype mismatch.
         if not (signal.dtype == self.dtype or signal.dtype == self.complex_dtype):
             logger.warning(
                 "Incorrect dtypes passed to (a)nufft."
