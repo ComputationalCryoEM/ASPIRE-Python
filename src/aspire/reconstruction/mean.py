@@ -296,7 +296,6 @@ class MeanEstimator(WeightedVolumesEstimator):
     for a single volume.
     """
 
-
     def __init__(self, src, **kwargs):
         # Note, Handle boosting by adjusting weights based on symmetric order.
         weights = np.ones((src.n, 1)) / np.sqrt(
