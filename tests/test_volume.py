@@ -1,6 +1,7 @@
 import logging
 import os
 import tempfile
+import warnings
 from itertools import product
 
 import numpy as np
@@ -733,19 +734,51 @@ def test_symmetry_group_pass_through():
         symmetry_group=sym_group,
     )
 
-    # Chack symmetry_group pass-through for various transformations.
+    # Check symmetry_group pass-through for various transformations.
     assert str(vol.astype(np.float64).symmetry_group) == sym_group  # astype
     assert str(vol[0].symmetry_group) == sym_group  # getitem
     assert str(vol.stack_reshape((1, 1)).symmetry_group) == sym_group  # stack_reshape
-    assert str(vol.T.symmetry_group) == sym_group  # transpose
-    assert str(vol.flip().symmetry_group) == sym_group  # flip
     assert (
         str(vol.downsample(vol.resolution // 2).symmetry_group) == sym_group
     )  # downsample
-    assert (
-        str(vol.rotate(Rotation.about_axis("x", np.pi, dtype=vol.dtype)).symmetry_group)
-        == sym_group
-    )  # rotate
+
+
+def test_symmetry_group_reset_warning():
+    sym_group = "C5"
+    vol = Volume(
+        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")),
+        symmetry_group=sym_group,
+    )
+
+    # Check we get warning on first transformation.
+    with pytest.warns(
+        UserWarning, match=r".*`symmetry_group` attribute is being set to `C1`.*"
+    ) as record:
+        vol_t = vol.T
+        vol_f = vol.flip()
+        vol_r = vol.rotate(Rotation.about_axis("x", np.pi, dtype=vol.dtype))
+    assert len(record) == 3
+
+    # Check symmetry_group has been set to C1.
+    assert str(vol_t.symmetry_group) == "C1"
+    assert str(vol_f.symmetry_group) == "C1"
+    assert str(vol_r.symmetry_group) == "C1"
+
+    # Check we get no warnings on second transformation.
+    with pytest.warns() as record:
+        _ = vol_t.T
+        _ = vol_f.flip()
+        _ = vol_r.rotate(Rotation.about_axis("x", np.pi, dtype=vol.dtype))
+
+        # Throw single test warning.
+        warnings.warn("test", Warning)
+
+    # Should only have test warning
+    assert len(record) == 1
+    assert str(record[0].message) == "test"
+
+    # Check original volume has retained C5 symmetry.
+    assert str(vol.symmetry_group) == "C5"
 
 
 def test_volume_load_with_symmetry():
