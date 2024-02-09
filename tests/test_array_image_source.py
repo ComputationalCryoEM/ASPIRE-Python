@@ -100,7 +100,7 @@ class ImageTestCase(TestCase):
 
         # We also test that a source consumer generates same error,
         #   by instantiating a volume estimator.
-        estimator = MeanEstimator(src, self.basis, preconditioner="none")
+        estimator = MeanEstimator(src, basis=self.basis, preconditioner="none")
 
         # Test we raise with expected message
         with raises(RuntimeError, match=r"Consumer of ArrayImageSource.*"):
@@ -127,7 +127,7 @@ class ImageTestCase(TestCase):
         """
 
         # Run estimator with a Simulation source as a reference.
-        sim_estimator = MeanEstimator(self.sim, self.basis, preconditioner="none")
+        sim_estimator = MeanEstimator(self.sim, basis=self.basis, preconditioner="none")
         sim_est = sim_estimator.estimate()
         logger.info("Simulation source checkpoint")
 
@@ -135,7 +135,7 @@ class ImageTestCase(TestCase):
         src = ArrayImageSource(self.im, angles=self.sim.angles)
 
         # Instantiate a volume estimator using ArrayImageSource
-        estimator = MeanEstimator(src, self.basis, preconditioner="none")
+        estimator = MeanEstimator(src, basis=self.basis, preconditioner="none")
 
         # Get estimate consuming ArrayImageSource
         est = estimator.estimate()
