@@ -9,7 +9,6 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aspire.basis import FBBasis3D
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source import RelionSource
@@ -53,10 +52,8 @@ images.show()
 # Estimate Mean Volume
 # --------------------
 
-# We'll create a 3D Fourier Bessel Basis corresponding to volume resolution L.
-basis = FBBasis3D((L, L, L))
 # Estimate mean Volume
-mean_estimator = MeanEstimator(source, basis, batch_size=8192)
+mean_estimator = MeanEstimator(source, batch_size=8192)
 mean_est = mean_estimator.estimate()
 
 # %%
