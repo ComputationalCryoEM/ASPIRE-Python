@@ -32,10 +32,10 @@ class WeightedVolumesEstimatorTestCase(TestCase):
         self.basis = FBBasis3D((L, L, L), dtype=self.dtype)
         self.weights = np.ones((self.n, self.r)) / np.sqrt(self.n)
         self.estimator = WeightedVolumesEstimator(
-            self.weights, self.sim, self.basis, preconditioner="none"
+            self.weights, self.sim, basis=self.basis, preconditioner="none"
         )
         self.estimator_with_preconditioner = WeightedVolumesEstimator(
-            self.weights, self.sim, self.basis, preconditioner="circulant"
+            self.weights, self.sim, basis=self.basis, preconditioner="circulant"
         )
 
     def tearDown(self):
@@ -347,7 +347,8 @@ class WeightedVolumesEstimatorTestCase(TestCase):
                     6.46337066e-05,
                 ]
             ]
-            * self.r
+            * self.r,
+            dtype=self.dtype,
         )
 
         # Given equal weighting we should get the same result for all self.r volumes.
@@ -687,7 +688,7 @@ class WeightedVolumesEstimatorTestCase(TestCase):
         weights[:, 1] *= -1  # negate second set of weights
 
         estimator = WeightedVolumesEstimator(
-            weights, self.sim, self.basis, preconditioner="none"
+            weights, self.sim, basis=self.basis, preconditioner="none"
         )
 
         estimate = estimator.estimate()
