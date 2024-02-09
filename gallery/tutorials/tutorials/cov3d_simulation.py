@@ -55,7 +55,7 @@ sim = Simulation(
 num_vols = sim.C
 
 # Specify the normal FB basis method for expending the 2D images
-basis = FBBasis3D((img_size, img_size, img_size))
+basis = FBBasis3D(img_size)
 
 # Estimate the noise variance. This is needed for the covariance estimation step below.
 noise_estimator = WhiteNoiseEstimator(sim, batchSize=500)
@@ -71,11 +71,13 @@ logger.info(f"Noise Variance = {noise_variance}")
 # using the basis object, but the output is in the form of an
 # L-by-L-by-L array.
 
-mean_estimator = MeanEstimator(sim, basis)
+mean_estimator = MeanEstimator(sim, basis=basis)
 mean_est = mean_estimator.estimate()
 
 # Passing in a mean_kernel argument to the following constructor speeds up some calculations
-covar_estimator = CovarianceEstimator(sim, basis, mean_kernel=mean_estimator.kernel)
+covar_estimator = CovarianceEstimator(
+    sim, basis=basis, mean_kernel=mean_estimator.kernel
+)
 covar_est = covar_estimator.estimate(mean_est, noise_variance)
 
 # %%
