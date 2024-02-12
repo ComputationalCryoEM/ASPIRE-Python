@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 n_imgs = None  # Set to None for all images in starfile, can set smaller for tests.
 img_size = 32  # Downsample the images/reconstruction to a desired resolution
-n_classes = 2000  # How many class averages to compute.
+n_classes = 500  # How many class averages to compute.
 n_nbor = 100  # How many neighbors to stack
 starfile_in = "10081/data/particle_stacks/data.star"
 data_folder = "."  # This depends on the specific starfile entries.
@@ -116,6 +116,11 @@ oriented_src = OrientedSource(avgs, orient_est)
 # ----------------------
 #
 # Using the oriented source, attempt to reconstruct a volume.
+# Since this is a Cn symmetric molecule, as indicated by
+# ``symmetry="C4"`` above, the ``avgs`` images set will be repeated
+# for each of the 3 additional rotations during the back-projection
+# step.  This boosts the effective number of images used in the
+# reconstruction from ``n_classes`` to ``4*n_classes``.
 
 logger.info("Begin Volume reconstruction")
 
