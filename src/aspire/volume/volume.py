@@ -179,18 +179,20 @@ class Volume:
             )
         self._symmetry_group = value
 
-    def _symmetry_group_warning(self):
+    def _symmetry_group_warning(self, method):
         """
         Warn when a transformation has the potential to change the symmetry
         of a volume or the alignment of symmetry axes.
+
+        :param method: Name of method (string).
         """
         if str(self.symmetry_group) != "C1":
             msg = (
-                f"`symmetry_group` attribute is being set to `C1`. This transformation may"
-                f" effect the symmetry (or symmetric alignment) of the volume. To reset the"
+                f"`symmetry_group` attribute is being set to `C1`. {self.__class__.__name__}.{method}()"
+                f" may effect the symmetry (or symmetric alignment) of the volume. To reset the"
                 f" symmetry group run `self._set_symmetry_group('{self.symmetry_group}')`."
             )
-            warnings.warn(msg, UserWarning)
+            warnings.warn(msg, UserWarning, stacklevel=3)
 
     def stack_reshape(self, *args):
         """
@@ -230,6 +232,7 @@ class Volume:
         return self.n_vols
 
     def __add__(self, other):
+        self._symmetry_group_warning("add")
         if isinstance(other, Volume):
             res = self.__class__(self._data + other.asnumpy())
         else:
@@ -375,7 +378,7 @@ class Volume:
 
         :return: Volume instance.
         """
-        self._symmetry_group_warning()
+        self._symmetry_group_warning("transpose")
 
         original_stack_shape = self.stack_shape
         v = self._data.reshape(-1, *self._data.shape[-3:])
@@ -411,7 +414,7 @@ class Volume:
 
         :return: Volume instance.
         """
-        self._symmetry_group_warning()
+        self._symmetry_group_warning("flip")
 
         # Convert integer to tuple, so we can always loop.
         if isinstance(axis, int):
@@ -470,7 +473,7 @@ class Volume:
 
         :return: `Volume` instance.
         """
-        self._symmetry_group_warning()
+        self._symmetry_group_warning("rotate")
         if self.stack_ndim > 1:
             raise NotImplementedError(
                 "`rotation` is currently limited to 1D Volume stacks."
