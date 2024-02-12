@@ -179,7 +179,7 @@ class Volume:
             )
         self._symmetry_group = value
 
-    def _symmetry_group_warning(self, method):
+    def _symmetry_group_warning(self):
         """
         Warn when a transformation has the potential to change the symmetry
         of a volume or the alignment of symmetry axes.
@@ -188,8 +188,8 @@ class Volume:
         """
         if str(self.symmetry_group) != "C1":
             msg = (
-                f"`symmetry_group` attribute is being set to `C1`. {self.__class__.__name__}.{method}()"
-                f" may effect the symmetry (or symmetric alignment) of the volume. To reset the"
+                f"`symmetry_group` attribute is being set to `C1`. This transformation may"
+                f" effect the symmetry (or symmetric alignment) of the volume. To reset the"
                 f" symmetry group run `self._set_symmetry_group('{self.symmetry_group}')`."
             )
             warnings.warn(msg, UserWarning, stacklevel=3)
@@ -238,10 +238,10 @@ class Volume:
                     self._data + other.asnumpy(), symmetry_group=self.symmetry_group
                 )
             else:
-                self._symmetry_group_warning("add")
+                self._symmetry_group_warning()
                 res = self.__class__(self._data + other.asnumpy())
         else:
-            self._symmetry_group_warning("add")
+            self._symmetry_group_warning()
             res = self.__class__(self._data + other)
 
         return res
@@ -256,10 +256,10 @@ class Volume:
                     self._data - other.asnumpy(), symmetry_group=self.symmetry_group
                 )
             else:
-                self._symmetry_group_warning("subtract")
+                self._symmetry_group_warning()
                 res = self.__class__(self._data - other.asnumpy())
         else:
-            self._symmetry_group_warning("subtract")
+            self._symmetry_group_warning()
             res = self.__class__(self._data - other)
 
         return res
@@ -274,10 +274,10 @@ class Volume:
                     self._data * other.asnumpy(), symmetry_group=self.symmetry_group
                 )
             else:
-                self._symmetry_group_warning("multiply")
+                self._symmetry_group_warning()
                 res = self.__class__(self._data * other.asnumpy())
         else:
-            self._symmetry_group_warning("multiply")
+            self._symmetry_group_warning()
             res = self.__class__(self._data * other)
 
         return res
@@ -295,10 +295,10 @@ class Volume:
                     self._data / other.asnumpy(), symmetry_group=self.symmetry_group
                 )
             else:
-                self._symmetry_group_warning("divide")
+                self._symmetry_group_warning()
                 res = self.__class__(self._data / other.asnumpy())
         else:
-            self._symmetry_group_warning("divide")
+            self._symmetry_group_warning()
             res = self.__class__(self._data / other)
 
         return res
