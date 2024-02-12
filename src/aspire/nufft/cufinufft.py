@@ -4,7 +4,7 @@ import numpy as np
 import pycuda.autoinit  # noqa: F401
 import pycuda.driver as cuda  # noqa: F401
 import pycuda.gpuarray as gpuarray  # noqa: F401
-from cufinufft import cufinufft
+from cufinufft import Plan as cufPlan
 
 from aspire.nufft import Plan
 from aspire.utils import complex_type
@@ -54,8 +54,8 @@ class CufinufftPlan(Plan):
         self.num_pts = fourier_pts.shape[1]
         self.epsilon = max(epsilon, np.finfo(self.dtype).eps)
 
-        self._transform_plan = cufinufft(
-            2, self.sz, self.ntransforms, self.epsilon, -1, dtype=self.dtype
+        self._transform_plan = cufPlan(
+            2, self.sz, self.ntransforms, self.epsilon, -1, dtype=self.complex_dtype
         )
 
         self.adjoint_opts = dict()
@@ -67,22 +67,21 @@ class CufinufftPlan(Plan):
             )
             self.adjoint_opts["gpu_method"] = 1
 
-        self._adjoint_plan = cufinufft(
+        self._adjoint_plan = cufPlan(
             1,
             self.sz,
             self.ntransforms,
             self.epsilon,
             1,
-            dtype=self.dtype,
-            **self.adjoint_opts,
+            dtype=self.complex_dtype**self.adjoint_opts,
         )
 
         # Note, I store self.fourier_pts_gpu so the GPUArrray life
         #   is tied to instance, instead of this method.
         self.fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
 
-        self._transform_plan.set_pts(*self.fourier_pts_gpu)
-        self._adjoint_plan.set_pts(*self.fourier_pts_gpu)
+        self._transform_plan.setpts(*self.fourier_pts_gpu)
+        self._adjoint_plan.setpts(*self.fourier_pts_gpu)
 
     def transform(self, signal):
         """
@@ -130,7 +129,7 @@ class CufinufftPlan(Plan):
 
         result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype)
 
-        self._transform_plan.execute(result_gpu, signal_gpu)
+        self._transform_plan.execute(signal_gpu, out=result_gpu)
 
         result = result_gpu.get()
 
@@ -147,12 +146,8 @@ class CufinufftPlan(Plan):
         :returns: Transformed signal `(sz)` or `(sz, ntransforms)`.
         """
 
-        # Check we're not forcing a dtype workaround for ASPIRE-Python/703,
-        #   then check if we have a dtype mismatch.
-        # This avoids false positive complaint for the workaround.
-        if (self._original_dtype == self.dtype) and not (
-            signal.dtype == self.complex_dtype or signal.dtype == self.dtype
-        ):
+        # Check if we have a dtype mismatch.
+        if not (signal.dtype == self.complex_dtype or signal.dtype == self.dtype):
             logger.warning(
                 "Incorrect dtypes passed to (a)nufft."
                 " In the future this will be an error."
@@ -175,10 +170,8 @@ class CufinufftPlan(Plan):
 
         result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype)
 
-        self._adjoint_plan.execute(signal_gpu, result_gpu)
+        self._adjoint_plan.execute(signal_gpu, out=result_gpu)
 
         result = result_gpu.get()
-        # ASPIRE-Python/703
-        result = result.astype(complex_type(self._original_dtype), copy=False)
 
         return result
