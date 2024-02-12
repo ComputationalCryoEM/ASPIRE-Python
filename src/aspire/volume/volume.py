@@ -232,10 +232,16 @@ class Volume:
         return self.n_vols
 
     def __add__(self, other):
-        self._symmetry_group_warning("add")
         if isinstance(other, Volume):
-            res = self.__class__(self._data + other.asnumpy())
+            if str(self.symmetry_group) == str(other.symmetry_group):
+                res = self.__class__(
+                    self._data + other.asnumpy(), symmetry_group=self.symmetry_group
+                )
+            else:
+                self._symmetry_group_warning("add")
+                res = self.__class__(self._data + other.asnumpy())
         else:
+            self._symmetry_group_warning("add")
             res = self.__class__(self._data + other)
 
         return res
@@ -245,8 +251,15 @@ class Volume:
 
     def __sub__(self, other):
         if isinstance(other, Volume):
-            res = self.__class__(self._data - other.asnumpy())
+            if str(self.symmetry_group) == str(other.symmetry_group):
+                res = self.__class__(
+                    self._data - other.asnumpy(), symmetry_group=self.symmetry_group
+                )
+            else:
+                self._symmetry_group_warning("subtract")
+                res = self.__class__(self._data - other.asnumpy())
         else:
+            self._symmetry_group_warning("subtract")
             res = self.__class__(self._data - other)
 
         return res
@@ -256,8 +269,15 @@ class Volume:
 
     def __mul__(self, other):
         if isinstance(other, Volume):
-            res = self.__class__(self._data * other.asnumpy())
+            if str(self.symmetry_group) == str(other.symmetry_group):
+                res = self.__class__(
+                    self._data * other.asnumpy(), symmetry_group=self.symmetry_group
+                )
+            else:
+                self._symmetry_group_warning("multiply")
+                res = self.__class__(self._data * other.asnumpy())
         else:
+            self._symmetry_group_warning("multiply")
             res = self.__class__(self._data * other)
 
         return res
@@ -270,8 +290,15 @@ class Volume:
         Scalar division, follows numpy semantics.
         """
         if isinstance(other, Volume):
-            res = self.__class__(self._data / other.asnumpy())
+            if str(self.symmetry_group) == str(other.symmetry_group):
+                res = self.__class__(
+                    self._data / other.asnumpy(), symmetry_group=self.symmetry_group
+                )
+            else:
+                self._symmetry_group_warning("divide")
+                res = self.__class__(self._data / other.asnumpy())
         else:
+            self._symmetry_group_warning("divide")
             res = self.__class__(self._data / other)
 
         return res
