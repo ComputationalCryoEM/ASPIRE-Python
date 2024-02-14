@@ -183,8 +183,6 @@ class Volume:
         """
         Warn when a transformation has the potential to change the symmetry
         of a volume or the alignment of symmetry axes.
-
-        :param method: Name of method (string).
         """
         if str(self.symmetry_group) != "C1":
             msg = (
@@ -193,6 +191,27 @@ class Volume:
                 f" symmetry group run `self._set_symmetry_group('{self.symmetry_group}')`."
             )
             warnings.warn(msg, UserWarning, stacklevel=3)
+
+    def _result_symmetry(self, other):
+        """
+        Check if `other` will alter symmetry of `self` and return appropriate symmetry_group.
+        """
+        result_symmetry = self.symmetry_group
+
+        # Warn and set to Identity if incompatible symmetries or non-saclar.
+        if isinstance(other, Volume) and str(self.symmetry_group) != str(
+            other.symmetry_group
+        ):
+            self._symmetry_group_warning()
+            result_symmetry = IdentitySymmetryGroup(dtype=self.dtype)
+
+        elif not isinstance(other, Volume) and hasattr(
+            other, "__len__"
+        ):  # ie. is not a scalar
+            self._symmetry_group_warning()
+            result_symmetry = IdentitySymmetryGroup(dtype=self.dtype)
+
+        return result_symmetry
 
     def stack_reshape(self, *args):
         """
@@ -232,17 +251,11 @@ class Volume:
         return self.n_vols
 
     def __add__(self, other):
+        symmetry = self._result_symmetry(other)
         if isinstance(other, Volume):
-            if str(self.symmetry_group) == str(other.symmetry_group):
-                res = self.__class__(
-                    self._data + other.asnumpy(), symmetry_group=self.symmetry_group
-                )
-            else:
-                self._symmetry_group_warning()
-                res = self.__class__(self._data + other.asnumpy())
+            res = self.__class__(self._data + other.asnumpy(), symmetry_group=symmetry)
         else:
-            self._symmetry_group_warning()
-            res = self.__class__(self._data + other)
+            res = self.__class__(self._data + other, symmetry_group=symmetry)
 
         return res
 
@@ -250,17 +263,11 @@ class Volume:
         return self + otherL
 
     def __sub__(self, other):
+        symmetry = self._result_symmetry(other)
         if isinstance(other, Volume):
-            if str(self.symmetry_group) == str(other.symmetry_group):
-                res = self.__class__(
-                    self._data - other.asnumpy(), symmetry_group=self.symmetry_group
-                )
-            else:
-                self._symmetry_group_warning()
-                res = self.__class__(self._data - other.asnumpy())
+            res = self.__class__(self._data - other.asnumpy(), symmetry_group=symmetry)
         else:
-            self._symmetry_group_warning()
-            res = self.__class__(self._data - other)
+            res = self.__class__(self._data - other, symmetry_group=symmetry)
 
         return res
 
@@ -268,17 +275,11 @@ class Volume:
         return self.__class__(otherL - self._data)
 
     def __mul__(self, other):
+        symmetry = self._result_symmetry(other)
         if isinstance(other, Volume):
-            if str(self.symmetry_group) == str(other.symmetry_group):
-                res = self.__class__(
-                    self._data * other.asnumpy(), symmetry_group=self.symmetry_group
-                )
-            else:
-                self._symmetry_group_warning()
-                res = self.__class__(self._data * other.asnumpy())
+            res = self.__class__(self._data * other.asnumpy(), symmetry_group=symmetry)
         else:
-            self._symmetry_group_warning()
-            res = self.__class__(self._data * other)
+            res = self.__class__(self._data * other, symmetry_group=symmetry)
 
         return res
 
@@ -289,17 +290,11 @@ class Volume:
         """
         Scalar division, follows numpy semantics.
         """
+        symmetry = self._result_symmetry(other)
         if isinstance(other, Volume):
-            if str(self.symmetry_group) == str(other.symmetry_group):
-                res = self.__class__(
-                    self._data / other.asnumpy(), symmetry_group=self.symmetry_group
-                )
-            else:
-                self._symmetry_group_warning()
-                res = self.__class__(self._data / other.asnumpy())
+            res = self.__class__(self._data / other.asnumpy(), symmetry_group=symmetry)
         else:
-            self._symmetry_group_warning()
-            res = self.__class__(self._data / other)
+            res = self.__class__(self._data / other, symmetry_group=symmetry)
 
         return res
 
