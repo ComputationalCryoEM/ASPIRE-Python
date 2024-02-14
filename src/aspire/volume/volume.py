@@ -190,15 +190,18 @@ class Volume:
                 f" effect the symmetry (or symmetric alignment) of the volume. To reset the"
                 f" symmetry group run `self._set_symmetry_group('{self.symmetry_group}')`."
             )
-            warnings.warn(msg, UserWarning, stacklevel=3)
+            warnings.warn(msg, UserWarning, stacklevel=4)
 
-    def _result_symmetry(self, other):
+    def _result_symmetry(self, other=None):
         """
         Check if `other` will alter symmetry of `self` and return appropriate symmetry_group.
         """
-        result_symmetry = self.symmetry_group
+        if other is None:
+            self._symmetry_group_warning()
+            return IdentitySymmetryGroup(dtype=self.dtype)
 
-        # Warn and set to Identity if incompatible symmetries or non-saclar.
+        result_symmetry = self.symmetry_group
+        # Warn and set to IdentitySymmetryGroup if incompatible symmetries or non-scalar.
         if isinstance(other, Volume) and str(self.symmetry_group) != str(
             other.symmetry_group
         ):
@@ -400,13 +403,13 @@ class Volume:
 
         :return: Volume instance.
         """
-        self._symmetry_group_warning("transpose")
+        symmetry = self._result_symmetry()
 
         original_stack_shape = self.stack_shape
         v = self._data.reshape(-1, *self._data.shape[-3:])
         vt = np.transpose(v, (0, -1, -2, -3))
         vt = vt.reshape(*original_stack_shape, *self._data.shape[-3:])
-        return self.__class__(vt)
+        return self.__class__(vt, symmetry_group=symmetry)
 
     @property
     def T(self):
@@ -436,7 +439,7 @@ class Volume:
 
         :return: Volume instance.
         """
-        self._symmetry_group_warning("flip")
+        symmetry = self._result_symmetry()
 
         # Convert integer to tuple, so we can always loop.
         if isinstance(axis, int):
@@ -449,7 +452,7 @@ class Volume:
                     f"Cannot flip axis {ax}: stack axis. Did you mean {ax-4}?"
                 )
 
-        return self.__class__(np.flip(self._data, axis))
+        return self.__class__(np.flip(self._data, axis), symmetry_group=symmetry)
 
     def downsample(self, ds_res, mask=None):
         """
@@ -495,7 +498,7 @@ class Volume:
 
         :return: `Volume` instance.
         """
-        self._symmetry_group_warning("rotate")
+        symmetry = self._result_symmetry()
         if self.stack_ndim > 1:
             raise NotImplementedError(
                 "`rotation` is currently limited to 1D Volume stacks."
@@ -549,7 +552,7 @@ class Volume:
             np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
         )
 
-        return self.__class__(vol)
+        return self.__class__(vol, symmetry_group=symmetry)
 
     def denoise(self):
         raise NotImplementedError
