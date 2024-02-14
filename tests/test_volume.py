@@ -771,7 +771,7 @@ def test_symmetry_group_reset_warning():
         _ = vol_r.rotate(Rotation.about_axis("x", np.pi, dtype=vol.dtype))
 
         # Throw single test warning.
-        warnings.warn("test", Warning)
+        warnings.warn("test", Warning, stacklevel=2)
 
     # Should only have test warning
     assert len(record) == 1
