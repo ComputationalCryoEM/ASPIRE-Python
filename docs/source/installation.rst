@@ -141,24 +141,26 @@ driver version, run ``nvidia-smi`` on the intended system.
    * - CUDA Version
      - ASPIRE Extension
    * - 10.2
-     - gpu_102
+     - gpu-102
    * - 11.0
-     - gpu_110
+     - gpu-110
    * - 11.1
-     - gpu_111
+     - gpu-111
    * - >=11.2
-     - gpu_11x
+     - gpu-11x
+   * - >=12
+     - gpu-12x
 
-For example, if you have CUDA 11.7 installed on your system,
+For example, if you have CUDA 12.3 installed on your system,
 the command below would install GPU packages required for ASPIRE.
 
 ::
 
     # From a local git repo
-    pip install -e ".[gpu_11x]"
+    pip install -e ".[gpu-12x]"
 
     # From PyPI
-    pip install "aspire[gpu_11x]"
+    pip install "aspire[gpu-12x]"
 
     
 By default if the required GPU extensions are correctly installed,

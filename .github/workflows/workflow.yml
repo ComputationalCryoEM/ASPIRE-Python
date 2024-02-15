@@ -128,7 +128,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install dependencies
       run: |
-        pip install -e ".[dev,gpu_12x]"
+        pip install -e ".[dev,gpu-12x]"
     - name: Customize config
       run: |
         echo "Setup tmp dirs and chmod so others can cleanup."
