@@ -597,16 +597,20 @@ sim = Simulation(
 
 # %%
 # Clean projections.
-sim.projections[:5].show()
+sim.projections[:3].show()
 
 # %%
 # Images with only CTF applied.
-sim.clean_images[:5].show()
+sim.clean_images[:3].show()
 
 # %%
-# The first five corrupted images.
-sim.images[:5].show()
+# And now the first four corrupted images.
+sim.images[:4].show(columns=2, colorbar=False)
 
+# %%
+# .. note::
+#     Above the ``show`` call has been customized as a 2 column grid
+#     with out colorbar legend.
 
 # %%
 # Real Experimental Data - ``RelionSource``
@@ -658,13 +662,13 @@ src.images[:10].show()
 # +================+====================+=================+================+=====================+
 # |Simulation      | NoiseEstimator     | Class Averaging | CLSyncVoting   | MeanVolumeEstimator |
 # +----------------+--------------------+-----------------+----------------+---------------------+
-# |RelionSource    | downsample         | cov2d (CWF)     | CLSymmetryC3C4 |                     |
+# |RelionSource    | downsample         | cov2d (CWF)     | CLSymmetryC2   |                     |
 # +----------------+--------------------+-----------------+----------------+---------------------+
-# |CoordinateSource| whiten             |                 | CLSymmetryCn   |                     |
+# |CoordinateSource| whiten             |                 | CLSymmetryC3C4 |                     |
 # +----------------+--------------------+-----------------+----------------+---------------------+
-# |                | phase_flip         |                 | CommonlineSDP  |                     |
+# |                | phase_flip         |                 | CLSymmetryCn   |                     |
 # +----------------+--------------------+-----------------+----------------+---------------------+
-# |                |normalize_background|                 |                |                     |
+# |                |normalize_background|                 | CommonlineSDP  |                     |
 # +----------------+--------------------+-----------------+----------------+---------------------+
 # |                | CTFEstimator       |                 |                |                     |
 # +----------------+--------------------+-----------------+----------------+---------------------+
