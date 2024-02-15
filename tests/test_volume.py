@@ -13,6 +13,7 @@ from aspire.source import _LegacySimulation
 from aspire.utils import Rotation, anorm, grid_2d, powerset, utest_tolerance
 from aspire.volume import (
     AsymmetricVolume,
+    CnSymmetricVolume,
     CnSymmetryGroup,
     SymmetryGroup,
     TSymmetryGroup,
@@ -86,6 +87,13 @@ def vols_12(data_12):
 def asym_vols(res, dtype):
     vols = AsymmetricVolume(L=res, C=N, dtype=dtype, seed=0).generate()
     return vols
+
+
+@pytest.fixture(scope="module")
+def symmetric_vols(res, dtype):
+    vol_c3 = CnSymmetricVolume(L=res, C=1, order=3, dtype=dtype, seed=0).generate()
+    vol_c4 = CnSymmetricVolume(L=res, C=1, order=4, dtype=dtype, seed=0).generate()
+    return vol_c3, vol_c4
 
 
 @pytest.fixture(scope="module")
@@ -727,36 +735,37 @@ def test_symmetry_group_set_get(sym_group, sym_string):
         _ = Volume(data, symmetry_group=123, dtype=dtype)
 
 
-def test_symmetry_group_pass_through():
-    sym_group = "C5"
-    vol = Volume(
-        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")),
-        symmetry_group=sym_group,
-    )
+def test_symmetry_group_pass_through(symmetric_vols):
+    vol_c3, _ = symmetric_vols
+    sym_group = str(vol_c3.symmetry_group)
+    assert sym_group == "C3"
 
     # Check symmetry_group pass-through for various transformations.
-    assert str(vol.astype(np.float64).symmetry_group) == sym_group  # astype
-    assert str(vol[0].symmetry_group) == sym_group  # getitem
-    assert str(vol.stack_reshape((1, 1)).symmetry_group) == sym_group  # stack_reshape
+    assert str(vol_c3.astype(np.float64).symmetry_group) == sym_group  # astype
+    assert str(vol_c3[0].symmetry_group) == sym_group  # getitem
     assert (
-        str(vol.downsample(vol.resolution // 2).symmetry_group) == sym_group
+        str(vol_c3.stack_reshape((1, 1)).symmetry_group) == sym_group
+    )  # stack_reshape
+    assert (
+        str(vol_c3.downsample(vol_c3.resolution // 2).symmetry_group) == sym_group
     )  # downsample
 
 
-def test_symmetry_group_reset_warning():
-    sym_group = "C5"
-    vol = Volume(
-        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")),
-        symmetry_group=sym_group,
-    )
+def test_transformation_symmetry_warnings(symmetric_vols):
+    """
+    A warning should be emitted (once) for transpose, flip, rotate, add, sub, mult, div.
+    """
+    vol_c3, _ = symmetric_vols
+    sym_group = str(vol_c3.symmetry_group)
+    assert sym_group == "C3"
 
     # Check we get warning on first transformation.
     with pytest.warns(
         UserWarning, match=r".*`symmetry_group` attribute is being set to `C1`.*"
     ) as record:
-        vol_t = vol.T
-        vol_f = vol.flip()
-        vol_r = vol.rotate(Rotation.about_axis("x", np.pi, dtype=vol.dtype))
+        vol_t = vol_c3.T
+        vol_f = vol_c3.flip()
+        vol_r = vol_c3.rotate(Rotation.about_axis("x", np.pi, dtype=vol_c3.dtype))
     assert len(record) == 3
 
     # Check symmetry_group has been set to C1.
@@ -764,21 +773,41 @@ def test_symmetry_group_reset_warning():
     assert str(vol_f.symmetry_group) == "C1"
     assert str(vol_r.symmetry_group) == "C1"
 
-    # Check we get no warnings on second transformation.
-    with pytest.warns() as record:
-        _ = vol_t.T
-        _ = vol_f.flip()
-        _ = vol_r.rotate(Rotation.about_axis("x", np.pi, dtype=vol.dtype))
-
-        # Throw single test warning.
-        warnings.warn("test", Warning, stacklevel=2)
-
     # Should only have test warning
     assert len(record) == 1
     assert str(record[0].message) == "test"
 
-    # Check original volume has retained C5 symmetry.
-    assert str(vol.symmetry_group) == "C5"
+    # Check original volume has retained C3 symmetry.
+    assert str(vol_c3.symmetry_group) == "C3"
+
+
+def test_aglebraic_ops_symmetry_warnings(symmetric_vols):
+    vol_c3, vol_c4 = symmetric_vols
+
+    # Compatible symmetry should retain symmetry_group.
+    assert (vol_c3 + vol_c3).symmetry_group == vol_c3.symmetry_group
+    assert (vol_c3 - vol_c3).symmetry_group == vol_c3.symmetry_group
+    assert (vol_c3 * vol_c3).symmetry_group == vol_c3.symmetry_group
+    assert (
+        vol_c3 / (vol_c3 + 1)
+    ).symmetry_group == vol_c3.symmetry_group  # plus 1 to avoid division by 0.
+
+    # Incompatible symmetry should warn and set symmetry_group to C1.
+    with pytest.warns(
+        UserWarning, match=r".*`symmetry_group` attribute is being set to `C1`.*"
+    ) as record:
+        vols_sum = vol_c3 + vol_c4
+        vol_array_diff = vol_c3 - vol_c4.asnumpy()
+        vols_mult = vol_c3 * vol_c4
+        vol_array_div = vol_c3 / (vol_c4.asnumpy() + 1)
+
+    assert str(vols_sum.symmetry_group) == "C1"
+    assert str(vol_array_diff.symmetry_group) == "C1"
+    assert str(vols_mult.symmetry_group) == "C1"
+    assert str(vol_array_div.symmetry_group) == "C1"
+
+    # Should have 4 warnings on record.
+    assert len(record) == 4
 
 
 def test_volume_load_with_symmetry():
