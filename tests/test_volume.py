@@ -1,7 +1,6 @@
 import logging
 import os
 import tempfile
-import warnings
 from itertools import product
 
 import numpy as np
