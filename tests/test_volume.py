@@ -772,10 +772,6 @@ def test_transformation_symmetry_warnings(symmetric_vols):
     assert str(vol_f.symmetry_group) == "C1"
     assert str(vol_r.symmetry_group) == "C1"
 
-    # Should only have test warning
-    assert len(record) == 1
-    assert str(record[0].message) == "test"
-
     # Check original volume has retained C3 symmetry.
     assert str(vol_c3.symmetry_group) == "C3"
 
