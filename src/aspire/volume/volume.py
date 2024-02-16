@@ -181,27 +181,35 @@ class Volume:
 
     def _symmetry_group_warning(self):
         """
-        Warn when a transformation has the potential to change the symmetry
+        Warn when an operation has the potential to change the symmetry
         of a volume or the alignment of symmetry axes.
         """
-        if str(self.symmetry_group) != "C1":
-            msg = (
-                f"`symmetry_group` attribute is being set to `C1`. This transformation may"
-                f" effect the symmetry (or symmetric alignment) of the volume. To reset the"
-                f" symmetry group run `self._set_symmetry_group('{self.symmetry_group}')`."
-            )
-            warnings.warn(msg, UserWarning, stacklevel=4)
+        msg = (
+            f"`symmetry_group` attribute is being set to `C1`. This operation may"
+            f" effect the symmetry (or symmetric alignment) of the volume. To reset the"
+            f" symmetry group run `self._set_symmetry_group('{self.symmetry_group}')`."
+        )
+        warnings.warn(msg, UserWarning, stacklevel=4)
 
     def _result_symmetry(self, other=None):
         """
-        Check if `other` will alter symmetry of `self` and return appropriate symmetry_group.
+        Check if `other` will alter symmetry of `self` and return resulting symmetry_group.
+
+        :return: SymmetryGroup instance.
         """
+        # No need to check for C1.
+        if str(self.symmetry_group) == "C1":
+            return self.symmetry_group
+
+        # Handle case of transformations of `self`.
         if other is None:
             self._symmetry_group_warning()
             return IdentitySymmetryGroup(dtype=self.dtype)
 
+        # Handle binary operations of `self` and `other`.
         result_symmetry = self.symmetry_group
-        # Warn and set to IdentitySymmetryGroup if incompatible symmetries or non-scalar.
+
+        # Warn and set to IdentitySymmetryGroup if `other` is symmetrically incompatible.
         if isinstance(other, Volume) and str(self.symmetry_group) != str(
             other.symmetry_group
         ):
