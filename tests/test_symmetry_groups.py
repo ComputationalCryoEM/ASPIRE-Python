@@ -66,6 +66,14 @@ def test_group_str(group_fixture):
     logger.debug(f"String for {group_fixture}: {sym_string}.")
 
 
+def test_group_equivalence(group_fixture):
+    C2_symmetry_group = CnSymmetryGroup(order=2, dtype=group_fixture.dtype)
+    if str(group_fixture) == "C2":
+        assert C2_symmetry_group == group_fixture
+    else:
+        assert C2_symmetry_group != group_fixture
+
+
 def test_group_rotations(group_fixture):
     rotations = group_fixture.rotations
     assert isinstance(rotations, Rotation)
