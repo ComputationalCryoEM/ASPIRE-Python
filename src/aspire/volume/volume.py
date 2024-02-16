@@ -198,27 +198,20 @@ class Volume:
         :return: SymmetryGroup instance.
         """
         # No need to check for C1.
-        if str(self.symmetry_group) == "C1":
+        if isinstance(self.symmetry_group, IdentitySymmetryGroup):
             return self.symmetry_group
 
-        # Handle case of transformations of `self`.
-        if other is None:
-            self._symmetry_group_warning()
-            return IdentitySymmetryGroup(dtype=self.dtype)
-
-        # Handle binary operations of `self` and `other`.
+        # Warn and set to IdentitySymmetryGroup if `other` is symmetrically incompatible.
         result_symmetry = self.symmetry_group
 
-        # Warn and set to IdentitySymmetryGroup if `other` is symmetrically incompatible.
-        if isinstance(other, Volume) and str(self.symmetry_group) != str(
+        # Conditions of incompatibility.
+        self_transformation = other is None
+        incompat_syms = isinstance(other, Volume) and str(self.symmetry_group) != str(
             other.symmetry_group
-        ):
-            self._symmetry_group_warning()
-            result_symmetry = IdentitySymmetryGroup(dtype=self.dtype)
+        )
+        arbitrary_array = not isinstance(other, Volume) and hasattr(other, "__len__")
 
-        elif not isinstance(other, Volume) and hasattr(
-            other, "__len__"
-        ):  # ie. is not a scalar
+        if any([self_transformation, incompat_syms, arbitrary_array]):
             self._symmetry_group_warning()
             result_symmetry = IdentitySymmetryGroup(dtype=self.dtype)
 
