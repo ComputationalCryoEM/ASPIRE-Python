@@ -26,6 +26,11 @@ class SymmetryGroup(ABC):
         Method for generating a Rotation object for the symmetry group.
         """
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return str(self) == str(other)
+        return False
+
     @property
     def matrices(self):
         return self.rotations.matrices
