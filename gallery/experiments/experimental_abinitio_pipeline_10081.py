@@ -26,7 +26,6 @@ import logging
 from pathlib import Path
 
 from aspire.abinitio import CLSymmetryC3C4
-from aspire.basis import FFBBasis3D
 from aspire.denoising import DefaultClassAvgSource
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
@@ -125,11 +124,9 @@ oriented_src = OrientedSource(avgs, orient_est)
 
 logger.info("Begin Volume reconstruction")
 
-# Create a reasonable Basis for the 3d Volume
-basis = FFBBasis3D((img_size,) * 3, dtype=src.dtype)
 
 # Setup an estimator to perform the back projection.
-estimator = MeanEstimator(oriented_src, basis)
+estimator = MeanEstimator(oriented_src)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()

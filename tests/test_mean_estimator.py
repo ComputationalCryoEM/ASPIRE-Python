@@ -29,10 +29,12 @@ class MeanEstimatorTestCase(TestCase):
         )
         self.basis = FBBasis3D((self.resolution,) * 3, dtype=self.dtype)
 
-        self.estimator = MeanEstimator(self.sim, self.basis, preconditioner="none")
+        self.estimator = MeanEstimator(
+            self.sim, basis=self.basis, preconditioner="none"
+        )
 
         self.estimator_with_preconditioner = MeanEstimator(
-            self.sim, self.basis, preconditioner="circulant"
+            self.sim, basis=self.basis, preconditioner="circulant"
         )
 
     def tearDown(self):
@@ -47,7 +49,7 @@ class MeanEstimatorTestCase(TestCase):
             # This basis is intentionally the wrong resolution.
             incorrect_basis = FBBasis3D((2 * self.resolution,) * 3, dtype=self.dtype)
 
-            _ = MeanEstimator(self.sim, incorrect_basis, preconditioner="none")
+            _ = MeanEstimator(self.sim, basis=incorrect_basis, preconditioner="none")
 
     def testEstimate(self):
         estimate = self.estimator.estimate()
@@ -352,7 +354,8 @@ class MeanEstimatorTestCase(TestCase):
                     -9.82705453e-04,
                     6.46337066e-05,
                 ]
-            ]
+            ],
+            dtype=self.dtype,
         )
 
         x = self.estimator.conj_grad(mean_b_coef)
@@ -684,7 +687,7 @@ class MeanEstimatorTestCase(TestCase):
             prefix = os.path.join(tmp_input_dir, "new", "dirs", "chk")
             estimator = MeanEstimator(
                 self.sim,
-                self.basis,
+                basis=self.basis,
                 preconditioner="none",
                 checkpoint_iterations=test_iter,
                 maxiter=test_iter + 1,
@@ -712,7 +715,7 @@ class MeanEstimatorTestCase(TestCase):
                 ):
                     _ = MeanEstimator(
                         self.sim,
-                        self.basis,
+                        basis=self.basis,
                         preconditioner="none",
                         checkpoint_iterations=junk,
                         checkpoint_prefix=prefix,
@@ -723,7 +726,7 @@ class MeanEstimatorTestCase(TestCase):
                 ):
                     _ = MeanEstimator(
                         self.sim,
-                        self.basis,
+                        basis=self.basis,
                         preconditioner="none",
                         maxiter=junk,
                         checkpoint_prefix=prefix,
