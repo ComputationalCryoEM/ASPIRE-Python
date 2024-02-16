@@ -119,6 +119,8 @@ def test_compact_support(vol_fixture):
         assert (vol.asnumpy()[0][inside] > 0).all()
 
 
+# Supress expected warnings due to rotation of symmetric volume.
+@pytest.mark.filterwarnings("ignore:`symmetry_group` attribute is being set to `C1`")
 def test_volume_symmetry(vol_fixture):
     """Test that volumes have intended symmetry."""
     vol = vol_fixture.generate()
