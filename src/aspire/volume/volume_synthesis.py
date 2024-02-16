@@ -8,6 +8,7 @@ from aspire.utils.random import Random, randn
 from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
+    IdentitySymmetryGroup,
     OSymmetryGroup,
     TSymmetryGroup,
     Volume,
@@ -246,6 +247,9 @@ class AsymmetricVolume(CnSymmetricVolume):
             raise ValueError(
                 f"An {self.__class__.__name__} must have order=1. Provided order was {self.order}"
             )
+
+    def _set_symmetry_group(self):
+        self._symmetry_group = IdentitySymmetryGroup(dtype=self.dtype)
 
     def _symmetrize_gaussians(self, Q, D, mu):
         return Q, D, mu

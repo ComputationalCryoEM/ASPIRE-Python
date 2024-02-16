@@ -206,8 +206,8 @@ class Volume:
 
         # Conditions of incompatibility.
         self_transformation = other is None
-        incompat_syms = isinstance(other, Volume) and str(self.symmetry_group) != str(
-            other.symmetry_group
+        incompat_syms = (
+            isinstance(other, Volume) and self.symmetry_group != other.symmetry_group
         )
         arbitrary_array = not isinstance(other, Volume) and hasattr(other, "__len__")
 
