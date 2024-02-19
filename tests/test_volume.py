@@ -810,6 +810,12 @@ def test_aglebraic_ops_symmetry_warnings(symmetric_vols):
     # Should have 4 warnings on record.
     assert len(record) == 4
 
+    # Check that warning occurs only once per line.
+    with warnings.catch_warnings(record=True) as record:
+        for _ in range(5):
+            vol_c3 + vol_c4
+    assert len(record) == 1
+
 
 def test_volume_load_with_symmetry():
     # Check we can load a Volume with symmetry_group.
