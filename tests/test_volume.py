@@ -753,13 +753,13 @@ def test_symmetry_group_pass_through(symmetric_vols):
 
 def test_transformation_symmetry_warnings(symmetric_vols):
     """
-    A warning should be emitted (once) for transpose, flip, rotate, add, sub, mult, div.
+    A warning should be emitted for transpose, flip, and rotate.
     """
     vol_c3, _ = symmetric_vols
     sym_group = str(vol_c3.symmetry_group)
     assert sym_group == "C3"
 
-    # Check we get warning on first transformation.
+    # Check we get warning for each transformation.
     with pytest.warns(
         UserWarning, match=r".*`symmetry_group` attribute is being set to `C1`.*"
     ) as record:
@@ -778,6 +778,9 @@ def test_transformation_symmetry_warnings(symmetric_vols):
 
 
 def test_aglebraic_ops_symmetry_warnings(symmetric_vols):
+    """
+    A warning should be emitted for  add, sub, mult, and div.
+    """
     vol_c3, vol_c4 = symmetric_vols
 
     # Compatible symmetry should retain symmetry_group and emit no warning.
