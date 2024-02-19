@@ -1,6 +1,7 @@
 import logging
 import os
 import tempfile
+import warnings
 from itertools import product
 
 import numpy as np
@@ -779,13 +780,15 @@ def test_transformation_symmetry_warnings(symmetric_vols):
 def test_aglebraic_ops_symmetry_warnings(symmetric_vols):
     vol_c3, vol_c4 = symmetric_vols
 
-    # Compatible symmetry should retain symmetry_group.
-    assert (vol_c3 + vol_c3).symmetry_group == vol_c3.symmetry_group
-    assert (vol_c3 - vol_c3).symmetry_group == vol_c3.symmetry_group
-    assert (vol_c3 * vol_c3).symmetry_group == vol_c3.symmetry_group
-    assert (
-        vol_c3 / (vol_c3 + 1)
-    ).symmetry_group == vol_c3.symmetry_group  # plus 1 to avoid division by 0.
+    # Compatible symmetry should retain symmetry_group and emit no warning.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert (vol_c3 + vol_c3).symmetry_group == vol_c3.symmetry_group
+        assert (vol_c3 - vol_c3).symmetry_group == vol_c3.symmetry_group
+        assert (vol_c3 * vol_c3).symmetry_group == vol_c3.symmetry_group
+        assert (
+            vol_c3 / (vol_c3 + 1)
+        ).symmetry_group == vol_c3.symmetry_group  # plus 1 to avoid division by 0.
 
     # Incompatible symmetry should warn and set symmetry_group to C1.
     with pytest.warns(
