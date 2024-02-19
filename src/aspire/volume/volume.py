@@ -209,7 +209,7 @@ class Volume:
         incompat_syms = (
             isinstance(other, Volume) and self.symmetry_group != other.symmetry_group
         )
-        arbitrary_array = not isinstance(other, Volume) and getattr(other, size, 1) > 1
+        arbitrary_array = not isinstance(other, Volume) and getattr(other, 'size', 1) > 1
 
         if any([self_transformation, incompat_syms, arbitrary_array]):
             self._symmetry_group_warning()
@@ -398,13 +398,15 @@ class Volume:
 
         return cls(data)
 
-    def transpose(self):
+    def transpose(self, symmetry=None):
         """
         Returns a new Volume instance with volume data axes transposed.
 
         :return: Volume instance.
         """
-        symmetry = self._result_symmetry()
+        # Ensures warning stacklevel is the same for `vol.T` and `vol.transpose()`.
+        if symmetry is None:
+            symmetry = self._result_symmetry()
 
         original_stack_shape = self.stack_shape
         v = self._data.reshape(-1, *self._data.shape[-3:])
@@ -419,8 +421,8 @@ class Volume:
 
         :return: Volume instance.
         """
-
-        return self.transpose()
+        symmetry = self._result_symmetry()
+        return self.transpose(symmetry=symmetry)
 
     def flatten(self):
         """
