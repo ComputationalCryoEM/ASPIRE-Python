@@ -209,7 +209,7 @@ class Volume:
         incompat_syms = (
             isinstance(other, Volume) and self.symmetry_group != other.symmetry_group
         )
-        arbitrary_array = not isinstance(other, Volume) and hasattr(other, "__len__")
+        arbitrary_array = not isinstance(other, Volume) and getattr(other, size, 1) > 1
 
         if any([self_transformation, incompat_syms, arbitrary_array]):
             self._symmetry_group_warning()
