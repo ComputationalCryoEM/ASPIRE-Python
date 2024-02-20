@@ -100,11 +100,10 @@ class StarFile:
                         )
                     loop_tags = gemmi_item.loop.tags
                     # convert loop data to a list of lists
-                    # using the .val(row, col) method of gemmi's Loop class
                     loop_data = [None] * gemmi_item.loop.length()
                     for row in range(gemmi_item.loop.length()):
                         loop_data[row] = [
-                            gemmi_item.loop.val(row, col)
+                            gemmi_item.loop[row, col]
                             for col in range(gemmi_item.loop.width())
                         ]
             if block_has_pair:
