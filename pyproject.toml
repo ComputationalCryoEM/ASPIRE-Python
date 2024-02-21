@@ -9,16 +9,16 @@ maintainers = [
   {name = "ASPIRE Developers", email = "ASPIRE-DEVS@princeton.edu"}
 ]
 authors = [
-	{name = "Joakim Anden"},
-	{name = "Vineet Bansal"},
-	{name = "Josh Carmichael"},
-	{name = "Chris Langfield"},
-	{name = "Ayelet Heimowitz"},
-	{name = "Yoel Shkolnisky"},
-	{name = "Amit Singer"},
-	{name = "Kris Sowattanangkul"},
-	{name = "Garrett Wright"},
-	{name = "Junchao Xia"}
+        {name = "Joakim Anden"},
+        {name = "Vineet Bansal"},
+        {name = "Josh Carmichael"},
+        {name = "Chris Langfield"},
+        {name = "Ayelet Heimowitz"},
+        {name = "Yoel Shkolnisky"},
+        {name = "Amit Singer"},
+        {name = "Kris Sowattanangkul"},
+        {name = "Garrett Wright"},
+        {name = "Junchao Xia"}
 ]
 
 classifiers = [
@@ -31,7 +31,7 @@ dependencies = [
     "click",
     "confuse >= 2.0.0",
     "cvxpy",
-    # finufft 2.2.0 doesn't seemt to run on GHA Windows CI...    
+    # finufft 2.2.0 doesn't seemt to run on GHA Windows CI...
     "finufft==2.2.0 ; sys_platform != 'win32'",
     "finufft==2.1.0 ; sys_platform == 'win32'",
     "gemmi >= 0.6.5",
