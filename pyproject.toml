@@ -44,12 +44,11 @@ dependencies = [
     "pooch>=1.7.0",
     "pillow",
     "psutil",
-    "pydantic<2",  # Workaround for Ray<2.9
     "pyfftw",
     "pymanopt",
     "pyshtools<=4.10.4",  # 4.11.7 might have a packaging bug
     "PyWavelets",
-    "ray",
+    "ray >= 2.9.2",
     "scipy >= 1.10.0",
     "scikit-learn",
     "scikit-image",
