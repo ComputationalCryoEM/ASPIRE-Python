@@ -1,0 +1,103 @@
+
+:orphan:
+
+.. _sphx_glr_sg_execution_times:
+
+
+Computation times
+=================
+**21:22.963** total execution time for 23 files **from all galleries**:
+
+.. container::
+
+  .. raw:: html
+
+    <style scoped>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    </style>
+    <script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script type="text/javascript" class="init">
+    $(document).ready( function () {
+        $('table.sg-datatable').DataTable({order: [[1, 'desc']]});
+    } );
+    </script>
+
+  .. list-table::
+   :header-rows: 1
+   :class: table table-striped sg-datatable
+
+   * - Example
+     - Time
+     - Mem (MB)
+   * - :ref:`sphx_glr_auto_tutorials_aspire_introduction.py` (``../../gallery/tutorials/aspire_introduction.py``)
+     - 07:09.505
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_weighted_volume_estimation.py` (``../../gallery/tutorials/tutorials/weighted_volume_estimation.py``)
+     - 06:13.313
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_pipeline_demo.py` (``../../gallery/tutorials/pipeline_demo.py``)
+     - 02:31.842
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_cov3d_simulation.py` (``../../gallery/tutorials/tutorials/cov3d_simulation.py``)
+     - 01:11.160
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_class_averaging.py` (``../../gallery/tutorials/tutorials/class_averaging.py``)
+     - 01:01.868
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_apple_picker.py` (``../../gallery/tutorials/tutorials/apple_picker.py``)
+     - 00:52.801
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_image_expansion.py` (``../../gallery/tutorials/tutorials/image_expansion.py``)
+     - 00:52.350
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_micrograph_source.py` (``../../gallery/tutorials/tutorials/micrograph_source.py``)
+     - 00:29.254
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_cov2d_simulation.py` (``../../gallery/tutorials/tutorials/cov2d_simulation.py``)
+     - 00:11.223
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_ctf.py` (``../../gallery/tutorials/tutorials/ctf.py``)
+     - 00:09.669
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_preprocess_imgs_sim.py` (``../../gallery/tutorials/tutorials/preprocess_imgs_sim.py``)
+     - 00:08.855
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_configuration.py` (``../../gallery/tutorials/configuration.py``)
+     - 00:06.608
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_starfile.py` (``../../gallery/tutorials/tutorials/starfile.py``)
+     - 00:05.235
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_basic_image_array.py` (``../../gallery/tutorials/tutorials/basic_image_array.py``)
+     - 00:04.957
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_orient3d_simulation.py` (``../../gallery/tutorials/tutorials/orient3d_simulation.py``)
+     - 00:04.552
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_data_downloader.py` (``../../gallery/tutorials/tutorials/data_downloader.py``)
+     - 00:03.690
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_image_class.py` (``../../gallery/tutorials/tutorials/image_class.py``)
+     - 00:02.855
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_generating_volume_projections.py` (``../../gallery/tutorials/tutorials/generating_volume_projections.py``)
+     - 00:01.773
+     - 0.0
+   * - :ref:`sphx_glr_auto_tutorials_tutorials_relion_projection_interop.py` (``../../gallery/tutorials/tutorials/relion_projection_interop.py``)
+     - 00:01.453
+     - 0.0
+   * - :ref:`sphx_glr_auto_experiments_experimental_abinitio_pipeline_10028.py` (``../../gallery/experiments/experimental_abinitio_pipeline_10028.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_experiments_experimental_abinitio_pipeline_10073.py` (``../../gallery/experiments/experimental_abinitio_pipeline_10073.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_experiments_experimental_abinitio_pipeline_10081.py` (``../../gallery/experiments/experimental_abinitio_pipeline_10081.py``)
+     - 00:00.000
+     - 0.0
+   * - :ref:`sphx_glr_auto_experiments_simulated_abinitio_pipeline.py` (``../../gallery/experiments/simulated_abinitio_pipeline.py``)
+     - 00:00.000
+     - 0.0

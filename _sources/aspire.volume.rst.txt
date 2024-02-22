@@ -1,0 +1,37 @@
+aspire.volume package
+=====================
+
+Submodules
+----------
+
+aspire.volume.symmetry\_groups module
+-------------------------------------
+
+.. automodule:: aspire.volume.symmetry_groups
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.volume.volume module
+---------------------------
+
+.. automodule:: aspire.volume.volume
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.volume.volume\_synthesis module
+--------------------------------------
+
+.. automodule:: aspire.volume.volume_synthesis
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.volume
+   :members:
+   :undoc-members:
+   :show-inheritance:

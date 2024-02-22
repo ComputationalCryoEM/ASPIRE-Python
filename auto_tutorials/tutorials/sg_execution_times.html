@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Computation times &mdash; ASPIRE 0.12.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=61a4c737" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js?v=8a690cf6"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+              <div class="version">
+                0.12.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Computation times</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/auto_tutorials/tutorials/sg_execution_times.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="computation-times">
+<span id="sphx-glr-auto-tutorials-tutorials-sg-execution-times"></span><h1>Computation times<a class="headerlink" href="#computation-times" title="Permalink to this heading">¶</a></h1>
+<p><strong>11:35.008</strong> total execution time for 16 files <strong>from auto_tutorials/tutorials</strong>:</p>
+<div class="docutils container">
+<style scoped>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+</style>
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script type="text/javascript" class="init">
+$(document).ready( function () {
+    $('table.sg-datatable').DataTable({order: [[1, 'desc']]});
+} );
+</script><table class="table table-striped sg-datatable docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Example</p></th>
+<th class="head"><p>Time</p></th>
+<th class="head"><p>Mem (MB)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><a class="reference internal" href="weighted_volume_estimation.html#sphx-glr-auto-tutorials-tutorials-weighted-volume-estimation-py"><span class="std std-ref">Weighted Volume Reconstruction</span></a> (<code class="docutils literal notranslate"><span class="pre">weighted_volume_estimation.py</span></code>)</p></td>
+<td><p>06:13.313</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="cov3d_simulation.html#sphx-glr-auto-tutorials-tutorials-cov3d-simulation-py"><span class="std std-ref">Covariance 3D Estimation</span></a> (<code class="docutils literal notranslate"><span class="pre">cov3d_simulation.py</span></code>)</p></td>
+<td><p>01:11.160</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="class_averaging.html#sphx-glr-auto-tutorials-tutorials-class-averaging-py"><span class="std std-ref">Class Averaging</span></a> (<code class="docutils literal notranslate"><span class="pre">class_averaging.py</span></code>)</p></td>
+<td><p>01:01.868</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="apple_picker.html#sphx-glr-auto-tutorials-tutorials-apple-picker-py"><span class="std std-ref">Apple Picker</span></a> (<code class="docutils literal notranslate"><span class="pre">apple_picker.py</span></code>)</p></td>
+<td><p>00:52.801</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="image_expansion.html#sphx-glr-auto-tutorials-tutorials-image-expansion-py"><span class="std std-ref">Image Expansion</span></a> (<code class="docutils literal notranslate"><span class="pre">image_expansion.py</span></code>)</p></td>
+<td><p>00:52.350</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="micrograph_source.html#sphx-glr-auto-tutorials-tutorials-micrograph-source-py"><span class="std std-ref">Micrograph Sources</span></a> (<code class="docutils literal notranslate"><span class="pre">micrograph_source.py</span></code>)</p></td>
+<td><p>00:29.254</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="cov2d_simulation.html#sphx-glr-auto-tutorials-tutorials-cov2d-simulation-py"><span class="std std-ref">2D Covariance Estimation</span></a> (<code class="docutils literal notranslate"><span class="pre">cov2d_simulation.py</span></code>)</p></td>
+<td><p>00:11.223</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="ctf.html#sphx-glr-auto-tutorials-tutorials-ctf-py"><span class="std std-ref">CTF: Contrast Transfer Function</span></a> (<code class="docutils literal notranslate"><span class="pre">ctf.py</span></code>)</p></td>
+<td><p>00:09.669</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="preprocess_imgs_sim.html#sphx-glr-auto-tutorials-tutorials-preprocess-imgs-sim-py"><span class="std std-ref">Image Preprocessing</span></a> (<code class="docutils literal notranslate"><span class="pre">preprocess_imgs_sim.py</span></code>)</p></td>
+<td><p>00:08.855</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="starfile.html#sphx-glr-auto-tutorials-tutorials-starfile-py"><span class="std std-ref">Starfile</span></a> (<code class="docutils literal notranslate"><span class="pre">starfile.py</span></code>)</p></td>
+<td><p>00:05.235</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="basic_image_array.html#sphx-glr-auto-tutorials-tutorials-basic-image-array-py"><span class="std std-ref">Basic Image Array</span></a> (<code class="docutils literal notranslate"><span class="pre">basic_image_array.py</span></code>)</p></td>
+<td><p>00:04.957</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="orient3d_simulation.html#sphx-glr-auto-tutorials-tutorials-orient3d-simulation-py"><span class="std std-ref">3D Image Orientation</span></a> (<code class="docutils literal notranslate"><span class="pre">orient3d_simulation.py</span></code>)</p></td>
+<td><p>00:04.552</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="data_downloader.html#sphx-glr-auto-tutorials-tutorials-data-downloader-py"><span class="std std-ref">Data Downloader</span></a> (<code class="docutils literal notranslate"><span class="pre">data_downloader.py</span></code>)</p></td>
+<td><p>00:03.690</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="image_class.html#sphx-glr-auto-tutorials-tutorials-image-class-py"><span class="std std-ref">ASPIRE Image Class</span></a> (<code class="docutils literal notranslate"><span class="pre">image_class.py</span></code>)</p></td>
+<td><p>00:02.855</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generating_volume_projections.html#sphx-glr-auto-tutorials-tutorials-generating-volume-projections-py"><span class="std std-ref">Generating 3D Volume Projections</span></a> (<code class="docutils literal notranslate"><span class="pre">generating_volume_projections.py</span></code>)</p></td>
+<td><p>00:01.773</p></td>
+<td><p>0.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="relion_projection_interop.html#sphx-glr-auto-tutorials-tutorials-relion-projection-interop-py"><span class="std std-ref">Relion Projection Interoperability</span></a> (<code class="docutils literal notranslate"><span class="pre">relion_projection_interop.py</span></code>)</p></td>
+<td><p>00:01.453</p></td>
+<td><p>0.0</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
