@@ -174,7 +174,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"	  
       - name: Create Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/ASPIRE-data
           key: ${{ runner.os }}-cached-data
@@ -198,7 +198,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: Restore Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/ASPIRE-data
           key: ${{ runner.os }}-cached-data
@@ -209,7 +209,7 @@ jobs:
           make html
         working-directory: ./docs
       - name: Archive Sphinx docs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sphinx-docs
           path: docs/build
