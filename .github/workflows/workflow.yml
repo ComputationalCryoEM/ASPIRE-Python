@@ -52,7 +52,7 @@ jobs:
     - name: Test with tox
       run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
     - name: Upload Coverage to CodeCov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
 
   conda-build:
     needs: check
