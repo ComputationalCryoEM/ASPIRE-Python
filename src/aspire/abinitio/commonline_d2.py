@@ -69,11 +69,7 @@ class CLSymmetryD2(CLOrient3D):
         :return: Array of rotation matrices, size n_imgx3x3.
         """
         self.generate_lookup_data()
-        self.generate_scl_lookup_data(
-            self.inplane_rotated_grid1,
-            self.eq_idx1,
-            self.eq_class1,
-        )
+        self.generate_scl_lookup_data()
 
     def generate_lookup_data(self):
         """
@@ -153,13 +149,26 @@ class CLSymmetryD2(CLOrient3D):
         self.cl_ind_1, self.cl_angles1 = self.generate_commonline_indices(cl_angles1)
         self.cl_ind_2, self.cl_angles2 = self.generate_commonline_indices(cl_angles2)
 
-        self.generate_scl_lookup_data(
-            self.inplane_rotated_grid1, self.eq_idx1, self.eq_class1
-        )
-
-    def generate_scl_lookup_data(self, Ris, eq_idx, eq_class):
+    def generate_scl_lookup_data(self):
         """
         Generate lookup data for self-commonlines.
+
+        :param Ris: Candidate rotation matrices, (n_sphere_grid, n_inplane_rots, 3, 3).
+        :param eq_idx: Equator index mask for Ris.
+        :param eq_class: Equator classification for Ris.
+        """
+        self.scl_angles1 = self.generate_scl_angles(
+            self.inplane_rotated_grid1,
+            self.eq_idx1,
+            self.eq_class1,
+        )
+        self.scl_ind_1, self.scl_eq_lin_idx_lists_1 = self.generate_scl_indices(
+            self.scl_angles1, self.eq_class1
+        )
+
+    def generate_scl_angles(self, Ris, eq_idx, eq_class):
+        """
+        Generate self-commonline angles.
 
         :param Ris: Candidate rotation matrices, (n_sphere_grid, n_inplane_rots, 3, 3).
         :param eq_idx: Equator index mask for Ris.
@@ -172,7 +181,8 @@ class CLSymmetryD2(CLOrient3D):
         n_rots = len(Ris)
         for i in range(n_rots):
             Ri = Ris[i]
-            for k, g in enumerate(self.gs[1:]):
+            # TODO: Reversing self.gs here to match matlab. Should use as is.
+            for k, g in enumerate(self.gs[::-1][:3]):
                 g_Ri = g * Ri
                 Riis = np.transpose(Ri, axes=(0, 2, 1)) @ g_Ri
 
@@ -237,42 +247,49 @@ class CLSymmetryD2(CLOrient3D):
             + scl_angles[eq_class > 0] * ~p[:, :, None, None]
         )
 
-        # Convert angles from radians to degrees.
+        # Convert angles from radians to degrees (indices).
         scl_angles = np.round(scl_angles * 180 / np.pi) % L
-        import pdb
 
-        pdb.set_trace()
+        return scl_angles
+
+    def generate_scl_indices(self, scl_angles, eq_class):
+        L = 360
+
         # Create candidate common line linear indices lists for equators.
         # As indicated above for equator candidate, for each self common line we
         # don't get a single coordinate but a range of them. Here we register a
         # list of coordinates for each such self common line candidate.
         non_top_view_eq_idx = np.where(eq_class > 0)[0]
         n_eq = len(non_top_view_eq_idx)
-        n_inplane_rots = Ris.shape[1]
+        n_inplane_rots = scl_angles.shape[1]
         count_eq = 0
 
-        # eq_lin_idx_lists[i,j,1] registers a list of linear indices of the j'th
+        # eq_lin_idx_lists[1,i,j] registers a list of linear indices of the j'th
         # in-plane rotation of the range for the (only) self common line of the i'th
-        # candidate. eq_lin_idx_lists[i,j,2] registers the actual (integer) angle
+        # candidate. eq_lin_idx_lists[2,i,j] registers the actual (integer) angle
         # of the self common line in the 2D Fourier space. Note that we need only
         # one number since each self common line has radial coordinates of the form
         # (theta, theta+180).
-        eq_lin_idx_lists = []
-        for i in list(non_top_view_eq_idx):
-            i_list = []
+        eq_lin_idx_lists = np.empty((2, n_eq, n_inplane_rots), dtype=object)
+        for i in non_top_view_eq_idx.tolist():
             for j in range(n_inplane_rots):
                 idx1 = self.circ_seq(scl_angles[i, j, 0, 0], scl_angles[i, j, 1, 0], L)
                 idx2 = self.circ_seq(scl_angles[i, j, 0, 1], scl_angles[i, j, 1, 1], L)
 
                 # Adjust so idx2 is in [0, 180) range.
-                idx2[idx2 >= 180] = (idx2[idx2 >= 180] - L // 2) % (L // 2)
                 idx1[idx2 >= 180] = (idx1[idx2 >= 180] + L // 2) % L
-                print(i, j, idx1, idx2)
-                # register indices in list.
-                i_list.append(np.ravel_multi_index((idx1, idx2), (L, L // 2)))
-                i_list.append(idx2)
+                idx2[idx2 >= 180] = (idx2[idx2 >= 180] - L // 2) % (L // 2)
 
-            eq_lin_idx_lists.append(i_list)
+                # register indices in list.
+                eq_lin_idx_lists[0, count_eq, j] = np.ravel_multi_index(
+                    (idx1, idx2), (L, L // 2)
+                )
+                eq_lin_idx_lists[1, count_eq, j] = idx2
+            count_eq += 1
+
+        scl_indices, _ = self.generate_commonline_indices(scl_angles)
+
+        return scl_indices, eq_lin_idx_lists
 
     @staticmethod
     def circ_seq(n1, n2, L):
@@ -289,10 +306,9 @@ class CLSymmetryD2(CLOrient3D):
         if n1 == n2:
             return np.array(n1).astype(int)
 
-        seq = np.arange(n1, n2) % L
-        seq[abs(seq) < 1e-8] = L
+        seq = np.arange(n1, n2 + 1).astype(int) % L
 
-        return seq.astype(int)
+        return seq
 
     @staticmethod
     def saff_kuijlaars(N):
@@ -484,15 +500,15 @@ class CLSymmetryD2(CLOrient3D):
 
                 idx += 1
 
+        # Make all angles non-negative and convert to degrees.
+        cl_angles = (cl_angles + 2 * np.pi) % (2 * np.pi)
+        cl_angles = cl_angles * 180 / np.pi
+
         return cl_angles
 
     @staticmethod
     def generate_commonline_indices(cl_angles):
         # TODO: This is not accounting for n_theta other than 360!
-
-        # Make all angles non-negative and convert to degrees.
-        cl_angles = (cl_angles + 2 * np.pi) % (2 * np.pi)
-        cl_angles = cl_angles * 180 / np.pi
 
         # Flatten the stack
         og_shape = cl_angles.shape
