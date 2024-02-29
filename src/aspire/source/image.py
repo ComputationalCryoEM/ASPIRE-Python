@@ -1,4 +1,5 @@
 import copy
+import functools
 import logging
 import os.path
 import types
@@ -114,6 +115,7 @@ def as_copy(func):
     is best used on methods that mutate the object but don't return anything.
     """
 
+    @functools.wraps(func)  # Pass metadata (eg name and doctrings) from `func`
     def wrapper(self, *args, **kwargs):
         obj_copy = copy.deepcopy(self)
         func_copy = copy.deepcopy(func)
