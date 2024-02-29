@@ -252,15 +252,13 @@ estimated_volume = estimator.estimate()
 # the z-axis.  These estimated projections should align with the
 # original projection images.
 
-from aspire.source import ArrayImageSource
-
-# Get projections from the estimated volume using the estimated
-# orientations.  We instantiate the projections as an
-# ``ArrayImageSource`` to access the ``Image.show()`` method.
-projections_est = ArrayImageSource(estimated_volume.project(oriented_src.rotations))
+# Get the first 10 projections from the estimated volume using the
+# estimated orientations.  Recall that ``project`` returns an
+# ``Image`` instance, which we can peek at with ``show``.
+projections_est = estimated_volume.project(oriented_src.rotations[0:10])
 
 # We view the first 10 projections of the estimated volume.
-projections_est.images[0:10].show()
+projections_est.show()
 
 # %%
 
