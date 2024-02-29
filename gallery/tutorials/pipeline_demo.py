@@ -141,11 +141,13 @@ src.images[0:10].show()
 # We use ``RIRClass2D`` object to classify the images via the
 # rotationally invariant representation (RIR) algorithm. Class
 # selection is customizable. The classification module also includes a
-# set of protocols for selecting a set of images to be used for
-# classification.  Here we're using ``TopClassSelector``, which
-# selects the first ``n_classes`` images from the source.  In
-# practice, the selection is done by sorting class averages based on
-# some configurable notion of quality.
+# set of protocols for selecting a set of images to be used after
+# classification.  Here we're using the simplest
+# ``DebugClassAvgSource`` which internally uses the
+# ``TopClassSelector`` to select the first ``n_classes`` images from
+# the source.  In practice, the selection is done by sorting class
+# averages based on some configurable notion of quality (contrast,
+# neighbor distance etc).
 
 from aspire.classification import RIRClass2D
 
