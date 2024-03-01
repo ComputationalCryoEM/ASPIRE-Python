@@ -77,6 +77,10 @@ class CLOrient3D:
             logger.error(msg)
             raise NotImplementedError(msg)
 
+    def _prepare_pf(self):
+        """
+        Prepare the polar Fourier transform used for correlations.
+        """
         imgs = self.src.images[:]
 
         if self.mask:
@@ -106,6 +110,7 @@ class CLOrient3D:
         """
         Build common-lines matrix from Fourier stack of 2D images
         """
+        self._prepare_pf()
 
         n_img = self.n_img
         n_check = self.n_check
