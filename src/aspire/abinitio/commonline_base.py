@@ -57,6 +57,7 @@ class CLOrient3D:
         self.shift_step = shift_step
         self.mask = mask
         self.rotations = None
+        self._pf = None
 
         self._build()
 
@@ -77,6 +78,12 @@ class CLOrient3D:
             logger.error(msg)
             raise NotImplementedError(msg)
 
+    @property
+    def pf(self):
+        if self._pf is None:
+            self._pf = self._prepare_pf()
+        return self._pf
+
     def _prepare_pf(self):
         """
         Prepare the polar Fourier transform used for correlations.
@@ -88,15 +95,17 @@ class CLOrient3D:
             imgs = imgs * fuzz_mask
 
         # Obtain coefficients of polar Fourier transform for input 2D images
-        self.pft = PolarFT(
+        pft = PolarFT(
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
-        self.pf = self.pft.transform(imgs)
+        pf = pft.transform(imgs)
 
         # We remove the DC the component. pf has size (n_img) x (n_theta/2) x (n_rad-1),
         # with pf[:, :, 0] containing low frequency content and pf[:, :, -1] containing
         # high frequency content.
-        self.pf = self.pf[:, :, 1:]
+        pf = pf[:, :, 1:]
+
+        return pf
 
     def estimate_rotations(self):
         """
@@ -110,8 +119,6 @@ class CLOrient3D:
         """
         Build common-lines matrix from Fourier stack of 2D images
         """
-        self._prepare_pf()
-
         n_img = self.n_img
         n_check = self.n_check
 

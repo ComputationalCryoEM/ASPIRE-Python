@@ -104,7 +104,6 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
     def _estimate_relative_viewing_directions(self):
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-        self._prepare_pf()
         pf = self.pf
 
         # Generate candidate rotation matrices and the common-line and
