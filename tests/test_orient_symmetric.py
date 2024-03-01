@@ -173,6 +173,7 @@ def test_self_relative_rotations(n_img, L, order, dtype):
     src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
 
     # Estimate self-relative viewing directions, Riis.
+    cl_symm._prepare_pf()  # Required to compute self_clmatrix.
     scl = cl_symm._self_clmatrix_c3_c4()
     Riis = cl_symm._estimate_all_Riis_c3_c4(scl)
 
@@ -301,6 +302,7 @@ def test_self_commonlines(n_img, L, order, dtype):
     n_theta = cl_symm.n_theta
 
     # Initialize common-lines orientation estimation object and compute self-common-lines matrix.
+    cl_symm._prepare_pf()  # Requires polar Fourier transform.
     scl = cl_symm._self_clmatrix_c3_c4()
 
     # Compute ground truth self-common-lines matrix.
