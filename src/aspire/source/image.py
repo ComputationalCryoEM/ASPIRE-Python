@@ -103,7 +103,7 @@ class _ImageAccessor:
         return self.fun(indices)
 
 
-def as_copy(func):
+def _as_copy(func):
     """
     Method decorator that invokes the decorated method on a deepcopy of the object,
     and returns it on exit. The original object is unmodified.
@@ -759,7 +759,7 @@ class ImageSource(ABC):
             self.filter_indices[indices],
         )
 
-    @as_copy
+    @_as_copy
     def cache(self):
         """
         Computes all queued pipeline transformations and stores the
@@ -786,7 +786,7 @@ class ImageSource(ABC):
         Subclasses handle cached image check as well as applying transforms in the generation pipeline.
         """
 
-    @as_copy
+    @_as_copy
     def downsample(self, L):
         if L > self.L:
             raise ValueError(
@@ -802,7 +802,7 @@ class ImageSource(ABC):
 
         self.L = L
 
-    @as_copy
+    @_as_copy
     def whiten(self, noise_estimate=None):
         """
         Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
@@ -842,7 +842,7 @@ class ImageSource(ABC):
         logger.info("Adding Whitening Filter Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
-    @as_copy
+    @_as_copy
     def phase_flip(self):
         """
         Perform phase flip on images in the source object using CTF information.
@@ -867,7 +867,7 @@ class ImageSource(ABC):
                 "  Confirm you have correctly populated CTFFilters."
             )
 
-    @as_copy
+    @_as_copy
     def invert_contrast(self, batch_size=512):
         """
         invert the global contrast of images
@@ -917,7 +917,7 @@ class ImageSource(ABC):
         logger.info("Adding Scaling Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(Multiply(scale_factor))
 
-    @as_copy
+    @_as_copy
     def normalize_background(self, bg_radius=1.0, do_ramp=True):
         """
         Normalize the images by the noise background
