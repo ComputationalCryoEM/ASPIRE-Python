@@ -1498,14 +1498,18 @@ class IndexedSource(ImageSource):
         :param indices: A 1-D NumPy array of indices.
         :return: An `Image` object.
         """
-        mapped_indices = self.index_map[indices]
-        # Load previous source image data and apply any transforms
-        # belonging to this IndexedSource.  Note the previous source
-        # requires remapped indices, while the current source uses the
-        # `indices` arg directly.
-        return self.generation_pipeline.forward(
-            self.src.images[mapped_indices], indices
-        )
+
+        if self._cached_im is not None:
+            im = self._cached_im[indices]
+        else:
+            mapped_indices = self.index_map[indices]
+            # Load previous source image data and apply any transforms
+            # belonging to this IndexedSource.  Note the previous source
+            # requires remapped indices, while the current source uses the
+            # `indices` arg directly.
+            im = self.src.images[mapped_indices]
+
+        return self.generation_pipeline.forward(im, indices)
 
     def __repr__(self):
         return f"{self.__class__.__name__} mapping {self.n} of {self.src.n} indices from {self.src.__class__.__name__}."
