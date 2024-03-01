@@ -206,7 +206,7 @@ Image(phase_flipped_imgs).show()
 
 # %%
 # Validating ``CTFFilter``
-# --------------------
+# ------------------------
 # The forward modeling of CTF can be validated by passing a corrupted image
 # through CTF estimators and comparing the resulting defocus value(s).
 
