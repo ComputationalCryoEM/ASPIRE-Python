@@ -132,8 +132,15 @@ src.images[0:10].show()
 # We apply ``phase_flip()`` to correct for CTF effects.
 
 src = src.phase_flip()
-src.images[0:10].show()
 
+# %%
+# CTF Correction
+# --------------
+# We apply ``cache`` to store the results of the ``ImageSource``
+# pipeline up to this point.
+
+src = src.cache()
+src.images[0:10].show()
 
 # %%
 # Class Averaging
@@ -172,8 +179,14 @@ avgs = DebugClassAvgSource(
     classifier=rir,
 )
 
-# We'll continue our pipeline with the first ``n_classes`` from ``avgs``.
-avgs = avgs[:n_classes]
+# We'll continue our pipeline using only the first ``n_classes`` from
+# ``avgs``.  The ``cache()`` call is used here to precompute results
+# for the ``:n_classes`` slice.  This avoids recomputing the same
+# images twice when peeking in the next cell then requesting them in
+# the following ``CLSyncVoting`` algorithm.  Outside of demonstration
+# purposes, where we are repeatedly peeking at various stage results,
+# such caching can be dropped allowing for more lazy evaluation.
+avgs = avgs[:n_classes].cache()
 
 
 # %%
