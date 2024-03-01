@@ -284,7 +284,7 @@ class ClassAvgSource(ImageSource):
         # Check if this src cached images.
         if self._cached_im is not None:
             logger.debug(f"Loading {len(indices)} images from image cache")
-            im = Image(self._cached_im[indices, :, :])
+            im = self._cached_im[indices, :, :]
 
         # Check for heap cached image sets from class_selector.
         elif heap_inds:
