@@ -94,6 +94,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         Build common-lines matrix for molecules with C2 symmetry from Fourier stack of 2D images.
         This consists of finding for each pair of images the two common-lines induced by the 2-fold symmetry.
         """
+        self._prepare_pf()
 
         n_img = self.n_img
 
