@@ -134,10 +134,11 @@ src.images[0:10].show()
 src = src.phase_flip()
 
 # %%
-# CTF Correction
-# --------------
+# Cache
+# -----
 # We apply ``cache`` to store the results of the ``ImageSource``
-# pipeline up to this point.
+# pipeline up to this point.  This is optional, but can provide
+# benefit when used intently on machines with adequate memory.
 
 src = src.cache()
 src.images[0:10].show()
