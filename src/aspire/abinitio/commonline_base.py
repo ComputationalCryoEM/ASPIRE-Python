@@ -81,7 +81,7 @@ class CLOrient3D:
     @property
     def pf(self):
         if self._pf is None:
-            self._pf = self._prepare_pf()
+            self._prepare_pf()
         return self._pf
 
     def _prepare_pf(self):
@@ -103,9 +103,7 @@ class CLOrient3D:
         # We remove the DC the component. pf has size (n_img) x (n_theta/2) x (n_rad-1),
         # with pf[:, :, 0] containing low frequency content and pf[:, :, -1] containing
         # high frequency content.
-        pf = pf[:, :, 1:]
-
-        return pf
+        self._pf = pf[:, :, 1:]
 
     def estimate_rotations(self):
         """
