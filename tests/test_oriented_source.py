@@ -93,16 +93,26 @@ def test_estimator_error(src_fixture):
         _ = OrientedSource(og_src, junk_estimator)
 
 
-def test_lazy_orientation(src_fixture, caplog):
+def test_lazy_evaluation(src_fixture, caplog):
+    """
+    Test that both images and rotations are evaluated in a lazy fashion.
+    """
     _, oriented_src = src_fixture
 
-    # Check that instantiated oriented sources don't have rotation metadata.
+    # Check that instantiated oriented source does not have rotation metadata.
     rotation_metadata = ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]
     assert not oriented_src.has_metadata(rotation_metadata)
+
+    # Check that the oriented source's `orientation_estimator` does not have the attribute
+    # `_pf`, an indicator that images have not yet been requested by the estimator.
+    assert oriented_src.orientation_estimator._pf is None
 
     # Request rotations and check that metadata is populated.
     _ = oriented_src.rotations
     assert oriented_src.has_metadata(rotation_metadata)
+
+    # Chec that `_pf` is not None.
+    assert oriented_src.orientation_estimator._pf is not None
 
     # Check that requesting rotations again logs a debug message about skippin orientation.
     caplog.clear()

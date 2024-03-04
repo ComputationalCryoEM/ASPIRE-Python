@@ -119,6 +119,7 @@ class CLOrient3D:
         """
         Build common-lines matrix from Fourier stack of 2D images
         """
+
         n_img = self.n_img
         n_check = self.n_check
 
