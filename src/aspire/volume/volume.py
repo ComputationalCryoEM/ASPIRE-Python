@@ -111,6 +111,9 @@ class Volume:
         # Set symmetry_group. If None, default to 'C1'.
         self._set_symmetry_group(symmetry_group)
 
+        # Flag to ensure T and transpose have the same symmetry_group warning stacklevel.
+        self._called_from_T = False
+
         # Numpy interop
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
         self.__array_interface__ = self._data.__array_interface__
@@ -179,22 +182,27 @@ class Volume:
             )
         self._symmetry_group = value
 
-    def _symmetry_group_warning(self):
+    def _symmetry_group_warning(self, stacklevel):
         """
         Warn when an operation has the potential to change the symmetry
         of a volume or the alignment of symmetry axes.
+
+        :param stacklevel: Warning stacklevel.
         """
         msg = (
             f"`symmetry_group` attribute is being set to `C1`. This operation may"
             f" effect the symmetry (or symmetric alignment) of the volume. To reset the"
             f" symmetry group run `self._set_symmetry_group('{self.symmetry_group}')`."
         )
-        warnings.warn(msg, UserWarning, stacklevel=4)
+        warnings.warn(msg, UserWarning, stacklevel=stacklevel)
 
-    def _result_symmetry(self, other=None):
+    def _result_symmetry(self, other=None, stacklevel=4):
         """
         Check if `other` will alter symmetry of `self` and return resulting symmetry_group.
 
+        :param other: Other operand to self. Default is None for self transformations.
+        :param stacklevel: Warning stacklevel. Default of 4 indicates line of code where
+            operation was performed.
         :return: SymmetryGroup instance.
         """
         # No need to check for C1.
@@ -214,7 +222,7 @@ class Volume:
         )
 
         if any([self_transformation, incompat_syms, arbitrary_array]):
-            self._symmetry_group_warning()
+            self._symmetry_group_warning(stacklevel=stacklevel)
             result_symmetry = IdentitySymmetryGroup(dtype=self.dtype)
 
         return result_symmetry
@@ -400,15 +408,18 @@ class Volume:
 
         return cls(data)
 
-    def transpose(self, symmetry=None):
+    def transpose(self):
         """
         Returns a new Volume instance with volume data axes transposed.
 
         :return: Volume instance.
         """
         # Ensures warning stacklevel is the same for `vol.T` and `vol.transpose()`.
-        if symmetry is None:
-            symmetry = self._result_symmetry()
+        stacklevel = 4
+        if self._called_from_T:
+            stacklevel = 5
+            self._called_from_T = False
+        symmetry = self._result_symmetry(stacklevel=stacklevel)
 
         original_stack_shape = self.stack_shape
         v = self._data.reshape(-1, *self._data.shape[-3:])
@@ -423,8 +434,8 @@ class Volume:
 
         :return: Volume instance.
         """
-        symmetry = self._result_symmetry()
-        return self.transpose(symmetry=symmetry)
+        self._called_from_T = True
+        return self.transpose()
 
     def flatten(self):
         """
