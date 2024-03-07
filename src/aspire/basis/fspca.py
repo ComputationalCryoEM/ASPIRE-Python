@@ -4,7 +4,6 @@ from collections import OrderedDict
 import numpy as np
 
 from aspire.basis import Coef, ComplexCoef, FFBBasis2D, SteerableBasis2D
-from aspire.covariance import BatchedRotCov2D
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type, fix_signs, real_type
 
@@ -147,6 +146,9 @@ class FSPCABasis(SteerableBasis2D):
             self.noise_var = WhiteNoiseEstimator(self.src).estimate()
         logger.info(f"Setting noise_var={self.noise_var}")
 
+        # Import BatchedRotCov2D here to prevent circular imports.
+        from aspire.covariance import BatchedRotCov2D
+        
         cov2d = BatchedRotCov2D(
             src=self.src, basis=self.basis, batch_size=self.batch_size
         )
