@@ -148,7 +148,7 @@ class FSPCABasis(SteerableBasis2D):
 
         # Import BatchedRotCov2D here to prevent circular imports.
         from aspire.covariance import BatchedRotCov2D
-        
+
         cov2d = BatchedRotCov2D(
             src=self.src, basis=self.basis, batch_size=self.batch_size
         )
