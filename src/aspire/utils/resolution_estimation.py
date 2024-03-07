@@ -8,8 +8,7 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aspire import nufft
-from aspire import numeric
+from aspire import nufft, numeric
 from aspire.utils import grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
