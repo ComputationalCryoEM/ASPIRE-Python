@@ -8,8 +8,8 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aspire.nufft import nufft
-from aspire.numeric import fft
+from aspire import nufft
+from aspire import numeric
 from aspire.utils import grid_2d, grid_3d
 
 logger = logging.getLogger(__name__)
@@ -152,8 +152,8 @@ class FourierCorrelation:
         ]
 
         # Compute centered Fourier transforms.
-        f1 = fft.centered_fftn(self.a, axes=self._fourier_axes)
-        f2 = fft.centered_fftn(self.b, axes=self._fourier_axes)
+        f1 = numeric.fft.centered_fftn(self.a, axes=self._fourier_axes)
+        f2 = numeric.fft.centered_fftn(self.b, axes=self._fourier_axes)
 
         # Construct an output table of correlations
         correlations = np.zeros(
@@ -232,7 +232,7 @@ class FourierCorrelation:
         #   Note, we want a complex result.
         signal = np.vstack((self._a, self._b))
         # Compute one large NUFFT for all the signal frames,
-        f = nufft(signal, fourier_pts, real=False)
+        f = nufft.nufft(signal, fourier_pts, real=False)
         # then unpack as two 1D stacks of the polar grid points, one for _a and _b.
         f = f.reshape(self._a.shape[0] + self._b.shape[0], len(r), -1)
         f1, f2 = np.vsplit(f, [self._a.shape[0]])
