@@ -213,7 +213,7 @@ class Volume:
         result_symmetry = self.symmetry_group
 
         # Conditions of incompatibility.
-        self_transformation = other is None
+        axes_altering_transformation = other is None
         incompat_syms = (
             isinstance(other, Volume) and self.symmetry_group != other.symmetry_group
         )
@@ -221,7 +221,7 @@ class Volume:
             not isinstance(other, Volume) and getattr(other, "size", 1) > 1
         )
 
-        if any([self_transformation, incompat_syms, arbitrary_array]):
+        if any([axes_altering_transformation, incompat_syms, arbitrary_array]):
             self._symmetry_group_warning(stacklevel=stacklevel)
             result_symmetry = IdentitySymmetryGroup(dtype=self.dtype)
 
