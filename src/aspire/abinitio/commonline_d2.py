@@ -1,9 +1,11 @@
 import logging
 
 import numpy as np
+from numpy.linalg import norm
 
 from aspire.abinitio import CLOrient3D
-from aspire.utils import Rotation
+from aspire.operators import PolarFT
+from aspire.utils import Rotation, trange
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +72,114 @@ class CLSymmetryD2(CLOrient3D):
         """
         self.generate_lookup_data()
         self.generate_scl_lookup_data()
+        self.compute_scl_scores()
+
+    def compute_scl_scores(self):
+        pf = self.pf
+        n_img = self.n_img
+        L = self.src.L
+        n_theta = self.n_theta
+        max_shift_1d = self.max_shift
+        shift_step = self.shift_step
+
+        # Compute the correlation over all shifts.
+        # Generate Shifts.
+        r_max = pf.shape[-1]
+        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
+            r_max, max_shift_1d, shift_step
+        )
+        n_shifts = len(shifts)
+
+        # Reconstruct the full polar Fourier for use in correlation. self.pf only consists of
+        # rays in the range [180, 360), with shape (n_img, n_theta//2, n_rad-1).
+        pf_full = PolarFT.half_to_full(pf)
+
+        for i in trange(n_img):
+            pf_i = pf[i]
+            pf_full_i = pf_full[i]
+
+            # Generate shifted versions of images.
+            pf_i_shifted = np.array(
+                [pf_i * shift_phase for shift_phase in shift_phases]
+            )
+            pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
+
+            # # Normalize each ray.
+            pf_full_i /= norm(pf_full_i, axis=1)[..., np.newaxis]
+            pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
+
+            # Compute max correlation over all shifts.
+            corrs = np.real(pf_i_shifted @ pf_full_i.T)
+            corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
+            corrs = np.max(corrs, axis=0)
+
+            # Map correlations to probabilities (in the spirit of Maximum Likelihood).
+            corrs = 0.5 * (corrs + 1)
+
+            # Compute equator measures.
+            eq_measures = self.all_eq_measures(corrs)
+
+    def all_eq_measures(self, corrs):
+        """
+        Compute a measure of how much an image from data is close to be an equator.
+        """
+        # First compute the eq measure (corrs(scl-k,scl+k) for k=1:90)
+        # An eqautor image of a D2 molecule has the following property: If t_i is
+        # the angle of one of the rays of the self common line then all the pairs of
+        # rays of the form (t_i-k,t_i+k) for k=1:90 are identical. For each t_i we
+        # average over correlations between the lines (t_i-k,t_i+k) for k=1:90
+        # to measure the likelihood that the image is an equator and the ray (line)
+        # with angle t_i is a self common line.
+        # (This first loop can be done once outside this function and then pass
+        # idx as an argument).
+        idx = np.zeros((180, 90, 2))
+        idx_1 = np.mod(np.vstack((-np.arange(1, 91), np.arange(1, 91))), 360)
+        idx[0, :, :] = idx_1.T
+        for k in range(1, 180):
+            idx[k, :, :] = np.mod(idx_1.T + k, 360)
+        idx = np.mod(idx, 360)
+
+        idx_1 = idx[:, :, 0].flatten()
+        idx_2 = idx[:, :, 1].flatten()
+
+        # Make all Ri coordinates < 180 and compute linear indices for corrrelations
+        bigger_than_180 = idx_1 >= 180
+        idx_1[bigger_than_180] = idx_1[bigger_than_180] - 180
+        idx_2[bigger_than_180] = (idx_2[bigger_than_180] + 180) % 360
+
+        # Compute correlations.
+        eq_corrs = corrs[idx_1.astype(int), idx_2.astype(int)]
+        eq_corrs = eq_corrs.reshape(180, 90)
+        corrs_mean = np.mean(eq_corrs, axis=1)
+
+        # Now compute correlations for normals to scls.
+        # An eqautor image of a D2 molecule has the additional following property:
+        # The normal line to a self common line in 2D Fourier plane is real valued
+        # and both of its rays have identical values. We use the correlation
+        # between one Fourier ray of the normal to a self common line candidate t_i
+        # with its anti-podal as an additional way to measure if the image is an
+        # equator and t_i+0.5*pi is the normal to its self common line.
+        r = 2
+
+        normal_2_scl_idx = np.zeros((180, 2 * r + 1))
+        normal_2_scl_idx_1 = np.mod(180 - np.arange(90 - r, 90 + r + 1), 360)
+        normal_2_scl_idx[0, :] = normal_2_scl_idx_1
+        for k in range(1, 180):
+            normal_2_scl_idx[k, :] = np.mod(normal_2_scl_idx_1 + k, 360)
+
+        # Make all Ri coordinates <=180 and compute linear indices for corrrelations
+        bigger_than_180 = normal_2_scl_idx >= 180
+        normal_2_scl_idx[bigger_than_180] = normal_2_scl_idx[bigger_than_180] - 180
+
+        # Compute correlations for normals.
+        normal_2_scl_idx = normal_2_scl_idx.flatten()
+        normal_corrs = corrs[
+            normal_2_scl_idx.astype(int), normal_2_scl_idx.astype(int) + 180
+        ]
+        normal_corrs = normal_corrs.reshape(180, 2 * r + 1)
+        normal_corrs_max = np.max(normal_corrs, axis=1)
+
+        return corrs_mean * normal_corrs_max
 
     def generate_lookup_data(self):
         """
@@ -162,8 +272,17 @@ class CLSymmetryD2(CLOrient3D):
             self.eq_idx1,
             self.eq_class1,
         )
+        self.scl_angles2 = self.generate_scl_angles(
+            self.inplane_rotated_grid2,
+            self.eq_idx2,
+            self.eq_class2,
+        )
+
         self.scl_ind_1, self.scl_eq_lin_idx_lists_1 = self.generate_scl_indices(
             self.scl_angles1, self.eq_class1
+        )
+        self.scl_ind_2, self.scl_eq_lin_idx_lists_2 = self.generate_scl_indices(
+            self.scl_angles2, self.eq_class2
         )
 
     def generate_scl_angles(self, Ris, eq_idx, eq_class):
