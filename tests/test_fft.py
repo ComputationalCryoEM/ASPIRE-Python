@@ -1,3 +1,4 @@
+import logging
 from unittest import TestCase
 
 import numpy as np
@@ -5,8 +6,17 @@ import numpy as np
 from aspire import config
 from aspire.numeric import fft_object, numeric_object
 
+logger = logging.getLogger(__name__)
 # Create test option combinations between numerical modules and FFT libs
-test_backends = [("numpy", "scipy"), ("numpy", "pyfftw")]
+test_backends = [("numpy", "scipy")]
+
+try:
+    import pyfftw  # noqa: F401
+
+    test_backends.append(("numpy", "pyfftw"))
+except ModuleNotFoundError:
+    logger.info("`pyfftw` module is not installed, skipping `pyfftw` FFT backend.")
+
 
 # Create Cupy fft backend if Cupy module is enabled and lib exits.
 if config["common"]["numeric"].as_str() == "cupy":
