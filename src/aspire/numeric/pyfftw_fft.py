@@ -1,7 +1,11 @@
 import os
 from threading import Lock
 
-import pyfftw
+try:
+    import pyfftw
+except ModuleNotFoundError:
+    raise ModuleNotFoundError("Install `pyfftw` to use as a backend.")
+
 import pyfftw.interfaces.scipy_fftpack as scipy_fft
 
 from aspire.numeric.base_fft import FFT
