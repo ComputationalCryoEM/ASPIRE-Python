@@ -71,33 +71,47 @@ class CLSymmetryD2(CLOrient3D):
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
+        self.compute_shifted_pf()
         self.generate_lookup_data()
         self.generate_scl_lookup_data()
         self.compute_scl_scores()
+
+    def compute_shifted_pf(self):
+        pf = self.pf
+
+        # Generate shift phases.
+        r_max = pf.shape[-1]
+        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
+            r_max, self.max_shift, self.shift_step
+        )
+        self.n_shifts = len(shifts)
+
+        # Reconstruct full polar Fourier for use in correlation.
+        pf /= norm(pf, axis=2)[..., np.newaxis]  # Normalize each ray.
+        self.pf_full = PolarFT.half_to_full(pf)
+
+        # Pre-compute shifted pf's.
+        pf_shifted = (pf * shift_phases[:, None, None]).swapaxes(0, 1)
+        self.pf_shifted = pf_shifted.reshape(
+            (self.n_img, self.n_shifts * (self.n_theta // 2), r_max)
+        )
+
+    def compute_cl_scores(self):
+        """
+        Run common lines Maximum likelihood procedure for a D2 molecule, to find
+        the set of rotations Ri^TgkRj, k=1,2,3,4 for each pair of images i and j.
+        """
 
     def compute_scl_scores(self):
         """
         Compute correlations for self-commonline candidates.
         """
-        pf = self.pf
         n_img = self.n_img
         n_theta = self.n_theta
         max_shift_1d = self.max_shift
         shift_step = self.shift_step
         n_eq = len(self.non_tv_eq_idx)
         n_inplane = self.n_inplane_rots
-
-        # Compute the correlation over all shifts.
-        # Generate Shifts.
-        r_max = pf.shape[-1]
-        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
-            r_max, max_shift_1d, shift_step
-        )
-        n_shifts = len(shifts)
-
-        # Reconstruct the full polar Fourier for use in correlation. self.pf only consists of
-        # rays in the range [180, 360), with shape (n_img, n_theta//2, n_rad-1).
-        pf_full = PolarFT.half_to_full(pf)
 
         # Run ML in parallel
         scl_matrix = np.concatenate((self.scl_idx_1, self.scl_idx_2))
@@ -113,23 +127,13 @@ class CLSymmetryD2(CLOrient3D):
         )
 
         for i in trange(n_img):
-            pf_i = pf[i]
-            pf_full_i = pf_full[i]
-
-            # Generate shifted versions of images.
-            pf_i_shifted = np.array(
-                [pf_i * shift_phase for shift_phase in shift_phases]
-            )
-            pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
-
-            # # Normalize each ray.
-            pf_full_i /= norm(pf_full_i, axis=1)[..., np.newaxis]
-            pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
+            pf_full_i = self.pf_full[i]
+            pf_i_shifted = self.pf_shifted[i]
 
             # Compute max correlation over all shifts.
             corrs = np.real(pf_i_shifted @ np.conj(pf_full_i).T)
-            corrs = np.reshape(corrs, (n_theta // 2, n_shifts, n_theta))
-            corrs = np.max(corrs, axis=1)
+            corrs = np.reshape(corrs, (self.n_shifts, n_theta // 2, n_theta))
+            corrs = np.max(corrs, axis=0)
 
             # Map correlations to probabilities (in the spirit of Maximum Likelihood).
             corrs = 0.5 * (corrs + 1)
