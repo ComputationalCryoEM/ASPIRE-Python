@@ -60,6 +60,7 @@ class CLSymmetryD2(CLOrient3D):
 
         self.grid_res = grid_res
         self.inplane_res = inplane_res
+        self.n_inplane_rots = int(360 / self.inplane_res)
         self.eq_min_dist = eq_min_dist
         self.seed = seed
         self._generate_gs()
@@ -75,12 +76,16 @@ class CLSymmetryD2(CLOrient3D):
         self.compute_scl_scores()
 
     def compute_scl_scores(self):
+        """
+        Compute correlations for self-commonline candidates.
+        """
         pf = self.pf
         n_img = self.n_img
-        L = self.src.L
         n_theta = self.n_theta
         max_shift_1d = self.max_shift
         shift_step = self.shift_step
+        n_eq = len(self.non_tv_eq_idx)
+        n_inplane = self.n_inplane_rots
 
         # Compute the correlation over all shifts.
         # Generate Shifts.
@@ -93,6 +98,19 @@ class CLSymmetryD2(CLOrient3D):
         # Reconstruct the full polar Fourier for use in correlation. self.pf only consists of
         # rays in the range [180, 360), with shape (n_img, n_theta//2, n_rad-1).
         pf_full = PolarFT.half_to_full(pf)
+
+        # Run ML in parallel
+        scl_matrix = np.concatenate((self.scl_idx_1, self.scl_idx_2))
+        M = len(scl_matrix) // 3
+        corrs_out = np.zeros((n_img, M), dtype=self.dtype)
+        scl_idx = scl_matrix.reshape(M, 3)
+
+        # Get non-equator indices to use with corrs matrix.
+        non_eq_lin_idx = self.non_eq_idx.flatten()
+        n_non_eq = len(non_eq_lin_idx)
+        non_eq_idx = np.unravel_index(
+            scl_idx[non_eq_lin_idx].flatten(), (n_theta // 2, n_theta)
+        )
 
         for i in trange(n_img):
             pf_i = pf[i]
@@ -109,15 +127,40 @@ class CLSymmetryD2(CLOrient3D):
             pf_i_shifted /= norm(pf_i_shifted, axis=1)[..., np.newaxis]
 
             # Compute max correlation over all shifts.
-            corrs = np.real(pf_i_shifted @ pf_full_i.T)
-            corrs = np.reshape(corrs, (n_shifts, n_theta // 2, n_theta))
-            corrs = np.max(corrs, axis=0)
+            corrs = np.real(pf_i_shifted @ np.conj(pf_full_i).T)
+            corrs = np.reshape(corrs, (n_theta // 2, n_shifts, n_theta))
+            corrs = np.max(corrs, axis=1)
 
             # Map correlations to probabilities (in the spirit of Maximum Likelihood).
             corrs = 0.5 * (corrs + 1)
 
             # Compute equator measures.
             eq_measures = self.all_eq_measures(corrs)
+
+            # Handle the cases: Non-equator, Non-top-view equator, and Top view images.
+            # 1. Non-equators: just take product of probabilities.
+            prod_corrs = np.prod(corrs[non_eq_idx].reshape(n_non_eq, 3), axis=1)
+            corrs_out[i, non_eq_lin_idx] = prod_corrs
+
+            # 2. Non-topview equators: adjust scores by eq_measures
+            for eq_idx in range(n_eq):
+                for j in range(n_inplane):
+                    # Take the correlations for the self common line candidate of the
+                    # "equator rotation" `eq_idx` with respect to image i, and
+                    # multiply by all scores from the function eq_measures (see
+                    # documentation inside the function ). Then take maximum over
+                    # all the scores.
+                    scl_idx_list = np.unravel_index(
+                        self.scl_idx_lists[0, eq_idx, j], (n_theta // 2, n_theta)
+                    )
+                    true_scls_corrs = corrs[scl_idx_list]
+                    scls_cand_idx = self.scl_idx_lists[1, eq_idx, j]
+                    eq_measures_j = eq_measures[scls_cand_idx]
+                    measures_agg = true_scls_corrs * eq_measures_j
+                    k = self.non_tv_eq_idx[eq_idx]
+                    corrs_out[i, k * n_inplane + j] = np.max(measures_agg)
+
+        self.scls_scores = corrs_out
 
     def all_eq_measures(self, corrs):
         """
@@ -226,6 +269,7 @@ class CLSymmetryD2(CLOrient3D):
         self.sphere_grid2 = sphere_grid2[eq_class2 < 4]
         self.eq_idx1 = eq_idx1[eq_class1 < 4]
         self.eq_idx2 = eq_idx2[eq_class2 < 4]
+        self.eq_idx = np.concatenate((self.eq_idx1, self.eq_idx2))
         self.eq_class1 = eq_class1[eq_class1 < 4]
         self.eq_class2 = eq_class2[eq_class2 < 4]
 
@@ -256,17 +300,14 @@ class CLSymmetryD2(CLOrient3D):
         )
 
         # Generate commonline indices.
-        self.cl_ind_1, self.cl_angles1 = self.generate_commonline_indices(cl_angles1)
-        self.cl_ind_2, self.cl_angles2 = self.generate_commonline_indices(cl_angles2)
+        self.cl_idx_1, self.cl_angles1 = self.generate_commonline_indices(cl_angles1)
+        self.cl_idx_2, self.cl_angles2 = self.generate_commonline_indices(cl_angles2)
 
     def generate_scl_lookup_data(self):
         """
         Generate lookup data for self-commonlines.
-
-        :param Ris: Candidate rotation matrices, (n_sphere_grid, n_inplane_rots, 3, 3).
-        :param eq_idx: Equator index mask for Ris.
-        :param eq_class: Equator classification for Ris.
         """
+        # Get self-commonline angles.
         self.scl_angles1 = self.generate_scl_angles(
             self.inplane_rotated_grid1,
             self.eq_idx1,
@@ -278,12 +319,50 @@ class CLSymmetryD2(CLOrient3D):
             self.eq_class2,
         )
 
-        self.scl_ind_1, self.scl_eq_lin_idx_lists_1 = self.generate_scl_indices(
+        # Get self-commonline indices.
+        self.scl_idx_1, self.scl_eq_lin_idx_lists_1 = self.generate_scl_indices(
             self.scl_angles1, self.eq_class1
         )
-        self.scl_ind_2, self.scl_eq_lin_idx_lists_2 = self.generate_scl_indices(
+        self.scl_idx_2, self.scl_eq_lin_idx_lists_2 = self.generate_scl_indices(
             self.scl_angles2, self.eq_class2
         )
+        self.scl_idx_lists = np.concatenate(
+            (self.scl_eq_lin_idx_lists_1, self.scl_eq_lin_idx_lists_2), axis=1
+        )
+
+        # Compute non-equator indices.
+        # Register non equator indices. Denote by C_ij the j'th in-plane rotation of
+        # the i'th ML candidate, and arrange all candidates in a list with their in-plane
+        # rotations in the order: C_11,...,C_1r,...,C_m1,...,C_mr where m is the
+        # number of candidates and r is the number of in plane rotations. Here we
+        # create a sub-list of only non equator candidates, i.e., if i_1,...,i_p are
+        # non equators then we have the sub list is
+        # C_(i_1)1,...,C(i_1)r,...C_(i_p)1,...,C_(i_p)r.
+        n_non_eq = np.sum(self.eq_class1 == 0) + np.sum(self.eq_class2 == 0)
+        non_eq_idx = np.zeros((n_non_eq, int(self.n_inplane_rots)))
+        non_eq_idx[:, 0] = (
+            np.hstack(
+                (
+                    np.where(self.eq_class1 == 0)[0],
+                    len(self.eq_class1) + np.where(self.eq_class2 == 0)[0],
+                )
+            )
+            * self.n_inplane_rots
+        )
+        for i in range(1, self.n_inplane_rots):
+            non_eq_idx[:, i] = non_eq_idx[:, 0] + i
+
+        self.non_eq_idx = non_eq_idx.astype(int)
+
+        # Non-topview equator indices.
+        non_tv_eq_idx = np.concatenate(
+            (
+                np.where(self.eq_class1 > 0)[0],
+                len(self.eq_class1) + np.where(self.eq_class2 > 0)[0],
+            )
+        )
+
+        self.non_tv_eq_idx = non_tv_eq_idx.astype(int)
 
     def generate_scl_angles(self, Ris, eq_idx, eq_class):
         """
@@ -395,15 +474,15 @@ class CLSymmetryD2(CLOrient3D):
                 idx1 = self.circ_seq(scl_angles[i, j, 0, 0], scl_angles[i, j, 1, 0], L)
                 idx2 = self.circ_seq(scl_angles[i, j, 0, 1], scl_angles[i, j, 1, 1], L)
 
-                # Adjust so idx2 is in [0, 180) range.
-                idx1[idx2 >= 180] = (idx1[idx2 >= 180] + L // 2) % L
-                idx2[idx2 >= 180] = (idx2[idx2 >= 180] - L // 2) % (L // 2)
+                # Adjust so idx1 is in [0, 180) range.
+                idx1[idx1 >= 180] = (idx1[idx1 >= 180] - L // 2) % (L // 2)
+                idx2[idx1 >= 180] = (idx2[idx1 >= 180] + L // 2) % L
 
                 # register indices in list.
                 eq_lin_idx_lists[0, count_eq, j] = np.ravel_multi_index(
-                    (idx1, idx2), (L, L // 2)
+                    (idx1, idx2), (L // 2, L)
                 )
-                eq_lin_idx_lists[1, count_eq, j] = idx2
+                eq_lin_idx_lists[1, count_eq, j] = idx1
             count_eq += 1
 
         scl_indices, _ = self.generate_commonline_indices(scl_angles)
@@ -637,19 +716,19 @@ class CLSymmetryD2(CLOrient3D):
         row_sub = np.round(cl_angles[:, 0]).astype("int") % 360
         col_sub = np.round(cl_angles[:, 1]).astype("int") % 360
 
-        # Restrict Rj in-plane coordinates to <180 degrees.
-        is_geq_than_pi = col_sub >= 180
-        col_sub[is_geq_than_pi] = col_sub[is_geq_than_pi] - 180
-        row_sub[is_geq_than_pi] = (row_sub[is_geq_than_pi] + 180) % 360
+        # Restrict Ri in-plane coordinates to <180 degrees.
+        is_geq_than_pi = row_sub >= 180
+        row_sub[is_geq_than_pi] = row_sub[is_geq_than_pi] - 180
+        col_sub[is_geq_than_pi] = (col_sub[is_geq_than_pi] + 180) % 360
 
         # Convert to linear indices in 360*180 correlation matrix (same as cls_lookup in matlab)
-        cl_ind = np.ravel_multi_index((row_sub, col_sub), dims=(360, 180))
+        cl_idx = np.ravel_multi_index((row_sub, col_sub), dims=(180, 360))
 
         # Reshape cl_angles (to match matlab `cls`)
         cl_angles = cl_angles.reshape(og_shape)
 
         # Return as integer indices.
-        return cl_ind, np.rint(cl_angles).astype(int)
+        return cl_idx, np.rint(cl_angles).astype(int)
 
     def _generate_gs(self):
         """
