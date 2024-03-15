@@ -51,7 +51,7 @@ class Estimator:
 
         self.src = src
         if basis is None:
-            logger.info("{self.__class__.__name__} instantiating default basis.")
+            logger.info(f"{self.__class__.__name__} instantiating default basis.")
             basis = FFBBasis3D(src.L, dtype=src.dtype)
         self.basis = basis
         self.dtype = self.src.dtype
