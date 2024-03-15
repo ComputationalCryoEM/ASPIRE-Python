@@ -5,7 +5,7 @@ import numpy as np
 import scipy.sparse as sparse
 
 from aspire.operators import PolarFT
-from aspire.utils import common_line_from_rots, fuzzy_mask
+from aspire.utils import common_line_from_rots, fuzzy_mask, tqdm
 from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
@@ -167,6 +167,10 @@ class CLOrient3D:
         # Note that only use half of each ray
         pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
 
+        # Setup a progress bar
+        _total_pairs_to_test = self.n_check * (self.n_check - 1) // 2
+        pbar = tqdm(desc="Searching over common line pairs", total=_total_pairs_to_test)
+
         # Search for common lines between [i, j] pairs of images.
         # Creating pf and building common lines are different to the Matlab version.
         # The random selection is implemented.
@@ -211,6 +215,8 @@ class CLOrient3D:
                         clmatrix[j, i] = cl2
                         cl_dist[i, j] = sval
                         shifts_1d[i, j] = shifts[shift]
+                pbar.update()
+        pbar.close()
 
         self.clmatrix = clmatrix
         self.shifts_1d = shifts_1d
