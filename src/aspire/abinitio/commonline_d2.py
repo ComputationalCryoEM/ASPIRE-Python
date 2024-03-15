@@ -286,7 +286,7 @@ class CLSymmetryD2(CLOrient3D):
         )
 
         # Generate commmonline angles induced by all relative rotation candidates.
-        cl_angles1 = self.generate_commonline_angles(
+        cl_angles1, self.eq2eq_Rij_table_11 = self.generate_commonline_angles(
             self.inplane_rotated_grid1,
             self.inplane_rotated_grid1,
             self.eq_idx1,
@@ -294,7 +294,7 @@ class CLSymmetryD2(CLOrient3D):
             self.eq_class1,
             self.eq_class1,
         )
-        cl_angles2 = self.generate_commonline_angles(
+        cl_angles2, self.eq2eq_Rij_table_12 = self.generate_commonline_angles(
             self.inplane_rotated_grid1,
             self.inplane_rotated_grid2,
             self.eq_idx1,
@@ -367,6 +367,8 @@ class CLSymmetryD2(CLOrient3D):
         )
 
         self.non_tv_eq_idx = non_tv_eq_idx.astype(int)
+
+        self.generate_scl_scores_idx_map()
 
     def generate_scl_angles(self, Ris, eq_idx, eq_class):
         """
@@ -492,6 +494,64 @@ class CLSymmetryD2(CLOrient3D):
         scl_indices, _ = self.generate_commonline_indices(scl_angles)
 
         return scl_indices, eq_lin_idx_lists
+
+    def generate_scl_scores_idx_map(self):
+        n_rot_1 = len(self.scl_idx_1) // (3 * self.n_inplane_rots)
+        n_rot_2 = len(self.scl_idx_2) // (3 * self.n_inplane_rots)
+
+        # First the map for i<j pairs for Ri and Rj in octant 1.
+        n_pairs = np.sum(self.eq2eq_Rij_table_11)
+        oct1_ij_map = np.zeros((n_pairs, 2, self.n_inplane_rots**2 // 2))
+        i_idx = np.tile(
+            np.arange(self.n_inplane_rots), self.n_inplane_rots // 2
+        ).flatten()
+        j_idx = np.tile(
+            np.arange(self.n_inplane_rots // 2), (self.n_inplane_rots, 1)
+        ).T.flatten()
+        idx_vec = np.arange(n_rot_1)
+        idx = 0
+
+        for i in range(n_rot_1):
+            unique_pairs_i = idx_vec[self.eq2eq_Rij_table_11[i] > 0]
+            if len(unique_pairs_i) == 0:
+                continue
+            i_idx_plus_offset = i_idx + (i * self.n_inplane_rots)
+
+            for j in unique_pairs_i:
+                j_idx_plus_offset = j_idx + (j * self.n_inplane_rots)
+                oct1_ij_map[idx] = np.vstack((i_idx_plus_offset, j_idx_plus_offset))
+                idx += 1
+
+        # First the map for i<j pairs for Ri and Rj in octant 1.
+        n_pairs_12 = np.sum(self.eq2eq_Rij_table_12)
+        oct2_ij_map = np.zeros((n_pairs_12, 2, self.n_inplane_rots**2 // 2))
+        i_idx = np.tile(
+            np.arange(self.n_inplane_rots), self.n_inplane_rots // 2
+        ).flatten()
+        j_idx = np.tile(
+            np.arange(self.n_inplane_rots // 2), (self.n_inplane_rots, 1)
+        ).T.flatten()
+        idx_vec = np.arange(n_rot_2)
+        idx = 0
+
+        for i in range(n_rot_1):
+            unique_pairs_i = idx_vec[self.eq2eq_Rij_table_12[i] > 0]
+            if len(unique_pairs_i) == 0:
+                continue
+            i_idx_plus_offset = i_idx + (i * self.n_inplane_rots)
+
+            for j in unique_pairs_i:
+                j_idx_plus_offset = j_idx + (j * self.n_inplane_rots)
+                oct2_ij_map[idx] = np.vstack((i_idx_plus_offset, j_idx_plus_offset))
+                idx += 1
+
+        tmp1 = oct1_ij_map[:, 0, :]
+        tmp2 = oct1_ij_map[:, 1, :]
+        self.oct1_ij_map = np.column_stack((tmp1.flatten(), tmp2.flatten()))
+
+        tmp1 = oct2_ij_map[:, 0, :]
+        tmp2 = oct2_ij_map[:, 1, :]
+        self.oct2_ij_map = np.column_stack((tmp1.flatten(), tmp2.flatten()))
 
     @staticmethod
     def circ_seq(n1, n2, L):
@@ -706,7 +766,7 @@ class CLSymmetryD2(CLOrient3D):
         cl_angles = (cl_angles + 2 * np.pi) % (2 * np.pi)
         cl_angles = cl_angles * 180 / np.pi
 
-        return cl_angles
+        return cl_angles, eq2eq_Rij_table
 
     @staticmethod
     def generate_commonline_indices(cl_angles):
