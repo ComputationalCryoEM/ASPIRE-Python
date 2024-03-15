@@ -168,7 +168,7 @@ class CLOrient3D:
         pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
 
         # Setup a progress bar
-        _total_pairs_to_test = self.n_check * (self.n_check - 1) // 2
+        _total_pairs_to_test = self.n_img * (self.n_check - 1) // 2
         pbar = tqdm(desc="Searching over common line pairs", total=_total_pairs_to_test)
 
         # Search for common lines between [i, j] pairs of images.
