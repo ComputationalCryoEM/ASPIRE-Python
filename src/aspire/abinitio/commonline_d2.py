@@ -108,8 +108,6 @@ class CLSymmetryD2(CLOrient3D):
         """
         n_img = self.n_img
         n_theta = self.n_theta
-        max_shift_1d = self.max_shift
-        shift_step = self.shift_step
         n_eq = len(self.non_tv_eq_idx)
         n_inplane = self.n_inplane_rots
 
