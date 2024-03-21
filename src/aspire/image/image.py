@@ -516,18 +516,9 @@ class Image:
         ), "Number of rotation matrices must match the number of images"
 
         # Get symmetry rotations from SymmetryGroup.
-        if symmetry_group is None:
-            symmetry_rots = np.eye(3, dtype=self.dtype)[None]
-        else:
-            if isinstance(symmetry_group, str):
-                symmetry_group = SymmetryGroup.from_string(
-                    symmetry_group, dtype=self.dtype
-                )
-            if not isinstance(symmetry_group, SymmetryGroup):
-                raise TypeError(
-                    f"`symmetry_group` must be a `SymmetryGroup` instance. Found {type(symmetry_group)}."
-                )
-            symmetry_rots = symmetry_group.matrices
+        symmetry_rots = SymmetryGroup.from_string(
+            symmetry_group, dtype=self.dtype
+        ).matrices
 
         # Compute Fourier transform of images.
         im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self._data))) / (L**2)
