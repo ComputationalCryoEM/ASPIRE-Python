@@ -74,6 +74,9 @@ class SymmetryGroup(ABC):
             )
 
         symmetry = symmetry.upper()
+        if symmetry == "C1":
+            return IdentitySymmetryGroup(dtype=dtype)
+
         symmetry_type = symmetry[0]
         symmetric_order = symmetry[1:]
 
