@@ -8,6 +8,7 @@ from aspire.utils import Rotation
 from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
+    IdentitySymmetryGroup,
     OSymmetryGroup,
     SymmetryGroup,
     TSymmetryGroup,
@@ -77,6 +78,30 @@ def test_group_equivalence(group_fixture):
 def test_group_rotations(group_fixture):
     rotations = group_fixture.rotations
     assert isinstance(rotations, Rotation)
+
+
+def test_from_string_identity():
+    result = SymmetryGroup.from_string("C1", dtype=np.float32)
+    assert isinstance(result, IdentitySymmetryGroup)
+
+
+def test_from_string_with_group(group_fixture):
+    """Test SymmetryGroup instance are parsed correctly."""
+    result = SymmetryGroup.from_string(group_fixture, group_fixture.dtype)
+    assert result == group_fixture
+    assert result.dtype == group_fixture.dtype
+
+
+def test_from_string_dtype_casting(group_fixture, caplog):
+    """Test that dtype gets re-cast and warns."""
+    dtype = np.float32
+    if group_fixture.dtype == np.float32:
+        dtype = np.float64
+
+    caplog.clear()
+    msg = f"Recasting SymmetryGroup with dtype {dtype}."
+    result = SymmetryGroup.from_string(group_fixture, dtype)
+    assert msg in caplog.text
 
 
 def test_from_string_error():
