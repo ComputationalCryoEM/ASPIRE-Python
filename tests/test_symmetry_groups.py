@@ -100,7 +100,7 @@ def test_from_string_dtype_casting(group_fixture, caplog):
 
     caplog.clear()
     msg = f"Recasting SymmetryGroup with dtype {dtype}."
-    result = SymmetryGroup.from_string(group_fixture, dtype)
+    _ = SymmetryGroup.from_string(group_fixture, dtype)
     assert msg in caplog.text
 
 
