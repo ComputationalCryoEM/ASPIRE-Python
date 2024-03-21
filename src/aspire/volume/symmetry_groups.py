@@ -56,6 +56,23 @@ class SymmetryGroup(ABC):
         :return: Concrete SymmetryGroup object.
         """
 
+        if symmetry is None:
+            return IdentitySymmetryGroup(dtype=dtype)
+
+        if isinstance(symmetry, SymmetryGroup):
+            if symmetry.dtype != dtype:
+                logger.warning(f"Recasting SymmetryGroup with dtype {dtype}.")
+                group_kwargs = dict(dtype=dtype)
+                if getattr(symmetry, "order", False) and symmetry.order > 1:
+                    group_kwargs["order"] = symmetry.order
+                symmetry = symmetry.__class__(**group_kwargs)
+            return symmetry
+
+        if not isinstance(symmetry, str):
+            raise TypeError(
+                f"`symmetry` must be a string or `SymmetryGroup` instance. Found {type(symmetry)}"
+            )
+
         symmetry = symmetry.upper()
         symmetry_type = symmetry[0]
         symmetric_order = symmetry[1:]
