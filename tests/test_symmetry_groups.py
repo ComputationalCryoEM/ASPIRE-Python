@@ -80,19 +80,19 @@ def test_group_rotations(group_fixture):
     assert isinstance(rotations, Rotation)
 
 
-def test_from_string_identity():
-    result = SymmetryGroup.from_string("C1", dtype=np.float32)
+def test_parser_identity():
+    result = SymmetryGroup.parser("C1", dtype=np.float32)
     assert isinstance(result, IdentitySymmetryGroup)
 
 
-def test_from_string_with_group(group_fixture):
+def test_parser_with_group(group_fixture):
     """Test SymmetryGroup instance are parsed correctly."""
-    result = SymmetryGroup.from_string(group_fixture, group_fixture.dtype)
+    result = SymmetryGroup.parser(group_fixture, group_fixture.dtype)
     assert result == group_fixture
     assert result.dtype == group_fixture.dtype
 
 
-def test_from_string_dtype_casting(group_fixture, caplog):
+def test_parser_dtype_casting(group_fixture, caplog):
     """Test that dtype gets re-cast and warns."""
     dtype = np.float32
     if group_fixture.dtype == np.float32:
@@ -100,13 +100,13 @@ def test_from_string_dtype_casting(group_fixture, caplog):
 
     caplog.clear()
     msg = f"Recasting SymmetryGroup with dtype {dtype}."
-    _ = SymmetryGroup.from_string(group_fixture, dtype)
+    _ = SymmetryGroup.parser(group_fixture, dtype)
     assert msg in caplog.text
 
 
-def test_from_string_error():
+def test_parser_error():
     junk_symmetry = "P12"
     with pytest.raises(
         ValueError, match=f"Symmetry type {junk_symmetry[0]} not supported.*"
     ):
-        _ = SymmetryGroup.from_string(junk_symmetry, dtype=np.float32)
+        _ = SymmetryGroup.parser(junk_symmetry, dtype=np.float32)
