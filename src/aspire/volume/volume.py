@@ -171,16 +171,7 @@ class Volume:
 
         :param value: A `SymmetryGroup` instance or string indicating symmetry, ie. "C5", "D7", "T", etc.
         """
-        # If value not provided set symmetry to the `IdentitySymmetryGroup`.
-        value = value or IdentitySymmetryGroup(dtype=self.dtype)
-        if isinstance(value, str):
-            value = SymmetryGroup.from_string(value, dtype=self.dtype)
-        if not isinstance(value, SymmetryGroup):
-            raise ValueError(
-                "`symmetry_group` must be an instance of the SymmetryGroup class"
-                " or a string indicating the symmetry, ie. 'C5', 'D7', 'T', etc."
-            )
-        self._symmetry_group = value
+        self._symmetry_group = SymmetryGroup.from_string(value, dtype=self.dtype)
 
     def _symmetry_group_warning(self, stacklevel):
         """
