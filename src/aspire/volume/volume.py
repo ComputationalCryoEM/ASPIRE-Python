@@ -171,7 +171,7 @@ class Volume:
 
         :param value: A `SymmetryGroup` instance or string indicating symmetry, ie. "C5", "D7", "T", etc.
         """
-        self._symmetry_group = SymmetryGroup.parser(value, dtype=self.dtype)
+        self._symmetry_group = SymmetryGroup.parse(value, dtype=self.dtype)
 
     def _symmetry_group_warning(self, stacklevel):
         """
