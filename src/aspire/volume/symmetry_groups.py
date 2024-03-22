@@ -48,10 +48,10 @@ class SymmetryGroup(ABC):
     @staticmethod
     def parser(symmetry, dtype):
         """
-        Takes a string, ie. 'C1', 'C7', 'D3', 'T', 'O', and returns a concrete
-        SymmetryGroup object.
+        Takes a SymmetryGroup instance or a string, ie. 'C1', 'C7', 'D3', 'T', 'O', and returns a concrete
+        SymmetryGroup object with the specified dtype.
 
-        :param symmetry: A string indicating the symmetry of a molecule.
+        :param symmetry: A string (or SymmetryGroup instance) indicating the symmetry of a molecule.
         :param dtype: dtype for rotation matrices.
         :return: Concrete SymmetryGroup object.
         """
