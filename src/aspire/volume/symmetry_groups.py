@@ -46,17 +46,37 @@ class SymmetryGroup(ABC):
         return f"{self.to_string}"
 
     @staticmethod
-    def from_string(symmetry, dtype):
+    def parse(symmetry, dtype):
         """
-        Takes a string, ie. 'C1', 'C7', 'D3', 'T', 'O', and returns a concrete
-        SymmetryGroup object.
+        Takes a SymmetryGroup instance or a string, ie. 'C1', 'C7', 'D3', 'T', 'O', and returns a concrete
+        SymmetryGroup object with the specified dtype.
 
-        :param symmetry: A string indicating the symmetry of a molecule.
+        :param symmetry: A string (or SymmetryGroup instance) indicating the symmetry of a molecule.
         :param dtype: dtype for rotation matrices.
         :return: Concrete SymmetryGroup object.
         """
 
+        if symmetry is None:
+            return IdentitySymmetryGroup(dtype=dtype)
+
+        if isinstance(symmetry, SymmetryGroup):
+            if symmetry.dtype != dtype:
+                logger.warning(f"Recasting SymmetryGroup with dtype {dtype}.")
+                group_kwargs = dict(dtype=dtype)
+                if getattr(symmetry, "order", False) and symmetry.order > 1:
+                    group_kwargs["order"] = symmetry.order
+                symmetry = symmetry.__class__(**group_kwargs)
+            return symmetry
+
+        if not isinstance(symmetry, str):
+            raise TypeError(
+                f"`symmetry` must be a string or `SymmetryGroup` instance. Found {type(symmetry)}"
+            )
+
         symmetry = symmetry.upper()
+        if symmetry == "C1":
+            return IdentitySymmetryGroup(dtype=dtype)
+
         symmetry_type = symmetry[0]
         symmetric_order = symmetry[1:]
 

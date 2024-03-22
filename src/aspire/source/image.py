@@ -255,13 +255,8 @@ class ImageSource(ABC):
             raise RuntimeError(
                 f"This source is no longer mutable. Try new_source = source.update(symmetry_group='{value}')."
             )
-        if isinstance(value, str):
-            value = SymmetryGroup.from_string(value, dtype=self.dtype)
-        if not isinstance(value, SymmetryGroup):
-            raise ValueError(
-                "`symmetry_group` must be an instance of the SymmetryGroup class"
-            )
-        self._symmetry_group = value
+
+        self._symmetry_group = SymmetryGroup.parse(value, dtype=self.dtype)
         self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
 
     def _populate_symmetry_group(self, symmetry_group):
@@ -275,7 +270,7 @@ class ImageSource(ABC):
                     f"Overriding metadata with supplied symmetry group {symmetry_group}"
                 )
             else:
-                symmetry_group = SymmetryGroup.from_string(
+                symmetry_group = SymmetryGroup.parse(
                     symmetry=self.get_metadata(["_rlnSymmetryGroup"])[0],
                     dtype=self.dtype,
                 )

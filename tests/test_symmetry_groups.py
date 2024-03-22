@@ -8,6 +8,7 @@ from aspire.utils import Rotation
 from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
+    IdentitySymmetryGroup,
     OSymmetryGroup,
     SymmetryGroup,
     TSymmetryGroup,
@@ -79,9 +80,33 @@ def test_group_rotations(group_fixture):
     assert isinstance(rotations, Rotation)
 
 
-def test_from_string_error():
+def test_parser_identity():
+    result = SymmetryGroup.parse("C1", dtype=np.float32)
+    assert isinstance(result, IdentitySymmetryGroup)
+
+
+def test_parser_with_group(group_fixture):
+    """Test SymmetryGroup instance are parsed correctly."""
+    result = SymmetryGroup.parse(group_fixture, group_fixture.dtype)
+    assert result == group_fixture
+    assert result.dtype == group_fixture.dtype
+
+
+def test_parser_dtype_casting(group_fixture, caplog):
+    """Test that dtype gets re-cast and warns."""
+    dtype = np.float32
+    if group_fixture.dtype == np.float32:
+        dtype = np.float64
+
+    caplog.clear()
+    msg = f"Recasting SymmetryGroup with dtype {dtype}."
+    _ = SymmetryGroup.parse(group_fixture, dtype)
+    assert msg in caplog.text
+
+
+def test_parser_error():
     junk_symmetry = "P12"
     with pytest.raises(
         ValueError, match=f"Symmetry type {junk_symmetry[0]} not supported.*"
     ):
-        _ = SymmetryGroup.from_string(junk_symmetry, dtype=np.float32)
+        _ = SymmetryGroup.parse(junk_symmetry, dtype=np.float32)

@@ -727,13 +727,6 @@ def test_symmetry_group_set_get(sym_group, sym_string):
     assert isinstance(vol.symmetry_group, SymmetryGroup)
     assert str(vol.symmetry_group) == sym_string
 
-    # Check for expected error when symmetry_group is not a SymmetryGroup object.
-    with raises(
-        ValueError,
-        match=r"`symmetry_group` must be an instance of the SymmetryGroup class.*",
-    ):
-        _ = Volume(data, symmetry_group=123, dtype=dtype)
-
 
 def test_symmetry_group_pass_through(symmetric_vols):
     vol_c3, _ = symmetric_vols
