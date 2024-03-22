@@ -46,7 +46,7 @@ class SymmetryGroup(ABC):
         return f"{self.to_string}"
 
     @staticmethod
-    def parser(symmetry, dtype):
+    def parse(symmetry, dtype):
         """
         Takes a SymmetryGroup instance or a string, ie. 'C1', 'C7', 'D3', 'T', 'O', and returns a concrete
         SymmetryGroup object with the specified dtype.

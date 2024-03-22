@@ -516,7 +516,7 @@ class Image:
         ), "Number of rotation matrices must match the number of images"
 
         # Get symmetry rotations from SymmetryGroup.
-        symmetry_rots = SymmetryGroup.parser(symmetry_group, dtype=self.dtype).matrices
+        symmetry_rots = SymmetryGroup.parse(symmetry_group, dtype=self.dtype).matrices
 
         # Compute Fourier transform of images.
         im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self._data))) / (L**2)

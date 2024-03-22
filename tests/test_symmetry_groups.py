@@ -81,13 +81,13 @@ def test_group_rotations(group_fixture):
 
 
 def test_parser_identity():
-    result = SymmetryGroup.parser("C1", dtype=np.float32)
+    result = SymmetryGroup.parse("C1", dtype=np.float32)
     assert isinstance(result, IdentitySymmetryGroup)
 
 
 def test_parser_with_group(group_fixture):
     """Test SymmetryGroup instance are parsed correctly."""
-    result = SymmetryGroup.parser(group_fixture, group_fixture.dtype)
+    result = SymmetryGroup.parse(group_fixture, group_fixture.dtype)
     assert result == group_fixture
     assert result.dtype == group_fixture.dtype
 
@@ -100,7 +100,7 @@ def test_parser_dtype_casting(group_fixture, caplog):
 
     caplog.clear()
     msg = f"Recasting SymmetryGroup with dtype {dtype}."
-    _ = SymmetryGroup.parser(group_fixture, dtype)
+    _ = SymmetryGroup.parse(group_fixture, dtype)
     assert msg in caplog.text
 
 
@@ -109,4 +109,4 @@ def test_parser_error():
     with pytest.raises(
         ValueError, match=f"Symmetry type {junk_symmetry[0]} not supported.*"
     ):
-        _ = SymmetryGroup.parser(junk_symmetry, dtype=np.float32)
+        _ = SymmetryGroup.parse(junk_symmetry, dtype=np.float32)
