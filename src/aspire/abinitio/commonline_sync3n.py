@@ -16,6 +16,8 @@ from aspire.utils import (
     trange,
 )
 from aspire.utils.random import randn
+from aspire.utils.matlab_compat import stable_eigsh
+from aspire.utils import nearest_rotations
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         n_theta=None,
         max_shift=0.15,
         shift_step=1,
-        epsilon=1e-3,
+        epsilon=1e-2,
         max_iters=1000,
         degree_res=1,
         seed=None,
@@ -80,25 +82,25 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         Rij = self._global_J_sync(Rij0)
 
         # sync3n
-        S = cryo_sync3n_syncmatrix(Rij)
+        S = self.cryo_sync3n_syncmatrix(Rij)
 
         # optionally S weights
 
         # S to rot
-        # cryo_sync3n_S_to_rot(S)
+        Ris = self.cryo_sync3n_S_to_rot(S)
 
         self.rotations = Ris
 
     ###########################################
     # The hackberries taste like hackberries  #
     ###########################################
-    def cryo_sync3n_S_to_rot(S):
+    def cryo_sync3n_S_to_rot(self, S):
         """
         S is (n_img, n_img, 3,3)
         """
 
         # Convert S to stupid shape
-        S = np.transpose(S, (0, 2, 1, 3)).reshape(3 * n_img, 3 * n_img)
+        S = np.transpose(S, (0, 2, 1, 3)).reshape(3 * self.n_img, 3 * self.n_img)
 
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
         d, v = stable_eigsh(S, 10)
@@ -110,11 +112,11 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # Only need the top 3 eigen-vectors.
         v = v[:, sort_idx[:3]]
 
-        v1 = v[: 3 * n_img : 3].T.copy()
-        v2 = v[1 : 3 * n_img : 3].T.copy()
-        v3 = v[2 : 3 * n_img : 3].T.copy()
+        v1 = v[: 3 * self.n_img : 3].T.copy()
+        v2 = v[1 : 3 * self.n_img : 3].T.copy()
+        v3 = v[2 : 3 * self.n_img : 3].T.copy()
 
-        rotations = np.empty((n_img, 3, 3), dtype=self.dtype)
+        rotations = np.empty((self.n_img, 3, 3), dtype=self.dtype)
         rotations[:, :, 0] = v1.T
         rotations[:, :, 1] = v2.T
         rotations[:, :, 2] = v3.T
@@ -124,7 +126,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         return rotations
 
-    def cryo_sync3n_syncmatrix(Rij):
+    def cryo_sync3n_syncmatrix(self, Rij):
 
         S = np.zeros((self.n_img, self.n_img, 3, 3), dtype=self.dtype)
         I = np.eye(3, dtype=self.dtype)
@@ -133,12 +135,12 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         for i in range(self.n_img):
             # S( (3*i-2):(3*i) , (3*i-2):(3*i) ) = I; % Rii = I
             S[i, i] = I
-            for j in range(i + 1, N):
-                idx += 1
+            for j in range(i + 1, self.n_img):
                 # S( (3*i-2):(3*i) , (3*j-2):(3*j) ) = Rij(:,:,idx); % Rij
                 S[i, j] = Rij[idx]
                 # S( (3*j-2):(3*j) , (3*i-2):(3*i) ) = Rij(:,:,idx)'; % Rji = Rij'
                 S[j, i] = Rij[idx].T
+                idx += 1
 
         return S
 
@@ -156,7 +158,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         self.build_clmatrix()
 
         # Step 4: Calculate relative rotations
-        Rijs = self._estimate_all_Rijs_c3_c4(clmatrix)
+        Rijs = self._estimate_all_Rijs_c3_c4(self.clmatrix)
 
         return Rijs
 
@@ -267,3 +269,87 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         J_sync = np.sign(vec)
 
         return J_sync
+    def _signs_times_v(self, vijs, vec):
+        """
+        Multiplication of the J-synchronization matrix by a candidate eigenvector.
+
+        The J-synchronization matrix is a matrix representation of the handedness graph, Gamma, whose set of
+        nodes consists of the estimates vijs and whose set of edges consists of the undirected edges between
+        all triplets of estimates vij, vjk, and vik, where i<j<k. The weight of an edge is set to +1 if its
+        incident nodes agree in handednes and -1 if not.
+
+        The J-synchronization matrix is of size (n-choose-2)x(n-choose-2), where each entry corresponds to
+        the relative handedness of vij and vjk. The entry (ij, jk), where ij and jk are retrieved from the
+        all_pairs indexing, is 1 if vij and vjk are of the same handedness and -1 if not. All other entries
+        (ij, kl) hold a zero.
+
+        Due to the large size of the J-synchronization matrix we construct it on the fly as follows.
+        For each triplet of outer products vij, vjk, and vik, the associated elements of the J-synchronization
+        matrix are populated with +1 or -1 and multiplied by the corresponding elements of
+        the current candidate eigenvector supplied by the power method. The new candidate eigenvector
+        is updated for each triplet.
+
+        :param vijs: (n-choose-2)x3x3 array, where each 3x3 slice holds the outer product of vi and vj.
+
+        :param vec: The current candidate eigenvector of length n-choose-2 from the power method.
+
+        :return: New candidate eigenvector of length n-choose-2. The product of the J-sync matrix and vec.
+        """
+
+        # All pairs (i,j) and triplets (i,j,k) where i<j<k
+        n_img = self.n_img
+        triplets = all_triplets(n_img)
+        pairs, pairs_to_linear = all_pairs(n_img, return_map=True)
+
+        # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
+        # 'conjugate' expresses which node of the triplet must be conjugated (True) to achieve synchronization.
+        conjugate = np.empty((4, 3), bool)
+        conjugate[0] = [False, False, False]
+        conjugate[1] = [True, False, False]
+        conjugate[2] = [False, True, False]
+        conjugate[3] = [False, False, True]
+
+        # 'edges' corresponds to whether conjugation agrees between the pairs (vij, vjk), (vjk, vik),
+        # and (vik, vij). True if the pairs are in agreement, False otherwise.
+        edges = np.empty((4, 3), bool)
+        edges[:, 0] = conjugate[:, 0] == conjugate[:, 1]
+        edges[:, 1] = conjugate[:, 1] == conjugate[:, 2]
+        edges[:, 2] = conjugate[:, 2] == conjugate[:, 0]
+
+        # The corresponding entries in the J-synchronization matrix are +1 if the pair of nodes agree, -1 if not.
+        edge_signs = np.where(edges, 1, -1)
+
+        # For each triplet of nodes we apply the 4 configurations of conjugation and determine the
+        # relative handedness based on the condition that vij @ vjk - vik = 0 for synchronized nodes.
+        # We then construct the corresponding entries of the J-synchronization matrix with 'edge_signs'
+        # corresponding to the conjugation configuration producing the smallest residual for the above
+        # condition. Finally, we the multiply the 'edge_signs' by the cooresponding entries of 'vec'.
+        v = vijs
+        new_vec = np.zeros_like(vec)
+        for i, j, k in triplets:
+            ij = pairs_to_linear[i, j]
+            jk = pairs_to_linear[j, k]
+            ik = pairs_to_linear[i, k]
+            vij, vjk, vik = v[ij], v[jk], v[ik]
+            vij_J = J_conjugate(vij)
+            vjk_J = J_conjugate(vjk)
+            vik_J = J_conjugate(vik)
+
+            conjugated_pairs = np.where(
+                conjugate[..., np.newaxis, np.newaxis],
+                [vij_J, vjk_J, vik_J],
+                [vij, vjk, vik],
+            )
+            residual = np.stack([norm(x @ y - z) for x, y, z in conjugated_pairs])
+
+            min_residual = np.argmin(residual)
+
+            # Assign edge weights
+            s_ij_jk, s_ik_jk, s_ij_ik = edge_signs[min_residual]
+
+            # Update multiplication of signs times vec
+            new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
+            new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
+            new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]
+
+        return new_vec
