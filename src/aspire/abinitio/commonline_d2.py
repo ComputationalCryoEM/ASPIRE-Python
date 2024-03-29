@@ -5,7 +5,7 @@ from numpy.linalg import norm
 
 from aspire.abinitio import CLOrient3D
 from aspire.operators import PolarFT
-from aspire.utils import Rotation, trange
+from aspire.utils import Rotation, tqdm, trange
 
 logger = logging.getLogger(__name__)
 
@@ -75,8 +75,12 @@ class CLSymmetryD2(CLOrient3D):
         self.generate_lookup_data()
         self.generate_scl_lookup_data()
         self.compute_scl_scores()
+        self.compute_cl_scores()
 
     def compute_shifted_pf(self):
+        """
+        Pre-compute shifted and full polar Fourier transforms.
+        """
         pf = self.pf
 
         # Generate shift phases.
@@ -101,6 +105,137 @@ class CLSymmetryD2(CLOrient3D):
         Run common lines Maximum likelihood procedure for a D2 molecule, to find
         the set of rotations Ri^TgkRj, k=1,2,3,4 for each pair of images i and j.
         """
+        # Map the self common line scores of each 2 candidate rotations R_i,R_j to
+        # the respective relative rotation candidate R_i^TR_j.
+        n_lookup_1 = len(self.scl_idx_1) // 3
+        oct1_ij_map = np.vstack((self.oct1_ij_map, self.oct1_ij_map[:, [1, 0]]))
+        oct2_ij_map = self.oct2_ij_map
+        oct2_ij_map[:, 1] += n_lookup_1
+        oct2_ij_map = np.vstack((oct2_ij_map, oct2_ij_map[:, [1, 0]]))
+        ij_map = np.vstack((oct1_ij_map, oct2_ij_map))
+
+        # Allocate output variables.
+        n_pairs = self.n_img * (self.n_img - 1) // 2
+        corrs_idx = np.zeros(n_pairs, dtype=np.int64)
+        corrs_out = np.zeros(n_pairs, dtype=self.dtype)
+        ij_idx = 0
+
+        # Search for common lines between pairs of projections.
+        pbar = tqdm(
+            desc="Searching for commonlines between pairs of images", total=n_pairs
+        )
+        for i in range(self.n_img):
+            pf_i = self.pf_shifted[i]
+            scores_i = self.scls_scores[i]
+
+            for j in range(i + 1, self.n_img):
+                pf_j = self.pf_full[j]
+
+                # Compute maximum correlation over all shifts.
+                corrs = np.real(pf_i @ np.conj(pf_j).T)
+                corrs = np.reshape(
+                    corrs, (self.n_shifts, self.n_theta // 2, self.n_theta)
+                )
+                corrs = np.max(corrs, axis=0)
+
+                # Take the product over symmetrically induced candidates. Eq. 4.5 in paper.
+                cl_idx = np.unravel_index(
+                    self.cl_idx, (self.n_theta // 2, self.n_theta)
+                )
+                prod_corrs = corrs[cl_idx]
+                prod_corrs = prod_corrs.reshape(len(prod_corrs) // 4, 4)
+                prod_corrs = np.prod(prod_corrs, axis=1)
+
+                # Incorporate scores of individual rotations from self-commonlines.
+                scores_j = self.scls_scores[j]
+                scores_ij = scores_i[ij_map[:, 0]] * scores_j[ij_map[:, 1]]
+
+                # Find maximum correlations.
+                prod_corrs = prod_corrs * scores_ij
+                max_idx = np.argmax(prod_corrs)
+                corrs_idx[ij_idx] = max_idx
+                corrs_out[ij_idx] = prod_corrs[max_idx]
+                ij_idx += 1
+
+                pbar.update()
+        pbar.close()
+
+        # Get estimated relative viewing directions.
+        self.Rijs_est = self.get_Rijs_from_lin_idx(corrs_idx)
+
+    def get_Rijs_from_lin_idx(self, lin_idx):
+        """
+        Restore map results from maximum-likelihood over commonlines to corresponding
+        relative rotations.
+        """
+        Rijs_est = np.zeros((len(lin_idx), 4, 3, 3), dtype=self.dtype)
+        n_cand_per_oct = len(self.cl_idx_1) // 4
+        oct1_idx = lin_idx < n_cand_per_oct
+        n_est_in_oct1 = np.sum(oct1_idx, dtype=int)
+        if n_est_in_oct1 > 0:
+            Rijs_est[oct1_idx] = self.get_Rijs_from_oct(lin_idx[oct1_idx], octant=1)
+        if n_est_in_oct1 <= len(lin_idx):
+            Rijs_est[~oct1_idx] = self.get_Rijs_from_oct(
+                lin_idx[~oct1_idx] - n_cand_per_oct, octant=2
+            )
+
+    def get_Rijs_from_oct(self, lin_idx, octant=1):
+        if octant not in [1, 2]:
+            raise ValueError("`octant` must be 1 or 2.")
+
+        # Get pairs lookup table.
+        if octant == 1:
+            unique_pairs = self.eq2eq_Rij_table_11
+        else:
+            unique_pairs = self.eq2eq_Rij_table_12
+        n_theta = self.n_inplane_rots
+        n_lookup_pairs = np.sum(unique_pairs, dtype=np.int64)
+        n_rots = len(self.sphere_grid1)
+        if octant == 1:
+            n_rots2 = n_rots
+        else:
+            n_rots2 = len(self.sphere_grid2)
+        n_pairs = len(lin_idx)
+
+        # Map linear indices of chosen pairs of rotation candidates from ML to regular indices.
+        p_idx, inplane_i, inplane_j = np.unravel_index(
+            lin_idx, (2 * n_lookup_pairs, n_theta, n_theta // 2)
+        )
+        transpose_idx = p_idx >= n_lookup_pairs
+        p_idx[transpose_idx] -= n_lookup_pairs
+        s = self.inplane_rotated_grid1.shape
+        inplane_rotated_grid = np.reshape(
+            self.inplane_rotated_grid1, (np.prod(s[0:2]), 3, 3)
+        )
+        if octant == 1:
+            s2 = s
+            inplane_rotated_grid2 = inplane_rotated_grid
+        else:
+            s2 = self.inplane_rotated_grid2.shape
+            inplane_rotated_grid2 = np.reshape(
+                self.inplane_rotated_grid2, (np.prod(s2[0:2]), 3, 3)
+            )
+
+        Rijs_est = np.zeros((n_pairs, 4, 3, 3), dtype=self.dtype)
+
+        # Convert linear indices of unique table to linear indices of index pairs table.
+        idx_vec = np.arange(np.prod(unique_pairs.shape))
+        unique_lin_idx = idx_vec[unique_pairs.flatten()]
+        I, J = np.unravel_index(unique_lin_idx, (n_rots, n_rots2))
+        est_idx = np.vstack((I[p_idx], J[p_idx]))
+
+        # Assemble relative rotations Ri^TgRj using linear indices, where g is a group member of D2.
+        Ris_lin_idx = np.ravel_multi_index((est_idx[0], inplane_i), s[:2])
+        Rjs_lin_idx = np.ravel_multi_index((est_idx[1], inplane_j), s2[:2])
+        Ris = np.transpose(inplane_rotated_grid[Ris_lin_idx], (0, 2, 1))
+        Rjs = np.transpose(inplane_rotated_grid2[Rjs_lin_idx], (0, 2, 1))
+
+        for k, g in enumerate(self.gs):
+            Rijs_est[:, k] = np.transpose(Ris, (0, 2, 1)) @ (g * Rjs)
+
+        Rijs_est[transpose_idx] = np.transpose(Rijs_est[transpose_idx], (0, 1, 3, 2))
+
+        return Rijs_est
 
     def compute_scl_scores(self):
         """
@@ -299,11 +434,13 @@ class CLSymmetryD2(CLOrient3D):
             self.eq_idx2,
             self.eq_class1,
             self.eq_class2,
+            triu=False,
         )
 
         # Generate commonline indices.
         self.cl_idx_1, self.cl_angles1 = self.generate_commonline_indices(cl_angles1)
         self.cl_idx_2, self.cl_angles2 = self.generate_commonline_indices(cl_angles2)
+        self.cl_idx = np.hstack((self.cl_idx_1, self.cl_idx_2))
 
     def generate_scl_lookup_data(self):
         """
@@ -366,6 +503,7 @@ class CLSymmetryD2(CLOrient3D):
 
         self.non_tv_eq_idx = non_tv_eq_idx.astype(int)
 
+        # Generate maps from scl indices to relative rotations.
         self.generate_scl_scores_idx_map()
 
     def generate_scl_angles(self, Ris, eq_idx, eq_class):
@@ -499,36 +637,32 @@ class CLSymmetryD2(CLOrient3D):
 
         # First the map for i<j pairs for Ri and Rj in octant 1.
         n_pairs = np.sum(self.eq2eq_Rij_table_11)
-        oct1_ij_map = np.zeros((n_pairs, 2, self.n_inplane_rots**2 // 2))
-        i_idx = np.tile(
-            np.arange(self.n_inplane_rots), self.n_inplane_rots // 2
-        ).flatten()
-        j_idx = np.tile(
-            np.arange(self.n_inplane_rots // 2), (self.n_inplane_rots, 1)
-        ).T.flatten()
+        oct1_ij_map = np.zeros(
+            (self.n_inplane_rots**2 // 2, 2, n_pairs), dtype=np.int64
+        )
+        i_idx = np.repeat(np.arange(self.n_inplane_rots), self.n_inplane_rots // 2)
+        j_idx = np.tile(np.arange(self.n_inplane_rots // 2), self.n_inplane_rots)
         idx_vec = np.arange(n_rot_1)
         idx = 0
 
         for i in range(n_rot_1):
-            unique_pairs_i = idx_vec[self.eq2eq_Rij_table_11[i] > 0]
+            unique_pairs_i = idx_vec[self.eq2eq_Rij_table_11[i]]
             if len(unique_pairs_i) == 0:
                 continue
             i_idx_plus_offset = i_idx + (i * self.n_inplane_rots)
 
             for j in unique_pairs_i:
                 j_idx_plus_offset = j_idx + (j * self.n_inplane_rots)
-                oct1_ij_map[idx] = np.vstack((i_idx_plus_offset, j_idx_plus_offset))
+                oct1_ij_map[:, :, idx] = np.column_stack(
+                    (i_idx_plus_offset, j_idx_plus_offset)
+                )
                 idx += 1
 
         # First the map for i<j pairs for Ri and Rj in octant 1.
         n_pairs_12 = np.sum(self.eq2eq_Rij_table_12)
-        oct2_ij_map = np.zeros((n_pairs_12, 2, self.n_inplane_rots**2 // 2))
-        i_idx = np.tile(
-            np.arange(self.n_inplane_rots), self.n_inplane_rots // 2
-        ).flatten()
-        j_idx = np.tile(
-            np.arange(self.n_inplane_rots // 2), (self.n_inplane_rots, 1)
-        ).T.flatten()
+        oct2_ij_map = np.zeros(
+            (self.n_inplane_rots**2 // 2, 2, n_pairs_12), dtype=np.int64
+        )
         idx_vec = np.arange(n_rot_2)
         idx = 0
 
@@ -540,16 +674,22 @@ class CLSymmetryD2(CLOrient3D):
 
             for j in unique_pairs_i:
                 j_idx_plus_offset = j_idx + (j * self.n_inplane_rots)
-                oct2_ij_map[idx] = np.vstack((i_idx_plus_offset, j_idx_plus_offset))
+                oct2_ij_map[:, :, idx] = np.column_stack(
+                    (i_idx_plus_offset, j_idx_plus_offset)
+                )
                 idx += 1
 
         tmp1 = oct1_ij_map[:, 0, :]
         tmp2 = oct1_ij_map[:, 1, :]
-        self.oct1_ij_map = np.column_stack((tmp1.flatten(), tmp2.flatten()))
+        self.oct1_ij_map = np.column_stack(
+            (tmp1.flatten(order="F"), tmp2.flatten(order="F"))
+        )
 
         tmp1 = oct2_ij_map[:, 0, :]
         tmp2 = oct2_ij_map[:, 1, :]
-        self.oct2_ij_map = np.column_stack((tmp1.flatten(), tmp2.flatten()))
+        self.oct2_ij_map = np.column_stack(
+            (tmp1.flatten(order="F"), tmp2.flatten(order="F"))
+        )
 
     @staticmethod
     def circ_seq(n1, n2, L):
@@ -703,7 +843,14 @@ class CLSymmetryD2(CLOrient3D):
         return inplane_rotated_grid
 
     def generate_commonline_angles(
-        self, Ris, Rjs, Ri_eq_idx, Rj_eq_idx, Ri_eq_class, Rj_eq_class
+        self,
+        Ris,
+        Rjs,
+        Ri_eq_idx,
+        Rj_eq_idx,
+        Ri_eq_class,
+        Rj_eq_class,
+        triu=True,
     ):
         """
         Compute commonline angles induced by the 4 sets of relative rotations
@@ -726,7 +873,12 @@ class CLSymmetryD2(CLOrient3D):
         # equators with respect to the same symmetry axis (named unique_pairs).
         eq_table = np.outer(Ri_eq_idx, Rj_eq_idx)
         in_same_class = (Ri_eq_class[:, None] - Rj_eq_class.T[None]) == 0
-        eq2eq_Rij_table = np.triu(~(eq_table * in_same_class), 1)
+        eq2eq_Rij_table = ~(eq_table * in_same_class)
+
+        # This is to match matlab code that uses triu with octant 1 table, but not
+        # with octants 1 and 2.
+        if triu:
+            eq2eq_Rij_table = np.triu(eq2eq_Rij_table, 1)
 
         n_pairs = np.sum(eq2eq_Rij_table)
         idx = 0
