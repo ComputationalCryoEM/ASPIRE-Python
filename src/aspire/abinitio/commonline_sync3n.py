@@ -1,30 +1,19 @@
 import logging
 
 import numpy as np
-from numpy.linalg import eigh, norm, svd
+from numpy.linalg import norm
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
-from aspire.operators import PolarFT
-from aspire.utils import (
-    J_conjugate,
-    Rotation,
-    all_pairs,
-    all_triplets,
-    anorm,
-    cyclic_rotations,
-    tqdm,
-    trange,
-)
-from aspire.utils.random import randn
+from aspire.utils import J_conjugate, all_pairs, all_triplets, nearest_rotations
 from aspire.utils.matlab_compat import stable_eigsh
-from aspire.utils import nearest_rotations
+from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 
 
 class CLSync3N(CLOrient3D, SyncVotingMixin):
     """
-    Define a class to estimate 3D orientations using common lines (2017) methods.
+    Define a class to estimate 3D orientations using common lines Sync3N methods (2017).
     """
 
     def __init__(
@@ -70,77 +59,86 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         self.degree_res = degree_res
         self.seed = seed
 
+    ###########################################
+    # High level algorithm steps              #
+    ###########################################
     def estimate_rotations(self):
         """
-        Estimate rotation matrices for molecules with C3 or C4 symmetry.
+        Estimate rotation matrices.
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
+
+        # Initial estimate of viewing directions
         Rij0 = self._estimate_relative_viewing_directions()
 
-        logger.info("Performing global handedness synchronization.")
+        # Compute and apply global handedness
         Rij = self._global_J_sync(Rij0)
 
-        # sync3n
-        S = self.cryo_sync3n_syncmatrix(Rij)
+        # Build sync3n matrix
+        S = self._construct_sync3n_matrix(Rij)
 
-        # optionally S weights
+        # Optionally S weights
+        # todo
 
-        # S to rot
-        Ris = self.cryo_sync3n_S_to_rot(S)
+        # Yield rotations from S
+        Ris = self._sync3n_S_to_rot(S)
 
         self.rotations = Ris
 
     ###########################################
     # The hackberries taste like hackberries  #
     ###########################################
-    def cryo_sync3n_S_to_rot(self, S):
+    def _sync3n_S_to_rot(self, S, n_eigs=4):
         """
-        S is (n_img, n_img, 3,3)
+        Use eigen decomposition of S to estimate transforms,
+        then project transforms to nearest rotations.
         """
 
-        # Convert S to stupid shape
-        S = np.transpose(S, (0, 2, 1, 3)).reshape(3 * self.n_img, 3 * self.n_img)
+        if n_eigs < 3:
+            raise ValueError(
+                f"n_eigs must be greater than 3, default is 4. Invoked with {n_eigs}"
+            )
 
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
-        d, v = stable_eigsh(S, 10)
+        d, v = stable_eigsh(S, n_eigs)
         sort_idx = np.argsort(-d)
         logger.info(
-            f"Top 10 eigenvalues from synchronization voting matrix: {d[sort_idx]}"
+            f"Top {n_eigs} eigenvalues from synchronization voting matrix: {d[sort_idx]}"
         )
 
         # Only need the top 3 eigen-vectors.
         v = v[:, sort_idx[:3]]
 
-        v1 = v[: 3 * self.n_img : 3].T.copy()
-        v2 = v[1 : 3 * self.n_img : 3].T.copy()
-        v3 = v[2 : 3 * self.n_img : 3].T.copy()
+        # Yield estimated rotations from the eigen-vectors
+        v = v.reshape(3, self.n_img, 3)
+        rotations = np.transpose(v, (1, 0, 2))  # Check, may be (1, 2 , 0) for T
 
-        rotations = np.empty((self.n_img, 3, 3), dtype=self.dtype)
-        rotations[:, :, 0] = v1.T
-        rotations[:, :, 1] = v2.T
-        rotations[:, :, 2] = v3.T
-        # Make sure that we got rotations by enforcing R to be
-        # a rotation (in case the error is large)
+        # Enforce we are returning actual rotations
         rotations = nearest_rotations(rotations)
 
         return rotations
 
-    def cryo_sync3n_syncmatrix(self, Rij):
+    def _construct_sync3n_matrix(self, Rij):
+        """
+        Construct sync3n matrix from estimated rotations Rij.
+        """
 
-        S = np.zeros((self.n_img, self.n_img, 3, 3), dtype=self.dtype)
-        I = np.eye(3, dtype=self.dtype)
+        # Initialize S with diag identity blocks
+        n = self.n_img
+        S = np.eye(3 * n, dtype=self.dtype).reshape(n, 3, n, 3)
 
         idx = 0
-        for i in range(self.n_img):
-            # S( (3*i-2):(3*i) , (3*i-2):(3*i) ) = I; % Rii = I
-            S[i, i] = I
-            for j in range(i + 1, self.n_img):
+        for i in range(n):
+            for j in range(i + 1, n):
                 # S( (3*i-2):(3*i) , (3*j-2):(3*j) ) = Rij(:,:,idx); % Rij
-                S[i, j] = Rij[idx]
+                S[i, :, j, :] = Rij[idx]
                 # S( (3*j-2):(3*j) , (3*i-2):(3*i) ) = Rij(:,:,idx)'; % Rji = Rij'
-                S[j, i] = Rij[idx].T
+                S[j, :, i, :] = Rij[idx].T
                 idx += 1
+
+        # Convert S shape to 3Nx3N
+        S = S.reshape(3 * n, 3 * n)
 
         return S
 
@@ -154,22 +152,22 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         vi is the third row of the i'th rotation matrix Ri.
         """
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-        # Step 1: Detect a single pair of common-lines between each pair of images
+        # Detect a single pair of common-lines between each pair of images
         self.build_clmatrix()
 
-        # Step 4: Calculate relative rotations
+        # Calculate relative rotations
         Rijs = self._estimate_all_Rijs_c3_c4(self.clmatrix)
 
         return Rijs
 
     def _global_J_sync(self, vijs):
         """ """
-        n_img = self.n_img
 
         # Determine relative handedness of vijs.
         sign_ij_J = self._J_sync_power_method(vijs)
 
         # Synchronize vijs
+        logger.info("Applying global handedness synchronization.")
         for i, sign in enumerate(sign_ij_J):
             if sign == -1:
                 vijs[i] = J_conjugate(vijs[i])
@@ -240,6 +238,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         i'th entry indicates whether the i'th relative orientation matrix will be J-conjugated.
         """
 
+        logger.info(
+            "Initiating power method to estimate J-synchronization matrix eigenvector."
+        )
         # Set power method tolerance and maximum iterations.
         epsilon = self.epsilon
         max_iters = self.max_iters
@@ -252,9 +253,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         itr = 0
 
         # Power method iterations
-        logger.info(
-            "Initiating power method to estimate J-synchronization matrix eigenvector."
-        )
         while itr < max_iters and residual > epsilon:
             itr += 1
             vec_new = self._signs_times_v(vijs, vec)
@@ -269,6 +267,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         J_sync = np.sign(vec)
 
         return J_sync
+
     def _signs_times_v(self, vijs, vec):
         """
         Multiplication of the J-synchronization matrix by a candidate eigenvector.
