@@ -537,7 +537,7 @@ class Image:
             )
             pts_rot = pts_rot.reshape((3, -1))
 
-            vol += anufft(im_f, pts_rot[::-1], (L, L, L), real=True)
+            vol += anufft(im_f, pts_rot, (L, L, L), real=True)
 
         vol /= L
 
