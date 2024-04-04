@@ -59,6 +59,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         self.degree_res = degree_res
         self.seed = seed
 
+        # Sync3N specific vars
+        self._W = None
+        self._D_null = 1e-13
+
     ###########################################
     # High level algorithm steps              #
     ###########################################
@@ -100,6 +104,42 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 f"n_eigs must be greater than 3, default is 4. Invoked with {n_eigs}"
             )
 
+        if self._W is not None:
+            W = self._W
+            if not W.shape == (self.n_img, self.n_img):
+                raise RuntimeError(
+                    f"Shape of W should be {(self.n_img, self.n_img)}."
+                    f" Received {W.shape}."
+                )
+            # Initialize D
+            D = np.mean(W, axis=1)  # D, check axis
+
+            Dhalf = D
+            # Compute mask of trouble D values
+            nulls = np.abs(D) < self._D_null
+            # Avoid trouble values when exponentiating
+            Dhalf[~nulls] = Dhalf[~nulls] ** (-0.5)
+            # Flush trouble values to zero
+            Dhalf[nulls] = 0
+            # expand diagonal
+            Dhalf = np.diag(Dhalf)
+
+            # Report W Diagnostic
+            W_normalized = Dhalf**2 @ W
+            nzidx = np.sum(W_normalized, axis=1) != 0
+            err = np.linalg.norm(np.sum(W_normalized[nzidx], axis=1) - self.n_img)
+            if err > 1e-10:
+                logger.warning(f"Large Weights Matrix Normalization Error: {err}")
+
+            # Make W of size 3Nx3N
+            W = np.kron(W, np.ones((3, 3)))
+
+            # Make Dhalf of size 3Nx3N
+            Dhalf = np.diag(np.kron(np.diag(Dhalf), np.ones((1, 3)))[0])
+
+            # Apply weights to S
+            S = Dhalf @ (W * S) @ Dhalf
+
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
         d, v = stable_eigsh(S, n_eigs)
         sort_idx = np.argsort(-d)
@@ -109,6 +149,13 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Only need the top 3 eigen-vectors.
         v = v[:, sort_idx[:3]]
+
+        # Cancel symmetrization when using weights W
+        if self._W is not None:
+            # Untill now we used a symmetrized variant of the weighted Sync matrix,
+            # thus we didn't get the right eigenvectors. to fix that we just need
+            # to multiply:
+            v = Dhalf @ v
 
         # Yield estimated rotations from the eigen-vectors
         v = v.reshape(3, self.n_img, 3)
