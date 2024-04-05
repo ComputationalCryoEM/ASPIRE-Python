@@ -28,6 +28,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         degree_res=1,
         seed=None,
         mask=True,
+        S_weighting=False,
     ):
         """
         Initialize object for estimating 3D orientations.
@@ -60,7 +61,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         self.seed = seed
 
         # Sync3N specific vars
-        self._W = None
+        self.S_weighting = S_weighting
         self._D_null = 1e-13
 
     ###########################################
@@ -82,18 +83,20 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # Build sync3n matrix
         S = self._construct_sync3n_matrix(Rij)
 
-        # Optionally S weights
-        # todo
+        # Optionally compute S weights
+        W = None
+        if self.S_weighting is True:
+            W = self._syncmatrix_weights(Rij)
 
         # Yield rotations from S
-        Ris = self._sync3n_S_to_rot(S)
+        Ris = self._sync3n_S_to_rot(S, W)
 
         self.rotations = Ris
 
     ###########################################
     # The hackberries taste like hackberries  #
     ###########################################
-    def _sync3n_S_to_rot(self, S, n_eigs=4):
+    def _sync3n_S_to_rot(self, S, W=None, n_eigs=4):
         """
         Use eigen decomposition of S to estimate transforms,
         then project transforms to nearest rotations.
@@ -104,8 +107,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 f"n_eigs must be greater than 3, default is 4. Invoked with {n_eigs}"
             )
 
-        if self._W is not None:
-            W = self._W
+        if W is not None:
+            logger.info("Applying weights to synchronization matrix.")
             if not W.shape == (self.n_img, self.n_img):
                 raise RuntimeError(
                     f"Shape of W should be {(self.n_img, self.n_img)}."
@@ -151,7 +154,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         v = v[:, sort_idx[:3]]
 
         # Cancel symmetrization when using weights W
-        if self._W is not None:
+        if W is not None:
             # Untill now we used a symmetrized variant of the weighted Sync matrix,
             # thus we didn't get the right eigenvectors. to fix that we just need
             # to multiply:
@@ -159,7 +162,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Yield estimated rotations from the eigen-vectors
         v = v.reshape(3, self.n_img, 3)
-        rotations = np.transpose(v, (1, 0, 2))  # Check, may be (1, 2 , 0) for T
+        rotations = np.transpose(v, (1, 0, 2))
 
         # Enforce we are returning actual rotations
         rotations = nearest_rotations(rotations)
@@ -188,6 +191,16 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         S = S.reshape(3 * n, 3 * n)
 
         return S
+
+    def _syncmatrix_weights(self, Rij):
+        """
+        Given relative rotations matrix `Rij`,
+        compute probability weights for S.
+        """
+        logger.info("Computing synchronization matrix weights.")
+        # Test with identity weights,
+        # todo, port cryo_sync3n_syncmatrix_weights
+        return np.ones((self.n_img, self.n_img))
 
     ###########################################
     # Primary Methods                         #
