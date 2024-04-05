@@ -192,15 +192,82 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         return S
 
-    def _syncmatrix_weights(self, Rij):
+    def _syncmatrix_weights(
+        self,
+        Rij,
+        permitted_inconsistency=1.5,
+        p_domain_limit=0.7,
+        max_iterations=12,
+        min_p_permitted=0.04,
+    ):
         """
         Given relative rotations matrix `Rij`,
-        compute probability weights for S.
+        compute and return probability weights for S.
         """
         logger.info("Computing synchronization matrix weights.")
-        # Test with identity weights,
-        # todo, port cryo_sync3n_syncmatrix_weights
-        return np.ones((self.n_img, self.n_img))
+
+        def body(prev_too_low, Pmin, Pmax, hist, p_domain_limit=p_domain_limit):
+            # Get inistial estimate for Pij
+            P, sigma, Rsquare, Pij, hist, fit, cum_scores = self._triangle_scores(
+                Rij, hist, Pmin, Pmax
+            )
+
+            # Check if P and Pij are consistent
+            mean_Pij = np.mean(Pij)
+            too_low = P < mean_Pij / permitted_inconsistency
+            too_high = P > mean_Pij * permitted_inconsistency
+            inconsistent = too_low | too_high
+
+            # Check trend
+            if prev_too_low is not None and too_low != prev_too_low:
+                p_domain_limit = np.sqrt(p_domain_limit)
+
+            # define limits for next P estimation
+            if too_high:
+                if P < min_p_permitted:
+                    logger.error(
+                        "Triangles Scores are too bad distributed, whatever small P we force."
+                    )
+
+                Pmax = P
+                if Pmax is not None:
+                    Pmax = Pmax * p_domain_limit
+
+                Pmin = Pmax * p_domain_limit
+            else:
+                Pmin = P
+                if Pmin is not None:
+                    Pmin = Pmin / p_domain_limit
+
+                Pmax = Pmin / p_domain_limit
+
+            return inconsistent, Pij, (too_low, Pmin, Pmax, hist)
+
+        # Repeat iteratively until estimations of P & Pij are consistent
+        i = 0
+        res = (None,) * 4
+        inconsistent = True
+        while inconsistent and i < max_iterations:
+            inconsistent, Pij, res = body(*res)
+
+        # Pack W
+        # N = 0.5 * (1 + np.sqrt(1+8*Rij.shape[2])) #? what
+        W = np.zeros((self.n_img, self.n_img))
+        idx = 0
+        for i in range(self.n_img):
+            for j in range(i, self.n_img):
+                W[i, j] = Pij[idx]
+                W[j, i] = Pij[idx]
+                idx += 1
+
+        return W
+
+    def _triangle_scores(self, Rij, hist, Pmin, Pmax):
+        """
+        Todo
+        """
+        # return P, sigma, Rsquare, Pij, hist, fit, cum_scores
+        pass
 
     ###########################################
     # Primary Methods                         #
