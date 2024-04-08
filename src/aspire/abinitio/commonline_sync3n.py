@@ -226,18 +226,20 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             if too_high:
                 if P < min_p_permitted:
                     logger.error(
-                        "Triangles Scores are too bad distributed, whatever small P we force."
+                        "Triangles Scores are poorly distributed, whatever small P we force."
                     )
 
-                Pmax = P
                 if Pmax is not None:
                     Pmax = Pmax * p_domain_limit
+                else:
+                    Pmax = P
 
                 Pmin = Pmax * p_domain_limit
-            else:
-                Pmin = P
+            else:  # too low
                 if Pmin is not None:
                     Pmin = Pmin / p_domain_limit
+                else:
+                    Pmin = P
 
                 Pmax = Pmin / p_domain_limit
 
@@ -251,7 +253,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             inconsistent, Pij, res = body(*res)
 
         # Pack W
-        # N = 0.5 * (1 + np.sqrt(1+8*Rij.shape[2])) #? what
         W = np.zeros((self.n_img, self.n_img))
         idx = 0
         for i in range(self.n_img):
