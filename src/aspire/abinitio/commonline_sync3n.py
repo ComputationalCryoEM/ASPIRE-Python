@@ -2,6 +2,7 @@ import logging
 
 import numpy as np
 from numpy.linalg import norm
+from scipy.optimize import curve_fit
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
 from aspire.utils import J_conjugate, all_pairs, all_triplets, nearest_rotations
@@ -96,7 +97,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     ###########################################
     # The hackberries taste like hackberries  #
     ###########################################
-    def _sync3n_S_to_rot(self, S, W=None, n_eigs=4):
+    def _sync3n_S_to_rot(self, S, W=None, n_eigs=10):
         """
         Use eigen decomposition of S to estimate transforms,
         then project transforms to nearest rotations.
@@ -104,7 +105,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         if n_eigs < 3:
             raise ValueError(
-                f"n_eigs must be greater than 3, default is 4. Invoked with {n_eigs}"
+                f"n_eigs must be greater than 3, default is 10. Invoked with {n_eigs}"
             )
 
         if W is not None:
@@ -161,8 +162,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             v = Dhalf @ v
 
         # Yield estimated rotations from the eigen-vectors
-        v = v.reshape(3, self.n_img, 3)
-        rotations = np.transpose(v, (1, 0, 2))
+        rotations = v.reshape(self.n_img, 3, 3).transpose(0, 2, 1)
 
         # Enforce we are returning actual rotations
         rotations = nearest_rotations(rotations)
@@ -263,12 +263,188 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         return W
 
-    def _triangle_scores(self, Rij, hist, Pmin, Pmax):
+    def _triangle_scores_mex(self, Rijs, hist_intervals):
+        pass
+        # return cum_scores, hist_scores
+
+    def _pairs_probabilities(self, Rijs, P2, A, a, B, b, x0):
+        # The following is adopted from Matlab parias_probabilities_mex.c `looper`
+        # The code should be thread/parallel safe over `i` when results are gathered (via sum).
+
+        # Initialize probability result arrays
+        ln_f_ind = np.zeros(len(Rij), dtype=self.dtype)
+        ln_f_arb = np.zeros(len(Rij), dtype=self.dtype)
+
+        c = np.empty((4), dtype=self.dtype)
+        for i in range(self.n_img):
+            for j in range(i, self.n_img):
+                Rij = Rijs[i * self.n_img + j]
+                for k in range(j, self.n_img):
+                    Rik = Rijs[i * self.n_img + k]
+                    Rjk = Rijs[j * self.n_img + k]
+
+                    # Compute conjugated rotats
+                    Rij_J = J_conjugate(Rij)
+                    Rik_J = J_conjugate(Rik)
+                    Rjk_J = J_conjugate(Rjk)
+
+                    # Compute R muls and norms
+                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk) - Rjk) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                    c[4] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+
+                    # Find best match
+                    best_i = np.argmin(c)
+                    best_val = c[best_i]
+
+                    # For each triangle side, find the best alternative
+
+                    # Compute scores
+                    s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
+                    s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
+                    s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
+
+                    # Update probabilities
+                    # # Probability of pair ij having score given indicicative common line
+                    # P2, B, b, x0, A, a
+                    f_ij_jk = np.log(
+                        P2
+                        * (
+                            B
+                            * np.pow(1 - s_ij_jk, b)
+                            * np.exp(-b / (1 - x0) * (1 - s_ij_jk))
+                        )
+                        + (1 - P2) * A * np.pow((1 - s_ij_jk), a)
+                    )
+                    f_ik_jk = np.log(
+                        P2
+                        * (
+                            B
+                            * np.pow(1 - s_ik_jk, b)
+                            * np.exp(-b / (1 - x0) * (1 - s_ik_jk))
+                        )
+                        + (1 - P2) * A * np.pow((1 - s_ik_jk), a)
+                    )
+                    f_ij_ik = np.log(
+                        P2
+                        * (
+                            B
+                            * np.pow(1 - s_ij_ik, b)
+                            * np.exp(-b / (1 - x0) * (1 - s_ij_ik))
+                        )
+                        + (1 - P2) * A * np.pow((1 - s_ij_ik), a)
+                    )
+                    ln_f_ind[ij] += f_ij_jk + f_ij_ik
+                    ln_f_ind[jk] += f_ij_jk + f_ik_jk
+                    ln_f_ind[ik] += f_ik_jk + f_ij_ik
+
+                    # # Probability of pair ij having score given arbitrary common line
+                    f_ij_jk = np.log(A * np.pow((1 - s_ij_jk), a))
+                    f_ik_jk = np.log(A * np.pow((1 - s_ik_jk), a))
+                    f_ij_ik = np.log(A * np.pow((1 - s_ij_ik), a))
+                    ln_f_arb[ij] += f_ij_jk + f_ij_ik
+                    ln_f_arb[jk] += f_ij_jk + f_ik_jk
+                    ln_f_arb[ik] += f_ik_jk + f_ij_ik
+
+        return ln_f_ind, ln_f_arb
+
+    def _triangle_scores(
+        self,
+        Rijs,
+        hist,
+        Pmin,
+        Pmax,
+        hist_intervals=100,
+        a=2.2,
+        peak2sigma=2.43e-2,
+        P=0.5,
+        b=2.5,
+        x0=0.78,
+    ):
         """
         Todo
+
+        :param a: magic number
+        :param peak2sigma: empirical relation between the location of
+            the peak of the histigram, and the mean error in the
+            common lines estimations.
+            AKA, magic number
+        :param P:
+        :param b:
+        :param x0:
         """
-        # return P, sigma, Rsquare, Pij, hist, fit, cum_scores
-        pass
+
+        Pmin = Pmin or 0
+        Pmin = max(Pmin, 0)  # Clamp probability to [0,1]
+        Pmax = Pmax or 1
+        Pmax = min(Pmax, 1)  # Clamp probability to [0,1]
+
+        if hist is not None:
+            cum_scores, scores_hist = self._triangle_scores_mex(Rijs, hist_intervals)
+
+            # Normalize cumulated scores
+            cum_scores /= len(Rij)
+
+        # Histogram decomposition: P & sigma evaluation
+        h = 1 / hist_intervals
+        hist_x = np.arange(h / 2, 1, h)
+        # normalization factor of one component of the histogram
+        A = (
+            (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2)
+            / hist_intervals
+            * (a + 1)
+        )
+        # normalization of 2nd component: B = P*N_delta/sum(f), where f is the component formula
+        B0 = P ** (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2) / np.sum(
+            ((1 - hist_x) ** b) * np.exp(-b / (1 - x0) * (1 - hist_x))
+        )
+        start_values = np.array([B0, P, b, x0], dtype=np.float64)
+        lower_bounds = np.array([0, Pmin**3, 2, 0], dtype=np.float64)
+        upper_bounds = np.array([np.inf, Pmax**3, np.inf, 1], dtype=np.float64)
+
+        # Fit distribution
+        def fun(x, B, P, b, x0, A=A, a=a):
+            """Function to fit. x is data vector."""
+            return (1 - P) @ A * (1 - x) ** a + P * B * (1 - x) ** b * np.exp(
+                -b / (1 - x0) * (1 - x)
+            )
+
+        popt, pcov = curve_fit(
+            fun,
+            hist_x.astype(np.float64, copy=False),
+            scores_hist.astype(np.float64, copy=False),
+            p0=start_values,
+            bounds=(lower_bounds, upper_bounds),
+        )
+        B, P, b, x0 = popt
+
+        # Derive P and sigma
+        P = P ** (1 / 3)
+        peak = x0  # can rm later
+        sigma = (1 - peak) / peak2sigma
+
+        # Initialize probability computations
+        # Local histograms analysis
+        A = a + 1  # distribution 1st component normalization factor
+        # distribution 2nd component normalization factor
+        B = B / (
+            (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2) / hist_intervals
+        )
+
+        # Calculate probabilities
+        ln_f_ind, ln_f_arb = self._pairs_probabilities(Rij, P**2, A, a, B, b, x0)
+        Pij = 1 / (1 + (1 - P) / P * np.exp(ln_f_arb - ln_f_ind))
+
+        # Fix singular output
+        num_nan = np.sum(np.isnan(Pij))
+        if num_nan > 0:
+            logger.error(
+                f"NaN probabilities occurred {num_nan} times out of {size(Pij)}. Setting NaNs to zero."
+            )
+            Pij = np.nan_to_num(Pij)
+
+        return P, sigma, Rsquare, Pij, scores_hist, fit, cum_scores
 
     ###########################################
     # Primary Methods                         #
