@@ -362,24 +362,24 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
                     # Update histogram
                     threshold = 0
-                    for l1 in range(hist_intervals):
+                    for _l1 in range(hist_intervals):
                         threshold += h
                         if s_ij_jk < threshold:
                             break
 
-                    for l2 in range(hist_intervals):
+                    for _l2 in range(hist_intervals):
                         threshold += h
                         if s_ik_jk < threshold:
                             break
 
-                    for l3 in range(hist_intervals):
+                    for _l3 in range(hist_intervals):
                         threshold += h
                         if s_ij_ik < threshold:
                             break
 
-                    scores_hist[l1] += 1
-                    scores_hist[l2] += 1
-                    scores_hist[l3] += 1
+                    scores_hist[_l1] += 1
+                    scores_hist[_l2] += 1
+                    scores_hist[_l3] += 1
 
         return cum_scores, scores_hist
 
