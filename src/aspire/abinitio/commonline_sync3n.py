@@ -5,11 +5,46 @@ from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
-from aspire.utils import J_conjugate, all_pairs, all_triplets, nearest_rotations
+from aspire.utils import J_conjugate, all_pairs, all_triplets, nearest_rotations, trange
 from aspire.utils.matlab_compat import stable_eigsh
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
+
+# Initialize alternatives
+#
+# When we find the best J-configuration, we also compare it to the alternative 2nd best one.
+# this comparison is done for every pair in the triplete independently. to make sure that the
+# alternative is indeed different in relation to the pair, we document the differences between
+# the configurations in advance:
+# ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from best_conf in relation to pair
+
+_ALTS = np.empty((3, 4, 3), dtype=int)
+# Rewrite this later.
+_ALTS[0][0][0] = 1
+_ALTS[0][1][0] = 0
+_ALTS[0][2][0] = 0
+_ALTS[0][3][0] = 1
+_ALTS[1][0][0] = 2
+_ALTS[1][1][0] = 3
+_ALTS[1][2][0] = 3
+_ALTS[1][3][0] = 2
+_ALTS[0][0][1] = 2
+_ALTS[0][1][1] = 2
+_ALTS[0][2][1] = 0
+_ALTS[0][3][1] = 0
+_ALTS[1][0][1] = 3
+_ALTS[1][1][1] = 3
+_ALTS[1][2][1] = 1
+_ALTS[1][3][1] = 1
+_ALTS[0][0][2] = 1
+_ALTS[0][1][2] = 0
+_ALTS[0][2][2] = 1
+_ALTS[0][3][2] = 0
+_ALTS[1][0][2] = 3
+_ALTS[1][1][2] = 2
+_ALTS[1][2][2] = 3
+_ALTS[1][3][2] = 2
 
 
 class CLSync3N(CLOrient3D, SyncVotingMixin):
@@ -55,6 +90,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             shift_step=shift_step,
             mask=mask,
         )
+
+        # Generate pair mappings
+        self._pairs, self._pairs_to_linear = all_pairs(self.n_img, return_map=True)
 
         self.epsilon = epsilon
         self.max_iters = max_iters
@@ -208,7 +246,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         def body(prev_too_low, Pmin, Pmax, hist, p_domain_limit=p_domain_limit):
             # Get inistial estimate for Pij
-            P, sigma, Rsquare, Pij, hist, fit, cum_scores = self._triangle_scores(
+            P, sigma, Pij, hist, cum_scores = self._triangle_scores(
                 Rij, hist, Pmin, Pmax
             )
 
@@ -249,14 +287,15 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         i = 0
         res = (None,) * 4
         inconsistent = True
-        while inconsistent and i < max_iterations:
+        while inconsistent and i < 1:  # max_iterations:
             inconsistent, Pij, res = body(*res)
+            i += 1
 
         # Pack W
         W = np.zeros((self.n_img, self.n_img))
         idx = 0
         for i in range(self.n_img):
-            for j in range(i, self.n_img):
+            for j in range(i + 1, self.n_img):
                 W[i, j] = Pij[idx]
                 W[j, i] = Pij[idx]
                 idx += 1
@@ -264,24 +303,26 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         return W
 
     def _triangle_scores_mex(self, Rijs, hist_intervals):
-        pass
-        # return cum_scores, hist_scores
-
-    def _pairs_probabilities(self, Rijs, P2, A, a, B, b, x0):
-        # The following is adopted from Matlab parias_probabilities_mex.c `looper`
+        # The following is adopted from Matlab triangle_scores_mex.c
         # The code should be thread/parallel safe over `i` when results are gathered (via sum).
 
         # Initialize probability result arrays
-        ln_f_ind = np.zeros(len(Rij), dtype=self.dtype)
-        ln_f_arb = np.zeros(len(Rij), dtype=self.dtype)
+        cum_scores = np.zeros(len(Rijs), dtype=self.dtype)
+        scores_hist = np.zeros(hist_intervals, dtype=self.dtype)
+        h = 1 / hist_intervals
 
         c = np.empty((4), dtype=self.dtype)
-        for i in range(self.n_img):
-            for j in range(i, self.n_img):
-                Rij = Rijs[i * self.n_img + j]
-                for k in range(j, self.n_img):
-                    Rik = Rijs[i * self.n_img + k]
-                    Rjk = Rijs[j * self.n_img + k]
+        for i in trange(self.n_img, desc="Computing triangle scores"):
+            for j in range(
+                i + 1, self.n_img - 1
+            ):  # check bound (taken from MATLAB mex)
+                ij = self._pairs_to_linear[i, j]
+                Rij = Rijs[ij]
+                for k in range(j + 1, self.n_img):
+                    ik = self._pairs_to_linear[i, k]
+                    jk = self._pairs_to_linear[j, k]
+                    Rik = Rijs[ik]
+                    Rjk = Rijs[jk]
 
                     # Compute conjugated rotats
                     Rij_J = J_conjugate(Rij)
@@ -290,15 +331,102 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
                     # Compute R muls and norms
                     c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
-                    c[1] = np.sum(((Rij_J @ Rjk) - Rjk) ** 2)
-                    c[3] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
-                    c[4] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
 
                     # Find best match
                     best_i = np.argmin(c)
                     best_val = c[best_i]
 
                     # For each triangle side, find the best alternative
+                    alt_ij_jk = c[_ALTS[0][best_i][0]]
+                    if c[_ALTS[1][best_i][0]] < alt_ij_jk:
+                        alt_ij_jk = c[_ALTS[1][best_i][0]]
+                    alt_ik_jk = c[_ALTS[0][best_i][1]]
+                    if c[_ALTS[1][best_i][1]] < alt_ik_jk:
+                        alt_ik_jk = c[_ALTS[1][best_i][1]]
+                    alt_ij_ik = c[_ALTS[0][best_i][2]]
+                    if c[_ALTS[1][best_i][2]] < alt_ij_ik:
+                        alt_ij_ik = c[_ALTS[1][best_i][2]]
+
+                    # Compute scores
+                    s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
+                    s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
+                    s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
+
+                    # Update cumulated scores
+                    cum_scores[ij] += s_ij_jk + s_ij_ik
+                    cum_scores[jk] += s_ij_jk + s_ik_jk
+                    cum_scores[ik] += s_ik_jk + s_ij_ik
+
+                    # Update histogram
+                    threshold = 0
+                    for l1 in range(hist_intervals):
+                        threshold += h
+                        if s_ij_jk < threshold:
+                            break
+
+                    for l2 in range(hist_intervals):
+                        threshold += h
+                        if s_ik_jk < threshold:
+                            break
+
+                    for l3 in range(hist_intervals):
+                        threshold += h
+                        if s_ij_ik < threshold:
+                            break
+
+                    scores_hist[l1] += 1
+                    scores_hist[l2] += 1
+                    scores_hist[l3] += 1
+
+        return cum_scores, scores_hist
+
+    def _pairs_probabilities(self, Rijs, P2, A, a, B, b, x0):
+        # The following is adopted from Matlab pairas_probabilities_mex.c `looper`
+        # The code should be thread/parallel safe over `i` when results are gathered (via sum).
+
+        # Initialize probability result arrays
+        ln_f_ind = np.zeros(len(Rijs), dtype=self.dtype)
+        ln_f_arb = np.zeros(len(Rijs), dtype=self.dtype)
+
+        c = np.empty((4), dtype=self.dtype)
+        for i in trange(self.n_img, desc="Computing pair probabilities"):
+            for j in range(i + 1, self.n_img - 1):
+                ij = self._pairs_to_linear[i, j]
+                Rij = Rijs[ij]
+                for k in range(j + 1, self.n_img):
+                    ik = self._pairs_to_linear[i, k]
+                    jk = self._pairs_to_linear[j, k]
+                    Rik = Rijs[ik]
+                    Rjk = Rijs[jk]
+
+                    # Compute conjugated rotats
+                    Rij_J = J_conjugate(Rij)
+                    Rik_J = J_conjugate(Rik)
+                    Rjk_J = J_conjugate(Rjk)
+
+                    # Compute R muls and norms
+                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+
+                    # Find best match
+                    best_i = np.argmin(c)
+                    best_val = c[best_i]
+
+                    # For each triangle side, find the best alternative
+                    alt_ij_jk = c[_ALTS[0][best_i][0]]
+                    if c[_ALTS[1][best_i][0]] < alt_ij_jk:
+                        alt_ij_jk = c[_ALTS[1][best_i][0]]
+                    alt_ik_jk = c[_ALTS[0][best_i][1]]
+                    if c[_ALTS[1][best_i][1]] < alt_ik_jk:
+                        alt_ik_jk = c[_ALTS[1][best_i][1]]
+                    alt_ij_ik = c[_ALTS[0][best_i][2]]
+                    if c[_ALTS[1][best_i][2]] < alt_ij_ik:
+                        alt_ij_ik = c[_ALTS[1][best_i][2]]
 
                     # Compute scores
                     s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
@@ -312,37 +440,37 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                         P2
                         * (
                             B
-                            * np.pow(1 - s_ij_jk, b)
+                            * np.power(1 - s_ij_jk, b)
                             * np.exp(-b / (1 - x0) * (1 - s_ij_jk))
                         )
-                        + (1 - P2) * A * np.pow((1 - s_ij_jk), a)
+                        + (1 - P2) * A * np.power((1 - s_ij_jk), a)
                     )
                     f_ik_jk = np.log(
                         P2
                         * (
                             B
-                            * np.pow(1 - s_ik_jk, b)
+                            * np.power(1 - s_ik_jk, b)
                             * np.exp(-b / (1 - x0) * (1 - s_ik_jk))
                         )
-                        + (1 - P2) * A * np.pow((1 - s_ik_jk), a)
+                        + (1 - P2) * A * np.power((1 - s_ik_jk), a)
                     )
                     f_ij_ik = np.log(
                         P2
                         * (
                             B
-                            * np.pow(1 - s_ij_ik, b)
+                            * np.power(1 - s_ij_ik, b)
                             * np.exp(-b / (1 - x0) * (1 - s_ij_ik))
                         )
-                        + (1 - P2) * A * np.pow((1 - s_ij_ik), a)
+                        + (1 - P2) * A * np.power((1 - s_ij_ik), a)
                     )
                     ln_f_ind[ij] += f_ij_jk + f_ij_ik
                     ln_f_ind[jk] += f_ij_jk + f_ik_jk
                     ln_f_ind[ik] += f_ik_jk + f_ij_ik
 
                     # # Probability of pair ij having score given arbitrary common line
-                    f_ij_jk = np.log(A * np.pow((1 - s_ij_jk), a))
-                    f_ik_jk = np.log(A * np.pow((1 - s_ik_jk), a))
-                    f_ij_ik = np.log(A * np.pow((1 - s_ij_ik), a))
+                    f_ij_jk = np.log(A * np.power((1 - s_ij_jk), a))
+                    f_ik_jk = np.log(A * np.power((1 - s_ik_jk), a))
+                    f_ij_ik = np.log(A * np.power((1 - s_ij_ik), a))
                     ln_f_arb[ij] += f_ij_jk + f_ij_ik
                     ln_f_arb[jk] += f_ij_jk + f_ik_jk
                     ln_f_arb[ik] += f_ik_jk + f_ij_ik
@@ -352,7 +480,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     def _triangle_scores(
         self,
         Rijs,
-        hist,
+        scores_hist,
         Pmin,
         Pmax,
         hist_intervals=100,
@@ -380,11 +508,12 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         Pmax = Pmax or 1
         Pmax = min(Pmax, 1)  # Clamp probability to [0,1]
 
-        if hist is not None:
+        cum_scores = None  # XXX Why do we even need cum_scores?
+        if scores_hist is None:
             cum_scores, scores_hist = self._triangle_scores_mex(Rijs, hist_intervals)
 
             # Normalize cumulated scores
-            cum_scores /= len(Rij)
+            cum_scores /= len(Rijs)
 
         # Histogram decomposition: P & sigma evaluation
         h = 1 / hist_intervals
@@ -406,10 +535,11 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # Fit distribution
         def fun(x, B, P, b, x0, A=A, a=a):
             """Function to fit. x is data vector."""
-            return (1 - P) @ A * (1 - x) ** a + P * B * (1 - x) ** b * np.exp(
+            return (1 - P) * A * (1 - x) ** a + P * B * (1 - x) ** b * np.exp(
                 -b / (1 - x0) * (1 - x)
             )
 
+        breakpoint()
         popt, pcov = curve_fit(
             fun,
             hist_x.astype(np.float64, copy=False),
@@ -433,18 +563,18 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # Calculate probabilities
-        ln_f_ind, ln_f_arb = self._pairs_probabilities(Rij, P**2, A, a, B, b, x0)
+        ln_f_ind, ln_f_arb = self._pairs_probabilities(Rijs, P**2, A, a, B, b, x0)
         Pij = 1 / (1 + (1 - P) / P * np.exp(ln_f_arb - ln_f_ind))
 
         # Fix singular output
         num_nan = np.sum(np.isnan(Pij))
         if num_nan > 0:
             logger.error(
-                f"NaN probabilities occurred {num_nan} times out of {size(Pij)}. Setting NaNs to zero."
+                f"NaN probabilities occurred {num_nan} times out of {np.size(Pij)}. Setting NaNs to zero."
             )
             Pij = np.nan_to_num(Pij)
 
-        return P, sigma, Rsquare, Pij, scores_hist, fit, cum_scores
+        return P, sigma, Pij, scores_hist, cum_scores
 
     ###########################################
     # Primary Methods                         #
@@ -484,10 +614,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         """
         n_img = self.n_img
         n_theta = self.n_theta
-        pairs = all_pairs(n_img)
-        Rijs = np.zeros((len(pairs), 3, 3))
+        Rijs = np.zeros((len(self._pairs), 3, 3))
 
-        for idx, (i, j) in enumerate(pairs):
+        for idx, (i, j) in enumerate(self._pairs):
             Rijs[idx] = self._syncmatrix_ij_vote_3n(
                 clmatrix, i, j, np.arange(n_img), n_theta
             )
@@ -599,10 +728,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :return: New candidate eigenvector of length n-choose-2. The product of the J-sync matrix and vec.
         """
 
-        # All pairs (i,j) and triplets (i,j,k) where i<j<k
+        # All triplets (i,j,k) where i<j<k
         n_img = self.n_img
         triplets = all_triplets(n_img)
-        pairs, pairs_to_linear = all_pairs(n_img, return_map=True)
 
         # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
         # 'conjugate' expresses which node of the triplet must be conjugated (True) to achieve synchronization.
@@ -630,9 +758,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         v = vijs
         new_vec = np.zeros_like(vec)
         for i, j, k in triplets:
-            ij = pairs_to_linear[i, j]
-            jk = pairs_to_linear[j, k]
-            ik = pairs_to_linear[i, k]
+            ij = self._pairs_to_linear[i, j]
+            jk = self._pairs_to_linear[j, k]
+            ik = self._pairs_to_linear[i, k]
             vij, vjk, vik = v[ij], v[jk], v[ik]
             vij_J = J_conjugate(vij)
             vjk_J = J_conjugate(vjk)
