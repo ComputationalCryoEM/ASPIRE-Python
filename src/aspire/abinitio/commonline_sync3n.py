@@ -19,32 +19,13 @@ logger = logging.getLogger(__name__)
 # the configurations in advance:
 # ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from best_conf in relation to pair
 
-_ALTS = np.empty((3, 4, 3), dtype=int)
-# Rewrite this later.
-_ALTS[0][0][0] = 1
-_ALTS[0][1][0] = 0
-_ALTS[0][2][0] = 0
-_ALTS[0][3][0] = 1
-_ALTS[1][0][0] = 2
-_ALTS[1][1][0] = 3
-_ALTS[1][2][0] = 3
-_ALTS[1][3][0] = 2
-_ALTS[0][0][1] = 2
-_ALTS[0][1][1] = 2
-_ALTS[0][2][1] = 0
-_ALTS[0][3][1] = 0
-_ALTS[1][0][1] = 3
-_ALTS[1][1][1] = 3
-_ALTS[1][2][1] = 1
-_ALTS[1][3][1] = 1
-_ALTS[0][0][2] = 1
-_ALTS[0][1][2] = 0
-_ALTS[0][2][2] = 1
-_ALTS[0][3][2] = 0
-_ALTS[1][0][2] = 3
-_ALTS[1][1][2] = 2
-_ALTS[1][2][2] = 3
-_ALTS[1][3][2] = 2
+_ALTS = np.array(
+    [
+        [[1, 2, 1], [0, 2, 0], [0, 0, 1], [1, 0, 0]],
+        [[2, 3, 3], [3, 3, 2], [3, 1, 3], [2, 1, 2]],
+    ],
+    dtype=int,
+)
 
 
 class CLSync3N(CLOrient3D, SyncVotingMixin):
@@ -114,28 +95,26 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         """
 
         # Initial estimate of viewing directions
-        Rij0 = self._estimate_relative_viewing_directions()
+        Rijs0 = self._estimate_relative_viewing_directions()
 
         # Compute and apply global handedness
-        Rij = self._global_J_sync(Rij0)
+        Rijs = self._global_J_sync(Rijs0)
 
         # Build sync3n matrix
-        S = self._construct_sync3n_matrix(Rij)
+        S = self._construct_sync3n_matrix(Rijs)
 
         # Optionally compute S weights
         W = None
         if self.S_weighting is True:
-            W = self._syncmatrix_weights(Rij)
+            W = self._syncmatrix_weights(Rijs)
 
         # Yield rotations from S
-        Ris = self._sync3n_S_to_rot(S, W)
-
-        self.rotations = Ris
+        self.rotations = self._sync3n_S_to_rot(S, W)
 
     ###########################################
     # The hackberries taste like hackberries  #
     ###########################################
-    def _sync3n_S_to_rot(self, S, W=None, n_eigs=10):
+    def _sync3n_S_to_rot(self, S, W=None, n_eigs=4):
         """
         Use eigen decomposition of S to estimate transforms,
         then project transforms to nearest rotations.
@@ -143,7 +122,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         if n_eigs < 3:
             raise ValueError(
-                f"n_eigs must be greater than 3, default is 10. Invoked with {n_eigs}"
+                f"n_eigs must be greater than 3, default is 4. Invoked with {n_eigs}"
             )
 
         if W is not None:
@@ -232,7 +211,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
     def _syncmatrix_weights(
         self,
-        Rij,
+        Rijs,
         permitted_inconsistency=1.5,
         p_domain_limit=0.7,
         max_iterations=12,
@@ -247,7 +226,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         def body(prev_too_low, Pmin, Pmax, hist, p_domain_limit=p_domain_limit):
             # Get inistial estimate for Pij
             P, sigma, Pij, hist, cum_scores = self._triangle_scores(
-                Rij, hist, Pmin, Pmax
+                Rijs, hist, Pmin, Pmax
             )
 
             # Check if P and Pij are consistent
@@ -287,7 +266,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         i = 0
         res = (None,) * 4
         inconsistent = True
-        while inconsistent and i < 1:  # max_iterations:
+        while inconsistent and i < max_iterations:
             inconsistent, Pij, res = body(*res)
             i += 1
 
@@ -343,9 +322,11 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                     alt_ij_jk = c[_ALTS[0][best_i][0]]
                     if c[_ALTS[1][best_i][0]] < alt_ij_jk:
                         alt_ij_jk = c[_ALTS[1][best_i][0]]
+
                     alt_ik_jk = c[_ALTS[0][best_i][1]]
                     if c[_ALTS[1][best_i][1]] < alt_ik_jk:
                         alt_ik_jk = c[_ALTS[1][best_i][1]]
+
                     alt_ij_ik = c[_ALTS[0][best_i][2]]
                     if c[_ALTS[1][best_i][2]] < alt_ij_ik:
                         alt_ij_ik = c[_ALTS[1][best_i][2]]
@@ -539,7 +520,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 -b / (1 - x0) * (1 - x)
             )
 
-        breakpoint()
         popt, pcov = curve_fit(
             fun,
             hist_x.astype(np.float64, copy=False),
@@ -590,7 +570,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         self.build_clmatrix()
 
         # Calculate relative rotations
-        Rijs = self._estimate_all_Rijs_c3_c4(self.clmatrix)
+        Rijs = self._estimate_all_Rijs(self.clmatrix)
 
         return Rijs
 
@@ -608,7 +588,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         return vijs
 
-    def _estimate_all_Rijs_c3_c4(self, clmatrix):
+    def _estimate_all_Rijs(self, clmatrix):
         """
         Estimate Rijs using the voting method.
         """
@@ -684,6 +664,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         vec = vec / norm(vec)
         residual = 1
         itr = 0
+
+        # XXX, I don't like that epsilon>1 (residual) returns signs of random vector
+        #      maybe force to run once? or return vec as zeros in that case?
+        #      Seems unintended, but easy to do.
 
         # Power method iterations
         while itr < max_iters and residual > epsilon:
