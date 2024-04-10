@@ -756,6 +756,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                     # Update vector entries
                     new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
                     new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
-                    new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]
+                    new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
 
         return new_vec
