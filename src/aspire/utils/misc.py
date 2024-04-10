@@ -368,12 +368,12 @@ def J_conjugate(A):
     """
     Conjugate the 3x3 matrix A by the diagonal matrix J=diag((-1, -1, 1)).
 
-    :param A: A 3x3 matrix.
-    :return: J*A*J
+    :param A: A 3x3 matrix, or nx3x3 matrix.
+    :return: J@A@J
     """
-    J = np.array([[1, 1, -1], [1, 1, -1], [-1, -1, 1]], dtype=A.dtype)
+    JJop = np.array([[1, 1, -1], [1, 1, -1], [-1, -1, 1]], dtype=A.dtype)
 
-    return A * J
+    return A * JJop
 
 
 def cyclic_rotations(order, dtype=np.float64):
