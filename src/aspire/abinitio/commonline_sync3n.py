@@ -5,7 +5,7 @@ from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
-from aspire.utils import J_conjugate, all_pairs, all_triplets, nearest_rotations, trange
+from aspire.utils import J_conjugate, all_pairs, nearest_rotations, trange
 from aspire.utils.matlab_compat import stable_eigsh
 from aspire.utils.random import randn
 
@@ -27,6 +27,8 @@ _ALTS = np.array(
     dtype=int,
 )
 
+_signs_confs = np.array([[1, 1, 1], [-1, 1, -1], [-1, -1, 1], [1, -1, -1]], dtype=int)
+
 
 class CLSync3N(CLOrient3D, SyncVotingMixin):
     """
@@ -46,6 +48,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         seed=None,
         mask=True,
         S_weighting=False,
+        J_weighting=False,
     ):
         """
         Initialize object for estimating 3D orientations.
@@ -82,6 +85,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Sync3N specific vars
         self.S_weighting = S_weighting
+        self.J_weighting = J_weighting
         self._D_null = 1e-13
 
     ###########################################
@@ -574,19 +578,18 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         return Rijs
 
-    def _global_J_sync(self, vijs):
+    def _global_J_sync(self, Rijs):
         """ """
 
-        # Determine relative handedness of vijs.
-        sign_ij_J = self._J_sync_power_method(vijs)
+        # Determine relative handedness of Rijs.
+        sign_ij_J = self._J_sync_power_method(Rijs)
 
-        # Synchronize vijs
+        # Synchronize Rijs
         logger.info("Applying global handedness synchronization.")
-        for i, sign in enumerate(sign_ij_J):
-            if sign == -1:
-                vijs[i] = J_conjugate(vijs[i])
+        mask = sign_ij_J == -1
+        Rijs[mask] = J_conjugate(Rijs[mask])
 
-        return vijs
+        return Rijs
 
     def _estimate_all_Rijs(self, clmatrix):
         """
@@ -636,7 +639,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     # Secondary Methods for Global J Sync #
     #######################################
 
-    def _J_sync_power_method(self, vijs):
+    def _J_sync_power_method(self, Rijs):
         """
         Calculate the leading eigenvector of the J-synchronization matrix
         using the power method.
@@ -645,7 +648,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         use the power method to compute the eigenvalues and eigenvectors,
         while constructing the matrix on-the-fly.
 
-        :param vijs: (n-choose-2)x3x3 array of estimates of relative orientation matrices.
+        :param Rijs: (n-choose-2)x3x3 array of estimates of relative orientation matrices.
 
         :return: An array of length n-choose-2 consisting of 1 or -1, where the sign of the
         i'th entry indicates whether the i'th relative orientation matrix will be J-conjugated.
@@ -659,8 +662,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         max_iters = self.max_iters
 
         # Initialize candidate eigenvectors
-        n_vijs = vijs.shape[0]
-        vec = randn(n_vijs, seed=self.seed)
+        n_Rijs = Rijs.shape[0]
+        vec = randn(n_Rijs, seed=self.seed)
         vec = vec / norm(vec)
         residual = 1
         itr = 0
@@ -672,7 +675,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # Power method iterations
         while itr < max_iters and residual > epsilon:
             itr += 1
-            vec_new = self._signs_times_v(vijs, vec)
+            vec_new = self._signs_times_v(Rijs, vec)
             vec_new = vec_new / norm(vec_new)
             residual = norm(vec_new - vec)
             vec = vec_new
@@ -685,86 +688,74 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         return J_sync
 
-    def _signs_times_v(self, vijs, vec):
+    def _signs_times_v(self, Rijs, vec):
         """
-        Multiplication of the J-synchronization matrix by a candidate eigenvector.
-
-        The J-synchronization matrix is a matrix representation of the handedness graph, Gamma, whose set of
-        nodes consists of the estimates vijs and whose set of edges consists of the undirected edges between
-        all triplets of estimates vij, vjk, and vik, where i<j<k. The weight of an edge is set to +1 if its
-        incident nodes agree in handednes and -1 if not.
-
-        The J-synchronization matrix is of size (n-choose-2)x(n-choose-2), where each entry corresponds to
-        the relative handedness of vij and vjk. The entry (ij, jk), where ij and jk are retrieved from the
-        all_pairs indexing, is 1 if vij and vjk are of the same handedness and -1 if not. All other entries
-        (ij, kl) hold a zero.
-
-        Due to the large size of the J-synchronization matrix we construct it on the fly as follows.
-        For each triplet of outer products vij, vjk, and vik, the associated elements of the J-synchronization
-        matrix are populated with +1 or -1 and multiplied by the corresponding elements of
-        the current candidate eigenvector supplied by the power method. The new candidate eigenvector
-        is updated for each triplet.
-
-        :param vijs: (n-choose-2)x3x3 array, where each 3x3 slice holds the outer product of vi and vj.
-
-        :param vec: The current candidate eigenvector of length n-choose-2 from the power method.
-
-        :return: New candidate eigenvector of length n-choose-2. The product of the J-sync matrix and vec.
+        Ported from _signs_times_v_mex.c
         """
+        # The code should be thread/parallel safe over `i`.
 
-        # All triplets (i,j,k) where i<j<k
-        n_img = self.n_img
-        triplets = all_triplets(n_img)
-
-        # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
-        # 'conjugate' expresses which node of the triplet must be conjugated (True) to achieve synchronization.
-        conjugate = np.empty((4, 3), bool)
-        conjugate[0] = [False, False, False]
-        conjugate[1] = [True, False, False]
-        conjugate[2] = [False, True, False]
-        conjugate[3] = [False, False, True]
-
-        # 'edges' corresponds to whether conjugation agrees between the pairs (vij, vjk), (vjk, vik),
-        # and (vik, vij). True if the pairs are in agreement, False otherwise.
-        edges = np.empty((4, 3), bool)
-        edges[:, 0] = conjugate[:, 0] == conjugate[:, 1]
-        edges[:, 1] = conjugate[:, 1] == conjugate[:, 2]
-        edges[:, 2] = conjugate[:, 2] == conjugate[:, 0]
-
-        # The corresponding entries in the J-synchronization matrix are +1 if the pair of nodes agree, -1 if not.
-        edge_signs = np.where(edges, 1, -1)
-
-        # For each triplet of nodes we apply the 4 configurations of conjugation and determine the
-        # relative handedness based on the condition that vij @ vjk - vik = 0 for synchronized nodes.
-        # We then construct the corresponding entries of the J-synchronization matrix with 'edge_signs'
-        # corresponding to the conjugation configuration producing the smallest residual for the above
-        # condition. Finally, we the multiply the 'edge_signs' by the cooresponding entries of 'vec'.
-        v = vijs
         new_vec = np.zeros_like(vec)
-        for i, j, k in triplets:
-            ij = self._pairs_to_linear[i, j]
-            jk = self._pairs_to_linear[j, k]
-            ik = self._pairs_to_linear[i, k]
-            vij, vjk, vik = v[ij], v[jk], v[ik]
-            vij_J = J_conjugate(vij)
-            vjk_J = J_conjugate(vjk)
-            vik_J = J_conjugate(vik)
+        c = np.empty((4), dtype=self.dtype)
+        desc = "Computing signs_times_v"
+        if self.J_weighting:
+            desc += " with J_weighting"
+        for i in trange(self.n_img, desc=desc):
+            for j in range(
+                i + 1, self.n_img - 1
+            ):  # check bound (taken from MATLAB mex)
+                ij = self._pairs_to_linear[i, j]
+                Rij = Rijs[ij]
+                for k in range(j + 1, self.n_img):
+                    ik = self._pairs_to_linear[i, k]
+                    jk = self._pairs_to_linear[j, k]
+                    Rik = Rijs[ik]
+                    Rjk = Rijs[jk]
 
-            conjugated_pairs = np.where(
-                conjugate[..., np.newaxis, np.newaxis],
-                [vij_J, vjk_J, vik_J],
-                [vij, vjk, vik],
-            )
-            residual = np.stack([norm(x @ y - z) for x, y, z in conjugated_pairs])
+                    # Compute conjugated rotats
+                    Rij_J = J_conjugate(Rij)
+                    Rik_J = J_conjugate(Rik)
+                    Rjk_J = J_conjugate(Rjk)
 
-            min_residual = np.argmin(residual)
+                    # Compute R muls and norms
+                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
 
-            # Assign edge weights
-            s_ij_jk, s_ik_jk, s_ij_ik = edge_signs[min_residual]
+                    # Find best match
+                    best_i = np.argmin(c)
+                    best_val = c[best_i]
 
-            # Update multiplication of signs times vec
-            new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
-            new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
-            new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]
+                    # MATLAB: scores_as_entries == 0
+                    s_ij_jk = _signs_confs[best_i][0]
+                    s_ik_jk = _signs_confs[best_i][1]
+                    s_ij_ik = _signs_confs[best_i][2]
+
+                    # Note there was a third J_weighting option (2) in MATLAB,
+                    # but it was not exposed at top level.
+                    if self.J_weighting:
+                        # MATLAB: scores_as_entries == 1
+                        # For each triangle side, find the best alternative
+                        alt_ij_jk = c[_ALTS[0][best_i][0]]
+                        if c[_ALTS[1][best_i][0]] < alt_ij_jk:
+                            alt_ij_jk = c[_ALTS[1][best_i][0]]
+
+                        alt_ik_jk = c[_ALTS[0][best_i][1]]
+                        if c[_ALTS[1][best_i][1]] < alt_ik_jk:
+                            alt_ik_jk = c[_ALTS[1][best_i][1]]
+
+                        alt_ij_ik = c[_ALTS[0][best_i][2]]
+                        if c[_ALTS[1][best_i][2]] < alt_ij_ik:
+                            alt_ij_ik = c[_ALTS[1][best_i][2]]
+
+                        # Compute scores
+                        s_ij_jk *= 1 - np.sqrt(best_val / alt_ij_jk)
+                        s_ik_jk *= 1 - np.sqrt(best_val / alt_ik_jk)
+                        s_ij_ik *= 1 - np.sqrt(best_val / alt_ij_ik)
+
+                    # Update vector entries
+                    new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
+                    new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
+                    new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]
 
         return new_vec
