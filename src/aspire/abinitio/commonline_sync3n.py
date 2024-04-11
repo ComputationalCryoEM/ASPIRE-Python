@@ -28,8 +28,6 @@ _ALTS = np.array(
     dtype=int,
 )
 
-_signs_confs = np.array([[1, 1, 1], [-1, 1, -1], [-1, -1, 1], [1, -1, -1]], dtype=int)
-
 
 class CLSync3N(CLOrient3D, SyncVotingMixin):
     """
@@ -692,14 +690,17 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     def _signs_times_v(self, Rijs, vec):
 
         # host/gpu dispatch
-        new_vec = _signs_times_v_host(self.n_img, Rijs, vec, self.J_weighting, _ALTS, _signs_confs)
+        #new_vec = _signs_times_v_host(self.n_img, Rijs, vec, self.J_weighting, _ALTS)
+
+        assert self.J_weighting ==False, "not implemented yet"
+        new_vec = _signs_times_v_cupy(self.n_img, Rijs, vec, self.J_weighting, _ALTS)
 
         return new_vec
 
 def PAIR_IDX(N,I,J):
     return ((2*N-I-1)*I//2+J-I-1)
     
-def _signs_times_v_host(n, Rijs, vec,J_weighting, _ALTS, _signs_confs):
+def _signs_times_v_host(n, Rijs, vec,J_weighting, _ALTS):
     """
     Ported from _signs_times_v_mex.c
 
@@ -715,6 +716,7 @@ def _signs_times_v_host(n, Rijs, vec,J_weighting, _ALTS, _signs_confs):
 
     new_vec = np.zeros_like(vec)
 
+    _signs_confs = np.array([[1, 1, 1], [-1, 1, -1], [-1, -1, 1], [1, -1, -1]], dtype=int)
     c = np.empty((4))
     desc = "Computing signs_times_v"
     if J_weighting:
@@ -779,11 +781,12 @@ def _signs_times_v_host(n, Rijs, vec,J_weighting, _ALTS, _signs_confs):
                 # Update vector entries
                 new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
                 new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
-                new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
+                #new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
+                new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
 
     return new_vec
 
-def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS, _signs_confs):
+def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS):
     """
     Ported from _signs_times_v_mex.c
 
@@ -840,9 +843,12 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
 {
     /* thread index (1d), represents "i" index */
     unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+    //unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
 
     /* no-op when out of bounds */
     if(i >= n) return;
+    //if(j >= n-1) return;
+    //if(j < i+1) return;
 
     unsigned long n_pairs = n*(n-1)/2;
     double c[4]={0,0,0,0};
@@ -919,11 +925,12 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
     new_vec_dev = cp.zeros_like(vec)
 
     # call the kernel
-    blkszx = 512
+    blkszx = 128
     nblkx = (n+blkszx-1)//blkszx
-    # blkszy = 512
+    # blkszy = 2
     # nblky = (n+blkszy-1)//blkszy
 
+    #signs_times_v((nblkx,nblky), (blkszx,blkszy), (n, Rijs_dev, vec_dev, new_vec_dev))
     signs_times_v((nblkx,), (blkszx,), (n, Rijs_dev, vec_dev, new_vec_dev))
 
     new_vec= new_vec_dev.get()
