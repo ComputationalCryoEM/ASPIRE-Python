@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+import cupy as cp
 from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
@@ -689,73 +690,242 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         return J_sync
 
     def _signs_times_v(self, Rijs, vec):
-        """
-        Ported from _signs_times_v_mex.c
-        """
-        # The code should be thread/parallel safe over `i`.
 
-        new_vec = np.zeros_like(vec)
-        c = np.empty((4), dtype=self.dtype)
-        desc = "Computing signs_times_v"
-        if self.J_weighting:
-            desc += " with J_weighting"
-        for i in trange(self.n_img, desc=desc):
-            for j in range(
-                i + 1, self.n_img - 1
-            ):  # check bound (taken from MATLAB mex)
-                ij = self._pairs_to_linear[i, j]
-                Rij = Rijs[ij]
-                for k in range(j + 1, self.n_img):
-                    ik = self._pairs_to_linear[i, k]
-                    jk = self._pairs_to_linear[j, k]
-                    Rik = Rijs[ik]
-                    Rjk = Rijs[jk]
-
-                    # Compute conjugated rotats
-                    Rij_J = J_conjugate(Rij)
-                    Rik_J = J_conjugate(Rik)
-                    Rjk_J = J_conjugate(Rjk)
-
-                    # Compute R muls and norms
-                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
-                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
-                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
-                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
-
-                    # Find best match
-                    best_i = np.argmin(c)
-                    best_val = c[best_i]
-
-                    # MATLAB: scores_as_entries == 0
-                    s_ij_jk = _signs_confs[best_i][0]
-                    s_ik_jk = _signs_confs[best_i][1]
-                    s_ij_ik = _signs_confs[best_i][2]
-
-                    # Note there was a third J_weighting option (2) in MATLAB,
-                    # but it was not exposed at top level.
-                    if self.J_weighting:
-                        # MATLAB: scores_as_entries == 1
-                        # For each triangle side, find the best alternative
-                        alt_ij_jk = c[_ALTS[0][best_i][0]]
-                        if c[_ALTS[1][best_i][0]] < alt_ij_jk:
-                            alt_ij_jk = c[_ALTS[1][best_i][0]]
-
-                        alt_ik_jk = c[_ALTS[0][best_i][1]]
-                        if c[_ALTS[1][best_i][1]] < alt_ik_jk:
-                            alt_ik_jk = c[_ALTS[1][best_i][1]]
-
-                        alt_ij_ik = c[_ALTS[0][best_i][2]]
-                        if c[_ALTS[1][best_i][2]] < alt_ij_ik:
-                            alt_ij_ik = c[_ALTS[1][best_i][2]]
-
-                        # Compute scores
-                        s_ij_jk *= 1 - np.sqrt(best_val / alt_ij_jk)
-                        s_ik_jk *= 1 - np.sqrt(best_val / alt_ik_jk)
-                        s_ij_ik *= 1 - np.sqrt(best_val / alt_ij_ik)
-
-                    # Update vector entries
-                    new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
-                    new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
-                    new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
+        # host/gpu dispatch
+        new_vec = _signs_times_v_host(self.n_img, Rijs, vec, self.J_weighting, _ALTS, _signs_confs)
 
         return new_vec
+
+def PAIR_IDX(N,I,J):
+    return ((2*N-I-1)*I//2+J-I-1)
+    
+def _signs_times_v_host(n, Rijs, vec,J_weighting, _ALTS, _signs_confs):
+    """
+    Ported from _signs_times_v_mex.c
+
+    n: n_img
+    Rijs: nchoose2x3x3 array
+    vec: input array
+    new_vec: output array
+    J_weighting: bool
+    _ALTS= 2x4x3 const lut array
+    _signs_confs = 4x3 const lut array
+    """
+    # The code should be thread/parallel safe over `i`.
+
+    new_vec = np.zeros_like(vec)
+
+    c = np.empty((4))
+    desc = "Computing signs_times_v"
+    if J_weighting:
+        desc += " with J_weighting"
+    for i in trange(n, desc=desc):
+        for j in range(
+            i + 1, n - 1
+        ):  # check bound (taken from MATLAB mex)
+            #ij = self._pairs_to_linear[i, j]
+            ij = PAIR_IDX(n, i, j)
+            Rij = Rijs[ij]
+            for k in range(j + 1, n):
+                #ik = self._pairs_to_linear[i, k]
+                #jk = self._pairs_to_linear[j, k]
+                ik = PAIR_IDX(n, i, k)
+                jk = PAIR_IDX(n, j, k)
+                Rik = Rijs[ik]
+                Rjk = Rijs[jk]
+
+                # Compute conjugated rotats
+                Rij_J = J_conjugate(Rij)
+                Rik_J = J_conjugate(Rik)
+                Rjk_J = J_conjugate(Rjk)
+
+                # Compute R muls and norms
+                c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+
+                # Find best match
+                best_i = np.argmin(c)
+                best_val = c[best_i]
+
+                # MATLAB: scores_as_entries == 0
+                s_ij_jk = _signs_confs[best_i][0]
+                s_ik_jk = _signs_confs[best_i][1]
+                s_ij_ik = _signs_confs[best_i][2]
+
+                # Note there was a third J_weighting option (2) in MATLAB,
+                # but it was not exposed at top level.
+                if J_weighting:
+                    # MATLAB: scores_as_entries == 1
+                    # For each triangle side, find the best alternative
+                    alt_ij_jk = c[_ALTS[0][best_i][0]]
+                    if c[_ALTS[1][best_i][0]] < alt_ij_jk:
+                        alt_ij_jk = c[_ALTS[1][best_i][0]]
+
+                    alt_ik_jk = c[_ALTS[0][best_i][1]]
+                    if c[_ALTS[1][best_i][1]] < alt_ik_jk:
+                        alt_ik_jk = c[_ALTS[1][best_i][1]]
+
+                    alt_ij_ik = c[_ALTS[0][best_i][2]]
+                    if c[_ALTS[1][best_i][2]] < alt_ij_ik:
+                        alt_ij_ik = c[_ALTS[1][best_i][2]]
+
+                    # Compute scores
+                    s_ij_jk *= 1 - np.sqrt(best_val / alt_ij_jk)
+                    s_ik_jk *= 1 - np.sqrt(best_val / alt_ik_jk)
+                    s_ij_ik *= 1 - np.sqrt(best_val / alt_ij_ik)
+
+                # Update vector entries
+                new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
+                new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
+                new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
+
+    return new_vec
+
+def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS, _signs_confs):
+    """
+    Ported from _signs_times_v_mex.c
+
+    n: n_img
+    Rijs: nchoose2x3x3 array
+    vec: input array
+    new_vec: output array
+    #todo J_weighting: bool
+    #todo _ALTS= 2x4x3 const lut array
+    #todo _signs_confs = 4x3 const lut array
+    """
+    # The code should be thread/parallel safe over `i`.
+
+
+    code = r'''
+
+/* from i,j indoces to the common index in the N-choose-2 sized array */
+#define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2+J-I-1)
+
+inline void mult_3x3(double *out, double *R1, double *R2) {
+/* 3X3 matrices multiplication: out = R1*R2 */
+	int i,j;
+	for (i=0; i<3; i++) {
+		for (j=0;j<3;j++) {
+			out[3*j+i] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
+		}
+	}
+}
+
+inline void JRJ(double *R, double *A) {
+/* multiple 3X3 matrix by J from both sizes: A = JRJ */
+	A[0]=R[0];
+	A[1]=R[1];
+	A[2]=-R[2];
+	A[3]=R[3];
+	A[4]=R[4];
+	A[5]=-R[5];
+	A[6]=-R[6];
+	A[7]=-R[7];
+	A[8]=R[8];
+}
+
+inline double diff_norm_3x3(const double *R1, const double *R2) {
+/* difference 2 matrices and return squared norm: ||R1-R2||^2 */
+	int i;
+	double norm = 0;
+	for (i=0; i<9; i++) {norm += (R1[i]-R2[i])*(R1[i]-R2[i]);}
+	return norm;
+}
+
+
+extern "C" __global__
+void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
+{
+    /* thread index (1d), represents "i" index */
+    unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    /* no-op when out of bounds */
+    if(i >= n) return;
+
+    unsigned long n_pairs = n*(n-1)/2;
+    double c[4]={0,0,0,0};
+    unsigned int ij, jk, ik;
+    unsigned int eig;
+    int best_i;
+    double best_val;
+    int s_ij_jk, s_ik_jk, s_ij_ik;
+
+    double *Rij, *Rjk, *Rik;
+    double JRijJ[9], JRjkJ[9], JRikJ[9];
+    double tmp[9];
+
+    /* le sigh */
+    int signs_confs[4][3];
+    signs_confs[2-1][1-1]=-1; signs_confs[2-1][3-1]=-1;
+    signs_confs[3-1][1-1]=-1; signs_confs[3-1][2-1]=-1;
+    signs_confs[4-1][2-1]=-1; signs_confs[4-1][3-1]=-1;
+    
+    for(int j=i+1; j< n - 1; j++){
+        ij = PAIR_IDX(n, i, j);
+        for(int k=j+1; k< n; k++){
+            ik = PAIR_IDX(n, i, k);
+            jk = PAIR_IDX(n, j, k);
+
+            /* compute configurations matches scores */
+	    Rij = Rijs + 9*ij;
+	    Rjk = Rijs + 9*jk;
+            Rik = Rijs + 9*ik;
+                        
+            JRJ(Rij, JRijJ);
+            JRJ(Rjk, JRjkJ);
+            JRJ(Rik, JRikJ);
+                        
+            mult_3x3(tmp,Rij,Rjk);
+            c[0] = diff_norm_3x3(tmp,Rik);
+                        
+            mult_3x3(tmp,JRijJ,Rjk);
+            c[1] = diff_norm_3x3(tmp,Rik);
+                        
+            mult_3x3(tmp,Rij,JRjkJ);
+            c[2] = diff_norm_3x3(tmp,Rik);
+                        
+            mult_3x3(tmp,Rij,Rjk);
+            c[3] = diff_norm_3x3(tmp,JRikJ);
+                        
+            /* find best match */
+            best_i=0; best_val=c[0];
+            if (c[1]<best_val) {best_i=1; best_val=c[1];}
+            if (c[2]<best_val) {best_i=2; best_val=c[2];}
+            if (c[3]<best_val) {best_i=3; best_val=c[3];}
+        
+            /* set triangles entries to be signs */
+            s_ij_jk = signs_confs[best_i][0];
+            s_ik_jk = signs_confs[best_i][1];
+            s_ij_ik = signs_confs[best_i][2];
+
+            /* update multiplication */
+            new_vec[ij] += s_ij_jk*vec[jk] + s_ij_ik*vec[ik];
+            new_vec[jk] += s_ij_jk*vec[ij] + s_ik_jk*vec[ik];
+            new_vec[ik] += s_ij_ik*vec[ij] + s_ik_jk*vec[jk];  /* ij jk bug? */
+
+        } /* k */
+    } /* j */
+    return;
+};
+'''
+
+    module = cp.RawModule(code=code)
+    signs_times_v = module.get_function('signs_times_v')
+
+    Rijs_dev = cp.array(Rijs)
+    vec_dev = cp.array(vec)
+    new_vec_dev = cp.zeros_like(vec)
+
+    # call the kernel
+    blkszx = 512
+    nblkx = (n+blkszx-1)//blkszx
+    # blkszy = 512
+    # nblky = (n+blkszy-1)//blkszy
+
+    signs_times_v((nblkx,), (blkszx,), (n, Rijs_dev, vec_dev, new_vec_dev))
+
+    new_vec= new_vec_dev.get()
+
+    return new_vec
