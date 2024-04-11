@@ -690,7 +690,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     def _signs_times_v(self, Rijs, vec):
 
         # host/gpu dispatch
-        # new_vec = _signs_times_v_host(self.n_img, Rijs, vec, self.J_weighting, _ALTS)
+        # new_vec = _signs_times_v_host(self.n_img, Rijs, vec, self.J_weighting, _ALTS, self._pairs_to_linear)
 
         assert self.J_weighting == False, "not implemented yet"
         new_vec = _signs_times_v_cupy(self.n_img, Rijs, vec, self.J_weighting, _ALTS)
@@ -702,7 +702,7 @@ def PAIR_IDX(N, I, J):
     return (2 * N - I - 1) * I // 2 + J - I - 1
 
 
-def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS):
+def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
     """
     Ported from _signs_times_v_mex.c
 
@@ -727,14 +727,14 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS):
         desc += " with J_weighting"
     for i in trange(n, desc=desc):
         for j in range(i + 1, n - 1):  # check bound (taken from MATLAB mex)
-            # ij = self._pairs_to_linear[i, j]
-            ij = PAIR_IDX(n, i, j)
+            ij = _pairs_to_linear[i, j]
+            #ij = PAIR_IDX(n, i, j)
             Rij = Rijs[ij]
             for k in range(j + 1, n):
-                # ik = self._pairs_to_linear[i, k]
-                # jk = self._pairs_to_linear[j, k]
-                ik = PAIR_IDX(n, i, k)
-                jk = PAIR_IDX(n, j, k)
+                ik = _pairs_to_linear[i, k]
+                jk = _pairs_to_linear[j, k]
+                #ik = PAIR_IDX(n, i, k)
+                #jk = PAIR_IDX(n, j, k)
                 Rik = Rijs[ik]
                 Rjk = Rijs[jk]
 
@@ -784,9 +784,8 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS):
                 new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
                 new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
                 # new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
-                new_vec[ik] += (
-                    s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
-                )  # jk/ik? was a bug?? worked better with s_ij_jk...
+                # jk/ik? was a bug?? worked better with s_ij_jk...
+                new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
 
     return new_vec
 
@@ -808,7 +807,8 @@ def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS):
     code = r"""
 
 /* from i,j indoces to the common index in the N-choose-2 sized array */
-#define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2+J-I-1)
+#define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2 + J-I-1)
+
 
 inline void mult_3x3(double *out, double *R1, double *R2) {
 /* 3X3 matrices multiplication: out = R1*R2 */
@@ -854,10 +854,10 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
     //if(j >= n-1) return;
     //if(j < i+1) return;
 
-    unsigned long n_pairs = n*(n-1)/2;
-    double c[4]={0,0,0,0};
-    unsigned int ij, jk, ik;
-    unsigned int eig;
+    double c[4];
+    int j, k;
+    for(k=0;k<4;k++){c[k]=0;}
+    unsigned long ij, jk, ik;
     int best_i;
     double best_val;
     int s_ij_jk, s_ik_jk, s_ij_ik;
@@ -868,13 +868,15 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
 
     /* le sigh */
     int signs_confs[4][3];
+    for(int a=0; a<4; a++) { for(k=0; k<3; k++) { signs_confs[a][k]=1; } }
     signs_confs[2-1][1-1]=-1; signs_confs[2-1][3-1]=-1;
     signs_confs[3-1][1-1]=-1; signs_confs[3-1][2-1]=-1;
     signs_confs[4-1][2-1]=-1; signs_confs[4-1][3-1]=-1;
     
-    for(int j=i+1; j< n - 1; j++){
+
+    for(j=i+1; j< n - 1; j++){
         ij = PAIR_IDX(n, i, j);
-        for(int k=j+1; k< n; k++){
+        for(k=j+1; k< n; k++){
             ik = PAIR_IDX(n, i, k);
             jk = PAIR_IDX(n, j, k);
 
@@ -917,6 +919,7 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
 
         } /* k */
     } /* j */
+
     return;
 };
 """
