@@ -1,7 +1,7 @@
 import logging
 
-import numpy as np
 import cupy as cp
+import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
@@ -690,17 +690,19 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     def _signs_times_v(self, Rijs, vec):
 
         # host/gpu dispatch
-        #new_vec = _signs_times_v_host(self.n_img, Rijs, vec, self.J_weighting, _ALTS)
+        # new_vec = _signs_times_v_host(self.n_img, Rijs, vec, self.J_weighting, _ALTS)
 
-        assert self.J_weighting ==False, "not implemented yet"
+        assert self.J_weighting == False, "not implemented yet"
         new_vec = _signs_times_v_cupy(self.n_img, Rijs, vec, self.J_weighting, _ALTS)
 
         return new_vec
 
-def PAIR_IDX(N,I,J):
-    return ((2*N-I-1)*I//2+J-I-1)
-    
-def _signs_times_v_host(n, Rijs, vec,J_weighting, _ALTS):
+
+def PAIR_IDX(N, I, J):
+    return (2 * N - I - 1) * I // 2 + J - I - 1
+
+
+def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS):
     """
     Ported from _signs_times_v_mex.c
 
@@ -716,21 +718,21 @@ def _signs_times_v_host(n, Rijs, vec,J_weighting, _ALTS):
 
     new_vec = np.zeros_like(vec)
 
-    _signs_confs = np.array([[1, 1, 1], [-1, 1, -1], [-1, -1, 1], [1, -1, -1]], dtype=int)
+    _signs_confs = np.array(
+        [[1, 1, 1], [-1, 1, -1], [-1, -1, 1], [1, -1, -1]], dtype=int
+    )
     c = np.empty((4))
     desc = "Computing signs_times_v"
     if J_weighting:
         desc += " with J_weighting"
     for i in trange(n, desc=desc):
-        for j in range(
-            i + 1, n - 1
-        ):  # check bound (taken from MATLAB mex)
-            #ij = self._pairs_to_linear[i, j]
+        for j in range(i + 1, n - 1):  # check bound (taken from MATLAB mex)
+            # ij = self._pairs_to_linear[i, j]
             ij = PAIR_IDX(n, i, j)
             Rij = Rijs[ij]
             for k in range(j + 1, n):
-                #ik = self._pairs_to_linear[i, k]
-                #jk = self._pairs_to_linear[j, k]
+                # ik = self._pairs_to_linear[i, k]
+                # jk = self._pairs_to_linear[j, k]
                 ik = PAIR_IDX(n, i, k)
                 jk = PAIR_IDX(n, j, k)
                 Rik = Rijs[ik]
@@ -781,10 +783,13 @@ def _signs_times_v_host(n, Rijs, vec,J_weighting, _ALTS):
                 # Update vector entries
                 new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
                 new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
-                #new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
-                new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
+                # new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
+                new_vec[ik] += (
+                    s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
+                )  # jk/ik? was a bug?? worked better with s_ij_jk...
 
     return new_vec
+
 
 def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS):
     """
@@ -800,8 +805,7 @@ def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS):
     """
     # The code should be thread/parallel safe over `i`.
 
-
-    code = r'''
+    code = r"""
 
 /* from i,j indoces to the common index in the N-choose-2 sized array */
 #define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2+J-I-1)
@@ -915,10 +919,10 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
     } /* j */
     return;
 };
-'''
+"""
 
     module = cp.RawModule(code=code)
-    signs_times_v = module.get_function('signs_times_v')
+    signs_times_v = module.get_function("signs_times_v")
 
     Rijs_dev = cp.array(Rijs)
     vec_dev = cp.array(vec)
@@ -926,13 +930,13 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
 
     # call the kernel
     blkszx = 128
-    nblkx = (n+blkszx-1)//blkszx
+    nblkx = (n + blkszx - 1) // blkszx
     # blkszy = 2
     # nblky = (n+blkszy-1)//blkszy
 
-    #signs_times_v((nblkx,nblky), (blkszx,blkszy), (n, Rijs_dev, vec_dev, new_vec_dev))
+    # signs_times_v((nblkx,nblky), (blkszx,blkszy), (n, Rijs_dev, vec_dev, new_vec_dev))
     signs_times_v((nblkx,), (blkszx,), (n, Rijs_dev, vec_dev, new_vec_dev))
 
-    new_vec= new_vec_dev.get()
+    new_vec = new_vec_dev.get()
 
     return new_vec
