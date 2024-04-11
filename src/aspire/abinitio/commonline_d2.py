@@ -5,7 +5,8 @@ from numpy.linalg import norm
 
 from aspire.abinitio import CLOrient3D
 from aspire.operators import PolarFT
-from aspire.utils import Rotation, tqdm, trange
+from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, tqdm, trange
+from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class CLSymmetryD2(CLOrient3D):
         grid_res=1200,
         inplane_res=5,
         eq_min_dist=7,
+        epsilon=0.01,
         seed=None,
     ):
         """
@@ -63,6 +65,7 @@ class CLSymmetryD2(CLOrient3D):
         self.n_inplane_rots = int(360 / self.inplane_res)
         self.eq_min_dist = eq_min_dist
         self.seed = seed
+        self.epsilon = epsilon
         self._generate_gs()
 
     def estimate_rotations(self):
@@ -76,6 +79,14 @@ class CLSymmetryD2(CLOrient3D):
         self.generate_scl_lookup_data()
         self.compute_scl_scores()
         self.compute_cl_scores()
+
+        # Handedness Synchronization
+        self.Rijs_sync = self._global_J_sync(self.Rijs_est)
+        np.save("Rijs_sync.npy", self.Rijs_sync)
+        np.save("Rijs_est.npy", self.Rijs_est)
+        import pdb
+
+        pdb.set_trace()
 
     def compute_shifted_pf(self):
         """
@@ -178,6 +189,8 @@ class CLSymmetryD2(CLOrient3D):
             Rijs_est[~oct1_idx] = self.get_Rijs_from_oct(
                 lin_idx[~oct1_idx] - n_cand_per_oct, octant=2
             )
+
+        return Rijs_est
 
     def get_Rijs_from_oct(self, lin_idx, octant=1):
         if octant not in [1, 2]:
@@ -690,6 +703,200 @@ class CLSymmetryD2(CLOrient3D):
         self.oct2_ij_map = np.column_stack(
             (tmp1.flatten(order="F"), tmp2.flatten(order="F"))
         )
+
+    #############################
+    # Methods for Global J Sync #
+    #############################
+
+    def _global_J_sync(self, Rijs):
+        """
+        Global J-synchronization of all third row outer products. Given 3x3 matrices Rijs and viis, each
+        of which might contain a spurious J (ie. vij = J*vi*vj^T*J instead of vij = vi*vj^T),
+        we return Rijs and viis that all have either a spurious J or not.
+
+        :param Rijs: An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding
+        outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
+        might have a spurious J independently of other estimates.
+
+        :return: Rijs, all of which have a spurious J or not.
+        """
+        n_img = self.n_img
+
+        # Find best J_configuration.
+        J_list = self._J_configuration(Rijs)
+
+        # Determine relative handedness of Rijs.
+        sign_ij_J = self._J_sync_power_method(J_list)
+
+        # Synchronize Rijs
+        logger.info("Applying global handedness synchronization.")
+        mask = sign_ij_J == 1
+        Rijs[mask] = J_conjugate(Rijs[mask])
+
+        return Rijs
+
+    def _J_configuration(self, Rijs):
+        """
+        For each triplet of indices (i, j, k), consider the relative rotations
+        tuples {Ri^TgmRj}, {Ri^TglRk} and {Rj^TgrRk}. Compute norms of the form
+        ||Ri^TgmRj*Rj^TglRk-Ri^TglRk||, ||J*Ri^TgmRj*J*Rj^TglRk-Ri^TglRk||,
+        ||Ri^TgmRj*J*Rj^TglRk*J-Ri^TglRk| and ||Ri^TgmRj*Rj^TglRk-J*Ri^TglRk*J||
+        where gm,gl,gr are the varipus gorup members of Dn and J=diag([1,1-1]).
+        The correct "J-configuration" is given for the smallest of these 4 norms.
+
+        :param Rijs: (n-choose-2)x3x3 array of relative rotations.
+        :return: List of n-choose-3 indices in {0,1,2,3} indicating
+            which J-configuration for each triplet of Rijs, i<j<k.
+        """
+        self.triplets = all_triplets(self.n_img)
+        self.pairs, self.pairs_to_linear = all_pairs(self.n_img, return_map=True)
+        J_list = np.zeros(len(self.triplets), dtype="int")
+        R = Rijs
+        trip_idx = 0
+        pbar = tqdm(
+            desc="Finding best J-configuration over triplets", total=len(self.triplets)
+        )
+        for i, j, k in self.triplets:
+            ij = self.pairs_to_linear[i, j]
+            jk = self.pairs_to_linear[j, k]
+            ik = self.pairs_to_linear[i, k]
+            Rij, Rjk, Rik = R[ij], R[jk], R[ik]
+            Rjk_t = np.transpose(Rjk, (0, 2, 1))
+
+            Rij_J = J_conjugate(Rij)
+            Rjk_t_J = J_conjugate(Rjk_t)
+            Rik_J = J_conjugate(Rik)
+
+            final_votes = np.zeros(4)
+            final_votes[0] = self._compare_rots(Rij, Rjk_t, Rik)
+            final_votes[1] = self._compare_rots(Rij_J, Rjk_t, Rik)
+            final_votes[2] = self._compare_rots(Rij, Rjk_t_J, Rik)
+            final_votes[3] = self._compare_rots(Rij, Rjk_t, Rik_J)
+            J_list[trip_idx] = np.argmin(final_votes)
+            trip_idx += 1
+
+            pbar.update()
+        pbar.close()
+
+        return J_list
+
+    def _compare_rots(self, Rij, Rjk_t, Rik):
+        """
+        Compute norms for the 4 J-configurations and return indices
+        corresponding to best configuration for the provided triplet
+        of relative rotations.
+        """
+        prod_arr = np.einsum("nij,mjk->nmik", Rik, Rjk_t)
+
+        arr = np.zeros((8, 8, 3, 3), dtype=self.dtype)
+        arr[0:4, 0:4] = prod_arr - Rij[0]
+        arr[0:4, 4:8] = prod_arr - Rij[1]
+        arr[4:8, 0:4] = prod_arr - Rij[2]
+        arr[4:8, 4:8] = prod_arr - Rij[3]
+
+        arr = arr.reshape((64, 9))
+        arr = np.sum(arr**2, axis=1)
+        m = np.sort(arr.flatten())
+        vote = np.sum(m[:16])
+
+        return vote
+
+    def _J_sync_power_method(self, J_list):
+        """
+        Calculate the leading eigenvector of the J-synchronization matrix
+        using the power method.
+
+        As the J-synchronization matrix is of size (n-choose-2)x(n-choose-2), we
+        use the power method to compute the eigenvalues and eigenvectors,
+        while constructing the matrix on-the-fly.
+
+        :param Rijs: (n-choose-2)x3x3 array of estimates of relative orientation matrices.
+
+        :return: An array of length n-choose-2 consisting of 1 or -1, where the sign of the
+        i'th entry indicates whether the i'th relative orientation matrix will be J-conjugated.
+        """
+
+        # Set power method tolerance and maximum iterations.
+        epsilon = self.epsilon
+        max_iters = 100
+
+        # Initialize candidate eigenvectors
+        n_Rijs = len(self.pairs)
+        vec = randn(n_Rijs, seed=self.seed)
+        vec = vec / norm(vec)
+        residual = 1
+        itr = 0
+
+        # Power method iterations
+        logger.info(
+            "Initiating power method to estimate J-synchronization matrix eigenvector."
+        )
+        while itr < max_iters and residual > epsilon:
+            itr += 1
+            vec_new = self._signs_times_v2(J_list, vec)
+            vec_new = vec_new / norm(vec_new)
+            residual = norm(vec_new - vec)
+            vec = vec_new
+            logger.info(
+                f"Iteration {itr}, residual {round(residual, 5)} (target {epsilon})"
+            )
+
+        # We need only the signs of the eigenvector
+        J_sync = np.sign(vec)
+
+        return J_sync
+
+    def _signs_times_v2(self, J_list, vec):
+        """
+        Multiplication of the J-synchronization matrix by a candidate eigenvector.
+
+        The J-synchronization matrix is a matrix representation of the handedness graph, Gamma, whose set of
+        nodes consists of the estimates Rijs and whose set of edges consists of the undirected edges between
+        all triplets of estimates vij, vjk, and vik, where i<j<k. The weight of an edge is set to +1 if its
+        incident nodes agree in handednes and -1 if not.
+
+        The J-synchronization matrix is of size (n-choose-2)x(n-choose-2), where each entry corresponds to
+        the relative handedness of vij and vjk. The entry (ij, jk), where ij and jk are retrieved from the
+        all_pairs indexing, is 1 if vij and vjk are of the same handedness and -1 if not. All other entries
+        (ij, kl) hold a zero.
+
+        Due to the large size of the J-synchronization matrix we construct it on the fly as follows.
+        For each triplet of outer products vij, vjk, and vik, the associated elements of the J-synchronization
+        matrix are populated with +1 or -1 and multiplied by the corresponding elements of
+        the current candidate eigenvector supplied by the power method. The new candidate eigenvector
+        is updated for each triplet.
+
+        :param J_list: n-choose-3 array of indices indicating the best signs configuration.
+
+        :param vec: The current candidate eigenvector of length n-choose-2 from the power method.
+
+        :return: New candidate eigenvector of length n-choose-2. The product of the J-sync matrix and vec.
+        """
+        new_vec = np.zeros_like(vec)
+        signs_confs = np.array(
+            [[1, 1, 1], [-1, 1, -1], [-1, -1, 1], [1, -1, -1]], dtype=int
+        )
+        trip_idx = 0
+        for i in trange(self.n_img, desc="Computing signs_times_v"):
+            for j in range(i + 1, self.n_img - 1):
+                ij = self.pairs_to_linear[i, j]
+                for k in range(j + 1, self.n_img):
+                    ik = self.pairs_to_linear[i, k]
+                    jk = self.pairs_to_linear[j, k]
+
+                    best_i = J_list[trip_idx]
+                    trip_idx += 1
+
+                    s_ij_jk = signs_confs[best_i][0]
+                    s_ik_jk = signs_confs[best_i][1]
+                    s_ij_ik = signs_confs[best_i][2]
+
+                    # Update multiplication
+                    new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
+                    new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
+                    new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
+
+        return new_vec
 
     @staticmethod
     def circ_seq(n1, n2, L):
