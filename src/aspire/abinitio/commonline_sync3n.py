@@ -744,10 +744,10 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
                 Rjk_J = J_conjugate(Rjk)
 
                 # Compute R muls and norms
-                c[0] = np.sum(((Rij @ Rjk.T) - Rik) ** 2)
-                c[1] = np.sum(((Rij_J @ Rjk.T) - Rik) ** 2)
-                c[2] = np.sum(((Rij @ Rjk_J.T) - Rik) ** 2)
-                c[3] = np.sum(((Rij @ Rjk.T) - Rik_J) ** 2)
+                c[0] = np.sum(((Rjk @ Rij) - Rik) ** 2)
+                c[1] = np.sum(((Rjk @ Rij_J) - Rik) ** 2)
+                c[2] = np.sum(((Rjk_J @ Rij) - Rik) ** 2)
+                c[3] = np.sum(((Rjk @ Rij ) - Rik_J) ** 2)
 
                 # Find best match
                 best_i = np.argmin(c)
@@ -817,8 +817,8 @@ inline void mult_3x3(double *out, double *R1, double *R2) {
 	int i,j;
 	for (i=0; i<3; i++) {
 		for (j=0;j<3;j++) {
-//			out[3*j+i] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
-			out[3*i+j] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
+			out[3*j+i] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
+//			out[3*i+j] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
 
 		}
 	}
