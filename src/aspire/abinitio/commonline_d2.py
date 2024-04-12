@@ -67,6 +67,8 @@ class CLSymmetryD2(CLOrient3D):
         self.seed = seed
         self.epsilon = epsilon
         self._generate_gs()
+        self.triplets = all_triplets(self.n_img)
+        self.pairs, self.pairs_to_linear = all_pairs(self.n_img, return_map=True)
 
     def estimate_rotations(self):
         """
@@ -74,19 +76,23 @@ class CLSymmetryD2(CLOrient3D):
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
+        # Pre-compute phase-shifted polar Fourier.
         self.compute_shifted_pf()
+
+        # Generate lookup data
         self.generate_lookup_data()
         self.generate_scl_lookup_data()
+
+        # Compute common-line scores.
         self.compute_scl_scores()
+
+        # Compute common-lines and estimate relative rotations Rijs.
         self.compute_cl_scores()
 
-        # Handedness Synchronization
+        # Perform handedness synchronization.
         self.Rijs_sync = self._global_J_sync(self.Rijs_est)
-        np.save("Rijs_sync.npy", self.Rijs_sync)
-        np.save("Rijs_est.npy", self.Rijs_est)
-        import pdb
 
-        pdb.set_trace()
+        # Synchronize colors.
 
     def compute_shifted_pf(self):
         """
@@ -714,7 +720,7 @@ class CLSymmetryD2(CLOrient3D):
         of which might contain a spurious J (ie. vij = J*vi*vj^T*J instead of vij = vi*vj^T),
         we return Rijs and viis that all have either a spurious J or not.
 
-        :param Rijs: An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding
+        :param Rijs: An (n-choose-2)x4 x3x3 array where each 3x3 slice holds an estimate for the corresponding
         outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
         might have a spurious J independently of other estimates.
 
@@ -897,6 +903,99 @@ class CLSymmetryD2(CLOrient3D):
                     new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
 
         return new_vec
+
+    ######################
+    # Synchronize Colors #
+    ######################
+
+    def _sync_colors(self, Rijs):
+
+        # Generate array of one rank matrices from which we can extract rows.
+        # Matrices are of the form 0.5(Ri^TRj+Ri^TgkRj). Each such matrix can be
+        # written in the form Qi^T*Ik*Qj where Ik is a 3x3 matrix with all zero
+        # entries except for the entry a_kk, k in {1,2,3}.
+        n_pairs = len(Rijs)
+        Rijs_rows = np.zeros((n_pairs, 3, 3, 3), dtype=self.dtype)
+        for layer in range(3):
+            Rijs_rows[:, layer] = 0.5 * (Rijs[:, 0] + Rijs[:, layer + 1])
+
+        # Partition the set of matrices Rijs_rows into 3 sets of matrices, where
+        # each set there are only matrices Qi^T*Ik*Qj for a unique value of k in
+        # {1,2,3}.
+        # First determine for each pair of tuples of the form {Qi^T*Ik*Qj} and
+        # {Qr^T*Il*Qj} where {i,j}\cap{r,l}==1, whether l==r.
+        color_perms = self._match_colors(Rijs_rows)
+        return color_perms
+
+    def _match_colors(self, Rijs_rows):
+        Rijs_rows_t = np.transpose(Rijs_rows, (0, 1, 3, 2))
+        trip_perms = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
+        inverse_perms = [
+            [1, 2, 3],
+            [1, 3, 2],
+            [2, 1, 3],
+            [3, 1, 2],
+            [2, 3, 1],
+            [3, 2, 1],
+        ]
+
+        m = np.zeros(6)
+        colors_i = np.zeros((len(self.triplets), 3), dtype=self.dtype)  # int?
+        n_trip = len(self.triplets)
+        votes = np.zeros((n_trip))
+
+        # Compute relative color permutations. See Section 7.2 of paper.
+        for i, j, k in self.triplets:
+            ij = self.pairs_to_linear[i, j]
+            jk = self.pairs_to_linear[j, k]
+            ik = self.pairs_to_linear[i, k]
+
+            # For r=1:3 compute 3*3 products v_{ji}(r)v_{ik}v_{kj}
+            prod_arr = np.einsum("nij,mjk->mnik", Rijs_rows[ik], Rijs_rows_t[jk])
+            prod_arr_tmp = prod_arr.copy()
+            prod_arr = np.einsum(
+                "nij,mjk->nmik", Rijs_rows_t[ij], prod_arr.reshape((9, 3, 3))
+            )
+            prod_arr = np.transpose(
+                prod_arr.reshape((3, 3, 3, 9), order="F"), (2, 1, 0, 3)
+            )
+
+            # Compare to v_{jj}(r)=v_{ji}v_{ij}.
+            self_prods = Rijs_rows_t[ij] @ Rijs_rows[ij]
+            self_prods = self_prods.reshape(3, 9)
+
+            prod_arr1 = prod_arr.copy()
+            prod_arr1[:, :, 0, :] = prod_arr1[:, :, 0, :] - self_prods[0]
+            prod_arr1[:, :, 1, :] = prod_arr1[:, :, 1, :] - self_prods[1]
+            prod_arr1[:, :, 2, :] = prod_arr1[:, :, 2, :] - self_prods[2]
+            norms1 = np.sum(prod_arr1**2, axis=3)
+
+            prod_arr2 = prod_arr.copy()
+            prod_arr2[:, :, 0, :] = prod_arr2[:, :, 0, :] + self_prods[0]
+            prod_arr2[:, :, 1, :] = prod_arr2[:, :, 1, :] + self_prods[1]
+            prod_arr2[:, :, 2, :] = prod_arr2[:, :, 2, :] + self_prods[2]
+            norms2 = np.sum(prod_arr2**2, axis=3)
+
+            # Compare to v_{jj}(r)=v_{jk}v_{kj}.
+            self_prods = Rijs_rows[jk] @ Rijs_rows_t[jk]
+            self_prods = self_prods.reshape(3, 9)
+
+            prod_arr1 = prod_arr.copy()
+            prod_arr1[0] = prod_arr1[0] - self_prods[0]
+            prod_arr1[1] = prod_arr1[1] - self_prods[1]
+            prod_arr1[2] = prod_arr1[2] - self_prods[2]
+            norms1 = norms1 + np.sum(prod_arr1**2, axis=3)
+
+            prod_arr2 = prod_arr.copy()
+            prod_arr2[0] = prod_arr2[0] + self_prods[0]
+            prod_arr2[1] = prod_arr2[1] + self_prods[1]
+            prod_arr2[2] = prod_arr2[2] + self_prods[2]
+            norms2 = norms2 + np.sum(prod_arr2**2, axis=3)
+            # Verfied up to this point!
+
+    ####################
+    # Helper Functions #
+    ####################
 
     @staticmethod
     def circ_seq(n1, n2, L):
