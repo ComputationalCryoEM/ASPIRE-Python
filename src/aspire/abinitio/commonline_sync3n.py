@@ -312,10 +312,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                     Rjk_J = J_conjugate(Rjk)
 
                     # Compute R muls and norms
-                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
-                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
-                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
-                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+                    c[0] = np.sum(((Rij @ Rjk.T) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk.T) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J.T) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk.T) - Rik_J) ** 2)
 
                     # Find best match
                     best_i = np.argmin(c)
@@ -392,10 +392,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                     Rjk_J = J_conjugate(Rjk)
 
                     # Compute R muls and norms
-                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
-                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
-                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
-                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+                    c[0] = np.sum(((Rij @ Rjk.T) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk.T) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J.T) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk.T) - Rik_J) ** 2)
 
                     # Find best match
                     best_i = np.argmin(c)
@@ -728,13 +728,13 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
     for i in trange(n, desc=desc):
         for j in range(i + 1, n - 1):  # check bound (taken from MATLAB mex)
             ij = _pairs_to_linear[i, j]
-            #ij = PAIR_IDX(n, i, j)
+            # ij = PAIR_IDX(n, i, j)
             Rij = Rijs[ij]
             for k in range(j + 1, n):
                 ik = _pairs_to_linear[i, k]
                 jk = _pairs_to_linear[j, k]
-                #ik = PAIR_IDX(n, i, k)
-                #jk = PAIR_IDX(n, j, k)
+                # ik = PAIR_IDX(n, i, k)
+                # jk = PAIR_IDX(n, j, k)
                 Rik = Rijs[ik]
                 Rjk = Rijs[jk]
 
@@ -744,10 +744,10 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
                 Rjk_J = J_conjugate(Rjk)
 
                 # Compute R muls and norms
-                c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
-                c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
-                c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
-                c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+                c[0] = np.sum(((Rij @ Rjk.T) - Rik) ** 2)
+                c[1] = np.sum(((Rij_J @ Rjk.T) - Rik) ** 2)
+                c[2] = np.sum(((Rij @ Rjk_J.T) - Rik) ** 2)
+                c[3] = np.sum(((Rij @ Rjk.T) - Rik_J) ** 2)
 
                 # Find best match
                 best_i = np.argmin(c)
@@ -810,12 +810,16 @@ def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS):
 #define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2 + J-I-1)
 
 
+// DEBUG TRANS BUGS
 inline void mult_3x3(double *out, double *R1, double *R2) {
-/* 3X3 matrices multiplication: out = R1*R2 */
+// /* 3X3 matrices multiplication: out = R1*R2 */
+// out.T = R1.T @ R2.T ?
 	int i,j;
 	for (i=0; i<3; i++) {
 		for (j=0;j<3;j++) {
-			out[3*j+i] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
+//			out[3*j+i] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
+			out[3*i+j] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
+
 		}
 	}
 }
@@ -847,15 +851,13 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
 {
     /* thread index (1d), represents "i" index */
     unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
-    //unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
 
     /* no-op when out of bounds */
     if(i >= n) return;
-    //if(j >= n-1) return;
-    //if(j < i+1) return;
 
     double c[4];
-    int j, k;
+    int j;
+    int k;
     for(k=0;k<4;k++){c[k]=0;}
     unsigned long ij, jk, ik;
     int best_i;
@@ -874,7 +876,7 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
     signs_confs[4-1][2-1]=-1; signs_confs[4-1][3-1]=-1;
     
 
-    for(j=i+1; j< n - 1; j++){
+    for(j=i+1; j< (n - 1); j++){
         ij = PAIR_IDX(n, i, j);
         for(k=j+1; k< n; k++){
             ik = PAIR_IDX(n, i, k);
@@ -913,9 +915,10 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
             s_ij_ik = signs_confs[best_i][2];
 
             /* update multiplication */
-            new_vec[ij] += s_ij_jk*vec[jk] + s_ij_ik*vec[ik];
-            new_vec[jk] += s_ij_jk*vec[ij] + s_ik_jk*vec[ik];
-            new_vec[ik] += s_ij_ik*vec[ij] + s_ik_jk*vec[jk];  /* ij jk bug? */
+            new_vec[ij*n + i] += s_ij_jk*vec[jk] + s_ij_ik*vec[ik];
+            new_vec[jk*n + i] += s_ij_jk*vec[ij] + s_ik_jk*vec[ik];
+            new_vec[ik*n + i] += s_ij_ik*vec[ij] + s_ik_jk*vec[jk];  /* ij jk bug?, relating to mat mul T? */
+            //new_vec[ik*n + i] += s_ij_jk*vec[ij] + s_ik_jk*vec[jk];  /* ij jk bug? */
 
         } /* k */
     } /* j */
@@ -929,17 +932,19 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
 
     Rijs_dev = cp.array(Rijs)
     vec_dev = cp.array(vec)
-    new_vec_dev = cp.zeros_like(vec)
+    # 2d over i then accum to avoid race on i
+    new_vec_dev = cp.zeros((vec.shape[0], n))
 
     # call the kernel
-    blkszx = 128
+    blkszx = 512
     nblkx = (n + blkszx - 1) // blkszx
-    # blkszy = 2
-    # nblky = (n+blkszy-1)//blkszy
 
-    # signs_times_v((nblkx,nblky), (blkszx,blkszy), (n, Rijs_dev, vec_dev, new_vec_dev))
     signs_times_v((nblkx,), (blkszx,), (n, Rijs_dev, vec_dev, new_vec_dev))
 
-    new_vec = new_vec_dev.get()
+    # accumulate, can reuse the vec_dev array now.
+    cp.sum(new_vec_dev, axis=1, out=vec_dev)
+
+    # dtoh
+    new_vec = vec_dev.get()
 
     return new_vec
