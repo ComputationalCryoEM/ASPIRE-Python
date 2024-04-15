@@ -1,3 +1,21 @@
+"""
+Notes on env setup (Linux x86_64)
+
+conda create -n cryojax-aspire-env -c conda-forge python=3.11
+conda activate cryojax-aspire-env
+python -m pip install cryojax
+# note if installing from source, will need `git-lfs pull` to download data files.
+# note that we actually ended up using the `grid-search` development branch (not the pypi package above)
+# Todo, update these notes when polishing the example.
+
+
+git clone -b develop git@github.com:ComputationalCryoEM/ASPIRE-Python
+cd ASPIRE-Python
+pip install -e ".[dev]"
+# Installing from pypi was similar, no issues.
+
+"""
+
 # Jax imports
 import jax
 import jax.numpy as jnp
