@@ -89,23 +89,8 @@ def make_pipeline(key: PRNGKeyArray, no_vmap: tuple[PyTree, ...]) -> cxs.ImagePi
     # ... now in-plane translation
     ny, nx = config.shape
 
-    # TODO, remove this
-    in_plane_offset_in_angstroms = (
-        jax.random.uniform(key, (2,), minval=-0.45, maxval=0.45)
-        * jnp.asarray((nx, ny))
-        * config.pixel_size
-        * 0  # hack
-    )
-    # ... convert 2D in-plane translation to 3D, setting the out-of-plane translation to
-    # zero
-    offset_in_angstroms = jnp.pad(in_plane_offset_in_angstroms, ((0, 1),))
     # ... build the pose
-    pose = cxs.QuaternionPose.from_rotation_and_translation(
-        rotation, offset_in_angstroms
-    )
-
-    # # TODO: Ask what I'm doing wrong here ...
-    # pose = cxs.QuaternionPose.from_rotation(rotation)
+    pose = cxs.QuaternionPose.from_rotation(rotation)
 
     # ... build the Specimen and ImagePipeline as usual and return
     specimen = cxs.Specimen(potential, integrator, pose)
@@ -123,7 +108,7 @@ pipeline = make_pipeline(
 
 
 # ... specify which leaves we would like to vmap over
-where = lambda pipeline: pipeline.specimen.pose
+where = lambda pipeline: pipeline.specimen.pose.wxyz
 # ... use a cryojax wrapper to return a filter_spec
 filter_spec = cx.get_filter_spec(pipeline, where)
 
