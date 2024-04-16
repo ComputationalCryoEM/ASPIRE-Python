@@ -1,6 +1,5 @@
 import logging
 
-import cupy as cp
 import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import curve_fit
@@ -86,6 +85,22 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         self.S_weighting = S_weighting
         self.J_weighting = J_weighting
         self._D_null = 1e-13
+
+        # Auto configure GPU
+        self._use_gpu = False
+        try:
+            import cupy as cp
+
+            if cp.cuda.runtime.getDeviceCount() >= 1:
+                gpu_id = cp.cuda.runtime.getDevice()
+                logger.info(
+                    f"cupy and GPU {gpu_id} found by cuda runtime; enabling cupy."
+                )
+                self._use_gpu = True
+            else:
+                logger.info("GPU not found, defaulting to numpy.")
+        except ModuleNotFoundError:
+            logger.info("cupy not found, defaulting numpy.")
 
     ###########################################
     # High level algorithm steps              #
@@ -286,7 +301,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
     def _triangle_scores_mex(self, Rijs, hist_intervals):
         # The following is adopted from Matlab triangle_scores_mex.c
-        # The code should be thread/parallel safe over `i` when results are gathered (via sum).
 
         # Initialize probability result arrays
         cum_scores = np.zeros(len(Rijs), dtype=self.dtype)
@@ -369,7 +383,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
     def _pairs_probabilities(self, Rijs, P2, A, a, B, b, x0):
         # The following is adopted from Matlab pairas_probabilities_mex.c `looper`
-        # The code should be thread/parallel safe over `i` when results are gathered (via sum).
 
         # Initialize probability result arrays
         ln_f_ind = np.zeros(len(Rijs), dtype=self.dtype)
@@ -690,16 +703,17 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     def _signs_times_v(self, Rijs, vec):
 
         # host/gpu dispatch
-        # new_vec = _signs_times_v_host(self.n_img, Rijs, vec, self.J_weighting, _ALTS, self._pairs_to_linear)
-
-        assert self.J_weighting == False, "not implemented yet"
-        new_vec = _signs_times_v_cupy(self.n_img, Rijs, vec, self.J_weighting, _ALTS)
+        if self._use_gpu:
+            assert self.J_weighting is False, "not implemented yet"
+            new_vec = _signs_times_v_cupy(
+                self.n_img, Rijs, vec, self.J_weighting, _ALTS
+            )
+        else:
+            new_vec = _signs_times_v_host(
+                self.n_img, Rijs, vec, self.J_weighting, _ALTS, self._pairs_to_linear
+            )
 
         return new_vec
-
-
-def PAIR_IDX(N, I, J):
-    return (2 * N - I - 1) * I // 2 + J - I - 1
 
 
 def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
@@ -714,7 +728,6 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
     _ALTS= 2x4x3 const lut array
     _signs_confs = 4x3 const lut array
     """
-    # The code should be thread/parallel safe over `i`.
 
     new_vec = np.zeros_like(vec)
 
@@ -728,13 +741,10 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
     for i in trange(n, desc=desc):
         for j in range(i + 1, n - 1):  # check bound (taken from MATLAB mex)
             ij = _pairs_to_linear[i, j]
-            # ij = PAIR_IDX(n, i, j)
             Rij = Rijs[ij]
             for k in range(j + 1, n):
                 ik = _pairs_to_linear[i, k]
                 jk = _pairs_to_linear[j, k]
-                # ik = PAIR_IDX(n, i, k)
-                # jk = PAIR_IDX(n, j, k)
                 Rik = Rijs[ik]
                 Rjk = Rijs[jk]
 
@@ -747,7 +757,7 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
                 c[0] = np.sum(((Rjk @ Rij) - Rik) ** 2)
                 c[1] = np.sum(((Rjk @ Rij_J) - Rik) ** 2)
                 c[2] = np.sum(((Rjk_J @ Rij) - Rik) ** 2)
-                c[3] = np.sum(((Rjk @ Rij ) - Rik_J) ** 2)
+                c[3] = np.sum(((Rjk @ Rij) - Rik_J) ** 2)
 
                 # Find best match
                 best_i = np.argmin(c)
@@ -802,7 +812,7 @@ def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS):
     #todo _ALTS= 2x4x3 const lut array
     #todo _signs_confs = 4x3 const lut array
     """
-    # The code should be thread/parallel safe over `i`.
+    import cupy as cp
 
     code = r"""
 
@@ -814,35 +824,35 @@ def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS):
 inline void mult_3x3(double *out, double *R1, double *R2) {
 // /* 3X3 matrices multiplication: out = R1*R2 */
 // out.T = R1.T @ R2.T ?
-	int i,j;
-	for (i=0; i<3; i++) {
-		for (j=0;j<3;j++) {
-			out[3*j+i] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
-//			out[3*i+j] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
+        int i,j;
+        for (i=0; i<3; i++) {
+                for (j=0;j<3;j++) {
+                        out[3*j+i] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
+//                      out[3*i+j] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
 
-		}
-	}
+                }
+        }
 }
 
 inline void JRJ(double *R, double *A) {
 /* multiple 3X3 matrix by J from both sizes: A = JRJ */
-	A[0]=R[0];
-	A[1]=R[1];
-	A[2]=-R[2];
-	A[3]=R[3];
-	A[4]=R[4];
-	A[5]=-R[5];
-	A[6]=-R[6];
-	A[7]=-R[7];
-	A[8]=R[8];
+        A[0]=R[0];
+        A[1]=R[1];
+        A[2]=-R[2];
+        A[3]=R[3];
+        A[4]=R[4];
+        A[5]=-R[5];
+        A[6]=-R[6];
+        A[7]=-R[7];
+        A[8]=R[8];
 }
 
 inline double diff_norm_3x3(const double *R1, const double *R2) {
 /* difference 2 matrices and return squared norm: ||R1-R2||^2 */
-	int i;
-	double norm = 0;
-	for (i=0; i<9; i++) {norm += (R1[i]-R2[i])*(R1[i]-R2[i]);}
-	return norm;
+        int i;
+        double norm = 0;
+        for (i=0; i<9; i++) {norm += (R1[i]-R2[i])*(R1[i]-R2[i]);}
+        return norm;
 }
 
 
@@ -874,7 +884,7 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
     signs_confs[2-1][1-1]=-1; signs_confs[2-1][3-1]=-1;
     signs_confs[3-1][1-1]=-1; signs_confs[3-1][2-1]=-1;
     signs_confs[4-1][2-1]=-1; signs_confs[4-1][3-1]=-1;
-    
+
 
     for(j=i+1; j< (n - 1); j++){
         ij = PAIR_IDX(n, i, j);
@@ -883,32 +893,32 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
             jk = PAIR_IDX(n, j, k);
 
             /* compute configurations matches scores */
-	    Rij = Rijs + 9*ij;
-	    Rjk = Rijs + 9*jk;
+            Rij = Rijs + 9*ij;
+            Rjk = Rijs + 9*jk;
             Rik = Rijs + 9*ik;
-                        
+
             JRJ(Rij, JRijJ);
             JRJ(Rjk, JRjkJ);
             JRJ(Rik, JRikJ);
-                        
+
             mult_3x3(tmp,Rij,Rjk);
             c[0] = diff_norm_3x3(tmp,Rik);
-                        
+
             mult_3x3(tmp,JRijJ,Rjk);
             c[1] = diff_norm_3x3(tmp,Rik);
-                        
+
             mult_3x3(tmp,Rij,JRjkJ);
             c[2] = diff_norm_3x3(tmp,Rik);
-                        
+
             mult_3x3(tmp,Rij,Rjk);
             c[3] = diff_norm_3x3(tmp,JRikJ);
-                        
+
             /* find best match */
             best_i=0; best_val=c[0];
             if (c[1]<best_val) {best_i=1; best_val=c[1];}
             if (c[2]<best_val) {best_i=2; best_val=c[2];}
             if (c[3]<best_val) {best_i=3; best_val=c[3];}
-        
+
             /* set triangles entries to be signs */
             s_ij_jk = signs_confs[best_i][0];
             s_ik_jk = signs_confs[best_i][1];
