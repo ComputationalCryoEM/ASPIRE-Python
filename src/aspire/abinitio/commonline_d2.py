@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+import scipy.sparse.linalg as la
 from numpy.linalg import norm
 
 from aspire.abinitio import CLOrient3D
@@ -925,6 +926,21 @@ class CLSymmetryD2(CLOrient3D):
         # First determine for each pair of tuples of the form {Qi^T*Ik*Qj} and
         # {Qr^T*Il*Qj} where {i,j}\cap{r,l}==1, whether l==r.
         color_perms = self._match_colors(Rijs_rows)
+
+        # Compute eigenvectors of color matrix. This is just a matrix of dimensions
+        # 3(N choose 2)x3(N choose 2) where each entry corresponds to a pair of
+        # matrices {Qi^T*Ir*Qj} and {Qr^T*Il*Qj} and eqauls \delta_rl.
+        # The 2 leading eigenvectors span a linear subspace which contains a
+        # vector which encodes the partition. All the entries of the vector are
+        # either 1,0 or -1, where the number encodes which the index r in Ir.
+        # This vector is a linear combination of the two leading eigen vectors,
+        # and so we 'unmix' these vectors to retrieve it.
+        cmat = lambda v: self.mult_cmat_by_vec(color_perms, v)
+        omega = la.LinearOperator((3 * n_pairs,) * 2, cmat)
+        vals, colors = la.eigs(omega, k=3, which="LR")
+        import pdb
+
+        pdb.set_trace()
         return color_perms
 
     def _match_colors(self, Rijs_rows):
@@ -1040,11 +1056,12 @@ class CLSymmetryD2(CLOrient3D):
 
             min_idx = np.unravel_index(np.argmin(m), m.shape)
             votes[trip_idx] = m[min_idx]
+
+            # Store permutation indices as digits in of base 10 number.
             colors_i[trip_idx, :2] = [
                 100 * (min_idx[0] + 1),
                 10 * (min_idx[1] + 1),
-            ]  # What's up with 100 and 10??
-            # might need to use 1-based indexing for colors_i, ie min_idx[i] + 1
+            ]
 
             # Calculate the relative permutation of Rik to Rij given
             # by (sigma_ik)\circ(sigma_ij)^-1
@@ -1059,6 +1076,80 @@ class CLSymmetryD2(CLOrient3D):
         colors_i = np.sum(colors_i, axis=1)
 
         return colors_i
+
+    def mult_cmat_by_vec(self, c_perms, v):
+        """
+        Multiply color matrix by vector v "on the fly".
+
+        :param c_perms: An (N over 3) vector. Each corresponds to a triplet of
+            indices i<j<k and indicates the relative permutation of tuples
+            {Qi^TIrQj},{Qj^TIlQk} and {Qk^TIlQi}. The color matrix can be
+            completely reconstructed from this information, which is used
+            here to execute a single multiplication of the matrix by the
+            vector v instead of explicitely computing and storing the prohibitively
+            large color matrix in memory.
+        :param v: vector to be multiplied by 'color matrix'.
+        """
+        t_perms = np.array(
+            [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
+        )
+        i_perms = np.array(
+            [[0, 1, 2], [0, 2, 1], [1, 0, 2], [2, 0, 1], [1, 2, 0], [2, 1, 0]]
+        )
+        out = np.zeros_like(v)
+        trip_idx = 0
+        for i in trange(self.n_img, desc="Computing cmat_times_v."):
+            for j in range(i + 1, self.n_img - 1):
+                ij = 3 * self.pairs_to_linear[i, j] - 2
+                for k in range(j + 1, self.n_img):
+                    ik = 3 * self.pairs_to_linear[i, k] - 2
+                    jk = 3 * self.pairs_to_linear[j, k] - 2
+
+                    # Extract permutation indices from c_perms
+                    n = c_perms[trip_idx]
+                    p_n1 = n // 100
+                    p_n3 = n % 10
+                    p_n2 = (n - p_n1 * 100 - p_n3) // 10
+
+                    # Adjust for 0-based indexing. (Take this out)
+                    p_n1 = (p_n1 - 1).astype("int")
+                    p_n2 = (p_n2 - 1).astype("int")
+                    p_n3 = (p_n3 - 1).astype("int")
+
+                    # Multiply vector by color matrix
+
+                    # Upper triangular part
+                    p = t_perms[p_n1] + ik
+                    out[ij] = out[ij] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[ij + 1] = out[ij + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[ij + 2] = out[ij + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+
+                    p = t_perms[p_n2] + jk
+                    out[ij] = out[ij] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[ij + 1] = out[ij + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[ij + 2] = out[ij + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+
+                    p = i_perms[p_n3] + jk
+                    out[ik] = out[ik] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[ik + 1] = out[ik + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[ik + 2] = out[ik + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+
+                    # Lower triangular part
+                    p = i_perms[p_n1] + ij
+                    out[ik] = out[ik] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[ik + 1] = out[ik + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[ik + 2] = out[ik + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+
+                    p = i_perms[p_n2] + ij
+                    out[jk] = out[jk] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[jk + 1] = out[jk + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[jk + 2] = out[jk + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+
+                    p = t_perms[p_n3] + ik
+                    out[jk] = out[jk] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[jk + 1] = out[jk + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[jk + 2] = out[jk + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+        return out
 
     ####################
     # Helper Functions #
