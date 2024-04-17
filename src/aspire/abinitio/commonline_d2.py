@@ -929,20 +929,27 @@ class CLSymmetryD2(CLOrient3D):
 
     def _match_colors(self, Rijs_rows):
         Rijs_rows_t = np.transpose(Rijs_rows, (0, 1, 3, 2))
-        trip_perms = [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]]
-        inverse_perms = [
-            [1, 2, 3],
-            [1, 3, 2],
-            [2, 1, 3],
-            [3, 1, 2],
-            [2, 3, 1],
-            [3, 2, 1],
-        ]
+        trip_perms = np.array(
+            [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]],
+            dtype="int",
+        )
+        inverse_perms = np.array(
+            [
+                [0, 1, 2],
+                [0, 2, 1],
+                [1, 0, 2],
+                [2, 0, 1],
+                [1, 2, 0],
+                [2, 1, 0],
+            ],
+            dtype="int",
+        )
 
-        m = np.zeros(6)
-        colors_i = np.zeros((len(self.triplets), 3), dtype=self.dtype)  # int?
+        m = np.zeros((6, 6), dtype=self.dtype)
+        colors_i = np.zeros((len(self.triplets), 3), dtype=self.dtype)  # ints?
         n_trip = len(self.triplets)
         votes = np.zeros((n_trip))
+        trip_idx = 0
 
         # Compute relative color permutations. See Section 7.2 of paper.
         for i, j, k in self.triplets:
@@ -991,7 +998,67 @@ class CLSymmetryD2(CLOrient3D):
             prod_arr2[1] = prod_arr2[1] + self_prods[1]
             prod_arr2[2] = prod_arr2[2] + self_prods[2]
             norms2 = norms2 + np.sum(prod_arr2**2, axis=3)
-            # Verfied up to this point!
+
+            # For r=1:3 compute 3*3 products v_{ij}(r)v_{jk}v_{ki} and compare to
+            # Compare to v_{ii}(r)=v_{ij}v_{ji}
+            prod_arr = np.transpose(prod_arr_tmp, (0, 1, 3, 2))
+            prod_arr = np.einsum(
+                "nij,mjk->mnik", Rijs_rows[ij], prod_arr.reshape(9, 3, 3)
+            )
+            prod_arr = np.transpose(
+                prod_arr.reshape((3, 3, 3, 9), order="F"), (1, 0, 2, 3)
+            )
+            # Commented out calculations in matlab here.
+
+            # Compare to v_{ii}(r)=v_{ik}v_{ki}.
+            self_prods = Rijs_rows[ik] @ Rijs_rows_t[ik]
+            self_prods = self_prods.reshape(3, 9)
+
+            prod_arr1 = prod_arr.copy()
+            prod_arr1[:, 0] = prod_arr1[:, 0] - self_prods[0]
+            prod_arr1[:, 1] = prod_arr1[:, 1] - self_prods[1]
+            prod_arr1[:, 2] = prod_arr1[:, 2] - self_prods[2]
+            norms1 = norms1 + np.sum(prod_arr1**2, axis=3)
+
+            prod_arr2 = prod_arr.copy()
+            prod_arr2[:, 0] = prod_arr2[:, 0] + self_prods[0]
+            prod_arr2[:, 1] = prod_arr2[:, 1] + self_prods[1]
+            prod_arr2[:, 2] = prod_arr2[:, 2] + self_prods[2]
+            norms2 = norms2 + np.sum(prod_arr2**2, axis=3)
+
+            norms = np.minimum(norms1, norms2)
+
+            for l in range(6):
+                p1 = trip_perms[l]
+                for r in range(6):
+                    p2 = trip_perms[r]
+                    m[l, r] = (
+                        norms[p2[0], p1[0], 0]
+                        + norms[p2[1], p1[1], 1]
+                        + norms[p2[2], p1[2], 2]
+                    )
+
+            min_idx = np.unravel_index(np.argmin(m), m.shape)
+            votes[trip_idx] = m[min_idx]
+            colors_i[trip_idx, :2] = [
+                100 * (min_idx[0] + 1),
+                10 * (min_idx[1] + 1),
+            ]  # What's up with 100 and 10??
+            # might need to use 1-based indexing for colors_i, ie min_idx[i] + 1
+
+            # Calculate the relative permutation of Rik to Rij given
+            # by (sigma_ik)\circ(sigma_ij)^-1
+            inv_jk_perm = inverse_perms[min_idx[1]]
+            rel_perm = trip_perms[min_idx[0]]
+            rel_perm = rel_perm[inv_jk_perm]
+            colors_i[trip_idx, 2] = (2 * (rel_perm[0] + 1) - 1) + (
+                rel_perm[1] > rel_perm[2]
+            )
+            trip_idx += 1
+
+        colors_i = np.sum(colors_i, axis=1)
+
+        return colors_i
 
     ####################
     # Helper Functions #
