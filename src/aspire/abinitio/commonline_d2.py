@@ -727,8 +727,6 @@ class CLSymmetryD2(CLOrient3D):
 
         :return: Rijs, all of which have a spurious J or not.
         """
-        n_img = self.n_img
-
         # Find best J_configuration.
         J_list = self._J_configuration(Rijs)
 
@@ -935,12 +933,11 @@ class CLSymmetryD2(CLOrient3D):
         # either 1,0 or -1, where the number encodes which the index r in Ir.
         # This vector is a linear combination of the two leading eigen vectors,
         # and so we 'unmix' these vectors to retrieve it.
-        cmat = lambda v: self.mult_cmat_by_vec(color_perms, v)
-        omega = la.LinearOperator((3 * n_pairs,) * 2, cmat)
-        vals, colors = la.eigs(omega, k=3, which="LR")
-        import pdb
+        color_mat = la.LinearOperator(
+            (3 * n_pairs,) * 2, lambda v: self.mult_cmat_by_vec(color_perms, v)
+        )
+        vals, colors = la.eigs(color_mat, k=3, which="LR")
 
-        pdb.set_trace()
         return color_perms
 
     def _match_colors(self, Rijs_rows):
@@ -1044,11 +1041,11 @@ class CLSymmetryD2(CLOrient3D):
 
             norms = np.minimum(norms1, norms2)
 
-            for l in range(6):
-                p1 = trip_perms[l]
-                for r in range(6):
-                    p2 = trip_perms[r]
-                    m[l, r] = (
+            for r in range(6):
+                p1 = trip_perms[r]
+                for s in range(6):
+                    p2 = trip_perms[s]
+                    m[r, s] = (
                         norms[p2[0], p1[0], 0]
                         + norms[p2[1], p1[1], 1]
                         + norms[p2[2], p1[2], 2]
@@ -1100,18 +1097,19 @@ class CLSymmetryD2(CLOrient3D):
         trip_idx = 0
         for i in trange(self.n_img, desc="Computing cmat_times_v."):
             for j in range(i + 1, self.n_img - 1):
-                ij = 3 * self.pairs_to_linear[i, j] - 2
+                ij = 3 * self.pairs_to_linear[i, j]
                 for k in range(j + 1, self.n_img):
-                    ik = 3 * self.pairs_to_linear[i, k] - 2
-                    jk = 3 * self.pairs_to_linear[j, k] - 2
+                    ik = 3 * self.pairs_to_linear[i, k]
+                    jk = 3 * self.pairs_to_linear[j, k]
 
                     # Extract permutation indices from c_perms
                     n = c_perms[trip_idx]
+                    trip_idx += 1
                     p_n1 = n // 100
                     p_n3 = n % 10
                     p_n2 = (n - p_n1 * 100 - p_n3) // 10
 
-                    # Adjust for 0-based indexing. (Take this out)
+                    # Adjust for 0-based indexing. (Take this out by computing c_perms with 0-base)
                     p_n1 = (p_n1 - 1).astype("int")
                     p_n2 = (p_n2 - 1).astype("int")
                     p_n3 = (p_n3 - 1).astype("int")
