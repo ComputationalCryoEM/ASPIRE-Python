@@ -94,6 +94,10 @@ class CLSymmetryD2(CLOrient3D):
         self.Rijs_sync = self._global_J_sync(self.Rijs_est)
 
         # Synchronize colors.
+        self.colors, self.Rijs_rows = self._sync_colors(self.Rijs_sync)
+
+        # Synchronize signs.
+        Ris = self._sync_signs(self.Rijs_rows, self.colors)
 
     def compute_shifted_pf(self):
         """
@@ -944,7 +948,7 @@ class CLSymmetryD2(CLOrient3D):
 
         cp, _ = self._unmix_colors(colors[:, :2])
 
-        return cp
+        return cp, Rijs_rows
 
     def _match_colors(self, Rijs_rows):
         Rijs_rows_t = np.transpose(Rijs_rows, (0, 1, 3, 2))
@@ -1229,6 +1233,86 @@ class CLSymmetryD2(CLOrient3D):
                     colors[i] = p_i_sqr
 
         return colors.flatten(), best_unmix
+
+    #####################
+    # Synchronize Signs #
+    #####################
+
+    def _sync_signs(self, rr, c_vec):
+        """
+        This function executes the final stage of the algorithm, Signs
+        synchroniztion. At the end all rows of the rotations Ri are exctracted
+        and the matrices Ri are assembled.
+        """
+        # Partition the union of tuples {0.5*(Ri^TRj+Ri^TgkRj), k=1:3} according
+        # to the color partition established in color synchroniztion procedure.
+        # The partition is stored in two different arrays each with the purpose
+        # of a computational speed up for two different computations performed
+        # later (space considerations are of little concern since arrays are ~
+        # o(N^2) which doesn't pose a constraint for inputs on the scale of 10^3-10^4.
+        n_pairs = len(self.pairs)
+        c_mat_5d = np.zeros((self.n_img, self.n_img, 3, 3, 3), dtype=self.dtype)
+        c_mat_4d = np.zeros((n_pairs, 3, 3, 3), dtype=self.dtype)
+        for i in trange(self.n_img - 1):
+            for j in range(i + 1, self.n_img):
+                ij = self.pairs_to_linear[i, j]
+                c_mat_5d[i, j, c_vec[3 * ij]] = rr[ij, 0]
+                c_mat_5d[i, j, c_vec[3 * ij + 1]] = rr[ij, 1]
+                c_mat_5d[i, j, c_vec[3 * ij + 2]] = rr[ij, 2]
+                c_mat_5d[j, i, c_vec[3 * ij]] = rr[ij, 0].T
+                c_mat_5d[j, i, c_vec[3 * ij + 1]] = rr[ij, 1].T
+                c_mat_5d[j, i, c_vec[3 * ij + 2]] = rr[ij, 2].T
+
+                c_mat_4d[ij, c_vec[3 * ij]] = rr[ij, 0]
+                c_mat_4d[ij, c_vec[3 * ij + 1]] = rr[ij, 1]
+                c_mat_4d[ij, c_vec[3 * ij + 2]] = rr[ij, 2]
+
+        # Compute estimates for the tuples {0.5*(Ri^TRi+Ri^TgkRi), k=1:3} for
+        # i=1:N. For 1<=i,j<=N and c=1,2,3 write Qij^c=0.5*(Ri^TRj+Ri^TgmRj).
+        # For each i in {1:N} and each k in {1,2,3} the estimator is the
+        # average over all j~=i of Qij^c*(Qij^c)^T.
+        # Since in practice the result of the average is not really rank 1, we
+        # compute the best rank approximation to this average.
+        for i in range(self.n_img):
+            for c in range(3):
+                Rijs = c_mat_5d[i, :, c]
+                Rijs = np.delete(Rijs, i, axis=0)
+                Rii_est = Rijs @ np.transpose(Rijs, (0, 2, 1))
+                Rii = np.mean(Rii_est, axis=0)
+                U, _, _ = np.linalg.svd(Rii)
+                c_mat_5d[i, i, c] = np.outer(U[:, 0], U[:, 0])
+
+        # Construct the 3Nx3N row synchroniztion matrices (as done for C_2), one
+        # for all first rows of the matrices Ri, one for all second rows and one
+        # for all third rows. The ij'th block of the k'th matrix is Qij^c.
+        # In C_2 one such matrix is constructed for the 3rd rows
+        # and is rank 1 by construction. In practice, thus far, for each c and
+        # (i,j) we either have Qij^c or -Qij^c independently.
+        c_mat = np.zeros((3, 3 * self.n_img, 3 * self.n_img), dtype=self.dtype)
+        rot = np.zeros((self.n_img, 3, 3), dtype=self.dtype)
+        for i in range(self.n_img - 1):
+            for j in range(i + 1, self.n_img):
+                ij = self.pairs_to_linear[i, j]
+                c_mat[c_vec[3 * ij], 3 * i : 3 * i + 2, 3 * j : 3 * j + 2] = rr[ij, 0]
+                c_mat[c_vec[3 * ij + 1], 3 * i : 3 * i + 2, 3 * j : 3 * j + 2] = rr[
+                    ij, 1
+                ]
+                c_mat[c_vec[3 * ij + 2], 3 * i : 3 * i + 2, 3 * j : 3 * j + 2] = rr[
+                    ij, 2
+                ]
+
+        c_mat[0] = c_mat[0] + c_mat[0].T
+        c_mat[1] = c_mat[1] + c_mat[1].T
+        c_mat[2] = c_mat[2] + c_mat[2].T
+
+        for c in range(3):
+            for i in range(self.n_img):
+                c_mat[c, 3 * i : 3 * i + 2, 3 * i : 3 * i + 2] = c_mat_5d[i, i, c]
+
+        # To decompose cMat as a rank 1 matrix we need to adjust the signs of the
+        # Qij^c so that sign(Qij^c*Qjk^c) = sign(Qik^c) for all c=1,2,3 and (i,j).
+        # In practice we compare the sign of the sum of the entries of Qij^c*Qjk^c
+        # to the sum of entries of Qik^c.
 
     ####################
     # Helper Functions #
