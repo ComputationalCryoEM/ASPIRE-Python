@@ -908,7 +908,9 @@ class CLSymmetryD2(CLOrient3D):
     ######################
 
     def _sync_colors(self, Rijs):
-
+        """
+        Add documention!
+        """
         # Generate array of one rank matrices from which we can extract rows.
         # Matrices are of the form 0.5(Ri^TRj+Ri^TgkRj). Each such matrix can be
         # written in the form Qi^T*Ik*Qj where Ik is a 3x3 matrix with all zero
@@ -937,8 +939,12 @@ class CLSymmetryD2(CLOrient3D):
             (3 * n_pairs,) * 2, lambda v: self.mult_cmat_by_vec(color_perms, v)
         )
         vals, colors = la.eigs(color_mat, k=3, which="LR")
+        vals = np.real(vals)
+        colors = np.real(colors)
 
-        return color_perms
+        cp, _ = self._unmix_colors(colors[:, :2])
+
+        return cp
 
     def _match_colors(self, Rijs_rows):
         Rijs_rows_t = np.transpose(Rijs_rows, (0, 1, 3, 2))
@@ -1095,7 +1101,7 @@ class CLSymmetryD2(CLOrient3D):
         )
         out = np.zeros_like(v)
         trip_idx = 0
-        for i in trange(self.n_img, desc="Computing cmat_times_v."):
+        for i in range(self.n_img):
             for j in range(i + 1, self.n_img - 1):
                 ij = 3 * self.pairs_to_linear[i, j]
                 for k in range(j + 1, self.n_img):
@@ -1148,6 +1154,81 @@ class CLSymmetryD2(CLOrient3D):
                     out[jk + 1] = out[jk + 1] - v[p[0]] - v[p[2]] + v[p[1]]
                     out[jk + 2] = out[jk + 2] - v[p[0]] - v[p[1]] + v[p[2]]
         return out
+
+    def _unmix_colors(self, color_vecs):
+        """
+        The 'color vector' which partitions the rank 1 3x3 matrices into 3 sets
+        is one of 2 leading orthogonal eigenvectors of the color matrix.
+        SVD retrieves two orthogonal linear combinations of these vectors which
+        can be 'unmixed' to retrieve the color vector by finding a suitable
+        2D rotation of these vectors (see Section 7.3 of D2 paper for details).
+        """
+        n_p = color_vecs.shape[0] // 3
+        d_theta = 360 // self.n_theta
+        max_t = 360 // d_theta + 1
+
+        def R_theta(theta):
+            R = np.array(
+                [[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]],
+                dtype=self.dtype,
+            )
+            return R
+
+        s = float("inf")
+        scores = np.zeros(max_t, dtype=self.dtype)
+        idx = 0
+        for t in np.arange(0, max_t, 0.5):
+            unmix_ev = color_vecs @ R_theta(np.pi * t / 180)
+            s1 = unmix_ev[:, 0].reshape(n_p, 3)
+            p11 = (-s1).argsort(axis=1)  # descending argsort
+            s1 = np.take_along_axis(s1, p11, axis=1)
+            score11 = np.sum((s1[:, 0] + s1[:, 2]) ** 2 + s1[:, 1] ** 2)
+
+            s2 = abs(unmix_ev[:, 1].reshape(n_p, 3))
+            p12 = (-s2).argsort(axis=1)  # descending argsort
+            s2 = np.take_along_axis(s2, p12, axis=1)
+            score12 = np.sum(
+                (s2[:, 0] - 2 * s2[:, 1]) ** 2
+                + (s2[:, 0] - 2 * s2[:, 2]) ** 2
+                + (s2[:, 1] - s2[:, 2]) ** 2
+            )  # Matlab comment: Is this an error??? + instead of - in the first 2 members
+
+            s1 = abs(unmix_ev[:, 0].reshape(n_p, 3))
+            p12 = (-s1).argsort(axis=1)  # descending argsort
+            s1 = np.take_along_axis(s1, p11, axis=1)
+            score22 = np.sum(
+                (s1[:, 0] - 2 * s1[:, 1]) ** 2
+                + (s1[:, 0] - 2 * s1[:, 2]) ** 2
+                + (s1[:, 1] - s1[:, 2]) ** 2
+            )
+
+            s2 = unmix_ev[:, 1].reshape(n_p, 3)
+            p22 = (-s2).argsort(axis=1)  # descending argsort
+            s2 = np.take_along_axis(s2, p12, axis=1)
+            score21 = np.sum((s2[:, 0] + s2[:, 2]) ** 2 + s2[:, 1] ** 2)
+
+            score_vecs = [score11 + score12, score21 + score22]
+            which_vec = np.argmin([score11 + score12, score21 + score22])
+            scores[idx] = score_vecs[which_vec]
+            if scores[idx] < s:
+                s = scores[idx]
+                if which_vec == 0:
+                    p = p11
+                else:
+                    p = p22
+                best_unmix = unmix_ev[:, which_vec]
+
+            # Assign integers between 1:3 to permutations
+            colors = np.zeros((n_p, 3), dtype=int)
+            for i in range(n_p):
+                p_i = p[i]
+                p_i_sqr = p_i[p_i]
+                if np.sum((p_i_sqr - [0, 1, 2]) ** 2) == 0:  # non-cyclic permutation
+                    colors[i] = p_i
+                else:
+                    colors[i] = p_i_sqr
+
+        return colors.flatten(), best_unmix
 
     ####################
     # Helper Functions #
