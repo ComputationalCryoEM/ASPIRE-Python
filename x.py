@@ -84,4 +84,4 @@ def main():
     plotit(results)
 
 
-time_test(64)
+time_test(128)
