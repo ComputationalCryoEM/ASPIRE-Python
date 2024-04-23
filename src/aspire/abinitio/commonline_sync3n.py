@@ -793,8 +793,6 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
                 # Update vector entries
                 new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
                 new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
-                # new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]  # jk/ik? was a bug?? worked better with s_ij_jk...
-                # jk/ik? was a bug?? worked better with s_ij_jk...
                 new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
 
     return new_vec
@@ -820,18 +818,14 @@ def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS):
 #define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2 + J-I-1)
 
 
-// DEBUG TRANS BUGS
 inline void mult_3x3(double *out, double *R1, double *R2) {
-// /* 3X3 matrices multiplication: out = R1*R2 */
-// out.T = R1.T @ R2.T ?
-        int i,j;
-        for (i=0; i<3; i++) {
-                for (j=0;j<3;j++) {
-                        out[3*j+i] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
-//                      out[3*i+j] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
-
-                }
-        }
+  /* 3X3 matrices multiplication: out = R1*R2 */
+  int i,j;
+  for (i=0; i<3; i++) {
+    for (j=0;j<3;j++) {
+      out[3*j+i] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
+    }
+  }
 }
 
 inline void JRJ(double *R, double *A) {
@@ -927,8 +921,7 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
             /* update multiplication */
             new_vec[ij*n + i] += s_ij_jk*vec[jk] + s_ij_ik*vec[ik];
             new_vec[jk*n + i] += s_ij_jk*vec[ij] + s_ik_jk*vec[ik];
-            new_vec[ik*n + i] += s_ij_ik*vec[ij] + s_ik_jk*vec[jk];  /* ij jk bug?, relating to mat mul T? */
-            //new_vec[ik*n + i] += s_ij_jk*vec[ij] + s_ik_jk*vec[jk];  /* ij jk bug? */
+            new_vec[ik*n + i] += s_ij_ik*vec[ij] + s_ik_jk*vec[jk];
 
         } /* k */
     } /* j */
