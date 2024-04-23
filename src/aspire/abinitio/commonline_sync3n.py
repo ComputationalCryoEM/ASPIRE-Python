@@ -705,9 +705,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # host/gpu dispatch
         if self._use_gpu:
             assert self.J_weighting is False, "not implemented yet"
-            new_vec = _signs_times_v_cupy(
-                self.n_img, Rijs, vec, self.J_weighting, _ALTS
-            )
+            new_vec = _signs_times_v_cupy(self.n_img, Rijs, vec, self.J_weighting)
         else:
             new_vec = _signs_times_v_host(
                 self.n_img, Rijs, vec, self.J_weighting, _ALTS, self._pairs_to_linear
@@ -726,7 +724,6 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
     new_vec: output array
     J_weighting: bool
     _ALTS= 2x4x3 const lut array
-    _signs_confs = 4x3 const lut array
     """
 
     new_vec = np.zeros_like(vec)
@@ -734,6 +731,7 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
     _signs_confs = np.array(
         [[1, 1, 1], [-1, 1, -1], [-1, -1, 1], [1, -1, -1]], dtype=int
     )
+
     c = np.empty((4))
     desc = "Computing signs_times_v"
     if J_weighting:
@@ -754,10 +752,10 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
                 Rjk_J = J_conjugate(Rjk)
 
                 # Compute R muls and norms
-                c[0] = np.sum(((Rjk @ Rij) - Rik) ** 2)
-                c[1] = np.sum(((Rjk @ Rij_J) - Rik) ** 2)
-                c[2] = np.sum(((Rjk_J @ Rij) - Rik) ** 2)
-                c[3] = np.sum(((Rjk @ Rij) - Rik_J) ** 2)
+                c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
 
                 # Find best match
                 best_i = np.argmin(c)
@@ -798,7 +796,7 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
     return new_vec
 
 
-def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS):
+def _signs_times_v_cupy(n, Rijs, vec, J_weighting):
     """
     Ported from _signs_times_v_mex.c
 
@@ -806,9 +804,7 @@ def _signs_times_v_cupy(n, Rijs, vec, J_weighting, _ALTS):
     Rijs: nchoose2x3x3 array
     vec: input array
     new_vec: output array
-    #todo J_weighting: bool
-    #todo _ALTS= 2x4x3 const lut array
-    #todo _signs_confs = 4x3 const lut array
+    J_weighting: bool
     """
     import cupy as cp
 
@@ -851,7 +847,7 @@ inline double diff_norm_3x3(const double *R1, const double *R2) {
 
 
 extern "C" __global__
-void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
+void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec, bool J_weighting)
 {
     /* thread index (1d), represents "i" index */
     unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -860,24 +856,40 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
     if(i >= n) return;
 
     double c[4];
-    int j;
-    int k;
+    unsigned int j;
+    unsigned int k;
     for(k=0;k<4;k++){c[k]=0;}
     unsigned long ij, jk, ik;
     int best_i;
     double best_val;
-    int s_ij_jk, s_ik_jk, s_ij_ik;
+    double s_ij_jk, s_ik_jk, s_ij_ik;
+    double alt_ij_jk, alt_ij_ik, alt_ik_jk;
 
     double *Rij, *Rjk, *Rik;
     double JRijJ[9], JRjkJ[9], JRikJ[9];
     double tmp[9];
 
-    /* le sigh */
     int signs_confs[4][3];
     for(int a=0; a<4; a++) { for(k=0; k<3; k++) { signs_confs[a][k]=1; } }
-    signs_confs[2-1][1-1]=-1; signs_confs[2-1][3-1]=-1;
-    signs_confs[3-1][1-1]=-1; signs_confs[3-1][2-1]=-1;
-    signs_confs[4-1][2-1]=-1; signs_confs[4-1][3-1]=-1;
+    signs_confs[1][0]=-1; signs_confs[1][2]=-1;
+    signs_confs[2][0]=-1; signs_confs[2][1]=-1;
+    signs_confs[3][1]=-1; signs_confs[3][2]=-1;
+
+    /* initialize alternatives */
+    /* when we find the best J-configuration, we also compare it to the alternative 2nd best one.
+    * this comparison is done for every pair in the triplete independently. to make sure that the
+    * alternative is indeed different in relation to the pair, we document the differences between
+    * the configurations in advance:
+    * ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from
+    * best_conf in relation to pair */
+
+    int ALTS[2][4][3];
+    ALTS[0][0][0]=1; ALTS[0][1][0]=0; ALTS[0][2][0]=0; ALTS[0][3][0]=1;
+    ALTS[1][0][0]=2; ALTS[1][1][0]=3; ALTS[1][2][0]=3; ALTS[1][3][0]=2;
+    ALTS[0][0][1]=2; ALTS[0][1][1]=2; ALTS[0][2][1]=0; ALTS[0][3][1]=0;
+    ALTS[1][0][1]=3; ALTS[1][1][1]=3; ALTS[1][2][1]=1; ALTS[1][3][1]=1;
+    ALTS[0][0][2]=1; ALTS[0][1][2]=0; ALTS[0][2][2]=1; ALTS[0][3][2]=0;
+    ALTS[1][0][2]=3; ALTS[1][1][2]=2; ALTS[1][2][2]=3; ALTS[1][3][2]=2;
 
 
     for(j=i+1; j< (n - 1); j++){
@@ -895,16 +907,16 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
             JRJ(Rjk, JRjkJ);
             JRJ(Rik, JRikJ);
 
-            mult_3x3(tmp,Rij,Rjk);
+            mult_3x3(tmp,Rjk,Rij);
             c[0] = diff_norm_3x3(tmp,Rik);
 
-            mult_3x3(tmp,JRijJ,Rjk);
+            mult_3x3(tmp,Rjk,JRijJ);
             c[1] = diff_norm_3x3(tmp,Rik);
 
-            mult_3x3(tmp,Rij,JRjkJ);
+            mult_3x3(tmp,JRjkJ,Rij);
             c[2] = diff_norm_3x3(tmp,Rik);
 
-            mult_3x3(tmp,Rij,Rjk);
+            mult_3x3(tmp,Rjk,Rij);
             c[3] = diff_norm_3x3(tmp,JRikJ);
 
             /* find best match */
@@ -917,6 +929,30 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
             s_ij_jk = signs_confs[best_i][0];
             s_ik_jk = signs_confs[best_i][1];
             s_ij_ik = signs_confs[best_i][2];
+
+            /* J weighting */
+            if(J_weighting){
+                /* for each triangle side, find the best alternative */
+                alt_ij_jk = c[ALTS[0][best_i][0]];
+                if (c[ALTS[1][best_i][0]] < alt_ij_jk){
+                     alt_ij_jk = c[ALTS[1][best_i][0]];
+                }
+
+                alt_ik_jk = c[ALTS[0][best_i][1]];
+                if (c[ALTS[1][best_i][1]] < alt_ik_jk){
+                     alt_ik_jk = c[ALTS[1][best_i][1]];
+                }
+                alt_ij_ik = c[ALTS[0][best_i][2]];
+                if (c[ALTS[1][best_i][2]] < alt_ij_ik){
+                     alt_ij_ik = c[ALTS[1][best_i][2]];
+                }
+
+                /* Update scores */
+                s_ij_jk *= 1 - sqrt(best_val / alt_ij_jk);
+                s_ik_jk *= 1 - sqrt(best_val / alt_ik_jk);
+                s_ij_ik *= 1 - sqrt(best_val / alt_ij_ik);
+            }
+
 
             /* update multiplication */
             new_vec[ij*n + i] += s_ij_jk*vec[jk] + s_ij_ik*vec[ik];
@@ -941,8 +977,8 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec)
     # call the kernel
     blkszx = 512
     nblkx = (n + blkszx - 1) // blkszx
-
-    signs_times_v((nblkx,), (blkszx,), (n, Rijs_dev, vec_dev, new_vec_dev))
+    assert J_weighting == False
+    signs_times_v((nblkx,), (blkszx,), (n, Rijs_dev, vec_dev, new_vec_dev, J_weighting))
 
     # accumulate, can reuse the vec_dev array now.
     cp.sum(new_vec_dev, axis=1, out=vec_dev)
