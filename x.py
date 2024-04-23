@@ -19,14 +19,14 @@ def time_test(n):
     Rijs = np.arange(n_pairs * 3 * 3).reshape(n_pairs, 3, 3).astype(dtype=np.float64)
 
     tic0 = time.perf_counter()
-    new_vec = _signs_times_v_cupy(n, Rijs, vec, J_weighting=None, _ALTS=None)
+    new_vec = _signs_times_v_cupy(n, Rijs, vec, J_weighting=False)
     tic1 = time.perf_counter()
     gpu_time = tic1 - tic0
     print("gpu\n", new_vec)
 
     tic2 = time.perf_counter()
     new_vec_host = _signs_times_v_host(
-        n, Rijs, vec, J_weighting=None, _ALTS=None, _pairs_to_linear=_pairs_to_linear
+        n, Rijs, vec, J_weighting=False, _ALTS=None, _pairs_to_linear=_pairs_to_linear
     )
     tic3 = time.perf_counter()
     host_time = tic3 - tic2
@@ -84,4 +84,4 @@ def main():
     plotit(results)
 
 
-time_test(128)
+time_test(64)
