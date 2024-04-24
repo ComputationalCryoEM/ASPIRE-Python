@@ -299,7 +299,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         return W
 
-    def _triangle_scores_mex(self, Rijs, hist_intervals):
+    def _triangle_scores_inner(self, Rijs, hist_intervals):
         # The following is adopted from Matlab triangle_scores_mex.c
 
         # Initialize probability result arrays
@@ -326,10 +326,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                     Rjk_J = J_conjugate(Rjk)
 
                     # Compute R muls and norms
-                    c[0] = np.sum(((Rij @ Rjk.T) - Rik) ** 2)
-                    c[1] = np.sum(((Rij_J @ Rjk.T) - Rik) ** 2)
-                    c[2] = np.sum(((Rij @ Rjk_J.T) - Rik) ** 2)
-                    c[3] = np.sum(((Rij @ Rjk.T) - Rik_J) ** 2)
+                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
 
                     # Find best match
                     best_i = np.argmin(c)
@@ -382,95 +382,15 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         return cum_scores, scores_hist
 
     def _pairs_probabilities(self, Rijs, P2, A, a, B, b, x0):
-        # The following is adopted from Matlab pairas_probabilities_mex.c `looper`
-
-        # Initialize probability result arrays
-        ln_f_ind = np.zeros(len(Rijs), dtype=self.dtype)
-        ln_f_arb = np.zeros(len(Rijs), dtype=self.dtype)
-
-        c = np.empty((4), dtype=self.dtype)
-        for i in trange(self.n_img, desc="Computing pair probabilities"):
-            for j in range(i + 1, self.n_img - 1):
-                ij = self._pairs_to_linear[i, j]
-                Rij = Rijs[ij]
-                for k in range(j + 1, self.n_img):
-                    ik = self._pairs_to_linear[i, k]
-                    jk = self._pairs_to_linear[j, k]
-                    Rik = Rijs[ik]
-                    Rjk = Rijs[jk]
-
-                    # Compute conjugated rotats
-                    Rij_J = J_conjugate(Rij)
-                    Rik_J = J_conjugate(Rik)
-                    Rjk_J = J_conjugate(Rjk)
-
-                    # Compute R muls and norms
-                    c[0] = np.sum(((Rij @ Rjk.T) - Rik) ** 2)
-                    c[1] = np.sum(((Rij_J @ Rjk.T) - Rik) ** 2)
-                    c[2] = np.sum(((Rij @ Rjk_J.T) - Rik) ** 2)
-                    c[3] = np.sum(((Rij @ Rjk.T) - Rik_J) ** 2)
-
-                    # Find best match
-                    best_i = np.argmin(c)
-                    best_val = c[best_i]
-
-                    # For each triangle side, find the best alternative
-                    alt_ij_jk = c[_ALTS[0][best_i][0]]
-                    if c[_ALTS[1][best_i][0]] < alt_ij_jk:
-                        alt_ij_jk = c[_ALTS[1][best_i][0]]
-                    alt_ik_jk = c[_ALTS[0][best_i][1]]
-                    if c[_ALTS[1][best_i][1]] < alt_ik_jk:
-                        alt_ik_jk = c[_ALTS[1][best_i][1]]
-                    alt_ij_ik = c[_ALTS[0][best_i][2]]
-                    if c[_ALTS[1][best_i][2]] < alt_ij_ik:
-                        alt_ij_ik = c[_ALTS[1][best_i][2]]
-
-                    # Compute scores
-                    s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
-                    s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
-                    s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
-
-                    # Update probabilities
-                    # # Probability of pair ij having score given indicicative common line
-                    # P2, B, b, x0, A, a
-                    f_ij_jk = np.log(
-                        P2
-                        * (
-                            B
-                            * np.power(1 - s_ij_jk, b)
-                            * np.exp(-b / (1 - x0) * (1 - s_ij_jk))
-                        )
-                        + (1 - P2) * A * np.power((1 - s_ij_jk), a)
-                    )
-                    f_ik_jk = np.log(
-                        P2
-                        * (
-                            B
-                            * np.power(1 - s_ik_jk, b)
-                            * np.exp(-b / (1 - x0) * (1 - s_ik_jk))
-                        )
-                        + (1 - P2) * A * np.power((1 - s_ik_jk), a)
-                    )
-                    f_ij_ik = np.log(
-                        P2
-                        * (
-                            B
-                            * np.power(1 - s_ij_ik, b)
-                            * np.exp(-b / (1 - x0) * (1 - s_ij_ik))
-                        )
-                        + (1 - P2) * A * np.power((1 - s_ij_ik), a)
-                    )
-                    ln_f_ind[ij] += f_ij_jk + f_ij_ik
-                    ln_f_ind[jk] += f_ij_jk + f_ik_jk
-                    ln_f_ind[ik] += f_ik_jk + f_ij_ik
-
-                    # # Probability of pair ij having score given arbitrary common line
-                    f_ij_jk = np.log(A * np.power((1 - s_ij_jk), a))
-                    f_ik_jk = np.log(A * np.power((1 - s_ik_jk), a))
-                    f_ij_ik = np.log(A * np.power((1 - s_ij_ik), a))
-                    ln_f_arb[ij] += f_ij_jk + f_ij_ik
-                    ln_f_arb[jk] += f_ij_jk + f_ik_jk
-                    ln_f_arb[ik] += f_ik_jk + f_ij_ik
+        # dtype is critical for passing into C code...
+        params = np.arary([P2, A, a, B, b, x0], dtype=np.float64)
+        # host/gpu dispatch
+        if self._use_gpu:
+            ln_f_ind, ln_f_arb = _pairs_probabilities_cupy(self.n_img, Rijs, *params)
+        else:
+            ln_f_ind, ln_f_arb = _pairs_probabilities_host(
+                self.n_img, Rijs, *params, _ALTS, self._pairs_to_linear
+            )
 
         return ln_f_ind, ln_f_arb
 
@@ -507,7 +427,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         cum_scores = None  # XXX Why do we even need cum_scores?
         if scores_hist is None:
-            cum_scores, scores_hist = self._triangle_scores_mex(Rijs, hist_intervals)
+            cum_scores, scores_hist = self._triangle_scores_inner(Rijs, hist_intervals)
 
             # Normalize cumulated scores
             cum_scores /= len(Rijs)
@@ -704,7 +624,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # host/gpu dispatch
         if self._use_gpu:
-            assert self.J_weighting is False, "not implemented yet"
             new_vec = _signs_times_v_cupy(self.n_img, Rijs, vec, self.J_weighting)
         else:
             new_vec = _signs_times_v_host(
@@ -796,19 +715,8 @@ def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
     return new_vec
 
 
-def _signs_times_v_cupy(n, Rijs, vec, J_weighting):
-    """
-    Ported from _signs_times_v_mex.c
-
-    n: n_img
-    Rijs: nchoose2x3x3 array
-    vec: input array
-    new_vec: output array
-    J_weighting: bool
-    """
-    import cupy as cp
-
-    code = r"""
+def _init_cupy_module():
+    module_code = r"""
 
 /* from i,j indoces to the common index in the N-choose-2 sized array */
 #define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2 + J-I-1)
@@ -971,9 +879,157 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec, bool
 
     return;
 };
-"""
 
-    module = cp.RawModule(code=code)
+extern "C" __global__
+void pairs_probabilities(int n, double* Rijs, double P2, double A, double a, double B, double b, double x0, double* ln_f_ind, double* ln_f_arb)
+{
+    /* thread index (1d), represents "i" index */
+    unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    /* no-op when out of bounds */
+    if(i >= n) return;
+
+    double c[4];
+    unsigned int j;
+    unsigned int k;
+    for(k=0;k<4;k++){c[k]=0;}
+    unsigned long ij, jk, ik;
+    int best_i;
+    double best_val;
+    double s_ij_jk, s_ik_jk, s_ij_ik;
+    double alt_ij_jk, alt_ij_ik, alt_ik_jk;
+    double f_ij_jk, f_ik_jk, f_ij_ik;
+
+
+    double *Rij, *Rjk, *Rik;
+    double JRijJ[9], JRjkJ[9], JRikJ[9];
+    double tmp[9];
+
+    int signs_confs[4][3];
+    for(int a=0; a<4; a++) { for(k=0; k<3; k++) { signs_confs[a][k]=1; } }
+    signs_confs[1][0]=-1; signs_confs[1][2]=-1;
+    signs_confs[2][0]=-1; signs_confs[2][1]=-1;
+    signs_confs[3][1]=-1; signs_confs[3][2]=-1;
+
+    /* initialize alternatives */
+    /* when we find the best J-configuration, we also compare it to the alternative 2nd best one.
+    * this comparison is done for every pair in the triplete independently. to make sure that the
+    * alternative is indeed different in relation to the pair, we document the differences between
+    * the configurations in advance:
+    * ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from
+    * best_conf in relation to pair */
+
+    int ALTS[2][4][3];
+    ALTS[0][0][0]=1; ALTS[0][1][0]=0; ALTS[0][2][0]=0; ALTS[0][3][0]=1;
+    ALTS[1][0][0]=2; ALTS[1][1][0]=3; ALTS[1][2][0]=3; ALTS[1][3][0]=2;
+    ALTS[0][0][1]=2; ALTS[0][1][1]=2; ALTS[0][2][1]=0; ALTS[0][3][1]=0;
+    ALTS[1][0][1]=3; ALTS[1][1][1]=3; ALTS[1][2][1]=1; ALTS[1][3][1]=1;
+    ALTS[0][0][2]=1; ALTS[0][1][2]=0; ALTS[0][2][2]=1; ALTS[0][3][2]=0;
+    ALTS[1][0][2]=3; ALTS[1][1][2]=2; ALTS[1][2][2]=3; ALTS[1][3][2]=2;
+
+
+    for(j=i+1; j< (n - 1); j++){
+        ij = PAIR_IDX(n, i, j);
+        for(k=j+1; k< n; k++){
+            ik = PAIR_IDX(n, i, k);
+            jk = PAIR_IDX(n, j, k);
+
+            /* compute configurations matches scores */
+            Rij = Rijs + 9*ij;
+            Rjk = Rijs + 9*jk;
+            Rik = Rijs + 9*ik;
+
+            JRJ(Rij, JRijJ);
+            JRJ(Rjk, JRjkJ);
+            JRJ(Rik, JRikJ);
+
+            mult_3x3(tmp, Rij, Rjk);
+            c[0] = diff_norm_3x3(tmp, Rik);
+
+            mult_3x3(tmp, JRijJ, Rjk);
+            c[1] = diff_norm_3x3(tmp, Rik);
+
+            mult_3x3(tmp, Rij, JRjkJ);
+            c[2] = diff_norm_3x3(tmp, Rik);
+
+            mult_3x3(tmp, Rij, Rjk);
+            c[3] = diff_norm_3x3(tmp, JRikJ);
+
+            /* find best match */
+            best_i=0; best_val=c[0];
+            if (c[1]<best_val) {best_i=1; best_val=c[1];}
+            if (c[2]<best_val) {best_i=2; best_val=c[2];}
+            if (c[3]<best_val) {best_i=3; best_val=c[3];}
+
+             /* for each triangle side, find the best alternative */
+             alt_ij_jk = c[ALTS[0][best_i][0]];
+             if (c[ALTS[1][best_i][0]] < alt_ij_jk){
+                 alt_ij_jk = c[ALTS[1][best_i][0]];
+             }
+
+             alt_ik_jk = c[ALTS[0][best_i][1]];
+             if (c[ALTS[1][best_i][1]] < alt_ik_jk){
+                 alt_ik_jk = c[ALTS[1][best_i][1]];
+             }
+             alt_ij_ik = c[ALTS[0][best_i][2]];
+             if (c[ALTS[1][best_i][2]] < alt_ij_ik){
+                 alt_ij_ik = c[ALTS[1][best_i][2]];
+             }
+
+            /* Assign scores */
+            s_ij_jk = 1 - sqrt(best_val / alt_ij_jk);
+            s_ik_jk = 1 - sqrt(best_val / alt_ik_jk);
+            s_ij_ik = 1 - sqrt(best_val / alt_ij_ik);
+            
+
+            /* the probability of a pair ij to have the observed triangles scores,
+            given it has an indicative common line */
+            f_ij_jk = log( P2*(B*pow(1-s_ij_jk,b)*exp(-b/(1-x0)*(1-s_ij_jk))) + (1-P2)*A*pow((1-s_ij_jk),a) );
+            f_ik_jk = log( P2*(B*pow(1-s_ik_jk,b)*exp(-b/(1-x0)*(1-s_ik_jk))) + (1-P2)*A*pow((1-s_ik_jk),a) );
+            f_ij_ik = log( P2*(B*pow(1-s_ij_ik,b)*exp(-b/(1-x0)*(1-s_ij_ik))) + (1-P2)*A*pow((1-s_ij_ik),a) );
+	    ln_f_ind[ij*n +i] += f_ij_jk + f_ij_ik;
+	    ln_f_ind[jk*n +i] += f_ij_jk + f_ik_jk;
+	    ln_f_ind[ik*n +i] += f_ik_jk + f_ij_ik;
+			
+            /* the probability of a pair ij to have the observed triangles scores,
+             given it has an arbitrary common line */
+            f_ij_jk = log( A*pow((1-s_ij_jk),a) );
+	    f_ik_jk = log( A*pow((1-s_ik_jk),a) );
+	    f_ij_ik = log( A*pow((1-s_ij_ik),a) );
+	    ln_f_arb[ij*n +i] += f_ij_jk + f_ij_ik;
+	    ln_f_arb[jk*n +i] += f_ij_jk + f_ik_jk;
+            ln_f_arb[ik*n +i] += f_ik_jk + f_ij_ik;
+
+
+        } /* k */
+    } /* j */
+
+    return;
+};
+
+"""
+    import cupy as cp
+
+    module = cp.RawModule(code=module_code)
+
+    return module
+
+
+def _signs_times_v_cupy(n, Rijs, vec, J_weighting):
+    """
+    Ported from _signs_times_v_mex.c
+
+    n: n_img
+    Rijs: nchoose2x3x3 array
+    vec: input array
+    new_vec: output array
+    J_weighting: bool
+    """
+    import cupy as cp
+
+    # xxx
+    module = _init_cupy_module()
+
     signs_times_v = module.get_function("signs_times_v")
 
     Rijs_dev = cp.array(Rijs)
@@ -984,7 +1040,6 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec, bool
     # call the kernel
     blkszx = 512
     nblkx = (n + blkszx - 1) // blkszx
-    assert J_weighting == False
     signs_times_v((nblkx,), (blkszx,), (n, Rijs_dev, vec_dev, new_vec_dev, J_weighting))
 
     # accumulate, can reuse the vec_dev array now.
@@ -994,3 +1049,131 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec, bool
     new_vec = vec_dev.get()
 
     return new_vec
+
+
+# (n, Rijs_dev,                P2, A, a, B, b, x0, ln_f_ind_dev, ln_f_arb_dev)
+def _pairs_probabilities_cupy(n, Rijs, P2, A, a, B, b, x0):
+    """
+    n: n_img
+    Rijs: nchoose2x3x3 array
+
+    """
+    import cupy as cp
+
+    # xxx
+    module = _init_cupy_module()
+
+    pairs_probabilities = module.get_function("pairs_probabilities")
+
+    Rijs_dev = cp.array(Rijs)
+    ln_f_ind_dev = cp.zeros((n * (n - 1) // 2, n))  # n is for thread safety
+    ln_f_arb_dev = cp.zeros((n * (n - 1) // 2, n))  # n is for thread safety
+
+    # call the kernel
+    blkszx = 512
+    nblkx = (n + blkszx - 1) // blkszx
+    pairs_probabilities(
+        (nblkx,),
+        (blkszx,),
+        (n, Rijs_dev, P2, A, a, B, b, x0, ln_f_ind_dev, ln_f_arb_dev),
+    )
+
+    # accumulate over thread results
+    ln_f_arb = cp.sum(ln_f_arb_dev, axis=1).get()
+    ln_f_ind = cp.sum(ln_f_ind_dev, axis=1).get()
+
+    return ln_f_ind, ln_f_arb
+
+
+def _pairs_probabilities_host(n, Rijs, P2, A, a, B, b, x0, _ALTS, _pairs_to_linear):
+    # The following is adopted from Matlab pairs_probabilities_mex.c `looper`
+
+    # Initialize probability result arrays
+    ln_f_ind = np.zeros(len(Rijs), dtype=Rijs.dtype)
+    ln_f_arb = np.zeros(len(Rijs), dtype=Rijs.dtype)
+
+    c = np.empty((4), dtype=Rijs.dtype)
+    for i in trange(n, desc="Computing pair probabilities"):
+        for j in range(i + 1, n - 1):
+            ij = _pairs_to_linear[i, j]
+            Rij = Rijs[ij]
+            for k in range(j + 1, n):
+                ik = _pairs_to_linear[i, k]
+                jk = _pairs_to_linear[j, k]
+                Rik = Rijs[ik]
+                Rjk = Rijs[jk]
+
+                # Compute conjugated rotats
+                Rij_J = J_conjugate(Rij)
+                Rik_J = J_conjugate(Rik)
+                Rjk_J = J_conjugate(Rjk)
+
+                # Compute R muls and norms
+                c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+
+                # Find best match
+                best_i = np.argmin(c)
+                best_val = c[best_i]
+
+                # For each triangle side, find the best alternative
+                alt_ij_jk = c[_ALTS[0][best_i][0]]
+                if c[_ALTS[1][best_i][0]] < alt_ij_jk:
+                    alt_ij_jk = c[_ALTS[1][best_i][0]]
+                alt_ik_jk = c[_ALTS[0][best_i][1]]
+                if c[_ALTS[1][best_i][1]] < alt_ik_jk:
+                    alt_ik_jk = c[_ALTS[1][best_i][1]]
+                alt_ij_ik = c[_ALTS[0][best_i][2]]
+                if c[_ALTS[1][best_i][2]] < alt_ij_ik:
+                    alt_ij_ik = c[_ALTS[1][best_i][2]]
+
+                # Compute scores
+                s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
+                s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
+                s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
+
+                # Update probabilities
+                # # Probability of pair ij having score given indicicative common line
+                # P2, B, b, x0, A, a
+                f_ij_jk = np.log(
+                    P2
+                    * (
+                        B
+                        * np.power(1 - s_ij_jk, b)
+                        * np.exp(-b / (1 - x0) * (1 - s_ij_jk))
+                    )
+                    + (1 - P2) * A * np.power((1 - s_ij_jk), a)
+                )
+                f_ik_jk = np.log(
+                    P2
+                    * (
+                        B
+                        * np.power(1 - s_ik_jk, b)
+                        * np.exp(-b / (1 - x0) * (1 - s_ik_jk))
+                    )
+                    + (1 - P2) * A * np.power((1 - s_ik_jk), a)
+                )
+                f_ij_ik = np.log(
+                    P2
+                    * (
+                        B
+                        * np.power(1 - s_ij_ik, b)
+                        * np.exp(-b / (1 - x0) * (1 - s_ij_ik))
+                    )
+                    + (1 - P2) * A * np.power((1 - s_ij_ik), a)
+                )
+                ln_f_ind[ij] += f_ij_jk + f_ij_ik
+                ln_f_ind[jk] += f_ij_jk + f_ik_jk
+                ln_f_ind[ik] += f_ik_jk + f_ij_ik
+
+                # # Probability of pair ij having score given arbitrary common line
+                f_ij_jk = np.log(A * np.power((1 - s_ij_jk), a))
+                f_ik_jk = np.log(A * np.power((1 - s_ik_jk), a))
+                f_ij_ik = np.log(A * np.power((1 - s_ij_ik), a))
+                ln_f_arb[ij] += f_ij_jk + f_ij_ik
+                ln_f_arb[jk] += f_ij_jk + f_ik_jk
+                ln_f_arb[ik] += f_ik_jk + f_ij_ik
+
+    return ln_f_ind, ln_f_arb
