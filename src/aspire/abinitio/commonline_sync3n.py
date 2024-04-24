@@ -815,11 +815,18 @@ def _signs_times_v_cupy(n, Rijs, vec, J_weighting):
 
 
 inline void mult_3x3(double *out, double *R1, double *R2) {
-  /* 3X3 matrices multiplication: out = R1*R2 */
-  int i,j;
-  for (i=0; i<3; i++) {
-    for (j=0;j<3;j++) {
-      out[3*j+i] = R1[3*0+i]*R2[3*j+0] + R1[3*1+i]*R2[3*j+1] + R1[3*2+i]*R2[3*j+2];
+  /* 3X3 matrices multiplication: out = R1*R2
+   * Note, this differs from the MATLAB mult_3x3.
+  */
+
+  int i,j,k;
+
+  for(i=0; i<3; i++){
+    for(j=0; j<3; j++){
+      out[i*3 + j] = 0;
+      for (k=0; k<3; k++){
+        out[i*3 + j] += R1[i*3+k] * R2[k*3+j];
+      }
     }
   }
 }
@@ -907,17 +914,17 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec, bool
             JRJ(Rjk, JRjkJ);
             JRJ(Rik, JRikJ);
 
-            mult_3x3(tmp,Rjk,Rij);
-            c[0] = diff_norm_3x3(tmp,Rik);
+            mult_3x3(tmp, Rij, Rjk);
+            c[0] = diff_norm_3x3(tmp, Rik);
 
-            mult_3x3(tmp,Rjk,JRijJ);
-            c[1] = diff_norm_3x3(tmp,Rik);
+            mult_3x3(tmp, JRijJ, Rjk);
+            c[1] = diff_norm_3x3(tmp, Rik);
 
-            mult_3x3(tmp,JRjkJ,Rij);
-            c[2] = diff_norm_3x3(tmp,Rik);
+            mult_3x3(tmp, Rij, JRjkJ);
+            c[2] = diff_norm_3x3(tmp, Rik);
 
-            mult_3x3(tmp,Rjk,Rij);
-            c[3] = diff_norm_3x3(tmp,JRikJ);
+            mult_3x3(tmp, Rij, Rjk);
+            c[3] = diff_norm_3x3(tmp, JRikJ);
 
             /* find best match */
             best_i=0; best_val=c[0];
