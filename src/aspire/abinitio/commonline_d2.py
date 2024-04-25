@@ -99,6 +99,8 @@ class CLSymmetryD2(CLOrient3D):
         # Synchronize signs.
         Ris = self._sync_signs(self.Rijs_rows, self.colors)
 
+        self.rotations = Ris
+
     def compute_shifted_pf(self):
         """
         Pre-compute shifted and full polar Fourier transforms.
@@ -945,7 +947,7 @@ class CLSymmetryD2(CLOrient3D):
         vals, colors = la.eigs(color_mat, k=3, which="LR")
         vals = np.real(vals)
         colors = np.real(colors)
-
+        colors[:, 1] = -colors[:, 1]  # TODO: Take this out. Only here for debugging.
         cp, _ = self._unmix_colors(colors[:, :2])
 
         return cp, Rijs_rows
@@ -1293,11 +1295,11 @@ class CLSymmetryD2(CLOrient3D):
         for i in range(self.n_img - 1):
             for j in range(i + 1, self.n_img):
                 ij = self.pairs_to_linear[i, j]
-                c_mat[c_vec[3 * ij], 3 * i : 3 * i + 2, 3 * j : 3 * j + 2] = rr[ij, 0]
-                c_mat[c_vec[3 * ij + 1], 3 * i : 3 * i + 2, 3 * j : 3 * j + 2] = rr[
+                c_mat[c_vec[3 * ij], 3 * i : 3 * i + 3, 3 * j : 3 * j + 3] = rr[ij, 0]
+                c_mat[c_vec[3 * ij + 1], 3 * i : 3 * i + 3, 3 * j : 3 * j + 3] = rr[
                     ij, 1
                 ]
-                c_mat[c_vec[3 * ij + 2], 3 * i : 3 * i + 2, 3 * j : 3 * j + 2] = rr[
+                c_mat[c_vec[3 * ij + 2], 3 * i : 3 * i + 3, 3 * j : 3 * j + 3] = rr[
                     ij, 2
                 ]
 
@@ -1307,12 +1309,225 @@ class CLSymmetryD2(CLOrient3D):
 
         for c in range(3):
             for i in range(self.n_img):
-                c_mat[c, 3 * i : 3 * i + 2, 3 * i : 3 * i + 2] = c_mat_5d[i, i, c]
+                c_mat[c, 3 * i : 3 * i + 3, 3 * i : 3 * i + 3] = c_mat_5d[i, i, c]
 
         # To decompose cMat as a rank 1 matrix we need to adjust the signs of the
         # Qij^c so that sign(Qij^c*Qjk^c) = sign(Qik^c) for all c=1,2,3 and (i,j).
         # In practice we compare the sign of the sum of the entries of Qij^c*Qjk^c
         # to the sum of entries of Qik^c.
+
+        # For computational comfort the signs for each c=1,2,3 are stored in a
+        # Nx(N over 2) array, where the ij'th column corresponds to the signs of
+        # Qij^c * Qjk^c for k~=i,j. The entries in the k=i,j rows of the ij'th
+        # column are zero, the value zero is arbitrary, since these entries are
+        # not used by the algorithm, and only exist for comfort (of storage and
+        # access).
+        signs = np.zeros((3, n_pairs, self.n_img), dtype=self.dtype)
+        for c in range(3):
+            for p in range(n_pairs):
+                i, j = self.pairs[p]
+                idx_mask = np.full(self.n_img, True)
+                idx_mask[[i, j]] = False
+                signs[c, p, idx_mask] = self.calc_Rij_prods(c_mat_5d, i, j, c)
+
+        # Now compute the signs of Qij^c.
+        est_signs = np.sign(np.sum(c_mat_4d, axis=(-2, -1)))
+        signs = np.transpose(signs, (0, 2, 1))
+        for c in range(3):
+            signs[c] = est_signs[:, c] * signs[c]
+
+        # Qik^c can be compared with Qir^c*Qrk^c for each r~=i,k, that is,
+        # N-2 options. Another way to look at this, is that the r'th image
+        # participates in all comparisons of the form sign(Qir^c*Qrk^c)~sign(Qik)
+        # for r~=i,k for each c=1,2,3 (see Section 8 in D2 paper).
+        # For each image r construct a 3Nx3N matrix. If
+        # sign(Qir^c*Qrk^c)~sign(Qik)=1, its ik'th 3x3 block is set to Qik,
+        # otherwise, it is set to -Qik.
+        sync_signs2 = np.arange(self.n_img).reshape((1, 1, self.n_img, 1))
+        sync_signs2 = np.tile(sync_signs2, (3, self.n_img, 1, self.n_img))
+        for c in range(3):
+            for r in range(self.n_img):
+                # Fill signs for synchroniztion for the r'th image.
+                # Go over all i,j~=r.
+                i_idx = np.concatenate(
+                    (np.arange(0, r), np.arange(r + 1, self.n_img))
+                )  # i~=r
+                for i in i_idx:
+                    if i <= r:
+                        j_idx = np.concatenate(
+                            (np.arange(i + 1, r), np.arange(r + 1, self.n_img))
+                        )
+                    else:
+                        j_idx = np.arange(i + 1, self.n_img)
+                    for j in j_idx:
+                        ij = self.pairs_to_linear[i, j]
+                        sync_signs2[c, r, j, i] = (
+                            j + 0.5 * (1 - signs[c, r, ij]) * self.n_img
+                        )
+                        sync_signs2[c, r, i, j] = (
+                            i + 0.5 * (1 - signs[c, r, ij]) * self.n_img
+                        )
+                        # The function (1-x)/2 maps 1->0 and -1->1
+
+        c_mat_5d_mp = np.concatenate((c_mat_5d, -c_mat_5d), axis=1)
+        rows_arr = np.zeros((3, self.n_img, 3 * self.n_img), dtype=self.dtype)
+        svals = np.zeros((3, 2, self.n_img), dtype=self.dtype)
+
+        logger.info("Constructing and decomposing N sign synchronization matrices...")
+        for c in range(3):
+            for r in range(self.n_img):
+                # Image r used for signs.
+                c_mat_eff = self.fill_sign_sync_matrix_c(c_mat_5d_mp, sync_signs2, c, r)
+
+                # Construct (3*N)x(3*N) rank 1 matrices from Qik
+                c_mat_for_svd = np.zeros(
+                    (3 * self.n_img, 3 * self.n_img), dtype=self.dtype
+                )
+                for i in range(self.n_img):
+                    row_3Nx3 = c_mat_eff[i]
+                    row_3Nx3 = row_3Nx3.reshape(3 * self.n_img, 3)
+                    c_mat_for_svd[:, 3 * i : 3 * i + 3] = row_3Nx3
+
+                c_mat_for_svd = c_mat_for_svd + c_mat_for_svd.T
+
+                # Extract leading eigenvector of rank 1 matrix. For each r and c
+                # this gives an estimate for the c'th row of the rotation Rr, up
+                # to sign +/-.
+                for i in range(self.n_img):
+                    c_mat_for_svd[3 * i : 3 * i + 3, 3 * i : 3 * i + 3] = c_mat_eff[
+                        i, i
+                    ]
+                U, S, _ = np.linalg.svd(c_mat_for_svd)
+                svals[c, :, r] = S[:2]
+                rows_arr[c, r] = U[:, 0]
+
+        # Sync signs according to results for each image. Dot products between
+        # signed row estimates are used to construct an (N over 2)x(N over 2)
+        # sign synchronization matrix S. If (v_i)k and (v_j)k are the i'th and
+        # j'th estimates for the c'th row of Rk, then the entry (i,k),(k,j) entry
+        # of S is <(v_i)k,(v_j)k>, where the rows and columns of S are indexed by
+        # double indexes (i,j), 1<=i<j<=(N over 2).
+        # TODO: maybe this can be done with a mask?
+        pairs_map = np.zeros((n_pairs, 2 * (self.n_img - 2)), dtype=int)
+        for i in range(self.n_img):
+            for j in range(i + 1, self.n_img):
+                ij = self.pairs_to_linear[i, j]
+                pairs_map[ij] = np.concatenate(
+                    (
+                        self.pairs_to_linear[:i, i],
+                        self.pairs_to_linear[i, np.r_[i + 1 : j, j + 1 : self.n_img]],
+                        self.pairs_to_linear[np.r_[:i, i + 1 : j], j],
+                        self.pairs_to_linear[j, j + 1 :],
+                    )
+                )
+
+        signs = np.zeros((3, n_pairs), dtype=self.dtype)
+        s_out = np.zeros((3, 3), dtype=self.dtype)
+
+        logger.info("Constructing and decomposing 3 sign synchroniztion matrices...")
+        # The matrix S requires space on order of O(N^4). Instead of storing it
+        # in memory we compute its SVD using the function smat which multiplies
+        # (N over 2)x1 vectors by S.
+        for c in range(3):
+            # Prepare data for smat to act on vectors.
+            sign_mat = np.zeros((n_pairs, 2 * (self.n_img - 2)), dtype=int)
+            for i in range(self.n_img - 1):
+                for j in range(i + 1, self.n_img):
+                    ij = self.pairs_to_linear[i, j]
+                    sij = rows_arr[c, j, 3 * i : 3 * i + 3]
+                    sji = rows_arr[c, i, 3 * j : 3 * j + 3]
+                    siks = rows_arr[
+                        c, np.r_[:i, i + 1 : j, j + 1 : self.n_img], 3 * i : 3 * i + 3
+                    ]
+                    sjks = rows_arr[
+                        c, np.r_[:i, i + 1 : j, j + 1 : self.n_img], 3 * j : 3 * j + 3
+                    ]
+                    sign_mat[ij] = np.concatenate(
+                        (np.sign(siks @ sij), np.sign(sjks @ sji))
+                    )
+
+            smat = la.LinearOperator(
+                shape=(n_pairs, n_pairs),
+                matvec=lambda v, s=sign_mat: self.mult_smat_by_vec(v, s, pairs_map),
+                rmatvec=lambda v, s=sign_mat: self.mult_smat_by_vec(v, s, pairs_map),
+            )
+            U, S, _ = la.svds(smat, k=3, which="LM")
+            signs[c] = U[:, -1]  # Returns in ascending order
+            s_out[c] = S[::-1]
+
+        signs = np.sign(signs)
+
+        # Adjust the signs of Qij^c in the matrices cMat(:,:,c) for all c=1,2,3
+        # and 1<=i<j<=N according to the results of the signs from the last stage.
+        logger.info("Constructing and decomposing 3 row synchroniztion matrices...")
+        for c in range(3):
+            idx = 0
+            for i in range(self.n_img - 1):
+                for j in range(i + 1, self.n_img):
+                    c_mat[c, 3 * j : 3 * j + 3, 3 * i : 3 * i + 3] = (
+                        signs[c, idx] * c_mat[c, 3 * j : 3 * j + 3, 3 * i : 3 * i + 3]
+                    )
+                    c_mat[c, 3 * i : 3 * i + 3, 3 * j : 3 * j + 3] = (
+                        signs[c, idx] * c_mat[c, 3 * i : 3 * i + 3, 3 * j : 3 * j + 3]
+                    )
+                    idx += 1
+
+        # cMat(:,:,c) are now rank 1. Decompose using SVD and take leading eigenvector.
+        U1, S1, _ = la.svds(c_mat[0], k=3, which="LM")
+        U2, S2, _ = la.svds(c_mat[1], k=3, which="LM")
+        U3, S3, _ = la.svds(c_mat[2], k=3, which="LM")
+        svals2 = np.zeros((3, 3), dtype=self.dtype)
+        svals2[0] = S1[::-1]
+        svals2[1] = S2[::-1]
+        svals2[2] = S3[::-1]
+
+        # The c'th row of the rotation Rj is Uc(3*j-2:3*j,1)/norm(Uc(3*j-2:3*j,1)),
+        # (Rows must be normalized to length 1).
+        logger.info("Assembeling rows to rotations matrices...")
+        for i in range(self.n_img):
+            rot[i, 0] = U1[3 * i : 3 * i + 3, -1] / np.linalg.norm(
+                U1[3 * i : 3 * i + 3, -1]
+            )
+            rot[i, 1] = U2[3 * i : 3 * i + 3, -1] / np.linalg.norm(
+                U2[3 * i : 3 * i + 3, -1]
+            )
+            rot[i, 2] = U3[3 * i : 3 * i + 3, -1] / np.linalg.norm(
+                U3[3 * i : 3 * i + 3, -1]
+            )
+            if np.linalg.det(rot[i]) < 0:
+                rot[i, 2] = -rot[i, 2]
+
+        return rot
+
+    def fill_sign_sync_matrix_c(self, c_mat_5d_mp, sync_signs2, c, img):
+        c_mat_eff = np.zeros((self.n_img, self.n_img, 3, 3), dtype=self.dtype)
+        for r in range(self.n_img):
+            c_mat_eff[:, r] = c_mat_5d_mp[r, sync_signs2[c, img, :, r], c]
+        return c_mat_eff
+
+    def calc_Rij_prods(self, c_mat_5d, i, j, c):
+        Rik = np.delete(c_mat_5d[i, :, c], [i, j], axis=0)
+        Rkj = np.delete(c_mat_5d[:, j, c], [i, j], axis=0)
+        Rij = Rik @ Rkj
+
+        # In case we get a zero score arbitrarily choose sign +1.
+        ij_signs = np.sum(Rij, axis=(-2, -1))
+        zeros_idx = ij_signs == 0
+        if np.sum(zeros_idx) > 0:
+            ij_signs[zeros_idx] = 1
+
+        return np.sign(ij_signs)
+
+    def mult_smat_by_vec(self, v, sign_mat, pairs_map):
+        """
+        Multiplies the signs sync matrix by a vector.
+        """
+        v_out = np.zeros_like(v)
+        for i in range(self.n_img):
+            for j in range(i + 1, self.n_img):
+                ij = self.pairs_to_linear[i, j]
+                v_out[ij] = sign_mat[ij] @ v[pairs_map[ij]]
+        return v_out
 
     ####################
     # Helper Functions #
