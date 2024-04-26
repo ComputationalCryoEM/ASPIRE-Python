@@ -80,6 +80,7 @@ jobs:
     - name: Set up Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
       uses: conda-incubator/setup-miniconda@v2
       with:
+        miniconda-version: "latest"
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
         activate-environment: aspire
