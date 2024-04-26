@@ -290,7 +290,7 @@ void pairs_probabilities(int n, double* Rijs, double P2, double A, double a, dou
 
 
 extern "C" __global__
-void triangle_scores_inner(int n, double* Rijs, int n_intervals, double* cum_scores, double* scores_hist)
+void triangle_scores_inner(int n, double* Rijs, int n_intervals, double* scores_hist)
 {
   /* thread index (1d), represents "i" index */
   unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -384,12 +384,6 @@ void triangle_scores_inner(int n, double* Rijs, int n_intervals, double* cum_sco
       s_ij_jk = 1 - sqrt(best_val / alt_ij_jk);
       s_ik_jk = 1 - sqrt(best_val / alt_ik_jk);
       s_ij_ik = 1 - sqrt(best_val / alt_ij_ik);
-
-
-      /* update cumulated scores */
-      cum_scores[ij*n+i] += s_ij_jk + s_ij_ik;
-      cum_scores[jk*n+i] += s_ij_jk + s_ik_jk;
-      cum_scores[ik*n+i] += s_ik_jk + s_ij_ik;
 
       /* update scores histogram */
       threshold = 0;

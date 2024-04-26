@@ -9,6 +9,9 @@ N = 64  # Number of images
 n_pairs = N * (N - 1) // 2
 
 
+# XXX TODO, conditionally run these only if GPU present.
+
+
 @pytest.fixture
 def src_fixture():
     src = Simulation(n=N, L=32, C=1, dtype=DTYPE)
@@ -57,14 +60,13 @@ def test_triangle_scores_host_vs_cupy(cl3n_fixture, rijs_fixture):
     # DTYPE is critical here (manually calling private method
 
     # Execute CUPY
-    cucp, hicp = cl3n_fixture._triangle_scores_inner_cupy(rijs_fixture)
+    hist_cp = cl3n_fixture._triangle_scores_inner_cupy(rijs_fixture)
 
     # Execute host
-    cuh, hih = cl3n_fixture._triangle_scores_inner_host(rijs_fixture)
+    hist_h = cl3n_fixture._triangle_scores_inner_host(rijs_fixture)
 
     # Compare host to cupy calls
-    np.testing.assert_allclose(cucp, cuh)
-    np.testing.assert_allclose(hicp, hih)
+    np.testing.assert_allclose(hist_cp, hist_h)
 
 
 def test_stv_host_vs_cupy(cl3n_fixture, rijs_fixture):
