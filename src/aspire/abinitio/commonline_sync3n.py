@@ -247,9 +247,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         def body(prev_too_low, Pmin, Pmax, hist, p_domain_limit=p_domain_limit):
             # Get inistial estimate for Pij
-            P, sigma, Pij, hist, cum_scores = self._triangle_scores(
-                Rijs, hist, Pmin, Pmax
-            )
+            P, sigma, Pij, hist = self._triangle_scores(Rijs, hist, Pmin, Pmax)
 
             # Check if P and Pij are consistent
             mean_Pij = np.mean(Pij)
@@ -307,18 +305,17 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # host/gpu dispatch
         if self._gpu_module:
-            cum_scores, scores_hist = self._triangle_scores_inner_cupy(Rijs)
+            scores_hist = self._triangle_scores_inner_cupy(Rijs)
         else:
-            cum_scores, scores_hist = self._triangle_scores_inner_host(Rijs)
+            scores_hist = self._triangle_scores_inner_host(Rijs)
 
-        return cum_scores, scores_hist
+        return scores_hist
 
     def _triangle_scores_inner_host(self, Rijs):
 
         # The following is adopted from Matlab triangle_scores_mex.c
 
         # Initialize probability result arrays
-        cum_scores = np.zeros(len(Rijs), dtype=Rijs.dtype)
         scores_hist = np.zeros(self.hist_intervals, dtype=Rijs.dtype)
         h = 1 / self.hist_intervals
 
@@ -368,11 +365,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                     s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
                     s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
 
-                    # Update cumulated scores
-                    cum_scores[ij] += s_ij_jk + s_ij_ik
-                    cum_scores[jk] += s_ij_jk + s_ik_jk
-                    cum_scores[ik] += s_ik_jk + s_ij_ik
-
                     # Update histogram
                     threshold = 0
                     for _l1 in range(self.hist_intervals - 1):
@@ -396,7 +388,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                     scores_hist[_l2] += 1
                     scores_hist[_l3] += 1
 
-        return cum_scores, scores_hist
+        return scores_hist
 
     def _triangle_scores_inner_cupy(self, Rijs):
         """
@@ -409,11 +401,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         triangle_scores = self._gpu_module.get_function("triangle_scores_inner")
 
         Rijs_dev = cp.array(Rijs)
-
-        # xxx I think we can safely remove cum_scores
-        cum_scores_dev = cp.zeros(
-            (self.n_img * (self.n_img - 1) // 2, self.n_img), dtype=np.float64
-        )  # n is for thread safety
 
         scores_hist_dev = cp.zeros(
             (self.hist_intervals, self.n_img), dtype=np.float64
@@ -429,16 +416,14 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 self.n_img,
                 Rijs_dev,
                 self.hist_intervals,
-                cum_scores_dev,
                 scores_hist_dev,
             ),
         )
 
         # accumulate over thread results
-        cum_scores = cp.sum(cum_scores_dev, axis=1).get()
         scores_hist = cp.sum(scores_hist_dev, axis=1).get()
 
-        return cum_scores, scores_hist
+        return scores_hist
 
     def _pairs_probabilities(self, Rijs, P2, A, a, B, b, x0):
         # dtype is critical for passing into C code...
@@ -607,12 +592,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         Pmax = Pmax or 1
         Pmax = min(Pmax, 1)  # Clamp probability to [0,1]
 
-        cum_scores = None  # XXX Why do we even need cum_scores?
         if scores_hist is None:
-            cum_scores, scores_hist = self._triangle_scores_inner(Rijs)
-
-            # Normalize cumulated scores
-            cum_scores /= len(Rijs)
+            scores_hist = self._triangle_scores_inner(Rijs)
 
         # Histogram decomposition: P & sigma evaluation
         h = 1 / self.hist_intervals
@@ -672,7 +653,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             )
             Pij = np.nan_to_num(Pij)
 
-        return P, sigma, Pij, scores_hist, cum_scores
+        return P, sigma, Pij, scores_hist
 
     ###########################################
     # Primary Methods                         #
