@@ -1,12 +1,13 @@
 import numpy as np
 import pytest
 
-from aspire.source import Simulation
 from aspire.abinitio.commonline_sync3n import CLSync3N
+from aspire.source import Simulation
 
-DTYPE = np.float64
-N = 64
+DTYPE = np.float64  # TODO, consider single precision.
+N = 64  # Number of images
 n_pairs = N * (N - 1) // 2
+
 
 @pytest.fixture
 def src_fixture():
@@ -14,10 +15,12 @@ def src_fixture():
     src = src.cache()
     return src
 
+
 @pytest.fixture
 def cl3n_fixture(src_fixture):
     cl = CLSync3N(src_fixture)
     return cl
+
 
 @pytest.fixture
 def rijs_fixture():
@@ -25,11 +28,12 @@ def rijs_fixture():
     Rijs = Rijs.astype(dtype=DTYPE, copy=False)
     return Rijs
 
+
 def test_pairs_prob_host_vs_cupy(cl3n_fixture, rijs_fixture):
     """
     Compares pairs_probabilities  between host and cupy implementations.
     """
-    
+
     P2, A, a, B, b, x0 = 1, 2, 3, 4, 5, 6
 
     # DTYPE is critical here (manually calling private method
@@ -45,6 +49,7 @@ def test_pairs_prob_host_vs_cupy(cl3n_fixture, rijs_fixture):
     np.testing.assert_allclose(indsh, indscp)
     np.testing.assert_allclose(arbh, arbcp)
 
+
 def test_triangle_scores_host_vs_cupy(cl3n_fixture, rijs_fixture):
     """
     Compares triangle_scores between host and cupy implementations.
@@ -58,8 +63,9 @@ def test_triangle_scores_host_vs_cupy(cl3n_fixture, rijs_fixture):
     cuh, hih = cl3n_fixture._triangle_scores_inner_host(rijs_fixture)
 
     # Compare host to cupy calls
-    np.testing.assert_allclose(cucp,cuh)
-    np.testing.assert_allclose(hicp,hih)
+    np.testing.assert_allclose(cucp, cuh)
+    np.testing.assert_allclose(hicp, hih)
+
 
 def test_stv_host_vs_cupy(cl3n_fixture, rijs_fixture):
     """
@@ -68,10 +74,10 @@ def test_stv_host_vs_cupy(cl3n_fixture, rijs_fixture):
     Default J_weighting=False
     """
     # dummy data vector
-    vec = np.ones(n_pairs, dtype=DTYPE)
+    vec = np.random.random(n_pairs).astype(dtype=DTYPE, copy=False)
 
     # J_weighting=False
-    assert cl3n_fixture.J_weighting == False
+    assert cl3n_fixture.J_weighting is False
 
     # Execute CUPY
     new_vec_cp = cl3n_fixture._signs_times_v_cupy(rijs_fixture, vec)
@@ -82,6 +88,7 @@ def test_stv_host_vs_cupy(cl3n_fixture, rijs_fixture):
     # Compare host to cupy calls
     np.testing.assert_allclose(new_vec_cp, new_vec_h)
 
+
 def test_stvJwt_host_vs_cupy(cl3n_fixture, rijs_fixture):
     """
     Compares signs_times_v between host and cupy implementations.
@@ -89,7 +96,7 @@ def test_stvJwt_host_vs_cupy(cl3n_fixture, rijs_fixture):
     Force J_weighting=True
     """
     # dummy data vector
-    vec = np.ones(n_pairs, dtype=DTYPE)
+    vec = np.random.random(n_pairs).astype(dtype=DTYPE, copy=False)
 
     # J_weighting=True
     cl3n_fixture.J_weighting = True
