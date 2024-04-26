@@ -918,7 +918,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         blkszx = 512
         nblkx = (self.n_img + blkszx - 1) // blkszx
         signs_times_v(
-            (nblkx,), (blkszx,), (self.n_img, Rijs_dev, vec_dev, new_vec_dev, self.J_weighting)
+            (nblkx,),
+            (blkszx,),
+            (self.n_img, Rijs_dev, vec_dev, new_vec_dev, self.J_weighting),
         )
 
         # accumulate, can reuse the vec_dev array now.
@@ -939,7 +941,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Read in contents of file
         fp = os.path.join(os.path.dirname(__file__), "commonline_sync3n.cu")
-        with open(fp, 'r') as fh:
+        with open(fp, "r") as fh:
             module_code = fh.read()
 
         # CUPY compile the CUDA code
