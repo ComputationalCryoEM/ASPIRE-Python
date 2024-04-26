@@ -151,7 +151,7 @@ jobs:
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} python -c \
         "import aspire; print(aspire.config['ray']['temp_dir'])"
-        ASPIREDIR=${{ env.WORK_DIR }} pytest --durations=50
+        ASPIREDIR=${{ env.WORK_DIR }} python -m pytest --durations=50
     - name: Cache Data
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} python -c \
