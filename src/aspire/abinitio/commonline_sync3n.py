@@ -1,4 +1,5 @@
 import logging
+import os.path
 
 import numpy as np
 from numpy.linalg import norm
@@ -37,7 +38,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         self,
         src,
         n_rad=None,
-        n_theta=None,
+        n_theta=360,
         max_shift=0.15,
         shift_step=1,
         epsilon=1e-2,
@@ -98,7 +99,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 logger.info(
                     f"cupy and GPU {gpu_id} found by cuda runtime; enabling cupy."
                 )
-                self._gpu_module = _init_cupy_module()
+                self._gpu_module = self._init_cupy_module()
             else:
                 logger.info("GPU not found, defaulting to numpy.")
 
@@ -411,16 +412,16 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # xxx I think we can safely remove cum_scores
         cum_scores_dev = cp.zeros(
-            (n_img * (n_img - 1) // 2, n_img), dtype=np.float64
+            (self.n_img * (self.n_img - 1) // 2, self.n_img), dtype=np.float64
         )  # n is for thread safety
 
         scores_hist_dev = cp.zeros(
-            (hist_intervals, n_img), dtype=np.float64
+            (self.hist_intervals, self.n_img), dtype=np.float64
         )  # n is for thread safety
 
         # call the kernel
         blkszx = 512
-        nblkx = (n_img + blkszx - 1) // blkszx
+        nblkx = (self.n_img + blkszx - 1) // blkszx
         triangle_scores(
             (nblkx,),
             (blkszx,),
@@ -614,12 +615,12 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             cum_scores /= len(Rijs)
 
         # Histogram decomposition: P & sigma evaluation
-        h = 1 / hist_intervals
+        h = 1 / self.hist_intervals
         hist_x = np.arange(h / 2, 1, h)
         # normalization factor of one component of the histogram
         A = (
             (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2)
-            / hist_intervals
+            / self.hist_intervals
             * (a + 1)
         )
         # normalization of 2nd component: B = P*N_delta/sum(f), where f is the component formula
@@ -656,7 +657,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         A = a + 1  # distribution 1st component normalization factor
         # distribution 2nd component normalization factor
         B = B / (
-            (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2) / hist_intervals
+            (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2) / self.hist_intervals
         )
 
         # Calculate probabilities
@@ -831,7 +832,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         c = np.empty((4))
         desc = "Computing signs_times_v"
-        if J_weighting:
+        if self.J_weighting:
             desc += " with J_weighting"
         for i in trange(self.n_img, desc=desc):
             for j in range(
@@ -911,13 +912,13 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         Rijs_dev = cp.array(Rijs)
         vec_dev = cp.array(vec)
         # 2d over i then accum to avoid race on i
-        new_vec_dev = cp.zeros((vec.shape[0], n))
+        new_vec_dev = cp.zeros((vec.shape[0], self.n_img))
 
         # call the kernel
         blkszx = 512
-        nblkx = (n + blkszx - 1) // blkszx
+        nblkx = (self.n_img + blkszx - 1) // blkszx
         signs_times_v(
-            (nblkx,), (blkszx,), (n, Rijs_dev, vec_dev, new_vec_dev, J_weighting)
+            (nblkx,), (blkszx,), (self.n_img, Rijs_dev, vec_dev, new_vec_dev, self.J_weighting)
         )
 
         # accumulate, can reuse the vec_dev array now.
@@ -937,8 +938,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         import cupy as cp
 
         # Read in contents of file
-        with open("commonline_sync3n.cu", rb) as f:
-            module_code = f.read()
+        fp = os.path.join(os.path.dirname(__file__), "commonline_sync3n.cu")
+        with open(fp, 'r') as fh:
+            module_code = fh.read()
 
         # CUPY compile the CUDA code
         return cp.RawModule(code=module_code)
