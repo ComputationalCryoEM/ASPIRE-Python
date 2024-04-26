@@ -11,27 +11,27 @@ from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 
-# Initialize alternatives
-#
-# When we find the best J-configuration, we also compare it to the alternative 2nd best one.
-# this comparison is done for every pair in the triplete independently. to make sure that the
-# alternative is indeed different in relation to the pair, we document the differences between
-# the configurations in advance:
-# ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from best_conf in relation to pair
-
-_ALTS = np.array(
-    [
-        [[1, 2, 1], [0, 2, 0], [0, 0, 1], [1, 0, 0]],
-        [[2, 3, 3], [3, 3, 2], [3, 1, 3], [2, 1, 2]],
-    ],
-    dtype=int,
-)
-
 
 class CLSync3N(CLOrient3D, SyncVotingMixin):
     """
     Define a class to estimate 3D orientations using common lines Sync3N methods (2017).
     """
+
+    # Initialize alternatives
+    #
+    # When we find the best J-configuration, we also compare it to the alternative 2nd best one.
+    # this comparison is done for every pair in the triplete independently. to make sure that the
+    # alternative is indeed different in relation to the pair, we document the differences between
+    # the configurations in advance:
+    # ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from best_conf in relation to pair
+
+    _ALTS = np.array(
+        [
+            [[1, 2, 1], [0, 2, 0], [0, 0, 1], [1, 0, 0]],
+            [[2, 3, 3], [3, 3, 2], [3, 1, 3], [2, 1, 2]],
+        ],
+        dtype=int,
+    )
 
     def __init__(
         self,
@@ -47,6 +47,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         mask=True,
         S_weighting=False,
         J_weighting=False,
+        hist_intervals=100,
     ):
         """
         Initialize object for estimating 3D orientations.
@@ -85,9 +86,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         self.S_weighting = S_weighting
         self.J_weighting = J_weighting
         self._D_null = 1e-13
+        self.hist_intervals = hist_intervals
 
         # Auto configure GPU
-        self._use_gpu = False
+        self._gpu_module = None
         try:
             import cupy as cp
 
@@ -96,9 +98,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 logger.info(
                     f"cupy and GPU {gpu_id} found by cuda runtime; enabling cupy."
                 )
-                self._use_gpu = True
+                self._gpu_module = _init_cupy_module()
             else:
                 logger.info("GPU not found, defaulting to numpy.")
+
         except ModuleNotFoundError:
             logger.info("cupy not found, defaulting numpy.")
 
@@ -299,17 +302,140 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         return W
 
-    def _triangle_scores_inner(self, Rijs, hist_intervals):
+    def _triangle_scores_inner(self, Rijs):
 
         # host/gpu dispatch
-        if self._use_gpu:
-            cum_scores, scores_hist = _triangle_scores_inner_cupy(
-                self.n_img, Rijs, hist_intervals
-            )
+        if self._gpu_module:
+            cum_scores, scores_hist = self._triangle_scores_inner_cupy(Rijs)
         else:
-            cum_scores, scores_hist = _triangle_scores_inner_host(
-                self.n_img, Rijs, hist_intervals, _ALTS, self._pairs_to_linear
-            )
+            cum_scores, scores_hist = self._triangle_scores_inner_host(Rijs)
+
+        return cum_scores, scores_hist
+
+    def _triangle_scores_inner_host(self, Rijs):
+
+        # The following is adopted from Matlab triangle_scores_mex.c
+
+        # Initialize probability result arrays
+        cum_scores = np.zeros(len(Rijs), dtype=Rijs.dtype)
+        scores_hist = np.zeros(self.hist_intervals, dtype=Rijs.dtype)
+        h = 1 / self.hist_intervals
+
+        c = np.empty((4), dtype=Rijs.dtype)
+        for i in trange(self.n_img, desc="Computing triangle scores"):
+            for j in range(
+                i + 1, self.n_img - 1
+            ):  # check bound (taken from MATLAB mex)
+                ij = self._pairs_to_linear[i, j]
+                Rij = Rijs[ij]
+                for k in range(j + 1, self.n_img):
+                    ik = self._pairs_to_linear[i, k]
+                    jk = self._pairs_to_linear[j, k]
+                    Rik = Rijs[ik]
+                    Rjk = Rijs[jk]
+
+                    # Compute conjugated rotats
+                    Rij_J = J_conjugate(Rij)
+                    Rik_J = J_conjugate(Rik)
+                    Rjk_J = J_conjugate(Rjk)
+
+                    # Compute R muls and norms
+                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+
+                    # Find best match
+                    best_i = np.argmin(c)
+                    best_val = c[best_i]
+
+                    # For each triangle side, find the best alternative
+                    alt_ij_jk = c[self._ALTS[0][best_i][0]]
+                    if c[self._ALTS[1][best_i][0]] < alt_ij_jk:
+                        alt_ij_jk = c[self._ALTS[1][best_i][0]]
+
+                    alt_ik_jk = c[self._ALTS[0][best_i][1]]
+                    if c[self._ALTS[1][best_i][1]] < alt_ik_jk:
+                        alt_ik_jk = c[self._ALTS[1][best_i][1]]
+
+                    alt_ij_ik = c[self._ALTS[0][best_i][2]]
+                    if c[self._ALTS[1][best_i][2]] < alt_ij_ik:
+                        alt_ij_ik = c[self._ALTS[1][best_i][2]]
+
+                    # Compute scores
+                    s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
+                    s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
+                    s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
+
+                    # Update cumulated scores
+                    cum_scores[ij] += s_ij_jk + s_ij_ik
+                    cum_scores[jk] += s_ij_jk + s_ik_jk
+                    cum_scores[ik] += s_ik_jk + s_ij_ik
+
+                    # Update histogram
+                    threshold = 0
+                    for _l1 in range(self.hist_intervals - 1):
+                        threshold += h
+                        if s_ij_jk < threshold:
+                            break
+
+                    threshold = 0
+                    for _l2 in range(self.hist_intervals - 1):
+                        threshold += h
+                        if s_ik_jk < threshold:
+                            break
+
+                    threshold = 0
+                    for _l3 in range(self.hist_intervals - 1):
+                        threshold += h
+                        if s_ij_ik < threshold:
+                            break
+
+                    scores_hist[_l1] += 1
+                    scores_hist[_l2] += 1
+                    scores_hist[_l3] += 1
+
+        return cum_scores, scores_hist
+
+    def _triangle_scores_inner_cupy(self, Rijs):
+        """
+        n: n_img
+        Rijs: nchoose2x3x3 array
+
+        """
+        import cupy as cp
+
+        triangle_scores = self._gpu_module.get_function("triangle_scores_inner")
+
+        Rijs_dev = cp.array(Rijs)
+
+        # xxx I think we can safely remove cum_scores
+        cum_scores_dev = cp.zeros(
+            (n_img * (n_img - 1) // 2, n_img), dtype=np.float64
+        )  # n is for thread safety
+
+        scores_hist_dev = cp.zeros(
+            (hist_intervals, n_img), dtype=np.float64
+        )  # n is for thread safety
+
+        # call the kernel
+        blkszx = 512
+        nblkx = (n_img + blkszx - 1) // blkszx
+        triangle_scores(
+            (nblkx,),
+            (blkszx,),
+            (
+                self.n_img,
+                Rijs_dev,
+                self.hist_intervals,
+                cum_scores_dev,
+                scores_hist_dev,
+            ),
+        )
+
+        # accumulate over thread results
+        cum_scores = cp.sum(cum_scores_dev, axis=1).get()
+        scores_hist = cp.sum(scores_hist_dev, axis=1).get()
 
         return cum_scores, scores_hist
 
@@ -317,12 +443,136 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # dtype is critical for passing into C code...
         params = np.arary([P2, A, a, B, b, x0], dtype=np.float64)
         # host/gpu dispatch
-        if self._use_gpu:
-            ln_f_ind, ln_f_arb = _pairs_probabilities_cupy(self.n_img, Rijs, *params)
+        if self._gpu_module:
+            ln_f_ind, ln_f_arb = self._pairs_probabilities_cupy(Rijs, *params)
         else:
-            ln_f_ind, ln_f_arb = _pairs_probabilities_host(
-                self.n_img, Rijs, *params, _ALTS, self._pairs_to_linear
-            )
+            ln_f_ind, ln_f_arb = self._pairs_probabilities_host(Rijs, *params)
+
+        return ln_f_ind, ln_f_arb
+
+    def _pairs_probabilities_host(self, Rijs, P2, A, a, B, b, x0):
+        # The following is adopted from Matlab pairs_probabilities_mex.c `looper`
+
+        # Initialize probability result arrays
+        ln_f_ind = np.zeros(len(Rijs), dtype=Rijs.dtype)
+        ln_f_arb = np.zeros(len(Rijs), dtype=Rijs.dtype)
+
+        c = np.empty((4), dtype=Rijs.dtype)
+        for i in trange(self.n_img, desc="Computing pair probabilities"):
+            for j in range(i + 1, self.n_img - 1):
+                ij = self._pairs_to_linear[i, j]
+                Rij = Rijs[ij]
+                for k in range(j + 1, self.n_img):
+                    ik = self._pairs_to_linear[i, k]
+                    jk = self._pairs_to_linear[j, k]
+                    Rik = Rijs[ik]
+                    Rjk = Rijs[jk]
+
+                    # Compute conjugated rotats
+                    Rij_J = J_conjugate(Rij)
+                    Rik_J = J_conjugate(Rik)
+                    Rjk_J = J_conjugate(Rjk)
+
+                    # Compute R muls and norms
+                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+
+                    # Find best match
+                    best_i = np.argmin(c)
+                    best_val = c[best_i]
+
+                    # For each triangle side, find the best alternative
+                    alt_ij_jk = c[self._ALTS[0][best_i][0]]
+                    if c[self._ALTS[1][best_i][0]] < alt_ij_jk:
+                        alt_ij_jk = c[self._ALTS[1][best_i][0]]
+                    alt_ik_jk = c[self._ALTS[0][best_i][1]]
+                    if c[self._ALTS[1][best_i][1]] < alt_ik_jk:
+                        alt_ik_jk = c[self._ALTS[1][best_i][1]]
+                    alt_ij_ik = c[self._ALTS[0][best_i][2]]
+                    if c[self._ALTS[1][best_i][2]] < alt_ij_ik:
+                        alt_ij_ik = c[self._ALTS[1][best_i][2]]
+
+                    # Compute scores
+                    s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
+                    s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
+                    s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
+
+                    # Update probabilities
+                    # # Probability of pair ij having score given indicicative common line
+                    # P2, B, b, x0, A, a
+                    f_ij_jk = np.log(
+                        P2
+                        * (
+                            B
+                            * np.power(1 - s_ij_jk, b)
+                            * np.exp(-b / (1 - x0) * (1 - s_ij_jk))
+                        )
+                        + (1 - P2) * A * np.power((1 - s_ij_jk), a)
+                    )
+                    f_ik_jk = np.log(
+                        P2
+                        * (
+                            B
+                            * np.power(1 - s_ik_jk, b)
+                            * np.exp(-b / (1 - x0) * (1 - s_ik_jk))
+                        )
+                        + (1 - P2) * A * np.power((1 - s_ik_jk), a)
+                    )
+                    f_ij_ik = np.log(
+                        P2
+                        * (
+                            B
+                            * np.power(1 - s_ij_ik, b)
+                            * np.exp(-b / (1 - x0) * (1 - s_ij_ik))
+                        )
+                        + (1 - P2) * A * np.power((1 - s_ij_ik), a)
+                    )
+                    ln_f_ind[ij] += f_ij_jk + f_ij_ik
+                    ln_f_ind[jk] += f_ij_jk + f_ik_jk
+                    ln_f_ind[ik] += f_ik_jk + f_ij_ik
+
+                    # # Probability of pair ij having score given arbitrary common line
+                    f_ij_jk = np.log(A * np.power((1 - s_ij_jk), a))
+                    f_ik_jk = np.log(A * np.power((1 - s_ik_jk), a))
+                    f_ij_ik = np.log(A * np.power((1 - s_ij_ik), a))
+                    ln_f_arb[ij] += f_ij_jk + f_ij_ik
+                    ln_f_arb[jk] += f_ij_jk + f_ik_jk
+                    ln_f_arb[ik] += f_ik_jk + f_ij_ik
+
+        return ln_f_ind, ln_f_arb
+
+    def _pairs_probabilities_cupy(self, Rijs, P2, A, a, B, b, x0):
+        """
+        n: n_img
+        Rijs: nchoose2x3x3 array
+
+        """
+        import cupy as cp
+
+        pairs_probabilities = self._gpu_module.get_function("pairs_probabilities")
+
+        Rijs_dev = cp.array(Rijs)
+        ln_f_ind_dev = cp.zeros(
+            (self.n_img * (self.n_img - 1) // 2, self.n_img)
+        )  # second dim is for thread safety
+        ln_f_arb_dev = cp.zeros(
+            (self.n_img * (self.n_img - 1) // 2, self.n_img)
+        )  # second dim  is for thread safety
+
+        # call the kernel
+        blkszx = 512
+        nblkx = (self.n_img + blkszx - 1) // blkszx
+        pairs_probabilities(
+            (nblkx,),
+            (blkszx,),
+            (self.n_img, Rijs_dev, P2, A, a, B, b, x0, ln_f_ind_dev, ln_f_arb_dev),
+        )
+
+        # accumulate over thread results
+        ln_f_arb = cp.sum(ln_f_arb_dev, axis=1).get()
+        ln_f_ind = cp.sum(ln_f_ind_dev, axis=1).get()
 
         return ln_f_ind, ln_f_arb
 
@@ -332,7 +582,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         scores_hist,
         Pmin,
         Pmax,
-        hist_intervals=100,
         a=2.2,
         peak2sigma=2.43e-2,
         P=0.5,
@@ -359,7 +608,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         cum_scores = None  # XXX Why do we even need cum_scores?
         if scores_hist is None:
-            cum_scores, scores_hist = self._triangle_scores_inner(Rijs, hist_intervals)
+            cum_scores, scores_hist = self._triangle_scores_inner(Rijs)
 
             # Normalize cumulated scores
             cum_scores /= len(Rijs)
@@ -555,809 +804,141 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     def _signs_times_v(self, Rijs, vec):
 
         # host/gpu dispatch
-        if self._use_gpu:
-            new_vec = _signs_times_v_cupy(self.n_img, Rijs, vec, self.J_weighting)
+        if self._gpu_module:
+            new_vec = self._signs_times_v_cupy(Rijs, vec)
         else:
-            new_vec = _signs_times_v_host(
-                self.n_img, Rijs, vec, self.J_weighting, _ALTS, self._pairs_to_linear
-            )
+            new_vec = self._signs_times_v_host(Rijs, vec)
 
         return new_vec
 
+    def _signs_times_v_host(self, Rijs, vec):
+        """
+        Ported from _signs_times_v_mex.c
+
+        n: n_img
+        Rijs: nchoose2x3x3 array
+        vec: input array
+        new_vec: output array
+        J_weighting: bool
+        _ALTS= 2x4x3 const lut array
+        """
+
+        new_vec = np.zeros_like(vec)
+
+        _signs_confs = np.array(
+            [[1, 1, 1], [-1, 1, -1], [-1, -1, 1], [1, -1, -1]], dtype=int
+        )
+
+        c = np.empty((4))
+        desc = "Computing signs_times_v"
+        if J_weighting:
+            desc += " with J_weighting"
+        for i in trange(self.n_img, desc=desc):
+            for j in range(
+                i + 1, self.n_img - 1
+            ):  # check bound (taken from MATLAB mex)
+                ij = self._pairs_to_linear[i, j]
+                Rij = Rijs[ij]
+                for k in range(j + 1, self.n_img):
+                    ik = self._pairs_to_linear[i, k]
+                    jk = self._pairs_to_linear[j, k]
+                    Rik = Rijs[ik]
+                    Rjk = Rijs[jk]
+
+                    # Compute conjugated rotats
+                    Rij_J = J_conjugate(Rij)
+                    Rik_J = J_conjugate(Rik)
+                    Rjk_J = J_conjugate(Rjk)
+
+                    # Compute R muls and norms
+                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+
+                    # Find best match
+                    best_i = np.argmin(c)
+                    best_val = c[best_i]
+
+                    # MATLAB: scores_as_entries == 0
+                    s_ij_jk = _signs_confs[best_i][0]
+                    s_ik_jk = _signs_confs[best_i][1]
+                    s_ij_ik = _signs_confs[best_i][2]
+
+                    # Note there was a third J_weighting option (2) in MATLAB,
+                    # but it was not exposed at top level.
+                    if self.J_weighting:
+                        # MATLAB: scores_as_entries == 1
+                        # For each triangle side, find the best alternative
+                        alt_ij_jk = c[self._ALTS[0][best_i][0]]
+                        if c[self._ALTS[1][best_i][0]] < alt_ij_jk:
+                            alt_ij_jk = c[self._ALTS[1][best_i][0]]
+
+                        alt_ik_jk = c[self._ALTS[0][best_i][1]]
+                        if c[self._ALTS[1][best_i][1]] < alt_ik_jk:
+                            alt_ik_jk = c[self._ALTS[1][best_i][1]]
+
+                        alt_ij_ik = c[self._ALTS[0][best_i][2]]
+                        if c[self._ALTS[1][best_i][2]] < alt_ij_ik:
+                            alt_ij_ik = c[self._ALTS[1][best_i][2]]
+
+                        # Compute scores
+                        s_ij_jk *= 1 - np.sqrt(best_val / alt_ij_jk)
+                        s_ik_jk *= 1 - np.sqrt(best_val / alt_ik_jk)
+                        s_ij_ik *= 1 - np.sqrt(best_val / alt_ij_ik)
+
+                    # Update vector entries
+                    new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
+                    new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
+                    new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
+
+        return new_vec
+
+    def _signs_times_v_cupy(self, Rijs, vec):
+        """
+        Ported from _signs_times_v_mex.c
+
+        n: n_img
+        Rijs: nchoose2x3x3 array
+        vec: input array
+        new_vec: output array
+        J_weighting: bool
+        """
+        import cupy as cp
+
+        signs_times_v = self._gpu_module.get_function("signs_times_v")
+
+        Rijs_dev = cp.array(Rijs)
+        vec_dev = cp.array(vec)
+        # 2d over i then accum to avoid race on i
+        new_vec_dev = cp.zeros((vec.shape[0], n))
 
-def _signs_times_v_host(n, Rijs, vec, J_weighting, _ALTS, _pairs_to_linear):
-    """
-    Ported from _signs_times_v_mex.c
+        # call the kernel
+        blkszx = 512
+        nblkx = (n + blkszx - 1) // blkszx
+        signs_times_v(
+            (nblkx,), (blkszx,), (n, Rijs_dev, vec_dev, new_vec_dev, J_weighting)
+        )
 
-    n: n_img
-    Rijs: nchoose2x3x3 array
-    vec: input array
-    new_vec: output array
-    J_weighting: bool
-    _ALTS= 2x4x3 const lut array
-    """
+        # accumulate, can reuse the vec_dev array now.
+        cp.sum(new_vec_dev, axis=1, out=vec_dev)
 
-    new_vec = np.zeros_like(vec)
+        # dtoh
+        new_vec = vec_dev.get()
 
-    _signs_confs = np.array(
-        [[1, 1, 1], [-1, 1, -1], [-1, -1, 1], [1, -1, -1]], dtype=int
-    )
+        return new_vec
 
-    c = np.empty((4))
-    desc = "Computing signs_times_v"
-    if J_weighting:
-        desc += " with J_weighting"
-    for i in trange(n, desc=desc):
-        for j in range(i + 1, n - 1):  # check bound (taken from MATLAB mex)
-            ij = _pairs_to_linear[i, j]
-            Rij = Rijs[ij]
-            for k in range(j + 1, n):
-                ik = _pairs_to_linear[i, k]
-                jk = _pairs_to_linear[j, k]
-                Rik = Rijs[ik]
-                Rjk = Rijs[jk]
+    @staticmethod
+    def _init_cupy_module():
+        """
+        Private utility method to read in CUDA source and return as compiled CUPY module.
+        """
 
-                # Compute conjugated rotats
-                Rij_J = J_conjugate(Rij)
-                Rik_J = J_conjugate(Rik)
-                Rjk_J = J_conjugate(Rjk)
+        import cupy as cp
 
-                # Compute R muls and norms
-                c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
-                c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
-                c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
-                c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+        # Read in contents of file
+        with open("commonline_sync3n.cu", rb) as f:
+            module_code = f.read()
 
-                # Find best match
-                best_i = np.argmin(c)
-                best_val = c[best_i]
-
-                # MATLAB: scores_as_entries == 0
-                s_ij_jk = _signs_confs[best_i][0]
-                s_ik_jk = _signs_confs[best_i][1]
-                s_ij_ik = _signs_confs[best_i][2]
-
-                # Note there was a third J_weighting option (2) in MATLAB,
-                # but it was not exposed at top level.
-                if J_weighting:
-                    # MATLAB: scores_as_entries == 1
-                    # For each triangle side, find the best alternative
-                    alt_ij_jk = c[_ALTS[0][best_i][0]]
-                    if c[_ALTS[1][best_i][0]] < alt_ij_jk:
-                        alt_ij_jk = c[_ALTS[1][best_i][0]]
-
-                    alt_ik_jk = c[_ALTS[0][best_i][1]]
-                    if c[_ALTS[1][best_i][1]] < alt_ik_jk:
-                        alt_ik_jk = c[_ALTS[1][best_i][1]]
-
-                    alt_ij_ik = c[_ALTS[0][best_i][2]]
-                    if c[_ALTS[1][best_i][2]] < alt_ij_ik:
-                        alt_ij_ik = c[_ALTS[1][best_i][2]]
-
-                    # Compute scores
-                    s_ij_jk *= 1 - np.sqrt(best_val / alt_ij_jk)
-                    s_ik_jk *= 1 - np.sqrt(best_val / alt_ik_jk)
-                    s_ij_ik *= 1 - np.sqrt(best_val / alt_ij_ik)
-
-                # Update vector entries
-                new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
-                new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
-                new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
-
-    return new_vec
-
-
-def _init_cupy_module():
-    module_code = r"""
-
-/* from i,j indoces to the common index in the N-choose-2 sized array */
-#define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2 + J-I-1)
-
-
-inline void mult_3x3(double *out, double *R1, double *R2) {
-  /* 3X3 matrices multiplication: out = R1*R2
-   * Note, this differs from the MATLAB mult_3x3.
-  */
-
-  int i,j,k;
-
-  for(i=0; i<3; i++){
-    for(j=0; j<3; j++){
-      out[i*3 + j] = 0;
-      for (k=0; k<3; k++){
-        out[i*3 + j] += R1[i*3+k] * R2[k*3+j];
-      }
-    }
-  }
-}
-
-inline void JRJ(double *R, double *A) {
-/* multiple 3X3 matrix by J from both sizes: A = JRJ */
-        A[0]=R[0];
-        A[1]=R[1];
-        A[2]=-R[2];
-        A[3]=R[3];
-        A[4]=R[4];
-        A[5]=-R[5];
-        A[6]=-R[6];
-        A[7]=-R[7];
-        A[8]=R[8];
-}
-
-inline double diff_norm_3x3(const double *R1, const double *R2) {
-/* difference 2 matrices and return squared norm: ||R1-R2||^2 */
-        int i;
-        double norm = 0;
-        for (i=0; i<9; i++) {norm += (R1[i]-R2[i])*(R1[i]-R2[i]);}
-        return norm;
-}
-
-
-extern "C" __global__
-void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec, bool J_weighting)
-{
-    /* thread index (1d), represents "i" index */
-    unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
-
-    /* no-op when out of bounds */
-    if(i >= n) return;
-
-    double c[4];
-    unsigned int j;
-    unsigned int k;
-    for(k=0;k<4;k++){c[k]=0;}
-    unsigned long ij, jk, ik;
-    int best_i;
-    double best_val;
-    double s_ij_jk, s_ik_jk, s_ij_ik;
-    double alt_ij_jk, alt_ij_ik, alt_ik_jk;
-
-    double *Rij, *Rjk, *Rik;
-    double JRijJ[9], JRjkJ[9], JRikJ[9];
-    double tmp[9];
-
-    int signs_confs[4][3];
-    for(int a=0; a<4; a++) { for(k=0; k<3; k++) { signs_confs[a][k]=1; } }
-    signs_confs[1][0]=-1; signs_confs[1][2]=-1;
-    signs_confs[2][0]=-1; signs_confs[2][1]=-1;
-    signs_confs[3][1]=-1; signs_confs[3][2]=-1;
-
-    /* initialize alternatives */
-    /* when we find the best J-configuration, we also compare it to the alternative 2nd best one.
-    * this comparison is done for every pair in the triplete independently. to make sure that the
-    * alternative is indeed different in relation to the pair, we document the differences between
-    * the configurations in advance:
-    * ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from
-    * best_conf in relation to pair */
-
-    int ALTS[2][4][3];
-    ALTS[0][0][0]=1; ALTS[0][1][0]=0; ALTS[0][2][0]=0; ALTS[0][3][0]=1;
-    ALTS[1][0][0]=2; ALTS[1][1][0]=3; ALTS[1][2][0]=3; ALTS[1][3][0]=2;
-    ALTS[0][0][1]=2; ALTS[0][1][1]=2; ALTS[0][2][1]=0; ALTS[0][3][1]=0;
-    ALTS[1][0][1]=3; ALTS[1][1][1]=3; ALTS[1][2][1]=1; ALTS[1][3][1]=1;
-    ALTS[0][0][2]=1; ALTS[0][1][2]=0; ALTS[0][2][2]=1; ALTS[0][3][2]=0;
-    ALTS[1][0][2]=3; ALTS[1][1][2]=2; ALTS[1][2][2]=3; ALTS[1][3][2]=2;
-
-
-    for(j=i+1; j< (n - 1); j++){
-        ij = PAIR_IDX(n, i, j);
-        for(k=j+1; k< n; k++){
-            ik = PAIR_IDX(n, i, k);
-            jk = PAIR_IDX(n, j, k);
-
-            /* compute configurations matches scores */
-            Rij = Rijs + 9*ij;
-            Rjk = Rijs + 9*jk;
-            Rik = Rijs + 9*ik;
-
-            JRJ(Rij, JRijJ);
-            JRJ(Rjk, JRjkJ);
-            JRJ(Rik, JRikJ);
-
-            mult_3x3(tmp, Rij, Rjk);
-            c[0] = diff_norm_3x3(tmp, Rik);
-
-            mult_3x3(tmp, JRijJ, Rjk);
-            c[1] = diff_norm_3x3(tmp, Rik);
-
-            mult_3x3(tmp, Rij, JRjkJ);
-            c[2] = diff_norm_3x3(tmp, Rik);
-
-            mult_3x3(tmp, Rij, Rjk);
-            c[3] = diff_norm_3x3(tmp, JRikJ);
-
-            /* find best match */
-            best_i=0; best_val=c[0];
-            if (c[1]<best_val) {best_i=1; best_val=c[1];}
-            if (c[2]<best_val) {best_i=2; best_val=c[2];}
-            if (c[3]<best_val) {best_i=3; best_val=c[3];}
-
-            /* set triangles entries to be signs */
-            s_ij_jk = signs_confs[best_i][0];
-            s_ik_jk = signs_confs[best_i][1];
-            s_ij_ik = signs_confs[best_i][2];
-
-            /* J weighting */
-            if(J_weighting){
-                /* for each triangle side, find the best alternative */
-                alt_ij_jk = c[ALTS[0][best_i][0]];
-                if (c[ALTS[1][best_i][0]] < alt_ij_jk){
-                     alt_ij_jk = c[ALTS[1][best_i][0]];
-                }
-
-                alt_ik_jk = c[ALTS[0][best_i][1]];
-                if (c[ALTS[1][best_i][1]] < alt_ik_jk){
-                     alt_ik_jk = c[ALTS[1][best_i][1]];
-                }
-                alt_ij_ik = c[ALTS[0][best_i][2]];
-                if (c[ALTS[1][best_i][2]] < alt_ij_ik){
-                     alt_ij_ik = c[ALTS[1][best_i][2]];
-                }
-
-                /* Update scores */
-                s_ij_jk *= 1 - sqrt(best_val / alt_ij_jk);
-                s_ik_jk *= 1 - sqrt(best_val / alt_ik_jk);
-                s_ij_ik *= 1 - sqrt(best_val / alt_ij_ik);
-            }
-
-
-            /* update multiplication */
-            new_vec[ij*n + i] += s_ij_jk*vec[jk] + s_ij_ik*vec[ik];
-            new_vec[jk*n + i] += s_ij_jk*vec[ij] + s_ik_jk*vec[ik];
-            new_vec[ik*n + i] += s_ij_ik*vec[ij] + s_ik_jk*vec[jk];
-
-        } /* k */
-    } /* j */
-
-    return;
-};
-
-extern "C" __global__
-void pairs_probabilities(int n, double* Rijs, double P2, double A, double a, double B, double b, double x0, double* ln_f_ind, double* ln_f_arb)
-{
-    /* thread index (1d), represents "i" index */
-    unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
-
-    /* no-op when out of bounds */
-    if(i >= n) return;
-
-    double c[4];
-    unsigned int j;
-    unsigned int k;
-    for(k=0;k<4;k++){c[k]=0;}
-    unsigned long ij, jk, ik;
-    int best_i;
-    double best_val;
-    double s_ij_jk, s_ik_jk, s_ij_ik;
-    double alt_ij_jk, alt_ij_ik, alt_ik_jk;
-    double f_ij_jk, f_ik_jk, f_ij_ik;
-
-
-    double *Rij, *Rjk, *Rik;
-    double JRijJ[9], JRjkJ[9], JRikJ[9];
-    double tmp[9];
-
-    int signs_confs[4][3];
-    for(int a=0; a<4; a++) { for(k=0; k<3; k++) { signs_confs[a][k]=1; } }
-    signs_confs[1][0]=-1; signs_confs[1][2]=-1;
-    signs_confs[2][0]=-1; signs_confs[2][1]=-1;
-    signs_confs[3][1]=-1; signs_confs[3][2]=-1;
-
-    /* initialize alternatives */
-    /* when we find the best J-configuration, we also compare it to the alternative 2nd best one.
-    * this comparison is done for every pair in the triplete independently. to make sure that the
-    * alternative is indeed different in relation to the pair, we document the differences between
-    * the configurations in advance:
-    * ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from
-    * best_conf in relation to pair */
-
-    int ALTS[2][4][3];
-    ALTS[0][0][0]=1; ALTS[0][1][0]=0; ALTS[0][2][0]=0; ALTS[0][3][0]=1;
-    ALTS[1][0][0]=2; ALTS[1][1][0]=3; ALTS[1][2][0]=3; ALTS[1][3][0]=2;
-    ALTS[0][0][1]=2; ALTS[0][1][1]=2; ALTS[0][2][1]=0; ALTS[0][3][1]=0;
-    ALTS[1][0][1]=3; ALTS[1][1][1]=3; ALTS[1][2][1]=1; ALTS[1][3][1]=1;
-    ALTS[0][0][2]=1; ALTS[0][1][2]=0; ALTS[0][2][2]=1; ALTS[0][3][2]=0;
-    ALTS[1][0][2]=3; ALTS[1][1][2]=2; ALTS[1][2][2]=3; ALTS[1][3][2]=2;
-
-
-    for(j=i+1; j< (n - 1); j++){
-        ij = PAIR_IDX(n, i, j);
-        for(k=j+1; k< n; k++){
-            ik = PAIR_IDX(n, i, k);
-            jk = PAIR_IDX(n, j, k);
-
-            /* compute configurations matches scores */
-            Rij = Rijs + 9*ij;
-            Rjk = Rijs + 9*jk;
-            Rik = Rijs + 9*ik;
-
-            JRJ(Rij, JRijJ);
-            JRJ(Rjk, JRjkJ);
-            JRJ(Rik, JRikJ);
-
-            mult_3x3(tmp, Rij, Rjk);
-            c[0] = diff_norm_3x3(tmp, Rik);
-
-            mult_3x3(tmp, JRijJ, Rjk);
-            c[1] = diff_norm_3x3(tmp, Rik);
-
-            mult_3x3(tmp, Rij, JRjkJ);
-            c[2] = diff_norm_3x3(tmp, Rik);
-
-            mult_3x3(tmp, Rij, Rjk);
-            c[3] = diff_norm_3x3(tmp, JRikJ);
-
-            /* find best match */
-            best_i=0; best_val=c[0];
-            if (c[1]<best_val) {best_i=1; best_val=c[1];}
-            if (c[2]<best_val) {best_i=2; best_val=c[2];}
-            if (c[3]<best_val) {best_i=3; best_val=c[3];}
-
-             /* for each triangle side, find the best alternative */
-             alt_ij_jk = c[ALTS[0][best_i][0]];
-             if (c[ALTS[1][best_i][0]] < alt_ij_jk){
-                 alt_ij_jk = c[ALTS[1][best_i][0]];
-             }
-
-             alt_ik_jk = c[ALTS[0][best_i][1]];
-             if (c[ALTS[1][best_i][1]] < alt_ik_jk){
-                 alt_ik_jk = c[ALTS[1][best_i][1]];
-             }
-             alt_ij_ik = c[ALTS[0][best_i][2]];
-             if (c[ALTS[1][best_i][2]] < alt_ij_ik){
-                 alt_ij_ik = c[ALTS[1][best_i][2]];
-             }
-
-            /* Assign scores */
-            s_ij_jk = 1 - sqrt(best_val / alt_ij_jk);
-            s_ik_jk = 1 - sqrt(best_val / alt_ik_jk);
-            s_ij_ik = 1 - sqrt(best_val / alt_ij_ik);
-
-
-            /* the probability of a pair ij to have the observed triangles scores,
-            given it has an indicative common line */
-            f_ij_jk = log( P2*(B*pow(1-s_ij_jk,b)*exp(-b/(1-x0)*(1-s_ij_jk))) + (1-P2)*A*pow((1-s_ij_jk),a) );
-            f_ik_jk = log( P2*(B*pow(1-s_ik_jk,b)*exp(-b/(1-x0)*(1-s_ik_jk))) + (1-P2)*A*pow((1-s_ik_jk),a) );
-            f_ij_ik = log( P2*(B*pow(1-s_ij_ik,b)*exp(-b/(1-x0)*(1-s_ij_ik))) + (1-P2)*A*pow((1-s_ij_ik),a) );
-            ln_f_ind[ij*n +i] += f_ij_jk + f_ij_ik;
-            ln_f_ind[jk*n +i] += f_ij_jk + f_ik_jk;
-            ln_f_ind[ik*n +i] += f_ik_jk + f_ij_ik;
-
-            /* the probability of a pair ij to have the observed triangles scores,
-             given it has an arbitrary common line */
-            f_ij_jk = log( A*pow((1-s_ij_jk),a) );
-            f_ik_jk = log( A*pow((1-s_ik_jk),a) );
-            f_ij_ik = log( A*pow((1-s_ij_ik),a) );
-            ln_f_arb[ij*n +i] += f_ij_jk + f_ij_ik;
-            ln_f_arb[jk*n +i] += f_ij_jk + f_ik_jk;
-            ln_f_arb[ik*n +i] += f_ik_jk + f_ij_ik;
-
-
-        } /* k */
-    } /* j */
-
-    return;
-};
-
-
-extern "C" __global__
-void triangle_scores_inner(int n, double* Rijs, int n_intervals, double* cum_scores, double* scores_hist)
-{
-    /* thread index (1d), represents "i" index */
-    unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
-
-    /* no-op when out of bounds */
-    if(i >= n) return;
-
-    double c[4];
-    unsigned int j;
-    unsigned int k;
-    for(k=0;k<4;k++){c[k]=0;}
-    unsigned long ij, jk, ik;
-    int best_i;
-    double best_val;
-    double s_ij_jk, s_ik_jk, s_ij_ik;
-    double alt_ij_jk, alt_ij_ik, alt_ik_jk;
-    unsigned int l1,l2,l3;
-    double threshold;
-    double h = 1. / n_intervals;
-
-    double *Rij, *Rjk, *Rik;
-    double JRijJ[9], JRjkJ[9], JRikJ[9];
-    double tmp[9];
-
-    /* initialize alternatives */
-    /* when we find the best J-configuration, we also compare it to the alternative 2nd best one.
-    * this comparison is done for every pair in the triplete independently. to make sure that the
-    * alternative is indeed different in relation to the pair, we document the differences between
-    * the configurations in advance:
-    * ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from
-    * best_conf in relation to pair */
-
-    int ALTS[2][4][3];
-    ALTS[0][0][0]=1; ALTS[0][1][0]=0; ALTS[0][2][0]=0; ALTS[0][3][0]=1;
-    ALTS[1][0][0]=2; ALTS[1][1][0]=3; ALTS[1][2][0]=3; ALTS[1][3][0]=2;
-    ALTS[0][0][1]=2; ALTS[0][1][1]=2; ALTS[0][2][1]=0; ALTS[0][3][1]=0;
-    ALTS[1][0][1]=3; ALTS[1][1][1]=3; ALTS[1][2][1]=1; ALTS[1][3][1]=1;
-    ALTS[0][0][2]=1; ALTS[0][1][2]=0; ALTS[0][2][2]=1; ALTS[0][3][2]=0;
-    ALTS[1][0][2]=3; ALTS[1][1][2]=2; ALTS[1][2][2]=3; ALTS[1][3][2]=2;
-
-
-    for(j=i+1; j< (n - 1); j++){
-        ij = PAIR_IDX(n, i, j);
-        for(k=j+1; k< n; k++){
-            ik = PAIR_IDX(n, i, k);
-            jk = PAIR_IDX(n, j, k);
-
-            /* compute configurations matches scores */
-            Rij = Rijs + 9*ij;
-            Rjk = Rijs + 9*jk;
-            Rik = Rijs + 9*ik;
-
-            JRJ(Rij, JRijJ);
-            JRJ(Rjk, JRjkJ);
-            JRJ(Rik, JRikJ);
-
-            mult_3x3(tmp, Rij, Rjk);
-            c[0] = diff_norm_3x3(tmp, Rik);
-
-            mult_3x3(tmp, JRijJ, Rjk);
-            c[1] = diff_norm_3x3(tmp, Rik);
-
-            mult_3x3(tmp, Rij, JRjkJ);
-            c[2] = diff_norm_3x3(tmp, Rik);
-
-            mult_3x3(tmp, Rij, Rjk);
-            c[3] = diff_norm_3x3(tmp, JRikJ);
-
-            /* find best match */
-            best_i=0; best_val=c[0];
-            if (c[1]<best_val) {best_i=1; best_val=c[1];}
-            if (c[2]<best_val) {best_i=2; best_val=c[2];}
-            if (c[3]<best_val) {best_i=3; best_val=c[3];}
-
-             /* for each triangle side, find the best alternative */
-             alt_ij_jk = c[ALTS[0][best_i][0]];
-             if (c[ALTS[1][best_i][0]] < alt_ij_jk){
-                 alt_ij_jk = c[ALTS[1][best_i][0]];
-             }
-
-             alt_ik_jk = c[ALTS[0][best_i][1]];
-             if (c[ALTS[1][best_i][1]] < alt_ik_jk){
-                 alt_ik_jk = c[ALTS[1][best_i][1]];
-             }
-             alt_ij_ik = c[ALTS[0][best_i][2]];
-             if (c[ALTS[1][best_i][2]] < alt_ij_ik){
-                 alt_ij_ik = c[ALTS[1][best_i][2]];
-             }
-
-            /* Assign scores */
-            s_ij_jk = 1 - sqrt(best_val / alt_ij_jk);
-            s_ik_jk = 1 - sqrt(best_val / alt_ik_jk);
-            s_ij_ik = 1 - sqrt(best_val / alt_ij_ik);
-
-
-            /* update cumulated scores */
-            cum_scores[ij*n+i] += s_ij_jk + s_ij_ik;
-            cum_scores[jk*n+i] += s_ij_jk + s_ik_jk;
-            cum_scores[ik*n+i] += s_ik_jk + s_ij_ik;
-
-            /* update scores histogram */
-            threshold = 0;
-            for (l1=0; l1<n_intervals-1; l1++) {
-                threshold += h;
-                if (s_ij_jk < threshold) {break;}
-            }
-
-            threshold = 0;
-            for(l2=0; l2<n_intervals-1; l2++) {
-                threshold += h;
-                if(s_ik_jk < threshold) {break;}
-            }
-
-            threshold = 0;
-            for(l3=0; l3<n_intervals-1; l3++) {
-                threshold += h;
-                if (s_ij_ik < threshold) {break;}
-            }
-
-            scores_hist[l1*n+i] += 1;
-            scores_hist[l2*n+i] += 1;
-            scores_hist[l3*n+i] += 1;
-
-        } /* k */
-    } /* j */
-
-    return;
-};
-
-"""
-    import cupy as cp
-
-    module = cp.RawModule(code=module_code)
-
-    return module
-
-
-def _signs_times_v_cupy(n, Rijs, vec, J_weighting):
-    """
-    Ported from _signs_times_v_mex.c
-
-    n: n_img
-    Rijs: nchoose2x3x3 array
-    vec: input array
-    new_vec: output array
-    J_weighting: bool
-    """
-    import cupy as cp
-
-    # xxx
-    module = _init_cupy_module()
-
-    signs_times_v = module.get_function("signs_times_v")
-
-    Rijs_dev = cp.array(Rijs)
-    vec_dev = cp.array(vec)
-    # 2d over i then accum to avoid race on i
-    new_vec_dev = cp.zeros((vec.shape[0], n))
-
-    # call the kernel
-    blkszx = 512
-    nblkx = (n + blkszx - 1) // blkszx
-    signs_times_v((nblkx,), (blkszx,), (n, Rijs_dev, vec_dev, new_vec_dev, J_weighting))
-
-    # accumulate, can reuse the vec_dev array now.
-    cp.sum(new_vec_dev, axis=1, out=vec_dev)
-
-    # dtoh
-    new_vec = vec_dev.get()
-
-    return new_vec
-
-
-def _pairs_probabilities_cupy(n, Rijs, P2, A, a, B, b, x0):
-    """
-    n: n_img
-    Rijs: nchoose2x3x3 array
-
-    """
-    import cupy as cp
-
-    # xxx
-    module = _init_cupy_module()
-
-    pairs_probabilities = module.get_function("pairs_probabilities")
-
-    Rijs_dev = cp.array(Rijs)
-    ln_f_ind_dev = cp.zeros((n * (n - 1) // 2, n))  # n is for thread safety
-    ln_f_arb_dev = cp.zeros((n * (n - 1) // 2, n))  # n is for thread safety
-
-    # call the kernel
-    blkszx = 512
-    nblkx = (n + blkszx - 1) // blkszx
-    pairs_probabilities(
-        (nblkx,),
-        (blkszx,),
-        (n, Rijs_dev, P2, A, a, B, b, x0, ln_f_ind_dev, ln_f_arb_dev),
-    )
-
-    # accumulate over thread results
-    ln_f_arb = cp.sum(ln_f_arb_dev, axis=1).get()
-    ln_f_ind = cp.sum(ln_f_ind_dev, axis=1).get()
-
-    return ln_f_ind, ln_f_arb
-
-
-def _pairs_probabilities_host(n, Rijs, P2, A, a, B, b, x0, _ALTS, _pairs_to_linear):
-    # The following is adopted from Matlab pairs_probabilities_mex.c `looper`
-
-    # Initialize probability result arrays
-    ln_f_ind = np.zeros(len(Rijs), dtype=Rijs.dtype)
-    ln_f_arb = np.zeros(len(Rijs), dtype=Rijs.dtype)
-
-    c = np.empty((4), dtype=Rijs.dtype)
-    for i in trange(n, desc="Computing pair probabilities"):
-        for j in range(i + 1, n - 1):
-            ij = _pairs_to_linear[i, j]
-            Rij = Rijs[ij]
-            for k in range(j + 1, n):
-                ik = _pairs_to_linear[i, k]
-                jk = _pairs_to_linear[j, k]
-                Rik = Rijs[ik]
-                Rjk = Rijs[jk]
-
-                # Compute conjugated rotats
-                Rij_J = J_conjugate(Rij)
-                Rik_J = J_conjugate(Rik)
-                Rjk_J = J_conjugate(Rjk)
-
-                # Compute R muls and norms
-                c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
-                c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
-                c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
-                c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
-
-                # Find best match
-                best_i = np.argmin(c)
-                best_val = c[best_i]
-
-                # For each triangle side, find the best alternative
-                alt_ij_jk = c[_ALTS[0][best_i][0]]
-                if c[_ALTS[1][best_i][0]] < alt_ij_jk:
-                    alt_ij_jk = c[_ALTS[1][best_i][0]]
-                alt_ik_jk = c[_ALTS[0][best_i][1]]
-                if c[_ALTS[1][best_i][1]] < alt_ik_jk:
-                    alt_ik_jk = c[_ALTS[1][best_i][1]]
-                alt_ij_ik = c[_ALTS[0][best_i][2]]
-                if c[_ALTS[1][best_i][2]] < alt_ij_ik:
-                    alt_ij_ik = c[_ALTS[1][best_i][2]]
-
-                # Compute scores
-                s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
-                s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
-                s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
-
-                # Update probabilities
-                # # Probability of pair ij having score given indicicative common line
-                # P2, B, b, x0, A, a
-                f_ij_jk = np.log(
-                    P2
-                    * (
-                        B
-                        * np.power(1 - s_ij_jk, b)
-                        * np.exp(-b / (1 - x0) * (1 - s_ij_jk))
-                    )
-                    + (1 - P2) * A * np.power((1 - s_ij_jk), a)
-                )
-                f_ik_jk = np.log(
-                    P2
-                    * (
-                        B
-                        * np.power(1 - s_ik_jk, b)
-                        * np.exp(-b / (1 - x0) * (1 - s_ik_jk))
-                    )
-                    + (1 - P2) * A * np.power((1 - s_ik_jk), a)
-                )
-                f_ij_ik = np.log(
-                    P2
-                    * (
-                        B
-                        * np.power(1 - s_ij_ik, b)
-                        * np.exp(-b / (1 - x0) * (1 - s_ij_ik))
-                    )
-                    + (1 - P2) * A * np.power((1 - s_ij_ik), a)
-                )
-                ln_f_ind[ij] += f_ij_jk + f_ij_ik
-                ln_f_ind[jk] += f_ij_jk + f_ik_jk
-                ln_f_ind[ik] += f_ik_jk + f_ij_ik
-
-                # # Probability of pair ij having score given arbitrary common line
-                f_ij_jk = np.log(A * np.power((1 - s_ij_jk), a))
-                f_ik_jk = np.log(A * np.power((1 - s_ik_jk), a))
-                f_ij_ik = np.log(A * np.power((1 - s_ij_ik), a))
-                ln_f_arb[ij] += f_ij_jk + f_ij_ik
-                ln_f_arb[jk] += f_ij_jk + f_ik_jk
-                ln_f_arb[ik] += f_ik_jk + f_ij_ik
-
-    return ln_f_ind, ln_f_arb
-
-
-def _triangle_scores_inner_host(n_img, Rijs, hist_intervals, _ALTS, _pairs_to_linear):
-    # The following is adopted from Matlab triangle_scores_mex.c
-
-    # Initialize probability result arrays
-    cum_scores = np.zeros(len(Rijs), dtype=Rijs.dtype)
-    scores_hist = np.zeros(hist_intervals, dtype=Rijs.dtype)
-    h = 1 / hist_intervals
-
-    c = np.empty((4), dtype=Rijs.dtype)
-    for i in trange(n_img, desc="Computing triangle scores"):
-        for j in range(i + 1, n_img - 1):  # check bound (taken from MATLAB mex)
-            ij = _pairs_to_linear[i, j]
-            Rij = Rijs[ij]
-            for k in range(j + 1, n_img):
-                ik = _pairs_to_linear[i, k]
-                jk = _pairs_to_linear[j, k]
-                Rik = Rijs[ik]
-                Rjk = Rijs[jk]
-
-                # Compute conjugated rotats
-                Rij_J = J_conjugate(Rij)
-                Rik_J = J_conjugate(Rik)
-                Rjk_J = J_conjugate(Rjk)
-
-                # Compute R muls and norms
-                c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
-                c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
-                c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
-                c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
-
-                # Find best match
-                best_i = np.argmin(c)
-                best_val = c[best_i]
-
-                # For each triangle side, find the best alternative
-                alt_ij_jk = c[_ALTS[0][best_i][0]]
-                if c[_ALTS[1][best_i][0]] < alt_ij_jk:
-                    alt_ij_jk = c[_ALTS[1][best_i][0]]
-
-                alt_ik_jk = c[_ALTS[0][best_i][1]]
-                if c[_ALTS[1][best_i][1]] < alt_ik_jk:
-                    alt_ik_jk = c[_ALTS[1][best_i][1]]
-
-                alt_ij_ik = c[_ALTS[0][best_i][2]]
-                if c[_ALTS[1][best_i][2]] < alt_ij_ik:
-                    alt_ij_ik = c[_ALTS[1][best_i][2]]
-
-                # Compute scores
-                s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
-                s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
-                s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
-
-                # Update cumulated scores
-                cum_scores[ij] += s_ij_jk + s_ij_ik
-                cum_scores[jk] += s_ij_jk + s_ik_jk
-                cum_scores[ik] += s_ik_jk + s_ij_ik
-
-                # Update histogram
-                threshold = 0
-                for _l1 in range(hist_intervals - 1):
-                    threshold += h
-                    if s_ij_jk < threshold:
-                        break
-
-                threshold = 0
-                for _l2 in range(hist_intervals - 1):
-                    threshold += h
-                    if s_ik_jk < threshold:
-                        break
-
-                threshold = 0
-                for _l3 in range(hist_intervals - 1):
-                    threshold += h
-                    if s_ij_ik < threshold:
-                        break
-
-                scores_hist[_l1] += 1
-                scores_hist[_l2] += 1
-                scores_hist[_l3] += 1
-
-    return cum_scores, scores_hist
-
-
-def _triangle_scores_inner_cupy(n_img, Rijs, hist_intervals):
-    """
-    n: n_img
-    Rijs: nchoose2x3x3 array
-
-    """
-    import cupy as cp
-
-    # xxx
-    module = _init_cupy_module()
-
-    triangle_scores = module.get_function("triangle_scores_inner")
-
-    Rijs_dev = cp.array(Rijs)
-    # xxx I think we can safely remove cum_scores
-    cum_scores_dev = cp.zeros(
-        (n_img * (n_img - 1) // 2, n_img), dtype=np.float64
-    )  # n is for thread safety
-    scores_hist_dev = cp.zeros(
-        (hist_intervals, n_img), dtype=np.float64
-    )  # n is for thread safety
-
-    # call the kernel
-    blkszx = 512
-    nblkx = (n_img + blkszx - 1) // blkszx
-    triangle_scores(
-        (nblkx,),
-        (blkszx,),
-        (n_img, Rijs_dev, hist_intervals, cum_scores_dev, scores_hist_dev),
-    )
-
-    # accumulate over thread results
-    cum_scores = cp.sum(cum_scores_dev, axis=1).get()
-    scores_hist = cp.sum(scores_hist_dev, axis=1).get()
-
-    return cum_scores, scores_hist
+        # CUPY compile the CUDA code
+        return cp.RawModule(code=module_code)
