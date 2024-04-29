@@ -347,7 +347,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # The following is adopted from Matlab triangle_scores_mex.c
 
         # Initialize probability result arrays
-        scores_hist = np.zeros(self.hist_intervals, dtype=Rijs.dtype)
+        scores_hist = np.zeros(self.hist_intervals, dtype=np.uint32)
         h = 1 / self.hist_intervals
 
         c = np.empty((4), dtype=Rijs.dtype)
@@ -432,9 +432,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         triangle_scores = self._gpu_module.get_function("triangle_scores_inner")
 
-        Rijs_dev = cp.array(Rijs)
+        Rijs_dev = cp.array(Rijs, dtype=np.float64)
 
-        scores_hist_dev = cp.zeros((self.hist_intervals), dtype=np.float64)
+        # This holds integer counts
+        scores_hist_dev = cp.zeros((self.hist_intervals), dtype=np.uint32)
 
         # call the kernel
         blkszx = 512
@@ -596,7 +597,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         pairs_probabilities = self._gpu_module.get_function("pairs_probabilities")
 
-        Rijs_dev = cp.array(Rijs)
+        Rijs_dev = cp.array(Rijs, dtype=np.float64)
         ln_f_ind_dev = cp.zeros((self.n_img * (self.n_img - 1) // 2), dtype=np.float64)
         ln_f_arb_dev = cp.zeros((self.n_img * (self.n_img - 1) // 2), dtype=np.float64)
 
@@ -946,9 +947,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         signs_times_v = self._gpu_module.get_function("signs_times_v")
 
-        Rijs_dev = cp.array(Rijs)
-        vec_dev = cp.array(vec)
-        new_vec_dev = cp.zeros((vec.shape[0]))
+        Rijs_dev = cp.array(Rijs, dtype=np.float64)
+        vec_dev = cp.array(vec, dtype=np.float64)
+        new_vec_dev = cp.zeros((vec.shape[0]), dtype=np.float64)
 
         # call the kernel
         blkszx = 512
