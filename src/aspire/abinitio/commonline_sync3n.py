@@ -402,9 +402,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         Rijs_dev = cp.array(Rijs)
 
-        scores_hist_dev = cp.zeros(
-            (self.hist_intervals, self.n_img), dtype=np.float64
-        )  # n is for thread safety
+        scores_hist_dev = cp.zeros((self.hist_intervals), dtype=np.float64)
 
         # call the kernel
         blkszx = 512
@@ -420,8 +418,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             ),
         )
 
-        # accumulate over thread results
-        scores_hist = cp.sum(scores_hist_dev, axis=1).get()
+        # d2h
+        scores_hist = scores_hist_dev.get()
 
         return scores_hist
 
@@ -540,12 +538,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         pairs_probabilities = self._gpu_module.get_function("pairs_probabilities")
 
         Rijs_dev = cp.array(Rijs)
-        ln_f_ind_dev = cp.zeros(
-            (self.n_img * (self.n_img - 1) // 2, self.n_img)
-        )  # second dim is for thread safety
-        ln_f_arb_dev = cp.zeros(
-            (self.n_img * (self.n_img - 1) // 2, self.n_img)
-        )  # second dim  is for thread safety
+        ln_f_ind_dev = cp.zeros((self.n_img * (self.n_img - 1) // 2), dtype=np.float64)
+        ln_f_arb_dev = cp.zeros((self.n_img * (self.n_img - 1) // 2), dtype=np.float64)
 
         # call the kernel
         blkszx = 512
@@ -557,8 +551,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # accumulate over thread results
-        ln_f_arb = cp.sum(ln_f_arb_dev, axis=1).get()
-        ln_f_ind = cp.sum(ln_f_ind_dev, axis=1).get()
+        ln_f_arb = ln_f_arb_dev.get()
+        ln_f_ind = ln_f_ind_dev.get()
 
         return ln_f_ind, ln_f_arb
 

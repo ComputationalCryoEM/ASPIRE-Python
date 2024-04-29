@@ -12,20 +12,20 @@ n_pairs = N * (N - 1) // 2
 # XXX TODO, conditionally run these only if GPU present.
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def src_fixture():
     src = Simulation(n=N, L=32, C=1, dtype=DTYPE)
     src = src.cache()
     return src
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def cl3n_fixture(src_fixture):
     cl = CLSync3N(src_fixture)
     return cl
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def rijs_fixture():
     Rijs = np.arange(n_pairs * 3 * 3).reshape(n_pairs, 3, 3)
     Rijs = Rijs.astype(dtype=DTYPE, copy=False)
