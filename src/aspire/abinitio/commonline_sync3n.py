@@ -21,7 +21,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     # Initialize alternatives
     #
     # When we find the best J-configuration, we also compare it to the alternative 2nd best one.
-    # this comparison is done for every pair in the triplete independently. to make sure that the
+    # this comparison is done for every pair in the triplet independently. to make sure that the
     # alternative is indeed different in relation to the pair, we document the differences between
     # the configurations in advance:
     # ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from best_conf in relation to pair
@@ -43,7 +43,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         shift_step=1,
         epsilon=1e-2,
         max_iters=1000,
-        degree_res=1,
         seed=None,
         mask=True,
         S_weighting=False,
@@ -60,10 +59,15 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
-        :param degree_res: Degree resolution for estimating in-plane rotations.
         :param seed: Optional seed for RNG.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
+        :param S_weighting: Optionally apply probabilistic weighting
+            to the `S` matrix.
+        :param J_weighting: Optionally use `J` weights instead of
+            signs when computing `signs_times_v`.
+        :param hist_intervals: Number of histogram bins used to
+            compute triangle scores when `S_weighting` enabled.
         """
 
         super().__init__(
@@ -80,7 +84,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         self.epsilon = epsilon
         self.max_iters = max_iters
-        self.degree_res = degree_res
         self.seed = seed
 
         # Sync3N specific vars
@@ -241,11 +244,27 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     ):
         """
         Given relative rotations matrix `Rij`,
-        compute and return probability weights for S.
+        compute and return probability weights `P` for S.
+
+        Default parameters here were taken from those in the MATLAB
+        code, with the original author noting they were found
+        empirically.
+
+        :param permitted_inconsistency: Consistency condition is
+            `mean(Pij)/permitted_inconsistency < P <
+            mean(Pij)*permitted_inconsistency`.
+        :param p_domain_limit: Domain of P is [Pmin,Pmax], with
+            Pmin=p_domain_limit*Pmax
+        :param max_iterations: Maximum iterations for P estimation.
+        :param min_p_permitted: Small value at which to stop
+            attempting to synchronize P.
         """
         logger.info("Computing synchronization matrix weights.")
 
-        def body(prev_too_low, Pmin, Pmax, hist, p_domain_limit=p_domain_limit):
+        def _body(prev_too_low, Pmin, Pmax, hist, p_domain_limit=p_domain_limit):
+            """
+            Helper function to run and test triangle_scores.
+            """
             # Get inistial estimate for Pij
             P, sigma, Pij, hist = self._triangle_scores(Rijs, hist, Pmin, Pmax)
 
@@ -287,7 +306,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         res = (None,) * 4
         inconsistent = True
         while inconsistent and i < max_iterations:
-            inconsistent, Pij, res = body(*res)
+            inconsistent, Pij, res = _body(*res)
             i += 1
 
         # Pack W
@@ -302,6 +321,13 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         return W
 
     def _triangle_scores_inner(self, Rijs):
+        """
+        Computes histogram of `triangle scores`.
+
+        Wrapper for cpu/gpu dispatch.
+
+        :param Rijs: nchoose2 by 3 by 3 array of rotations.
+        """
 
         # host/gpu dispatch
         if self._gpu_module:
@@ -312,6 +338,11 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         return scores_hist
 
     def _triangle_scores_inner_host(self, Rijs):
+        """
+        See _triangle_scores_inner.
+
+        CPU implementation.
+        """
 
         # The following is adopted from Matlab triangle_scores_mex.c
 
@@ -392,10 +423,11 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
     def _triangle_scores_inner_cupy(self, Rijs):
         """
-        n: n_img
-        Rijs: nchoose2x3x3 array
+        See _triangle_scores_inner.
 
+        GPU implementation.
         """
+
         import cupy as cp
 
         triangle_scores = self._gpu_module.get_function("triangle_scores_inner")
@@ -424,6 +456,20 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         return scores_hist
 
     def _pairs_probabilities(self, Rijs, P2, A, a, B, b, x0):
+        """
+        This function computes the probability of a pair `ij` having
+        an observed value of triangles score under two priors.  Once
+        given it has an indicative common line, and again once given
+        it has an arbitrary common line.
+
+        The probability of the common line to be indicative can then
+        be derived by Bayes Theorem.
+
+        Wrapper for cpu/gpu dispatch.
+
+        :param Rijs: nchoose2 by 3 by 3 array of rotations.
+        XXX
+        """
         # dtype is critical for passing into C code...
         params = np.arary([P2, A, a, B, b, x0], dtype=np.float64)
         # host/gpu dispatch
@@ -435,6 +481,11 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         return ln_f_ind, ln_f_arb
 
     def _pairs_probabilities_host(self, Rijs, P2, A, a, B, b, x0):
+        """
+        See _pairs_probabilities.
+
+        CPU implementation.
+        """
         # The following is adopted from Matlab pairs_probabilities_mex.c `looper`
 
         # Initialize probability result arrays
@@ -529,10 +580,11 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
     def _pairs_probabilities_cupy(self, Rijs, P2, A, a, B, b, x0):
         """
-        n: n_img
-        Rijs: nchoose2x3x3 array
+        See _pairs_probabilities.
 
+        GPU implementation.
         """
+
         import cupy as cp
 
         pairs_probabilities = self._gpu_module.get_function("pairs_probabilities")
@@ -569,16 +621,19 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         x0=0.78,
     ):
         """
-        Todo
+        Computes `triangle_scores`, attempts to fit curve to distribution, and uses estimated distribution to compute `pairs_probabilities`.
 
-        :param a: magic number
+        Default parameters here were taken from those in the MATLAB
+        code, with the original author noting they were found
+        empirically.
+
+        :param a:
         :param peak2sigma: empirical relation between the location of
             the peak of the histigram, and the mean error in the
             common lines estimations.
-            AKA, magic number
         :param P:
         :param b:
-        :param x0:
+        :param x0: Initial guess
         """
 
         Pmin = Pmin or 0
@@ -757,7 +812,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         residual = 1
         itr = 0
 
-        # XXX, I don't like that epsilon>1 (residual) returns signs of random vector
+        # Todo
+        # I don't like that epsilon>1 (residual) returns signs of random vector
         #      maybe force to run once? or return vec as zeros in that case?
         #      Seems unintended, but easy to do.
 
@@ -778,7 +834,14 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         return J_sync
 
     def _signs_times_v(self, Rijs, vec):
+        """
+        Multiplication of the J-synchronization matrix by a candidate eigenvector `vec`
 
+        Wrapper for cpu/gpu dispatch.
+
+        :param Rijs: An n-choose-2x3x3 array of estimates of relative rotations
+        :param vec: The current candidate eigenvector of length n-choose-2 from the power method.
+        """
         # host/gpu dispatch
         if self._gpu_module:
             new_vec = self._signs_times_v_cupy(Rijs, vec)
@@ -789,14 +852,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
     def _signs_times_v_host(self, Rijs, vec):
         """
-        Ported from _signs_times_v_mex.c
+        See `_signs_times_v`.
 
-        n: n_img
-        Rijs: nchoose2x3x3 array
-        vec: input array
-        new_vec: output array
-        J_weighting: bool
-        _ALTS= 2x4x3 const lut array
+        CPU implementation.
         """
 
         new_vec = np.zeros_like(vec)
@@ -872,13 +930,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
     def _signs_times_v_cupy(self, Rijs, vec):
         """
-        Ported from _signs_times_v_mex.c
+        See `_signs_times_v`.
 
-        n: n_img
-        Rijs: nchoose2x3x3 array
-        vec: input array
-        new_vec: output array
-        J_weighting: bool
+        CPU implementation.
         """
         import cupy as cp
 
@@ -905,7 +959,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     @staticmethod
     def _init_cupy_module():
         """
-        Private utility method to read in CUDA source and return as compiled CUPY module.
+        Private utility method to read in CUDA source and return as
+        compiled CUPY module.
         """
 
         import cupy as cp
