@@ -268,18 +268,18 @@ void pairs_probabilities(int n, double* Rijs, double P2, double A, double a, dou
       f_ij_jk = log( P2*(B*pow(1-s_ij_jk,b)*exp(-b/(1-x0)*(1-s_ij_jk))) + (1-P2)*A*pow((1-s_ij_jk),a) );
       f_ik_jk = log( P2*(B*pow(1-s_ik_jk,b)*exp(-b/(1-x0)*(1-s_ik_jk))) + (1-P2)*A*pow((1-s_ik_jk),a) );
       f_ij_ik = log( P2*(B*pow(1-s_ij_ik,b)*exp(-b/(1-x0)*(1-s_ij_ik))) + (1-P2)*A*pow((1-s_ij_ik),a) );
-      ln_f_ind[ij*n +i] += f_ij_jk + f_ij_ik;
-      ln_f_ind[jk*n +i] += f_ij_jk + f_ik_jk;
-      ln_f_ind[ik*n +i] += f_ik_jk + f_ij_ik;
+      atomicAdd(&(ln_f_ind[ij]), f_ij_jk + f_ij_ik);
+      atomicAdd(&(ln_f_ind[jk]), f_ij_jk + f_ik_jk);
+      atomicAdd(&(ln_f_ind[ik]), f_ik_jk + f_ij_ik);
 
       /* the probability of a pair ij to have the observed triangles scores,
          given it has an arbitrary common line */
       f_ij_jk = log( A*pow((1-s_ij_jk),a) );
       f_ik_jk = log( A*pow((1-s_ik_jk),a) );
       f_ij_ik = log( A*pow((1-s_ij_ik),a) );
-      ln_f_arb[ij*n +i] += f_ij_jk + f_ij_ik;
-      ln_f_arb[jk*n +i] += f_ij_jk + f_ik_jk;
-      ln_f_arb[ik*n +i] += f_ik_jk + f_ij_ik;
+      atomicAdd(&(ln_f_arb[ij]), f_ij_jk + f_ij_ik);
+      atomicAdd(&(ln_f_arb[jk]), f_ij_jk + f_ik_jk);
+      atomicAdd(&(ln_f_arb[ik]), f_ik_jk + f_ij_ik);
 
 
     } /* k */
@@ -404,9 +404,9 @@ void triangle_scores_inner(int n, double* Rijs, int n_intervals, double* scores_
         if (s_ij_ik < threshold) {break;}
       }
 
-      scores_hist[l1*n+i] += 1;
-      scores_hist[l2*n+i] += 1;
-      scores_hist[l3*n+i] += 1;
+      atomicAdd(&(scores_hist[l1]), 1);
+      atomicAdd(&(scores_hist[l2]), 1);
+      atomicAdd(&(scores_hist[l3]), 1);
 
     } /* k */
   } /* j */
