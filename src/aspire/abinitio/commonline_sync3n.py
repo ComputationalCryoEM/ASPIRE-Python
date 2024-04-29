@@ -892,8 +892,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         Rijs_dev = cp.array(Rijs)
         vec_dev = cp.array(vec)
-        # 2d over i then accum to avoid race on i
-        new_vec_dev = cp.zeros((vec.shape[0], self.n_img))
+        new_vec_dev = cp.zeros((vec.shape[0]))
 
         # call the kernel
         blkszx = 512
@@ -904,11 +903,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             (self.n_img, Rijs_dev, vec_dev, new_vec_dev, self.J_weighting),
         )
 
-        # accumulate, can reuse the vec_dev array now.
-        cp.sum(new_vec_dev, axis=1, out=vec_dev)
-
         # dtoh
-        new_vec = vec_dev.get()
+        new_vec = new_vec_dev.get()
 
         return new_vec
 
