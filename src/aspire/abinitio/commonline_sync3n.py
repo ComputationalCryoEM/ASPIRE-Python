@@ -451,7 +451,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # d2h
-        scores_hist = scores_hist_dev.get()
+        scores_hist = scores_hist_dev.get().astype(self.dtype, copy=False)
 
         return scores_hist
 
@@ -468,10 +468,17 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         Wrapper for cpu/gpu dispatch.
 
         :param Rijs: nchoose2 by 3 by 3 array of rotations.
-        XXX
+        :param P2: distribution parameter
+        :param A: distribution parameter
+        :param a: distribution parameter
+        :param B: distribution parameter
+        :param b: distribution parameter
+        :param x0: Initial guess
+
         """
-        # dtype is critical for passing into C code...
-        params = np.arary([P2, A, a, B, b, x0], dtype=np.float64)
+        # These param values are passed to C, force doubles.
+        params = np.array([P2, A, a, B, b, x0], dtype=np.float64)
+
         # host/gpu dispatch
         if self._gpu_module:
             ln_f_ind, ln_f_arb = self._pairs_probabilities_cupy(Rijs, *params)
@@ -603,8 +610,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # accumulate over thread results
-        ln_f_arb = ln_f_arb_dev.get()
-        ln_f_ind = ln_f_ind_dev.get()
+        ln_f_arb = ln_f_arb_dev.get().astype(self.dtype, copy=False)
+        ln_f_ind = ln_f_ind_dev.get().astype(self.dtype, copy=False)
 
         return ln_f_ind, ln_f_arb
 
@@ -952,7 +959,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # dtoh
-        new_vec = new_vec_dev.get()
+        new_vec = new_vec_dev.get().astype(self.dtype, copy=False)
 
         return new_vec
 
