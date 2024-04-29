@@ -290,7 +290,7 @@ void pairs_probabilities(int n, double* Rijs, double P2, double A, double a, dou
 
 
 extern "C" __global__
-void triangle_scores_inner(int n, double* Rijs, int n_intervals, double* scores_hist)
+void triangle_scores_inner(int n, double* Rijs, int n_intervals, unsigned int* scores_hist)
 {
   /* thread index (1d), represents "i" index */
   unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
