@@ -827,7 +827,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # Power method iterations
         while itr < max_iters and residual > epsilon:
             itr += 1
-            vec_new = self._signs_times_v(Rijs, vec)
+            # Todo, this code code actually needs double precision for accuracy... forcing.
+            vec_new = self._signs_times_v(Rijs, vec).astype(np.float64, copy=False)
             vec_new = vec_new / norm(vec_new)
             residual = norm(vec_new - vec)
             vec = vec_new
