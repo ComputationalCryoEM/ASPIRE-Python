@@ -4,12 +4,13 @@ import pytest
 from aspire.abinitio.commonline_sync3n import CLSync3N
 from aspire.source import Simulation
 
+# If cupy is not available, skip this entire module
+pytest.importorskip("cupy")
+
+
 DTYPE = np.float64  # TODO, consider single precision.
 N = 64  # Number of images
 n_pairs = N * (N - 1) // 2
-
-
-# XXX TODO, conditionally run these only if GPU present.
 
 
 @pytest.fixture(scope="module")
