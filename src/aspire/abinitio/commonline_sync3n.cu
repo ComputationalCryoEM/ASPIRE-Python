@@ -151,9 +151,9 @@ void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec, bool
 
 
       /* update multiplication */
-      new_vec[ij*n + i] += s_ij_jk*vec[jk] + s_ij_ik*vec[ik];
-      new_vec[jk*n + i] += s_ij_jk*vec[ij] + s_ik_jk*vec[ik];
-      new_vec[ik*n + i] += s_ij_ik*vec[ij] + s_ik_jk*vec[jk];
+      atomicAdd(&(new_vec[ij]), s_ij_jk*vec[jk] + s_ij_ik*vec[ik]);
+      atomicAdd(&(new_vec[jk]), s_ij_jk*vec[ij] + s_ik_jk*vec[ik]);
+      atomicAdd(&(new_vec[ik]), s_ij_ik*vec[ij] + s_ik_jk*vec[jk]);
 
     } /* k */
   } /* j */
