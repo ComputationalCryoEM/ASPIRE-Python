@@ -451,7 +451,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # d2h
-        scores_hist = scores_hist_dev.get().astype(self.dtype, copy=False)
+        scores_hist = scores_hist_dev.get()
 
         return scores_hist
 
@@ -610,8 +610,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # accumulate over thread results
-        ln_f_arb = ln_f_arb_dev.get().astype(self.dtype, copy=False)
-        ln_f_ind = ln_f_ind_dev.get().astype(self.dtype, copy=False)
+        ln_f_arb = ln_f_arb_dev.get()
+        ln_f_ind = ln_f_ind_dev.get()
 
         return ln_f_ind, ln_f_arb
 
@@ -959,7 +959,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # dtoh
-        new_vec = new_vec_dev.get().astype(self.dtype, copy=False)
+        new_vec = new_vec_dev.get()
 
         return new_vec
 
