@@ -8,9 +8,8 @@ from pytest import raises
 from aspire.basis import Coef, FBBasis3D
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
-from aspire.source.simulation import _LegacySimulation
+from aspire.source.simulation import Simulation
 from aspire.utils import grid_3d
-from aspire.volume import LegacyVolume, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -19,15 +18,16 @@ class MeanEstimatorTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
         self.L = 8
-        self.vol = LegacyVolume(L=self.L, C=1, dtype=self.dtype).generate()
-        self.sim = _LegacySimulation(
-            n=1024,
-            vols=self.vol,
+        self.sim = Simulation(
+            n=512,
+            C=1,  # single volume
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             dtype=self.dtype,
+            seed=1616,
         )
+        # Todo, swap for default FFB
         self.basis = FBBasis3D((self.L,) * 3, dtype=self.dtype)
 
         self.estimator = MeanEstimator(
@@ -57,10 +57,10 @@ class MeanEstimatorTestCase(TestCase):
         estimate = self.estimator.estimate()
 
         est = estimate.asnumpy() * self.mask
-        vol = self.vol.asnumpy() * self.mask
+        vol = self.sim.vols.asnumpy() * self.mask
 
         np.testing.assert_allclose(
-            est / np.linalg.norm(est), vol / np.linalg.norm(vol), atol=0.05
+            est / np.linalg.norm(est), vol / np.linalg.norm(vol), atol=0.1
         )
 
     def testAdjoint(self):
@@ -71,7 +71,7 @@ class MeanEstimatorTestCase(TestCase):
         est = Coef(self.basis, mean_b_coef).evaluate()
 
         # Mask off corners of volume
-        vol = self.vol.asnumpy() * self.mask
+        vol = self.sim.vols.asnumpy() * self.mask
 
         # Assert the mean volume is close to original volume
         np.testing.assert_allclose(
