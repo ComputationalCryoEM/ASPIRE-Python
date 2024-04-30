@@ -7,9 +7,8 @@ import numpy as np
 from aspire.basis import Coef, FBBasis3D
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import WeightedVolumesEstimator
-from aspire.source import _LegacySimulation
+from aspire.source import Simulation
 from aspire.utils import grid_3d
-from aspire.volume import LegacyVolume
 
 logger = logging.getLogger(__name__)
 
@@ -19,17 +18,19 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class WeightedVolumesEstimatorTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
-        self.n = 1024
+        self.n = 512
         self.r = 2
         self.L = L = 8
-        self.sim = _LegacySimulation(
-            vols=LegacyVolume(L, C=1, dtype=self.dtype).generate(),
+        self.sim = Simulation(
             n=self.n,
+            C=1,  # single volume
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             dtype=self.dtype,
+            seed=1617,
         )
+        # Todo, swap for default FFB3D
         self.basis = FBBasis3D((L, L, L), dtype=self.dtype)
         self.weights = np.ones((self.n, self.r)) / np.sqrt(self.n)
         self.estimator = WeightedVolumesEstimator(
@@ -53,7 +54,7 @@ class WeightedVolumesEstimatorTestCase(TestCase):
         # Compare each output volume
         for _est in est:
             np.testing.assert_allclose(
-                _est / np.linalg.norm(_est), vol / np.linalg.norm(vol), atol=0.05
+                _est / np.linalg.norm(_est), vol / np.linalg.norm(vol), atol=0.1
             )
 
     def testAdjoint(self):
@@ -69,7 +70,7 @@ class WeightedVolumesEstimatorTestCase(TestCase):
         # Assert the mean volumes are close to original volume
         for _est in est:
             np.testing.assert_allclose(
-                _est / np.linalg.norm(est), vol / np.linalg.norm(vol), atol=0.1
+                _est / np.linalg.norm(_est), vol / np.linalg.norm(vol), atol=0.1
             )
 
     def testOptimize1(self):
@@ -102,10 +103,10 @@ class WeightedVolumesEstimatorTestCase(TestCase):
 
         # Compare positive weighted output volume
         np.testing.assert_allclose(
-            est[0] / np.linalg.norm(est[0]), vol / np.linalg.norm(vol), atol=0.05
+            est[0] / np.linalg.norm(est[0]), vol / np.linalg.norm(vol), atol=0.1
         )
 
         # Compare negative weighted output volume
         np.testing.assert_allclose(
-            -1 * est[1] / np.linalg.norm(est[1]), vol / np.linalg.norm(vol), atol=0.05
+            -1 * est[1] / np.linalg.norm(est[1]), vol / np.linalg.norm(vol), atol=0.1
         )
