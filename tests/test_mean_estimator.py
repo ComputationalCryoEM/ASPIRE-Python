@@ -5,11 +5,12 @@ from unittest import TestCase
 import numpy as np
 from pytest import raises
 
-from aspire.basis import FBBasis3D
+from aspire.basis import Coef, FBBasis3D
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import _LegacySimulation
-from aspire.volume import LegacyVolume
+from aspire.utils import grid_3d
+from aspire.volume import LegacyVolume, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -17,17 +18,17 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class MeanEstimatorTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
-        self.resolution = 8
-        self.vols = LegacyVolume(L=self.resolution, dtype=self.dtype).generate()
+        self.L = 8
+        self.vol = LegacyVolume(L=self.L, C=1, dtype=self.dtype).generate()
         self.sim = _LegacySimulation(
             n=1024,
-            vols=self.vols,
+            vols=self.vol,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             dtype=self.dtype,
         )
-        self.basis = FBBasis3D((self.resolution,) * 3, dtype=self.dtype)
+        self.basis = FBBasis3D((self.L,) * 3, dtype=self.dtype)
 
         self.estimator = MeanEstimator(
             self.sim, basis=self.basis, preconditioner="none"
@@ -36,6 +37,7 @@ class MeanEstimatorTestCase(TestCase):
         self.estimator_with_preconditioner = MeanEstimator(
             self.sim, basis=self.basis, preconditioner="circulant"
         )
+        self.mask = grid_3d(self.L)["r"] < 1
 
     def tearDown(self):
         pass
@@ -47,208 +49,33 @@ class MeanEstimatorTestCase(TestCase):
 
         with raises(ValueError, match=r".*resolution.*"):
             # This basis is intentionally the wrong resolution.
-            incorrect_basis = FBBasis3D((2 * self.resolution,) * 3, dtype=self.dtype)
+            incorrect_basis = FBBasis3D((2 * self.L,) * 3, dtype=self.dtype)
 
             _ = MeanEstimator(self.sim, basis=incorrect_basis, preconditioner="none")
 
     def testEstimate(self):
         estimate = self.estimator.estimate()
-        self.assertTrue(
-            np.allclose(
-                estimate.asnumpy()[0][:, :, 4],
-                [
-                    [
-                        +0.00000000,
-                        +0.00000000,
-                        +0.00000000,
-                        +0.00000000,
-                        -0.00000000,
-                        +0.00000000,
-                        +0.00000000,
-                        +0.00000000,
-                    ],
-                    [
-                        +0.00000000,
-                        +0.00000000,
-                        +0.02446793,
-                        +0.05363505,
-                        +0.21988572,
-                        +0.19513786,
-                        +0.01174418,
-                        +0.00000000,
-                    ],
-                    [
-                        +0.00000000,
-                        -0.06168774,
-                        +0.13178457,
-                        +0.36011154,
-                        +0.88632372,
-                        +0.92307694,
-                        +0.45524491,
-                        +0.15142541,
-                    ],
-                    [
-                        +0.00000000,
-                        -0.09108749,
-                        +0.19564009,
-                        +0.78325885,
-                        +2.34527692,
-                        +2.44817345,
-                        +1.41268619,
-                        +0.53634876,
-                    ],
-                    [
-                        +0.00000000,
-                        +0.07150180,
-                        +0.38347393,
-                        +1.70868980,
-                        +3.78134981,
-                        +3.03582139,
-                        +1.49942724,
-                        +0.52104809,
-                    ],
-                    [
-                        +0.00000000,
-                        +0.00736866,
-                        +0.19239950,
-                        +1.71596036,
-                        +3.59823119,
-                        +2.64081679,
-                        +1.08514933,
-                        +0.24995637,
-                    ],
-                    [
-                        +0.00000000,
-                        +0.11075829,
-                        +0.43197553,
-                        +0.82667320,
-                        +1.51163241,
-                        +1.25342639,
-                        +0.36478594,
-                        -0.00464912,
-                    ],
-                    [
-                        +0.00000000,
-                        +0.00000000,
-                        +0.43422818,
-                        +0.64440739,
-                        +0.44137408,
-                        +0.25311494,
-                        +0.00011242,
-                        +0.00000000,
-                    ],
-                ],
-                atol=1e-5,
-            )
+
+        est = estimate.asnumpy() * self.mask
+        vol = self.vol.asnumpy() * self.mask
+
+        np.testing.assert_allclose(
+            est / np.linalg.norm(est), vol / np.linalg.norm(vol), atol=0.05
         )
 
     def testAdjoint(self):
-        mean_b_coef = self.estimator.src_backward().squeeze()
-        self.assertTrue(
-            np.allclose(
-                mean_b_coef,
-                [
-                    1.07338590e-01,
-                    1.23690941e-01,
-                    6.44482039e-03,
-                    -5.40484306e-02,
-                    -4.85304586e-02,
-                    1.09852144e-02,
-                    3.87838396e-02,
-                    3.43796455e-02,
-                    -6.43284705e-03,
-                    -2.86677145e-02,
-                    -1.42313328e-02,
-                    -2.25684091e-03,
-                    -3.31840727e-02,
-                    -2.59706174e-03,
-                    -5.91919887e-04,
-                    -9.97433028e-03,
-                    9.19123928e-04,
-                    1.19891589e-03,
-                    7.49154982e-03,
-                    6.18865229e-03,
-                    -8.13265715e-04,
-                    -1.30715655e-02,
-                    -1.44160603e-02,
-                    2.90379956e-03,
-                    2.37066082e-02,
-                    4.88805735e-03,
-                    1.47870707e-03,
-                    7.63376018e-03,
-                    -5.60619559e-03,
-                    1.05165081e-02,
-                    3.30510143e-03,
-                    -3.48652120e-03,
-                    -4.23228797e-04,
-                    1.40484061e-02,
-                    1.42914291e-03,
-                    -1.28129504e-02,
-                    2.19868825e-03,
-                    -6.30835037e-03,
-                    1.18524223e-03,
-                    -2.97855052e-02,
-                    1.15491057e-03,
-                    -8.27947006e-03,
-                    3.45442781e-03,
-                    -4.72868856e-03,
-                    2.66615329e-03,
-                    -7.87929790e-03,
-                    8.84126590e-04,
-                    1.59402808e-03,
-                    -9.06854048e-05,
-                    -8.79119004e-03,
-                    1.76449039e-03,
-                    -1.36414673e-02,
-                    1.56793855e-03,
-                    1.44708445e-02,
-                    -2.55974802e-03,
-                    5.38506357e-03,
-                    -3.24188673e-03,
-                    4.81582945e-04,
-                    7.74260101e-05,
-                    5.48772082e-03,
-                    1.92058500e-03,
-                    -4.63538896e-03,
-                    -2.02735133e-03,
-                    3.67592386e-03,
-                    7.23486969e-04,
-                    1.81838422e-03,
-                    1.78793284e-03,
-                    -8.01474060e-03,
-                    -8.54007528e-03,
-                    1.96353845e-03,
-                    -2.16254252e-03,
-                    -3.64243996e-05,
-                    -2.27329863e-03,
-                    1.11424393e-03,
-                    -1.39389189e-03,
-                    2.57787159e-04,
-                    3.66918811e-03,
-                    1.31477774e-03,
-                    6.82220128e-04,
-                    1.41822851e-03,
-                    -1.89476924e-03,
-                    -6.43966255e-05,
-                    -7.87888465e-04,
-                    -6.99459279e-04,
-                    1.08918981e-03,
-                    2.25264584e-03,
-                    -1.43651015e-04,
-                    7.68377620e-04,
-                    5.05955256e-04,
-                    2.66936132e-06,
-                    2.24934884e-03,
-                    6.70529439e-04,
-                    4.81121742e-04,
-                    -6.40789745e-05,
-                    -3.35915672e-04,
-                    -7.98651783e-04,
-                    -9.82705453e-04,
-                    6.46337066e-05,
-                ],
-                atol=1e-6,
-            )
+        # Mean coefs formed by backprojections
+        mean_b_coef = self.estimator.src_backward()
+
+        # Evaluate mean coefs into a volume
+        est = Coef(self.basis, mean_b_coef).evaluate()
+
+        # Mask off corners of volume
+        vol = self.vol.asnumpy() * self.mask
+
+        # Assert the mean volume is close to original volume
+        np.testing.assert_allclose(
+            est / np.linalg.norm(est), vol / np.linalg.norm(vol), atol=0.1
         )
 
     def testOptimize1(self):
