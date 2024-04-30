@@ -133,7 +133,7 @@ class Estimator:
         if b_coef is None:
             b_coef = self.src_backward()
         est_coef = self.conj_grad(b_coef, tol=tol, regularizer=regularizer)
-        est = Coef(self.basis, est_coef).evaluate().T
+        est = Coef(self.basis, est_coef).evaluate()
 
         return est
 
