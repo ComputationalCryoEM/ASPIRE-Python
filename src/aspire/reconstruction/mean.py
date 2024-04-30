@@ -126,7 +126,7 @@ class WeightedVolumesEstimator(Estimator):
                         batch_kernel += (
                             1
                             / (self.r * self.src.L**4)
-                            * anufft(weights, pts_rot[::-1], (_2L, _2L, _2L), real=True)
+                            * anufft(weights, pts_rot, (_2L, _2L, _2L), real=True)
                         )
 
                     kernel[k, j] += batch_kernel
