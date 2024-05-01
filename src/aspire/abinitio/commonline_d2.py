@@ -35,6 +35,7 @@ class CLSymmetryD2(CLOrient3D):
         eq_min_dist=7,
         epsilon=0.01,
         seed=None,
+        mask=True,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with D2 symmetry.
@@ -59,6 +60,7 @@ class CLSymmetryD2(CLOrient3D):
             n_theta=n_theta,
             max_shift=max_shift,
             shift_step=shift_step,
+            mask=mask,
         )
 
         self.grid_res = grid_res
@@ -109,8 +111,9 @@ class CLSymmetryD2(CLOrient3D):
 
         # Generate shift phases.
         r_max = pf.shape[-1]
+        max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
         shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
-            r_max, self.max_shift, self.shift_step
+            r_max, max_shift_1d, self.shift_step
         )
         self.n_shifts = len(shifts)
 
