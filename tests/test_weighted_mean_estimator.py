@@ -73,16 +73,6 @@ class WeightedVolumesEstimatorTestCase(TestCase):
                 _est / np.linalg.norm(_est), vol / np.linalg.norm(vol), atol=0.1
             )
 
-    def testOptimize1(self):
-        """
-        x = self.estimator.conj_grad(mean_b_coef)
-        """
-
-    def testOptimize2(self):
-        """
-        x = self.estimator_with_preconditioner.conj_grad(mean_b_coef)
-        """
-
     def testNegativeWeightedEstimates(self):
         """
         Here we'll test createing two volumes.
