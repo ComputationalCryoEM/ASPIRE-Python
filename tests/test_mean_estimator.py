@@ -75,7 +75,7 @@ def mask(L):
 
 
 # Tests
-def test_estimate_resolution_error(sim, basis):
+def test_resolution_error(sim, basis):
     """
     Test mismatched resolutions yields a relevant error message.
     """
@@ -90,8 +90,8 @@ def test_estimate_resolution_error(sim, basis):
 def test_estimate(sim, estimator, mask):
     estimate = estimator.estimate()
 
-    est = estimate.asnumpy() * mask
-    vol = sim.vols.asnumpy() * mask
+    est = estimate * mask
+    vol = sim.vols * mask
 
     np.testing.assert_allclose(
         est / np.linalg.norm(est), vol / np.linalg.norm(vol), atol=0.1
@@ -106,7 +106,7 @@ def test_adjoint(sim, basis, estimator, mask):
     est = Coef(basis, mean_b_coef).evaluate() * mask
 
     # Mask off corners of volume
-    vol = sim.vols.asnumpy() * mask
+    vol = sim.vols * mask
 
     # Assert the mean volume is close to original volume
     np.testing.assert_allclose(
