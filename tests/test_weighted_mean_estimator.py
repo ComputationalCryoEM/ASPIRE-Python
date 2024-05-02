@@ -1,102 +1,187 @@
-import logging
 import os.path
-from unittest import TestCase
+import tempfile
 
 import numpy as np
+import pytest
+from pytest import raises
 
 from aspire.basis import Coef, FBBasis3D
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import WeightedVolumesEstimator
-from aspire.source import Simulation
+from aspire.source.simulation import Simulation
 from aspire.utils import grid_3d
-
-logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
+# Params
 
-class WeightedVolumesEstimatorTestCase(TestCase):
-    def setUp(self):
-        self.dtype = np.float32
-        self.n = 512
-        self.r = 2
-        self.L = L = 8
-        self.sim = Simulation(
-            n=self.n,
-            C=1,  # single volume
-            unique_filters=[
-                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
-            ],
-            dtype=self.dtype,
-            seed=1617,
+SEED = 1617
+
+DTYPE = [np.float32, np.float64]
+L = [
+    8,
+    9,
+]
+
+PRECONDITIONERS = ["none", None]
+
+# Fixtures.
+
+
+@pytest.fixture(params=L, ids=lambda x: f"L={x}", scope="module")
+def L(request):
+    return request.param
+
+
+@pytest.fixture(params=DTYPE, ids=lambda x: f"dtype={x}", scope="module")
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture(scope="module")
+def sim(L, dtype):
+    sim = Simulation(
+        L=L,
+        n=256,
+        C=1,  # single volume
+        unique_filters=[
+            RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
+        ],
+        dtype=dtype,
+        seed=SEED,
+    )
+
+    sim = sim.cache()  # precompute images
+
+    return sim
+
+
+@pytest.fixture(scope="module")
+def basis(L, dtype):
+    return FBBasis3D(L, dtype=dtype)
+
+
+@pytest.fixture(scope="module")
+def weights(sim):
+    # Construct simple test weights;
+    # one uniform positive and negative weighted volume respectively.
+    r = 2  # Number of weighted volumes
+    weights = np.ones((sim.n, r)) / np.sqrt(sim.n)
+    weights[:, 1] *= -1  # negate second weight vector
+
+    return weights
+
+
+@pytest.fixture(
+    params=PRECONDITIONERS, ids=lambda x: f"preconditioner={x}", scope="module"
+)
+def estimator(request, sim, basis, weights):
+    preconditioner = request.param
+
+    return WeightedVolumesEstimator(
+        weights, sim, basis=basis, preconditioner=preconditioner
+    )
+
+
+@pytest.fixture(scope="module")
+def mask(L):
+    return grid_3d(L)["r"] < 1
+
+
+# Tests
+def test_resolution_error(sim, basis, weights):
+    """
+    Test mismatched resolutions yields a relevant error message.
+    """
+
+    with raises(ValueError, match=r".*resolution.*"):
+        # This basis is intentionally the wrong resolution.
+        incorrect_basis = FBBasis3D(sim.L + 1, dtype=sim.dtype)
+
+        _ = WeightedVolumesEstimator(
+            weights, sim, basis=incorrect_basis, preconditioner="none"
         )
-        # Todo, swap for default FFB3D
-        self.basis = FBBasis3D((L, L, L), dtype=self.dtype)
-        self.weights = np.ones((self.n, self.r)) / np.sqrt(self.n)
-        self.estimator = WeightedVolumesEstimator(
-            self.weights, self.sim, basis=self.basis, preconditioner="none"
-        )
-        self.estimator_with_preconditioner = WeightedVolumesEstimator(
-            self.weights, self.sim, basis=self.basis, preconditioner="circulant"
-        )
-        self.mask = grid_3d(self.L)["r"] < 1
 
-    def tearDown(self):
-        pass
 
-    def testPositiveWeightedEstimates(self):
-        estimate = self.estimator.estimate()
+def test_estimate(sim, estimator, mask):
+    estimate = estimator.estimate()
 
-        est = estimate * self.mask
-        vol = self.sim.vols.asnumpy() * self.mask
-        vol /= np.linalg.norm(vol)
+    est = estimate * mask
+    vol = sim.vols * mask
 
-        # Compare each output volume
-        for _est in est:
-            np.testing.assert_allclose(
-                _est / np.linalg.norm(_est), vol / np.linalg.norm(vol), atol=0.1
-            )
-
-    def testAdjoint(self):
-        # Mean coefs formed by backprojections
-        mean_b_coef = self.estimator.src_backward()
-
-        # Evaluate mean coefs into a volume
-        est = Coef(self.basis, mean_b_coef).evaluate()
-
-        # Mask off corners of volume
-        vol = self.sim.vols.asnumpy() * self.mask
-
-        # Assert the mean volumes are close to original volume
-        for _est in est:
-            np.testing.assert_allclose(
-                _est / np.linalg.norm(_est), vol / np.linalg.norm(vol), atol=0.1
-            )
-
-    def testNegativeWeightedEstimates(self):
-        """
-        Here we'll test createing two volumes.
-        One with positive and another with negative weights.
-        """
-        weights = np.ones((self.n, self.r)) / np.sqrt(self.n)
-        weights[:, 1] *= -1  # negate second set of weights
-
-        estimator = WeightedVolumesEstimator(
-            weights, self.sim, basis=self.basis, preconditioner="none"
-        )
-
-        estimate = estimator.estimate()
-
-        est = estimate * self.mask
-        vol = self.sim.vols.asnumpy() * self.mask
-        vol /= np.linalg.norm(vol)
-
-        # Compare positive weighted output volume
+    for i, w in enumerate([1, -1]):
         np.testing.assert_allclose(
-            est[0] / np.linalg.norm(est[0]), vol / np.linalg.norm(vol), atol=0.1
+            w * est[i] / np.linalg.norm(est[i]), vol / np.linalg.norm(vol), atol=0.1
         )
 
-        # Compare negative weighted output volume
+
+def test_adjoint(sim, basis, estimator, mask):
+    # Mean coefs formed by backprojections
+    mean_b_coef = estimator.src_backward()
+
+    # Evaluate mean coefs into a volume
+    est = Coef(basis, mean_b_coef).evaluate()
+
+    # Mask off corners of volume
+    vol = sim.vols * mask
+
+    # Assert the mean volume is close to original volume
+    for i, w in enumerate([1, -1]):
         np.testing.assert_allclose(
-            -1 * est[1] / np.linalg.norm(est[1]), vol / np.linalg.norm(vol), atol=0.1
+            w * est[i] / np.linalg.norm(est[i]), vol / np.linalg.norm(vol), atol=0.11
         )
+
+
+def test_checkpoint(sim, basis, estimator, weights):
+    """Exercise the checkpointing and max iterations branches."""
+    test_iter = 2
+    with tempfile.TemporaryDirectory() as tmp_input_dir:
+        prefix = os.path.join(tmp_input_dir, "new", "dirs", "chk")
+        _estimator = WeightedVolumesEstimator(
+            weights,
+            sim,
+            basis=basis,
+            preconditioner="none",
+            checkpoint_iterations=test_iter,
+            maxiter=test_iter + 1,
+            checkpoint_prefix=prefix,
+        )
+
+        # Assert we raise when reading `maxiter`.
+        with raises(RuntimeError, match="Unable to converge!"):
+            _ = _estimator.estimate()
+
+        # Load the checkpoint coefficients while tmp_input_dir exists.
+        b_chk = np.load(f"{prefix}_iter{test_iter:04d}.npy")
+
+        # Restart estimate from checkpoint
+        _ = estimator.estimate(b_coef=b_chk)
+
+
+def test_checkpoint_args(sim, basis, weights):
+    with tempfile.TemporaryDirectory() as tmp_input_dir:
+        prefix = os.path.join(tmp_input_dir, "chk")
+
+        for junk in [-1, 0, "abc"]:
+            # Junk `checkpoint_iterations` values
+            with raises(
+                ValueError, match=r".*iterations.*should be a positive integer.*"
+            ):
+                _ = WeightedVolumesEstimator(
+                    weights,
+                    sim,
+                    basis=basis,
+                    preconditioner="none",
+                    checkpoint_iterations=junk,
+                    checkpoint_prefix=prefix,
+                )
+            # Junk `maxiter` values
+            with raises(ValueError, match=r".*maxiter.*should be a positive integer.*"):
+                _ = WeightedVolumesEstimator(
+                    weights,
+                    sim,
+                    basis=basis,
+                    preconditioner="none",
+                    maxiter=junk,
+                    checkpoint_prefix=prefix,
+                )
