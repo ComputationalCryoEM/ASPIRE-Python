@@ -64,7 +64,9 @@ class WeightedVolumesEstimator(Estimator):
                     1.0 / self.kernel.circularize()
                 )
             else:
-                if self.preconditioner.lower() not in (None, "none"):
+                if self.preconditioner and (
+                    self.preconditioner.lower() not in (None, "none")
+                ):
                     logger.warning(
                         f"Preconditioner {self.preconditioner} is not implemented, resetting to default of None."
                     )
