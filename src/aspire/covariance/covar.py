@@ -57,7 +57,7 @@ class CovarianceEstimator(Estimator):
                 weights[:, 0, :] = 0
 
             # TODO: This is where this differs from MeanEstimator
-            pts_rot = np.moveaxis(pts_rot[::-1], 1, 0).reshape(-1, 3, L**2)
+            pts_rot = np.moveaxis(pts_rot, 1, 0).reshape(-1, 3, L**2)
             weights = weights.T.reshape((-1, L**2))
 
             batch_n = weights.shape[0]
@@ -67,7 +67,7 @@ class CovarianceEstimator(Estimator):
                 factors[j] = anufft(weights[j], pts_rot[j], (_2L, _2L, _2L), real=True)
 
             factors = Volume(factors).to_vec()
-            kernel += vecmat_to_volmat(factors.T @ factors) / (n * L**8)
+            kernel += (factors.T @ factors).reshape((_2L,) * 6) / (n * L**8)
 
         # Ensure symmetric kernel
         kernel[0, :, :, :, :, :] = 0
@@ -90,6 +90,8 @@ class CovarianceEstimator(Estimator):
         b_coef = self.src_backward(mean_vol, noise_variance)
         est_coef = self.conj_grad(b_coef, tol=tol, regularizer=regularizer)
         covar_est = self.basis.mat_evaluate(est_coef)
+        # Note, notice these cancel out, but requires a lot of changes elsewhere in this file,
+        # basically totally removing all the `utils/matrix` hacks ... todo.
         covar_est = vecmat_to_volmat(make_symmat(volmat_to_vecmat(covar_est)))
         return covar_est
 
@@ -180,7 +182,9 @@ class CovarianceEstimator(Estimator):
                 im_centered_b[j] = self.src.im_backward(im_centered[j], i + j)
             im_centered_b = Volume(im_centered_b).to_vec()
 
-            covar_b += vecmat_to_volmat(im_centered_b.T @ im_centered_b) / self.src.n
+            covar_b += (im_centered_b.T @ im_centered_b).reshape(
+                (self.src.L,) * 6
+            ) / self.src.n
 
         covar_b_coef = self.basis.mat_evaluate_t(covar_b)
         return self._shrink(covar_b_coef, noise_variance, shrink_method)
