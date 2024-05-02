@@ -65,7 +65,7 @@ class WeightedVolumesEstimator(Estimator):
                 )
             else:
                 if self.preconditioner and (
-                    self.preconditioner.lower() not in (None, "none")
+                    self.preconditioner.lower() not in ("none")
                 ):
                     logger.warning(
                         f"Preconditioner {self.preconditioner} is not implemented, resetting to default of None."
