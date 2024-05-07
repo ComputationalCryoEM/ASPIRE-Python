@@ -8,14 +8,19 @@ from aspire.source import Simulation
 pytest.importorskip("cupy")
 
 
-DTYPE = np.float64  # TODO, consider single precision.
-N = 64  # Number of images
+N = 32  # Number of images
 n_pairs = N * (N - 1) // 2
+DTYPES = [np.float32, np.float64]
+
+
+@pytest.fixture(scope="module", params=DTYPES, ids=lambda x: f"dtype={x}")
+def dtype(request):
+    return request.param
 
 
 @pytest.fixture(scope="module")
-def src_fixture():
-    src = Simulation(n=N, L=32, C=1, dtype=DTYPE)
+def src_fixture(dtype):
+    src = Simulation(n=N, L=32, C=1, dtype=dtype)
     src = src.cache()
     return src
 
@@ -27,9 +32,8 @@ def cl3n_fixture(src_fixture):
 
 
 @pytest.fixture(scope="module")
-def rijs_fixture():
-    Rijs = np.arange(n_pairs * 3 * 3).reshape(n_pairs, 3, 3)
-    Rijs = Rijs.astype(dtype=DTYPE, copy=False)
+def rijs_fixture(dtype):
+    Rijs = np.arange(n_pairs * 3 * 3, dtype=dtype).reshape(n_pairs, 3, 3)
     return Rijs
 
 
@@ -50,15 +54,17 @@ def test_pairs_prob_host_vs_cupy(cl3n_fixture, rijs_fixture):
     indsh, arbh = cl3n_fixture._pairs_probabilities_host(rijs_fixture, *params)
 
     # Compare host to cupy calls
-    np.testing.assert_allclose(indsh, indscp)
-    np.testing.assert_allclose(arbh, arbcp)
+    rtol = 1e-07  # np testing default
+    if rijs_fixture.dtype != np.float64:
+        rtol = 2e-5
+    np.testing.assert_allclose(indsh, indscp, rtol=rtol)
+    np.testing.assert_allclose(arbh, arbcp, rtol=rtol)
 
 
 def test_triangle_scores_host_vs_cupy(cl3n_fixture, rijs_fixture):
     """
     Compares triangle_scores between host and cupy implementations.
     """
-    # DTYPE is critical here (manually calling private method
 
     # Execute CUPY
     hist_cp = cl3n_fixture._triangle_scores_inner_cupy(rijs_fixture)
@@ -77,7 +83,7 @@ def test_stv_host_vs_cupy(cl3n_fixture, rijs_fixture):
     Default J_weighting=False
     """
     # dummy data vector
-    vec = np.random.random(n_pairs).astype(dtype=DTYPE, copy=False)
+    vec = np.ones(n_pairs, dtype=rijs_fixture.dtype)
 
     # J_weighting=False
     assert cl3n_fixture.J_weighting is False
@@ -99,7 +105,7 @@ def test_stvJwt_host_vs_cupy(cl3n_fixture, rijs_fixture):
     Force J_weighting=True
     """
     # dummy data vector
-    vec = np.random.random(n_pairs).astype(dtype=DTYPE, copy=False)
+    vec = np.ones(n_pairs, dtype=rijs_fixture.dtype)
 
     # J_weighting=True
     cl3n_fixture.J_weighting = True
@@ -111,7 +117,13 @@ def test_stvJwt_host_vs_cupy(cl3n_fixture, rijs_fixture):
     new_vec_h = cl3n_fixture._signs_times_v_host(rijs_fixture, vec)
 
     # Compare host to cupy calls
-    np.testing.assert_allclose(new_vec_cp, new_vec_h)
+    rtol = 1e-7  # np testing default
+    if vec.dtype != np.float64:
+        rtol = 3e-07
+    np.testing.assert_allclose(new_vec_cp, new_vec_h, rtol=rtol)
+
+
+# The following fixture and tests compare against the legacy MATLAB implementation
 
 
 @pytest.fixture
@@ -120,7 +132,7 @@ def matlab_ref_fixture():
     Setup ASPIRE-Python objects using dummy data that is easily
     constructed in MATLAB.
     """
-    DTYPE = np.float64
+    DTYPE = np.float64  # MATLAB code is doubles only
     n = 5
     n_pairs = n * (n - 1) // 2
 
@@ -210,7 +222,7 @@ def test_signs_times_v_mex(matlab_ref_fixture):
     Rijs, cl3n = matlab_ref_fixture
 
     # Dummy input vector
-    vec = np.ones(len(Rijs), dtype=DTYPE)
+    vec = np.ones(len(Rijs), dtype=Rijs.dtype)
     # Equivalent matlab
     # vec=ones([1,np]);
 
