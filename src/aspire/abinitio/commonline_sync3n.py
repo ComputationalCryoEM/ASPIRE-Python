@@ -611,8 +611,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # accumulate over thread results
-        ln_f_arb = ln_f_arb_dev.get()
-        ln_f_ind = ln_f_ind_dev.get()
+        ln_f_arb = ln_f_arb_dev.get().astype(self.dtype, copy=False)
+        ln_f_ind = ln_f_ind_dev.get().astype(self.dtype, copy=False)
 
         return ln_f_ind, ln_f_arb
 
@@ -857,7 +857,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         else:
             new_vec = self._signs_times_v_host(Rijs, vec)
 
-        return new_vec
+        return new_vec.astype(vec.dtype, copy=False)
 
     def _signs_times_v_host(self, Rijs, vec):
         """
@@ -961,7 +961,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # dtoh
-        new_vec = new_vec_dev.get()
+        new_vec = new_vec_dev.get().astype(vec.dtype, copy=False)
 
         return new_vec
 
