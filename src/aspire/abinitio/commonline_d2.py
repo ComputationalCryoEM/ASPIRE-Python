@@ -118,7 +118,12 @@ class CLSymmetryD2(CLOrient3D):
         self.n_shifts = len(shifts)
 
         # Reconstruct full polar Fourier for use in correlation.
+        pf[:, :, 0] = 0  # Matching matlab convention to zero out the lowest frequency.
         pf /= norm(pf, axis=2)[..., np.newaxis]  # Normalize each ray.
+        pf *= (
+            np.sqrt(2) / 2
+        )  # Magic number to match matlab pf. (root2 over 2) Remove after debug.
+        pf = pf[:, :, ::-1]  # also to match matlab
         self.pf_full = PolarFT.half_to_full(pf)
 
         # Pre-compute shifted pf's.
@@ -159,7 +164,7 @@ class CLSymmetryD2(CLOrient3D):
                 pf_j = self.pf_full[j]
 
                 # Compute maximum correlation over all shifts.
-                corrs = np.real(pf_i @ np.conj(pf_j).T)
+                corrs = 2 * np.real(pf_i @ np.conj(pf_j).T)
                 corrs = np.reshape(
                     corrs, (self.n_shifts, self.n_theta // 2, self.n_theta)
                 )
@@ -169,6 +174,7 @@ class CLSymmetryD2(CLOrient3D):
                 cl_idx = np.unravel_index(
                     self.cl_idx, (self.n_theta // 2, self.n_theta)
                 )
+
                 prod_corrs = corrs[cl_idx]
                 prod_corrs = prod_corrs.reshape(len(prod_corrs) // 4, 4)
                 prod_corrs = np.prod(prod_corrs, axis=1)
@@ -217,6 +223,7 @@ class CLSymmetryD2(CLOrient3D):
             unique_pairs = self.eq2eq_Rij_table_11
         else:
             unique_pairs = self.eq2eq_Rij_table_12
+
         n_theta = self.n_inplane_rots
         n_lookup_pairs = np.sum(unique_pairs, dtype=np.int64)
         n_rots = len(self.sphere_grid1)
@@ -256,11 +263,11 @@ class CLSymmetryD2(CLOrient3D):
         # Assemble relative rotations Ri^TgRj using linear indices, where g is a group member of D2.
         Ris_lin_idx = np.ravel_multi_index((est_idx[0], inplane_i), s[:2])
         Rjs_lin_idx = np.ravel_multi_index((est_idx[1], inplane_j), s2[:2])
-        Ris = np.transpose(inplane_rotated_grid[Ris_lin_idx], (0, 2, 1))
-        Rjs = np.transpose(inplane_rotated_grid2[Rjs_lin_idx], (0, 2, 1))
+        Ris_t = np.transpose(inplane_rotated_grid[Ris_lin_idx], (0, 2, 1))
+        Rjs = inplane_rotated_grid2[Rjs_lin_idx]
 
         for k, g in enumerate(self.gs):
-            Rijs_est[:, k] = np.transpose(Ris, (0, 2, 1)) @ (g * Rjs)
+            Rijs_est[:, k] = Ris_t @ (g * Rjs)
 
         Rijs_est[transpose_idx] = np.transpose(Rijs_est[transpose_idx], (0, 1, 3, 2))
 
@@ -293,7 +300,7 @@ class CLSymmetryD2(CLOrient3D):
             pf_i_shifted = self.pf_shifted[i]
 
             # Compute max correlation over all shifts.
-            corrs = np.real(pf_i_shifted @ np.conj(pf_full_i).T)
+            corrs = 2 * np.real(pf_i_shifted @ np.conj(pf_full_i).T)
             corrs = np.reshape(corrs, (self.n_shifts, n_theta // 2, n_theta))
             corrs = np.max(corrs, axis=0)
 
@@ -322,7 +329,7 @@ class CLSymmetryD2(CLOrient3D):
                     true_scls_corrs = corrs[scl_idx_list]
                     scls_cand_idx = self.scl_idx_lists[1, eq_idx, j]
                     eq_measures_j = eq_measures[scls_cand_idx]
-                    measures_agg = true_scls_corrs * eq_measures_j
+                    measures_agg = np.outer(true_scls_corrs, eq_measures_j)
                     k = self.non_tv_eq_idx[eq_idx]
                     corrs_out[i, k * n_inplane + j] = np.max(measures_agg)
 
@@ -646,8 +653,9 @@ class CLSymmetryD2(CLOrient3D):
                 idx2 = self.circ_seq(scl_angles[i, j, 0, 1], scl_angles[i, j, 1, 1], L)
 
                 # Adjust so idx1 is in [0, 180) range.
-                idx1[idx1 >= 180] = (idx1[idx1 >= 180] - L // 2) % (L // 2)
-                idx2[idx1 >= 180] = (idx2[idx1 >= 180] + L // 2) % L
+                geq_180 = idx1 >= 180
+                idx1[geq_180] = (idx1[geq_180] - L // 2) % (L // 2)
+                idx2[geq_180] = (idx2[geq_180] + L // 2) % L
 
                 # register indices in list.
                 eq_lin_idx_lists[0, count_eq, j] = np.ravel_multi_index(
@@ -950,7 +958,7 @@ class CLSymmetryD2(CLOrient3D):
         vals, colors = la.eigs(color_mat, k=3, which="LR")
         vals = np.real(vals)
         colors = np.real(colors)
-        colors[:, 1] = -colors[:, 1]  # TODO: Take this out. Only here for debugging.
+        colors = np.sign(colors[0]) * colors  # Stable eigs
         cp, _ = self._unmix_colors(colors[:, :2])
 
         return cp, Rijs_rows
@@ -1066,10 +1074,12 @@ class CLSymmetryD2(CLOrient3D):
                         + norms[p2[2], p1[2], 2]
                     )
 
-            min_idx = np.unravel_index(np.argmin(m), m.shape)
+            # In the event of duplicate min values min_idx is the first occurence
+            # by column order to match matlab outputs.
+            min_idx = np.unravel_index(np.argmin(m.T), m.shape)[::-1]
             votes[trip_idx] = m[min_idx]
 
-            # Store permutation indices as digits in of base 10 number.
+            # Store permutation indices as digits of a base 10 number.
             colors_i[trip_idx, :2] = [
                 100 * (min_idx[0] + 1),
                 10 * (min_idx[1] + 1),
@@ -1236,8 +1246,9 @@ class CLSymmetryD2(CLOrient3D):
                     colors[i] = p_i
                 else:
                     colors[i] = p_i_sqr
-
-        return colors.flatten(), best_unmix
+            colors = colors.flatten()
+            colors = 2 - colors  # For debug. remove
+        return colors, best_unmix
 
     #####################
     # Synchronize Signs #
@@ -1258,7 +1269,7 @@ class CLSymmetryD2(CLOrient3D):
         n_pairs = len(self.pairs)
         c_mat_5d = np.zeros((self.n_img, self.n_img, 3, 3, 3), dtype=self.dtype)
         c_mat_4d = np.zeros((n_pairs, 3, 3, 3), dtype=self.dtype)
-        for i in trange(self.n_img - 1):
+        for i in range(self.n_img - 1):
             for j in range(i + 1, self.n_img):
                 ij = self.pairs_to_linear[i, j]
                 c_mat_5d[i, j, c_vec[3 * ij]] = rr[ij, 0]
