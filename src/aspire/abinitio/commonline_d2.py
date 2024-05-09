@@ -865,6 +865,7 @@ class CLSymmetryD2(CLOrient3D):
 
         # We need only the signs of the eigenvector
         J_sync = np.sign(vec)
+        J_sync = np.sign(J_sync[0]) * J_sync  # Stabilize J_sync
 
         return J_sync
 
@@ -1466,6 +1467,7 @@ class CLSymmetryD2(CLOrient3D):
                 rmatvec=lambda v, s=sign_mat: self.mult_smat_by_vec(v, s, pairs_map),
             )
             U, S, _ = la.svds(smat, k=3, which="LM")
+            U = np.sign(U[0]) * U  # Stable svds
             signs[c] = U[:, -1]  # Returns in ascending order
             s_out[c] = S[::-1]
 
@@ -1494,6 +1496,11 @@ class CLSymmetryD2(CLOrient3D):
         svals2[0] = S1[::-1]
         svals2[1] = S2[::-1]
         svals2[2] = S3[::-1]
+
+        # Stable eigenvectors.
+        U1 = np.sign(U1[0]) * U1
+        U2 = np.sign(U2[0]) * U2
+        U3 = np.sign(U3[0]) * U3
 
         # The c'th row of the rotation Rj is Uc(3*j-2:3*j,1)/norm(Uc(3*j-2:3*j,1)),
         # (Rows must be normalized to length 1).
