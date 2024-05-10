@@ -3,15 +3,7 @@ import pytest
 
 from aspire.abinitio import CLSymmetryD2
 from aspire.source import Simulation
-from aspire.utils import (
-    J_conjugate,
-    Rotation,
-    all_pairs,
-    cyclic_rotations,
-    mean_aligned_angular_distance,
-    randn,
-    utest_tolerance,
-)
+from aspire.utils import J_conjugate, all_pairs, mean_aligned_angular_distance
 from aspire.volume import DnSymmetricVolume, DnSymmetryGroup
 
 ##############
