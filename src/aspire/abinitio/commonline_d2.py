@@ -104,6 +104,10 @@ class CLSymmetryD2(CLOrient3D):
         # Assign rotations.
         self.rotations = Ris
 
+    #########################
+    # Prepare Polar Fourier #
+    #########################
+
     def _compute_shifted_pf(self):
         """
         Pre-compute shifted and full polar Fourier transforms.
@@ -133,270 +137,9 @@ class CLSymmetryD2(CLOrient3D):
             (self.n_img, self.n_shifts * (self.n_theta // 2), r_max)
         )
 
-    def _compute_cl_scores(self):
-        """
-        Run common lines Maximum likelihood procedure for a D2 molecule, to find
-        the set of rotations Ri^TgkRj, k=1,2,3,4 for each pair of images i and j.
-        """
-        # Map the self common line scores of each 2 candidate rotations R_i,R_j to
-        # the respective relative rotation candidate R_i^TR_j.
-        n_lookup_1 = len(self.scl_idx_1) // 3
-        oct1_ij_map = np.vstack((self.oct1_ij_map, self.oct1_ij_map[:, [1, 0]]))
-        oct2_ij_map = self.oct2_ij_map
-        oct2_ij_map[:, 1] += n_lookup_1
-        oct2_ij_map = np.vstack((oct2_ij_map, oct2_ij_map[:, [1, 0]]))
-        ij_map = np.vstack((oct1_ij_map, oct2_ij_map))
-
-        # Allocate output variables.
-        n_pairs = self.n_img * (self.n_img - 1) // 2
-        corrs_idx = np.zeros(n_pairs, dtype=np.int64)
-        corrs_out = np.zeros(n_pairs, dtype=self.dtype)
-        ij_idx = 0
-
-        # Search for common lines between pairs of projections.
-        pbar = tqdm(
-            desc="Searching for commonlines between pairs of images", total=n_pairs
-        )
-        for i in range(self.n_img):
-            pf_i = self.pf_shifted[i]
-            scores_i = self.scls_scores[i]
-
-            for j in range(i + 1, self.n_img):
-                pf_j = self.pf_full[j]
-
-                # Compute maximum correlation over all shifts.
-                corrs = 2 * np.real(pf_i @ np.conj(pf_j).T)
-                corrs = np.reshape(
-                    corrs, (self.n_shifts, self.n_theta // 2, self.n_theta)
-                )
-                corrs = np.max(corrs, axis=0)
-
-                # Take the product over symmetrically induced candidates. Eq. 4.5 in paper.
-                cl_idx = np.unravel_index(
-                    self.cl_idx, (self.n_theta // 2, self.n_theta)
-                )
-
-                prod_corrs = corrs[cl_idx]
-                prod_corrs = prod_corrs.reshape(len(prod_corrs) // 4, 4)
-                prod_corrs = np.prod(prod_corrs, axis=1)
-
-                # Incorporate scores of individual rotations from self-commonlines.
-                scores_j = self.scls_scores[j]
-                scores_ij = scores_i[ij_map[:, 0]] * scores_j[ij_map[:, 1]]
-
-                # Find maximum correlations.
-                prod_corrs = prod_corrs * scores_ij
-                max_idx = np.argmax(prod_corrs)
-                corrs_idx[ij_idx] = max_idx
-                corrs_out[ij_idx] = prod_corrs[max_idx]
-                ij_idx += 1
-
-                pbar.update()
-        pbar.close()
-
-        # Get estimated relative viewing directions.
-        self.Rijs_est = self._get_Rijs_from_lin_idx(corrs_idx)
-
-    def _get_Rijs_from_lin_idx(self, lin_idx):
-        """
-        Restore map results from maximum-likelihood over commonlines to corresponding
-        relative rotations.
-        """
-        Rijs_est = np.zeros((len(lin_idx), 4, 3, 3), dtype=self.dtype)
-        n_cand_per_oct = len(self.cl_idx_1) // 4
-        oct1_idx = lin_idx < n_cand_per_oct
-        n_est_in_oct1 = np.sum(oct1_idx, dtype=int)
-        if n_est_in_oct1 > 0:
-            Rijs_est[oct1_idx] = self._get_Rijs_from_oct(lin_idx[oct1_idx], octant=1)
-        if n_est_in_oct1 <= len(lin_idx):
-            Rijs_est[~oct1_idx] = self._get_Rijs_from_oct(
-                lin_idx[~oct1_idx] - n_cand_per_oct, octant=2
-            )
-
-        return Rijs_est
-
-    def _get_Rijs_from_oct(self, lin_idx, octant=1):
-        if octant not in [1, 2]:
-            raise ValueError("`octant` must be 1 or 2.")
-
-        # Get pairs lookup table.
-        if octant == 1:
-            unique_pairs = self.eq2eq_Rij_table_11
-        else:
-            unique_pairs = self.eq2eq_Rij_table_12
-
-        n_theta = self.n_inplane_rots
-        n_lookup_pairs = np.sum(unique_pairs, dtype=np.int64)
-        n_rots = len(self.sphere_grid1)
-        if octant == 1:
-            n_rots2 = n_rots
-        else:
-            n_rots2 = len(self.sphere_grid2)
-        n_pairs = len(lin_idx)
-
-        # Map linear indices of chosen pairs of rotation candidates from ML to regular indices.
-        p_idx, inplane_i, inplane_j = np.unravel_index(
-            lin_idx, (2 * n_lookup_pairs, n_theta, n_theta // 2)
-        )
-        transpose_idx = p_idx >= n_lookup_pairs
-        p_idx[transpose_idx] -= n_lookup_pairs
-        s = self.inplane_rotated_grid1.shape
-        inplane_rotated_grid = np.reshape(
-            self.inplane_rotated_grid1, (np.prod(s[0:2]), 3, 3)
-        )
-        if octant == 1:
-            s2 = s
-            inplane_rotated_grid2 = inplane_rotated_grid
-        else:
-            s2 = self.inplane_rotated_grid2.shape
-            inplane_rotated_grid2 = np.reshape(
-                self.inplane_rotated_grid2, (np.prod(s2[0:2]), 3, 3)
-            )
-
-        Rijs_est = np.zeros((n_pairs, 4, 3, 3), dtype=self.dtype)
-
-        # Convert linear indices of unique table to linear indices of index pairs table.
-        idx_vec = np.arange(np.prod(unique_pairs.shape))
-        unique_lin_idx = idx_vec[unique_pairs.flatten()]
-        I, J = np.unravel_index(unique_lin_idx, (n_rots, n_rots2))
-        est_idx = np.vstack((I[p_idx], J[p_idx]))
-
-        # Assemble relative rotations Ri^TgRj using linear indices, where g is a group member of D2.
-        Ris_lin_idx = np.ravel_multi_index((est_idx[0], inplane_i), s[:2])
-        Rjs_lin_idx = np.ravel_multi_index((est_idx[1], inplane_j), s2[:2])
-        Ris_t = np.transpose(inplane_rotated_grid[Ris_lin_idx], (0, 2, 1))
-        Rjs = inplane_rotated_grid2[Rjs_lin_idx]
-
-        for k, g in enumerate(self.gs):
-            Rijs_est[:, k] = Ris_t @ (g * Rjs)
-
-        Rijs_est[transpose_idx] = np.transpose(Rijs_est[transpose_idx], (0, 1, 3, 2))
-
-        return Rijs_est
-
-    def _compute_scl_scores(self):
-        """
-        Compute correlations for self-commonline candidates.
-        """
-        n_img = self.n_img
-        n_theta = self.n_theta
-        n_eq = len(self.non_tv_eq_idx)
-        n_inplane = self.n_inplane_rots
-
-        # Run ML in parallel
-        scl_matrix = np.concatenate((self.scl_idx_1, self.scl_idx_2))
-        M = len(scl_matrix) // 3
-        corrs_out = np.zeros((n_img, M), dtype=self.dtype)
-        scl_idx = scl_matrix.reshape(M, 3)
-
-        # Get non-equator indices to use with corrs matrix.
-        non_eq_lin_idx = self.non_eq_idx.flatten()
-        n_non_eq = len(non_eq_lin_idx)
-        non_eq_idx = np.unravel_index(
-            scl_idx[non_eq_lin_idx].flatten(), (n_theta // 2, n_theta)
-        )
-
-        for i in trange(n_img):
-            pf_full_i = self.pf_full[i]
-            pf_i_shifted = self.pf_shifted[i]
-
-            # Compute max correlation over all shifts.
-            corrs = 2 * np.real(pf_i_shifted @ np.conj(pf_full_i).T)
-            corrs = np.reshape(corrs, (self.n_shifts, n_theta // 2, n_theta))
-            corrs = np.max(corrs, axis=0)
-
-            # Map correlations to probabilities (in the spirit of Maximum Likelihood).
-            corrs = 0.5 * (corrs + 1)
-
-            # Compute equator measures.
-            eq_measures = self._all_eq_measures(corrs)
-
-            # Handle the cases: Non-equator, Non-top-view equator, and Top view images.
-            # 1. Non-equators: just take product of probabilities.
-            prod_corrs = np.prod(corrs[non_eq_idx].reshape(n_non_eq, 3), axis=1)
-            corrs_out[i, non_eq_lin_idx] = prod_corrs
-
-            # 2. Non-topview equators: adjust scores by eq_measures
-            for eq_idx in range(n_eq):
-                for j in range(n_inplane):
-                    # Take the correlations for the self common line candidate of the
-                    # "equator rotation" `eq_idx` with respect to image i, and
-                    # multiply by all scores from the function eq_measures (see
-                    # documentation inside the function ). Then take maximum over
-                    # all the scores.
-                    scl_idx_list = np.unravel_index(
-                        self.scl_idx_lists[0, eq_idx, j], (n_theta // 2, n_theta)
-                    )
-                    true_scls_corrs = corrs[scl_idx_list]
-                    scls_cand_idx = self.scl_idx_lists[1, eq_idx, j]
-                    eq_measures_j = eq_measures[scls_cand_idx]
-                    measures_agg = np.outer(true_scls_corrs, eq_measures_j)
-                    k = self.non_tv_eq_idx[eq_idx]
-                    corrs_out[i, k * n_inplane + j] = np.max(measures_agg)
-
-        self.scls_scores = corrs_out
-
-    def _all_eq_measures(self, corrs):
-        """
-        Compute a measure of how much an image from data is close to be an equator.
-        """
-        # First compute the eq measure (corrs(scl-k,scl+k) for k=1:90)
-        # An eqautor image of a D2 molecule has the following property: If t_i is
-        # the angle of one of the rays of the self common line then all the pairs of
-        # rays of the form (t_i-k,t_i+k) for k=1:90 are identical. For each t_i we
-        # average over correlations between the lines (t_i-k,t_i+k) for k=1:90
-        # to measure the likelihood that the image is an equator and the ray (line)
-        # with angle t_i is a self common line.
-        # (This first loop can be done once outside this function and then pass
-        # idx as an argument).
-        idx = np.zeros((180, 90, 2))
-        idx_1 = np.mod(np.vstack((-np.arange(1, 91), np.arange(1, 91))), 360)
-        idx[0, :, :] = idx_1.T
-        for k in range(1, 180):
-            idx[k, :, :] = np.mod(idx_1.T + k, 360)
-        idx = np.mod(idx, 360)
-
-        idx_1 = idx[:, :, 0].flatten()
-        idx_2 = idx[:, :, 1].flatten()
-
-        # Make all Ri coordinates < 180 and compute linear indices for corrrelations
-        bigger_than_180 = idx_1 >= 180
-        idx_1[bigger_than_180] = idx_1[bigger_than_180] - 180
-        idx_2[bigger_than_180] = (idx_2[bigger_than_180] + 180) % 360
-
-        # Compute correlations.
-        eq_corrs = corrs[idx_1.astype(int), idx_2.astype(int)]
-        eq_corrs = eq_corrs.reshape(180, 90)
-        corrs_mean = np.mean(eq_corrs, axis=1)
-
-        # Now compute correlations for normals to scls.
-        # An eqautor image of a D2 molecule has the additional following property:
-        # The normal line to a self common line in 2D Fourier plane is real valued
-        # and both of its rays have identical values. We use the correlation
-        # between one Fourier ray of the normal to a self common line candidate t_i
-        # with its anti-podal as an additional way to measure if the image is an
-        # equator and t_i+0.5*pi is the normal to its self common line.
-        r = 2
-
-        normal_2_scl_idx = np.zeros((180, 2 * r + 1))
-        normal_2_scl_idx_1 = np.mod(180 - np.arange(90 - r, 90 + r + 1), 360)
-        normal_2_scl_idx[0, :] = normal_2_scl_idx_1
-        for k in range(1, 180):
-            normal_2_scl_idx[k, :] = np.mod(normal_2_scl_idx_1 + k, 360)
-
-        # Make all Ri coordinates <=180 and compute linear indices for corrrelations
-        bigger_than_180 = normal_2_scl_idx >= 180
-        normal_2_scl_idx[bigger_than_180] = normal_2_scl_idx[bigger_than_180] - 180
-
-        # Compute correlations for normals.
-        normal_2_scl_idx = normal_2_scl_idx.flatten()
-        normal_corrs = corrs[
-            normal_2_scl_idx.astype(int), normal_2_scl_idx.astype(int) + 180
-        ]
-        normal_corrs = normal_corrs.reshape(180, 2 * r + 1)
-        normal_corrs_max = np.max(normal_corrs, axis=1)
-
-        return corrs_mean * normal_corrs_max
+    ###################################
+    # Generate Commonline Lookup Data #
+    ###################################
 
     def _generate_lookup_data(self):
         """
@@ -478,6 +221,10 @@ class CLSymmetryD2(CLOrient3D):
         self.cl_idx_1, self.cl_angles1 = self._generate_commonline_indices(cl_angles1)
         self.cl_idx_2, self.cl_angles2 = self._generate_commonline_indices(cl_angles2)
         self.cl_idx = np.hstack((self.cl_idx_1, self.cl_idx_2))
+
+    ########################################
+    # Generate Self-Commonline Lookup Data #
+    ########################################
 
     def _generate_scl_lookup_data(self):
         """
@@ -729,9 +476,282 @@ class CLSymmetryD2(CLOrient3D):
             (tmp1.flatten(order="F"), tmp2.flatten(order="F"))
         )
 
-    #############################
-    # Methods for Global J Sync #
-    #############################
+    ##############################################
+    # Compute Self-Commonline Correlation Scores #
+    ##############################################
+
+    def _compute_scl_scores(self):
+        """
+        Compute correlations for self-commonline candidates.
+        """
+        n_img = self.n_img
+        n_theta = self.n_theta
+        n_eq = len(self.non_tv_eq_idx)
+        n_inplane = self.n_inplane_rots
+
+        # Run ML in parallel
+        scl_matrix = np.concatenate((self.scl_idx_1, self.scl_idx_2))
+        M = len(scl_matrix) // 3
+        corrs_out = np.zeros((n_img, M), dtype=self.dtype)
+        scl_idx = scl_matrix.reshape(M, 3)
+
+        # Get non-equator indices to use with corrs matrix.
+        non_eq_lin_idx = self.non_eq_idx.flatten()
+        n_non_eq = len(non_eq_lin_idx)
+        non_eq_idx = np.unravel_index(
+            scl_idx[non_eq_lin_idx].flatten(), (n_theta // 2, n_theta)
+        )
+
+        for i in trange(n_img):
+            pf_full_i = self.pf_full[i]
+            pf_i_shifted = self.pf_shifted[i]
+
+            # Compute max correlation over all shifts.
+            corrs = 2 * np.real(pf_i_shifted @ np.conj(pf_full_i).T)
+            corrs = np.reshape(corrs, (self.n_shifts, n_theta // 2, n_theta))
+            corrs = np.max(corrs, axis=0)
+
+            # Map correlations to probabilities (in the spirit of Maximum Likelihood).
+            corrs = 0.5 * (corrs + 1)
+
+            # Compute equator measures.
+            eq_measures = self._all_eq_measures(corrs)
+
+            # Handle the cases: Non-equator, Non-top-view equator, and Top view images.
+            # 1. Non-equators: just take product of probabilities.
+            prod_corrs = np.prod(corrs[non_eq_idx].reshape(n_non_eq, 3), axis=1)
+            corrs_out[i, non_eq_lin_idx] = prod_corrs
+
+            # 2. Non-topview equators: adjust scores by eq_measures
+            for eq_idx in range(n_eq):
+                for j in range(n_inplane):
+                    # Take the correlations for the self common line candidate of the
+                    # "equator rotation" `eq_idx` with respect to image i, and
+                    # multiply by all scores from the function eq_measures (see
+                    # documentation inside the function ). Then take maximum over
+                    # all the scores.
+                    scl_idx_list = np.unravel_index(
+                        self.scl_idx_lists[0, eq_idx, j], (n_theta // 2, n_theta)
+                    )
+                    true_scls_corrs = corrs[scl_idx_list]
+                    scls_cand_idx = self.scl_idx_lists[1, eq_idx, j]
+                    eq_measures_j = eq_measures[scls_cand_idx]
+                    measures_agg = np.outer(true_scls_corrs, eq_measures_j)
+                    k = self.non_tv_eq_idx[eq_idx]
+                    corrs_out[i, k * n_inplane + j] = np.max(measures_agg)
+
+        self.scls_scores = corrs_out
+
+    def _all_eq_measures(self, corrs):
+        """
+        Compute a measure of how much an image from data is close to be an equator.
+        """
+        # First compute the eq measure (corrs(scl-k,scl+k) for k=1:90)
+        # An eqautor image of a D2 molecule has the following property: If t_i is
+        # the angle of one of the rays of the self common line then all the pairs of
+        # rays of the form (t_i-k,t_i+k) for k=1:90 are identical. For each t_i we
+        # average over correlations between the lines (t_i-k,t_i+k) for k=1:90
+        # to measure the likelihood that the image is an equator and the ray (line)
+        # with angle t_i is a self common line.
+        # (This first loop can be done once outside this function and then pass
+        # idx as an argument).
+        idx = np.zeros((180, 90, 2))
+        idx_1 = np.mod(np.vstack((-np.arange(1, 91), np.arange(1, 91))), 360)
+        idx[0, :, :] = idx_1.T
+        for k in range(1, 180):
+            idx[k, :, :] = np.mod(idx_1.T + k, 360)
+        idx = np.mod(idx, 360)
+
+        idx_1 = idx[:, :, 0].flatten()
+        idx_2 = idx[:, :, 1].flatten()
+
+        # Make all Ri coordinates < 180 and compute linear indices for corrrelations
+        bigger_than_180 = idx_1 >= 180
+        idx_1[bigger_than_180] = idx_1[bigger_than_180] - 180
+        idx_2[bigger_than_180] = (idx_2[bigger_than_180] + 180) % 360
+
+        # Compute correlations.
+        eq_corrs = corrs[idx_1.astype(int), idx_2.astype(int)]
+        eq_corrs = eq_corrs.reshape(180, 90)
+        corrs_mean = np.mean(eq_corrs, axis=1)
+
+        # Now compute correlations for normals to scls.
+        # An eqautor image of a D2 molecule has the additional following property:
+        # The normal line to a self common line in 2D Fourier plane is real valued
+        # and both of its rays have identical values. We use the correlation
+        # between one Fourier ray of the normal to a self common line candidate t_i
+        # with its anti-podal as an additional way to measure if the image is an
+        # equator and t_i+0.5*pi is the normal to its self common line.
+        r = 2
+
+        normal_2_scl_idx = np.zeros((180, 2 * r + 1))
+        normal_2_scl_idx_1 = np.mod(180 - np.arange(90 - r, 90 + r + 1), 360)
+        normal_2_scl_idx[0, :] = normal_2_scl_idx_1
+        for k in range(1, 180):
+            normal_2_scl_idx[k, :] = np.mod(normal_2_scl_idx_1 + k, 360)
+
+        # Make all Ri coordinates <=180 and compute linear indices for corrrelations
+        bigger_than_180 = normal_2_scl_idx >= 180
+        normal_2_scl_idx[bigger_than_180] = normal_2_scl_idx[bigger_than_180] - 180
+
+        # Compute correlations for normals.
+        normal_2_scl_idx = normal_2_scl_idx.flatten()
+        normal_corrs = corrs[
+            normal_2_scl_idx.astype(int), normal_2_scl_idx.astype(int) + 180
+        ]
+        normal_corrs = normal_corrs.reshape(180, 2 * r + 1)
+        normal_corrs_max = np.max(normal_corrs, axis=1)
+
+        return corrs_mean * normal_corrs_max
+
+    #########################################
+    # Compute Commonline Correlation Scores #
+    #########################################
+
+    def _compute_cl_scores(self):
+        """
+        Run common lines Maximum likelihood procedure for a D2 molecule, to find
+        the set of rotations Ri^TgkRj, k=1,2,3,4 for each pair of images i and j.
+        """
+        # Map the self common line scores of each 2 candidate rotations R_i,R_j to
+        # the respective relative rotation candidate R_i^TR_j.
+        n_lookup_1 = len(self.scl_idx_1) // 3
+        oct1_ij_map = np.vstack((self.oct1_ij_map, self.oct1_ij_map[:, [1, 0]]))
+        oct2_ij_map = self.oct2_ij_map
+        oct2_ij_map[:, 1] += n_lookup_1
+        oct2_ij_map = np.vstack((oct2_ij_map, oct2_ij_map[:, [1, 0]]))
+        ij_map = np.vstack((oct1_ij_map, oct2_ij_map))
+
+        # Allocate output variables.
+        n_pairs = self.n_img * (self.n_img - 1) // 2
+        corrs_idx = np.zeros(n_pairs, dtype=np.int64)
+        corrs_out = np.zeros(n_pairs, dtype=self.dtype)
+        ij_idx = 0
+
+        # Search for common lines between pairs of projections.
+        pbar = tqdm(
+            desc="Searching for commonlines between pairs of images", total=n_pairs
+        )
+        for i in range(self.n_img):
+            pf_i = self.pf_shifted[i]
+            scores_i = self.scls_scores[i]
+
+            for j in range(i + 1, self.n_img):
+                pf_j = self.pf_full[j]
+
+                # Compute maximum correlation over all shifts.
+                corrs = 2 * np.real(pf_i @ np.conj(pf_j).T)
+                corrs = np.reshape(
+                    corrs, (self.n_shifts, self.n_theta // 2, self.n_theta)
+                )
+                corrs = np.max(corrs, axis=0)
+
+                # Take the product over symmetrically induced candidates. Eq. 4.5 in paper.
+                cl_idx = np.unravel_index(
+                    self.cl_idx, (self.n_theta // 2, self.n_theta)
+                )
+
+                prod_corrs = corrs[cl_idx]
+                prod_corrs = prod_corrs.reshape(len(prod_corrs) // 4, 4)
+                prod_corrs = np.prod(prod_corrs, axis=1)
+
+                # Incorporate scores of individual rotations from self-commonlines.
+                scores_j = self.scls_scores[j]
+                scores_ij = scores_i[ij_map[:, 0]] * scores_j[ij_map[:, 1]]
+
+                # Find maximum correlations.
+                prod_corrs = prod_corrs * scores_ij
+                max_idx = np.argmax(prod_corrs)
+                corrs_idx[ij_idx] = max_idx
+                corrs_out[ij_idx] = prod_corrs[max_idx]
+                ij_idx += 1
+
+                pbar.update()
+        pbar.close()
+
+        # Get estimated relative viewing directions.
+        self.Rijs_est = self._get_Rijs_from_lin_idx(corrs_idx)
+
+    def _get_Rijs_from_lin_idx(self, lin_idx):
+        """
+        Restore map results from maximum-likelihood over commonlines to corresponding
+        relative rotations.
+        """
+        Rijs_est = np.zeros((len(lin_idx), 4, 3, 3), dtype=self.dtype)
+        n_cand_per_oct = len(self.cl_idx_1) // 4
+        oct1_idx = lin_idx < n_cand_per_oct
+        n_est_in_oct1 = np.sum(oct1_idx, dtype=int)
+        if n_est_in_oct1 > 0:
+            Rijs_est[oct1_idx] = self._get_Rijs_from_oct(lin_idx[oct1_idx], octant=1)
+        if n_est_in_oct1 <= len(lin_idx):
+            Rijs_est[~oct1_idx] = self._get_Rijs_from_oct(
+                lin_idx[~oct1_idx] - n_cand_per_oct, octant=2
+            )
+
+        return Rijs_est
+
+    def _get_Rijs_from_oct(self, lin_idx, octant=1):
+        if octant not in [1, 2]:
+            raise ValueError("`octant` must be 1 or 2.")
+
+        # Get pairs lookup table.
+        if octant == 1:
+            unique_pairs = self.eq2eq_Rij_table_11
+        else:
+            unique_pairs = self.eq2eq_Rij_table_12
+
+        n_theta = self.n_inplane_rots
+        n_lookup_pairs = np.sum(unique_pairs, dtype=np.int64)
+        n_rots = len(self.sphere_grid1)
+        if octant == 1:
+            n_rots2 = n_rots
+        else:
+            n_rots2 = len(self.sphere_grid2)
+        n_pairs = len(lin_idx)
+
+        # Map linear indices of chosen pairs of rotation candidates from ML to regular indices.
+        p_idx, inplane_i, inplane_j = np.unravel_index(
+            lin_idx, (2 * n_lookup_pairs, n_theta, n_theta // 2)
+        )
+        transpose_idx = p_idx >= n_lookup_pairs
+        p_idx[transpose_idx] -= n_lookup_pairs
+        s = self.inplane_rotated_grid1.shape
+        inplane_rotated_grid = np.reshape(
+            self.inplane_rotated_grid1, (np.prod(s[0:2]), 3, 3)
+        )
+        if octant == 1:
+            s2 = s
+            inplane_rotated_grid2 = inplane_rotated_grid
+        else:
+            s2 = self.inplane_rotated_grid2.shape
+            inplane_rotated_grid2 = np.reshape(
+                self.inplane_rotated_grid2, (np.prod(s2[0:2]), 3, 3)
+            )
+
+        Rijs_est = np.zeros((n_pairs, 4, 3, 3), dtype=self.dtype)
+
+        # Convert linear indices of unique table to linear indices of index pairs table.
+        idx_vec = np.arange(np.prod(unique_pairs.shape))
+        unique_lin_idx = idx_vec[unique_pairs.flatten()]
+        I, J = np.unravel_index(unique_lin_idx, (n_rots, n_rots2))
+        est_idx = np.vstack((I[p_idx], J[p_idx]))
+
+        # Assemble relative rotations Ri^TgRj using linear indices, where g is a group member of D2.
+        Ris_lin_idx = np.ravel_multi_index((est_idx[0], inplane_i), s[:2])
+        Rjs_lin_idx = np.ravel_multi_index((est_idx[1], inplane_j), s2[:2])
+        Ris_t = np.transpose(inplane_rotated_grid[Ris_lin_idx], (0, 2, 1))
+        Rjs = inplane_rotated_grid2[Rjs_lin_idx]
+
+        for k, g in enumerate(self.gs):
+            Rijs_est[:, k] = Ris_t @ (g * Rjs)
+
+        Rijs_est[transpose_idx] = np.transpose(Rijs_est[transpose_idx], (0, 1, 3, 2))
+
+        return Rijs_est
+
+    ####################################
+    # Perform Global J Synchronization #
+    ####################################
 
     def _global_J_sync(self, Rijs):
         """
