@@ -80,17 +80,17 @@ class CLSymmetryD2(CLOrient3D):
         :return: Array of rotation matrices, size n_imgx3x3.
         """
         # Pre-compute phase-shifted polar Fourier.
-        self.compute_shifted_pf()
+        self._compute_shifted_pf()
 
         # Generate lookup data
-        self.generate_lookup_data()
-        self.generate_scl_lookup_data()
+        self._generate_lookup_data()
+        self._generate_scl_lookup_data()
 
         # Compute common-line scores.
-        self.compute_scl_scores()
+        self._compute_scl_scores()
 
         # Compute common-lines and estimate relative rotations Rijs.
-        self.compute_cl_scores()
+        self._compute_cl_scores()
 
         # Perform handedness synchronization.
         self.Rijs_sync = self._global_J_sync(self.Rijs_est)
@@ -101,9 +101,10 @@ class CLSymmetryD2(CLOrient3D):
         # Synchronize signs.
         Ris = self._sync_signs(self.Rijs_rows, self.colors)
 
+        # Assign rotations.
         self.rotations = Ris
 
-    def compute_shifted_pf(self):
+    def _compute_shifted_pf(self):
         """
         Pre-compute shifted and full polar Fourier transforms.
         """
@@ -132,7 +133,7 @@ class CLSymmetryD2(CLOrient3D):
             (self.n_img, self.n_shifts * (self.n_theta // 2), r_max)
         )
 
-    def compute_cl_scores(self):
+    def _compute_cl_scores(self):
         """
         Run common lines Maximum likelihood procedure for a D2 molecule, to find
         the set of rotations Ri^TgkRj, k=1,2,3,4 for each pair of images i and j.
@@ -194,9 +195,9 @@ class CLSymmetryD2(CLOrient3D):
         pbar.close()
 
         # Get estimated relative viewing directions.
-        self.Rijs_est = self.get_Rijs_from_lin_idx(corrs_idx)
+        self.Rijs_est = self._get_Rijs_from_lin_idx(corrs_idx)
 
-    def get_Rijs_from_lin_idx(self, lin_idx):
+    def _get_Rijs_from_lin_idx(self, lin_idx):
         """
         Restore map results from maximum-likelihood over commonlines to corresponding
         relative rotations.
@@ -206,15 +207,15 @@ class CLSymmetryD2(CLOrient3D):
         oct1_idx = lin_idx < n_cand_per_oct
         n_est_in_oct1 = np.sum(oct1_idx, dtype=int)
         if n_est_in_oct1 > 0:
-            Rijs_est[oct1_idx] = self.get_Rijs_from_oct(lin_idx[oct1_idx], octant=1)
+            Rijs_est[oct1_idx] = self._get_Rijs_from_oct(lin_idx[oct1_idx], octant=1)
         if n_est_in_oct1 <= len(lin_idx):
-            Rijs_est[~oct1_idx] = self.get_Rijs_from_oct(
+            Rijs_est[~oct1_idx] = self._get_Rijs_from_oct(
                 lin_idx[~oct1_idx] - n_cand_per_oct, octant=2
             )
 
         return Rijs_est
 
-    def get_Rijs_from_oct(self, lin_idx, octant=1):
+    def _get_Rijs_from_oct(self, lin_idx, octant=1):
         if octant not in [1, 2]:
             raise ValueError("`octant` must be 1 or 2.")
 
@@ -273,7 +274,7 @@ class CLSymmetryD2(CLOrient3D):
 
         return Rijs_est
 
-    def compute_scl_scores(self):
+    def _compute_scl_scores(self):
         """
         Compute correlations for self-commonline candidates.
         """
@@ -308,7 +309,7 @@ class CLSymmetryD2(CLOrient3D):
             corrs = 0.5 * (corrs + 1)
 
             # Compute equator measures.
-            eq_measures = self.all_eq_measures(corrs)
+            eq_measures = self._all_eq_measures(corrs)
 
             # Handle the cases: Non-equator, Non-top-view equator, and Top view images.
             # 1. Non-equators: just take product of probabilities.
@@ -335,7 +336,7 @@ class CLSymmetryD2(CLOrient3D):
 
         self.scls_scores = corrs_out
 
-    def all_eq_measures(self, corrs):
+    def _all_eq_measures(self, corrs):
         """
         Compute a measure of how much an image from data is close to be an equator.
         """
@@ -397,13 +398,13 @@ class CLSymmetryD2(CLOrient3D):
 
         return corrs_mean * normal_corrs_max
 
-    def generate_lookup_data(self):
+    def _generate_lookup_data(self):
         """
         Generate candidate relative rotations and corresponding common line indices.
         """
         # Generate uniform grid on sphere with Saff-Kuijlaars and take one quarter
         # of sphere because of D2 symmetry redundancy.
-        sphere_grid = self.saff_kuijlaars(self.grid_res)
+        sphere_grid = self._saff_kuijlaars(self.grid_res)
         octant1_mask = np.all(sphere_grid > 0, axis=1)
         octant2_mask = (
             (sphere_grid[:, 0] > 0) & (sphere_grid[:, 1] > 0) & (sphere_grid[:, 2] < 0)
@@ -420,8 +421,8 @@ class CLSymmetryD2(CLOrient3D):
         # We detect such directions by taking a strip of radius
         # eq_filter_angle about the 3 great circles perpendicular to the symmetry
         # axes of D2 (i.e to X,Y and Z axes).
-        eq_idx1, eq_class1 = self.mark_equators(sphere_grid1, self.eq_min_dist)
-        eq_idx2, eq_class2 = self.mark_equators(sphere_grid2, self.eq_min_dist)
+        eq_idx1, eq_class1 = self._mark_equators(sphere_grid1, self.eq_min_dist)
+        eq_idx2, eq_class2 = self._mark_equators(sphere_grid2, self.eq_min_dist)
 
         #  Mark Top View Directions.
         #  A Top view projection image is taken from the direction of one of the
@@ -447,15 +448,15 @@ class CLSymmetryD2(CLOrient3D):
         self.eq_class2 = eq_class2[eq_class2 < 4]
 
         # Generate in-plane rotations for each grid point on the sphere.
-        self.inplane_rotated_grid1 = self.generate_inplane_rots(
+        self.inplane_rotated_grid1 = self._generate_inplane_rots(
             self.sphere_grid1, self.inplane_res
         )
-        self.inplane_rotated_grid2 = self.generate_inplane_rots(
+        self.inplane_rotated_grid2 = self._generate_inplane_rots(
             self.sphere_grid2, self.inplane_res
         )
 
         # Generate commmonline angles induced by all relative rotation candidates.
-        cl_angles1, self.eq2eq_Rij_table_11 = self.generate_commonline_angles(
+        cl_angles1, self.eq2eq_Rij_table_11 = self._generate_commonline_angles(
             self.inplane_rotated_grid1,
             self.inplane_rotated_grid1,
             self.eq_idx1,
@@ -463,7 +464,7 @@ class CLSymmetryD2(CLOrient3D):
             self.eq_class1,
             self.eq_class1,
         )
-        cl_angles2, self.eq2eq_Rij_table_12 = self.generate_commonline_angles(
+        cl_angles2, self.eq2eq_Rij_table_12 = self._generate_commonline_angles(
             self.inplane_rotated_grid1,
             self.inplane_rotated_grid2,
             self.eq_idx1,
@@ -474,31 +475,31 @@ class CLSymmetryD2(CLOrient3D):
         )
 
         # Generate commonline indices.
-        self.cl_idx_1, self.cl_angles1 = self.generate_commonline_indices(cl_angles1)
-        self.cl_idx_2, self.cl_angles2 = self.generate_commonline_indices(cl_angles2)
+        self.cl_idx_1, self.cl_angles1 = self._generate_commonline_indices(cl_angles1)
+        self.cl_idx_2, self.cl_angles2 = self._generate_commonline_indices(cl_angles2)
         self.cl_idx = np.hstack((self.cl_idx_1, self.cl_idx_2))
 
-    def generate_scl_lookup_data(self):
+    def _generate_scl_lookup_data(self):
         """
         Generate lookup data for self-commonlines.
         """
         # Get self-commonline angles.
-        self.scl_angles1 = self.generate_scl_angles(
+        self.scl_angles1 = self._generate_scl_angles(
             self.inplane_rotated_grid1,
             self.eq_idx1,
             self.eq_class1,
         )
-        self.scl_angles2 = self.generate_scl_angles(
+        self.scl_angles2 = self._generate_scl_angles(
             self.inplane_rotated_grid2,
             self.eq_idx2,
             self.eq_class2,
         )
 
         # Get self-commonline indices.
-        self.scl_idx_1, self.scl_eq_lin_idx_lists_1 = self.generate_scl_indices(
+        self.scl_idx_1, self.scl_eq_lin_idx_lists_1 = self._generate_scl_indices(
             self.scl_angles1, self.eq_class1
         )
-        self.scl_idx_2, self.scl_eq_lin_idx_lists_2 = self.generate_scl_indices(
+        self.scl_idx_2, self.scl_eq_lin_idx_lists_2 = self._generate_scl_indices(
             self.scl_angles2, self.eq_class2
         )
         self.scl_idx_lists = np.concatenate(
@@ -540,9 +541,9 @@ class CLSymmetryD2(CLOrient3D):
         self.non_tv_eq_idx = non_tv_eq_idx.astype(int)
 
         # Generate maps from scl indices to relative rotations.
-        self.generate_scl_scores_idx_map()
+        self._generate_scl_scores_idx_map()
 
-    def generate_scl_angles(self, Ris, eq_idx, eq_class):
+    def _generate_scl_angles(self, Ris, eq_idx, eq_class):
         """
         Generate self-commonline angles.
 
@@ -628,7 +629,7 @@ class CLSymmetryD2(CLOrient3D):
 
         return scl_angles
 
-    def generate_scl_indices(self, scl_angles, eq_class):
+    def _generate_scl_indices(self, scl_angles, eq_class):
         L = 360
 
         # Create candidate common line linear indices lists for equators.
@@ -649,8 +650,8 @@ class CLSymmetryD2(CLOrient3D):
         eq_lin_idx_lists = np.empty((2, n_eq, n_inplane_rots), dtype=object)
         for i in non_top_view_eq_idx.tolist():
             for j in range(n_inplane_rots):
-                idx1 = self.circ_seq(scl_angles[i, j, 0, 0], scl_angles[i, j, 1, 0], L)
-                idx2 = self.circ_seq(scl_angles[i, j, 0, 1], scl_angles[i, j, 1, 1], L)
+                idx1 = self._circ_seq(scl_angles[i, j, 0, 0], scl_angles[i, j, 1, 0], L)
+                idx2 = self._circ_seq(scl_angles[i, j, 0, 1], scl_angles[i, j, 1, 1], L)
 
                 # Adjust so idx1 is in [0, 180) range.
                 geq_180 = idx1 >= 180
@@ -664,11 +665,11 @@ class CLSymmetryD2(CLOrient3D):
                 eq_lin_idx_lists[1, count_eq, j] = idx1
             count_eq += 1
 
-        scl_indices, _ = self.generate_commonline_indices(scl_angles)
+        scl_indices, _ = self._generate_commonline_indices(scl_angles)
 
         return scl_indices, eq_lin_idx_lists
 
-    def generate_scl_scores_idx_map(self):
+    def _generate_scl_scores_idx_map(self):
         n_rot_1 = len(self.scl_idx_1) // (3 * self.n_inplane_rots)
         n_rot_2 = len(self.scl_idx_2) // (3 * self.n_inplane_rots)
 
@@ -954,7 +955,7 @@ class CLSymmetryD2(CLOrient3D):
         # This vector is a linear combination of the two leading eigen vectors,
         # and so we 'unmix' these vectors to retrieve it.
         color_mat = la.LinearOperator(
-            (3 * n_pairs,) * 2, lambda v: self.mult_cmat_by_vec(color_perms, v)
+            (3 * n_pairs,) * 2, lambda v: self._mult_cmat_by_vec(color_perms, v)
         )
         vals, colors = la.eigs(color_mat, k=3, which="LR")
         vals = np.real(vals)
@@ -1100,7 +1101,7 @@ class CLSymmetryD2(CLOrient3D):
 
         return colors_i
 
-    def mult_cmat_by_vec(self, c_perms, v):
+    def _mult_cmat_by_vec(self, c_perms, v):
         """
         Multiply color matrix by vector v "on the fly".
 
@@ -1343,7 +1344,7 @@ class CLSymmetryD2(CLOrient3D):
                 i, j = self.pairs[p]
                 idx_mask = np.full(self.n_img, True)
                 idx_mask[[i, j]] = False
-                signs[c, p, idx_mask] = self.calc_Rij_prods(c_mat_5d, i, j, c)
+                signs[c, p, idx_mask] = self._calc_Rij_prods(c_mat_5d, i, j, c)
 
         # Now compute the signs of Qij^c.
         est_signs = np.sign(np.sum(c_mat_4d, axis=(-2, -1)))
@@ -1392,7 +1393,9 @@ class CLSymmetryD2(CLOrient3D):
         for c in range(3):
             for r in range(self.n_img):
                 # Image r used for signs.
-                c_mat_eff = self.fill_sign_sync_matrix_c(c_mat_5d_mp, sync_signs2, c, r)
+                c_mat_eff = self._fill_sign_sync_matrix_c(
+                    c_mat_5d_mp, sync_signs2, c, r
+                )
 
                 # Construct (3*N)x(3*N) rank 1 matrices from Qik
                 c_mat_for_svd = np.zeros(
@@ -1463,8 +1466,8 @@ class CLSymmetryD2(CLOrient3D):
 
             smat = la.LinearOperator(
                 shape=(n_pairs, n_pairs),
-                matvec=lambda v, s=sign_mat: self.mult_smat_by_vec(v, s, pairs_map),
-                rmatvec=lambda v, s=sign_mat: self.mult_smat_by_vec(v, s, pairs_map),
+                matvec=lambda v, s=sign_mat: self._mult_smat_by_vec(v, s, pairs_map),
+                rmatvec=lambda v, s=sign_mat: self._mult_smat_by_vec(v, s, pairs_map),
             )
             U, S, _ = la.svds(smat, k=3, which="LM")
             U = np.sign(U[0]) * U  # Stable svds
@@ -1520,13 +1523,13 @@ class CLSymmetryD2(CLOrient3D):
 
         return rot
 
-    def fill_sign_sync_matrix_c(self, c_mat_5d_mp, sync_signs2, c, img):
+    def _fill_sign_sync_matrix_c(self, c_mat_5d_mp, sync_signs2, c, img):
         c_mat_eff = np.zeros((self.n_img, self.n_img, 3, 3), dtype=self.dtype)
         for r in range(self.n_img):
             c_mat_eff[:, r] = c_mat_5d_mp[r, sync_signs2[c, img, :, r], c]
         return c_mat_eff
 
-    def calc_Rij_prods(self, c_mat_5d, i, j, c):
+    def _calc_Rij_prods(self, c_mat_5d, i, j, c):
         Rik = np.delete(c_mat_5d[i, :, c], [i, j], axis=0)
         Rkj = np.delete(c_mat_5d[:, j, c], [i, j], axis=0)
         Rij = Rik @ Rkj
@@ -1539,7 +1542,7 @@ class CLSymmetryD2(CLOrient3D):
 
         return np.sign(ij_signs)
 
-    def mult_smat_by_vec(self, v, sign_mat, pairs_map):
+    def _mult_smat_by_vec(self, v, sign_mat, pairs_map):
         """
         Multiplies the signs sync matrix by a vector.
         """
@@ -1555,7 +1558,7 @@ class CLSymmetryD2(CLOrient3D):
     ####################
 
     @staticmethod
-    def circ_seq(n1, n2, L):
+    def _circ_seq(n1, n2, L):
         """
         Make a circular sequence of integers between n1 and n2 modulo L.
 
@@ -1574,7 +1577,7 @@ class CLSymmetryD2(CLOrient3D):
         return seq
 
     @staticmethod
-    def saff_kuijlaars(N):
+    def _saff_kuijlaars(N):
         """
         Generates N vertices on the unit sphere that are approximately evenly distributed.
 
@@ -1605,7 +1608,7 @@ class CLSymmetryD2(CLOrient3D):
         return mesh
 
     @staticmethod
-    def mark_equators(sphere_grid, eq_filter_angle):
+    def _mark_equators(sphere_grid, eq_filter_angle):
         """
         :param sphere_grid: Nx3 array of vertices in cartesian coordinates.
         :param eq_filter_angle: Angular distance from equator to be marked as
@@ -1662,7 +1665,7 @@ class CLSymmetryD2(CLOrient3D):
         return eq_idx, eq_class
 
     @staticmethod
-    def generate_inplane_rots(sphere_grid, d_theta):
+    def _generate_inplane_rots(sphere_grid, d_theta):
         """
         This function takes projection directions (points on the 2-sphere) and
         generates rotation matrices in SO(3). The projection direction
@@ -1705,7 +1708,7 @@ class CLSymmetryD2(CLOrient3D):
 
         return inplane_rotated_grid
 
-    def generate_commonline_angles(
+    def _generate_commonline_angles(
         self,
         Ris,
         Rjs,
@@ -1782,7 +1785,7 @@ class CLSymmetryD2(CLOrient3D):
         return cl_angles, eq2eq_Rij_table
 
     @staticmethod
-    def generate_commonline_indices(cl_angles):
+    def _generate_commonline_indices(cl_angles):
         # TODO: This is not accounting for n_theta other than 360!
 
         # Flatten the stack
