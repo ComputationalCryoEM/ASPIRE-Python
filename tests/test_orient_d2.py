@@ -98,7 +98,10 @@ def orient_est(source):
 def test_estimate_rotations(orient_est):
     """
     This test runs through the complete D2 algorithm and compares the
-    estimated rotations to the ground truth rotations.
+    estimated rotations to the ground truth rotations. In particular,
+    we check that the estimates are close to the ground truth up to
+    a local rotation by a D2 symmetry group member, a global J-conjugation,
+    and a globally aligning rotation.
     """
     # Estimate rotations.
     orient_est.estimate_rotations()
@@ -170,7 +173,7 @@ def test_global_J_sync(orient_est):
     # Perform global J-synchronization and check that
     # Rijs_sync is equal to either Rijs or J_conjugate(Rijs).
     Rijs_sync = orient_est._global_J_sync(Rijs_conj)
-    need_to_conj_Rijs = ~np.allclose(Rijs_sync[inds][0], Rijs[inds][0])
+    need_to_conj_Rijs = not np.allclose(Rijs_sync[inds][0], Rijs[inds][0])
     if need_to_conj_Rijs:
         np.testing.assert_allclose(Rijs_sync, J_conjugate(Rijs))
     else:
