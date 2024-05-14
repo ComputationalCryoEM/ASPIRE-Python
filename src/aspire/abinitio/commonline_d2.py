@@ -72,6 +72,7 @@ class CLSymmetryD2(CLOrient3D):
         self._generate_gs()
         self.triplets = all_triplets(self.n_img)
         self.pairs, self.pairs_to_linear = all_pairs(self.n_img, return_map=True)
+        self.n_pairs = len(self.pairs)
 
     def estimate_rotations(self):
         """
@@ -128,7 +129,7 @@ class CLSymmetryD2(CLOrient3D):
         pf *= (
             np.sqrt(2) / 2
         )  # Magic number to match matlab pf. (root2 over 2) Remove after debug.
-        pf = pf[:, :, ::-1]  # also to match matlab
+        pf = pf[:, :, ::-1]  # also to match matlab. Can remove.
         self.pf_full = PolarFT.half_to_full(pf)
 
         # Pre-compute shifted pf's.
@@ -791,8 +792,6 @@ class CLSymmetryD2(CLOrient3D):
         :return: List of n-choose-3 indices in {0,1,2,3} indicating
             which J-configuration for each triplet of Rijs, i<j<k.
         """
-        self.triplets = all_triplets(self.n_img)
-        self.pairs, self.pairs_to_linear = all_pairs(self.n_img, return_map=True)
         J_list = np.zeros(len(self.triplets), dtype="int")
         R = Rijs
         trip_idx = 0
@@ -815,6 +814,7 @@ class CLSymmetryD2(CLOrient3D):
             final_votes[1] = self._compare_rots(Rij_J, Rjk_t, Rik)
             final_votes[2] = self._compare_rots(Rij, Rjk_t_J, Rik)
             final_votes[3] = self._compare_rots(Rij, Rjk_t, Rik_J)
+
             J_list[trip_idx] = np.argmin(final_votes)
             trip_idx += 1
 
@@ -839,6 +839,7 @@ class CLSymmetryD2(CLOrient3D):
 
         arr = arr.reshape((64, 9))
         arr = np.sum(arr**2, axis=1)
+
         m = np.sort(arr.flatten())
         vote = np.sum(m[:16])
 
@@ -864,8 +865,7 @@ class CLSymmetryD2(CLOrient3D):
         max_iters = 100
 
         # Initialize candidate eigenvectors
-        n_Rijs = len(self.pairs)
-        vec = randn(n_Rijs, seed=self.seed)
+        vec = randn(self.n_pairs, seed=self.seed)
         vec = vec / norm(vec)
         residual = 1
         itr = 0
@@ -1288,9 +1288,8 @@ class CLSymmetryD2(CLOrient3D):
         # of a computational speed up for two different computations performed
         # later (space considerations are of little concern since arrays are ~
         # o(N^2) which doesn't pose a constraint for inputs on the scale of 10^3-10^4.
-        n_pairs = len(self.pairs)
         c_mat_5d = np.zeros((self.n_img, self.n_img, 3, 3, 3), dtype=self.dtype)
-        c_mat_4d = np.zeros((n_pairs, 3, 3, 3), dtype=self.dtype)
+        c_mat_4d = np.zeros((self.n_pairs, 3, 3, 3), dtype=self.dtype)
         for i in range(self.n_img - 1):
             for j in range(i + 1, self.n_img):
                 ij = self.pairs_to_linear[i, j]
@@ -1358,9 +1357,9 @@ class CLSymmetryD2(CLOrient3D):
         # column are zero, the value zero is arbitrary, since these entries are
         # not used by the algorithm, and only exist for comfort (of storage and
         # access).
-        signs = np.zeros((3, n_pairs, self.n_img), dtype=self.dtype)
+        signs = np.zeros((3, self.n_pairs, self.n_img), dtype=self.dtype)
         for c in range(3):
-            for p in range(n_pairs):
+            for p in range(self.n_pairs):
                 i, j = self.pairs[p]
                 idx_mask = np.full(self.n_img, True)
                 idx_mask[[i, j]] = False
@@ -1446,7 +1445,7 @@ class CLSymmetryD2(CLOrient3D):
         # of S is <(v_i)k,(v_j)k>, where the rows and columns of S are indexed by
         # double indexes (i,j), 1<=i<j<=(N over 2).
         # TODO: maybe this can be done with a mask?
-        pairs_map = np.zeros((n_pairs, 2 * (self.n_img - 2)), dtype=int)
+        pairs_map = np.zeros((self.n_pairs, 2 * (self.n_img - 2)), dtype=int)
         for i in range(self.n_img):
             for j in range(i + 1, self.n_img):
                 ij = self.pairs_to_linear[i, j]
@@ -1459,7 +1458,7 @@ class CLSymmetryD2(CLOrient3D):
                     )
                 )
 
-        signs = np.zeros((3, n_pairs), dtype=self.dtype)
+        signs = np.zeros((3, self.n_pairs), dtype=self.dtype)
         s_out = np.zeros((3, 3), dtype=self.dtype)
 
         logger.info("Constructing and decomposing 3 sign synchroniztion matrices...")
@@ -1468,7 +1467,7 @@ class CLSymmetryD2(CLOrient3D):
         # (N over 2)x1 vectors by S.
         for c in range(3):
             # Prepare data for smat to act on vectors.
-            sign_mat = np.zeros((n_pairs, 2 * (self.n_img - 2)), dtype=int)
+            sign_mat = np.zeros((self.n_pairs, 2 * (self.n_img - 2)), dtype=int)
             for i in range(self.n_img - 1):
                 for j in range(i + 1, self.n_img):
                     ij = self.pairs_to_linear[i, j]
@@ -1485,7 +1484,7 @@ class CLSymmetryD2(CLOrient3D):
                     )
 
             smat = la.LinearOperator(
-                shape=(n_pairs, n_pairs),
+                shape=(self.n_pairs, self.n_pairs),
                 matvec=lambda v, s=sign_mat: self._mult_smat_by_vec(v, s, pairs_map),
                 rmatvec=lambda v, s=sign_mat: self._mult_smat_by_vec(v, s, pairs_map),
             )
