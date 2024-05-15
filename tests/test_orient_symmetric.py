@@ -435,10 +435,19 @@ def test_commonlines(n_img, L, order, dtype):
     assert within_1 > 0.90
 
 
-@pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_global_J_sync(dtype):
-    L = 16
-    n_img = 20
+@pytest.mark.parametrize(
+    "n_img, dtype",
+    [(3, np.float32), (3, np.float64), (20, np.float32), (20, np.float64)],
+)
+def test_global_J_sync(n_img, dtype):
+    """
+    For this test we build a set of relative rotations, Rijs, and randomly
+    J_conjugate them. We then test that J-synchronization is correct up to
+    conjugation of the entire set. We use n_img = 3 as the smallest possible
+    example to run the algorithm, which computes relative handedness over all
+    triplets of images.
+    """
+    L = 16  # test not dependent on L
     order = 3  # test not dependent on order
     _, orient_est = source_orientation_objs(n_img, L, order, dtype)
 
@@ -447,8 +456,10 @@ def test_global_J_sync(dtype):
 
     # J-conjugate some of these outer products (every other element).
     vijs_conj, viis_conj = vijs.copy(), viis.copy()
-    vijs_conj[::2] = J_conjugate(vijs_conj[::2])
-    viis_conj[::2] = J_conjugate(viis_conj[::2])
+    inds_ij = np.random.choice(len(vijs), size=len(vijs) // 2, replace=False)
+    inds_ii = np.random.choice(len(viis), size=len(viis) // 2, replace=False)
+    vijs_conj[inds_ij] = J_conjugate(vijs[inds_ij])
+    viis_conj[inds_ii] = J_conjugate(viis[inds_ii])
 
     # Synchronize vijs_conj and viis_conj.
     # Note: `_global_J_sync()` does not depend on cyclic order, so we can use
@@ -457,12 +468,13 @@ def test_global_J_sync(dtype):
 
     # Check that synchronized outer products equal original
     # up to J-conjugation of the entire set.
-    if (vijs[0] == vijs_sync[0]).all():
-        assert np.allclose(vijs, vijs_sync)
-        assert np.allclose(viis, viis_sync)
-    else:
+    need_to_conj_vijs = not np.allclose(vijs_sync[inds_ij][0], vijs[inds_ij][0])
+    if need_to_conj_vijs:
         assert np.allclose(vijs, J_conjugate(vijs_sync))
         assert np.allclose(viis, J_conjugate(viis_sync))
+    else:
+        assert np.allclose(vijs, vijs_sync)
+        assert np.allclose(viis, viis_sync)
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
