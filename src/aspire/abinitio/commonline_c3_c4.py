@@ -785,7 +785,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             # Update multiplication of signs times vec
             new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
             new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
-            new_vec[ik] += s_ij_jk * vec[ij] + s_ik_jk * vec[jk]
+            new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
 
         return new_vec
 
