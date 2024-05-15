@@ -441,11 +441,11 @@ def test_commonlines(n_img, L, order, dtype):
 )
 def test_global_J_sync(n_img, dtype):
     """
-    For this test we build a set of relative rotations, Rijs, and randomly
-    J_conjugate them. We then test that J-synchronization is correct up to
-    conjugation of the entire set. We use n_img = 3 as the smallest possible
-    example to run the algorithm, which computes relative handedness over all
-    triplets of images.
+    For this test we build a set of 3rd row outer products, vijs and viis, and
+    randomly J_conjugate them. We then test that J-synchronization is correct up
+    to conjugation of the entire set. To expose bugs in the implementation, we use
+    n_img = 3 as the smallest possible example to run the algorithm, which computes
+    relative handedness over all triplets of images (in this case 1 triplet).
     """
     L = 16  # test not dependent on L
     order = 3  # test not dependent on order
