@@ -23,7 +23,12 @@ L = [
     9,
 ]
 
-PRECONDITIONERS = ["none", None, "circulant"]
+PRECONDITIONERS = [
+    None,
+    "circulant",
+    pytest.param("none", marks=pytest.mark.expensive),
+    pytest.param("", marks=pytest.mark.expensive),
+]
 
 # Fixtures.
 
