@@ -191,7 +191,7 @@ class WeightedVolumesEstimator(Estimator):
 
         return res
 
-    def conj_grad(self, b_coef, tol=1e-5, regularizer=0):
+    def conj_grad(self, b_coef, x0=None, tol=1e-5, regularizer=0):
         count = b_coef.shape[-1]  # b_coef should be (r, basis.count)
         kernel = self.kernel
 
@@ -242,12 +242,13 @@ class WeightedVolumesEstimator(Estimator):
                 # Construct checkpoint path
                 path = f"{self.checkpoint_prefix}_iter{self.i:04d}.npy"
                 # Write out the current solution
-                np.save(path, xk.reshape(self.r, self.basis.count))
+                np.save(path, xk)
                 logger.info(f"Checkpoint saved to `{path}`")
 
         x, info = cg(
             operator,
             b_coef.flatten(),
+            x0=x0,
             M=M,
             callback=cb,
             tol=tol,
