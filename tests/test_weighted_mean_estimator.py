@@ -23,7 +23,7 @@ L = [
     9,
 ]
 
-PRECONDITIONERS = ["none", None]
+PRECONDITIONERS = ["none", None, "circulant"]
 
 # Fixtures.
 
