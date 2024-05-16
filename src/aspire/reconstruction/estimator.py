@@ -56,6 +56,13 @@ class Estimator:
         self.basis = basis
         self.dtype = self.src.dtype
         self.batch_size = batch_size
+        if not preconditioner or preconditioner.lower() == "none":
+            # Resolve None and string nones to None
+            preconditioner = None
+        elif preconditioner not in ["circulant"]:
+            raise ValueError(
+                f"Supplied preconditioner {preconditioner} is not supported."
+            )
         self.preconditioner = preconditioner
         self.boost = boost
 
