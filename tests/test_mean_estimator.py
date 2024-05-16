@@ -133,10 +133,10 @@ def test_checkpoint(sim, basis, estimator):
             _ = _estimator.estimate()
 
         # Load the checkpoint coefficients while tmp_input_dir exists.
-        b_chk = np.load(f"{prefix}_iter{test_iter:04d}.npy")
+        x_chk = np.load(f"{prefix}_iter{test_iter:04d}.npy")
 
         # Restart estimate from checkpoint
-        _ = estimator.estimate(b_coef=b_chk)
+        _ = estimator.estimate(x0=x_chk)
 
 
 def test_checkpoint_args(sim, basis):
