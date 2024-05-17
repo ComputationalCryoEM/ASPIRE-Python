@@ -230,12 +230,13 @@ def test_sync_colors(orient_est):
             Rijs[p, k] = rots[i].T @ (g * rots[j])
 
     # Perform color synchronization.
-    colors, Rijs_rows = orient_est._sync_colors(Rijs)
-
     # Rijs_rows is shape (n_pairs, 3, 3, 3) where Rijs_rows[ij, m] corresponds
     # to the outer product vij_m = rots[i, m].T @ rots[j, m] where m is the m'th row
     # of the rotations matrices Ri and Rj. `colors` partitions the set of Rijs_rows
     # such that the indices of `colors` corresponds to the row index m.
+    colors, Rijs_rows = orient_est._sync_colors(Rijs)
+
+    # Compute ground truth m'th row outer products.
     vijs = np.zeros((orient_est.n_pairs, 3, 3, 3), dtype=orient_est.dtype)
     for p, (i, j) in enumerate(orient_est.pairs):
         for m in range(3):
@@ -270,6 +271,37 @@ def test_sync_colors(orient_est):
     )
     np.testing.assert_allclose(
         vijs, Rijs_rows_synced, atol=utest_tolerance(orient_est.dtype)
+    )
+
+
+def test_sync_signs(orient_est):
+    """
+    Sign synchronization consumes a set of m'th row outer products along with
+    a color synchronizing vector and returns a set of rotation matrices
+    that are the result of synchronizing the signs of the rows of the outer
+    products and factoring the outer products to form the rows of the rotations.
+
+    In this test we provide a color-synchronized set of m'th row outer products
+    with a corresponding color vector and test that the output rotations
+    equivalent to the ground truth rotations up to a global alignment.
+    """
+    rots = orient_est.src.rotations
+
+    # Compute ground truth m'th row outer products.
+    vijs = np.zeros((orient_est.n_pairs, 3, 3, 3), dtype=orient_est.dtype)
+    for p, (i, j) in enumerate(orient_est.pairs):
+        for m in range(3):
+            vijs[p, m] = np.outer(rots[i][m], rots[j][m])
+
+    # We will pass in m'th row outer products that are color synchronized,
+    # ie. colors = [0, 1, 2, 0, 1, 2, ...]
+    perm = np.array([0, 2, 1])
+    colors = np.tile(perm, orient_est.n_pairs)
+
+    # Estimate rotations and check against ground truth.
+    rots_est = orient_est._sync_signs(vijs, colors)
+    mean_aligned_angular_distance(
+        rots, rots_est, degree_tol=utest_tolerance(orient_est.dtype)
     )
 
 
