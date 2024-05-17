@@ -3,7 +3,13 @@ import pytest
 
 from aspire.abinitio import CLSymmetryD2
 from aspire.source import Simulation
-from aspire.utils import J_conjugate, all_pairs, mean_aligned_angular_distance
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    all_pairs,
+    mean_aligned_angular_distance,
+    utest_tolerance,
+)
 from aspire.volume import DnSymmetricVolume, DnSymmetryGroup
 
 ##############
@@ -138,7 +144,9 @@ def test_global_J_sync(orient_est):
 
     # J-conjugate a random set of Rijs.
     Rijs_conj = Rijs.copy()
-    inds = np.random.choice(orient_est.n_pairs, size=15, replace=False)
+    inds = np.random.choice(
+        orient_est.n_pairs, size=orient_est.n_pairs // 2, replace=False
+    )
     Rijs_conj[inds] = J_conjugate(Rijs[inds])
 
     # Create J-configuration conditions for the triplet Rij, Rjk, Rik.
@@ -178,6 +186,92 @@ def test_global_J_sync(orient_est):
         np.testing.assert_allclose(Rijs_sync, J_conjugate(Rijs))
     else:
         np.testing.assert_allclose(Rijs_sync, Rijs)
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_global_J_sync_single_triplet(dtype):
+    """
+    This exercises the J-synchronization algorithm using the smallest
+    possible problem size, a single triplets of relative rotations Rijs.
+    """
+    # Generate 3 image source and orientation object.
+    src = Simulation(n=3, L=10, dtype=dtype, seed=SEED)
+    orient_est = CLSymmetryD2(src, n_theta=360, seed=SEED)
+
+    # Grab set of rotations and generate a set of relative rotations, Rijs.
+    rots = orient_est.src.rotations
+    Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
+    for p, (i, j) in enumerate(orient_est.pairs):
+        for k, g in enumerate(orient_est.gs):
+            k = (k + p) % 4  # Mix up the ordering of symmetric Rijs
+            Rijs[p, k] = rots[i].T @ (g * rots[j])
+
+    # J-conjugate a random Rij.
+    Rijs_conj = Rijs.copy()
+    inds = np.random.choice(orient_est.n_pairs, size=1, replace=False)
+    Rijs_conj[inds] = J_conjugate(Rijs[inds])
+
+    # Perform global J-synchronization and check that
+    # Rijs_sync is equal to either Rijs or J_conjugate(Rijs).
+    Rijs_sync = orient_est._global_J_sync(Rijs_conj)
+    need_to_conj_Rijs = not np.allclose(Rijs_sync[inds][0], Rijs[inds][0])
+    if need_to_conj_Rijs:
+        np.testing.assert_allclose(Rijs_sync, J_conjugate(Rijs))
+    else:
+        np.testing.assert_allclose(Rijs_sync, Rijs)
+
+
+def test_sync_colors(orient_est):
+    # Grab set of rotations and generate a set of relative rotations, Rijs.
+    rots = orient_est.src.rotations
+    Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
+    for p, (i, j) in enumerate(orient_est.pairs):
+        for k, g in enumerate(orient_est.gs):
+            k = (k + p) % 4  # Mix up the ordering of symmetric Rijs
+            Rijs[p, k] = rots[i].T @ (g * rots[j])
+
+    # Perform color synchronization.
+    colors, Rijs_rows = orient_est._sync_colors(Rijs)
+
+    # Rijs_rows is shape (n_pairs, 3, 3, 3) where Rijs_rows[ij, m] corresponds
+    # to the outer product vij_m = rots[i, m].T @ rots[j, m] where m is the m'th row
+    # of the rotations matrices Ri and Rj. `colors` partitions the set of Rijs_rows
+    # such that the indices of `colors` corresponds to the row index m.
+    vijs = np.zeros((orient_est.n_pairs, 3, 3, 3), dtype=orient_est.dtype)
+    for p, (i, j) in enumerate(orient_est.pairs):
+        for m in range(3):
+            vijs[p, m] = np.outer(rots[i][m], rots[j][m])
+
+    # Reshape `colors` to shape (n_pairs, 3) and use to index Rijs_rows into the
+    # correctly order 3rd row outer products vijs.
+    colors = colors.reshape(orient_est.n_pairs, 3)
+
+    # `colors` is an arbitrary permutation (but globally consistent), and we know
+    # that colors[0] should correspond to the ordering [0, 1, 2] due to the construction
+    # of Rijs[0] using the symmetric rotations g0, g1, g2, g3 in non-permuted order.
+    # So we sort the columns such that colors[0] = [0,1,2].
+
+    # Create a mapping array
+    perm = colors[0]
+    mapping = np.zeros_like(perm)
+    mapping[perm] = np.arange(3)
+
+    # Apply this mapping to all rows of the colors array
+    colors_mapped = mapping[colors]
+
+    # Synchronize Rijs_rows according to the color map.
+    row_indices = np.arange(orient_est.n_pairs)[:, None]
+    Rijs_rows_synced = Rijs_rows[row_indices, colors_mapped]
+
+    # Rijs_rows_synced should match the ground truth vijs up to the sign of each row.
+    # So we multiply by the sign of the first column of the last two axes to sync signs.
+    vijs = vijs * np.sign(vijs[..., :, 0])[..., np.newaxis]
+    Rijs_rows_synced = (
+        Rijs_rows_synced * np.sign(Rijs_rows_synced[..., :, 0])[..., np.newaxis]
+    )
+    np.testing.assert_allclose(
+        vijs, Rijs_rows_synced, atol=utest_tolerance(orient_est.dtype)
+    )
 
 
 ####################
