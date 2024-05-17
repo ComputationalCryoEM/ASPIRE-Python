@@ -5,7 +5,6 @@ from aspire.abinitio import CLSymmetryD2
 from aspire.source import Simulation
 from aspire.utils import (
     J_conjugate,
-    Rotation,
     all_pairs,
     mean_aligned_angular_distance,
     utest_tolerance,
