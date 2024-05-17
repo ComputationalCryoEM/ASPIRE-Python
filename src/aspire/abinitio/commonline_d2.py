@@ -126,9 +126,7 @@ class CLSymmetryD2(CLOrient3D):
         # Reconstruct full polar Fourier for use in correlation.
         pf[:, :, 0] = 0  # Matching matlab convention to zero out the lowest frequency.
         pf /= norm(pf, axis=2)[..., np.newaxis]  # Normalize each ray.
-        pf *= (
-            np.sqrt(2) / 2
-        )  # Magic number to match matlab pf. (root2 over 2) Remove after debug.
+        pf *= np.sqrt(2) / 2  # Magic number to match matlab pf. Remove after debug.
         pf = pf[:, :, ::-1]  # also to match matlab. Can remove.
         self.pf_full = PolarFT.half_to_full(pf)
 
@@ -977,7 +975,11 @@ class CLSymmetryD2(CLOrient3D):
         color_mat = la.LinearOperator(
             (3 * n_pairs,) * 2, lambda v: self._mult_cmat_by_vec(color_perms, v)
         )
-        vals, colors = la.eigs(color_mat, k=3, which="LR")
+        v0 = randn(
+            3 * n_pairs, seed=self.seed
+        )  # Seed eigs initial vector for iterative method
+        v0 = v0 / norm(v0)
+        vals, colors = la.eigs(color_mat, k=3, which="LM", v0=v0)  # Changed from "LR"
         vals = np.real(vals)
         colors = np.real(colors)
         colors = np.sign(colors[0]) * colors  # Stable eigs
@@ -1269,7 +1271,7 @@ class CLSymmetryD2(CLOrient3D):
                 else:
                     colors[i] = p_i_sqr
             colors = colors.flatten()
-            colors = 2 - colors  # For debug. remove
+            # colors = 2 - colors  # For debug. remove
         return colors, best_unmix
 
     #####################
@@ -1283,7 +1285,7 @@ class CLSymmetryD2(CLOrient3D):
         and the matrices Ri are assembled.
         """
         # Partition the union of tuples {0.5*(Ri^TRj+Ri^TgkRj), k=1:3} according
-        # to the color partition established in color synchroniztion procedure.
+        # to the color partition established in color synchronization procedure.
         # The partition is stored in two different arrays each with the purpose
         # of a computational speed up for two different computations performed
         # later (space considerations are of little concern since arrays are ~
