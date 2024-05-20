@@ -5,6 +5,7 @@ from aspire.abinitio import CLSymmetryD2
 from aspire.source import Simulation
 from aspire.utils import (
     J_conjugate,
+    Rotation,
     all_pairs,
     mean_aligned_angular_distance,
     utest_tolerance,
@@ -27,22 +28,22 @@ OFFSETS = [0, pytest.param(None, marks=pytest.mark.expensive)]
 SEED = 3
 
 
-@pytest.fixture(params=DTYPE, ids=lambda x: f"dtype={x}")
+@pytest.fixture(params=DTYPE, ids=lambda x: f"dtype={x}", scope="module")
 def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=RESOLUTION, ids=lambda x: f"resolution={x}")
+@pytest.fixture(params=RESOLUTION, ids=lambda x: f"resolution={x}", scope="module")
 def resolution(request):
     return request.param
 
 
-@pytest.fixture(params=N_IMG, ids=lambda x: f"n images={x}")
+@pytest.fixture(params=N_IMG, ids=lambda x: f"n images={x}", scope="module")
 def n_img(request):
     return request.param
 
 
-@pytest.fixture(params=OFFSETS, ids=lambda x: f"offsets={x}")
+@pytest.fixture(params=OFFSETS, ids=lambda x: f"offsets={x}", scope="module")
 def offsets(request):
     return request.param
 
@@ -52,7 +53,7 @@ def offsets(request):
 ############
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def source(n_img, resolution, dtype, offsets):
     vol = DnSymmetricVolume(
         L=resolution, order=2, C=1, K=100, dtype=dtype, seed=SEED
@@ -70,29 +71,9 @@ def source(n_img, resolution, dtype, offsets):
     return src
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def orient_est(source):
-    # Search for common lines over less shifts for 0 offsets.
-    max_shift = 0
-    shift_step = 1
-    if source.offsets.all() != 0:
-        max_shift = 0.2
-        shift_step = 0.1  # Reduce shift steps for non-integer offsets of Simulation.
-
-    orient_est = CLSymmetryD2(
-        source,
-        max_shift=max_shift,
-        shift_step=shift_step,
-        n_theta=360,
-        n_rad=source.L,
-        grid_res=350,  # Tuned for speed
-        inplane_res=15,  # Tuned for speed
-        eq_min_dist=10,  # Tuned for speed
-        epsilon=0.001,
-        seed=SEED,
-    )
-
-    return orient_est
+    return build_CL_from_source(source)
 
 
 #########
@@ -124,6 +105,63 @@ def test_estimate_rotations(orient_est):
     if orient_est.src.offsets.all() != 0:
         deg_tol = 7
     mean_aligned_angular_distance(rots_est, rots_gt_sync, degree_tol=deg_tol)
+
+
+def test_scl_scores(orient_est):
+
+    # Generate lookup data and extract rotations from the candidate `sphere_grid`.
+    orient_est._generate_lookup_data()
+    cand_rots = orient_est.inplane_rotated_grid1
+    non_eq_idx = int(
+        np.argwhere(orient_est.eq_class1 == 0)[0]
+    )  # Take first non equator viewing direction
+    rots = cand_rots[
+        non_eq_idx, :10
+    ]  # Take the first 10 inplane rots from non_eq viewing direction.
+    angles = Rotation(rots).angles
+
+    # Create a Simulation using those first 10 candidate rotations.
+    vol = DnSymmetricVolume(
+        L=orient_est.src.L, order=2, C=1, K=100, dtype=orient_est.dtype, seed=SEED
+    ).generate()
+
+    src = Simulation(
+        n=orient_est.src.n,
+        L=orient_est.src.L,
+        vols=vol,
+        angles=angles,
+        offsets=orient_est.src.offsets,
+        amplitudes=1,
+        seed=SEED,
+    )
+
+    # Initialize CL instance with new source.
+    CL = build_CL_from_source(src)
+
+    # Generate lookup data and compute scl scores.
+    # Pre-compute phase-shifted polar Fourier.
+    CL._compute_shifted_pf()
+
+    # Generate lookup data
+    CL._generate_lookup_data()
+    CL._generate_scl_lookup_data()
+
+    # Compute self-commonline scores.
+    CL._compute_scl_scores()
+
+    # CL.scls_scores is shape (n_img, n_cand_rots). Since we used the first
+    # 10 candidate rotations of the first non-equator viewing direction as our
+    # Simulation rotations, the maximum correlation for image i should occur at
+    # candidate rotation index (non_eq_idx * CL.n_inplane_rots + i).
+    max_corr_idx = np.argmax(CL.scls_scores, axis=1)
+    gt_idx = CL.n_inplane_rots * non_eq_idx + np.arange(10)
+
+    # Check that self-commonline indices match ground truth.
+    n_match = np.sum(max_corr_idx == gt_idx)
+    match_tol = 0.99  # match at least 99%.
+    if not (src.offsets == 0.0).all():
+        match_tol = 0.89  # match at least 89% with offsets.
+    np.testing.assert_array_less(match_tol, n_match / src.n)
 
 
 def test_global_J_sync(orient_est):
@@ -295,7 +333,7 @@ def test_sync_signs(orient_est):
 
     # We will pass in m'th row outer products that are color synchronized,
     # ie. colors = [0, 1, 2, 0, 1, 2, ...]
-    perm = np.array([0, 2, 1])
+    perm = np.array([0, 1, 2])
     colors = np.tile(perm, orient_est.n_pairs)
 
     # Estimate rotations and check against ground truth.
@@ -374,3 +412,26 @@ def g_sync_d2(rots, rots_gt):
         rots_gt_sync[i] = rots_symm[power_g_Ri] @ rot_gt
 
     return rots_gt_sync
+
+
+def build_CL_from_source(source):
+    # Search for common lines over less shifts for 0 offsets.
+    max_shift = 0
+    shift_step = 1
+    if source.offsets.all() != 0:
+        max_shift = 0.2
+        shift_step = 0.1  # Reduce shift steps for non-integer offsets of Simulation.
+
+    orient_est = CLSymmetryD2(
+        source,
+        max_shift=max_shift,
+        shift_step=shift_step,
+        n_theta=360,
+        n_rad=source.L,
+        grid_res=350,  # Tuned for speed
+        inplane_res=15,  # Tuned for speed
+        eq_min_dist=10,  # Tuned for speed
+        epsilon=0.001,
+        seed=SEED,
+    )
+    return orient_est

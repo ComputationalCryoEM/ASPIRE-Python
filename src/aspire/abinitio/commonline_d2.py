@@ -669,6 +669,7 @@ class CLSymmetryD2(CLOrient3D):
         pbar.close()
 
         # Get estimated relative viewing directions.
+        self.corrs_idx = corrs_idx  # Used in unit test
         self.Rijs_est = self._get_Rijs_from_lin_idx(corrs_idx)
 
     def _get_Rijs_from_lin_idx(self, lin_idx):
