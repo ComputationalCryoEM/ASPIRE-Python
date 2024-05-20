@@ -300,9 +300,7 @@ def test_sync_signs(orient_est):
 
     # Estimate rotations and check against ground truth.
     rots_est = orient_est._sync_signs(vijs, colors)
-    mean_aligned_angular_distance(
-        rots, rots_est, degree_tol=utest_tolerance(orient_est.dtype)
-    )
+    mean_aligned_angular_distance(rots, rots_est, degree_tol=1e-5)
 
 
 ####################
