@@ -108,27 +108,25 @@ def test_estimate_rotations(orient_est):
 
 
 def test_scl_scores(orient_est):
-
+    """
+    This test uses a Simulation generated with rotations taken directly
+    from the D2 algorithm `sphere_grid` of candidate rotations. It is
+    these candidates which should produce maximum correlation scores since
+    they match perfectly the Simulation rotations.
+    """
     # Generate lookup data and extract rotations from the candidate `sphere_grid`.
+    # In this case, we take first 10 candidates from a non-equator viewing direction.
     orient_est._generate_lookup_data()
     cand_rots = orient_est.inplane_rotated_grid1
-    non_eq_idx = int(
-        np.argwhere(orient_est.eq_class1 == 0)[0]
-    )  # Take first non equator viewing direction
-    rots = cand_rots[
-        non_eq_idx, :10
-    ]  # Take the first 10 inplane rots from non_eq viewing direction.
+    non_eq_idx = int(np.argwhere(orient_est.eq_class1 == 0)[0])
+    rots = cand_rots[non_eq_idx, :10]
     angles = Rotation(rots).angles
 
     # Create a Simulation using those first 10 candidate rotations.
-    vol = DnSymmetricVolume(
-        L=orient_est.src.L, order=2, C=1, K=100, dtype=orient_est.dtype, seed=SEED
-    ).generate()
-
     src = Simulation(
         n=orient_est.src.n,
         L=orient_est.src.L,
-        vols=vol,
+        vols=orient_est.src.vols,
         angles=angles,
         offsets=orient_est.src.offsets,
         amplitudes=1,
@@ -138,11 +136,8 @@ def test_scl_scores(orient_est):
     # Initialize CL instance with new source.
     CL = build_CL_from_source(src)
 
-    # Generate lookup data and compute scl scores.
-    # Pre-compute phase-shifted polar Fourier.
+    # Generate lookup data.
     CL._compute_shifted_pf()
-
-    # Generate lookup data
     CL._generate_lookup_data()
     CL._generate_scl_lookup_data()
 
@@ -154,7 +149,7 @@ def test_scl_scores(orient_est):
     # Simulation rotations, the maximum correlation for image i should occur at
     # candidate rotation index (non_eq_idx * CL.n_inplane_rots + i).
     max_corr_idx = np.argmax(CL.scls_scores, axis=1)
-    gt_idx = CL.n_inplane_rots * non_eq_idx + np.arange(10)
+    gt_idx = non_eq_idx * CL.n_inplane_rots + np.arange(10)
 
     # Check that self-commonline indices match ground truth.
     n_match = np.sum(max_corr_idx == gt_idx)
@@ -176,7 +171,7 @@ def test_global_J_sync(orient_est):
     Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
     for p, (i, j) in enumerate(orient_est.pairs):
         for k, g in enumerate(orient_est.gs):
-            k = (k + p) % 4  # Mix up the ordering of symmetric Rijs
+            k = (k + p) % 4  # Mix up the ordering of Rijs
             Rijs[p, k] = rots[i].T @ (g * rots[j])
 
     # J-conjugate a random set of Rijs.
@@ -240,7 +235,7 @@ def test_global_J_sync_single_triplet(dtype):
     Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
     for p, (i, j) in enumerate(orient_est.pairs):
         for k, g in enumerate(orient_est.gs):
-            k = (k + p) % 4  # Mix up the ordering of symmetric Rijs
+            k = (k + p) % 4  # Mix up the ordering of Rijs
             Rijs[p, k] = rots[i].T @ (g * rots[j])
 
     # J-conjugate a random Rij.
@@ -264,7 +259,7 @@ def test_sync_colors(orient_est):
     Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
     for p, (i, j) in enumerate(orient_est.pairs):
         for k, g in enumerate(orient_est.gs):
-            k = (k + p) % 4  # Mix up the ordering of symmetric Rijs
+            k = (k + p) % 4  # Mix up the ordering of Rijs
             Rijs[p, k] = rots[i].T @ (g * rots[j])
 
     # Perform color synchronization.
@@ -303,10 +298,8 @@ def test_sync_colors(orient_est):
 
     # Rijs_rows_synced should match the ground truth vijs up to the sign of each row.
     # So we multiply by the sign of the first column of the last two axes to sync signs.
-    vijs = vijs * np.sign(vijs[..., :, 0])[..., np.newaxis]
-    Rijs_rows_synced = (
-        Rijs_rows_synced * np.sign(Rijs_rows_synced[..., :, 0])[..., np.newaxis]
-    )
+    vijs = vijs * np.sign(vijs[..., 0])[..., None]
+    Rijs_rows_synced = Rijs_rows_synced * np.sign(Rijs_rows_synced[..., 0])[..., None]
     np.testing.assert_allclose(
         vijs, Rijs_rows_synced, atol=utest_tolerance(orient_est.dtype)
     )
@@ -420,16 +413,16 @@ def build_CL_from_source(source):
     shift_step = 1
     if source.offsets.all() != 0:
         max_shift = 0.2
-        shift_step = 0.1  # Reduce shift steps for non-integer offsets of Simulation.
+        shift_step = 0.02  # Reduce shift steps for non-integer offsets of Simulation.
 
     orient_est = CLSymmetryD2(
         source,
         max_shift=max_shift,
         shift_step=shift_step,
-        n_theta=360,
+        n_theta=180,
         n_rad=source.L,
         grid_res=350,  # Tuned for speed
-        inplane_res=15,  # Tuned for speed
+        inplane_res=12,  # Tuned for speed
         eq_min_dist=10,  # Tuned for speed
         epsilon=0.001,
         seed=SEED,

@@ -297,7 +297,6 @@ class CLSymmetryD2(CLOrient3D):
         :param eq_idx: Equator index mask for Ris.
         :param eq_class: Equator classification for Ris.
         """
-        L = 360  # TODO: Maybe this should be self.n_theta
 
         # For each candidate rotation Ri we generate the set of 3 self-commonlines.
         scl_angles = np.zeros((*Ris.shape[:2], 3, 2), dtype=Ris.dtype)
@@ -370,13 +369,15 @@ class CLSymmetryD2(CLOrient3D):
             + scl_angles[eq_class > 0] * ~p[:, :, None, None]
         )
 
-        # Convert angles from radians to degrees (indices).
-        scl_angles = np.round(scl_angles * 180 / np.pi) % L
-
-        return scl_angles
+        # Convert from angles [0,2*pi) to degrees [0, 360).
+        return np.round(scl_angles * 180 / np.pi) % 360
 
     def _generate_scl_indices(self, scl_angles, eq_class):
-        L = 360
+        L = self.n_theta
+
+        # Convert from angles to indices.
+        scl_indices, _ = self._generate_commonline_indices(scl_angles)
+        scl_angles = np.mod(np.round(scl_angles / (2 * np.pi) * L), L).astype(int)
 
         # Create candidate common line linear indices lists for equators.
         # As indicated above for equator candidate, for each self common line we
@@ -399,10 +400,15 @@ class CLSymmetryD2(CLOrient3D):
                 idx1 = self._circ_seq(scl_angles[i, j, 0, 0], scl_angles[i, j, 1, 0], L)
                 idx2 = self._circ_seq(scl_angles[i, j, 0, 1], scl_angles[i, j, 1, 1], L)
 
+                # Ensure idx1 and idx2 have same number of elements.
+                # Might be off by one due to n_theta discretization.
+                end = np.minimum(len(idx1), len(idx2))
+                idx1, idx2 = idx1[:end], idx2[:end]
+
                 # Adjust so idx1 is in [0, 180) range.
-                geq_180 = idx1 >= 180
-                idx1[geq_180] = (idx1[geq_180] - L // 2) % (L // 2)
-                idx2[geq_180] = (idx2[geq_180] + L // 2) % L
+                is_geq_than_pi = idx1 >= L // 2
+                idx1[is_geq_than_pi] = (idx1[is_geq_than_pi] - L // 2) % (L // 2)
+                idx2[is_geq_than_pi] = (idx2[is_geq_than_pi] + L // 2) % L
 
                 # register indices in list.
                 eq_lin_idx_lists[0, count_eq, j] = np.ravel_multi_index(
@@ -410,8 +416,6 @@ class CLSymmetryD2(CLOrient3D):
                 )
                 eq_lin_idx_lists[1, count_eq, j] = idx1
             count_eq += 1
-
-        scl_indices, _ = self._generate_commonline_indices(scl_angles)
 
         return scl_indices, eq_lin_idx_lists
 
@@ -543,10 +547,10 @@ class CLSymmetryD2(CLOrient3D):
 
     def _all_eq_measures(self, corrs):
         """
-        Compute a measure of how much an image from data is close to be an equator.
+        Compute a measure of how much an image from data is close to an equator.
         """
         # First compute the eq measure (corrs(scl-k,scl+k) for k=1:90)
-        # An eqautor image of a D2 molecule has the following property: If t_i is
+        # An equator image of a D2 molecule has the following property: If t_i is
         # the angle of one of the rays of the self common line then all the pairs of
         # rays of the form (t_i-k,t_i+k) for k=1:90 are identical. For each t_i we
         # average over correlations between the lines (t_i-k,t_i+k) for k=1:90
@@ -554,24 +558,28 @@ class CLSymmetryD2(CLOrient3D):
         # with angle t_i is a self common line.
         # (This first loop can be done once outside this function and then pass
         # idx as an argument).
-        idx = np.zeros((180, 90, 2))
-        idx_1 = np.mod(np.vstack((-np.arange(1, 91), np.arange(1, 91))), 360)
+        L = self.n_theta
+        idx = np.zeros((L // 2, L // 4, 2))
+        idx_1 = np.mod(
+            np.vstack((-np.arange(1, L // 4 + 1), np.arange(1, L // 4 + 1))), L
+        )
         idx[0, :, :] = idx_1.T
-        for k in range(1, 180):
-            idx[k, :, :] = np.mod(idx_1.T + k, 360)
-        idx = np.mod(idx, 360)
+        for k in range(1, L // 2):
+            idx[k, :, :] = np.mod(idx_1.T + k, L)
+        idx = np.mod(idx, L)
 
+        # Convert to Fourier ray indices.
         idx_1 = idx[:, :, 0].flatten()
         idx_2 = idx[:, :, 1].flatten()
 
         # Make all Ri coordinates < 180 and compute linear indices for corrrelations
-        bigger_than_180 = idx_1 >= 180
-        idx_1[bigger_than_180] = idx_1[bigger_than_180] - 180
-        idx_2[bigger_than_180] = (idx_2[bigger_than_180] + 180) % 360
+        is_geq_than_pi = idx_1 >= L // 2
+        idx_1[is_geq_than_pi] = idx_1[is_geq_than_pi] - (L // 2)
+        idx_2[is_geq_than_pi] = (idx_2[is_geq_than_pi] + (L // 2)) % L
 
         # Compute correlations.
         eq_corrs = corrs[idx_1.astype(int), idx_2.astype(int)]
-        eq_corrs = eq_corrs.reshape(180, 90)
+        eq_corrs = eq_corrs.reshape(L // 2, L // 4)
         corrs_mean = np.mean(eq_corrs, axis=1)
 
         # Now compute correlations for normals to scls.
@@ -581,24 +589,24 @@ class CLSymmetryD2(CLOrient3D):
         # between one Fourier ray of the normal to a self common line candidate t_i
         # with its anti-podal as an additional way to measure if the image is an
         # equator and t_i+0.5*pi is the normal to its self common line.
-        r = 2
+        r = (2 * L) // 360
 
-        normal_2_scl_idx = np.zeros((180, 2 * r + 1))
-        normal_2_scl_idx_1 = np.mod(180 - np.arange(90 - r, 90 + r + 1), 360)
+        normal_2_scl_idx = np.zeros((L // 2, 2 * r + 1))
+        normal_2_scl_idx_1 = np.mod(L // 2 - np.arange(L // 4 - r, L // 4 + r + 1), L)
         normal_2_scl_idx[0, :] = normal_2_scl_idx_1
-        for k in range(1, 180):
-            normal_2_scl_idx[k, :] = np.mod(normal_2_scl_idx_1 + k, 360)
+        for k in range(1, L // 2):
+            normal_2_scl_idx[k, :] = np.mod(normal_2_scl_idx_1 + k, L)
 
         # Make all Ri coordinates <=180 and compute linear indices for corrrelations
-        bigger_than_180 = normal_2_scl_idx >= 180
-        normal_2_scl_idx[bigger_than_180] = normal_2_scl_idx[bigger_than_180] - 180
+        is_geq_than_pi = normal_2_scl_idx >= L // 2
+        normal_2_scl_idx[is_geq_than_pi] = normal_2_scl_idx[is_geq_than_pi] - (L // 2)
 
         # Compute correlations for normals.
         normal_2_scl_idx = normal_2_scl_idx.flatten()
         normal_corrs = corrs[
-            normal_2_scl_idx.astype(int), normal_2_scl_idx.astype(int) + 180
+            normal_2_scl_idx.astype(int), normal_2_scl_idx.astype(int) + (L // 2)
         ]
-        normal_corrs = normal_corrs.reshape(180, 2 * r + 1)
+        normal_corrs = normal_corrs.reshape(L // 2, 2 * r + 1)
         normal_corrs_max = np.max(normal_corrs, axis=1)
 
         return corrs_mean * normal_corrs_max
@@ -612,6 +620,8 @@ class CLSymmetryD2(CLOrient3D):
         Run common lines Maximum likelihood procedure for a D2 molecule, to find
         the set of rotations Ri^TgkRj, k=1,2,3,4 for each pair of images i and j.
         """
+        L = self.n_theta
+
         # Map the self common line scores of each 2 candidate rotations R_i,R_j to
         # the respective relative rotation candidate R_i^TR_j.
         n_lookup_1 = len(self.scl_idx_1) // 3
@@ -640,15 +650,11 @@ class CLSymmetryD2(CLOrient3D):
 
                 # Compute maximum correlation over all shifts.
                 corrs = 2 * np.real(pf_i @ np.conj(pf_j).T)
-                corrs = np.reshape(
-                    corrs, (self.n_shifts, self.n_theta // 2, self.n_theta)
-                )
+                corrs = np.reshape(corrs, (self.n_shifts, L // 2, L))
                 corrs = np.max(corrs, axis=0)
 
                 # Take the product over symmetrically induced candidates. Eq. 4.5 in paper.
-                cl_idx = np.unravel_index(
-                    self.cl_idx, (self.n_theta // 2, self.n_theta)
-                )
+                cl_idx = np.unravel_index(self.cl_idx, (L // 2, L))
 
                 prod_corrs = corrs[cl_idx]
                 prod_corrs = prod_corrs.reshape(len(prod_corrs) // 4, 4)
@@ -1208,8 +1214,8 @@ class CLSymmetryD2(CLOrient3D):
         2D rotation of these vectors (see Section 7.3 of D2 paper for details).
         """
         n_p = color_vecs.shape[0] // 3
-        d_theta = 360 // self.n_theta
-        max_t = 360 // d_theta + 1
+        d_theta = self.n_theta // self.n_theta
+        max_t = self.n_theta // d_theta + 1
 
         def R_theta(theta):
             R = np.array(
@@ -1592,7 +1598,7 @@ class CLSymmetryD2(CLOrient3D):
         if n2 < n1:
             n2 += L
         if n1 == n2:
-            return np.array(n1).astype(int)
+            return np.array([n1]).astype(int) % L
 
         seq = np.arange(n1, n2 + 1).astype(int) % L
 
@@ -1806,25 +1812,29 @@ class CLSymmetryD2(CLOrient3D):
 
         return cl_angles, eq2eq_Rij_table
 
-    @staticmethod
-    def _generate_commonline_indices(cl_angles):
+    def _generate_commonline_indices(self, cl_angles):
+        """
+        Converts pairs pf commonline angles in [0, 360) first into polar Fourier
+        indices in [0, self.n_theta), then in commonline linear indices.
+        """
         # TODO: This is not accounting for n_theta other than 360!
+        L = self.n_theta
 
         # Flatten the stack
         og_shape = cl_angles.shape
         cl_angles = np.reshape(cl_angles, (np.prod(og_shape[:-1]), 2))
 
         # Fourier ray index
-        row_sub = np.round(cl_angles[:, 0]).astype("int") % 360
-        col_sub = np.round(cl_angles[:, 1]).astype("int") % 360
+        row_sub = np.round(cl_angles[:, 0] * L / 360).astype("int") % L
+        col_sub = np.round(cl_angles[:, 1] * L / 360).astype("int") % L
 
         # Restrict Ri in-plane coordinates to <180 degrees.
-        is_geq_than_pi = row_sub >= 180
-        row_sub[is_geq_than_pi] = row_sub[is_geq_than_pi] - 180
-        col_sub[is_geq_than_pi] = (col_sub[is_geq_than_pi] + 180) % 360
+        is_geq_than_pi = row_sub >= L // 2
+        row_sub[is_geq_than_pi] = row_sub[is_geq_than_pi] - L // 2
+        col_sub[is_geq_than_pi] = (col_sub[is_geq_than_pi] + (L // 2)) % L
 
-        # Convert to linear indices in 360*180 correlation matrix (same as cls_lookup in matlab)
-        cl_idx = np.ravel_multi_index((row_sub, col_sub), dims=(180, 360))
+        # Convert to linear indices in 180x360 correlation matrix.
+        cl_idx = np.ravel_multi_index((row_sub, col_sub), dims=(L // 2, L))
 
         # Reshape cl_angles (to match matlab `cls`)
         cl_angles = cl_angles.reshape(og_shape)
