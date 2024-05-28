@@ -14,7 +14,6 @@ Unfortunately we need a complex valued PCA, so we wrap theirs for now.
 import numpy as np
 import scipy.sparse as sp
 from sklearn.decomposition import PCA
-from sklearn.utils._array_api import get_namespace
 
 from .validation import check_array
 
@@ -46,8 +45,6 @@ class ComplexPCA(PCA):
             allow_complex=True,
         )
 
-        xp, is_array_api_compliant = get_namespace(X)
-
         # Handle n_components==None
         if self.n_components is None:
             if self.svd_solver != "arpack":
@@ -71,9 +68,9 @@ class ComplexPCA(PCA):
 
         # Call different fits for either full or truncated SVD
         if self._fit_svd_solver == "full":
-            return self._fit_full(X, n_components, xp, is_array_api_compliant)
+            return self._fit_full(X, n_components)
         elif self._fit_svd_solver in ["arpack", "randomized"]:
-            return self._fit_truncated(X, n_components, xp)
+            return self._fit_truncated(X, n_components, self._fit_svd_solver)
         else:
             raise ValueError(
                 "Unrecognized svd_solver='{0}'" "".format(self._fit_svd_solver)
