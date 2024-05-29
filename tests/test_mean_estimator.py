@@ -5,11 +5,13 @@ import numpy as np
 import pytest
 from pytest import raises
 
-from aspire.basis import Coef, FBBasis3D
+from aspire.basis import FBBasis3D
+from aspire.image import Image
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils import grid_3d
+from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -104,19 +106,25 @@ def test_estimate(sim, estimator, mask):
 
 
 def test_adjoint(sim, basis, estimator, mask):
-    # Mean coefs formed by backprojections
-    mean_b_coef = estimator.src_backward()
+    """
+    Test <Projection(v,rots), u> = <v, BackProjection(u,rots)>
+    for random volume `v` and random images `u`.
+    """
+    rots = sim.rotations
 
-    # Evaluate mean coefs into a volume
-    est = Coef(basis, mean_b_coef).evaluate() * mask
+    L = sim.L
+    n = sim.n
 
-    # Mask off corners of volume
-    vol = sim.vols * mask
+    u = np.random.rand(n, L, L).astype(sim.dtype, copy=False)
+    v = np.random.rand(L, L, L).astype(sim.dtype, copy=False)
 
-    # Assert the mean volume is close to original volume
-    np.testing.assert_allclose(
-        est / np.linalg.norm(est), vol / np.linalg.norm(vol), atol=0.11
-    )
+    proj = Volume(v).project(rots)
+    backproj = Image(u).backproject(rots)
+
+    lhs = np.dot(proj.asnumpy().flatten(), u.flatten())
+    rhs = np.dot(backproj.asnumpy().flatten(), v.flatten())
+
+    np.testing.assert_allclose(lhs, rhs, rtol=1e-6)
 
 
 def test_checkpoint(sim, basis, estimator):
