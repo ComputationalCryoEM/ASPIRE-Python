@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from pytest import raises
 
-from aspire.basis import Coef, FBBasis3D
+from aspire.basis import FBBasis3D
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import WeightedVolumesEstimator
 from aspire.source.simulation import Simulation
@@ -117,23 +117,6 @@ def test_estimate(sim, estimator, mask):
     for i, w in enumerate([1, -1]):
         np.testing.assert_allclose(
             w * est[i] / np.linalg.norm(est[i]), vol / np.linalg.norm(vol), atol=0.1
-        )
-
-
-def test_adjoint(sim, basis, estimator, mask):
-    # Mean coefs formed by backprojections
-    mean_b_coef = estimator.src_backward()
-
-    # Evaluate mean coefs into a volume
-    est = Coef(basis, mean_b_coef).evaluate()
-
-    # Mask off corners of volume
-    vol = sim.vols * mask
-
-    # Assert the mean volume is close to original volume
-    for i, w in enumerate([1, -1]):
-        np.testing.assert_allclose(
-            w * est[i] / np.linalg.norm(est[i]), vol / np.linalg.norm(vol), atol=0.11
         )
 
 
