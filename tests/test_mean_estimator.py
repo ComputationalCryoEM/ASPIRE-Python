@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from pytest import raises
 
-from aspire.basis import FBBasis3D
+from aspire.basis import Coef, FBBasis3D
 from aspire.image import Image
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
@@ -105,7 +105,7 @@ def test_estimate(sim, estimator, mask):
     )
 
 
-def test_adjoint(sim, basis, estimator, mask):
+def test_adjoint(sim, basis, estimator):
     """
     Test <Projection(v,rots), u> = <v, BackProjection(u,rots)>
     for random volume `v` and random images `u`.
@@ -125,6 +125,24 @@ def test_adjoint(sim, basis, estimator, mask):
     rhs = np.dot(backproj.asnumpy().flatten(), v.flatten())
 
     np.testing.assert_allclose(lhs, rhs, rtol=1e-6)
+
+
+def test_src_adjoint(sim, basis, estimator):
+    """
+    Test the built-in source based estimator's `src_backward` has
+    adjoint like relationship with simulated image generation.
+    """
+
+    v = sim.vols.asnumpy()[0]  # random volume
+    proj = sim.images[:]  # projections of v
+    u = proj.asnumpy()  # u = proj
+
+    backproj = Coef(basis, estimator.src_backward() * sim.n).evaluate()
+
+    lhs = np.dot(proj.asnumpy().flatten(), u.flatten())
+    rhs = np.dot(backproj.asnumpy().flatten(), v.flatten())
+
+    np.testing.assert_allclose(lhs, rhs, rtol=0.02)
 
 
 def test_checkpoint(sim, basis, estimator):
