@@ -11,8 +11,6 @@ a few places and not supporting it/crashing in other areas of code.
 Unfortunately we need a complex valued PCA, so we wrap theirs for now.
 """
 
-import sys
-
 import numpy as np
 import scipy.sparse as sp
 import sklearn
