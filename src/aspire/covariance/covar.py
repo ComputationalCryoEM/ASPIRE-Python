@@ -179,7 +179,7 @@ class CovarianceEstimator(Estimator):
                 (batch_n, self.src.L, self.src.L, self.src.L), dtype=self.dtype
             )
             for j in range(batch_n):
-                im_centered_b[j] = self.src.im_backward(im_centered[j], i + j)
+                im_centered_b[j] = self.src.im_backward([i + j], im_centered[j])
             im_centered_b = Volume(im_centered_b).to_vec()
 
             covar_b += (im_centered_b.T @ im_centered_b).reshape(
