@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from pytest import raises
 
-from aspire.basis import FBBasis3D
+from aspire.basis import Coef, FBBasis3D
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import WeightedVolumesEstimator
 from aspire.source.simulation import Simulation
@@ -118,6 +118,25 @@ def test_estimate(sim, estimator, mask):
         np.testing.assert_allclose(
             w * est[i] / np.linalg.norm(est[i]), vol / np.linalg.norm(vol), atol=0.1
         )
+
+
+def test_src_adjoint(sim, basis, estimator):
+    """
+    Test the built-in source based estimator's `src_backward` has
+    adjoint like relationship with simulated image generation.
+    """
+
+    v = sim.vols.asnumpy()[0]  # random volume
+    proj = sim.images[:]  # projections of v
+    u = proj.asnumpy()  # u = proj
+
+    backproj = Coef(basis, estimator.src_backward() * sim.n).evaluate()
+
+    lhs = np.dot(proj.asnumpy().flatten(), u.flatten())
+
+    for i, w in enumerate([1, -1]):
+        rhs = np.dot(backproj[i].asnumpy().flatten(), w * v.flatten())
+        np.testing.assert_allclose(lhs, rhs, rtol=0.02)
 
 
 def test_checkpoint(sim, basis, estimator, weights):
