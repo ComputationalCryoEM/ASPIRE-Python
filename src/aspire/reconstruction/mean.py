@@ -175,12 +175,12 @@ class WeightedVolumesEstimator(Estimator):
         )
 
         for i in range(0, self.src.n, self.batch_size):
+            idx = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
+            im = self.src.images[idx]
             for k in range(self.r):
-                im = self.src.images[i : i + self.batch_size]
-
                 batch_vol_rhs = self.src.im_backward(
+                    idx,
                     im,
-                    i,
                     self.weights[:, k],
                     symmetry_group=symmetry_group,
                 ) / (self.src.n * sym_order)
