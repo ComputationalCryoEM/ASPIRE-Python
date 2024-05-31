@@ -56,8 +56,6 @@ def sim(L, dtype):
         ],
         dtype=dtype,
         seed=SEED,
-        amplitudes=1,
-        offsets=0,
     )
 
     sim = sim.cache()  # precompute images
