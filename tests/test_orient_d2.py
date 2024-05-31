@@ -143,7 +143,7 @@ def test_scl_scores(orient_est):
 
     # Compute self-commonline scores.
     CL._compute_scl_scores()
-
+    CL._compute_cl_scores()
     # CL.scls_scores is shape (n_img, n_cand_rots). Since we used the first
     # 10 candidate rotations of the first non-equator viewing direction as our
     # Simulation rotations, the maximum correlation for image i should occur at
@@ -228,7 +228,7 @@ def test_global_J_sync_single_triplet(dtype):
     """
     # Generate 3 image source and orientation object.
     src = Simulation(n=3, L=10, dtype=dtype, seed=SEED)
-    orient_est = CLSymmetryD2(src, n_theta=360, seed=SEED)
+    orient_est = build_CL_from_source(src)
 
     # Grab set of rotations and generate a set of relative rotations, Rijs.
     rots = orient_est.src.rotations
