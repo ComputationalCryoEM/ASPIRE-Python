@@ -46,12 +46,15 @@ class CLSymmetryD2(CLOrient3D):
         :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
         :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param grid_res: Number of sampling points on sphere for projetion directions.
-            These are generated using the Saaf - Kuijlaars algorithm. Default value is 1200.
+            These are generated using the Saaf-Kuijlaars algorithm. Default value is 1200.
         :param inplane_res: The sampling resolution of in-plane rotations for each
-            projetion direction. Default value is 5.
+            projetion direction. Default value is 5 degrees.
         :param eq_min_dist: Width of strip around equator projection directions from
-            which we DO NOT sample directions. Default value is 7.
+            which we DO NOT sample directions. Default value is 7 degrees.
+        :param epsilon: Tolerance for J-synchronization power method.
         :param seed: Optional seed for RNG.
+        :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
+            Default, `True`, applies a mask.
         """
 
         super().__init__(
@@ -76,9 +79,8 @@ class CLSymmetryD2(CLOrient3D):
 
     def estimate_rotations(self):
         """
-        Estimate rotation matrices for molecules with D2 symmetry.
-
-        :return: Array of rotation matrices, size n_imgx3x3.
+        Estimate rotation matrices for molecules with D2 symmetry. Sets the attribute
+        self.rotations with an array of estimated rotation matrices, size src.nx3x3.
         """
         # Pre-compute phase-shifted polar Fourier.
         self._compute_shifted_pf()
@@ -221,6 +223,82 @@ class CLSymmetryD2(CLOrient3D):
         self.cl_idx_2, self.cl_angles2 = self._generate_commonline_indices(cl_angles2)
         self.cl_idx = np.hstack((self.cl_idx_1, self.cl_idx_2))
 
+    def _generate_commonline_angles(
+        self,
+        Ris,
+        Rjs,
+        Ri_eq_idx,
+        Rj_eq_idx,
+        Ri_eq_class,
+        Rj_eq_class,
+        triu=True,
+    ):
+        """
+        Compute commonline angles induced by the 4 sets of relative rotations
+        Rij = Ri.T @ g_m @ Rj, m = 0,1,2,3, where g_m is the identity and rotations
+        about the three axes of symmetry of a D2 symmetric molecule.
+
+        :param Ris: First set of candidate rotations.
+        :param Rjs: Second set of candidate rotation.
+        :param Ri_eq_idx: Equator index mask.
+        :param Rj_eq_idx: Equator index mask.
+        :param Ri_eq_class: Equator classification for Ris.
+        :param Rj_eq_class: Equator classification for Rjs.
+
+        :return: Commonline angles induced by relative rotation candidates.
+        """
+        n_rots_i = len(Ris)
+        n_theta = Ris.shape[1]  # Same for Rjs, TODO: Don't call this n_theta
+
+        # Generate upper triangular table of indicators of all pairs which are not
+        # equators with respect to the same symmetry axis (named unique_pairs).
+        eq_table = np.outer(Ri_eq_idx, Rj_eq_idx)
+        in_same_class = (Ri_eq_class[:, None] - Rj_eq_class.T[None]) == 0
+        eq2eq_Rij_table = ~(eq_table * in_same_class)
+
+        # This is to match matlab code that uses triu with octant 1 table, but not
+        # with octants 1 and 2.
+        if triu:
+            eq2eq_Rij_table = np.triu(eq2eq_Rij_table, 1)
+
+        n_pairs = np.sum(eq2eq_Rij_table)
+        idx = 0
+        cl_angles = np.zeros((2 * n_pairs, n_theta, n_theta // 2, 4, 2))
+
+        for i in range(n_rots_i):
+            unique_pairs_i = np.where(eq2eq_Rij_table[i])[0]
+            if len(unique_pairs_i) == 0:
+                continue
+            Ri = Ris[i]
+            for j in unique_pairs_i:
+                Rj = Rjs[j, : n_theta // 2]
+                for k, g in enumerate(self.gs):
+                    # Compute relative rotations candidates Rij = Ri.T @ gs @ Rj
+                    g_Rj = g * Rj
+                    Rijs = np.transpose(g_Rj, axes=(0, 2, 1)) @ Ri[:, None]
+
+                    # Common line indices induced by Rijs
+                    cl_angles[idx, :, :, k, 0] = np.arctan2(
+                        Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
+                    )
+                    cl_angles[idx, :, :, k, 1] = np.arctan2(
+                        -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
+                    )
+                    cl_angles[idx + n_pairs, :, :, k, 0] = np.arctan2(
+                        Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
+                    )
+                    cl_angles[idx + n_pairs, :, :, k, 1] = np.arctan2(
+                        -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
+                    )
+
+                idx += 1
+
+        # Make all angles non-negative and convert to degrees.
+        cl_angles = (cl_angles + 2 * np.pi) % (2 * np.pi)
+        cl_angles = cl_angles * 180 / np.pi
+
+        return cl_angles, eq2eq_Rij_table
+
     ########################################
     # Generate Self-Commonline Lookup Data #
     ########################################
@@ -291,11 +369,14 @@ class CLSymmetryD2(CLOrient3D):
 
     def _generate_scl_angles(self, Ris, eq_idx, eq_class):
         """
-        Generate self-commonline angles.
+        Generate self-commonline angles. For each candidate rotation a pair of self-commonline
+        angles are generated for each of the 3 self-commonlines induced by D2 symmetry.
 
         :param Ris: Candidate rotation matrices, (n_sphere_grid, n_inplane_rots, 3, 3).
         :param eq_idx: Equator index mask for Ris.
         :param eq_class: Equator classification for Ris.
+
+        :return: `scl_angles` of shape (n_sphere_grid, n_inplane_rots, 3, 2).
         """
 
         # For each candidate rotation Ri we generate the set of 3 self-commonlines.
@@ -351,8 +432,7 @@ class CLSymmetryD2(CLOrient3D):
         # indices 1 and 2, but flip one common line to antipodal.
         scl_angles[eq_class == 3, :, 0] = scl_angles[eq_class == 3][:, :, 0, [1, 0]]
 
-        # TODO: Maybe a cleaner way to do this.
-        # Make sure angle range is <= 180 degrees.
+        # Make sure angle range is < 180 degrees.
         # p1 marks "equator" self-commonlines where both entries of the first
         # scl are greater than both entries of the second scl.
         p1 = scl_angles[eq_class > 0, :, 0] > scl_angles[eq_class > 0, :, 1]
@@ -373,6 +453,20 @@ class CLSymmetryD2(CLOrient3D):
         return np.round(scl_angles * 180 / np.pi) % 360
 
     def _generate_scl_indices(self, scl_angles, eq_class):
+        """
+        Generate self-commonline indices. This includes a set of linear indices for
+        all candidate rotations as well as lists of self-commonline index ranges for
+        equator candidates.
+
+        :param scl_angles: Self-commonline angles, shape (n_sphere_grid, n_inplane_rots, 3, 2).
+        :param eq_class: Equator classification for the sphere_grid points represented
+            by the first axis of `scl_angles`.
+
+        :returns:
+            - scl_indices, self-commonline linear indices.
+            - eq_lin_idx_lists, a list containing a range of self-commonline
+                indices for each equator candidate.
+        """
         L = self.n_theta
 
         # Convert from angles to indices.
@@ -388,9 +482,9 @@ class CLSymmetryD2(CLOrient3D):
         n_inplane_rots = scl_angles.shape[1]
         count_eq = 0
 
-        # eq_lin_idx_lists[1,i,j] registers a list of linear indices of the j'th
+        # eq_lin_idx_lists[0,i,j] registers a list of linear indices of the j'th
         # in-plane rotation of the range for the (only) self common line of the i'th
-        # candidate. eq_lin_idx_lists[2,i,j] registers the actual (integer) angle
+        # candidate. eq_lin_idx_lists[1,i,j] registers the actual (integer) angle
         # of the self common line in the 2D Fourier space. Note that we need only
         # one number since each self common line has radial coordinates of the form
         # (theta, theta+180).
@@ -420,6 +514,10 @@ class CLSymmetryD2(CLOrient3D):
         return scl_indices, eq_lin_idx_lists
 
     def _generate_scl_scores_idx_map(self):
+        """
+        Generates lookup tables for maximum likelihood scheme to estimate commonlines
+        between images.
+        """
         n_rot_1 = len(self.scl_idx_1) // (3 * self.n_inplane_rots)
         n_rot_2 = len(self.scl_idx_2) // (3 * self.n_inplane_rots)
 
@@ -446,7 +544,7 @@ class CLSymmetryD2(CLOrient3D):
                 )
                 idx += 1
 
-        # First the map for i<j pairs for Ri and Rj in octant 1.
+        # Now the map for i<j pairs for Ri in octant 1 and Rj in octant 2.
         n_pairs_12 = np.sum(self.eq2eq_Rij_table_12)
         oct2_ij_map = np.zeros(
             (self.n_inplane_rots**2 // 2, 2, n_pairs_12), dtype=np.int64
@@ -520,7 +618,7 @@ class CLSymmetryD2(CLOrient3D):
             # Compute equator measures.
             eq_measures = self._all_eq_measures(corrs)
 
-            # Handle the cases: Non-equator, Non-top-view equator, and Top view images.
+            # Handle the cases: Non-equator, Non-top-view equator images.
             # 1. Non-equators: just take product of probabilities.
             prod_corrs = np.prod(corrs[non_eq_idx].reshape(n_non_eq, 3), axis=1)
             corrs_out[i, non_eq_lin_idx] = prod_corrs
@@ -548,6 +646,10 @@ class CLSymmetryD2(CLOrient3D):
     def _all_eq_measures(self, corrs):
         """
         Compute a measure of how much an image from data is close to an equator.
+
+        :param corrs: Correlation table of shape (n_theta // 2, n_theta).
+
+        :return: (n_theta // 2) likelihood scores.
         """
         # First compute the eq measure (corrs(scl-k,scl+k) for k=1:90)
         # An equator image of a D2 molecule has the following property: If t_i is
@@ -675,13 +777,17 @@ class CLSymmetryD2(CLOrient3D):
         pbar.close()
 
         # Get estimated relative viewing directions.
-        self.corrs_idx = corrs_idx  # Used in unit test
+        self.corrs_idx = corrs_idx
         self.Rijs_est = self._get_Rijs_from_lin_idx(corrs_idx)
 
     def _get_Rijs_from_lin_idx(self, lin_idx):
         """
         Restore map results from maximum-likelihood over commonlines to corresponding
         relative rotations.
+
+        :param lin_idx: Set of linear indices corresponding to best estimate of Rijs.
+
+        :return: Estimated Rijs.
         """
         Rijs_est = np.zeros((len(lin_idx), 4, 3, 3), dtype=self.dtype)
         n_cand_per_oct = len(self.cl_idx_1) // 4
@@ -861,8 +967,9 @@ class CLSymmetryD2(CLOrient3D):
 
         :param Rijs: (n-choose-2)x3x3 array of estimates of relative orientation matrices.
 
-        :return: An array of length n-choose-2 consisting of 1 or -1, where the sign of the
-        i'th entry indicates whether the i'th relative orientation matrix will be J-conjugated.
+        :return: An array of length n-choose-2 consisting of 1 or -1, where the sign
+            of the i'th entry indicates whether the i'th relative orientation matrix
+            will be J-conjugated.
         """
 
         # Set power method tolerance and maximum iterations.
@@ -953,7 +1060,14 @@ class CLSymmetryD2(CLOrient3D):
 
     def _sync_colors(self, Rijs):
         """
-        Add documention!
+        At this point, we have obtained a hand-consistent set of 4-tuples of Rijs,
+        with Rij = Ri.T @ g_s @ Rj, where s is an unknown permutation of (0, 1, 2, 3).
+        Taking the average of the first Rij in the 4-tuple with the remaining 3
+        results in a set of 3 outer products (+-)vi(m).T @ vj(m) of unknown ordering
+        where vi(m) is the m'th row of the i'th rotation matrix, Ri.
+
+        The color sync procedure partitions the set of 3-tuples of m'th row outer
+        products into 3 sets of row-consistent outer products up to the sign of each.
         """
         # Generate array of one rank matrices from which we can extract rows.
         # Matrices are of the form 0.5(Ri^TRj+Ri^TgkRj). Each such matrix can be
@@ -1453,7 +1567,6 @@ class CLSymmetryD2(CLOrient3D):
         # j'th estimates for the c'th row of Rk, then the entry (i,k),(k,j) entry
         # of S is <(v_i)k,(v_j)k>, where the rows and columns of S are indexed by
         # double indexes (i,j), 1<=i<j<=(N over 2).
-        # TODO: maybe this can be done with a mask?
         pairs_map = np.zeros((self.n_pairs, 2 * (self.n_img - 2)), dtype=int)
         for i in range(self.n_img):
             for j in range(i + 1, self.n_img):
@@ -1499,7 +1612,7 @@ class CLSymmetryD2(CLOrient3D):
             )
             U, S, _ = la.svds(smat, k=3, which="LM")
             U = np.sign(U[0]) * U  # Stable svds
-            signs[c] = U[:, -1]  # Returns in ascending order
+            signs[c] = U[:, -1]  # svds returns in ascending order
             s_out[c] = S[::-1]
 
         signs = np.sign(signs)
@@ -1736,88 +1849,11 @@ class CLSymmetryD2(CLOrient3D):
 
         return inplane_rotated_grid
 
-    def _generate_commonline_angles(
-        self,
-        Ris,
-        Rjs,
-        Ri_eq_idx,
-        Rj_eq_idx,
-        Ri_eq_class,
-        Rj_eq_class,
-        triu=True,
-    ):
-        """
-        Compute commonline angles induced by the 4 sets of relative rotations
-        Rij = Ri.T @ g_m @ Rj, m = 0,1,2,3, where g_m is the identity and rotations
-        about the three axes of symmetry of a D2 symmetric molecule.
-
-        :param Ris: First set of candidate rotations.
-        :param Rjs: Second set of candidate rotation.
-        :param Ri_eq_idx: Equator index mask.
-        :param Rj_eq_idx: Equator index mask.
-        :param Ri_eq_class: Equator classification for Ris.
-        :param Rj_eq_class: Equator classification for Rjs.
-
-        :return: Commonline angles induced by relative rotation candidates.
-        """
-        n_rots_i = len(Ris)
-        n_theta = Ris.shape[1]  # Same for Rjs, TODO: Don't call this n_theta
-
-        # Generate upper triangular table of indicators of all pairs which are not
-        # equators with respect to the same symmetry axis (named unique_pairs).
-        eq_table = np.outer(Ri_eq_idx, Rj_eq_idx)
-        in_same_class = (Ri_eq_class[:, None] - Rj_eq_class.T[None]) == 0
-        eq2eq_Rij_table = ~(eq_table * in_same_class)
-
-        # This is to match matlab code that uses triu with octant 1 table, but not
-        # with octants 1 and 2.
-        if triu:
-            eq2eq_Rij_table = np.triu(eq2eq_Rij_table, 1)
-
-        n_pairs = np.sum(eq2eq_Rij_table)
-        idx = 0
-        cl_angles = np.zeros((2 * n_pairs, n_theta, n_theta // 2, 4, 2))
-
-        for i in range(n_rots_i):
-            unique_pairs_i = np.where(eq2eq_Rij_table[i])[0]
-            if len(unique_pairs_i) == 0:
-                continue
-            Ri = Ris[i]
-            for j in unique_pairs_i:
-                Rj = Rjs[j, : (n_theta // 2)]
-                for k, g in enumerate(self.gs):
-                    # Compute relative rotations candidates Rij = Ri.T @ gs @ Rj
-                    g_Rj = g * Rj
-                    Rijs = np.transpose(g_Rj, axes=(0, 2, 1)) @ Ri[:, None]
-
-                    # Common line indices induced by Rijs
-                    cl_angles[idx, :, :, k, 0] = np.arctan2(
-                        Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
-                    )
-                    cl_angles[idx, :, :, k, 1] = np.arctan2(
-                        -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
-                    )
-                    cl_angles[idx + n_pairs, :, :, k, 0] = np.arctan2(
-                        Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
-                    )
-                    cl_angles[idx + n_pairs, :, :, k, 1] = np.arctan2(
-                        -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
-                    )
-
-                idx += 1
-
-        # Make all angles non-negative and convert to degrees.
-        cl_angles = (cl_angles + 2 * np.pi) % (2 * np.pi)
-        cl_angles = cl_angles * 180 / np.pi
-
-        return cl_angles, eq2eq_Rij_table
-
     def _generate_commonline_indices(self, cl_angles):
         """
         Converts pairs pf commonline angles in [0, 360) first into polar Fourier
-        indices in [0, self.n_theta), then in commonline linear indices.
+        indices in [0, self.n_theta), then into commonline linear indices.
         """
-        # TODO: This is not accounting for n_theta other than 360!
         L = self.n_theta
 
         # Flatten the stack
@@ -1836,11 +1872,11 @@ class CLSymmetryD2(CLOrient3D):
         # Convert to linear indices in 180x360 correlation matrix.
         cl_idx = np.ravel_multi_index((row_sub, col_sub), dims=(L // 2, L))
 
-        # Reshape cl_angles (to match matlab `cls`)
-        cl_angles = cl_angles.reshape(og_shape)
+        # Return cl_angles in original shape as integer indices.
+        cl_angles = np.rint(cl_angles.reshape(og_shape)).astype(int)
 
         # Return as integer indices.
-        return cl_idx, np.rint(cl_angles).astype(int)
+        return cl_idx, cl_angles
 
     def _generate_gs(self):
         """
