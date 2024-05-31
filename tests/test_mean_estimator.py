@@ -137,6 +137,7 @@ def test_src_adjoint(sim, basis, estimator):
     proj = sim.images[:]  # projections of v
     u = proj.asnumpy()  # u = proj
 
+    # `src_backward` scales by 1/n
     backproj = Coef(basis, estimator.src_backward() * sim.n).evaluate()
 
     lhs = np.dot(proj.asnumpy().flatten(), u.flatten())
