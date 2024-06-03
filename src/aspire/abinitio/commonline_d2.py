@@ -8,6 +8,7 @@ from aspire.abinitio import CLOrient3D
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, tqdm, trange
 from aspire.utils.random import randn
+from aspire.volume import DnSymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -72,10 +73,14 @@ class CLSymmetryD2(CLOrient3D):
         self.eq_min_dist = eq_min_dist
         self.seed = seed
         self.epsilon = epsilon
-        self._generate_gs()
+
         self.triplets = all_triplets(self.n_img)
         self.pairs, self.pairs_to_linear = all_pairs(self.n_img, return_map=True)
         self.n_pairs = len(self.pairs)
+
+        # D2 symmetry group.
+        # Rearrange in order Identity, about_x, about_y, about_z.
+        self.gs = DnSymmetryGroup(order=2, dtype=self.dtype).matrices[[0, 3, 2, 1]]
 
     def estimate_rotations(self):
         """
@@ -128,8 +133,6 @@ class CLSymmetryD2(CLOrient3D):
         # Reconstruct full polar Fourier for use in correlation.
         pf[:, :, 0] = 0  # Matching matlab convention to zero out the lowest frequency.
         pf /= norm(pf, axis=2)[..., np.newaxis]  # Normalize each ray.
-        pf *= np.sqrt(2) / 2  # Magic number to match matlab pf. Remove after debug.
-        pf = pf[:, :, ::-1]  # also to match matlab. Can remove.
         self.pf_full = PolarFT.half_to_full(pf)
 
         # Pre-compute shifted pf's.
@@ -163,7 +166,7 @@ class CLSymmetryD2(CLOrient3D):
         # some symmetry axis only have 2 common lines instead of 4, and must be
         # treated separately.
         # We detect such directions by taking a strip of radius
-        # eq_filter_angle about the 3 great circles perpendicular to the symmetry
+        # `eq_min_dist` about the 3 great circles perpendicular to the symmetry
         # axes of D2 (i.e to X,Y and Z axes).
         eq_idx1, eq_class1 = self._mark_equators(sphere_grid1, self.eq_min_dist)
         eq_idx2, eq_class2 = self._mark_equators(sphere_grid2, self.eq_min_dist)
@@ -215,7 +218,7 @@ class CLSymmetryD2(CLOrient3D):
             self.eq_idx2,
             self.eq_class1,
             self.eq_class2,
-            triu=False,
+            same_octant=False,
         )
 
         # Generate commonline indices.
@@ -231,7 +234,7 @@ class CLSymmetryD2(CLOrient3D):
         Rj_eq_idx,
         Ri_eq_class,
         Rj_eq_class,
-        triu=True,
+        same_octant=True,
     ):
         """
         Compute commonline angles induced by the 4 sets of relative rotations
@@ -244,6 +247,7 @@ class CLSymmetryD2(CLOrient3D):
         :param Rj_eq_idx: Equator index mask.
         :param Ri_eq_class: Equator classification for Ris.
         :param Rj_eq_class: Equator classification for Rjs.
+        :param same_octant: True if both sets of candidates are in the same octant.
 
         :return: Commonline angles induced by relative rotation candidates.
         """
@@ -256,9 +260,8 @@ class CLSymmetryD2(CLOrient3D):
         in_same_class = (Ri_eq_class[:, None] - Rj_eq_class.T[None]) == 0
         eq2eq_Rij_table = ~(eq_table * in_same_class)
 
-        # This is to match matlab code that uses triu with octant 1 table, but not
-        # with octants 1 and 2.
-        if triu:
+        # For candidates in the same octant only need upper triangle of table.
+        if same_octant:
             eq2eq_Rij_table = np.triu(eq2eq_Rij_table, 1)
 
         n_pairs = np.sum(eq2eq_Rij_table)
@@ -274,7 +277,7 @@ class CLSymmetryD2(CLOrient3D):
                 Rj = Rjs[j, : n_theta // 2]
                 for k, g in enumerate(self.gs):
                     # Compute relative rotations candidates Rij = Ri.T @ gs @ Rj
-                    g_Rj = g * Rj
+                    g_Rj = g @ Rj
                     Rijs = np.transpose(g_Rj, axes=(0, 2, 1)) @ Ri[:, None]
 
                     # Common line indices induced by Rijs
@@ -339,7 +342,7 @@ class CLSymmetryD2(CLOrient3D):
         # non equators then we have the sub list is
         # C_(i_1)1,...,C(i_1)r,...C_(i_p)1,...,C_(i_p)r.
         n_non_eq = np.sum(self.eq_class1 == 0) + np.sum(self.eq_class2 == 0)
-        non_eq_idx = np.zeros((n_non_eq, int(self.n_inplane_rots)))
+        non_eq_idx = np.zeros((n_non_eq, self.n_inplane_rots), dtype=int)
         non_eq_idx[:, 0] = (
             np.hstack(
                 (
@@ -352,17 +355,15 @@ class CLSymmetryD2(CLOrient3D):
         for i in range(1, self.n_inplane_rots):
             non_eq_idx[:, i] = non_eq_idx[:, 0] + i
 
-        self.non_eq_idx = non_eq_idx.astype(int)
+        self.non_eq_idx = non_eq_idx
 
         # Non-topview equator indices.
-        non_tv_eq_idx = np.concatenate(
+        self.non_tv_eq_idx = np.concatenate(
             (
                 np.where(self.eq_class1 > 0)[0],
                 len(self.eq_class1) + np.where(self.eq_class2 > 0)[0],
             )
         )
-
-        self.non_tv_eq_idx = non_tv_eq_idx.astype(int)
 
         # Generate maps from scl indices to relative rotations.
         self._generate_scl_scores_idx_map()
@@ -384,9 +385,8 @@ class CLSymmetryD2(CLOrient3D):
         n_rots = len(Ris)
         for i in range(n_rots):
             Ri = Ris[i]
-            # TODO: Reversing self.gs here to match matlab. Should use as is.
-            for k, g in enumerate(self.gs[::-1][:3]):
-                g_Ri = g * Ri
+            for k, g in enumerate(self.gs[1:]):
+                g_Ri = g @ Ri
                 Riis = np.transpose(Ri, axes=(0, 2, 1)) @ g_Ri
 
                 scl_angles[i, :, k, 0] = np.arctan2(Riis[:, 2, 0], -Riis[:, 2, 1])
@@ -398,7 +398,7 @@ class CLSymmetryD2(CLOrient3D):
         # Deal with non top view equators
         # A non-TV equator has only one self common line. However, we clasify an
         # equator as an image whose projection direction is at radial distance <
-        # eq_filter_angle from the great circle perpendicural to a symmetry axis,
+        # `eq_min_dist` from the great circle perpendicural to a symmetry axis,
         # and not strictly zero distance. Thus in most cases we get 2 common lines
         # differing by a small difference in degrees. Actually the calculation above
         # gives us two NEARLY antipodal lines, so we first flip one of them by
@@ -608,7 +608,7 @@ class CLSymmetryD2(CLOrient3D):
             pf_i_shifted = self.pf_shifted[i]
 
             # Compute max correlation over all shifts.
-            corrs = 2 * np.real(pf_i_shifted @ np.conj(pf_full_i).T)
+            corrs = np.real(pf_i_shifted @ np.conj(pf_full_i).T)
             corrs = np.reshape(corrs, (self.n_shifts, n_theta // 2, n_theta))
             corrs = np.max(corrs, axis=0)
 
@@ -691,7 +691,7 @@ class CLSymmetryD2(CLOrient3D):
         # between one Fourier ray of the normal to a self common line candidate t_i
         # with its anti-podal as an additional way to measure if the image is an
         # equator and t_i+0.5*pi is the normal to its self common line.
-        r = (2 * L) // 360
+        r = 2  # Search radius within 2 adjacent rays of normal ray.
 
         normal_2_scl_idx = np.zeros((L // 2, 2 * r + 1))
         normal_2_scl_idx_1 = np.mod(L // 2 - np.arange(L // 4 - r, L // 4 + r + 1), L)
@@ -751,7 +751,7 @@ class CLSymmetryD2(CLOrient3D):
                 pf_j = self.pf_full[j]
 
                 # Compute maximum correlation over all shifts.
-                corrs = 2 * np.real(pf_i @ np.conj(pf_j).T)
+                corrs = np.real(pf_i @ np.conj(pf_j).T)
                 corrs = np.reshape(corrs, (self.n_shifts, L // 2, L))
                 corrs = np.max(corrs, axis=0)
 
@@ -855,7 +855,7 @@ class CLSymmetryD2(CLOrient3D):
         Rjs = inplane_rotated_grid2[Rjs_lin_idx]
 
         for k, g in enumerate(self.gs):
-            Rijs_est[:, k] = Ris_t @ (g * Rjs)
+            Rijs_est[:, k] = Ris_t @ g @ Rjs
 
         Rijs_est[transpose_idx] = np.transpose(Rijs_est[transpose_idx], (0, 1, 3, 2))
 
@@ -867,13 +867,12 @@ class CLSymmetryD2(CLOrient3D):
 
     def _global_J_sync(self, Rijs):
         """
-        Global J-synchronization of all third row outer products. Given 3x3 matrices Rijs and viis, each
-        of which might contain a spurious J (ie. vij = J*vi*vj^T*J instead of vij = vi*vj^T),
-        we return Rijs and viis that all have either a spurious J or not.
+        Global J-synchronization of all third row outer products. Given n_pairsx4x3x3 matrices Rijs, each
+        of which might contain a spurious J (ie. Rij = J @ Ri.T @ gs @ Rj @ J instead of Rij = Ri.T @ gs @ Rj),
+        we return Rijs that all have either a spurious J or not.
 
         :param Rijs: An (n-choose-2)x4 x3x3 array where each 3x3 slice holds an estimate for the corresponding
-        outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
-        might have a spurious J independently of other estimates.
+        outer-product Ri.T @ Rj. Each estimate might have a spurious J independently of other estimates.
 
         :return: Rijs, all of which have a spurious J or not.
         """
@@ -1008,16 +1007,16 @@ class CLSymmetryD2(CLOrient3D):
 
         The J-synchronization matrix is a matrix representation of the handedness graph, Gamma, whose set of
         nodes consists of the estimates Rijs and whose set of edges consists of the undirected edges between
-        all triplets of estimates vij, vjk, and vik, where i<j<k. The weight of an edge is set to +1 if its
+        all triplets of estimates Rij, Rjk, and Rik, where i<j<k. The weight of an edge is set to +1 if its
         incident nodes agree in handednes and -1 if not.
 
         The J-synchronization matrix is of size (n-choose-2)x(n-choose-2), where each entry corresponds to
-        the relative handedness of vij and vjk. The entry (ij, jk), where ij and jk are retrieved from the
-        all_pairs indexing, is 1 if vij and vjk are of the same handedness and -1 if not. All other entries
+        the relative handedness of Rij and Rjk. The entry (ij, jk), where ij and jk are retrieved from the
+        all_pairs indexing, is 1 if Rij and Rjk are of the same handedness and -1 if not. All other entries
         (ij, kl) hold a zero.
 
         Due to the large size of the J-synchronization matrix we construct it on the fly as follows.
-        For each triplet of outer products vij, vjk, and vik, the associated elements of the J-synchronization
+        For each triplet of outer products Rij, Rjk, and Rik, the associated elements of the J-synchronization
         matrix are populated with +1 or -1 and multiplied by the corresponding elements of
         the current candidate eigenvector supplied by the power method. The new candidate eigenvector
         is updated for each triplet.
@@ -1877,16 +1876,3 @@ class CLSymmetryD2(CLOrient3D):
 
         # Return as integer indices.
         return cl_idx, cl_angles
-
-    def _generate_gs(self):
-        """
-        Generate analogue to D2 rotation matrices, such that element-wise
-        multiplication, `*`, by gs is equivalent to matrix multiplication,
-        `@`, by a correspopnding rotation matrix.
-        """
-        gs = np.ones((4, 3, 3), dtype=self.dtype)
-        gs[1, 1:3] = -gs[1, 1:3]
-        gs[2, [0, 2]] = -gs[2, [0, 2]]
-        gs[3, 0:2] = -gs[3, 0:2]
-
-        self.gs = gs
