@@ -100,11 +100,8 @@ def test_estimate_rotations(orient_est):
     rots_gt_sync = g_sync_d2(rots_est, rots_gt)
 
     # Register estimates to ground truth rotations and check that the mean angular
-    # distance between them is less than 5 degrees (7 when testing with offsets).
-    deg_tol = 5
-    if orient_est.src.offsets.all() != 0:
-        deg_tol = 7
-    mean_aligned_angular_distance(rots_est, rots_gt_sync, degree_tol=deg_tol)
+    # distance between them is less than 5 degrees.
+    mean_aligned_angular_distance(rots_est, rots_gt_sync, degree_tol=5)
 
 
 def test_scl_scores(orient_est):
@@ -143,7 +140,7 @@ def test_scl_scores(orient_est):
 
     # Compute self-commonline scores.
     CL._compute_scl_scores()
-    CL._compute_cl_scores()
+
     # CL.scls_scores is shape (n_img, n_cand_rots). Since we used the first
     # 10 candidate rotations of the first non-equator viewing direction as our
     # Simulation rotations, the maximum correlation for image i should occur at
@@ -172,7 +169,7 @@ def test_global_J_sync(orient_est):
     for p, (i, j) in enumerate(orient_est.pairs):
         for k, g in enumerate(orient_est.gs):
             k = (k + p) % 4  # Mix up the ordering of Rijs
-            Rijs[p, k] = rots[i].T @ (g * rots[j])
+            Rijs[p, k] = rots[i].T @ g @ rots[j]
 
     # J-conjugate a random set of Rijs.
     Rijs_conj = Rijs.copy()
@@ -236,7 +233,7 @@ def test_global_J_sync_single_triplet(dtype):
     for p, (i, j) in enumerate(orient_est.pairs):
         for k, g in enumerate(orient_est.gs):
             k = (k + p) % 4  # Mix up the ordering of Rijs
-            Rijs[p, k] = rots[i].T @ (g * rots[j])
+            Rijs[p, k] = rots[i].T @ g @ rots[j]
 
     # J-conjugate a random Rij.
     Rijs_conj = Rijs.copy()
@@ -260,7 +257,7 @@ def test_sync_colors(orient_est):
     for p, (i, j) in enumerate(orient_est.pairs):
         for k, g in enumerate(orient_est.gs):
             k = (k + p) % 4  # Mix up the ordering of Rijs
-            Rijs[p, k] = rots[i].T @ (g * rots[j])
+            Rijs[p, k] = rots[i].T @ g @ rots[j]
 
     # Perform color synchronization.
     # Rijs_rows is shape (n_pairs, 3, 3, 3) where Rijs_rows[ij, m] corresponds
