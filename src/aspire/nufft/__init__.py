@@ -2,6 +2,11 @@ import logging
 
 import numpy as np
 
+try:
+    import cupy as cp
+except ModuleNotFoundError:
+    cp = None
+
 from aspire import config
 from aspire.utils import LogFilterByCount, complex_type, real_type
 
@@ -152,6 +157,9 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
 
     Selects best available package from `nfft` `backends` configuration list.
 
+    When sig_f is provided as a CuPy gpu array with a cufinufft
+    backend, result is maintained on GPU.
+
     :param sig_f: Array representing the signal(s) in Fourier space to be transformed. \
     sig_f either matches length of fourier_pts or sig_f.shape is stack of (`ntransforms`, ...).
     :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
@@ -161,6 +169,10 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
     :return: The Non Uniform FFT adjoint transform.
 
     """
+
+    on_gpu = False
+    if cp and isinstance(sig_f, cp.ndarray):
+        on_gpu = True
 
     if fourier_pts.dtype != real_type(sig_f.dtype):
         raise RuntimeError(
@@ -181,7 +193,13 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
         sz=sz, fourier_pts=fourier_pts, ntransforms=ntransforms, epsilon=epsilon
     )
     adjoint = plan.adjoint(sig_f)
-    return np.real(adjoint) if real else adjoint
+
+    adjoint = adjoint.real if real else adjoint
+
+    if not on_gpu:
+        adjoint = adjoint.get()
+
+    return adjoint
 
 
 def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
@@ -191,6 +209,9 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
 
     Selects best available package from `nfft` `backends` configuration list.
 
+    When sig_f is provided as a CuPy gpu array with a cufinufft
+    backend, result is maintained on GPU.
+
     :param sig_f: Array representing the signal(s) in real space to be transformed. \
     sig_f either matches `sz` or sig_f.shape is stack of (..., `ntransforms`).
     :param fourier_pts: The points in Fourier space where the Fourier transform is to be calculated,
@@ -199,6 +220,10 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
     :return: The Non Uniform FFT transform.
 
     """
+
+    on_gpu = False
+    if cp and isinstance(sig_f, cp.ndarray):
+        on_gpu = True
 
     if fourier_pts.dtype != real_type(sig_f.dtype):
         raise RuntimeError(
@@ -229,4 +254,10 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
         sz=sz, fourier_pts=fourier_pts, ntransforms=ntransforms, epsilon=epsilon
     )
     transform = plan.transform(sig_f)
-    return np.real(transform) if real else transform
+
+    transform = transform.real if real else transform
+
+    if not on_gpu:
+        transform = transform.get()
+
+    return transform
