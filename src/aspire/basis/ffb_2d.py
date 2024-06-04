@@ -193,56 +193,53 @@ class FFBBasis2D(FBBasis2D):
         n_images = x.shape[0]
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pf = nufft(x, 2 * pi * freqs)
-        pf = np.reshape(pf, (n_images, n_r, n_theta))
+        pf = nufft(xp.array(x), 2 * pi * freqs)
+        pf = pf.reshape(n_images, n_r, n_theta)
 
         # Recover "negative" frequencies from "positive" half plane.
-        pf = np.concatenate((pf, pf.conjugate()), axis=2)
+        pf = xp.concatenate((pf, pf.conjugate()), axis=2)
 
         # evaluate radial integral using the Gauss-Legendre quadrature rule
-        for i_r in range(0, n_r):
-            pf[:, i_r, :] = pf[:, i_r, :] * (
-                self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r]
-            )
+        pf = pf * (xp.array(self._precomp["gl_weights"]) * xp.array(self._precomp["gl_nodes"]))[None, :, None]
 
         #  1D FFT on the angular dimension for each concentric circle
-        pf = 2 * pi / (2 * n_theta) * xp.asnumpy(fft.fft(xp.asarray(pf)))
+        pf = 2 * xp.pi / (2 * n_theta) * fft.fft(pf)
 
         # This only makes it easier to slice the array later.
-        v = np.zeros((n_images, self.count), dtype=x.dtype)
+        v = xp.zeros((n_images, self.count), dtype=x.dtype)
 
         # go through each basis function and find the corresponding coefficient
         ind = 0
-        idx = ind + np.arange(self.k_max[0])
+        idx = ind + xp.arange(self.k_max[0])
 
         # include the normalization factor of angular part into radial part
-        radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
+        radial_norm = xp.array(self._precomp["radial"] / np.expand_dims(self.angular_norms, 1))
         v[:, self._zero_angular_inds] = pf[:, :, 0].real @ radial_norm[idx].T
-        ind = ind + np.size(idx)
+        ind = ind + idx.size
 
         ind_pos = ind
         for ell in range(1, self.ell_max + 1):
-            idx = ind + np.arange(self.k_max[ell])
-            idx_pos = ind_pos + np.arange(self.k_max[ell])
+            idx = ind + xp.arange(self.k_max[ell])
+            idx_pos = ind_pos + xp.arange(self.k_max[ell])
             idx_neg = idx_pos + self.k_max[ell]
 
             v_ell = pf[:, :, ell] @ radial_norm[idx].T
 
             if np.mod(ell, 2) == 0:
-                v_pos = np.real(v_ell)
-                v_neg = -np.imag(v_ell)
+                v_pos = v_ell.real
+                v_neg = -v_ell.imag
             else:
-                v_pos = np.imag(v_ell)
-                v_neg = np.real(v_ell)
+                v_pos = v_ell.imag
+                v_neg = v_ell.real
 
             v[:, idx_pos] = v_pos
             v[:, idx_neg] = v_neg
 
-            ind = ind + np.size(idx)
+            ind = ind + idx.size
 
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
-        return v
+        return xp.asnumpy(v)
 
     def filter_to_basis_mat(self, f, **kwargs):
         """

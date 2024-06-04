@@ -400,7 +400,7 @@ class Image:
         out = fft.centered_ifft2(crop_fx).real * (ds_res**2 / self.resolution**2)
         out = xp.asnumpy(out)
 
-        return self.__class__(out).stack_reshape(original_stack_shape)
+        return self.__class__(np.array(out.get())).stack_reshape(original_stack_shape)
 
     def filter(self, filter):
         """
