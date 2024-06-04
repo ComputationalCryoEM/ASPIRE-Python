@@ -1,9 +1,7 @@
 import logging
 
+import cupy as cp
 import numpy as np
-import pycuda.autoinit  # noqa: F401
-import pycuda.driver as cuda  # noqa: F401
-import pycuda.gpuarray as gpuarray  # noqa: F401
 from cufinufft import Plan as cufPlan
 
 from aspire.nufft import Plan
@@ -85,7 +83,7 @@ class CufinufftPlan(Plan):
 
         # Note, I store self.fourier_pts_gpu so the GPUArrray life
         #   is tied to instance, instead of this method.
-        self.fourier_pts_gpu = gpuarray.to_gpu(self.fourier_pts)
+        self.fourier_pts_gpu = cp.array(self.fourier_pts)
 
         self._transform_plan.setpts(*self.fourier_pts_gpu)
         self._adjoint_plan.setpts(*self.fourier_pts_gpu)
@@ -99,7 +97,7 @@ class CufinufftPlan(Plan):
         For a batch, signal should have shape `(*sz, ntransforms)`.
 
         :returns: Transformed signal of shape `num_pts` or
-        `(ntransforms, num_pts)`.
+        `(ntransforms, num_pts)` as CuPy array.
         """
 
         # Check we're not forcing a dtype workaround for ASPIRE-Python/703,
@@ -112,6 +110,8 @@ class CufinufftPlan(Plan):
                 "Incorrect dtypes passed to (a)nufft."
                 " In the future this will be an error."
             )
+
+        signal = cp.asarray(signal, dtype=self.complex_dtype)
 
         sig_shape = signal.shape
         res_shape = self.num_pts
@@ -134,17 +134,16 @@ class CufinufftPlan(Plan):
             sig_shape == self.sz
         ), f"Signal frame to be transformed must have shape {self.sz}"
 
-        signal_gpu = gpuarray.to_gpu(
-            np.ascontiguousarray(signal, dtype=self.complex_dtype)
-        )
+        result = cp.empty(res_shape, dtype=self.complex_dtype)
 
-        result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype)
+        if signal.dtype != self.complex_dtype:
+            signal = signal.astype(self.complex_dtype)
 
-        self._transform_plan.execute(signal_gpu, out=result_gpu)
+        self._transform_plan.execute(signal, out=result)
 
-        result = result_gpu.get()
         # ASPIRE-Python/703
-        result = result.astype(complex_type(self._original_dtype), copy=False)
+        if result.dtype != complex_type(self._original_dtype):
+            result = result.astype(complex_type(self._original_dtype))
 
         return result
 
@@ -156,7 +155,7 @@ class CufinufftPlan(Plan):
         this should be a a 1D array of len `num_pts`.
         For a batch, signal should have shape `(ntransforms, num_pts)`.
 
-        :returns: Transformed signal `(sz)` or `(sz, ntransforms)`.
+        :returns: Transformed signal `(sz)` or `(sz, ntransforms)` as CuPy array.
         """
 
         # Check we're not forcing a dtype workaround for ASPIRE-Python/703,
@@ -170,6 +169,8 @@ class CufinufftPlan(Plan):
                 " In the future this will be an error."
             )
 
+        signal = cp.asarray(signal, dtype=self.complex_dtype)
+
         res_shape = self.sz
         # Note, there is a corner case for ntransforms == 1.
         if self.ntransforms > 1 or (self.ntransforms == 1 and len(signal.shape) == 2):
@@ -181,16 +182,15 @@ class CufinufftPlan(Plan):
             ), "For multiple transforms, signal stack length should match ntransforms {self.ntransforms}."
             res_shape = (self.ntransforms, *self.sz)
 
-        signal_gpu = gpuarray.to_gpu(
-            np.ascontiguousarray(signal, dtype=self.complex_dtype)
-        )
+        result = cp.empty(res_shape, dtype=self.complex_dtype)
 
-        result_gpu = gpuarray.GPUArray(res_shape, dtype=self.complex_dtype)
+        if signal.dtype != self.complex_dtype:
+            signal = signal.astype(self.complex_dtype)
 
-        self._adjoint_plan.execute(signal_gpu, out=result_gpu)
+        self._adjoint_plan.execute(signal, out=result)
 
-        result = result_gpu.get()
         # ASPIRE-Python/703
-        result = result.astype(complex_type(self._original_dtype), copy=False)
+        if result.dtype != complex_type(self._original_dtype):
+            result = result.astype(complex_type(self._original_dtype))
 
         return result
