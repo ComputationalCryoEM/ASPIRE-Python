@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-  
+
 
 jobs:
   check:
@@ -215,3 +215,19 @@ jobs:
           name: sphinx-docs
           path: docs/build
           retention-days: 7
+
+  osx_arm:
+    needs: check
+    runs-on: macos-latest-xlarge
+    # Run on every code push, but only on review ready PRs
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8'
+    - name: Install dependencies
+      run: pip install tox tox-gh-actions
+    - name: Test
+      run: python -m pytest --durations=50
