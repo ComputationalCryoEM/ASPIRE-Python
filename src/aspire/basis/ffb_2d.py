@@ -105,6 +105,7 @@ class FFBBasis2D(FBBasis2D):
             coordinate basis. This is Image instance with resolution of `self.sz`
             and the first dimension correspond to remaining dimension of `v`.
         """
+        v = xp.array(v)
         sz_roll = v.shape[:-1]
         v = v.reshape(-1, self.count)
 
@@ -112,27 +113,29 @@ class FFBBasis2D(FBBasis2D):
         n_data = v.shape[0]
 
         # get information on polar grids from precomputed data
-        n_theta = np.size(self._precomp["freqs"], 2)
-        n_r = np.size(self._precomp["freqs"], 1)
+        n_theta = self._precomp["freqs"].shape[2]
+        n_r = self._precomp["freqs"].shape[1]
 
         # go through  each basis function and find corresponding coefficient
-        pf = np.zeros((n_data, 2 * n_theta, n_r), dtype=complex_type(self.dtype))
+        pf = xp.zeros((n_data, 2 * n_theta, n_r), dtype=complex_type(self.dtype))
 
         ind = 0
 
-        idx = ind + np.arange(self.k_max[0], dtype=int)
+        idx = ind + xp.arange(self.k_max[0], dtype=int)
 
         # include the normalization factor of angular part into radial part
-        radial_norm = self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
-        pf[:, 0, :] = v[:, self._zero_angular_inds] @ radial_norm[idx]
-        ind = ind + np.size(idx)
+        radial_norm = xp.array(self._precomp["radial"]) / xp.array(
+            np.expand_dims(self.angular_norms, 1)
+        )
+        pf[:, 0, :] = v[:, xp.array(self._zero_angular_inds)] @ radial_norm[idx]
+        ind = ind + idx.size
 
         ind_pos = ind
 
         for ell in range(1, self.ell_max + 1):
-            idx = ind + np.arange(self.k_max[ell], dtype=int)
-            idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=int)
-            idx_neg = idx_pos + self.k_max[ell]
+            idx = ind + xp.arange(self.k_max[ell], dtype=int)
+            idx_pos = ind_pos + xp.arange(self.k_max[ell], dtype=int)
+            idx_neg = idx_pos + xp.array(self.k_max[ell])
 
             v_ell = (v[:, idx_pos] - 1j * v[:, idx_neg]) / 2.0
 
@@ -147,22 +150,19 @@ class FFBBasis2D(FBBasis2D):
             else:
                 pf[:, 2 * n_theta - ell, :] = -pf_ell.conjugate()
 
-            ind = ind + np.size(idx)
-            ind_pos = ind_pos + 2 * self.k_max[ell]
+            ind = ind + idx.size
+            ind_pos = ind_pos + 2 * xp.array(self.k_max[ell])
 
         # 1D inverse FFT in the degree of polar angle
-        pf = 2 * pi * xp.asnumpy(fft.ifft(xp.asarray(pf), axis=1))
+        pf = 2 * xp.pi * fft.ifft(xp.asarray(pf), axis=1)
 
         # Only need "positive" frequencies.
-        hsize = int(np.size(pf, 1) / 2)
+        hsize = int(pf.shape[1] / 2)
         pf = pf[:, 0:hsize, :]
-
-        for i_r in range(0, n_r):
-            pf[..., i_r] = pf[..., i_r] * (
-                self._precomp["gl_weights"][i_r] * self._precomp["gl_nodes"][i_r]
-            )
-
-        pf = np.reshape(pf, (n_data, n_r * n_theta))
+        pf *= (
+            xp.array(self._precomp["gl_weights"]) * xp.array(self._precomp["gl_nodes"])
+        )[None, None, :]
+        pf = pf.reshape(n_data, n_r * n_theta)
 
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
         freqs = m_reshape(self._precomp["freqs"], (2, n_r * n_theta))
@@ -172,7 +172,7 @@ class FFBBasis2D(FBBasis2D):
         # Return X as Image instance with the last two dimensions as *self.sz
         x = x.reshape((*sz_roll, *self.sz))
 
-        return x
+        return xp.asnumpy(x)
 
     def _evaluate_t(self, x):
         """
@@ -200,7 +200,13 @@ class FFBBasis2D(FBBasis2D):
         pf = xp.concatenate((pf, pf.conjugate()), axis=2)
 
         # evaluate radial integral using the Gauss-Legendre quadrature rule
-        pf = pf * (xp.array(self._precomp["gl_weights"]) * xp.array(self._precomp["gl_nodes"]))[None, :, None]
+        pf = (
+            pf
+            * (
+                xp.array(self._precomp["gl_weights"])
+                * xp.array(self._precomp["gl_nodes"])
+            )[None, :, None]
+        )
 
         #  1D FFT on the angular dimension for each concentric circle
         pf = 2 * xp.pi / (2 * n_theta) * fft.fft(pf)
@@ -213,7 +219,9 @@ class FFBBasis2D(FBBasis2D):
         idx = ind + xp.arange(self.k_max[0])
 
         # include the normalization factor of angular part into radial part
-        radial_norm = xp.array(self._precomp["radial"] / np.expand_dims(self.angular_norms, 1))
+        radial_norm = xp.array(
+            self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
+        )
         v[:, self._zero_angular_inds] = pf[:, :, 0].real @ radial_norm[idx].T
         ind = ind + idx.size
 
