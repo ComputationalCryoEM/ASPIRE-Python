@@ -51,4 +51,3 @@ def test_eigsh(backends):
 
     lamb, _ = sparse.linalg.eigsh(A)
     np.testing.assert_allclose(xp.asnumpy(lamb), 1.0)
-    print(lamb)
