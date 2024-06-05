@@ -120,6 +120,7 @@ class CLSymmetryD2(CLOrient3D):
         """
         Pre-compute shifted and full polar Fourier transforms.
         """
+        logger.info("Preparing polar Fourier transform.")
         pf = self.pf
 
         # Generate shift phases.
@@ -149,6 +150,7 @@ class CLSymmetryD2(CLOrient3D):
         """
         Generate candidate relative rotations and corresponding common line indices.
         """
+        logger.info("Generating commonline lookup data.")
         # Generate uniform grid on sphere with Saff-Kuijlaars and take one quarter
         # of sphere because of D2 symmetry redundancy.
         sphere_grid = self._saff_kuijlaars(self.grid_res)
@@ -310,6 +312,7 @@ class CLSymmetryD2(CLOrient3D):
         """
         Generate lookup data for self-commonlines.
         """
+        logger.info("Generating self-commonline lookup data.")
         # Get self-commonline angles.
         self.scl_angles1 = self._generate_scl_angles(
             self.inplane_rotated_grid1,
@@ -585,6 +588,7 @@ class CLSymmetryD2(CLOrient3D):
         """
         Compute correlations for self-commonline candidates.
         """
+        logger.info("Computing self-commonline correlation scores.")
         n_img = self.n_img
         n_theta = self.n_theta
         n_eq = len(self.non_tv_eq_idx)
@@ -722,6 +726,7 @@ class CLSymmetryD2(CLOrient3D):
         Run common lines Maximum likelihood procedure for a D2 molecule, to find
         the set of rotations Ri^TgkRj, k=1,2,3,4 for each pair of images i and j.
         """
+        logger.info("Computing commonline correlation scores.")
         L = self.n_theta
 
         # Map the self common line scores of each 2 candidate rotations R_i,R_j to
@@ -876,6 +881,7 @@ class CLSymmetryD2(CLOrient3D):
 
         :return: Rijs, all of which have a spurious J or not.
         """
+        logger.info("Performing global handedness synchronization.")
         # Find best J_configuration.
         J_list = self._J_configuration(Rijs)
 
@@ -1068,6 +1074,7 @@ class CLSymmetryD2(CLOrient3D):
         The color sync procedure partitions the set of 3-tuples of m'th row outer
         products into 3 sets of row-consistent outer products up to the sign of each.
         """
+        logger.info("Performing rotations' rows synchronization.")
         # Generate array of one rank matrices from which we can extract rows.
         # Matrices are of the form 0.5(Ri^TRj+Ri^TgkRj). Each such matrix can be
         # written in the form Qi^T*Ik*Qj where Ik is a 3x3 matrix with all zero
@@ -1404,6 +1411,7 @@ class CLSymmetryD2(CLOrient3D):
         synchroniztion. At the end all rows of the rotations Ri are exctracted
         and the matrices Ri are assembled.
         """
+        logger.info("Performing signs synchronization.")
         # Partition the union of tuples {0.5*(Ri^TRj+Ri^TgkRj), k=1:3} according
         # to the color partition established in color synchronization procedure.
         # The partition is stored in two different arrays each with the purpose
@@ -1582,7 +1590,7 @@ class CLSymmetryD2(CLOrient3D):
         signs = np.zeros((3, self.n_pairs), dtype=self.dtype)
         s_out = np.zeros((3, 3), dtype=self.dtype)
 
-        logger.info("Constructing and decomposing 3 sign synchroniztion matrices...")
+        logger.info("Constructing and decomposing 3 sign synchroniztion matrices.")
         # The matrix S requires space on order of O(N^4). Instead of storing it
         # in memory we compute its SVD using the function smat which multiplies
         # (N over 2)x1 vectors by S.
@@ -1618,7 +1626,7 @@ class CLSymmetryD2(CLOrient3D):
 
         # Adjust the signs of Qij^c in the matrices cMat(:,:,c) for all c=1,2,3
         # and 1<=i<j<=N according to the results of the signs from the last stage.
-        logger.info("Constructing and decomposing 3 row synchroniztion matrices...")
+        logger.info("Constructing and decomposing 3 row synchroniztion matrices.")
         for c in range(3):
             idx = 0
             for i in range(self.n_img - 1):
@@ -1647,7 +1655,7 @@ class CLSymmetryD2(CLOrient3D):
 
         # The c'th row of the rotation Rj is Uc(3*j-2:3*j,1)/norm(Uc(3*j-2:3*j,1)),
         # (Rows must be normalized to length 1).
-        logger.info("Assembeling rows to rotations matrices...")
+        logger.info("Assembeling rows to rotations matrices.")
         for i in range(self.n_img):
             rot[i, 0] = U1[3 * i : 3 * i + 3, -1] / np.linalg.norm(
                 U1[3 * i : 3 * i + 3, -1]
