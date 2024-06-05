@@ -47,7 +47,7 @@ def test_eigsh(backends):
     """
     xp, sparse = backends
 
-    A = xp.eye(123)
+    A = xp.eye(1234)
 
     lamb, _ = sparse.linalg.eigsh(A)
     np.testing.assert_allclose(xp.asnumpy(lamb), 1.0)
