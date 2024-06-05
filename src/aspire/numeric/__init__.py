@@ -35,3 +35,22 @@ def fft_object(which):
 
 
 fft = fft_object(config["common"]["fft"].as_str())
+
+
+# Configure `sparse` in tandem with `numeric` as the arrays generally will need to interoperate.
+def sparse_object(which):
+    if which == "cupy":
+        from cupyx.scipy import sparse as SparseClass
+
+        # CuPy imports don't work the same as scipy
+        from cupyx.scipy.sparse.linalg import eigsh
+
+        SparseClass.linalg.eigsh = eigsh
+    elif which == "numpy":
+        from scipy import sparse as SparseClass
+    else:
+        raise RuntimeError(f"Invalid selection for sparse module: {which}")
+    return SparseClass
+
+
+sparse = sparse_object(config["common"]["numeric"].as_str())
