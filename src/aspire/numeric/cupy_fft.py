@@ -1,4 +1,5 @@
 import cupy as cp
+import cupyx.scipy.fft as cufft
 
 from aspire.numeric.base_fft import FFT
 
@@ -35,7 +36,7 @@ class CupyFFT(FFT):
         return cp.fft.ifftshift(x, axes=axes)
 
     def dct(self, *args, **kwargs):
-        return cp.fft.dct(*args, **kwargs)
+        return cufft.dct(*args, **kwargs)
 
     def idct(self, *args, **kwargs):
-        return cp.fft.idct(*args, **kwargs)
+        return cufft.idct(*args, **kwargs)

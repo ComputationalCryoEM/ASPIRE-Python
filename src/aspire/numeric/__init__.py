@@ -36,6 +36,21 @@ def fft_object(which):
 
 fft = fft_object(config["common"]["fft"].as_str())
 
+# Sanity check.
+if (config["common"]["numeric"].as_str() == "cupy") and (
+    config["common"]["fft"].as_str() != "cupy"
+):
+    raise RuntimeError(
+        "Using `cupy` numeric backend without `cupy` fft is unsupported."
+    )
+
+if (config["common"]["fft"].as_str() == "cupy") and (
+    config["common"]["numeric"].as_str() != "cupy"
+):
+    raise RuntimeError(
+        "Using `cupy` fft without `cupy` numeric backend is unsupported."
+    )
+
 
 # Configure `sparse` in tandem with `numeric` as the arrays generally will need to interoperate.
 def sparse_object(which):
