@@ -33,3 +33,9 @@ class ScipyFFT(FFT):
 
     def ifftshift(self, x, axes=None):
         return sp.fft.ifftshift(x, axes=axes)
+
+    def dct(self, *args, **kwargs):
+        return sp.fft.dct(*args, **kwargs)
+
+    def idct(self, *args, **kwargs):
+        return sp.fft.idct(*args, **kwargs)
