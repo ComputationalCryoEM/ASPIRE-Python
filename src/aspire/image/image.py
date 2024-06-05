@@ -397,9 +397,7 @@ class Image:
         # crop 2D Fourier transform for each image
         crop_fx = crop_pad_2d(fx, ds_res)
         # take back to real space, discard complex part, and scale
-        out = fft.centered_ifft2(crop_fx).real * (
-            ds_res**2 / self.resolution**2
-        )
+        out = fft.centered_ifft2(crop_fx).real * (ds_res**2 / self.resolution**2)
         out = xp.asnumpy(out)
 
         return self.__class__(out).stack_reshape(original_stack_shape)
