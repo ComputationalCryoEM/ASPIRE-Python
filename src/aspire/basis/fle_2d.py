@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from scipy.fft import dct, idct
 from scipy.special import jv
 
 from aspire.basis import Coef, FBBasisMixin, SteerableBasis2D
@@ -555,10 +554,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_img = betas.shape[0]
         if self.num_interp > self.num_radial_nodes:
             betas = xp.asnumpy(betas)
-            betas = dct(betas, axis=1, type=2) / (2 * self.num_radial_nodes)
+            betas = fft.dct(betas, axis=1, type=2) / (2 * self.num_radial_nodes)
             zeros = np.zeros(betas.shape)
             betas = np.concatenate((betas, zeros), axis=1)
-            betas = idct(betas, axis=1, type=2) * 2 * betas.shape[1]
+            betas = fft.idct(betas, axis=1, type=2) * 2 * betas.shape[1]
             betas = xp.asarray(betas)
         betas = xp.moveaxis(betas, 0, -1)
 
@@ -590,9 +589,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         out = xp.moveaxis(out, -1, 0)
         if self.num_interp > self.num_radial_nodes:
             out = xp.asnumpy(out)  # RM
-            out = dct(out, axis=1, type=2)
+            out = fft.dct(out, axis=1, type=2)
             out = out[:, : self.num_radial_nodes, :]
-            out = idct(out, axis=1, type=2)
+            out = fft.idct(out, axis=1, type=2)
 
         return out
 
@@ -736,10 +735,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         b = np.squeeze(b)
         b = np.array(b)
         if self.num_interp > self.num_radial_nodes:
-            b = dct(b, axis=0, type=2) / (2 * self.num_radial_nodes)
+            b = fft.dct(b, axis=0, type=2) / (2 * self.num_radial_nodes)
             bz = np.zeros(b.shape)
             b = np.concatenate((b, bz), axis=0)
-            b = idct(b, axis=0, type=2) * 2 * b.shape[0]
+            b = fft.idct(b, axis=0, type=2) * 2 * b.shape[0]
         a = np.zeros(self.count, dtype=np.float64)
         y = [None] * (self.ell_p_max + 1)
         for i in range(self.ell_p_max + 1):
