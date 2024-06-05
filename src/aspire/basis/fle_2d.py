@@ -1,3 +1,4 @@
+import gc
 import logging
 
 import numpy as np
@@ -16,6 +17,19 @@ from aspire.operators import DiagMatrix
 from aspire.utils import complex_type, grid_2d
 
 logger = logging.getLogger(__name__)
+
+
+def _cleanup():
+    """
+    Utility for informing python+cupy to cleanup memory held by old vars.
+    """
+    gc.collect()
+    try:
+        import cupy
+
+        cupy.get_default_memory_pool().free_all_blocks()
+    except ModuleNotFoundError:
+        pass
 
 
 class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
@@ -499,12 +513,20 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         imgs = xp.array(imgs)  # Copy here, mutating.
         imgs[:, self.radial_mask] = 0
         z = self._step1_t(imgs)
+        del imgs
+        _cleanup()
+
         b = self._step2_t(z)
+        del z
+        _cleanup()
+
         coefs = self._step3_t(b)
+        del b
+        _cleanup()
 
         # return in FB order
         coefs = coefs[..., self._fle_to_fb_indices]
-        return coefs.astype(self.coefficient_dtype, copy=False)
+        return xp.asnumpy(coefs.astype(self.coefficient_dtype))
 
     def _step1_t(self, im):
         """
@@ -562,7 +584,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             coefs[self.idx_list[i]] = self.A3[i] @ betas[:, i, :]
         coefs = coefs.T
 
-        return xp.asnumpy(coefs * self.norm_constants / self.h)
+        return coefs * self.norm_constants / self.h
 
     def _step3(self, coefs):
         """
