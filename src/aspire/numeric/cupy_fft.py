@@ -33,3 +33,9 @@ class CupyFFT(FFT):
 
     def ifftshift(self, x, axes=None):
         return cp.fft.ifftshift(x, axes=axes)
+
+    def dct(self, *args, **kwargs):
+        return cp.fft.dct(*args, **kwargs)
+
+    def idct(self, *args, **kwargs):
+        return cp.fft.idct(*args, **kwargs)
