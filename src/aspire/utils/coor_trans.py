@@ -8,6 +8,7 @@ import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import svd
 
+from aspire.numeric import xp
 from aspire.utils.random import Random
 from aspire.utils.rotation import Rotation
 
@@ -368,23 +369,26 @@ def rots_to_clmatrix(rots, n_theta):
 
 def crop_pad_2d(im, size, fill_value=0):
     """
-    :param im: A 2-dimensional numpy array
+    :param im: A >=2-dimensional numpy array
     :param size: Integer size of cropped/padded output
-    :return: A numpy array of shape (size, size)
+    :return: A numpy array of shape (..., size, size)
     """
 
-    im_y, im_x = im.shape
+    im_y, im_x = im.shape[-2:]
     # shift terms
     start_x = math.floor(im_x / 2) - math.floor(size / 2)
     start_y = math.floor(im_y / 2) - math.floor(size / 2)
 
     # cropping
     if size <= min(im_y, im_x):
-        return im[start_y : start_y + size, start_x : start_x + size]
+        return im[..., start_y : start_y + size, start_x : start_x + size]
     # padding
     elif size >= max(im_y, im_x):
+        # Determine shape
+        shape = list(im.shape[:-2])
+        shape.extend([size,size])
         # ensure that we return in the same dtype as the input
-        to_return = fill_value * np.ones((size, size), dtype=im.dtype)
+        to_return = xp.full(shape, fill_value, dtype=im.dtype)
         # when padding, start_x and start_y are negative since size is larger
         # than im_x and im_y; the below line calculates where the original image
         # is placed in relation to the (now-larger) box size
