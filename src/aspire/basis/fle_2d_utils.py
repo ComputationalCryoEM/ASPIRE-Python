@@ -1,5 +1,6 @@
 import numpy as np
-import scipy.sparse as sparse
+
+from aspire.numeric import sparse, xp
 
 
 def transform_complex_to_real(B, ells):
@@ -43,9 +44,9 @@ def precomp_transform_complex_to_real(ells):
     """
     count = len(ells)
     num_nonzero = np.sum(ells == 0) + 2 * np.sum(ells != 0)
-    idx = np.zeros(num_nonzero, dtype=int)
-    jdx = np.zeros(num_nonzero, dtype=int)
-    vals = np.zeros(num_nonzero, dtype=np.complex128)
+    idx = xp.zeros(num_nonzero, dtype=int)
+    jdx = xp.zeros(num_nonzero, dtype=int)
+    vals = xp.zeros(num_nonzero, dtype=np.complex128)
 
     k = 0
     for i in range(count):
@@ -190,9 +191,10 @@ def barycentric_interp_sparse(target_points, known_points, numsparse):
     # note that const cancels in numerator and denominator
     vals = vals / denom.reshape(-1, 1)
 
-    vals = vals.flatten()
-    idx = idx.flatten()
-    jdx = jdx.flatten()
+    # TODO, migrate more of this method towards `xp`
+    vals = xp.array(vals.flatten())
+    idx = xp.array(idx.flatten())
+    jdx = xp.array(jdx.flatten())
     # A is the linear operator mapping the function values from the fixed source
     # points to the fixed target points.
     # A(i,j) = \ell(x[i] ) w_j/(x[i] - xs[j]), with the notation in Eq. 3.3
