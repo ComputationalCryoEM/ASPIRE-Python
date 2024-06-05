@@ -23,13 +23,13 @@ def test_csr_matrix(backends):
     xp, sparse = backends
 
     m, n = 10, 10
-    jdx = xp.arange(10)
-    idx = xp.arange(10)
+    jdx = xp.arange(m)
+    idx = xp.arange(n)
     vals = xp.random.random(10)
 
     # Compute dense matmul
     _A = np.diag(xp.asnumpy(vals))
-    _B = np.random.random((10, 20))
+    _B = np.random.random((n, 20))
     _C = _A @ _B
 
     # Compute matmul using sparse csr
