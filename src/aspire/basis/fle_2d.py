@@ -496,7 +496,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             coefficients.
         """
         # See Section 3.5
-        imgs = imgs.copy()
+        imgs = xp.array(imgs)  # Copy here, mutating.
         imgs[:, self.radial_mask] = 0
         z = self._step1_t(imgs)
         b = self._step2_t(z)
@@ -513,7 +513,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         im = im.reshape(-1, self.nres, self.nres).astype(complex_type(self.dtype))
         num_img = im.shape[0]
-        z = np.zeros(
+        z = xp.zeros(
             (num_img, self.num_radial_nodes, self.num_angular_nodes),
             dtype=complex_type(self.dtype),
         )
@@ -535,7 +535,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_img = z.shape[0]
         # Compute FFT along angular nodes
         betas = fft.fft(z, axis=2) / self.num_angular_nodes
-        betas = xp.asarray(betas)  # RM
         betas = betas[:, :, self.nus]
         betas = betas.conj()
         betas = betas.swapaxes(0, 2)
@@ -553,12 +552,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         num_img = betas.shape[0]
         if self.num_interp > self.num_radial_nodes:
-            betas = xp.asnumpy(betas)
             betas = fft.dct(betas, axis=1, type=2) / (2 * self.num_radial_nodes)
-            zeros = np.zeros(betas.shape)
-            betas = np.concatenate((betas, zeros), axis=1)
+            betas = xp.concatenate((betas, xp.zeros(betas.shape)), axis=1)
             betas = fft.idct(betas, axis=1, type=2) * 2 * betas.shape[1]
-            betas = xp.asarray(betas)
         betas = xp.moveaxis(betas, 0, -1)
 
         coefs = xp.zeros((self.count, num_img), dtype=np.float64)
@@ -588,7 +584,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             out[:, i, :] = self.A3_T[i] @ coefs[self.idx_list[i]]
         out = xp.moveaxis(out, -1, 0)
         if self.num_interp > self.num_radial_nodes:
-            out = xp.asnumpy(out)  # RM
             out = fft.dct(out, axis=1, type=2)
             out = out[:, : self.num_radial_nodes, :]
             out = fft.idct(out, axis=1, type=2)
@@ -601,7 +596,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             to images).
         Uses the IFFT to convert Beta values into Fourier-space images.
         """
-        betas = xp.asarray(betas)
         num_img = betas.shape[0]
         tmp = xp.zeros(
             (num_img, self.num_radial_nodes, self.num_angular_nodes),
@@ -615,7 +609,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         betas = betas.swapaxes(0, 2)
 
         tmp[:, :, self.nus] = betas.conj()
-        tmp = xp.asnumpy(tmp)  # rm
         z = fft.ifft(tmp, axis=2)
 
         return z
@@ -639,7 +632,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         im = im.reshape(num_img, self.nres, self.nres)
         im[:, self.radial_mask] = 0
 
-        return im
+        return xp.asnumpy(im)
 
     def _create_dense_matrix(self):
         """
