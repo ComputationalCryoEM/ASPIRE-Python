@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-import scipy.sparse as sparse
 from scipy.fft import dct, idct
 from scipy.special import jv
 
@@ -13,7 +12,7 @@ from aspire.basis.fle_2d_utils import (
     transform_complex_to_real,
 )
 from aspire.nufft import anufft, nufft
-from aspire.numeric import fft
+from aspire.numeric import fft, sparse, xp
 from aspire.operators import DiagMatrix
 from aspire.utils import complex_type, grid_2d
 
@@ -440,7 +439,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Generate the actual basis functions as Python lambda operators
         """
-        norm_constants = np.zeros(self.count)
+        norm_constants = xp.zeros(self.count)
         basis_functions = [None] * self.count
         for i in range(self.count):
             # parameters defining the basis function: bessel order and which bessel root
@@ -537,13 +536,14 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_img = z.shape[0]
         # Compute FFT along angular nodes
         betas = fft.fft(z, axis=2) / self.num_angular_nodes
+        betas = xp.asarray(betas)  # RM
         betas = betas[:, :, self.nus]
-        betas = np.conj(betas)
-        betas = np.swapaxes(betas, 0, 2)
+        betas = betas.conj()
+        betas = betas.swapaxes(0, 2)
         betas = betas.reshape(-1, self.num_radial_nodes * num_img)
         betas = self.c2r_nus @ betas
         betas = betas.reshape(-1, self.num_radial_nodes, num_img)
-        betas = np.real(np.swapaxes(betas, 0, 2))
+        betas = betas.swapaxes(0, 2).real
         return betas
 
     def _step3_t(self, betas):
@@ -554,18 +554,20 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         num_img = betas.shape[0]
         if self.num_interp > self.num_radial_nodes:
+            betas = xp.asnumpy(betas)
             betas = dct(betas, axis=1, type=2) / (2 * self.num_radial_nodes)
             zeros = np.zeros(betas.shape)
             betas = np.concatenate((betas, zeros), axis=1)
             betas = idct(betas, axis=1, type=2) * 2 * betas.shape[1]
-        betas = np.moveaxis(betas, 0, -1)
+            betas = xp.asarray(betas)
+        betas = xp.moveaxis(betas, 0, -1)
 
-        coefs = np.zeros((self.count, num_img), dtype=np.float64)
+        coefs = xp.zeros((self.count, num_img), dtype=np.float64)
         for i in range(self.ell_p_max + 1):
             coefs[self.idx_list[i]] = self.A3[i] @ betas[:, i, :]
         coefs = coefs.T
 
-        return coefs * self.norm_constants / self.h
+        return xp.asnumpy(coefs * self.norm_constants / self.h)
 
     def _step3(self, coefs):
         """
@@ -574,19 +576,20 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         Uses barycenteric interpolation in reverse to compute values of Betas
             at Chebyshev nodes, given an array of FLE coefficients.
         """
-        coefs = coefs.copy().reshape(-1, self.count)
+        coefs = xp.asarray(coefs.reshape(-1, self.count))
         num_img = coefs.shape[0]
         coefs *= self.h * self.norm_constants
         coefs = coefs.T
 
-        out = np.zeros(
+        out = xp.zeros(
             (self.num_interp, 2 * self.max_ell + 1, num_img),
             dtype=np.float64,
         )
         for i in range(self.ell_p_max + 1):
             out[:, i, :] = self.A3_T[i] @ coefs[self.idx_list[i]]
-        out = np.moveaxis(out, -1, 0)
+        out = xp.moveaxis(out, -1, 0)
         if self.num_interp > self.num_radial_nodes:
+            out = xp.asnumpy(out)  # RM
             out = dct(out, axis=1, type=2)
             out = out[:, : self.num_radial_nodes, :]
             out = idct(out, axis=1, type=2)
@@ -599,19 +602,21 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             to images).
         Uses the IFFT to convert Beta values into Fourier-space images.
         """
+        betas = xp.asarray(betas)
         num_img = betas.shape[0]
-        tmp = np.zeros(
+        tmp = xp.zeros(
             (num_img, self.num_radial_nodes, self.num_angular_nodes),
             dtype=np.complex128,
         )
 
-        betas = np.swapaxes(betas, 0, 2)
+        betas = betas.swapaxes(0, 2)
         betas = betas.reshape(-1, self.num_radial_nodes * num_img)
         betas = self.r2c_nus @ betas
         betas = betas.reshape(-1, self.num_radial_nodes, num_img)
-        betas = np.swapaxes(betas, 0, 2)
+        betas = betas.swapaxes(0, 2)
 
-        tmp[:, :, self.nus] = np.conj(betas)
+        tmp[:, :, self.nus] = betas.conj()
+        tmp = xp.asnumpy(tmp)  # rm
         z = fft.ifft(tmp, axis=2)
 
         return z
