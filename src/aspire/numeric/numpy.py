@@ -1,8 +1,13 @@
+import cupy as cp
 import numpy as np
 
 
 class Numpy:
-    asnumpy = staticmethod(lambda x: x)
+    @staticmethod
+    def asnumpy(x):
+        if isinstance(x, cp.ndarray):
+            x = x.get()
+        return x
 
     def __getattr__(self, item):
         """
