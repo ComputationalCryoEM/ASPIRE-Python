@@ -5,6 +5,7 @@ from time import perf_counter, time
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 from aspire.basis import FFBBasis2D, FLEBasis2D
 from aspire.downloader import emdb_2660
 from aspire.noise import WhiteNoiseAdder
