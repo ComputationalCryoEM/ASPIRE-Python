@@ -184,9 +184,19 @@ class PowerFilter(Filter):
     A Filter object that is composed of a regular `Filter` object, but evaluates it to a specified power.
     """
 
-    def __init__(self, filter, power=1):
+    def __init__(self, filter, power=1, epsilon=None):
+        """
+        Initialize PowerFilter instance.
+
+        :param filter: A Filter instance.
+        :param power: Exponent to raise filter values.
+        :param epsilon: Threshold on filter values that get raised to a negative power.
+            `filter` values below this threshold will be set to zero during evaluation.
+            Default uses machine epsilon for filter.dtype.
+        """
         self._filter = filter
         self._power = power
+        self._epsilon = epsilon
         super().__init__(dim=filter.dim, radial=filter.radial)
 
     def _evaluate(self, omega):
@@ -204,7 +214,9 @@ class PowerFilter(Filter):
 
         # Place safeguard on values below machine epsilon for negative powers.
         if self._power < 0:
-            eps = np.finfo(filter_vals.dtype).eps
+            eps = self._epsilon
+            if eps is None:
+                eps = np.finfo(filter_vals.dtype).eps
             condition = abs(filter_vals) < eps
             num_less_eps = np.count_nonzero(condition)
             if num_less_eps > 0:
