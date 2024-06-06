@@ -798,7 +798,7 @@ class ImageSource(ABC):
         self.L = L
 
     @_as_copy
-    def whiten(self, noise_estimate=None):
+    def whiten(self, noise_estimate=None, epsilon=None):
         """
         Modify the `ImageSource` in-place by appending a whitening filter to the generation pipeline.
 
@@ -810,6 +810,9 @@ class ImageSource(ABC):
             passed a `NoiseEstimator` the `filter` attribute will be
             queried.  Alternatively, the noise PSD may be passed
             directly as a `Filter` object.
+        :param epsilon: Threshold used to determine which frequencies to whiten
+            and which to set to zero. By default all filter values less than
+            100*eps(self.dtype) are zeroed out.
         :return: On return, the `ImageSource` object has been modified in place.
         """
 
@@ -827,8 +830,15 @@ class ImageSource(ABC):
                 " instead of `NoiseEstimator` or `Filter`."
             )
 
+        # Set threshold for whiten_filter. All values such that sqrt(noise_filter) < eps
+        # will be set to zero in the whiten_filter.
+        if epsilon is None:
+            epsilon = 100 * np.finfo(self.dtype).eps
+
         logger.info("Whitening source object")
-        whiten_filter = PowerFilter(noise_filter, power=-0.5)
+        # epsilon is squared to account for the PowerFilter applying the threshold
+        # to noise_filter, not sqrt(noise_filter).
+        whiten_filter = PowerFilter(noise_filter, power=-0.5, epsilon=epsilon**2)
 
         logger.info("Transforming all CTF Filters into Multiplicative Filters")
         self.unique_filters = [
