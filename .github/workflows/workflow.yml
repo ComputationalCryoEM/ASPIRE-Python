@@ -223,13 +223,18 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v2.3.0
       with:
+        miniconda-version: "latest"
+        auto-update-conda: true
         python-version: '3.8'
-    - name: Install dependencies
+    - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
-           pip install tox tox-gh-actions
-           pip install -e ".[dev]"
+        conda info
+        conda list
+        conda install pyshtools  # debug depends issues
+        pip install -e ".[dev]"  # install aspire
+        pip freeze
     - name: Test
       run: python -m pytest --durations=50
