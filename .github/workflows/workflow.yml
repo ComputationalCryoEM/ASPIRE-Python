@@ -229,6 +229,9 @@ jobs:
         miniconda-version: "latest"
         auto-update-conda: true
         python-version: '3.8'
+        activate-environment: aspire
+        environment-file: environment-accelerate.yml
+        auto-activate-base: false
     - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         conda info
