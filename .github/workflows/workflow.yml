@@ -231,9 +231,10 @@ jobs:
       with:
         miniconda-version: "latest"
         auto-update-conda: true
-        channels: conda-forge, defaults
         python-version: '3.8'
-        auto-activate-base: true
+        activate-environment: aspire
+        environment-file: environment-accelerate.yml
+        auto-activate-base: false
     - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         conda info
