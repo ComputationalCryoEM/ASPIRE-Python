@@ -22,7 +22,7 @@ jobs:
       run: tox -e check
 
   build:
-    needs: osx_arm
+    needs: check
     runs-on: ubuntu-latest
     # Run on every code push, but only on review ready PRs
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}    
@@ -55,7 +55,7 @@ jobs:
       uses: codecov/codecov-action@v4
 
   conda-build:
-    needs: osx_arm
+    needs: check
     runs-on: ${{ matrix.os }}
     # Only run on review ready pull_requests
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
@@ -121,7 +121,7 @@ jobs:
       shell: bash
 
   ampere_gpu:
-    needs: osx_arm
+    needs: check
     runs-on: self-hosted
     # Run on every code push, but only on review ready PRs
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
@@ -243,4 +243,4 @@ jobs:
         pip install -e ".[dev]"  # install aspire
         pip freeze
     - name: Test
-      run: python -m pytest --durations=50
+      run: python -m pytest -n2 --durations=50
