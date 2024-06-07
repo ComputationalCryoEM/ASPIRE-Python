@@ -22,7 +22,7 @@ jobs:
       run: tox -e check
 
   build:
-    needs: check
+    needs: osx_arm
     runs-on: ubuntu-latest
     # Run on every code push, but only on review ready PRs
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}    
@@ -55,7 +55,7 @@ jobs:
       uses: codecov/codecov-action@v4
 
   conda-build:
-    needs: check
+    needs: osx_arm
     runs-on: ${{ matrix.os }}
     # Only run on review ready pull_requests
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
@@ -121,7 +121,7 @@ jobs:
       shell: bash
 
   ampere_gpu:
-    needs: check
+    needs: osx_arm
     runs-on: self-hosted
     # Run on every code push, but only on review ready PRs
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
@@ -217,6 +217,9 @@ jobs:
           retention-days: 7
 
   osx_arm:
+    defaults:
+      run:
+        shell: bash -l {0}
     needs: check
     runs-on: macos-14
     # Run on every code push, but only on review ready PRs
@@ -228,10 +231,9 @@ jobs:
       with:
         miniconda-version: "latest"
         auto-update-conda: true
+        channels: conda-forge, defaults
         python-version: '3.8'
-        activate-environment: aspire
-        environment-file: environment-accelerate.yml
-        auto-activate-base: false
+        auto-activate-base: true
     - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         conda info
