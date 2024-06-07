@@ -243,4 +243,4 @@ jobs:
         pip install -e ".[dev]"  # install aspire
         pip freeze
     - name: Test
-      run: python -m pytest -n2 --durations=50
+      run: python -m pytest -n3 --durations=50
