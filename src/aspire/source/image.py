@@ -937,38 +937,31 @@ class ImageSource(ABC):
             LambdaXform(normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp)
         )
 
-    def im_backward(self, idx, im=None, weights=None, symmetry_group=None):
+    def im_backward(self, im, start, weights=None, symmetry_group=None):
         """
-        Apply adjoint mapping to set of images identified by indices `idx`.
+        Apply adjoint mapping to set of images
 
-        :param idx: Source indices corresponding to a set of images.
-        :param im: An Image instance to which we wish to apply the
-            adjoint of the forward model.  When `None`, infers
-            `im=self.images[idx]`.
+        :param im: An Image instance to which we wish to apply the adjoint of the forward model.
+        :param start: Start index of image to consider
         :param weights: Optional vector of weights to apply to images.
             Weights should be length `self.n`.
         :param symmetry_group: A SymmetryGroup instance. If supplied, uses symmetry to increase
              number of images used in back-projectioon.
         :return: An L-by-L-by-L volume containing the sum of the adjoint mappings applied to the start+num-1 images.
         """
+        num = im.n_images
 
-        if im is None:
-            im = self.images[idx]
-        elif im.n_images != len(idx):
-            raise RuntimeError(
-                f"`im_backward` n_images != len(idx): {im.n_images} != {len(idx)}"
-            )
-
-        im *= self.amplitudes[idx, np.newaxis, np.newaxis]
-        im = im.shift(-self.offsets[idx, :])
-        im = self._apply_source_filters(im, idx)
+        all_idx = np.arange(start, min(start + num, self.n))
+        im *= self.amplitudes[all_idx, np.newaxis, np.newaxis]
+        im = im.shift(-self.offsets[all_idx, :])
+        im = self._apply_source_filters(im, all_idx)
 
         if weights is not None:
-            im *= weights[idx, np.newaxis, np.newaxis]
+            im *= weights[all_idx, np.newaxis, np.newaxis]
 
-        vol = im.backproject(self.rotations[idx, :, :], symmetry_group=symmetry_group)[
-            0
-        ]
+        vol = im.backproject(
+            self.rotations[start : start + num, :, :], symmetry_group=symmetry_group
+        )[0]
 
         return vol
 
