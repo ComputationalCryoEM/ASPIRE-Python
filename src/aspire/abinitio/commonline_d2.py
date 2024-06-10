@@ -504,7 +504,7 @@ class CLSymmetryD2(CLOrient3D):
 
                 # Adjust so idx1 is in [0, 180) range.
                 is_geq_than_pi = idx1 >= L // 2
-                idx1[is_geq_than_pi] = (idx1[is_geq_than_pi] - L // 2) % (L // 2)
+                idx1[is_geq_than_pi] = (idx1[is_geq_than_pi] - L // 2)
                 idx2[is_geq_than_pi] = (idx2[is_geq_than_pi] + L // 2) % L
 
                 # register indices in list.
