@@ -349,7 +349,8 @@ class ArrayFilter(Filter):
         # Result is 1 x np.prod(self.sz) in shape; convert to a 1-d vector
         result = np.squeeze(result, 0)
 
-        return result
+        # Recast result with correct dtype
+        return result.astype(self.xfer_fn_array.dtype)
 
     def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
         """

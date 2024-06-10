@@ -361,3 +361,19 @@ def test_power_filter_safeguard(dtype, caplog):
     # Check caplog for warning.
     msg = f"setting {num_eps} extremal filter value(s) to zero."
     assert msg in caplog.text
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_array_filter_dtype_passthrough(dtype):
+    """
+    Do to a bug in scipy versions < 1.10.1, scipy's interpolator crashes
+    in singles. We have a workaround that upcasts to doubles. This test
+    ensures that we recast to the correct dtype during calculations.
+    """
+    L = 8
+    arr = np.ones((L, L), dtype=dtype)
+
+    filt = ArrayFilter(arr)
+    filt_vals = filt.evaluate_grid(L, dtype=dtype)
+
+    assert filt_vals.dtype == dtype
