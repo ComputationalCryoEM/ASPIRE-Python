@@ -504,7 +504,7 @@ class CLSymmetryD2(CLOrient3D):
 
                 # Adjust so idx1 is in [0, 180) range.
                 is_geq_than_pi = idx1 >= L // 2
-                idx1[is_geq_than_pi] = (idx1[is_geq_than_pi] - L // 2)
+                idx1[is_geq_than_pi] = idx1[is_geq_than_pi] - L // 2
                 idx2[is_geq_than_pi] = (idx2[is_geq_than_pi] + L // 2) % L
 
                 # register indices in list.
@@ -1106,7 +1106,7 @@ class CLSymmetryD2(CLOrient3D):
             3 * n_pairs, seed=self.seed
         )  # Seed eigs initial vector for iterative method
         v0 = v0 / norm(v0)
-        vals, colors = la.eigs(color_mat, k=3, which="LM", v0=v0)  # Changed from "LR"
+        vals, colors = la.eigs(color_mat, k=3, which="LR", v0=v0)
         vals = np.real(vals)
         colors = np.real(colors)
         colors = np.sign(colors[0]) * colors  # Stable eigs
