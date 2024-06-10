@@ -103,6 +103,9 @@ def test_estimate_rotations(orient_est):
     # distance between them is less than 5 degrees.
     mean_aligned_angular_distance(rots_est, rots_gt_sync, degree_tol=5)
 
+    # Check dtype pass-through.
+    assert rots_est.dtype == orient_est.dtype
+
 
 def test_scl_scores(orient_est):
     """
@@ -154,6 +157,9 @@ def test_scl_scores(orient_est):
     if not (src.offsets == 0.0).all():
         match_tol = 0.89  # match at least 89% with offsets.
     np.testing.assert_array_less(match_tol, n_match / src.n)
+
+    # Check dtype pass-through.
+    assert CL.scls_scores.dtype == orient_est.dtype
 
 
 def test_global_J_sync(orient_est):
@@ -215,6 +221,9 @@ def test_global_J_sync(orient_est):
         np.testing.assert_allclose(Rijs_sync, J_conjugate(Rijs))
     else:
         np.testing.assert_allclose(Rijs_sync, Rijs)
+
+    # Check dtype pass-through.
+    assert Rijs_sync.dtype == orient_est.dtype
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
@@ -301,6 +310,9 @@ def test_sync_colors(orient_est):
         vijs, Rijs_rows_synced, atol=utest_tolerance(orient_est.dtype)
     )
 
+    # Check dtype pass-through.
+    assert Rijs_rows.dtype == orient_est.dtype
+
 
 def test_sync_signs(orient_est):
     """
@@ -329,6 +341,9 @@ def test_sync_signs(orient_est):
     # Estimate rotations and check against ground truth.
     rots_est = orient_est._sync_signs(vijs, colors)
     mean_aligned_angular_distance(rots, rots_est, degree_tol=1e-5)
+
+    # Check dtype pass-through.
+    assert rots_est.dtype == orient_est.dtype
 
 
 ####################
