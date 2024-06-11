@@ -831,8 +831,6 @@ class ImageSource(ABC):
             )
 
         logger.info("Whitening source object")
-        # epsilon is squared to account for the PowerFilter applying the threshold
-        # to noise_filter, not sqrt(noise_filter).
         whiten_filter = PowerFilter(noise_filter, power=-0.5, epsilon=epsilon)
 
         logger.info("Transforming all CTF Filters into Multiplicative Filters")
