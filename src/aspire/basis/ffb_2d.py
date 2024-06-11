@@ -154,7 +154,7 @@ class FFBBasis2D(FBBasis2D):
             ind_pos = ind_pos + 2 * xp.array(self.k_max[ell])
 
         # 1D inverse FFT in the degree of polar angle
-        pf = 2 * xp.pi * fft.ifft(xp.asarray(pf), axis=1)
+        pf = 2 * xp.pi * fft.ifft(pf, axis=1)
 
         # Only need "positive" frequencies.
         hsize = int(pf.shape[1] / 2)
