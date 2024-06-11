@@ -830,6 +830,9 @@ class ImageSource(ABC):
                 " instead of `NoiseEstimator` or `Filter`."
             )
 
+        if epsilon is None:
+            epsilon = np.finfo(self.dtype).eps
+
         logger.info("Whitening source object")
         whiten_filter = PowerFilter(noise_filter, power=-0.5, epsilon=epsilon)
 
