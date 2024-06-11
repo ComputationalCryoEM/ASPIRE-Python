@@ -167,7 +167,9 @@ class FFBBasis2D(FBBasis2D):
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
         freqs = m_reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
-        x = 2 * anufft(pf, 2 * pi * freqs, self.sz, real=True)
+        x = 2 * anufft(
+            pf.astype(complex_type(self.dtype)), 2 * pi * freqs, self.sz, real=True
+        )
 
         # Return X as Image instance with the last two dimensions as *self.sz
         x = x.reshape((*sz_roll, *self.sz))
