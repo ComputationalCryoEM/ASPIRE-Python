@@ -141,7 +141,7 @@ class FFBBasis2D(FBBasis2D):
         for ell in range(1, self.ell_max + 1):
             idx = ind + xp.arange(self.k_max[ell], dtype=int)
             idx_pos = ind_pos + xp.arange(self.k_max[ell], dtype=int)
-            idx_neg = idx_pos + xp.asarray(self.k_max[ell])
+            idx_neg = idx_pos + self.k_max[ell]
 
             v_ell = (v[:, idx_pos] - 1j * v[:, idx_neg]) / 2.0
 
@@ -157,7 +157,7 @@ class FFBBasis2D(FBBasis2D):
                 pf[:, 2 * n_theta - ell, :] = -pf_ell.conjugate()
 
             ind = ind + idx.size
-            ind_pos = ind_pos + 2 * xp.asarray(self.k_max[ell])
+            ind_pos = ind_pos + 2 * self.k_max[ell]
 
         # 1D inverse FFT in the degree of polar angle
         pf = 2 * xp.pi * fft.ifft(pf, axis=1)
