@@ -218,8 +218,8 @@ class FFBBasis3D(FBBasis3D):
                     int((ell - 1) / 2),
                 ] = v_ell
 
-        u_even = xp.transpose(u_even, (3, 0, 1, 2))
-        u_odd = xp.transpose(u_odd, (3, 0, 1, 2))
+        u_even = u_even.transpose((3, 0, 1, 2))
+        u_odd = u_odd.transpose((3, 0, 1, 2))
         w_even = xp.zeros((n_phi, n_r, n_data, 2 * self.ell_max + 1), dtype=v.dtype)
         w_odd = xp.zeros((n_phi, n_r, n_data, 2 * self.ell_max + 1), dtype=v.dtype)
 
@@ -254,8 +254,8 @@ class FFBBasis3D(FBBasis3D):
                 w_even[:, :, :, self.ell_max + sgn * m] = w_m_even
                 w_odd[:, :, :, self.ell_max + sgn * m] = w_m_odd
 
-        w_even = xp.transpose(w_even, (3, 0, 1, 2))
-        w_odd = xp.transpose(w_odd, (3, 0, 1, 2))
+        w_even = w_even.transpose((3, 0, 1, 2))
+        w_odd = w_odd.transpose((3, 0, 1, 2))
         u_even = w_even
         u_odd = w_odd
 
@@ -307,14 +307,14 @@ class FFBBasis3D(FBBasis3D):
 
         # evaluate the theta parts
         tmp = self._precomp["ang_theta_wtd"].T
-        u_even = tmp @ xp.real(pf)
-        u_odd = tmp @ xp.imag(pf)
+        u_even = tmp @ pf.real
+        u_odd = tmp @ pf.imag
 
         u_even = m_reshape(u_even, (2 * self.ell_max + 1, n_phi, n_r, n_data))
         u_odd = m_reshape(u_odd, (2 * self.ell_max + 1, n_phi, n_r, n_data))
 
-        u_even = xp.transpose(u_even, (1, 2, 3, 0))
-        u_odd = xp.transpose(u_odd, (1, 2, 3, 0))
+        u_even = u_even.transpose((1, 2, 3, 0))
+        u_odd = u_odd.transpose((1, 2, 3, 0))
 
         w_even = xp.zeros(
             (int(np.floor(self.ell_max / 2) + 1), n_r, 2 * self.ell_max + 1, n_data),
@@ -355,8 +355,8 @@ class FFBBasis3D(FBBasis3D):
                 end = np.size(w_odd, 0)
                 w_odd[end - n_odd_ell : end, :, self.ell_max + sgn * m, :] = w_m_odd
 
-        w_even = xp.transpose(w_even, (1, 2, 3, 0))
-        w_odd = xp.transpose(w_odd, (1, 2, 3, 0))
+        w_even = w_even.transpose((1, 2, 3, 0))
+        w_odd = w_odd.transpose((1, 2, 3, 0))
 
         # evaluate the radial parts
         v = xp.zeros((n_data, self.count), dtype=x.dtype)
