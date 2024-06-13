@@ -452,7 +452,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Generate the actual basis functions as Python lambda operators
         """
-        norm_constants = xp.zeros(self.count)
+        norm_constants = np.zeros(self.count)
         basis_functions = [None] * self.count
         for i in range(self.count):
             # parameters defining the basis function: bessel order and which bessel root
@@ -481,7 +481,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
             norm_constants[i] = c
 
-        self.norm_constants = norm_constants
+        self.norm_constants = xp.asarray(norm_constants)
         self.basis_functions = basis_functions
 
     def _evaluate(self, coefs):
