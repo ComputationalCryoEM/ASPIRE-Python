@@ -58,6 +58,16 @@ class FFBBasis2D(FBBasis2D):
         # precompute the basis functions in 2D grids
         self._precomp = self._precomp()
 
+        # include the normalization factor of angular part into radial part
+        self.radial_norm = xp.array(self._precomp["radial"]) / xp.array(
+            np.expand_dims(self.angular_norms, 1)
+        )
+
+        # precompute weighted nodes
+        self.gl_weighted_nodes = xp.array(self._precomp["gl_weights"]) * xp.array(
+            self._precomp["gl_nodes"]
+        )
+
     def _precomp(self):
         """
         Precomute the basis functions on a polar Fourier grid
@@ -123,11 +133,7 @@ class FFBBasis2D(FBBasis2D):
 
         idx = ind + xp.arange(self.k_max[0], dtype=int)
 
-        # include the normalization factor of angular part into radial part
-        radial_norm = xp.array(self._precomp["radial"]) / xp.array(
-            np.expand_dims(self.angular_norms, 1)
-        )
-        pf[:, 0, :] = v[:, xp.array(self._zero_angular_inds)] @ radial_norm[idx]
+        pf[:, 0, :] = v[:, xp.array(self._zero_angular_inds)] @ self.radial_norm[idx]
         ind = ind + idx.size
 
         ind_pos = ind
@@ -142,7 +148,7 @@ class FFBBasis2D(FBBasis2D):
             if np.mod(ell, 2) == 1:
                 v_ell = 1j * v_ell
 
-            pf_ell = v_ell @ radial_norm[idx]
+            pf_ell = v_ell @ self.radial_norm[idx]
             pf[:, ell, :] = pf_ell
 
             if np.mod(ell, 2) == 0:
@@ -159,9 +165,7 @@ class FFBBasis2D(FBBasis2D):
         # Only need "positive" frequencies.
         hsize = int(pf.shape[1] / 2)
         pf = pf[:, 0:hsize, :]
-        pf *= (
-            xp.array(self._precomp["gl_weights"]) * xp.array(self._precomp["gl_nodes"])
-        )[None, None, :]
+        pf *= self.gl_weighted_nodes[None, None, :]
         pf = pf.reshape(n_data, n_r * n_theta)
 
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
@@ -202,13 +206,7 @@ class FFBBasis2D(FBBasis2D):
         pf = xp.concatenate((pf, pf.conjugate()), axis=2)
 
         # evaluate radial integral using the Gauss-Legendre quadrature rule
-        pf = (
-            pf
-            * (
-                xp.array(self._precomp["gl_weights"])
-                * xp.array(self._precomp["gl_nodes"])
-            )[None, :, None]
-        )
+        pf *= self.gl_weighted_nodes[None, :, None]
 
         #  1D FFT on the angular dimension for each concentric circle
         pf = 2 * xp.pi / (2 * n_theta) * fft.fft(pf)
@@ -221,10 +219,8 @@ class FFBBasis2D(FBBasis2D):
         idx = ind + xp.arange(self.k_max[0])
 
         # include the normalization factor of angular part into radial part
-        radial_norm = xp.array(
-            self._precomp["radial"] / np.expand_dims(self.angular_norms, 1)
-        )
-        v[:, self._zero_angular_inds] = pf[:, :, 0].real @ radial_norm[idx].T
+
+        v[:, self._zero_angular_inds] = pf[:, :, 0].real @ self.radial_norm[idx].T
         ind = ind + idx.size
 
         ind_pos = ind
@@ -233,7 +229,7 @@ class FFBBasis2D(FBBasis2D):
             idx_pos = ind_pos + xp.arange(self.k_max[ell])
             idx_neg = idx_pos + self.k_max[ell]
 
-            v_ell = pf[:, :, ell] @ radial_norm[idx].T
+            v_ell = pf[:, :, ell] @ self.radial_norm[idx].T
 
             if np.mod(ell, 2) == 0:
                 v_pos = v_ell.real
