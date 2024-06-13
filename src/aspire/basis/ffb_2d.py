@@ -218,8 +218,6 @@ class FFBBasis2D(FBBasis2D):
         ind = 0
         idx = ind + xp.arange(self.k_max[0])
 
-        # include the normalization factor of angular part into radial part
-
         v[:, self._zero_angular_inds] = pf[:, :, 0].real @ self.radial_norm[idx].T
         ind = ind + idx.size
 
