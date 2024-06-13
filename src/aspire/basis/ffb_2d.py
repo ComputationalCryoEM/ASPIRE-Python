@@ -59,12 +59,12 @@ class FFBBasis2D(FBBasis2D):
         self._precomp = self._precomp()
 
         # include the normalization factor of angular part into radial part
-        self.radial_norm = xp.array(self._precomp["radial"]) / xp.array(
+        self.radial_norm = xp.asarray(self._precomp["radial"]) / xp.asarray(
             np.expand_dims(self.angular_norms, 1)
         )
 
         # precompute weighted nodes
-        self.gl_weighted_nodes = xp.array(self._precomp["gl_weights"]) * xp.array(
+        self.gl_weighted_nodes = xp.asarray(self._precomp["gl_weights"]) * xp.asarray(
             self._precomp["gl_nodes"]
         )
 
@@ -115,7 +115,7 @@ class FFBBasis2D(FBBasis2D):
             coordinate basis. This is Image instance with resolution of `self.sz`
             and the first dimension correspond to remaining dimension of `v`.
         """
-        v = xp.array(v)
+        v = xp.asarray(v)
         sz_roll = v.shape[:-1]
         v = v.reshape(-1, self.count)
 
@@ -133,7 +133,7 @@ class FFBBasis2D(FBBasis2D):
 
         idx = ind + xp.arange(self.k_max[0], dtype=int)
 
-        pf[:, 0, :] = v[:, xp.array(self._zero_angular_inds)] @ self.radial_norm[idx]
+        pf[:, 0, :] = v[:, xp.asarray(self._zero_angular_inds)] @ self.radial_norm[idx]
         ind = ind + idx.size
 
         ind_pos = ind
@@ -141,7 +141,7 @@ class FFBBasis2D(FBBasis2D):
         for ell in range(1, self.ell_max + 1):
             idx = ind + xp.arange(self.k_max[ell], dtype=int)
             idx_pos = ind_pos + xp.arange(self.k_max[ell], dtype=int)
-            idx_neg = idx_pos + xp.array(self.k_max[ell])
+            idx_neg = idx_pos + xp.asarray(self.k_max[ell])
 
             v_ell = (v[:, idx_pos] - 1j * v[:, idx_neg]) / 2.0
 
@@ -157,7 +157,7 @@ class FFBBasis2D(FBBasis2D):
                 pf[:, 2 * n_theta - ell, :] = -pf_ell.conjugate()
 
             ind = ind + idx.size
-            ind_pos = ind_pos + 2 * xp.array(self.k_max[ell])
+            ind_pos = ind_pos + 2 * xp.asarray(self.k_max[ell])
 
         # 1D inverse FFT in the degree of polar angle
         pf = 2 * xp.pi * fft.ifft(pf, axis=1)
@@ -199,7 +199,7 @@ class FFBBasis2D(FBBasis2D):
         n_images = x.shape[0]
 
         # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
-        pf = nufft(xp.array(x), 2 * pi * freqs)
+        pf = nufft(xp.asarray(x), 2 * pi * freqs)
         pf = pf.reshape(n_images, n_r, n_theta)
 
         # Recover "negative" frequencies from "positive" half plane.
