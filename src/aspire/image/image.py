@@ -186,6 +186,9 @@ class Image:
         self.__array_interface__ = self._data.__array_interface__
         self.__array__ = self._data
 
+    def project(self, angles):
+        """docstring"""
+
     @property
     def res(self):
         warn(
