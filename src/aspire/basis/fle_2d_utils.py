@@ -44,9 +44,9 @@ def precomp_transform_complex_to_real(ells):
     """
     count = len(ells)
     num_nonzero = np.sum(ells == 0) + 2 * np.sum(ells != 0)
-    idx = xp.zeros(num_nonzero, dtype=int)
-    jdx = xp.zeros(num_nonzero, dtype=int)
-    vals = xp.zeros(num_nonzero, dtype=np.complex128)
+    idx = np.zeros(num_nonzero, dtype=int)
+    jdx = np.zeros(num_nonzero, dtype=int)
+    vals = np.zeros(num_nonzero, dtype=np.complex128)
 
     k = 0
     for i in range(count):
@@ -86,7 +86,11 @@ def precomp_transform_complex_to_real(ells):
             jdx[k] = i + 1
             k = k + 1
 
-    A = sparse.csr_matrix((vals, (idx, jdx)), shape=(count, count), dtype=np.complex128)
+    A = sparse.csr_matrix(
+        (xp.asarray(vals), (xp.asarray(idx), xp.asarray(jdx))),
+        shape=(count, count),
+        dtype=np.complex128,
+    )
 
     return A.conjugate()
 
