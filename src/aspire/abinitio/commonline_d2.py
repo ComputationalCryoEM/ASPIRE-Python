@@ -872,12 +872,14 @@ class CLSymmetryD2(CLOrient3D):
 
     def _global_J_sync(self, Rijs):
         """
-        Global J-synchronization of all third row outer products. Given n_pairsx4x3x3 matrices Rijs, each
-        of which might contain a spurious J (ie. Rij = J @ Ri.T @ gs @ Rj @ J instead of Rij = Ri.T @ gs @ Rj),
-        we return Rijs that all have either a spurious J or not.
+        Global J-synchronization of all third row outer products. Given n_pairsx4x3x3
+        matrices Rijs, each of which might contain a spurious J, ie.
+        Rij = J @ Ri.T @ gs @ Rj @ J instead of Rij = Ri.T @ gs @ Rj, we return Rijs
+        that all have either a spurious J or not.
 
-        :param Rijs: An (n-choose-2)x4 x3x3 array where each 3x3 slice holds an estimate for the corresponding
-        outer-product Ri.T @ Rj. Each estimate might have a spurious J independently of other estimates.
+        :param Rijs: An (n-choose-2)x4 x3x3 array where each 3x3 slice holds an estimate
+            for the corresponding outer-product Ri.T @ Rj. Each estimate might have a
+            spurious J independently of other estimates.
 
         :return: Rijs, all of which have a spurious J or not.
         """
@@ -1013,27 +1015,30 @@ class CLSymmetryD2(CLOrient3D):
         """
         Multiplication of the J-synchronization matrix by a candidate eigenvector.
 
-        The J-synchronization matrix is a matrix representation of the handedness graph, Gamma, whose set of
-        nodes consists of the estimates Rijs and whose set of edges consists of the undirected edges between
-        all triplets of estimates Rij, Rjk, and Rik, where i<j<k. The weight of an edge is set to +1 if its
-        incident nodes agree in handednes and -1 if not.
+        The J-synchronization matrix is a matrix representation of the handedness graph,
+        Gamma, whose set of nodes consists of the estimates Rijs and whose set of edges
+        consists of the undirected edges between all triplets of estimates Rij, Rjk,
+        and Rik, where i<j<k. The weight of an edge is set to +1 if its incident nodes
+        agree in handednes and -1 if not.
 
-        The J-synchronization matrix is of size (n-choose-2)x(n-choose-2), where each entry corresponds to
-        the relative handedness of Rij and Rjk. The entry (ij, jk), where ij and jk are retrieved from the
-        all_pairs indexing, is 1 if Rij and Rjk are of the same handedness and -1 if not. All other entries
-        (ij, kl) hold a zero.
+        The J-synchronization matrix is of size (n-choose-2)x(n-choose-2), where each
+        entry corresponds to the relative handedness of Rij and Rjk. The entry (ij, jk),
+        where ij and jk are retrieved from the all_pairs indexing, is 1 if Rij and Rjk
+        are of the same handedness and -1 if not. All other entries (ij, kl) hold a zero.
 
-        Due to the large size of the J-synchronization matrix we construct it on the fly as follows.
-        For each triplet of outer products Rij, Rjk, and Rik, the associated elements of the J-synchronization
-        matrix are populated with +1 or -1 and multiplied by the corresponding elements of
-        the current candidate eigenvector supplied by the power method. The new candidate eigenvector
-        is updated for each triplet.
+        Due to the large size of the J-synchronization matrix we construct it on the fly
+        as follows. For each triplet of outer products Rij, Rjk, and Rik, the associated
+        elements of the J-synchronization matrix are populated with +1 or -1 and
+        multiplied by the corresponding elements of the current candidate eigenvector
+        supplied by the power method. The new candidate eigenvector is updated for each
+        triplet.
 
         :param J_list: n-choose-3 array of indices indicating the best signs configuration.
+        :param vec: The current candidate eigenvector of length n-choose-2 from the power
+            method.
 
-        :param vec: The current candidate eigenvector of length n-choose-2 from the power method.
-
-        :return: New candidate eigenvector of length n-choose-2. The product of the J-sync matrix and vec.
+        :return: New candidate eigenvector of length n-choose-2. The product of the J-sync
+            matrix and vec.
         """
         new_vec = np.zeros_like(vec)
         signs_confs = np.array(
