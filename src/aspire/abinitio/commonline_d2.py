@@ -945,7 +945,9 @@ class CLSymmetryD2(CLOrient3D):
         corresponding to best configuration for the provided triplet
         of relative rotations.
         """
-        prod_arr = np.einsum("nij,mjk->nmik", Rik, Rjk_t)
+        # We compute the four sets of 4^3 norms |Rik @ Rjk.T - Rij|
+        # See equation (6.11) in publication.
+        prod_arr = Rik[:, None, :, :] @ Rjk_t[None, :, :, :]
 
         arr = np.zeros((8, 8, 3, 3), dtype=self.dtype)
         arr[0:4, 0:4] = prod_arr - Rij[0]
