@@ -1400,7 +1400,7 @@ class CLSymmetryD2(CLOrient3D):
                 else:
                     colors[i] = p_i_sqr
             colors = colors.flatten()
-            # colors = 2 - colors  # For debug. remove
+
         return colors, best_unmix
 
     #####################
