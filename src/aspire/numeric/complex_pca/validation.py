@@ -15,7 +15,14 @@ import warnings
 
 import numpy as np
 import scipy.sparse as sp
-from numpy.core.numeric import ComplexWarning
+from packaging.version import Version
+
+# Support both numpy 1 and 2
+if Version(np.__version__) >= Version("2.0.0"):
+    from numpy.exceptions import ComplexWarning
+else:
+    from numpy.core.numeric import ComplexWarning
+
 from sklearn.exceptions import DataConversionWarning
 from sklearn.utils.validation import _assert_all_finite
 
