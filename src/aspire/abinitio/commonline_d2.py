@@ -18,7 +18,7 @@ class CLSymmetryD2(CLOrient3D):
     Define a class to estimate 3D orientations using common lines methods for
     molecules with D2 (dihedral) symmetry.
 
-    The related publications are:
+    Corresponding publication:
     E. Rosen and Y. Shkolnisky,
     Common lines ab-initio reconstruction of D2-symmetric molecules,
     SIAM Journal on Imaging Sciences, volume 13-4, p. 1898-1994, 2020
@@ -94,7 +94,7 @@ class CLSymmetryD2(CLOrient3D):
         self._generate_lookup_data()
         self._generate_scl_lookup_data()
 
-        # Compute common-line scores.
+        # Compute self common-line scores.
         self._compute_scl_scores()
 
         # Compute common-lines and estimate relative rotations Rijs.
@@ -947,7 +947,7 @@ class CLSymmetryD2(CLOrient3D):
         """
         # We compute the four sets of 4^3 norms |Rik @ Rjk.T - Rij|
         # See equation (6.11) in publication.
-        prod_arr = Rik[:, None, :, :] @ Rjk_t[None, :, :, :]
+        prod_arr = Rik[:, None] @ Rjk_t[None]
 
         arr = np.zeros((8, 8, 3, 3), dtype=self.dtype)
         arr[0:4, 0:4] = prod_arr - Rij[0]
@@ -1147,11 +1147,9 @@ class CLSymmetryD2(CLOrient3D):
             ik = self.pairs_to_linear[i, k]
 
             # For r=1:3 compute 3*3 products v_{ji}(r)v_{ik}v_{kj}
-            prod_arr = np.einsum("nij,mjk->mnik", Rijs_rows[ik], Rijs_rows_t[jk])
+            prod_arr = Rijs_rows[ik, None] @ Rijs_rows_t[jk, :, None]
             prod_arr_tmp = prod_arr.copy()
-            prod_arr = np.einsum(
-                "nij,mjk->nmik", Rijs_rows_t[ij], prod_arr.reshape((9, 3, 3))
-            )
+            prod_arr = Rijs_rows_t[ij, :, None] @ prod_arr_tmp.reshape((9, 3, 3))[None]
             prod_arr = np.transpose(
                 prod_arr.reshape((3, 3, 3, 9), order="F"), (2, 1, 0, 3)
             )
@@ -1191,13 +1189,10 @@ class CLSymmetryD2(CLOrient3D):
             # For r=1:3 compute 3*3 products v_{ij}(r)v_{jk}v_{ki} and compare to
             # Compare to v_{ii}(r)=v_{ij}v_{ji}
             prod_arr = np.transpose(prod_arr_tmp, (0, 1, 3, 2))
-            prod_arr = np.einsum(
-                "nij,mjk->mnik", Rijs_rows[ij], prod_arr.reshape(9, 3, 3)
-            )
+            prod_arr = Rijs_rows[ij, :, None] @ prod_arr.reshape((9, 3, 3))[None]
             prod_arr = np.transpose(
                 prod_arr.reshape((3, 3, 3, 9), order="F"), (1, 0, 2, 3)
             )
-            # Commented out calculations in matlab here.
 
             # Compare to v_{ii}(r)=v_{ik}v_{ki}.
             self_prods = Rijs_rows[ik] @ Rijs_rows_t[ik]
