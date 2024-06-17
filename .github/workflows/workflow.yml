@@ -18,8 +18,6 @@ jobs:
     - name: Install dependencies
       run: |
         pip install tox tox-gh-actions
-        # Optional packages
-        pip install pyfftw  # `test_fft` runs for pyfftw when installed
     - name: Run Tox Check
       run: tox -e check
 
@@ -51,6 +49,8 @@ jobs:
     - name: Install dependencies
       run: |
         pip install tox tox-gh-actions
+        # Optional packages
+        pip install pyfftw  # `test_fft` runs for pyfftw when installed
     - name: Test with tox
       run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
     - name: Upload Coverage to CodeCov
