@@ -1,3 +1,4 @@
+import itertools
 import logging
 import os.path
 from unittest import TestCase
@@ -332,20 +333,26 @@ class SimTestCase(TestCase):
         self.assertTrue(np.allclose(sign_filter.evaluate(self.omega), signs))
 
 
-@pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_power_filter_safeguard(dtype, caplog):
+params = list(itertools.product([np.float32, np.float64], [None, 0.01]))
+
+
+@pytest.mark.parametrize("dtype, epsilon", params)
+def test_power_filter_safeguard(dtype, epsilon, caplog):
     L = 25
     arr = np.ones((L, L), dtype=dtype)
 
     # Set a few values below machine epsilon.
     num_eps = 3
-    eps = np.finfo(dtype).eps
+    eps = epsilon
+    if eps is None:
+        eps = np.finfo(dtype).eps
     arr[L // 2, L // 2 : L // 2 + num_eps] = eps / 2
 
     # For negative powers, values below machine eps will be set to zero.
     filt = PowerFilter(
         filter=ArrayFilter(arr),
         power=-0.5,
+        epsilon=epsilon,
     )
 
     caplog.clear()
