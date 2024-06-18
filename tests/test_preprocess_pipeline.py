@@ -126,6 +126,15 @@ def testWhiten2(dtype):
     assert np.allclose(np.eye(2), corr_coef, atol=2e-1)
 
 
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_whiten_epsilon(dtype):
+    """Smoke test for epsilon argument"""
+    L = 25
+    sim = get_sim_object(L, dtype)
+    noise_estimator = AnisotropicNoiseEstimator(sim)
+    _ = sim.whiten(noise_estimator.filter, epsilon=0.01)
+
+
 @pytest.mark.parametrize("L, dtype", params)
 def testInvertContrast(L, dtype):
     sim1 = get_sim_object(L, dtype)
