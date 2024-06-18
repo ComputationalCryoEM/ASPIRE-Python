@@ -1,9 +1,9 @@
 version: 0.12.3
 common:
     # numeric module to use - one of numpy/cupy
-    numeric: cupy
+    numeric: numpy
     # fft backend to use - one of pyfftw/scipy/cupy/mkl
-    fft: cupy
+    fft: scipy
 
     # Set cache directory for ASPIRE example data.
     # By default the cache location will be set by pooch.os_cache(),
