@@ -127,12 +127,32 @@ def testWhiten2(dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_whiten_epsilon(dtype):
-    """Smoke test for epsilon argument"""
+def test_whiten_safeguard(dtype):
+    """Test that whitening safeguard works as expected."""
     L = 25
+    epsilon = 0.02
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
-    _ = sim.whiten(noise_estimator.filter, epsilon=0.01)
+    sim = sim.whiten(noise_estimator.filter, epsilon=epsilon)
+
+    # Get whitening_filter from generation pipeline.
+    whiten_filt = sim.generation_pipeline.xforms[0].filter.evaluate_grid(sim.L)
+
+    # Generate whitening_filter without safeguard directly from noise_estimator.
+    filt_vals = noise_estimator.filter.xfer_fn_array
+    whiten_filt_unsafe = filt_vals**-0.5
+
+    # Get indices where safeguard should be applied
+    # and assert that they are not empty.
+    ind = np.where(filt_vals < epsilon)
+    np.testing.assert_array_less(0, len(ind[0]))
+
+    # Check that whiten_filt and whiten_filt_unsafe agree up to safeguard indices.
+    disagree = np.where(whiten_filt != whiten_filt_unsafe)
+    np.testing.assert_array_equal(ind, disagree)
+
+    # Check that whiten_filt is zero at safeguard indices.
+    np.testing.assert_allclose(whiten_filt[ind], 0.0)
 
 
 @pytest.mark.parametrize("L, dtype", params)
