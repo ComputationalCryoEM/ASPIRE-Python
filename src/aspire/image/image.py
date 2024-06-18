@@ -9,6 +9,7 @@ from PIL import Image as PILImage
 from scipy.linalg import lstsq
 
 import aspire.volume
+import finufft
 from aspire.nufft import anufft
 from aspire.numeric import fft, xp
 from aspire.utils import FourierRingCorrelation, anorm, crop_pad_2d, grid_2d
@@ -187,7 +188,41 @@ class Image:
         self.__array__ = self._data
 
     def project(self, angles):
-        """docstring"""
+        """docstring
+        angles: radians
+        """
+        n_points = self.resolution  # number of points to sample on radial line in polar grid
+
+        nufft_type=2
+        eps=1e-8
+        
+        n_trans = self.n_images
+        assert n_trans == 1
+
+        # 2-D grid
+        
+        y_idx = np.arange(-n_points / 2, n_points / 2) / n_points * 2
+
+        x_theta = y_idx[:, np.newaxis] * np.sin(angles)[np.newaxis, :]
+        x_theta = np.pi * x_theta.flatten()
+
+        y_theta = y_idx[:, np.newaxis] * np.cos(angles)[np.newaxis, :]
+        y_theta = np.pi * y_theta.flatten()
+
+        # NUFFT
+        plan = finufft.Plan(nufft_type, (self.resolution, self.resolution), n_trans, eps)
+        plan.setpts(x_theta, y_theta)
+
+        freqs = np.abs(np.pi * y_idx)
+        n_lines = len(angles)
+
+        # compute the polar nufft
+        image_ft = plan.execute(self._data.astype(np.complex128)).reshape(n_points, n_lines)
+
+        # compute the Radon transform (sinogram)
+
+        image_rt = np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(image_ft, axes=0), axis=0), axes=0).real
+        return image_rt
 
     @property
     def res(self):
