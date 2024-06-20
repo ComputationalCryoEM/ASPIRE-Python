@@ -61,10 +61,6 @@ dependencies = [
 "Source" = "https://github.com/ComputationalCryoEM/ASPIRE-Python"
 
 [project.optional-dependencies]
-gpu-102 = ["cupy-cuda102", "cufinufft==1.3"]
-gpu-110 = ["cupy-cuda110", "cufinufft==1.3"]
-gpu-111 = ["cupy-cuda111", "cufinufft==1.3"]
-gpu-11x = ["cupy-cuda11x", "cufinufft==1.3"]
 gpu-12x = ["cupy-cuda12x", "cufinufft==2.2.0"]
 dev = [
     "black",
