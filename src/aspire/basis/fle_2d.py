@@ -721,10 +721,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                 "`radial_convolve` currently only implemented for 1D stacks."
             )
 
-        coefs = coefs.asnumpy()
+        # Potentially migrate to GPU
+        coefs = xp.asarray(coefs.asnumpy())
+        radial_img = xp.asarray(radial_img)
 
         num_img = coefs.shape[0]
-        coefs_conv = np.zeros(coefs.shape)
+        coefs_conv = xp.zeros(coefs.shape)
 
         # Convert to internal FLE indices ordering
         coefs = coefs[..., self._fb_to_fle_indices]
@@ -736,25 +738,26 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             weights = self._radial_convolve_weights(b)
             b = weights / (self.h**2)
             b = b.reshape(self.count)
-            coefs_conv[k, :] = np.real(self.c2r @ (b * (self.r2c @ _coefs).flatten()))
+            coefs_conv[k, :] = (self.c2r @ (b * (self.r2c @ _coefs).flatten())).real
 
         # Convert from internal FLE ordering to FB convention
         coefs_conv = coefs_conv[..., self._fle_to_fb_indices]
 
-        return Coef(self, coefs_conv)
+        # Return as Coef on host
+        return Coef(self, xp.asnumpy(coefs_conv))
 
     def _radial_convolve_weights(self, b):
         """
         Helper function for step 3 of convolving with a radial function.
         """
-        b = np.squeeze(b)
-        b = np.array(b)
+        b = xp.squeeze(b)
+        b = xp.array(b)  # implies copy
         if self.num_interp > self.num_radial_nodes:
             b = fft.dct(b, axis=0, type=2) / (2 * self.num_radial_nodes)
-            bz = np.zeros(b.shape)
-            b = np.concatenate((b, bz), axis=0)
+            bz = xp.zeros(b.shape)
+            b = xp.concatenate((b, bz), axis=0)
             b = fft.idct(b, axis=0, type=2) * 2 * b.shape[0]
-        a = np.zeros(self.count, dtype=np.float64)
+        a = xp.zeros(self.count, dtype=np.float64)
         y = [None] * (self.ell_p_max + 1)
         for i in range(self.ell_p_max + 1):
             y[i] = (self.A3[i] @ b[:, 0]).flatten()
