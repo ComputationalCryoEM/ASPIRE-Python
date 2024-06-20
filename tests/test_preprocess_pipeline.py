@@ -101,7 +101,7 @@ def testWhiten(dtype):
     corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
 
     # correlation matrix should be close to identity
-    assert np.allclose(np.eye(2), corr_coef, atol=1e-1)
+    np.testing.assert_allclose(np.eye(2), corr_coef, atol=1e-1)
     # dtype of returned images should be the same
     assert dtype == imgs_wt.dtype
 
@@ -123,7 +123,7 @@ def testWhiten2(dtype):
     corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
 
     # Correlation matrix should be close to identity
-    assert np.allclose(np.eye(2), corr_coef, atol=2e-1)
+    np.testing.assert_allclose(np.eye(2), corr_coef, atol=2e-1)
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
@@ -167,7 +167,9 @@ def testInvertContrast(L, dtype):
     imgs2_rc = sim2.images[:num_images]
 
     # all images should be the same after inverting contrast
-    assert np.allclose(imgs1_rc.asnumpy(), imgs2_rc.asnumpy())
+    np.testing.assert_allclose(
+        imgs1_rc.asnumpy(), imgs2_rc.asnumpy(), rtol=1e-05, atol=1e-08
+    )
     # dtype of returned images should be the same
     assert dtype == imgs1_rc.dtype
     assert dtype == imgs2_rc.dtype
