@@ -401,7 +401,7 @@ def crop_pad_2d(im, size, fill_value=0):
             _full = xp.full
 
         to_return = _full(shape, fill_value, dtype=im.dtype)
-        
+
         # when padding, start_x and start_y are negative since size is larger
         # than im_x and im_y; the below line calculates where the original image
         # is placed in relation to the (now-larger) box size
