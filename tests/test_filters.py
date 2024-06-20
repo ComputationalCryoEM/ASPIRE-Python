@@ -373,7 +373,7 @@ def test_power_filter_safeguard(dtype, epsilon, caplog):
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_array_filter_dtype_passthrough(dtype):
     """
-    scipy's interpolator will upcast singles. This test
+    We upcast to use scipy's fast interpolator. This test
     ensures that we recast to the correct dtype during calculations.
     """
     L = 8
