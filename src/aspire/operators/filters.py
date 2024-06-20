@@ -333,7 +333,7 @@ class ArrayFilter(Filter):
         #  for values slightly outside the interpolation grid bounds.
         interpolator = RegularGridInterpolator(
             _input_pts,
-            self.xfer_fn_array,
+            self.xfer_fn_array.astype(np.float64),
             method="linear",
             bounds_error=False,
             fill_value=None,
