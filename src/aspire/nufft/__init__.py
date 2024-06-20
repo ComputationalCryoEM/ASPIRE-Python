@@ -2,13 +2,15 @@ import logging
 
 import numpy as np
 
+from aspire import config
+from aspire.utils import LogFilterByCount, complex_type, real_type
+
+cp = None
 try:
     import cupy as cp
 except ModuleNotFoundError:
-    cp = None
+    pass
 
-from aspire import config
-from aspire.utils import LogFilterByCount, complex_type, real_type
 
 logger = logging.getLogger(__name__)
 
@@ -196,7 +198,7 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
 
     adjoint = adjoint.real if real else adjoint
 
-    if not on_gpu:
+    if cp and not on_gpu:
         adjoint = adjoint.get()
 
     return adjoint
@@ -257,7 +259,7 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
 
     transform = transform.real if real else transform
 
-    if not on_gpu:
+    if cp and not on_gpu:
         transform = transform.get()
 
     return transform
