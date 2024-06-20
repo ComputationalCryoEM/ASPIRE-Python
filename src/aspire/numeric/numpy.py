@@ -1,11 +1,16 @@
-import cupy as cp
 import numpy as np
+
+cp = None
+try:
+    import cupy as cp
+except ModuleNotFoundError:
+    pass
 
 
 class Numpy:
     @staticmethod
     def asnumpy(x):
-        if isinstance(x, cp.ndarray):
+        if cp and isinstance(x, cp.ndarray):
             x = x.get()
         return x
 
