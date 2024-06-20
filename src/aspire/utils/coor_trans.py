@@ -369,6 +369,11 @@ def rots_to_clmatrix(rots, n_theta):
 
 def crop_pad_2d(im, size, fill_value=0):
     """
+    Crop/pads `im` according to `size`.
+
+    Padding will use `fill_value`.
+    Return's host/gpu array based on `im`.
+
     :param im: A >=2-dimensional numpy array
     :param size: Integer size of cropped/padded output
     :return: A numpy array of shape (..., size, size)
@@ -387,8 +392,16 @@ def crop_pad_2d(im, size, fill_value=0):
         # Determine shape
         shape = list(im.shape[:-2])
         shape.extend([size, size])
-        # ensure that we return in the same dtype as the input
-        to_return = xp.full(shape, fill_value, dtype=im.dtype)
+
+        # Ensure that we return in the same dtype as the input
+        _full = np.full  # Default to numpy array
+        if isinstance(im, xp.ndarray):
+            # Use cupy when `im` _and_ xp are cupy ndarray
+            # Avoids having to handle when cupy is not installed
+            _full = xp.full
+
+        to_return = _full(shape, fill_value, dtype=im.dtype)
+        
         # when padding, start_x and start_y are negative since size is larger
         # than im_x and im_y; the below line calculates where the original image
         # is placed in relation to the (now-larger) box size
