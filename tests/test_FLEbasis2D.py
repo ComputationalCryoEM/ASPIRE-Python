@@ -142,7 +142,7 @@ def testMatchFBEvaluate(basis):
     fb_images = fb_basis.evaluate(coefs)
     fle_images = basis.evaluate(coefs)
 
-    assert np.allclose(fb_images._data, fle_images._data, atol=1e-4)
+    np.testing.assert_allclose(fb_images._data, fle_images._data, atol=1e-4)
 
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
@@ -159,8 +159,8 @@ def testMatchFBDenseEvaluate(basis):
     fle_images = Image(fle_out.T.reshape(-1, basis.nres, basis.nres)).asnumpy()
 
     # Matrix column reording in match_fb mode flips signs of some of the basis functions
-    assert np.allclose(np.abs(fb_images), np.abs(fle_images), atol=1e-3)
-    assert np.allclose(fb_images, fle_images, atol=1e-3)
+    np.testing.assert_allclose(np.abs(fb_images), np.abs(fle_images), atol=1e-3)
+    np.testing.assert_allclose(fb_images, fle_images, atol=1e-3)
 
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
@@ -177,7 +177,7 @@ def testMatchFBEvaluate_t(basis):
     fb_coefs = fb_basis.evaluate_t(images)
     fle_coefs = basis.evaluate_t(images)
 
-    assert np.allclose(fb_coefs, fle_coefs, atol=1e-4)
+    np.testing.assert_allclose(fb_coefs, fle_coefs, atol=1e-4)
 
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
@@ -197,7 +197,7 @@ def testMatchFBDenseEvaluate_t(basis):
     fle_coefs = basis._create_dense_matrix().T @ vec.T
 
     # Matrix column reording in match_fb mode flips signs of some of the basis coefficients
-    assert np.allclose(np.abs(fb_coefs), np.abs(fle_coefs), atol=1e-4)
+    np.testing.assert_allclose(np.abs(fb_coefs), np.abs(fle_coefs), atol=1e-4)
 
 
 def testLowPass():
@@ -265,4 +265,4 @@ def testRadialConvolution():
             convolution_fft_pad[L // 2 : L // 2 + L, L // 2 : L // 2 + L]
         )
 
-    assert np.allclose(imgs_convolved_fle, imgs_convolved_slow, atol=1e-5)
+    np.testing.assert_allclose(imgs_convolved_fle, imgs_convolved_slow, atol=1e-5)
