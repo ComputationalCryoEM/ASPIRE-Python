@@ -4,6 +4,7 @@ from skimage import data
 from skimage.transform import radon
 
 from aspire.image import Image
+from aspire.source import Simulation
 from aspire.utils import grid_2d
 
 # parameter img_sizes: 511, 512
@@ -64,3 +65,32 @@ def test_image_project(masked_image):
     np.testing.assert_allclose(s, reference_sinogram, rtol=11, atol=1e-8)
 
     # create fixture called masked_image(img_size) -> return: masked image of size (grid generation goes in fixture)
+
+
+def test_multidim():
+    """
+    Test Image.project on stacks of images.
+    """
+
+    L = 32  # pixels
+    n = 3
+
+    # Generate a mask
+    g = grid_2d(L, normalized=True, shifted=True)
+    mask = g["r"] < 1
+
+    # Generate a simulation
+    src = Simulation(n=n, L=L, C=1, dtype=np.float64)
+    imgs = src.images[:]
+
+    # Generate line project angles
+    ang_degrees = np.linspace(0, 180, L)
+    ang_rads = ang_degrees * np.pi / 180.0
+
+    # Call the line projection method
+    s = imgs.project(ang_rads)
+
+    # # Compare with sk
+    # res = np.empty((n,L,L))
+    # for i,img in enumerate(imgs.asnumpy()):
+    #     #res[i] = radon(img ...)
