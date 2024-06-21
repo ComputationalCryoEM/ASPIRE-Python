@@ -786,20 +786,26 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         # get 2D grid in polar coordinate
         k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
-        k, theta = np.meshgrid(
-            k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
+        k, theta = xp.meshgrid(
+            xp.asarray(k_vals),
+            xp.arange(n_theta) * 2 * np.pi / (2 * n_theta),
+            indexing="ij",
         )
 
         # Get function values in polar 2D grid and average out angle contribution
         # NOTE: should probably just let the ctf objects handle this...
-        omegax = k * np.cos(theta)
-        omegay = k * np.sin(theta)
-        omega = 2 * np.pi * np.vstack((omegax.flatten("C"), omegay.flatten("C")))
+        omegax = k * xp.cos(theta)
+        omegay = k * xp.sin(theta)
+        omega = 2 * xp.pi * xp.vstack((omegax.flatten("C"), omegay.flatten("C")))
 
-        h_vals2d = h_fun(omega).reshape(n_k, n_theta).astype(self.dtype)
-        h_vals = np.sum(h_vals2d, axis=1) / n_theta
+        h_vals2d = (
+            xp.asarray(h_fun(omega))
+            .reshape(n_k, n_theta)
+            .astype(self.dtype, copy=False)
+        )
+        h_vals = xp.sum(h_vals2d, axis=1) / n_theta
 
-        h_basis = np.zeros(self.count, dtype=self.dtype)
+        h_basis = xp.zeros(self.count, dtype=self.dtype)
         # For now we just need to handle 1D (stack of one ctf)
         for j in range(self.ell_p_max + 1):
             h_basis[self.idx_list[j]] = self.A3[j] @ h_vals
@@ -807,4 +813,4 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Convert from internal FLE ordering to FB convention
         h_basis = h_basis[self._fle_to_fb_indices]
 
-        return DiagMatrix(h_basis)
+        return DiagMatrix(xp.asnumpy(h_basis))
