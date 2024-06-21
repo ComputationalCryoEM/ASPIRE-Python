@@ -1,20 +1,70 @@
+import itertools
+
 import numpy as np
 import pytest
 from skimage import data
-from skimage.transform import radon
+from skimage.transform import radon, resize
 
 from aspire.image import Image
+from aspire.utils import grid_2d
+
+# parameter img_sizes: 511, 512
+IMG_SIZES = [
+    511,
+    512,
+]
+
+# parameter dtype: float32, float64
+DTYPES = [
+    np.float32,
+    np.float64,
+]
+
+
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
+def dtype(request):
+    """
+    Dtypes for image.
+    """
+    return request.param
+
+
+@pytest.fixture(params=IMG_SIZES, ids=lambda x: f"px={x}", scope="module")
+def img_size(request):
+    """
+    Image size.
+    """
+    return request.param
+
+
+@pytest.fixture
+def masked_image(dtype, img_size):
+    """
+    Construct a masked image fixture that takes paramters
+    """
+    g = grid_2d(img_size, normalized=True, shifted=True)
+    mask = g["r"] < 1
+
+    # add more logic to check the sizes and readjust accordingly
+    image = data.camera().astype(dtype)
+    image = image[:img_size, :img_size]
+    return Image(image * mask)
+
 
 # Image.project and compare results to skimage.radon
-
-
-def test_image_project():
-    image = Image(data.camera().astype(np.float64))
-    ny = image.resolution
+def test_image_project(masked_image):
+    ny = masked_image.resolution
     angles = np.linspace(0, 360, ny, endpoint=False)
     rads = angles / 180 * np.pi
-    s = image.project(rads)
+    s = masked_image.project(rads)
 
     # add reference skimage radon here
+    n = masked_image._data[0]
+    print(s.shape)
+    print(n.shape)
+    reference_sinogram = radon(n, theta=angles)
 
     # compare s with reference
+    np.testing.assert_allclose(s, reference_sinogram, rtol=11, atol=1e-8)
+
+    # create fixture called masked_image(img_size) -> return: masked image of size (grid generation goes in fixture)
