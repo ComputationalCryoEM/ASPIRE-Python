@@ -191,9 +191,8 @@ class Image:
         """docstring
         angles: radians
         """
-        n_points = (
-            self.resolution
-        )  # number of points to sample on radial line in polar grid
+        # number of points to sample on radial line in polar grid
+        n_points = self.resolution
 
         nufft_type = 2
         eps = 1e-8
@@ -217,7 +216,6 @@ class Image:
         )
         plan.setpts(x_theta, y_theta)
 
-        freqs = np.abs(np.pi * y_idx)
         n_lines = len(angles)
 
         # compute the polar nufft

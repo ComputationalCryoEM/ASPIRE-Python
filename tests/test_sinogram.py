@@ -1,9 +1,7 @@
-import itertools
-
 import numpy as np
 import pytest
 from skimage import data
-from skimage.transform import radon, resize
+from skimage.transform import radon
 
 from aspire.image import Image
 from aspire.utils import grid_2d
@@ -60,9 +58,7 @@ def test_image_project(masked_image):
 
     # add reference skimage radon here
     n = masked_image._data[0]
-    print(s.shape)
-    print(n.shape)
-    reference_sinogram = radon(n, theta=angles)
+    reference_sinogram = radon(n, theta=angles[::-1])
 
     # compare s with reference
     np.testing.assert_allclose(s, reference_sinogram, rtol=11, atol=1e-8)
