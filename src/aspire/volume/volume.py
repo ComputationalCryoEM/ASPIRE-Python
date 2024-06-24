@@ -342,13 +342,13 @@ class Volume:
         if rot_matrices.ndim == 2:
             rot_matrices = np.expand_dims(rot_matrices, axis=0)
 
-        data = self._data
+        data = xp.asarray(self._data)
         n_rots = rot_matrices.shape[0]
         pts_rot = rotated_grids(self.resolution, rot_matrices)
 
         if n_rots == self.n_vols:
             # Apply rotations to Volumes element-wise.
-            im_f = np.empty(
+            im_f = xp.empty(
                 (self.n_vols, self.resolution**2), dtype=complex_type(self.dtype)
             )
             pts_rot = pts_rot.reshape((3, n_rots, self.resolution**2))
@@ -370,9 +370,9 @@ class Volume:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
 
-        im_f = xp.asnumpy(fft.centered_ifft2(xp.asarray(im_f)))
+        im_f = fft.centered_ifft2(im_f)
 
-        return aspire.image.Image(np.real(im_f))
+        return aspire.image.Image(xp.asnumpy(im_f.real))
 
     def to_vec(self):
         """Returns an N x resolution ** 3 array."""
