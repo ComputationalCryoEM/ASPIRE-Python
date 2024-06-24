@@ -196,7 +196,7 @@ class Image:
         n_trans = self.n_images
 
         # 2-D grid
-        y_idx = np.arange(-n_points / 2, n_points / 2) / n_points * 2
+        y_idx = np.arange(-n_points / 2, n_points / 2, dtype=self.dtype) / n_points * 2
         pts = np.empty((2, n_points * len(angles)), dtype=self.dtype)
 
         x_theta = y_idx[:, np.newaxis] * np.sin(angles)[np.newaxis, :]
@@ -210,12 +210,10 @@ class Image:
         image_ft = nufft(self._data, pts).reshape(self.n_images, n_points, n_points)
 
         # compute the Radon transform (sinogram)
-        image_rt = np.empty((self.n_images, n_points, n_points))
-        for i in range(n_trans):
-            image_rt[i] = np.fft.fftshift(
-                np.fft.ifft(np.fft.ifftshift(image_ft[i], axes=0), axis=0), axes=0
-            ).real
-        # previous code: image_rt = np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(image_ft, axes=0), axis=0), axes=0).real
+        image_rt = np.fft.fftshift(
+            np.fft.ifftn(np.fft.ifftshift(image_ft, axes=(0, 1)), axes=(0, 1)),
+            axes=(0, 1),
+        ).real
         return image_rt
 
     @property
