@@ -495,15 +495,15 @@ class Image:
             n_shifts == 1 or n_shifts == self.n_images
         ), "number of shifts must be 1 or match the number of images"
         # Cast shifts to this instance's internal dtype
-        shifts = shifts.astype(self.dtype)
+        shifts = xp.asarray(shifts, dtype=self.dtype)
 
         L = self.resolution
-        im_f = xp.asnumpy(fft.fft2(xp.asarray(im)))  # todo
+        im_f = fft.fft2(xp.asarray(im))
         grid_shifted = fft.ifftshift(
-            xp.asarray(np.ceil(np.arange(-L / 2, L / 2, dtype=self.dtype)))
+            xp.ceil(xp.arange(-L / 2, L / 2, dtype=self.dtype))
         )
-        grid_1d = xp.asnumpy(grid_shifted) * 2 * np.pi / L
-        om_x, om_y = np.meshgrid(grid_1d, grid_1d, indexing="ij")
+        grid_1d = grid_shifted * 2 * xp.pi / L
+        om_x, om_y = xp.meshgrid(grid_1d, grid_1d, indexing="ij")
 
         phase_shifts_x = -shifts[:, 0].reshape((n_shifts, 1, 1))
         phase_shifts_y = -shifts[:, 1].reshape((n_shifts, 1, 1))
@@ -512,9 +512,9 @@ class Image:
             om_x[np.newaxis, :, :] * phase_shifts_x
             + om_y[np.newaxis, :, :] * phase_shifts_y
         )
-        mult_f = np.exp(-1j * phase_shifts)
+        mult_f = xp.exp(-1j * phase_shifts)
         im_translated_f = im_f * mult_f
-        im_translated = fft.ifft2(xp.asarray(im_translated_f))
+        im_translated = fft.ifft2(im_translated_f)
         im_translated = xp.asnumpy(im_translated.real)
 
         # Reshape to stack shape
