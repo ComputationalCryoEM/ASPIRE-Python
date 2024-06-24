@@ -413,17 +413,18 @@ class Image:
 
         im = self.stack_reshape(-1)
 
-        filter_values = filter.evaluate_grid(self.resolution)
+        filter_values = xp.asarray(filter.evaluate_grid(self.resolution))
 
-        im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(im._data)))
+        im_f = fft.centered_fft2(xp.asarray(im._data))
 
         # TODO: why are these different? Doesn't the broadcast work?
         if im_f.ndim > filter_values.ndim:
             im_f *= filter_values
         else:
             im_f = filter_values * im_f
-        im = xp.asnumpy(fft.centered_ifft2(xp.asarray(im_f)))
-        im = np.real(im)
+
+        im = fft.centered_ifft2(im_f)
+        im = xp.asnumpy(im.real)
 
         return self.__class__(im).stack_reshape(original_stack_shape)
 
@@ -497,7 +498,7 @@ class Image:
         shifts = shifts.astype(self.dtype)
 
         L = self.resolution
-        im_f = xp.asnumpy(fft.fft2(xp.asarray(im)))
+        im_f = xp.asnumpy(fft.fft2(xp.asarray(im)))  # todo
         grid_shifted = fft.ifftshift(
             xp.asarray(np.ceil(np.arange(-L / 2, L / 2, dtype=self.dtype)))
         )
@@ -513,8 +514,8 @@ class Image:
         )
         mult_f = np.exp(-1j * phase_shifts)
         im_translated_f = im_f * mult_f
-        im_translated = xp.asnumpy(fft.ifft2(xp.asarray(im_translated_f)))
-        im_translated = np.real(im_translated)
+        im_translated = fft.ifft2(xp.asarray(im_translated_f))
+        im_translated = xp.asnumpy(im_translated.real)
 
         # Reshape to stack shape
         return self.__class__(im_translated).stack_reshape(stack_shape)
