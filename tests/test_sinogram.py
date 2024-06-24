@@ -62,7 +62,7 @@ def test_image_project(masked_image):
     reference_sinogram = radon(n, theta=angles[::-1])
 
     # compare s with reference
-    np.testing.assert_allclose(s, reference_sinogram, rtol=11, atol=1e-8)
+    np.testing.assert_allclose(s[0], reference_sinogram, rtol=11, atol=1e-8)
 
     # create fixture called masked_image(img_size) -> return: masked image of size (grid generation goes in fixture)
 
@@ -72,7 +72,7 @@ def test_multidim():
     Test Image.project on stacks of images.
     """
 
-    L = 32  # pixels
+    L = 64  # pixels
     n = 3
 
     # Generate a mask
@@ -81,16 +81,18 @@ def test_multidim():
 
     # Generate a simulation
     src = Simulation(n=n, L=L, C=1, dtype=np.float64)
-    imgs = src.images[:]
+    imgs = src.images[:] * mask
 
     # Generate line project angles
-    ang_degrees = np.linspace(0, 180, L)
+    ang_degrees = np.linspace(0, 180, L, endpoint=False)
     ang_rads = ang_degrees * np.pi / 180.0
 
     # Call the line projection method
     s = imgs.project(ang_rads)
 
     # # Compare with sk
-    # res = np.empty((n,L,L))
-    # for i,img in enumerate(imgs.asnumpy()):
-    #     #res[i] = radon(img ...)
+    res = np.empty((n, L, L))
+    for i, img in enumerate(imgs._data):
+        res[i] = radon(img, theta=ang_rads[::-1])
+
+    np.testing.assert_allclose(s, res, rtol=12, atol=1e-8)

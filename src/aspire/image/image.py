@@ -194,7 +194,6 @@ class Image:
         n_points = self.resolution
 
         n_trans = self.n_images
-        assert n_trans == 1
 
         # 2-D grid
         y_idx = np.arange(-n_points / 2, n_points / 2) / n_points * 2
@@ -207,13 +206,16 @@ class Image:
         pts[1] = np.pi * y_theta.flatten()
 
         # NUFFT
-        # compute the polar nufft
-        image_ft = nufft(self._data, pts).reshape(n_points, n_points)
+        # compute the polar nufft, create a
+        image_ft = nufft(self._data, pts).reshape(self.n_images, n_points, n_points)
 
         # compute the Radon transform (sinogram)
-        image_rt = np.fft.fftshift(
-            np.fft.ifft(np.fft.ifftshift(image_ft, axes=0), axis=0), axes=0
-        ).real
+        image_rt = np.empty((self.n_images, n_points, n_points))
+        for i in range(n_trans):
+            image_rt[i] = np.fft.fftshift(
+                np.fft.ifft(np.fft.ifftshift(image_ft[i], axes=0), axis=0), axes=0
+            ).real
+        # previous code: image_rt = np.fft.fftshift(np.fft.ifft(np.fft.ifftshift(image_ft, axes=0), axis=0), axes=0).real
         return image_rt
 
     @property
