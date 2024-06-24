@@ -8,8 +8,12 @@ except ModuleNotFoundError:
 
 
 class Numpy:
+    # This can be required when mixing nufft/fft/numpy backend combinations.
     @staticmethod
     def asnumpy(x):
+        """
+        Ensure `asnumpy` is always available and returns a numpy array.
+        """
         if cp and isinstance(x, cp.ndarray):
             x = x.get()
         return x

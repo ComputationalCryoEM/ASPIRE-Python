@@ -160,8 +160,8 @@ class PyfftwFFT(FFT):
     def ifftshift(self, a, axes=None):
         return scipy_fft.ifftshift(a, axes=axes)
 
-    def dct(self, *args, **kwargs):
-        return scipy_fft.dct(*args, **kwargs)
+    def dct(self, x, **kwargs):
+        return scipy_fft.dct(x, **kwargs)
 
-    def idct(self, *args, **kwargs):
-        return scipy_fft.idct(*args, **kwargs)
+    def idct(self, x, **kwargs):
+        return scipy_fft.idct(x, **kwargs)

@@ -7,11 +7,16 @@ import numpy as np
 from aspire.numeric.base_fft import FFT
 
 
+# This improves the flexibility of our FFT wrappers by allowing for
+# incremental code changes and testing.
 def _preserve_host(func):
     """
-    Method decorator that returns a numpy/cupy array result when passed a numpy/cupy array input.
+    Method decorator that returns a numpy/cupy array result when
+    passed a numpy/cupy array input respectively.
 
-    This improves the flexibility of our FFT wrappers by allowing for incremental code changes.
+    At the time of writing this wrapper will also upcast cupy FFT
+    operations to doubles as the precision in singles can cause
+    accuracy issues.
     """
 
     @functools.wraps(func)  # Pass metadata (eg name and doctrings) from `func`
@@ -20,6 +25,9 @@ def _preserve_host(func):
         # CuPy's single precision FFT appears to be too inaccurate for
         # many of our unit tests, so the signal is upcast and recast
         # on return.
+        # Todo, discuss with Joakim whether we want this upcasting
+        # business configurable or keep singles, both in conjunction
+        # with xfailing the tests.
         _singles = False
         if x.dtype == np.float32:
             _singles = True
