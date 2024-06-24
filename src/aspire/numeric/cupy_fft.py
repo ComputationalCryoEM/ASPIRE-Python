@@ -2,6 +2,7 @@ import functools
 
 import cupy as cp
 import cupyx.scipy.fft as cufft
+import numpy as np
 
 from aspire.numeric.base_fft import FFT
 
@@ -16,6 +17,17 @@ def _preserve_host(func):
     @functools.wraps(func)  # Pass metadata (eg name and doctrings) from `func`
     def wrapper(self, x, *args, **kwargs):
 
+        # CuPy's single precision FFT appears to be too inaccurate for
+        # many of our unit tests, so the signal is upcast and recast
+        # on return.
+        _singles = False
+        if x.dtype == np.float32:
+            _singles = True
+            x = x.astype(np.float64)
+        elif x.dtype == np.complex64:
+            _singles = True
+            x = x.astype(np.complex128)
+
         _host = False
         if not isinstance(x, cp.ndarray):
             _host = True
@@ -25,6 +37,12 @@ def _preserve_host(func):
 
         if _host:
             res = res.get()
+
+        # Recast if needed.
+        if _singles and res.dtype == np.float64:
+            res = res.astype(np.float32)
+        elif _singles and res.dtype == np.complex128:
+            res = res.astype(np.complex64)
 
         return res
 
