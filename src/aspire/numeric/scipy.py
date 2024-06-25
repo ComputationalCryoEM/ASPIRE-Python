@@ -2,10 +2,11 @@
 Utility wrappers for scipy methods.
 """
 
+import scipy
+from packaging.version import Version
 
-from scipy.sparse.linalg import cg
 
-def cg(*args,**kwargs):
+def cg(*args, **kwargs):
     """
     Supports scipy cg before and after 1.14.0.
     """
@@ -13,4 +14,4 @@ def cg(*args,**kwargs):
     # older scipy cg interface uses `tol` instead of `rtol`
     if Version(scipy.__version__) < Version("1.14.0"):
         kwargs["tol"] = kwargs.pop("rtol", None)
-    return cg(*args,**kwargs)
+    return scipy.sparse.linalg.cg(*args, **kwargs)

@@ -1,9 +1,10 @@
 import logging
 
 import numpy as np
-from scipy.sparse.linalg import LinearOperator, cg
+from scipy.sparse.linalg import LinearOperator
 
 from aspire.image import Image
+from aspire.numeric.scipy import cg
 from aspire.utils import mdim_mat_fun_conj
 from aspire.volume import Volume
 
@@ -580,7 +581,7 @@ class Basis:
         for isample in range(0, n_data):
             b = self.evaluate_t(self._cls(x[isample])).asnumpy().T
             # TODO: need check the initial condition x0 can improve the results or not.
-            v[isample], info = cg(operator, b, tol=tol, atol=atol)
+            v[isample], info = cg(operator, b, rtol=tol, atol=atol)
             if info != 0:
                 raise RuntimeError(f"Unable to converge! cg info={info}")
 
