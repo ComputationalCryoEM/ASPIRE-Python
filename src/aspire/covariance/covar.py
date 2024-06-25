@@ -2,12 +2,12 @@ import logging
 from functools import partial
 
 import numpy as np
-import scipy.sparse.linalg
 from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
 
 from aspire.nufft import anufft
 from aspire.numeric import fft
+from aspire.numeric.scipy import cg
 from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel, MeanEstimator
 from aspire.utils import (
@@ -127,9 +127,7 @@ class CovarianceEstimator(Estimator):
                 f"Delta {norm(b_coef - self.apply_kernel(xk, packed=True))} (target {target_residual})"
             )
 
-        x, info = scipy.sparse.linalg.cg(
-            operator, b_coef, M=M, callback=cb, tol=tol, atol=0
-        )
+        x, info = cg(operator, b_coef, M=M, callback=cb, rtol=tol, atol=0)
 
         if info != 0:
             raise RuntimeError("Unable to converge!")
