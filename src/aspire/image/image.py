@@ -192,8 +192,7 @@ class Image:
         """
         # number of points to sample on radial line in polar grid
         n_points = self.resolution
-
-        n_trans = self.n_images
+        original_stack = self.stack_shape
 
         # 2-D grid
         y_idx = np.arange(-n_points / 2, n_points / 2, dtype=self.dtype) / n_points * 2
@@ -206,14 +205,17 @@ class Image:
         pts[1] = np.pi * y_theta.flatten()
 
         # NUFFT
-        # compute the polar nufft, create a
-        image_ft = nufft(self._data, pts).reshape(self.n_images, n_points, n_points)
+        # compute the polar nufft
+        image_ft = nufft(self.stack_reshape(-1)._data, pts).reshape(
+            self.n_images, n_points, n_points
+        )
 
         # compute the Radon transform (sinogram)
         image_rt = np.fft.fftshift(
             np.fft.ifftn(np.fft.ifftshift(image_ft, axes=(0, 1)), axes=(0, 1)),
             axes=(0, 1),
         ).real
+        image_rt = image_rt.reshape(*original_stack, n_points, n_points)
         return image_rt
 
     @property
