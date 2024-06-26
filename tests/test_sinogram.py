@@ -44,7 +44,6 @@ def masked_image(dtype, img_size):
     g = grid_2d(img_size, normalized=True, shifted=True)
     mask = g["r"] < 1
 
-    # add more logic to check the sizes and readjust accordingly
     image = data.camera().astype(dtype)
     image = image[:img_size, :img_size]
     return Image(image * mask)
@@ -52,6 +51,9 @@ def masked_image(dtype, img_size):
 
 # Image.project and compare results to skimage.radon
 def test_image_project(masked_image):
+    """
+    TestImage.project on a single stack of images. Compares project method with skimage.
+    """
     ny = masked_image.resolution
     angles = np.linspace(0, 360, ny, endpoint=False)
     rads = angles / 180 * np.pi
@@ -62,9 +64,15 @@ def test_image_project(masked_image):
     reference_sinogram = radon(n, theta=angles[::-1])
 
     # compare s with reference
-    np.testing.assert_allclose(s[0], reference_sinogram, rtol=11, atol=1e-8)
+    nrms = np.sqrt(np.mean((s[0] - reference_sinogram) ** 2, axis=0)) / np.linalg.norm(
+        reference_sinogram, axis=0
+    )
+    tol = 0.002
 
-    # create fixture called masked_image(img_size) -> return: masked image of size (grid generation goes in fixture)
+    # odd image tolerance (stink)
+    if masked_image.resolution % 2 == 1:
+        tol = 0.02
+    np.testing.assert_array_less(nrms, tol, "Error in test image")
 
 
 def test_multidim():
@@ -72,7 +80,7 @@ def test_multidim():
     Test Image.project on stacks of images.
     """
 
-    L = 64  # pixels
+    L = 512  # pixels
     n = 3
 
     # Generate a mask
@@ -84,15 +92,18 @@ def test_multidim():
     imgs = src.images[:] * mask
 
     # Generate line project angles
-    ang_degrees = np.linspace(0, 180, L, endpoint=False)
-    ang_rads = ang_degrees * np.pi / 180.0
-
-    # Call the line projection method
-    s = imgs.project(ang_rads)
+    angles = np.linspace(0, 180, L, endpoint=False)
+    rads = angles / 180.0 * np.pi
+    s = imgs.project(rads)
 
     # # Compare with sk
-    res = np.empty((n, L, L))
+    reference_sinograms = np.empty((n, L, L))
     for i, img in enumerate(imgs._data):
-        res[i] = radon(img, theta=ang_rads[::-1])
+        reference_sinograms[i] = radon(img, theta=angles[::-1])
 
-    np.testing.assert_allclose(s, res, rtol=12, atol=1e-8)
+    # decrease tolerance as L goes up
+    for i in range(n):
+        nrms = np.sqrt(
+            np.mean((s[i] - reference_sinograms[i]) ** 2, axis=0)
+        ) / np.linalg.norm(reference_sinograms[i], axis=0)
+        np.testing.assert_array_less(nrms, 0.05, err_msg=f"Error in image {i}")
