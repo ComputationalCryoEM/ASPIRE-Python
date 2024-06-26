@@ -51,11 +51,11 @@ class CufinufftPlan(Plan):
                 "cufinufft has caught a non C_CONTIGUOUS array,"
                 " `fourier_pts` will be copied to C_CONTIGUOUS."
             )
-        self.fourier_pts = np.ascontiguousarray(
-            np.mod(fourier_pts + np.pi, 2 * np.pi) - np.pi, dtype=self.dtype
+        self.fourier_pts = cp.ascontiguousarray(
+            cp.mod(cp.asarray(fourier_pts, dtype=self.dtype) + cp.pi, 2 * cp.pi) - cp.pi
         )
 
-        self.num_pts = fourier_pts.shape[1]
+        self.num_pts = self.fourier_pts.shape[1]
         self.epsilon = max(epsilon, np.finfo(self.dtype).eps)
 
         self._transform_plan = cufPlan(
@@ -81,12 +81,8 @@ class CufinufftPlan(Plan):
             **self.adjoint_opts,
         )
 
-        # Note, I store self.fourier_pts_gpu so the GPUArrray life
-        #   is tied to instance, instead of this method.
-        self.fourier_pts_gpu = cp.array(self.fourier_pts)
-
-        self._transform_plan.setpts(*self.fourier_pts_gpu)
-        self._adjoint_plan.setpts(*self.fourier_pts_gpu)
+        self._transform_plan.setpts(*self.fourier_pts)
+        self._adjoint_plan.setpts(*self.fourier_pts)
 
     def transform(self, signal):
         """

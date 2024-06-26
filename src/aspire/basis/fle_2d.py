@@ -308,12 +308,13 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             * np.arange(self.num_angular_nodes // 2, dtype=self.dtype)
             / self.num_angular_nodes
         )
-        x = np.cos(phi).reshape(1, self.num_angular_nodes // 2)
-        y = np.sin(phi).reshape(1, self.num_angular_nodes // 2)
-        x = x * nodes * h
-        y = y * nodes * h
-        self.grid_x = x.flatten()
-        self.grid_y = y.flatten()
+        grid_xy = np.empty(
+            (2, self.num_radial_nodes, self.num_angular_nodes // 2), dtype=self.dtype
+        )
+        grid_xy[0] = np.cos(phi)  # x
+        grid_xy[1] = np.sin(phi)  # y
+        grid_xy *= nodes * h
+        self.grid_xy = xp.asarray(grid_xy.reshape(2, -1))
 
     def _build_interpolation_matrix(self):
         """
@@ -531,7 +532,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     def _step1_t(self, im):
         """
         Step 1 of the adjoint transformation (images to coefficients).
-        Calculates the NUFFT of the image on gridpoints `self.grid_x` and `self.grid_y`.
+        Calculates the NUFFT of the image on gridpoints `grid_x` and `grid_y`.
         """
         im = im.reshape(-1, self.nres, self.nres).astype(complex_type(self.dtype))
         num_img = im.shape[0]
@@ -539,10 +540,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             (num_img, self.num_radial_nodes, self.num_angular_nodes),
             dtype=complex_type(self.dtype),
         )
-        _z = (
-            nufft(im, np.stack((self.grid_x, self.grid_y)), epsilon=self.epsilon)
-            * self.h**2
-        )
+        _z = nufft(im, self.grid_xy, epsilon=self.epsilon) * self.h**2
         _z = _z.reshape(num_img, self.num_radial_nodes, self.num_angular_nodes // 2)
         z[:, :, : self.num_angular_nodes // 2] = _z
         z[:, :, self.num_angular_nodes // 2 :] = np.conj(_z)
@@ -645,7 +643,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         z = z[:, :, : self.num_angular_nodes // 2].reshape(num_img, -1)
         im = anufft(
             z.astype(complex_type(self.dtype)),
-            np.stack((self.grid_x, self.grid_y)),
+            self.grid_xy,
             (self.nres, self.nres),
             epsilon=self.epsilon,
         )
