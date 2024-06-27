@@ -64,15 +64,15 @@ src = RelionSource(
 
 # Downsample the images
 logger.info(f"Set the resolution to {img_size} X {img_size}")
-src.downsample(img_size)
+src = src.downsample(img_size)
 
 # Use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
-src.phase_flip()
+src = src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
-src.whiten(aiso_noise_estimator.filter)
+src = src.whiten(aiso_noise_estimator.filter)
 
 # Caching is used for speeding up large datasets on high memory machines.
 src = src.cache()
