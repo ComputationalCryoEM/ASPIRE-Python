@@ -55,7 +55,7 @@ def test_image_project(masked_image):
     TestImage.project on a single stack of images. Compares project method with skimage.
     """
     ny = masked_image.resolution
-    angles = np.linspace(0, 360, ny, endpoint=False)
+    angles = np.linspace(0, 360, ny + 1, endpoint=False)
     rads = angles / 180 * np.pi
     s = masked_image.project(rads)
 
@@ -68,10 +68,6 @@ def test_image_project(masked_image):
         reference_sinogram, axis=0
     )
     tol = 0.002
-
-    # odd image tolerance (stink)
-    if masked_image.resolution % 2 == 1:
-        tol = 0.02
     np.testing.assert_array_less(nrms, tol, "Error in test image")
 
 
