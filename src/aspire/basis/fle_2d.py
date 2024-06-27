@@ -1,4 +1,3 @@
-import gc
 import logging
 
 import numpy as np
@@ -21,9 +20,8 @@ logger = logging.getLogger(__name__)
 
 def _cleanup():
     """
-    Utility for informing python+cupy to cleanup memory held by old vars.
+    Utility for informing cupy to cleanup memory held by old vars.
     """
-    gc.collect()
     try:
         import cupy
 
@@ -511,18 +509,18 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             coefficients.
         """
         # See Section 3.5
-        imgs = xp.array(imgs)  # Copy here, mutating.
+        imgs = xp.array(imgs)  # Intentionally copying here, mutating.
         imgs[:, self.radial_mask] = 0
         z = self._step1_t(imgs)
-        del imgs
+        del imgs  # inform python we're done with imgs
         _cleanup()
 
         b = self._step2_t(z)
-        del z
+        del z  # inform python we're done with z
         _cleanup()
 
         coefs = self._step3_t(b)
-        del b
+        del b  # inform python we're done with b
         _cleanup()
 
         # return in FB order
