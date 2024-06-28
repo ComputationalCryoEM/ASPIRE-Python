@@ -5,6 +5,7 @@ from warnings import catch_warnings, filterwarnings, simplefilter, warn
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
+from numpy.fft import irfft
 from PIL import Image as PILImage
 from scipy.linalg import lstsq
 
@@ -195,24 +196,27 @@ class Image:
         original_stack = self.stack_shape
 
         # 2-D grid
-        y_idx = np.fft.fftshift(np.fft.fftfreq(n_points))
-        pts = np.empty((2, len(angles), n_points), dtype=self.dtype)
+        y_idx = np.fft.rfftfreq(n_points) * np.pi * 2
+        n_real_points = len(y_idx)
+
+        # y_idx = np.fft.fftshift(np.fft.fftfreq(n_points))
+        pts = np.empty((2, len(angles), n_real_points), dtype=self.dtype)
 
         pts[0] = y_idx[np.newaxis, :] * np.sin(angles)[:, np.newaxis]
         pts[1] = y_idx[np.newaxis, :] * np.cos(angles)[:, np.newaxis]
-        pts = pts.reshape(2, n_points * len(angles)) * 2 * np.pi
+        pts = pts.reshape(2, n_real_points * len(angles))
 
         # NUFFT
         # compute the polar nufft
         image_ft = nufft(self.stack_reshape(-1)._data, pts).reshape(
-            self.n_images, len(angles), n_points
+            self.n_images, len(angles), n_real_points
         )
 
         # compute the Radon transform (sinogram)
         image_rt = np.fft.fftshift(
-            np.fft.ifftn(np.fft.ifftshift(image_ft, axes=(0, 2)), axes=(0, 2)),
+            np.fft.irfftn(image_ft, s=(self.n_images, n_points), axes=(0, 2)),
             axes=(0, 2),
-        ).real
+        )
         image_rt = image_rt.reshape(*original_stack, len(angles), n_points)
         return image_rt
 
