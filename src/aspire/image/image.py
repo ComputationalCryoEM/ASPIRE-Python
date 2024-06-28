@@ -196,24 +196,24 @@ class Image:
 
         # 2-D grid
         y_idx = np.fft.fftshift(np.fft.fftfreq(n_points))
-        pts = np.empty((2, n_points, len(angles)), dtype=self.dtype)
+        pts = np.empty((2, len(angles), n_points), dtype=self.dtype)
 
-        pts[0] = y_idx[:, np.newaxis] * np.sin(angles)[np.newaxis, :]
-        pts[1] = y_idx[:, np.newaxis] * np.cos(angles)[np.newaxis, :]
+        pts[0] = y_idx[np.newaxis, :] * np.sin(angles)[:, np.newaxis]
+        pts[1] = y_idx[np.newaxis, :] * np.cos(angles)[:, np.newaxis]
         pts = pts.reshape(2, n_points * len(angles)) * 2 * np.pi
 
         # NUFFT
         # compute the polar nufft
         image_ft = nufft(self.stack_reshape(-1)._data, pts).reshape(
-            self.n_images, n_points, len(angles)
+            self.n_images, len(angles), n_points
         )
 
         # compute the Radon transform (sinogram)
         image_rt = np.fft.fftshift(
-            np.fft.ifftn(np.fft.ifftshift(image_ft, axes=(0, 1)), axes=(0, 1)),
-            axes=(0, 1),
+            np.fft.ifftn(np.fft.ifftshift(image_ft, axes=(0, 2)), axes=(0, 2)),
+            axes=(0, 2),
         ).real
-        image_rt = image_rt.reshape(*original_stack, n_points, len(angles))
+        image_rt = image_rt.reshape(*original_stack, len(angles), n_points)
         return image_rt
 
     @property
