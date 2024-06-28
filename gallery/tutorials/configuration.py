@@ -102,6 +102,36 @@ for _ in trange(3):
     time.sleep(1)
 print("Done Loop 2\n")
 
+# %%
+# Enabling GPU Acceleration
+# -------------------------
+# Enabling GPU acceleration requires installing supporting software
+# packages and small config changes. Installing the supporting
+# software is most easily accomplished by installing ASPIRE with one
+# of the published GPU extensions, for example ``pip install
+# "aspire[dev,gpu_12x]"``.  Once the packages are installed users
+# should automatically find that the NUFFT calls are running on the
+# GPU.  Additional acceleration is achieved by enabling `cupy` for
+# `numeric` and `fft` components.
+#
+#    .. code-block:: yaml
+#
+#      common:
+#          # numeric module to use - one of numpy/cupy
+#          numeric: cupy
+#          # fft backend to use - one of pyfftw/scipy/cupy/mkl
+#          fft: cupy
+#
+# Alternatively, like other config options, this can be changed
+# dynamically with code.
+#
+#    .. code-block:: python
+#
+#      from aspire import config
+#
+#      config["common"]["numeric"] = "cupy"
+#      config["common"]["fft"] = "cupy"
+#
 
 # %%
 # Resolution
