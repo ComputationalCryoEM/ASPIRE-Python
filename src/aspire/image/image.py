@@ -5,7 +5,6 @@ from warnings import catch_warnings, filterwarnings, simplefilter, warn
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
-from numpy.fft import irfft
 from PIL import Image as PILImage
 from scipy.linalg import lstsq
 
