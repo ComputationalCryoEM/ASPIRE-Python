@@ -376,7 +376,7 @@ def crop_pad_2d(im, size, fill_value=0):
 
     :param im: A >=2-dimensional numpy array
     :param size: Integer size of cropped/padded output
-    :return: A numpy array of shape (..., size, size)
+    :return: Array of shape (..., size, size)
     """
 
     im_y, im_x = im.shape[-2:]
@@ -393,7 +393,7 @@ def crop_pad_2d(im, size, fill_value=0):
         shape = list(im.shape[:-2])
         shape.extend([size, size])
 
-        # Ensure that we return in the same dtype as the input
+        # Ensure that we return the same dtype as the input
         _full = np.full  # Default to numpy array
         if isinstance(im, xp.ndarray):
             # Use cupy when `im` _and_ xp are cupy ndarray
@@ -405,34 +405,61 @@ def crop_pad_2d(im, size, fill_value=0):
         # when padding, start_x and start_y are negative since size is larger
         # than im_x and im_y; the below line calculates where the original image
         # is placed in relation to the (now-larger) box size
-        to_return[-start_y : im_y - start_y, -start_x : im_x - start_x] = im
+        to_return[..., -start_y : im_y - start_y, -start_x : im_x - start_x] = im
         return to_return
     else:
         # target size is between mat_x and mat_y
         raise ValueError("Cannot crop and pad an image at the same time.")
 
 
-def crop_pad_3d(im, size, fill_value=0):
-    im_y, im_x, im_z = im.shape
+def crop_pad_3d(vol, size, fill_value=0):
+    """
+    Crop/pads `vol` according to `size`.
+
+    Padding will use `fill_value`.
+    Return's host/gpu array based on `vol`.
+
+    :param vol: A >=3-dimensional numpy array
+    :param size: Integer size of cropped/padded output
+    :return: Array of shape (..., size, size, size)
+    """
+
+    vol_z, vol_y, vol_x = vol.shape[-3:]
     # shift terms
-    start_x = math.floor(im_x / 2) - math.floor(size / 2)
-    start_y = math.floor(im_y / 2) - math.floor(size / 2)
-    start_z = math.floor(im_z / 2) - math.floor(size / 2)
+    start_z = math.floor(vol_z / 2) - math.floor(size / 2)
+    start_y = math.floor(vol_y / 2) - math.floor(size / 2)
+    start_x = math.floor(vol_x / 2) - math.floor(size / 2)
 
     # cropping
-    if size <= min(im_y, im_x, im_z):
-        return im[
-            start_y : start_y + size, start_x : start_x + size, start_z : start_z + size
+    if size <= min(vol_z, vol_y, vol_x):
+        return vol[
+            ...,
+            start_z : start_z + size,
+            start_y : start_y + size,
+            start_x : start_x + size,
         ]
     # padding
-    elif size >= max(im_y, im_x, im_z):
-        to_return = fill_value * np.ones((size, size, size), dtype=im.dtype)
+    elif size >= max(vol_z, vol_y, vol_x):
+        # Determine shape
+        shape = list(vol.shape[:-3])
+        shape.extend([size, size, size])
+
+        # Ensure that we return the same dtype as the input
+        _full = np.full  # Default to numpy array
+        if isinstance(vol, xp.ndarray):
+            # Use cupy when `vol` _and_ xp are cupy ndarray
+            # Avoids having to handle when cupy is not installed
+            _full = xp.full
+
+        to_return = _full(shape, fill_value, dtype=vol.dtype)
+
         to_return[
-            -start_y : im_y - start_y,
-            -start_x : im_x - start_x,
-            -start_z : im_z - start_z,
-        ] = im
+            ...,
+            -start_z : vol_z - start_z,
+            -start_y : vol_y - start_y,
+            -start_x : vol_x - start_x,
+        ] = vol
         return to_return
     else:
-        # target size is between min and max of (im_y, im_x, im_z)
+        # target size is between min and max of (vol_y, vol_x, vol_z)
         raise ValueError("Cannot crop and pad a volume at the same time.")
