@@ -129,10 +129,10 @@ an M1 laptop:
 Installing GPU Extensions
 *************************
 
-ASPIRE does support GPUs, depending on several external packages.  The
-collection of GPU extensions can be installed using ``pip``.
-Extensions are grouped based on CUDA versions.  To find the CUDA
-driver version, run ``nvidia-smi`` on the intended system.
+ASPIRE does support using a GPU, depending on several external
+packages.  The collection of GPU extensions can be installed using
+``pip``.  Extensions are grouped based on CUDA versions.  To find the
+CUDA driver version, run ``nvidia-smi`` on the intended system.
 
 .. list-table:: CUDA GPU Extension Versions
    :widths: 25 25
@@ -140,14 +140,6 @@ driver version, run ``nvidia-smi`` on the intended system.
 
    * - CUDA Version
      - ASPIRE Extension
-   * - 10.2
-     - gpu-102
-   * - 11.0
-     - gpu-110
-   * - 11.1
-     - gpu-111
-   * - >=11.2
-     - gpu-11x
    * - >=12
      - gpu-12x
 
@@ -164,12 +156,15 @@ the command below would install GPU packages required for ASPIRE.
 
     
 By default if the required GPU extensions are correctly installed,
-ASPIRE should automatically begin using the GPU for select components
-(such as those using ``nufft``).
+ASPIRE should automatically begin using the GPU calls to our ``nufft`` module.
 
-Because GPU extensions depend on several third party packages and
-libraries, we can only offer limited support if one of the packages
-has a problem on your system.
+Using GPU in other areas of the code is still an experimental feature
+and requires a minor configuration setting to enable ``cupy``. See the
+:ref:`sphx_glr_auto_tutorials_configuration.py` for details. Because
+GPU extensions depend on several third party softwares and machines
+vary wildly, we can only offer limited support if one of the packages
+has a problem on your system.  We are currently expanding GPU code
+coverage.
 
 Generating Documentation
 ************************
