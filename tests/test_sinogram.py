@@ -4,7 +4,6 @@ from skimage import data
 from skimage.transform import radon
 
 from aspire.image import Image
-from aspire.source import Simulation
 from aspire.utils import grid_2d
 
 # parameter img_sizes: 511, 512
@@ -85,9 +84,8 @@ def test_multidim():
     g = grid_2d(L, normalized=True, shifted=True)
     mask = g["r"] < 1
 
-    # Generate a simulation
-    src = Simulation(n=n, L=L, C=1, dtype=np.float64)
-    imgs = src.images[:] * mask
+    # Generate images
+    imgs = Image(np.random.random((n, L, L))) * mask
 
     # Generate line project angles
     angles = np.linspace(0, 180, L, endpoint=False)
@@ -97,11 +95,11 @@ def test_multidim():
     # # Compare with sk
     reference_sinograms = np.empty((n, L, L))
     for i, img in enumerate(imgs._data):
-        reference_sinograms[i] = radon(img, theta=angles[::-1])
+        reference_sinograms[i] = radon(img, theta=angles[::-1]).T
 
     # decrease tolerance as L goes up
     for i in range(n):
         nrms = np.sqrt(
-            np.mean((s[i] - reference_sinograms[i]) ** 2, axis=0)
-        ) / np.linalg.norm(reference_sinograms[i], axis=0)
+            np.mean((s[i] - reference_sinograms[i]) ** 2, axis=1)
+        ) / np.linalg.norm(reference_sinograms[i], axis=1)
         np.testing.assert_array_less(nrms, 0.05, err_msg=f"Error in image {i}")
