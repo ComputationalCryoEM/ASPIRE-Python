@@ -58,14 +58,16 @@ def test_image_project(masked_image):
     angles = np.linspace(0, 360, ny + 1, endpoint=False)
     rads = angles / 180 * np.pi
     s = masked_image.project(rads)
+    assert s.shape == (1, len(angles), ny)
 
     # add reference skimage radon here
     n = masked_image._data[0]
-    reference_sinogram = radon(n, theta=angles[::-1])
-
+    reference_sinogram = radon(n, theta=angles[::-1]).T  # transpose angles, points
+    assert reference_sinogram.shape == (len(angles), ny)
     # compare s with reference
-    nrms = np.sqrt(np.mean((s[0] - reference_sinogram) ** 2, axis=0)) / np.linalg.norm(
-        reference_sinogram, axis=0
+
+    nrms = np.sqrt(np.mean((s[0] - reference_sinogram) ** 2, axis=1)) / np.linalg.norm(
+        reference_sinogram, axis=1
     )
     tol = 0.002
     np.testing.assert_array_less(nrms, tol, "Error in test image")
