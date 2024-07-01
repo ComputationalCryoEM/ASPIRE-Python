@@ -131,16 +131,16 @@ class FFBBasis2D(FBBasis2D):
 
         ind = 0
 
-        idx = ind + xp.arange(self.k_max[0], dtype=int)
+        idx = ind + np.arange(self.k_max[0], dtype=int)
 
-        pf[:, 0, :] = v[:, xp.asarray(self._zero_angular_inds)] @ self.radial_norm[idx]
+        pf[:, 0, :] = v[:, self._zero_angular_inds] @ self.radial_norm[idx]
         ind = ind + idx.size
 
         ind_pos = ind
 
         for ell in range(1, self.ell_max + 1):
             idx = ind + xp.arange(self.k_max[ell], dtype=int)
-            idx_pos = ind_pos + xp.arange(self.k_max[ell], dtype=int)
+            idx_pos = ind_pos + np.arange(self.k_max[ell], dtype=int)
             idx_neg = idx_pos + self.k_max[ell]
 
             v_ell = (v[:, idx_pos] - 1j * v[:, idx_neg]) / 2.0
@@ -171,9 +171,7 @@ class FFBBasis2D(FBBasis2D):
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
         freqs = m_reshape(self._precomp["freqs"], (2, n_r * n_theta))
 
-        x = 2 * anufft(
-            pf.astype(complex_type(self.dtype)), 2 * pi * freqs, self.sz, real=True
-        )
+        x = 2 * anufft(pf, 2 * pi * freqs, self.sz, real=True)
 
         # Return X as Image instance with the last two dimensions as *self.sz
         x = x.reshape((*sz_roll, *self.sz))
@@ -206,7 +204,7 @@ class FFBBasis2D(FBBasis2D):
         pf = xp.concatenate((pf, pf.conjugate()), axis=2)
 
         # evaluate radial integral using the Gauss-Legendre quadrature rule
-        pf *= self.gl_weighted_nodes[None, :, None]
+        pf = pf * self.gl_weighted_nodes[None, :, None]
 
         #  1D FFT on the angular dimension for each concentric circle
         pf = 2 * xp.pi / (2 * n_theta) * fft.fft(pf)
