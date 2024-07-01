@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from numpy import pi
 
 from aspire.basis import FBBasis3D
 from aspire.basis.basis_utils import lgwt, norm_assoc_legendre, sph_bessel
@@ -61,26 +60,29 @@ class FFBBasis3D(FBBasis3D):
 
         r, wt_r = lgwt(n_r, 0.0, self.kcut, dtype=self.dtype)
         z, wt_z = lgwt(n_phi, -1, 1, dtype=self.dtype)
-        r = m_reshape(r, (n_r, 1))
-        wt_r = m_reshape(wt_r, (n_r, 1))
-        z = m_reshape(z, (n_phi, 1))
-        wt_z = m_reshape(wt_z, (n_phi, 1))
-        phi = np.arccos(z)
+        r = m_reshape(xp.asarray(r), (n_r, 1))
+        rh = xp.asnumpy(r)
+        wt_r = m_reshape(xp.asarray(wt_r), (n_r, 1))
+        z = m_reshape(xp.asarray(z), (n_phi, 1))
+        wt_z = m_reshape(xp.asarray(wt_z), (n_phi, 1))
+        phi = xp.arccos(z)
         wt_phi = wt_z
-        theta = 2 * pi * np.arange(n_theta, dtype=self.dtype).T / (2 * n_theta)
+        theta = 2 * xp.pi * xp.arange(n_theta, dtype=self.dtype).T / (2 * n_theta)
         theta = m_reshape(theta, (n_theta, 1))
 
         # evaluate basis function in the radial dimension
-        radial_wtd = np.zeros(
+        radial_wtd = xp.zeros(
             shape=(n_r, np.max(self.k_max), self.ell_max + 1), dtype=self.dtype
         )
         for ell in range(0, self.ell_max + 1):
             k_max_ell = self.k_max[ell]
-            rmat = r * self.r0[ell][0:k_max_ell].T / self.kcut
-            radial_ell = np.zeros_like(rmat)
+            rmat = rh * self.r0[ell][0:k_max_ell].T / self.kcut  # host
+            radial_ell = xp.zeros_like(rmat)
             for ik in range(0, k_max_ell):
-                radial_ell[:, ik] = sph_bessel(ell, rmat[:, ik])
-            nrm = np.abs(sph_bessel(ell + 1, self.r0[ell][0:k_max_ell].T) / 4)
+                radial_ell[:, ik] = xp.asarray(sph_bessel(ell, rmat[:, ik]))
+            nrm = xp.abs(
+                xp.asarray(sph_bessel(ell + 1, self.r0[ell][0:k_max_ell].T)) / 4
+            )
             radial_ell = radial_ell / nrm
             radial_ell_wtd = r**2 * wt_r * radial_ell
             radial_wtd[:, 0:k_max_ell, ell] = radial_ell_wtd
@@ -95,14 +97,14 @@ class FFBBasis3D(FBBasis3D):
                 - np.mod(self.ell_max, 2) * np.mod(m, 2)
             )
             n_odd_ell = int(self.ell_max - m + 1 - n_even_ell)
-            phi_wtd_m_even = np.zeros((n_phi, n_even_ell), dtype=phi.dtype)
-            phi_wtd_m_odd = np.zeros((n_phi, n_odd_ell), dtype=phi.dtype)
+            phi_wtd_m_even = xp.zeros((n_phi, n_even_ell), dtype=phi.dtype)
+            phi_wtd_m_odd = xp.zeros((n_phi, n_odd_ell), dtype=phi.dtype)
 
             ind_even = 0
             ind_odd = 0
             for ell in range(m, self.ell_max + 1):
-                phi_m_ell = norm_assoc_legendre(ell, m, z)
-                nrm_inv = np.sqrt(0.5 / pi)
+                phi_m_ell = xp.asarray(norm_assoc_legendre(ell, m, z))
+                nrm_inv = np.sqrt(0.5 / np.pi)
                 phi_m_ell = nrm_inv * phi_m_ell
                 phi_wtd_m_ell = wt_phi * phi_m_ell
                 if np.mod(ell, 2) == 0:
@@ -116,41 +118,41 @@ class FFBBasis3D(FBBasis3D):
             ang_phi_wtd_odd.append(phi_wtd_m_odd)
 
         # evaluate basis function in the theta dimension
-        ang_theta = np.zeros((n_theta, 2 * self.ell_max + 1), dtype=theta.dtype)
+        ang_theta = xp.zeros((n_theta, 2 * self.ell_max + 1), dtype=theta.dtype)
 
-        ang_theta[:, 0 : self.ell_max] = np.sqrt(2) * np.sin(
-            theta @ m_reshape(np.arange(self.ell_max, 0, -1), (1, self.ell_max))
+        ang_theta[:, 0 : self.ell_max] = np.sqrt(2) * xp.sin(
+            theta @ m_reshape(xp.arange(self.ell_max, 0, -1), (1, self.ell_max))
         )
-        ang_theta[:, self.ell_max] = np.ones(n_theta, dtype=theta.dtype)
-        ang_theta[:, self.ell_max + 1 : 2 * self.ell_max + 1] = np.sqrt(2) * np.cos(
-            theta @ m_reshape(np.arange(1, self.ell_max + 1), (1, self.ell_max))
+        ang_theta[:, self.ell_max] = xp.ones(n_theta, dtype=theta.dtype)
+        ang_theta[:, self.ell_max + 1 : 2 * self.ell_max + 1] = np.sqrt(2) * xp.cos(
+            theta @ m_reshape(xp.arange(1, self.ell_max + 1), (1, self.ell_max))
         )
 
-        ang_theta_wtd = (2 * pi / n_theta) * ang_theta
+        ang_theta_wtd = (2 * np.pi / n_theta) * ang_theta
 
-        theta_grid, phi_grid, r_grid = np.meshgrid(
-            theta, phi, r, sparse=False, indexing="ij"
+        theta_grid, phi_grid, r_grid = xp.meshgrid(
+            theta.flatten(), phi.flatten(), r.flatten(), sparse=False, indexing="ij"
         )
-        fourier_x = m_flatten(r_grid * np.cos(theta_grid) * np.sin(phi_grid))
-        fourier_y = m_flatten(r_grid * np.sin(theta_grid) * np.sin(phi_grid))
-        fourier_z = m_flatten(r_grid * np.cos(phi_grid))
+        fourier_x = m_flatten(r_grid * xp.cos(theta_grid) * xp.sin(phi_grid))
+        fourier_y = m_flatten(r_grid * xp.sin(theta_grid) * xp.sin(phi_grid))
+        fourier_z = m_flatten(r_grid * xp.cos(phi_grid))
         fourier_pts = (
             2
-            * pi
-            * np.vstack(
+            * xp.pi
+            * xp.vstack(
                 (
-                    fourier_z[np.newaxis, ...],
-                    fourier_y[np.newaxis, ...],
-                    fourier_x[np.newaxis, ...],
+                    fourier_z[xp.newaxis, ...],
+                    fourier_y[xp.newaxis, ...],
+                    fourier_x[xp.newaxis, ...],
                 )
             )
         )
 
         return {
-            "radial_wtd": xp.asarray(radial_wtd),
-            "ang_phi_wtd_even": [xp.asarray(x) for x in ang_phi_wtd_even],
-            "ang_phi_wtd_odd": [xp.asarray(x) for x in ang_phi_wtd_odd],
-            "ang_theta_wtd": xp.asarray(ang_theta_wtd),
+            "radial_wtd": radial_wtd,
+            "ang_phi_wtd_even": ang_phi_wtd_even,
+            "ang_phi_wtd_odd": ang_phi_wtd_odd,
+            "ang_theta_wtd": ang_theta_wtd,
             "fourier_pts": fourier_pts,
         }
 
