@@ -172,9 +172,9 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
 
     """
 
-    _on_gpu = False
+    _keep_on_gpu = False
     if cp and isinstance(sig_f, cp.ndarray):
-        _on_gpu = True
+        _keep_on_gpu = True
 
     if fourier_pts.dtype != real_type(sig_f.dtype):
         raise RuntimeError(
@@ -198,7 +198,7 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
 
     adjoint = adjoint.real if real else adjoint
 
-    if cp and not _on_gpu:
+    if cp and not _keep_on_gpu:
         adjoint = adjoint.get()
 
     return adjoint
@@ -223,9 +223,9 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
 
     """
 
-    _on_gpu = False
+    _keep_on_gpu = False
     if cp and isinstance(sig_f, cp.ndarray):
-        _on_gpu = True
+        _keep_on_gpu = True
 
     if fourier_pts.dtype != real_type(sig_f.dtype):
         raise RuntimeError(
@@ -259,7 +259,7 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
 
     transform = transform.real if real else transform
 
-    if cp and not _on_gpu:
+    if cp and not _keep_on_gpu:
         transform = transform.get()
 
     return transform
