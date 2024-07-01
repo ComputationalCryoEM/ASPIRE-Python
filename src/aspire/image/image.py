@@ -392,6 +392,10 @@ class Image:
         original_stack_shape = self.stack_shape
         im = self.stack_reshape(-1)
 
+        # Note image data is intentionally migrated via `xp.asarray`
+        # because all of the subsequent calls until `asnumpy` are GPU
+        # when xp and fft in `cupy` mode.
+
         # compute FT with centered 0-frequency
         fx = fft.centered_fft2(xp.asarray(im._data))
         # crop 2D Fourier transform for each image
@@ -413,17 +417,16 @@ class Image:
 
         im = self.stack_reshape(-1)
 
+        # Note image and filter data is intentionally migrated via
+        # `xp.asarray` because all of the subsequent calls until
+        # `asnumpy` are GPU when xp and fft in `cupy` mode.
         filter_values = xp.asarray(filter.evaluate_grid(self.resolution))
 
+        # Convolve
         im_f = fft.centered_fft2(xp.asarray(im._data))
-
-        # TODO: why are these different? Doesn't the broadcast work?
-        if im_f.ndim > filter_values.ndim:
-            im_f *= filter_values
-        else:
-            im_f = filter_values * im_f
-
+        im_f = filter_values * im_f
         im = fft.centered_ifft2(im_f)
+
         im = xp.asnumpy(im.real)
 
         return self.__class__(im).stack_reshape(original_stack_shape)
