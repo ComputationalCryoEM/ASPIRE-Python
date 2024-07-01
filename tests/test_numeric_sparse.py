@@ -1,3 +1,7 @@
+"""
+Tests basic numpy/cupy functionality of sparse numeric wrappers.
+"""
+
 import numpy as np
 import pytest
 
