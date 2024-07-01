@@ -195,7 +195,6 @@ def barycentric_interp_sparse(target_points, known_points, numsparse):
     # note that const cancels in numerator and denominator
     vals = vals / denom.reshape(-1, 1)
 
-    # TODO, migrate more of this method towards `xp`
     vals = xp.array(vals.flatten())
     idx = xp.array(idx.flatten())
     jdx = xp.array(jdx.flatten())

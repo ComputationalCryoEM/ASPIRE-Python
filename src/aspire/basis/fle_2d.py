@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 def _cleanup():
     """
     Utility for informing cupy to cleanup memory held by old vars.
+
+    This method is designed to be safely called even when `CuPy` is
+    not installed, in which case it is a no-op.
     """
     try:
         import cupy
@@ -288,10 +291,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.num_angular_nodes = num_angular_nodes
 
         # create gridpoints
-        nodes = 1 - (2 * np.arange(self.num_radial_nodes, dtype=self.dtype) + 1) / (
+        nodes = 1 - (2 * xp.arange(self.num_radial_nodes, dtype=self.dtype) + 1) / (
             2 * self.num_radial_nodes
         )
-        nodes = (np.cos(np.pi * nodes) + 1) / 2
+        nodes = (xp.cos(np.pi * nodes) + 1) / 2
         nodes = (
             self.greatest_lambda - self.smallest_lambda
         ) * nodes + self.smallest_lambda
@@ -302,17 +305,17 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         phi = (
             2
-            * np.pi
-            * np.arange(self.num_angular_nodes // 2, dtype=self.dtype)
+            * xp.pi
+            * xp.arange(self.num_angular_nodes // 2, dtype=self.dtype)
             / self.num_angular_nodes
         )
-        grid_xy = np.empty(
+        grid_xy = xp.empty(
             (2, self.num_radial_nodes, self.num_angular_nodes // 2), dtype=self.dtype
         )
-        grid_xy[0] = np.cos(phi)  # x
-        grid_xy[1] = np.sin(phi)  # y
-        grid_xy *= nodes * h
-        self.grid_xy = xp.asarray(grid_xy.reshape(2, -1))
+        grid_xy[0] = xp.cos(phi)  # x
+        grid_xy[1] = xp.sin(phi)  # y
+        grid_xy = grid_xy * nodes * h
+        self.grid_xy = grid_xy.reshape(2, -1)
 
     def _build_interpolation_matrix(self):
         """
@@ -530,7 +533,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     def _step1_t(self, im):
         """
         Step 1 of the adjoint transformation (images to coefficients).
-        Calculates the NUFFT of the image on gridpoints `grid_x` and `grid_y`.
+        Calculates the NUFFT of the image on gridpoints `grid_xy`.
         """
         im = im.reshape(-1, self.nres, self.nres).astype(complex_type(self.dtype))
         num_img = im.shape[0]
