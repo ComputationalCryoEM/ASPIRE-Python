@@ -468,27 +468,27 @@ class Volume:
         :param ds_res: Desired resolution.
         :param mask: Optional NumPy array mask to multiply in Fourier space.
         """
-        if mask is None:
-            mask = 1.0
 
         original_stack_shape = self.stack_shape
         v = self.stack_reshape(-1)
 
         # take 3D Fourier transform of each volume in the stack
-        fx = xp.asnumpy(fft.fftshift(fft.fftn(xp.asarray(v._data), axes=(1, 2, 3))))
+        fx = fft.fftshift(fft.fftn(xp.asarray(v._data), axes=(1, 2, 3)))
+
         # crop each volume to the desired resolution in frequency space
-        crop_fx = (
-            np.array([crop_pad_3d(fx[i, :, :, :], ds_res) for i in range(self.n_vols)])
-            * mask
-        )
+        fx = crop_pad_3d(fx, ds_res)
+
+        # Optionally apply mask
+        if mask is not None:
+            fx = fx * xp.asarray(mask)
+
         # inverse Fourier transform of each volume
-        out = xp.asnumpy(
-            fft.ifftn(fft.ifftshift(xp.asarray(crop_fx)), axes=(1, 2, 3))
-            * (ds_res**3 / self.resolution**3)
-        )
+        out = fft.ifftn(fft.ifftshift(fx), axes=(1, 2, 3)).real
+        out = out.real * (ds_res**3 / self.resolution**3)
+
         # returns a new Volume object
         return self.__class__(
-            np.real(out), symmetry_group=self.symmetry_group
+            xp.asnumpy(out), symmetry_group=self.symmetry_group
         ).stack_reshape(original_stack_shape)
 
     def shift(self):
