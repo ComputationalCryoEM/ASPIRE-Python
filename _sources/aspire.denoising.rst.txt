@@ -1,0 +1,53 @@
+aspire.denoising package
+========================
+
+Submodules
+----------
+
+aspire.denoising.adaptive\_support module
+-----------------------------------------
+
+.. automodule:: aspire.denoising.adaptive_support
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.denoising.class\_avg module
+----------------------------------
+
+.. automodule:: aspire.denoising.class_avg
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.denoising.denoised\_src module
+-------------------------------------
+
+.. automodule:: aspire.denoising.denoised_src
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.denoising.denoiser module
+--------------------------------
+
+.. automodule:: aspire.denoising.denoiser
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.denoising.denoiser\_cov2d module
+---------------------------------------
+
+.. automodule:: aspire.denoising.denoiser_cov2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.denoising
+   :members:
+   :undoc-members:
+   :show-inheritance:

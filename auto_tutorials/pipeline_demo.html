@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ab-initio Pipeline Demonstration &mdash; ASPIRE 0.12.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=61a4c737" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=2e1188ef"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Component Examples" href="tutorials/index.html" />
+    <link rel="prev" title="ASPIRE-Python Introduction" href="aspire_introduction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+              <div class="version">
+                0.12.3
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#api-introduction">API Introduction</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="configuration.html">ASPIRE Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire_introduction.html">ASPIRE-Python Introduction</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Ab-initio Pipeline Demonstration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#download-an-example-volume">Download an Example Volume</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-simulation-source">Create a Simulation Source</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#several-views-of-the-projection-images">Several Views of the Projection Images</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ctf-correction">CTF Correction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cache">Cache</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#class-averaging">Class Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#view-the-class-averages">View the Class Averages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#orientation-estimation">Orientation Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mean-error-of-estimated-rotations">Mean Error of Estimated Rotations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#volume-reconstruction">Volume Reconstruction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#comparison-of-estimated-volume-with-source-volume">Comparison of Estimated Volume with Source Volume</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#component-examples">Component Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Ab-initio Pipeline Demonstration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/auto_tutorials/pipeline_demo.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-pipeline-demo-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="ab-initio-pipeline-demonstration">
+<span id="sphx-glr-auto-tutorials-pipeline-demo-py"></span><h1>Ab-initio Pipeline Demonstration<a class="headerlink" href="#ab-initio-pipeline-demonstration" title="Permalink to this heading">¶</a></h1>
+<p>This tutorial demonstrates some key components of an ab-initio
+reconstruction pipeline using synthetic data generated with ASPIRE’s
+<code class="docutils literal notranslate"><span class="pre">Simulation</span></code> class of objects.</p>
+<section id="download-an-example-volume">
+<h2>Download an Example Volume<a class="headerlink" href="#download-an-example-volume" title="Permalink to this heading">¶</a></h2>
+<p>We begin by downloading a high resolution volume map of the 80S
+Ribosome, sourced from EMDB: <a class="reference external" href="https://www.ebi.ac.uk/emdb/EMD-2660">https://www.ebi.ac.uk/emdb/EMD-2660</a>.
+This is one of several volume maps that can be downloaded with
+ASPIRE’s data downloading utility by using the following import.
+sphinx_gallery_start_ignore
+flake8: noqa
+sphinx_gallery_end_ignore</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">aspire.downloader</span> <span class="kn">import</span> <span class="n">emdb_2660</span>
+
+<span class="c1"># Load 80s Ribosome as a ``Volume`` object.</span>
+<span class="n">original_vol</span> <span class="o">=</span> <span class="n">emdb_2660</span><span class="p">()</span>
+
+<span class="c1"># Downsample the volume</span>
+<span class="n">res</span> <span class="o">=</span> <span class="mi">41</span>
+<span class="n">vol</span> <span class="o">=</span> <span class="n">original_vol</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">Volume</span></code> can be saved using the <code class="docutils literal notranslate"><span class="pre">Volume.save()</span></code> method as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fn</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;downsampled_80s_ribosome_size</span><span class="si">{</span><span class="n">res</span><span class="si">}</span><span class="s2">.mrc&quot;</span>
+<span class="n">vol</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="create-a-simulation-source">
+<h2>Create a Simulation Source<a class="headerlink" href="#create-a-simulation-source" title="Permalink to this heading">¶</a></h2>
+<p>ASPIRE’s <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> class can be used to generate a synthetic
+dataset of projection images.  A <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> object produces
+random projections of a supplied Volume and applies noise and CTF
+filters. The resulting stack of 2D images is stored in an <code class="docutils literal notranslate"><span class="pre">Image</span></code>
+object.</p>
+<section id="ctf-filters">
+<h3>CTF Filters<a class="headerlink" href="#ctf-filters" title="Permalink to this heading">¶</a></h3>
+<p>Let’s start by creating CTF filters. The <code class="docutils literal notranslate"><span class="pre">operators</span></code> package
+contains a collection of filter classes that can be supplied to a
+<code class="docutils literal notranslate"><span class="pre">Simulation</span></code>.  We use <code class="docutils literal notranslate"><span class="pre">RadialCTFFilter</span></code> to generate a set of CTF
+filters with various defocus values.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create CTF filters</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">aspire.operators</span> <span class="kn">import</span> <span class="n">RadialCTFFilter</span>
+
+<span class="c1"># Radial CTF Filter</span>
+<span class="n">defocus_min</span> <span class="o">=</span> <span class="mi">15000</span>  <span class="c1"># unit is angstroms</span>
+<span class="n">defocus_max</span> <span class="o">=</span> <span class="mi">25000</span>
+<span class="n">defocus_ct</span> <span class="o">=</span> <span class="mi">7</span>
+
+<span class="n">ctf_filters</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">RadialCTFFilter</span><span class="p">(</span><span class="n">pixel_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">defocus</span><span class="o">=</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">defocus_min</span><span class="p">,</span> <span class="n">defocus_max</span><span class="p">,</span> <span class="n">defocus_ct</span><span class="p">)</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="initialize-simulation-object">
+<h3>Initialize Simulation Object<a class="headerlink" href="#initialize-simulation-object" title="Permalink to this heading">¶</a></h3>
+<p>We feed our <code class="docutils literal notranslate"><span class="pre">Volume</span></code> and filters into <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> to generate
+the dataset of images.  When controlled white Gaussian noise is
+desired, <code class="docutils literal notranslate"><span class="pre">WhiteNoiseAdder.from_snr()</span></code> can be used to generate a
+simulation data set around a specific SNR.</p>
+<p>Alternatively, users can bring their own images using an
+<code class="docutils literal notranslate"><span class="pre">ArrayImageSource</span></code>, or define their own custom noise functions via
+<code class="docutils literal notranslate"><span class="pre">Simulation(...,</span> <span class="pre">noise_adder=CustomNoiseAdder(...))</span></code>.  Examples
+can be found in <code class="docutils literal notranslate"><span class="pre">tutorials/class_averaging.py</span></code> and
+<code class="docutils literal notranslate"><span class="pre">experiments/simulated_abinitio_pipeline.py</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">aspire.noise</span> <span class="kn">import</span> <span class="n">WhiteNoiseAdder</span>
+<span class="kn">from</span> <span class="nn">aspire.source</span> <span class="kn">import</span> <span class="n">Simulation</span>
+
+<span class="c1"># set parameters</span>
+<span class="n">n_imgs</span> <span class="o">=</span> <span class="mi">2500</span>
+
+<span class="c1"># SNR target for white gaussian noise.</span>
+<span class="n">snr</span> <span class="o">=</span> <span class="mf">0.5</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note, the SNR value was chosen based on other parameters for this
+quick tutorial, and can be changed to adjust the power of the
+additive noise.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For this ``Simulation`` we set all 2D offset vectors to zero,</span>
+<span class="c1"># but by default offset vectors will be randomly distributed.</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span>
+    <span class="n">n</span><span class="o">=</span><span class="n">n_imgs</span><span class="p">,</span>  <span class="c1"># number of projections</span>
+    <span class="n">vols</span><span class="o">=</span><span class="n">vol</span><span class="p">,</span>  <span class="c1"># volume source</span>
+    <span class="n">offsets</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Default: images are randomly shifted</span>
+    <span class="n">unique_filters</span><span class="o">=</span><span class="n">ctf_filters</span><span class="p">,</span>
+    <span class="n">noise_adder</span><span class="o">=</span><span class="n">WhiteNoiseAdder</span><span class="o">.</span><span class="n">from_snr</span><span class="p">(</span><span class="n">snr</span><span class="o">=</span><span class="n">snr</span><span class="p">),</span>  <span class="c1"># desired SNR</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/5 [00:00&lt;?, ?it/s]
+ 20%|██        | 1/5 [00:00&lt;00:00,  4.47it/s]
+ 40%|████      | 2/5 [00:00&lt;00:00,  4.56it/s]
+ 60%|██████    | 3/5 [00:00&lt;00:00,  4.59it/s]
+ 80%|████████  | 4/5 [00:00&lt;00:00,  4.61it/s]
+100%|██████████| 5/5 [00:01&lt;00:00,  4.82it/s]
+100%|██████████| 5/5 [00:01&lt;00:00,  4.70it/s]
+</pre></div>
+</div>
+</section>
+</section>
+<section id="several-views-of-the-projection-images">
+<h2>Several Views of the Projection Images<a class="headerlink" href="#several-views-of-the-projection-images" title="Permalink to this heading">¶</a></h2>
+<p>We can access several views of the projection images.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># with no corruption applied</span>
+<span class="n">src</span><span class="o">.</span><span class="n">projections</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_001.png" srcset="../_images/sphx_glr_pipeline_demo_001.png" alt="pipeline demo" class = "sphx-glr-single-img"/><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># with no noise corruption</span>
+<span class="n">src</span><span class="o">.</span><span class="n">clean_images</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_002.png" srcset="../_images/sphx_glr_pipeline_demo_002.png" alt="pipeline demo" class = "sphx-glr-single-img"/><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># with noise and CTF corruption</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_003.png" srcset="../_images/sphx_glr_pipeline_demo_003.png" alt="pipeline demo" class = "sphx-glr-single-img"/></section>
+<section id="ctf-correction">
+<h2>CTF Correction<a class="headerlink" href="#ctf-correction" title="Permalink to this heading">¶</a></h2>
+<p>We apply <code class="docutils literal notranslate"><span class="pre">phase_flip()</span></code> to correct for CTF effects.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">phase_flip</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="cache">
+<h2>Cache<a class="headerlink" href="#cache" title="Permalink to this heading">¶</a></h2>
+<p>We apply <code class="docutils literal notranslate"><span class="pre">cache</span></code> to store the results of the <code class="docutils literal notranslate"><span class="pre">ImageSource</span></code>
+pipeline up to this point.  This is optional, but can provide
+benefit when used intently on machines with adequate memory.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_004.png" srcset="../_images/sphx_glr_pipeline_demo_004.png" alt="pipeline demo" class = "sphx-glr-single-img"/></section>
+<section id="class-averaging">
+<h2>Class Averaging<a class="headerlink" href="#class-averaging" title="Permalink to this heading">¶</a></h2>
+<p>We use <code class="docutils literal notranslate"><span class="pre">RIRClass2D</span></code> object to classify the images via the
+rotationally invariant representation (RIR) algorithm. Class
+selection is customizable. The classification module also includes a
+set of protocols for selecting a set of images to be used after
+classification.  Here we’re using the simplest
+<code class="docutils literal notranslate"><span class="pre">DebugClassAvgSource</span></code> which internally uses the
+<code class="docutils literal notranslate"><span class="pre">TopClassSelector</span></code> to select the first <code class="docutils literal notranslate"><span class="pre">n_classes</span></code> images from
+the source.  In practice, the selection is done by sorting class
+averages based on some configurable notion of quality (contrast,
+neighbor distance etc).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">aspire.classification</span> <span class="kn">import</span> <span class="n">RIRClass2D</span>
+
+<span class="c1"># set parameters</span>
+<span class="n">n_classes</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">n_nbor</span> <span class="o">=</span> <span class="mi">6</span>
+
+<span class="c1"># We will customize our class averaging source. Note that the</span>
+<span class="c1"># ``fspca_components`` and ``bispectrum_components`` were selected for</span>
+<span class="c1"># this small tutorial.</span>
+<span class="n">rir</span> <span class="o">=</span> <span class="n">RIRClass2D</span><span class="p">(</span>
+    <span class="n">src</span><span class="p">,</span>
+    <span class="n">fspca_components</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+    <span class="n">bispectrum_components</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">n_nbor</span><span class="o">=</span><span class="n">n_nbor</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">aspire.denoising</span> <span class="kn">import</span> <span class="n">DebugClassAvgSource</span>
+
+<span class="n">avgs</span> <span class="o">=</span> <span class="n">DebugClassAvgSource</span><span class="p">(</span>
+    <span class="n">src</span><span class="o">=</span><span class="n">src</span><span class="p">,</span>
+    <span class="n">classifier</span><span class="o">=</span><span class="n">rir</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># We&#39;ll continue our pipeline using only the first ``n_classes`` from</span>
+<span class="c1"># ``avgs``.  The ``cache()`` call is used here to precompute results</span>
+<span class="c1"># for the ``:n_classes`` slice.  This avoids recomputing the same</span>
+<span class="c1"># images twice when peeking in the next cell then requesting them in</span>
+<span class="c1"># the following ``CLSyncVoting`` algorithm.  Outside of demonstration</span>
+<span class="c1"># purposes, where we are repeatedly peeking at various stage results,</span>
+<span class="c1"># such caching can be dropped allowing for more lazy evaluation.</span>
+<span class="n">avgs</span> <span class="o">=</span> <span class="n">avgs</span><span class="p">[:</span><span class="n">n_classes</span><span class="p">]</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/5 [00:00&lt;?, ?it/s]
+100%|██████████| 5/5 [00:00&lt;00:00, 682.16it/s]
+
+  0%|          | 0/5 [00:00&lt;?, ?it/s]
+ 20%|██        | 1/5 [00:00&lt;00:01,  3.69it/s]
+ 40%|████      | 2/5 [00:00&lt;00:00,  3.70it/s]
+ 60%|██████    | 3/5 [00:00&lt;00:00,  3.71it/s]
+ 80%|████████  | 4/5 [00:01&lt;00:00,  3.67it/s]
+100%|██████████| 5/5 [00:01&lt;00:00,  3.86it/s]
+100%|██████████| 5/5 [00:01&lt;00:00,  3.78it/s]
+
+  0%|          | 0/200 [00:00&lt;?, ?it/s]
+  1%|          | 2/200 [00:00&lt;00:15, 12.59it/s]
+  2%|▏         | 4/200 [00:00&lt;00:15, 12.49it/s]
+  3%|▎         | 6/200 [00:00&lt;00:15, 12.49it/s]
+  4%|▍         | 8/200 [00:00&lt;00:15, 12.47it/s]
+  5%|▌         | 10/200 [00:00&lt;00:15, 12.44it/s]
+  6%|▌         | 12/200 [00:00&lt;00:15, 12.41it/s]
+  7%|▋         | 14/200 [00:01&lt;00:14, 12.44it/s]
+  8%|▊         | 16/200 [00:01&lt;00:14, 12.48it/s]
+  9%|▉         | 18/200 [00:01&lt;00:14, 12.46it/s]
+ 10%|█         | 20/200 [00:01&lt;00:14, 12.47it/s]
+ 11%|█         | 22/200 [00:01&lt;00:14, 12.47it/s]
+ 12%|█▏        | 24/200 [00:01&lt;00:14, 12.43it/s]
+ 13%|█▎        | 26/200 [00:02&lt;00:13, 12.47it/s]
+ 14%|█▍        | 28/200 [00:02&lt;00:13, 12.48it/s]
+ 15%|█▌        | 30/200 [00:02&lt;00:13, 12.50it/s]
+ 16%|█▌        | 32/200 [00:02&lt;00:13, 12.52it/s]
+ 17%|█▋        | 34/200 [00:02&lt;00:13, 12.53it/s]
+ 18%|█▊        | 36/200 [00:02&lt;00:13, 12.55it/s]
+ 19%|█▉        | 38/200 [00:03&lt;00:12, 12.56it/s]
+ 20%|██        | 40/200 [00:03&lt;00:12, 12.56it/s]
+ 21%|██        | 42/200 [00:03&lt;00:12, 12.57it/s]
+ 22%|██▏       | 44/200 [00:03&lt;00:12, 12.60it/s]
+ 23%|██▎       | 46/200 [00:03&lt;00:12, 12.57it/s]
+ 24%|██▍       | 48/200 [00:03&lt;00:12, 12.55it/s]
+ 25%|██▌       | 50/200 [00:03&lt;00:11, 12.55it/s]
+ 26%|██▌       | 52/200 [00:04&lt;00:11, 12.55it/s]
+ 27%|██▋       | 54/200 [00:04&lt;00:11, 12.49it/s]
+ 28%|██▊       | 56/200 [00:04&lt;00:11, 12.51it/s]
+ 29%|██▉       | 58/200 [00:04&lt;00:11, 12.52it/s]
+ 30%|███       | 60/200 [00:04&lt;00:11, 12.52it/s]
+ 31%|███       | 62/200 [00:04&lt;00:11, 12.54it/s]
+ 32%|███▏      | 64/200 [00:05&lt;00:10, 12.58it/s]
+ 33%|███▎      | 66/200 [00:05&lt;00:10, 12.60it/s]
+ 34%|███▍      | 68/200 [00:05&lt;00:10, 12.60it/s]
+ 35%|███▌      | 70/200 [00:05&lt;00:10, 12.58it/s]
+ 36%|███▌      | 72/200 [00:05&lt;00:10, 12.54it/s]
+ 37%|███▋      | 74/200 [00:05&lt;00:10, 12.55it/s]
+ 38%|███▊      | 76/200 [00:06&lt;00:09, 12.55it/s]
+ 39%|███▉      | 78/200 [00:06&lt;00:09, 12.53it/s]
+ 40%|████      | 80/200 [00:06&lt;00:09, 12.54it/s]
+ 41%|████      | 82/200 [00:06&lt;00:09, 12.54it/s]
+ 42%|████▏     | 84/200 [00:06&lt;00:09, 12.54it/s]
+ 43%|████▎     | 86/200 [00:06&lt;00:09, 12.53it/s]
+ 44%|████▍     | 88/200 [00:07&lt;00:08, 12.50it/s]
+ 45%|████▌     | 90/200 [00:07&lt;00:08, 12.50it/s]
+ 46%|████▌     | 92/200 [00:07&lt;00:08, 12.49it/s]
+ 47%|████▋     | 94/200 [00:07&lt;00:08, 12.51it/s]
+ 48%|████▊     | 96/200 [00:07&lt;00:08, 12.51it/s]
+ 49%|████▉     | 98/200 [00:07&lt;00:08, 12.51it/s]
+ 50%|█████     | 100/200 [00:07&lt;00:08, 12.48it/s]
+ 51%|█████     | 102/200 [00:08&lt;00:07, 12.51it/s]
+ 52%|█████▏    | 104/200 [00:08&lt;00:07, 12.52it/s]
+ 53%|█████▎    | 106/200 [00:08&lt;00:07, 12.53it/s]
+ 54%|█████▍    | 108/200 [00:08&lt;00:07, 12.55it/s]
+ 55%|█████▌    | 110/200 [00:08&lt;00:07, 12.57it/s]
+ 56%|█████▌    | 112/200 [00:08&lt;00:07, 12.55it/s]
+ 57%|█████▋    | 114/200 [00:09&lt;00:06, 12.48it/s]
+ 58%|█████▊    | 116/200 [00:09&lt;00:06, 12.49it/s]
+ 59%|█████▉    | 118/200 [00:09&lt;00:06, 12.47it/s]
+ 60%|██████    | 120/200 [00:09&lt;00:06, 12.46it/s]
+ 61%|██████    | 122/200 [00:09&lt;00:06, 12.43it/s]
+ 62%|██████▏   | 124/200 [00:09&lt;00:06, 12.51it/s]
+ 63%|██████▎   | 126/200 [00:10&lt;00:05, 12.54it/s]
+ 64%|██████▍   | 128/200 [00:10&lt;00:05, 12.54it/s]
+ 65%|██████▌   | 130/200 [00:10&lt;00:05, 12.55it/s]
+ 66%|██████▌   | 132/200 [00:10&lt;00:05, 12.57it/s]
+ 67%|██████▋   | 134/200 [00:10&lt;00:05, 12.54it/s]
+ 68%|██████▊   | 136/200 [00:10&lt;00:05, 12.50it/s]
+ 69%|██████▉   | 138/200 [00:11&lt;00:04, 12.53it/s]
+ 70%|███████   | 140/200 [00:11&lt;00:04, 12.54it/s]
+ 71%|███████   | 142/200 [00:11&lt;00:04, 12.55it/s]
+ 72%|███████▏  | 144/200 [00:11&lt;00:04, 12.54it/s]
+ 73%|███████▎  | 146/200 [00:11&lt;00:04, 12.52it/s]
+ 74%|███████▍  | 148/200 [00:11&lt;00:04, 12.51it/s]
+ 75%|███████▌  | 150/200 [00:11&lt;00:04, 12.50it/s]
+ 76%|███████▌  | 152/200 [00:12&lt;00:03, 12.50it/s]
+ 77%|███████▋  | 154/200 [00:12&lt;00:03, 12.52it/s]
+ 78%|███████▊  | 156/200 [00:12&lt;00:03, 12.50it/s]
+ 79%|███████▉  | 158/200 [00:12&lt;00:03, 12.50it/s]
+ 80%|████████  | 160/200 [00:12&lt;00:03, 12.50it/s]
+ 81%|████████  | 162/200 [00:12&lt;00:03, 12.52it/s]
+ 82%|████████▏ | 164/200 [00:13&lt;00:02, 12.51it/s]
+ 83%|████████▎ | 166/200 [00:13&lt;00:02, 12.52it/s]
+ 84%|████████▍ | 168/200 [00:13&lt;00:02, 12.54it/s]
+ 85%|████████▌ | 170/200 [00:13&lt;00:02, 12.55it/s]
+ 86%|████████▌ | 172/200 [00:13&lt;00:02, 12.54it/s]
+ 87%|████████▋ | 174/200 [00:13&lt;00:02, 12.52it/s]
+ 88%|████████▊ | 176/200 [00:14&lt;00:01, 12.51it/s]
+ 89%|████████▉ | 178/200 [00:14&lt;00:01, 12.54it/s]
+ 90%|█████████ | 180/200 [00:14&lt;00:01, 12.53it/s]
+ 91%|█████████ | 182/200 [00:14&lt;00:01, 12.52it/s]
+ 92%|█████████▏| 184/200 [00:14&lt;00:01, 12.51it/s]
+ 93%|█████████▎| 186/200 [00:14&lt;00:01, 12.51it/s]
+ 94%|█████████▍| 188/200 [00:15&lt;00:00, 12.53it/s]
+ 95%|█████████▌| 190/200 [00:15&lt;00:00, 12.55it/s]
+ 96%|█████████▌| 192/200 [00:15&lt;00:00, 12.55it/s]
+ 97%|█████████▋| 194/200 [00:15&lt;00:00, 12.54it/s]
+ 98%|█████████▊| 196/200 [00:15&lt;00:00, 12.53it/s]
+ 99%|█████████▉| 198/200 [00:15&lt;00:00, 12.55it/s]
+100%|██████████| 200/200 [00:15&lt;00:00, 12.51it/s]
+100%|██████████| 200/200 [00:15&lt;00:00, 12.52it/s]
+
+  0%|          | 0/200 [00:00&lt;?, ?it/s]
+  8%|▊         | 17/200 [00:00&lt;00:01, 161.39it/s]
+ 17%|█▋        | 34/200 [00:00&lt;00:01, 165.18it/s]
+ 26%|██▌       | 51/200 [00:00&lt;00:00, 166.17it/s]
+ 34%|███▍      | 68/200 [00:00&lt;00:00, 165.87it/s]
+ 42%|████▎     | 85/200 [00:00&lt;00:00, 166.77it/s]
+ 51%|█████     | 102/200 [00:00&lt;00:00, 167.17it/s]
+ 60%|█████▉    | 119/200 [00:00&lt;00:00, 167.51it/s]
+ 68%|██████▊   | 136/200 [00:00&lt;00:00, 167.58it/s]
+ 76%|███████▋  | 153/200 [00:00&lt;00:00, 167.90it/s]
+ 85%|████████▌ | 170/200 [00:01&lt;00:00, 166.58it/s]
+ 94%|█████████▎| 187/200 [00:01&lt;00:00, 167.06it/s]
+100%|██████████| 200/200 [00:01&lt;00:00, 166.86it/s]
+</pre></div>
+</div>
+</section>
+<section id="view-the-class-averages">
+<h2>View the Class Averages<a class="headerlink" href="#view-the-class-averages" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Show class averages</span>
+<span class="n">avgs</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_005.png" srcset="../_images/sphx_glr_pipeline_demo_005.png" alt="pipeline demo" class = "sphx-glr-single-img"/><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Show original images corresponding to those classes. This 1:1</span>
+<span class="c1"># comparison is only expected to work because we used</span>
+<span class="c1"># ``TopClassSelector`` to classify our images.</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_006.png" srcset="../_images/sphx_glr_pipeline_demo_006.png" alt="pipeline demo" class = "sphx-glr-single-img"/></section>
+<section id="orientation-estimation">
+<h2>Orientation Estimation<a class="headerlink" href="#orientation-estimation" title="Permalink to this heading">¶</a></h2>
+<p>We create an <code class="docutils literal notranslate"><span class="pre">OrientedSource</span></code>, which consumes an <code class="docutils literal notranslate"><span class="pre">ImageSource</span></code> object, an
+orientation estimator, and returns a new source which lazily estimates orientations.
+In this case we supply <code class="docutils literal notranslate"><span class="pre">avgs</span></code> for our source and a <code class="docutils literal notranslate"><span class="pre">CLSyncVoting</span></code>
+class instance for our orientation estimator. The <code class="docutils literal notranslate"><span class="pre">CLSyncVoting</span></code> algorithm employs
+a common-lines method with synchronization and voting.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">aspire.abinitio</span> <span class="kn">import</span> <span class="n">CLSyncVoting</span>
+<span class="kn">from</span> <span class="nn">aspire.source</span> <span class="kn">import</span> <span class="n">OrientedSource</span>
+
+<span class="c1"># Stash true rotations for later comparison</span>
+<span class="n">true_rotations</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">rotations</span><span class="p">[:</span><span class="n">n_classes</span><span class="p">]</span>
+
+<span class="c1"># For this low resolution example we will customize the ``CLSyncVoting``</span>
+<span class="c1"># instance to use fewer theta points ``n_theta`` then the default value of 360.</span>
+<span class="n">orient_est</span> <span class="o">=</span> <span class="n">CLSyncVoting</span><span class="p">(</span><span class="n">avgs</span><span class="p">,</span> <span class="n">n_theta</span><span class="o">=</span><span class="mi">72</span><span class="p">)</span>
+
+<span class="c1"># Instantiate an ``OrientedSource``.</span>
+<span class="n">oriented_src</span> <span class="o">=</span> <span class="n">OrientedSource</span><span class="p">(</span><span class="n">avgs</span><span class="p">,</span> <span class="n">orient_est</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="mean-error-of-estimated-rotations">
+<h2>Mean Error of Estimated Rotations<a class="headerlink" href="#mean-error-of-estimated-rotations" title="Permalink to this heading">¶</a></h2>
+<p>ASPIRE has the built-in utility function, <code class="docutils literal notranslate"><span class="pre">mean_aligned_angular_distance</span></code>, which globally
+aligns the estimated rotations to the true rotations and computes the mean
+angular distance (in degrees).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">aspire.utils</span> <span class="kn">import</span> <span class="n">mean_aligned_angular_distance</span>
+
+<span class="c1"># Compare with known true rotations</span>
+<span class="n">mean_ang_dist</span> <span class="o">=</span> <span class="n">mean_aligned_angular_distance</span><span class="p">(</span><span class="n">oriented_src</span><span class="o">.</span><span class="n">rotations</span><span class="p">,</span> <span class="n">true_rotations</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean aligned angular distance: </span><span class="si">{</span><span class="n">mean_ang_dist</span><span class="si">}</span><span class="s2"> degrees&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Searching over common line pairs:   0%|          | 0/19900 [00:00&lt;?, ?it/s]
+Searching over common line pairs:   1%|▏         | 249/19900 [00:00&lt;00:07, 2489.15it/s]
+Searching over common line pairs:   3%|▎         | 505/19900 [00:00&lt;00:07, 2528.55it/s]
+Searching over common line pairs:   4%|▍         | 761/19900 [00:00&lt;00:07, 2538.44it/s]
+Searching over common line pairs:   5%|▌         | 1017/19900 [00:00&lt;00:07, 2544.89it/s]
+Searching over common line pairs:   6%|▋         | 1272/19900 [00:00&lt;00:07, 2546.00it/s]
+Searching over common line pairs:   8%|▊         | 1527/19900 [00:00&lt;00:07, 2547.28it/s]
+Searching over common line pairs:   9%|▉         | 1782/19900 [00:00&lt;00:07, 2546.34it/s]
+Searching over common line pairs:  10%|█         | 2037/19900 [00:00&lt;00:07, 2543.75it/s]
+Searching over common line pairs:  12%|█▏        | 2292/19900 [00:00&lt;00:06, 2544.69it/s]
+Searching over common line pairs:  13%|█▎        | 2547/19900 [00:01&lt;00:06, 2545.28it/s]
+Searching over common line pairs:  14%|█▍        | 2803/19900 [00:01&lt;00:06, 2547.91it/s]
+Searching over common line pairs:  15%|█▌        | 3060/19900 [00:01&lt;00:06, 2552.01it/s]
+Searching over common line pairs:  17%|█▋        | 3316/19900 [00:01&lt;00:06, 2552.83it/s]
+Searching over common line pairs:  18%|█▊        | 3572/19900 [00:01&lt;00:06, 2552.45it/s]
+Searching over common line pairs:  19%|█▉        | 3828/19900 [00:01&lt;00:06, 2549.55it/s]
+Searching over common line pairs:  21%|██        | 4083/19900 [00:01&lt;00:06, 2546.97it/s]
+Searching over common line pairs:  22%|██▏       | 4339/19900 [00:01&lt;00:06, 2548.38it/s]
+Searching over common line pairs:  23%|██▎       | 4595/19900 [00:01&lt;00:06, 2549.68it/s]
+Searching over common line pairs:  24%|██▍       | 4850/19900 [00:01&lt;00:05, 2549.37it/s]
+Searching over common line pairs:  26%|██▌       | 5106/19900 [00:02&lt;00:05, 2549.98it/s]
+Searching over common line pairs:  27%|██▋       | 5361/19900 [00:02&lt;00:05, 2546.62it/s]
+Searching over common line pairs:  28%|██▊       | 5616/19900 [00:02&lt;00:05, 2546.39it/s]
+Searching over common line pairs:  30%|██▉       | 5871/19900 [00:02&lt;00:05, 2546.51it/s]
+Searching over common line pairs:  31%|███       | 6126/19900 [00:02&lt;00:05, 2544.59it/s]
+Searching over common line pairs:  32%|███▏      | 6381/19900 [00:02&lt;00:05, 2542.61it/s]
+Searching over common line pairs:  33%|███▎      | 6636/19900 [00:02&lt;00:05, 2544.27it/s]
+Searching over common line pairs:  35%|███▍      | 6891/19900 [00:02&lt;00:05, 2545.16it/s]
+Searching over common line pairs:  36%|███▌      | 7146/19900 [00:02&lt;00:05, 2545.08it/s]
+Searching over common line pairs:  37%|███▋      | 7401/19900 [00:02&lt;00:04, 2545.19it/s]
+Searching over common line pairs:  38%|███▊      | 7656/19900 [00:03&lt;00:04, 2544.67it/s]
+Searching over common line pairs:  40%|███▉      | 7912/19900 [00:03&lt;00:04, 2548.46it/s]
+Searching over common line pairs:  41%|████      | 8167/19900 [00:03&lt;00:05, 2152.81it/s]
+Searching over common line pairs:  42%|████▏     | 8412/19900 [00:03&lt;00:05, 2230.06it/s]
+Searching over common line pairs:  44%|████▎     | 8669/19900 [00:03&lt;00:04, 2321.38it/s]
+Searching over common line pairs:  45%|████▍     | 8925/19900 [00:03&lt;00:04, 2386.12it/s]
+Searching over common line pairs:  46%|████▌     | 9182/19900 [00:03&lt;00:04, 2436.43it/s]
+Searching over common line pairs:  47%|████▋     | 9439/19900 [00:03&lt;00:04, 2472.62it/s]
+Searching over common line pairs:  49%|████▊     | 9694/19900 [00:03&lt;00:04, 2494.31it/s]
+Searching over common line pairs:  50%|████▉     | 9949/19900 [00:03&lt;00:03, 2510.03it/s]
+Searching over common line pairs:  51%|█████▏    | 10205/19900 [00:04&lt;00:03, 2523.68it/s]
+Searching over common line pairs:  53%|█████▎    | 10461/19900 [00:04&lt;00:03, 2534.15it/s]
+Searching over common line pairs:  54%|█████▍    | 10718/19900 [00:04&lt;00:03, 2542.25it/s]
+Searching over common line pairs:  55%|█████▌    | 10973/19900 [00:04&lt;00:03, 2540.15it/s]
+Searching over common line pairs:  56%|█████▋    | 11229/19900 [00:04&lt;00:03, 2544.48it/s]
+Searching over common line pairs:  58%|█████▊    | 11485/19900 [00:04&lt;00:03, 2547.63it/s]
+Searching over common line pairs:  59%|█████▉    | 11742/19900 [00:04&lt;00:03, 2552.16it/s]
+Searching over common line pairs:  60%|██████    | 11998/19900 [00:04&lt;00:03, 2550.00it/s]
+Searching over common line pairs:  62%|██████▏   | 12254/19900 [00:04&lt;00:02, 2549.74it/s]
+Searching over common line pairs:  63%|██████▎   | 12510/19900 [00:04&lt;00:02, 2549.73it/s]
+Searching over common line pairs:  64%|██████▍   | 12766/19900 [00:05&lt;00:02, 2544.27it/s]
+Searching over common line pairs:  65%|██████▌   | 13022/19900 [00:05&lt;00:02, 2546.52it/s]
+Searching over common line pairs:  67%|██████▋   | 13278/19900 [00:05&lt;00:02, 2549.26it/s]
+Searching over common line pairs:  68%|██████▊   | 13533/19900 [00:05&lt;00:02, 2548.61it/s]
+Searching over common line pairs:  69%|██████▉   | 13788/19900 [00:05&lt;00:02, 2548.95it/s]
+Searching over common line pairs:  71%|███████   | 14043/19900 [00:05&lt;00:02, 2547.35it/s]
+Searching over common line pairs:  72%|███████▏  | 14299/19900 [00:05&lt;00:02, 2550.00it/s]
+Searching over common line pairs:  73%|███████▎  | 14555/19900 [00:05&lt;00:02, 2552.23it/s]
+Searching over common line pairs:  74%|███████▍  | 14812/19900 [00:05&lt;00:01, 2555.11it/s]
+Searching over common line pairs:  76%|███████▌  | 15068/19900 [00:05&lt;00:01, 2556.31it/s]
+Searching over common line pairs:  77%|███████▋  | 15324/19900 [00:06&lt;00:01, 2552.52it/s]
+Searching over common line pairs:  78%|███████▊  | 15580/19900 [00:06&lt;00:01, 2551.08it/s]
+Searching over common line pairs:  80%|███████▉  | 15836/19900 [00:06&lt;00:01, 2551.16it/s]
+Searching over common line pairs:  81%|████████  | 16092/19900 [00:06&lt;00:01, 2551.36it/s]
+Searching over common line pairs:  82%|████████▏ | 16348/19900 [00:06&lt;00:01, 2551.71it/s]
+Searching over common line pairs:  83%|████████▎ | 16604/19900 [00:06&lt;00:01, 2550.83it/s]
+Searching over common line pairs:  85%|████████▍ | 16860/19900 [00:06&lt;00:01, 2553.13it/s]
+Searching over common line pairs:  86%|████████▌ | 17117/19900 [00:06&lt;00:01, 2555.36it/s]
+Searching over common line pairs:  87%|████████▋ | 17373/19900 [00:06&lt;00:00, 2552.54it/s]
+Searching over common line pairs:  89%|████████▊ | 17629/19900 [00:06&lt;00:00, 2552.33it/s]
+Searching over common line pairs:  90%|████████▉ | 17885/19900 [00:07&lt;00:00, 2549.15it/s]
+Searching over common line pairs:  91%|█████████ | 18141/19900 [00:07&lt;00:00, 2551.35it/s]
+Searching over common line pairs:  92%|█████████▏| 18397/19900 [00:07&lt;00:00, 2549.94it/s]
+Searching over common line pairs:  94%|█████████▎| 18652/19900 [00:07&lt;00:00, 2549.22it/s]
+Searching over common line pairs:  95%|█████████▌| 18908/19900 [00:07&lt;00:00, 2549.98it/s]
+Searching over common line pairs:  96%|█████████▋| 19164/19900 [00:07&lt;00:00, 2550.48it/s]
+Searching over common line pairs:  98%|█████████▊| 19420/19900 [00:07&lt;00:00, 2549.67it/s]
+Searching over common line pairs:  99%|█████████▉| 19675/19900 [00:07&lt;00:00, 2548.47it/s]
+Searching over common line pairs: 100%|██████████| 19900/19900 [00:07&lt;00:00, 2527.82it/s]
+Mean aligned angular distance: 7.126775193681746 degrees
+</pre></div>
+</div>
+</section>
+<section id="volume-reconstruction">
+<h2>Volume Reconstruction<a class="headerlink" href="#volume-reconstruction" title="Permalink to this heading">¶</a></h2>
+<p>Now that we have our class averages and rotation estimates, we can
+estimate the mean volume by supplying the class averages and basis
+for back projection.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">aspire.reconstruction</span> <span class="kn">import</span> <span class="n">MeanEstimator</span>
+
+<span class="c1"># Setup an estimator to perform the back projection.</span>
+<span class="n">estimator</span> <span class="o">=</span> <span class="n">MeanEstimator</span><span class="p">(</span><span class="n">oriented_src</span><span class="p">)</span>
+
+<span class="c1"># Perform the estimation and save the volume.</span>
+<span class="n">estimated_volume</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">estimate</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="comparison-of-estimated-volume-with-source-volume">
+<h2>Comparison of Estimated Volume with Source Volume<a class="headerlink" href="#comparison-of-estimated-volume-with-source-volume" title="Permalink to this heading">¶</a></h2>
+<p>To get a visual confirmation that our results are sane, we rotate
+the estimated volume by the estimated rotations and project along
+the z-axis.  These estimated projections should align with the
+original projection images.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the first 10 projections from the estimated volume using the</span>
+<span class="c1"># estimated orientations.  Recall that ``project`` returns an</span>
+<span class="c1"># ``Image`` instance, which we can peek at with ``show``.</span>
+<span class="n">projections_est</span> <span class="o">=</span> <span class="n">estimated_volume</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">oriented_src</span><span class="o">.</span><span class="n">rotations</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">])</span>
+
+<span class="c1"># We view the first 10 projections of the estimated volume.</span>
+<span class="n">projections_est</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_007.png" srcset="../_images/sphx_glr_pipeline_demo_007.png" alt="pipeline demo" class = "sphx-glr-single-img"/><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For comparison, we view the first 10 source projections.</span>
+<span class="n">src</span><span class="o">.</span><span class="n">projections</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_008.png" srcset="../_images/sphx_glr_pipeline_demo_008.png" alt="pipeline demo" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 8.143 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-pipeline-demo-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/9b821c495445535e6775308a42eb84d7/pipeline_demo.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">pipeline_demo.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/295b04456c31e136eefc8b736de1e0a4/pipeline_demo.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">pipeline_demo.py</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire_introduction.html" class="btn btn-neutral float-left" title="ASPIRE-Python Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tutorials/index.html" class="btn btn-neutral float-right" title="Component Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

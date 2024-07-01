@@ -1,0 +1,45 @@
+aspire.nufft package
+====================
+
+Submodules
+----------
+
+aspire.nufft.cufinufft module
+-----------------------------
+
+.. automodule:: aspire.nufft.cufinufft
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.nufft.finufft module
+---------------------------
+
+.. automodule:: aspire.nufft.finufft
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.nufft.pynfft module
+--------------------------
+
+.. automodule:: aspire.nufft.pynfft
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.nufft.utils module
+-------------------------
+
+.. automodule:: aspire.nufft.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.nufft
+   :members:
+   :undoc-members:
+   :show-inheritance:

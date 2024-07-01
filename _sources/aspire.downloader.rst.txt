@@ -1,0 +1,29 @@
+aspire.downloader package
+=========================
+
+Submodules
+----------
+
+aspire.downloader.data\_fetcher module
+--------------------------------------
+
+.. automodule:: aspire.downloader.data_fetcher
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.downloader.registry module
+---------------------------------
+
+.. automodule:: aspire.downloader.registry
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.downloader
+   :members:
+   :undoc-members:
+   :show-inheritance:
