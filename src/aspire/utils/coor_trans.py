@@ -409,7 +409,11 @@ def crop_pad_2d(im, size, fill_value=0):
         return to_return
     else:
         # target size is between mat_x and mat_y
-        raise ValueError("Cannot crop and pad an image at the same time.")
+        raise ValueError(
+            "Cannot crop and pad Image at the same time."
+            "If this is really what you intended,"
+            " make two seperate calls for cropping and padding."
+        )
 
 
 def crop_pad_3d(vol, size, fill_value=0):
@@ -461,5 +465,9 @@ def crop_pad_3d(vol, size, fill_value=0):
         ] = vol
         return to_return
     else:
-        # target size is between min and max of (vol_y, vol_x, vol_z)
-        raise ValueError("Cannot crop and pad a volume at the same time.")
+        # target size is between min and max of (vol_x, vol_y, vol_z)
+        raise ValueError(
+            "Cannot crop and pad Volume at the same time."
+            "If this is really what you intended,"
+            " make two seperate calls for cropping and padding."
+        )
