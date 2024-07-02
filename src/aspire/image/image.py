@@ -420,6 +420,8 @@ class Image:
         # Note image and filter data is intentionally migrated via
         # `xp.asarray` because all of the subsequent calls until
         # `asnumpy` are GPU when xp and fft in `cupy` mode.
+        #
+        # Second note, filter dtype may not match image dtype.
         filter_values = xp.asarray(
             filter.evaluate_grid(self.resolution), dtype=self.dtype
         )
