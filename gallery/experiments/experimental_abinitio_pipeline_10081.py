@@ -59,7 +59,11 @@ pixel_size = 1.3
 
 # Create a source object for the experimental images
 src = RelionSource(
-    starfile_in, pixel_size=pixel_size, max_rows=n_imgs, data_folder=data_folder
+    starfile_in,
+    pixel_size=pixel_size,
+    max_rows=n_imgs,
+    data_folder=data_folder,
+    symmetry_group="C4",
 )
 
 # Downsample the images
@@ -115,12 +119,13 @@ oriented_src = OrientedSource(avgs, orient_est)
 # Volume Reconstruction
 # ----------------------
 #
-# Using the oriented source, attempt to reconstruct a volume.
-# Since this is a Cn symmetric molecule, as indicated by
-# ``symmetry="C4"`` above, the ``avgs`` images set will be repeated
-# for each of the 3 additional rotations during the back-projection
-# step.  This boosts the effective number of images used in the
-# reconstruction from ``n_classes`` to ``4*n_classes``.
+# Using the oriented source, attempt to reconstruct a volume.  Since
+# this is a Cn symmetric molecule, as specified by ``RelionSource(...,
+# symmetry_group="C4, ...)"``, the ``symmetry_group`` source attribute
+# will flow through the pipeline to ``avgs``. Then each image will be
+# repeated for each of the 3 additional rotations during
+# back-projection.  This boosts the effective number of images used in
+# the reconstruction from ``n_classes`` to ``4*n_classes``.
 
 logger.info("Begin Volume reconstruction")
 
