@@ -16,6 +16,15 @@ logger = logging.getLogger(__name__)
 class CLSync3N(CLOrient3D, SyncVotingMixin):
     """
     Define a class to estimate 3D orientations using common lines Sync3N methods (2017).
+
+    Ido Greenberg, Yoel Shkolnisky,
+    Common lines modeling for reference free Ab-initio reconstruction in cryo-EM,
+    Journal of Structural Biology,
+    Volume 200, Issue 2,
+    2017,
+    Pages 106-117,
+    ISSN 1047-8477,
+    https://doi.org/10.1016/j.jsb.2017.09.007.
     """
 
     # Initialize alternatives
@@ -136,13 +145,17 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # Yield rotations from S
         self.rotations = self._sync3n_S_to_rot(S, W)
 
-    ###########################################
-    # The hackberries taste like hackberries  #
-    ###########################################
+    #######################
+    # Main Sync3N Methods #
+    #######################
     def _sync3n_S_to_rot(self, S, W=None, n_eigs=4):
         """
         Use eigen decomposition of S to estimate transforms,
         then project transforms to nearest rotations.
+
+        :param S: Numpy array represeting Synchronization matrix.
+        :param W: Optional weights array, default `None` is equal weighting of `S`.
+        :param n_eigs: Optional, number of eigenvalues to compute (min 3).
         """
 
         if n_eigs < 3:
@@ -214,6 +227,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     def _construct_sync3n_matrix(self, Rij):
         """
         Construct sync3n matrix from estimated rotations Rij.
+
+        :param Rij: Numpy array of estimated rotations (all pairs).
+        :return: Synchronization matrix S, (3*N, 3*N).
         """
 
         # Initialize S with diag identity blocks
@@ -258,6 +274,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :param max_iterations: Maximum iterations for P estimation.
         :param min_p_permitted: Small value at which to stop
             attempting to synchronize P.
+        :return: Synchronization matrix weights `W`.
         """
         logger.info("Computing synchronization matrix weights.")
 
@@ -327,6 +344,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         Wrapper for cpu/gpu dispatch.
 
         :param Rijs: nchoose2 by 3 by 3 array of rotations.
+        :return: Histogram of triangle scores.
         """
 
         # host/gpu dispatch
@@ -475,7 +493,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :param B: distribution parameter
         :param b: distribution parameter
         :param x0: Initial guess
-
+        :return: (log indicative probabilities, log arbitrary probabilities)
         """
         # These param values are passed to C, force doubles.
         params = np.array([P2, A, a, B, b, x0], dtype=np.float64)
@@ -629,19 +647,23 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         x0=0.78,
     ):
         """
-        Computes `triangle_scores`, attempts to fit curve to distribution, and uses estimated distribution to compute `pairs_probabilities`.
+        Computes `triangle_scores`, attempts to fit curve to
+        distribution, and uses estimated distribution to compute
+        `pairs_probabilities`.
 
         Default parameters here were taken from those in the MATLAB
         code, with the original author noting they were found
         empirically.
 
-        :param a:
+        :param a: distribution parameter
         :param peak2sigma: empirical relation between the location of
             the peak of the histigram, and the mean error in the
             common lines estimations.
-        :param P:
-        :param b:
+        :param P: distribution parameter
+        :param b: distribution parameter
         :param x0: Initial guess
+        :return: Tuple of pairs probabilty Pij and related terms
+             (P, sigma, Pij, scores_hist)
         """
 
         Pmin = Pmin or 0
@@ -731,7 +753,17 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         return Rijs
 
     def _global_J_sync(self, Rijs):
-        """ """
+        """
+        Apply global J-synchronization.
+
+        Given all pairs of estimated rotation matrices `Rijs` with
+        arbitrary handedness (J conjugation), attempt to detect and
+        conjugate entries of `Rijs` such that all rotations have same
+        handedness.
+
+        :param Rijs: Array of all pairs of rotation matrices
+        :return: Array of all pairs of J synchronized rotation matrices
+        """
 
         # Determine relative handedness of Rijs.
         sign_ij_J = self._J_sync_power_method(Rijs)
@@ -746,6 +778,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     def _estimate_all_Rijs(self, clmatrix):
         """
         Estimate Rijs using the voting method.
+
+        :param clmatrix: Common lines matrix
+        :return: Estimated rotations
         """
         n_img = self.n_img
         n_theta = self.n_theta
@@ -850,6 +885,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         :param Rijs: An n-choose-2x3x3 array of estimates of relative rotations
         :param vec: The current candidate eigenvector of length n-choose-2 from the power method.
+        :return: New candidate eigenvector.
         """
         # host/gpu dispatch
         if self._gpu_module:
