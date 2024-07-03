@@ -18,53 +18,42 @@ RESOLUTION = [
 # `None` defaults to random offsets.
 OFFSETS = [
     0,
-    #    pytest.param(None, marks=pytest.mark.expensive),
 ]
 
 DTYPES = [
-    #    np.float32,
+    np.float32,
     #    pytest.param(np.float64, marks=pytest.mark.expensive),
     np.float64,
 ]
 
 
-@pytest.fixture(params=RESOLUTION, ids=lambda x: f"resolution={x}")
+@pytest.fixture(params=RESOLUTION, ids=lambda x: f"resolution={x}", scope="module")
 def resolution(request):
     return request.param
 
 
-@pytest.fixture(params=OFFSETS, ids=lambda x: f"offsets={x}")
+@pytest.fixture(params=OFFSETS, ids=lambda x: f"offsets={x}", scope="module")
 def offsets(request):
     return request.param
 
 
-@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
 def dtype(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def source_orientation_objs(resolution, offsets, dtype):
     src = Simulation(
-        n=50,
+        n=100,
         L=resolution,
-        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=0).generate(),
+        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=123).generate(),
         offsets=offsets,
         amplitudes=1,
-        seed=0,
+        seed=456,
     ).cache()
 
-    # # Search for common lines over less shifts for 0 offsets.
-    # max_shift = 1 / resolution
-    # shift_step = 1
-    # if src.offsets.all() != 0:
-    #     max_shift = 0.20
-    #     shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
-    # orient_est = CLSync3N(
-    #     src, max_shift=max_shift, shift_step=shift_step, mask=False
-
-    # )
-    orient_est = CLSync3N(src)
+    orient_est = CLSync3N(src, S_weighting=True, seed=789)
 
     return src, orient_est
 
