@@ -99,7 +99,13 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         self.S_weighting = S_weighting
         self.J_weighting = J_weighting
         self._D_null = 1e-13
-        self.hist_intervals = hist_intervals
+        self.hist_intervals = int(hist_intervals)
+        # Warn if histogram may be too sparse for curve fitting
+        if self.S_weighting and (src.n < hist_intervals):
+            logger.warning(
+                f"`hist_intervals` {hist_intervals} > src.n {src.n}."
+                "  Consider reducing if curve fitting is infeasable."
+            )
 
         # Auto configure GPU
         self._gpu_module = None
