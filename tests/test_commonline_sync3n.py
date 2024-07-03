@@ -12,18 +12,16 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 RESOLUTION = [
     40,
-    41,
+    pytest.param(41, marks=pytest.mark.expensive),
 ]
 
-# `None` defaults to random offsets.
 OFFSETS = [
     0,
 ]
 
 DTYPES = [
     np.float32,
-    #    pytest.param(np.float64, marks=pytest.mark.expensive),
-    np.float64,
+    pytest.param(np.float64, marks=pytest.mark.expensive),
 ]
 
 
@@ -47,7 +45,9 @@ def source_orientation_objs(resolution, offsets, dtype):
     src = Simulation(
         n=100,
         L=resolution,
-        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=123).generate(),
+        vols=AsymmetricVolume(
+            L=resolution, C=1, K=100, seed=123, dtype=dtype
+        ).generate(),
         offsets=offsets,
         amplitudes=1,
         seed=456,
