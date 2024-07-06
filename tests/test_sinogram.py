@@ -38,7 +38,7 @@ def img_size(request):
 @pytest.fixture
 def masked_image(dtype, img_size):
     """
-    Construct a masked image fixture that takes paramters
+    Creates a masked image fixture using camera data from Skikit-Image.
     """
     g = grid_2d(img_size, normalized=True, shifted=True)
     mask = g["r"] < 1
@@ -51,7 +51,7 @@ def masked_image(dtype, img_size):
 # Image.project and compare results to skimage.radon
 def test_image_project(masked_image):
     """
-    TestImage.project on a single stack of images. Compares project method with skimage.
+    Test Image.project on a single stack of images. Compares project method with skimage.
     """
     ny = masked_image.resolution
     angles = np.linspace(0, 360, ny + 1, endpoint=False)
@@ -59,22 +59,22 @@ def test_image_project(masked_image):
     s = masked_image.project(rads)
     assert s.shape == (1, len(angles), ny)
 
-    # add reference skimage radon here
+    # ski-kit image radon reference
     n = masked_image._data[0]
     reference_sinogram = radon(n, theta=angles[::-1]).T  # transpose angles, points
     assert reference_sinogram.shape == (len(angles), ny)
-    # compare s with reference
 
+    # compare project method on ski-image reference
     nrms = np.sqrt(np.mean((s[0] - reference_sinogram) ** 2, axis=1)) / np.linalg.norm(
         reference_sinogram, axis=1
     )
     tol = 0.002
-    np.testing.assert_array_less(nrms, tol, "Error in test image")
+    np.testing.assert_array_less(nrms, tol, "Error in image projections.")
 
 
 def test_multidim():
     """
-    Test Image.project on stacks of images.
+    Test Image.project on stacks of images. Extension of test_image_project but for multi-dimensional stacks.
     """
 
     L = 512  # pixels
@@ -92,14 +92,13 @@ def test_multidim():
     rads = angles / 180.0 * np.pi
     s = imgs.project(rads)
 
-    # # Compare with sk
+    # Compare with ski-image
     reference_sinograms = np.empty((n, L, L))
     for i, img in enumerate(imgs._data):
         reference_sinograms[i] = radon(img, theta=angles[::-1]).T
 
-    # decrease tolerance as L goes up
     for i in range(n):
         nrms = np.sqrt(
             np.mean((s[i] - reference_sinograms[i]) ** 2, axis=1)
         ) / np.linalg.norm(reference_sinograms[i], axis=1)
-        np.testing.assert_array_less(nrms, 0.05, err_msg=f"Error in image {i}")
+        np.testing.assert_array_less(nrms, 0.05, err_msg=f"Error in image {i}.")

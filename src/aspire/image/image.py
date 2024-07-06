@@ -187,8 +187,12 @@ class Image:
         self.__array__ = self._data
 
     def project(self, angles):
-        """docstring
-        angles: radians
+        """
+        Computes the Radon Transform on an Image Stack using Non-Uniform Fast Fourier Transforms. This method projects the Image stack along different angles and returns the Radon Transform.
+
+        :param angles: A 1-D Numpy Array of angles in Radians. This is used to compute the Radon Transform at different angles.
+        :return: Radon transform of the Image Stack.
+        :rtype: Ndarray (stack size, number of angles, image resolution)
         """
         # number of points to sample on radial line in polar grid
         n_points = self.resolution
@@ -198,20 +202,17 @@ class Image:
         y_idx = np.fft.rfftfreq(n_points) * np.pi * 2
         n_real_points = len(y_idx)
 
-        # y_idx = np.fft.fftshift(np.fft.fftfreq(n_points))
         pts = np.empty((2, len(angles), n_real_points), dtype=self.dtype)
-
         pts[0] = y_idx[np.newaxis, :] * np.sin(angles)[:, np.newaxis]
         pts[1] = y_idx[np.newaxis, :] * np.cos(angles)[:, np.newaxis]
         pts = pts.reshape(2, n_real_points * len(angles))
 
-        # NUFFT
-        # compute the polar nufft
+        # compute the polar nufft (NUFFT)
         image_ft = nufft(self.stack_reshape(-1)._data, pts).reshape(
             self.n_images, len(angles), n_real_points
         )
 
-        # compute the Radon transform (sinogram)
+        # Radon transform
         image_rt = np.fft.fftshift(
             np.fft.irfftn(image_ft, s=(self.n_images, n_points), axes=(0, 2)),
             axes=(0, 2),
