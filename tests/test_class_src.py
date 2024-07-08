@@ -128,7 +128,14 @@ def class_sim_fixture(dtype, img_size):
     # Note using a single volume via C=1 is critical to matching
     # alignment without the complexity of remapping via states etc.
     src = Simulation(
-        L=img_size, n=n, vols=v, offsets=0, amplitudes=1, C=1, angles=true_rots.angles
+        L=img_size,
+        n=n,
+        vols=v,
+        offsets=0,
+        amplitudes=1,
+        C=1,
+        angles=true_rots.angles,
+        symmetry_group="C4",  # For testing symmetry_group pass-through.
     )
     # Prefetch all the images
     src = src.cache()
@@ -192,6 +199,9 @@ def test_basic_averaging(class_sim_fixture, test_src_cls, basis, classifier):
     # Check we match class indices between automatic and manual slice.
     k = len(src2.class_indices)
     np.testing.assert_equal(src2.class_indices, test_src.class_indices[::3][:k])
+
+    # Check symmetry_group pass-through.
+    assert test_src.symmetry_group == class_sim_fixture.symmetry_group
 
 
 # Test the _HeapItem helper class
