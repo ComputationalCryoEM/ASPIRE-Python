@@ -121,7 +121,7 @@ oriented_src = OrientedSource(avgs, orient_est)
 #
 # Using the oriented source, attempt to reconstruct a volume.  Since
 # this is a Cn symmetric molecule, as specified by ``RelionSource(...,
-# symmetry_group="C4, ...)"``, the ``symmetry_group`` source attribute
+# symmetry_group="C4", ...)``, the ``symmetry_group`` source attribute
 # will flow through the pipeline to ``avgs``. Then each image will be
 # repeated for each of the 3 additional rotations during
 # back-projection.  This boosts the effective number of images used in
