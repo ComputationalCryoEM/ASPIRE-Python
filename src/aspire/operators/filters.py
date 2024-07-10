@@ -333,7 +333,7 @@ class ArrayFilter(Filter):
         #  for values slightly outside the interpolation grid bounds.
         interpolator = RegularGridInterpolator(
             _input_pts,
-            # scipy requires upcasting to use cython interpolator.
+            # https://github.com/scipy/scipy/issues/17718
             self.xfer_fn_array.astype(np.float64),
             method="linear",
             bounds_error=False,
@@ -349,8 +349,7 @@ class ArrayFilter(Filter):
         # Result is 1 x np.prod(self.sz) in shape; convert to a 1-d vector
         result = np.squeeze(result, 0)
 
-        # Scipy's interpolator will upcast singles. Recasting.
-        return result.astype(self.xfer_fn_array.dtype, copy=False)
+        return result
 
     def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
         """
