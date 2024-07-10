@@ -13,7 +13,7 @@ def sim_fixture():
     """
     Generate a very small simulation and slice it.
     """
-    sim = Simulation(L=8, n=10, C=1)
+    sim = Simulation(L=8, n=10, C=1, symmetry_group="D3")
     sim2 = sim[0::2]  # Slice the evens
     return sim, sim2
 
@@ -30,6 +30,9 @@ def test_remapping(sim_fixture):
 
     # Check meta is served correctly.
     assert np.all(sim.get_metadata(indices=sim2.index_map) == sim2.get_metadata())
+
+    # Check symmetry_group pass-through.
+    assert sim.symmetry_group == sim2.symmetry_group
 
 
 def test_repr(sim_fixture):
