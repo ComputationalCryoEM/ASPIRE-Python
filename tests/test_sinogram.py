@@ -6,6 +6,10 @@ from skimage.transform import radon
 from aspire.image import Image
 from aspire.utils import grid_2d
 
+# Relative tolerance comparing line projections to scikit
+# The same tolerance will be used in all scikit comparisons
+SK_TOL = 0.002
+
 # parameter img_sizes: 511, 512
 IMG_SIZES = [
     511,
@@ -59,17 +63,23 @@ def test_image_project(masked_image):
     s = masked_image.project(rads)
     assert s.shape == (1, len(angles), ny)
 
-    # ski-kit image radon reference
-    n = masked_image._data[0]
-    reference_sinogram = radon(n, theta=angles[::-1]).T  # transpose angles, points
-    assert reference_sinogram.shape == (len(angles), ny)
+    # sci-kit image `radon` reference
+    #
+    # Note, Image.project's angles are wrt projection line (ie
+    # grid), while sk's radon are wrt the image. To correspond the
+    # rotations are inverted.  This was the convention prefered by
+    # the original author of this method.
+    #
+    # Note, transpose sk output to match (angles, points)
+    reference_sinogram = radon(masked_image._data[0], theta=angles[::-1]).T
+    assert reference_sinogram.shape == (len(angles), ny), "Incorrect Shape"
 
     # compare project method on ski-image reference
     nrms = np.sqrt(np.mean((s[0] - reference_sinogram) ** 2, axis=1)) / np.linalg.norm(
         reference_sinogram, axis=1
     )
-    tol = 0.002
-    np.testing.assert_array_less(nrms, tol, "Error in image projections.")
+
+    np.testing.assert_array_less(nrms, SK_TOL, "Error in image projections.")
 
 
 def test_multidim():
@@ -92,13 +102,20 @@ def test_multidim():
     rads = angles / 180.0 * np.pi
     s = imgs.project(rads)
 
-    # Compare with ski-image
+    # Compare
     reference_sinograms = np.empty((n, L, L))
-    for i, img in enumerate(imgs._data):
-        reference_sinograms[i] = radon(img, theta=angles[::-1]).T
+    for i, img in enumerate(imgs):
+        # Compute the singleton case, and compare with the stack
+        single_sinogram = img.project(rads)
+        # These should be allclose up to determinism in the FFT and NUFFT.
+        np.testing.assert_allclose(s[i : i + 1], single_sinogram)
 
+        # Next individually compute sk's radon transform for each image.
+        reference_sinograms[i] = radon(img._data[0], theta=angles[::-1]).T
+
+    # Compare all lines in each sinogram with sk-image
     for i in range(n):
         nrms = np.sqrt(
             np.mean((s[i] - reference_sinograms[i]) ** 2, axis=1)
         ) / np.linalg.norm(reference_sinograms[i], axis=1)
-        np.testing.assert_array_less(nrms, 0.05, err_msg=f"Error in image {i}.")
+        np.testing.assert_array_less(nrms, SK_TOL, err_msg=f"Error in image {i}.")
