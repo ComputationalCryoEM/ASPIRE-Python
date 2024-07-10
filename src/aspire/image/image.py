@@ -517,6 +517,8 @@ class Image:
 
         # Get symmetry rotations from SymmetryGroup.
         symmetry_rots = SymmetryGroup.parse(symmetry_group, dtype=self.dtype).matrices
+        if len(symmetry_rots) > 1:
+            logger.info("Boosting with {len(symmetry_rots)} rotational symmetries.")
 
         # Compute Fourier transform of images.
         im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self._data))) / (L**2)
