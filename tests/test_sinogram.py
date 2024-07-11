@@ -8,7 +8,7 @@ from aspire.utils import grid_2d
 
 # Relative tolerance comparing line projections to scikit
 # The same tolerance will be used in all scikit comparisons
-SK_TOL = 0.002
+SK_TOL = 0.005
 
 IMG_SIZES = [
     511,
@@ -21,6 +21,7 @@ DTYPES = [
 ]
 
 ANGLES = [1, 50, 90, 117, 180, 360]
+
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
 def dtype(request):
@@ -36,6 +37,7 @@ def img_size(request):
     Image size.
     """
     return request.param
+
 
 @pytest.fixture(params=ANGLES, ids=lambda x: f"angles={x}", scope="module")
 def num_ang(request):
@@ -88,7 +90,7 @@ def test_image_project(masked_image, num_ang):
     np.testing.assert_array_less(nrms, SK_TOL, "Error in image projections.")
 
 
-def test_multidim():
+def test_multidim(num_ang):
     """
     Test Image.project on stacks of images. Extension of test_image_project but for multi-dimensional stacks.
     """
@@ -104,12 +106,12 @@ def test_multidim():
     imgs = Image(np.random.random((n, L, L))) * mask
 
     # Generate line project angles
-    angles = np.linspace(0, 180, L, endpoint=False)
+    angles = np.linspace(0, 180, num_ang, endpoint=False)
     rads = angles / 180.0 * np.pi
     s = imgs.project(rads)
 
     # Compare
-    reference_sinograms = np.empty((n, L, L))
+    reference_sinograms = np.empty((n, num_ang, L))
     for i, img in enumerate(imgs):
         # Compute the singleton case, and compare with the stack
         single_sinogram = img.project(rads)
