@@ -10,18 +10,17 @@ from aspire.utils import grid_2d
 # The same tolerance will be used in all scikit comparisons
 SK_TOL = 0.002
 
-# parameter img_sizes: 511, 512
 IMG_SIZES = [
     511,
     512,
 ]
 
-# parameter dtype: float32, float64
 DTYPES = [
     np.float32,
     np.float64,
 ]
 
+ANGLES = [1, 50, 90, 117, 180, 360]
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
 def dtype(request):
@@ -35,6 +34,13 @@ def dtype(request):
 def img_size(request):
     """
     Image size.
+    """
+    return request.param
+
+@pytest.fixture(params=ANGLES, ids=lambda x: f"angles={x}", scope="module")
+def num_ang(request):
+    """
+    Angles.
     """
     return request.param
 
@@ -53,12 +59,12 @@ def masked_image(dtype, img_size):
 
 
 # Image.project and compare results to skimage.radon
-def test_image_project(masked_image):
+def test_image_project(masked_image, num_ang):
     """
     Test Image.project on a single stack of images. Compares project method with skimage.
     """
     ny = masked_image.resolution
-    angles = np.linspace(0, 360, ny + 1, endpoint=False)
+    angles = np.linspace(0, 360, num_ang, endpoint=False)
     rads = angles / 180 * np.pi
     s = masked_image.project(rads)
     assert s.shape == (1, len(angles), ny)
