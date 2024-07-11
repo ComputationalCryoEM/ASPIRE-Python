@@ -213,10 +213,7 @@ class Image:
         )
 
         # Radon transform
-        image_rt = np.fft.fftshift(
-            np.fft.irfftn(image_ft, s=(self.n_images, n_points), axes=(0, 2)),
-            axes=(0, 2),
-        )
+        image_rt = np.fft.fftshift(np.fft.irfft(image_ft, n=n_points, axis=-1), axes=-1)
         image_rt = image_rt.reshape(*original_stack, len(angles), n_points)
         return image_rt
 
