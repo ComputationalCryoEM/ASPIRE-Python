@@ -377,7 +377,7 @@ def test_array_filter_dtype_passthrough(dtype):
     on exit, so this is an expected fail for singles.
     """
     if dtype == np.float32:
-        pytest.xfail(reason="ArrayFilter currently upcasts singles.", strict=True)
+        pytest.xfail(reason="ArrayFilter currently upcasts singles.")
 
     L = 8
     arr = np.ones((L, L), dtype=dtype)
