@@ -20,7 +20,14 @@ DTYPES = [
     np.float64,
 ]
 
-ANGLES = [1, 50, 90, 117, 180, 360]
+ANGLES = [
+    1,
+    50,
+    pytest.param(90, marks=pytest.mark.expensive),
+    pytest.param(117, marks=pytest.mark.expensive),
+    pytest.param(180, marks=pytest.mark.expensive),
+    pytest.param(360, marks=pytest.mark.expensive),
+]
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
@@ -83,8 +90,8 @@ def test_image_project(masked_image, num_ang):
     assert reference_sinogram.shape == (len(angles), ny), "Incorrect Shape"
 
     # compare project method on ski-image reference
-    nrms = np.sqrt(np.mean((s[0] - reference_sinogram) ** 2, axis=1)) / np.linalg.norm(
-        reference_sinogram, axis=1
+    nrms = np.sqrt(np.mean((s[0] - reference_sinogram) ** 2, axis=-1)) / np.linalg.norm(
+        reference_sinogram, axis=-1
     )
 
     np.testing.assert_array_less(nrms, SK_TOL, "Error in image projections.")
@@ -97,33 +104,47 @@ def test_multidim(num_ang):
 
     L = 512  # pixels
     n = 3
+    m = 2
 
     # Generate a mask
     g = grid_2d(L, normalized=True, shifted=True)
     mask = g["r"] < 1
 
     # Generate images
-    imgs = Image(np.random.random((n, L, L))) * mask
+    imgs = Image(np.random.random((m, n, L, L))) * mask
 
     # Generate line project angles
-    angles = np.linspace(0, 180, num_ang, endpoint=False)
+    angles = np.linspace(0, 360, num_ang, endpoint=False)
     rads = angles / 180.0 * np.pi
     s = imgs.project(rads)
 
     # Compare
-    reference_sinograms = np.empty((n, num_ang, L))
-    for i, img in enumerate(imgs):
-        # Compute the singleton case, and compare with the stack
-        single_sinogram = img.project(rads)
-        # These should be allclose up to determinism in the FFT and NUFFT.
-        np.testing.assert_allclose(s[i : i + 1], single_sinogram)
+    reference_sinograms = np.empty((m, n, num_ang, L))
+    for i in range(m):
+        for j in range(n):
+            img = imgs[i, j]
+            # Compute the singleton case, and compare with the stack
+            single_sinogram = img.project(rads)
+            # These should be allclose up to determinism in the FFT and NUFFT.
+            np.testing.assert_allclose(s[i, j : j + 1], single_sinogram)
 
-        # Next individually compute sk's radon transform for each image.
-        reference_sinograms[i] = radon(img._data[0], theta=angles[::-1]).T
+            # Next individually compute sk's radon transform for each image.
+            reference_sinograms[i, j] = radon(img._data[0], theta=angles[::-1]).T
 
-    # Compare all lines in each sinogram with sk-image
-    for i in range(n):
-        nrms = np.sqrt(
-            np.mean((s[i] - reference_sinograms[i]) ** 2, axis=1)
-        ) / np.linalg.norm(reference_sinograms[i], axis=1)
-        np.testing.assert_array_less(nrms, SK_TOL, err_msg=f"Error in image {i}.")
+    _nrms = np.sqrt(np.mean((s - reference_sinograms) ** 2, axis=-1)) / np.linalg.norm(
+        reference_sinograms, axis=-1
+    )
+    np.testing.assert_array_less(_nrms, SK_TOL)
+
+    # # numpy can do all these faster if we dont loop in python,
+    # # here it doesnt mke a huge difference practically,
+    # # but if it was part of the actual algo it might...
+    # for i in range(m):
+    #     for j in range(n):
+    #         # Compare all lines in each sinogram with sk-image
+    #         nrms = np.sqrt(
+    #             np.mean((s[i,j] - reference_sinograms[i,j]) ** 2, axis=-1)
+    #         ) / np.linalg.norm(reference_sinograms[i,j], axis=-1)
+    #         np.testing.assert_array_less(nrms, SK_TOL, err_msg=f"Error in image {i},{j}.")
+    #         # test we're getting same results with loop and with vectors
+    #         np.testing.assert_allclose(nrms, _nrms[i,j])
