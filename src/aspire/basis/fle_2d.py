@@ -544,7 +544,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         _z = nufft(im, self.grid_xy, epsilon=self.epsilon) * self.h**2
         _z = _z.reshape(num_img, self.num_radial_nodes, self.num_angular_nodes // 2)
         z[:, :, : self.num_angular_nodes // 2] = _z
-        z[:, :, self.num_angular_nodes // 2 :] = np.conj(_z)
+        z[:, :, self.num_angular_nodes // 2 :] = _z.conj()
         return z
 
     def _step2_t(self, z):
@@ -643,13 +643,13 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_img = z.shape[0]
         z = z[:, :, : self.num_angular_nodes // 2].reshape(num_img, -1)
         im = anufft(
-            z.astype(complex_type(self.dtype)),
+            z.astype(complex_type(self.dtype), copy=False),
             self.grid_xy,
             (self.nres, self.nres),
             epsilon=self.epsilon,
         )
-        im = im + np.conj(im)
-        im = np.real(im)
+        im = im + im.conj()
+        im = im.real
         im = im.reshape(num_img, self.nres, self.nres)
         im[:, self.radial_mask] = 0
 
