@@ -6,6 +6,7 @@ from aspire.denoising import DenoisedSource, DenoiserCov2D
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import IdentityFilter, RadialCTFFilter
 from aspire.source import Simulation
+from aspire.utils import utest_tolerance
 
 # TODO, parameterize these further.
 dtype = np.float32
@@ -89,7 +90,9 @@ def test_batched_rotcov2d_MSE(sim, basis):
     # Additionally test the `DenoisedSource` and lazy-eval-cache
     # of the cov2d estimator.
     src = DenoisedSource(sim, denoiser)
-    np.testing.assert_allclose(imgs_denoised, src.images[:], rtol=1e-05, atol=1e-08)
+    np.testing.assert_allclose(
+        imgs_denoised, src.images[:], rtol=1e-05, atol=utest_tolerance(src.dtype)
+    )
 
 
 def test_source_mismatch(sim, basis):
