@@ -110,7 +110,7 @@ print("Done Loop 2\n")
 # software is most easily accomplished by installing ASPIRE with one
 # of the published GPU extensions, for example ``pip install
 # "aspire[dev,gpu_12x]"``.  Once the packages are installed users
-# should automatically find that the NUFFT calls are running on the
+# should find that the NUFFT calls are automatically running on the
 # GPU.  Additional acceleration is achieved by enabling `cupy` for
 # `numeric` and `fft` components.
 #
