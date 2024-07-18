@@ -645,9 +645,10 @@ class Volume:
             )
 
         with mrcfile.new(filename, overwrite=overwrite) as mrc:
-            if self.pixel_size is not None:
-                mrc.voxel_size(self.pixel_size)
             mrc.set_data(self._data.astype(np.float32))
+            # Note assigning voxel_size must come after `set_data`
+            if self.pixel_size is not None:
+                mrc.voxel_size = self.pixel_size
 
         if self.dtype != np.float32:
             logger.info(f"Volume with dtype {self.dtype} saved with dtype float32")
@@ -757,6 +758,7 @@ class Volume:
         """
         Utility to convert from several possible `mrcfile.voxel_size` representations to a single (float) value or None.
         """
+
         # Convert from recarray to single values,
         #   checks uniformity.
         if isinstance(vx, np.recarray):
@@ -765,7 +767,9 @@ class Volume:
             vx = vx.x
 
         # Convert `0` to `None`
-        if (isinstance(vx, int) or isinstance(vx, float)) and vx == 0:
+        if (
+            isinstance(vx, int) or isinstance(vx, float) or isinstance(vx, np.ndarray)
+        ) and vx == 0:
             vx = None
 
         # Consistently return a `float` when not None
