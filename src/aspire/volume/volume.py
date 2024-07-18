@@ -147,7 +147,9 @@ class Volume:
         :return: Volume instance
         """
         return self.__class__(
-            self.asnumpy().astype(dtype, copy=copy), symmetry_group=self.symmetry_group
+            self.asnumpy().astype(dtype, copy=copy),
+            pixel_size=self.pixel_size,
+            symmetry_group=self.symmetry_group,
         )
 
     def _check_key_dims(self, key):
@@ -158,7 +160,11 @@ class Volume:
 
     def __getitem__(self, key):
         self._check_key_dims(key)
-        return self.__class__(self._data[key], symmetry_group=self.symmetry_group)
+        return self.__class__(
+            self._data[key],
+            pixel_size=self.pixel_size,
+            symmetry_group=self.symmetry_group,
+        )
 
     def __setitem__(self, key, value):
         self._check_key_dims(key)
@@ -249,6 +255,7 @@ class Volume:
 
         return self.__class__(
             self._data.reshape(*shape, *self._data.shape[-3:]),
+            pixel_size=self.pixel_size,
             symmetry_group=self.symmetry_group,
         )
 
@@ -265,9 +272,15 @@ class Volume:
     def __add__(self, other):
         symmetry = self._result_symmetry(other)
         if isinstance(other, Volume):
-            res = self.__class__(self._data + other.asnumpy(), symmetry_group=symmetry)
+            res = self.__class__(
+                self._data + other.asnumpy(),
+                pixel_size=self.pixel_size,
+                symmetry_group=symmetry,
+            )
         else:
-            res = self.__class__(self._data + other, symmetry_group=symmetry)
+            res = self.__class__(
+                self._data + other, pixel_size=self.pixel_size, symmetry_group=symmetry
+            )
 
         return res
 
@@ -277,21 +290,37 @@ class Volume:
     def __sub__(self, other):
         symmetry = self._result_symmetry(other)
         if isinstance(other, Volume):
-            res = self.__class__(self._data - other.asnumpy(), symmetry_group=symmetry)
+            res = self.__class__(
+                self._data - other.asnumpy(),
+                pixel_size=self.pixel_size,
+                symmetry_group=symmetry,
+            )
         else:
-            res = self.__class__(self._data - other, symmetry_group=symmetry)
+            res = self.__class__(
+                self._data - other, pixel_size=self.pixel_size, symmetry_group=symmetry
+            )
 
         return res
 
     def __rsub__(self, otherL):
-        return self.__class__(otherL - self._data)
+        return self.__class__(
+            otherL - self._data,
+            pixel_size=self.pixel_size,
+            symmetry_group=self.symmetry_group,
+        )
 
     def __mul__(self, other):
         symmetry = self._result_symmetry(other)
         if isinstance(other, Volume):
-            res = self.__class__(self._data * other.asnumpy(), symmetry_group=symmetry)
+            res = self.__class__(
+                self._data * other.asnumpy(),
+                pixel_size=self.pixel_size,
+                symmetry_group=symmetry,
+            )
         else:
-            res = self.__class__(self._data * other, symmetry_group=symmetry)
+            res = self.__class__(
+                self._data * other, pixel_size=self.pixel_size, symmetry_group=symmetry
+            )
 
         return res
 
@@ -304,9 +333,15 @@ class Volume:
         """
         symmetry = self._result_symmetry(other)
         if isinstance(other, Volume):
-            res = self.__class__(self._data / other.asnumpy(), symmetry_group=symmetry)
+            res = self.__class__(
+                self._data / other.asnumpy(),
+                pixel_size=self.pixel_size,
+                symmetry_group=symmetry,
+            )
         else:
-            res = self.__class__(self._data / other, symmetry_group=symmetry)
+            res = self.__class__(
+                self._data / other, pixel_size=self.pixel_size, symmetry_group=symmetry
+            )
 
         return res
 
@@ -314,7 +349,10 @@ class Volume:
         """
         Right scalar division, follows numpy semantics.
         """
-        return otherL * Volume(1.0 / self._data)
+        return otherL * Volume(
+            1.0 / self._data,
+            pixel_size=self.pixel_size,
+        )
 
     def project(self, rot_matrices, zero_nyquist=True):
         """
@@ -381,7 +419,7 @@ class Volume:
             im_f[:, :, 0] = 0
 
         im_f = fft.centered_ifft2(im_f)
-
+        # todo add pixel_size to Image
         return aspire.image.Image(xp.asnumpy(im_f.real))
 
     def to_vec(self):
@@ -426,7 +464,7 @@ class Volume:
         v = self._data.reshape(-1, *self._data.shape[-3:])
         vt = np.transpose(v, (0, -1, -2, -3))
         vt = vt.reshape(*original_stack_shape, *self._data.shape[-3:])
-        return self.__class__(vt, symmetry_group=symmetry)
+        return self.__class__(vt, pixel_size=self.pixel_size, symmetry_group=symmetry)
 
     @property
     def T(self):
@@ -469,7 +507,11 @@ class Volume:
                     f"Cannot flip axis {ax}: stack axis. Did you mean {ax-4}?"
                 )
 
-        return self.__class__(np.flip(self._data, axis), symmetry_group=symmetry)
+        return self.__class__(
+            np.flip(self._data, axis),
+            pixel_size=self.pixel_size,
+            symmetry_group=symmetry,
+        )
 
     def downsample(self, ds_res, mask=None, zero_nyquist=True):
         """
@@ -583,7 +625,7 @@ class Volume:
             np.real(fft.centered_ifftn(xp.asarray(vol_f), axes=(-3, -2, -1)))
         )
 
-        return self.__class__(vol, symmetry_group=symmetry)
+        return self.__class__(vol, pixel_size=self.pixel_size, symmetry_group=symmetry)
 
     def denoise(self):
         raise NotImplementedError
@@ -625,12 +667,7 @@ class Volume:
         """
         with mrcfile.open(filename, permissive=permissive) as mrc:
             loaded_data = mrc.data
-            pixel_size = mrc.voxel_size
-
-        # Handle default pixel_size.
-        # `mrcfile` defaults to zero, where we use `None`.
-        if pixel_size == 0:
-            pixel_size = None
+            pixel_size = Volume._vx_array_to_size(mrc.voxel_size)
 
         # FINUFFT work around
         if loaded_data.dtype == np.float32:
@@ -714,6 +751,28 @@ class Volume:
         :return: Volume instance
         """
         return Volume(np.zeros(v.shape, dtype=v.dtype), pixel_size=v.pixel_size)
+
+    @staticmethod
+    def _vx_array_to_size(vx):
+        """
+        Utility to convert from several possible `mrcfile.voxel_size` representations to a single (float) value or None.
+        """
+        # Convert from recarray to single values,
+        #   checks uniformity.
+        if isinstance(vx, np.recarray):
+            if vx.x != vx.y or vx.x != vx.z:
+                raise ValueError(f"Voxel sizes are not uniform: {vx}")
+            vx = vx.x
+
+        # Convert `0` to `None`
+        if (isinstance(vx, int) or isinstance(vx, float)) and vx == 0:
+            vx = None
+
+        # Consistently return a `float` when not None
+        if vx is not None:
+            vx = float(vx)
+
+        return vx
 
 
 class CartesianVolume(Volume):
