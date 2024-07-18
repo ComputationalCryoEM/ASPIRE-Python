@@ -625,6 +625,12 @@ class Volume:
         """
         with mrcfile.open(filename, permissive=permissive) as mrc:
             loaded_data = mrc.data
+            pixel_size = mrc.voxel_size
+
+        # Handle default pixel_size.
+        # `mrcfile` defaults to zero, where we use `None`.
+        if pixel_size == 0:
+            pixel_size = None
 
         # FINUFFT work around
         if loaded_data.dtype == np.float32:
@@ -635,7 +641,12 @@ class Volume:
         if loaded_data.dtype != dtype:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
 
-        return cls(loaded_data, symmetry_group=symmetry_group, dtype=dtype)
+        return cls(
+            loaded_data,
+            pixel_size=pixel_size,
+            symmetry_group=symmetry_group,
+            dtype=dtype,
+        )
 
     def fsc(self, other, cutoff=None, method="fft", plot=False):
         r"""
