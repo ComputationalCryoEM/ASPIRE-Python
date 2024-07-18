@@ -75,7 +75,7 @@ def vols_1(data_1):
 
 @pytest.fixture
 def vols_2(data_2):
-    return Volume(data_2)
+    return Volume(data_2, pixel_size=4.56)
 
 
 @pytest.fixture
@@ -291,6 +291,32 @@ def test_save_load(vols_1):
         assert np.allclose(vols_1, vols_loaded_single)
         assert isinstance(vols_loaded_double, Volume)
         assert np.allclose(vols_1, vols_loaded_double)
+        assert vols_loaded_single.pixel_size is None, "Pixel size should be None"
+        assert vols_loaded_double.pixel_size is None, "Pixel size should be None"
+
+
+def test_save_load_pixel_size(vols_2):
+    # Create a tmpdir in a context. It will be cleaned up on exit.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Save the Volume object into an MRC files
+        mrcs_filepath = os.path.join(tmpdir, "test.mrc")
+        vols_2.save(mrcs_filepath)
+
+        # Load saved MRC file as a Volume of dtypes single and double.
+        vols_loaded_single = Volume.load(mrcs_filepath, dtype=np.float32)
+        vols_loaded_double = Volume.load(mrcs_filepath, dtype=np.float64)
+
+        # Confirm the pixel size is loaded
+        np.testing.assert_approx_equal(
+            vols_loaded_single.pixel_size,
+            vols_2.pixel_size,
+            err_msg="Incorrect pixel size in singles.",
+        )
+        np.testing.assert_approx_equal(
+            vols_loaded_double.pixel_size,
+            vols_2.pixel_size,
+            err_msg="Incorrect pixel size in doubles.",
+        )
 
 
 def test_project(vols_hot_cold):
@@ -545,10 +571,19 @@ def test_flip(vols_1, data_1):
 
 
 def test_downsample(res):
-    vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")))
+    vols = Volume(
+        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")), pixel_size=1.23
+    )
     result = vols.downsample(res)
     og_res = vols.resolution
     ds_res = result.resolution
+
+    # Confirm the pixel size is scaled
+    np.testing.assert_approx_equal(
+        result.pixel_size,
+        vols.pixel_size * res / ds_res,
+        err_msg="Incorrect pixel size.",
+    )
 
     # check signal energy
     np.testing.assert_allclose(
