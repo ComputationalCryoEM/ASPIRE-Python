@@ -80,7 +80,7 @@ def load_mrc(filepath):
     Load raw data from `.mrc` into an array.
 
     :param filepath: File path (string).
-    :return: numpy array of image data.
+    :return: (numpy array of image data, pixel_size)
     """
 
     # mrcfile tends to yield many warnings about EMPIAR datasets being corrupt
@@ -92,6 +92,7 @@ def load_mrc(filepath):
 
         with mrcfile.open(filepath, mode="r", permissive=True) as mrc:
             im = mrc.data
+            pixel_size = Image._vx_array_to_size(mrc.voxel_size)
 
         # Log each mrcfile warning to debug log, noting the associated file
         for w in ws:
@@ -110,19 +111,29 @@ def load_mrc(filepath):
                 f" Will attempt to continue processing {filepath}"
             )
 
-    return im
+    return im, pixel_size
 
 
 def load_tiff(filepath):
     """
     Load raw data from `.tiff` into an array.
 
-    :param filepath: File path (string).
-    :return: numpy array of image data.
-    """
+    Note, TIFF does not natively provide equivalent to pixel/voxel_size,
+    so users of TIFF files may need to manually assign `pixel_size` to
+    `Image` instances when required. Defaults to `pixel_size=None`.
 
-    # Use PIL to open `filepath` and cast to numpy array.
-    return np.array(PILImage.open(filepath))
+    :param filepath: File path (string).
+    :return: (numpy array of image data, pixel_size=None)
+    """
+    # Use PIL to open `filepath`
+    img = PILImage.open(filepath)
+
+    # Future todo, extract `voxel_size` if available in TIFF tags (custom tag?)
+    # For now, default to `None`.
+    voxel_size = None
+
+    # Cast image data as numpy array
+    return np.array(img), voxel_size
 
 
 class Image:
@@ -133,7 +144,7 @@ class Image:
         ".tiff": load_tiff,
     }
 
-    def __init__(self, data, dtype=None):
+    def __init__(self, data, pixel_size=None, dtype=None):
         """
         A stack of one or more images.
 
@@ -149,6 +160,10 @@ class Image:
 
         :param data: Numpy array containing image data with shape
             `(..., resolution, resolution)`.
+        :param pixel_size: Optional pixel size in Angstroms.
+            When provided will be saved with `mrc` metadata.
+            Default of `None` will not write to file,
+            but will be considered unit pixels (1) for FSC.
         :param dtype: Optionally cast `data` to this dtype.
             Defaults to `data.dtype`.
 
@@ -180,6 +195,9 @@ class Image:
         self.stack_shape = self._data.shape[:-2]
         self.n_images = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
+        self.pixel_size = None
+        if pixel_size is not None:
+            self.pixel_size = float(pixel_size)
 
         # Numpy interop
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
@@ -238,7 +256,7 @@ class Image:
 
     def __getitem__(self, key):
         self._check_key_dims(key)
-        return self.__class__(self._data[key])
+        return self.__class__(self._data[key], pixel_size=self.pixel_size)
 
     def __setitem__(self, key, value):
         self._check_key_dims(key)
@@ -266,31 +284,34 @@ class Image:
                 f"Number of images {self.n_images} cannot be reshaped to {shape}."
             )
 
-        return self.__class__(self._data.reshape(*shape, *self._data.shape[-2:]))
+        return self.__class__(
+            self._data.reshape(*shape, *self._data.shape[-2:]),
+            pixel_size=self.pixel_size,
+        )
 
     def __add__(self, other):
         if isinstance(other, Image):
             other = other._data
 
-        return self.__class__(self._data + other)
+        return self.__class__(self._data + other, pixel_size=self.pixel_size)
 
     def __sub__(self, other):
         if isinstance(other, Image):
             other = other._data
 
-        return self.__class__(self._data - other)
+        return self.__class__(self._data - other, pixel_size=self.pixel_size)
 
     def __mul__(self, other):
         if isinstance(other, Image):
             other = other._data
 
-        return self.__class__(self._data * other)
+        return self.__class__(self._data * other, pixel_size=self.pixel_size)
 
     def __neg__(self):
-        return self.__class__(-self._data)
+        return self.__class__(-self._data, pixel_size=self.pixel_size)
 
     def sqrt(self):
-        return self.__class__(np.sqrt(self._data))
+        return self.__class__(np.sqrt(self._data), pixel_size=self.pixel_size)
 
     @property
     def T(self):
@@ -312,7 +333,9 @@ class Image:
         im = self.stack_reshape(-1)
         imt = np.transpose(im._data, (0, -1, -2))
 
-        return self.__class__(imt).stack_reshape(original_stack_shape)
+        return self.__class__(imt, pixel_size=self.pixel_size).stack_reshape(
+            original_stack_shape
+        )
 
     def flip(self, axis=-2):
         """
@@ -335,7 +358,7 @@ class Image:
                     f"Cannot flip axis {ax}: stack axis. Did you mean {ax-3}?"
                 )
 
-        return self.__class__(np.flip(self._data, axis))
+        return self.__class__(np.flip(self._data, axis), pixel_size=self.pixel_size)
 
     def __repr__(self):
         msg = f"{self.n_images} {self.dtype} images arranged as a {self.stack_shape} stack"
@@ -355,7 +378,7 @@ class Image:
         return view
 
     def copy(self):
-        return self.__class__(self._data.copy())
+        return self.__class__(self._data.copy(), pixel_size=self.pixel_size)
 
     def shift(self, shifts):
         """
@@ -412,7 +435,14 @@ class Image:
         out = fft.centered_ifft2(crop_fx).real * (ds_res**2 / self.resolution**2)
         out = xp.asnumpy(out)
 
-        return self.__class__(out).stack_reshape(original_stack_shape)
+        # Optionally scale pixel size
+        ds_pixel_size = self.pixel_size
+        if ds_pixel_size is not None:
+            ds_pixel_size *= self.resolution / ds_res
+
+        return self.__class__(out, pixel_size=ds_pixel_size).stack_reshape(
+            original_stack_shape
+        )
 
     def filter(self, filter):
         """
@@ -441,7 +471,9 @@ class Image:
 
         im = xp.asnumpy(im.real)
 
-        return self.__class__(im).stack_reshape(original_stack_shape)
+        return self.__class__(im, pixel_size=self.pixel_size).stack_reshape(
+            original_stack_shape
+        )
 
     def rotate(self):
         raise NotImplementedError
@@ -453,6 +485,9 @@ class Image:
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)
             mrc.set_data(self._data.astype(np.float32))
+            # Note assigning voxel_size must come after `set_data`
+            if self.pixel_size is not None:
+                mrc.voxel_size = self.pixel_size
 
     @staticmethod
     def load(filepath, dtype=None):
@@ -477,14 +512,14 @@ class Image:
             )
 
         # Call the appropriate file reader
-        im = Image.extensions[ext](filepath)
+        im, pixel_size = Image.extensions[ext](filepath)
 
         # Attempt casting when user provides dtype
         if dtype is not None:
             im = im.astype(dtype, copy=False)
 
         # Return as Image instance
-        return Image(im)
+        return Image(im, pixel_size=pixel_size)
 
     def _im_translate(self, shifts):
         """
@@ -535,7 +570,9 @@ class Image:
         im_translated = xp.asnumpy(im_translated.real)
 
         # Reshape to stack shape
-        return self.__class__(im_translated).stack_reshape(stack_shape)
+        return self.__class__(im_translated, pixel_size=self.pixel_size).stack_reshape(
+            stack_shape
+        )
 
     def norm(self):
         return anorm(self._data)
@@ -602,7 +639,9 @@ class Image:
 
         vol /= L
 
-        return aspire.volume.Volume(vol, symmetry_group=symmetry_group)
+        return aspire.volume.Volume(
+            vol, pixel_size=self.pixel_size, symmetry_group=symmetry_group
+        )
 
     def show(self, columns=5, figsize=(20, 10), colorbar=True):
         """
@@ -645,7 +684,7 @@ class Image:
 
             plt.show()
 
-    def frc(self, other, cutoff=None, pixel_size=None, method="fft", plot=False):
+    def frc(self, other, cutoff=None, method="fft", plot=False):
         r"""
         Compute the Fourier ring correlation between two images.
 
@@ -663,8 +702,6 @@ class Image:
             Default `None` implies `cutoff=1` and excludes
             plotting cutoff line.
 
-        :param pixel_size: Pixel size in angstrom.  Default `None`
-            implies unit in pixels, equivalent to pixel_size=1.
         :param method: Selects either 'fft' (on cartesian grid),
             or 'nufft' (on polar grid). Defaults to 'fft'.
         :param plot: Optionally plot to screen or file.
@@ -684,7 +721,7 @@ class Image:
         frc = FourierRingCorrelation(
             a=self.asnumpy(),
             b=other.asnumpy(),
-            pixel_size=pixel_size,
+            pixel_size=self.pixel_size,
             method=method,
         )
 
@@ -694,6 +731,32 @@ class Image:
             frc.plot(cutoff=cutoff, save_to_file=plot)
 
         return frc.analyze_correlations(cutoff), frc.correlations
+
+    @staticmethod
+    def _vx_array_to_size(vx):
+        """
+        Utility to convert from several possible `mrcfile.voxel_size`
+        representations to a single (float) value or None.
+        """
+
+        # Convert from recarray to single values,
+        #   checks uniformity.
+        if isinstance(vx, np.recarray):
+            if vx.x != vx.y:
+                raise ValueError(f"Voxel sizes are not uniform: {vx}")
+            vx = vx.x
+
+        # Convert `0` to `None`
+        if (
+            isinstance(vx, int) or isinstance(vx, float) or isinstance(vx, np.ndarray)
+        ) and vx == 0:
+            vx = None
+
+        # Consistently return a `float` when not None
+        if vx is not None:
+            vx = float(vx)
+
+        return vx
 
 
 class CartesianImage(Image):
