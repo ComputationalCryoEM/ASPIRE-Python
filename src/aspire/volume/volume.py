@@ -420,7 +420,7 @@ class Volume:
 
         im_f = fft.centered_ifft2(im_f)
         # todo add pixel_size to Image
-        return aspire.image.Image(xp.asnumpy(im_f.real))
+        return aspire.image.Image(xp.asnumpy(im_f.real), pixel_size=self.pixel_size)
 
     def to_vec(self):
         """Returns an N x resolution ** 3 array."""
@@ -756,7 +756,8 @@ class Volume:
     @staticmethod
     def _vx_array_to_size(vx):
         """
-        Utility to convert from several possible `mrcfile.voxel_size` representations to a single (float) value or None.
+        Utility to convert from several possible `mrcfile.voxel_size`
+        representations to a single (float) value or None.
         """
 
         # Convert from recarray to single values,
