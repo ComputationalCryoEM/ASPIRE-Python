@@ -178,7 +178,7 @@ def test_frc_plot(image_fixture, method):
 def test_fsc_id(volume_fixture, method):
     vol, _ = volume_fixture
 
-    fsc_resolution, fsc = vol.fsc(vol, pixel_size=1, cutoff=0.143, method=method)
+    fsc_resolution, fsc = vol.fsc(vol, cutoff=0.143, method=method)
     assert np.isclose(fsc_resolution[0], 2, rtol=0.02)
     assert np.allclose(fsc, 1, rtol=0.01)
 
@@ -186,11 +186,11 @@ def test_fsc_id(volume_fixture, method):
 def test_fsc_trunc(volume_fixture, method):
     vol_a, vol_b = volume_fixture
 
-    fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, cutoff=0.143, method=method)
+    fsc_resolution, fsc = vol_a.fsc(vol_b, cutoff=0.143, method=method)
     assert fsc_resolution[0] > 3.0
 
     # The follow should correspond to the test_fsc_plot below.
-    fsc_resolution, fsc = vol_a.fsc(vol_b, pixel_size=1, cutoff=0.5, method=method)
+    fsc_resolution, fsc = vol_a.fsc(vol_b, cutoff=0.5, method=method)
     assert fsc_resolution[0] > 3.9
 
 
@@ -202,13 +202,13 @@ def test_fsc_vol_plot(volume_fixture):
 
     # Plot to screen
     with matplotlib_no_gui():
-        _ = vol_a.fsc(vol_b, pixel_size=1, cutoff=0.5, plot=True)
+        _ = vol_a.fsc(vol_b, cutoff=0.5, plot=True)
 
     # Plot to file
     # Also tests `cutoff=None`
     with tempfile.TemporaryDirectory() as tmp_input_dir:
         file_path = os.path.join(tmp_input_dir, "vol_fsc_curve.png")
-        vol_a.fsc(vol_b, pixel_size=1, cutoff=None, plot=file_path)
+        vol_a.fsc(vol_b, cutoff=None, plot=file_path)
         assert os.path.exists(file_path)
 
 
@@ -218,9 +218,7 @@ def test_fsc_plot(volume_fixture, method):
     """
     vol_a, vol_b = volume_fixture
 
-    fsc = FourierShellCorrelation(
-        vol_a.asnumpy(), vol_b.asnumpy(), pixel_size=1, method=method
-    )
+    fsc = FourierShellCorrelation(vol_a.asnumpy(), vol_b.asnumpy(), method=method)
 
     with matplotlib_no_gui():
         fsc.plot(cutoff=0.5)
@@ -314,7 +312,7 @@ def test_vol_type_mismatch():
     b = a.asnumpy()
 
     with pytest.raises(TypeError, match=r"`other` volume must be an `Volume` instance"):
-        _ = a.fsc(b, pixel_size=1, cutoff=0.143)
+        _ = a.fsc(b, cutoff=0.143)
 
 
 # Broadcasting
@@ -378,7 +376,7 @@ def test_fsc_id_bcast(volume_fixture, method):
     k = 3
     vol_b = Volume(np.tile(vol.asnumpy(), (3, 1, 1, 1)))
 
-    fsc_resolution, fsc = vol.fsc(vol_b, pixel_size=1, cutoff=0.143, method=method)
+    fsc_resolution, fsc = vol.fsc(vol_b, cutoff=0.143, method=method)
     assert np.allclose(
         fsc_resolution,
         [

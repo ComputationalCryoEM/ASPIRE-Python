@@ -122,7 +122,7 @@ def weighted_source(weighted_volume):
 def test_fsc(source, estimated_volume):
     """Compare estimated volume to source volume with FSC."""
     # Fourier Shell Correlation
-    fsc_resolution, fsc = source.vols.fsc(estimated_volume, pixel_size=1, cutoff=0.5)
+    fsc_resolution, fsc = source.vols.fsc(estimated_volume, cutoff=0.5)
 
     # Check that resolution is less than 2.1 pixels.
     np.testing.assert_array_less(fsc_resolution, 2.1)
