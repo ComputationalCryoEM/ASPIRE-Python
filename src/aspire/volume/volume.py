@@ -58,7 +58,7 @@ class Volume:
     Volume is an (N1 x ...) x L x L x L array, along with associated utility methods.
     """
 
-    def __init__(self, data, dtype=None, symmetry_group=None):
+    def __init__(self, data, dtype=None, pixel_size=None, symmetry_group=None):
         """
         A stack of one or more volumes.
 
@@ -76,6 +76,10 @@ class Volume:
             `(..., resolution, resolution, resolution)`.
         :param dtype: Optionally cast `data` to this dtype.
             Defaults to `data.dtype`.
+        :param pixel_size: Optional voxel_size in Angstroms.
+            When provided will be saved with `map`/`mrc` metadata.
+            Default of `None` will not write to file,
+            but will be considered unit pixels (1) for FSC.
         :param symmetry_group: A SymmetryGroup instance or string indicating symmetry of the Volume.
 
         :return: A Volume instance holding `data`.
@@ -107,6 +111,9 @@ class Volume:
         self.n_vols = np.prod(self.stack_shape)
         self.resolution = self._data.shape[-1]
         self.size = self._data.size
+        self.pixel_size = None
+        if pixel_size is not None:
+            self.pixel_size = float(pixel_size)
 
         # Set symmetry_group. If None, default to 'C1'.
         self._set_symmetry_group(symmetry_group)
@@ -497,10 +504,14 @@ class Volume:
         out = fft.centered_ifftn(fx)
         out = out.real * (ds_res**3 / self.resolution**3)
 
+        # Optionally scale pixel size
+        ds_pixel_size = self.pixel_size
+        if ds_pixel_size is not None:
+            ds_pixel_size *= self.resolution / ds_res
+
         # returns a new Volume object
         return self.__class__(
-            xp.asnumpy(out),
-            symmetry_group=self.symmetry_group,
+            xp.asnumpy(out), pixel_size=ds_pixel_size, symmetry_group=self.symmetry_group
         ).stack_reshape(original_stack_shape)
 
     def shift(self):
@@ -592,6 +603,8 @@ class Volume:
             )
 
         with mrcfile.new(filename, overwrite=overwrite) as mrc:
+            if self.pixel_size is not None:
+                mrc.voxel_size(self.pixel_size)
             mrc.set_data(self._data.astype(np.float32))
 
         if self.dtype != np.float32:
@@ -624,7 +637,7 @@ class Volume:
 
         return cls(loaded_data, symmetry_group=symmetry_group, dtype=dtype)
 
-    def fsc(self, other, cutoff=None, pixel_size=None, method="fft", plot=False):
+    def fsc(self, other, cutoff=None, method="fft", plot=False):
         r"""
         Compute the Fourier shell correlation between two volumes.
 
@@ -641,8 +654,6 @@ class Volume:
         :param cutoff: Cutoff value, traditionally `.143`.
             Default `None` implies `cutoff=1` and excludes
             plotting cutoff line.
-        :param pixel_size: Pixel size in angstrom.  Default `None`
-            implies unit in pixels, equivalent to pixel_size=1.
         :param method: Selects either 'fft' (on cartesian grid),
             or 'nufft' (on polar grid). Defaults to 'fft'.
         :param plot: Optionally plot to screen or file.
@@ -662,7 +673,7 @@ class Volume:
         fsc = FourierShellCorrelation(
             a=self.asnumpy(),
             b=other.asnumpy(),
-            pixel_size=pixel_size,
+            pixel_size=self.pixel_size,
             method=method,
         )
 
@@ -681,7 +692,7 @@ class Volume:
         :param v: Volume instance
         :return: Volume instance
         """
-        return Volume(np.empty(v.shape, dtype=v.dtype))
+        return Volume(np.empty(v.shape, dtype=v.dtype), pixel_size=v.pixel_size)
 
     @staticmethod
     def zeros_like(v):
@@ -691,7 +702,7 @@ class Volume:
         :param v: Volume instance
         :return: Volume instance
         """
-        return Volume(np.zeros(v.shape, dtype=v.dtype))
+        return Volume(np.zeros(v.shape, dtype=v.dtype), pixel_size=v.pixel_size)
 
 
 class CartesianVolume(Volume):
