@@ -4,21 +4,29 @@ import numpy as np
 import pytest
 
 from aspire.source import RelionSource, Simulation
+from aspire.utils import utest_tolerance
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-STARFILE = [
-    "rln_proj_65.star",
-    "rln_proj_64.star",
+STARFILE_ODD = [
+    "rln_proj_65_centered.star",
     "rln_proj_65_shifted.star",
+]
+
+STARFILE_EVEN = [
+    "rln_proj_64_centered.star",
     "rln_proj_64_shifted.star",
 ]
 
 
-@pytest.fixture(params=STARFILE, scope="module")
+@pytest.fixture(params=STARFILE_ODD + STARFILE_EVEN, scope="module")
 def sources(request):
+    """
+    Initialize RelionSource from starfile and generate corresponding ASPIRE
+    Simulation source.
+    """
     starfile = os.path.join(DATA_DIR, request.param)
     rln_src = RelionSource(starfile)
 
@@ -42,6 +50,21 @@ def sources(request):
         dtype=rln_src.dtype,
     )
     return rln_src, sim_src
+
+
+@pytest.fixture(params=[STARFILE_ODD, STARFILE_EVEN], scope="module")
+def rln_sources(request):
+    """
+    Initialize centered and shifted RelionSource's generated using the
+    same viewing angles.
+    """
+    starfile_centered = os.path.join(DATA_DIR, request.param[0])
+    starfile_shifted = os.path.join(DATA_DIR, request.param[1])
+
+    rln_src_centered = RelionSource(starfile_centered)
+    rln_src_shifted = RelionSource(starfile_shifted)
+
+    return rln_src_centered, rln_src_shifted
 
 
 def test_projections_relative_error(sources):
@@ -73,3 +96,17 @@ def test_projections_frc(sources):
     # Check that estimated resolution is high (< 2.5 pixels) and correlation is close to 1.
     np.testing.assert_array_less(res, 2.5)
     np.testing.assert_array_less(1 - corr[:, -2], 0.025)
+
+
+def test_relion_source_centering(rln_sources):
+    """Test that centering by using provided Relion shifts works."""
+    rln_src_centered, rln_src_shifted = rln_sources
+    ims_centered = rln_src_centered.images[:]
+    ims_shifted = rln_src_shifted.images[:]
+
+    offsets = rln_src_shifted.offsets
+    np.testing.assert_allclose(
+        ims_centered.asnumpy(),
+        ims_shifted.shift(-offsets).asnumpy(),
+        atol=utest_tolerance(rln_src_centered.dtype),
+    )
