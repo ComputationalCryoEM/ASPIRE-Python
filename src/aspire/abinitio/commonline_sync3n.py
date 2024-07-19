@@ -134,8 +134,14 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :return: Array of rotation matrices, size n_imgx3x3.
         """
 
+        logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
+
+        # Detect a single pair of common-lines between each pair of images
+        self.build_clmatrix()
+
         # Initial estimate of viewing directions
-        Rijs0 = self._estimate_relative_viewing_directions()
+        # Calculate relative rotations
+        Rijs0 = self._estimate_all_Rijs(self.clmatrix)
 
         # Compute and apply global handedness
         Rijs = self._global_J_sync(Rijs0)
@@ -742,20 +748,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     ###########################################
     # Primary Methods                         #
     ###########################################
-
-    def _estimate_relative_viewing_directions(self):
-        """
-        Estimate the relative viewing directions vij = vi*vj^T, i<j, and vii = vi*vi^T, where
-        vi is the third row of the i'th rotation matrix Ri.
-        """
-        logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-        # Detect a single pair of common-lines between each pair of images
-        self.build_clmatrix()
-
-        # Calculate relative rotations
-        Rijs = self._estimate_all_Rijs(self.clmatrix)
-
-        return Rijs
 
     def _global_J_sync(self, Rijs):
         """
