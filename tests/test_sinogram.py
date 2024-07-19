@@ -46,10 +46,10 @@ def img_size(request):
     return request.param
 
 
-@pytest.fixture(params=ANGLES, ids=lambda x: f"angles={x}", scope="module")
+@pytest.fixture(params=ANGLES, ids=lambda x: f"n_angles={x}", scope="module")
 def num_ang(request):
     """
-    Angles (Degrees).
+    Number of angles in radon transform.
     """
     return request.param
 
