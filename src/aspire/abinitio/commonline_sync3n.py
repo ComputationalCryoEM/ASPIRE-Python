@@ -122,7 +122,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 logger.info("GPU not found, defaulting to numpy.")
 
         except ModuleNotFoundError:
-            logger.info("cupy not found, defaulting numpy.")
+            logger.info("cupy not found, defaulting to numpy.")
 
     ###########################################
     # High level algorithm steps              #
@@ -159,7 +159,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         Use eigen decomposition of S to estimate transforms,
         then project transforms to nearest rotations.
 
-        :param S: Numpy array represeting Synchronization matrix.
+        :param S: Numpy array representing Synchronization matrix.
         :param W: Optional weights array, default `None` is equal weighting of `S`.
         :param n_eigs: Optional, number of eigenvalues to compute (min 3).
         """
@@ -177,7 +177,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                     f" Received {W.shape}."
                 )
             # Initialize D
-            D = np.mean(W, axis=1)  # D, check axis
+            D = np.mean(W, axis=1)
 
             Dhalf = D
             # Compute mask of trouble D values
@@ -197,10 +197,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 logger.warning(f"Large Weights Matrix Normalization Error: {err}")
 
             # Make W of size 3Nx3N
-            W = np.kron(W, np.ones((3, 3)))
+            W = np.kron(W, np.ones((3, 3), dtype=self.dtype))
 
             # Make Dhalf of size 3Nx3N
-            Dhalf = np.diag(np.kron(np.diag(Dhalf), np.ones((1, 3)))[0])
+            Dhalf = np.diag(np.kron(np.diag(Dhalf), np.ones(3, dtype=self.dtype)))
 
             # Apply weights to S
             S = Dhalf @ (W * S) @ Dhalf
@@ -333,7 +333,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             i += 1
 
         # Pack W
-        W = np.zeros((self.n_img, self.n_img))
+        W = np.zeros((self.n_img, self.n_img), dtype=self.dtype)
         idx = 0
         for i in range(self.n_img):
             for j in range(i + 1, self.n_img):
@@ -375,7 +375,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         h = 1 / self.hist_intervals
 
         c = np.empty((4), dtype=Rijs.dtype)
-        for i in trange(self.n_img, desc="Computing triangle scores"):
+        for i in trange(self.n_img - 2, desc="Computing triangle scores"):
             for j in range(
                 i + 1, self.n_img - 1
             ):  # check bound (taken from MATLAB mex)
@@ -525,7 +525,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         ln_f_arb = np.zeros(len(Rijs), dtype=Rijs.dtype)
 
         c = np.empty((4), dtype=Rijs.dtype)
-        for i in trange(self.n_img, desc="Computing pair probabilities"):
+        for i in trange(self.n_img - 2, desc="Computing pair probabilities"):
             for j in range(i + 1, self.n_img - 1):
                 ij = self._pairs_to_linear[i, j]
                 Rij = Rijs[ij]
@@ -715,8 +715,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Derive P and sigma
         P = P ** (1 / 3)
-        peak = x0  # can rm later
-        sigma = (1 - peak) / peak2sigma
+        sigma = (1 - x0) / peak2sigma
 
         # Initialize probability computations
         # Local histograms analysis
@@ -918,7 +917,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         desc = "Computing signs_times_v"
         if self.J_weighting:
             desc += " with J_weighting"
-        for i in trange(self.n_img, desc=desc):
+        for i in trange(self.n_img - 2, desc=desc):
             for j in range(
                 i + 1, self.n_img - 1
             ):  # check bound (taken from MATLAB mex)
