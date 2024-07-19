@@ -188,9 +188,13 @@ class Image:
 
     def project(self, angles):
         """
-        Computes the Radon Transform on an Image Stack using Non-Uniform Fast Fourier Transforms. This method projects the Image stack along different angles and returns the Radon Transform.
+        Computes the Radon Transform on an Image Stack using
+        Non-Uniform Fast Fourier Transforms. This method projects the
+        Image stack along different angles and returns the Radon
+        Transform.
 
-        :param angles: A 1-D Numpy Array of angles in Radians. This is used to compute the Radon Transform at different angles.
+        :param angles: A 1-D Numpy Array of angles in Radians.
+            This is used to compute the Radon Transform at different angles.
         :return: Radon transform of the Image Stack.
         :rtype: Ndarray (stack size, number of angles, image resolution)
         """
