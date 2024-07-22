@@ -56,10 +56,10 @@ def img_size(request):
 def volume(dtype, img_size):
     # Get a volume
     v = Volume(
-        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(dtype)
+        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")).astype(dtype)
     )
     # 1e3 is hardcoded to match legacy test files.
-    return v.downsample(img_size) * 1.0e3
+    return v * 1.0e3
 
 
 @pytest.fixture(params=BASIS, ids=lambda x: f"basis={x}")

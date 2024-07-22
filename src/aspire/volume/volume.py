@@ -309,7 +309,7 @@ class Volume:
         """
         return otherL * Volume(1.0 / self._data)
 
-    def project(self, rot_matrices):
+    def project(self, rot_matrices, zero_nyquist=False):
         """
         Using the stack of rot_matrices, project images of Volume. When projecting
         over a stack of volumes, a singleton Rotation or a Rotation with stack size
@@ -318,6 +318,8 @@ class Volume:
         and a Rotation stack, the i'th Volume will be projected using the i'th Rotation.
 
         :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
+            Defaults to zero_nyquist=False, keeping the Nyquist frequency.
         :return: `Image` instance.
         """
         # See Issue #727
@@ -366,7 +368,8 @@ class Volume:
 
         im_f = im_f.reshape(-1, self.resolution, self.resolution)
 
-        if self.resolution % 2 == 0:
+        # If resolution is even, optionally zero out the nyquist frequency.
+        if self.resolution % 2 == 0 and zero_nyquist is True:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
 
@@ -473,7 +476,7 @@ class Volume:
         v = self.stack_reshape(-1)
 
         # take 3D Fourier transform of each volume in the stack
-        fx = fft.fftshift(fft.fftn(xp.asarray(v._data), axes=(1, 2, 3)))
+        fx = fft.centered_fftn(xp.asarray(v._data), axes=(1, 2, 3))
 
         # crop each volume to the desired resolution in frequency space
         fx = crop_pad_3d(fx, ds_res)
@@ -483,18 +486,19 @@ class Volume:
             fx = fx * xp.asarray(mask)
 
         # inverse Fourier transform of each volume
-        out = fft.ifftn(fft.ifftshift(fx), axes=(1, 2, 3)).real
+        out = fft.centered_ifftn(fx, axes=(1, 2, 3))
         out = out.real * (ds_res**3 / self.resolution**3)
 
         # returns a new Volume object
         return self.__class__(
-            xp.asnumpy(out), symmetry_group=self.symmetry_group
+            xp.asnumpy(out),
+            symmetry_group=self.symmetry_group,
         ).stack_reshape(original_stack_shape)
 
     def shift(self):
         raise NotImplementedError
 
-    def rotate(self, rot_matrices, zero_nyquist=True):
+    def rotate(self, rot_matrices, zero_nyquist=False):
         """
         Rotate volumes, within a fixed grid, by `rot_matrices`. If `rot_matrices` is a single
         rotation, each volume will be rotated by that rotation. If `rot_matrices` is a stack of
@@ -502,7 +506,7 @@ class Volume:
 
         :param rot_matrices: `Rotation` object of length 1 or n_vols.
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-            Defaults to zero_nyquist=True, removing the Nyquist frequency.
+            Defaults to zero_nyquist=False, keeping the Nyquist frequency.
 
         :return: `Volume` instance.
         """
@@ -550,7 +554,7 @@ class Volume:
 
             vol_f = vol_f.reshape(-1, self.resolution, self.resolution, self.resolution)
 
-        # If resolution is even, we zero out the nyquist frequency by default.
+        # If resolution is even, optionally zero out the nyquist frequency.
         if self.resolution % 2 == 0 and zero_nyquist is True:
             vol_f[:, 0, :, :] = 0
             vol_f[:, :, 0, :] = 0

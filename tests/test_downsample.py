@@ -3,6 +3,7 @@ from itertools import product
 import numpy as np
 import pytest
 
+from aspire.downloader import emdb_2660
 from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
@@ -54,7 +55,7 @@ def checkCenterPoint(data_org, data_ds):
         center_org += (L // 2,)
         center_ds += (L_ds // 2,)
         # indeterminacy for 3D
-        tolerance = 5e-2
+        tolerance = 1e-3
     return np.allclose(
         data_org.asnumpy()[(..., *center_org)],
         data_ds.asnumpy()[(..., *center_ds)],
@@ -107,3 +108,50 @@ def test_downsample_3d_case(L, L_ds):
 def test_integer_offsets():
     sim = Simulation(offsets=0)
     _ = sim.downsample(3)
+
+
+# Test that vol.downsample.project == vol.project.downsample.
+DTYPES = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
+RES = [65, 66]
+RES_DS = [32, 33]
+
+
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture(params=RES, ids=lambda x: f"resolution={x}", scope="module")
+def res(request):
+    return request.param
+
+
+@pytest.fixture(params=RES_DS, ids=lambda x: f"resolution_ds={x}", scope="module")
+def res_ds(request):
+    return request.param
+
+
+@pytest.fixture(scope="module")
+def emdb_vol():
+    return emdb_2660()
+
+
+@pytest.fixture(scope="module")
+def volume(emdb_vol, res, dtype):
+    vol = emdb_vol.astype(dtype, copy=False)
+    vol = vol.downsample(res)
+    return vol
+
+
+def test_downsample_project(volume, res_ds):
+    """
+    Test that vol.downsample.project == vol.project.downsample.
+    """
+    rot = np.eye(3, dtype=volume.dtype)  # project along z-axis
+    im_ds_proj = volume.downsample(res_ds).project(rot)
+    im_proj_ds = volume.project(rot).downsample(res_ds)
+
+    tol = 1e-07
+    if volume.dtype == np.float64:
+        tol = 1e-09
+    np.testing.assert_allclose(im_ds_proj, im_proj_ds, atol=tol)

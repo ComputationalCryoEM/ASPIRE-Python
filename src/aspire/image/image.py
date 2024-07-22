@@ -537,7 +537,7 @@ class Image:
         # probably not needed, transition
         return np.size(self._data)
 
-    def backproject(self, rot_matrices, symmetry_group=None):
+    def backproject(self, rot_matrices, symmetry_group=None, zero_nyquist=False):
         """
         Backproject images along rotations. If a symmetry group is provided, images
         used in back-projection are duplicated (boosted) for symmetric viewing directions.
@@ -547,6 +547,8 @@ class Image:
             corresponding to viewing directions.
         :param symmetry_group: A SymmetryGroup instance or string indicating symmetry, ie. "C3".
             If supplied, uses symmetry to increase number of images used in back-projection.
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
+            Defaults to zero_nyquist=False, keeping the Nyquist frequency.
 
         :return: Volume instance corresonding to the backprojected images.
         """
@@ -569,7 +571,9 @@ class Image:
 
         # Compute Fourier transform of images.
         im_f = xp.asnumpy(fft.centered_fft2(xp.asarray(self._data))) / (L**2)
-        if L % 2 == 0:
+
+        # If resolution is even, optionally zero out the nyquist frequency.
+        if L % 2 == 0 and zero_nyquist is True:
             im_f[:, 0, :] = 0
             im_f[:, :, 0] = 0
 
