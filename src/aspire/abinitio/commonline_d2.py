@@ -51,7 +51,7 @@ class CLSymmetryD2(CLOrient3D):
         :param inplane_res: The sampling resolution of in-plane rotations for each
             projetion direction. Default value is 5 degrees.
         :param eq_min_dist: Width of strip around equator projection directions from
-            which we DO NOT sample directions. Default value is 7 degrees.
+            which we do not sample directions. Default value is 7 degrees.
         :param epsilon: Tolerance for J-synchronization power method.
         :param seed: Optional seed for RNG.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
