@@ -59,7 +59,6 @@ class RelionSource(ImageSource):
 
         self.filepath = filepath
         self.data_folder = data_folder
-        self.pixel_size = pixel_size
         self.B = B
         self.n_workers = n_workers
         self.max_rows = max_rows
@@ -112,6 +111,7 @@ class RelionSource(ImageSource):
             metadata=metadata,
             symmetry_group=symmetry_group,
             memory=memory,
+            pixel_size=pixel_size,
         )
 
         # CTF estimation parameters coming from Relion
@@ -272,4 +272,6 @@ class RelionSource(ImageSource):
         logger.debug(f"Loading {len(indices)} images complete")
 
         # Finally, apply transforms to resulting Image
-        return self.generation_pipeline.forward(Image(im), indices)
+        return self.generation_pipeline.forward(
+            Image(im, pixel_size=self.pixel_size), indices
+        )

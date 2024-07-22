@@ -260,7 +260,7 @@ class Simulation(ImageSource):
             im_k = self.vols[k - 1].project(rot_matrices=rot)
             im[idx_k, :, :] = im_k.asnumpy()
 
-        return Image(im)
+        return Image(im, pixel_size=self.pixel_size)
 
     @property
     def clean_images(self):
