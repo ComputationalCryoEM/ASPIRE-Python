@@ -31,15 +31,16 @@ def sources(request):
     rln_src = RelionSource(starfile)
 
     # Generate Volume used for Relion projections.
-    # Note, `downsample` is a no-op for resolution 65.
     vol_path = os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")
-    vol = Volume(np.load(vol_path), dtype=rln_src.dtype).downsample(rln_src.L)
+    vol = Volume(np.load(vol_path, allow_pickle=True), dtype=rln_src.dtype)
+    if rln_src.L == 64:
+        vol = vol.downsample(64)
 
     # Create Simulation source using Volume and angles from Relion projections.
     # Note, for odd resolution Relion projections are shifted by 1 pixel in x and y.
     offsets = rln_src.offsets
     if rln_src.L % 2 == 1:
-        offsets -= np.ones((rln_src.n, 2), dtype=rln_src.dtype)
+        offsets -= 1
 
     sim_src = Simulation(
         n=rln_src.n,

@@ -320,7 +320,7 @@ def test_project(vols_hot_cold):
     # Generate projection images.
     projections = vols.project(rots)
 
-    # Check that new hot/cold spots are within 1 pixel of expectecd locations.
+    # Check that new hot/cold spots are within 1 pixel of expected locations.
     for i in range(vols.n_vols):
         p = projections.asnumpy()[i]
         new_hot_loc = np.unravel_index(np.argmax(p), (L, L))
@@ -343,7 +343,7 @@ def test_project_axes(vols_1, dtype):
 
     # Project a Volume with all the test rotations
     vol_id = 1  # select a volume from Volume stack
-    img_stack = vols_1[vol_id].project(r_stack)
+    img_stack = vols_1[vol_id].project(r_stack, zero_nyquist=True)
 
     for r in range(len(r_stack)):
         # Get result of test projection at center of Image.
@@ -371,7 +371,7 @@ def test_project_axes(vols_1, dtype):
     # Note, transforming rotations to compensate for legacy grid convention used in saved data.
     rots = _LegacySimulation.rots_zyx_to_legacy_aspire(rots)
 
-    imgs_clean = vols.project(rots).asnumpy()
+    imgs_clean = vols.project(rots, zero_nyquist=True).asnumpy()
     assert np.allclose(results, imgs_clean, atol=1e-7)
 
 
@@ -546,20 +546,20 @@ def test_flip(vols_1, data_1):
 
 def test_downsample(res):
     vols = Volume(np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")))
-    result = vols.downsample(8)
-    res = vols.resolution
+    result = vols.downsample(res)
+    og_res = vols.resolution
     ds_res = result.resolution
 
     # check signal energy
-    assert np.allclose(
-        anorm(vols.asnumpy(), axes=(1, 2, 3)) / res,
+    np.testing.assert_allclose(
+        anorm(vols.asnumpy(), axes=(1, 2, 3)) / og_res,
         anorm(result.asnumpy(), axes=(1, 2, 3)) / ds_res,
         atol=1e-3,
     )
 
     # check gridpoints
-    assert np.allclose(
-        vols.asnumpy()[:, res // 2, res // 2, res // 2],
+    np.testing.assert_allclose(
+        vols.asnumpy()[:, og_res // 2, og_res // 2, og_res // 2],
         result.asnumpy()[:, ds_res // 2, ds_res // 2, ds_res // 2],
         atol=1e-4,
     )
