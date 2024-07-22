@@ -266,7 +266,7 @@ class CLSymmetryD2(CLOrient3D):
         if same_octant:
             eq2eq_Rij_table = np.triu(eq2eq_Rij_table, 1)
 
-        n_pairs = np.sum(eq2eq_Rij_table)
+        n_pairs = np.count_nonzero(eq2eq_Rij_table)
         idx = 0
         cl_angles = np.zeros((2 * n_pairs, n_theta, n_theta // 2, 4, 2))
 
@@ -344,7 +344,9 @@ class CLSymmetryD2(CLOrient3D):
         # create a sub-list of only non equator candidates, i.e., if i_1,...,i_p are
         # non equators then we have the sub list is
         # C_(i_1)1,...,C(i_1)r,...C_(i_p)1,...,C_(i_p)r.
-        n_non_eq = np.sum(self.eq_class1 == 0) + np.sum(self.eq_class2 == 0)
+        n_non_eq = np.count_nonzero(self.eq_class1 == 0) + np.count_nonzero(
+            self.eq_class2 == 0
+        )
         non_eq_idx = np.zeros((n_non_eq, self.n_inplane_rots), dtype=int)
         non_eq_idx[:, 0] = (
             np.hstack(
@@ -525,7 +527,7 @@ class CLSymmetryD2(CLOrient3D):
         n_rot_2 = len(self.scl_idx_2) // (3 * self.n_inplane_rots)
 
         # First the map for i<j pairs for Ri and Rj in octant 1.
-        n_pairs = np.sum(self.eq2eq_Rij_table_11)
+        n_pairs = np.count_nonzero(self.eq2eq_Rij_table_11)
         oct1_ij_map = np.zeros(
             (self.n_inplane_rots**2 // 2, 2, n_pairs), dtype=np.int64
         )
@@ -548,7 +550,7 @@ class CLSymmetryD2(CLOrient3D):
                 idx += 1
 
         # Now the map for i<j pairs for Ri in octant 1 and Rj in octant 2.
-        n_pairs_12 = np.sum(self.eq2eq_Rij_table_12)
+        n_pairs_12 = np.count_nonzero(self.eq2eq_Rij_table_12)
         oct2_ij_map = np.zeros(
             (self.n_inplane_rots**2 // 2, 2, n_pairs_12), dtype=np.int64
         )
@@ -797,7 +799,7 @@ class CLSymmetryD2(CLOrient3D):
         Rijs_est = np.zeros((len(lin_idx), 4, 3, 3), dtype=self.dtype)
         n_cand_per_oct = len(self.cl_idx_1) // 4
         oct1_idx = lin_idx < n_cand_per_oct
-        n_est_in_oct1 = np.sum(oct1_idx, dtype=int)
+        n_est_in_oct1 = np.count_nonzero(oct1_idx)
         if n_est_in_oct1 > 0:
             Rijs_est[oct1_idx] = self._get_Rijs_from_oct(lin_idx[oct1_idx], octant=1)
         if n_est_in_oct1 <= len(lin_idx):
@@ -818,7 +820,7 @@ class CLSymmetryD2(CLOrient3D):
             unique_pairs = self.eq2eq_Rij_table_12
 
         n_theta = self.n_inplane_rots
-        n_lookup_pairs = np.sum(unique_pairs, dtype=np.int64)
+        n_lookup_pairs = np.count_nonzero(unique_pairs)
         n_rots = len(self.sphere_grid1)
         if octant == 1:
             n_rots2 = n_rots
@@ -1687,7 +1689,7 @@ class CLSymmetryD2(CLOrient3D):
         # In case we get a zero score arbitrarily choose sign +1.
         ij_signs = np.sum(Rij, axis=(-2, -1))
         zeros_idx = ij_signs == 0
-        if np.sum(zeros_idx) > 0:
+        if np.count_nonzero(zeros_idx) > 0:
             ij_signs[zeros_idx] = 1
 
         return np.sign(ij_signs)
@@ -1793,7 +1795,7 @@ class CLSymmetryD2(CLOrient3D):
 
         # Mark all views close to an equator.
         eq_min_dist = np.cos(eq_filter_angle * np.pi / 180)
-        n_eqs = np.sum(angular_dists > eq_min_dist, axis=1)
+        n_eqs = np.count_nonzero(angular_dists > eq_min_dist, axis=1)
         eq_idx = n_eqs > 0
 
         # Classify equators.
