@@ -403,7 +403,7 @@ class CLSymmetryD2(CLOrient3D):
         # Deal with non top view equators
         # A non-TV equator has only one self common line. However, we clasify an
         # equator as an image whose projection direction is at radial distance <
-        # `eq_min_dist` from the great circle perpendicural to a symmetry axis,
+        # `eq_min_dist` from the great circle perpendicular to a symmetry axis,
         # and not strictly zero distance. Thus in most cases we get 2 common lines
         # differing by a small difference in degrees. Actually the calculation above
         # gives us two NEARLY antipodal lines, so we first flip one of them by
@@ -454,7 +454,7 @@ class CLSymmetryD2(CLOrient3D):
             + scl_angles[eq_class > 0] * ~p[:, :, None, None]
         )
 
-        # Convert from angles [0,2*pi) to degrees [0, 360).
+        # Convert from radians [0,2*pi) to degrees [0, 360).
         return np.round(scl_angles * 180 / np.pi) % 360
 
     def _generate_scl_indices(self, scl_angles, eq_class):
@@ -596,10 +596,9 @@ class CLSymmetryD2(CLOrient3D):
         n_eq = len(self.non_tv_eq_idx)
         n_inplane = self.n_inplane_rots
 
-        # Run ML in parallel
+        # Prepare self-commonline indices.
         scl_matrix = np.concatenate((self.scl_idx_1, self.scl_idx_2))
         M = len(scl_matrix) // 3
-        corrs_out = np.zeros((n_img, M), dtype=self.dtype)
         scl_idx = scl_matrix.reshape(M, 3)
 
         # Get non-equator indices to use with corrs matrix.
@@ -609,6 +608,7 @@ class CLSymmetryD2(CLOrient3D):
             scl_idx[non_eq_lin_idx].flatten(), (n_theta // 2, n_theta)
         )
 
+        corrs_out = np.zeros((n_img, M), dtype=self.dtype)
         for i in trange(n_img):
             pf_full_i = self.pf_full[i]
             pf_i_shifted = self.pf_shifted[i]
@@ -1102,7 +1102,7 @@ class CLSymmetryD2(CLOrient3D):
 
         # Compute eigenvectors of color matrix. This is just a matrix of dimensions
         # 3(N choose 2)x3(N choose 2) where each entry corresponds to a pair of
-        # matrices {Qi^T*Ir*Qj} and {Qr^T*Il*Qj} and eqauls \delta_rl.
+        # matrices {Qi^T*Ir*Qj} and {Qr^T*Il*Qj} and equals \delta_rl.
         # The 2 leading eigenvectors span a linear subspace which contains a
         # vector which encodes the partition. All the entries of the vector are
         # either 1,0 or -1, where the number encodes which the index r in Ir.
