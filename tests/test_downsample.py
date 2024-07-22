@@ -90,6 +90,9 @@ def test_downsample_2d_case(L, L_ds):
     assert (N, L_ds, L_ds) == imgs_ds.shape
     # check center points for all images
     assert checkCenterPoint(imgs_org, imgs_ds)
+    # Confirm default `pixel_size`
+    assert imgs_org.pixel_size is None
+    assert imgs_ds.pixel_size is None
 
 
 @pytest.mark.parametrize("L", [65, 66])
@@ -103,6 +106,9 @@ def test_downsample_3d_case(L, L_ds):
     assert checkCenterPoint(vols_org, vols_ds)
     # check signal energy is conserved
     assert checkSignalEnergy(vols_org, vols_ds)
+    # Confirm default `pixel_size`
+    assert vols_org.pixel_size is None
+    assert vols_ds.pixel_size is None
 
 
 def test_integer_offsets():
@@ -155,3 +161,25 @@ def test_downsample_project(volume, res_ds):
     if volume.dtype == np.float64:
         tol = 1e-09
     np.testing.assert_allclose(im_ds_proj, im_proj_ds, atol=tol)
+
+def test_pixel_size():
+    """
+    Test downsampling is rescaling the `pixel_size` attribute.
+    """
+    # Image sizes in pixels
+    L = 8  # original
+    dsL = 5  # downsampled
+
+    # Construct a small test Image
+    img = Image(np.random.random((1, L, L)).astype(DTYPE, copy=False), pixel_size=1.23)
+
+    # Downsample the image
+    result = img.downsample(dsL)
+
+    # Confirm the pixel size is scaled
+    np.testing.assert_approx_equal(
+        result.pixel_size,
+        img.pixel_size * L / dsL,
+        err_msg="Incorrect pixel size.",
+    )
+
