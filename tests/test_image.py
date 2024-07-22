@@ -438,3 +438,30 @@ def test_load_tiff():
 
     # Check contents
     assert np.array_equal(im, im2)
+
+
+def test_save_load_pixel_size(get_images, dtype):
+    """
+    Test saving and loading an MRC with pixel size attribute
+    """
+
+    im_np, im = get_images
+
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        test_filepath = os.path.join(tmpdir_name, "test.mrc")
+
+        # Save image to file
+        im.save(test_filepath)
+
+        # Load image from file
+        im2 = Image.load(test_filepath, dtype)
+
+    # Check we've loaded the image data
+    np.testing.assert_allclose(im2, im)
+    # Check we've loaded the image dtype
+    assert im2.dtype == im.dtype, "Image dtype mismatched on save-load"
+    # Check we've loaded the pixel size
+    np.testing.assert_almost_equal(
+        im2.pixel_size, im.pixel_size, err_msg="Image pixel_size incorrect save-load"
+    )
