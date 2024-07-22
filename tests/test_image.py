@@ -24,8 +24,22 @@ params = [(0, np.float32), (1, np.float32), (0, np.float64), (1, np.float64)]
 n = 3
 mdim = 2
 
+PARITY = [0, 1]
+DTYPES = [np.float32, np.float64]
 
-def get_images(parity=0, dtype=np.float32):
+
+@pytest.fixture(params=PARITY, ids=lambda x: f"parity={x}", scope="module")
+def parity(request):
+    return request.param
+
+
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture(scope="module")
+def get_images(parity, dtype):
     size = 768 - parity
     # numpy array for top-level functions that directly expect it
     im_np = face(gray=True).astype(dtype)[np.newaxis, :size, :size]
@@ -33,36 +47,40 @@ def get_images(parity=0, dtype=np.float32):
     im_np /= denom  # Normalize test image data to 0,1
 
     # Independent Image object for testing Image methods
-    im = Image(im_np.copy())
+    im = Image(im_np.copy(), pixel_size=1.23)
     return im_np, im
 
 
-def get_stacks(parity=0, dtype=np.float32):
-    im_np, im = get_images(parity, dtype)
+@pytest.fixture(scope="module")
+def get_stacks(get_images, dtype):
+    im_np, im = get_images
 
     # Construct a simple stack of Images
-    ims_np = np.empty((n, *im_np.shape[1:]), dtype=dtype)
+    ims_np = np.empty((n, *im_np.shape[1:]), dtype=im_np.dtype)
     for i in range(n):
         ims_np[i] = im_np * (i + 1) / float(n)
 
     # Independent Image stack object for testing Image methods
-    ims = Image(ims_np)
+    ims = Image(ims_np.copy())
     return ims_np, ims
 
 
-def get_mdim_images(parity=0, dtype=np.float32):
-    ims_np, im = get_stacks(parity, dtype)
+# Note that `get_mdim_images` is mutated by some tests,
+# force per function scope.
+@pytest.fixture(scope="function")
+def get_mdim_images(get_stacks):
+    ims_np, im = get_stacks
     # Multi dimensional stack Image object
     mdim = 2
     mdim_ims_np = np.concatenate([ims_np] * mdim).reshape(mdim, *ims_np.shape)
 
     # Independent multidimensional Image stack object for testing Image methods
-    mdim_ims = Image(mdim_ims_np)
+    mdim_ims = Image(mdim_ims_np.copy())
     return mdim_ims_np, mdim_ims
 
 
-def testRepr():
-    _, mdim_ims = get_mdim_images()
+def testRepr(get_mdim_images):
+    _, mdim_ims = get_mdim_images
     r = repr(mdim_ims)
     logger.info(f"Image repr:\n{r}")
 
@@ -73,9 +91,8 @@ def testNonSquare():
         _ = Image(np.empty((4, 5)))
 
 
-@pytest.mark.parametrize("parity,dtype", params)
-def testImShift(parity, dtype):
-    im_np, im = get_images(parity, dtype)
+def testImShift(get_images, dtype):
+    im_np, im = get_images
     # Note that the _im_translate method can handle float input shifts, as it
     # computes the shifts in Fourier space, rather than performing a roll
     # However, NumPy's roll() only accepts integer inputs
@@ -101,10 +118,8 @@ def testImShift(parity, dtype):
     np.testing.assert_allclose(im0.asnumpy()[0, :, :], im3, atol=atol)
 
 
-@pytest.mark.parametrize("parity,dtype", params)
-def testImShiftStack(parity, dtype):
-    ims_np, ims = get_stacks(parity, dtype)
-
+def testImShiftStack(get_stacks, dtype):
+    ims_np, ims = get_stacks
     # test stack of shifts (same number as Image.num_img)
     # mix of odd and even
     shifts = np.array([[100, 200], [203, 150], [55, 307]])
@@ -131,8 +146,8 @@ def testImShiftStack(parity, dtype):
     np.testing.assert_allclose(im0.asnumpy(), im3, atol=atol)
 
 
-def testImageShiftErrors():
-    _, im = get_images(0, np.float32)
+def testImageShiftErrors(get_images):
+    _, im = get_images
     # test bad shift shape
     with pytest.raises(ValueError, match="Input shifts must be of shape"):
         _ = im.shift(np.array([100, 100, 100]))
@@ -141,18 +156,16 @@ def testImageShiftErrors():
         _ = im.shift(np.array([[100, 200], [100, 200]]))
 
 
-@pytest.mark.parametrize("parity,dtype", params)
-def testImageSqrt(parity, dtype):
-    im_np, im = get_images(parity, dtype)
-    ims_np, ims = get_stacks(parity, dtype)
+def testImageSqrt(get_images, get_stacks):
+    im_np, im = get_images
+    ims_np, ims = get_stacks
     assert np.allclose(im.sqrt().asnumpy(), np.sqrt(im_np))
     assert np.allclose(ims.sqrt().asnumpy(), np.sqrt(ims_np))
 
 
-@pytest.mark.parametrize("parity,dtype", params)
-def testImageTranspose(parity, dtype):
-    im_np, im = get_images(parity, dtype)
-    ims_np, ims = get_stacks(parity, dtype)
+def testImageTranspose(get_images, get_stacks):
+    im_np, im = get_images
+    ims_np, ims = get_stacks
     # test method and abbreviation
     assert np.allclose(im.T.asnumpy(), np.transpose(im_np, (0, 2, 1)))
     assert np.allclose(im.transpose().asnumpy(), np.transpose(im_np, (0, 2, 1)))
@@ -163,10 +176,9 @@ def testImageTranspose(parity, dtype):
         assert np.allclose(ims.transpose()[i], ims_np[i].T)
 
 
-@pytest.mark.parametrize("parity,dtype", params)
-def testImageFlip(parity, dtype):
-    im_np, im = get_images(parity, dtype)
-    ims_np, ims = get_stacks(parity, dtype)
+def testImageFlip(get_images, get_stacks):
+    im_np, im = get_images
+    ims_np, ims = get_stacks
     for axis in powerset(range(1, 3)):
         if not axis:
             # test default
@@ -188,31 +200,31 @@ def testImageFlip(parity, dtype):
             _ = im.flip(axis)
 
 
-def testShape():
-    ims_np, ims = get_stacks()
+def testShape(get_stacks):
+    ims_np, ims = get_stacks
     assert ims.shape == ims_np.shape
     assert ims.stack_shape == ims_np.shape[:-2]
     assert ims.stack_ndim == 1
 
 
-def testMultiDimShape():
-    ims_np, ims = get_stacks()
-    mdim_ims_np, mdim_ims = get_mdim_images()
+def testMultiDimShape(get_stacks, get_mdim_images):
+    ims_np, ims = get_stacks
+    mdim_ims_np, mdim_ims = get_mdim_images
     assert mdim_ims.shape == mdim_ims_np.shape
     assert mdim_ims.stack_shape == mdim_ims_np.shape[:-2]
     assert mdim_ims.stack_ndim == mdim
     assert mdim_ims.n_images == mdim * ims.n_images
 
 
-def testBadKey():
-    mdim_ims_np, mdim_ims = get_mdim_images()
+def testBadKey(get_mdim_images):
+    mdim_ims_np, mdim_ims = get_mdim_images
     with pytest.raises(ValueError, match="slice length must be"):
         _ = mdim_ims[tuple(range(mdim_ims.ndim + 1))]
 
 
-def testMultiDimGets():
-    ims_np, ims = get_stacks()
-    mdim_ims_np, mdim_ims = get_mdim_images()
+def testMultiDimGets(get_stacks, get_mdim_images):
+    ims_np, ims = get_stacks
+    mdim_ims_np, mdim_ims = get_mdim_images
     for X in mdim_ims:
         assert np.allclose(ims_np, X)
 
@@ -220,9 +232,9 @@ def testMultiDimGets():
     assert np.allclose(mdim_ims[:, 1:], ims[1:])
 
 
-def testMultiDimSets():
-    ims_np, ims = get_stacks()
-    mdim_ims_np, mdim_ims = get_mdim_images()
+def testMultiDimSets(get_stacks, get_mdim_images):
+    ims_np, ims = get_stacks
+    mdim_ims_np, mdim_ims = get_mdim_images
     mdim_ims[0, 1] = 123
     # Check the values changed
     assert np.allclose(mdim_ims[0, 1], 123)
@@ -232,9 +244,9 @@ def testMultiDimSets():
     assert np.allclose(mdim_ims[1, :], ims_np)
 
 
-def testMultiDimSetsSlice():
-    ims_np, ims = get_stacks()
-    mdim_ims_np, mdim_ims = get_mdim_images()
+def testMultiDimSetsSlice(get_stacks, get_mdim_images):
+    ims_np, ims = get_stacks
+    mdim_ims_np, mdim_ims = get_mdim_images
     # Test setting a slice
     mdim_ims[0, 1:] = 456
     # Check the values changed
@@ -244,9 +256,9 @@ def testMultiDimSetsSlice():
     assert np.allclose(mdim_ims[1, :], ims_np)
 
 
-def testMultiDimReshape():
+def testMultiDimReshape(get_mdim_images):
     # Try mdim reshape
-    mdim_ims_np, mdim_ims = get_mdim_images()
+    mdim_ims_np, mdim_ims = get_mdim_images
     X = mdim_ims.stack_reshape(*mdim_ims.stack_shape[::-1])
     assert X.stack_shape == mdim_ims.stack_shape[::-1]
     # Compare with direct np.reshape of axes of ndarray
@@ -254,22 +266,22 @@ def testMultiDimReshape():
     assert np.allclose(X.asnumpy(), mdim_ims_np.reshape(shape))
 
 
-def testMultiDimFlattens():
-    mdim_ims_np, mdim_ims = get_mdim_images()
+def testMultiDimFlattens(get_mdim_images):
+    mdim_ims_np, mdim_ims = get_mdim_images
     # Try flattening
     X = mdim_ims.stack_reshape(mdim_ims.n_images)
     assert X.stack_shape, (mdim_ims.n_images,)
 
 
-def testMultiDimFlattensTrick():
-    mdim_ims_np, mdim_ims = get_mdim_images()
+def testMultiDimFlattensTrick(get_mdim_images):
+    mdim_ims_np, mdim_ims = get_mdim_images
     # Try flattening with -1
     X = mdim_ims.stack_reshape(-1)
     assert X.stack_shape == (mdim_ims.n_images,)
 
 
-def testMultiDimReshapeTuples():
-    mdim_ims_np, mdim_ims = get_mdim_images()
+def testMultiDimReshapeTuples(get_mdim_images):
+    mdim_ims_np, mdim_ims = get_mdim_images
     # Try flattening with (-1,)
     X = mdim_ims.stack_reshape((-1,))
     assert X.stack_shape, (mdim_ims.n_images,)
@@ -279,8 +291,8 @@ def testMultiDimReshapeTuples():
     assert X.stack_shape == mdim_ims.stack_shape[::-1]
 
 
-def testMultiDimBadReshape():
-    mdim_ims_np, mdim_ims = get_mdim_images()
+def testMultiDimBadReshape(get_mdim_images):
+    mdim_ims_np, mdim_ims = get_mdim_images
     # Incorrect flat shape
     with pytest.raises(ValueError, match="Number of images"):
         _ = mdim_ims.stack_reshape(8675309)
@@ -290,11 +302,11 @@ def testMultiDimBadReshape():
         _ = mdim_ims.stack_reshape(42, 8675309)
 
 
-def testMultiDimBroadcast():
-    ims_np, ims = get_stacks()
-    mdim_ims_np, mdim_ims = get_mdim_images()
+def testMultiDimBroadcast(get_stacks, get_mdim_images):
+    ims_np, ims = get_stacks
+    mdim_ims_np, mdim_ims = get_mdim_images
     X = mdim_ims + ims
-    assert np.allclose(X[0], 2 * ims.asnumpy())
+    np.testing.assert_allclose(X[0], 2 * ims.asnumpy())
 
 
 @matplotlib_dry_run
@@ -306,12 +318,12 @@ def testShow():
     im.show()
 
 
-def test_backproject_symmetry_group():
+def test_backproject_symmetry_group(dtype):
     """
     Test backproject SymmetryGroup pass through and error message.
     """
     ary = np.random.random((5, 8, 8))
-    im = Image(ary)
+    im = Image(ary, dtype=dtype)
     rots = Rotation.generate_random_rotations(5).matrices
 
     # Attempt backproject with bad symmetry group.
@@ -324,9 +336,7 @@ def test_backproject_symmetry_group():
     assert isinstance(vol.symmetry_group, CnSymmetryGroup)
 
     # Symmetry from instance.
-    vol = im.backproject(
-        rots, symmetry_group=CnSymmetryGroup(order=3, dtype=np.float32)
-    )
+    vol = im.backproject(rots, symmetry_group=CnSymmetryGroup(order=3, dtype=dtype))
     assert isinstance(vol.symmetry_group, CnSymmetryGroup)
 
 
@@ -381,7 +391,7 @@ def test_load_bad_ext():
         _ = Image.load("bad.ext")
 
 
-def test_load_mrc():
+def test_load_mrc(dtype):
     """
     Test `Image.load` round-trip.
     """
@@ -390,27 +400,19 @@ def test_load_mrc():
     filepath = os.path.join(DATA_DIR, "sample.mrc")
 
     # Load data from file
-    im = Image.load(filepath)
-    im_64 = Image.load(filepath, dtype=np.float64)
+    im = Image.load(filepath, dtype=dtype)
 
     with tempfile.TemporaryDirectory() as tmpdir_name:
         # tmp filename
         test_filepath = os.path.join(tmpdir_name, "test.mrc")
-        test_filepath_64 = os.path.join(tmpdir_name, "test_64.mrc")
 
         im.save(test_filepath)
-        im_64.save(test_filepath_64)
 
-        im2 = Image.load(test_filepath)
-        im2_64 = Image.load(test_filepath_64, dtype=np.float64)
+        im2 = Image.load(test_filepath, dtype)
 
     # Check the single precision round-trip
     assert np.array_equal(im, im2)
-    assert im2.dtype == np.float32
-
-    # check the double precision round-trip
-    assert np.array_equal(im_64, im2_64)
-    assert im2_64.dtype == np.float64
+    assert im2.dtype == dtype
 
 
 def test_load_tiff():
