@@ -274,10 +274,10 @@ class DiskMicrographSource(MicrographSource):
             # Assert pixel_size
             if (
                 micrograph.pixel_size is not None
-                and micrograph.pixel_size != pixel_size
+                and micrograph.pixel_size != self.pixel_size
             ):
                 raise NotImplementedError(
-                    f"Mismatched pixel size. {micrograph.pixel_size} defined in {self.micrograph_files[ind]}, but provided {pixel_size}."
+                    f"Mismatched pixel size. {micrograph.pixel_size} defined in {self.micrograph_files[ind]}, but provided {self.pixel_size}."
                 )
 
         return Image(micrographs, pixel_size=self.pixel_size)
