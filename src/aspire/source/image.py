@@ -150,7 +150,14 @@ class ImageSource(ABC):
     _mutable = True
 
     def __init__(
-        self, L, n, dtype="double", metadata=None, memory=None, symmetry_group=None
+        self,
+        L,
+        n,
+        dtype="double",
+        metadata=None,
+        memory=None,
+        symmetry_group=None,
+        pixel_size=None,
     ):
         """
         A cryo-EM ImageSource object that supplies images along with other parameters for image manipulation.
@@ -163,6 +170,7 @@ class ImageSource(ABC):
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
             Defaults to the `IdentitySymmetryGroup`, which represents an asymmetric particle, if none provided.
+        :param pixel_size: Pixel size of the images in Angstroms, default `None`.
         """
 
         # Instantiate the accessor for the `images` property
@@ -172,6 +180,9 @@ class ImageSource(ABC):
         self._n = None
         self.n = n
         self.dtype = np.dtype(dtype)
+        if pixel_size is not None:
+            pixel_size = float(pixel_size)
+        self.pixel_size = pixel_size
 
         # The private attribute '_cached_im' can be populated by calling this object's cache() method explicitly
         self._cached_im = None
@@ -736,7 +747,7 @@ class ImageSource(ABC):
                 f"_apply_filters() passed {type(im_orig)} instead of Image instance"
             )
             # for now just convert it
-            im_orig = Image(im_orig)
+            im_orig = Image(im_orig, pixel_size=self.pixel_size)
 
         im = im_orig.copy()
 
@@ -1481,6 +1492,7 @@ class IndexedSource(ImageSource):
             dtype=src.dtype,
             metadata=metadata,
             memory=memory,
+            pixel_size=src.pixel_size,
         )
 
         # Create filter indices, these are required to pass unharmed through filter eval code
@@ -1650,7 +1662,9 @@ class ArrayImageSource(ImageSource):
     if available, is consulted directly by the parent class, bypassing `_images`.
     """
 
-    def __init__(self, im, metadata=None, angles=None, symmetry_group=None):
+    def __init__(
+        self, im, metadata=None, angles=None, symmetry_group=None, pixel_size=None
+    ):
         """
         Initialize from an `Image` object.
 
@@ -1664,7 +1678,7 @@ class ArrayImageSource(ImageSource):
         if not isinstance(im, Image):
             logger.info("Attempting to create an Image object from Numpy array.")
             try:
-                im = Image(im)
+                im = Image(im, pixel_size=pixel_size)
             except Exception as e:
                 raise RuntimeError(
                     "Creating Image object from Numpy array failed."
@@ -1678,6 +1692,7 @@ class ArrayImageSource(ImageSource):
             metadata=metadata,
             memory=None,
             symmetry_group=symmetry_group,
+            pixel_size=im.pixel_size,
         )
 
         self._cached_im = im

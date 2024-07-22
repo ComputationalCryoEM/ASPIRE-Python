@@ -17,11 +17,14 @@ logger = logging.getLogger(__name__)
 
 
 class MicrographSource(ABC):
-    def __init__(self, micrograph_count, micrograph_size, dtype):
+    def __init__(self, micrograph_count, micrograph_size, dtype, pixel_size=None):
         """ """
         self.micrograph_count = int(micrograph_count)
         self.micrograph_size = int(micrograph_size)
         self.dtype = np.dtype(dtype)
+        if pixel_size is not None:
+            pixel_size = float(pixel_size)
+        self.pixel_size = pixel_size
 
         self._images_accessor = _ImageAccessor(self._images, self.micrograph_count)
 
@@ -85,7 +88,7 @@ class MicrographSource(ABC):
         """
         Helper function to display micrograph. See Image.show().
         """
-        Image(self.asnumpy()).show(*args, **kwargs)
+        Image(self.asnumpy(), pixel_size=self.pixel_size).show(*args, **kwargs)
 
     @property
     def images(self):
@@ -107,7 +110,7 @@ class MicrographSource(ABC):
 
 
 class ArrayMicrographSource(MicrographSource):
-    def __init__(self, micrographs, dtype=None):
+    def __init__(self, micrographs, dtype=None, pixel_size=None):
         """
         Instantiate a `MicrographSource` with `micrographs`.
 
@@ -140,6 +143,7 @@ class ArrayMicrographSource(MicrographSource):
             micrograph_count=micrographs.shape[0],
             micrograph_size=micrographs.shape[-1],
             dtype=dtype or micrographs.dtype,
+            pixel_size=pixel_size,
         )
 
         # We're already backed by an array, access it directly.
@@ -152,11 +156,11 @@ class ArrayMicrographSource(MicrographSource):
         :param indices: A 1-D Numpy array of integer indices.
         :return: An array backed `MicrographSource` object representing the micrographs for `indices`.
         """
-        return Image(self._data[indices])
+        return Image(self._data[indices], pixel_size=self.pixel_size)
 
 
 class DiskMicrographSource(MicrographSource):
-    def __init__(self, micrographs_path, dtype=None):
+    def __init__(self, micrographs_path, dtype=None, pixel_size=None):
         """
         Instantiate a `MicrographSource` with `micrographs_path`.
 
@@ -190,11 +194,16 @@ class DiskMicrographSource(MicrographSource):
         # Load the first micrograph to infer shape/type
         # Size will be checked during on-the-fly loading of subsequent micrographs.
         micrograph0 = Image.load(self.micrograph_files[0])
+        if micrograph0.pixel_size is not None and micrograph0.pixel_size != pixel_size:
+            raise NotImplementedError(
+                f"Mismatched pixel size. {micrograph0.pixel_size} defined in {self.micrograph_files[0]}, but provided {pixel_size}."
+            )
 
         super().__init__(
             micrograph_count=len(self.micrograph_files),
             micrograph_size=micrograph0.resolution,
             dtype=dtype or micrograph0.dtype,
+            pixel_size=pixel_size,
         )
 
         # Prepare accessor to load files from disk on the fly.
@@ -262,8 +271,16 @@ class DiskMicrographSource(MicrographSource):
                 )
             # Assign to array, implicitly performs casting to dtype
             micrographs[i] = micrograph.asnumpy()
+            # Assert pixel_size
+            if (
+                micrograph.pixel_size is not None
+                and micrograph.pixel_size != pixel_size
+            ):
+                raise NotImplementedError(
+                    f"Mismatched pixel size. {micrograph.pixel_size} defined in {self.micrograph_files[ind]}, but provided {pixel_size}."
+                )
 
-        return Image(micrographs)
+        return Image(micrographs, pixel_size=self.pixel_size)
 
 
 class MicrographSimulation(MicrographSource):
@@ -557,7 +574,7 @@ class MicrographSimulation(MicrographSource):
             self.pad : self.micrograph_size + self.pad,
             self.pad : self.micrograph_size + self.pad,
         ]
-        return Image(clean_micrograph)
+        return Image(clean_micrograph, pixel_size=self.pixel_size)
 
     def get_micrograph_index(self, particle_index):
         """
