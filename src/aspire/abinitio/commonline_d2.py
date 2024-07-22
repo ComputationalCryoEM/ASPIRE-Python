@@ -137,7 +137,7 @@ class CLSymmetryD2(CLOrient3D):
         self.pf_full = PolarFT.half_to_full(pf)
 
         # Pre-compute shifted pf's.
-        pf_shifted = (pf * shift_phases[:, None, None]).swapaxes(0, 1)
+        pf_shifted = pf[:, None] * shift_phases[None, :, None]
         self.pf_shifted = pf_shifted.reshape(
             (self.n_img, self.n_shifts * (self.n_theta // 2), r_max)
         )
