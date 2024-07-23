@@ -25,9 +25,6 @@ def _preserve_host(func):
         # CuPy's single precision FFT appears to be too inaccurate for
         # many of our unit tests, so the signal is upcast and recast
         # on return.
-        # Todo, discuss with Joakim whether we want this upcasting
-        # business configurable or keep singles, both in conjunction
-        # with xfailing the tests.
         _singles = False
         if x.dtype == np.float32:
             _singles = True

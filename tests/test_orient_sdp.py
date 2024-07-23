@@ -77,7 +77,7 @@ def test_estimate_rotations(src_orient_est_fixture):
     src, orient_est = src_orient_est_fixture
 
     if backend_available("cufinufft") and src.dtype == np.float32:
-        pytest.skip("CI on gpu fails for singles.")
+        pytest.skip("CI on GPU fails for singles.")
 
     orient_est.estimate_rotations()
 

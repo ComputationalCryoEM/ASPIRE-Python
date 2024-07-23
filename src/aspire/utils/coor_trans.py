@@ -372,7 +372,7 @@ def crop_pad_2d(im, size, fill_value=0):
     Crop/pads `im` according to `size`.
 
     Padding will use `fill_value`.
-    Return's host/gpu array based on `im`.
+    Return's host/GPU array based on `im`.
 
     :param im: A >=2-dimensional numpy array
     :param size: Integer size of cropped/padded output
@@ -421,7 +421,7 @@ def crop_pad_3d(vol, size, fill_value=0):
     Crop/pads `vol` according to `size`.
 
     Padding will use `fill_value`.
-    Return's host/gpu array based on `vol`.
+    Return's host/GPU array based on `vol`.
 
     :param vol: A >=3-dimensional numpy array
     :param size: Integer size of cropped/padded output
