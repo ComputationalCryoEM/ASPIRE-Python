@@ -4,6 +4,7 @@ from skimage import data
 from skimage.transform import radon
 
 from aspire.image import Image
+from aspire.image.line import Line
 from aspire.utils import grid_2d
 
 # Relative tolerance comparing line projections to scikit
@@ -136,3 +137,34 @@ def test_multidim(num_ang):
         reference_sinograms, axis=-1
     )
     np.testing.assert_array_less(_nrms, SK_TOL, "Error in image projections.")
+
+
+def test_back_project_single(masked_image, num_ang):
+    """
+    Test Line.backproject on a single stack of line projections or sinogram. Compares the reconstructed image to original image.
+    """
+    # I'll be creating a sinogram representation of camera man
+    # reusing our grid fixture
+    # and testing the skimage's backwards project without a filter (note there currently is no filter so blurry
+    angles = np.linspace(0, 360, num_ang, endpoint=False)
+    rads = angles / 180 * np.pi
+    sinogram = Line(masked_image.project(rads))
+    back_project = sinogram.back_project(num_ang)
+
+    assert masked_img.shape == back_project.shape, "Shape must be the same."
+
+    # no filter for now
+    sk_image_iradon = iradon(masked_image, theta=np.degrees(angles), filter_name=None)
+
+    nrms = np.sqrt(
+        np.mean((sk_image_iradon - back_project) ** 2, axis=-1)
+    ) / np.linalg.norm(back_project, axis=-1)
+    np.testing.assert_array_less(nrms, SK_TOL, "Error in image reconstruction.")
+
+
+def test_back_project_multidim(num_ang):
+    """
+    Test Line.backproject on a stack of images. Extension of back_project_single but for multi-dimensional stacks.
+    """
+    # assume once we can get this functioning for single stack
+    # we can get this working for multiple
