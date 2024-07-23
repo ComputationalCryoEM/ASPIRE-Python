@@ -308,9 +308,9 @@ class FFBBasis3D(FBBasis3D):
         pf = m_reshape(pf.T, (n_theta, n_phi * n_r * n_data))
 
         # evaluate the theta parts
-        tmp = self._precomp["ang_theta_wtd"].T
-        u_even = tmp @ pf.real
-        u_odd = tmp @ pf.imag
+        ang_theta_wtd_trans = self._precomp["ang_theta_wtd"].T
+        u_even = ang_theta_wtd_trans @ pf.real
+        u_odd = ang_theta_wtd_trans @ pf.imag
 
         u_even = m_reshape(u_even, (2 * self.ell_max + 1, n_phi, n_r, n_data))
         u_odd = m_reshape(u_odd, (2 * self.ell_max + 1, n_phi, n_r, n_data))
