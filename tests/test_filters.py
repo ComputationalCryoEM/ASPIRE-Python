@@ -1,4 +1,3 @@
-import itertools
 import logging
 import os.path
 from unittest import TestCase
