@@ -9,7 +9,7 @@ from PIL import Image as PILImage
 from scipy.linalg import lstsq
 
 import aspire.volume
-from aspire.nufft import anufft
+from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
 from aspire.utils import FourierRingCorrelation, anorm, crop_pad_2d, grid_2d
 from aspire.volume import SymmetryGroup
@@ -185,6 +185,42 @@ class Image:
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
         self.__array_interface__ = self._data.__array_interface__
         self.__array__ = self._data
+
+    def project(self, angles):
+        """
+        Computes the Radon Transform on an Image Stack using
+        Non-Uniform Fast Fourier Transforms. This method projects the
+        Image stack along different angles and returns the Radon
+        Transform.
+
+        :param angles: A 1-D Numpy Array of angles in Radians.
+            This is used to compute the Radon Transform at different angles.
+        :return: Radon transform of the Image Stack.
+        :rtype: Ndarray (stack size, number of angles, image resolution)
+        """
+        # number of points to sample on radial line in polar grid
+        n_points = self.resolution
+        original_stack = self.stack_shape
+
+        # 2-D grid
+        radial_idx = np.fft.rfftfreq(n_points) * np.pi * 2
+        n_real_points = len(radial_idx)
+        n_angles = len(angles)
+
+        pts = np.empty((2, n_angles, n_real_points), dtype=self.dtype)
+        pts[0] = radial_idx[np.newaxis, :] * np.sin(angles)[:, np.newaxis]
+        pts[1] = radial_idx[np.newaxis, :] * np.cos(angles)[:, np.newaxis]
+        pts = pts.reshape(2, n_real_points * n_angles)
+
+        # compute the polar nufft (NUFFT)
+        image_ft = nufft(self.stack_reshape(-1)._data, pts).reshape(
+            self.n_images, n_angles, n_real_points
+        )
+
+        # Radon transform, output: (stack size, angles, points)
+        image_rt = np.fft.fftshift(np.fft.irfft(image_ft, n=n_points, axis=-1), axes=-1)
+        image_rt = image_rt.reshape(*original_stack, n_angles, n_points)
+        return image_rt
 
     @property
     def res(self):
