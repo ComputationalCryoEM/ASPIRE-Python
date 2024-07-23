@@ -159,7 +159,7 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
 
     Selects best available package from `nfft` `backends` configuration list.
 
-    When sig_f is provided as a CuPy gpu array with a cufinufft
+    When sig_f is provided as a CuPy GPU array with a cufinufft
     backend, result is maintained on GPU.
 
     :param sig_f: Array representing the signal(s) in Fourier space to be transformed. \
@@ -211,7 +211,7 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
 
     Selects best available package from `nfft` `backends` configuration list.
 
-    When sig_f is provided as a CuPy gpu array with a cufinufft
+    When sig_f is provided as a CuPy GPU array with a cufinufft
     backend, result is maintained on GPU.
 
     :param sig_f: Array representing the signal(s) in real space to be transformed. \
