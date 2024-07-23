@@ -657,11 +657,11 @@ class CLSymmetryD2(CLOrient3D):
 
         :return: (n_theta // 2) likelihood scores.
         """
-        # First compute the eq measure (corrs(scl-k,scl+k) for k=1:90)
+        # First compute the eq measure (corrs(scl-k,scl+k) for k=1:n_theta // 4)
         # An equator image of a D2 molecule has the following property: If t_i is
         # the angle of one of the rays of the self common line then all the pairs of
-        # rays of the form (t_i-k,t_i+k) for k=1:90 are identical. For each t_i we
-        # average over correlations between the lines (t_i-k,t_i+k) for k=1:90
+        # rays of the form (t_i-k,t_i+k) for k=1:n_theta // 4 are identical. For each t_i we
+        # average over correlations between the lines (t_i-k,t_i+k) for k=1:n_theta // 4
         # to measure the likelihood that the image is an equator and the ray (line)
         # with angle t_i is a self common line.
         # (This first loop can be done once outside this function and then pass
