@@ -333,10 +333,20 @@ class SimTestCase(TestCase):
         self.assertTrue(np.allclose(sign_filter.evaluate(self.omega), signs))
 
 
-params = list(itertools.product([np.float32, np.float64], [None, 0.01]))
+DTYPES = [np.float32, np.float64]
+EPS = [None, 0.01]
 
 
-@pytest.mark.parametrize("dtype, epsilon", params)
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture(params=EPS, ids=lambda x: f"epsilon={x}", scope="module")
+def epsilon(request):
+    return request.param
+
+
 def test_power_filter_safeguard(dtype, epsilon, caplog):
     L = 25
     arr = np.ones((L, L), dtype=dtype)
@@ -370,7 +380,6 @@ def test_power_filter_safeguard(dtype, epsilon, caplog):
     assert msg in caplog.text
 
 
-@pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_array_filter_dtype_passthrough(dtype):
     """
     We upcast to use scipy's fast interpolator. We do not recast
