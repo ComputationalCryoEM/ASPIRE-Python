@@ -6,6 +6,7 @@ import pytest
 from scipy.special import jv
 
 from aspire.basis import Coef, FFBBasis2D
+from aspire.nufft import all_backends
 from aspire.source import Simulation
 from aspire.utils.misc import grid_2d
 from aspire.volume import Volume
@@ -126,6 +127,9 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
 params = [pytest.param(512, np.float32, marks=pytest.mark.expensive)]
 
 
+@pytest.mark.skipif(
+    all_backends()[0] == "cufinufft", reason="Not enough memory to run via GPU"
+)
 @pytest.mark.parametrize(
     "L, dtype",
     params,
@@ -136,6 +140,7 @@ def testHighResFFBBasis2D(L, dtype):
     sim = Simulation(
         n=1,
         L=L,
+        C=1,
         dtype=dtype,
         amplitudes=1,
         offsets=0,
@@ -149,4 +154,6 @@ def testHighResFFBBasis2D(L, dtype):
 
     # Mask to compare inside disk of radius 1.
     mask = grid_2d(L, normalized=True)["r"] < 1
-    assert np.allclose(im_ffb.asnumpy()[0][mask], im.asnumpy()[0][mask], atol=1e-4)
+    np.testing.assert_allclose(
+        im_ffb.asnumpy()[0][mask], im.asnumpy()[0][mask], rtol=1e-05, atol=1e-4
+    )
