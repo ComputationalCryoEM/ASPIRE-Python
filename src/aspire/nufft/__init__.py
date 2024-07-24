@@ -198,7 +198,7 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
 
     adjoint = adjoint.real if real else adjoint
 
-    if cp and not _keep_on_gpu:
+    if cp and isinstance(adjoint, cp.ndarray) and not _keep_on_gpu:
         adjoint = adjoint.get()
 
     return adjoint
@@ -259,7 +259,7 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
 
     transform = transform.real if real else transform
 
-    if cp and not _keep_on_gpu:
+    if cp and isinstance(transform, cp.ndarray) and not _keep_on_gpu:
         transform = transform.get()
 
     return transform
