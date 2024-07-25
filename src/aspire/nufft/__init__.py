@@ -3,6 +3,7 @@ import logging
 import numpy as np
 
 from aspire import config
+from aspire.numeric import xp
 from aspire.utils import LogFilterByCount, complex_type, real_type
 
 cp = None
@@ -198,8 +199,8 @@ def anufft(sig_f, fourier_pts, sz, real=False, epsilon=1e-8):
 
     adjoint = adjoint.real if real else adjoint
 
-    if cp and isinstance(adjoint, cp.ndarray) and not _keep_on_gpu:
-        adjoint = adjoint.get()
+    if not _keep_on_gpu:
+        adjoint = xp.asnumpy(adjoint)
 
     return adjoint
 
@@ -259,7 +260,7 @@ def nufft(sig_f, fourier_pts, real=False, epsilon=1e-8):
 
     transform = transform.real if real else transform
 
-    if cp and isinstance(transform, cp.ndarray) and not _keep_on_gpu:
-        transform = transform.get()
+    if not _keep_on_gpu:
+        transform = xp.asnumpy(transform)
 
     return transform
