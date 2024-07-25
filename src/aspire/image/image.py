@@ -509,8 +509,9 @@ class Image:
         grid_shifted = fft.ifftshift(
             xp.ceil(xp.arange(-L / 2, L / 2, dtype=self.dtype))
         )
+
         grid_1d = grid_shifted * 2 * xp.pi / L
-        om_x, om_y = xp.meshgrid(grid_1d, grid_1d, indexing="ij")
+        om_x, om_y = xp.meshgrid(grid_1d, grid_1d, indexing="xy")
 
         phase_shifts_x = -shifts[:, 0].reshape((n_shifts, 1, 1))
         phase_shifts_y = -shifts[:, 1].reshape((n_shifts, 1, 1))
