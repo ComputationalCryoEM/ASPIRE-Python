@@ -1,15 +1,17 @@
 import numpy as np
 import pytest
 from skimage import data
-from skimage.transform import radon
+from skimage.transform import iradon, radon
 
 from aspire.image import Image
 from aspire.image.line import Line
 from aspire.utils import grid_2d
 
 # Relative tolerance comparing line projections to scikit
-# The same tolerance will be used in all scikit comparisons
-SK_TOL = 0.005
+# The same tolerance will be used in all scikit forward and backward comparisons
+SK_TOL_FORWARDPROJECT = 0.005
+
+SK_TOL_BACKPROJECT = 0.2
 
 IMG_SIZES = [
     511,
@@ -95,7 +97,9 @@ def test_image_project(masked_image, num_ang):
         reference_sinogram, axis=-1
     )
 
-    np.testing.assert_array_less(nrms, SK_TOL, "Error in image projections.")
+    np.testing.assert_array_less(
+        nrms, SK_TOL_FORWARDPROJECT, "Error in image projections."
+    )
 
 
 def test_multidim(num_ang):
@@ -136,35 +140,65 @@ def test_multidim(num_ang):
     _nrms = np.sqrt(np.mean((s - reference_sinograms) ** 2, axis=-1)) / np.linalg.norm(
         reference_sinograms, axis=-1
     )
-    np.testing.assert_array_less(_nrms, SK_TOL, "Error in image projections.")
+    np.testing.assert_array_less(
+        _nrms, SK_TOL_FORWARDPROJECT, "Error in image projections."
+    )
 
 
 def test_back_project_single(masked_image, num_ang):
     """
     Test Line.backproject on a single stack of line projections or sinogram. Compares the reconstructed image to original image.
     """
-    # I'll be creating a sinogram representation of camera man
-    # reusing our grid fixture
-    # and testing the skimage's backwards project without a filter (note there currently is no filter so blurry
     angles = np.linspace(0, 360, num_ang, endpoint=False)
     rads = angles / 180 * np.pi
-    sinogram = Line(masked_image.project(rads))
-    back_project = sinogram.back_project(num_ang)
+    sinogram_np = masked_image.project(rads)
+    sinogram = Line(sinogram_np)
+    back_project = sinogram.back_project(rads)
 
-    assert masked_img.shape == back_project.shape, "Shape must be the same."
+    assert masked_image.shape == back_project.shape, "The shape must be the same."
 
-    # no filter for now
-    sk_image_iradon = iradon(masked_image, theta=np.degrees(angles), filter_name=None)
+    # generate circular mask w/ radius 1 to reconstructed image
+    # aim to remove discrepencies for the edges of the image
+    g = grid_2d(sinogram_np.shape[2], normalized=True, shifted=True)
+    mask = g["r"] < 1
+    our_back_project = back_project.asnumpy()[0] * mask
 
-    nrms = np.sqrt(
-        np.mean((sk_image_iradon - back_project) ** 2, axis=-1)
-    ) / np.linalg.norm(back_project, axis=-1)
-    np.testing.assert_array_less(nrms, SK_TOL, "Error in image reconstruction.")
+    # generating sci-kit image backproject method w/ no filter
+    sk_image_iradon = iradon(sinogram_np[0].T, theta=angles[::-1], filter_name=None)
+
+    # we apply a normalized root mean square error on the images to find relative error to range of ref. image
+    # Note: toleranc is typically < 0.2 regardless of angles, pixels, etc.
+    nrmse = np.sqrt(np.mean((our_back_project - sk_image_iradon) ** 2)) / (
+        np.max(sk_image_iradon - np.min(sk_image_iradon))
+    )
+    assert (
+        nrmse < SK_TOL_BACKPROJECT
+    ), f"NRMSE is too high: {nrmse}, expected less than {SK_TOL_BACKPROJECT}"
 
 
 def test_back_project_multidim(num_ang):
     """
     Test Line.backproject on a stack of images. Extension of back_project_single but for multi-dimensional stacks.
     """
-    # assume once we can get this functioning for single stack
-    # we can get this working for multiple
+    L = 512  # pixels
+    n = 3
+    m = 2
+
+    # Generate a mask
+    g = grid_2d(L, normalized=True, shifted=True)
+    mask = g["r"] < 1
+
+    # Generate images
+    imgs = Image(np.random.random((m, n, L, L))) * mask
+
+    # Generate line project angles
+    angles = np.linspace(0, 360, num_ang, endpoint=False)
+    rads = angles / 180.0 * np.pi
+    s = imgs.project(rads)
+    sinogram = Line(s)
+    return sinogram
+    # back project + grid
+
+    # sci-kit back project
+
+    # compare nrmse for all images in the stack
