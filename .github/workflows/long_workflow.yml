@@ -1,14 +1,14 @@
 name: ASPIRE Python Long Running Test Suite
 
 on:
-  push:
-    branches:
-      - 'main'
-      - 'develop'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
   expensive_tests:
     runs-on: self-hosted
+    # Only run on review ready pull_requests
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
     timeout-minutes: 360
     steps:
     - uses: actions/checkout@v4
