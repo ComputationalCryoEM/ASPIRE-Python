@@ -88,18 +88,19 @@ def testImShift(parity, dtype):
     # test that float input returns the same thing
     im2 = im.shift(shifts.astype(dtype))
     # ground truth numpy roll
-    im3 = np.roll(im_np[0, :, :], -shifts, axis=(0, 1))
+    im3 = np.roll(im_np[0, :, :], -shifts, axis=(1, 0))
 
     atol = utest_tolerance(dtype)
 
-    assert np.allclose(im0.asnumpy(), im1.asnumpy(), atol=atol)
-    assert np.allclose(im1.asnumpy(), im2.asnumpy(), atol=atol)
-    assert np.allclose(im0.asnumpy()[0, :, :], im3, atol=atol)
+    np.testing.assert_allclose(im0.asnumpy(), im1.asnumpy(), atol=atol)
+    np.testing.assert_allclose(im1.asnumpy(), im2.asnumpy(), atol=atol)
+    np.testing.assert_allclose(im0.asnumpy()[0, :, :], im3, atol=atol)
 
 
 @pytest.mark.parametrize("parity,dtype", params)
 def testImShiftStack(parity, dtype):
     ims_np, ims = get_stacks(parity, dtype)
+
     # test stack of shifts (same number as Image.num_img)
     # mix of odd and even
     shifts = np.array([[100, 200], [203, 150], [55, 307]])
@@ -112,14 +113,14 @@ def testImShiftStack(parity, dtype):
     im2 = ims.shift(shifts.astype(dtype))
     # ground truth numpy roll
     im3 = np.array(
-        [np.roll(ims_np[i, :, :], -shifts[i], axis=(0, 1)) for i in range(n)]
+        [np.roll(ims_np[i, :, :], -shifts[i], axis=(1, 0)) for i in range(n)]
     )
 
     atol = utest_tolerance(dtype)
 
-    assert np.allclose(im0.asnumpy(), im1.asnumpy(), atol=atol)
-    assert np.allclose(im1.asnumpy(), im2.asnumpy(), atol=atol)
-    assert np.allclose(im0.asnumpy(), im3, atol=atol)
+    np.testing.assert_allclose(im0.asnumpy(), im1.asnumpy(), atol=atol)
+    np.testing.assert_allclose(im1.asnumpy(), im2.asnumpy(), atol=atol)
+    np.testing.assert_allclose(im0.asnumpy(), im3, atol=atol)
 
 
 def testImageShiftErrors():

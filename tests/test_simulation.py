@@ -123,6 +123,10 @@ class SimTestCase(TestCase):
             dtype=self.dtype,
         )
 
+        # Keep hardcoded tests passing after fixing swapped offsets.
+        # See github issue #1146.
+        self.sim = self.sim.update(offsets=self.sim.offsets[:, [1, 0]])
+
     def tearDown(self):
         pass
 
@@ -162,6 +166,7 @@ class SimTestCase(TestCase):
             n=self.n,
             L=self.L,
             vols=self.vols,
+            offsets=self.sim.offsets,
             unique_filters=[
                 RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],

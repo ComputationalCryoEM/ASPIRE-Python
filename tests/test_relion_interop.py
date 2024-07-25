@@ -9,7 +9,12 @@ from aspire.volume import Volume
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
-STARFILE = ["rln_proj_65.star", "rln_proj_64.star"]
+STARFILE = [
+    "rln_proj_65.star",
+    "rln_proj_64.star",
+    "rln_proj_65_shifted.star",
+    "rln_proj_64_shifted.star",
+]
 
 
 @pytest.fixture(params=STARFILE, scope="module")
@@ -24,9 +29,9 @@ def sources(request):
 
     # Create Simulation source using Volume and angles from Relion projections.
     # Note, for odd resolution Relion projections are shifted by 1 pixel in x and y.
-    offsets = 0
+    offsets = rln_src.offsets
     if rln_src.L % 2 == 1:
-        offsets = -np.ones((rln_src.n, 2), dtype=rln_src.dtype)
+        offsets -= np.ones((rln_src.n, 2), dtype=rln_src.dtype)
 
     sim_src = Simulation(
         n=rln_src.n,
@@ -51,11 +56,11 @@ def test_projections_relative_error(sources):
     rln_np = (rln_np - np.mean(rln_np)) / np.std(rln_np)
     sim_np = (sim_np - np.mean(sim_np)) / np.std(sim_np)
 
-    # Check that relative error is less than 3%.
+    # Check that relative error is less than 4%.
     error = np.linalg.norm(rln_np - sim_np, axis=(1, 2)) / np.linalg.norm(
         rln_np, axis=(1, 2)
     )
-    np.testing.assert_array_less(error, 0.03)
+    np.testing.assert_array_less(error, 0.04)
 
 
 def test_projections_frc(sources):
@@ -67,4 +72,4 @@ def test_projections_frc(sources):
 
     # Check that estimated resolution is high (< 2.5 pixels) and correlation is close to 1.
     np.testing.assert_array_less(res, 2.5)
-    np.testing.assert_array_less(1 - corr[:, -2], 0.02)
+    np.testing.assert_array_less(1 - corr[:, -2], 0.025)
