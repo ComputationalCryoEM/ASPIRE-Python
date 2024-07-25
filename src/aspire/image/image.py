@@ -511,7 +511,7 @@ class Image:
         )
         grid_1d = grid_shifted * 2 * xp.pi / L
 
-        # Grid indexing changed to "xy" to match Relion shift conventions.        
+        # Grid indexing changed to "xy" to match Relion shift conventions.
         om_x, om_y = xp.meshgrid(grid_1d, grid_1d, indexing="xy")
 
         phase_shifts_x = -shifts[:, 0].reshape((n_shifts, 1, 1))
