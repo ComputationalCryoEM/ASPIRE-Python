@@ -93,9 +93,9 @@ def test_image_project(masked_image, num_ang):
     assert reference_sinogram.shape == (len(angles), ny), "Incorrect Shape"
 
     # compare project method on ski-image reference
-    nrms = np.sqrt(np.mean((s[0] - reference_sinogram) ** 2, axis=-1)) / np.linalg.norm(
-        reference_sinogram, axis=-1
-    )
+    nrms = np.sqrt(
+        np.mean((s[0]._data - reference_sinogram) ** 2, axis=-1)
+    ) / np.linalg.norm(reference_sinogram, axis=-1)
 
     np.testing.assert_array_less(
         nrms, SK_TOL_FORWARDPROJECT, "Error in image projections."
