@@ -4,7 +4,7 @@ from skimage import data
 from skimage.transform import iradon, radon
 
 from aspire.image import Image
-from aspire.image.line import Line
+from aspire.line import Line
 from aspire.utils import grid_2d
 
 # Relative tolerance comparing line projections to scikit
