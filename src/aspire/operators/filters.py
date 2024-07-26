@@ -403,7 +403,7 @@ class IdentityFilter(ScalarFilter):
 class CTFFilter(Filter):
     def __init__(
         self,
-        pixel_size=10,
+        pixel_size=1,
         voltage=200,
         defocus_u=15000,
         defocus_v=15000,
@@ -415,7 +415,7 @@ class CTFFilter(Filter):
         """
         A CTF (Contrast Transfer Function) Filter
 
-        :param pixel_size:  Pixel size in angstrom
+        :param pixel_size:  Pixel size in angstrom, default 1.
         :param voltage:     Electron voltage in kV
         :param defocus_u:   Defocus depth along the u-axis in angstrom
         :param defocus_v:   Defocus depth along the v-axis in angstrom
@@ -425,7 +425,7 @@ class CTFFilter(Filter):
         :param B:           Envelope decay in inverse square angstrom (default 0)
         """
         super().__init__(dim=2, radial=defocus_u == defocus_v)
-        self.pixel_size = pixel_size
+        self.pixel_size = float(pixel_size)
         self.voltage = voltage
         self.wavelength = voltage_to_wavelength(self.voltage)
         self.defocus_u = defocus_u
@@ -482,7 +482,7 @@ class CTFFilter(Filter):
 
 class RadialCTFFilter(CTFFilter):
     def __init__(
-        self, pixel_size=10, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
+        self, pixel_size=1, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
     ):
         super().__init__(
             pixel_size=pixel_size,
