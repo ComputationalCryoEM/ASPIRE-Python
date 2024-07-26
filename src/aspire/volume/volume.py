@@ -553,7 +553,9 @@ class Volume:
 
         # returns a new Volume object
         return self.__class__(
-            xp.asnumpy(out), pixel_size=ds_pixel_size, symmetry_group=self.symmetry_group
+            xp.asnumpy(out),
+            pixel_size=ds_pixel_size,
+            symmetry_group=self.symmetry_group,
         ).stack_reshape(original_stack_shape)
 
     def shift(self):
