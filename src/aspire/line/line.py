@@ -2,9 +2,9 @@ import logging
 
 import numpy as np
 
-import aspire
+import aspire.image
+from aspire.nufft import anufft
 
-# noticed a lot of classes had these already, might be helpful for pathing, logging info, etc. (inc. os, logging)
 logger = logging.getLogger(__name__)
 
 
@@ -66,7 +66,7 @@ class Line:
         pts[0] = y_idx[np.newaxis, :] * np.sin(angles)[:, np.newaxis]
         pts[1] = y_idx[np.newaxis, :] * np.cos(angles)[:, np.newaxis]
 
-        imgs = aspire.nufft.anufft(
+        imgs = anufft(
             sinogram_ft.reshape(n_img, -1),
             pts.reshape(2, n_real_points * len(angles)),
             sz=(L, L),
@@ -75,5 +75,4 @@ class Line:
 
         # normalization which gives us roughly the same error regardless of angles
         imgs = imgs / (n_real_points * len(angles))
-
         return aspire.image.Image(imgs)
