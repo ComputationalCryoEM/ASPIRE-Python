@@ -151,15 +151,15 @@ def test_back_project_single(masked_image, num_ang):
     """
     angles = np.linspace(0, 360, num_ang, endpoint=False)
     rads = angles / 180 * np.pi
-    sinogram_np = masked_image.project(rads)
-    sinogram = Line(sinogram_np)
+    sinogram = masked_image.project(rads)
+    sinogram_np = sinogram.asnumpy()
     back_project = sinogram.back_project(rads)
 
     assert masked_image.shape == back_project.shape, "The shape must be the same."
 
     # generate circular mask w/ radius 1 to reconstructed image
     # aim to remove discrepencies for the edges of the image
-    g = grid_2d(sinogram_np.shape[2], normalized=True, shifted=True)
+    g = grid_2d(back_project.resolution, normalized=True, shifted=True)
     mask = g["r"] < 1
     our_back_project = back_project.asnumpy()[0] * mask
 
