@@ -118,7 +118,8 @@ class SimTestCase(TestCase):
         self.assertEqual(result.shape, (256,))
 
     def testRadialCTFFilterGrid(self):
-        filter = RadialCTFFilter(defocus=2.5e4)
+        # Set legacy pixel size
+        filter = RadialCTFFilter(pixel_size=10, defocus=2.5e4)
         result = filter.evaluate_grid(8, dtype=self.dtype)
 
         self.assertEqual(result.shape, (8, 8))
@@ -218,7 +219,10 @@ class SimTestCase(TestCase):
         )
 
     def testRadialCTFFilterMultiplierGrid(self):
-        filter = RadialCTFFilter(defocus=2.5e4) * RadialCTFFilter(defocus=2.5e4)
+        # Set legacy pixel size
+        filter = RadialCTFFilter(pixel_size=10, defocus=2.5e4) * RadialCTFFilter(
+            pixel_size=10, defocus=2.5e4
+        )
         result = filter.evaluate_grid(8, dtype=self.dtype)
 
         self.assertEqual(result.shape, (8, 8))
