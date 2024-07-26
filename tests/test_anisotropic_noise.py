@@ -20,7 +20,9 @@ class SimTestCase(TestCase):
             n=1024,
             vols=self.vol,
             unique_filters=[
-                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
+                # Set legacy pixel size
+                RadialCTFFilter(pixel_size=10, defocus=d)
+                for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             dtype=self.dtype,
         )
