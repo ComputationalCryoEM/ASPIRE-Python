@@ -180,23 +180,11 @@ def test_back_project_multidim(num_ang):
     """
     Test Line.backproject on a stack of images. Extension of back_project_single but for multi-dimensional stacks.
     """
-    L = 512  # pixels
-    n = 3
-    m = 2
-
     # Generate a mask
-    g = grid_2d(L, normalized=True, shifted=True)
-    mask = g["r"] < 1
 
     # Generate images
-    imgs = Image(np.random.random((m, n, L, L))) * mask
 
     # Generate line project angles
-    angles = np.linspace(0, 360, num_ang, endpoint=False)
-    rads = angles / 180.0 * np.pi
-    s = imgs.project(rads)
-    sinogram = Line(s)
-    return sinogram
     # back project + grid
 
     # sci-kit back project
