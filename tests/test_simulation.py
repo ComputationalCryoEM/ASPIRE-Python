@@ -116,8 +116,10 @@ class SimTestCase(TestCase):
             n=self.n,
             L=self.L,
             vols=self.vols,
+            # Set legacy pixel_size
             unique_filters=[
-                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
+                RadialCTFFilter(pixel_size=10, defocus=d)
+                for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
@@ -168,7 +170,9 @@ class SimTestCase(TestCase):
             vols=self.vols,
             offsets=self.sim.offsets,
             unique_filters=[
-                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
+                # Set legacy pixel size
+                RadialCTFFilter(pixel_size=10, defocus=d)
+                for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
