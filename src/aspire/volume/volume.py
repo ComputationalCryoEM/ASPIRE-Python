@@ -76,7 +76,7 @@ class Volume:
             `(..., resolution, resolution, resolution)`.
         :param dtype: Optionally cast `data` to this dtype.
             Defaults to `data.dtype`.
-        :param pixel_size: Optional voxel_size in Angstroms.
+        :param pixel_size: Optional voxel_size in angstroms.
             When provided will be saved with `map`/`mrc` metadata.
             Default of `None` will not write to file,
             but will be considered unit pixels (1) for FSC.
@@ -262,7 +262,7 @@ class Volume:
     def __repr__(self):
         px_msg = "."
         if self.pixel_size is not None:
-            px_msg = f" with pixel_size={self.pixel_size} Angstroms."
+            px_msg = f" with pixel_size={self.pixel_size} angstroms."
 
         msg = (
             f"{self.n_vols} {self.dtype} volumes arranged as a {self.stack_shape} stack"
@@ -423,7 +423,6 @@ class Volume:
             im_f[:, :, 0] = 0
 
         im_f = fft.centered_ifft2(im_f)
-        # todo add pixel_size to Image
         return aspire.image.Image(xp.asnumpy(im_f.real), pixel_size=self.pixel_size)
 
     def to_vec(self):
