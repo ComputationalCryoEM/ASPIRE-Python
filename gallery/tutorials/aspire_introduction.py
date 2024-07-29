@@ -571,7 +571,7 @@ defocus_ct = 7
 
 # Generate several CTFs.
 ctf_filters = [
-    RadialCTFFilter(pixel_size=5, defocus=d)
+    RadialCTFFilter(pixel_size=vol_ds.pixel_size, defocus=d)
     for d in np.linspace(defocus_min, defocus_max, defocus_ct)
 ]
 

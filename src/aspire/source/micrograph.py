@@ -122,6 +122,7 @@ class ArrayMicrographSource(MicrographSource):
             Currently only `float32` and `float64` are supported.
             Note, due to limitations of common MRC implementations,
             saving is limited to single precision.
+        :param pixel_size: Pixel size of the images in angstroms, default `None`.
         """
 
         # Check micrographs is an array

@@ -170,7 +170,7 @@ class ImageSource(ABC):
             The path of the base directory to use as a data store or None. If None is given, no caching is performed.
         :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
             Defaults to the `IdentitySymmetryGroup`, which represents an asymmetric particle, if none provided.
-        :param pixel_size: Pixel size of the images in Angstroms, default `None`.
+        :param pixel_size: Pixel size of the images in angstroms, default `None`.
         """
 
         # Instantiate the accessor for the `images` property
@@ -1673,6 +1673,7 @@ class ArrayImageSource(ImageSource):
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
         :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
+        :param pixel_size: Pixel size of the images in angstroms, default `None`.
         """
 
         if not isinstance(im, Image):
