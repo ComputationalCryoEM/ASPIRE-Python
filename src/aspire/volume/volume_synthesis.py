@@ -16,11 +16,12 @@ from aspire.volume import (
 
 
 class SyntheticVolumeBase(abc.ABC):
-    def __init__(self, L, C, seed=None, dtype=np.float64):
+    def __init__(self, L, C, pixel_size=None, seed=None, dtype=np.float64):
         self.L = L
         self.C = C
         self.seed = seed
         self.dtype = dtype
+        self.pixel_size = pixel_size
 
     @abc.abstractmethod
     def generate(self):
@@ -39,18 +40,21 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
     A base class for all volumes which are generated with randomized 3D Gaussians.
     """
 
-    def __init__(self, L, C, K=16, alpha=1, seed=None, dtype=np.float64):
+    def __init__(
+        self, L, C, K=16, alpha=1, pixel_size=None, seed=None, dtype=np.float64
+    ):
         """
         :param L: Resolution of the Volume(s) in pixels.
         :param C: Number of Volumes to generate.
         :param K: Number of Gaussian blobs used to construct the Volume(s).
         :param alpha: Scaling factor for variance of Gaussian blobs. Default=1.
+        :param pixel_size: Optional voxel_size in Angstroms. Default=1.
         :param seed: Random seed for generating random Gaussian blobs.
         :param dtype: dtype for Volume(s)
         """
         self.K = int(K)
         self.alpha = float(alpha)
-        super().__init__(L=L, C=C, seed=seed, dtype=dtype)
+        super().__init__(L=L, C=C, pixel_size=pixel_size, seed=seed, dtype=dtype)
         self._set_symmetry_group()
 
     @abc.abstractproperty
@@ -75,7 +79,11 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         """
         vol = self._gaussian_blob_vols()
         bump_mask = bump_3d(self.L, spread=5, dtype=self.dtype)
-        return Volume(bump_mask * vol, symmetry_group=self.symmetry_group)
+        return Volume(
+            bump_mask * vol,
+            symmetry_group=self.symmetry_group,
+            pixel_size=self.pixel_size,
+        )
 
     def _gaussian_blob_vols(self):
         """
@@ -168,18 +176,23 @@ class CnSymmetricVolume(GaussianBlobsVolume):
     A Volume object with cyclically symmetric volumes constructed of random 3D Gaussian blobs.
     """
 
-    def __init__(self, L, C, order, K=16, alpha=1, seed=None, dtype=np.float64):
+    def __init__(
+        self, L, C, order, K=16, alpha=1, pixel_size=None, seed=None, dtype=np.float64
+    ):
         """
         :param L: Resolution of the Volume(s) in pixels.
         :param C: Number of Volumes to generate.
         :param order: An integer representing the cyclic order of the Volume(s).
         :param K: Number of Gaussian blobs used to construct the Volume(s).
+        :param pixel_size: Optional voxel_size in Angstroms. Default=1.
         :param seed: Random seed for generating random Gaussian blobs.
         :param dtype: dtype for Volume(s)
         """
         self.order = int(order)
         self._check_order()
-        super().__init__(L=L, C=C, K=K, alpha=alpha, seed=seed, dtype=dtype)
+        super().__init__(
+            L=L, C=C, K=K, alpha=alpha, pixel_size=pixel_size, seed=seed, dtype=dtype
+        )
 
     def _check_order(self):
         if self.order < 2:
@@ -239,8 +252,10 @@ class AsymmetricVolume(CnSymmetricVolume):
     An asymmetric Volume constructed of random 3D Gaussian blobs with compact support in the unit sphere.
     """
 
-    def __init__(self, L, C, K=64, seed=None, dtype=np.float64):
-        super().__init__(L=L, C=C, K=K, order=1, seed=seed, dtype=dtype)
+    def __init__(self, L, C, K=64, pixel_size=None, seed=None, dtype=np.float64):
+        super().__init__(
+            L=L, C=C, K=K, order=1, pixel_size=pixel_size, seed=seed, dtype=dtype
+        )
 
     def _check_order(self):
         if self.order != 1:
@@ -260,8 +275,8 @@ class LegacyVolume(AsymmetricVolume):
     An asymmetric Volume object used for testing of legacy code.
     """
 
-    def __init__(self, L, C=2, K=16, seed=0, dtype=np.float64):
-        super().__init__(L=L, C=C, K=K, seed=seed, dtype=dtype)
+    def __init__(self, L, C=2, K=16, pixel_size=None, seed=0, dtype=np.float64):
+        super().__init__(L=L, C=C, K=K, pixel_size=pixel_size, seed=seed, dtype=dtype)
 
     def generate(self):
         """
@@ -272,4 +287,4 @@ class LegacyVolume(AsymmetricVolume):
         # Swap axes to retain Legacy xyz-indexing.
         vols = np.swapaxes(vols, 1, 3)
 
-        return Volume(vols)
+        return Volume(vols, pixel_size=self.pixel_size)

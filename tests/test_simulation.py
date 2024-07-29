@@ -21,14 +21,18 @@ class SingleSimTestCase(TestCase):
     """Test we can construct a length 1 Sim."""
 
     def setUp(self):
-        self.sim = Simulation(
-            n=1,
-            L=8,
-        )
+        self._pixel_size = 1.23  # Test value
+
+        self.sim = Simulation(n=1, L=8, pixel_size=self._pixel_size)
 
     def testImage(self):
         """Test we can get an Image from a length 1 Sim."""
         _ = self.sim.images[0]
+
+    def testPixelSize(self):
+        """Test pixel_size is passing through Simulation."""
+        self.assertTrue(self.sim.pixel_size == self._pixel_size)
+        self.assertTrue(self.sim.pixel_size == self.sim.vols.pixel_size)
 
     @matplotlib_dry_run
     def testImageShow(self):
@@ -106,9 +110,12 @@ class SimTestCase(TestCase):
         self.n = 1024
         self.L = 8
         self.dtype = np.float32
+        # Set legacy pixel_size
+        self._pixel_size = 10
 
         self.vols = LegacyVolume(
             L=self.L,
+            pixel_size=self._pixel_size,
             dtype=self.dtype,
         ).generate()
 
@@ -116,9 +123,8 @@ class SimTestCase(TestCase):
             n=self.n,
             L=self.L,
             vols=self.vols,
-            # Set legacy pixel_size
             unique_filters=[
-                RadialCTFFilter(pixel_size=10, defocus=d)
+                RadialCTFFilter(pixel_size=self._pixel_size, defocus=d)
                 for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             noise_adder=WhiteNoiseAdder(var=1),
@@ -171,7 +177,7 @@ class SimTestCase(TestCase):
             offsets=self.sim.offsets,
             unique_filters=[
                 # Set legacy pixel size
-                RadialCTFFilter(pixel_size=10, defocus=d)
+                RadialCTFFilter(pixel_size=self._pixel_size, defocus=d)
                 for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             noise_adder=WhiteNoiseAdder(var=1),
@@ -663,3 +669,15 @@ def test_cached_image_accessors():
     np.testing.assert_allclose(cached_src.projections[:], src.projections[:])
     np.testing.assert_allclose(cached_src.images[:], src.images[:])
     np.testing.assert_allclose(cached_src.clean_images[:], src.clean_images[:])
+
+
+def test_mismatched_pixel_size():
+    """
+    Confirm raises error when explicit Simulation and CTFFilter pixel sizes mismatch.
+    """
+    # Create a CTF with a pixel_size
+    filts = [RadialCTFFilter(pixel_size=5)]
+
+    # Try to create a Simulation with a different pixel_size
+    with raises(ValueError, match=r"pixel_size.*does not match filter.*"):
+        _ = Simulation(L=8, n=1, C=1, pixel_size=10, unique_filters=filts)
