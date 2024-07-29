@@ -260,10 +260,14 @@ class Volume:
         )
 
     def __repr__(self):
+        px_msg = "."
+        if self.pixel_size is not None:
+            px_msg = f" with pixel_size={self.pixel_size} Angstroms."
+
         msg = (
             f"{self.n_vols} {self.dtype} volumes arranged as a {self.stack_shape} stack"
         )
-        msg += f" each of size {self.resolution}x{self.resolution}x{self.resolution}."
+        msg += f" each of size {self.resolution}x{self.resolution}x{self.resolution}{px_msg}"
         return msg
 
     def __len__(self):
