@@ -50,6 +50,7 @@ class Simulation(ImageSource):
         memory=None,
         noise_adder=None,
         symmetry_group=None,
+        pixel_size=None,
     ):
         """
         A `Simulation` object that supplies images along with other parameters for image manipulation.
@@ -79,6 +80,7 @@ class Simulation(ImageSource):
         :param noise_adder: Optionally append instance of `NoiseAdder`
             to generation pipeline.
         :param symmetry_group: A SymmetryGroup instance or string indicating symmetry of the molecule.
+        :param pixel_size: Pixel size of the images in Angstroms, default `None`.
 
         :return: A Simulation object.
         """
@@ -91,6 +93,7 @@ class Simulation(ImageSource):
             self.vols = AsymmetricVolume(
                 L=L or 8,
                 C=C,
+                pixel_size=pixel_size,
                 seed=self.seed,
                 dtype=dtype or np.float32,
             ).generate()
@@ -122,6 +125,7 @@ class Simulation(ImageSource):
             dtype=self.vols.dtype,
             memory=memory,
             symmetry_group=symmetry_group,
+            pixel_size=self.vols.pixel_size,
         )
 
         # If a user provides both `L` and `vols`, resolution should match.
@@ -153,6 +157,7 @@ class Simulation(ImageSource):
         if unique_filters is None:
             unique_filters = []
         self.unique_filters = unique_filters
+        self._check_filter_pixel_size(unique_filters)
         # sim_filters must be a deep copy so that it is not changed
         # when unique_filters is changed
         self.sim_filters = copy.deepcopy(unique_filters)
@@ -230,6 +235,29 @@ class Simulation(ImageSource):
             ],
             filter_values,
         )
+
+    def _check_filter_pixel_size(self, unique_filters):
+        """
+        Private method to ensure user provided filters match `Simulation` pixel size.
+
+        When `Simulation.pixel_size` is not `None`, any
+        `unique_filters` having a non-matching `pixel_size` attribute
+        will raise.
+        """
+
+        # Skip when Simulation pixel_size is not explicitly provided.
+        if self.pixel_size is None:
+            return
+
+        for f in unique_filters:
+            f_pixel_size = getattr(f, "pixel_size", None)
+            if f_pixel_size is not None and not np.isclose(
+                f_pixel_size, self.pixel_size
+            ):
+                raise ValueError(
+                    f"`Simulation.pixel_size` {self.pixel_size} does not match filter {f} {f_pixel_size}."
+                    "Ensure provided `pixel_size` attributes match."
+                )
 
     @property
     def projections(self):

@@ -85,6 +85,10 @@ def vol_fixture(request, dtype_fixture):
     if len(params) > 2:
         vol_kwargs["order"] = params[2]
 
+    # Assign some volumes a pixel_size, leave others as default.
+    if res % 2:
+        vol_kwargs["pixel_size"] = 3.0
+
     return vol_class(**vol_kwargs)
 
 
@@ -96,8 +100,15 @@ def test_volume_repr(vol_fixture):
 
 
 def test_volume_generate(vol_fixture):
-    """Test that a volume is generated"""
-    _ = vol_fixture.generate()
+    """
+    Test that a volume is generated
+    and stores pixel_size when provided.
+    """
+    v = vol_fixture.generate()
+
+    # In vol_fixture, we assign pixel_size to volumes having odd voxel sizes.
+    if vol_fixture.L % 2:
+        assert v.pixel_size == 3
 
 
 def test_simulation_init(vol_fixture):
