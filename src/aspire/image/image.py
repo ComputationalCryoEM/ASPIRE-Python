@@ -130,10 +130,10 @@ def load_tiff(filepath):
 
     # Future todo, extract `voxel_size` if available in TIFF tags (custom tag?)
     # For now, default to `None`.
-    voxel_size = None
+    pixel_size = None
 
     # Cast image data as numpy array
-    return np.array(img), voxel_size
+    return np.array(img), pixel_size
 
 
 class Image:
@@ -160,7 +160,7 @@ class Image:
 
         :param data: Numpy array containing image data with shape
             `(..., resolution, resolution)`.
-        :param pixel_size: Optional pixel size in Angstroms.
+        :param pixel_size: Optional pixel size in angstroms.
             When provided will be saved with `mrc` metadata.
             Default of `None` will not write to file,
             but will be considered unit pixels (1) for FSC.
