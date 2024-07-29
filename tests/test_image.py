@@ -116,6 +116,10 @@ def testImShiftStack(parity, dtype):
     # test that float input returns the same thing
     im2 = ims.shift(shifts.astype(dtype))
     # ground truth numpy roll
+    # Note: NumPy axes 0 and 1 correspond to the row and column of an array,
+    # respectively, which corresponds to the y-axis and x-axis when that array
+    # represents an image. Since our shifts are (x-shifts, y-shifts), the axis
+    # parameter for np.roll() must be set to (1, 0) to accomodate.
     im3 = np.array(
         [np.roll(ims_np[i, :, :], -shifts[i], axis=(1, 0)) for i in range(n)]
     )
