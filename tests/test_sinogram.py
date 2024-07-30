@@ -71,7 +71,7 @@ def masked_image(dtype, img_size):
 
 
 # Image.project and compare results to skimage.radon
-def test_image_project(masked_image, num_ang):
+def test_project_single(masked_image, num_ang):
     """
     Test Image.project on a single stack of images. Compares project method output with skimage project.
     """
@@ -102,7 +102,7 @@ def test_image_project(masked_image, num_ang):
     )
 
 
-def test_multidim(num_ang):
+def test_project_multidim(num_ang):
     """
     Test Image.project on stacks of images. Extension of test_image_project but for multi-dimensional stacks.
     """
@@ -167,7 +167,7 @@ def test_back_project_single(masked_image, num_ang):
     sk_image_iradon = iradon(sinogram_np[0].T, theta=angles[::-1], filter_name=None)
 
     # we apply a normalized root mean square error on the images to find relative error to range of ref. image
-    # Note: toleranc is typically < 0.2 regardless of angles, pixels, etc.
+    # Note: tolerance is typically < 0.2 regardless of angles, pixels, etc.
     nrmse = np.sqrt(np.mean((our_back_project - sk_image_iradon) ** 2)) / (
         np.max(sk_image_iradon - np.min(sk_image_iradon))
     )
@@ -178,15 +178,46 @@ def test_back_project_single(masked_image, num_ang):
 
 def test_back_project_multidim(num_ang):
     """
-    Test Line.backproject on a stack of images. Extension of back_project_single but for multi-dimensional stacks.
+    Test Line.backproject on a stack of images. Extension of back_project_single but for multi-dimensional stacks. Similar to forward_multidim test.
     """
-    # Generate a mask
+    L = 512  # pixels
+    n = 3
+    m = 2
+
+    g = grid_2d(L, normalized=True, shifted=True)
+    mask = g["r"] < 1
 
     # Generate images
+    imgs = Image(np.random.random((m, n, L, L))) * mask
+    angles = np.linspace(0, 360, num_ang, endpoint=False)
+    rads = angles / 180 * np.pi
 
-    # Generate line project angles
-    # back project + grid
+    # apply a forward project on the image, then backwards
+    ours_forward = imgs.project(rads)
+    ours_backward = ours_forward.back_project(rads)
 
-    # sci-kit back project
+    # Compare
+    reference_back_projects = np.empty((m, n, L, L))
+    for i in range(m):
+        for j in range(n):
+            img = imgs[i, j]
+            # Compute the singleton case, and compare with stack.
+            single_sinogram = img.project(rads)
+            back_project = single_sinogram.back_project(rads)
 
-    # compare nrmse for all images in the stack
+            # These should be allclose up to determinism.
+            np.testing.assert_allclose(ours_backward[i, j : j + 1], back_project[0])
+
+            # Next individually compute sk's iradon transform for each image.
+            reference_back_projects[i, j] = iradon(
+                single_sinogram.asnumpy()[0].T, theta=angles[::-1], filter_name=None
+            )
+
+    # apply a mask, then find the NRMSE on the collection of images
+    # similar tolerance level to single project test
+    nrmse = np.sqrt(
+        np.mean((ours_backward.asnumpy() * mask - reference_back_projects) ** 2)
+    ) / (np.max(reference_back_projects) - np.min(reference_back_projects))
+    assert (
+        nrmse < SK_TOL_BACKPROJECT
+    ), f"NRMSE is too high for image ({i},{j}): {nrmse}, expected less than {SK_TOL_BACKPROJECT}"
