@@ -666,27 +666,27 @@ class CLSymmetryD2(CLOrient3D):
         # (This first loop can be done once outside this function and then pass
         # idx as an argument).
         L = self.n_theta
-        idx = np.zeros((L // 2, L // 4, 2))
-        idx_1 = np.mod(
-            np.vstack((-np.arange(1, L // 4 + 1), np.arange(1, L // 4 + 1))), L
-        )
-        idx[0, :, :] = idx_1.T
-        for k in range(1, L // 2):
-            idx[k, :, :] = np.mod(idx_1.T + k, L)
-        idx = np.mod(idx, L)
+        L_half = L // 2
+
+        # Generate indices using broadcasting.
+        t_i = np.arange(L_half)[:, None, None]
+        k_vals = np.arange(1, L // 4 + 1)[None, :, None]
+        neg_pos_k = np.array([-1, 1])[None, None, :]
+
+        # Calculate indices, shape: (L//2, L//4, 2).
+        idx = np.mod(t_i + k_vals * neg_pos_k, L)
 
         # Convert to Fourier ray indices.
         idx_1 = idx[:, :, 0].flatten()
         idx_2 = idx[:, :, 1].flatten()
 
-        # Make all Ri coordinates < 180 and compute linear indices for corrrelations
-        is_geq_than_pi = idx_1 >= L // 2
-        idx_1[is_geq_than_pi] = idx_1[is_geq_than_pi] - (L // 2)
-        idx_2[is_geq_than_pi] = (idx_2[is_geq_than_pi] + (L // 2)) % L
+        # Adjust idx_1 to be within [0, 180) and adjust idx_2 accordingly.
+        is_geq_than_pi = idx_1 >= L_half
+        idx_1[is_geq_than_pi] -= L_half
+        idx_2[is_geq_than_pi] = (idx_2[is_geq_than_pi] + L_half) % L
 
-        # Compute correlations.
-        eq_corrs = corrs[idx_1.astype(int), idx_2.astype(int)]
-        eq_corrs = eq_corrs.reshape(L // 2, L // 4)
+        # Compute correlations
+        eq_corrs = corrs[idx_1, idx_2].reshape(L_half, L // 4)
         corrs_mean = np.mean(eq_corrs, axis=1)
 
         # Now compute correlations for normals to scls.
@@ -698,22 +698,19 @@ class CLSymmetryD2(CLOrient3D):
         # equator and t_i+0.5*pi is the normal to its self common line.
         r = 2  # Search radius within 2 adjacent rays of normal ray.
 
-        normal_2_scl_idx = np.zeros((L // 2, 2 * r + 1))
-        normal_2_scl_idx_1 = np.mod(L // 2 - np.arange(L // 4 - r, L // 4 + r + 1), L)
-        normal_2_scl_idx[0, :] = normal_2_scl_idx_1
-        for k in range(1, L // 2):
-            normal_2_scl_idx[k, :] = np.mod(normal_2_scl_idx_1 + k, L)
+        # Generate indices for normal to scl index.
+        normal_2_scl_idx_0 = (
+            L_half - np.arange(L_half // 2 - r, L_half // 2 + r + 1)
+        ) % L
+        normal_2_scl_idx = (normal_2_scl_idx_0 + np.arange(L_half).reshape(-1, 1)) % L
 
-        # Make all Ri coordinates <=180 and compute linear indices for corrrelations
-        is_geq_than_pi = normal_2_scl_idx >= L // 2
-        normal_2_scl_idx[is_geq_than_pi] = normal_2_scl_idx[is_geq_than_pi] - (L // 2)
+        # Adjust indices to be within [0, 180) range.
+        normal_2_scl_idx = np.where(
+            normal_2_scl_idx >= L_half, normal_2_scl_idx - L_half, normal_2_scl_idx
+        )
 
         # Compute correlations for normals.
-        normal_2_scl_idx = normal_2_scl_idx.flatten()
-        normal_corrs = corrs[
-            normal_2_scl_idx.astype(int), normal_2_scl_idx.astype(int) + (L // 2)
-        ]
-        normal_corrs = normal_corrs.reshape(L // 2, 2 * r + 1)
+        normal_corrs = corrs[normal_2_scl_idx, normal_2_scl_idx + L_half]
         normal_corrs_max = np.max(normal_corrs, axis=1)
 
         return corrs_mean * normal_corrs_max
