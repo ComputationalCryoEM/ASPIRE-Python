@@ -357,8 +357,7 @@ class CLSymmetryD2(CLOrient3D):
             )
             * self.n_inplane_rots
         )
-        for i in range(1, self.n_inplane_rots):
-            non_eq_idx[:, i] = non_eq_idx[:, 0] + i
+        non_eq_idx[:, 1:] = non_eq_idx[:, [0]] + np.arange(1, self.n_inplane_rots)
 
         self.non_eq_idx = non_eq_idx
 
