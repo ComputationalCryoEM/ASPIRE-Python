@@ -726,9 +726,9 @@ class CLSymmetryD2(CLOrient3D):
         """
         logger.info("Computing commonline correlation scores.")
         L = self.n_theta
+        n_pairs = self.n_img * (self.n_img - 1) // 2
 
-        # Map the self common line scores of each 2 candidate rotations R_i,R_j to
-        # the respective relative rotation candidate R_i^TR_j.
+        # Map the self common line scores of each 2 candidate rotations R_i, R_j
         n_lookup_1 = len(self.scl_idx_1) // 3
         oct1_ij_map = np.vstack((self.oct1_ij_map, self.oct1_ij_map[:, [1, 0]]))
         oct2_ij_map = self.oct2_ij_map
@@ -736,50 +736,56 @@ class CLSymmetryD2(CLOrient3D):
         oct2_ij_map = np.vstack((oct2_ij_map, oct2_ij_map[:, [1, 0]]))
         ij_map = np.vstack((oct1_ij_map, oct2_ij_map))
 
-        # Allocate output variables.
-        n_pairs = self.n_img * (self.n_img - 1) // 2
+        # Gather commonline indices and unravel to index into correlations.
+        cl_idx = np.unravel_index(self.cl_idx, (L // 2, L))
+
+        # Allocate output variables
         corrs_idx = np.zeros(n_pairs, dtype=np.int64)
         corrs_out = np.zeros(n_pairs, dtype=self.dtype)
-        ij_idx = 0
 
-        # Search for common lines between pairs of projections.
+        ij_idx = 0
         pbar = tqdm(
             desc="Searching for commonlines between pairs of images", total=n_pairs
         )
-        for i in range(self.n_img):
+
+        # Vectorize over pairs of images
+        for i in range(self.n_img - 1):
             pf_i = self.pf_shifted[i]
             scores_i = self.scls_scores[i]
 
-            for j in range(i + 1, self.n_img):
-                pf_j = self.pf_full[j]
+            # Gather all pf_j in one array for vectorized computation
+            pf_js = self.pf_full[i + 1 : self.n_img]
+            n_pf_js = pf_js.shape[0]
 
-                # Compute maximum correlation over all shifts.
-                corrs = np.real(pf_i @ np.conj(pf_j).T)
-                corrs = np.reshape(corrs, (self.n_shifts, L // 2, L))
-                corrs = np.max(corrs, axis=0)
+            # Compute maximum correlation over all shifts for all pf_j
+            corrs = np.real(pf_i @ np.conj(pf_js.transpose(0, 2, 1)))
+            corrs = corrs.reshape(n_pf_js, self.n_shifts, L // 2, L)
+            corrs = np.max(corrs, axis=1)  # Max over shifts
 
-                # Take the product over symmetrically induced candidates. Eq. 4.5 in paper.
-                cl_idx = np.unravel_index(self.cl_idx, (L // 2, L))
+            # Take the product over symmetrically induced candidates. Eq. 4.5 in paper.
+            # Vectorize extraction and processing of correlations
+            prod_corrs = corrs[:, cl_idx[0], cl_idx[1]]
+            prod_corrs = prod_corrs.reshape(n_pf_js, len(prod_corrs[0]) // 4, 4)
+            prod_corrs = np.prod(prod_corrs, axis=2)
 
-                prod_corrs = corrs[cl_idx]
-                prod_corrs = prod_corrs.reshape(len(prod_corrs) // 4, 4)
-                prod_corrs = np.prod(prod_corrs, axis=1)
+            # Incorporate scores of individual rotations from self-commonlines
+            scores_js = self.scls_scores[i + 1 : self.n_img]
+            scores_ij = scores_i[ij_map[:, 0]] * scores_js[:, ij_map[:, 1]]
 
-                # Incorporate scores of individual rotations from self-commonlines.
-                scores_j = self.scls_scores[j]
-                scores_ij = scores_i[ij_map[:, 0]] * scores_j[ij_map[:, 1]]
+            # Find maximum correlations and update results
+            prod_corrs = prod_corrs * scores_ij
+            max_indices = np.argmax(prod_corrs, axis=1)
+            corrs_idx[ij_idx : ij_idx + len(max_indices)] = max_indices
+            corrs_out[ij_idx : ij_idx + len(max_indices)] = prod_corrs[
+                np.arange(len(max_indices)), max_indices
+            ]
 
-                # Find maximum correlations.
-                prod_corrs = prod_corrs * scores_ij
-                max_idx = np.argmax(prod_corrs)
-                corrs_idx[ij_idx] = max_idx
-                corrs_out[ij_idx] = prod_corrs[max_idx]
-                ij_idx += 1
+            ij_idx += len(max_indices)
+            pbar.update(len(max_indices))
 
-                pbar.update()
         pbar.close()
 
-        # Get estimated relative viewing directions.
+        # Get estimated relative viewing directions
         self.corrs_idx = corrs_idx
         self.Rijs_est = self._get_Rijs_from_lin_idx(corrs_idx)
 
