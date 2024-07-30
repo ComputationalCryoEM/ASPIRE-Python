@@ -101,9 +101,8 @@ class CupyFFT(FFT):
     def idct(self, x, **kwargs):
         return cufft.idct(x, **kwargs)
 
-    @_preserve_host
-    def rfftfreq(self, x, **kwargs):
-        return cufft.rfftfreq(x, **kwargs)
+    def rfftfreq(self, n, **kwargs):
+        return cufft.rfftfreq(n, **kwargs)
 
     @_preserve_host
     def irfft(self, x, **kwargs):
