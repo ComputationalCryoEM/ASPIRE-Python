@@ -225,6 +225,7 @@ class Image:
         radial_idx = fft.rfftfreq(n_points) * xp.pi * 2
         n_real_points = len(radial_idx)
         n_angles = len(angles)
+        angles = xp.asarray(angles)
 
         pts = xp.empty((2, n_angles, n_real_points), dtype=self.dtype)
         pts[0] = radial_idx[xp.newaxis, :] * xp.sin(angles)[:, xp.newaxis]
