@@ -1,8 +1,5 @@
 import logging
-import os
-from warnings import catch_warnings, filterwarnings, simplefilter, warn
 
-import mrcfile
 import numpy as np
 
 import aspire.image
