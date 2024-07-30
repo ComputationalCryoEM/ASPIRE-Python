@@ -224,8 +224,8 @@ class CLSymmetryD2(CLOrient3D):
         )
 
         # Generate commonline indices.
-        self.cl_idx_1, self.cl_angles1 = self._generate_commonline_indices(cl_angles1)
-        self.cl_idx_2, self.cl_angles2 = self._generate_commonline_indices(cl_angles2)
+        self.cl_idx_1 = self._generate_commonline_indices(cl_angles1)
+        self.cl_idx_2 = self._generate_commonline_indices(cl_angles2)
         self.cl_idx = np.hstack((self.cl_idx_1, self.cl_idx_2))
 
     def _generate_commonline_angles(
@@ -268,7 +268,7 @@ class CLSymmetryD2(CLOrient3D):
 
         n_pairs = np.count_nonzero(eq2eq_Rij_table)
         idx = 0
-        cl_angles = np.zeros((2 * n_pairs, n_theta, n_theta // 2, 4, 2))
+        cl_angles = np.zeros((2, n_pairs, n_theta, n_theta // 2, 4, 2))
 
         for i in range(n_rots_i):
             unique_pairs_i = np.where(eq2eq_Rij_table[i])[0]
@@ -283,16 +283,16 @@ class CLSymmetryD2(CLOrient3D):
                     Rijs = np.transpose(g_Rj, axes=(0, 2, 1)) @ Ri[:, None]
 
                     # Common line indices induced by Rijs
-                    cl_angles[idx, :, :, k, 0] = np.arctan2(
+                    cl_angles[0, idx, :, :, k, 0] = np.arctan2(
                         Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
                     )
-                    cl_angles[idx, :, :, k, 1] = np.arctan2(
+                    cl_angles[0, idx, :, :, k, 1] = np.arctan2(
                         -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
                     )
-                    cl_angles[idx + n_pairs, :, :, k, 0] = np.arctan2(
+                    cl_angles[1, idx, :, :, k, 0] = np.arctan2(
                         Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
                     )
-                    cl_angles[idx + n_pairs, :, :, k, 1] = np.arctan2(
+                    cl_angles[1, idx, :, :, k, 1] = np.arctan2(
                         -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
                     )
 
@@ -475,7 +475,7 @@ class CLSymmetryD2(CLOrient3D):
         L = self.n_theta
 
         # Convert from angles to indices.
-        scl_indices, _ = self._generate_commonline_indices(scl_angles)
+        scl_indices = self._generate_commonline_indices(scl_angles)
         scl_angles = np.mod(np.round(scl_angles / (2 * np.pi) * L), L).astype(int)
 
         # Create candidate common line linear indices lists for equators.
@@ -1887,4 +1887,4 @@ class CLSymmetryD2(CLOrient3D):
         cl_angles = np.rint(cl_angles.reshape(og_shape)).astype(int)
 
         # Return as integer indices.
-        return cl_idx, cl_angles
+        return cl_idx
