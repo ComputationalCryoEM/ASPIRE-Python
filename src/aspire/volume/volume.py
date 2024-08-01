@@ -476,7 +476,7 @@ class Volume:
         v = self.stack_reshape(-1)
 
         # take 3D Fourier transform of each volume in the stack
-        fx = fft.centered_fftn(xp.asarray(v._data), axes=(1, 2, 3))
+        fx = fft.centered_fftn(xp.asarray(v._data))
 
         # crop each volume to the desired resolution in frequency space
         fx = crop_pad_3d(fx, ds_res)
@@ -486,7 +486,7 @@ class Volume:
             fx = fx * xp.asarray(mask)
 
         # inverse Fourier transform of each volume
-        out = fft.centered_ifftn(fx, axes=(1, 2, 3))
+        out = fft.centered_ifftn(fx)
         out = out.real * (ds_res**3 / self.resolution**3)
 
         # returns a new Volume object
