@@ -48,7 +48,10 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         :param C: Number of Volumes to generate.
         :param K: Number of Gaussian blobs used to construct the Volume(s).
         :param alpha: Scaling factor for variance of Gaussian blobs. Default=1.
-        :param pixel_size: Optional voxel_size in angstroms. Default=1.
+        :param pixel_size: Optional voxel_size in angstroms.
+            When provided will be saved with `map`/`mrc` metadata.
+            Default of `None` will not write to file,
+            but will be considered unit pixels (1) for FSC.
         :param seed: Random seed for generating random Gaussian blobs.
         :param dtype: dtype for Volume(s)
         """
@@ -184,7 +187,10 @@ class CnSymmetricVolume(GaussianBlobsVolume):
         :param C: Number of Volumes to generate.
         :param order: An integer representing the cyclic order of the Volume(s).
         :param K: Number of Gaussian blobs used to construct the Volume(s).
-        :param pixel_size: Optional voxel_size in angstroms. Default=1.
+        :param pixel_size: Optional voxel_size in angstroms.
+            When provided will be saved with `map`/`mrc` metadata.
+            Default of `None` will not write to file,
+            but will be considered unit pixels (1) for FSC.
         :param seed: Random seed for generating random Gaussian blobs.
         :param dtype: dtype for Volume(s)
         """
