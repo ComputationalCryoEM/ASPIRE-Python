@@ -30,6 +30,7 @@ def res_id(params):
 
 
 RES = [42, 43]
+TEST_PX_SZ = 4.56
 
 
 @pytest.fixture(params=RES, ids=res_id, scope="module")
@@ -75,7 +76,7 @@ def vols_1(data_1):
 
 @pytest.fixture
 def vols_2(data_2):
-    return Volume(data_2, pixel_size=4.56)
+    return Volume(data_2, pixel_size=TEST_PX_SZ)
 
 
 @pytest.fixture
@@ -293,6 +294,13 @@ def test_save_load(vols_1):
         assert np.allclose(vols_1, vols_loaded_double)
         assert vols_loaded_single.pixel_size is None, "Pixel size should be None"
         assert vols_loaded_double.pixel_size is None, "Pixel size should be None"
+
+
+def test_volume_pixel_size(vols_2):
+    """
+    Test volume is storing pixel_size attribute.
+    """
+    assert np.isclose(TEST_PX_SZ, vols_2.pixel_size), "Incorrect Volume pixel_size"
 
 
 def test_save_load_pixel_size(vols_2):
