@@ -255,7 +255,7 @@ class Simulation(ImageSource):
                 f_pixel_size, self.pixel_size
             ):
                 raise ValueError(
-                    f"`Simulation.pixel_size` {self.pixel_size} does not match filter {f} {f_pixel_size}."
+                    f"`Simulation.pixel_size` {self.pixel_size} does not match filter {f} pixel size {f_pixel_size}."
                     "Ensure provided `pixel_size` attributes match."
                 )
 
