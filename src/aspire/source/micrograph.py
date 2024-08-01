@@ -197,7 +197,7 @@ class DiskMicrographSource(MicrographSource):
         micrograph0 = Image.load(self.micrograph_files[0])
         if micrograph0.pixel_size is not None and micrograph0.pixel_size != pixel_size:
             raise NotImplementedError(
-                f"Mismatched pixel size. {micrograph0.pixel_size} defined in {self.micrograph_files[0]}, but provided {pixel_size}."
+                f"Mismatched pixel size. {micrograph0.pixel_size} angstroms defined in {self.micrograph_files[0]}, but provided {pixel_size} angstroms."
             )
 
         super().__init__(
@@ -278,7 +278,7 @@ class DiskMicrographSource(MicrographSource):
                 and micrograph.pixel_size != self.pixel_size
             ):
                 raise NotImplementedError(
-                    f"Mismatched pixel size. {micrograph.pixel_size} defined in {self.micrograph_files[ind]}, but provided {self.pixel_size}."
+                    f"Mismatched pixel size. {micrograph.pixel_size} angstroms defined in {self.micrograph_files[ind]}, but provided {self.pixel_size} angstroms."
                 )
 
         return Image(micrographs, pixel_size=self.pixel_size)
