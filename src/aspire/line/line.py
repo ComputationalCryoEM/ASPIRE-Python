@@ -113,13 +113,13 @@ class Line:
         ), "Number of angles must match the number of projections"
 
         original_stack_shape = self.stack_shape
-        sinogram = self.stack_reshape(-1)
+        sinogram = xp.asarray(self.stack_reshape(-1)._data)
         L = self.n_radial_points
         sinogram = fft.ifftshift(sinogram, axes=-1)
         sinogram_ft = fft.rfft(sinogram, axis=-1)
 
         # grid generation with real points
-        y_idx = xp.fft.rfftfreq(self.n_radial_points) * xp.pi * 2
+        y_idx = fft.rfftfreq(self.n_radial_points) * xp.pi * 2
         n_real_points = len(y_idx)
         pts = xp.empty((2, len(angles), n_real_points), dtype=self.dtype)
         pts[0] = y_idx[xp.newaxis, :] * xp.sin(angles)[:, xp.newaxis]
@@ -134,4 +134,4 @@ class Line:
 
         # normalization which gives us roughly the same error regardless of angles
         imgs = imgs / (n_real_points * len(angles))
-        return aspire.image.Image(imgs).stack_reshape(original_stack_shape)
+        return aspire.image.Image(xp.asnumpy(imgs)).stack_reshape(original_stack_shape)
