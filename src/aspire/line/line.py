@@ -117,6 +117,7 @@ class Line:
         L = self.n_radial_points
         sinogram = fft.ifftshift(sinogram, axes=-1)
         sinogram_ft = fft.rfft(sinogram, axis=-1)
+        angles = xp.asarray(angles)
 
         # grid generation with real points
         y_idx = fft.rfftfreq(self.n_radial_points) * xp.pi * 2
