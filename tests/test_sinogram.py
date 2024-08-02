@@ -4,6 +4,7 @@ from skimage import data
 from skimage.transform import iradon, radon
 
 from aspire.image import Image
+from aspire.numeric import xp
 from aspire.utils import grid_2d
 
 # Relative tolerance comparing line projections to scikit
@@ -146,9 +147,12 @@ def test_project_multidim(num_ang):
 
 def test_back_project_single(masked_image, num_ang):
     """
-    Test Line.backproject on a single stack of line projections or sinogram. Compares the reconstructed image to original image.
+    Test Line.backproject on a single stack of line projections or sinogram. Compares the reconstructed image to original.
     """
-    angles = np.linspace(0, 360, num_ang, endpoint=False)
+    angles = xp.asarray(np.linspace(0, 360, num_ang, endpoint=False))
+    angles_np = xp.asnumpy(
+        angles
+    )  # skimage requires numpy array while we're using cupy arrays
     rads = angles / 180 * np.pi
     sinogram = masked_image.project(rads)
     sinogram_np = sinogram.asnumpy()
@@ -163,7 +167,7 @@ def test_back_project_single(masked_image, num_ang):
     our_back_project = back_project.asnumpy()[0] * mask
 
     # generating sci-kit image backproject method w/ no filter
-    sk_image_iradon = iradon(sinogram_np[0].T, theta=angles[::-1], filter_name=None)
+    sk_image_iradon = iradon(sinogram_np[0].T, theta=angles_np[::-1], filter_name=None)
 
     # we apply a normalized root mean square error on the images to find relative error to range of ref. image
     # Note: tolerance is typically < 0.2 regardless of angles, pixels, etc.
@@ -188,7 +192,8 @@ def test_back_project_multidim(num_ang):
 
     # Generate images
     imgs = Image(np.random.random((m, n, L, L))) * mask
-    angles = np.linspace(0, 360, num_ang, endpoint=False)
+    angles = xp.asarray(np.linspace(0, 360, num_ang, endpoint=False))
+    angles_np = xp.asnumpy(angles)  # need this for the skimage transformations
     rads = angles / 180 * np.pi
 
     # apply a forward project on the image, then backwards
@@ -209,7 +214,7 @@ def test_back_project_multidim(num_ang):
 
             # Next individually compute sk's iradon transform for each image.
             reference_back_projects[i, j] = iradon(
-                single_sinogram.asnumpy()[0].T, theta=angles[::-1], filter_name=None
+                single_sinogram.asnumpy()[0].T, theta=angles_np[::-1], filter_name=None
             )
 
     # apply a mask, then find the NRMSE on the collection of images
