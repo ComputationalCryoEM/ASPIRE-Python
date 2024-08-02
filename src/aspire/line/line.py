@@ -4,6 +4,7 @@ import numpy as np
 
 import aspire.image
 from aspire.nufft import anufft
+from aspire.numeric import fft, xp
 
 logger = logging.getLogger(__name__)
 
@@ -114,15 +115,15 @@ class Line:
         original_stack_shape = self.stack_shape
         sinogram = self.stack_reshape(-1)
         L = self.n_radial_points
-        sinogram = np.fft.ifftshift(sinogram, axes=-1)
-        sinogram_ft = np.fft.rfft(sinogram, axis=-1)
+        sinogram = fft.ifftshift(sinogram, axes=-1)
+        sinogram_ft = fft.rfft(sinogram, axis=-1)
 
         # grid generation with real points
-        y_idx = np.fft.rfftfreq(self.n_radial_points) * np.pi * 2
+        y_idx = xp.fft.rfftfreq(self.n_radial_points) * xp.pi * 2
         n_real_points = len(y_idx)
-        pts = np.empty((2, len(angles), n_real_points), dtype=self.dtype)
-        pts[0] = y_idx[np.newaxis, :] * np.sin(angles)[:, np.newaxis]
-        pts[1] = y_idx[np.newaxis, :] * np.cos(angles)[:, np.newaxis]
+        pts = xp.empty((2, len(angles), n_real_points), dtype=self.dtype)
+        pts[0] = y_idx[xp.newaxis, :] * xp.sin(angles)[:, xp.newaxis]
+        pts[1] = y_idx[xp.newaxis, :] * xp.cos(angles)[:, xp.newaxis]
 
         imgs = anufft(
             sinogram_ft.reshape(self.n, -1),
