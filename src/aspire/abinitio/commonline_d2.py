@@ -277,24 +277,27 @@ class CLSymmetryD2(CLOrient3D):
             Ri = Ris[i]
             for j in unique_pairs_i:
                 Rj = Rjs[j, : n_theta // 2]
-                for k, g in enumerate(self.gs):
-                    # Compute relative rotations candidates Rij = Ri.T @ gs @ Rj
-                    g_Rj = g @ Rj
-                    Rijs = np.transpose(g_Rj, axes=(0, 2, 1)) @ Ri[:, None]
 
-                    # Common line indices induced by Rijs
-                    cl_angles[0, idx, :, :, k, 0] = np.arctan2(
-                        Rijs[:, :, 2, 0], -Rijs[:, :, 2, 1]
-                    )
-                    cl_angles[0, idx, :, :, k, 1] = np.arctan2(
-                        -Rijs[:, :, 0, 2], Rijs[:, :, 1, 2]
-                    )
-                    cl_angles[1, idx, :, :, k, 0] = np.arctan2(
-                        Rijs[:, :, 0, 2], -Rijs[:, :, 1, 2]
-                    )
-                    cl_angles[1, idx, :, :, k, 1] = np.arctan2(
-                        -Rijs[:, :, 2, 0], Rijs[:, :, 2, 1]
-                    )
+                # Compute relative rotations candidates Rij = Ri.T @ gs @ Rj
+                Rijs = (
+                    np.transpose(Ri, axes=(0, 2, 1))[:, None, None]
+                    @ self.gs
+                    @ Rj[:, None]
+                )
+
+                # Common line indices induced by Rijs
+                cl_angles[0, idx, :, :, :, 0] = np.arctan2(
+                    -Rijs[..., 0, 2], Rijs[..., 1, 2]
+                )
+                cl_angles[0, idx, :, :, :, 1] = np.arctan2(
+                    Rijs[..., 2, 0], -Rijs[..., 2, 1]
+                )
+                cl_angles[1, idx, :, :, :, 0] = np.arctan2(
+                    -Rijs[..., 2, 0], Rijs[..., 2, 1]
+                )
+                cl_angles[1, idx, :, :, :, 1] = np.arctan2(
+                    Rijs[..., 0, 2], -Rijs[..., 1, 2]
+                )
 
                 idx += 1
 
