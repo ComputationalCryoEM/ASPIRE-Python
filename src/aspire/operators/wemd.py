@@ -46,7 +46,7 @@ def wemd_embed(arr, wavelet="coif3", level=None):
             message="Level value of .* is too high:"
             " all coefficients will experience boundary effects.",
         )
-        arrdwt = pywt.wavedecn(arr-arr.mean(), wavelet, mode="zero", level=level)
+        arrdwt = pywt.wavedecn(arr - arr.mean(), wavelet, mode="zero", level=level)
 
     detail_coefs = arrdwt[1:]
     assert len(detail_coefs) == level
