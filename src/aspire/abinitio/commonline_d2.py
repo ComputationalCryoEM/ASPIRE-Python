@@ -852,8 +852,6 @@ class CLSymmetryD2(CLOrient3D):
                 self.inplane_rotated_grid2, (np.prod(s2[0:2]), 3, 3)
             )
 
-        Rijs_est = np.zeros((n_pairs, 4, 3, 3), dtype=self.dtype)
-
         # Convert linear indices of unique table to linear indices of index pairs table.
         idx_vec = np.arange(np.prod(unique_pairs.shape))
         unique_lin_idx = idx_vec[unique_pairs.flatten()]
@@ -865,9 +863,7 @@ class CLSymmetryD2(CLOrient3D):
         Rjs_lin_idx = np.ravel_multi_index((est_idx[1], inplane_j), s2[:2])
         Ris_t = np.transpose(inplane_rotated_grid[Ris_lin_idx], (0, 2, 1))
         Rjs = inplane_rotated_grid2[Rjs_lin_idx]
-
-        for k, g in enumerate(self.gs):
-            Rijs_est[:, k] = Ris_t @ g @ Rjs
+        Rijs_est = Ris_t[:, None] @ self.gs @ Rjs[:, None]
 
         Rijs_est[transpose_idx] = np.transpose(Rijs_est[transpose_idx], (0, 1, 3, 2))
 
