@@ -1000,7 +1000,7 @@ class CLSymmetryD2(CLOrient3D):
         )
         while itr < max_iters and residual > epsilon:
             itr += 1
-            vec_new = self._signs_times_v2(J_list, vec)
+            vec_new = self._signs_times_v(J_list, vec)
             vec_new = vec_new / norm(vec_new)
             residual = norm(vec_new - vec)
             vec = vec_new
@@ -1014,7 +1014,7 @@ class CLSymmetryD2(CLOrient3D):
 
         return J_sync
 
-    def _signs_times_v2(self, J_list, vec):
+    def _signs_times_v(self, J_list, vec):
         """
         Multiplication of the J-synchronization matrix by a candidate eigenvector.
 
