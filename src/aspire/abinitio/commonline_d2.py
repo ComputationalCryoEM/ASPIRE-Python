@@ -949,21 +949,25 @@ class CLSymmetryD2(CLOrient3D):
         Compute norms for the 4 J-configurations and return indices
         corresponding to best configuration for the provided triplet
         of relative rotations.
+
+        :param Rij: Relative rotation between i'th and j'th candidate rotations
+            of shape (4, 3, 3).
+        :param Rjk_t: Transpose of relative rotation between j'th and k'th candidate
+            rotations of shape (4, 3, 3).
+        :param Rik: Relative rotation between i'th and k'th candidate rotations
+            of shape (4, 3, 3).
+        :return: Score for this J-configuration of the given rotation triplet.
         """
         # We compute the four sets of 4^3 norms |Rik @ Rjk.T - Rij|
         # See equation (6.11) in publication.
         prod_arr = Rik[:, None] @ Rjk_t[None]
+        diff_arr = prod_arr[:, :, None] - Rij
+        diff_arr = diff_arr.reshape((64, 9))
+        norm_arr = np.sum(diff_arr**2, axis=1)
 
-        arr = np.zeros((8, 8, 3, 3), dtype=self.dtype)
-        arr[0:4, 0:4] = prod_arr - Rij[0]
-        arr[0:4, 4:8] = prod_arr - Rij[1]
-        arr[4:8, 0:4] = prod_arr - Rij[2]
-        arr[4:8, 4:8] = prod_arr - Rij[3]
-
-        arr = arr.reshape((64, 9))
-        arr = np.sum(arr**2, axis=1)
-
-        m = np.sort(arr.flatten())
+        # For perfect estimates, 16 of the 64 norms will equal zero.
+        # We sum over the smallest 16 values to get a vote for this J-configuration.
+        m = np.sort(norm_arr)
         vote = np.sum(m[:16])
 
         return vote
