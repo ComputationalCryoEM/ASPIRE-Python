@@ -12,10 +12,14 @@ logger = logging.getLogger(__name__)
 class Line:
     def __init__(self, data, dtype=np.float64):
         """
-        Initialize a Line Object. Change later (similar intuition from Image class)
+        Initialize a Line Object. This is a stack of one or more line projections or sinograms.
+
+        The stack can be multidimensional with 'n' equal to the product
+        of the stack dimensions. Singletons will be expanded into a stack
+        with one entry.
 
         :param data: Numpy array containing image data with shape
-            `(..., resolution, resolution)`.
+            `(..., angles, radial points)`.
         :param dtype: Optionally cast `data` to this dtype.
             Defaults to `data.dtype`.
         """
@@ -23,7 +27,9 @@ class Line:
         if data.ndim == 2:
             data = data[np.newaxis, :, :]
         if data.ndim < 3:
-            assert "Projection Dimensions should be more than Three-Dimensions"
+            raise ValueError(
+                f"Invalid data shape: {data.shape}. Expected shape: (..., angles, radial_points), where '...' is the stack number."
+            )
         self._data = data.astype(self.dtype, copy=False)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
@@ -71,7 +77,7 @@ class Line:
         # Sanity check the size
         if shape != (-1,) and np.prod(shape) != self.n:
             raise ValueError(
-                f"Number of sinogram images {self.n_images} cannot be reshaped to {shape}."
+                f"Number of sinogram images {self.n} cannot be reshaped to {shape}."
             )
 
         return self.__class__(self._data.reshape(*shape, *self._data.shape[-2:]))
@@ -94,23 +100,17 @@ class Line:
     def __str__(self):
         return f"Line(n_images = {self.n}, n_angles = {self.n_points}, n_radial_points = {self.n_radial_points})"
 
-    @property
-    def stack(self):
-        return self.n_images
-
-    def back_project(self, angles):
+    def backproject(self, angles):
         """
         Back Projection Method for a single stack of lines.
 
-        :param filter_name: string, optional
-            Filter used in frequency domain filtering. Assign None to use no filter.
-        :param angles: array
-            assuming not perfectly radial angles
-        :return: stack of reconstructed
+        :param angles: np.ndarray
+            1D array of angles in radians. Each entry in the array corresponds to a different number of angles which are used to reconstruct the image.
+        :return: Aspire Image
+            An Image object containing the original stack size with a newly reconstructed numpy array of the images. Expected return shape should be (n_images, n_angles, n_radial_points)
         """
-        assert (
-            len(angles) == self.n_angles
-        ), "Number of angles must match the number of projections"
+        if len(angles) != self.n_angles:
+            raise ValueError("Number of angles must match the number of projections.")
 
         original_stack_shape = self.stack_shape
         sinogram = xp.asarray(self.stack_reshape(-1)._data)
