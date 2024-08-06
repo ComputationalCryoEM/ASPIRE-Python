@@ -831,7 +831,6 @@ class CLSymmetryD2(CLOrient3D):
             n_rots2 = n_rots
         else:
             n_rots2 = len(self.sphere_grid2)
-        n_pairs = len(lin_idx)
 
         # Map linear indices of chosen pairs of rotation candidates from ML to regular indices.
         p_idx, inplane_i, inplane_j = np.unravel_index(
