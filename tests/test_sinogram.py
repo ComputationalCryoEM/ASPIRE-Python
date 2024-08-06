@@ -144,15 +144,18 @@ def test_project_multidim(num_ang):
     )
 
 
-def test_back_project_single(masked_image, num_ang):
+def test_backproject_single(masked_image, num_ang):
     """
-    Test Line.backproject on a single stack of line projections or sinogram. Compares the reconstructed image to original.
+    Test Line.backproject on a single stack of line projections (sinograms).
+
+    This test compares the reconstructed image from the `backproject` method to
+    the skimage method `iradon.`
     """
     angles = np.linspace(0, 360, num_ang, endpoint=False)
     rads = angles / 180 * np.pi
     sinogram = masked_image.project(rads)
     sinogram_np = sinogram.asnumpy()
-    back_project = sinogram.back_project(rads)
+    back_project = sinogram.backproject(rads)
 
     assert masked_image.shape == back_project.shape, "The shape must be the same."
 
@@ -168,16 +171,18 @@ def test_back_project_single(masked_image, num_ang):
     # we apply a normalized root mean square error on the images to find relative error to range of ref. image
     # Note: tolerance is typically < 0.2 regardless of angles, pixels, etc.
     nrmse = np.sqrt(np.mean((our_back_project - sk_image_iradon) ** 2)) / (
-        np.max(sk_image_iradon - np.min(sk_image_iradon))
+        np.max(sk_image_iradon) - np.min(sk_image_iradon)
     )
     assert (
         nrmse < SK_TOL_BACKPROJECT
     ), f"NRMSE is too high: {nrmse}, expected less than {SK_TOL_BACKPROJECT}"
 
 
-def test_back_project_multidim(num_ang):
+def test_backproject_multidim(num_ang):
     """
-    Test Line.backproject on a stack of images. Extension of back_project_single but for multi-dimensional stacks. Similar to forward_multidim test.
+    Test Line.backproject on a stack of line projections.
+
+    Extension of the `backproject_single` test but checks for multi-dimensional stacks.
     """
     L = 512  # pixels
     n = 3
@@ -193,7 +198,7 @@ def test_back_project_multidim(num_ang):
 
     # apply a forward project on the image, then backwards
     ours_forward = imgs.project(rads)
-    ours_backward = ours_forward.back_project(rads)
+    ours_backward = ours_forward.backproject(rads)
 
     # Compare
     reference_back_projects = np.empty((m, n, L, L))
@@ -202,7 +207,7 @@ def test_back_project_multidim(num_ang):
             img = imgs[i, j]
             # Compute the singleton case, and compare with stack.
             single_sinogram = img.project(rads)
-            back_project = single_sinogram.back_project(rads)
+            back_project = single_sinogram.backproject(rads)
 
             # These should be allclose up to determinism.
             np.testing.assert_allclose(ours_backward[i, j : j + 1], back_project[0])
@@ -212,11 +217,12 @@ def test_back_project_multidim(num_ang):
                 single_sinogram.asnumpy()[0].T, theta=angles[::-1], filter_name=None
             )
 
-    # apply a mask, then find the NRMSE on the collection of images
-    # similar tolerance level to single project test
+            # apply a mask, then find the NRMSE on the collection of images
+            # similar tolerance level to single project test
     nrmse = np.sqrt(
         np.mean((ours_backward.asnumpy() * mask - reference_back_projects) ** 2)
     ) / (np.max(reference_back_projects) - np.min(reference_back_projects))
-    assert (
-        nrmse < SK_TOL_BACKPROJECT
-    ), f"NRMSE is too high for image ({i},{j}): {nrmse}, expected less than {SK_TOL_BACKPROJECT}"
+
+    np.testing.assert_array_less(
+        nrmse, SK_TOL_BACKPROJECT, "Error with the reconstructed images."
+    )
