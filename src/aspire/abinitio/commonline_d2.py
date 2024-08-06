@@ -1679,13 +1679,18 @@ class CLSymmetryD2(CLOrient3D):
     @staticmethod
     def _circ_seq(n1, n2, L):
         """
-        Make a circular sequence of integers between n1 and n2 modulo L.
+        For integers 0 <= n1, n2 < L, make a circular sequence of integers between
+        n1 and n2 modulo L.
 
         :param n1: First integer in sequence.
         :param n2: Last integer in sequence.
         :param L: Modulus of values in sequence.
         :return: Circular sequence modulo L.
         """
+        if min(n1, n2) < 0 or max(n1, n2) >= L:
+            raise ValueError(
+                f"n1 and n2 must both be in [0, {L}). Found n1={n1}, n2={n2}."
+            )
         if n2 < n1:
             n2 += L
         if n1 == n2:
