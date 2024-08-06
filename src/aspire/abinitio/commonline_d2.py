@@ -1171,15 +1171,11 @@ class CLSymmetryD2(CLOrient3D):
             self_prods = self_prods.reshape(3, 9)
 
             prod_arr1 = prod_arr.copy()
-            prod_arr1[:, :, 0, :] = prod_arr1[:, :, 0, :] - self_prods[0]
-            prod_arr1[:, :, 1, :] = prod_arr1[:, :, 1, :] - self_prods[1]
-            prod_arr1[:, :, 2, :] = prod_arr1[:, :, 2, :] - self_prods[2]
+            prod_arr1 -= self_prods
             norms1 = np.sum(prod_arr1**2, axis=3)
 
             prod_arr2 = prod_arr.copy()
-            prod_arr2[:, :, 0, :] = prod_arr2[:, :, 0, :] + self_prods[0]
-            prod_arr2[:, :, 1, :] = prod_arr2[:, :, 1, :] + self_prods[1]
-            prod_arr2[:, :, 2, :] = prod_arr2[:, :, 2, :] + self_prods[2]
+            prod_arr2 += self_prods
             norms2 = np.sum(prod_arr2**2, axis=3)
 
             # Compare to v_{jj}(r)=v_{jk}v_{kj}.
@@ -1187,15 +1183,11 @@ class CLSymmetryD2(CLOrient3D):
             self_prods = self_prods.reshape(3, 9)
 
             prod_arr1 = prod_arr.copy()
-            prod_arr1[0] = prod_arr1[0] - self_prods[0]
-            prod_arr1[1] = prod_arr1[1] - self_prods[1]
-            prod_arr1[2] = prod_arr1[2] - self_prods[2]
+            prod_arr1 -= self_prods[:, None, None]
             norms1 = norms1 + np.sum(prod_arr1**2, axis=3)
 
             prod_arr2 = prod_arr.copy()
-            prod_arr2[0] = prod_arr2[0] + self_prods[0]
-            prod_arr2[1] = prod_arr2[1] + self_prods[1]
-            prod_arr2[2] = prod_arr2[2] + self_prods[2]
+            prod_arr2 += self_prods[:, None, None]
             norms2 = norms2 + np.sum(prod_arr2**2, axis=3)
 
             # For r=1:3 compute 3*3 products v_{ij}(r)v_{jk}v_{ki} and compare to
@@ -1211,15 +1203,11 @@ class CLSymmetryD2(CLOrient3D):
             self_prods = self_prods.reshape(3, 9)
 
             prod_arr1 = prod_arr.copy()
-            prod_arr1[:, 0] = prod_arr1[:, 0] - self_prods[0]
-            prod_arr1[:, 1] = prod_arr1[:, 1] - self_prods[1]
-            prod_arr1[:, 2] = prod_arr1[:, 2] - self_prods[2]
+            prod_arr1 -= self_prods[None, :, None]
             norms1 = norms1 + np.sum(prod_arr1**2, axis=3)
 
             prod_arr2 = prod_arr.copy()
-            prod_arr2[:, 0] = prod_arr2[:, 0] + self_prods[0]
-            prod_arr2[:, 1] = prod_arr2[:, 1] + self_prods[1]
-            prod_arr2[:, 2] = prod_arr2[:, 2] + self_prods[2]
+            prod_arr2 += self_prods[None, :, None]
             norms2 = norms2 + np.sum(prod_arr2**2, axis=3)
 
             norms = np.minimum(norms1, norms2)
