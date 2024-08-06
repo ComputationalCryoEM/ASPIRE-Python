@@ -1417,19 +1417,13 @@ class CLSymmetryD2(CLOrient3D):
         # o(N^2) which doesn't pose a constraint for inputs on the scale of 10^3-10^4.
         c_mat_5d = np.zeros((self.n_img, self.n_img, 3, 3, 3), dtype=self.dtype)
         c_mat_4d = np.zeros((self.n_pairs, 3, 3, 3), dtype=self.dtype)
+        c_vec = c_vec.reshape(self.n_pairs, 3)
         for i in range(self.n_img - 1):
             for j in range(i + 1, self.n_img):
                 ij = self.pairs_to_linear[i, j]
-                c_mat_5d[i, j, c_vec[3 * ij]] = rr[ij, 0]
-                c_mat_5d[i, j, c_vec[3 * ij + 1]] = rr[ij, 1]
-                c_mat_5d[i, j, c_vec[3 * ij + 2]] = rr[ij, 2]
-                c_mat_5d[j, i, c_vec[3 * ij]] = rr[ij, 0].T
-                c_mat_5d[j, i, c_vec[3 * ij + 1]] = rr[ij, 1].T
-                c_mat_5d[j, i, c_vec[3 * ij + 2]] = rr[ij, 2].T
-
-                c_mat_4d[ij, c_vec[3 * ij]] = rr[ij, 0]
-                c_mat_4d[ij, c_vec[3 * ij + 1]] = rr[ij, 1]
-                c_mat_4d[ij, c_vec[3 * ij + 2]] = rr[ij, 2]
+                c_mat_5d[i, j, c_vec[ij]] = rr[ij]
+                c_mat_5d[j, i, c_vec[ij]] = rr[ij].transpose(0, 2, 1)
+                c_mat_4d[ij, c_vec[ij]] = rr[ij]
 
         # Compute estimates for the tuples {0.5*(Ri^TRi+Ri^TgkRi), k=1:3} for
         # i=1:N. For 1<=i,j<=N and c=1,2,3 write Qij^c=0.5*(Ri^TRj+Ri^TgmRj).
@@ -1452,26 +1446,18 @@ class CLSymmetryD2(CLOrient3D):
         # In C_2 one such matrix is constructed for the 3rd rows
         # and is rank 1 by construction. In practice, thus far, for each c and
         # (i,j) we either have Qij^c or -Qij^c independently.
-        c_mat = np.zeros((3, 3 * self.n_img, 3 * self.n_img), dtype=self.dtype)
+        c_mat = np.zeros((3, self.n_img, 3, self.n_img, 3), dtype=self.dtype)
         rot = np.zeros((self.n_img, 3, 3), dtype=self.dtype)
         for i in range(self.n_img - 1):
             for j in range(i + 1, self.n_img):
                 ij = self.pairs_to_linear[i, j]
-                c_mat[c_vec[3 * ij], 3 * i : 3 * i + 3, 3 * j : 3 * j + 3] = rr[ij, 0]
-                c_mat[c_vec[3 * ij + 1], 3 * i : 3 * i + 3, 3 * j : 3 * j + 3] = rr[
-                    ij, 1
-                ]
-                c_mat[c_vec[3 * ij + 2], 3 * i : 3 * i + 3, 3 * j : 3 * j + 3] = rr[
-                    ij, 2
-                ]
+                c_mat[c_vec[ij], i, :, j, :] = rr[ij]
 
-        c_mat[0] = c_mat[0] + c_mat[0].T
-        c_mat[1] = c_mat[1] + c_mat[1].T
-        c_mat[2] = c_mat[2] + c_mat[2].T
+        c_mat = c_mat + c_mat.transpose(0, 3, 4, 1, 2)
 
         for c in range(3):
             for i in range(self.n_img):
-                c_mat[c, 3 * i : 3 * i + 3, 3 * i : 3 * i + 3] = c_mat_5d[i, i, c]
+                c_mat[c, i, :, i, :] = c_mat_5d[i, i, c]
 
         # To decompose cMat as a rank 1 matrix we need to adjust the signs of the
         # Qij^c so that sign(Qij^c*Qjk^c) = sign(Qik^c) for all c=1,2,3 and (i,j).
@@ -1628,15 +1614,12 @@ class CLSymmetryD2(CLOrient3D):
             idx = 0
             for i in range(self.n_img - 1):
                 for j in range(i + 1, self.n_img):
-                    c_mat[c, 3 * j : 3 * j + 3, 3 * i : 3 * i + 3] = (
-                        signs[c, idx] * c_mat[c, 3 * j : 3 * j + 3, 3 * i : 3 * i + 3]
-                    )
-                    c_mat[c, 3 * i : 3 * i + 3, 3 * j : 3 * j + 3] = (
-                        signs[c, idx] * c_mat[c, 3 * i : 3 * i + 3, 3 * j : 3 * j + 3]
-                    )
+                    c_mat[c, j, :, i, :] *= signs[c, idx]
+                    c_mat[c, i, :, j, :] *= signs[c, idx]
                     idx += 1
 
         # cMat(:,:,c) are now rank 1. Decompose using SVD and take leading eigenvector.
+        c_mat = c_mat.reshape(3, 3 * self.n_img, 3 * self.n_img)
         U1, S1, _ = la.svds(c_mat[0], k=3, which="LM")
         U2, S2, _ = la.svds(c_mat[1], k=3, which="LM")
         U3, S3, _ = la.svds(c_mat[2], k=3, which="LM")
