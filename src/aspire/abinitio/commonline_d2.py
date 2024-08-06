@@ -1447,7 +1447,6 @@ class CLSymmetryD2(CLOrient3D):
         # and is rank 1 by construction. In practice, thus far, for each c and
         # (i,j) we either have Qij^c or -Qij^c independently.
         c_mat = np.zeros((3, self.n_img, 3, self.n_img, 3), dtype=self.dtype)
-        rot = np.zeros((self.n_img, 3, 3), dtype=self.dtype)
         for i in range(self.n_img - 1):
             for j in range(i + 1, self.n_img):
                 ij = self.pairs_to_linear[i, j]
@@ -1620,34 +1619,27 @@ class CLSymmetryD2(CLOrient3D):
 
         # cMat(:,:,c) are now rank 1. Decompose using SVD and take leading eigenvector.
         c_mat = c_mat.reshape(3, 3 * self.n_img, 3 * self.n_img)
-        U1, S1, _ = la.svds(c_mat[0], k=3, which="LM")
-        U2, S2, _ = la.svds(c_mat[1], k=3, which="LM")
-        U3, S3, _ = la.svds(c_mat[2], k=3, which="LM")
-        svals2 = np.zeros((3, 3), dtype=self.dtype)
-        svals2[0] = S1[::-1]
-        svals2[1] = S2[::-1]
-        svals2[2] = S3[::-1]
+        U1, _, _ = la.svds(c_mat[0], k=3, which="LM")
+        U2, _, _ = la.svds(c_mat[1], k=3, which="LM")
+        U3, _, _ = la.svds(c_mat[2], k=3, which="LM")
 
-        # Stable eigenvectors.
-        U1 = np.sign(U1[0]) * U1
-        U2 = np.sign(U2[0]) * U2
-        U3 = np.sign(U3[0]) * U3
+        # Stabilize and take leading eigenvector.
+        U1 = np.sign(U1[0, -1]) * U1[:, -1]
+        U2 = np.sign(U2[0, -1]) * U2[:, -1]
+        U3 = np.sign(U3[0, -1]) * U3[:, -1]
 
         # The c'th row of the rotation Rj is Uc(3*j-2:3*j,1)/norm(Uc(3*j-2:3*j,1)),
         # (Rows must be normalized to length 1).
         logger.info("Assembeling rows to rotations matrices.")
-        for i in range(self.n_img):
-            rot[i, 0] = U1[3 * i : 3 * i + 3, -1] / np.linalg.norm(
-                U1[3 * i : 3 * i + 3, -1]
-            )
-            rot[i, 1] = U2[3 * i : 3 * i + 3, -1] / np.linalg.norm(
-                U2[3 * i : 3 * i + 3, -1]
-            )
-            rot[i, 2] = U3[3 * i : 3 * i + 3, -1] / np.linalg.norm(
-                U3[3 * i : 3 * i + 3, -1]
-            )
-            if np.linalg.det(rot[i]) < 0:
-                rot[i, 2] = -rot[i, 2]
+        rot = np.zeros((self.n_img, 3, 3), dtype=self.dtype)
+        rot[:, 0] = U1.reshape(self.n_img, 3)
+        rot[:, 1] = U2.reshape(self.n_img, 3)
+        rot[:, 2] = U3.reshape(self.n_img, 3)
+        rot /= np.linalg.norm(rot, axis=-1)[:, :, None]
+
+        # Ensure we have rotations.
+        not_a_rot = np.argwhere(np.linalg.det(rot) < 0)
+        rot[not_a_rot, 2] *= -1
 
         return rot
 
