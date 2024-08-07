@@ -490,7 +490,9 @@ class CoordinateSource(ImageSource, ABC):
                     cropped = self._crop_micrograph(arr, next(coord))
                     im[i] = cropped
         # Finally, apply transforms to resulting Image
-        return self.generation_pipeline.forward(Image(im), indices)
+        return self.generation_pipeline.forward(
+            Image(im, pixel_size=self.pixel_size), indices
+        )
 
     @staticmethod
     def _is_number(text):
