@@ -610,44 +610,47 @@ class CLSymmetryD2(CLOrient3D):
             scl_idx[non_eq_lin_idx].flatten(), (n_theta // 2, n_theta)
         )
 
+        # Compute max correlation over all shifts.
+        corrs = np.real(
+            self.pf_shifted @ np.transpose(np.conj(self.pf_full), (0, 2, 1))
+        )
+        corrs = np.reshape(corrs, (self.n_img, self.n_shifts, n_theta // 2, n_theta))
+        corrs = np.max(corrs, axis=1)
+
+        # Map correlations to probabilities (in the spirit of Maximum Likelihood).
+        corrs = 0.5 * (corrs + 1)
+
+        # Compute equator measures.
+        eq_measures = np.zeros((self.n_img, n_theta // 2), dtype=self.dtype)
+        for i in range(self.n_img):
+            eq_measures[i] = self._all_eq_measures(corrs[i])
+
+        # Handle the cases: Non-equator, Non-top-view equator images.
+        # 1. Non-equators: just take product of probabilities.
         corrs_out = np.zeros((n_img, M), dtype=self.dtype)
-        for i in trange(n_img):
-            pf_full_i = self.pf_full[i]
-            pf_i_shifted = self.pf_shifted[i]
+        prod_corrs = np.prod(
+            corrs[:, non_eq_idx[0], non_eq_idx[1]].reshape(self.n_img, n_non_eq, 3),
+            axis=2,
+        )
+        corrs_out[:, non_eq_lin_idx] = prod_corrs
 
-            # Compute max correlation over all shifts.
-            corrs = np.real(pf_i_shifted @ np.conj(pf_full_i).T)
-            corrs = np.reshape(corrs, (self.n_shifts, n_theta // 2, n_theta))
-            corrs = np.max(corrs, axis=0)
-
-            # Map correlations to probabilities (in the spirit of Maximum Likelihood).
-            corrs = 0.5 * (corrs + 1)
-
-            # Compute equator measures.
-            eq_measures = self._all_eq_measures(corrs)
-
-            # Handle the cases: Non-equator, Non-top-view equator images.
-            # 1. Non-equators: just take product of probabilities.
-            prod_corrs = np.prod(corrs[non_eq_idx].reshape(n_non_eq, 3), axis=1)
-            corrs_out[i, non_eq_lin_idx] = prod_corrs
-
-            # 2. Non-topview equators: adjust scores by eq_measures
-            for eq_idx in range(n_eq):
-                for j in range(n_inplane):
-                    # Take the correlations for the self common line candidate of the
-                    # "equator rotation" `eq_idx` with respect to image i, and
-                    # multiply by all scores from the function eq_measures (see
-                    # documentation inside the function ). Then take maximum over
-                    # all the scores.
-                    scl_idx_list = np.unravel_index(
-                        self.scl_idx_lists[0, eq_idx, j], (n_theta // 2, n_theta)
-                    )
-                    true_scls_corrs = corrs[scl_idx_list]
-                    scls_cand_idx = self.scl_idx_lists[1, eq_idx, j]
-                    eq_measures_j = eq_measures[scls_cand_idx]
-                    measures_agg = np.outer(true_scls_corrs, eq_measures_j)
-                    k = self.non_tv_eq_idx[eq_idx]
-                    corrs_out[i, k * n_inplane + j] = np.max(measures_agg)
+        # 2. Non-topview equators: adjust scores by eq_measures
+        for eq_idx in range(n_eq):
+            for j in range(n_inplane):
+                # Take the correlations for the self common line candidate of the
+                # "equator rotation" `eq_idx` with respect to image i, and
+                # multiply by all scores from the function eq_measures (see
+                # documentation inside the function ). Then take maximum over
+                # all the scores.
+                scl_idx_list = np.unravel_index(
+                    self.scl_idx_lists[0, eq_idx, j], (n_theta // 2, n_theta)
+                )
+                true_scls_corrs = corrs[:, scl_idx_list[0], scl_idx_list[1]]
+                scls_cand_idx = self.scl_idx_lists[1, eq_idx, j]
+                eq_measures_j = eq_measures[:, scls_cand_idx]
+                measures_agg = true_scls_corrs[:, :, None] * eq_measures_j[:, None, :]
+                k = self.non_tv_eq_idx[eq_idx]
+                corrs_out[:, k * n_inplane + j] = np.max(measures_agg, axis=(-2, -1))
 
         self.scls_scores = corrs_out
 
