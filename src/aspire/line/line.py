@@ -117,6 +117,8 @@ class Line:
         L = self.n_radial_points
         sinogram = fft.ifftshift(sinogram, axes=-1)
         sinogram_ft = fft.rfft(sinogram, axis=-1)
+        sinogram_ft *= xp.pi  # Fix scale to match
+        sinogram_ft[..., 0] /= 2  # Fix DC
         angles = xp.asarray(angles)
 
         # grid generation with real points
@@ -134,5 +136,5 @@ class Line:
         ).reshape(self.n, L, L)
 
         # normalization which gives us roughly the same error regardless of angles
-        imgs = imgs / (n_real_points * len(angles))
+        imgs = imgs / (self.n_radial_points * len(angles))
         return aspire.image.Image(xp.asnumpy(imgs)).stack_reshape(original_stack_shape)

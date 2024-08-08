@@ -10,7 +10,7 @@ from aspire.utils import grid_2d
 # The same tolerance will be used in all scikit forward and backward comparisons
 SK_TOL_FORWARDPROJECT = 0.005
 
-SK_TOL_BACKPROJECT = 0.2
+SK_TOL_BACKPROJECT = 0.0025
 
 IMG_SIZES = [
     511,
@@ -162,19 +162,18 @@ def test_backproject_single(masked_image, num_ang):
     # generate circular mask w/ radius 1 to reconstructed image
     # aim to remove discrepencies for the edges of the image
     g = grid_2d(back_project.resolution, normalized=True, shifted=True)
-    mask = g["r"] < 1
+    mask = g["r"] < 0.99
     our_back_project = back_project.asnumpy()[0] * mask
 
     # generating sci-kit image backproject method w/ no filter
-    sk_image_iradon = iradon(sinogram_np[0].T, theta=angles[::-1], filter_name=None)
+    sk_image_iradon = iradon(sinogram_np[0].T, theta=-angles, filter_name=None) * mask
 
     # we apply a normalized root mean square error on the images to find relative error to range of ref. image
-    # Note: tolerance is typically < 0.2 regardless of angles, pixels, etc.
     nrmse = np.sqrt(np.mean((our_back_project - sk_image_iradon) ** 2)) / (
         np.max(sk_image_iradon) - np.min(sk_image_iradon)
     )
-    assert (
-        nrmse < SK_TOL_BACKPROJECT
+    np.testing.assert_array_less(
+        nrmse, SK_TOL_BACKPROJECT
     ), f"NRMSE is too high: {nrmse}, expected less than {SK_TOL_BACKPROJECT}"
 
 
@@ -189,7 +188,7 @@ def test_backproject_multidim(num_ang):
     m = 2
 
     g = grid_2d(L, normalized=True, shifted=True)
-    mask = g["r"] < 1
+    mask = g["r"] < 0.99
 
     # Generate images
     imgs = Image(np.random.random((m, n, L, L))) * mask
@@ -213,15 +212,24 @@ def test_backproject_multidim(num_ang):
             np.testing.assert_allclose(ours_backward[i, j : j + 1], back_project[0])
 
             # Next individually compute sk's iradon transform for each image.
-            reference_back_projects[i, j] = iradon(
-                single_sinogram.asnumpy()[0].T, theta=angles[::-1], filter_name=None
+            reference_back_projects[i, j] = (
+                iradon(
+                    single_sinogram.asnumpy()[0].T, theta=-1 * angles, filter_name=None
+                )
+                * mask
             )
 
             # apply a mask, then find the NRMSE on the collection of images
             # similar tolerance level to single project test
     nrmse = np.sqrt(
-        np.mean((ours_backward.asnumpy() * mask - reference_back_projects) ** 2)
-    ) / (np.max(reference_back_projects) - np.min(reference_back_projects))
+        np.mean(
+            (ours_backward.asnumpy() * mask - reference_back_projects), axis=(-2, -1)
+        )
+        ** 2
+    ) / (
+        np.max(reference_back_projects, axis=(-2, -1))
+        - np.min(reference_back_projects, axis=(-2, -1))
+    )
 
     np.testing.assert_array_less(
         nrmse, SK_TOL_BACKPROJECT, "Error with the reconstructed images."
