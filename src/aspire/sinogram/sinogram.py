@@ -9,10 +9,10 @@ from aspire.numeric import fft, xp
 logger = logging.getLogger(__name__)
 
 
-class Line:
+class Sinogram:
     def __init__(self, data, dtype=np.float64):
         """
-        Initialize a Line Object. This is a stack of one or more line projections or sinograms.
+        Initialize a Sinogram Object. This is a stack of one or more line projections or sinograms.
 
         The stack can be multidimensional with 'n' equal to the product
         of the stack dimensions. Singletons will be expanded into a stack
@@ -47,7 +47,7 @@ class Line:
     def _check_key_dims(self, key):
         if isinstance(key, tuple) and (len(key) > self._data.ndim):
             raise ValueError(
-                f"Line stack_dim is {self.stack_n_dim}, slice length must be =< {self.n_dim}"
+                f"Sinogram stack_dim is {self.stack_n_dim}, slice length must be =< {self.n_dim}"
             )
 
     def __getitem__(self, key):
@@ -64,7 +64,7 @@ class Line:
 
         :*args: Integer(s) or tuple describing the intended shape.
 
-        :returns: Line instance
+        :returns: Sinogram instance
         """
 
         # If we're passed a tuple, use that
@@ -98,7 +98,7 @@ class Line:
         return self.__class__(self._data.copy())
 
     def __str__(self):
-        return f"Line(n_images = {self.n}, n_angles = {self.n_points}, n_radial_points = {self.n_radial_points})"
+        return f"Sinogram(n_images = {self.n}, n_angles = {self.n_points}, n_radial_points = {self.n_radial_points})"
 
     def backproject(self, angles):
         """

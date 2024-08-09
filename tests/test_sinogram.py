@@ -6,7 +6,7 @@ from skimage.transform import iradon, radon
 from aspire.image import Image
 from aspire.utils import grid_2d
 
-# Relative tolerance comparing line projections to scikit
+# Relative tolerance comparing sinogram projections to scikit
 # The same tolerance will be used in all scikit forward and backward comparisons
 SK_TOL_FORWARDPROJECT = 0.005
 
@@ -146,7 +146,7 @@ def test_project_multidim(num_ang):
 
 def test_backproject_single(masked_image, num_ang):
     """
-    Test Line.backproject on a single stack of line projections (sinograms).
+    Test Sinogram.backproject on a single stack of line projections (sinograms).
 
     This test compares the reconstructed image from the `backproject` method to
     the skimage method `iradon.`
@@ -179,7 +179,7 @@ def test_backproject_single(masked_image, num_ang):
 
 def test_backproject_multidim(num_ang):
     """
-    Test Line.backproject on a stack of line projections.
+    Test Sinogram.backproject on a stack of line projections.
 
     Extension of the `backproject_single` test but checks for multi-dimensional stacks.
     """
