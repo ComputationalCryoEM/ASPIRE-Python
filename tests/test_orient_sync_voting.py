@@ -52,7 +52,7 @@ def source_orientation_objs(resolution, offsets, dtype):
     src = Simulation(
         n=50,
         L=resolution,
-        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=0).generate(),
+        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=0, dtype=dtype).generate(),
         offsets=offsets,
         amplitudes=1,
         seed=0,
