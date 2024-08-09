@@ -6,7 +6,7 @@ from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
-from aspire.utils import J_conjugate, all_pairs, nearest_rotations, trange
+from aspire.utils import J_conjugate, all_pairs, nearest_rotations, tqdm, trange
 from aspire.utils.matlab_compat import stable_eigsh
 from aspire.utils.random import randn
 
@@ -783,7 +783,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         n_theta = self.n_theta
         Rijs = np.zeros((len(self._pairs), 3, 3))
 
-        for idx, (i, j) in enumerate(self._pairs):
+        for idx, (i, j) in enumerate(tqdm(self._pairs, desc="Estimate Rijs")):
             Rijs[idx] = self._syncmatrix_ij_vote_3n(
                 clmatrix, i, j, np.arange(n_img), n_theta
             )
