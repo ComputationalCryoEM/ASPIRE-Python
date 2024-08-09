@@ -39,3 +39,12 @@ class ScipyFFT(FFT):
 
     def idct(self, x, **kwargs):
         return sp.fft.idct(x, **kwargs)
+
+    def rfftfreq(self, x, **kwargs):
+        return sp.fft.rfftfreq(x, **kwargs)
+
+    def irfft(self, x, **kwargs):
+        return sp.fft.irfft(x, **kwargs)
+
+    def rfft(self, x, **kwargs):
+        return sp.fft.rfft(x, **kwargs)
