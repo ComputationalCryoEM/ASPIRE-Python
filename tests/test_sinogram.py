@@ -97,7 +97,7 @@ def test_project_single(masked_image, num_ang):
     ) / np.linalg.norm(reference_sinogram, axis=-1)
 
     np.testing.assert_array_less(
-        nrms, SK_TOL_FORWARDPROJECT, "Error in image projections."
+        nrms, SK_TOL_FORWARDPROJECT, err_msg="Error in image projections."
     )
 
 
@@ -140,7 +140,7 @@ def test_project_multidim(num_ang):
         reference_sinograms, axis=-1
     )
     np.testing.assert_array_less(
-        _nrms, SK_TOL_FORWARDPROJECT, "Error in image projections."
+        _nrms, SK_TOL_FORWARDPROJECT, err_msg="Error in image projections."
     )
 
 
@@ -173,8 +173,10 @@ def test_backproject_single(masked_image, num_ang):
         np.max(sk_image_iradon) - np.min(sk_image_iradon)
     )
     np.testing.assert_array_less(
-        nrmse, SK_TOL_BACKPROJECT
-    ), f"NRMSE is too high: {nrmse}, expected less than {SK_TOL_BACKPROJECT}"
+        nrmse,
+        SK_TOL_BACKPROJECT,
+        err_msg=f"NRMSE is too high: {nrmse}, expected less than {SK_TOL_BACKPROJECT}",
+    )
 
 
 def test_backproject_multidim(num_ang):
@@ -232,5 +234,5 @@ def test_backproject_multidim(num_ang):
     )
 
     np.testing.assert_array_less(
-        nrmse, SK_TOL_BACKPROJECT, "Error with the reconstructed images."
+        nrmse, SK_TOL_BACKPROJECT, err_msg="Error with the reconstructed images."
     )
