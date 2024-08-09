@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image as PILImage
 from scipy.linalg import lstsq
 
-import aspire.line
+import aspire.sinogram
 import aspire.volume
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
@@ -240,7 +240,7 @@ class Image:
         # Radon transform, output: (stack size, angles, points)
         image_rt = fft.fftshift(fft.irfft(image_ft, n=n_points, axis=-1), axes=-1)
         image_rt = image_rt.reshape(*original_stack, n_angles, n_points)
-        return aspire.line.Line(xp.asnumpy(image_rt))
+        return aspire.sinogram.Sinogram(xp.asnumpy(image_rt))
 
     @property
     def res(self):
