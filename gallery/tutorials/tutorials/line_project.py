@@ -23,7 +23,7 @@ from skimage import data
 from skimage.transform import radon, iradon
 from aspire.image import Image
 from aspire.utils import grid_2d
-from aspire.line import Line  
+from aspire.sinogram import Sinogram  
 
 # %%                                                                                                                                                                                                                  
 # Overview                                                                                                                                                                                                            
@@ -48,11 +48,7 @@ grid = grid_2d(img_size, normalized=True, shifted=True)
 mask = grid["r"] < 1
 masked_image = image * mask
 image_camera = Image(masked_image)
-
-fig, ax = plt.subplots(figsize=(8, 8))
-ax.imshow(masked_image)
-ax.set_title("Original Image")
-plt.show()
+image_camera.show()
 
 # %%                                                                                                                                                                                                                  
 # Forward Projection
@@ -64,7 +60,7 @@ plt.show()
 # sinogram projections for later
 sinogram_camera = image_camera.project(rads)
 
-# 3. Show camera man and a line through camera angle the corresponding line projection
+# 3. Show camera man and a sinogram through camera angle the corresponding line projection
 angles_to_plot = [42, 88, 180]
 
 # could try to make a tile or collection of these line projects, need to fix later
@@ -81,7 +77,7 @@ for angle in angles_to_plot:
 
     # Single line projection from camera man
     plt.figure(figsize=(8, 4))
-    plt.plot(sinogram_camera[0, :, int(angle * img_size / 360)], 'r')
+    plt.plot(sinogram_camera.asnumpy()[0, :, int(angle * img_size / 360)], 'r')
     plt.title(f"Line Projection @ {angle} degrees")
     plt.show()
 
@@ -90,7 +86,7 @@ for angle in angles_to_plot:
 fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 axes[0].imshow(masked_image, aspect='auto')
 axes[0].set_title('Original Image')
-axes[1].imshow(sinogram_camera[0].T, aspect='auto')
+axes[1].imshow(sinogram_camera.asnumpy()[0].T, aspect='auto')
 axes[1].set_title('Our Projection')
 plt.tight_layout()
 plt.show()
@@ -102,6 +98,7 @@ plt.show()
 # As mentioned previously, we can transform our line projections (or sinograms) into the original reconstructed image.
 
 # now bring back the line projections into the reconstructed image
-line_sinogram = sinogram_camera.asnumpy()
-back_project = line_sinogram.backproject(rads)
+# change later
 
+back_project = sinogram_camera.backproject(rads)
+back_project.show()
