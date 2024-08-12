@@ -380,12 +380,14 @@ class Image:
 
         return self._im_translate(shifts)
 
-    def downsample(self, ds_res, zero_nyquist=True):
+    def downsample(self, ds_res, zero_nyquist=False):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
 
         :param ds_res: int - new resolution, should be <= the current resolution
             of this Image
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
+            Defaults to zero_nyquist=False, keeping the Nyquist frequency.
         :return: The downsampled Image object.
         """
 
