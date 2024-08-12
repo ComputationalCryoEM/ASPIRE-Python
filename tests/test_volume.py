@@ -343,7 +343,7 @@ def test_project_axes(vols_1, dtype):
 
     # Project a Volume with all the test rotations
     vol_id = 1  # select a volume from Volume stack
-    img_stack = vols_1[vol_id].project(r_stack, zero_nyquist=True)
+    img_stack = vols_1[vol_id].project(r_stack)
 
     for r in range(len(r_stack)):
         # Get result of test projection at center of Image.
@@ -371,7 +371,7 @@ def test_project_axes(vols_1, dtype):
     # Note, transforming rotations to compensate for legacy grid convention used in saved data.
     rots = _LegacySimulation.rots_zyx_to_legacy_aspire(rots)
 
-    imgs_clean = vols.project(rots, zero_nyquist=True).asnumpy()
+    imgs_clean = vols.project(rots).asnumpy()
     assert np.allclose(results, imgs_clean, atol=1e-7)
 
 

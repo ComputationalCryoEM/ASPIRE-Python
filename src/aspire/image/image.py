@@ -380,14 +380,14 @@ class Image:
 
         return self._im_translate(shifts)
 
-    def downsample(self, ds_res, zero_nyquist=False):
+    def downsample(self, ds_res, zero_nyquist=True):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
 
         :param ds_res: int - new resolution, should be <= the current resolution
             of this Image
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-            Defaults to zero_nyquist=False, keeping the Nyquist frequency.
+            Defaults to zero_nyquist=True, removing the Nyquist frequency.
         :return: The downsampled Image object.
         """
 
@@ -545,7 +545,7 @@ class Image:
         # probably not needed, transition
         return np.size(self._data)
 
-    def backproject(self, rot_matrices, symmetry_group=None, zero_nyquist=False):
+    def backproject(self, rot_matrices, symmetry_group=None, zero_nyquist=True):
         """
         Backproject images along rotations. If a symmetry group is provided, images
         used in back-projection are duplicated (boosted) for symmetric viewing directions.
@@ -556,7 +556,7 @@ class Image:
         :param symmetry_group: A SymmetryGroup instance or string indicating symmetry, ie. "C3".
             If supplied, uses symmetry to increase number of images used in back-projection.
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-            Defaults to zero_nyquist=False, keeping the Nyquist frequency.
+            Defaults to zero_nyquist=True, removing the Nyquist frequency.
 
         :return: Volume instance corresonding to the backprojected images.
         """

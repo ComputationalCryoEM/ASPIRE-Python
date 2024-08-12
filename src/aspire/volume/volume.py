@@ -309,7 +309,7 @@ class Volume:
         """
         return otherL * Volume(1.0 / self._data)
 
-    def project(self, rot_matrices, zero_nyquist=False):
+    def project(self, rot_matrices, zero_nyquist=True):
         """
         Using the stack of rot_matrices, project images of Volume. When projecting
         over a stack of volumes, a singleton Rotation or a Rotation with stack size
@@ -319,7 +319,7 @@ class Volume:
 
         :param rot_matrices: Stack of rotations. Rotation or ndarray instance.
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-            Defaults to zero_nyquist=False, keeping the Nyquist frequency.
+            Defaults to zero_nyquist=True, removing the Nyquist frequency.
         :return: `Image` instance.
         """
         # See Issue #727
@@ -464,13 +464,13 @@ class Volume:
 
         return self.__class__(np.flip(self._data, axis), symmetry_group=symmetry)
 
-    def downsample(self, ds_res, mask=None, zero_nyquist=False):
+    def downsample(self, ds_res, mask=None, zero_nyquist=True):
         """
         Downsample each volume to a desired resolution (only cubic supported).
 
         :param ds_res: Desired resolution.
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-            Defaults to zero_nyquist=False, keeping the Nyquist frequency.
+            Defaults to zero_nyquist=True, removing the Nyquist frequency.
         :param mask: Optional NumPy array mask to multiply in Fourier space.
         """
 
