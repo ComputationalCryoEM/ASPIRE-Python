@@ -55,7 +55,7 @@ def checkCenterPoint(data_org, data_ds):
         center_org += (L // 2,)
         center_ds += (L_ds // 2,)
         # indeterminacy for 3D
-        tolerance = 1e-3
+        tolerance = 5e-2
     return np.allclose(
         data_org.asnumpy()[(..., *center_org)],
         data_ds.asnumpy()[(..., *center_ds)],

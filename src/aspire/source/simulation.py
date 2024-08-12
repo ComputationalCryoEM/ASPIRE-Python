@@ -243,10 +243,9 @@ class Simulation(ImageSource):
         """
         return self._projections_accessor
 
-    def _projections(self, indices, legacy=False):
+    def _projections(self, indices):
         """
         Accesses and returns projections as an `Image` instance. Called by self._projections_accessor.
-        For legacy=True we project with zero Nyquist frequency (used in _LegacySimulation).
         """
         im = np.zeros(
             (len(indices), self._original_L, self._original_L), dtype=self.dtype
@@ -258,7 +257,7 @@ class Simulation(ImageSource):
             idx_k = np.where(states == k)[0]
             rot = self.rotations[indices[idx_k], :, :]
 
-            im_k = self.vols[k - 1].project(rot_matrices=rot, zero_nyquist=legacy)
+            im_k = self.vols[k - 1].project(rot_matrices=rot)
             im[idx_k, :, :] = im_k.asnumpy()
 
         return Image(im)
@@ -601,11 +600,3 @@ class _LegacySimulation(Simulation):
         new_rots = rots[:, ::-1] @ flip_xy
 
         return new_rots.reshape(og_shape)
-
-    def _projections(self, indices):
-        """
-        Accesses and returns projections as an `Image` instance. Called by self._projections_accessor
-
-        Note: uses Volume.project(zero_nyquist=True) to match legacy projections.
-        """
-        return super()._projections(indices, legacy=True)
