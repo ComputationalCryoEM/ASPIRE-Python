@@ -380,7 +380,7 @@ class Image:
 
         return self._im_translate(shifts)
 
-    def downsample(self, ds_res):
+    def downsample(self, ds_res, zero_nyquist=True):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
 
@@ -400,6 +400,12 @@ class Image:
         fx = fft.centered_fft2(xp.asarray(im._data))
         # crop 2D Fourier transform for each image
         crop_fx = crop_pad_2d(fx, ds_res)
+
+        # If downsampled resolution is even, optionally zero out the nyquist frequency.
+        if ds_res % 2 == 0 and zero_nyquist is True:
+            crop_fx[:, 0, :] = 0
+            crop_fx[:, :, 0] = 0
+
         # take back to real space, discard complex part, and scale
         out = fft.centered_ifft2(crop_fx).real * (ds_res**2 / self.resolution**2)
         out = xp.asnumpy(out)

@@ -464,11 +464,13 @@ class Volume:
 
         return self.__class__(np.flip(self._data, axis), symmetry_group=symmetry)
 
-    def downsample(self, ds_res, mask=None):
+    def downsample(self, ds_res, mask=None, zero_nyquist=False):
         """
         Downsample each volume to a desired resolution (only cubic supported).
 
         :param ds_res: Desired resolution.
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
+            Defaults to zero_nyquist=False, keeping the Nyquist frequency.
         :param mask: Optional NumPy array mask to multiply in Fourier space.
         """
 
@@ -480,6 +482,12 @@ class Volume:
 
         # crop each volume to the desired resolution in frequency space
         fx = crop_pad_3d(fx, ds_res)
+
+        # If downsample resolution is even, optionally zero out the nyquist frequency.
+        if ds_res % 2 == 0 and zero_nyquist is True:
+            fx[:, 0, :, :] = 0
+            fx[:, :, 0, :] = 0
+            fx[:, :, :, 0] = 0
 
         # Optionally apply mask
         if mask is not None:
