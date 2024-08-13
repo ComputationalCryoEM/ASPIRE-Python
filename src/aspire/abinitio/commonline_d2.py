@@ -1409,6 +1409,12 @@ class CLSymmetryD2(CLOrient3D):
         This function executes the final stage of the algorithm, Signs
         synchroniztion. At the end all rows of the rotations Ri are exctracted
         and the matrices Ri are assembled.
+
+        :param rr: Array of color synchronized rotations' rows outer products of
+            shape (n_pairs, 3, 3, 3), where each rr[ij] corresponds to a 3-tuple
+            of m'th row outer product matrices, some of which having a spurious -1.
+        :param c_vec: A color mapping vector of length (n_pairs * 3) which permutes
+            the 3-tuples of `rr` to be globally row-consistent.
         """
         logger.info("Performing signs synchronization.")
         # Partition the union of tuples {0.5*(Ri^TRj+Ri^TgkRj), k=1:3} according
