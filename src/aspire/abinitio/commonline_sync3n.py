@@ -716,6 +716,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             scores_hist.astype(np.float64, copy=False),
             p0=start_values,
             bounds=(lower_bounds, upper_bounds),
+            method="trf",  # MATLAB used method "LAR" with algo "Trust-Region"
         )
         B, P, b, x0 = popt
 
