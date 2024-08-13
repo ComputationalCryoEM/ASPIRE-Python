@@ -1415,6 +1415,7 @@ class CLSymmetryD2(CLOrient3D):
             of m'th row outer product matrices, some of which having a spurious -1.
         :param c_vec: A color mapping vector of length (n_pairs * 3) which permutes
             the 3-tuples of `rr` to be globally row-consistent.
+        :return: n_img x 3 x 3 array of rotation matrices.
         """
         logger.info("Performing signs synchronization.")
         # Partition the union of tuples {0.5*(Ri^TRj+Ri^TgkRj), k=1:3} according
@@ -1743,6 +1744,12 @@ class CLSymmetryD2(CLOrient3D):
     @staticmethod
     def _mark_equators(sphere_grid, eq_filter_angle):
         """
+        This method categorizes a set of 3D unit vectors into equator and non-equator
+        vectors determined by the parameter `eq_filter_angle`, returned as `eq_idx`.
+        It further categorizes the vectors into the classes non_equator, z-equator,
+        y-equator, x-equator, z-top_view, y-top_view, and x-top_view, which are labeled
+        respectively with the values 0 - 6 and returned as `eq_class`.
+
         :param sphere_grid: Nx3 array of vertices in cartesian coordinates.
         :param eq_filter_angle: Angular distance from equator to be marked as
             an equator point.
