@@ -294,7 +294,8 @@ def fuzzy_mask(L, dtype, r0=None, risetime=None):
     if r0 is None:
         r0 = np.floor(0.45 * L[0])
     if risetime is None:
-        risetime = np.floor(0.05 * L[0])
+        # Guard against zero here for small L
+        risetime = max(np.floor(0.05 * L[0]), 1.0)
 
     dim = len(L)
     axes = ["x"]
