@@ -1763,23 +1763,12 @@ class CLSymmetryD2(CLOrient3D):
         n_rots = len(sphere_grid)
         angular_dists = np.zeros((n_rots, 3), dtype=sphere_grid.dtype)
 
-        # Distance from z-axis equator.
-        proj_xy = sphere_grid.copy()
-        proj_xy[:, 2] = 0
-        proj_xy /= np.linalg.norm(proj_xy, axis=1)[:, None]
-        angular_dists[:, 0] = np.sum(sphere_grid * proj_xy, axis=-1)
-
-        # Distance from y-axis equator.
-        proj_xz = sphere_grid.copy()
-        proj_xz[:, 1] = 0
-        proj_xz /= np.linalg.norm(proj_xz, axis=1)[:, None]
-        angular_dists[:, 1] = np.sum(sphere_grid * proj_xz, axis=-1)
-
-        # Distance from x-axis equator.
-        proj_yz = sphere_grid.copy()
-        proj_yz[:, 0] = 0
-        proj_yz /= np.linalg.norm(proj_yz, axis=1)[:, None]
-        angular_dists[:, 2] = np.sum(sphere_grid * proj_yz, axis=-1)
+        # For each grid point get the distance from the z, y, and x-axis equators.
+        for i in range(3):
+            proj_along_axis = sphere_grid.copy()
+            proj_along_axis[:, 2 - i] = 0
+            proj_along_axis /= np.linalg.norm(proj_along_axis, axis=1)[:, None]
+            angular_dists[:, i] = np.sum(sphere_grid * proj_along_axis, axis=-1)
 
         # Mark all views close to an equator.
         eq_min_dist = np.cos(eq_filter_angle * np.pi / 180)
@@ -1795,9 +1784,14 @@ class CLSymmetryD2(CLOrient3D):
         # 5 -> y top view
         # 6 -> x top view
         eq_class = np.zeros(n_rots)
+
+        # Grid points which are equator points with respect to 2 equators are considered top views.
+        # For example, a grid point that is close to both the x and y equator is a z top view.
         top_view_idx = n_eqs > 1
-        top_view_class = np.argmin(angular_dists[top_view_idx] > eq_min_dist)
+        top_view_class = np.argmin(angular_dists[top_view_idx] > eq_min_dist, axis=1)
         eq_class[top_view_idx] = top_view_class + 4
+
+        # Assign grid points which are equator points with respect to only 1 equator.
         eq_view_idx = n_eqs == 1
         eq_view_class = np.argmax(angular_dists[eq_view_idx] > eq_min_dist, axis=1)
         eq_class[eq_view_idx] = eq_view_class + 1
