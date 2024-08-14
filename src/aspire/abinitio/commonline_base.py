@@ -1,10 +1,12 @@
 import logging
 import math
+from time import perf_counter
 
 import numpy as np
 import scipy.sparse as sparse
 
 from aspire.image import Image
+from aspire.numeric import fft, xp
 from aspire.operators import PolarFT
 from aspire.utils import common_line_from_rots, fuzzy_mask, tqdm
 from aspire.utils.random import choice
@@ -129,6 +131,22 @@ class CLOrient3D:
         raise NotImplementedError("subclasses should implement this")
 
     def build_clmatrix(self):
+        """dispatch, compare, dispair"""
+
+        tic1 = perf_counter()
+        clmatrix_orig = self.build_clmatrix_orig()
+        tic2 = perf_counter()
+        clmatrix_cupy = self.build_clmatrix_cupy()
+        tic3 = perf_counter()
+        print(f"Orig CL build: {tic2-tic1}")
+        print(f"Cupy CL build: {tic3-tic2}")
+
+        np.testing.assert_allclose(clmatrix_orig[0], clmatrix_cupy[0])
+        np.testing.assert_allclose(clmatrix_orig[1], clmatrix_cupy[1])
+
+        self.shifts_1d, self.clmatrix = clmatrix_cupy
+
+    def build_clmatrix_orig(self):
         """
         Build common-lines matrix from Fourier stack of 2D images
         """
@@ -177,10 +195,11 @@ class CLOrient3D:
         shifts, shift_phases, h = self._generate_shift_phase_and_filter(
             r_max, max_shift, shift_step
         )
+        shifts, shift_phases = xp.asnumpy(shifts), xp.asnumpy(shift_phases)
 
         # Apply bandpass filter, normalize each ray of each image
         # Note that only use half of each ray
-        pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
+        pf = xp.asnumpy(self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h))
 
         # Setup a progress bar
         _total_pairs_to_test = self.n_img * (self.n_check - 1) // 2
@@ -233,8 +252,115 @@ class CLOrient3D:
                 pbar.update()
         pbar.close()
 
-        self.clmatrix = clmatrix
-        self.shifts_1d = shifts_1d
+        return shifts_1d, clmatrix
+
+    def build_clmatrix_cupy(self):
+        """
+        Build common-lines matrix from Fourier stack of 2D images
+        """
+
+        n_img = self.n_img
+        n_check = self.n_check
+
+        if self.n_theta % 2 == 1:
+            msg = "n_theta must be even"
+            logger.error(msg)
+            raise NotImplementedError(msg)
+
+        n_theta_half = self.n_theta // 2
+
+        # need to do a copy to prevent modifying self.pf for other functions
+        # also places on GPU when xp is in cupy mode.
+        pf = xp.array(self.pf)
+
+        # Allocate local variables for return
+        # clmatrix represents the common lines matrix.
+        # Namely, clmatrix[i,j] contains the index in image i of
+        # the common line with image j. Note the common line index
+        # starts from 0 instead of 1 as Matlab version. -1 means
+        # there is no common line such as clmatrix[i,i].
+        clmatrix = -xp.ones((n_img, n_img), dtype=self.dtype)
+        # When cl_dist[i, j] is not -1, it stores the maximum value
+        # of correlation between image i and j for all possible 1D shifts.
+        # We will use cl_dist[i, j] = -1 (including j<=i) to
+        # represent that there is no need to check common line
+        # between i and j. Since it is symmetric,
+        # only above the diagonal entries are necessary.
+        cl_dist = -xp.ones((n_img, n_img), dtype=self.dtype)
+
+        # Allocate variables used for shift estimation
+
+        # set maximum value of 1D shift (in pixels) to search
+        # between common-lines.
+        max_shift = self.max_shift
+        # Set resolution of shift estimation in pixels. Note that
+        # shift_step can be any positive real number.
+        shift_step = self.shift_step
+        # 1D shift between common-lines
+        shifts_1d = xp.zeros((n_img, n_img))
+
+        # Prepare the shift phases to try and generate filter for common-line detection
+        r_max = pf.shape[2]
+        shifts, shift_phases, h = self._generate_shift_phase_and_filter(
+            r_max, max_shift, shift_step
+        )
+
+        # Apply bandpass filter, normalize each ray of each image
+        # Note that only use half of each ray
+        pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
+
+        # Setup a progress bar
+        _total_pairs_to_test = self.n_img * (self.n_check - 1) // 2
+        pbar = tqdm(desc="Searching over common line pairs", total=_total_pairs_to_test)
+
+        # Search for common lines between [i, j] pairs of images.
+        # Creating pf and building common lines are different to the Matlab version.
+        # The random selection is implemented.
+        for i in range(n_img - 1):
+            p1 = pf[i]
+            p1_real = xp.real(p1)
+            p1_imag = xp.imag(p1)
+
+            # build the subset of j images if n_check < n_img
+            n_remaining = n_img - i - 1
+            n_j = min(n_remaining, n_check)
+            subset_j = np.sort(choice(n_remaining, n_j, replace=False) + i + 1)
+
+            for j in subset_j:
+                p2_flipped = xp.conj(pf[j])
+
+                for shift in range(len(shifts)):
+                    shift_phase = shift_phases[shift]
+                    p2_shifted_flipped = (shift_phase * p2_flipped).T
+                    # Compute correlations in the positive r direction
+                    part1 = p1_real.dot(p2_shifted_flipped.real)
+                    # Compute correlations in the negative r direction
+                    part2 = p1_imag.dot(p2_shifted_flipped.imag)
+
+                    c1 = part1 - part2
+                    sidx = c1.argmax()
+                    cl1, cl2 = np.unravel_index(sidx, c1.shape)
+                    sval = c1[cl1, cl2]
+
+                    c2 = part1 + part2
+                    sidx = c2.argmax()
+                    cl1_2, cl2_2 = np.unravel_index(sidx, c2.shape)
+                    sval2 = c2[cl1_2, cl2_2]
+
+                    if sval2 > sval:
+                        cl1 = cl1_2
+                        cl2 = cl2_2 + n_theta_half
+                        sval = sval2
+                    sval = 2 * sval
+                    if sval > cl_dist[i, j]:
+                        clmatrix[i, j] = cl1
+                        clmatrix[j, i] = cl2
+                        cl_dist[i, j] = sval
+                        shifts_1d[i, j] = shifts[shift]
+                pbar.update()
+        pbar.close()
+
+        return xp.asnumpy(shifts_1d), xp.asnumpy(clmatrix)
 
     def estimate_shifts(self, equations_factor=1, max_memory=4000):
         """
@@ -488,13 +614,13 @@ class CLOrient3D:
         n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
 
         # only half of ray, excluding the DC component.
-        rk = np.arange(1, r_max + 1)
+        rk = xp.arange(1, r_max + 1)
 
         # Generate all shift phases
-        shifts = -max_shift + shift_step * np.arange(n_shifts)
-        shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
+        shifts = -max_shift + shift_step * xp.arange(n_shifts)
+        shift_phases = xp.exp(xp.outer(shifts, -2 * xp.pi * 1j * rk / (2 * r_max + 1)))
         # Set filter for common-line detection
-        h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
+        h = xp.sqrt(xp.abs(rk)) * xp.exp(-xp.square(rk) / (2 * (r_max / 4) ** 2))
 
         return shifts, shift_phases, h
 
@@ -556,11 +682,11 @@ class CLOrient3D:
 
         # Note if we'd rather not have the dtype and casting args,
         #   we can control h.dtype instead.
-        np.einsum(subscripts, pf, h, out=pf, dtype=pf.dtype, casting="same_kind")
+        xp.einsum(subscripts, pf, h, out=pf, dtype=pf.dtype, casting="same_kind")
 
         # This is a high pass filter, cutting out the lowest frequency
         # (DC has already been removed).
         pf[..., 0] = 0
-        pf /= np.linalg.norm(pf, axis=-1)[..., np.newaxis]
+        pf /= xp.linalg.norm(pf, axis=-1)[..., xp.newaxis]
 
         return pf
