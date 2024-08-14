@@ -71,6 +71,7 @@ def source(n_img, resolution, dtype, offsets):
         amplitudes=1,
         seed=SEED,
     )
+    src = src.cache()  # Precompute image stack
 
     return src
 
