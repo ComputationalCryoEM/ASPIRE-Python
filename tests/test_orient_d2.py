@@ -23,6 +23,10 @@ OFFSETS = [0, pytest.param(None, marks=pytest.mark.expensive)]
 
 # Since these tests are optimized for runtime, detuned parameters cause
 # the algorithm to be fickle, especially for small problem sizes.
+# In particular, the parameters `grid_res`, inplane_res`, and `eq_min_dist`
+# which control the number of candidate rotations used in the D2 algorithm
+# will produce bad estimates if the candidates do not align closely with the
+# ground truth rotations.
 # This seed is chosen so the tests pass CI on github's envs as well
 # as our self-hosted runner.
 SEED = 3
