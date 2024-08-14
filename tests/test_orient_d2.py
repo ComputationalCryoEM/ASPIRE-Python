@@ -268,10 +268,20 @@ def test_sync_colors(orient_est):
     # Grab set of rotations and generate a set of relative rotations, Rijs.
     rots = orient_est.src.rotations
     Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
+    gt_colors = np.zeros((orient_est.n_pairs, 3), dtype=int)
     for p, (i, j) in enumerate(orient_est.pairs):
-        for k, g in enumerate(orient_est.gs):
-            k = (k + p) % 4  # Mix up the ordering of Rijs
-            Rijs[p, k] = rots[i].T @ g @ rots[j]
+        gs = orient_est.gs
+        if p > 0:
+            np.random.shuffle(gs)  # Mix up the ordering of all but 1st Rijs
+
+        # Compute the rotation row permutation created by the ordering of gs.
+        # See Proposition 5.1 in the related publication for details.
+        for m in range(3):
+            gt_colors[p, m] = np.argmax(np.sum(abs(0.5 * (gs[0] + gs[m + 1])), axis=0))
+
+        # Compute Rijs with shuffled gs.
+        Rij = rots[i].T @ gs @ rots[j]
+        Rijs[p] = Rij
 
     # Perform color synchronization.
     # Rijs_rows is shape (n_pairs, 3, 3, 3) where Rijs_rows[ij, m] corresponds
@@ -284,7 +294,8 @@ def test_sync_colors(orient_est):
     vijs = np.zeros((orient_est.n_pairs, 3, 3, 3), dtype=orient_est.dtype)
     for p, (i, j) in enumerate(orient_est.pairs):
         for m in range(3):
-            vijs[p, m] = np.outer(rots[i][m], rots[j][m])
+            row = gt_colors[p, m]
+            vijs[p, m] = np.outer(rots[i][row], rots[j][row])
 
     # Reshape `colors` to shape (n_pairs, 3) and use to index Rijs_rows into the
     # correctly order 3rd row outer products vijs.
@@ -303,17 +314,14 @@ def test_sync_colors(orient_est):
     # Apply this mapping to all rows of the colors array
     colors_mapped = mapping[colors]
 
-    # Synchronize Rijs_rows according to the color map.
-    row_indices = np.arange(orient_est.n_pairs)[:, None]
-    Rijs_rows_synced = Rijs_rows[row_indices, colors_mapped]
+    # Check that remapped color permutations match ground truth.
+    np.testing.assert_allclose(colors_mapped, gt_colors)
 
     # Rijs_rows_synced should match the ground truth vijs up to the sign of each row.
     # So we multiply by the sign of the first column of the last two axes to sync signs.
     vijs = vijs * np.sign(vijs[..., 0])[..., None]
-    Rijs_rows_synced = Rijs_rows_synced * np.sign(Rijs_rows_synced[..., 0])[..., None]
-    np.testing.assert_allclose(
-        vijs, Rijs_rows_synced, atol=utest_tolerance(orient_est.dtype)
-    )
+    Rijs_rows = Rijs_rows * np.sign(Rijs_rows[..., 0])[..., None]
+    np.testing.assert_allclose(vijs, Rijs_rows, atol=utest_tolerance(orient_est.dtype))
 
     # Check dtype pass-through.
     assert Rijs_rows.dtype == orient_est.dtype
