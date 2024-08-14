@@ -1829,7 +1829,7 @@ class CLSymmetryD2(CLOrient3D):
 
         # Generate in-plane rotations.
         d_theta *= np.pi / 180
-        # TODO: Negative signs to match matlab.
+        # Negative signs to match matlab.
         inplane_rots = Rotation.about_axis(
             "z", np.arange(0, -2 * np.pi, -d_theta), dtype=dtype
         ).matrices
@@ -1844,8 +1844,12 @@ class CLSymmetryD2(CLOrient3D):
 
     def _generate_commonline_indices(self, cl_angles):
         """
-        Converts pairs pf commonline angles in [0, 360) first into polar Fourier
-        indices in [0, self.n_theta), then into commonline linear indices.
+        Converts a multi-dimensional stack of pairs of commonline angles in [0, 360) degrees
+        into a flattened stack of polar Fourier linear indices, with the convention that
+        each linear index corresponds to an unraveled index in [0, n_theta // 2) x [0, n_theta).
+
+        :param cl_angles: A multi-dimensional stack of commonline angles in degrees, shape (..., 2).
+        :return: cl_idx, a 1D array of linear indices.
         """
         L = self.n_theta
 
@@ -1865,8 +1869,4 @@ class CLSymmetryD2(CLOrient3D):
         # Convert to linear indices in 180x360 correlation matrix.
         cl_idx = np.ravel_multi_index((row_sub, col_sub), dims=(L // 2, L))
 
-        # Return cl_angles in original shape as integer indices.
-        cl_angles = np.rint(cl_angles.reshape(og_shape)).astype(int)
-
-        # Return as integer indices.
         return cl_idx
