@@ -178,9 +178,9 @@ def test_global_J_sync(orient_est):
     rots = orient_est.src.rotations
     Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
     for p, (i, j) in enumerate(orient_est.pairs):
-        for k, g in enumerate(orient_est.gs):
-            k = (k + p) % 4  # Mix up the ordering of Rijs
-            Rijs[p, k] = rots[i].T @ g @ rots[j]
+        Rij = rots[i].T @ orient_est.gs @ rots[j]
+        np.random.shuffle(Rij)  # Mix up the ordering of Rijs
+        Rijs[p] = Rij
 
     # J-conjugate a random set of Rijs.
     Rijs_conj = Rijs.copy()
@@ -245,9 +245,9 @@ def test_global_J_sync_single_triplet(dtype):
     rots = orient_est.src.rotations
     Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
     for p, (i, j) in enumerate(orient_est.pairs):
-        for k, g in enumerate(orient_est.gs):
-            k = (k + p) % 4  # Mix up the ordering of Rijs
-            Rijs[p, k] = rots[i].T @ g @ rots[j]
+        Rij = rots[i].T @ orient_est.gs @ rots[j]
+        np.random.shuffle(Rij)  # Mix up the ordering of Rijs
+        Rijs[p] = Rij
 
     # J-conjugate a random Rij.
     Rijs_conj = Rijs.copy()
