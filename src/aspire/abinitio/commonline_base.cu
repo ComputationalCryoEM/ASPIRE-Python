@@ -21,7 +21,7 @@ void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, do
   int cl1, cl2;
   int best_cl1, best_cl2, best_s;
   double dist, best_cl_dist;
-  double p1,p2;
+  double p1, p2;
 
   double p1_realk, p1_imagk;
   double p2conj_realk, p2conj_imagk;
@@ -29,14 +29,14 @@ void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, do
   double shift_phases_real, shift_phases_imag;
 
   
-  best_s = -1;
+  best_s = -99999;
   best_cl1 = -1;
   best_cl2 = -1;
   best_cl_dist = -1/0;
 
-  for(s=0; s<n_shifts; s++){
-    for(cl1=0; cl1<m; cl1++){
-      for(cl2=0; cl2<m; cl2++){
+  for(cl1=0; cl1<m; cl1++){
+    for(cl2=0; cl2<m; cl2++){
+      for(s=0; s<n_shifts; s++){
         p1 = 0;
         p2 = 0;
         /* inner most dim of dot (matmul) */
@@ -53,8 +53,6 @@ void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, do
           p1 += p1_realk * p2_realk;
           p2 += p1_imagk * p2_imagk;
 
-          // p1 += pf[2*(i*m*r + cl1*r + k)]     *  pf[2*(j*m*r + cl2*r + k)]     * shift_phases[2*(s*r + k)];       
-          // p2 += pf[2*(i*m*r + cl1*r + k) + 1] * -pf[2*(j*m*r + cl2*r + k) + 1] * shift_phases[2*(s*r + k) +1];
         }
 
         dist = p1 - p2;
