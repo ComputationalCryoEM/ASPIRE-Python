@@ -265,6 +265,24 @@ def test_global_J_sync_single_triplet(dtype):
 
 
 def test_sync_colors(orient_est):
+    """
+    A set of estimated relative rotations, Rijs, have the shape (n_pairs, 4, 3, 3),
+    where each 4-tuple Rij is given by Rij = Ri.T @ g_m @ Rj, for m in [0, 1, 2, 3],
+    where each g_m is an element of the D2 symmetry group. The ordering of the symmetry
+    group elements, g_m, is unknown and independent between Rijs. The `_sync_colors`
+    algorithm forms the set of vijs of shape (n_pairs, 3, 3, 3), where each vij, given
+    by vij = (Rij[0] + Rij[m]) / 2 with m = 1, 2, 3, is some permutation of the outer
+    products of the k'th rows of the rotation matrices Ri and Rj, for k = 0, 1, 2.
+
+    The 'sync_colors` algorithm uses a colored graph to partition the set of vijs
+    based on k'th row outer products and returns those outer products along with
+    a color mapping encoding a permutation for each vij.
+
+    In this test we form a set of Rijs with randomly ordered symmetry group elements
+    and extract the ground truth color permutations based on that ordering. We then
+    construct a set of ground truth vijs adjusted by the ground truth color permuations.
+    We then compare estimated vijs and color permutations to ground truth.
+    """
     # Grab set of rotations and generate a set of relative rotations, Rijs.
     rots = orient_est.src.rotations
     Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
@@ -283,13 +301,6 @@ def test_sync_colors(orient_est):
         Rij = rots[i].T @ gs @ rots[j]
         Rijs[p] = Rij
 
-    # Perform color synchronization.
-    # Rijs_rows is shape (n_pairs, 3, 3, 3) where Rijs_rows[ij, m] corresponds
-    # to the outer product vij_m = rots[i, m].T @ rots[j, m] where m is the m'th row
-    # of the rotations matrices Ri and Rj. `colors` partitions the set of Rijs_rows
-    # such that the indices of `colors` corresponds to the row index m.
-    colors, Rijs_rows = orient_est._sync_colors(Rijs)
-
     # Compute ground truth m'th row outer products.
     vijs = np.zeros((orient_est.n_pairs, 3, 3, 3), dtype=orient_est.dtype)
     for p, (i, j) in enumerate(orient_est.pairs):
@@ -297,34 +308,41 @@ def test_sync_colors(orient_est):
             row = gt_colors[p, m]
             vijs[p, m] = np.outer(rots[i][row], rots[j][row])
 
-    # Reshape `colors` to shape (n_pairs, 3) and use to index Rijs_rows into the
-    # correctly order 3rd row outer products vijs.
-    colors = colors.reshape(orient_est.n_pairs, 3)
+    # Perform color synchronization.
+    # `est_vijs` is shape (n_pairs, 3, 3, 3) where est_vijs[ij, m] corresponds
+    # to the outer product vij_m = rots[i, m].T @ rots[j, m] where m is the m'th row
+    # of the rotations matrices Ri and Rj. `est_colors` partitions the set of `est_vijs`
+    # such that the indices of `est_colors` corresponds to the row index m.
+    est_colors, est_vijs = orient_est._sync_colors(Rijs)
 
-    # `colors` is an arbitrary permutation (but globally consistent), and we know
-    # that colors[0] should correspond to the ordering [0, 1, 2] due to the construction
+    # Reshape `est_colors` to shape (n_pairs, 3) and use to index est_vijs into the
+    # correctly order 3rd row outer products vijs.
+    est_colors = est_colors.reshape(orient_est.n_pairs, 3)
+
+    # `est_colors` is an arbitrary permutation (but globally consistent), and we know
+    # that est_colors[0] should correspond to the ordering [0, 1, 2] due to the construction
     # of Rijs[0] using the symmetric rotations g0, g1, g2, g3 in non-permuted order.
-    # So we sort the columns such that colors[0] = [0,1,2].
+    # So we sort the columns such that est_colors[0] = [0,1,2].
 
     # Create a mapping array
-    perm = colors[0]
+    perm = est_colors[0]
     mapping = np.zeros_like(perm)
     mapping[perm] = np.arange(3)
 
-    # Apply this mapping to all rows of the colors array
-    colors_mapped = mapping[colors]
+    # Apply this mapping to all rows of the est_colors array
+    est_colors_mapped = mapping[est_colors]
 
     # Check that remapped color permutations match ground truth.
-    np.testing.assert_allclose(colors_mapped, gt_colors)
+    np.testing.assert_allclose(est_colors_mapped, gt_colors)
 
-    # Rijs_rows_synced should match the ground truth vijs up to the sign of each row.
+    # est_vijs_synced should match the ground truth vijs up to the sign of each row.
     # So we multiply by the sign of the first column of the last two axes to sync signs.
     vijs = vijs * np.sign(vijs[..., 0])[..., None]
-    Rijs_rows = Rijs_rows * np.sign(Rijs_rows[..., 0])[..., None]
-    np.testing.assert_allclose(vijs, Rijs_rows, atol=utest_tolerance(orient_est.dtype))
+    est_vijs = est_vijs * np.sign(est_vijs[..., 0])[..., None]
+    np.testing.assert_allclose(vijs, est_vijs, atol=utest_tolerance(orient_est.dtype))
 
     # Check dtype pass-through.
-    assert Rijs_rows.dtype == orient_est.dtype
+    assert est_vijs.dtype == orient_est.dtype
 
 
 def test_sync_signs(orient_est):
