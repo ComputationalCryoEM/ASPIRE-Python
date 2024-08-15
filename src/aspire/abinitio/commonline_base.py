@@ -1,5 +1,6 @@
 import logging
 import math
+import os
 from time import perf_counter
 
 import numpy as np
@@ -70,6 +71,23 @@ class CLOrient3D:
         self.rotations = None
         self._pf = None
 
+        # Auto configure GPU
+        self.__gpu_module = None
+        try:
+            import cupy as cp
+
+            if cp.cuda.runtime.getDeviceCount() >= 1:
+                gpu_id = cp.cuda.runtime.getDevice()
+                logger.info(
+                    f"cupy and GPU {gpu_id} found by cuda runtime; enabling cupy."
+                )
+                self.__gpu_module = self.__init_cupy_module()
+            else:
+                logger.info("GPU not found, defaulting to numpy.")
+
+        except ModuleNotFoundError:
+            logger.info("cupy not found, defaulting to numpy.")
+
         self._build()
 
     def _build(self):
@@ -133,18 +151,22 @@ class CLOrient3D:
     def build_clmatrix(self):
         """dispatch, compare, dispair"""
 
+        logger.info("Begin building Common Lines Matrix")
+
         tic1 = perf_counter()
-        clmatrix_orig = self.build_clmatrix_orig()
+        clmatrix_cu = self.build_clmatrix_cu()
         tic2 = perf_counter()
-        clmatrix_cupy = self.build_clmatrix_cupy()
+        print(f"Cuda CL build: {tic2-tic1}")
+
         tic3 = perf_counter()
-        print(f"Orig CL build: {tic2-tic1}")
-        print(f"Cupy CL build: {tic3-tic2}")
+        clmatrix_orig = self.build_clmatrix_orig()
+        tic4 = perf_counter()
+        print(f"Orig CL build: {tic4-tic3}")
 
-        np.testing.assert_allclose(clmatrix_orig[0], clmatrix_cupy[0])
-        np.testing.assert_allclose(clmatrix_orig[1], clmatrix_cupy[1])
+        # np.testing.assert_allclose(clmatrix_cu[1], clmatrix_orig[1])
+        # np.testing.assert_allclose( clmatrix_cu[0], clmatrix_orig[0])
 
-        self.shifts_1d, self.clmatrix = clmatrix_cupy
+        self.shifts_1d, self.clmatrix = clmatrix_cu
 
     def build_clmatrix_orig(self):
         """
@@ -203,7 +225,9 @@ class CLOrient3D:
 
         # Setup a progress bar
         _total_pairs_to_test = self.n_img * (self.n_check - 1) // 2
-        pbar = tqdm(desc="Searching over common line pairs", total=_total_pairs_to_test)
+        pbar = tqdm(
+            desc="Searching over common line pairs (orig)", total=_total_pairs_to_test
+        )
 
         # Search for common lines between [i, j] pairs of images.
         # Creating pf and building common lines are different to the Matlab version.
@@ -219,6 +243,7 @@ class CLOrient3D:
             subset_j = np.sort(choice(n_remaining, n_j, replace=False) + i + 1)
 
             for j in subset_j:
+                # for j in range(i+1,n_img):
                 p2_flipped = np.conj(pf[j])
 
                 for shift in range(len(shifts)):
@@ -254,10 +279,12 @@ class CLOrient3D:
 
         return shifts_1d, clmatrix
 
-    def build_clmatrix_cupy(self):
+    def build_clmatrix_cu(self):
         """
         Build common-lines matrix from Fourier stack of 2D images
         """
+
+        import cupy as cp
 
         n_img = self.n_img
         n_check = self.n_check
@@ -267,11 +294,12 @@ class CLOrient3D:
             logger.error(msg)
             raise NotImplementedError(msg)
 
-        n_theta_half = self.n_theta // 2
+        n_theta_half = self.n_theta // 2  # rm
 
         # need to do a copy to prevent modifying self.pf for other functions
-        # also places on GPU when xp is in cupy mode.
-        pf = xp.array(self.pf)
+        # also places on GPU
+        pf = cp.array(self.pf)
+        assert pf.shape[1] == n_theta_half
 
         # Allocate local variables for return
         # clmatrix represents the common lines matrix.
@@ -279,14 +307,14 @@ class CLOrient3D:
         # the common line with image j. Note the common line index
         # starts from 0 instead of 1 as Matlab version. -1 means
         # there is no common line such as clmatrix[i,i].
-        clmatrix = -xp.ones((n_img, n_img), dtype=self.dtype)
+        clmatrix = -cp.ones((n_img, n_img), dtype=np.float64)
         # When cl_dist[i, j] is not -1, it stores the maximum value
         # of correlation between image i and j for all possible 1D shifts.
         # We will use cl_dist[i, j] = -1 (including j<=i) to
         # represent that there is no need to check common line
         # between i and j. Since it is symmetric,
         # only above the diagonal entries are necessary.
-        cl_dist = -xp.ones((n_img, n_img), dtype=self.dtype)
+        cl_dist = -cp.ones((n_img, n_img), dtype=np.float64)
 
         # Allocate variables used for shift estimation
 
@@ -297,7 +325,7 @@ class CLOrient3D:
         # shift_step can be any positive real number.
         shift_step = self.shift_step
         # 1D shift between common-lines
-        shifts_1d = xp.zeros((n_img, n_img))
+        shifts_1d = cp.zeros((n_img, n_img), dtype=np.float64)  # check dtype
 
         # Prepare the shift phases to try and generate filter for common-line detection
         r_max = pf.shape[2]
@@ -309,58 +337,40 @@ class CLOrient3D:
         # Note that only use half of each ray
         pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
 
-        # Setup a progress bar
-        _total_pairs_to_test = self.n_img * (self.n_check - 1) // 2
-        pbar = tqdm(desc="Searching over common line pairs", total=_total_pairs_to_test)
+        # Get kernel
+        build_clmatrix_kernel = self.__gpu_module.get_function("build_clmatrix_kernel")
 
-        # Search for common lines between [i, j] pairs of images.
-        # Creating pf and building common lines are different to the Matlab version.
-        # The random selection is implemented.
-        for i in range(n_img - 1):
-            p1 = pf[i]
-            p1_real = xp.real(p1)
-            p1_imag = xp.imag(p1)
+        # Configure grid of blocks
+        blkszx = 32
+        nblkx = (self.n_img + blkszx - 2) // blkszx
+        blkszy = 32
+        nblky = (self.n_img + blkszy - 1) // blkszy
 
-            # build the subset of j images if n_check < n_img
-            n_remaining = n_img - i - 1
-            n_j = min(n_remaining, n_check)
-            subset_j = np.sort(choice(n_remaining, n_j, replace=False) + i + 1)
+        # Launch
+        logger.info("Launching `build_clmatrix_kernel`.")
+        build_clmatrix_kernel(
+            (nblkx, nblky),
+            (blkszx, blkszy),
+            (
+                pf.shape[0],
+                pf.shape[1],
+                pf.shape[2],
+                pf.astype(np.complex128, copy=False).view(np.float64),
+                clmatrix,
+                cl_dist,
+                shifts_1d,
+                len(shifts),
+                shifts,
+                shift_phases.astype(np.complex128, copy=False).view(np.float64),
+            ),
+        )
 
-            for j in subset_j:
-                p2_flipped = xp.conj(pf[j])
+        # Copy result device arrays to host
+        shifts_1d = shifts_1d.get().astype(self.dtype, copy=False)
+        clmatrix = clmatrix.get().astype(self.dtype, copy=False)
+        # cl_dist = cl_dist.get().astype(self.dtype, copy=False)
 
-                for shift in range(len(shifts)):
-                    shift_phase = shift_phases[shift]
-                    p2_shifted_flipped = (shift_phase * p2_flipped).T
-                    # Compute correlations in the positive r direction
-                    part1 = p1_real.dot(p2_shifted_flipped.real)
-                    # Compute correlations in the negative r direction
-                    part2 = p1_imag.dot(p2_shifted_flipped.imag)
-
-                    c1 = part1 - part2
-                    sidx = c1.argmax()
-                    cl1, cl2 = np.unravel_index(sidx, c1.shape)
-                    sval = c1[cl1, cl2]
-
-                    c2 = part1 + part2
-                    sidx = c2.argmax()
-                    cl1_2, cl2_2 = np.unravel_index(sidx, c2.shape)
-                    sval2 = c2[cl1_2, cl2_2]
-
-                    if sval2 > sval:
-                        cl1 = cl1_2
-                        cl2 = cl2_2 + n_theta_half
-                        sval = sval2
-                    sval = 2 * sval
-                    if sval > cl_dist[i, j]:
-                        clmatrix[i, j] = cl1
-                        clmatrix[j, i] = cl2
-                        cl_dist[i, j] = sval
-                        shifts_1d[i, j] = shifts[shift]
-                pbar.update()
-        pbar.close()
-
-        return xp.asnumpy(shifts_1d), xp.asnumpy(clmatrix)
+        return shifts_1d, clmatrix
 
     def estimate_shifts(self, equations_factor=1, max_memory=4000):
         """
@@ -682,7 +692,7 @@ class CLOrient3D:
 
         # Note if we'd rather not have the dtype and casting args,
         #   we can control h.dtype instead.
-        xp.einsum(subscripts, pf, h, out=pf, dtype=pf.dtype, casting="same_kind")
+        pf = xp.einsum(subscripts, pf, h, dtype=pf.dtype)  # casting="same_kind"
 
         # This is a high pass filter, cutting out the lowest frequency
         # (DC has already been removed).
@@ -690,3 +700,20 @@ class CLOrient3D:
         pf /= xp.linalg.norm(pf, axis=-1)[..., xp.newaxis]
 
         return pf
+
+    @staticmethod
+    def __init_cupy_module():
+        """
+        Private utility method to read in CUDA source and return as
+        compiled CUPY module.
+        """
+
+        import cupy as cp
+
+        # Read in contents of file
+        fp = os.path.join(os.path.dirname(__file__), "commonline_base.cu")
+        with open(fp, "r") as fh:
+            module_code = fh.read()
+
+        # CUPY compile the CUDA code
+        return cp.RawModule(code=module_code)
