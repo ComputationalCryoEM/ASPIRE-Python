@@ -163,7 +163,7 @@ class CLOrient3D:
         tic4 = perf_counter()
         print(f"Orig CL build: {tic4-tic3}")
 
-        # np.testing.assert_allclose(clmatrix_cu[1], clmatrix_orig[1])
+        np.testing.assert_allclose(clmatrix_cu[1], clmatrix_orig[1])
         # np.testing.assert_allclose( clmatrix_cu[0], clmatrix_orig[0])
 
         self.shifts_1d, self.clmatrix = clmatrix_cu
@@ -243,7 +243,7 @@ class CLOrient3D:
             subset_j = np.sort(choice(n_remaining, n_j, replace=False) + i + 1)
 
             for j in subset_j:
-                # for j in range(i+1,n_img):
+                # for j in range(i+1,n_img):  # for testing, rm later
                 p2_flipped = np.conj(pf[j])
 
                 for shift in range(len(shifts)):
@@ -299,7 +299,6 @@ class CLOrient3D:
         # need to do a copy to prevent modifying self.pf for other functions
         # also places on GPU
         pf = cp.array(self.pf)
-        assert pf.shape[1] == n_theta_half
 
         # Allocate local variables for return
         # clmatrix represents the common lines matrix.
@@ -342,7 +341,7 @@ class CLOrient3D:
 
         # Configure grid of blocks
         blkszx = 32
-        nblkx = (self.n_img + blkszx - 2) // blkszx
+        nblkx = (self.n_img + blkszx - 2) // blkszx  # n_img-1
         blkszy = 32
         nblky = (self.n_img + blkszy - 1) // blkszy
 
@@ -368,7 +367,7 @@ class CLOrient3D:
         # Copy result device arrays to host
         shifts_1d = shifts_1d.get().astype(self.dtype, copy=False)
         clmatrix = clmatrix.get().astype(self.dtype, copy=False)
-        # cl_dist = cl_dist.get().astype(self.dtype, copy=False)
+        cl_dist = cl_dist.get().astype(self.dtype, copy=False)  # diagnostic
 
         return shifts_1d, clmatrix
 
