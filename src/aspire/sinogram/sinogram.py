@@ -105,9 +105,12 @@ class Sinogram:
         Back Projection Method for a single stack of lines.
 
         :param angles: np.ndarray
-            1D array of angles in radians. Each entry in the array corresponds to a different number of angles which are used to reconstruct the image.
-        :return: Aspire Image
-            An Image object containing the original stack size with a newly reconstructed numpy array of the images. Expected return shape should be (n_images, n_angles, n_radial_points)
+            1D array of angles in radians. Each entry in the array
+            corresponds to a different number of angles which are used to
+            reconstruct the image.
+        :return: An Image object containing the original stack size
+            with a newly reconstructed numpy array of the images.
+            Expected return shape should be (..., n_radial_points, n_radial_points)
         """
         if len(angles) != self.n_angles:
             raise ValueError("Number of angles must match the number of projections.")
