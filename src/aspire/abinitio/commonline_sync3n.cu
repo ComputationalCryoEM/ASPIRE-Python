@@ -1,5 +1,5 @@
 
-/* from i,j indoces to the common index in the N-choose-2 sized array */
+/* from i,j indices to the common index in the N-choose-2 sized array */
 #define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2 + J-I-1)
 
 
