@@ -42,10 +42,10 @@ void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, do
         /* inner most dim of dot (matmul) */
         for(k=0; k<r; k++){
           /* factor */
-          p1_realk = pf[2*(i*m*r + cl1*r + k)];
-          p1_imagk = pf[2*(i*m*r + cl1*r + k) + 1];
-          p2conj_realk =  pf[2*(j*m*r + cl2*r + k)];
-          p2conj_imagk = -pf[2*(j*m*r + cl2*r + k) + 1];
+          p1_realk = pf[2*(k*m*n + cl1*n + i)];
+          p1_imagk = pf[2*(k*m*n + cl1*n + i) + 1];
+          p2conj_realk =  pf[2*(k*m*n + cl2*n + j)];
+          p2conj_imagk = -pf[2*(k*m*n + cl2*n + j) + 1];
           shift_phases_real = shift_phases[2*(s*r + k)];
           shift_phases_imag = shift_phases[2*(s*r + k) +1];
           p2_realk = (p2conj_realk * shift_phases_real) - (p2conj_imagk*shift_phases_imag);
