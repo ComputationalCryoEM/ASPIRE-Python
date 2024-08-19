@@ -354,7 +354,7 @@ class CLOrient3D:
                 pf.shape[0],
                 pf.shape[1],
                 pf.shape[2],
-                pf.astype(np.complex128, copy=False).view(np.float64),
+                cp.ascontiguousarray(pf.T, dtype=np.complex128).view(np.float64),
                 clmatrix,
                 cl_dist,
                 shifts_1d,
