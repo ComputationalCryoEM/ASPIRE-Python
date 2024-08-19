@@ -4,7 +4,7 @@ void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, do
 {
   /* n n_img */
   /* m,r st (n, m, r) = pf.shape, ie len(pf[i])  */
-     
+
   /* thread index (1d), represents "i" index */
   unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
   unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
@@ -25,10 +25,10 @@ void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, do
 
   double p1_realk, p1_imagk;
   double p2conj_realk, p2conj_imagk;
-  double p2_realk, p2_imagk;  
+  double p2_realk, p2_imagk;
   double shift_phases_real, shift_phases_imag;
 
-  
+
   best_s = -99999;
   best_cl1 = -1;
   best_cl2 = -1;
@@ -71,9 +71,10 @@ void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, do
           best_s = s;
         }
 
-      } /* cl2 */
-    }/* cl1 */
-  } /* s */
+      } /* s */
+    } /* cl2 */
+  }/* cl1 */
+
 
   /* update global best for i, j*/
   ind = i*n + j;
@@ -81,5 +82,5 @@ void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, do
   clmatrix[j*n+i] = best_cl2;  /* [j,i] */
   cl_dist[ind] = 2*best_cl_dist;  // 2 of mystery
   shifts_1d[ind] = shifts[best_s];
-  
-}  
+
+}
