@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class Sinogram:
-    def __init__(self, data, dtype=np.float64):
+    def __init__(self, data, dtype=None):
         """
         Initialize a Sinogram Object. This is a stack of one or more line projections or sinograms.
 
-        The stack can be multidimensional with 'n' equal to the product
+        The stack can be multidimensional with 'self.n' equal to the product
         of the stack dimensions. Singletons will be expanded into a stack
         with one entry.
 
@@ -22,14 +22,21 @@ class Sinogram:
             `(..., angles, radial points)`.
         :param dtype: Optionally cast `data` to this dtype.
             Defaults to `data.dtype`.
+
+        :return: Sinogram instance holding `data`.
         """
-        self.dtype = np.dtype(dtype)
+        if dtype is None:
+            self.dtype = data.dtype
+        else:
+            self.dtype = np.dtype(dtype)
+
         if data.ndim == 2:
             data = data[np.newaxis, :, :]
         if data.ndim < 3:
             raise ValueError(
                 f"Invalid data shape: {data.shape}. Expected shape: (..., angles, radial_points), where '...' is the stack number."
             )
+
         self._data = data.astype(self.dtype, copy=False)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
@@ -64,7 +71,7 @@ class Sinogram:
 
         :*args: Integer(s) or tuple describing the intended shape.
 
-        :returns: Sinogram instance
+        :return: Sinogram instance
         """
 
         # If we're passed a tuple, use that
@@ -98,7 +105,13 @@ class Sinogram:
         return self.__class__(self._data.copy())
 
     def __str__(self):
-        return f"Sinogram(n_images = {self.n}, n_angles = {self.n_points}, n_radial_points = {self.n_radial_points})"
+        return f"Sinogram(n_images = {self.n}, n_angles = {self.n_angles}, n_radial_points = {self.n_radial_points})"
+
+    def __repr__(self):
+        msg = f"Sinogram: {self.n} images of dtype {self.dtype}, "
+        msg += f"arranged as a stack with shape {self.stack_shape}. "
+        msg += f"Each image has {self.n_angles} angles and {self.n_radial_points} radial points."
+        return msg
 
     def backproject(self, angles):
         """
@@ -106,7 +119,7 @@ class Sinogram:
 
         :param angles: np.ndarray
             1D array of angles in radians. Each entry in the array
-            corresponds to a different number of angles which are used to
+            corresponds to different angles which are used to
             reconstruct the image.
         :return: An Image object containing the original stack size
             with a newly reconstructed numpy array of the images.
@@ -138,6 +151,5 @@ class Sinogram:
             real=True,
         ).reshape(self.n, L, L)
 
-        # normalization which gives us roughly the same error regardless of angles
         imgs = imgs / (self.n_radial_points * len(angles))
         return aspire.image.Image(xp.asnumpy(imgs)).stack_reshape(original_stack_shape)
