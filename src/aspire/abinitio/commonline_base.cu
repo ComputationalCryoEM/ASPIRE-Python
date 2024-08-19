@@ -1,6 +1,7 @@
+#include <cupy/complex.cuh>
 
 extern "C" __global__
-void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, double* cl_dist, double* shifts_1d, int n_shifts, int* shifts,  double* shift_phases)
+void build_clmatrix_kernel(int n, int m, int r, const complex<double>* __restrict__ pf, double* __restrict__ clmatrix, double* __restrict__  cl_dist, double* __restrict__ shifts_1d, int n_shifts, int* __restrict__ shifts,  const complex<double>* __restrict__ shift_phases)
 {
   /* n n_img */
   /* m,r st (n, m, r) = pf.shape, ie len(pf[i])  */
@@ -22,12 +23,7 @@ void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, do
   int best_cl1, best_cl2, best_s;
   double dist, best_cl_dist;
   double p1, p2;
-
-  double p1_realk, p1_imagk;
-  double p2conj_realk, p2conj_imagk;
-  double p2_realk, p2_imagk;
-  double shift_phases_real, shift_phases_imag;
-
+  complex<double> pfik, pfjk;
 
   best_s = -99999;
   best_cl1 = -1;
@@ -41,18 +37,10 @@ void build_clmatrix_kernel(int n, int m, int r, double* pf, double* clmatrix, do
         p2 = 0;
         /* inner most dim of dot (matmul) */
         for(k=0; k<r; k++){
-          /* factor */
-          p1_realk = pf[2*(k*m*n + cl1*n + i)];
-          p1_imagk = pf[2*(k*m*n + cl1*n + i) + 1];
-          p2conj_realk =  pf[2*(k*m*n + cl2*n + j)];
-          p2conj_imagk = -pf[2*(k*m*n + cl2*n + j) + 1];
-          shift_phases_real = shift_phases[2*(s*r + k)];
-          shift_phases_imag = shift_phases[2*(s*r + k) +1];
-          p2_realk = (p2conj_realk * shift_phases_real) - (p2conj_imagk*shift_phases_imag);
-          p2_imagk = (p2conj_imagk * shift_phases_real) + (p2conj_realk*shift_phases_imag);
-          p1 += p1_realk * p2_realk;
-          p2 += p1_imagk * p2_imagk;
-
+          pfik = pf[k*m*n + cl1*n + i];
+          pfjk = conj(pf[k*m*n + cl2*n + j]) * shift_phases[s*r + k];
+          p1 += real(pfik) * real(pfjk);
+          p2 += imag(pfik) * imag(pfjk);
         }
 
         dist = p1 - p2;

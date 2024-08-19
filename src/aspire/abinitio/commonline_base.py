@@ -294,8 +294,6 @@ class CLOrient3D:
             logger.error(msg)
             raise NotImplementedError(msg)
 
-        n_theta_half = self.n_theta // 2  # rm
-
         # need to do a copy to prevent modifying self.pf for other functions
         # also places on GPU
         pf = cp.array(self.pf)
@@ -335,6 +333,8 @@ class CLOrient3D:
         # Apply bandpass filter, normalize each ray of each image
         # Note that only use half of each ray
         pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
+        # Tranpose `pf` for better (CUDA) memory access pattern, and cast as needed.
+        pf = cp.ascontiguousarray(pf.T, dtype=np.complex128)
 
         # Get kernel
         build_clmatrix_kernel = self.__gpu_module.get_function("build_clmatrix_kernel")
@@ -351,16 +351,16 @@ class CLOrient3D:
             (nblkx, nblky),
             (blkszx, blkszy),
             (
-                pf.shape[0],
+                n_img,
                 pf.shape[1],
-                pf.shape[2],
-                cp.ascontiguousarray(pf.T, dtype=np.complex128).view(np.float64),
+                r_max,
+                pf,
                 clmatrix,
                 cl_dist,
                 shifts_1d,
                 len(shifts),
                 shifts,
-                shift_phases.astype(np.complex128, copy=False).view(np.float64),
+                shift_phases.astype(np.complex128, copy=False),
             ),
         )
 
