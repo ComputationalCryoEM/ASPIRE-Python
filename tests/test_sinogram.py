@@ -62,7 +62,7 @@ def masked_image(dtype, img_size):
     Creates a masked image fixture using camera data from Scikit-Image.
     """
     g = grid_2d(img_size, normalized=True, shifted=True)
-    mask = g["r"] < 1
+    mask = g["r"] < 0.99
 
     image = data.camera().astype(dtype)
     image = image[:img_size, :img_size]
@@ -236,3 +236,33 @@ def test_backproject_multidim(num_ang):
     np.testing.assert_array_less(
         nrmse, SK_TOL_BACKPROJECT, err_msg="Error with the reconstructed images."
     )
+
+
+# testing the str method
+def test_sinogram_str_method(masked_image, num_ang):
+    angles = np.linspace(0, 360, num_ang, endpoint=False)
+    rads = angles / 180 * np.pi
+    sinogram = masked_image.project(rads)
+    n_images = sinogram.n
+    n_angles = sinogram.n_angles
+    n_radial_points = sinogram.n_radial_points
+    expected_str = f"Sinogram(n_images = {n_images}, n_angles = {n_angles}, n_radial_points = {n_radial_points})"
+    assert str(sinogram) == expected_str
+
+
+# testing the repr method
+def test_sinogram_repr_method(masked_image, num_ang):
+    angles = np.linspace(0, 360, num_ang, endpoint=False)
+    rads = angles / 180 * np.pi
+    sinogram = masked_image.project(rads)
+    n_images = sinogram.n
+    dtype = sinogram.dtype
+    stack_shape = sinogram.stack_shape
+    n_angles = sinogram.n_angles
+    n_radial_points = sinogram.n_radial_points
+    expected_repr = (
+        f"Sinogram: {n_images} images of dtype {dtype}, "
+        f"arranged as a stack with shape {stack_shape}. "
+        f"Each image has {n_angles} angles and {n_radial_points} radial points."
+    )
+    assert repr(sinogram) == expected_repr
