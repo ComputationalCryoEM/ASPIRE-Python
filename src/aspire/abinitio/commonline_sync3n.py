@@ -108,7 +108,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             )
 
         # Auto configure GPU
-        self._gpu_module = None
+        self.__gpu_module = None
         try:
             import cupy as cp
 
@@ -117,7 +117,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 logger.info(
                     f"cupy and GPU {gpu_id} found by cuda runtime; enabling cupy."
                 )
-                self._gpu_module = self._init_cupy_module()
+                self.__gpu_module = self.__init_cupy_module()
             else:
                 logger.info("GPU not found, defaulting to numpy.")
 
@@ -360,7 +360,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         """
 
         # host/gpu dispatch
-        if self._gpu_module:
+        if self.__gpu_module:
             scores_hist = self._triangle_scores_inner_cupy(Rijs)
         else:
             scores_hist = self._triangle_scores_inner_host(Rijs)
@@ -460,7 +460,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         import cupy as cp
 
-        triangle_scores = self._gpu_module.get_function("triangle_scores_inner")
+        triangle_scores = self.__gpu_module.get_function("triangle_scores_inner")
 
         Rijs_dev = cp.array(Rijs, dtype=np.float64)
 
@@ -511,7 +511,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         params = np.array([P2, A, a, B, b, x0], dtype=np.float64)
 
         # host/gpu dispatch
-        if self._gpu_module:
+        if self.__gpu_module:
             ln_f_ind, ln_f_arb = self._pairs_probabilities_cupy(Rijs, *params)
         else:
             ln_f_ind, ln_f_arb = self._pairs_probabilities_host(Rijs, *params)
@@ -625,7 +625,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         import cupy as cp
 
-        pairs_probabilities = self._gpu_module.get_function("pairs_probabilities")
+        pairs_probabilities = self.__gpu_module.get_function("pairs_probabilities")
 
         Rijs_dev = cp.array(Rijs, dtype=np.float64)
         ln_f_ind_dev = cp.zeros((self.n_img * (self.n_img - 1) // 2), dtype=np.float64)
@@ -886,7 +886,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :return: New candidate eigenvector.
         """
         # host/gpu dispatch
-        if self._gpu_module:
+        if self.__gpu_module:
             new_vec = self._signs_times_v_cupy(Rijs, vec)
         else:
             new_vec = self._signs_times_v_host(Rijs, vec)
@@ -979,7 +979,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         """
         import cupy as cp
 
-        signs_times_v = self._gpu_module.get_function("signs_times_v")
+        signs_times_v = self.__gpu_module.get_function("signs_times_v")
 
         Rijs_dev = cp.array(Rijs, dtype=np.float64)
         vec_dev = cp.array(vec, dtype=np.float64)
@@ -1000,7 +1000,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         return new_vec
 
     @staticmethod
-    def _init_cupy_module():
+    def __init_cupy_module():
         """
         Private utility method to read in CUDA source and return as
         compiled CUPY module.
