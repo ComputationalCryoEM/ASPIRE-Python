@@ -153,22 +153,16 @@ class CLOrient3D:
 
         logger.info("Begin building Common Lines Matrix")
 
-        tic1 = perf_counter()
-        clmatrix_cu = self.build_clmatrix_cu()
-        tic2 = perf_counter()
-        print(f"Cuda CL build: {tic2-tic1}")
+        # host/gpu dispatch
+        if self.__gpu_module:
+            res = self.build_clmatrix_cu()
+        else:
+            res = self.build_clmatrix_host()
 
-        tic3 = perf_counter()
-        clmatrix_orig = self.build_clmatrix_orig()
-        tic4 = perf_counter()
-        print(f"Orig CL build: {tic4-tic3}")
+        # Unpack result
+        self.shifts_1d, self.clmatrix = res
 
-        np.testing.assert_allclose(clmatrix_cu[1], clmatrix_orig[1])
-        # np.testing.assert_allclose( clmatrix_cu[0], clmatrix_orig[0])
-
-        self.shifts_1d, self.clmatrix = clmatrix_cu
-
-    def build_clmatrix_orig(self):
+    def build_clmatrix_host(self):
         """
         Build common-lines matrix from Fourier stack of 2D images
         """
@@ -217,11 +211,10 @@ class CLOrient3D:
         shifts, shift_phases, h = self._generate_shift_phase_and_filter(
             r_max, max_shift, shift_step
         )
-        shifts, shift_phases = xp.asnumpy(shifts), xp.asnumpy(shift_phases)
 
         # Apply bandpass filter, normalize each ray of each image
         # Note that only use half of each ray
-        pf = xp.asnumpy(self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h))
+        pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
 
         # Setup a progress bar
         _total_pairs_to_test = self.n_img * (self.n_check - 1) // 2
@@ -329,6 +322,9 @@ class CLOrient3D:
         shifts, shift_phases, h = self._generate_shift_phase_and_filter(
             r_max, max_shift, shift_step
         )
+        # Transfer to device, dtypes must match kernel header.
+        shifts = cp.asarray(shifts, dtype=np.float64)
+        shift_phases = cp.asarray(shift_phases, dtype=np.complex128)
 
         # Apply bandpass filter, normalize each ray of each image
         # Note that only use half of each ray
@@ -360,7 +356,7 @@ class CLOrient3D:
                 shifts_1d,
                 len(shifts),
                 shifts,
-                shift_phases.astype(np.complex128, copy=False),
+                shift_phases,
             ),
         )
 
@@ -623,13 +619,13 @@ class CLOrient3D:
         n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
 
         # only half of ray, excluding the DC component.
-        rk = xp.arange(1, r_max + 1)
+        rk = np.arange(1, r_max + 1, dtype=self.dtype)
 
         # Generate all shift phases
-        shifts = -max_shift + shift_step * xp.arange(n_shifts)
-        shift_phases = xp.exp(xp.outer(shifts, -2 * xp.pi * 1j * rk / (2 * r_max + 1)))
+        shifts = -max_shift + shift_step * np.arange(n_shifts, dtype=self.dtype)
+        shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
         # Set filter for common-line detection
-        h = xp.sqrt(xp.abs(rk)) * xp.exp(-xp.square(rk) / (2 * (r_max / 4) ** 2))
+        h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
 
         return shifts, shift_phases, h
 
@@ -691,12 +687,12 @@ class CLOrient3D:
 
         # Note if we'd rather not have the dtype and casting args,
         #   we can control h.dtype instead.
-        pf = xp.einsum(subscripts, pf, h, dtype=pf.dtype)  # casting="same_kind"
+        pf = np.einsum(subscripts, pf, h, dtype=pf.dtype)
 
         # This is a high pass filter, cutting out the lowest frequency
         # (DC has already been removed).
         pf[..., 0] = 0
-        pf /= xp.linalg.norm(pf, axis=-1)[..., xp.newaxis]
+        pf /= np.linalg.norm(pf, axis=-1)[..., np.newaxis]
 
         return pf
 
