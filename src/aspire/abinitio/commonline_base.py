@@ -1,7 +1,6 @@
 import logging
 import math
 import os
-from time import perf_counter
 
 import numpy as np
 import scipy.sparse as sparse
@@ -280,7 +279,6 @@ class CLOrient3D:
         import cupy as cp
 
         n_img = self.n_img
-        n_check = self.n_check
 
         if self.n_theta % 2 == 1:
             msg = "n_theta must be even"
