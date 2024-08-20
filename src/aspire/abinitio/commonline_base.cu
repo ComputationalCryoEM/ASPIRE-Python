@@ -1,7 +1,7 @@
 #include <cupy/complex.cuh>
 
 extern "C" __global__
-void build_clmatrix_kernel(int n, int m, int r, const complex<double>* __restrict__ pf, double* __restrict__ clmatrix, double* __restrict__  cl_dist, double* __restrict__ shifts_1d, int n_shifts, int* __restrict__ shifts,  const complex<double>* __restrict__ shift_phases)
+void build_clmatrix_kernel(int n, int m, int r, const complex<double>* __restrict__ pf, double* __restrict__ clmatrix, double* __restrict__  cl_dist, double* __restrict__ shifts_1d, int n_shifts, double* __restrict__ shifts,  const complex<double>* __restrict__ shift_phases)
 {
   /* n n_img */
   /* m,r st (n, m, r) = pf.shape, ie len(pf[i])  */
