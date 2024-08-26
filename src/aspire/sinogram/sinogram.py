@@ -115,7 +115,7 @@ class Sinogram:
 
     def backproject(self, angles):
         """
-        Back Projection Method for a single stack of lines.
+        Backprojection method for a single stack of lines.
 
         :param angles: np.ndarray
             1D array of angles in radians. Each entry in the array
