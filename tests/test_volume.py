@@ -589,7 +589,7 @@ def test_downsample(res):
     # Confirm the pixel size is scaled
     np.testing.assert_approx_equal(
         result.pixel_size,
-        vols.pixel_size * res / ds_res,
+        vols.pixel_size * og_res / ds_res,
         err_msg="Incorrect pixel size.",
     )
 
