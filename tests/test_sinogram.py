@@ -88,12 +88,13 @@ def test_project_single(masked_image, num_ang):
     # the original author of this method.
     #
     # Note, transpose sk output to match (angles, points)
-    reference_sinogram = radon(masked_image._data[0], theta=angles[::-1]).T
+    # Note, `radon` does not admit read only views, so the slice is copied.
+    reference_sinogram = radon(masked_image.asnumpy()[0].copy(), theta=angles[::-1]).T
     assert reference_sinogram.shape == (len(angles), ny), "Incorrect Shape"
 
     # compare project method on ski-image reference
     nrms = np.sqrt(
-        np.mean((s[0]._data - reference_sinogram) ** 2, axis=-1)
+        np.mean((s[0].asnumpy() - reference_sinogram) ** 2, axis=-1)
     ) / np.linalg.norm(reference_sinogram, axis=-1)
 
     np.testing.assert_array_less(
@@ -134,7 +135,10 @@ def test_project_multidim(num_ang):
             np.testing.assert_allclose(s[i, j : j + 1], single_sinogram)
 
             # Next individually compute sk's radon transform for each image.
-            reference_sinograms[i, j] = radon(img._data[0], theta=angles[::-1]).T
+            # Note, `radon` does not admit read only views, so the slice is copied.
+            reference_sinograms[i, j] = radon(
+                img.asnumpy()[0].copy(), theta=angles[::-1]
+            ).T
 
     _nrms = np.sqrt(np.mean((s - reference_sinograms) ** 2, axis=-1)) / np.linalg.norm(
         reference_sinograms, axis=-1
