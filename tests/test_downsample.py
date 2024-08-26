@@ -162,6 +162,7 @@ def test_downsample_project(volume, res_ds):
         tol = 1e-09
     np.testing.assert_allclose(im_ds_proj, im_proj_ds, atol=tol)
 
+
 def test_pixel_size():
     """
     Test downsampling is rescaling the `pixel_size` attribute.
@@ -182,4 +183,3 @@ def test_pixel_size():
         img.pixel_size * L / dsL,
         err_msg="Incorrect pixel size.",
     )
-
