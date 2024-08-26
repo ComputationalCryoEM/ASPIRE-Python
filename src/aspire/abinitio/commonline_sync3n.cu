@@ -413,3 +413,20 @@ void triangle_scores_inner(int n, double* Rijs, int n_intervals, unsigned int* s
 
   return;
 };
+
+extern "C" __global__
+void estimate_all_Rijs(int n,double* __restrict__ clmatrix)
+{
+  /* n n_img */
+
+  /* thread index (2d), represents "i" index, "j" index */
+  unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+  unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
+
+  /* no-op when out of bounds */
+  if(i >= n) return;
+  if(j >= n) return;
+  /* no-op lower triangle */
+  if(j <= i) return;
+
+}

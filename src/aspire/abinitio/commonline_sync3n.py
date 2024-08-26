@@ -823,6 +823,28 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :param clmatrix: Common lines matrix
         :return: Estimated rotations
         """
+        # host/gpu dispatch
+        if self.__gpu_module:
+            res = self._estimate_all_Rijs_cupy(Rijs)
+        else:
+            res = self._estimate_all_Rijs_host(Rijs)
+        
+        return res
+        
+    def _estimate_all_Rijs_cupy(self, clmatrix):
+        import cupy as cp
+
+        estimate_all_Rijs = self.__gpu_module.get_function("estimate_all_Rijs")
+        
+        return
+
+    def _estimate_all_Rijs_host(self, clmatrix):
+        """
+        Estimate Rijs using the voting method.
+
+        :param clmatrix: Common lines matrix
+        :return: Estimated rotations
+        """        
         n_img = self.n_img
         n_theta = self.n_theta
         Rijs = np.zeros((len(self._pairs), 3, 3))
