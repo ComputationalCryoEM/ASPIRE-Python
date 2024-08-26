@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 # dtype fixture to pass into volume fixture.
 DTYPES = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
 
+# Pixel sized used to test assignment
+PXSZ = 3.0
+
 
 @pytest.fixture(params=DTYPES)
 def dtype_fixture(request):
@@ -87,7 +90,7 @@ def vol_fixture(request, dtype_fixture):
 
     # Assign some volumes a pixel_size, leave others as default.
     if res % 2:
-        vol_kwargs["pixel_size"] = 3.0
+        vol_kwargs["pixel_size"] = PXSZ
 
     return vol_class(**vol_kwargs)
 
@@ -108,7 +111,7 @@ def test_volume_generate(vol_fixture):
 
     # In vol_fixture, we assign pixel_size to volumes having odd voxel sizes.
     if vol_fixture.L % 2:
-        assert v.pixel_size == 3
+        np.testing.assert_approx_equal(v.pixel_size, PXSZ)
 
 
 def test_simulation_init(vol_fixture):
