@@ -506,7 +506,7 @@ class Volume:
     def shift(self):
         raise NotImplementedError
 
-    def rotate(self, rot_matrices, zero_nyquist=False):
+    def rotate(self, rot_matrices, zero_nyquist=True):
         """
         Rotate volumes, within a fixed grid, by `rot_matrices`. If `rot_matrices` is a single
         rotation, each volume will be rotated by that rotation. If `rot_matrices` is a stack of
@@ -514,7 +514,7 @@ class Volume:
 
         :param rot_matrices: `Rotation` object of length 1 or n_vols.
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-            Defaults to zero_nyquist=False, keeping the Nyquist frequency.
+            Defaults to zero_nyquist=True, removing the Nyquist frequency.
 
         :return: `Volume` instance.
         """
