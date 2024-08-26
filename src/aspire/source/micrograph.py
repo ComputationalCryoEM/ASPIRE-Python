@@ -196,7 +196,7 @@ class DiskMicrographSource(MicrographSource):
         # Size will be checked during on-the-fly loading of subsequent micrographs.
         micrograph0 = Image.load(self.micrograph_files[0])
         if micrograph0.pixel_size is not None and micrograph0.pixel_size != pixel_size:
-            raise NotImplementedError(
+            raise ValueError(
                 f"Mismatched pixel size. {micrograph0.pixel_size} angstroms defined in {self.micrograph_files[0]}, but provided {pixel_size} angstroms."
             )
 
@@ -277,7 +277,7 @@ class DiskMicrographSource(MicrographSource):
                 micrograph.pixel_size is not None
                 and micrograph.pixel_size != self.pixel_size
             ):
-                raise NotImplementedError(
+                raise ValueError(
                     f"Mismatched pixel size. {micrograph.pixel_size} angstroms defined in {self.micrograph_files[ind]}, but provided {self.pixel_size} angstroms."
                 )
 
