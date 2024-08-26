@@ -531,7 +531,7 @@ class CLSymmetryD2(CLOrient3D):
         # First the map for i<j pairs for Ri and Rj in octant 1.
         n_pairs = np.count_nonzero(self.eq2eq_Rij_table_11)
         oct1_ij_map = np.zeros(
-            (self.n_inplane_rots**2 // 2, 2, n_pairs), dtype=np.int64
+            (n_pairs, self.n_inplane_rots**2 // 2, 2), dtype=np.int64
         )
         i_idx = np.repeat(np.arange(self.n_inplane_rots), self.n_inplane_rots // 2)
         j_idx = np.tile(np.arange(self.n_inplane_rots // 2), self.n_inplane_rots)
@@ -546,7 +546,7 @@ class CLSymmetryD2(CLOrient3D):
 
             for j in unique_pairs_i:
                 j_idx_plus_offset = j_idx + (j * self.n_inplane_rots)
-                oct1_ij_map[:, :, idx] = np.column_stack(
+                oct1_ij_map[idx] = np.column_stack(
                     (i_idx_plus_offset, j_idx_plus_offset)
                 )
                 idx += 1
@@ -554,7 +554,7 @@ class CLSymmetryD2(CLOrient3D):
         # Now the map for i<j pairs for Ri in octant 1 and Rj in octant 2.
         n_pairs_12 = np.count_nonzero(self.eq2eq_Rij_table_12)
         oct2_ij_map = np.zeros(
-            (self.n_inplane_rots**2 // 2, 2, n_pairs_12), dtype=np.int64
+            (n_pairs_12, self.n_inplane_rots**2 // 2, 2), dtype=np.int64
         )
         idx_vec = np.arange(n_rot_2)
         idx = 0
@@ -567,22 +567,19 @@ class CLSymmetryD2(CLOrient3D):
 
             for j in unique_pairs_i:
                 j_idx_plus_offset = j_idx + (j * self.n_inplane_rots)
-                oct2_ij_map[:, :, idx] = np.column_stack(
+                oct2_ij_map[idx] = np.column_stack(
                     (i_idx_plus_offset, j_idx_plus_offset)
                 )
                 idx += 1
 
-        tmp1 = oct1_ij_map[:, 0, :]
-        tmp2 = oct1_ij_map[:, 1, :]
-        self.oct1_ij_map = np.column_stack(
-            (tmp1.flatten(order="F"), tmp2.flatten(order="F"))
-        )
+        tmp1 = oct1_ij_map[:, :, 0].flatten()
+        tmp2 = oct1_ij_map[:, :, 1].flatten()
+        self.oct1_ij_map = np.column_stack((tmp1, tmp2))
 
-        tmp1 = oct2_ij_map[:, 0, :]
-        tmp2 = oct2_ij_map[:, 1, :]
-        self.oct2_ij_map = np.column_stack(
-            (tmp1.flatten(order="F"), tmp2.flatten(order="F"))
-        )
+        tmp1 = oct2_ij_map[:, :, 0].flatten()
+        tmp2 = oct2_ij_map[:, :, 1].flatten()
+        self.oct2_ij_map = np.column_stack((tmp1, tmp2))
+
 
     ##############################################
     # Compute Self-Commonline Correlation Scores #
