@@ -653,7 +653,7 @@ class CLSymmetryD2(CLOrient3D):
 
     def _all_eq_measures(self, corrs):
         """
-        Compute a measure of how much an image from data is close to an equator.
+        Compute a measure indicating how likely an image is an equator image.
 
         :param corrs: Correlation table of shape (n_theta // 2, n_theta).
 
