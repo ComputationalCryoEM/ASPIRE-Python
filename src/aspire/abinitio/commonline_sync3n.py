@@ -383,9 +383,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Initialize probability result arrays
         scores_hist = np.zeros(self.hist_intervals, dtype=np.uint32)
-        h = 1 / self.hist_intervals
 
         c = np.empty((4), dtype=Rijs.dtype)
+        s = np.empty((3), dtype=Rijs.dtype)
         for i in trange(self.n_img - 2, desc="Computing triangle scores"):
             for j in range(
                 i + 1, self.n_img - 1
@@ -427,28 +427,15 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                         alt_ij_ik = c[self._ALTS[1][best_i][2]]
 
                     # Compute scores
-                    s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
-                    s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
-                    s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
+                    s[0] = 1 - np.sqrt(best_val / alt_ij_jk)  # s_ij_jk
+                    s[1] = 1 - np.sqrt(best_val / alt_ik_jk)  # s_ik_jk
+                    s[2] = 1 - np.sqrt(best_val / alt_ij_ik)  # s_ij_ik
 
                     # Update histogram
-                    threshold = 0
-                    for _l1 in range(self.hist_intervals - 1):
-                        threshold += h
-                        if s_ij_jk < threshold:
-                            break
-
-                    threshold = 0
-                    for _l2 in range(self.hist_intervals - 1):
-                        threshold += h
-                        if s_ik_jk < threshold:
-                            break
-
-                    threshold = 0
-                    for _l3 in range(self.hist_intervals - 1):
-                        threshold += h
-                        if s_ij_ik < threshold:
-                            break
+                    # Find integer bin [0,self.hist_intervals)
+                    _l1, _l2, _l3 = np.minimum(
+                        (self.hist_intervals * s).astype(int),  # implicit floor
+                        self.hist_intervals-1)  # clamp upper bound
 
                     scores_hist[_l1] += 1
                     scores_hist[_l2] += 1
