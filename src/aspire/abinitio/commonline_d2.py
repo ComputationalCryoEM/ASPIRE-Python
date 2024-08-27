@@ -580,7 +580,6 @@ class CLSymmetryD2(CLOrient3D):
         tmp2 = oct2_ij_map[:, :, 1].flatten()
         self.oct2_ij_map = np.column_stack((tmp1, tmp2))
 
-
     ##############################################
     # Compute Self-Commonline Correlation Scores #
     ##############################################
@@ -751,7 +750,7 @@ class CLSymmetryD2(CLOrient3D):
             desc="Searching for commonlines between pairs of images", total=n_pairs
         )
 
-        # Vectorize over pairs of images
+        # For each i'th image compute the correlation with all j'th images, j > i.
         for i in range(self.n_img - 1):
             pf_i = self.pf_shifted[i]
             scores_i = self.scls_scores[i]
@@ -766,7 +765,6 @@ class CLSymmetryD2(CLOrient3D):
             corrs = np.max(corrs, axis=1)  # Max over shifts
 
             # Take the product over symmetrically induced candidates. Eq. 4.5 in paper.
-            # Vectorize extraction and processing of correlations
             prod_corrs = corrs[:, cl_idx[0], cl_idx[1]]
             prod_corrs = prod_corrs.reshape(n_pf_js, len(prod_corrs[0]) // 4, 4)
             prod_corrs = np.prod(prod_corrs, axis=2)
@@ -815,6 +813,16 @@ class CLSymmetryD2(CLOrient3D):
         return Rijs_est
 
     def _get_Rijs_from_oct(self, lin_idx, octant=1):
+        """
+        Calculate estimated relative rotations Rijs from the linear indices of
+        common-lines estimates from the search table. Rijs are generated from the
+        rotation grids from which the common-lines table was generated.
+
+        :param lin_idx: Set of linear indices corresponding to best estimate of Rijs.
+        :param octant: Octant of rotation grid from which the Rj rotation was selected
+             when generating the common-lines table.
+        :return: Estimated Rijs.
+        """
         if octant not in [1, 2]:
             raise ValueError("`octant` must be 1 or 2.")
 
@@ -1128,6 +1136,16 @@ class CLSymmetryD2(CLOrient3D):
         return cp, Rijs_rows
 
     def _match_colors(self, Rijs_rows):
+        """
+        Partition the set of matrices Rijs_rows, which correspond to a permutation of
+        the outer products of the m'th rows of Ri and Rj, into 3 sets of matrices each
+        corresponding to an m'th row. Returns the permutations which induce the partition.
+
+        :param Rijs_rows: An n_pairsx3x3x3 array of m'th row outer products for the pairs
+            Ri, Rj, where Rijs_rows[:, i] is the m'th row outer product of unknown row m.
+        :return: n_pairs length array corresponding to the permutation which color matches
+            Rijs_rows.
+        """
         Rijs_rows_t = np.transpose(Rijs_rows, (0, 1, 3, 2))
         trip_perms = np.array(
             [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]],
