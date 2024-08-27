@@ -277,7 +277,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     ):
         """
         Given relative rotations matrix `Rij`,
-        compute and return probability weights `P` for S.
+        compute and return probability weights `W` for S.
 
         Default parameters here were taken from those in the MATLAB
         code, with the original author noting they were found
