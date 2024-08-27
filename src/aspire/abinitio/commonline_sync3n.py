@@ -65,8 +65,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :param src: The source object of 2D denoised or class-averaged images with metadata
         :param n_rad: The number of points in the radial direction
         :param n_theta: The number of points in the theta direction
-        :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
-        :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
+        :param max_shift: Maximum range for shifts as a proportion of box size. Default = 0.15.
+        :param shift_step: Step size of shift estimation in pixels. Default = 1 pixel.
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param seed: Optional seed for RNG.
