@@ -57,6 +57,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         S_weighting=False,
         J_weighting=False,
         hist_intervals=100,
+        disable_gpu=False,
     ):
         """
         Initialize object for estimating 3D orientations.
@@ -77,6 +78,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             signs when computing `signs_times_v`.
         :param hist_intervals: Number of histogram bins used to
             compute triangle scores when `S_weighting` enabled.
+        :param disable_gpu: Disables GPU acceleration;
+            forces CPU only code for this module.
+            Defaults to automatically using GPU when available.
         """
 
         super().__init__(
@@ -109,20 +113,21 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Auto configure GPU
         self.__gpu_module = None
-        try:
-            import cupy as cp
+        if not disable_gpu:
+            try:
+                import cupy as cp
 
-            if cp.cuda.runtime.getDeviceCount() >= 1:
-                gpu_id = cp.cuda.runtime.getDevice()
-                logger.info(
-                    f"cupy and GPU {gpu_id} found by cuda runtime; enabling cupy."
-                )
-                self.__gpu_module = self.__init_cupy_module()
-            else:
-                logger.info("GPU not found, defaulting to numpy.")
+                if cp.cuda.runtime.getDeviceCount() >= 1:
+                    gpu_id = cp.cuda.runtime.getDevice()
+                    logger.info(
+                        f"cupy and GPU {gpu_id} found by cuda runtime; enabling cupy."
+                    )
+                    self.__gpu_module = self.__init_cupy_module()
+                else:
+                    logger.info("GPU not found, defaulting to numpy.")
 
-        except ModuleNotFoundError:
-            logger.info("cupy not found, defaulting to numpy.")
+            except ModuleNotFoundError:
+                logger.info("cupy not found, defaulting to numpy.")
 
     ###########################################
     # High level algorithm steps              #
