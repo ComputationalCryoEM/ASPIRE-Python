@@ -372,54 +372,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         return scores_hist
 
-    def _scores_inner_body(self, Rijs, c, s, i, j, k):
-        """
-        Private method to compute scores `s`
-        given rotations `Rijs` and indices `i`, `j`, `k`.
-
-        Note arrays `Rijs`, `c`, and `s` are passed by reference from caller.
-        """
-
-        ij = self._pairs_to_linear[i, j]
-        ik = self._pairs_to_linear[i, k]
-        jk = self._pairs_to_linear[j, k]
-        Rij = Rijs[ij]
-        Rik = Rijs[ik]
-        Rjk = Rijs[jk]
-
-        # Compute conjugated rots
-        Rij_J = J_conjugate(Rij)
-        Rik_J = J_conjugate(Rik)
-        Rjk_J = J_conjugate(Rjk)
-
-        # Compute R muls and norms
-        c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
-        c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
-        c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
-        c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
-
-        # Find best match
-        best_i = np.argmin(c)
-        best_val = c[best_i]
-
-        # For each triangle side, find the best alternative
-        alt_ij_jk = c[self._ALTS[0][best_i][0]]
-        if c[self._ALTS[1][best_i][0]] < alt_ij_jk:
-            alt_ij_jk = c[self._ALTS[1][best_i][0]]
-
-        alt_ik_jk = c[self._ALTS[0][best_i][1]]
-        if c[self._ALTS[1][best_i][1]] < alt_ik_jk:
-            alt_ik_jk = c[self._ALTS[1][best_i][1]]
-
-        alt_ij_ik = c[self._ALTS[0][best_i][2]]
-        if c[self._ALTS[1][best_i][2]] < alt_ij_ik:
-            alt_ij_ik = c[self._ALTS[1][best_i][2]]
-
-        # Compute scores
-        s[0] = 1 - np.sqrt(best_val / alt_ij_jk)  # s_ij_jk
-        s[1] = 1 - np.sqrt(best_val / alt_ik_jk)  # s_ik_jk
-        s[2] = 1 - np.sqrt(best_val / alt_ij_ik)  # s_ij_ik
-
     def _triangle_scores_inner_host(self, Rijs):
         """
         See _triangle_scores_inner.
@@ -438,17 +390,52 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             for j in range(
                 i + 1, self.n_img - 1
             ):  # check bound (taken from MATLAB mex)
+                ij = self._pairs_to_linear[i, j]
+                Rij = Rijs[ij]
                 for k in range(j + 1, self.n_img):
+                    ik = self._pairs_to_linear[i, k]
+                    jk = self._pairs_to_linear[j, k]
+                    Rik = Rijs[ik]
+                    Rjk = Rijs[jk]
+
+                    # Compute conjugated rotats
+                    Rij_J = J_conjugate(Rij)
+                    Rik_J = J_conjugate(Rik)
+                    Rjk_J = J_conjugate(Rjk)
+
+                    # Compute R muls and norms
+                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+
+                    # Find best match
+                    best_i = np.argmin(c)
+                    best_val = c[best_i]
+
+                    # For each triangle side, find the best alternative
+                    alt_ij_jk = c[self._ALTS[0][best_i][0]]
+                    if c[self._ALTS[1][best_i][0]] < alt_ij_jk:
+                        alt_ij_jk = c[self._ALTS[1][best_i][0]]
+
+                    alt_ik_jk = c[self._ALTS[0][best_i][1]]
+                    if c[self._ALTS[1][best_i][1]] < alt_ik_jk:
+                        alt_ik_jk = c[self._ALTS[1][best_i][1]]
+
+                    alt_ij_ik = c[self._ALTS[0][best_i][2]]
+                    if c[self._ALTS[1][best_i][2]] < alt_ij_ik:
+                        alt_ij_ik = c[self._ALTS[1][best_i][2]]
 
                     # Compute scores
-                    self._scores_inner_body(Rijs, c, s, i, j, k)
+                    s[0] = 1 - np.sqrt(best_val / alt_ij_jk)  # s_ij_jk
+                    s[1] = 1 - np.sqrt(best_val / alt_ik_jk)  # s_ik_jk
+                    s[2] = 1 - np.sqrt(best_val / alt_ij_ik)  # s_ij_ik
 
                     # Update histogram
                     # Find integer bin [0,self.hist_intervals)
                     _l1, _l2, _l3 = np.minimum(
                         (self.hist_intervals * s).astype(int),  # implicit floor
-                        self.hist_intervals - 1,
-                    )  # clamp upper bound
+                        self.hist_intervals-1)  # clamp upper bound
 
                     scores_hist[_l1] += 1
                     scores_hist[_l2] += 1
@@ -536,19 +523,46 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         ln_f_arb = np.zeros(len(Rijs), dtype=Rijs.dtype)
 
         c = np.empty((4), dtype=Rijs.dtype)
-        s = np.empty((3), dtype=Rijs.dtype)
         for i in trange(self.n_img - 2, desc="Computing pair probabilities"):
             for j in range(i + 1, self.n_img - 1):
                 ij = self._pairs_to_linear[i, j]
+                Rij = Rijs[ij]
                 for k in range(j + 1, self.n_img):
                     ik = self._pairs_to_linear[i, k]
                     jk = self._pairs_to_linear[j, k]
+                    Rik = Rijs[ik]
+                    Rjk = Rijs[jk]
+
+                    # Compute conjugated rotats
+                    Rij_J = J_conjugate(Rij)
+                    Rik_J = J_conjugate(Rik)
+                    Rjk_J = J_conjugate(Rjk)
+
+                    # Compute R muls and norms
+                    c[0] = np.sum(((Rij @ Rjk) - Rik) ** 2)
+                    c[1] = np.sum(((Rij_J @ Rjk) - Rik) ** 2)
+                    c[2] = np.sum(((Rij @ Rjk_J) - Rik) ** 2)
+                    c[3] = np.sum(((Rij @ Rjk) - Rik_J) ** 2)
+
+                    # Find best match
+                    best_i = np.argmin(c)
+                    best_val = c[best_i]
+
+                    # For each triangle side, find the best alternative
+                    alt_ij_jk = c[self._ALTS[0][best_i][0]]
+                    if c[self._ALTS[1][best_i][0]] < alt_ij_jk:
+                        alt_ij_jk = c[self._ALTS[1][best_i][0]]
+                    alt_ik_jk = c[self._ALTS[0][best_i][1]]
+                    if c[self._ALTS[1][best_i][1]] < alt_ik_jk:
+                        alt_ik_jk = c[self._ALTS[1][best_i][1]]
+                    alt_ij_ik = c[self._ALTS[0][best_i][2]]
+                    if c[self._ALTS[1][best_i][2]] < alt_ij_ik:
+                        alt_ij_ik = c[self._ALTS[1][best_i][2]]
 
                     # Compute scores
-                    self._scores_inner_body(Rijs, c, s, i, j, k)
-
-                    # Unpack scores to local formula vars
-                    s_ij_jk, s_ik_jk, s_ij_ik = s
+                    s_ij_jk = 1 - np.sqrt(best_val / alt_ij_jk)
+                    s_ik_jk = 1 - np.sqrt(best_val / alt_ik_jk)
+                    s_ij_ik = 1 - np.sqrt(best_val / alt_ij_ik)
 
                     # Update probabilities
                     # # Probability of pair ij having score given indicicative common line
