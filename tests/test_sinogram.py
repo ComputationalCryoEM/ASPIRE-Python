@@ -113,7 +113,7 @@ def test_project_multidim(num_ang):
 
     # Generate a mask
     g = grid_2d(L, normalized=True, shifted=True)
-    mask = g["r"] < .99
+    mask = g["r"] < 0.99
 
     # Generate images
     imgs = Image(np.random.random((m, n, L, L))) * mask
