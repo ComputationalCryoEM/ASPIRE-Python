@@ -4,6 +4,7 @@ import math
 import numpy as np
 import scipy.sparse as sparse
 
+from aspire.image import Image
 from aspire.operators import PolarFT
 from aspire.utils import common_line_from_rots, fuzzy_mask, tqdm
 from aspire.utils.random import choice
@@ -92,8 +93,9 @@ class CLOrient3D:
 
         if self.mask:
             # For best results and to reproduce MATLAB:
+            #   Set risetime=2
             #   Always compute mask (erf) in doubles.
-            fuzz_mask = fuzzy_mask((self.n_res, self.n_res), np.float64)
+            fuzz_mask = fuzzy_mask((self.n_res, self.n_res), np.float64, risetime=2)
             #   Apply mask in doubles (allow imgs to upcast as needed)
             imgs = imgs * fuzz_mask
             #   Cast to desired type
