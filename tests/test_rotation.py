@@ -173,6 +173,9 @@ def test_angle_dist(dtype):
     with pytest.raises(ValueError, match=r"r1 and r2 are not broadcastable*"):
         _ = Rotation.angle_dist(rots[:3], rots[:5])
 
+    # Test that single value returns as 0-dim.
+    assert Rotation.angle_dist(rots[0], rots[1], dtype).ndim == 0
+
 
 def test_mean_angular_distance(dtype):
     rots_z = Rotation.about_axis("z", [0, np.pi / 4, np.pi / 2], dtype=dtype).matrices

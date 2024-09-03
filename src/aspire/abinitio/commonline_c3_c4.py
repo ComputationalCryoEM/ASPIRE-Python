@@ -850,7 +850,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         thetas = np.mod(thetas, 2 * np.pi)
 
         # linear scale from [0,2*pi) to [0,n_theta).
-        return np.mod(np.round(thetas / (2 * np.pi) * n_theta), n_theta).astype(int)
+        ind = np.mod(np.round(thetas / (2 * np.pi) * n_theta), n_theta).astype(int)
+
+        # Return scalar for single value.
+        if ind.size == 1:
+            ind = ind.flat[0]
+
+        return ind
 
     @staticmethod
     def g_sync(rots, order, rots_gt):
