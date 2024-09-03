@@ -22,8 +22,21 @@ BASIS = [
     pytest.param(FBBasis2D, marks=pytest.mark.expensive),
     FFBBasis2D,
     FLEBasis2D,
-    pytest.param(PSWFBasis2D, marks=pytest.mark.expensive),
-    FPSWFBasis2D,
+    pytest.param(
+        PSWFBasis2D,
+        marks=[
+            pytest.mark.expensive,
+            pytest.mark.filterwarnings(
+                "ignore:BlkDiagMatrix.from_dense truncating values*"
+            ),
+        ],
+    ),
+    pytest.param(
+        FPSWFBasis2D,
+        marks=pytest.mark.filterwarnings(
+            "ignore:BlkDiagMatrix.from_dense truncating values*"
+        ),
+    ),
 ]
 
 
