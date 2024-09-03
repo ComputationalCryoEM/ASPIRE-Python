@@ -42,7 +42,7 @@ class Sinogram:
         self.shape = self._data.shape
         self.stack_shape = self._data.shape[:-2]
         self.stack_n_dim = self._data.ndim - 2
-        self.n = np.product(self.stack_shape)
+        self.n = np.prod(self.stack_shape)
         self.n_angles = self._data.shape[-2]
         self.n_radial_points = self._data.shape[-1]
 
