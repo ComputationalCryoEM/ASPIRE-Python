@@ -354,7 +354,7 @@ class FourierCorrelation:
         plt.ylabel("Correlation")
         plt.ylim([0, 1.1])
         for i, line in enumerate(self.correlations):
-            _label = None
+            _label = "correlation"
             if len(self.correlations) > 1:
                 _label = f"{i}"
                 if labels is not None:
