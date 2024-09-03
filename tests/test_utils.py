@@ -399,6 +399,9 @@ def matplotlib_no_gui():
 
         yield
 
+    # Explicitly close all figures before making backend changes.
+    matplotlib.pyplot.close("all")
+
     # Restore backend
     matplotlib.use(backend)
 
