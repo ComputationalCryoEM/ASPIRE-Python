@@ -91,8 +91,13 @@ class CLOrient3D:
         imgs = self.src.images[:]
 
         if self.mask:
-            fuzz_mask = fuzzy_mask((self.n_res, self.n_res), self.dtype)
+            # For best results and to reproduce MATLAB:
+            #   Always compute mask (erf) in doubles.
+            fuzz_mask = fuzzy_mask((self.n_res, self.n_res), np.float64)
+            #   Apply mask in doubles (allow imgs to upcast as needed)
             imgs = imgs * fuzz_mask
+            #   Cast to desired type
+            imgs = Image(imgs.asnumpy().astype(self.dtype, copy=False))
 
         # Obtain coefficients of polar Fourier transform for input 2D images
         pft = PolarFT(
