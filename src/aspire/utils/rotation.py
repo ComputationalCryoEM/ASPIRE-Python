@@ -408,6 +408,10 @@ class Rotation:
         theta = (tr_r[non_zero_dist_ind] - 1) / 2
         theta = np.maximum(np.minimum(theta, 1), -1)  # Clamp theta in [-1,1]
         dist[non_zero_dist_ind] = np.arccos(theta, dtype=dtype)
+
+        # If we only have one value, return as a scalar.
+        if dist.size == 1:
+            dist = dist.flat[0]
         return dist
 
     @staticmethod
