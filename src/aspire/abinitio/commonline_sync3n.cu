@@ -422,6 +422,14 @@ void estimate_all_Rijs(int n,double* __restrict__ clmatrix)
   /* thread index (2d), represents "i" index, "j" index */
   unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
   unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
+  int cl_diff1, cl_diff2, cl_diff3;
+  double theta1, theta2, theta3;
+  double c1, c2, c3;
+  double cond;
+  double cos_phi2;
+  double alpha;
+  double angles[3];
+  double r[3][3];
 
   /* no-op when out of bounds */
   if(i >= n) return;
@@ -429,4 +437,70 @@ void estimate_all_Rijs(int n,double* __restrict__ clmatrix)
   /* no-op lower triangle */
   if(j <= i) return;
 
+
+  // vote_ij creates good_k list per (i,j)
+
+  // We shouldn't need this... confirm and rm later.
+  if(clmatrix[i*n + j] == -1) return;
+
+  int cl_idx12 = clmatrix[i*n + j];
+  int cl_idx21 = clmatrix[j*n + i];
+
+  /* Assume that k_list starts as [0,n] */
+  for(k=0; k<n; k++){
+
+    cl_idx13 = clmatrix[i*n + k];
+    cl_idx31 = clmatrix[k*n + i];
+    cl_idx23 = clmatrix[j*n + k];
+    cl_idx32 = clmatrix[k*n + j];
+
+    // test `k` values
+    if(k==i) return;
+    if(cl_idx13 == -1) return;  // i, k
+    if(cl_idx31 == -1) return;  // k, i
+    if(cl_idx23 == -1) return;  // j, k
+    // if(cl_idx32 == -1) return;  // k, j
+
+    // self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
+    cl_diff1 = cl_idx13 - cl_idx12;
+    cl_diff2 = cl_idx21 - cl_idx23;
+    cl_diff3 = cl_idx32 - cl_idx31;
+
+    theta1 = cl_diff1 * 2 * np.pi / n_theta;
+    theta2 = cl_diff2 * 2 * np.pi / n_theta;
+    theta3 = cl_diff3 * 2 * np.pi / n_theta;
+
+    c1 = cos(theta1);
+    c2 = cos(theta2);
+    c3 = cos(theta3);
+
+    cond = 1 + 2 * c1 * c2 * c3 - (c1*c1 + c2*c2 + c3*c3);
+
+    // test if we have a good_idx
+    if(cond < 1e-5) return;
+
+    cos_phi2 = (c3 - c1*c2 ) / (sin(theta1) * sin(theta2));
+    
+    //end _get_cos_phis
+
+    // clip [-1,1]
+    if(cos_phi2 >1){
+      cos_phi2 = 1;
+    }
+    if(cos_phi2 <-1){
+      cos_phi2 = -1;
+    }
+    
+    // // _rotratio_eulerangle_vec loops over good_k list per (i,j)
+    // alpha = arccos(cos_phi2);    
+    // // convert Euler angle to rotation matrix
+    // angles[0] = cl_idx12 * 2 * pi / n + pi / 2;
+    // angles[1] = alpha;
+    // angles[2] = -pi / 2 - cl_idx21 * 2 * pi / n;
+    // //r = from_euler(angles);
+  
+
+
+  
+  
 }
