@@ -285,7 +285,7 @@ def test_rectangular_micrograph_source_files():
     """
 
     # Test inconsistent mrc files
-    imgs = [np.empty((7, 7)), np.empty((8, 8))]
+    imgs = [np.zeros((7, 7)), np.zeros((8, 8))]
     with tempfile.TemporaryDirectory() as tmp_output_dir:
         # Save the files
         for i, img in enumerate(imgs):
