@@ -1,7 +1,28 @@
+# define M_PI           3.14159265358979323846  /* pi */
 
 /* from i,j indices to the common index in the N-choose-2 sized array */
 #define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2 + J-I-1)
 
+/* convert euler angles (a,b,c) in ZYZ to rotation matrix r */
+inline void ang2orth(double* r, double a, double b, double c){
+  double sa = sin(a);
+  double sb = sin(b);
+  double sc = sin(c);
+  double ca = cos(a);
+  double cb = cos(b);
+  double cc = cos(c);
+
+  r[0] = ca*cb*cc - sa*sc;
+  r[1] = -ca*cb*cc - sa*sc;
+  r[2] = ca*sb;
+  r[3] = sa*cb*cc + ca*sc;
+  r[4] = -sa*cb*cc + ca*sc;
+  r[5] = sa*sb;
+  r[6] = -sb*cc;
+  r[7] = sb*sc;
+  r[8] = cb;  
+}
+  
 
 inline void mult_3x3(double *out, double *R1, double *R2) {
   /* 3X3 matrices multiplication: out = R1*R2
@@ -415,21 +436,24 @@ void triangle_scores_inner(int n, double* Rijs, int n_intervals, unsigned int* s
 };
 
 extern "C" __global__
-void estimate_all_Rijs(int n,double* __restrict__ clmatrix)
+void estimate_all_Rijs(int n, int n_theta, double* __restrict__ clmatrix, double* __restrict__ hist, int* __restrict__ kmap, double* rotations)
 {
+  // try toget kmap as uint16_t
   /* n n_img */
 
   /* thread index (2d), represents "i" index, "j" index */
   unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
   unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
+  int k;
+  int kk;
   int cl_diff1, cl_diff2, cl_diff3;
   double theta1, theta2, theta3;
   double c1, c2, c3;
   double cond;
   double cos_phi2;
-  double alpha;
   double angles[3];
-  double r[3][3];
+  double r[9];
+  int cnt;
 
   /* no-op when out of bounds */
   if(i >= n) return;
@@ -445,7 +469,16 @@ void estimate_all_Rijs(int n,double* __restrict__ clmatrix)
 
   int cl_idx12 = clmatrix[i*n + j];
   int cl_idx21 = clmatrix[j*n + i];
-
+  int cl_idx13, cl_idx31;
+  int cl_idx23, cl_idx32;
+  const int ntics = 60;
+  const double sigma = 3.0;
+  double ga;
+  double angle;
+  int b;
+  int peak_idx;
+  double peak;
+  
   /* Assume that k_list starts as [0,n] */
   for(k=0; k<n; k++){
 
@@ -466,9 +499,9 @@ void estimate_all_Rijs(int n,double* __restrict__ clmatrix)
     cl_diff2 = cl_idx21 - cl_idx23;
     cl_diff3 = cl_idx32 - cl_idx31;
 
-    theta1 = cl_diff1 * 2 * np.pi / n_theta;
-    theta2 = cl_diff2 * 2 * np.pi / n_theta;
-    theta3 = cl_diff3 * 2 * np.pi / n_theta;
+    theta1 = cl_diff1 * 2 * M_PI / n_theta;
+    theta2 = cl_diff2 * 2 * M_PI / n_theta;
+    theta3 = cl_diff3 * 2 * M_PI / n_theta;
 
     c1 = cos(theta1);
     c2 = cos(theta2);
@@ -490,17 +523,57 @@ void estimate_all_Rijs(int n,double* __restrict__ clmatrix)
     if(cos_phi2 <-1){
       cos_phi2 = -1;
     }
+                   
+    /* compute histogram contribution and index map */
+    angle = acos(cos_phi2) * 180. / M_PI;
+    // angle's bin
+    kmap[PAIR_IDX(n,i,j)*n + k] = angle / ntics;
+    for(b=0; b<ntics; b++){
+      ga = b*(180/ntics);  // grid angle // todo, just compute in radians to avoid extra arithmetic
+      // histogram contribution
+      hist[PAIR_IDX(n,i,j)*ntics + b ] += exp(
+          (2*angle*ga - (angle*angle + ga*ga))/(2*sigma*sigma));
+    } /* bins */
+  } /* k*/
+  
+  /* find peak of histogram */
+  peak = -1;
+  peak_idx = -1;
+  for(b=0; b<ntics; b++){
+    if(hist[PAIR_IDX(n,i,j)*ntics + b] > peak){
+      peak = hist[PAIR_IDX(n,i,j)*ntics + b];
+      peak_idx = b;
+    }
+  }
+  
+  /* find mean of rotations */
+  // initialize
+  cnt = 0;
+
+  // _rotratio_eulerangle_vec loops over good_k list per (i,j)
+  // find satisfying indices  
+  for(k=0; k<n; k++){
+    // image k in peak bin
+    if(abs(kmap[PAIR_IDX(n,i,j)*n + k] - peak_idx) < 2){
+      cnt += 1;
+      // convert to euler angles  // check
+      angles[0] = cl_idx12 * 2 * M_PI / n + M_PI / 2;
+      angles[1] = angle;
+      angles[2] = -M_PI / 2 - cl_idx21 * 2 * M_PI / n;
+      
+      // convert euler to rotation
+      ang2orth(r, angles[0], angles[1], angles[2]);
+      // add rotation matrix contribution to mean
+      for(kk=0; kk<9;kk++){
+        rotations[PAIR_IDX(n,i,j)*9 + kk] += r[kk];
+      } /* kk */
+    } /* if */   
+  } /* k */
     
-    // // _rotratio_eulerangle_vec loops over good_k list per (i,j)
-    // alpha = arccos(cos_phi2);    
-    // // convert Euler angle to rotation matrix
-    // angles[0] = cl_idx12 * 2 * pi / n + pi / 2;
-    // angles[1] = alpha;
-    // angles[2] = -pi / 2 - cl_idx21 * 2 * pi / n;
-    // //r = from_euler(angles);
-  
 
-
-  
-  
-}
+  // divide  (todo, better handle 0/0?)
+  for(kk=0; kk<9;kk++){
+    rotations[PAIR_IDX(n,i,j)*9 + kk] /= cnt;
+  } /* kk */
+    
+} /* kernel */
