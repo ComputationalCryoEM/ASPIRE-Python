@@ -698,7 +698,9 @@ class CLSymmetryD2(CLOrient3D):
         # between one Fourier ray of the normal to a self common line candidate t_i
         # with its anti-podal as an additional way to measure if the image is an
         # equator and t_i+0.5*pi is the normal to its self common line.
-        r = 2  # Search radius within 2 adjacent rays of normal ray.
+        r = np.ceil(2 * L / 360).astype(
+            int
+        )  # Search radius within 2 degrees of normal ray.
 
         # Generate indices for normal to scl index.
         normal_2_scl_idx_0 = (
