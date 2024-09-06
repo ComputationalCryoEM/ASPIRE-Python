@@ -5,16 +5,10 @@ import warnings
 import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import curve_fit
+from scipy.spatial.transform import Rotation as sprot
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
-from aspire.utils import (
-    J_conjugate,
-    Rotation,
-    all_pairs,
-    nearest_rotations,
-    tqdm,
-    trange,
-)
+from aspire.utils import J_conjugate, all_pairs, nearest_rotations, tqdm, trange
 from aspire.utils.matlab_compat import stable_eigsh
 from aspire.utils.random import randn
 
@@ -819,13 +813,20 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         angle = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
         angles = np.zeros(3)
-        
+
         if angle is not None:
-            # Convert the Euler angles with ZYZ conversion to rotation matrices
-            angles[0] = clmatrix[i, j] * 2 * np.pi / n_theta + np.pi / 2
+            # # # BAD
+            # # Convert the Euler angles with ZYZ conversion to rotation matrices
+            # angles[0] = clmatrix[i, j] * 2 * np.pi / n_theta + np.pi / 2
+            # angles[1] = angle
+            # angles[2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
+            # rot = Rotation.from_euler(angles).matrices
+
+            angles[0] = clmatrix[i, j] * 2 * np.pi / n_theta - np.pi
             angles[1] = angle
-            angles[2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
-            rot = Rotation.from_euler(angles).matrices
+            angles[2] = np.pi - clmatrix[j, i] * 2 * np.pi / n_theta
+            rot = sprot.from_euler("ZXZ", angles).as_matrix()
+
         else:
             # This is for the case that images i and j correspond to the same
             # viewing direction and differ only by in-plane rotation.
