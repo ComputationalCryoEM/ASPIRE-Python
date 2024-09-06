@@ -7,7 +7,14 @@ from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
-from aspire.utils import J_conjugate, all_pairs, nearest_rotations, tqdm, trange
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    all_pairs,
+    nearest_rotations,
+    tqdm,
+    trange,
+)
 from aspire.utils.matlab_compat import stable_eigsh
 from aspire.utils.random import randn
 
@@ -783,12 +790,15 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         n_img = self.n_img
         n_theta = self.n_theta
         Rijs = np.zeros((len(self._pairs), 3, 3))
+        dbg_angles = np.zeros((len(self._pairs), 3))
 
         for idx, (i, j) in enumerate(tqdm(self._pairs, desc="Estimate Rijs")):
-            Rijs[idx] = self._syncmatrix_ij_vote_3n(
+            Rijs[idx], dbg_angles[idx] = self._syncmatrix_ij_vote_3n(
                 clmatrix, i, j, np.arange(n_img), n_theta
             )
 
+        np.save("Rijs.npy", Rijs)
+        np.save("dbg_angles.npy", dbg_angles)
         return Rijs
 
     def _syncmatrix_ij_vote_3n(self, clmatrix, i, j, k_list, n_theta):
@@ -807,18 +817,22 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         """
         good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
 
-        rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
-
-        if rots is not None:
-            rot_mean = np.mean(rots, 0)
-
+        angle = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
+        angles = np.zeros(3)
+        
+        if angle is not None:
+            # Convert the Euler angles with ZYZ conversion to rotation matrices
+            angles[0] = clmatrix[i, j] * 2 * np.pi / n_theta + np.pi / 2
+            angles[1] = angle
+            angles[2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
+            rot = Rotation.from_euler(angles).matrices
         else:
             # This is for the case that images i and j correspond to the same
             # viewing direction and differ only by in-plane rotation.
             # We set to zero as in the Matlab code.
-            rot_mean = np.zeros((3, 3))
+            rot = np.zeros((3, 3))
 
-        return rot_mean
+        return rot, angles
 
     #######################################
     # Secondary Methods for Global J Sync #
