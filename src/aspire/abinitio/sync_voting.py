@@ -93,8 +93,11 @@ class SyncVotingMixin(object):
         # cl_diff2 is for the angle on C2 created by its intersection with C1 and C3.
         # cl_diff3 is for the angle on C3 created by its intersection with C2 and C1.
         cl_diff1 = cl_idx13 - cl_idx12
+        # bad or just a trig identity?
         cl_diff2 = cl_idx21 - cl_idx23
+        # cl_diff2 = cl_idx23 - cl_idx21  # theta2 = (clmatrix(j,K)-clmatrix(j,i)) * 2*pi/L;
         cl_diff3 = cl_idx32 - cl_idx31
+
         # Calculate the cos values of rotation angles between i an j images for good k images
         cos_phi2, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
 
@@ -115,7 +118,7 @@ class SyncVotingMixin(object):
             return []
 
         # Parameters used to compute the smoothed angle histogram.
-        ntics = 60
+        ntics = int(180 / self.tic_width)
         angles_grid = np.linspace(0, 180, ntics, True)
         # Get angles between images i and j for computing the histogram
         angles = np.arccos(phis[:]) * 180 / np.pi
@@ -218,4 +221,5 @@ class SyncVotingMixin(object):
         cos_phi2 = (c3[good_idx] - c1[good_idx] * c2[good_idx]) / (
             np.sin(theta1[good_idx]) * np.sin(theta2[good_idx])
         )
+
         return cos_phi2, good_idx
