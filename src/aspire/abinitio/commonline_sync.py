@@ -24,7 +24,15 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
     """
 
     def __init__(
-        self, src, n_rad=None, n_theta=360, max_shift=0.15, shift_step=1, mask=True
+        self,
+        src,
+        n_rad=None,
+        n_theta=360,
+        max_shift=0.15,
+        shift_step=1,
+        hist_bin_width=3,
+        full_width=6,
+        mask=True,
     ):
         """
         Initialize an object for estimating 3D orientations using synchronization matrix
@@ -36,6 +44,10 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
         :param max_shift: Determines maximum range for shifts as a proportion
             of the resolution. Default is 0.15.
         :param shift_step: Resolution for shift estimation in pixels. Default is 1 pixel.
+        :param hist_bin_width: Bin width in smoothing histogram (degrees).
+        :param full_width: Selection width around smoothed histogram peak (degrees).
+            `adaptive` will attempt to automatically find the smallest number of
+            `hist_bin_width`s required to find at least one valid image index.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         """
@@ -45,6 +57,8 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
             n_theta=n_theta,
             max_shift=max_shift,
             shift_step=shift_step,
+            hist_bin_width=hist_bin_width,
+            full_width=full_width,
             mask=mask,
         )
         self.syncmatrix = None

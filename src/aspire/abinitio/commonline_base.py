@@ -23,7 +23,8 @@ class CLOrient3D:
         n_rad=None,
         n_theta=360,
         n_check=None,
-        tic_width=1,
+        hist_bin_width=3,
+        full_width=6,
         max_shift=0.15,
         shift_step=1,
         mask=True,
@@ -43,7 +44,10 @@ class CLOrient3D:
             of the resolution. Default is 0.15.
         :param shift_step: Resolution of shift estimation in pixels.
             Default is 1 pixel.
-        :param tic_width: Bin width in smoothing histogram (a tic is approx a degree).
+        :param hist_bin_width: Bin width in smoothing histogram (degrees).
+        :param full_width: Selection width around smoothed histogram peak (degrees).
+            `adaptive` will attempt to automatically find the smallest number of
+            `hist_bin_width`s required to find at least one valid image index.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         """
@@ -55,7 +59,8 @@ class CLOrient3D:
         self.n_rad = n_rad
         self.n_theta = n_theta
         self.n_check = n_check
-        self.tic_width = tic_width
+        self.hist_bin_width = hist_bin_width
+        self.full_width = full_width
         self.clmatrix = None
         self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
