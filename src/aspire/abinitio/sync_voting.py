@@ -118,7 +118,7 @@ class SyncVotingMixin(object):
             return []
 
         # Parameters used to compute the smoothed angle histogram.
-        ntics = int(180 / self.tic_width)
+        ntics = int(180 / self.hist_bin_width)
         angles_grid = np.linspace(0, 180, ntics, True)
         # Get angles between images i and j for computing the histogram
         angles = np.arccos(phis[:]) * 180 / np.pi
@@ -145,8 +145,31 @@ class SyncVotingMixin(object):
         # tics, since the peak might move a little bit due to wrong k images
         # that accidentally fall near the peak.
         peak_idx = angles_hist.argmax()
-        idx = np.abs(angles - angles_grid[peak_idx]) < 360 / ntics
+
+        if str(self.full_width).lower() == "adaptive":
+            # Adaptive width  (MATLAB)
+            # % look for the estimations in the peak of the histogram
+            # w_theta_needed = 0;
+            # idx = [];
+            # while numel(idx) == 0
+            #     w_theta_needed = w_theta_needed + w_theta; % widen peak as needed
+            #     idx = find( abs(angles-angle_tics(peakidx)) < w_theta_needed );
+            # end
+            w_theta_needed = 0
+            idx = []
+            while sum(idx) == 0:
+                w_theta_needed += self.hist_bin_width  # widen peak as needed
+                idx = np.abs(angles - angles_grid[peak_idx]) < w_theta_needed
+            if w_theta_needed > self.hist_bin_width:
+                logger.info(
+                    f"adaptive ({i},{j}) w_theta_needed={w_theta_needed} sum(idx)={sum(idx)}"
+                )
+        else:
+            # Fixed width
+            idx = np.abs(angles - angles_grid[peak_idx]) < self.full_width
+
         good_k = inds[idx]
+
         return good_k.astype("int")
 
     def _get_cos_phis(self, cl_diff1, cl_diff2, cl_diff3, n_theta):
