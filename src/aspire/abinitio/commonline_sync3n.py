@@ -52,6 +52,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         n_theta=360,
         max_shift=0.15,
         shift_step=1,
+        hist_bin_width=1,
+        full_width="adaptive",
         epsilon=1e-2,
         max_iters=1000,
         seed=None,
@@ -69,6 +71,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :param n_theta: The number of points in the theta direction
         :param max_shift: Maximum range for shifts as a proportion of box size. Default = 0.15.
         :param shift_step: Step size of shift estimation in pixels. Default = 1 pixel.
+        :param hist_bin_width: Bin width in smoothing histogram (degrees).
+        :param full_width: Selection width around smoothed histogram peak (degrees).
+            `adaptive` will attempt to automatically find the smallest number of
+            `hist_bin_width`s required to find at least one valid image index.
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param seed: Optional seed for RNG.
@@ -91,6 +97,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             n_theta=n_theta,
             max_shift=max_shift,
             shift_step=shift_step,
+            hist_bin_width=hist_bin_width,
+            full_width=full_width,
             mask=mask,
         )
 
