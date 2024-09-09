@@ -77,7 +77,7 @@ def test_repr():
     Test accessing the `repr` does not crash.
     """
 
-    d = DiagMatrix(np.empty((10, 8)))
+    d = DiagMatrix(np.ones((10, 8)))
     assert repr(d).startswith("DiagMatrix(")
 
 
@@ -86,7 +86,7 @@ def test_str():
     Test accessing the `str` does not crash.
     """
 
-    d = DiagMatrix(np.empty((10, 8)))
+    d = DiagMatrix(np.ones((10, 8)))
     assert str(d).startswith("DiagMatrix(")
 
 
@@ -104,13 +104,13 @@ def test_len():
     """
     Test the `len`.
     """
-    d = DiagMatrix(np.empty((10, 8)))
+    d = DiagMatrix(np.ones((10, 8)))
 
     assert d.size == 10
     assert d.count == 8
     assert len(d) == 10
 
-    d = DiagMatrix(np.empty((2, 5, 8)))
+    d = DiagMatrix(np.ones((2, 5, 8)))
 
     assert d.size == 10
     assert d.count == 8
@@ -121,8 +121,8 @@ def test_size_mismatch():
     """
     Test we raise operating on `DiagMatrix` having different counts.
     """
-    d1 = DiagMatrix(np.empty((10, 8)))
-    d2 = DiagMatrix(np.empty((10, 7)))
+    d1 = DiagMatrix(np.ones((10, 8)))
+    d2 = DiagMatrix(np.ones((10, 7)))
 
     with pytest.raises(RuntimeError, match=r".*not same dimension.*"):
         _ = d1 + d2
@@ -132,8 +132,8 @@ def test_dtype_mismatch():
     """
     Test we raise operating on `DiagMatrix` having different dtypes.
     """
-    d1 = DiagMatrix(np.empty((10, 8)), dtype=np.float32)
-    d2 = DiagMatrix(np.empty((10, 8)), dtype=np.float64)
+    d1 = DiagMatrix(np.ones((10, 8)), dtype=np.float32)
+    d2 = DiagMatrix(np.ones((10, 8)), dtype=np.float64)
 
     with pytest.raises(RuntimeError, match=r".*received different types.*"):
         _ = d1 + d2
@@ -144,7 +144,7 @@ def test_dtype_passthrough():
     Test that the datatype is inferred correctly.
     """
     for dtype in (int, np.float32, np.float64, np.complex64, np.complex128):
-        d_np = np.empty(42, dtype=dtype)
+        d_np = np.ones(42, dtype=dtype)
         d = DiagMatrix(d_np)
         assert d.dtype == dtype
 
@@ -154,7 +154,7 @@ def test_dtype_cast():
     Test that a datatype is cast when overridden.
     """
     for dtype in (int, np.float32, np.float64, np.complex64, np.complex128):
-        d_np = np.empty(42, dtype=np.float16)
+        d_np = np.ones(42, dtype=np.float16)
         d = DiagMatrix(d_np, dtype)
         assert d.dtype == dtype
 
@@ -444,7 +444,7 @@ def test_diag_badtype_matmul():
     """
     Test matrix multiply of `DiagMatrix` with incompatible type raises.
     """
-    d1 = DiagMatrix(np.empty(8))
+    d1 = DiagMatrix(np.ones(8))
 
     # matmul
     with pytest.raises(RuntimeError, match=r".*not implemented for.*"):
@@ -576,7 +576,7 @@ def test_bad_as_blk_diag(matrix_size, blk_diag):
     """
     with pytest.raises(RuntimeError, match=r".*only implemented for singletons.*"):
         # Construct via Numpy.
-        d_np = np.empty((2, matrix_size), dtype=blk_diag.dtype)
+        d_np = np.ones((2, matrix_size), dtype=blk_diag.dtype)
 
         # Create DiagMatrix then convert to BlkDiagMatrix
         d = DiagMatrix(d_np)
@@ -654,7 +654,7 @@ def test_diag_blk_mul():
     """
     Test mixing `BlkDiagMatrix` with `DiagMatrix` element-wise multiplication raises.
     """
-    d = DiagMatrix(np.empty(8))
+    d = DiagMatrix(np.ones(8))
 
     partition = [(4, 4), (4, 4)]
     b = BlkDiagMatrix.ones(partition, dtype=d.dtype)
@@ -672,7 +672,7 @@ def test_non_square_as_blk_diag():
     """
     Test non square partition blocks raise an error in as_blk_diag.
     """
-    d = DiagMatrix(np.empty(8))
+    d = DiagMatrix(np.ones(8))
 
     partition = [(4, 5), (4, 3)]
     with pytest.raises(RuntimeError, match=r".*not square.*"):
@@ -683,8 +683,8 @@ def test_bad_broadcast():
     """
     Test incompatible stack shapes raise appropriate error.
     """
-    d1 = DiagMatrix(np.empty((2, 3, 8)))
-    d2 = DiagMatrix(np.empty((2, 2, 8)))
+    d1 = DiagMatrix(np.ones((2, 3, 8)))
+    d2 = DiagMatrix(np.ones((2, 2, 8)))
 
     with pytest.raises(ValueError, match=r".*incompatible shapes.*"):
         _ = d1 + d2
