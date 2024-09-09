@@ -364,7 +364,7 @@ def test_corrupt_mrc_load(caplog):
         mrc_path = os.path.join(tmpdir_name, "bad.mrc")
 
         # Create and save image
-        Image(np.empty((1, 8, 8), dtype=np.float32)).save(mrc_path)
+        Image(np.ones((1, 8, 8), dtype=np.float32)).save(mrc_path)
 
         # Open mrc file and soft corrupt it
         with mrcfile.open(mrc_path, "r+") as fh:
