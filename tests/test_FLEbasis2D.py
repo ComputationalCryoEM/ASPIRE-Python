@@ -232,7 +232,7 @@ def testRadialConvolution():
     # (e.g. CTF) function via FLE coefficients
 
     L = 32
-    basis = FLEBasis2D(L, match_fb=False)
+    basis = FLEBasis2D(L, match_fb=False, dtype=np.float64)
     # load test radial function
     x = np.load(os.path.join(DATA_DIR, "fle_radial_fn_32x32.npy")).reshape(1, 32, 32)
     x = x / np.max(np.abs(x.flatten()))
@@ -245,7 +245,7 @@ def testRadialConvolution():
     imgs_convolved_fle = basis.evaluate(coefs_convolved).asnumpy()
 
     # convolve using FFT
-    x = basis.evaluate(basis.evaluate_t(x)).asnumpy()
+    x = basis.evaluate(basis.evaluate_t(Image(x))).asnumpy()
     ims = basis.evaluate(coefs).asnumpy()
 
     imgs_convolved_slow = np.zeros((10, L, L))
