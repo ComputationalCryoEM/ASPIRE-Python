@@ -353,13 +353,10 @@ def test_asnumpy_readonly():
         vw[0, 0, 0] = 123
 
 
-@pytest.mark.xfail(reason="Ray logging issue ray#37711", strict=False)
 def test_corrupt_mrc_load(caplog):
     """
     Test that corrupt mrc files are logged as expected.
     """
-
-    caplog.set_level(logging.WARNING)
 
     # Create a tmp dir for this test output
     with tempfile.TemporaryDirectory() as tmpdir_name:
@@ -374,13 +371,16 @@ def test_corrupt_mrc_load(caplog):
             fh.header.map = -1
 
         # Check that we get a WARNING
-        _ = Image.load(mrc_path)
+        with caplog.at_level(logging.WARNING):
+            _ = Image.load(mrc_path)
 
-    # Check the message prefix
-    assert f"Image.load of {mrc_path} reporting 1 corruptions" in caplog.text
+            # Check the message prefix
+            assert f"Image.load of {mrc_path} reporting 1 corruptions" in caplog.text
 
-    # Check the message contains the file path
-    assert mrc_path in caplog.text
+            # Check the message contains the file path
+            assert mrc_path in caplog.text
+
+            caplog.clear()
 
 
 def test_load_bad_ext():
