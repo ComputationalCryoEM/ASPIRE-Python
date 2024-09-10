@@ -354,6 +354,7 @@ class FourierCorrelation:
         plt.ylabel("Correlation")
         plt.ylim([0, 1.1])
         for i, line in enumerate(self.correlations):
+            # Set default label for single correlation (required by plt.legend() below).
             _label = "correlation"
             if len(self.correlations) > 1:
                 _label = f"{i}"
