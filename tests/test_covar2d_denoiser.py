@@ -18,6 +18,9 @@ filters = [
     RadialCTFFilter(5, 200, defocus=d, Cs=2.0, alpha=0.1)
     for d in np.linspace(1.5e4, 2.5e4, 7)
 ]
+
+# For (F)PSWFBasis2D we get off-block entries which are truncated
+# when converting to block-diagonal. We filter these warnings.
 BASIS = [
     pytest.param(FBBasis2D, marks=pytest.mark.expensive),
     FFBBasis2D,
