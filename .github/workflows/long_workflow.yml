@@ -36,6 +36,6 @@ jobs:
         export OMP_NUM_THREADS=1
         ASPIREDIR=${{ env.WORK_DIR }} python -c \
         "import aspire; print(aspire.config['ray']['temp_dir'])"
-        ASPIREDIR=${{ env.WORK_DIR }} python -m pytest -n8 -m "expensive" --durations=0
+        ASPIREDIR=${{ env.WORK_DIR }} python -m pytest -n8 -m "expensive" --durations=0 --strict-warnings
     - name: Cleanup
       run: rm -rf ${{ env.WORK_DIR }}
