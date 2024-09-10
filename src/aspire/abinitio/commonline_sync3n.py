@@ -1,5 +1,6 @@
 import logging
 import os.path
+import warnings
 
 import numpy as np
 from numpy.linalg import norm
@@ -727,7 +728,13 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Calculate probabilities
         ln_f_ind, ln_f_arb = self._pairs_probabilities(Rijs, P**2, A, a, B, b, x0)
-        Pij = 1 / (1 + (1 - P) / P * np.exp(ln_f_arb - ln_f_ind))
+
+        with warnings.catch_warnings():
+            # For large values of (ln_f_arb - ln_f_ind), numpy exponential will overflow. We still
+            # get the intended result of Pij = 0, so we capture and ignore the overflow warning.
+            warnings.filterwarnings("ignore", r".*overflow encountered in exp.*")
+
+            Pij = 1 / (1 + (1 - P) / P * np.exp(ln_f_arb - ln_f_ind))
 
         # Fix singular output
         num_nan = np.sum(np.isnan(Pij))
