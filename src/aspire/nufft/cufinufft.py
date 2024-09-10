@@ -107,7 +107,8 @@ class CufinufftPlan(Plan):
                 " In the future this will be an error."
             )
 
-        signal = cp.asarray(signal, dtype=self.complex_dtype)
+        # Note, if not C order, cuFINUFFT will copy-cast anyway.
+        signal = cp.asarray(signal, order="C", dtype=self.complex_dtype)
 
         sig_shape = signal.shape
         res_shape = self.num_pts
