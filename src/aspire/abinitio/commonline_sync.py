@@ -203,7 +203,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
         :return: The (i,j) rotation block of the synchronization matrix
         """
 
-        good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
+        _, good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
 
         rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
 
