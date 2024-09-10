@@ -2,6 +2,8 @@ import logging
 
 import numpy as np
 
+from aspire.utils import Rotation
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,18 +37,29 @@ class SyncVotingMixin(object):
         # cl_diff2 is for the angle on C2 created by its intersection with C1 and C3.
         # cl_diff3 is for the angle on C3 created by its intersection with C2 and C1.
         cl_diff1 = clmatrix[i, good_k] - clmatrix[i, j]  # for theta1
-        cl_diff2 = clmatrix[j, good_k] - clmatrix[j, i]  # for - theta2
+        cl_diff2 = clmatrix[j, good_k] - clmatrix[j, i]  # for theta2
         cl_diff3 = clmatrix[good_k, j] - clmatrix[good_k, i]  # for theta3
 
         # Calculate the cos values of rotation angles between i an j images for good k images
-        c_alpha, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
+        c_alpha, good_idx = self._get_cos_phis(
+            cl_diff1, cl_diff2, cl_diff3, n_theta, sync=False
+        )
+
         if len(c_alpha) == 0:
             return None
         alpha = np.arccos(c_alpha)
 
-        return np.mean(alpha)
+        # # TODO??
+        # Convert the Euler angles with ZYZ conversion to rotation matrices
+        angles = np.zeros((alpha.shape[0], 3))
+        angles[:, 0] = clmatrix[i, j] * 2 * np.pi / n_theta + np.pi / 2
+        angles[:, 1] = alpha
+        angles[:, 2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
+        r = Rotation.from_euler(angles).matrices
 
-    def _vote_ij(self, clmatrix, n_theta, i, j, k_list):
+        return r[good_idx, :, :]
+
+    def _vote_ij(self, clmatrix, n_theta, i, j, k_list, sync=False):
         """
         Apply the voting algorithm for images i and j.
 
@@ -59,12 +72,13 @@ class SyncVotingMixin(object):
         :param i: The i image
         :param j: The j image
         :param k_list: The list of images for the third image for voting algorithm
+        :param sync:
         :return:  good_k, the list of all third images in the peak of the histogram
             corresponding to the pair of images (i,j)
         """
 
         if i == j or clmatrix[i, j] == -1:
-            return []
+            return None, []
 
         # Some of the entries in clmatrix may be zero if we cleared
         # them due to small correlation, or if for each image
@@ -93,13 +107,13 @@ class SyncVotingMixin(object):
         # cl_diff2 is for the angle on C2 created by its intersection with C1 and C3.
         # cl_diff3 is for the angle on C3 created by its intersection with C2 and C1.
         cl_diff1 = cl_idx13 - cl_idx12
-        # bad or just a trig identity?
-        cl_diff2 = cl_idx21 - cl_idx23
-        # cl_diff2 = cl_idx23 - cl_idx21  # theta2 = (clmatrix(j,K)-clmatrix(j,i)) * 2*pi/L;
+        cl_diff2 = cl_idx23 - cl_idx21
         cl_diff3 = cl_idx32 - cl_idx31
 
         # Calculate the cos values of rotation angles between i an j images for good k images
-        cos_phi2, good_idx = self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
+        cos_phi2, good_idx = self._get_cos_phis(
+            cl_diff1, cl_diff2, cl_diff3, n_theta, sync=sync
+        )
 
         if np.any(np.abs(cos_phi2) - 1 > 1e-12):
             logger.warning(
@@ -115,13 +129,15 @@ class SyncVotingMixin(object):
         inds = k_list[good_idx]
 
         if phis.shape[0] == 0:
-            return []
+            return None, []
 
         # Parameters used to compute the smoothed angle histogram.
         ntics = int(180 / self.hist_bin_width)
-        angles_grid = np.linspace(0, 180, ntics, True)
+        angles_grid = np.linspace(0, 180, ntics + 1, True)
+
         # Get angles between images i and j for computing the histogram
         angles = np.arccos(phis[:]) * 180 / np.pi
+
         # Angles that are up to 10 degrees apart are considered
         # similar. This sigma ensures that the width of the density
         # estimation kernel is roughly 10 degrees. For 15 degrees, the
@@ -129,14 +145,8 @@ class SyncVotingMixin(object):
         sigma = 3.0
 
         # Compute the histogram of the angles between images i and j
-        squared_values = np.add.outer(np.square(angles), np.square(angles_grid))
-        angles_hist = np.sum(
-            np.exp(
-                (2 * np.multiply.outer(angles, angles_grid) - squared_values)
-                / (2 * sigma**2)
-            ),
-            0,
-        )
+        angles_distances = angles_grid[None, :] - angles[:, None]
+        angles_hist = np.sum(np.exp(-(angles_distances**2) / (2 * sigma**2)), axis=0)
 
         # We assume that at the location of the peak we get the true angle
         # between images i and j. Find all third images k, that induce an
@@ -148,13 +158,7 @@ class SyncVotingMixin(object):
 
         if str(self.full_width).lower() == "adaptive":
             # Adaptive width  (MATLAB)
-            # % look for the estimations in the peak of the histogram
-            # w_theta_needed = 0;
-            # idx = [];
-            # while numel(idx) == 0
-            #     w_theta_needed = w_theta_needed + w_theta; % widen peak as needed
-            #     idx = find( abs(angles-angle_tics(peakidx)) < w_theta_needed );
-            # end
+            # Look for the estimations in the peak of the histogram
             w_theta_needed = 0
             idx = []
             while sum(idx) == 0:
@@ -162,17 +166,18 @@ class SyncVotingMixin(object):
                 idx = np.abs(angles - angles_grid[peak_idx]) < w_theta_needed
             if w_theta_needed > self.hist_bin_width:
                 logger.info(
-                    f"adaptive ({i},{j}) w_theta_needed={w_theta_needed} sum(idx)={sum(idx)}"
+                    f"Adaptive width {w_theta_needed} required for ({i},{j}), found {sum(idx)} indices."
                 )
         else:
             # Fixed width
             idx = np.abs(angles - angles_grid[peak_idx]) < self.full_width
 
         good_k = inds[idx]
+        alpha = np.arccos(phis[idx])
 
-        return good_k.astype("int")
+        return alpha, good_k.astype("int")
 
-    def _get_cos_phis(self, cl_diff1, cl_diff2, cl_diff3, n_theta):
+    def _get_cos_phis(self, cl_diff1, cl_diff2, cl_diff3, n_theta, sync=False):
         """
         Calculate cos values of rotation angles between i and j images
 
@@ -196,6 +201,7 @@ class SyncVotingMixin(object):
         :param cl_diff3: Difference of common line indices on C3 created by
             its intersection with C2 and C1
         :param n_theta: The number of points in the theta direction (common lines)
+        :param sync:
         :return: cos values of rotation angles between i and j images
             and indices for good k
         """
@@ -241,8 +247,38 @@ class SyncVotingMixin(object):
         good_idx = np.nonzero(cond > 1e-5)[0]
 
         # Calculated cos values of angle between i and j images
-        cos_phi2 = (c3[good_idx] - c1[good_idx] * c2[good_idx]) / (
-            np.sin(theta1[good_idx]) * np.sin(theta2[good_idx])
-        )
+        if sync:
+            # MATLAB
+            cos_phi2 = (c3[good_idx] - c1[good_idx] * c2[good_idx]) / (
+                np.sqrt(1 - c1[good_idx] ** 2) * np.sqrt(1 - c2[good_idx] ** 2)
+            )
+
+            #  Some synchronization must be applied when common line is
+            #  out by 180 degrees.
+            #  Here fix the angles between c_ij(c_ji) and c_ik(c_jk) to be smaller than pi/2,
+            #  otherwise there will be an ambiguity between alpha and pi-alpha.
+            TOL_idx = 1e-12
+
+            # Select only good_idx
+            theta1 = theta1[good_idx]
+            theta2 = theta2[good_idx]
+            theta3 = theta3[good_idx]
+
+            # Check sync conditions
+            ind1 = (theta1 > (np.pi + TOL_idx)) | (
+                (theta1 < -TOL_idx) & (theta1 > -np.pi)
+            )
+            ind2 = (theta2 > (np.pi + TOL_idx)) | (
+                (theta2 < -TOL_idx) & (theta2 > -np.pi)
+            )
+            align180 = (ind1 & ~ind2) | (~ind1 & ind2)
+
+            # Apply sync
+            cos_phi2[align180] = -cos_phi2[align180]
+        else:
+            # Python
+            cos_phi2 = (c3[good_idx] - c1[good_idx] * c2[good_idx]) / (
+                np.sin(theta1[good_idx]) * np.sin(theta2[good_idx])
+            )
 
         return cos_phi2, good_idx
