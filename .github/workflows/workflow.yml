@@ -157,7 +157,7 @@ jobs:
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} python -c \
         "import aspire; print(aspire.config['ray']['temp_dir'])"
-        ASPIREDIR=${{ env.WORK_DIR }} python -m pytest --durations=50 --strict-warnings
+        ASPIREDIR=${{ env.WORK_DIR }} PYTHONWARNINGS=error python -m pytest --durations=50
     - name: Cache Data
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} python -c \
@@ -247,4 +247,4 @@ jobs:
         pip install -e ".[dev]"  # install aspire
         pip freeze
     - name: Test
-      run: python -m pytest -n3 --durations=50 --strict-warnings
+      run: PYTHONWARNINGS=error python -m pytest -n3 --durations=50
