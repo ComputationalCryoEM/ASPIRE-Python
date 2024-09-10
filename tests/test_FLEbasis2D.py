@@ -230,16 +230,17 @@ def testLowPass():
 def testRadialConvolution():
     # test ability to accurately convolve with a radial
     # (e.g. CTF) function via FLE coefficients
-
     L = 32
-    basis = FLEBasis2D(L, match_fb=False, dtype=np.float64)
+
     # load test radial function
     x = np.load(os.path.join(DATA_DIR, "fle_radial_fn_32x32.npy")).reshape(1, 32, 32)
     x = x / np.max(np.abs(x.flatten()))
 
     # get sample images
     ims = create_images(L, 10)
+
     # convolve using coefficients
+    basis = FLEBasis2D(L, match_fb=False, dtype=ims.dtype)
     coefs = basis.evaluate_t(ims)
     coefs_convolved = basis.radial_convolve(coefs, x)
     imgs_convolved_fle = basis.evaluate(coefs_convolved).asnumpy()
