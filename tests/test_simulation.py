@@ -3,7 +3,6 @@ import os.path
 import tempfile
 from unittest import TestCase
 
-import matplotlib.pyplot as plt
 import numpy as np
 from pytest import raises
 
