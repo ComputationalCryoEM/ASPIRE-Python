@@ -39,22 +39,13 @@ class SingleSimTestCase(TestCase):
     def testImageShow(self):
         self.sim.images[:].show()
 
-        # Explicitly close all figures before making backend changes.
-        plt.close("all")
-
     @matplotlib_dry_run
     def testCleanImagesShow(self):
         self.sim.clean_images[:].show()
 
-        # Explicitly close all figures before making backend changes.
-        plt.close("all")
-
     @matplotlib_dry_run
     def testProjectionsShow(self):
         self.sim.projections[:].show()
-
-        # Explicitly close all figures before making backend changes.
-        plt.close("all")
 
 
 class SimVolTestCase(TestCase):
