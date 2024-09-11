@@ -814,10 +814,8 @@ def test_transformation_symmetry_warnings(symmetric_vols):
 
 
 @pytest.mark.skipif(
-    (os.getenv("GITHUB_JOB") == "ampere_gpu")
-    or (os.getenv("GITHUB_JOB") == "osx_arm")
-    or (os.getenv("GITHUB_JOB") == "expensive_tests"),
-    reason="Cached warnings will error for these jobs.",
+    (os.getenv("GITHUB_JOB") == "ampere_gpu"),
+    reason="Cached warnings will error for this job.",
 )
 def test_aglebraic_ops_symmetry_warnings(symmetric_vols):
     """
