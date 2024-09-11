@@ -43,7 +43,6 @@ dependencies = [
     "pillow",
     "psutil",
     "pymanopt",
-    "pyshtools<=4.10.4",  # 4.11.7 might have a packaging bug
     "PyWavelets",
     "ray >= 2.9.2",
     "scipy >= 1.10.0",
