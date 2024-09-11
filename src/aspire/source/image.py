@@ -2,7 +2,6 @@ import copy
 import functools
 import logging
 import os.path
-import types
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Iterable
@@ -212,40 +211,6 @@ class ImageSource(ABC):
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
-
-    def __deepcopy__(self, memo):
-        """
-        A custom __deepcopy__ implementation to individually handle special cases.
-        Mostly copied over from https://stackoverflow.com/a/71125311
-        """
-        # Get a reference to the bound deepcopy method
-        deepcopy_method = self.__deepcopy__
-        # Temporarily disable __deepcopy__ to avoid infinite recursion
-        self.__deepcopy__ = None
-        # Create a deepcopy cp using the normal procedure
-        cp = copy.deepcopy(self, memo)
-
-        # --------------------------------------
-        # Handle any special cases for cp here.
-        # --------------------------------------
-        # This is the whole reason this method exists. If this section is empty,
-        # then this entire __deepcopy__ implementation can be removed.
-
-        # The 'dtype' attribute is a numpy module level singleton obtained by np.dtype(..) call
-        # The 'finufft' library currently compares this to the result of a new np.dtype(..) call
-        # by reference, not by value (as it should). A deepcopy will make a copy of the singleton,
-        # and thus comparison by reference will fail. Till this bug in 'finufft' is removed, we assign
-        # self.dtype to dtype
-        cp.dtype = self.dtype
-
-        # --------------------------------------
-
-        # Reattach the bound deepcopy method
-        self.__deepcopy__ = deepcopy_method
-        # Get the unbounded function corresponding to the bound deepcopy method and rebind to cp
-        cp.__deepcopy__ = types.MethodType(deepcopy_method.__func__, cp)
-
-        return cp
 
     @property
     def symmetry_group(self):
