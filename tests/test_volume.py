@@ -813,10 +813,6 @@ def test_transformation_symmetry_warnings(symmetric_vols):
     assert str(vol_c3.symmetry_group) == "C3"
 
 
-@pytest.mark.skipif(
-    (os.getenv("GITHUB_JOB") == "ampere_gpu"),
-    reason="Cached warnings will error for this job.",
-)
 def test_aglebraic_ops_symmetry_warnings(symmetric_vols):
     """
     A warning should be emitted for  add, sub, mult, and div.
@@ -849,12 +845,6 @@ def test_aglebraic_ops_symmetry_warnings(symmetric_vols):
 
     # Should have 4 warnings on record.
     assert len(record) == 4
-
-    # Check that warning occurs only once per line.
-    with warnings.catch_warnings(record=True) as record:
-        for _ in range(5):
-            vol_c3 + vol_c4
-    assert len(record) == 1
 
 
 def test_volume_load_with_symmetry():
