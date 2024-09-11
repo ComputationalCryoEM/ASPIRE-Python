@@ -672,14 +672,8 @@ class Volume:
         :return: Volume instance.
         """
         with mrcfile.open(filename, permissive=permissive) as mrc:
-            loaded_data = mrc.data
+            loaded_data = mrc.data.copy()  # Allow mutation
             pixel_size = Volume._vx_array_to_size(mrc.voxel_size)
-
-        # FINUFFT work around
-        if loaded_data.dtype == np.float32:
-            loaded_data = loaded_data.astype(np.float32)
-        elif loaded_data.dtype == np.float64:
-            loaded_data = loaded_data.astype(np.float64)
 
         if loaded_data.dtype != dtype:
             logger.info(f"{filename} with dtype {loaded_data.dtype} loaded as {dtype}")
