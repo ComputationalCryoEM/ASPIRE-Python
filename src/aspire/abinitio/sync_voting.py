@@ -71,9 +71,10 @@ class SyncVotingMixin(object):
         :param i: The i image
         :param j: The j image
         :param k_list: The list of images for the third image for voting algorithm
-        :param sync:
-        :return:  good_k, the list of all third images in the peak of the histogram
-            corresponding to the pair of images (i,j)
+        :param sync: Perform 180 degree ambiguity synchronization.
+        :return: (alpha, good_k), angles and list of all third images
+            in the peak of the histogram corresponding to the pair of
+            images (i,j)
         """
 
         if i == j or clmatrix[i, j] == -1:
@@ -200,7 +201,7 @@ class SyncVotingMixin(object):
         :param cl_diff3: Difference of common line indices on C3 created by
             its intersection with C2 and C1
         :param n_theta: The number of points in the theta direction (common lines)
-        :param sync:
+        :param sync: Perform 180 degree ambiguity synchronization.
         :return: cos values of rotation angles between i and j images
             and indices for good k
         """
