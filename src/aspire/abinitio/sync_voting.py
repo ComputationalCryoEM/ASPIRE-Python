@@ -49,7 +49,6 @@ class SyncVotingMixin(object):
             return None
         alpha = np.arccos(c_alpha)
 
-        # # TODO??
         # Convert the Euler angles with ZYZ conversion to rotation matrices
         angles = np.zeros((alpha.shape[0], 3))
         angles[:, 0] = clmatrix[i, j] * 2 * np.pi / n_theta + np.pi / 2

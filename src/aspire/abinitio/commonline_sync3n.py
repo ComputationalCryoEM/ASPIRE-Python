@@ -5,10 +5,16 @@ import warnings
 import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import curve_fit
-from scipy.spatial.transform import Rotation as sprot
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
-from aspire.utils import J_conjugate, all_pairs, nearest_rotations, tqdm, trange
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    all_pairs,
+    nearest_rotations,
+    tqdm,
+    trange,
+)
 from aspire.utils.matlab_compat import stable_eigsh
 from aspire.utils.random import randn
 
@@ -819,11 +825,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         angles = np.zeros(3)
 
         if alphas is not None:
-            # TODO, fixup to ZYZ? or?
-            angles[0] = clmatrix[i, j] * 2 * np.pi / n_theta - np.pi
+            angles[0] = clmatrix[i, j] * 2 * np.pi / n_theta + np.pi / 2
             angles[1] = np.mean(alphas)
-            angles[2] = np.pi - clmatrix[j, i] * 2 * np.pi / n_theta
-            rot = sprot.from_euler("ZXZ", angles).as_matrix()
+            angles[2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
+            rot = Rotation.from_euler(angles).matrices
 
         else:
             # This is for the case that images i and j correspond to the same
