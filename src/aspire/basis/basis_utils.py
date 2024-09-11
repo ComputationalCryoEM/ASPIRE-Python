@@ -9,8 +9,7 @@ import warnings
 import numpy as np
 from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
-from pyshtools.expand import spharm_lm
-from scipy.special import jn, jv, sph_harm
+from scipy.special import jn, jv, sph_harm, factorial
 
 from aspire.utils import grid_2d, grid_3d
 
@@ -157,6 +156,31 @@ def norm_assoc_legendre(j, m, x):
 
     return px
 
+def _sph_harm(m, j, theta, phi):
+    """
+    Compute spherical harmonics.
+
+    :param m: Order |m| <= j
+    :param j: Harmonic degree, j>=0
+    :param theta: longitude coordinate [0, 2*pi]
+    :param phi: latitude coordinate [0, pi]
+    """
+
+    if m < 0:
+        return (-1)**(m%2)*np.conj(_sph_harm(-m, j, phi, theta))
+
+    from scipy.special import lpmv    
+    y = np.sqrt( ((2*j+1)/(4*np.pi)) * factorial(j-m)/factorial(j+m)) * lpmv(m, j, np.cos(phi)) * np.exp(1j*m*theta)  # OKAY
+    # _y = norm_assoc_legendre(j, m, np.cos(phi)) * np.exp(1j*m*theta) / np.sqrt( ((2*j+1)/(4*np.pi)) * factorial(j-m)/factorial(j+m)) # not the right factor?
+
+    # # also not the right factor
+    # k=2
+    # if m == 0:
+    #     k =1
+    # _y = norm_assoc_legendre(j, m, np.cos(phi)) * np.exp(1j*m*theta) / np.sqrt( k*(2*j+1) * factorial(j-m)/factorial(j+m))
+
+    
+    return y
 
 def real_sph_harmonic(j, m, theta, phi):
     """
@@ -174,27 +198,11 @@ def real_sph_harmonic(j, m, theta, phi):
 
     # The `scipy` sph_harm implementation is much faster,
     #   but incorrectly returns NaN for high orders.
-    # For higher order use `pyshtools`.
-    if j < 86:
-        y = sph_harm(abs_m, j, phi, theta)
-    else:
-        warnings.warn(
-            "Computing higher order spherical harmonics is slow."
-            "  Consider using `FFBBasis3D` or decreasing volume size.",
-            stacklevel=1,
-        )
+    y = _sph_harm(abs_m, j, phi, theta)
+    #y = sph_harm(abs_m, j, phi, theta)  # scipy
 
-        y = spharm_lm(
-            j,
-            abs_m,
-            theta,
-            phi,
-            kind="complex",
-            degrees=False,
-            csphase=-1,
-            normalization="ortho",
-        )
 
+    
     if m < 0:
         y = np.sqrt(2) * np.imag(y)
     elif m > 0:
