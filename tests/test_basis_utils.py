@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 import numpy as np
+from scipy.special import sph_harm as sp_sph_harm
 
 from aspire.basis.basis_utils import (
     all_besselj_zeros,
@@ -9,8 +10,53 @@ from aspire.basis.basis_utils import (
     norm_assoc_legendre,
     real_sph_harmonic,
     sph_bessel,
+    sph_harm,
     unique_coords_nd,
 )
+
+
+def test_sph_harm_low_order():
+    """
+    Test the `sph_harm` implementation matches `scipy` at lower orders.
+    """
+    m = 3
+    j = 5
+    x = np.linspace(0, np.pi, 42)
+    y = np.linspace(0, 2 * np.pi, 42)
+
+    ref = sp_sph_harm(m, j, y, x)  # Note calling convention is different
+    np.testing.assert_allclose(sph_harm(j, m, x, y), ref)
+
+
+def test_sph_harm_high_order():
+    """
+    Test we remain finite at higher orders where `scipy.special.sph_harm` overflows.
+    """
+    m = 87
+    j = 87
+    x = 0.12345
+    y = 0.56789
+
+    # If scipy fixed their implementation for higher orders in the future,
+    # this check will we may wish to take it.
+    ref = sp_sph_harm(m, j, y, x)  # Note calling convention is different
+    assert not np.isfinite(ref)
+
+    # Can manually check against pyshtools,
+    # but we are avoiding that package dependency.
+    # y = spharm_lm(
+    #     j,
+    #     abs_m,
+    #     theta,
+    #     phi,
+    #     kind="complex",
+    #     degrees=False,
+    #     csphase=-1,
+    #     normalization="ortho",
+    # )
+
+    # Check we are finite.
+    assert np.isfinite(sph_harm(j, m, x, y))
 
 
 class BesselTestCase(TestCase):
