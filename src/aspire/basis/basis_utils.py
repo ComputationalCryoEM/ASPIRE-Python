@@ -178,7 +178,7 @@ def sph_harm(j, m, theta, phi):
 
     # Use identity for negative `m`
     if m < 0:
-        (-1) ** (m % 2) * np.conj(y)
+        y = (-1) ** (m % 2) * np.conj(y)
 
     return y
 
