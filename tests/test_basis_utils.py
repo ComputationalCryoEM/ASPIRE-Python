@@ -38,12 +38,13 @@ def test_sph_harm_high_order():
     y = 0.56789
 
     # If scipy fixed their implementation for higher orders in the future,
-    # this check will we may wish to take it.
+    # this check should fail and we can reconsider that package.
     ref = sp_sph_harm(m, j, y, x)  # Note calling convention is different
     assert not np.isfinite(ref)
 
     # Can manually check against pyshtools,
     # but we are avoiding that package dependency.
+    # Leaving this here intentionally for future developers.
     # y = spharm_lm(
     #     j,
     #     abs_m,
