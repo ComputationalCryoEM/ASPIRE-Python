@@ -27,6 +27,11 @@ def test_sph_harm_low_order():
     ref = sp_sph_harm(m, j, y, x)  # Note calling convention is different
     np.testing.assert_allclose(sph_harm(j, m, x, y), ref)
 
+    # negative m
+    m *= -1
+    ref = sp_sph_harm(m, j, y, x)  # Note calling convention is different
+    np.testing.assert_allclose(sph_harm(j, m, x, y), ref)
+
 
 def test_sph_harm_high_order():
     """
