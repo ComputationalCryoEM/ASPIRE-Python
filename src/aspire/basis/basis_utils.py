@@ -8,7 +8,7 @@ import logging
 import numpy as np
 from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
-from scipy.special import factorial, jn, jv
+from scipy.special import jn, jv
 
 from aspire.utils import grid_2d, grid_3d
 
@@ -156,33 +156,29 @@ def norm_assoc_legendre(j, m, x):
     return px
 
 
-def _sph_harm(m, j, theta, phi):
+def sph_harm(j, m, theta, phi):
     """
     Compute spherical harmonics.
 
+    Note call signature convention may be different from other packages.
+
     :param m: Order |m| <= j
     :param j: Harmonic degree, j>=0
-    :param theta: longitude coordinate [0, 2*pi]
-    :param phi: latitude coordinate [0, pi]
+    :param theta: latitude coordinate [0, pi]
+    :param phi: longitude coordinate [0, 2*pi]
+    :return: Complex array of evaluated spherical harmonics.
     """
 
-    if m < 0:
-        return (-1) ** (m % 2) * np.conj(_sph_harm(-m, j, phi, theta))
-
-    from scipy.special import lpmv
-
+    # Compute sph_harm for positive `abs(m)`
     y = (
-        np.sqrt(((2 * j + 1) / (4 * np.pi)) * factorial(j - m) / factorial(j + m))
-        * lpmv(m, j, np.cos(phi))
-        * np.exp(1j * m * theta)
-    )  # OKAY
-    # _y = norm_assoc_legendre(j, m, np.cos(phi)) * np.exp(1j*m*theta) / np.sqrt( ((2*j+1)/(4*np.pi)) * factorial(j-m)/factorial(j+m)) # not the right factor?
+        norm_assoc_legendre(j, abs(m), np.cos(theta))
+        * np.exp(1j * abs(m) * phi)
+        * np.sqrt(0.5 / np.pi)
+    )
 
-    # # also not the right factor
-    # k=2
-    # if m == 0:
-    #     k =1
-    # _y = norm_assoc_legendre(j, m, np.cos(phi)) * np.exp(1j*m*theta) / np.sqrt( k*(2*j+1) * factorial(j-m)/factorial(j+m))
+    # Use identity for negative `m`
+    if m < 0:
+        (-1) ** (m % 2) * np.conj(y)
 
     return y
 
@@ -201,11 +197,8 @@ def real_sph_harmonic(j, m, theta, phi):
     """
     abs_m = abs(m)
 
-    # The `scipy` sph_harm implementation is much faster,
-    #   but incorrectly returns NaN for high orders.
-    y = _sph_harm(abs_m, j, phi, theta)
-    # from scipy.special import sph_harm
-    # y = sph_harm(abs_m, j, phi, theta)  # scipy
+    # Note the calling convention here may not match other `sph_harm` packages
+    y = sph_harm(j, abs_m, theta, phi)
 
     if m < 0:
         y = np.sqrt(2) * np.imag(y)
