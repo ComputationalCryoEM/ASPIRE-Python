@@ -4,12 +4,11 @@ prolate spheroidal wave function (PSWF) objects.
 """
 
 import logging
-import warnings
 
 import numpy as np
 from numpy import diff, exp, log, pi
 from numpy.polynomial.legendre import leggauss
-from scipy.special import jn, jv, sph_harm, factorial
+from scipy.special import factorial, jn, jv
 
 from aspire.utils import grid_2d, grid_3d
 
@@ -156,6 +155,7 @@ def norm_assoc_legendre(j, m, x):
 
     return px
 
+
 def _sph_harm(m, j, theta, phi):
     """
     Compute spherical harmonics.
@@ -167,10 +167,15 @@ def _sph_harm(m, j, theta, phi):
     """
 
     if m < 0:
-        return (-1)**(m%2)*np.conj(_sph_harm(-m, j, phi, theta))
+        return (-1) ** (m % 2) * np.conj(_sph_harm(-m, j, phi, theta))
 
-    from scipy.special import lpmv    
-    y = np.sqrt( ((2*j+1)/(4*np.pi)) * factorial(j-m)/factorial(j+m)) * lpmv(m, j, np.cos(phi)) * np.exp(1j*m*theta)  # OKAY
+    from scipy.special import lpmv
+
+    y = (
+        np.sqrt(((2 * j + 1) / (4 * np.pi)) * factorial(j - m) / factorial(j + m))
+        * lpmv(m, j, np.cos(phi))
+        * np.exp(1j * m * theta)
+    )  # OKAY
     # _y = norm_assoc_legendre(j, m, np.cos(phi)) * np.exp(1j*m*theta) / np.sqrt( ((2*j+1)/(4*np.pi)) * factorial(j-m)/factorial(j+m)) # not the right factor?
 
     # # also not the right factor
@@ -179,8 +184,8 @@ def _sph_harm(m, j, theta, phi):
     #     k =1
     # _y = norm_assoc_legendre(j, m, np.cos(phi)) * np.exp(1j*m*theta) / np.sqrt( k*(2*j+1) * factorial(j-m)/factorial(j+m))
 
-    
     return y
+
 
 def real_sph_harmonic(j, m, theta, phi):
     """
@@ -199,10 +204,9 @@ def real_sph_harmonic(j, m, theta, phi):
     # The `scipy` sph_harm implementation is much faster,
     #   but incorrectly returns NaN for high orders.
     y = _sph_harm(abs_m, j, phi, theta)
-    #y = sph_harm(abs_m, j, phi, theta)  # scipy
+    # from scipy.special import sph_harm
+    # y = sph_harm(abs_m, j, phi, theta)  # scipy
 
-
-    
     if m < 0:
         y = np.sqrt(2) * np.imag(y)
     elif m > 0:
