@@ -272,7 +272,7 @@ class CLSymmetryD2(CLOrient3D):
         cl_angles = np.zeros((2, n_pairs, n_theta, n_theta // 2, 4, 2))
 
         for i in range(n_rots_i):
-            unique_pairs_i = np.where(eq2eq_Rij_table[i])[0]
+            unique_pairs_i = np.nonzero(eq2eq_Rij_table[i])[0]
             if len(unique_pairs_i) == 0:
                 continue
             Ri = Ris[i]
@@ -355,8 +355,8 @@ class CLSymmetryD2(CLOrient3D):
         non_eq_idx[:, 0] = (
             np.hstack(
                 (
-                    np.where(self.eq_class1 == 0)[0],
-                    len(self.eq_class1) + np.where(self.eq_class2 == 0)[0],
+                    np.nonzero(self.eq_class1 == 0)[0],
+                    len(self.eq_class1) + np.nonzero(self.eq_class2 == 0)[0],
                 )
             )
             * self.n_inplane_rots
@@ -368,8 +368,8 @@ class CLSymmetryD2(CLOrient3D):
         # Non-topview equator indices.
         self.non_tv_eq_idx = np.concatenate(
             (
-                np.where(self.eq_class1 > 0)[0],
-                len(self.eq_class1) + np.where(self.eq_class2 > 0)[0],
+                np.nonzero(self.eq_class1 > 0)[0],
+                len(self.eq_class1) + np.nonzero(self.eq_class2 > 0)[0],
             )
         )
 
@@ -485,7 +485,7 @@ class CLSymmetryD2(CLOrient3D):
         # As indicated above for equator candidate, for each self common line we
         # don't get a single coordinate but a range of them. Here we register a
         # list of coordinates for each such self common line candidate.
-        non_top_view_eq_idx = np.where(eq_class > 0)[0]
+        non_top_view_eq_idx = np.nonzero(eq_class > 0)[0]
         n_eq = len(non_top_view_eq_idx)
         n_inplane_rots = scl_angles.shape[1]
         count_eq = 0
