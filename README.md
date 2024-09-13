@@ -37,11 +37,7 @@ install `aspire` safely in that environment.
 
 If you are unfamiliar with `conda`, the
 [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
-distribution for `x86_64` is recommended.  For Apple silicon to use
-the osx-arm platform, patching and building some dependencies from
-source is currently required.  The Intel `osx-64` install is still
-preferred even for Apple silicon users, otherwise [notes are
-provided.](https://github.com/ComputationalCryoEM/ASPIRE-Python/discussions/969)
+distribution for `x86_64` is recommended.
 
 Assuming you have `conda` and a compatible system, the following steps
 will checkout current code release, create an environment, and install
