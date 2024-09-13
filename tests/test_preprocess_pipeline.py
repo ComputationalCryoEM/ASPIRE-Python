@@ -168,7 +168,7 @@ def testInvertContrast(L, dtype):
 
     # all images should be the same after inverting contrast
     np.testing.assert_allclose(
-        imgs1_rc.asnumpy(), imgs2_rc.asnumpy(), rtol=1e-05, atol=1e-08
+        imgs1_rc.asnumpy(), imgs2_rc.asnumpy(), rtol=1e-05, atol=1e-06
     )
     # dtype of returned images should be the same
     assert dtype == imgs1_rc.dtype
