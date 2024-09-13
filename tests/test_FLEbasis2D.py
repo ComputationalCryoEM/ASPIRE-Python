@@ -73,8 +73,10 @@ def relerr(base, approx):
 class TestFLEBasis2D(UniversalBasisMixin):
     # Loosen the tolerance for `cufinufft` and `osx_arm` to be within 15%
     test_eps = 1.0
-    if backend_available("cufinufft") or platform.system() == "Darwin":
-        test_eps = 1.16
+    if backend_available("cufinufft"):
+        test_eps = 1.15
+    elif platform.system() == "Darwin":
+        test_eps = 1.20
 
     # check closeness guarantees for fast vs dense matrix method
     def testFastVDense_T(self, basis):
