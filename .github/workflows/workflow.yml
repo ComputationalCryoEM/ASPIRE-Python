@@ -222,9 +222,6 @@ jobs:
           retention-days: 7
 
   osx_arm:
-    defaults:
-      run:
-        shell: bash -l {0}
     needs: check
     runs-on: macos-14
     # Run on every code push, but only on review ready PRs
