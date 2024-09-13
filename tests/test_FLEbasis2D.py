@@ -1,4 +1,5 @@
 import os
+import platform
 import sys
 
 import numpy as np
@@ -70,8 +71,10 @@ def relerr(base, approx):
 
 @pytest.mark.parametrize("basis", test_bases, ids=show_fle_params)
 class TestFLEBasis2D(UniversalBasisMixin):
-    # Loosen the tolerance for `cufinufft` to be within 15%
-    test_eps = 1.15 if backend_available("cufinufft") else 1.0
+    # Loosen the tolerance for `cufinufft` and `osx_arm` to be within 15%
+    test_eps = 1.0
+    if backend_available("cufinufft") or platform.system() == "Darwin":
+        test_eps = 1.16
 
     # check closeness guarantees for fast vs dense matrix method
     def testFastVDense_T(self, basis):

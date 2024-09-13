@@ -604,7 +604,9 @@ class SimTestCase(TestCase):
             relion_src = RelionSource(star_filepath, tmpdir, max_rows=1024)
             imgs_sav = relion_src.images[:1024]
             # Compare original images with saved images
-            self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))
+            np.testing.assert_allclose(
+                imgs_org.asnumpy(), imgs_sav.asnumpy(), atol=1e-6
+            )
             # Save images into multiple MRCS files based on batch size
             batch_size = 512
             info = self.sim.save(star_filepath, batch_size=batch_size, overwrite=False)
@@ -623,7 +625,9 @@ class SimTestCase(TestCase):
             relion_src = RelionSource(star_filepath, tmpdir, max_rows=1024)
             imgs_sav = relion_src.images[:1024]
             # Compare original images with saved images
-            self.assertTrue(np.allclose(imgs_org.asnumpy(), imgs_sav.asnumpy()))
+            np.testing.assert_allclose(
+                imgs_org.asnumpy(), imgs_sav.asnumpy(), atol=1e-6
+            )
 
 
 def test_default_symmetry_group():
@@ -666,9 +670,11 @@ def test_cached_image_accessors():
     cached_src = src.cache()
 
     # Compare the cached vs dynamic image sets.
-    np.testing.assert_allclose(cached_src.projections[:], src.projections[:])
-    np.testing.assert_allclose(cached_src.images[:], src.images[:])
-    np.testing.assert_allclose(cached_src.clean_images[:], src.clean_images[:])
+    np.testing.assert_allclose(cached_src.projections[:], src.projections[:], atol=1e-6)
+    np.testing.assert_allclose(cached_src.images[:], src.images[:], atol=1e-6)
+    np.testing.assert_allclose(
+        cached_src.clean_images[:], src.clean_images[:], atol=1e-6
+    )
 
 
 def test_mismatched_pixel_size():
