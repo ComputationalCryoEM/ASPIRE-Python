@@ -79,7 +79,7 @@ def source(n_img, resolution, dtype, offsets):
 
 @pytest.fixture(scope="module")
 def orient_est(source):
-    return build_CL_from_source(source)
+    return build_cl_from_source(source)
 
 
 #########
@@ -140,22 +140,22 @@ def test_scl_scores(orient_est):
     )
 
     # Initialize CL instance with new source.
-    CL = build_CL_from_source(src)
+    cl = build_cl_from_source(src)
 
     # Generate lookup data.
-    CL._compute_shifted_pf()
-    CL._generate_lookup_data()
-    CL._generate_scl_lookup_data()
+    cl._compute_shifted_pf()
+    cl._generate_lookup_data()
+    cl._generate_scl_lookup_data()
 
     # Compute self-commonline scores.
-    CL._compute_scl_scores()
+    cl._compute_scl_scores()
 
-    # CL.scls_scores is shape (n_img, n_cand_rots). Since we used the first
+    # cl.scls_scores is shape (n_img, n_cand_rots). Since we used the first
     # 10 candidate rotations of the first non-equator viewing direction as our
     # Simulation rotations, the maximum correlation for image i should occur at
-    # candidate rotation index (non_eq_idx * CL.n_inplane_rots + i).
-    max_corr_idx = np.argmax(CL.scls_scores, axis=1)
-    gt_idx = non_eq_idx * CL.n_inplane_rots + np.arange(10)
+    # candidate rotation index (non_eq_idx * cl.n_inplane_rots + i).
+    max_corr_idx = np.argmax(cl.scls_scores, axis=1)
+    gt_idx = non_eq_idx * cl.n_inplane_rots + np.arange(10)
 
     # Check that self-commonline indices match ground truth.
     n_match = np.sum(max_corr_idx == gt_idx)
@@ -165,7 +165,7 @@ def test_scl_scores(orient_est):
     np.testing.assert_array_less(match_tol, n_match / src.n)
 
     # Check dtype pass-through.
-    assert CL.scls_scores.dtype == orient_est.dtype
+    assert cl.scls_scores.dtype == orient_est.dtype
 
 
 def test_global_J_sync(orient_est):
@@ -240,7 +240,7 @@ def test_global_J_sync_single_triplet(dtype):
     """
     # Generate 3 image source and orientation object.
     src = Simulation(n=3, L=10, dtype=dtype, seed=SEED)
-    orient_est = build_CL_from_source(src)
+    orient_est = build_cl_from_source(src)
 
     # Grab set of rotations and generate a set of relative rotations, Rijs.
     rots = orient_est.src.rotations
@@ -455,7 +455,7 @@ def g_sync_d2(rots, rots_gt):
     return rots_gt_sync
 
 
-def build_CL_from_source(source):
+def build_cl_from_source(source):
     # Search for common lines over less shifts for 0 offsets.
     max_shift = 0
     shift_step = 1
