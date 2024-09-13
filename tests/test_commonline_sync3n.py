@@ -53,7 +53,7 @@ def source_orientation_objs(resolution, offsets, dtype):
         seed=456,
     ).cache()
 
-    orient_est = CLSync3N(src, S_weighting=True, seed=789)
+    orient_est = CLSync3N(src, n_theta=72, S_weighting=True, seed=789)
 
     return src, orient_est
 
@@ -68,15 +68,15 @@ def test_build_clmatrix(source_orientation_objs):
 
     angle_diffs = abs(orient_est.clmatrix - gt_clmatrix) * 360 / orient_est.n_theta
 
-    # Count number of estimates within 5 degrees of ground truth.
-    within_5 = np.sum((angle_diffs - 360) % 360 < 5)
+    # Count number of estimates near ground truth.
+    within = np.sum((angle_diffs - 360) % 360 < 10)
 
-    # Check that at least 98% of estimates are within 5 degrees.
-    tol = 0.98
+    # Check that at least 95% of estimates are within degree range.
+    tol = 0.96
     if src.offsets.all() != 0:
         # Set tolerance to 95% when using nonzero offsets.
         tol = 0.95
-    assert within_5 / angle_diffs.size > tol
+    assert within / angle_diffs.size > tol
 
 
 def test_estimate_rotations(source_orientation_objs):

@@ -16,7 +16,7 @@ from aspire.utils import (
     trange,
 )
 from aspire.utils.matlab_compat import stable_eigsh
-from aspire.utils.random import randn
+from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +191,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :param n_eigs: Optional, number of eigenvalues to compute (min 3).
         """
 
+        # Critical this occurs in double precision
+        S = S.astype(np.float64, copy=False)
+
         if n_eigs < 3:
             raise ValueError(
                 f"n_eigs must be greater than 3, default is 4. Invoked with {n_eigs}"
@@ -204,6 +207,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                     f" Received {W.shape}."
                 )
             # Initialize D
+            # Critical this occurs in double precision
+            W = W.astype(np.float64, copy=False)
             D = np.mean(W, axis=1)
 
             Dhalf = D
@@ -227,13 +232,14 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             W = np.kron(W, np.ones((3, 3), dtype=self.dtype))
 
             # Make Dhalf of size 3Nx3N
-            Dhalf = np.diag(np.kron(np.diag(Dhalf), np.ones(3, dtype=self.dtype)))
+            Dhalf = np.diag(np.kron(np.diag(Dhalf), np.ones(3, dtype=np.float64)))
 
             # Apply weights to S
             S = Dhalf @ (W * S) @ Dhalf
 
         # Extract three eigenvectors corresponding to non-zero eigenvalues.
-        d, v = stable_eigsh(S, n_eigs)
+        d, v = stable_eigsh(S, n_eigs, which="LM")
+
         sort_idx = np.argsort(-d)
         logger.info(
             f"Top {n_eigs} eigenvalues from synchronization voting matrix: {d[sort_idx]}"
@@ -249,13 +255,21 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             # to multiply:
             v = Dhalf @ v
 
-        # Yield estimated rotations from the eigen-vectors
-        rotations = v.reshape(self.n_img, 3, 3).transpose(0, 2, 1)
+        # # quick hack the matlab code in here
+        H = v.T.reshape(3, self.n_img, 3)
+        rotations = np.zeros((self.n_img, 3, 3), dtype=np.float64)
+        for i in range(self.n_img):
+            U, _, V = np.linalg.svd(H[:, i, :])
+            # breakpoint()
+            rotations[i] = U @ V
 
-        # Enforce we are returning actual rotations
-        rotations = nearest_rotations(rotations)
+        # # Yield estimated rotations from the eigen-vectors
+        # rotations = v.reshape(self.n_img, 3, 3).transpose(0, 2, 1)
 
-        return rotations
+        # # Enforce we are returning actual rotations
+        # rotations = nearest_rotations(rotations)
+
+        return rotations.astype(self.dtype)
 
     def _construct_sync3n_matrix(self, Rij):
         """
@@ -829,6 +843,11 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             angles[1] = np.mean(alphas)
             angles[2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
             rot = Rotation.from_euler(angles).matrices
+            # from scipy.spatial.transform import Rotation as sprot
+            # angles[0] = clmatrix[i, j] * 2 * np.pi / n_theta - np.pi
+            # angles[1] = np.mean(alphas)
+            # angles[2] = np.pi - clmatrix[j, i] * 2 * np.pi / n_theta
+            # rot = sprot.from_euler("ZXZ", angles).as_matrix()
 
         else:
             # This is for the case that images i and j correspond to the same
@@ -866,7 +885,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Initialize candidate eigenvectors
         n_Rijs = Rijs.shape[0]
-        vec = randn(n_Rijs, seed=self.seed)
+        vec = rand(n_Rijs, seed=self.seed)
         vec = vec / norm(vec)
         residual = 1
         itr = 0
@@ -890,6 +909,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # We need only the signs of the eigenvector
         J_sync = np.sign(vec)
+        J_sync = -1 * np.sign(J_sync[0]) * J_sync  # Stabilize J_sync
 
         return J_sync
 

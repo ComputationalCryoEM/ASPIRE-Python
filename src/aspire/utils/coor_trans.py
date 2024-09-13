@@ -299,6 +299,7 @@ def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):
         and the ground truth (in degrees).
     """
     Q_mat, flag = register_rotations(rots_est, rots_gt)
+    print("Q_mat", Q_mat, "\nflag", flag)
     regrot = get_aligned_rotations(rots_est, Q_mat, flag)
     mean_ang_dist = Rotation.mean_angular_distance(regrot, rots_gt) * 180 / np.pi
 
