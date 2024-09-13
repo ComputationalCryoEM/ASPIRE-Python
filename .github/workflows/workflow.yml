@@ -231,19 +231,9 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Conda
-      uses: conda-incubator/setup-miniconda@v2.3.0
-      with:
-        miniconda-version: "latest"
-        auto-update-conda: true
-        python-version: '3.8'
-        activate-environment: aspire
-        environment-file: environment-accelerate.yml
-        auto-activate-base: false
-    - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
+    - name: Complete Install and Log Environment
       run: |
-        conda info
-        conda list
+        python --version
         pip install -e ".[dev]"  # install aspire
         pip freeze
     - name: Test
