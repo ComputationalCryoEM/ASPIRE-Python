@@ -231,6 +231,9 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
     steps:
     - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
     - name: Complete Install and Log Environment
       run: |
         python --version
