@@ -1167,7 +1167,7 @@ class CLSymmetryD2(CLOrient3D):
         )
 
         m = np.zeros((6, 6), dtype=self.dtype)
-        colors_i = np.zeros((len(self.triplets), 3), dtype=self.dtype)  # ints?
+        colors_i = np.zeros((len(self.triplets), 3), dtype=int)
         n_trip = len(self.triplets)
         votes = np.zeros((n_trip))
         trip_idx = 0
