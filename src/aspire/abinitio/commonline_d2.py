@@ -49,7 +49,7 @@ class CLSymmetryD2(CLOrient3D):
         :param grid_res: Number of sampling points on sphere for projetion directions.
             These are generated using the Saaf-Kuijlaars algorithm. Default value is 1200.
         :param inplane_res: The sampling resolution of in-plane rotations for each
-            projetion direction. Default value is 5 degrees.
+            projection direction. Default value is 5 degrees.
         :param eq_min_dist: Width of strip around equator projection directions from
             which we do not sample directions. Default value is 7 degrees.
         :param epsilon: Tolerance for J-synchronization power method.
