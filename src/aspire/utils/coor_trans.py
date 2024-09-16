@@ -2,6 +2,7 @@
 General purpose math functions, mostly geometric in nature.
 """
 
+import logging
 import math
 
 import numpy as np
@@ -11,6 +12,8 @@ from scipy.linalg import svd
 from aspire.numeric import xp
 from aspire.utils.random import Random
 from aspire.utils.rotation import Rotation
+
+logger = logging.getLogger(__name__)
 
 
 def cart2pol(x, y):
@@ -299,7 +302,7 @@ def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):
         and the ground truth (in degrees).
     """
     Q_mat, flag = register_rotations(rots_est, rots_gt)
-    print("Q_mat", Q_mat, "\nflag", flag)
+    logger.debug(f"Registration Q_mat: {Q_mat}\nflag: {flag}")
     regrot = get_aligned_rotations(rots_est, Q_mat, flag)
     mean_ang_dist = Rotation.mean_angular_distance(regrot, rots_gt) * 180 / np.pi
 
