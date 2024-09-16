@@ -255,19 +255,11 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             # to multiply:
             v = Dhalf @ v
 
-        # # quick hack the matlab code in here
-        H = v.T.reshape(3, self.n_img, 3)
-        rotations = np.zeros((self.n_img, 3, 3), dtype=np.float64)
-        for i in range(self.n_img):
-            U, _, V = np.linalg.svd(H[:, i, :])
-            # breakpoint()
-            rotations[i] = U @ V
+        # Yield estimated rotations from the eigen-vectors
+        rotations = v.reshape(self.n_img, 3, 3).transpose(0, 2, 1)
 
-        # # Yield estimated rotations from the eigen-vectors
-        # rotations = v.reshape(self.n_img, 3, 3).transpose(0, 2, 1)
-
-        # # Enforce we are returning actual rotations
-        # rotations = nearest_rotations(rotations)
+        # Enforce we are returning actual rotations
+        rotations = nearest_rotations(rotations)
 
         return rotations.astype(self.dtype)
 
