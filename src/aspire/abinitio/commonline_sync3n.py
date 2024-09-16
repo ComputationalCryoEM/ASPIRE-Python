@@ -835,11 +835,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             angles[1] = np.mean(alphas)
             angles[2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
             rot = Rotation.from_euler(angles).matrices
-            # from scipy.spatial.transform import Rotation as sprot
-            # angles[0] = clmatrix[i, j] * 2 * np.pi / n_theta - np.pi
-            # angles[1] = np.mean(alphas)
-            # angles[2] = np.pi - clmatrix[j, i] * 2 * np.pi / n_theta
-            # rot = sprot.from_euler("ZXZ", angles).as_matrix()
 
         else:
             # This is for the case that images i and j correspond to the same
@@ -901,7 +896,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # We need only the signs of the eigenvector
         J_sync = np.sign(vec)
-        J_sync = -1 * np.sign(J_sync[0]) * J_sync  # Stabilize J_sync
+        J_sync = np.sign(J_sync[0]) * J_sync  # Stabilize J_sync
 
         return J_sync
 
