@@ -71,7 +71,7 @@ def test_build_clmatrix(source_orientation_objs):
     # Count number of estimates near ground truth.
     within = np.sum((angle_diffs - 360) % 360 < 10)
 
-    # Check that at least 95% of estimates are within degree range.
+    # Check estimates are within degree range.
     tol = 0.96
     if src.offsets.all() != 0:
         # Set tolerance to 95% when using nonzero offsets.
