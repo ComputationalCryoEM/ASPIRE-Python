@@ -259,7 +259,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         rotations = v.reshape(self.n_img, 3, 3).transpose(0, 2, 1)
 
         # Enforce we are returning actual rotations
-        rotations = nearest_rotations(rotations)
+        rotations = nearest_rotations(rotations, allow_reflection=True)
 
         return rotations.astype(self.dtype)
 
