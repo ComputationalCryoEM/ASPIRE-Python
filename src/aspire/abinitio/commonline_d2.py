@@ -1097,6 +1097,15 @@ class CLSymmetryD2(CLOrient3D):
 
         The color sync procedure partitions the set of 3-tuples of m'th row outer
         products into 3 sets of row-consistent outer products up to the sign of each.
+
+        :param Rijs: Array of shape (n_pairs,4,3,3) consisting of the n_pairs of
+            hand-consistent 4-tuples of Rijs.
+        :returns:
+            - cp, A color mapping vector of length (n_pairs * 3) which permutes
+                the 3-tuples of `Rijs_rows` to be globally row-consistent.
+            - Rijs_rows, An array of color synchronized rotations' rows outer products of
+                shape (n_pairs, 3, 3, 3), where each Rijs_rows[ij] corresponds to a 3-tuple
+                of m'th row outer product matrices, some of which having a spurious -1.
         """
         logger.info("Performing rotations' rows synchronization.")
         # Generate array of one rank matrices from which we can extract rows.
