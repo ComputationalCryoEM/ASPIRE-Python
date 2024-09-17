@@ -830,15 +830,16 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         #     res = self._estimate_all_Rijs_host(Rijs)
         res = self._estimate_all_Rijs_cupy(clmatrix)
         res_host = self._estimate_all_Rijs_host(clmatrix)
-        if not np.allclose(res, res_host):
-            breakpoint()
+        # if not np.allclose(res, res_host):
+        #     breakpoint()
 
         return res
 
     def _estimate_all_Rijs_cupy(self, clmatrix):
         import cupy as cp
 
-        estimate_all_Rijs = self.__gpu_module.get_function("estimate_all_Rijs")
+        estimate_all_angles = self.__gpu_module.get_function("estimate_all_angles")
+        angles_to_rots = self.__gpu_module.get_function("angles_to_rots")
 
         full_width = self.full_width
         if str(full_width).lower() == "adaptive":
@@ -854,11 +855,14 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         ntics = int(180 / self.hist_bin_width)
         n_pairs = (self.n_img * (self.n_img - 1)) // 2
         hist = cp.zeros((n_pairs, ntics), dtype=np.float64)
-        # kmap stores the mapping of k indices to histogram bins
-        kmap = cp.zeros(
+        # k_map stores the mapping of k indices to histogram bins
+        k_map = cp.empty(
             (n_pairs, self.n_img), dtype=int
         )  # note, high memory , probably need to change...
-        rotations = cp.empty((n_pairs, 3, 3), dtype=np.float64)
+        angles_map = cp.empty(
+            (n_pairs, self.n_img), dtype=int
+        )  # note, high memory , probably need to change...
+        angles = cp.empty((n_pairs, 3), dtype=np.float64)
 
         # Configure grid of blocks
         blkszx = 32
@@ -866,21 +870,44 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         blkszy = 32
         nblky = (self.n_img + blkszy - 1) // blkszy
 
-        logger.info("Launching `estimate_all_Rijs` kernel.")
-        estimate_all_Rijs(
+        logger.info("Launching `estimate_all_angles` kernel.")
+        estimate_all_angles(
             (nblkx, nblky),
             (blkszx, blkszy),
             (
                 self.n_img,
                 self.n_theta,
-                self.hist_bin_width,  # converted to double
-                full_width,
-                sigma,
-                sync,
+                np.float64(self.hist_bin_width),
+                int(full_width),
+                np.float64(sigma),
+                int(sync),
                 clmatrix,  # input
                 hist,  # tmp
-                kmap,  # tmp
-                rotations,  # output
+                k_map,  # tmp
+                angles_map,  # tmp
+                angles,  # output
+            ),
+        )
+
+        # no longer need workspace vars
+        del hist
+        del k_map
+        del angles_map
+
+        # convert angles to rots
+        rotations = cp.empty((n_pairs, 3, 3), dtype=np.float64)
+
+        blkszx = 1024
+        nblkx = (n_pairs + blkszx - 1) // blkszx
+
+        logger.info("Launching `angles_to_rots` kernel.")
+        angles_to_rots(
+            (nblkx,),
+            (blkszx,),
+            (
+                n_pairs,
+                angles,
+                rotations,
             ),
         )
 
