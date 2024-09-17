@@ -289,7 +289,7 @@ def test_sync_colors(orient_est):
     Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
     gt_colors = np.zeros((orient_est.n_pairs, 3), dtype=int)
 
-    with Random(1234):
+    with Random(123):
         for p, (i, j) in enumerate(orient_est.pairs):
             gs = orient_est.gs
             if p > 0:
