@@ -1299,10 +1299,10 @@ class CLSymmetryD2(CLOrient3D):
         trip_idx = 0
         for i in range(self.n_img):
             for j in range(i + 1, self.n_img - 1):
-                ij = 3 * self.pairs_to_linear[i, j]
+                ij_block = 3 * self.pairs_to_linear[i, j]
                 for k in range(j + 1, self.n_img):
-                    ik = 3 * self.pairs_to_linear[i, k]
-                    jk = 3 * self.pairs_to_linear[j, k]
+                    ik_block = 3 * self.pairs_to_linear[i, k]
+                    jk_block = 3 * self.pairs_to_linear[j, k]
 
                     # Extract permutation indices from c_perms
                     n = c_perms[trip_idx]
@@ -1319,36 +1319,36 @@ class CLSymmetryD2(CLOrient3D):
                     # Multiply vector by color matrix
 
                     # Upper triangular part
-                    p = t_perms[p_n1] + ik
-                    out[ij] = out[ij] - v[p[1]] - v[p[2]] + v[p[0]]
-                    out[ij + 1] = out[ij + 1] - v[p[0]] - v[p[2]] + v[p[1]]
-                    out[ij + 2] = out[ij + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+                    p = t_perms[p_n1] + ik_block
+                    out[ij_block] = out[ij_block] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[ij_block + 1] = out[ij_block + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[ij_block + 2] = out[ij_block + 2] - v[p[0]] - v[p[1]] + v[p[2]]
 
-                    p = t_perms[p_n2] + jk
-                    out[ij] = out[ij] - v[p[1]] - v[p[2]] + v[p[0]]
-                    out[ij + 1] = out[ij + 1] - v[p[0]] - v[p[2]] + v[p[1]]
-                    out[ij + 2] = out[ij + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+                    p = t_perms[p_n2] + jk_block
+                    out[ij_block] = out[ij_block] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[ij_block + 1] = out[ij_block + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[ij_block + 2] = out[ij_block + 2] - v[p[0]] - v[p[1]] + v[p[2]]
 
-                    p = i_perms[p_n3] + jk
-                    out[ik] = out[ik] - v[p[1]] - v[p[2]] + v[p[0]]
-                    out[ik + 1] = out[ik + 1] - v[p[0]] - v[p[2]] + v[p[1]]
-                    out[ik + 2] = out[ik + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+                    p = i_perms[p_n3] + jk_block
+                    out[ik_block] = out[ik_block] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[ik_block + 1] = out[ik_block + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[ik_block + 2] = out[ik_block + 2] - v[p[0]] - v[p[1]] + v[p[2]]
 
                     # Lower triangular part
-                    p = i_perms[p_n1] + ij
-                    out[ik] = out[ik] - v[p[1]] - v[p[2]] + v[p[0]]
-                    out[ik + 1] = out[ik + 1] - v[p[0]] - v[p[2]] + v[p[1]]
-                    out[ik + 2] = out[ik + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+                    p = i_perms[p_n1] + ij_block
+                    out[ik_block] = out[ik_block] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[ik_block + 1] = out[ik_block + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[ik_block + 2] = out[ik_block + 2] - v[p[0]] - v[p[1]] + v[p[2]]
 
-                    p = i_perms[p_n2] + ij
-                    out[jk] = out[jk] - v[p[1]] - v[p[2]] + v[p[0]]
-                    out[jk + 1] = out[jk + 1] - v[p[0]] - v[p[2]] + v[p[1]]
-                    out[jk + 2] = out[jk + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+                    p = i_perms[p_n2] + ij_block
+                    out[jk_block] = out[jk_block] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[jk_block + 1] = out[jk_block + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[jk_block + 2] = out[jk_block + 2] - v[p[0]] - v[p[1]] + v[p[2]]
 
-                    p = t_perms[p_n3] + ik
-                    out[jk] = out[jk] - v[p[1]] - v[p[2]] + v[p[0]]
-                    out[jk + 1] = out[jk + 1] - v[p[0]] - v[p[2]] + v[p[1]]
-                    out[jk + 2] = out[jk + 2] - v[p[0]] - v[p[1]] + v[p[2]]
+                    p = t_perms[p_n3] + ik_block
+                    out[jk_block] = out[jk_block] - v[p[1]] - v[p[2]] + v[p[0]]
+                    out[jk_block + 1] = out[jk_block + 1] - v[p[0]] - v[p[2]] + v[p[1]]
+                    out[jk_block + 2] = out[jk_block + 2] - v[p[0]] - v[p[1]] + v[p[2]]
         return out
 
     def _unmix_colors(self, color_vecs):
@@ -1434,8 +1434,14 @@ class CLSymmetryD2(CLOrient3D):
     def _sync_signs(self, rr, c_vec):
         """
         This function executes the final stage of the algorithm, Signs
-        synchroniztion. At the end all rows of the rotations Ri are exctracted
-        and the matrices Ri are assembled.
+        synchroniztion. At this point, we have rotation rows
+        rr[ij, m] = sij_m * vi_m.T @ vj_m, where vi_m, vj_m are the m'th rows
+        of rotation matrices Ri and Rj and sij_m is an unknown sign. This method
+        uses the permutation vector, `c_vec`, to partition the rotation row
+        outer products and constructs a symmetric block matrix, H, with ij'th block
+        sij * vi.T @ vj. The signs sij are then adjusted so that H is rank-1. This
+        matrix is then factored to extract the rows of each rotation matrix. At the
+        end all rows of the rotations Ri are exctracted and the matrices Ri are assembled.
 
         :param rr: Array of color synchronized rotations' rows outer products of
             shape (n_pairs, 3, 3, 3), where each rr[ij] corresponds to a 3-tuple
@@ -1445,6 +1451,28 @@ class CLSymmetryD2(CLOrient3D):
         :return: n_img x 3 x 3 array of rotation matrices.
         """
         logger.info("Performing signs synchronization.")
+        c_mat, c_mat_5d, c_mat_4d = self._construct_color_mats(rr, c_vec)
+
+        sync_signs2 = self._compute_signs(c_mat_5d, c_mat_4d)
+
+        rows_arr = self._estimate_rows(sync_signs2, c_mat_5d)
+
+        signs = self._compute_signs_adjustment(rows_arr)
+
+        rots = self._extract_rotations(c_mat, signs)
+
+        return rots
+
+    def _construct_color_mats(self, rr, c_vec):
+        """
+        Construct the partitioned row synchronized color matrices, `c_mat`, where
+        c_mat[m] contains the 3x3 blocks sij*vi_m.T @ vj_m, where vi_m is the m'th
+        row of the i'th rotation Ri and sij is the unknown sign.
+
+        :param rr: Non-partitioned rotation row matrices.
+        :param c_vec: Color partition vector.
+        :return: Partitioned row synchronized color matrices.
+        """
         # Partition the union of tuples {0.5*(Ri^TRj+Ri^TgkRj), k=1:3} according
         # to the color partition established in color synchronization procedure.
         # The partition is stored in two different arrays each with the purpose
@@ -1494,6 +1522,12 @@ class CLSymmetryD2(CLOrient3D):
             for i in range(self.n_img):
                 c_mat[c, i, :, i, :] = c_mat_5d[i, i, c]
 
+        return c_mat, c_mat_5d, c_mat_4d
+
+    def _compute_signs(self, c_mat_5d, c_mat_4d):
+        """
+        Compute signs for adjusting `c_mat` to be composed of all rank-1 3x3 blocks.
+        """
         # To decompose cMat as a rank 1 matrix we need to adjust the signs of the
         # Qij^c so that sign(Qij^c*Qjk^c) = sign(Qik^c) for all c=1,2,3 and (i,j).
         # In practice we compare the sign of the sum of the entries of Qij^c*Qjk^c
@@ -1552,6 +1586,14 @@ class CLSymmetryD2(CLOrient3D):
                         )
                         # The function (1-x)/2 maps 1->0 and -1->1
 
+        return sync_signs2
+
+    def _estimate_rows(self, sync_signs2, c_mat_5d):
+        """
+        Construct 3N x 3N matrix of rank-1 3x3 blocks of sij*vi_m.T @ vj_m,
+        the leading eigenvectors of which correspond to estimates for the rows
+        of the rotations Ri, up to signs.
+        """
         c_mat_5d_mp = np.concatenate((c_mat_5d, -c_mat_5d), axis=1)
         rows_arr = np.zeros((3, self.n_img, 3 * self.n_img), dtype=self.dtype)
         svals = np.zeros((3, 2, self.n_img), dtype=self.dtype)
@@ -1586,6 +1628,12 @@ class CLSymmetryD2(CLOrient3D):
                 svals[c, :, r] = S[:2]
                 rows_arr[c, r] = U[:, 0]
 
+        return rows_arr
+
+    def _compute_signs_adjustment(self, rows_arr):
+        """
+        Compute signs adjustment vector.
+        """
         # Sync signs according to results for each image. Dot products between
         # signed row estimates are used to construct an (N over 2)x(N over 2)
         # sign synchronization matrix S. If (v_i)k and (v_j)k are the i'th and
@@ -1640,8 +1688,17 @@ class CLSymmetryD2(CLOrient3D):
             signs[c] = U[:, -1]  # svds returns in ascending order
             s_out[c] = S[::-1]
 
-        signs = np.sign(signs)
+        return np.sign(signs)
 
+    def _extract_rotations(self, c_mat, signs):
+        """
+        Adjust the signs of each block of `c_mat` then extract the rotation
+        rows and construct the estimated rotations.
+
+        :param c_mat: The color synchronization matrix.
+        :param signs: The signs adjustment matrix.
+        :return: Estimated rotations.
+        """
         # Adjust the signs of Qij^c in the matrices cMat(:,:,c) for all c=1,2,3
         # and 1<=i<j<=N according to the results of the signs from the last stage.
         logger.info("Constructing and decomposing 3 row synchroniztion matrices.")
