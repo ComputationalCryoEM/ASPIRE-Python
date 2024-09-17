@@ -62,7 +62,9 @@ def source_orientation_objs(resolution, offsets, dtype):
         max_shift = 0.20
         shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
 
-    orient_est = CLSync3N(src, max_shift=max_shift, shift_step=shift_step, seed=789)
+    orient_est = CLSync3N(
+        src, max_shift=max_shift, shift_step=shift_step, seed=789, full_width=2
+    )
 
     # Estimate rotations once for all tests.
     orient_est.estimate_rotations()
