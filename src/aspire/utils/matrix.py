@@ -438,8 +438,10 @@ def nearest_rotations(A, allow_reflection=False):
     """
     Uses the SVD method to compute the set of nearest rotations to the set A of noisy rotations.
 
+    Note when `allow_reflection` is `True`, results may contain reflections.
+
     :param A: A 2D array or a 3D array where the first axis is the stack axis.
-    :param allow_reflection: Optionally correct reflections.
+    :param allow_reflection: Optionally allow reflections (disables correction).
     :return: ndarray of rotations of equal size to A.
     """
     og_shape = A.shape
