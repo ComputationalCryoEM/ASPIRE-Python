@@ -824,19 +824,70 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :return: Estimated rotations
         """
         # host/gpu dispatch
-        if self.__gpu_module:
-            res = self._estimate_all_Rijs_cupy(Rijs)
-        else:
-            res = self._estimate_all_Rijs_host(Rijs)
-        
+        # if self.__gpu_module:
+        #     res = self._estimate_all_Rijs_cupy(Rijs)
+        # else:
+        #     res = self._estimate_all_Rijs_host(Rijs)
+        res = self._estimate_all_Rijs_cupy(clmatrix)
+        res_host = self._estimate_all_Rijs_host(clmatrix)
+        if not np.allclose(res, res_host):
+            breakpoint()
+
         return res
-        
+
     def _estimate_all_Rijs_cupy(self, clmatrix):
         import cupy as cp
 
         estimate_all_Rijs = self.__gpu_module.get_function("estimate_all_Rijs")
-        
-        return
+
+        full_width = self.full_width
+        if str(full_width).lower() == "adaptive":
+            full_width = -1
+
+        sigma = 3.0
+        sync = 1
+
+        # transfer input to device
+        clmatrix = cp.asarray(self.clmatrix, dtype=int)
+
+        # workspace arrays
+        ntics = int(180 / self.hist_bin_width)
+        n_pairs = (self.n_img * (self.n_img - 1)) // 2
+        hist = cp.zeros((n_pairs, ntics), dtype=np.float64)
+        # kmap stores the mapping of k indices to histogram bins
+        kmap = cp.zeros(
+            (n_pairs, self.n_img), dtype=int
+        )  # note, high memory , probably need to change...
+        rotations = cp.empty((n_pairs, 3, 3), dtype=np.float64)
+
+        # Configure grid of blocks
+        blkszx = 32
+        nblkx = (self.n_img + blkszx - 1) // blkszx
+        blkszy = 32
+        nblky = (self.n_img + blkszy - 1) // blkszy
+
+        logger.info("Launching `estimate_all_Rijs` kernel.")
+        estimate_all_Rijs(
+            (nblkx, nblky),
+            (blkszx, blkszy),
+            (
+                self.n_img,
+                self.n_theta,
+                self.hist_bin_width,  # converted to double
+                full_width,
+                sigma,
+                sync,
+                clmatrix,  # input
+                hist,  # tmp
+                kmap,  # tmp
+                rotations,  # output
+            ),
+        )
+
+        # transfer results device to host
+        rotations = rotations.get()
+
+        return rotations
 
     def _estimate_all_Rijs_host(self, clmatrix):
         """
@@ -844,7 +895,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         :param clmatrix: Common lines matrix
         :return: Estimated rotations
-        """        
+        """
         n_img = self.n_img
         n_theta = self.n_theta
         Rijs = np.zeros((len(self._pairs), 3, 3))
