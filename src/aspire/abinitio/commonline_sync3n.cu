@@ -436,18 +436,19 @@ void triangle_scores_inner(int n, double* Rijs, int n_intervals, unsigned int* s
 };
 
 extern "C" __global__
-void estimate_all_Rijs(int n,
-                       int n_theta,
-                       double hist_bin_width,
-                       int full_width,
-                       double sigma,
-                       int sync,
-                       double* __restrict__ clmatrix,
-                       double* __restrict__ hist,
-                       int* __restrict__ kmap,
-                       double* rotations)
+void estimate_all_angles(int n,
+                         int n_theta,
+                         double hist_bin_width,
+                         int full_width,
+                         double sigma,
+                         int sync,
+                         int* __restrict__ clmatrix,
+                         double* __restrict__ hist,
+                         int* __restrict__ k_map,
+                         double* __restrict__ angles_map,
+                         double* __restrict__ angles)
 {
-  // try toget kmap as uint16_t
+  // try toget k_map as uint16_t
   /* n n_img */
 
   /* thread index (2d), represents "i" index, "j" index */
@@ -459,7 +460,6 @@ void estimate_all_Rijs(int n,
   double c1, c2, c3;
   double cond;
   double cos_phi2;
-  double angles[3];
   int cnt;
 
   /* no-op when out of bounds */
@@ -470,6 +470,8 @@ void estimate_all_Rijs(int n,
 
 
   // vote_ij creates good_k list per (i,j)
+  const int pair_idx = PAIR_IDX(n,i,j);
+  int map_idx; /* tmp index var */
 
   // We shouldn't need this... confirm and rm later.
   if(clmatrix[i*n + j] == -1) return;
@@ -560,12 +562,14 @@ void estimate_all_Rijs(int n,
     /* compute histogram contribution and index map */
     angle = acos(cos_phi2) * 180. / M_PI;
     // angle's bin
-    kmap[PAIR_IDX(n,i,j)*n + k] = angle / ntics;
+    map_idx = pair_idx*n + k;
+    k_map[map_idx] = angle / ntics;
+    angles_map[map_idx] = angle;
     for(b=0; b<ntics; b++){
       ga = b*(180/ntics);  // grid angle // todo, just compute in radians to avoid extra arithmetic
       ga = (ga - angle);
       // histogram contribution
-      hist[PAIR_IDX(n,i,j)*ntics + b ] += exp(
+      hist[pair_idx*ntics + b ] += exp(
           ga*ga / ( 2*sigma*sigma));
     } /* bins */
   } /* k*/
@@ -583,17 +587,19 @@ void estimate_all_Rijs(int n,
   peak = -1;
   peak_idx = -1;
   for(b=0; b<ntics; b++){
-    if(hist[PAIR_IDX(n,i,j)*ntics + b] > peak){
-      peak = hist[PAIR_IDX(n,i,j)*ntics + b];
+    map_idx = pair_idx*ntics + b;
+    if(hist[map_idx] > peak){
+      peak = hist[map_idx];
       peak_idx = b;
     }
   }
 
   /* find mean of rotations */
   // initialize
-  angles[0] = cl_idx12 * 2 * M_PI / n + M_PI / 2;
-  angles[1] = 0;
-  angles[2] = -M_PI / 2 - cl_idx21 * 2 * M_PI / n;
+  map_idx = pair_idx*3;
+  angles[map_idx    ] = cl_idx12 * 2 * M_PI / n + M_PI / 2;
+  angles[map_idx + 1] = 0;
+  angles[map_idx + 2] = -M_PI / 2 - cl_idx21 * 2 * M_PI / n;
   cnt = 0;
 
   if(full_width!=-1){
@@ -601,9 +607,10 @@ void estimate_all_Rijs(int n,
     // find satisfying indices
     for(k=0; k<n; k++){
       // image k in peak bin
-      if(abs(kmap[PAIR_IDX(n,i,j)*n + k] - peak_idx) < 2){
+      map_idx = pair_idx*n + k;
+      if(abs(k_map[map_idx] - peak_idx) < 2){
         cnt += 1;
-        angles[1] += angle;
+        angles[pair_idx*3 + 1] += angles_map[map_idx];
       } /* if */
     } /* k */
   }
@@ -612,9 +619,23 @@ void estimate_all_Rijs(int n,
   }
 
   // divide  (todo, better handle 0/0?)
-  angles[1] /= cnt;
-
-  // convert euler to rotation, probably break into it's own kernel.
-  ang2orth(&(rotations[PAIR_IDX(n,i,j)]), angles[0], angles[1], angles[2]);
+  angles[pair_idx*3 + 1] /= cnt;
 
 } /* kernel */
+
+extern "C" __global__
+void angles_to_rots(int n,
+                    double* __restrict__ angles,
+                    double* __restrict__ rotations)
+{
+  /* Convert stack of ZYZ Euler angles to stack of rotation matrices */
+
+  /* thread index (1d), represents "i" index */
+  unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+  /* no-op when out of bounds */
+  if(i >= n) return;
+
+  ang2orth(&(rotations[i*9]), angles[i*3],angles[i*3+1],angles[i*3+2]);
+
+}
