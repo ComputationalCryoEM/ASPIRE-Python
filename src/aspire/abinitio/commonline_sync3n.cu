@@ -20,9 +20,9 @@ inline void ang2orth(double* r, double a, double b, double c){
   r[5] = sa*sb;
   r[6] = -sb*cc;
   r[7] = sb*sc;
-  r[8] = cb;  
+  r[8] = cb;
 }
-  
+
 
 inline void mult_3x3(double *out, double *R1, double *R2) {
   /* 3X3 matrices multiplication: out = R1*R2
@@ -436,7 +436,16 @@ void triangle_scores_inner(int n, double* Rijs, int n_intervals, unsigned int* s
 };
 
 extern "C" __global__
-void estimate_all_Rijs(int n, int n_theta, double* __restrict__ clmatrix, double* __restrict__ hist, int* __restrict__ kmap, double* rotations)
+void estimate_all_Rijs(int n,
+                       int n_theta,
+                       double hist_bin_width,
+                       int full_width,
+                       double sigma,
+                       int sync,
+                       double* __restrict__ clmatrix,
+                       double* __restrict__ hist,
+                       int* __restrict__ kmap,
+                       double* rotations)
 {
   // try toget kmap as uint16_t
   /* n n_img */
@@ -445,14 +454,12 @@ void estimate_all_Rijs(int n, int n_theta, double* __restrict__ clmatrix, double
   unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
   unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
   int k;
-  int kk;
   int cl_diff1, cl_diff2, cl_diff3;
   double theta1, theta2, theta3;
   double c1, c2, c3;
   double cond;
   double cos_phi2;
   double angles[3];
-  double r[9];
   int cnt;
 
   /* no-op when out of bounds */
@@ -471,14 +478,15 @@ void estimate_all_Rijs(int n, int n_theta, double* __restrict__ clmatrix, double
   int cl_idx21 = clmatrix[j*n + i];
   int cl_idx13, cl_idx31;
   int cl_idx23, cl_idx32;
-  const int ntics = 60;
-  const double sigma = 3.0;
+  int ntics = 180 / hist_bin_width;
+  const double TOL_idx = 1e-12;
+  bool ind1, ind2;
   double ga;
   double angle;
   int b;
   int peak_idx;
   double peak;
-  
+
   /* Assume that k_list starts as [0,n] */
   for(k=0; k<n; k++){
 
@@ -496,7 +504,7 @@ void estimate_all_Rijs(int n, int n_theta, double* __restrict__ clmatrix, double
 
     // self._get_cos_phis(cl_diff1, cl_diff2, cl_diff3, n_theta)
     cl_diff1 = cl_idx13 - cl_idx12;
-    cl_diff2 = cl_idx21 - cl_idx23;
+    cl_diff2 = cl_idx23 - cl_idx21;
     cl_diff3 = cl_idx32 - cl_idx31;
 
     theta1 = cl_diff1 * 2 * M_PI / n_theta;
@@ -507,13 +515,38 @@ void estimate_all_Rijs(int n, int n_theta, double* __restrict__ clmatrix, double
     c2 = cos(theta2);
     c3 = cos(theta3);
 
-    cond = 1 + 2 * c1 * c2 * c3 - (c1*c1 + c2*c2 + c3*c3);
-
     // test if we have a good_idx
+    cond = 1 + 2 * c1 * c2 * c3 - (c1*c1 + c2*c2 + c3*c3);
     if(cond < 1e-5) return;
 
-    cos_phi2 = (c3 - c1*c2 ) / (sin(theta1) * sin(theta2));
-    
+    /* Calculated cos values of angle between i and j images */
+    if( sync == 1){
+
+      cos_phi2 = (c3 - c1 * c2) / (sqrt(1 - c1*c1) * sqrt(1 - c2 *c2));
+
+      /* Some synchronization must be applied when common line is out by 180 degrees.
+         Here fix the angles between c_ij(c_ji) and c_ik(c_jk) to be smaller than pi/2,
+         otherwise there will be an ambiguity between alpha and pi-alpha.
+      */
+
+      /* Check sync conditions */
+      ind1 = (theta1 > (M_PI + TOL_idx)) | (
+          (theta1 < -TOL_idx) & (theta1 > -M_PI)
+                                            );
+      ind2 = (theta2 > (M_PI + TOL_idx)) | (
+          (theta2 < -TOL_idx) & (theta2 > -M_PI)
+                                            );
+      if( (ind1 & ~ind2) | (~ind1 & ind2)){
+        /* Apply sync */
+        cos_phi2 = -cos_phi2;
+      }
+
+    }
+    else{
+
+      cos_phi2 = (c3 - c1*c2 ) / (sin(theta1) * sin(theta2));
+    }
+
     //end _get_cos_phis
 
     // clip [-1,1]
@@ -523,19 +556,29 @@ void estimate_all_Rijs(int n, int n_theta, double* __restrict__ clmatrix, double
     if(cos_phi2 <-1){
       cos_phi2 = -1;
     }
-                   
+
     /* compute histogram contribution and index map */
     angle = acos(cos_phi2) * 180. / M_PI;
     // angle's bin
     kmap[PAIR_IDX(n,i,j)*n + k] = angle / ntics;
     for(b=0; b<ntics; b++){
       ga = b*(180/ntics);  // grid angle // todo, just compute in radians to avoid extra arithmetic
+      ga = (ga - angle);
       // histogram contribution
       hist[PAIR_IDX(n,i,j)*ntics + b ] += exp(
-          (2*angle*ga - (angle*angle + ga*ga))/(2*sigma*sigma));
+          ga*ga / ( 2*sigma*sigma));
     } /* bins */
   } /* k*/
-  
+
+  /*
+    At this point, the kernel should have accumulated all "good"
+    k contributions into the histogram.
+    The next section solves the histogram.
+
+    Potentially this could be a distinct kernel,
+    but would require looking up cl_idx again or assigning them as below.
+  */
+
   /* find peak of histogram */
   peak = -1;
   peak_idx = -1;
@@ -545,35 +588,33 @@ void estimate_all_Rijs(int n, int n_theta, double* __restrict__ clmatrix, double
       peak_idx = b;
     }
   }
-  
+
   /* find mean of rotations */
   // initialize
+  angles[0] = cl_idx12 * 2 * M_PI / n + M_PI / 2;
+  angles[1] = 0;
+  angles[2] = -M_PI / 2 - cl_idx21 * 2 * M_PI / n;
   cnt = 0;
 
-  // _rotratio_eulerangle_vec loops over good_k list per (i,j)
-  // find satisfying indices  
-  for(k=0; k<n; k++){
-    // image k in peak bin
-    if(abs(kmap[PAIR_IDX(n,i,j)*n + k] - peak_idx) < 2){
-      cnt += 1;
-      // convert to euler angles  // check
-      angles[0] = cl_idx12 * 2 * M_PI / n + M_PI / 2;
-      angles[1] = angle;
-      angles[2] = -M_PI / 2 - cl_idx21 * 2 * M_PI / n;
-      
-      // convert euler to rotation
-      ang2orth(r, angles[0], angles[1], angles[2]);
-      // add rotation matrix contribution to mean
-      for(kk=0; kk<9;kk++){
-        rotations[PAIR_IDX(n,i,j)*9 + kk] += r[kk];
-      } /* kk */
-    } /* if */   
-  } /* k */
-    
+  if(full_width!=-1){
+    /* fixed width */
+    // find satisfying indices
+    for(k=0; k<n; k++){
+      // image k in peak bin
+      if(abs(kmap[PAIR_IDX(n,i,j)*n + k] - peak_idx) < 2){
+        cnt += 1;
+        angles[1] += angle;
+      } /* if */
+    } /* k */
+  }
+  else {
+    /* adaptive width*/
+  }
 
   // divide  (todo, better handle 0/0?)
-  for(kk=0; kk<9;kk++){
-    rotations[PAIR_IDX(n,i,j)*9 + kk] /= cnt;
-  } /* kk */
-    
+  angles[1] /= cnt;
+
+  // convert euler to rotation, probably break into it's own kernel.
+  ang2orth(&(rotations[PAIR_IDX(n,i,j)]), angles[0], angles[1], angles[2]);
+
 } /* kernel */
