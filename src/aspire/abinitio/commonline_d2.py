@@ -1149,9 +1149,18 @@ class CLSymmetryD2(CLOrient3D):
 
     def _match_colors(self, Rijs_rows):
         """
-        Partition the set of matrices Rijs_rows, which correspond to a permutation of
-        the outer products of the m'th rows of Ri and Rj, into 3 sets of matrices each
-        corresponding to an m'th row. Returns the permutations which induce the partition.
+        For each triplet of indices i < j < k, we consider the m'th row outer products stored
+        as Rijs_rows, ie. Rijs_rows[ij], Rijs_rows[jk], and Rijs_rows[ik]. Recall that
+        Rijs_rows[ij, n], n=0,1,2, corresponds to the 3x3 outer product vi_m.T @ vj_m, where
+        vi_m is an unknown row of the rotation matrices Ri and Rj. For each triplet of these
+        sets of row outer products this method finds a permutation sigma such that
+        Rijs_rows[ij, sigma(n)], Rijs_rows[jk, sigma(n)], and Rijs_rows[ik, sigma(n)] all
+        correspond to the same m'th row outer product.
+
+        Framed as graph partioning problem we are coloring the vertices, Rijs_rows[ij, n],
+        with three colors such that each color corresponds to the same row of the rotations
+        Ris. This method returns the permutation that rearanges the elements of each triplet
+        of Rijs to have matching color.
 
         :param Rijs_rows: An n_pairsx3x3x3 array of m'th row outer products for the pairs
             Ri, Rj, where Rijs_rows[:, i] is the m'th row outer product of unknown row m.
