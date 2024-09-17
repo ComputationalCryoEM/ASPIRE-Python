@@ -124,7 +124,7 @@ def test_scl_scores(orient_est):
     # In this case, we take first 10 candidates from a non-equator viewing direction.
     orient_est._generate_lookup_data()
     cand_rots = orient_est.inplane_rotated_grid1
-    non_eq_idx = int(np.argwhere(orient_est.eq_class1 == 0)[0])
+    non_eq_idx = int(np.argwhere(orient_est.eq_class1 == 0)[0][0])
     rots = cand_rots[non_eq_idx, :10]
     angles = Rotation(rots).angles
 
