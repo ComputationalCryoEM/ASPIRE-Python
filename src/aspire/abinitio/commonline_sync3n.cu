@@ -7,22 +7,23 @@
 
 /* convert euler angles (a,b,c) in ZYZ to rotation matrix r */
 inline void ang2orth(double* r, double a, double b, double c){
-  double sa = sin(c);
+  double sa = sin(a);
   double sb = sin(b);
   double sc = sin(c);
   double ca = cos(a);
   double cb = cos(b);
   double cc = cos(c);
 
-  // bugs here
+  // ZYZ Proper Euler angles
+  // https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix
   r[0] = ca*cb*cc - sa*sc;
-  r[1] = sa*cb*cc + ca*sc;
-  r[2] = -sb*cc;
-  r[3] = -ca*cb*sc - sa*cc;
-  r[4] = -sa*cb*sc + ca*cc;
-  r[5] = sb*sc;
-  r[6] = ca*sb;
-  r[7] = sa*sb;
+  r[1] = -cc*sa -ca*cb*sc;
+  r[2] = ca*sb;
+  r[3] = ca*sc + cb*cc*sa;
+  r[4] = ca*cc - cb*sa*sc;
+  r[5] = sa*sb;
+  r[6] = -cc*sb;
+  r[7] = sb*sc;
   r[8] = cb;
 }
 
