@@ -839,12 +839,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         estimate_all_angles = self.__gpu_module.get_function("estimate_all_angles")
         angles_to_rots = self.__gpu_module.get_function("angles_to_rots")
 
-        full_width = self.full_width
-        if str(full_width).lower() == "adaptive":
-            full_width = -1
-            raise
-        # XXX debug (check rest of kernel works before porting adaptive)
-
         sigma = 3.0
         sync = 1
 
@@ -878,7 +872,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 self.n_img,
                 self.n_theta,
                 np.float64(self.hist_bin_width),
-                full_width,
+                self.full_width,
                 np.float64(sigma),
                 sync,
                 clmatrix,  # input

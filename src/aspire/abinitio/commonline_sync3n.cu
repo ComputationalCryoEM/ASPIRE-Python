@@ -465,6 +465,8 @@ void estimate_all_angles(int n,
   double cond;
   double cos_phi2;
   int cnt;
+  double w_theta_need;
+  
 
   /* no-op when out of bounds */
   if(i >= n) return;
@@ -605,7 +607,23 @@ void estimate_all_angles(int n,
 
   cnt = 0;
 
-  if(full_width!=-1){
+  if(full_width==-1){
+    /* adaptive width*/
+    w_theta_need = 0;
+    cnt = 0;
+    while(cnt == 0){
+      w_theta_need += hist_bin_width;
+      for(k=0; k<n; k++){
+        // image k in peak bin
+        map_idx = pair_idx*n + k;
+        if(abs(k_map[map_idx] - peak_idx) < w_theta_need){
+          cnt += 1;  // this image was in the peak
+          angles[pair_idx*3 + 1] += angles_map[map_idx];  // accumulate angle
+        } /* fi < w_theta_need*/
+      } /* k */
+    } /* while */
+  } /* fi adaptive */
+  else {
     /* fixed width */
     // find satisfying indices
     for(k=0; k<n; k++){
@@ -614,12 +632,10 @@ void estimate_all_angles(int n,
       if(abs(k_map[map_idx] - peak_idx) < full_width){
         cnt += 1;  // this image was in the peak
         angles[pair_idx*3 + 1] += angles_map[map_idx];  // accumulate angle
-      } /* if */
+      } /* fi full_width */
     } /* k */
-  }
-  else {
-    /* adaptive width*/
-  }
+  } /* fi fixed width */
+
 
   /* Divide accumulated angles (resulting in the mean alpha angle) */   //(todo, better handle 0/0?)
   /* convert degree radian */
