@@ -171,8 +171,8 @@ class CLSymmetryD2(CLOrient3D):
         # We detect such directions by taking a strip of radius
         # `eq_min_dist` about the 3 great circles perpendicular to the symmetry
         # axes of D2 (i.e to X,Y and Z axes).
-        eq_idx1, eq_class1 = self._mark_equators(sphere_grid1, self.eq_min_dist)
-        eq_idx2, eq_class2 = self._mark_equators(sphere_grid2, self.eq_min_dist)
+        eq_class1 = self._mark_equators(sphere_grid1, self.eq_min_dist)
+        eq_class2 = self._mark_equators(sphere_grid2, self.eq_min_dist)
 
         #  Mark Top View Directions.
         #  A Top view projection image is taken from the direction of one of the
@@ -191,9 +191,6 @@ class CLSymmetryD2(CLOrient3D):
         # Remove top views from sphere grids and update equator indices and classes.
         self.sphere_grid1 = sphere_grid1[eq_class1 < 4]
         self.sphere_grid2 = sphere_grid2[eq_class2 < 4]
-        self.eq_idx1 = eq_idx1[eq_class1 < 4]
-        self.eq_idx2 = eq_idx2[eq_class2 < 4]
-        self.eq_idx = np.concatenate((self.eq_idx1, self.eq_idx2))
         self.eq_class1 = eq_class1[eq_class1 < 4]
         self.eq_class2 = eq_class2[eq_class2 < 4]
 
@@ -209,16 +206,12 @@ class CLSymmetryD2(CLOrient3D):
         cl_angles1, self.eq2eq_Rij_table_11 = self._generate_commonline_angles(
             self.inplane_rotated_grid1,
             self.inplane_rotated_grid1,
-            self.eq_idx1,
-            self.eq_idx1,
             self.eq_class1,
             self.eq_class1,
         )
         cl_angles2, self.eq2eq_Rij_table_12 = self._generate_commonline_angles(
             self.inplane_rotated_grid1,
             self.inplane_rotated_grid2,
-            self.eq_idx1,
-            self.eq_idx2,
             self.eq_class1,
             self.eq_class2,
             same_octant=False,
@@ -233,8 +226,6 @@ class CLSymmetryD2(CLOrient3D):
         self,
         Ris,
         Rjs,
-        Ri_eq_idx,
-        Rj_eq_idx,
         Ri_eq_class,
         Rj_eq_class,
         same_octant=True,
@@ -246,8 +237,6 @@ class CLSymmetryD2(CLOrient3D):
 
         :param Ris: First set of candidate rotations.
         :param Rjs: Second set of candidate rotation.
-        :param Ri_eq_idx: Equator index mask.
-        :param Rj_eq_idx: Equator index mask.
         :param Ri_eq_class: Equator classification for Ris.
         :param Rj_eq_class: Equator classification for Rjs.
         :param same_octant: True if both sets of candidates are in the same octant.
@@ -259,7 +248,7 @@ class CLSymmetryD2(CLOrient3D):
 
         # Generate upper triangular table of indicators of all pairs which are not
         # equators with respect to the same symmetry axis (named unique_pairs).
-        eq_table = np.outer(Ri_eq_idx, Rj_eq_idx)
+        eq_table = np.outer(Ri_eq_class > 0, Rj_eq_class > 0)
         in_same_class = (Ri_eq_class[:, None] - Rj_eq_class.T[None]) == 0
         eq2eq_Rij_table = ~(eq_table * in_same_class)
 
@@ -320,12 +309,10 @@ class CLSymmetryD2(CLOrient3D):
         # Get self-commonline angles.
         self.scl_angles1 = self._generate_scl_angles(
             self.inplane_rotated_grid1,
-            self.eq_idx1,
             self.eq_class1,
         )
         self.scl_angles2 = self._generate_scl_angles(
             self.inplane_rotated_grid2,
-            self.eq_idx2,
             self.eq_class2,
         )
 
@@ -376,7 +363,7 @@ class CLSymmetryD2(CLOrient3D):
         # Generate maps from scl indices to relative rotations.
         self._generate_scl_scores_idx_map()
 
-    def _generate_scl_angles(self, Ris, eq_idx, eq_class):
+    def _generate_scl_angles(self, Ris, eq_class):
         """
         Generate self-commonline angles. For each candidate rotation a pair of self-commonline
         angles are generated for each of the 3 self-commonlines induced by D2 symmetry.
@@ -1847,9 +1834,7 @@ class CLSymmetryD2(CLOrient3D):
         :param eq_filter_angle: Angular distance from equator to be marked as
             an equator point.
 
-        :returns:
-            - eq_idx, a boolean mask for equator indices.
-            - eq_class, n_rots length array of values indicating equator class.
+        :return: eq_class, n_rots length array of values indicating equator class.
         """
         # Project each vector onto xy, xz, yz planes and measure angular distance
         # from each plane.
@@ -1866,7 +1851,6 @@ class CLSymmetryD2(CLOrient3D):
         # Mark all views close to an equator.
         eq_min_dist = np.cos(eq_filter_angle * np.pi / 180)
         n_eqs = np.count_nonzero(angular_dists > eq_min_dist, axis=1)
-        eq_idx = n_eqs > 0
 
         # Classify equators.
         # 0 -> non-equator view
@@ -1889,7 +1873,7 @@ class CLSymmetryD2(CLOrient3D):
         eq_view_class = np.argmax(angular_dists[eq_view_idx] > eq_min_dist, axis=1)
         eq_class[eq_view_idx] = eq_view_class + 1
 
-        return eq_idx, eq_class
+        return eq_class
 
     @staticmethod
     def _generate_inplane_rots(sphere_grid, d_theta):
