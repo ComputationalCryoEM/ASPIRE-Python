@@ -828,10 +828,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         #     res = self._estimate_all_Rijs_cupy(Rijs)
         # else:
         #     res = self._estimate_all_Rijs_host(Rijs)
-        print(f"clmatrix {clmatrix}")
         res = self._estimate_all_Rijs_cupy(clmatrix)
         res_host = self._estimate_all_Rijs_host(clmatrix)
-        breakpoint()
 
         return res
 
@@ -896,9 +894,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         del k_map
         del angles_map
 
-        print(f"First three angles\n{angles.get()[:3]}")
-        np.save("cupy_angles.npy", angles.get())
-
         # convert angles to rots
         rotations = cp.empty((n_pairs, 3, 3), dtype=np.float64)
 
@@ -962,9 +957,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             angles[1] = np.mean(alphas)
             angles[2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
             rot = Rotation.from_euler(angles).matrices
-
-            if i == 0 and j <= 3:
-                print(f"host angles {i} {j} {angles}")
 
         else:
             # This is for the case that images i and j correspond to the same
