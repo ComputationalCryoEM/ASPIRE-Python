@@ -7,21 +7,22 @@
 
 /* convert euler angles (a,b,c) in ZYZ to rotation matrix r */
 inline void ang2orth(double* r, double a, double b, double c){
-  double sa = sin(a);
+  double sa = sin(c);
   double sb = sin(b);
   double sc = sin(c);
   double ca = cos(a);
   double cb = cos(b);
   double cc = cos(c);
 
+  // bugs here
   r[0] = ca*cb*cc - sa*sc;
-  r[1] = -ca*cb*cc - sa*sc;
-  r[2] = ca*sb;
-  r[3] = sa*cb*cc + ca*sc;
-  r[4] = -sa*cb*cc + ca*sc;
-  r[5] = sa*sb;
-  r[6] = -sb*cc;
-  r[7] = sb*sc;
+  r[1] = sa*cb*cc + ca*sc;
+  r[2] = -sb*cc;
+  r[3] = -ca*cb*sc - sa*cc;
+  r[4] = -sa*cb*sc + ca*cc;
+  r[5] = sb*sc;
+  r[6] = ca*sb;
+  r[7] = sa*sb;
   r[8] = cb;
 }
 
@@ -472,18 +473,18 @@ void estimate_all_angles(int n,
 
 
   // vote_ij creates good_k list per (i,j)
-  const int pair_idx = PAIR_IDXD(n,i,j);
+  const int pair_idx = PAIR_IDX(n,i,j);
   int map_idx; /* tmp index var */
 
   // We shouldn't need this... confirm and rm later.
   //xxx
-  if(clmatrix[i*n + j] == -1) return;
+  //  if(clmatrix[i*n + j] == -1) return;
 
-  const int cl_idx12 = clmatrix[i*n + j];
-  const int cl_idx21 = clmatrix[j*n + i];
+  int cl_idx12 = clmatrix[i*n + j];
+  int cl_idx21 = clmatrix[j*n + i];
   int cl_idx13, cl_idx31;
   int cl_idx23, cl_idx32;
-  int ntics = 180 / hist_bin_width;
+  int ntics = 180. / hist_bin_width;
   const double TOL_idx = 1e-12;
   bool ind1, ind2;
   double ga;
@@ -503,7 +504,7 @@ void estimate_all_angles(int n,
     // test `k` values
     if(k==i) continue;
     if(cl_idx13 == -1) continue;  // i, k
-    if(cl_idx31 == -1) continue;  // k, i
+    //if(cl_idx31 == -1) continue;  // k, i
     if(cl_idx23 == -1) continue;  // j, k
     // if(cl_idx32 == -1) return;  // k, j
 
@@ -522,7 +523,7 @@ void estimate_all_angles(int n,
 
     // test if we have a good_idx
     cond = 1 + 2 * c1 * c2 * c3 - (c1*c1 + c2*c2 + c3*c3);
-    if(cond <= 1e-5) continue;  // this value of k is not good
+    if(cond <= 1e-5) continue;  // that value of k is not good, skip
 
     /* Calculated cos values of angle between i and j images */
     if( sync == 1){
@@ -540,7 +541,7 @@ void estimate_all_angles(int n,
                                             );
       ind2 = (theta2 > (M_PI + TOL_idx)) || (
           (theta2 < -TOL_idx) && (theta2 > -M_PI)
-                                            );
+                                             );
       if( (ind1 && !ind2) || (!ind1 && ind2)){
         /* Apply sync */
         cos_phi2 = -cos_phi2;
@@ -548,7 +549,6 @@ void estimate_all_angles(int n,
 
     }  // end sync
     else{
-
       cos_phi2 = (c3 - c1*c2 ) / (sin(theta1) * sin(theta2));
     } // end not sync
 
@@ -564,14 +564,14 @@ void estimate_all_angles(int n,
     angle = acos(cos_phi2) * 180. / M_PI;
     // angle's bin
     map_idx = pair_idx*n + k;
-    k_map[map_idx] = angle / ntics;
+    k_map[map_idx] = angle / hist_bin_width;  //check
     angles_map[map_idx] = angle;  // degree
     for(b=0; b<ntics; b++){
-      ga = b*(180/ntics);  // grid angle // todo, just compute in radians to avoid extra arithmetic
+      ga = b*(180./ntics);  // grid angle // todo, just compute in radians to avoid extra arithmetic
       ga = (ga - angle);
       // histogram contribution
       hist[pair_idx*ntics + b ] += exp(
-          ga*ga / ( 2*sigma*sigma));
+          -(ga*ga) / ( 2*sigma*sigma));
     } /* bins */
   } /* k*/
 
@@ -585,7 +585,7 @@ void estimate_all_angles(int n,
   */
 
   /* find peak of histogram */
-  peak = -1;
+  peak = -99999;
   peak_idx = -1;
   for(b=0; b<ntics; b++){
     map_idx = pair_idx*ntics + b;
@@ -601,6 +601,7 @@ void estimate_all_angles(int n,
   angles[map_idx    ] = cl_idx12 * 2 * M_PI / n_theta + M_PI / 2;
   angles[map_idx + 1] = 0;
   angles[map_idx + 2] = -M_PI / 2 - cl_idx21 * 2 * M_PI / n_theta;
+
   cnt = 0;
 
   if(full_width!=-1){
@@ -623,11 +624,6 @@ void estimate_all_angles(int n,
   /* convert degree radian */
   angles[pair_idx*3 + 1] *= M_PI / (180*cnt);
 
-  //debug
-  // angles[pair_idx*3 + 0] = 0;
-  // angles[pair_idx*3 + 1] = 1;
-  // angles[pair_idx*3 + 2] = 2;
-  
 } /* kernel */
 
 extern "C" __global__
@@ -643,6 +639,6 @@ void angles_to_rots(int n,
   /* no-op when out of bounds */
   if(i >= n) return;
 
-  ang2orth(&(rotations[i*9]), angles[i*3],angles[i*3+1],angles[i*3+2]);
+  ang2orth(&(rotations[i*9]), angles[i*3], angles[i*3+1], angles[i*3+2]);
 
 }
