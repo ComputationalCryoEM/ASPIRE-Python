@@ -62,7 +62,9 @@ class CLOrient3D:
         self.n_theta = n_theta
         self.n_check = n_check
         self.hist_bin_width = hist_bin_width
-        self.full_width = full_width
+        if str(full_width).lower() == "adaptive":
+            full_width = -1
+        self.full_width = int(full_width)
         self.clmatrix = None
         self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
