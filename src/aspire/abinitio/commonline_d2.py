@@ -233,7 +233,11 @@ class CLSymmetryD2(CLOrient3D):
         """
         Compute commonline angles induced by the 4 sets of relative rotations
         Rij = Ri.T @ g_m @ Rj, m = 0,1,2,3, where g_m is the identity and rotations
-        about the three axes of symmetry of a D2 symmetric molecule.
+        about the three axes of symmetry of a D2 symmetric molecule. Note, we only
+        compute commonline angles between pairs of images which are not equator
+        images with respect to the same axis of symmetry. To do this we build a
+        table, `eq2eq_Rij_table`, which is `False` for pairs of images that are
+        equator images with respect to the same axis of symmetry and `True` otherwise.
 
         :param Ris: First set of candidate rotations.
         :param Rjs: Second set of candidate rotation.
