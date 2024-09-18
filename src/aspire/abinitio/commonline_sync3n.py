@@ -831,8 +831,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         print(f"clmatrix {clmatrix}")
         res = self._estimate_all_Rijs_cupy(clmatrix)
         res_host = self._estimate_all_Rijs_host(clmatrix)
-        # if not np.allclose(res, res_host):
-        #     breakpoint()
+        breakpoint()
 
         return res
 
@@ -846,22 +845,21 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         if str(full_width).lower() == "adaptive":
             full_width = -1
             raise
-        #XXX debug (check rest of kernel works before porting adaptive)
-
+        # XXX debug (check rest of kernel works before porting adaptive)
 
         sigma = 3.0
         sync = 1
 
         # transfer input to device
-        clmatrix = cp.asarray(self.clmatrix, dtype=int)
+        clmatrix = cp.asarray(clmatrix, dtype=np.int32)
 
         # workspace arrays
         ntics = int(180 / self.hist_bin_width)
-        n_pairs = (self.n_img * (self.n_img - 1)) // 2
+        n_pairs = self.n_img * (self.n_img - 1) // 2
         hist = cp.zeros((n_pairs, ntics), dtype=np.float64)
         # k_map stores the mapping of k indices to histogram bins
         k_map = cp.zeros(
-            (n_pairs, self.n_img), dtype=int
+            (n_pairs, self.n_img), dtype=np.int32
         )  # note, high memory , probably need to change...
         angles_map = cp.zeros(
             (n_pairs, self.n_img), dtype=np.float64
@@ -879,12 +877,12 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             (nblkx, nblky),
             (blkszx, blkszy),
             (
-                int(self.n_img),
-                int(self.n_theta),
+                self.n_img,
+                self.n_theta,
                 np.float64(self.hist_bin_width),
-                int(full_width),
+                full_width,
                 np.float64(sigma),
-                int(sync),
+                sync,
                 clmatrix,  # input
                 hist,  # tmp
                 k_map,  # tmp
@@ -899,6 +897,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         del angles_map
 
         print(f"First three angles\n{angles.get()[:3]}")
+        np.save("cupy_angles.npy", angles.get())
 
         # convert angles to rots
         rotations = cp.empty((n_pairs, 3, 3), dtype=np.float64)
@@ -964,8 +963,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             angles[2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
             rot = Rotation.from_euler(angles).matrices
 
-            if i == 0 and j<=3:
-                print(f'host angles {i} {j} {angles}')
+            if i == 0 and j <= 3:
+                print(f"host angles {i} {j} {angles}")
 
         else:
             # This is for the case that images i and j correspond to the same
