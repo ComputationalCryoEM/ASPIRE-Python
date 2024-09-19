@@ -72,6 +72,12 @@ class CLOrient3D:
         self.rotations = None
         self._pf = None
 
+        # Sanity limit to match potential clmatrix dtype of int16.
+        if self.n_img > (2**15 - 1):
+            raise NotImplementedError(
+                "Commonlines implementation limited to <2**15 images."
+            )
+
         # Auto configure GPU
         self.__gpu_module = None
         try:
@@ -297,7 +303,7 @@ class CLOrient3D:
         # the common line with image j. Note the common line index
         # starts from 0 instead of 1 as Matlab version. -1 means
         # there is no common line such as clmatrix[i,i].
-        clmatrix = -cp.ones((n_img, n_img), dtype=np.float64)
+        clmatrix = -cp.ones((n_img, n_img), dtype=np.int16)
         # When cl_dist[i, j] is not -1, it stores the maximum value
         # of correlation between image i and j for all possible 1D shifts.
         # We will use cl_dist[i, j] = -1 (including j<=i) to
@@ -711,4 +717,4 @@ class CLOrient3D:
             module_code = fh.read()
 
         # CUPY compile the CUDA code
-        return cp.RawModule(code=module_code)
+        return cp.RawModule(code=module_code, backend="nvcc")
