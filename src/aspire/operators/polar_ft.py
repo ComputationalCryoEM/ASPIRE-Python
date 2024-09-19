@@ -121,7 +121,7 @@ class PolarFT:
 
         resolution = x.shape[-1]
 
-        pf = nufft(x, self.freqs.astype(np.float64)) / resolution**2
+        pf = nufft(x.astype(np.float64), self.freqs.astype(np.float64)) / resolution**2
 
         return pf.reshape(*stack_shape, self.ntheta // 2, self.nrad).astype(self.dtype)
 
