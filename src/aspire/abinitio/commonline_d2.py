@@ -1148,11 +1148,11 @@ class CLSymmetryD2(CLOrient3D):
         )
         v0 = randn(
             3 * n_pairs, seed=self.seed
-        )  # Seed eigs initial vector for iterative method
+        ).astype(np.float64, copy=False)  # Seed eigs initial vector for iterative method
         v0 = v0 / norm(v0)
         vals, colors = la.eigs(color_mat, k=3, which="LR", v0=v0)
         vals = np.real(vals)
-        colors = np.real(colors)
+        colors = np.real(colors).astype(self.dtype, copy=False)
         colors = np.sign(colors[0]) * colors  # Stable eigs
         cp, _ = self._unmix_colors(colors[:, :2])
 
@@ -1731,15 +1731,15 @@ class CLSymmetryD2(CLOrient3D):
                     idx += 1
 
         # cMat(:,:,c) are now rank 1. Decompose using SVD and take leading eigenvector.
-        c_mat = c_mat.reshape(3, 3 * self.n_img, 3 * self.n_img)
+        c_mat = c_mat.reshape(3, 3 * self.n_img, 3 * self.n_img).astype(np.float64, copy=False)
         U1, _, _ = la.svds(c_mat[0], k=3, which="LM")
         U2, _, _ = la.svds(c_mat[1], k=3, which="LM")
         U3, _, _ = la.svds(c_mat[2], k=3, which="LM")
 
         # Stabilize and take leading eigenvector.
-        U1 = np.sign(U1[0, -1]) * U1[:, -1]
-        U2 = np.sign(U2[0, -1]) * U2[:, -1]
-        U3 = np.sign(U3[0, -1]) * U3[:, -1]
+        U1 = (np.sign(U1[0, -1]) * U1[:, -1]).astype(self.dtype, copy=False)
+        U2 = (np.sign(U2[0, -1]) * U2[:, -1]).astype(self.dtype, copy=False)
+        U3 = (np.sign(U3[0, -1]) * U3[:, -1]).astype(self.dtype, copy=False)
 
         # The c'th row of the rotation Rj is Uc(3*j-2:3*j,1)/norm(Uc(3*j-2:3*j,1)),
         # (Rows must be normalized to length 1).
