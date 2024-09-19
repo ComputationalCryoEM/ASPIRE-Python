@@ -864,14 +864,18 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         angles = cp.zeros((n_pairs, 3), dtype=np.float64)
 
         # Configure grid of blocks
-        blkszx = 1024
+        blkszx = 32
         nblkx = (self.n_img + blkszx - 1) // blkszx
+        blkszy = 32
+        nblky = (self.n_img + blkszy - 1) // blkszy
+        blksz = 1024
+        nblk = (self.n_img + blksz - 1) // blksz
 
         logger.info("Launching `estimate_all_angles` kernel.")
         for j in range(0, self.n_img):
             estimate_all_angles1(
-                (nblkx,),
-                (blkszx,),
+                (nblkx, nblky),
+                (blkszx, blkszy),
                 (
                     j,
                     self.n_img,
@@ -889,8 +893,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             )
 
             estimate_all_angles2(
-                (nblkx,),
-                (blkszx,),
+                (nblk,),
+                (blksz,),
                 (
                     j,
                     self.n_img,
