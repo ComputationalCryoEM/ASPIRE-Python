@@ -1731,7 +1731,7 @@ class CLSymmetryD2(CLOrient3D):
                     idx += 1
 
         # cMat(:,:,c) are now rank 1. Decompose using SVD and take leading eigenvector.
-        c_mat = c_mat.reshape(3, 3 * self.n_img, 3 * self.n_img).astype(np.float64, copy=False)
+        c_mat = c_mat.reshape(3, 3 * self.n_img, 3 * self.n_img) #.astype(np.float64, copy=False)
         U1, _, _ = la.svds(c_mat[0], k=3, which="LM")
         U2, _, _ = la.svds(c_mat[1], k=3, which="LM")
         U3, _, _ = la.svds(c_mat[2], k=3, which="LM")
