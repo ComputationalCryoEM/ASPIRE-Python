@@ -844,7 +844,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
     def _estimate_all_Rijs_cupy(self, clmatrix):
         import cupy as cp
 
-        estimate_all_angles = self.__gpu_module.get_function("estimate_all_angles")
+        estimate_all_angles1 = self.__gpu_module.get_function("estimate_all_angles1")
+        estimate_all_angles2 = self.__gpu_module.get_function("estimate_all_angles2")
         angles_to_rots = self.__gpu_module.get_function("angles_to_rots")
 
         sigma = 3.0
@@ -867,23 +868,41 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         nblkx = (self.n_img + blkszx - 1) // blkszx
 
         logger.info("Launching `estimate_all_angles` kernel.")
-        estimate_all_angles(
-            (nblkx,),
-            (blkszx,),
-            (
-                self.n_img,
-                self.n_theta,
-                np.float64(self.hist_bin_width),
-                self.full_width,
-                np.float64(sigma),
-                sync,
-                clmatrix,  # input
-                hist,  # tmp
-                k_map,  # tmp
-                angles_map,  # tmp
-                angles,  # output
-            ),
-        )
+        for j in range(0, self.n_img):
+            estimate_all_angles1(
+                (nblkx,),
+                (blkszx,),
+                (
+                    j,
+                    self.n_img,
+                    self.n_theta,
+                    np.float64(self.hist_bin_width),
+                    self.full_width,
+                    np.float64(sigma),
+                    sync,
+                    clmatrix,  # input
+                    hist,  # tmp
+                    k_map,  # tmp
+                    angles_map,  # tmp
+                    angles,  # output
+                ),
+            )
+
+            estimate_all_angles2(
+                (nblkx,),
+                (blkszx,),
+                (
+                    j,
+                    self.n_img,
+                    self.n_theta,
+                    np.float64(self.hist_bin_width),
+                    self.full_width,
+                    hist,  # tmp
+                    k_map,  # tmp
+                    angles_map,  # tmp
+                    angles,  # output
+                ),
+            )
 
         # no longer need workspace vars
         del hist
