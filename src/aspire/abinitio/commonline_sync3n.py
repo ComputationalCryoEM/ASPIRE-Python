@@ -824,24 +824,14 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         :return: Estimated rotations
         """
         # host/gpu dispatch
-        # if self.__gpu_module:
-        #     res = self._estimate_all_Rijs_cupy(Rijs)
-        # else:
-        #     res = self._estimate_all_Rijs_host(Rijs)
-        from time import perf_counter
-
-        tic = perf_counter()
-        res = self._estimate_all_Rijs_cupy(clmatrix)
-        toc1 = perf_counter()
-        print("_estimate_all_Rijs_cupy", toc1 - tic)
-
-        res_host = self._estimate_all_Rijs_host(clmatrix)
-        toc2 = perf_counter()
-        print("_estimate_all_Rijs_host", toc2 - toc1)
+        if self.__gpu_module:
+            res = self._estimate_all_Rijs_cu(clmatrix)
+        else:
+            res = self._estimate_all_Rijs_host(clmatrix)
 
         return res
 
-    def _estimate_all_Rijs_cupy(self, clmatrix):
+    def _estimate_all_Rijs_cu(self, clmatrix):
         import cupy as cp
 
         estimate_all_angles1 = self.__gpu_module.get_function("estimate_all_angles1")
@@ -863,16 +853,24 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         angles_map = cp.zeros((self.n_img, self.n_img), dtype=np.float64)
         angles = cp.zeros((n_pairs, 3), dtype=np.float64)
 
-        # Configure grid of blocks
+        # Configure 2d grid of blocks (kernel part 1)
         blkszx = 32
         nblkx = (self.n_img + blkszx - 1) // blkszx
         blkszy = 32
         nblky = (self.n_img + blkszy - 1) // blkszy
+
+        # Configure 1d grid of blocks (kernel part 2)
         blksz = 1024
         nblk = (self.n_img + blksz - 1) // blksz
 
+        from time import perf_counter
+
         logger.info("Launching `estimate_all_angles` kernel.")
+        toc0 = perf_counter()
         for j in range(0, self.n_img):
+
+            # -------------------
+            # Vote into histogram
             estimate_all_angles1(
                 (nblkx, nblky),
                 (blkszx, blkszy),
@@ -892,6 +890,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 ),
             )
 
+            # -------------------------
+            # Solve hist for mean angle
             estimate_all_angles2(
                 (nblk,),
                 (blksz,),
@@ -907,27 +907,38 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 ),
             )
 
-        # no longer need workspace vars
+        # Force all kernels to complete
+        cp.cuda.runtime.deviceSynchronize()
+        toc1 = perf_counter()
+        logger.info(f"estimate_all_angles: {toc1-toc0}s")
+
+        # Inform CuPy we longer need these workspace vars
         del hist
         del k_map
         del angles_map
 
-        # convert angles to rots
+        # ---------------------------
+        # Convert angles to rotations
         rotations = cp.empty((n_pairs, 3, 3), dtype=np.float64)
 
-        blkszx = 1024
-        nblkx = (n_pairs + blkszx - 1) // blkszx
+        # Configure 1d grid of blocks
+        blksz = 1024
+        nblk = (n_pairs + blksz - 1) // blksz
 
         logger.info("Launching `angles_to_rots` kernel.")
         angles_to_rots(
-            (nblkx,),
-            (blkszx,),
+            (nblk,),
+            (blksz,),
             (
                 n_pairs,
                 angles,
                 rotations,
             ),
         )
+
+        cp.cuda.runtime.deviceSynchronize()
+        toc2 = perf_counter()
+        logger.info(f"angles_to_rots: {toc2-toc1}s")
 
         # transfer results device to host
         rotations = rotations.get()
