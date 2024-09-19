@@ -828,8 +828,16 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         #     res = self._estimate_all_Rijs_cupy(Rijs)
         # else:
         #     res = self._estimate_all_Rijs_host(Rijs)
+        from time import perf_counter
+
+        tic = perf_counter()
         res = self._estimate_all_Rijs_cupy(clmatrix)
+        toc1 = perf_counter()
+        print("_estimate_all_Rijs_cupy", toc1 - tic)
+
         res_host = self._estimate_all_Rijs_host(clmatrix)
+        toc2 = perf_counter()
+        print("_estimate_all_Rijs_host", toc2 - toc1)
 
         return res
 
@@ -848,26 +856,20 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # workspace arrays
         ntics = int(180 / self.hist_bin_width)
         n_pairs = self.n_img * (self.n_img - 1) // 2
-        hist = cp.zeros((n_pairs, ntics), dtype=np.float64)
+        hist = cp.zeros((self.n_img, ntics), dtype=np.float64)
         # k_map stores the mapping of k indices to histogram bins
-        k_map = cp.zeros(
-            (n_pairs, self.n_img), dtype=np.int32
-        )  # note, high memory , probably need to change...
-        angles_map = cp.zeros(
-            (n_pairs, self.n_img), dtype=np.float64
-        )  # note, high memory , probably need to change...
+        k_map = cp.zeros((self.n_img, self.n_img), dtype=np.int32)
+        angles_map = cp.zeros((self.n_img, self.n_img), dtype=np.float64)
         angles = cp.zeros((n_pairs, 3), dtype=np.float64)
 
         # Configure grid of blocks
-        blkszx = 32
+        blkszx = 1024
         nblkx = (self.n_img + blkszx - 1) // blkszx
-        blkszy = 32
-        nblky = (self.n_img + blkszy - 1) // blkszy
 
         logger.info("Launching `estimate_all_angles` kernel.")
         estimate_all_angles(
-            (nblkx, nblky),
-            (blkszx, blkszy),
+            (nblkx,),
+            (blkszx,),
             (
                 self.n_img,
                 self.n_theta,
