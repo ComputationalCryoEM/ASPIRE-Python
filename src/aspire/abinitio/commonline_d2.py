@@ -516,17 +516,33 @@ class CLSymmetryD2(CLOrient3D):
         """
         Generates lookup tables for maximum likelihood scheme to estimate commonlines
         between images.
+
+        This method creates two lookup tables (`oct1_ij_map` and `oct2_ij_map`)
+        for pairs of candidate rotations (i, j) under the following conditions:
+
+        1. Both rotations Ri and Rj are in octant 1.
+        2. Ri is in octant 1 and Rj is in octant 2.
+
+        For each pair of candidate rotations the tables give a map into the set of
+        self-commonlines induced by those rotations. This table will be used later
+        to incorporate a likelihood score for self-commonlines into the likelihood
+        score for common lines for each pair of images.
         """
+        # Calculate number of rotations in each octant.
         n_rot_1 = len(self.scl_idx_1) // (3 * self.n_inplane_rots)
         n_rot_2 = len(self.scl_idx_2) // (3 * self.n_inplane_rots)
 
-        # First the map for i<j pairs for Ri and Rj in octant 1.
+        # First the map for i<j pairs for the rotations Ri and Rj in octant 1
+        # which are not equator images with respect to the same axis of symmetry.
         n_pairs = np.count_nonzero(self.eq2eq_Rij_table_11)
         oct1_ij_map = np.zeros(
             (n_pairs, self.n_inplane_rots**2 // 2, 2), dtype=np.int64
         )
+
+        # Create index arrays for i and j to cover all rotation combinations.
         i_idx = np.repeat(np.arange(self.n_inplane_rots), self.n_inplane_rots // 2)
         j_idx = np.tile(np.arange(self.n_inplane_rots // 2), self.n_inplane_rots)
+
         idx_vec = np.arange(n_rot_1)
         idx = 0
 
@@ -578,7 +594,11 @@ class CLSymmetryD2(CLOrient3D):
 
     def _compute_scl_scores(self):
         """
-        Compute correlations for self-commonline candidates.
+        Compute correlations for self-commonline candidates. For each image i
+        we compute an auto-correlation table between all polar Fourier rays.
+        We then use that table to apply a score to each non-topview candidate
+        rotation which gives the likelihood that the self-commonlines induced
+        by that candidate belong to the image i..
         """
         logger.info("Computing self-commonline correlation scores.")
         n_img = self.n_img
