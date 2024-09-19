@@ -18,4 +18,4 @@ jobs:
         pip install -e ".[dev]"  # install aspire
         pip freeze
     - name: Test
-      run: python -m pytest tests/test_orient_d2.py -k tests_estimate_rotations
+      run: python -m pytest tests/test_orient_d2.py
