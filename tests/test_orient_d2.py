@@ -17,7 +17,7 @@ from aspire.volume import DnSymmetricVolume, DnSymmetryGroup
 # Parameters #
 ##############
 
-DTYPE = [np.float64, pytest.param(np.float32, marks=pytest.mark.expensive)]
+DTYPE = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
 RESOLUTION = [48, 49]
 N_IMG = [10]
 OFFSETS = [0, pytest.param(None, marks=pytest.mark.expensive)]
