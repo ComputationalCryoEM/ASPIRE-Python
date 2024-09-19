@@ -6,7 +6,6 @@ import numpy as np
 import scipy.sparse as sparse
 
 from aspire.image import Image
-from aspire.numeric import fft, xp
 from aspire.operators import PolarFT
 from aspire.utils import common_line_from_rots, fuzzy_mask, tqdm
 from aspire.utils.random import choice
