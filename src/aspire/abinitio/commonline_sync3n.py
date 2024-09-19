@@ -894,7 +894,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 (
                     j,
                     self.n_img,
-                    self.n_theta,
                     np.float64(self.hist_bin_width),
                     self.full_width,
                     hist,  # tmp
