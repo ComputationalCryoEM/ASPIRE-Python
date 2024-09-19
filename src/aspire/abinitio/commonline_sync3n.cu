@@ -464,18 +464,19 @@ void estimate_all_angles1(int j,
   /* thread index (1d), represents "i" index */
   const unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
   /* j is image j index */
+  const unsigned int k = blockDim.y * blockIdx.y + threadIdx.y;
 
-  int k;
   int cl_diff1, cl_diff2, cl_diff3;
   double theta1, theta2, theta3;
   double c1, c2, c3;
   double cond;
   double cos_phi2;
-  int cnt;
   double w_theta_need;
 
   /* no-op when out of bounds */
   if(i >= n) return;
+  if(k >= n) return;
+
 
   int map_idx; /* tmp index var */
 
@@ -493,96 +494,96 @@ void estimate_all_angles1(int j,
   const int pair_idx = PAIR_IDX(n,i,j);
 
   /* initialize */
-  for(b=0; b<ntics; b++){
-    hist[i*ntics + b] = 0;
+  if((k==0) ^ (k==n-2)){  /* unique per ijk grid */
+    for(b=0; b<ntics; b++){
+      hist[i*ntics + b] = 0;
+    }
   }
 
   cl_idx12 = clmatrix[i*n + j];
   cl_idx21 = clmatrix[j*n + i];
 
   /* Assume that k_list starts as all n images */
-  for(k=0; k<n; k++){
 
-    cl_idx13 = clmatrix[i*n + k];
-    cl_idx31 = clmatrix[k*n + i];
-    cl_idx23 = clmatrix[j*n + k];
-    cl_idx32 = clmatrix[k*n + j];
+  cl_idx13 = clmatrix[i*n + k];
+  cl_idx31 = clmatrix[k*n + i];
+  cl_idx23 = clmatrix[j*n + k];
+  cl_idx32 = clmatrix[k*n + j];
 
-    /* test `k` values */
-    if(k==i) continue;
-    if(cl_idx13 == -1) continue;  /* i, k */
-    //if(cl_idx31 == -1) continue;  // k, i ?
-    if(cl_idx23 == -1) continue;  /* j, k */
-    // if(cl_idx32 == -1) return;  // k, j ?
+  /* test `k` values */
+  if(k==i) return;
+  if(cl_idx13 == -1) return;  /* i, k */
+  //if(cl_idx31 == -1) return;  // k, i ?
+  if(cl_idx23 == -1) return;  /* j, k */
+  // if(cl_idx32 == -1) return;  // k, j ?
 
-    /* get cosine angles */
-    cl_diff1 = cl_idx13 - cl_idx12;
-    cl_diff2 = cl_idx23 - cl_idx21;
-    cl_diff3 = cl_idx32 - cl_idx31;
+  /* get cosine angles */
+  cl_diff1 = cl_idx13 - cl_idx12;
+  cl_diff2 = cl_idx23 - cl_idx21;
+  cl_diff3 = cl_idx32 - cl_idx31;
 
-    theta1 = cl_diff1 * 2 * M_PI / n_theta;
-    theta2 = cl_diff2 * 2 * M_PI / n_theta;
-    theta3 = cl_diff3 * 2 * M_PI / n_theta;
+  theta1 = cl_diff1 * 2 * M_PI / n_theta;
+  theta2 = cl_diff2 * 2 * M_PI / n_theta;
+  theta3 = cl_diff3 * 2 * M_PI / n_theta;
 
-    c1 = cos(theta1);
-    c2 = cos(theta2);
-    c3 = cos(theta3);
+  c1 = cos(theta1);
+  c2 = cos(theta2);
+  c3 = cos(theta3);
 
-    /* test if we have a good index */
-    cond = 1 + 2 * c1 * c2 * c3 - (c1*c1 + c2*c2 + c3*c3);
-    if(cond <= 1e-5) continue;  /* current value of k is not good, skip */
+  /* test if we have a good index */
+  cond = 1 + 2 * c1 * c2 * c3 - (c1*c1 + c2*c2 + c3*c3);
+  if(cond <= 1e-5) return;  /* current value of k is not good, skip */
 
-    /* Calculated cos values of angle between i and j images */
-    if( sync == 1){
+  /* Calculated cos values of angle between i and j images */
+  if( sync == 1){
 
-      cos_phi2 = (c3 - c1*c2) / (sqrt(1 - c1*c1) * sqrt(1 - c2*c2));
+    cos_phi2 = (c3 - c1*c2) / (sqrt(1 - c1*c1) * sqrt(1 - c2*c2));
 
-      /*
-        Some synchronization must be applied when common line is out by 180 degrees.
-        Here fix the angles between c_ij(c_ji) and c_ik(c_jk) to be smaller than pi/2,
-        otherwise there will be an ambiguity between alpha and pi-alpha.
-      */
+    /*
+      Some synchronization must be applied when common line is out by 180 degrees.
+      Here fix the angles between c_ij(c_ji) and c_ik(c_jk) to be smaller than pi/2,
+      otherwise there will be an ambiguity between alpha and pi-alpha.
+    */
 
-      /* Check sync conditions */
-      ind1 = (theta1 > (M_PI + TOL_idx)) | (
-          (theta1 < -TOL_idx) & (theta1 > -M_PI)
-                                            );
-      ind2 = (theta2 > (M_PI + TOL_idx)) || (
-          (theta2 < -TOL_idx) && (theta2 > -M_PI)
-                                             );
-      if( (ind1 && !ind2) || (!ind1 && ind2)){
-        /* Apply sync */
-        cos_phi2 = -cos_phi2;
-      }
-
-    }  /* end sync */
-    else{
-      cos_phi2 = (c3 - c1*c2 ) / (sin(theta1) * sin(theta2));
-    } /* end not sync */
-
-    /* clip cosine phi between [-1,1] */
-    if(cos_phi2 >1){
-      cos_phi2 = 1;
-    }
-    if(cos_phi2 <-1){
-      cos_phi2 = -1;
+    /* Check sync conditions */
+    ind1 = (theta1 > (M_PI + TOL_idx)) | (
+        (theta1 < -TOL_idx) & (theta1 > -M_PI)
+                                          );
+    ind2 = (theta2 > (M_PI + TOL_idx)) || (
+        (theta2 < -TOL_idx) && (theta2 > -M_PI)
+                                           );
+    if( (ind1 && !ind2) || (!ind1 && ind2)){
+      /* Apply sync */
+      cos_phi2 = -cos_phi2;
     }
 
-    /* compute histogram contribution, angle mapping, and index mappings. */
-    angle = acos(cos_phi2) * 180. / M_PI;
-    /*  angle's bin */
-    map_idx = i*n + k;
-    k_map[map_idx] = angle / hist_bin_width;  // check
-    angles_map[map_idx] = angle;  /* degrees */
-    for(b=0; b<ntics; b++){
-      // todo, just compute in radians to avoid extra arithmetic
-      grid_angle = b * (180./ntics);  /* grid angle */  // check, I think off by one-ish (grid vs bins)
-      angle_diff = (grid_angle - angle);
-      /* accumulate histogram contribution */
-      hist[i*ntics + b ] += exp(
-          -(angle_diff*angle_diff) / ( two_sigma_sq));
-    } /* bins */
-  } /* k*/
+  }  /* end sync */
+  else{
+    cos_phi2 = (c3 - c1*c2 ) / (sin(theta1) * sin(theta2));
+  } /* end not sync */
+
+  /* clip cosine phi between [-1,1] */
+  if(cos_phi2 >1){
+    cos_phi2 = 1;
+  }
+  if(cos_phi2 <-1){
+    cos_phi2 = -1;
+  }
+
+  /* compute histogram contribution, angle mapping, and index mappings. */
+  angle = acos(cos_phi2) * 180. / M_PI;
+  /*  angle's bin */
+  map_idx = i*n + k;
+  k_map[map_idx] = angle / hist_bin_width;  // check
+  angles_map[map_idx] = angle;  /* degrees */
+  for(b=0; b<ntics; b++){
+    // todo, just compute in radians to avoid extra arithmetic
+    grid_angle = b * (180./ntics);  /* grid angle */  // check, I think off by one-ish (grid vs bins)
+    angle_diff = (grid_angle - angle);
+    /* accumulate histogram contribution */
+    hist[i*ntics + b ] += exp(
+        -(angle_diff*angle_diff) / ( two_sigma_sq));
+  } /* bins */
 
   /*
     At this point, the kernel should have accumulated all "good"
@@ -593,12 +594,13 @@ void estimate_all_angles1(int j,
   */
 
   /* Initialize euler angles */
-  map_idx = pair_idx*3;
-  angles[map_idx    ] = cl_idx12 * 2 * M_PI / n_theta + M_PI / 2;
-  angles[map_idx + 1] = 0;
-  angles[map_idx + 2] = -M_PI / 2 - cl_idx21 * 2 * M_PI / n_theta;
-
-
+  if((k==0) ^ (k==n-2))  /* unique per ijk grid */
+  {
+    map_idx = pair_idx*3;
+    angles[map_idx    ] = cl_idx12 * 2 * M_PI / n_theta + M_PI / 2;
+    angles[map_idx + 1] = 0;
+    angles[map_idx + 2] = -M_PI / 2 - cl_idx21 * 2 * M_PI / n_theta;
+  }
 } /* estimate_all_angles1 kernel */
 
 
@@ -659,6 +661,7 @@ void estimate_all_angles2(int j,
       /* find satisfying indices */
       for(k=0; k<n; k++){
         /* determine if image k in peak bin(s) */
+        // Perhaps transpose the maps so thread i in fast
         map_idx = i*n + k;
         if(abs(k_map[map_idx] - peak_idx) < w_theta_needed){
           cnt += 1;  /* count this image */
