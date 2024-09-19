@@ -1,3 +1,5 @@
+#include "stdint.h"
+
 # define M_PI           3.14159265358979323846  /* pi */
 
 /* from i,j indices to the common index in the N-choose-2 sized array */
@@ -6,6 +8,7 @@
 
 
 /* convert euler angles (a,b,c) in ZYZ to rotation matrix r */
+__host__ __device__
 inline void ang2orth(double* r, double a, double b, double c){
   double sa = sin(a);
   double sb = sin(b);
@@ -28,6 +31,7 @@ inline void ang2orth(double* r, double a, double b, double c){
 }
 
 
+__host__ __device__
 inline void mult_3x3(double *out, double *R1, double *R2) {
   /* 3X3 matrices multiplication: out = R1*R2
    * Note, this differs from the MATLAB mult_3x3.
@@ -45,6 +49,7 @@ inline void mult_3x3(double *out, double *R1, double *R2) {
   }
 }
 
+__host__ __device__
 inline void JRJ(double *R, double *A) {
   /* multiple 3X3 matrix by J from both sizes: A = JRJ */
   A[0]=R[0];
@@ -58,6 +63,7 @@ inline void JRJ(double *R, double *A) {
   A[8]=R[8];
 }
 
+__host__ __device__
 inline double diff_norm_3x3(const double *R1, const double *R2) {
   /* difference 2 matrices and return squared norm: ||R1-R2||^2 */
   int i;
@@ -446,9 +452,9 @@ void estimate_all_angles(int n,
                          int full_width,
                          double sigma,
                          int sync,
-                         int* __restrict__ clmatrix,
+                         int16_t* __restrict__ clmatrix,
                          double* __restrict__ hist,
-                         int* __restrict__ k_map,
+                         uint16_t* __restrict__ k_map,
                          double* __restrict__ angles_map,
                          double* __restrict__ angles)
 {

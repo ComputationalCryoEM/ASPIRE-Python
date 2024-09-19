@@ -851,14 +851,14 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         sync = 1
 
         # transfer input to device
-        clmatrix = cp.asarray(clmatrix, dtype=np.int32)
+        clmatrix = cp.asarray(clmatrix, dtype=np.int16)
 
         # workspace arrays
         ntics = int(180 / self.hist_bin_width)
         n_pairs = self.n_img * (self.n_img - 1) // 2
         hist = cp.zeros((self.n_img, ntics), dtype=np.float64)
         # k_map stores the mapping of k indices to histogram bins
-        k_map = cp.zeros((self.n_img, self.n_img), dtype=np.int32)
+        k_map = cp.zeros((self.n_img, self.n_img), dtype=np.uint16)
         angles_map = cp.zeros((self.n_img, self.n_img), dtype=np.float64)
         angles = cp.zeros((n_pairs, 3), dtype=np.float64)
 
@@ -1157,4 +1157,4 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             module_code = fh.read()
 
         # CUPY compile the CUDA code
-        return cp.RawModule(code=module_code)
+        return cp.RawModule(code=module_code, backend="nvcc")
