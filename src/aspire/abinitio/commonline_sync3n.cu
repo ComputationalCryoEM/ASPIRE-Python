@@ -476,7 +476,7 @@ void estimate_all_angles1(int j,
   /* no-op when out of bounds */
   if(i >= n) return;
   if(k >= n) return;
-
+  if(i >= j) return;
 
   int map_idx; /* tmp index var */
 
@@ -502,6 +502,11 @@ void estimate_all_angles1(int j,
 
   cl_idx12 = clmatrix[i*n + j];
   cl_idx21 = clmatrix[j*n + i];
+  /*
+    MATLAB code indicated this condition might occur outside i==j;
+    Ask Yoel what other reasons this would occur.
+  */
+  if(cl_idx12 == -1) return;
 
   /* Assume that k_list starts as all n images */
 
@@ -628,6 +633,7 @@ void estimate_all_angles2(int j,
 
   /* no-op when out of bounds */
   if(i >= n) return;
+  if(i >= j) return;
 
   int map_idx; /* tmp index var */
 
