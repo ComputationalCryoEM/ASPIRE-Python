@@ -517,6 +517,7 @@ void estimate_all_angles1(int j,
 
   /* test `k` values */
   if(k==i) return;
+  if(k==j) return;
   if(cl_idx13 == -1) return;  /* i, k */
   //if(cl_idx31 == -1) return;  // k, i ?
   if(cl_idx23 == -1) return;  /* j, k */
