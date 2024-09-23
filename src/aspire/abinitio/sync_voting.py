@@ -156,7 +156,7 @@ class SyncVotingMixin(object):
         # that accidentally fall near the peak.
         peak_idx = angles_hist.argmax()
 
-        if str(self.full_width).lower() == "adaptive":
+        if self.full_width==-1:
             # Adaptive width  (MATLAB)
             # Look for the estimations in the peak of the histogram
             w_theta_needed = 0
