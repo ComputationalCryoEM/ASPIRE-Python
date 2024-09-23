@@ -455,10 +455,13 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
                     # Update histogram
                     # Find integer bin [0,self.hist_intervals)
-                    _l1, _l2, _l3 = np.minimum(
-                        (self.hist_intervals * s).astype(int),  # implicit floor
-                        self.hist_intervals - 1,
-                    )  # clamp upper bound
+                    _l1, _l2, _l3 = np.maximum(
+                        np.minimum(
+                            (self.hist_intervals * s).astype(int),  # implicit floor
+                            self.hist_intervals - 1,  # clamp upper bound
+                        ),
+                        0,  # clamp lower bound
+                    )
 
                     scores_hist[_l1] += 1
                     scores_hist[_l2] += 1
