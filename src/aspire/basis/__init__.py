@@ -2,6 +2,7 @@
 # isort: off
 
 from .basis import Basis, Coef, ComplexCoef
+from .dirac import DiracBasis2D
 from .steerable import SteerableBasis2D
 from .fb import FBBasisMixin
 
