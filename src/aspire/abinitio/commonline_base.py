@@ -274,8 +274,9 @@ class CLOrient3D:
         show = False
         if logging.getLogger().isEnabledFor(logging.DEBUG):
             show = True
-        # Negative sign comes from using -i conversion of Fourier transformation
-        est_shifts = sparse.linalg.lsqr(shift_equations, -shift_b, show=show)[0]
+
+        # Estimate shifts.
+        est_shifts = sparse.linalg.lsqr(shift_equations, shift_b, show=show)[0]
         est_shifts = est_shifts.reshape((self.n_img, 2))
 
         return est_shifts
@@ -320,6 +321,7 @@ class CLOrient3D:
         n_equations = self._estimate_num_shift_equations(
             n_img, equations_factor, max_memory
         )
+
         # Allocate local variables for estimating 2D shifts based on the estimated number
         # of equations. The shift equations are represented using a sparse matrix,
         # since each row in the system contains four non-zeros (as it involves
@@ -404,13 +406,13 @@ class CLOrient3D:
             # Compute the coefficients of the current equation
             coefs = np.array(
                 [
-                    np.sin(shift_alpha),
                     np.cos(shift_alpha),
-                    -np.sin(shift_beta),
+                    np.sin(shift_alpha),
                     -np.cos(shift_beta),
+                    -np.sin(shift_beta),
                 ]
             )
-            shift_eq[idx] = -1 * coefs if is_pf_j_flipped else coefs
+            shift_eq[idx] = [-1, -1, 0, 0] * coefs if is_pf_j_flipped else coefs
 
         # create sparse matrix object only containing non-zero elements
         shift_equations = sparse.csr_matrix(

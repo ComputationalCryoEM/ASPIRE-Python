@@ -106,13 +106,21 @@ def test_estimate_rotations(source_orientation_objs):
 
 def test_estimate_shifts(source_orientation_objs):
     src, orient_est = source_orientation_objs
-    if src.offsets.all() != 0:
-        pytest.xfail("Currently failing under non-zero offsets.")
 
+    # Assign ground truth rotations.
+    orient_est.rotations = src.rotations
+
+    # Estimate shifts using ground truth rotations.
     est_shifts = orient_est.estimate_shifts()
 
-    # Assert that estimated shifts are close to src.offsets
-    assert np.allclose(est_shifts, src.offsets)
+    # Calculate the mean absolute difference in pixels.
+    mean_abs_diff = np.mean(abs(src.offsets - est_shifts))
+
+    # Assert that on average estimated shifts are close to src.offsets
+    if src.offsets.all() != 0:
+        np.testing.assert_array_less(mean_abs_diff, 0.35)
+    else:
+        np.testing.assert_allclose(mean_abs_diff, 0)
 
 
 def test_estimate_rotations_fuzzy_mask():
