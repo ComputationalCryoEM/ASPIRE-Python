@@ -326,7 +326,7 @@ def common_line_from_rots(r1, r2, ell):
 
     ut = np.dot(r2, r1.T)
     alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
-    alpha_ji = np.arctan2(ut[0, 2], -ut[1, 2]) + np.pi
+    alpha_ji = np.arctan2(-ut[0, 2], ut[1, 2]) + np.pi
 
     ell_ij = alpha_ij * ell / (2 * np.pi)
     ell_ji = alpha_ji * ell / (2 * np.pi)
