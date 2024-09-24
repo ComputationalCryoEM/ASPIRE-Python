@@ -113,14 +113,14 @@ def test_estimate_shifts(source_orientation_objs):
     # Estimate shifts using ground truth rotations.
     est_shifts = orient_est.estimate_shifts()
 
-    # Calculate the mean absolute difference in pixels.
-    mean_abs_diff = np.mean(abs(src.offsets - est_shifts))
+    # Calculate the mean 2D distance between estimates and ground truth.
+    mean_dist = np.mean(np.sqrt(np.sum((src.offsets - est_shifts) ** 2, axis=1)))
 
-    # Assert that on average estimated shifts are close to src.offsets
+    # Assert that on average estimated shifts are close (within 0.5 pix) to src.offsets
     if src.offsets.all() != 0:
-        np.testing.assert_array_less(mean_abs_diff, 0.35)
+        np.testing.assert_array_less(mean_dist, 0.5)
     else:
-        np.testing.assert_allclose(mean_abs_diff, 0)
+        np.testing.assert_allclose(mean_dist, 0)
 
 
 def test_estimate_rotations_fuzzy_mask():
