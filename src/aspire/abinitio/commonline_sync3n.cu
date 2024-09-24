@@ -1,6 +1,6 @@
 #include "stdint.h"
 
-# define M_PI           3.14159265358979323846  /* pi */
+#define M_PI 3.14159265358979323846  /* pi */
 
 /* from i,j indices to the common index in the N-choose-2 sized array */
 // careful, this is stricly the upper triangle!
@@ -477,13 +477,19 @@ void estimate_all_angles1(int j,
   if(i >= n) return;
   if(k >= n) return;
   if(i >= j) return;
+  /*
+    These are also tested later via the clmatrix values,
+    testing now avoids extra reads.
+  */
+  if(k==i) return;
+  if(k==j) return;
 
   int map_idx; /* tmp index var */
 
   int cl_idx12, cl_idx21;
   int cl_idx13, cl_idx31;
   int cl_idx23, cl_idx32;
-  int ntics = 180. / hist_bin_width;
+  const int ntics = 180. / hist_bin_width;
   const double TOL_idx = 1e-12;
   bool ind1, ind2;
   double grid_angle, angle_diff, angle;
@@ -492,13 +498,6 @@ void estimate_all_angles1(int j,
 
 
   const int pair_idx = PAIR_IDX(n,i,j);
-
-  /* initialize */
-  if((k==0) ^ (k==n-2)){  /* unique per ijk grid */
-    for(b=0; b<ntics; b++){
-      hist[i*ntics + b] = 0;
-    }
-  }
 
   cl_idx12 = clmatrix[i*n + j];
   cl_idx21 = clmatrix[j*n + i];
@@ -516,8 +515,6 @@ void estimate_all_angles1(int j,
   cl_idx32 = clmatrix[k*n + j];
 
   /* test `k` values */
-  if(k==i) return;
-  if(k==j) return;
   if(cl_idx13 == -1) return;  /* i, k */
   //if(cl_idx31 == -1) return;  // k, i ?
   if(cl_idx23 == -1) return;  /* j, k */
@@ -552,9 +549,9 @@ void estimate_all_angles1(int j,
     */
 
     /* Check sync conditions */
-    ind1 = (theta1 > (M_PI + TOL_idx)) | (
-        (theta1 < -TOL_idx) & (theta1 > -M_PI)
-                                          );
+    ind1 = (theta1 > (M_PI + TOL_idx)) || (
+        (theta1 < -TOL_idx) && (theta1 > -M_PI)
+                                           );
     ind2 = (theta2 > (M_PI + TOL_idx)) || (
         (theta2 < -TOL_idx) && (theta2 > -M_PI)
                                            );
@@ -586,9 +583,9 @@ void estimate_all_angles1(int j,
     // todo, just compute in radians to avoid extra arithmetic
     grid_angle = b * (180./ntics);  /* grid angle */  // check, I think off by one-ish (grid vs bins)
     angle_diff = (grid_angle - angle);
-    /* accumulate histogram contribution */
-    hist[i*ntics + b ] += exp(
-        -(angle_diff*angle_diff) / ( two_sigma_sq));
+    /* accumulate histogram contribution, atomic due to `k` */
+    atomicAdd(&(hist[i*ntics + b ]),
+              exp(-(angle_diff*angle_diff) / ( two_sigma_sq)));
   } /* bins */
 
   /*
@@ -600,7 +597,7 @@ void estimate_all_angles1(int j,
   */
 
   /* Initialize euler angles */
-  if((k==0) ^ (k==n-2))  /* unique per ijk grid */
+  /* can be done once? */
   {
     map_idx = pair_idx*3;
     angles[map_idx    ] = cl_idx12 * 2 * M_PI / n_theta + M_PI / 2;
@@ -638,7 +635,7 @@ void estimate_all_angles2(int j,
 
   int map_idx; /* tmp index var */
 
-  int ntics = 180. / hist_bin_width;
+  const int ntics = 180. / hist_bin_width;
   int b;
   int peak_idx;
   double peak;

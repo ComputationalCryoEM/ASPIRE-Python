@@ -842,7 +842,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         sync = 1
 
         # transfer input to device
-        clmatrix = cp.asarray(clmatrix, dtype=np.int16)
+        clmatrix = cp.asarray(clmatrix, order="C", dtype=np.int16)
 
         # workspace arrays
         ntics = int(180 / self.hist_bin_width)
@@ -868,6 +868,11 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         logger.info("Launching `estimate_all_angles` kernel.")
         toc0 = perf_counter()
         for j in range(0, self.n_img):
+
+            # ------------------------------------------
+            # Zero histogram and k mapping for each `j`.
+            hist[:] = 0
+            k_map[:] = 0
 
             # -------------------
             # Vote into histogram
