@@ -328,9 +328,9 @@ class CLOrient3D:
         # exactly four unknowns). The variables below are used to construct
         # this sparse system. The k'th non-zero element of the equations matrix
         # is stored at index (shift_i(k),shift_j(k)).
-        shift_i = np.zeros(4 * n_equations, dtype=self.dtype)
-        shift_j = np.zeros(4 * n_equations, dtype=self.dtype)
-        shift_eq = np.zeros(4 * n_equations, dtype=self.dtype)
+        shift_i = np.zeros((n_equations, 4), dtype=self.dtype)
+        shift_j = np.zeros((n_equations, 4), dtype=self.dtype)
+        shift_eq = np.zeros((n_equations, 4), dtype=self.dtype)
         shift_b = np.zeros(n_equations, dtype=self.dtype)
 
         # Prepare the shift phases to try and generate filter for common-line detection
@@ -390,16 +390,14 @@ class CLOrient3D:
             sidx = sidx1 if c1[sidx1] > c2[sidx2] else sidx2
             dx = -max_shift + sidx * shift_step
 
-            # Create a shift equation for the image pair [i,j]
-            idx = np.arange(4 * shift_eq_idx, 4 * shift_eq_idx + 4)
             # angle of common ray in image i
             shift_alpha = c_ij * d_theta
             # Angle of common ray in image j.
             shift_beta = c_ji * d_theta
             # Row index to construct the sparse equations
-            shift_i[idx] = shift_eq_idx
+            shift_i[shift_eq_idx] = shift_eq_idx
             # Columns of the shift variables that correspond to the current pair [i, j]
-            shift_j[idx] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
+            shift_j[shift_eq_idx] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
             # Right hand side of the current equation
             shift_b[shift_eq_idx] = dx
 
@@ -412,11 +410,13 @@ class CLOrient3D:
                     -np.sin(shift_beta),
                 ]
             )
-            shift_eq[idx] = [-1, -1, 0, 0] * coefs if is_pf_j_flipped else coefs
+            shift_eq[shift_eq_idx] = (
+                [-1, -1, 0, 0] * coefs if is_pf_j_flipped else coefs
+            )
 
         # create sparse matrix object only containing non-zero elements
         shift_equations = sparse.csr_matrix(
-            (shift_eq, (shift_i, shift_j)),
+            (shift_eq.flatten(), (shift_i.flatten(), shift_j.flatten())),
             shape=(n_equations, 2 * n_img),
             dtype=self.dtype,
         )
