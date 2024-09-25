@@ -7,22 +7,30 @@ from aspire.basis import Basis
 logger = logging.getLogger(__name__)
 
 
-class DiracBasis2D(Basis):
+class DiracBasis(Basis):
+    """
+    Dirac basis in 1D.
+
+    Supports subclassing higher dimensions.
+    """
+
+    dim = 1
+
     def __init__(self, size, mask=None, dtype=np.float32):
         """
-        Initialize 2D Dirac basis.
+        Initialize Dirac basis.
 
-        :param size: The shape defining the basis.  May be a 2-tuple
-            or an integer, in which case, a square basis is assumed.
+        :param size: The shape defining the basis.  May be a tuple
+            or an integer, in which case, a uniformly sized basis is assumed.
         :param mask: A boolean mask matching `size` indicating which
             coordinates to include in the basis. Default `None`
-            implies all via `np.full(size, True)`.
+            implies all via `np.full((size,)*dimension, True)`.
         :return: DiracBasis2D instance.
         """
 
         # Size
         if isinstance(size, int):
-            size = (size, size)
+            size = (size,) * self.dim
 
         # Masking
         if mask is None:
@@ -75,3 +83,23 @@ class DiracBasis2D(Basis):
         v = x[..., self.mask]
 
         return v
+
+
+class DiracBasis2D(DiracBasis):
+    """
+    Dirac basis in 2D.
+
+    See `DiracBasis` documentation.
+    """
+
+    dim = 2
+
+
+class DiracBasis3D(DiracBasis):
+    """
+    Dirac basis in 3D.
+
+    See `DiracBasis` documentation.
+    """
+
+    dim = 3
