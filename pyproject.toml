@@ -1,6 +1,6 @@
 [project]
 name = "aspire"
-version = "0.12.3"
+version = "0.13.0"
 description = "Algorithms for Single Particle Reconstruction"
 readme = "README.md" # Optional
 requires-python = ">=3.8"
