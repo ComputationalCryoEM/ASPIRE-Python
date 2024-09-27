@@ -17,7 +17,7 @@ class Estimator:
         preconditioner="circulant",
         checkpoint_iterations=10,
         checkpoint_prefix="volume_checkpoint",
-        maxiter=100,
+        maxiter=50,
         boost=True,
     ):
         """
