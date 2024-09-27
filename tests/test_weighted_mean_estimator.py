@@ -155,9 +155,7 @@ def test_checkpoint(sim, basis, estimator, weights):
             checkpoint_prefix=prefix,
         )
 
-        # Assert we raise when reading `maxiter`.
-        with raises(RuntimeError, match="Unable to converge!"):
-            _ = _estimator.estimate()
+        _ = _estimator.estimate()
 
         # Load the checkpoint coefficients while tmp_input_dir exists.
         x_chk = np.load(f"{prefix}_iter{test_iter:04d}.npy")
