@@ -258,7 +258,9 @@ class WeightedVolumesEstimator(Estimator):
         )
 
         if info != 0:
-            raise RuntimeError("Unable to converge!")
+            logger.warning(
+                f"Conjugate gradient unable to converge after {info} iterations."
+            )
 
         return x.reshape(self.r, self.basis.count)
 
