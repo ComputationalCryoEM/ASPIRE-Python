@@ -34,9 +34,12 @@ class Estimator:
             `src` during back projection and kernel estimation steps.
         :param preconditioner: Optional kernel preconditioner (`string`).
             Currently supported options are "circulant" or None.
-        :param checkpoint_iterations: Optionally save `cg` estimated `Volume`
-            instance periodically each `checkpoint_iterations`.
-            Setting to None disables, otherwise checks for positive integer.
+        :param checkpoint_iterations: Optionally save `cg` estimated
+            `basis` coefficients periodically each
+            `checkpoint_iterations`.  Setting to `None` disables,
+            otherwise checks for positive integer.  Note, when
+            `maxiter` is not `None` and `cg` fails to converge a final
+            checkpoint will still be written.
         :param checkpoint_prefix: Optional path prefix for `cg`
             checkpoint files.  If the parent directory does not exist,
             creation is attempted.  `_iter{N}` will be appended to the

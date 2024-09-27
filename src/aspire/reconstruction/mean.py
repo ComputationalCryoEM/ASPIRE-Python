@@ -231,7 +231,7 @@ class WeightedVolumesEstimator(Estimator):
 
             # Do checkpoint at `checkpoint_iterations`,
             _do_checkpoint = (
-                self.checkpoint_iterations
+                self.checkpoint_iterations is not None
                 and (self.i % self.checkpoint_iterations) == 0
             )
             # or the last iteration when `maxiter` provided.
