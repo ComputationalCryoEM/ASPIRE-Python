@@ -1,3 +1,4 @@
+import copy
 import os
 import os.path
 import tempfile
@@ -32,22 +33,22 @@ DTYPES = [
 ]
 
 
-@pytest.fixture(params=RESOLUTION, ids=lambda x: f"resolution={x}")
+@pytest.fixture(params=RESOLUTION, ids=lambda x: f"resolution={x}", scope="module")
 def resolution(request):
     return request.param
 
 
-@pytest.fixture(params=OFFSETS, ids=lambda x: f"offsets={x}")
+@pytest.fixture(params=OFFSETS, ids=lambda x: f"offsets={x}", scope="module")
 def offsets(request):
     return request.param
 
 
-@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
 def dtype(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def source_orientation_objs(resolution, offsets, dtype):
     src = Simulation(
         n=50,
@@ -67,6 +68,9 @@ def source_orientation_objs(resolution, offsets, dtype):
     orient_est = CLSyncVoting(
         src, max_shift=max_shift, shift_step=shift_step, mask=False
     )
+
+    # Estimate rotations once for all tests.
+    orient_est.estimate_rotations()
 
     return src, orient_est
 
@@ -96,8 +100,6 @@ def test_build_clmatrix(source_orientation_objs):
 def test_estimate_rotations(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
-    orient_est.estimate_rotations()
-
     # Register estimates to ground truth rotations and compute the
     # mean angular distance between them (in degrees).
     # Assert that mean angular distance is less than 1 degree.
@@ -108,6 +110,7 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
     # Assign ground truth rotations.
+    # Deep copy to prevent altering for other tests.
     orient_est.rotations = src.rotations
 
     # Estimate shifts using ground truth rotations.

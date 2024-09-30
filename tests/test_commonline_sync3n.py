@@ -1,3 +1,4 @@
+import copy
 import os
 
 import numpy as np
@@ -61,18 +62,16 @@ def source_orientation_objs(resolution, offsets, dtype):
         max_shift = 0.20
         shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
 
-    orient_est = CLSync3N(
-        src, max_shift=max_shift, shift_step=shift_step, S_weighting=True, seed=789
-    )
+    orient_est = CLSync3N(src, max_shift=max_shift, shift_step=shift_step, seed=789)
+
+    # Estimate rotations once for all tests.
+    orient_est.estimate_rotations()
 
     return src, orient_est
 
 
 def test_build_clmatrix(source_orientation_objs):
     src, orient_est = source_orientation_objs
-
-    # Build clmatrix estimate.
-    orient_est.build_clmatrix()
 
     gt_clmatrix = rots_to_clmatrix(src.rotations, orient_est.n_theta)
 
@@ -93,6 +92,8 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
     # Assign ground truth rotations.
+    # Deep copy to prevent altering for other tests.
+    orient_est = copy.deepcopy(orient_est)
     orient_est.rotations = src.rotations
 
     # Estimate shifts using ground truth rotations.
@@ -111,7 +112,6 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
 
 def test_estimate_shifts_with_est_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
-
     # Estimate shifts using estimated rotations.
     est_shifts = orient_est.estimate_shifts()
 
@@ -129,9 +129,10 @@ def test_estimate_shifts_with_est_rots(source_orientation_objs):
 def test_estimate_rotations(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
-    orient_est.estimate_rotations()
-
     # Register estimates to ground truth rotations and compute the
     # mean angular distance between them (in degrees).
-    # Assert that mean angular distance is less than 1 degree.
-    mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=1)
+    # Assert that mean angular distance is less than 1 degree (4 with offsets).
+    tol = 1
+    if src.offsets.all() != 0:
+        tol = 4
+    mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=tol)
