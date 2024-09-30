@@ -104,7 +104,7 @@ def test_estimate_rotations(source_orientation_objs):
     mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=1)
 
 
-def test_estimate_shifts(source_orientation_objs):
+def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
     # Assign ground truth rotations.
@@ -114,7 +114,25 @@ def test_estimate_shifts(source_orientation_objs):
     est_shifts = orient_est.estimate_shifts()
 
     # Calculate the mean 2D distance between estimates and ground truth.
-    mean_dist = np.mean(np.sqrt(np.sum((src.offsets - est_shifts) ** 2, axis=1)))
+    error = src.offsets - est_shifts
+    mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
+
+    # Assert that on average estimated shifts are close (within 0.5 pix) to src.offsets
+    if src.offsets.all() != 0:
+        np.testing.assert_array_less(mean_dist, 0.5)
+    else:
+        np.testing.assert_allclose(mean_dist, 0)
+
+
+def test_estimate_shifts_with_est_rots(source_orientation_objs):
+    src, orient_est = source_orientation_objs
+
+    # Estimate shifts using estimated rotations.
+    est_shifts = orient_est.estimate_shifts()
+
+    # Calculate the mean 2D distance between estimates and ground truth.
+    error = src.offsets - est_shifts
+    mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
 
     # Assert that on average estimated shifts are close (within 0.5 pix) to src.offsets
     if src.offsets.all() != 0:
