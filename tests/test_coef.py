@@ -48,7 +48,7 @@ def dtype(request):
     return request.param
 
 
-@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
+@pytest.fixture(params=DTYPES, ids=lambda x: f"basis_dtype={x}", scope="module")
 def basis_dtype(request):
     """
     Dtypes for basis
@@ -416,11 +416,16 @@ def test_shifts(coef_fixture, basis, rots):
     shifts = np.column_stack((rots, rots[::-1]))
 
     # Compare
+    min_dtype = (
+        np.float32
+        if (basis.dtype == np.float32 or coef_fixture.dtype == np.float32)
+        else np.float64
+    )
     np.testing.assert_allclose(
         coef_fixture.shift(shifts),
         basis.shift(coef_fixture, shifts),
         rtol=1e-05,
-        atol=utest_tolerance(basis.dtype),
+        atol=utest_tolerance(min_dtype),
     )
 
 
