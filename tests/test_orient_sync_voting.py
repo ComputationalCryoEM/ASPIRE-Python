@@ -111,6 +111,7 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
 
     # Assign ground truth rotations.
     # Deep copy to prevent altering for other tests.
+    orient_est = copy.deepcopy(orient_est)
     orient_est.rotations = src.rotations
 
     # Estimate shifts using ground truth rotations.
