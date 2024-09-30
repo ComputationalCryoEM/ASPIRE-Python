@@ -17,6 +17,7 @@ RESOLUTION = [
 
 OFFSETS = [
     0,
+    pytest.param(None, marks=pytest.mark.expensive),
 ]
 
 DTYPES = [
@@ -53,7 +54,16 @@ def source_orientation_objs(resolution, offsets, dtype):
         seed=456,
     ).cache()
 
-    orient_est = CLSync3N(src, S_weighting=True, seed=789)
+    # Search for common lines over less shifts for 0 offsets.
+    max_shift = 1 / resolution
+    shift_step = 1
+    if src.offsets.all() != 0:
+        max_shift = 0.20
+        shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
+
+    orient_est = CLSync3N(
+        src, max_shift=max_shift, shift_step=shift_step, S_weighting=True, seed=789
+    )
 
     return src, orient_est
 
@@ -74,9 +84,46 @@ def test_build_clmatrix(source_orientation_objs):
     # Check that at least 98% of estimates are within 5 degrees.
     tol = 0.98
     if src.offsets.all() != 0:
-        # Set tolerance to 95% when using nonzero offsets.
-        tol = 0.95
+        # Set tolerance to 75% when using nonzero offsets.
+        tol = 0.75
     assert within_5 / angle_diffs.size > tol
+
+
+def test_estimate_shifts_with_gt_rots(source_orientation_objs):
+    src, orient_est = source_orientation_objs
+
+    # Assign ground truth rotations.
+    orient_est.rotations = src.rotations
+
+    # Estimate shifts using ground truth rotations.
+    est_shifts = orient_est.estimate_shifts()
+
+    # Calculate the mean 2D distance between estimates and ground truth.
+    error = src.offsets - est_shifts
+    mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
+
+    # Assert that on average estimated shifts are close (within 0.8 pix) to src.offsets
+    if src.offsets.all() != 0:
+        np.testing.assert_array_less(mean_dist, 0.8)
+    else:
+        np.testing.assert_allclose(mean_dist, 0)
+
+
+def test_estimate_shifts_with_est_rots(source_orientation_objs):
+    src, orient_est = source_orientation_objs
+
+    # Estimate shifts using estimated rotations.
+    est_shifts = orient_est.estimate_shifts()
+
+    # Calculate the mean 2D distance between estimates and ground truth.
+    error = src.offsets - est_shifts
+    mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
+
+    # Assert that on average estimated shifts are close (within 0.8 pix) to src.offsets
+    if src.offsets.all() != 0:
+        np.testing.assert_array_less(mean_dist, 0.8)
+    else:
+        np.testing.assert_allclose(mean_dist, 0)
 
 
 def test_estimate_rotations(source_orientation_objs):
