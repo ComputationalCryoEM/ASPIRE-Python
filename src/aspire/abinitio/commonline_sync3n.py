@@ -719,9 +719,17 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             * (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2)
             / np.sum(((1 - hist_x) ** b) * np.exp(-b / (1 - x0) * (1 - hist_x)))
         )
-        start_values = np.array([B0, P, b, x0], dtype=np.float64)
+        # P must be in lower and upper bounds or `curve_fit` will error
+        # This was not the case for MATLAB...
+        P0 = np.clip(P, Pmin**3, Pmax**3)
+        start_values = np.array([B0, P0, b, x0], dtype=np.float64)
         lower_bounds = np.array([0, Pmin**3, 2, 0], dtype=np.float64)
         upper_bounds = np.array([np.inf, Pmax**3, np.inf, 1], dtype=np.float64)
+
+        with np.printoptions(precision=2):
+            logger.info(f"curve_fit lower_bounds:{lower_bounds}")
+            logger.info(f"curve_fit start_values:{start_values}")
+            logger.info(f"curve_fit upper_bounds:{upper_bounds}")
 
         # Fit distribution
         def fun(x, B, P, b, x0, A=A, a=a):
@@ -744,7 +752,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         P = P ** (1 / 3)
         sigma = (1 - x0) / peak2sigma
 
-        logger.info(f"Estimated CL Errors P,STD:\t{100*P}%\t{sigma}")
+        logger.info(f"Estimated CL Errors P,STD:\t{100*P:.2f}%\t{sigma:.2f}")
 
         # Initialize probability computations
         # Local histograms analysis
@@ -773,7 +781,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             Pij = np.nan_to_num(Pij)
 
         logger.info(
-            f"Common lines probabilities to be indicative Pij={100*np.mean(Pij)}%"
+            f"Common lines probabilities to be indicative Pij={100*np.mean(Pij):.2f}%"
         )
 
         return P, sigma, Pij, scores_hist
