@@ -397,6 +397,11 @@ def matplotlib_no_gui():
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", r"Matplotlib is currently using agg.*")
 
+        # Ignore the specific UserWarning about non-interactive FigureCanvasAgg
+        warnings.filterwarnings(
+            "ignore", r"FigureCanvasAgg is non-interactive, and thus cannot be shown"
+        )
+
         yield
 
     # Explicitly close all figures before making backend changes.
