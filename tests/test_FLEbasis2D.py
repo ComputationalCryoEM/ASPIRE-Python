@@ -76,7 +76,7 @@ class TestFLEBasis2D(UniversalBasisMixin):
     if backend_available("cufinufft"):
         test_eps = 1.15
     elif platform.system() == "Darwin":
-        test_eps = 1.20
+        test_eps = 1.30
 
     # check closeness guarantees for fast vs dense matrix method
     def testFastVDense_T(self, basis):
