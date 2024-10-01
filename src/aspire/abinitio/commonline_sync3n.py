@@ -714,8 +714,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             * (a + 1)
         )
         # normalization of 2nd component: B = P*N_delta/sum(f), where f is the component formula
-        B0 = P * (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2) / np.sum(
-            ((1 - hist_x) ** b) * np.exp(-b / (1 - x0) * (1 - hist_x))
+        B0 = (
+            P
+            * (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2)
+            / np.sum(((1 - hist_x) ** b) * np.exp(-b / (1 - x0) * (1 - hist_x)))
         )
         start_values = np.array([B0, P, b, x0], dtype=np.float64)
         lower_bounds = np.array([0, Pmin**3, 2, 0], dtype=np.float64)
@@ -742,6 +744,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         P = P ** (1 / 3)
         sigma = (1 - x0) / peak2sigma
 
+        logger.info(f"Estimated CL Errors P,STD:\t{100*P}%\t{sigma}")
+
         # Initialize probability computations
         # Local histograms analysis
         A = a + 1  # distribution 1st component normalization factor
@@ -767,6 +771,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 f"NaN probabilities occurred {num_nan} times out of {np.size(Pij)}. Setting NaNs to zero."
             )
             Pij = np.nan_to_num(Pij)
+
+        logger.info(
+            f"Common lines probabilities to be indicative Pij={100*np.mean(Pij)}%"
+        )
 
         return P, sigma, Pij, scores_hist
 
