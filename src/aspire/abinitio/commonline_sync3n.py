@@ -714,7 +714,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             * (a + 1)
         )
         # normalization of 2nd component: B = P*N_delta/sum(f), where f is the component formula
-        B0 = P ** (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2) / np.sum(
+        B0 = P * (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2) / np.sum(
             ((1 - hist_x) ** b) * np.exp(-b / (1 - x0) * (1 - hist_x))
         )
         start_values = np.array([B0, P, b, x0], dtype=np.float64)
