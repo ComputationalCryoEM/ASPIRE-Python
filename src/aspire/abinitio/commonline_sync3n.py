@@ -722,7 +722,10 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # P must be in lower and upper bounds or `curve_fit` will error
         # This was not the case for MATLAB...
         P0 = np.clip(P, Pmin**3, Pmax**3)
-        start_values = np.array([B0, P0, b, x0], dtype=np.float64)
+        # Note, MATLAB suggests the following, but I feel it is a bug.
+        # Will discuss with Yoel about the original code's intent.
+        #     np.array([B0, P0, b, x0], dtype=np.float64)
+        start_values = None
         lower_bounds = np.array([0, Pmin**3, 2, 0], dtype=np.float64)
         upper_bounds = np.array([np.inf, Pmax**3, np.inf, 1], dtype=np.float64)
 
