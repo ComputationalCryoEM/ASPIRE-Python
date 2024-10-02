@@ -714,14 +714,14 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             * (a + 1)
         )
         # normalization of 2nd component: B = P*N_delta/sum(f), where f is the component formula
-        B0 = (
-            P
-            * (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2)
-            / np.sum(((1 - hist_x) ** b) * np.exp(-b / (1 - x0) * (1 - hist_x)))
-        )
+        # B0 = (
+        #     P
+        #     * (self.n_img * (self.n_img - 1) * (self.n_img - 2) / 2)
+        #     / np.sum(((1 - hist_x) ** b) * np.exp(-b / (1 - x0) * (1 - hist_x)))
+        # )
         # P must be in lower and upper bounds or `curve_fit` will error
         # This was not the case for MATLAB...
-        P0 = np.clip(P, Pmin**3, Pmax**3)
+        # P0 = np.clip(P, Pmin**3, Pmax**3)
         # Note, MATLAB suggests the following, but I feel it is a bug.
         # Will discuss with Yoel about the original code's intent.
         #     np.array([B0, P0, b, x0], dtype=np.float64)
