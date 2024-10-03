@@ -51,7 +51,7 @@ class DiracBasis(Basis):
         Evaluate stack of standard coordinate coefficients from Dirac basis.
 
         :param v: Dirac basis coefficents. [..., self.count]
-        :return:  Standard basis coefficients. [..., self.sz]
+        :return:  Standard basis coefficients. [..., *self.sz]
         """
 
         # Initialize zeros array of standard basis size.
@@ -72,7 +72,7 @@ class DiracBasis(Basis):
         """
         Evaluate stack of Dirac basis coefficients from standard basis.
 
-        :param x:  Standard basis coefficients. [..., self.sz]
+        :param x:  Standard basis coefficients. [..., *self.sz]
         :return: Dirac basis coefficents. [..., self.count]
         """
 
