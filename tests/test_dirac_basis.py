@@ -78,7 +78,7 @@ def test_roundtrip(basis, mask):
         ref = x * mask
         np.testing.assert_allclose(_x, ref)
         # Negated mask joined with outer values should all be zero
-        np.all(x * ~mask == 0)
+        assert np.all((ref * ~mask).asnumpy() == 0)
     else:
         np.testing.assert_allclose(_x, x)
 
