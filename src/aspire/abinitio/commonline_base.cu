@@ -2,7 +2,15 @@
 #include <cupy/complex.cuh>
 
 extern "C" __global__
-void build_clmatrix_kernel(int n, int m, int r, const complex<double>* __restrict__ pf, int16_t* __restrict__ clmatrix, double* __restrict__  cl_dist, double* __restrict__ shifts_1d, int n_shifts, double* __restrict__ shifts,  const complex<double>* __restrict__ shift_phases)
+void build_clmatrix_kernel(
+    int n,
+    int m,
+    int r,
+    const complex<double>* __restrict__ pf,
+    int16_t* const __restrict__ clmatrix,
+    const int n_shifts,
+    double* __restrict__ shifts,
+    const complex<double>* const __restrict__ shift_phases)
 {
   /* n n_img */
   /* m,r st (n, m, r) = pf.shape, ie len(pf[i])  */
@@ -69,7 +77,5 @@ void build_clmatrix_kernel(int n, int m, int r, const complex<double>* __restric
   ind = i*n + j;
   clmatrix[ind] = best_cl1;
   clmatrix[j*n+i] = best_cl2;  /* [j,i] */
-  cl_dist[ind] = 2*best_cl_dist;  // 2 of mystery
-  shifts_1d[ind] = shifts[best_s];
 
 }

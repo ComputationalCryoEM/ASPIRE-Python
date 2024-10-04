@@ -303,13 +303,6 @@ class CLOrient3D:
         # starts from 0 instead of 1 as Matlab version. -1 means
         # there is no common line such as clmatrix[i,i].
         clmatrix = -cp.ones((n_img, n_img), dtype=np.int16)
-        # When cl_dist[i, j] is not -1, it stores the maximum value
-        # of correlation between image i and j for all possible 1D shifts.
-        # We will use cl_dist[i, j] = -1 (including j<=i) to
-        # represent that there is no need to check common line
-        # between i and j. Since it is symmetric,
-        # only above the diagonal entries are necessary.
-        cl_dist = -cp.ones((n_img, n_img), dtype=np.float64)
 
         # Allocate variables used for shift estimation
 
@@ -319,8 +312,6 @@ class CLOrient3D:
         # Set resolution of shift estimation in pixels. Note that
         # shift_step can be any positive real number.
         shift_step = self.shift_step
-        # 1D shift between common-lines
-        shifts_1d = cp.zeros((n_img, n_img), dtype=np.float64)  # check dtype
 
         # Prepare the shift phases to try and generate filter for common-line detection
         r_max = pf.shape[2]
@@ -357,8 +348,6 @@ class CLOrient3D:
                 r_max,
                 pf,
                 clmatrix,
-                cl_dist,
-                shifts_1d,
                 len(shifts),
                 shifts,
                 shift_phases,
@@ -366,11 +355,9 @@ class CLOrient3D:
         )
 
         # Copy result device arrays to host
-        shifts_1d = shifts_1d.get().astype(self.dtype, copy=False)
         clmatrix = clmatrix.get().astype(self.dtype, copy=False)
-        cl_dist = cl_dist.get().astype(self.dtype, copy=False)  # diagnostic
 
-        return shifts_1d, clmatrix
+        return None, clmatrix
 
     def estimate_shifts(self, equations_factor=1, max_memory=4000):
         """
