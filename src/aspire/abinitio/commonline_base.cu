@@ -29,12 +29,11 @@ void build_clmatrix_kernel(
   int k;
   int s;
   int cl1, cl2;
-  int best_cl1, best_cl2, best_s;
+  int best_cl1, best_cl2;
   double dist, best_cl_dist;
   double p1, p2;
   complex<double> pfik, pfjk;
 
-  best_s = -99999;
   best_cl1 = -1;
   best_cl2 = -1;
   best_cl_dist = -1/0;
@@ -57,7 +56,6 @@ void build_clmatrix_kernel(
           best_cl_dist = dist;
           best_cl1 = cl1;
           best_cl2 = cl2;
-          best_s = s;
         }
 
         dist = p1 + p2;
@@ -65,7 +63,6 @@ void build_clmatrix_kernel(
           best_cl_dist = dist;
           best_cl1 = cl1;
           best_cl2 = cl2 + m; // m is pf.shape[1], which should be n_theta//2...
-          best_s = s;
         }
 
       } /* s */
