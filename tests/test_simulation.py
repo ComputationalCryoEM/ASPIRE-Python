@@ -666,6 +666,76 @@ def test_cached_image_accessors():
     )
 
 
+def test_save_overwrite(caplog):
+    """
+    Test that the overwrite flag behaves as expected.
+    - overwrite=True: Overwrites the existing file.
+    - overwrite=False: Raises an error if the file exists.
+    - overwrite=None: Renames the existing file and saves the new one.
+    """
+    sim1 = Simulation(seed=1)
+    sim2 = Simulation(seed=2)
+    sim3 = Simulation(seed=3)
+
+    # Create a tmp dir for this test output
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        starfile = os.path.join(tmpdir_name, "og.star")
+        base, ext = os.path.splitext(starfile)
+
+        sim1.save(starfile, overwrite=True)
+
+        # Case 1: overwrite=True (should overwrite the existing file)
+        sim2.save(starfile, overwrite=True)
+
+        # Load and check if sim2 has overwritten sim1
+        sim2_loaded = RelionSource(starfile)
+        np.testing.assert_allclose(
+            sim2.images[:].asnumpy(),
+            sim2_loaded.images[:].asnumpy(),
+            atol=utest_tolerance(sim2.dtype),
+        )
+
+        # Case 2: overwrite=False (should raise an overwrite error)
+        with raises(
+            ValueError,
+            match="File '.*' already exists; set overwrite=True to overwrite it",
+        ):
+            sim2.save(starfile, overwrite=False)
+
+        # case 3: overwrite=None (should rename the existing file and save im3 with original filename)
+        with caplog.at_level(logging.INFO):
+            sim3.save(starfile, overwrite=None)
+
+            # Check that the existing file was renamed and logged
+            assert f"Found existing file with name {starfile}" in caplog.text
+
+            # Find the renamed file by checking the directory contents
+            renamed_file = None
+            for filename in os.listdir(tmpdir_name):
+                if filename.startswith("og_") and filename.endswith(".star"):
+                    renamed_file = os.path.join(tmpdir_name, filename)
+                    break
+
+            assert renamed_file is not None, "Renamed file not found"
+
+        # Load and check that sim3 was saved to the original path
+        sim3_loaded = RelionSource(starfile)
+        np.testing.assert_allclose(
+            sim3.images[:].asnumpy(),
+            sim3_loaded.images[:].asnumpy(),
+            atol=utest_tolerance(sim3.dtype),
+        )
+
+        # Also check that the renamed file still contains sim2's data
+        sim2_loaded_renamed = RelionSource(renamed_file)
+        np.testing.assert_allclose(
+            sim2.images[:].asnumpy(),
+            sim2_loaded_renamed.images[:].asnumpy(),
+            atol=utest_tolerance(sim2.dtype),
+        )
+
+
 def test_mismatched_pixel_size():
     """
     Confirm raises error when explicit Simulation and CTFFilter pixel sizes mismatch.
