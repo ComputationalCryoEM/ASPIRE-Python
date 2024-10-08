@@ -54,12 +54,8 @@ noise_variance = 5e-7  # Set a target noise variance
 # ---------------
 # Start with the hi-res volume map EMDB-2660 sourced from EMDB,
 # https://www.ebi.ac.uk/emdb/EMD-2660, and dowloaded via ASPIRE's downloader utility.
-og_v = emdb_2660()
+og_v = emdb_2660().astype(np.float64)
 logger.info("Original volume map data" f" shape: {og_v.shape} dtype:{og_v.dtype}")
-
-logger.info(f"Downsampling to {(img_size,)*3}")
-v = og_v.downsample(img_size)
-L = v.resolution
 
 
 # Then create a filter based on that variance
@@ -70,7 +66,7 @@ def noise_function(x, y):
     # White
     f1 = noise_variance
     # Violet-ish
-    f2 = noise_variance * (x * x + y * y) / L * L
+    f2 = noise_variance * (x * x + y * y) / img_size * img_size
     return (alpha * f1 + beta * f2) / 2.0
 
 
@@ -78,7 +74,7 @@ custom_noise = CustomNoiseAdder(noise_filter=FunctionFilter(noise_function))
 
 logger.info("Initialize CTF filters.")
 # Create some CTF effects
-pixel_size = 5 * 65 / img_size  # Pixel size of the images (in angstroms)
+pixel_size = og_v.pixel_size  # Pixel size (in angstroms)
 voltage = 200  # Voltage (in KV)
 defocus_min = 1.5e4  # Minimum defocus value (in angstroms)
 defocus_max = 2.5e4  # Maximum defocus value (in angstroms)
@@ -94,13 +90,16 @@ ctf_filters = [
 
 # Finally create the Simulation
 src = Simulation(
-    L=v.resolution,
     n=num_imgs,
-    vols=v,
+    vols=og_v,
     noise_adder=custom_noise,
     unique_filters=ctf_filters,
-    dtype=v.dtype,
+    dtype=np.float64,
 )
+
+# Downsample
+src = src.downsample(img_size).cache()
+
 # Peek
 if interactive:
     src.images[:10].show()
@@ -115,7 +114,7 @@ src = src.whiten(aiso_noise_estimator)
 
 # Plot the noise profile for inspection
 if interactive:
-    plt.imshow(aiso_noise_estimator.filter.evaluate_grid(L))
+    plt.imshow(aiso_noise_estimator.filter.evaluate_grid(img_size))
     plt.show()
 
 # Peek, what do the whitened images look like...
