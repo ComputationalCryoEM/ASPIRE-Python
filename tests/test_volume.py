@@ -296,6 +296,65 @@ def test_save_load(vols_1):
         assert vols_loaded_double.pixel_size is None, "Pixel size should be None"
 
 
+def test_save_overwrite(caplog):
+    """
+    Test that the overwrite flag behaves as expected.
+    - overwrite=True: Overwrites the existing file.
+    - overwrite=False: Raises an error if the file exists.
+    - overwrite=None: Renames the existing file and saves the new one.
+    """
+    # Create a tmp dir for this test output
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        mrc_path = os.path.join(tmpdir_name, "og.mrc")
+        base, ext = os.path.splitext(mrc_path)
+
+        # Create and save the first image
+        vol1 = Volume(np.ones((1, 8, 8, 8), dtype=np.float32))
+        vol1.save(mrc_path, overwrite=True)
+
+        # Case 1: overwrite=True (should overwrite the existing file)
+        vol2 = Volume(2 * np.ones((1, 8, 8, 8), dtype=np.float32))
+        vol2.save(mrc_path, overwrite=True)
+
+        # Load and check if vol2 has overwritten vol1
+        vol2_loaded = Volume.load(mrc_path)
+        np.testing.assert_allclose(vol2.asnumpy(), vol2_loaded.asnumpy())
+
+        # Case 2: overwrite=False (should raise an overwrite error)
+        vol3 = Volume(3 * np.ones((1, 8, 8, 8), dtype=np.float32))
+
+        with pytest.raises(
+            ValueError,
+            match="File '.*' already exists; set overwrite=True to overwrite it",
+        ):
+            vol3.save(mrc_path, overwrite=False)
+
+        # Case 3: overwrite=None (should rename the existing file and save vol3 with original filename)
+        with caplog.at_level(logging.INFO):
+            vol3.save(mrc_path, overwrite=None)
+
+            # Check that the existing file was renamed and logged
+            assert f"Found existing file with name {mrc_path}" in caplog.text
+
+            # Find the renamed file by checking the directory contents
+            renamed_file = None
+            for filename in os.listdir(tmpdir_name):
+                if filename.startswith("og_") and filename.endswith(".mrc"):
+                    renamed_file = os.path.join(tmpdir_name, filename)
+                    break
+
+            assert renamed_file is not None, "Renamed file not found"
+
+        # Load and check that vol3 was saved to the original path
+        vol3_loaded = Volume.load(mrc_path)
+        np.testing.assert_allclose(vol3.asnumpy(), vol3_loaded.asnumpy())
+
+        # Also check that the renamed file still contains vol2's data
+        vol2_loaded_renamed = Volume.load(renamed_file)
+        np.testing.assert_allclose(vol2.asnumpy(), vol2_loaded_renamed.asnumpy())
+
+
 def test_volume_pixel_size(vols_2):
     """
     Test volume is storing pixel_size attribute.

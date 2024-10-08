@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 from warnings import catch_warnings, filterwarnings, simplefilter, warn
 
 import matplotlib.pyplot as plt
@@ -484,11 +485,32 @@ class Image:
     def rotate(self):
         raise NotImplementedError
 
-    def save(self, mrcs_filepath, overwrite=False):
+    def save(self, mrcs_filepath, overwrite=None):
+        """
+        Save Image to disk as mrcs file
+
+        :param filename: Filepath where Image will be saved.
+        :param overwrite: Options to control overwrite behavior (default is None):
+            - True: Overwrites the existing file if it exists.
+            - False: Raises an error if the file exists.
+            - None: Renames the old file by appending a time/date stamp.
+        """
         if self.stack_ndim > 1:
             raise NotImplementedError("`save` is currently limited to 1D image stacks.")
 
-        with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
+        if overwrite is None and os.path.exists(mrcs_filepath):
+            # If the file exists, append the timestamp to the old file and rename it
+            base, ext = os.path.splitext(mrcs_filepath)
+            timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
+            renamed_filepath = f"{base}_{timestamp}{ext}"
+            logger.info(
+                f"Found existing file with name {mrcs_filepath}. Renaming existing file as {renamed_filepath}."
+            )
+
+            # Rename the existing file by appending the timestamp
+            os.rename(mrcs_filepath, renamed_filepath)
+
+        with mrcfile.new(mrcs_filepath, overwrite=bool(overwrite)) as mrc:
             # original input format (the image index first)
             mrc.set_data(self._data.astype(np.float32))
             # Note assigning voxel_size must come after `set_data`
