@@ -1,5 +1,7 @@
 import logging
+import os
 import warnings
+from datetime import datetime
 
 import mrcfile
 import numpy as np
@@ -635,21 +637,34 @@ class Volume:
     def denoise(self):
         raise NotImplementedError
 
-    def save(self, filename, overwrite=False):
+    def save(self, filename, overwrite=None):
         """
         Save volume to disk as mrc file
 
-        :param filename: Filepath where volume will be saved
-
-        :param overwrite: Option to overwrite file when set to True.
-            Defaults to overwrite=False.
+        :param filename: Filepath where volume will be saved.
+        :param overwrite: Options to control overwrite behavior (default is None):
+            - True: Overwrites the existing file if it exists.
+            - False: Raises an error if the file exists.
+            - None: Renames the old file by appending a time/date stamp.
         """
         if self.stack_ndim > 1:
             raise NotImplementedError(
                 "`save` is currently limited to 1D Volume stacks."
             )
 
-        with mrcfile.new(filename, overwrite=overwrite) as mrc:
+        if overwrite is None and os.path.exists(filename):
+            # If the file exists, append the timestamp to the old file and rename it
+            base, ext = os.path.splitext(filename)
+            timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
+            renamed_filepath = f"{base}_{timestamp}{ext}"
+            logger.info(
+                f"Found existing file with name {filename}. Renaming existing file as {renamed_filepath}."
+            )
+
+            # Rename the existing file by appending the timestamp
+            os.rename(filename, renamed_filepath)
+
+        with mrcfile.new(filename, overwrite=bool(overwrite)) as mrc:
             mrc.set_data(self._data.astype(np.float32))
             # Note assigning voxel_size must come after `set_data`
             if self.pixel_size is not None:
