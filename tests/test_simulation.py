@@ -711,7 +711,7 @@ def test_save_overwrite(caplog):
             sim3.save(starfile, overwrite=None)
 
             # Check that the existing file was renamed and logged
-            assert f"Found existing file with name {starfile}" in caplog.text
+            assert f"Renaming {starfile}" in caplog.text
 
             # Find the renamed file by checking the directory contents
             renamed_file = None
