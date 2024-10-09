@@ -148,7 +148,7 @@ def emdb_vol():
 
 @pytest.fixture(scope="module")
 def volume(emdb_vol, res, dtype):
-    vol = emdb_vol.astype(dtype, copy=False)
+    vol = emdb_vol.astype(dtype, copy=None)
     vol = vol.downsample(res)
     return vol
 
@@ -266,7 +266,7 @@ def test_pixel_size():
     dsL = 5  # downsampled
 
     # Construct a small test Image
-    img = Image(np.random.random((1, L, L)).astype(DTYPE, copy=False), pixel_size=1.23)
+    img = Image(np.random.random((1, L, L)).astype(DTYPE, copy=None), pixel_size=1.23)
 
     # Downsample the image
     result = img.downsample(dsL)

@@ -139,7 +139,7 @@ class PyfftwFFT(FFT):
         # FFTW_BACKWARD requires complex input array, cast as needed.
         # See https://pyfftw.readthedocs.io/en/latest/source/pyfftw/pyfftw.html#scheme-table
         comp_type = complex_type(a.dtype)
-        a = a.astype(comp_type, copy=False)
+        a = a.astype(comp_type, copy=None)
 
         mutex.acquire()
         try:

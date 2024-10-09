@@ -81,7 +81,7 @@ def _ensure_sparse_format(
         Data type of result. If None, the dtype of the input is preserved.
 
     copy : boolean
-        Whether a forced copy will be triggered. If copy=False, a copy might
+        Whether a forced copy will be triggered. If copy=None, a copy might
         be triggered by a conversion.
 
     force_all_finite : boolean or 'allow-nan', (default=True)
@@ -173,7 +173,7 @@ def check_array(
     accept_large_sparse=True,
     dtype="numeric",
     order=None,
-    copy=False,
+    copy=None,
     force_all_finite=True,
     ensure_2d=True,
     allow_nd=False,
@@ -216,13 +216,13 @@ def check_array(
 
     order : 'F', 'C' or None (default=None)
         Whether an array will be forced to be fortran or c-style.
-        When order is None (default), then if copy=False, nothing is ensured
+        When order is None (default), then if copy=None, nothing is ensured
         about the memory layout of the output array; otherwise (copy=True)
         the memory layout of the returned array is kept as close as possible
         to the original array.
 
     copy : boolean (default=False)
-        Whether a forced copy will be triggered. If copy=False, a copy might
+        Whether a forced copy will be triggered. If copy=None, a copy might
         be triggered by a conversion.
 
     force_all_finite : boolean or 'allow-nan', (default=True)
@@ -365,7 +365,7 @@ def check_array(
                     array = np.asarray(array, order=order)
                     if array.dtype.kind == "f":
                         _assert_all_finite(array, allow_nan=False, msg_dtype=dtype)
-                    array = array.astype(dtype, casting="unsafe", copy=False)
+                    array = array.astype(dtype, casting="unsafe", copy=None)
                 else:
                     array = np.asarray(array, order=order, dtype=dtype)
             except ComplexWarning:

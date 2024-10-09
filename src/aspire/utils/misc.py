@@ -135,7 +135,7 @@ def gaussian_1d(size, mu=0, sigma=1, dtype=np.float64):
 
     p = (g["x"] - mu) ** 2 / (2 * sigma**2)
 
-    return np.exp(-p).astype(dtype, copy=False)
+    return np.exp(-p).astype(dtype, copy=None)
 
 
 def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), indexing="yx", dtype=np.float64):
@@ -180,7 +180,7 @@ def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), indexing="yx", dtype=np.float64):
         2 * sigma[1] ** 2
     )
 
-    return np.exp(-p).astype(dtype, copy=False)
+    return np.exp(-p).astype(dtype, copy=None)
 
 
 def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), indexing="zyx", dtype=np.float64):
@@ -228,7 +228,7 @@ def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), indexing="zyx", dtype=np.fl
         + (g["z"] - mu[2]) ** 2 / (2 * sigma[2] ** 2)
     )
 
-    return np.exp(-p).astype(dtype, copy=False)
+    return np.exp(-p).astype(dtype, copy=None)
 
 
 def bump_3d(size, spread=1, dtype=np.float64):

@@ -693,7 +693,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         while itr < max_iters and residual > epsilon:
             itr += 1
             # Note, this appears to need double precision for accuracy in the following division.
-            vec_new = self._signs_times_v(vijs, vec).astype(np.float64, copy=False)
+            vec_new = self._signs_times_v(vijs, vec).astype(np.float64, copy=None)
             vec_new = vec_new / norm(vec_new)
             residual = norm(vec_new - vec)
             vec = vec_new
