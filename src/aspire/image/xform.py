@@ -144,8 +144,9 @@ class Multiply(SymmetricXform):
         self.multipliers = np.array(factor)
 
     def _forward(self, im, indices):
+
         if self.multipliers.size == 1:  # if we have a scalar multiplier
-            im_new = im * self.multipliers
+            im_new = im * self.multipliers.astype(im.dtype)
         else:
             im_new = im * self.multipliers[indices]
 
