@@ -149,7 +149,7 @@ class Picker:
         self.original_im = (
             DiskMicrographSource(self.filename)
             .asnumpy()[0]
-            .astype(np.float32, copy=False)
+            .astype(np.float32, copy=None)
         )
 
         # Discard outer pixels
@@ -167,7 +167,7 @@ class Picker:
         # Note, float64 required for signal.correlate call accuracy.
         im = np.asarray(
             PILImage.fromarray(im).resize(size, PILImage.Resampling.BICUBIC)
-        ).astype(np.float64, copy=False)
+        ).astype(np.float64, copy=None)
 
         im = signal.correlate(
             im,

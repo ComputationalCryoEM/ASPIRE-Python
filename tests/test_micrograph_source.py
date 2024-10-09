@@ -56,7 +56,7 @@ def image_data_fixture(micrograph_count, micrograph_size, dtype):
     This generates a Numpy array with prescribed shape and dtype.
     """
     img_np = np.random.rand(micrograph_count, micrograph_size, micrograph_size)
-    return img_np.astype(dtype, copy=False)
+    return img_np.astype(dtype, copy=None)
 
 
 # =====
