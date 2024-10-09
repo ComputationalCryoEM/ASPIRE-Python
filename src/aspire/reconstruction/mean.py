@@ -102,7 +102,7 @@ class WeightedVolumesEstimator(Estimator):
             _range = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
             sq_filters_f = evaluate_src_filters_on_grid(self.src, _range) ** 2
             amplitudes_sq = (self.src.amplitudes[_range] ** 2).astype(
-                self.dtype, copy=False
+                self.dtype, copy=None
             )
 
             for k in range(self.r):

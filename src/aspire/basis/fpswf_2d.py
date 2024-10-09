@@ -99,7 +99,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         ) = self._pswf_integration_sub_routine()
 
         self.us_fft_pts = us_fft_pts.astype(
-            self.dtype, copy=False
+            self.dtype, copy=None
         )  # TODO, debug where this is incorrect dtype
         self.blk_r = blk_r
         self.num_angular_pts = num_angular_pts

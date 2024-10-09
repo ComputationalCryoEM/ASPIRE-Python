@@ -643,7 +643,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_img = z.shape[0]
         z = z[:, :, : self.num_angular_nodes // 2].reshape(num_img, -1)
         im = anufft(
-            z.astype(complex_type(self.dtype), copy=False),
+            z.astype(complex_type(self.dtype), copy=None),
             self.grid_xy,
             (self.nres, self.nres),
             epsilon=self.epsilon,
@@ -800,7 +800,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         h_vals2d = (
             xp.asarray(h_fun(omega))
             .reshape(n_k, n_theta)
-            .astype(self.dtype, copy=False)
+            .astype(self.dtype, copy=None)
         )
         h_vals = xp.sum(h_vals2d, axis=1) / n_theta
 
