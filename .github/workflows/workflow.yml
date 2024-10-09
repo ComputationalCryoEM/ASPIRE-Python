@@ -14,7 +14,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.8'
+        python-version: '3.9'
     - name: Install dependencies
       run: |
         pip install tox tox-gh-actions
@@ -28,15 +28,15 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}    
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
         pyenv: [pip]
         exclude:
-          # Exclude 3.8-pip so we can add pre/post tasks to that environment.
-          - python-version: '3.8'
+          # Exclude 3.9-pip so we can add pre/post tasks to that environment.
+          - python-version: '3.9'
             pyenv: pip
         include:
-          # Re-include 3.8 with additional tox tasks.
-          - python-version: '3.8'
+          # Re-include 3.9 with additional tox tasks.
+          - python-version: '3.9'
             pyenv: pip,docs
 
 
@@ -70,7 +70,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-20.04, macOS-latest, macOS-13]
         backend: [default, openblas]
-        python-version: ['3.8']
+        python-version: ['3.9']
         include:
           - os: ubuntu-latest
             backend: intel
@@ -112,7 +112,7 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.8'
+        python-version: '3.9'
     - name: Install Dependencies
       run: |
         pip install -e ".[dev]"
@@ -176,11 +176,11 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: '3.9'
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"	  
+          pip install -e ".[dev]"
       - name: Create Cache
         uses: actions/cache@v4
         with:
@@ -200,7 +200,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.8'
+          python-version: '3.9'
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
@@ -232,7 +232,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.12'
     - name: Complete Install and Log Environment
       run: |
         python --version
