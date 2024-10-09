@@ -748,13 +748,12 @@ def check_metadata(sim_src, relion_src):
     """
     for k, v in sim_src._metadata.items():
         try:
-            # First try allclose. Loaded metadata might be strings,
-            # so we cast to the same type as v.
+            np.testing.assert_array_equal(v, relion_src._metadata[k])
+        except AssertionError:
+            # Loaded metadata might be strings so recast.
             np.testing.assert_allclose(
                 v, np.array(relion_src._metadata[k]).astype(type(v[0]))
             )
-        except:
-            np.testing.assert_array_equal(v, relion_src._metadata[k])
 
 
 def test_mismatched_pixel_size():
