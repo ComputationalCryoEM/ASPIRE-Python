@@ -72,7 +72,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
 
     # Apply mask images and calculate mean and std values of background
     imgs_masked = imgs * mask
-    denominator = np.sum(mask)
+    denominator = np.count_nonzero(mask)  # scalar int
     first_moment = np.sum(imgs_masked, axis=(1, 2)) / denominator
     second_moment = np.sum(imgs_masked**2, axis=(1, 2)) / denominator
     mean = first_moment.reshape(-1, 1, 1)
