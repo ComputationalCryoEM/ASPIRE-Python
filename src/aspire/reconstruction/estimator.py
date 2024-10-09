@@ -159,7 +159,7 @@ class Estimator:
 
         if kernel is None:
             kernel = self.kernel
-
+        vol_coef = vol_coef.astype(self.dtype, copy=None)  # np2 sigh
         vol = Coef(self.basis, vol_coef).evaluate()  # returns a Volume
         vol = kernel.convolve_volume(vol)  # returns a Volume
         vol_coef = self.basis.evaluate_t(vol)
