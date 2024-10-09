@@ -654,7 +654,7 @@ class Volume:
 
         if overwrite is None and os.path.exists(filename):
             # If the file exists, append a timestamp to the old file and rename it
-            rename_file(filename)
+            _ = rename_file(filename)
 
         with mrcfile.new(filename, overwrite=bool(overwrite)) as mrc:
             mrc.set_data(self._data.astype(np.float32))
