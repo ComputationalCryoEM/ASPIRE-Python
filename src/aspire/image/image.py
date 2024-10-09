@@ -1,6 +1,5 @@
 import logging
 import os
-from datetime import datetime
 from warnings import catch_warnings, filterwarnings, simplefilter, warn
 
 import matplotlib.pyplot as plt
@@ -13,7 +12,13 @@ import aspire.sinogram
 import aspire.volume
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
-from aspire.utils import FourierRingCorrelation, anorm, crop_pad_2d, grid_2d
+from aspire.utils import (
+    FourierRingCorrelation,
+    anorm,
+    crop_pad_2d,
+    grid_2d,
+    rename_file,
+)
 from aspire.volume import SymmetryGroup
 
 logger = logging.getLogger(__name__)
@@ -499,16 +504,8 @@ class Image:
             raise NotImplementedError("`save` is currently limited to 1D image stacks.")
 
         if overwrite is None and os.path.exists(mrcs_filepath):
-            # If the file exists, append the timestamp to the old file and rename it
-            base, ext = os.path.splitext(mrcs_filepath)
-            timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
-            renamed_filepath = f"{base}_{timestamp}{ext}"
-            logger.info(
-                f"Found existing file with name {mrcs_filepath}. Renaming existing file as {renamed_filepath}."
-            )
-
-            # Rename the existing file by appending the timestamp
-            os.rename(mrcs_filepath, renamed_filepath)
+            # If the file exists, append a timestamp to the old file and rename it
+            rename_file(mrcs_filepath)
 
         with mrcfile.new(mrcs_filepath, overwrite=bool(overwrite)) as mrc:
             # original input format (the image index first)
