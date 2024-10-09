@@ -493,7 +493,7 @@ def fix_signs(u):
     # Now we only care about the sign +1/-1.
     #  The following corrects for any numerical division noise,
     #  and also remaps 0 to +1.
-    signs = np.sign(signs * 2 + 1)
+    signs = np.sign(signs.real * 2 + 1)
 
     # Apply signs elementwise to matrix
     return u * signs
