@@ -5,7 +5,9 @@ Miscellaneous Utilities that have no better place (yet).
 import hashlib
 import importlib.resources
 import logging
+import os
 import sys
+from datetime import datetime
 from itertools import chain, combinations
 
 import numpy as np
@@ -46,6 +48,27 @@ def importlib_path(package, resource):
         )
 
     return p
+
+
+def rename_file(filepath, move=True):
+    """
+    Rename a file by appending a timestamp to the end of the filename.
+
+    :param filepath: Filepath to rename.
+    :param move: Option to rename the file on disk.
+
+    :return: If move=False, returns filepath with timestamp appended.
+    """
+    base, ext = os.path.splitext(filepath)
+    timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
+    renamed_filepath = f"{base}_{timestamp}{ext}"
+    logger.info(f"Renaming {filepath} as {renamed_filepath}.")
+
+    # Rename the existing file by appending the timestamp.
+    if move:
+        os.rename(filepath, renamed_filepath)
+    else:
+        return renamed_filepath
 
 
 def abs2(x):
