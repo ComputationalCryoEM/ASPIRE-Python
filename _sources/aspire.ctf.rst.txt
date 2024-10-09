@@ -1,0 +1,21 @@
+aspire.ctf package
+==================
+
+Submodules
+----------
+
+aspire.ctf.ctf\_estimator module
+--------------------------------
+
+.. automodule:: aspire.ctf.ctf_estimator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.ctf
+   :members:
+   :undoc-members:
+   :show-inheritance:

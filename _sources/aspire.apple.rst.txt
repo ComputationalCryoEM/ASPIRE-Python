@@ -1,0 +1,37 @@
+aspire.apple package
+====================
+
+Submodules
+----------
+
+aspire.apple.apple module
+-------------------------
+
+.. automodule:: aspire.apple.apple
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.apple.helper module
+--------------------------
+
+.. automodule:: aspire.apple.helper
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.apple.picking module
+---------------------------
+
+.. automodule:: aspire.apple.picking
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.apple
+   :members:
+   :undoc-members:
+   :show-inheritance:

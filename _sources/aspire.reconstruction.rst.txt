@@ -1,0 +1,37 @@
+aspire.reconstruction package
+=============================
+
+Submodules
+----------
+
+aspire.reconstruction.estimator module
+--------------------------------------
+
+.. automodule:: aspire.reconstruction.estimator
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.reconstruction.kernel module
+-----------------------------------
+
+.. automodule:: aspire.reconstruction.kernel
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.reconstruction.mean module
+---------------------------------
+
+.. automodule:: aspire.reconstruction.mean
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.reconstruction
+   :members:
+   :undoc-members:
+   :show-inheritance:
