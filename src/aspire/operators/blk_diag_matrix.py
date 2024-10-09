@@ -91,7 +91,7 @@ class BlkDiagMatrix:
         :param blk: Block to append (ndarray).
         """
 
-        self.data.append(blk.astype(self.dtype, copy=False))
+        self.data.append(blk.astype(self.dtype, copy=None))
         self.nblocks += 1
         self.reset_cache()
 
@@ -130,7 +130,7 @@ class BlkDiagMatrix:
         Convenience wrapper, setter on self.data.
         """
 
-        self.data[key] = value.astype(self.dtype, copy=False)
+        self.data[key] = value.astype(self.dtype, copy=None)
         self.reset_cache()
 
     def __len__(self):

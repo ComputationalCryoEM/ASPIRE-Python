@@ -1149,12 +1149,12 @@ class CLSymmetryD2(CLOrient3D):
 
         # Seed eigs initial vector for iterative method.
         # scipy LinearOperator needs doubles for some architectures (arm).
-        v0 = randn(3 * n_pairs, seed=self.seed).astype(np.float64, copy=False)
+        v0 = randn(3 * n_pairs, seed=self.seed).astype(np.float64, copy=None)
 
         v0 = v0 / norm(v0)
         vals, colors = la.eigs(color_mat, k=3, which="LR", v0=v0)
         vals = np.real(vals)
-        colors = np.real(colors).astype(self.dtype, copy=False)
+        colors = np.real(colors).astype(self.dtype, copy=None)
         colors = np.sign(colors[0]) * colors  # Stable eigs
         cp, _ = self._unmix_colors(colors[:, :2])
 

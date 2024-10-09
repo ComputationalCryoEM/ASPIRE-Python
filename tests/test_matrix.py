@@ -356,7 +356,7 @@ def test_nearest_rotations(dtype):
     rots = Rotation.generate_random_rotations(n_rots, seed=0, dtype=dtype).matrices
 
     # Add some noise to the rotations.
-    noise = 1e-3 * randn(n_rots * 9, seed=0).astype(dtype, copy=False).reshape(
+    noise = 1e-3 * randn(n_rots * 9, seed=0).astype(dtype, copy=None).reshape(
         n_rots, 3, 3
     )
     noisy_rots = rots + noise
@@ -381,7 +381,7 @@ def test_nearest_rotations_reflection(dtype):
 
     # Add a reflection and some noise to the rotation.
     refl = rot @ np.diag((1, -1, 1)).astype(dtype)
-    noise = 1e-3 * randn(9, seed=0).astype(dtype, copy=False).reshape(3, 3)
+    noise = 1e-3 * randn(9, seed=0).astype(dtype, copy=None).reshape(3, 3)
     noisy_refl = refl + noise
 
     # Find nearest rotation.

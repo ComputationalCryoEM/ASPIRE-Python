@@ -30,7 +30,7 @@ class CufinufftPlan(Plan):
         # ASPIRE-Python/703
         # Cast to doubles.
         self._original_dtype = fourier_pts.dtype
-        fourier_pts = fourier_pts.astype(np.float64, copy=False)
+        fourier_pts = fourier_pts.astype(np.float64, copy=None)
 
         # Basic dtype passthough.
         dtype = fourier_pts.dtype

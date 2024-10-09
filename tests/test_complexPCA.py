@@ -53,7 +53,7 @@ class ComplexPCACase(TestCase):
         """
 
         pca = ComplexPCA(
-            n_components=self.components_large, copy=False, svd_solver="full"
+            n_components=self.components_large, copy=None, svd_solver="full"
         )
 
         # Input data matrix X should be (n_samples, m_features)

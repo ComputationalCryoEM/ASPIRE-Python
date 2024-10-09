@@ -82,7 +82,7 @@ class SimVolTestCase(TestCase):
         without an explcit Simulation dtype.
         """
         for dtype in (np.float32, np.float64):
-            sim = Simulation(vols=self.vol.astype(dtype, copy=False))
+            sim = Simulation(vols=self.vol.astype(dtype, copy=None))
             # Did we assign the right type?
             self.assertTrue(sim.dtype == dtype)
 
