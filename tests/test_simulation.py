@@ -696,6 +696,9 @@ def test_save_overwrite(caplog):
             atol=utest_tolerance(sim2.dtype),
         )
 
+        # Check that metadata is unchanged.
+        check_metadata(sim2, sim2_loaded)
+
         # Case 2: overwrite=False (should raise an overwrite error)
         with raises(
             ValueError,
@@ -726,6 +729,7 @@ def test_save_overwrite(caplog):
             sim3_loaded.images[:].asnumpy(),
             atol=utest_tolerance(sim3.dtype),
         )
+        check_metadata(sim3, sim3_loaded)
 
         # Also check that the renamed file still contains sim2's data
         sim2_loaded_renamed = RelionSource(renamed_file)
@@ -734,6 +738,23 @@ def test_save_overwrite(caplog):
             sim2_loaded_renamed.images[:].asnumpy(),
             atol=utest_tolerance(sim2.dtype),
         )
+        check_metadata(sim2, sim2_loaded_renamed)
+
+
+def check_metadata(sim_src, relion_src):
+    """
+    Helper function to test if metadata fields in a Simulation match
+    those in a RelionSource.
+    """
+    for k, v in sim_src._metadata.items():
+        try:
+            # First try allclose. Loaded metadata might be strings,
+            # so we cast to the same type as v.
+            np.testing.assert_allclose(
+                v, np.array(relion_src._metadata[k]).astype(type(v[0]))
+            )
+        except:
+            np.testing.assert_array_equal(v, relion_src._metadata[k])
 
 
 def test_mismatched_pixel_size():
