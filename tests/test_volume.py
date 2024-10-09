@@ -335,7 +335,7 @@ def test_save_overwrite(caplog):
             vol3.save(mrc_path, overwrite=None)
 
             # Check that the existing file was renamed and logged
-            assert f"Found existing file with name {mrc_path}" in caplog.text
+            assert f"Renaming {mrc_path}" in caplog.text
 
             # Find the renamed file by checking the directory contents
             renamed_file = None
