@@ -1,7 +1,6 @@
 import logging
 import os
 import warnings
-from datetime import datetime
 
 import mrcfile
 import numpy as np
@@ -18,6 +17,7 @@ from aspire.utils import (
     grid_2d,
     grid_3d,
     mat_to_vec,
+    rename_file,
     vec_to_mat,
 )
 from aspire.volume import IdentitySymmetryGroup, SymmetryGroup
@@ -653,16 +653,8 @@ class Volume:
             )
 
         if overwrite is None and os.path.exists(filename):
-            # If the file exists, append the timestamp to the old file and rename it
-            base, ext = os.path.splitext(filename)
-            timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
-            renamed_filepath = f"{base}_{timestamp}{ext}"
-            logger.info(
-                f"Found existing file with name {filename}. Renaming existing file as {renamed_filepath}."
-            )
-
-            # Rename the existing file by appending the timestamp
-            os.rename(filename, renamed_filepath)
+            # If the file exists, append a timestamp to the old file and rename it
+            rename_file(filename)
 
         with mrcfile.new(filename, overwrite=bool(overwrite)) as mrc:
             mrc.set_data(self._data.astype(np.float32))
