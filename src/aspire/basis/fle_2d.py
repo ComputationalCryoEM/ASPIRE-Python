@@ -358,7 +358,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_ells = 1 + 2 * max_ell
         self._ells = np.zeros((num_ells, max_k), dtype=int)
         self._ks = np.zeros((num_ells, max_k), dtype=int)
-        self.bessel_zeros = np.ones((num_ells, max_k), dtype=np.float64) * np.Inf
+        self.bessel_zeros = np.ones((num_ells, max_k), dtype=np.float64) * np.inf
 
         # keep track of which order Bessel function we're on
         self._ells[0, :] = 0
