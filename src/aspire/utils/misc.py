@@ -57,7 +57,7 @@ def rename_file(filepath, move=True):
     :param filepath: Filepath to rename.
     :param move: Option to rename the file on disk.
 
-    :return: If move=False, returns filepath with timestamp appended.
+    :return: filepath with timestamp appended.
     """
     base, ext = os.path.splitext(filepath)
     timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
@@ -67,8 +67,8 @@ def rename_file(filepath, move=True):
     # Rename the existing file by appending the timestamp.
     if move:
         os.rename(filepath, renamed_filepath)
-    else:
-        return renamed_filepath
+
+    return renamed_filepath
 
 
 def abs2(x):

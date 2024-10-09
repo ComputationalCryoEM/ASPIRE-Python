@@ -3,6 +3,7 @@ import os
 import tempfile
 import warnings
 from contextlib import contextmanager
+from datetime import datetime
 
 import matplotlib
 import numpy as np
@@ -20,6 +21,7 @@ from aspire.utils import (
     num_procs_suggestion,
     physical_core_cpu_suggestion,
     powerset,
+    rename_file,
     utest_tolerance,
     virtual_core_cpu_suggestion,
 )
@@ -110,6 +112,32 @@ def test_get_full_version_unexpected(monkeypatch):
     with monkeypatch.context() as m:
         m.setattr("subprocess.check_output", lambda: RuntimeError)
         assert get_full_version() == __version__ + ".x"
+
+
+def test_rename_file():
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        filepath = os.path.join(tmpdir_name, "test_file.name")
+        base, ext = os.path.splitext(filepath)
+
+        # Create file on disk.
+        with open(filepath, "w") as f:
+            f.write("Test file")
+
+        # Case 1: move=False should return the new file name with apended timestamp.
+        renamed_file = rename_file(filepath, move=False)
+        timestamp = datetime.now().strftime("%y%m%d_%H%M")
+        assert renamed_file.startswith(f"{base}_{timestamp}") and renamed_file.endswith(
+            f"{ext}"
+        )
+
+        # Case 2: move=True (default) should rename file on disk.
+        renamed_file = rename_file(filepath)
+
+        # Check that the original file no longer exists.
+        assert not os.path.exists(filepath)
+
+        # Check that the new file exists on disk with the expected name.
+        assert os.path.exists(renamed_file)
 
 
 def test_power_set():
