@@ -65,7 +65,7 @@ def diag_matrix_fixture(stack, matrix_size, dtype):
     """
     shape = (2,) + stack + (matrix_size,)
     # Internally convert dtype.  Passthrough will be checked explicitly in `test_dtype_passthrough` and `test_dtype_cast`
-    d_np = np.random.random(shape).astype(dtype, copy=None)
+    d_np = np.random.random(shape).astype(dtype, copy=False)
     d1 = DiagMatrix(d_np[0])
     d2 = DiagMatrix(d_np[1])
 

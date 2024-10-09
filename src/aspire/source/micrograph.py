@@ -148,7 +148,7 @@ class ArrayMicrographSource(MicrographSource):
         )
 
         # We're already backed by an array, access it directly.
-        self._data = micrographs.astype(self.dtype, copy=None)
+        self._data = micrographs.astype(self.dtype, copy=False)
 
     def _images(self, indices):
         """

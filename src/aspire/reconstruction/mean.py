@@ -5,10 +5,9 @@ import numpy as np
 from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
 
-from aspire import config
 from aspire.basis import Coef
 from aspire.nufft import anufft
-from aspire.numeric import fft
+from aspire.numeric import config, fft
 from aspire.numeric.scipy import cg
 from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel, FourierKernelMatrix
@@ -102,7 +101,7 @@ class WeightedVolumesEstimator(Estimator):
             _range = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
             sq_filters_f = evaluate_src_filters_on_grid(self.src, _range) ** 2
             amplitudes_sq = (self.src.amplitudes[_range] ** 2).astype(
-                self.dtype, copy=None
+                self.dtype, copy=False
             )
 
             for k in range(self.r):
@@ -139,7 +138,7 @@ class WeightedVolumesEstimator(Estimator):
                     if j != k:
                         kernel[j, k] += batch_kernel
 
-        kermat_f = np.zeros((self.r, self.r, _2L, _2L, _2L))
+        kermat_f = np.zeros((self.r, self.r, _2L, _2L, _2L), dtype=self.dtype)
         logger.info("Computing non-centered Fourier Transform Kernel Mat")
         for k in range(self.r):
             for j in range(self.r):
@@ -184,10 +183,12 @@ class WeightedVolumesEstimator(Estimator):
                     i,
                     self.weights[:, k],
                     symmetry_group=symmetry_group,
-                ) / (self.src.n * sym_order)
+                ) / float(self.src.n * sym_order)
                 vol_rhs[k] += batch_vol_rhs.astype(self.dtype)
 
-        res = np.sqrt(self.src.n * sym_order) * self.basis.evaluate_t(vol_rhs)
+        res = np.sqrt(self.src.n * sym_order, dtype=self.dtype) * self.basis.evaluate_t(
+            vol_rhs
+        )
         logger.info(f"Determined weighted adjoint mappings. Shape = {res.shape}")
 
         return res
@@ -210,6 +211,7 @@ class WeightedVolumesEstimator(Estimator):
             precond_kernel = self.precond_kernel
             if regularizer > 0:
                 precond_kernel += regularizer
+
             M = LinearOperator(
                 (self.r * count, self.r * count),
                 matvec=partial(self.apply_kernel, kernel=precond_kernel),
@@ -262,7 +264,7 @@ class WeightedVolumesEstimator(Estimator):
                 f"Conjugate gradient unable to converge after {info} iterations."
             )
 
-        return x.reshape(self.r, self.basis.count)
+        return x.reshape(self.r, self.basis.count).astype(self.dtype, copy=False)
 
     def apply_kernel(self, vol_coef, kernel=None):
         """
@@ -283,8 +285,7 @@ class WeightedVolumesEstimator(Estimator):
         vols_out = Volume(
             np.zeros((self.r, self.src.L, self.src.L, self.src.L), dtype=self.dtype)
         )
-
-        vol = Coef(self.basis, vol_coef).evaluate()
+        vol = Coef(self.basis, vol_coef.astype(self.dtype, copy=False)).evaluate()
 
         for k in range(self.r):
             for j in range(self.r):

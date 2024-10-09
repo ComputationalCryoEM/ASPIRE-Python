@@ -203,7 +203,7 @@ def test_half_to_full_transform(stack_shape):
     """
     img_size = 32
     image = Image(
-        np.random.rand(*stack_shape, img_size, img_size).astype(np.float32, copy=None)
+        np.random.rand(*stack_shape, img_size, img_size).astype(np.float32, copy=False)
     )
     pft = PolarFT(size=img_size)
     pf = pft.transform(image)

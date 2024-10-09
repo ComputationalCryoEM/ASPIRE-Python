@@ -32,7 +32,7 @@ class FourierKernel(Kernel):
             to be able to use it within optimization loops. This operator allows one to use the FourierKernel object
             with the underlying 'kernel' attribute tweaked with a regularization parameter.
         """
-        new_kernel = self.kernel + delta
+        new_kernel = self.kernel + float(delta)
         return FourierKernel(new_kernel)
 
     def circularize(self):
@@ -191,7 +191,7 @@ class FourierKernelMatrix(FourierKernel):
 
     def circularize(self):
         _L = self.M // 2
-        xx = np.empty((self.r, self.r, _L, _L, _L))
+        xx = np.empty((self.r, self.r, _L, _L, _L), self.dtype)
         for k in range(self.r):
             for j in range(self.r):
                 xx[k, j] = FourierKernel(self.kermat[k, j]).circularize().real

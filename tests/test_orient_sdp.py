@@ -152,7 +152,7 @@ def test_ATA_solver():
     rots = Rotation.generate_random_rotations(n=n_rots, seed=seed, dtype=dtype).matrices
 
     # Create a simple reference linear transformation A that is rank-3.
-    A_ref = np.diag([1, 2, 3]).astype(dtype, copy=None)
+    A_ref = np.diag([1, 2, 3]).astype(dtype, copy=False)
 
     # Create v1 and v2 such that A_ref*v1=R1 and A_ref*v2=R2, R1 and R2 are the first
     # and second columns of all rotations.
