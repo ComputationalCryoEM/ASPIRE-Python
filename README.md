@@ -30,7 +30,7 @@ Getting Started - Installation
 ------------------------------
 
 ASPIRE is a pip-installable package for Linux/Mac/Windows, and
-requires Python 3.8-3.11. The recommended method of installation for
+requires Python 3.9-3.12. The recommended method of installation for
 getting started is to use Anaconda (64-bit) for your platform to
 install Python. Python's package manager `pip` can then be used to
 install `aspire` safely in that environment.
@@ -49,7 +49,7 @@ git clone https://github.com/ComputationalCryoEM/ASPIRE-Python.git
 cd ASPIRE-Python
 
 # Create a fresh environment
-conda create --name aspire python=3.8 pip
+conda create --name aspire python=3.9 pip
 
 # Enable the environment
 conda activate aspire
@@ -59,7 +59,7 @@ conda activate aspire
 pip install -e ".[dev]"
 ```
 
-If you prefer not to use Anaconda, or have other preferences for managing environments, you should be able to directly use `pip` with Python >= 3.8 from the local checkout or via PyPI.
+If you prefer not to use Anaconda, or have other preferences for managing environments, you should be able to directly use `pip` with Python >= 3.9 from the local checkout or via PyPI.
 Please see the full documentation for details and advanced instructions.
 
 ### Installation Testing
