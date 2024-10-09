@@ -390,7 +390,7 @@ class RIRClass2D(Class2D):
         #   We use an extension of SK that is hacked to admit complex.
         pca = ComplexPCA(
             self.bispectrum_components,
-            copy=None,  # careful, overwrites data matrix... we'll handle the copies.
+            copy=False,  # careful, overwrites data matrix... we'll handle the copies.
             svd_solver="auto",  # use randomized (Halko) for larger problems
             random_state=self.seed,
         )
