@@ -505,7 +505,7 @@ class Image:
 
         if overwrite is None and os.path.exists(mrcs_filepath):
             # If the file exists, append a timestamp to the old file and rename it
-            rename_file(mrcs_filepath)
+            _ = rename_file(mrcs_filepath)
 
         with mrcfile.new(mrcs_filepath, overwrite=bool(overwrite)) as mrc:
             # original input format (the image index first)
