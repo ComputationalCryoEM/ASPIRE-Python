@@ -195,7 +195,7 @@ class Image:
         if not data.shape[-1] == data.shape[-2]:
             raise ValueError("Only square ndarrays are supported.")
 
-        self._data = data.astype(self.dtype, copy=None)
+        self._data = data.astype(self.dtype, copy=False)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 2
@@ -543,7 +543,7 @@ class Image:
 
         # Attempt casting when user provides dtype
         if dtype is not None:
-            im = im.astype(dtype, copy=None)
+            im = im.astype(dtype, copy=False)
 
         # Return as Image instance
         return Image(im, pixel_size=pixel_size)
@@ -658,7 +658,7 @@ class Image:
 
             # TODO: rotated_grids might as well give us correctly shaped array in the first place
             pts_rot = aspire.volume.rotated_grids(L, rotations).astype(
-                self.dtype, copy=None
+                self.dtype, copy=False
             )
             pts_rot = pts_rot.reshape((3, -1))
 

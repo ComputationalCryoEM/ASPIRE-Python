@@ -163,10 +163,10 @@ def test_astype(vols_1, dtype):
 
 def test_astype_copy(vols_1):
     """
-    `astype(copy=None)` is an optimization partially mimicked from numpy.
+    `astype(copy=False)` is an optimization partially mimicked from numpy.
     """
-    # Same dtype, copy=None
-    v2 = vols_1.astype(vols_1.dtype, copy=None)
+    # Same dtype, copy=False
+    v2 = vols_1.astype(vols_1.dtype, copy=False)
     # Details should match,
     assert isinstance(v2, Volume)
     assert np.allclose(v2.asnumpy(), vols_1.asnumpy())

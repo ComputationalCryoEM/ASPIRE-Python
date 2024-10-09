@@ -241,7 +241,7 @@ class CtfEstimator:
         """
 
         num_1d_tapers = tapers_1d.shape[-1]
-        tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=None)
+        tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=False)
 
         blocks_mt = np.zeros(blocks[0, :, :].shape, dtype=self.dtype)
 
@@ -768,7 +768,7 @@ def estimate_ctf(
             micrograph = mrc.data
 
         # Try to match dtype used in Basis instance
-        micrograph = micrograph.astype(dtype, copy=None)
+        micrograph = micrograph.astype(dtype, copy=False)
 
         micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
 

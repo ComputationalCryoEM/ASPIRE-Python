@@ -115,8 +115,8 @@ def test_adjoint(sim, basis, estimator):
     L = sim.L
     n = sim.n
 
-    u = np.random.rand(n, L, L).astype(sim.dtype, copy=None)
-    v = np.random.rand(L, L, L).astype(sim.dtype, copy=None)
+    u = np.random.rand(n, L, L).astype(sim.dtype, copy=False)
+    v = np.random.rand(L, L, L).astype(sim.dtype, copy=False)
 
     proj = Volume(v).project(rots)
     backproj = Image(u).backproject(rots)

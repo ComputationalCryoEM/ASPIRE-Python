@@ -470,7 +470,7 @@ class TestFFBBasis3D(UniversalBasisMixin):
 
     def testFFBBasis3DEvaluate_t(self, basis):
         x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoef_in_8_8_8.npy")).T  # RCOPT
-        x = x.astype(basis.dtype, copy=None)
+        x = x.astype(basis.dtype, copy=False)
         result = basis.evaluate_t(Volume(x))
 
         ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoef_out_8_8_8.npy"))[..., 0]
@@ -479,7 +479,7 @@ class TestFFBBasis3D(UniversalBasisMixin):
 
     def testFFBBasis3DExpand(self, basis):
         x = np.load(os.path.join(DATA_DIR, "ffbbasis3d_xcoef_in_8_8_8.npy")).T  # RCOPT
-        x = x.astype(basis.dtype, copy=None)
+        x = x.astype(basis.dtype, copy=False)
         result = basis.expand(x)
 
         ref = np.load(os.path.join(DATA_DIR, "ffbbasis3d_vcoef_out_exp_8_8_8.npy"))[

@@ -62,7 +62,7 @@ class Coef:
             )
         self.basis = basis
 
-        self._data = data.astype(self.dtype, copy=None)
+        self._data = data.astype(self.dtype, copy=False)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 1
