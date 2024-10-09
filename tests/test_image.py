@@ -360,6 +360,10 @@ def test_save_overwrite(caplog):
     - overwrite=False: Raises an error if the file exists.
     - overwrite=None: Renames the existing file and saves the new one.
     """
+    im1 = Image(np.ones((1, 8, 8), dtype=np.float32))
+    im2 = Image(2 * np.ones((1, 8, 8), dtype=np.float32))
+    im3 = Image(3 * np.ones((1, 8, 8), dtype=np.float32))
+
     # Create a tmp dir for this test output
     with tempfile.TemporaryDirectory() as tmpdir_name:
         # tmp filename
@@ -367,11 +371,9 @@ def test_save_overwrite(caplog):
         base, ext = os.path.splitext(mrc_path)
 
         # Create and save the first image
-        im1 = Image(np.ones((1, 8, 8), dtype=np.float32))
         im1.save(mrc_path, overwrite=True)
 
         # Case 1: overwrite=True (should overwrite the existing file)
-        im2 = Image(2 * np.ones((1, 8, 8), dtype=np.float32))
         im2.save(mrc_path, overwrite=True)
 
         # Load and check if im2 has overwritten im1
@@ -379,8 +381,6 @@ def test_save_overwrite(caplog):
         np.testing.assert_allclose(im2.asnumpy(), im2_loaded.asnumpy())
 
         # Case 2: overwrite=False (should raise an overwrite error)
-        im3 = Image(3 * np.ones((1, 8, 8), dtype=np.float32))
-
         with pytest.raises(
             ValueError,
             match="File '.*' already exists; set overwrite=True to overwrite it",
