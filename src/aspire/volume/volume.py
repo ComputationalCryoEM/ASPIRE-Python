@@ -105,7 +105,7 @@ class Volume:
         if not (data.shape[-1] == data.shape[-2] == data.shape[-3]):
             raise ValueError("Only cubed ndarrays are supported.")
 
-        self._data = data.astype(self.dtype, copy=None)
+        self._data = data.astype(self.dtype, copy=False)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 3

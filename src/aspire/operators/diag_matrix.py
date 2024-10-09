@@ -45,7 +45,7 @@ class DiagMatrix:
         self.dtype = np.dtype(dtype)
 
         # Assign the `data`
-        self._data = data.astype(self.dtype, copy=None)
+        self._data = data.astype(self.dtype, copy=False)
 
         # Assign shapes from `data`
         self.count = self._data.shape[-1]

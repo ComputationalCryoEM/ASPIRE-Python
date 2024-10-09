@@ -197,7 +197,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         """
 
         # Critical this occurs in double precision
-        S = S.astype(np.float64, copy=None)
+        S = S.astype(np.float64, copy=False)
 
         if n_eigs < 3:
             raise ValueError(
@@ -213,7 +213,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 )
             # Initialize D
             # Critical this occurs in double precision
-            W = W.astype(np.float64, copy=None)
+            W = W.astype(np.float64, copy=False)
             D = np.mean(W, axis=1)
 
             Dhalf = D
@@ -266,7 +266,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # Enforce we are returning actual rotations
         rotations = nearest_rotations(rotations, allow_reflection=True)
 
-        return rotations.astype(self.dtype)
+        return rotations.astype(self.dtype, copy=False)
 
     def _construct_sync3n_matrix(self, Rij):
         """
@@ -664,8 +664,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # accumulate over thread results
-        ln_f_arb = ln_f_arb_dev.get().astype(self.dtype, copy=None)
-        ln_f_ind = ln_f_ind_dev.get().astype(self.dtype, copy=None)
+        ln_f_arb = ln_f_arb_dev.get().astype(self.dtype, copy=False)
+        ln_f_ind = ln_f_ind_dev.get().astype(self.dtype, copy=False)
 
         return ln_f_ind, ln_f_arb
 
@@ -748,8 +748,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         popt, pcov = curve_fit(
             fun,
-            hist_x.astype(np.float64, copy=None),
-            scores_hist.astype(np.float64, copy=None),
+            hist_x.astype(np.float64, copy=False),
+            scores_hist.astype(np.float64, copy=False),
             p0=start_values,
             bounds=(lower_bounds, upper_bounds),
             method="trf",  # MATLAB used method "LAR" with algo "Trust-Region"
@@ -1043,7 +1043,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         while itr < max_iters and residual > epsilon:
             itr += 1
             # Todo, this code code actually needs double precision for accuracy... forcing.
-            vec_new = self._signs_times_v(Rijs, vec).astype(np.float64, copy=None)
+            vec_new = self._signs_times_v(Rijs, vec).astype(np.float64, copy=False)
             vec_new = vec_new / norm(vec_new)
             residual = norm(vec_new - vec)
             vec = vec_new
@@ -1073,7 +1073,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         else:
             new_vec = self._signs_times_v_host(Rijs, vec)
 
-        return new_vec.astype(vec.dtype, copy=None)
+        return new_vec.astype(vec.dtype, copy=False)
 
     def _signs_times_v_host(self, Rijs, vec):
         """
@@ -1177,7 +1177,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         )
 
         # dtoh
-        new_vec = new_vec_dev.get().astype(vec.dtype, copy=None)
+        new_vec = new_vec_dev.get().astype(vec.dtype, copy=False)
 
         return new_vec
 
