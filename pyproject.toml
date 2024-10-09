@@ -3,7 +3,7 @@ name = "aspire"
 version = "0.13.0"
 description = "Algorithms for Single Particle Reconstruction"
 readme = "README.md" # Optional
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {file = "LICENSE"}
 maintainers = [
   {name = "ASPIRE Developers", email = "ASPIRE-DEVS@princeton.edu"}
