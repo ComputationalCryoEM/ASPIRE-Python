@@ -81,15 +81,13 @@ class MrcStatsTestCase(TestCase):
             with mrcfile.new_mmap(
                 files[1], shape=(self.n, self.n), mrc_mode=2, overwrite=True
             ) as mrc:
-                mrc.set_data(self.a.astype(np.float32))
+                mrc.set_data(self.a)
+                self.stats.update_header(mrc)
                 mrc.header.time = epoch
                 mrc.header.label[0] = label
 
             # Our homebrew and mrcfile files should now match to the bit.
             comparison = sha256sum(files[0]) == sha256sum(files[1])
-            # Expected hash:
-            # 71355fa0bcd5b989ff88166962ea5d2b78ea032933bd6fda41fbdcc1c6d1a009
             logging.debug(f"sha256(file0): {sha256sum(files[0])}")
             logging.debug(f"sha256(file1): {sha256sum(files[1])}")
-
             self.assertTrue(comparison)
