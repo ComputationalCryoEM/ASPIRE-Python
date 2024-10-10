@@ -4,6 +4,7 @@ import numpy as np
 from scipy.sparse.linalg import LinearOperator
 
 from aspire.image import Image
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.numeric.scipy import cg
 from aspire.utils import mdim_mat_fun_conj
 from aspire.volume import Volume
@@ -62,7 +63,7 @@ class Coef:
             )
         self.basis = basis
 
-        self._data = data.astype(self.dtype, copy=None)
+        self._data = data.astype(self.dtype, copy=COPY_ME_MAYBE)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 1

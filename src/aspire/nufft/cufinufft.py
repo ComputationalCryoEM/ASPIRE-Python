@@ -5,6 +5,7 @@ import numpy as np
 from cufinufft import Plan as cufPlan
 
 from aspire.nufft import Plan
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,7 @@ class CufinufftPlan(Plan):
         # ASPIRE-Python/703
         # Cast to doubles.
         self._original_dtype = fourier_pts.dtype
-        fourier_pts = fourier_pts.astype(np.float64, copy=None)
+        fourier_pts = fourier_pts.astype(np.float64, copy=COPY_ME_MAYBE)
 
         # Basic dtype passthough.
         dtype = fourier_pts.dtype

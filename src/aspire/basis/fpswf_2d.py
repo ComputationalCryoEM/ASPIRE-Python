@@ -9,7 +9,7 @@ from aspire.basis import ComplexCoef
 from aspire.basis.basis_utils import lgwt, t_x_mat, t_x_mat_dot
 from aspire.basis.pswf_2d import PSWFBasis2D
 from aspire.nufft import nufft
-from aspire.numeric import fft, xp
+from aspire.numeric import COPY_ME_MAYBE, fft, xp
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         ) = self._pswf_integration_sub_routine()
 
         self.us_fft_pts = us_fft_pts.astype(
-            self.dtype, copy=None
+            self.dtype, copy=COPY_ME_MAYBE
         )  # TODO, debug where this is incorrect dtype
         self.blk_r = blk_r
         self.num_angular_pts = num_angular_pts

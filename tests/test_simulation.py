@@ -7,6 +7,7 @@ import numpy as np
 from pytest import raises
 
 from aspire.noise import WhiteNoiseAdder
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.operators import RadialCTFFilter
 from aspire.source import RelionSource, Simulation, _LegacySimulation
 from aspire.utils import utest_tolerance
@@ -82,7 +83,7 @@ class SimVolTestCase(TestCase):
         without an explcit Simulation dtype.
         """
         for dtype in (np.float32, np.float64):
-            sim = Simulation(vols=self.vol.astype(dtype, copy=None))
+            sim = Simulation(vols=self.vol.astype(dtype, copy=COPY_ME_MAYBE))
             # Did we assign the right type?
             self.assertTrue(sim.dtype == dtype)
 

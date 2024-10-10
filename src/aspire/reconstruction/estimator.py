@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from aspire.basis import Coef, FFBBasis3D
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.reconstruction.kernel import FourierKernel
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,7 @@ class Estimator:
 
         if kernel is None:
             kernel = self.kernel
-        vol_coef = vol_coef.astype(self.dtype, copy=None)  # np2 sigh
+        vol_coef = vol_coef.astype(self.dtype, copy=COPY_ME_MAYBE)  # np2 sigh
         vol = Coef(self.basis, vol_coef).evaluate()  # returns a Volume
         vol = kernel.convolve_volume(vol)  # returns a Volume
         vol_coef = self.basis.evaluate_t(vol)

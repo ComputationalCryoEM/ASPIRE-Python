@@ -5,6 +5,7 @@ import numpy as np
 import scipy.sparse as sparse
 
 from aspire.image import Image
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.operators import PolarFT
 from aspire.utils import common_line_from_rots, fuzzy_mask, tqdm
 from aspire.utils.random import choice
@@ -107,7 +108,7 @@ class CLOrient3D:
             #   Apply mask in doubles (allow imgs to upcast as needed)
             imgs = imgs * fuzz_mask
             #   Cast to desired type
-            imgs = Image(imgs.asnumpy().astype(self.dtype, copy=None))
+            imgs = Image(imgs.asnumpy().astype(self.dtype, copy=COPY_ME_MAYBE))
 
         # Obtain coefficients of polar Fourier transform for input 2D images
         pft = PolarFT(

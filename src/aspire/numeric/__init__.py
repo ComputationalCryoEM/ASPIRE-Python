@@ -2,7 +2,12 @@ import logging
 
 from aspire import config
 
+# isort: off
+from .npcompat import COPY_ME_MAYBE
 from .complex_pca.complex_pca import ComplexPCA
+
+# isort: on
+
 
 logger = logging.getLogger(__name__)
 

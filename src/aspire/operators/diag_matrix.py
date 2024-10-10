@@ -1,3 +1,5 @@
+from aspire.numeric import COPY_ME_MAYBE
+
 """
 Implements operations for diagonal matrices as used by ASPIRE.
 """
@@ -45,7 +47,7 @@ class DiagMatrix:
         self.dtype = np.dtype(dtype)
 
         # Assign the `data`
-        self._data = data.astype(self.dtype, copy=None)
+        self._data = data.astype(self.dtype, copy=COPY_ME_MAYBE)
 
         # Assign shapes from `data`
         self.count = self._data.shape[-1]

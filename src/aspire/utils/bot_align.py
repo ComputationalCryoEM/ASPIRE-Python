@@ -1,3 +1,5 @@
+from aspire.numeric import COPY_ME_MAYBE
+
 """
 This code is an ASPIRE port of Ruiyi Yang's `Bayesian Optimal Transport Alignment`.
 
@@ -139,7 +141,7 @@ def align_BO(
             Loss function for surrogate problems.
             """
             kx = np.array(
-                [cov_fun(new.astype(dtype, copy=None), R[j]) for j in range(t)]
+                [cov_fun(new.astype(dtype, copy=COPY_ME_MAYBE), R[j]) for j in range(t)]
             )
             mu = kx @ q
             return mu
@@ -151,7 +153,10 @@ def align_BO(
             """
             # Corresponds to equation 11 in the paper.
             kx_grad = np.array(
-                [cov_fun_grad(new.astype(dtype, copy=None), R[j]) for j in range(t)]
+                [
+                    cov_fun_grad(new.astype(dtype, copy=COPY_ME_MAYBE), R[j])
+                    for j in range(t)
+                ]
             )
 
             kx_grad = kx_grad.reshape((t, 9))
@@ -168,7 +173,7 @@ def align_BO(
             verbosity=verbosity,
         )
         result = optimizer.run(problem)
-        R_new = result.point.astype(dtype, copy=None)
+        R_new = result.point.astype(dtype, copy=COPY_ME_MAYBE)
 
         loss[t] = loss_fun(R_new)
         R[t] = R_new
@@ -190,7 +195,7 @@ def align_BO(
             """
             Convert the alignment loss function over SO(3) to be over R^3.
             """
-            u = u.astype(dtype, copy=None)
+            u = u.astype(dtype, copy=COPY_ME_MAYBE)
             R = sign * Rotation.from_rotvec(u).matrices[0]
             v_rot = vol_given_ds.rotate(Rotation(R)).asnumpy()[0]
             return norm(vol_ref_ds - v_rot)

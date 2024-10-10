@@ -1,3 +1,5 @@
+from aspire.numeric import COPY_ME_MAYBE
+
 """
 Define a BlkDiagMatrix module which implements operations for
 block diagonal matrices as used by ASPIRE.
@@ -91,7 +93,7 @@ class BlkDiagMatrix:
         :param blk: Block to append (ndarray).
         """
 
-        self.data.append(blk.astype(self.dtype, copy=None))
+        self.data.append(blk.astype(self.dtype, copy=COPY_ME_MAYBE))
         self.nblocks += 1
         self.reset_cache()
 
@@ -130,7 +132,7 @@ class BlkDiagMatrix:
         Convenience wrapper, setter on self.data.
         """
 
-        self.data[key] = value.astype(self.dtype, copy=None)
+        self.data[key] = value.astype(self.dtype, copy=COPY_ME_MAYBE)
         self.reset_cache()
 
     def __len__(self):

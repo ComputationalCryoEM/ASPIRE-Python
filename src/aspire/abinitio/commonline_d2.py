@@ -5,6 +5,7 @@ import scipy.sparse.linalg as la
 from numpy.linalg import norm
 
 from aspire.abinitio import CLOrient3D
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, tqdm, trange
 from aspire.utils.random import randn
@@ -1149,12 +1150,12 @@ class CLSymmetryD2(CLOrient3D):
 
         # Seed eigs initial vector for iterative method.
         # scipy LinearOperator needs doubles for some architectures (arm).
-        v0 = randn(3 * n_pairs, seed=self.seed).astype(np.float64, copy=None)
+        v0 = randn(3 * n_pairs, seed=self.seed).astype(np.float64, copy=COPY_ME_MAYBE)
 
         v0 = v0 / norm(v0)
         vals, colors = la.eigs(color_mat, k=3, which="LR", v0=v0)
         vals = np.real(vals)
-        colors = np.real(colors).astype(self.dtype, copy=None)
+        colors = np.real(colors).astype(self.dtype, copy=COPY_ME_MAYBE)
         colors = np.sign(colors[0]) * colors  # Stable eigs
         cp, _ = self._unmix_colors(colors[:, :2])
 

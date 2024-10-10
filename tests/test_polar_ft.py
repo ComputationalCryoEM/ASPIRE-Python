@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from aspire.image import Image
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.operators import PolarFT
 from aspire.utils import gaussian_2d, grid_2d
 from aspire.volume import AsymmetricVolume, CnSymmetricVolume
@@ -203,7 +204,9 @@ def test_half_to_full_transform(stack_shape):
     """
     img_size = 32
     image = Image(
-        np.random.rand(*stack_shape, img_size, img_size).astype(np.float32, copy=None)
+        np.random.rand(*stack_shape, img_size, img_size).astype(
+            np.float32, copy=COPY_ME_MAYBE
+        )
     )
     pft = PolarFT(size=img_size)
     pf = pft.transform(image)

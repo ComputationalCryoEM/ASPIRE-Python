@@ -4,7 +4,7 @@ import numpy as np
 
 import aspire.image
 from aspire.nufft import anufft
-from aspire.numeric import fft, xp
+from aspire.numeric import COPY_ME_MAYBE, fft, xp
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class Sinogram:
                 f"Invalid data shape: {data.shape}. Expected shape: (..., angles, radial_points), where '...' is the stack number."
             )
 
-        self._data = data.astype(self.dtype, copy=None)
+        self._data = data.astype(self.dtype, copy=COPY_ME_MAYBE)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
         self.stack_shape = self._data.shape[:-2]

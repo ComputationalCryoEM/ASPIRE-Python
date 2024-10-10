@@ -11,7 +11,7 @@ from aspire.basis.fle_2d_utils import (
     transform_complex_to_real,
 )
 from aspire.nufft import anufft, nufft
-from aspire.numeric import fft, sparse, xp
+from aspire.numeric import COPY_ME_MAYBE, fft, sparse, xp
 from aspire.operators import DiagMatrix
 from aspire.utils import complex_type, grid_2d
 
@@ -643,7 +643,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_img = z.shape[0]
         z = z[:, :, : self.num_angular_nodes // 2].reshape(num_img, -1)
         im = anufft(
-            z.astype(complex_type(self.dtype), copy=None),
+            z.astype(complex_type(self.dtype), copy=COPY_ME_MAYBE),
             self.grid_xy,
             (self.nres, self.nres),
             epsilon=self.epsilon,
@@ -798,7 +798,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         omega = 2 * xp.pi * xp.vstack((omegax.flatten("C"), omegay.flatten("C")))
 
         h_vals2d = (
-            xp.asarray(h_fun(omega)).reshape(n_k, n_theta).astype(self.dtype, copy=None)
+            xp.asarray(h_fun(omega))
+            .reshape(n_k, n_theta)
+            .astype(self.dtype, copy=COPY_ME_MAYBE)
         )
         h_vals = xp.sum(h_vals2d, axis=1) / n_theta
 

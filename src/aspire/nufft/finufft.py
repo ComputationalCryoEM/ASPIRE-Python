@@ -4,6 +4,7 @@ import finufft
 import numpy as np
 
 from aspire.nufft import Plan
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
@@ -99,7 +100,9 @@ class FinufftPlan(Plan):
         ), f"Signal frame to be transformed must have shape {self.sz}"
 
         # FINUFFT was designed for a complex input array
-        signal = np.array(signal, copy=None, dtype=self.complex_dtype, order="C")
+        signal = np.array(
+            signal, copy=COPY_ME_MAYBE, dtype=self.complex_dtype, order="C"
+        )
 
         result = self._transform_plan.execute(signal)
 
@@ -130,7 +133,9 @@ class FinufftPlan(Plan):
                 signal = signal.reshape(self.num_pts)
 
         # FINUFFT was designed for a complex input array
-        signal = np.array(signal, copy=None, dtype=self.complex_dtype, order="C")
+        signal = np.array(
+            signal, copy=COPY_ME_MAYBE, dtype=self.complex_dtype, order="C"
+        )
 
         result = self._adjoint_plan.execute(signal)
 

@@ -11,7 +11,7 @@ from scipy.linalg import lstsq
 import aspire.sinogram
 import aspire.volume
 from aspire.nufft import anufft, nufft
-from aspire.numeric import fft, xp
+from aspire.numeric import COPY_ME_MAYBE, fft, xp
 from aspire.utils import FourierRingCorrelation, anorm, crop_pad_2d, grid_2d
 from aspire.volume import SymmetryGroup
 
@@ -189,7 +189,7 @@ class Image:
         if not data.shape[-1] == data.shape[-2]:
             raise ValueError("Only square ndarrays are supported.")
 
-        self._data = data.astype(self.dtype, copy=None)
+        self._data = data.astype(self.dtype, copy=COPY_ME_MAYBE)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 2
@@ -522,7 +522,7 @@ class Image:
 
         # Attempt casting when user provides dtype
         if dtype is not None:
-            im = im.astype(dtype, copy=None)
+            im = im.astype(dtype, copy=COPY_ME_MAYBE)
 
         # Return as Image instance
         return Image(im, pixel_size=pixel_size)
@@ -637,7 +637,7 @@ class Image:
 
             # TODO: rotated_grids might as well give us correctly shaped array in the first place
             pts_rot = aspire.volume.rotated_grids(L, rotations).astype(
-                self.dtype, copy=None
+                self.dtype, copy=COPY_ME_MAYBE
             )
             pts_rot = pts_rot.reshape((3, -1))
 

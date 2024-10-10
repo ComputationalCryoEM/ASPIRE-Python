@@ -1,3 +1,5 @@
+from aspire.numeric import COPY_ME_MAYBE
+
 """
 Utilties for arrays/n-dimensional matrices.
 """
@@ -462,7 +464,9 @@ def nearest_rotations(A, allow_reflection=False):
         # If det(U)*det(V) = -1, we negate the third singular value to
         # ensure we have a rotation.
         neg_det_idx = np.linalg.det(U) * np.linalg.det(V) < 0
-        U[neg_det_idx] = U[neg_det_idx] @ np.diag((1, 1, -1)).astype(dtype, copy=None)
+        U[neg_det_idx] = U[neg_det_idx] @ np.diag((1, 1, -1)).astype(
+            dtype, copy=COPY_ME_MAYBE
+        )
 
     rots = U @ V
 

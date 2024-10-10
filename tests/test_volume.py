@@ -9,6 +9,7 @@ import pytest
 from numpy import pi
 from pytest import raises, skip
 
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.source import _LegacySimulation
 from aspire.utils import Rotation, anorm, grid_2d, powerset, utest_tolerance
 from aspire.volume import (
@@ -161,10 +162,10 @@ def test_astype(vols_1, dtype):
 
 def test_astype_copy(vols_1):
     """
-    `astype(copy=None)` is an optimization partially mimicked from numpy.
+    `astype(copy=COPY_ME_MAYBE)` is an optimization partially mimicked from numpy.
     """
-    # Same dtype, copy=None
-    v2 = vols_1.astype(vols_1.dtype, copy=None)
+    # Same dtype, copy=COPY_ME_MAYBE
+    v2 = vols_1.astype(vols_1.dtype, copy=COPY_ME_MAYBE)
     # Details should match,
     assert isinstance(v2, Volume)
     assert np.allclose(v2.asnumpy(), vols_1.asnumpy())

@@ -4,6 +4,7 @@ import numpy as np
 from numpy.linalg import eigh, norm, svd
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.operators import PolarFT
 from aspire.utils import (
     J_conjugate,
@@ -692,7 +693,9 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         while itr < max_iters and residual > epsilon:
             itr += 1
             # Note, this appears to need double precision for accuracy in the following division.
-            vec_new = self._signs_times_v(vijs, vec).astype(np.float64, copy=None)
+            vec_new = self._signs_times_v(vijs, vec).astype(
+                np.float64, copy=COPY_ME_MAYBE
+            )
             vec_new = vec_new / norm(vec_new)
             residual = norm(vec_new - vec)
             vec = vec_new

@@ -14,7 +14,7 @@ from scipy.ndimage import (
 from sklearn import preprocessing, svm
 
 from aspire.apple.helper import PickerHelper
-from aspire.numeric import fft, xp
+from aspire.numeric import COPY_ME_MAYBE, fft, xp
 from aspire.source import DiskMicrographSource
 from aspire.utils import tqdm
 
@@ -149,7 +149,7 @@ class Picker:
         self.original_im = (
             DiskMicrographSource(self.filename)
             .asnumpy()[0]
-            .astype(np.float32, copy=None)
+            .astype(np.float32, copy=COPY_ME_MAYBE)
         )
 
         # Discard outer pixels
@@ -167,7 +167,7 @@ class Picker:
         # Note, float64 required for signal.correlate call accuracy.
         im = np.asarray(
             PILImage.fromarray(im).resize(size, PILImage.Resampling.BICUBIC)
-        ).astype(np.float64, copy=None)
+        ).astype(np.float64, copy=COPY_ME_MAYBE)
 
         im = signal.correlate(
             im,
