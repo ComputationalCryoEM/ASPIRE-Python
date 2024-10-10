@@ -155,6 +155,33 @@ def test_whiten_safeguard(dtype):
     np.testing.assert_allclose(whiten_filt[ind], 0.0)
 
 
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_whiten_safeguard_default(dtype):
+    """
+    This test catches the case found in the simulated_abinitio_pipeline.py
+    of images being zeroed out by to strict of a safeguard on the whiten filter.
+    """
+    L = 25
+    sim = get_sim_object(L, dtype)
+    noise_estimator = AnisotropicNoiseEstimator(sim)
+
+    # Alter noise_estimator filter values to be below machine eps.
+    # These are values comparable to those in
+    # gallery/experiments/simulated_abinitio_pipeline.py.
+    mach_eps = np.finfo(dtype).eps
+    noise_estimator.filter.xfer_fn_array *= mach_eps
+    assert noise_estimator.filter.xfer_fn_array.min() < mach_eps
+
+    # Whiten images
+    sim = sim.whiten(noise_estimator.filter)
+
+    # Get whitening_filter from generation pipeline.
+    whiten_filt = sim.generation_pipeline.xforms[0].filter.evaluate_grid(sim.L)
+
+    # Check that no values in the whiten filter have been zeroed out by safeguard.
+    assert np.count_nonzero(whiten_filt == 0) == 0
+
+
 @pytest.mark.parametrize("L, dtype", params)
 def testInvertContrast(L, dtype):
     sim1 = get_sim_object(L, dtype)
