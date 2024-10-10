@@ -1,8 +1,8 @@
 #include "stdint.h"
 #include "math.h"
 
-/* from i,j indices to the common index in the N-choose-2 sized array */
-// careful, this is stricly the upper triangle!
+/* From i,j indices to the common index in the N-choose-2 sized array */
+/* Careful, this is strictly the upper triangle! */
 #define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2 + J-I-1)
 
 
@@ -459,10 +459,11 @@ void estimate_all_angles1(int j,
                           double* __restrict__ angles)
 {
   /* n n_img */
-
-  /* thread index (1d), represents "i" index */
-  const unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
   /* j is image j index */
+
+  /* thread index represents "i" index */
+  const unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+  /* thread index represents "k" index */
   const unsigned int k = blockDim.y * blockIdx.y + threadIdx.y;
 
   int cl_diff1, cl_diff2, cl_diff3;
@@ -515,9 +516,7 @@ void estimate_all_angles1(int j,
 
   /* test `k` values */
   if(cl_idx13 == -1) return;  /* i, k */
-  //if(cl_idx31 == -1) return;  // k, i ?
   if(cl_idx23 == -1) return;  /* j, k */
-  // if(cl_idx32 == -1) return;  // k, j ?
 
   /* get cosine angles */
   cl_diff1 = cl_idx13 - cl_idx12;
@@ -565,38 +564,43 @@ void estimate_all_angles1(int j,
   } /* end not sync */
 
   /* clip cosine phi between [-1,1] */
-  if(cos_phi2 >1){
+  if(cos_phi2 > 1){
     cos_phi2 = 1;
   }
-  if(cos_phi2 <-1){
+  if(cos_phi2 < -1){
     cos_phi2 = -1;
   }
 
   /* compute histogram contribution, angle mapping, and index mappings. */
   angle = acos(cos_phi2) * 180. / M_PI;
-  /*  angle's bin */
+  /* index of angle's bin */
   map_idx = i*n + k;
-  k_map[map_idx] = angle / hist_bin_width;  // check
+  /*
+    For each k, keep track of bin and angles.
+    Note, this is slightly different than the host
+    which uses slightly different angle/hist grids (likely an oversight).
+  */
+  k_map[map_idx] = angle / hist_bin_width;
   angles_map[map_idx] = angle;  /* degrees */
   for(b=0; b<ntics; b++){
-    // todo, just compute in radians to avoid extra arithmetic
-    grid_angle = b * (180./ntics);  /* grid angle */  // check, I think off by one-ish (grid vs bins)
+    /* Potential optimization, just compute in radians to avoid extra arithmetic. */
+    grid_angle = b * (180./ntics);  /* grid angle */
     angle_diff = (grid_angle - angle);
-    /* accumulate histogram contribution, atomic due to `k` */
+    /* accumulate histogram contribution, atomic due to concurrent `k` */
     atomicAdd(&(hist[i*ntics + b ]),
               exp(-(angle_diff*angle_diff) / ( two_sigma_sq)));
-  } /* bins */
+  } /* b bins */
 
   /*
     At this point, the kernel should have accumulated all "good"
-    k contributions into the histogram for I j.
-    The next section solves the histogram.
+    k contributions into the histogram for I, j.
+    The next kernel solves the histogram.
 
-    Two known euler angles are also initialized while we have the cl_idx values.
+    The two known euler angles are initialized while we have the cl_idx values.
   */
 
   /* Initialize euler angles */
-  /* can be done once? */
+  /* Can be done once, but checking seemed to make the kernel slower... */
   {
     map_idx = pair_idx*3;
     angles[map_idx    ] = cl_idx12 * 2 * M_PI / n_theta + M_PI / 2;
@@ -619,10 +623,10 @@ void estimate_all_angles2(int j,
                           double* __restrict__ angles)
 {
   /* n n_img */
+  /* j is image j index */
 
   /* thread index (1d), represents image i index */
   const unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
-  /* j is image j index */
 
   int k;
   int cnt;
@@ -664,15 +668,15 @@ void estimate_all_angles2(int j,
       /* find satisfying indices */
       for(k=0; k<n; k++){
         /* determine if image k in peak bin(s) */
-        // Perhaps transpose the maps so thread i in fast
+        // Perhaps transpose the maps so thread i fast
         map_idx = i*n + k;
         if(abs(k_map[map_idx] - peak_idx) < w_theta_needed){
           cnt += 1;  /* count this image */
           angles[pair_idx*3 + 1] += angles_map[map_idx];  /* accumulate angle */
-        } /* fi < w_theta_needed */
+        } /* < w_theta_needed */
       } /* k */
-    } /* while */
-  } /* fi adaptive */
+    } /* cnt */
+  } /* full_width -1, adaptive */
   else {
     /* fixed width */
     cnt = 0;
@@ -682,13 +686,13 @@ void estimate_all_angles2(int j,
       if(abs(k_map[map_idx] - peak_idx) < full_width){
         cnt += 1;  /* count this image */
         angles[pair_idx*3 + 1] += angles_map[map_idx];  /* accumulate angle */
-      } /* fi full_width */
+      } /* full_width */
     } /* k */
-  } /* fi fixed width */
+  } /* fixed width */
 
   /* Divide accumulated angles (resulting in the mean alpha angle) */
-  // (todo, better handle 0/0?)
-  /* convert degree radian */
+  // (todo, can we have cnt = 0?)
+  /* convert degree to radian */
   angles[pair_idx*3 + 1] *= M_PI / (180*cnt);
 
 } /* estimate_all_angles2 kernel */

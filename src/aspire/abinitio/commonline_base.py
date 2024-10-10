@@ -155,7 +155,11 @@ class CLOrient3D:
         raise NotImplementedError("subclasses should implement this")
 
     def build_clmatrix(self):
-        """dispatch, compare, dispair"""
+        """
+        Build common-lines matrix from Fourier stack of 2D images
+
+        Wrapper for cpu/gpu dispatch.
+        """
 
         logger.info("Begin building Common Lines Matrix")
 
@@ -242,7 +246,6 @@ class CLOrient3D:
             subset_j = np.sort(choice(n_remaining, n_j, replace=False) + i + 1)
 
             for j in subset_j:
-                # for j in range(i+1,n_img):  # for testing, rm later
                 p2_flipped = np.conj(pf[j])
 
                 for shift in range(len(shifts)):
@@ -286,14 +289,15 @@ class CLOrient3D:
         import cupy as cp
 
         n_img = self.n_img
+        r = pf.shape[2]
 
         if self.n_theta % 2 == 1:
             msg = "n_theta must be even"
             logger.error(msg)
             raise NotImplementedError(msg)
 
-        # need to do a copy to prevent modifying self.pf for other functions
-        # also places on GPU
+        # Copy to prevent modifying self.pf for other functions
+        # Simultaneously place on GPU
         pf = cp.array(self.pf)
 
         # Allocate local variables for return
@@ -305,25 +309,26 @@ class CLOrient3D:
         clmatrix = -cp.ones((n_img, n_img), dtype=np.int16)
 
         # Allocate variables used for shift estimation
-
-        # set maximum value of 1D shift (in pixels) to search
+        #
+        # Set maximum value of 1D shift (in pixels) to search
         # between common-lines.
-        max_shift = self.max_shift
         # Set resolution of shift estimation in pixels. Note that
         # shift_step can be any positive real number.
-        shift_step = self.shift_step
-
+        #
         # Prepare the shift phases to try and generate filter for common-line detection
-        r_max = pf.shape[2]
+        #
+        # Note the CUDA implementation has been optimized to not
+        # compute or return diagnostic 1d shifts.
         _, shift_phases, h = self._generate_shift_phase_and_filter(
-            r_max, max_shift, shift_step
+            r, self.max_shift, self.shift_step
         )
         # Transfer to device, dtypes must match kernel header.
         shift_phases = cp.asarray(shift_phases, dtype=complex_type(self.dtype))
 
         # Apply bandpass filter, normalize each ray of each image
-        # Note that only use half of each ray
-        pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
+        # Note that this only uses half of each ray
+        pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r, h)
+
         # Tranpose `pf` for better (CUDA) memory access pattern, and cast as needed.
         pf = cp.ascontiguousarray(pf.T, dtype=complex_type(self.dtype))
 
@@ -336,11 +341,17 @@ class CLOrient3D:
             build_clmatrix_kernel = self.__gpu_module.get_function(
                 "fbuild_clmatrix_kernel"
             )
+        else:
+            raise NotImplementedError(
+                "build_clmatrix_kernel only implemented for float32 and float64."
+            )
 
         # Configure grid of blocks
         blkszx = 32
-        nblkx = (self.n_img + blkszx - 2) // blkszx  # n_img-1
+        # Enough blocks to cover n_img-1
+        nblkx = (self.n_img + blkszx - 2) // blkszx
         blkszy = 32
+        # Enough blocks to cover n_img
         nblky = (self.n_img + blkszy - 1) // blkszy
 
         # Launch
@@ -351,7 +362,7 @@ class CLOrient3D:
             (
                 n_img,
                 pf.shape[1],
-                r_max,
+                r,
                 pf,
                 clmatrix,
                 len(shift_phases),
@@ -362,6 +373,7 @@ class CLOrient3D:
         # Copy result device arrays to host
         clmatrix = clmatrix.get().astype(self.dtype, copy=False)
 
+        # Note diagnostic 1d shifts are not computed in the CUDA implementation.
         return None, clmatrix
 
     def estimate_shifts(self, equations_factor=1, max_memory=4000):
@@ -697,7 +709,7 @@ class CLOrient3D:
     def __init_cupy_module():
         """
         Private utility method to read in CUDA source and return as
-        compiled CUPY module.
+        compiled CuPy module.
         """
 
         import cupy as cp
@@ -707,7 +719,10 @@ class CLOrient3D:
         with open(fp, "r") as fh:
             module_code = fh.read()
 
-        # CUPY compile the CUDA code
+        # CuPy compile the CUDA code
+        # Note these optimizations are to steer aggresive optimization
+        # for single precision code.  Fast math will potentionally
+        # reduce accuracy in single precision.
         return cp.RawModule(
             code=module_code,
             backend="nvcc",
