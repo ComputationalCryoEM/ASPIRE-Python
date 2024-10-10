@@ -4,9 +4,9 @@
 
 extern "C" __global__
 void build_clmatrix_kernel(
-    int n,
-    int m,
-    int r,
+    const int n,
+    const int m,
+    const int r,
     const complex<double>* __restrict__ pf,
     int16_t* const __restrict__ clmatrix,
     const int n_shifts,
@@ -16,8 +16,8 @@ void build_clmatrix_kernel(
   /* m,r st (n, m, r) = pf.shape, ie len(pf[i])  */
 
   /* thread index (1d), represents "i" index */
-  unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
-  unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
+  const unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+  const unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
 
   /* no-op when out of bounds */
   if(i >= n) return;
