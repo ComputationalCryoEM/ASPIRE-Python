@@ -217,6 +217,7 @@ class PowerFilter(Filter):
             eps = self._epsilon
             if eps is None:
                 eps = np.finfo(filter_vals.dtype).eps
+                eps = (100 * eps) ** (-1 / self._power)
             condition = abs(filter_vals) < eps
             num_less_eps = np.count_nonzero(condition)
             if num_less_eps > 0:

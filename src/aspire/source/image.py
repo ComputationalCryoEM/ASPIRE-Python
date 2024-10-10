@@ -808,6 +808,7 @@ class ImageSource(ABC):
 
         if epsilon is None:
             epsilon = np.finfo(self.dtype).eps
+            epsilon = (100 * epsilon) ** 2
 
         logger.info("Whitening source object")
         whiten_filter = PowerFilter(noise_filter, power=-0.5, epsilon=epsilon)
