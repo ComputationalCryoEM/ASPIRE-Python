@@ -353,18 +353,19 @@ def epsilon(request):
 def test_power_filter_safeguard(dtype, epsilon, caplog):
     L = 25
     arr = np.ones((L, L), dtype=dtype)
+    power = -0.5
 
-    # Set a few values below machine epsilon.
+    # Set a few values below default safeguard.
     num_eps = 3
     eps = epsilon
     if eps is None:
-        eps = np.finfo(dtype).eps
+        eps = (100 * np.finfo(dtype).eps) ** (-1 / power)
     arr[L // 2, L // 2 : L // 2 + num_eps] = eps / 2
 
     # For negative powers, values below machine eps will be set to zero.
     filt = PowerFilter(
         filter=ArrayFilter(arr),
-        power=-0.5,
+        power=power,
         epsilon=epsilon,
     )
 
