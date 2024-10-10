@@ -142,7 +142,7 @@ class SyncVotingMixin(object):
         # similar. This sigma ensures that the width of the density
         # estimation kernel is roughly 10 degrees. For 15 degrees, the
         # value of the kernel is negligible.
-        sigma = 3.0
+        sigma = getattr(self, "sigma", 3.0)  # get from class if avail
 
         # Compute the histogram of the angles between images i and j
         angles_distances = angles_grid[None, :] - angles[:, None]

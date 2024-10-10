@@ -62,6 +62,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         full_width="adaptive",
         epsilon=1e-2,
         max_iters=1000,
+        sigma=3,
         seed=None,
         mask=True,
         S_weighting=False,
@@ -83,6 +84,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             `hist_bin_width`s required to find at least one valid image index.
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
+        :param sigma: Voting contribution smoothing factor.
         :param seed: Optional seed for RNG.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
@@ -113,6 +115,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         self.epsilon = epsilon
         self.max_iters = max_iters
+        self.sigma = float(sigma)
         self.seed = seed
 
         # Sync3N specific vars
@@ -838,7 +841,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         estimate_all_angles2 = self.__gpu_module.get_function("estimate_all_angles2")
         angles_to_rots = self.__gpu_module.get_function("angles_to_rots")
 
-        sigma = 3.0
+        # Use the sync3n MATLAB implementation,
+        # other mode exists to support other CL methods.
         sync = 1
 
         # transfer input to device
@@ -848,18 +852,20 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         ntics = int(180 / self.hist_bin_width)
         n_pairs = self.n_img * (self.n_img - 1) // 2
         hist = cp.zeros((self.n_img, ntics), dtype=np.float64)
-        # k_map stores the mapping of k indices to histogram bins
+        # k_map stores the mapping of i, k indices to histogram bins
         k_map = cp.zeros((self.n_img, self.n_img), dtype=np.uint16)
+        # angles_map stores mapping of i, k indices to angles
         angles_map = cp.zeros((self.n_img, self.n_img), dtype=np.float64)
+        # resulting pairs i,j euler angles
         angles = cp.zeros((n_pairs, 3), dtype=np.float64)
 
-        # Configure 2d grid of blocks (kernel part 1)
+        # Configure 2d grid of blocks (kernel 1)
         blkszx = 32
-        nblkx = (self.n_img + blkszx - 1) // blkszx
+        nblkx = (self.n_img + blkszx - 1) // blkszx  # i
         blkszy = 32
-        nblky = (self.n_img + blkszy - 1) // blkszy
+        nblky = (self.n_img + blkszy - 1) // blkszy  # k
 
-        # Configure 1d grid of blocks (kernel part 2)
+        # Configure 1d grid of blocks (kernel 2)
         blksz = 1024
         nblk = (self.n_img + blksz - 1) // blksz
 
@@ -885,7 +891,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                     self.n_theta,
                     np.float64(self.hist_bin_width),
                     self.full_width,
-                    np.float64(sigma),
+                    np.float64(self.sigma),
                     sync,
                     clmatrix,  # input
                     hist,  # tmp
@@ -912,12 +918,12 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 ),
             )
 
-        # Force all kernels to complete
+        # Force all kernels to complete before timing
         cp.cuda.runtime.deviceSynchronize()
         toc1 = perf_counter()
         logger.info(f"estimate_all_angles: {toc1-toc0}s")
 
-        # Inform CuPy we longer need these workspace vars
+        # Explicitly inform CuPy we longer need these workspace vars
         del hist
         del k_map
         del angles_map
@@ -926,7 +932,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # Convert angles to rotations
         rotations = cp.empty((n_pairs, 3, 3), dtype=np.float64)
 
-        # Configure 1d grid of blocks
+        # Configure another 1d grid of blocks
         blksz = 1024
         nblk = (n_pairs + blksz - 1) // blksz
 
