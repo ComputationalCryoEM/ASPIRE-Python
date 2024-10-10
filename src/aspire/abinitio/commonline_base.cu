@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <math.h>
 #include <cupy/complex.cuh>
 
 extern "C" __global__
@@ -9,7 +10,6 @@ void build_clmatrix_kernel(
     const complex<double>* __restrict__ pf,
     int16_t* const __restrict__ clmatrix,
     const int n_shifts,
-    double* __restrict__ shifts,
     const complex<double>* const __restrict__ shift_phases)
 {
   /* n n_img */
@@ -36,7 +36,7 @@ void build_clmatrix_kernel(
 
   best_cl1 = -1;
   best_cl2 = -1;
-  best_cl_dist = -1/0;
+  best_cl_dist = -INFINITY;
 
   for(cl1=0; cl1<m; cl1++){
     for(cl2=0; cl2<m; cl2++){
