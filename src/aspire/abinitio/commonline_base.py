@@ -289,7 +289,7 @@ class CLOrient3D:
         import cupy as cp
 
         n_img = self.n_img
-        r = pf.shape[2]
+        r = self.pf.shape[2]
 
         if self.n_theta % 2 == 1:
             msg = "n_theta must be even"
