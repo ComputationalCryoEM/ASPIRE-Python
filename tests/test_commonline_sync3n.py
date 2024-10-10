@@ -63,7 +63,10 @@ def source_orientation_objs(resolution, offsets, dtype):
         shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
 
     orient_est = CLSync3N(
-        src, max_shift=max_shift, shift_step=shift_step, seed=789,
+        src,
+        max_shift=max_shift,
+        shift_step=shift_step,
+        seed=789,
     )
 
     # Estimate rotations once for all tests.
@@ -138,3 +141,31 @@ def test_estimate_rotations(source_orientation_objs):
     if src.offsets.all() != 0:
         tol = 4
     mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=tol)
+
+
+@pytest.mark.expensive
+def test_weighted_sync3n(source_orientation_objs):
+    """
+    Test alternative Sync3N configuration code paths.
+    """
+    src, _ = source_orientation_objs
+
+    orient_est = CLSync3N(
+        src, seed=789, S_weighting=True, J_weighting=True, full_width=2, sigma=3.1415
+    )
+    # Estimate rotations
+    orient_est.estimate_rotations()
+
+    gt_clmatrix = rots_to_clmatrix(src.rotations, orient_est.n_theta)
+
+    angle_diffs = abs(orient_est.clmatrix - gt_clmatrix) * 360 / orient_est.n_theta
+
+    # Count number of estimates within 5 degrees of ground truth.
+    within_5 = np.sum((angle_diffs - 360) % 360 < 5)
+
+    # Check that at least 98% of estimates are within 5 degrees.
+    tol = 0.98
+    if src.offsets.all() != 0:
+        # Set tolerance to 75% when using nonzero offsets.
+        tol = 0.75
+    assert within_5 / angle_diffs.size > tol
