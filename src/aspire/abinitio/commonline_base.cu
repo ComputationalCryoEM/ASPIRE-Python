@@ -13,9 +13,11 @@ void build_clmatrix_kernel(
     const complex<double>* const __restrict__ shift_phases)
 {
   /* n n_img */
-  /* m,r st (n, m, r) = pf.shape, ie len(pf[i])  */
+  /* m angular componentns, n_theta//2 */
+  /* r radial componentns */
+  /* (n, m, r) = pf.shape in python (before transpose for CUDA kernel) */
 
-  /* thread index (1d), represents "i" index */
+  /* thread index (2d), represents "i" and "j" indices */
   const unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
   const unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
 
@@ -25,7 +27,6 @@ void build_clmatrix_kernel(
   /* no-op lower triangle */
   if(j <= i) return;
 
-  int ind;
   int k;
   int s;
   int cl1, cl2;
@@ -49,7 +50,7 @@ void build_clmatrix_kernel(
           pfjk = conj(pf[k*m*n + cl2*n + j]) * shift_phases[s*r + k];
           p1 += real(pfik) * real(pfjk);
           p2 += imag(pfik) * imag(pfjk);
-        }
+        } /* k */
 
         dist = p1 - p2;
         if(dist > best_cl_dist){
@@ -62,20 +63,18 @@ void build_clmatrix_kernel(
         if(dist > best_cl_dist){
           best_cl_dist = dist;
           best_cl1 = cl1;
-          best_cl2 = cl2 + m; // m is pf.shape[1], which should be n_theta//2...
+          best_cl2 = cl2 + m; /* m is pf.shape[1], which should be n_theta//2 */
         }
 
       } /* s */
     } /* cl2 */
   }/* cl1 */
 
-
-  /* update global best for i, j*/
-  ind = i*n + j;
-  clmatrix[ind] = best_cl1;
+  /* update global best for i, j */
+  clmatrix[i*n + j] = best_cl1;
   clmatrix[j*n+i] = best_cl2;  /* [j,i] */
 
-}
+} /* build_clmatrix_kernel */
 
 extern "C" __global__
 void fbuild_clmatrix_kernel(
@@ -88,9 +87,11 @@ void fbuild_clmatrix_kernel(
     const complex<float>* const __restrict__ shift_phases)
 {
   /* n n_img */
-  /* m,r st (n, m, r) = pf.shape, ie len(pf[i])  */
+  /* m angular componentns, n_theta//2 */
+  /* r radial componentns */
+  /* (n, m, r) = pf.shape in python (before transpose for CUDA kernel) */
 
-  /* thread index (1d), represents "i" index */
+  /* thread index (2d), represents "i" and "j" indices */
   const unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
   const unsigned int j = blockDim.y * blockIdx.y + threadIdx.y;
 
@@ -100,7 +101,6 @@ void fbuild_clmatrix_kernel(
   /* no-op lower triangle */
   if(j <= i) return;
 
-  int ind;
   int k;
   int s;
   int cl1, cl2;
@@ -124,7 +124,7 @@ void fbuild_clmatrix_kernel(
           pfjk = conj(pf[k*m*n + cl2*n + j]) * shift_phases[s*r + k];
           p1 += real(pfik) * real(pfjk);
           p2 += imag(pfik) * imag(pfjk);
-        }
+        } /* k */
 
         dist = p1 - p2;
         if(dist > best_cl_dist){
@@ -137,17 +137,15 @@ void fbuild_clmatrix_kernel(
         if(dist > best_cl_dist){
           best_cl_dist = dist;
           best_cl1 = cl1;
-          best_cl2 = cl2 + m; // m is pf.shape[1], which should be n_theta//2...
+          best_cl2 = cl2 + m; /* m is pf.shape[1], which should be n_theta//2 */
         }
 
       } /* s */
     } /* cl2 */
   }/* cl1 */
 
-
-  /* update global best for i, j*/
-  ind = i*n + j;
-  clmatrix[ind] = best_cl1;
+  /* update global best for i, j */
+  clmatrix[i*n + j] = best_cl1;
   clmatrix[j*n+i] = best_cl2;  /* [j,i] */
 
-}
+} /* fbuild_clmatrix_kernel */
