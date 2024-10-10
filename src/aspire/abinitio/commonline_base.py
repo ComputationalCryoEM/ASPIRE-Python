@@ -7,7 +7,7 @@ import scipy.sparse as sparse
 
 from aspire.image import Image
 from aspire.operators import PolarFT
-from aspire.utils import common_line_from_rots, fuzzy_mask, tqdm
+from aspire.utils import common_line_from_rots, complex_type, fuzzy_mask, tqdm
 from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
@@ -319,16 +319,23 @@ class CLOrient3D:
             r_max, max_shift, shift_step
         )
         # Transfer to device, dtypes must match kernel header.
-        shift_phases = cp.asarray(shift_phases, dtype=np.complex128)
+        shift_phases = cp.asarray(shift_phases, dtype=complex_type(self.dtype))
 
         # Apply bandpass filter, normalize each ray of each image
         # Note that only use half of each ray
         pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h)
         # Tranpose `pf` for better (CUDA) memory access pattern, and cast as needed.
-        pf = cp.ascontiguousarray(pf.T, dtype=np.complex128)
+        pf = cp.ascontiguousarray(pf.T, dtype=complex_type(self.dtype))
 
         # Get kernel
-        build_clmatrix_kernel = self.__gpu_module.get_function("build_clmatrix_kernel")
+        if self.dtype == np.float64:
+            build_clmatrix_kernel = self.__gpu_module.get_function(
+                "build_clmatrix_kernel"
+            )
+        elif self.dtype == np.float32:
+            build_clmatrix_kernel = self.__gpu_module.get_function(
+                "fbuild_clmatrix_kernel"
+            )
 
         # Configure grid of blocks
         blkszx = 32
@@ -701,4 +708,8 @@ class CLOrient3D:
             module_code = fh.read()
 
         # CUPY compile the CUDA code
-        return cp.RawModule(code=module_code, backend="nvcc")
+        return cp.RawModule(
+            code=module_code,
+            backend="nvcc",
+            options=("-O3", "--use_fast_math", "--extra-device-vectorization"),
+        )
