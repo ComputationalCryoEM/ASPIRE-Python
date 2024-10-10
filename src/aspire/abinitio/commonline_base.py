@@ -315,11 +315,10 @@ class CLOrient3D:
 
         # Prepare the shift phases to try and generate filter for common-line detection
         r_max = pf.shape[2]
-        shifts, shift_phases, h = self._generate_shift_phase_and_filter(
+        _, shift_phases, h = self._generate_shift_phase_and_filter(
             r_max, max_shift, shift_step
         )
         # Transfer to device, dtypes must match kernel header.
-        shifts = cp.asarray(shifts, dtype=np.float64)
         shift_phases = cp.asarray(shift_phases, dtype=np.complex128)
 
         # Apply bandpass filter, normalize each ray of each image
@@ -348,8 +347,7 @@ class CLOrient3D:
                 r_max,
                 pf,
                 clmatrix,
-                len(shifts),
-                shifts,
+                len(shift_phases),
                 shift_phases,
             ),
         )
