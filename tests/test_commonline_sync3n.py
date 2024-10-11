@@ -150,8 +150,22 @@ def test_weighted_sync3n(source_orientation_objs):
     """
     src, _ = source_orientation_objs
 
+    # Search for common lines over less shifts for 0 offsets.
+    max_shift = 1 / src.L
+    shift_step = 1
+    if src.offsets.all() != 0:
+        max_shift = 0.20
+        shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
+
     orient_est = CLSync3N(
-        src, seed=789, S_weighting=True, J_weighting=True, full_width=2, sigma=3.1415
+        src,
+        max_shift=max_shift,
+        shift_step=shift_step,
+        seed=789,
+        S_weighting=True,
+        J_weighting=True,
+        full_width=2,
+        sigma=2.9,
     )
     # Estimate rotations
     orient_est.estimate_rotations()
