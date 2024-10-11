@@ -155,6 +155,10 @@ jobs:
         echo -e "    fft: cupy\n" >> ${WORK_DIR}/config.yaml
         echo "Log the config: ${WORK_DIR}/config.yaml"
         cat ${WORK_DIR}/config.yaml
+    - name: Cache Data
+      run: |
+        ASPIREDIR=${{ env.WORK_DIR }} python -c \
+        "import aspire; print(aspire.config['common']['cache_dir']); import aspire.downloader; aspire.downloader.emdb_2660()"
     - name: Run
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} python -c \
@@ -164,10 +168,6 @@ jobs:
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-    - name: Cache Data
-      run: |
-        ASPIREDIR=${{ env.WORK_DIR }} python -c \
-        "import aspire; print(aspire.config['common']['cache_dir']); import aspire.downloader; aspire.downloader.emdb_2660()"
     - name: Cleanup
       run: rm -rf ${{ env.WORK_DIR }}
 
