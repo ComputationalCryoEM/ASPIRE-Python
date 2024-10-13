@@ -5,6 +5,7 @@ import pytest
 
 from aspire.downloader import emdb_2660
 from aspire.image import Image
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 from aspire.utils.matrix import anorm
@@ -144,7 +145,7 @@ def emdb_vol():
 
 @pytest.fixture(scope="module")
 def volume(emdb_vol, res, dtype):
-    vol = emdb_vol.astype(dtype, copy=False)
+    vol = emdb_vol.astype(dtype, copy=COPY_ME_MAYBE)
     vol = vol.downsample(res)
     return vol
 
@@ -172,7 +173,9 @@ def test_pixel_size():
     dsL = 5  # downsampled
 
     # Construct a small test Image
-    img = Image(np.random.random((1, L, L)).astype(DTYPE, copy=False), pixel_size=1.23)
+    img = Image(
+        np.random.random((1, L, L)).astype(DTYPE, copy=COPY_ME_MAYBE), pixel_size=1.23
+    )
 
     # Downsample the image
     result = img.downsample(dsL)

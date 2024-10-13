@@ -9,6 +9,7 @@ from aspire.basis import (
     FPSWFBasis2D,
     PSWFBasis2D,
 )
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.utils import utest_tolerance
 
 IMG_SIZE = [
@@ -90,7 +91,7 @@ def coef_fixture(basis, stack, dtype):
     # shape.
     size = stack + (basis.count,)
 
-    coef_np = np.random.random(size=size).astype(dtype, copy=False)
+    coef_np = np.random.random(size=size).astype(dtype, copy=COPY_ME_MAYBE)
 
     return Coef(basis, coef_np, dtype=dtype)
 
@@ -212,7 +213,9 @@ def test_add(basis, coef_fixture):
     Tests addition operation against pure Numpy.
     """
     # Make array
-    x = np.random.random(size=coef_fixture.shape).astype(coef_fixture.dtype, copy=False)
+    x = np.random.random(size=coef_fixture.shape).astype(
+        coef_fixture.dtype, copy=COPY_ME_MAYBE
+    )
     # Construct Coef
     c = Coef(basis, x)
 
@@ -231,7 +234,9 @@ def test_sub(basis, coef_fixture):
     Tests subtraction operation against pure Numpy.
     """
     # Make array
-    x = np.random.random(size=coef_fixture.shape).astype(coef_fixture.dtype, copy=False)
+    x = np.random.random(size=coef_fixture.shape).astype(
+        coef_fixture.dtype, copy=COPY_ME_MAYBE
+    )
     # Construct Coef
     c = Coef(basis, x)
 
@@ -264,7 +269,9 @@ def test_mul(basis, coef_fixture):
     Tests multiplication operation against pure Numpy.
     """
     # Make array
-    x = np.random.random(size=coef_fixture.shape).astype(coef_fixture.dtype, copy=False)
+    x = np.random.random(size=coef_fixture.shape).astype(
+        coef_fixture.dtype, copy=COPY_ME_MAYBE
+    )
     # Construct Coef
     c = Coef(basis, x)
 

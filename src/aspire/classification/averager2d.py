@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+from aspire.numeric import COPY_ME_MAYBE
+
 # Ray has DeprecationWarning issues that are not related to ASPIRE.
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -105,7 +107,7 @@ class Averager2D(ABC):
             source for a certain operation (ie alignment).
         """
         src = src or self.src
-        return src.images[cls].asnumpy().astype(self.dtype, copy=False)
+        return src.images[cls].asnumpy().astype(self.dtype, copy=COPY_ME_MAYBE)
 
 
 class AligningAverager2D(Averager2D):

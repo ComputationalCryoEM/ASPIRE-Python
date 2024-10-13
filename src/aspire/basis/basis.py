@@ -4,6 +4,7 @@ import numpy as np
 from scipy.sparse.linalg import LinearOperator
 
 from aspire.image import Image
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.numeric.scipy import cg
 from aspire.utils import mdim_mat_fun_conj
 from aspire.volume import Volume
@@ -62,7 +63,7 @@ class Coef:
             )
         self.basis = basis
 
-        self._data = data.astype(self.dtype, copy=False)
+        self._data = data.astype(self.dtype, copy=COPY_ME_MAYBE)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 1
@@ -373,9 +374,9 @@ class Basis:
         :param size: The size of the vectors for which to define the basis.
             Currently only square images and cubic volumes are supported.
         :param ell_max: The maximum order ell of the basis elements. If no input
-            (= None), it will be set to np.Inf and the basis includes all
+            (= None), it will be set to np.inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
-            below the Nyquist frequency (default Inf).
+            below the Nyquist frequency (default inf).
         """
         if ell_max is None:
             ell_max = np.inf

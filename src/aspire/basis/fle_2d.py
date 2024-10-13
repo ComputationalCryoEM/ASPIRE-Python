@@ -11,7 +11,7 @@ from aspire.basis.fle_2d_utils import (
     transform_complex_to_real,
 )
 from aspire.nufft import anufft, nufft
-from aspire.numeric import fft, sparse, xp
+from aspire.numeric import COPY_ME_MAYBE, fft, sparse, xp
 from aspire.operators import DiagMatrix
 from aspire.utils import complex_type, grid_2d
 
@@ -314,7 +314,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         )
         grid_xy[0] = xp.cos(phi)  # x
         grid_xy[1] = xp.sin(phi)  # y
-        grid_xy = grid_xy * nodes * h
+        grid_xy[:] = grid_xy * nodes * h
         self.grid_xy = grid_xy.reshape(2, -1)
 
     def _build_interpolation_matrix(self):
@@ -358,7 +358,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_ells = 1 + 2 * max_ell
         self._ells = np.zeros((num_ells, max_k), dtype=int)
         self._ks = np.zeros((num_ells, max_k), dtype=int)
-        self.bessel_zeros = np.ones((num_ells, max_k), dtype=np.float64) * np.Inf
+        self.bessel_zeros = np.ones((num_ells, max_k), dtype=np.float64) * np.inf
 
         # keep track of which order Bessel function we're on
         self._ells[0, :] = 0
@@ -643,7 +643,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         num_img = z.shape[0]
         z = z[:, :, : self.num_angular_nodes // 2].reshape(num_img, -1)
         im = anufft(
-            z.astype(complex_type(self.dtype), copy=False),
+            z.astype(complex_type(self.dtype), copy=COPY_ME_MAYBE),
             self.grid_xy,
             (self.nres, self.nres),
             epsilon=self.epsilon,
@@ -800,7 +800,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         h_vals2d = (
             xp.asarray(h_fun(omega))
             .reshape(n_k, n_theta)
-            .astype(self.dtype, copy=False)
+            .astype(self.dtype, copy=COPY_ME_MAYBE)
         )
         h_vals = xp.sum(h_vals2d, axis=1) / n_theta
 

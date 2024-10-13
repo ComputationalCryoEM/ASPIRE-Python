@@ -1,3 +1,5 @@
+from aspire.numeric import COPY_ME_MAYBE
+
 """
 Define a Rotation Class for customized rotation operations used by ASPIRE.
 """
@@ -256,7 +258,7 @@ class Rotation:
         """
         dtype = dtype or getattr(values, "dtype", np.float32)
         rotations = sp_rot.from_euler("ZYZ", values, degrees=False)
-        matrices = rotations.as_matrix().astype(dtype, copy=False)
+        matrices = rotations.as_matrix().astype(dtype, copy=COPY_ME_MAYBE)
         return Rotation(matrices)
 
     @staticmethod
@@ -324,7 +326,7 @@ class Rotation:
         """
         dtype = dtype or vec.dtype
         rots = sp_rot.from_rotvec(vec)
-        matrices = rots.as_matrix().astype(dtype, copy=False)
+        matrices = rots.as_matrix().astype(dtype, copy=COPY_ME_MAYBE)
         return Rotation(matrices)
 
     @staticmethod
@@ -337,7 +339,7 @@ class Rotation:
         :return: new Rotation object
         """
         dtype = dtype or values.dtype
-        return Rotation(values.astype(dtype, copy=False))
+        return Rotation(values.astype(dtype, copy=COPY_ME_MAYBE))
 
     @staticmethod
     def generate_random_rotations(

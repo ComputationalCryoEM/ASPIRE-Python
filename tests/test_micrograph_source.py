@@ -7,6 +7,7 @@ import pytest
 from PIL import Image as PILImage
 
 from aspire.image import Image
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.source import ArrayMicrographSource, DiskMicrographSource
 
 from .test_utils import matplotlib_no_gui
@@ -56,7 +57,7 @@ def image_data_fixture(micrograph_count, micrograph_size, dtype):
     This generates a Numpy array with prescribed shape and dtype.
     """
     img_np = np.random.rand(micrograph_count, micrograph_size, micrograph_size)
-    return img_np.astype(dtype, copy=False)
+    return img_np.astype(dtype, copy=COPY_ME_MAYBE)
 
 
 # =====

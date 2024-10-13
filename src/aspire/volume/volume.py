@@ -7,7 +7,7 @@ from numpy.linalg import qr
 
 import aspire.image
 from aspire.nufft import nufft
-from aspire.numeric import fft, xp
+from aspire.numeric import COPY_ME_MAYBE, fft, xp
 from aspire.utils import (
     FourierShellCorrelation,
     Rotation,
@@ -103,7 +103,7 @@ class Volume:
         if not (data.shape[-1] == data.shape[-2] == data.shape[-3]):
             raise ValueError("Only cubed ndarrays are supported.")
 
-        self._data = data.astype(self.dtype, copy=False)
+        self._data = data.astype(self.dtype, copy=COPY_ME_MAYBE)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 3

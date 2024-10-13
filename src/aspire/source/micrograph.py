@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from aspire.image import Image
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
 from aspire.storage import StarFile
@@ -148,7 +149,7 @@ class ArrayMicrographSource(MicrographSource):
         )
 
         # We're already backed by an array, access it directly.
-        self._data = micrographs.astype(self.dtype, copy=False)
+        self._data = micrographs.astype(self.dtype, copy=COPY_ME_MAYBE)
 
     def _images(self, indices):
         """

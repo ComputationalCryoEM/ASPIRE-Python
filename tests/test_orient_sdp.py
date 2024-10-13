@@ -3,6 +3,7 @@ import pytest
 
 from aspire.abinitio import CommonlineSDP
 from aspire.nufft import backend_available
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.source import Simulation
 from aspire.utils import (
     Rotation,
@@ -152,7 +153,7 @@ def test_ATA_solver():
     rots = Rotation.generate_random_rotations(n=n_rots, seed=seed, dtype=dtype).matrices
 
     # Create a simple reference linear transformation A that is rank-3.
-    A_ref = np.diag([1, 2, 3]).astype(dtype, copy=False)
+    A_ref = np.diag([1, 2, 3]).astype(dtype, copy=COPY_ME_MAYBE)
 
     # Create v1 and v2 such that A_ref*v1=R1 and A_ref*v2=R2, R1 and R2 are the first
     # and second columns of all rotations.

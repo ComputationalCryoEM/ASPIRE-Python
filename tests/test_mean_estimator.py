@@ -7,6 +7,7 @@ from pytest import raises
 
 from aspire.basis import Coef, FBBasis3D
 from aspire.image import Image
+from aspire.numeric import COPY_ME_MAYBE
 from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import Simulation
@@ -115,8 +116,8 @@ def test_adjoint(sim, basis, estimator):
     L = sim.L
     n = sim.n
 
-    u = np.random.rand(n, L, L).astype(sim.dtype, copy=False)
-    v = np.random.rand(L, L, L).astype(sim.dtype, copy=False)
+    u = np.random.rand(n, L, L).astype(sim.dtype, copy=COPY_ME_MAYBE)
+    v = np.random.rand(L, L, L).astype(sim.dtype, copy=COPY_ME_MAYBE)
 
     proj = Volume(v).project(rots)
     backproj = Image(u).backproject(rots)
