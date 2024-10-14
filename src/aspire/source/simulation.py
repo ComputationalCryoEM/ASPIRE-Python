@@ -171,8 +171,13 @@ class Simulation(ImageSource):
         else:
             self.filter_indices = np.zeros(n, dtype=int)
 
+        # Initialize ImageSource values
+        # Assign the Simulation projection values with deep copy of the same.
+        # This uncouples the ImageSource and Simulation attributes
         self.offsets = offsets
+        self.sim_offsets = copy.deepcopy(self.offsets)
         self.amplitudes = amplitudes
+        self.sim_amplitudes = copy.deepcopy(self.amplitudes)
 
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
         self._clean_images_accessor = _ImageAccessor(self._clean_images, self.n)
@@ -320,9 +325,11 @@ class Simulation(ImageSource):
         # apply original CTF distortion to image
         im = self._apply_sim_filters(im, indices)
 
-        im = im.shift(self.offsets[indices, :])
+        im = im.shift(self.sim_offsets[indices, :])
 
-        im *= self.amplitudes[indices].reshape(len(indices), 1, 1).astype(self.dtype)
+        im *= (
+            self.sim_amplitudes[indices].reshape(len(indices), 1, 1).astype(self.dtype)
+        )
 
         if not clean_images and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
