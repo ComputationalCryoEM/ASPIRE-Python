@@ -1,3 +1,5 @@
+import os
+import tempfile
 from itertools import product
 
 import numpy as np
@@ -5,7 +7,9 @@ import pytest
 
 from aspire.downloader import emdb_2660
 from aspire.image import Image
-from aspire.source import Simulation
+from aspire.noise import WhiteNoiseAdder
+from aspire.operators import RadialCTFFilter
+from aspire.source import RelionSource, Simulation
 from aspire.utils import utest_tolerance
 from aspire.utils.matrix import anorm
 from aspire.utils.misc import gaussian_3d
@@ -161,6 +165,47 @@ def test_downsample_project(volume, res_ds):
     if volume.dtype == np.float64:
         tol = 1e-09
     np.testing.assert_allclose(im_ds_proj, im_proj_ds, atol=tol)
+
+
+def test_post_downsample_attributes():
+    """
+    Test that Simulation.downsample corresponds to RelionSource.downsample
+    with respect to images and source attributes.
+    """
+    # Generate CTF and noise filters.
+    defocus_min = 15000  # unit is angstroms
+    defocus_max = 25000
+    defocus_ct = 7
+
+    ctf_filters = [
+        RadialCTFFilter(pixel_size=1, defocus=d)
+        for d in np.linspace(defocus_min, defocus_max, defocus_ct)
+    ]
+
+    # Generate Simulation source and downsampled simulation.
+    src = Simulation(
+        L=64,
+        n=10,
+        C=1,
+        unique_filters=ctf_filters,
+        noise_adder=WhiteNoiseAdder.from_snr(snr=1),
+    )
+    src_ds = src.downsample(src.L // 2)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Save the simulation object into STAR and MRCS files
+        starfile = os.path.join(tmpdir, "save_test.star")
+        src.save(starfile)
+
+        # Load Simulation source as a RelionSource
+        rln_src = RelionSource(starfile)
+
+        # Downsample and test that images and attributes correspond to src_ds
+        rln_src_ds = rln_src.downsample(src.L // 2)
+        np.testing.assert_allclose(
+            src_ds.images[:], rln_src_ds.images[:], atol=utest_tolerance(src.dtype)
+        )
+        np.testing.assert_allclose(src_ds.offsets, rln_src_ds.offsets)
 
 
 def test_pixel_size():
