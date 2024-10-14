@@ -28,7 +28,7 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation, grid_2d, support_mask, trange
+from aspire.utils import Rotation, grid_2d, rename_file, support_mask, trange
 from aspire.volume import IdentitySymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
@@ -976,7 +976,7 @@ class ImageSource(ABC):
         starfile_filepath,
         batch_size=512,
         save_mode=None,
-        overwrite=False,
+        overwrite=None,
     ):
         """
         Save the output metadata to STAR file and/or images to MRCS file.
@@ -988,10 +988,26 @@ class ImageSource(ABC):
             while `batch_size>=1` implies stack MRC extension `.mrcs`.
         :param save_mode: Whether to save all images in a `single` or multiple files in batch size.
             Default is multiple, supply `'single'` for single mode.
-        :param overwrite: Option to overwrite the output MRC files.
+        :param overwrite: Options to control overwrite behavior (default is None):
+            - True: Overwrites the existing file if it exists.
+            - False: Raises an error if the file exists.
+            - None: Renames the old file by appending a time/date stamp.
         :return: A dictionary containing "starfile"--the path to the saved starfile-- and "mrcs", a
             list of the saved particle stack MRC filenames.
         """
+        if overwrite is None and os.path.exists(starfile_filepath):
+            # If the file exists, append the timestamp to the old file and rename it
+            renamed_filepath = rename_file(starfile_filepath, move=False)
+
+            # Retrieve original ImageSource and save with new starfile name.
+            from aspire.source import RelionSource
+
+            src = RelionSource(starfile_filepath)
+            src.save(renamed_filepath, overwrite=False)
+
+            # Allow overwriting old files.
+            overwrite = True
+
         logger.info("save metadata into STAR file")
         filename_indices = self.save_metadata(
             starfile_filepath,
@@ -1005,7 +1021,7 @@ class ImageSource(ABC):
             starfile_filepath,
             filename_indices=filename_indices,
             batch_size=batch_size,
-            overwrite=overwrite,
+            overwrite=bool(overwrite),
         )
         # return some information about the saved files
         info = {"starfile": starfile_filepath, "mrcs": unique_filenames}

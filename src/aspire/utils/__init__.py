@@ -28,6 +28,7 @@ from .misc import (  # isort:skip
     inverse_r,
     J_conjugate,
     powerset,
+    rename_file,
     sha256sum,
     support_mask,
     fuzzy_mask,
