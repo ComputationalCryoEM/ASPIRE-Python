@@ -133,6 +133,7 @@ class SimTestCase(TestCase):
 
         # Keep hardcoded tests passing after fixing swapped offsets.
         # See github issue #1146.
+        self.sim.sim_offsets = self.sim.offsets[:, [1, 0]]
         self.sim = self.sim.update(offsets=self.sim.offsets[:, [1, 0]])
 
     def tearDown(self):
