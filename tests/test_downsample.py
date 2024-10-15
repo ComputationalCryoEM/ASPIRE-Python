@@ -217,7 +217,7 @@ def test_downsample_offsets(dtype, res):
     n = 10
     ds_scale = 2
 
-    offsets = np.random.choice([L // 8, -L // 8], size=(n, 2))
+    offsets = np.random.choice([L // 8, -L // 8], size=(n, 2)).astype(dtype, copy=False)
     src = Simulation(
         L=L,
         n=n,
@@ -240,8 +240,8 @@ def test_downsample_offsets(dtype, res):
 
     # Check `offsets` and `sim_offsets` attributes are as expected, ie.
     # `sim_offsets` are same as original while `offsets` are scaled by downsample.
-    np.testing.assert_array_equal(src_ds.sim_offsets, src.offsets)
-    np.testing.assert_array_equal(src_ds.offsets, src.offsets / offset_scale)
+    np.testing.assert_array_equal(src_ds.sim_offsets, offsets)
+    np.testing.assert_array_equal(src_ds.offsets, offsets / offset_scale)
 
     # Check that centering works for original and downsampled images.
     np.testing.assert_allclose(
