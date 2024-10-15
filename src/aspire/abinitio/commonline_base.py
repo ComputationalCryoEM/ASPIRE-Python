@@ -65,8 +65,11 @@ class CLOrient3D:
         self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
         self.mask = mask
-        self.rotations = None
         self._pf = None
+
+        # Outputs
+        self.rotations = None
+        self.shifts = None
 
         self._build()
 
@@ -277,9 +280,21 @@ class CLOrient3D:
 
         # Estimate shifts.
         est_shifts = sparse.linalg.lsqr(shift_equations, shift_b, show=show)[0]
-        est_shifts = est_shifts.reshape((self.n_img, 2))
+        self.shifts = est_shifts.reshape((self.n_img, 2))
 
-        return est_shifts
+        return self.shifts
+
+    def estimate(self, **kwargs):
+        """
+        Estimate orientation and shifts for all 2D images.
+
+        :return: (rotations, shifts)
+        """
+
+        self.estimate_rotations(**kwargs)
+        self.estimate_shifts(**kwargs)
+
+        return self.rotations, self.shifts
 
     def _get_shift_equations_approx(self, equations_factor=1, max_memory=4000):
         """
