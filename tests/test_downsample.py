@@ -167,7 +167,7 @@ def test_downsample_project(volume, res_ds):
     np.testing.assert_allclose(im_ds_proj, im_proj_ds, atol=tol)
 
 
-def test_post_downsample_attributes():
+def test_simulation_relion_downsample():
     """
     Test that Simulation.downsample corresponds to RelionSource.downsample
     with respect to images and source attributes.
@@ -206,6 +206,55 @@ def test_post_downsample_attributes():
             src_ds.images[:], rln_src_ds.images[:], atol=utest_tolerance(src.dtype)
         )
         np.testing.assert_allclose(src_ds.offsets, rln_src_ds.offsets)
+
+
+def test_downsample_offsets(dtype, res):
+    """
+    Test that `offsets` are appropriately scaled after downsample, that `sim_offsets`
+    remain unchanged by downsample, and that centering a downsampled image works properly.
+    """
+    L = res
+    n = 10
+    ds_scale = 2
+
+    offsets = np.random.choice([L // 8, -L // 8], size=(n, 2))
+    src = Simulation(
+        L=L,
+        n=n,
+        offsets=offsets,
+        seed=1234,
+        dtype=dtype,
+    )
+
+    src_centered = Simulation(
+        L=L,
+        n=n,
+        offsets=0,
+        seed=1234,
+        dtype=dtype,
+    )
+
+    src_ds = src.downsample(L // ds_scale)
+    src_centered_ds = src_centered.downsample(L // ds_scale)
+    offset_scale = L / (L // ds_scale)
+
+    # Check `offsets` and `sim_offsets` attributes are as expected, ie.
+    # `sim_offsets` are same as original while `offsets` are scaled by downsample.
+    np.testing.assert_array_equal(src_ds.sim_offsets, src.offsets)
+    np.testing.assert_array_equal(src_ds.offsets, src.offsets / offset_scale)
+
+    # Check that centering works for original and downsampled images.
+    np.testing.assert_allclose(
+        src.images[:].shift(-src.offsets),
+        src_centered.images[:],
+        atol=utest_tolerance(dtype),
+    )
+
+    np.testing.assert_allclose(
+        src_ds.images[:].shift(-src_ds.offsets),
+        src_centered_ds.images[:],
+        atol=utest_tolerance(dtype),
+    )
 
 
 def test_pixel_size():
