@@ -1572,13 +1572,14 @@ class OrientedSource(IndexedSource):
             return
 
         logger.info(
-            f"Estimating rotations for {self.src} using {self.orientation_estimator}."
+            f"Estimating rotations and shifts for {self.src} using {self.orientation_estimator}."
         )
-        self.orientation_estimator.estimate_rotations()
+        self.orientation_estimator.estimate()
 
         # Allow mutability to set rotations.
         self._mutable = True
         self.rotations = self.orientation_estimator.rotations
+        self.shifts = self.orientation_estimator.shifts
         self._mutable = False
 
         self._oriented = True
