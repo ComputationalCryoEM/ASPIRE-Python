@@ -142,7 +142,7 @@ class SyncVotingMixin(object):
         # similar. This sigma ensures that the width of the density
         # estimation kernel is roughly 10 degrees. For 15 degrees, the
         # value of the kernel is negligible.
-        sigma = 3.0
+        sigma = getattr(self, "sigma", 3.0)  # get from class if avail
 
         # Compute the histogram of the angles between images i and j
         angles_distances = angles_grid[None, :] - angles[:, None]
@@ -156,7 +156,7 @@ class SyncVotingMixin(object):
         # that accidentally fall near the peak.
         peak_idx = angles_hist.argmax()
 
-        if str(self.full_width).lower() == "adaptive":
+        if self.full_width == -1:
             # Adaptive width  (MATLAB)
             # Look for the estimations in the peak of the histogram
             w_theta_needed = 0
