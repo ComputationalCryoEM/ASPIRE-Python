@@ -1579,7 +1579,7 @@ class OrientedSource(IndexedSource):
         # Allow mutability to set rotations.
         self._mutable = True
         self.rotations = self.orientation_estimator.rotations
-        self.shifts = self.orientation_estimator.shifts
+        self.offsets = self.orientation_estimator.shifts
         self._mutable = False
 
         self._oriented = True
@@ -1589,7 +1589,13 @@ class OrientedSource(IndexedSource):
         Remove orientation information passed in by original source.
         """
         _info_removed = False
-        rot_keys = ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]
+        rot_keys = [
+            "_rlnAngleRot",
+            "_rlnAngleTilt",
+            "_rlnAnglePsi",
+            "_rlnOriginX",
+            "_rlnOriginY",
+        ]
         for key in rot_keys:
             if self.has_metadata(key):
                 del self._metadata[key]
@@ -1612,6 +1618,15 @@ class OrientedSource(IndexedSource):
     def _angles(self):
         self._orient()
         return super()._angles()
+
+    @property
+    def offsets(self):
+        self._orient()
+        return super().offsets
+
+    @IndexedSource.offsets.setter
+    def offsets(self, values):
+        IndexedSource.offsets.fset(self, values)
 
     def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
         self._orient()
