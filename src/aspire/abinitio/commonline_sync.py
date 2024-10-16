@@ -153,9 +153,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
         rotations[:, :, 2] = r3.T
         # Make sure that we got rotations by enforcing R to be
         # a rotation (in case the error is large)
-        rotations = nearest_rotations(rotations)
-
-        self.rotations = rotations
+        self.rotations = nearest_rotations(rotations)
 
     def syncmatrix_vote(self):
         """
@@ -163,8 +161,6 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
 
         A pre-computed common line matrix is required as input.
         """
-        if self.clmatrix is None:
-            self.build_clmatrix()
 
         clmatrix = self.clmatrix
 
