@@ -228,9 +228,7 @@ class CLOrient3D:
 
         # Setup a progress bar
         _total_pairs_to_test = self.n_img * (self.n_check - 1) // 2
-        pbar = tqdm(
-            desc="Searching over common line pairs (orig)", total=_total_pairs_to_test
-        )
+        pbar = tqdm(desc="Searching over common line pairs", total=_total_pairs_to_test)
 
         # Search for common lines between [i, j] pairs of images.
         # Creating pf and building common lines are different to the Matlab version.
