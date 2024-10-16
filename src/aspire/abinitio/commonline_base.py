@@ -64,7 +64,6 @@ class CLOrient3D:
         if str(full_width).lower() == "adaptive":
             full_width = -1
         self.full_width = int(full_width)
-        self.clmatrix = None
         self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
         self.mask = mask
@@ -94,6 +93,7 @@ class CLOrient3D:
             logger.info("cupy not found, defaulting to numpy.")
 
         # Outputs
+        self.clmatrix = None
         self.rotations = None
         self.shifts = None
 
@@ -157,6 +157,63 @@ class CLOrient3D:
         """
         raise NotImplementedError("subclasses should implement this")
 
+    @property
+    def clmatrix(self):
+        """
+        Returns Common Lines Matrix.
+
+        Computes if `clmatrix` is None.
+
+        :return: Common Lines Matrix
+        """
+        if self._clmatrix is None:
+            self.build_clmatrix()
+        else:
+            logger.info("Using existing estimated `clmatrix`.")
+        return self._clmatrix
+
+    @clmatrix.setter
+    def clmatrix(self, value):
+        self._clmatrix = value
+
+    @property
+    def rotations(self):
+        """
+        Returns estimated rotations.
+
+        Computes if `rotations` is None.
+
+        :return: Estimated rotations
+        """
+        if self._rotations is None:
+            self.estimate_rotations()
+        else:
+            logger.info("Using existing estimated `rotations`.")
+        return self._rotations
+
+    @rotations.setter
+    def rotations(self, value):
+        self._rotations = value
+
+    @property
+    def shifts(self):
+        """
+        Returns estimated shifts.
+
+        Computes if `shifts` is None.
+
+        :return: Estimated shifts
+        """
+        if self._shifts is None:
+            self.estimate_shifts()
+        else:
+            logger.info("Using existing estimated `shifts`.")
+        return self._shifts
+
+    @shifts.setter
+    def shifts(self, value):
+        self._shifts = value
+
     def build_clmatrix(self):
         """
         Build common-lines matrix from Fourier stack of 2D images
@@ -173,7 +230,9 @@ class CLOrient3D:
             res = self.build_clmatrix_host()
 
         # Unpack result
-        self.shifts_1d, self.clmatrix = res
+        self._shifts_1d, self.clmatrix = res
+
+        return self.clmatrix
 
     def build_clmatrix_host(self):
         """
@@ -464,8 +523,6 @@ class CLOrient3D:
         n_img = self.n_img
 
         # `estimate_shifts()` requires that rotations have already been estimated.
-        if self.rotations is None:
-            self.estimate_rotations()
         rotations = self.rotations
 
         pf = self.pf.copy()

@@ -117,6 +117,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         self.rotations = Ris
 
+        return self.rotations
+
     ###########################################
     # Primary Methods                         #
     ###########################################
@@ -129,7 +131,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
         # Step 1: Detect a single pair of common-lines between each pair of images
         self.build_clmatrix()
-        clmatrix = self.clmatrix
 
         # Step 2: Detect self-common-lines in each image
         sclmatrix = self._self_clmatrix_c3_c4()
@@ -138,7 +139,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         Riis = self._estimate_all_Riis_c3_c4(sclmatrix)
 
         # Step 4: Calculate relative rotations
-        Rijs = self._estimate_all_Rijs_c3_c4(clmatrix)
+        Rijs = self._estimate_all_Rijs_c3_c4(self.clmatrix)
 
         # Step 5: Inner J-synchronization
         vijs, viis = self._local_J_sync_c3_c4(Rijs, Riis)

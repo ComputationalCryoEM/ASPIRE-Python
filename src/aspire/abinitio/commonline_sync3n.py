@@ -181,6 +181,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # Yield rotations from S
         self.rotations = self._sync3n_S_to_rot(S, W)
 
+        return self.rotations
+
     #######################
     # Main Sync3N Methods #
     #######################

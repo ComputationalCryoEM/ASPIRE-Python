@@ -33,8 +33,9 @@ class CommonlineSDP(CLOrient3D):
         S = self._construct_S(self.clmatrix)
         A, b = self._sdp_prep()
         gram = self._compute_gram_matrix(S, A, b)
-        rotations = self._deterministic_rounding(gram)
-        self.rotations = rotations
+        self.rotations = self._deterministic_rounding(gram)
+
+        return self.rotations
 
     def _construct_S(self, clmatrix):
         """
