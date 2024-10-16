@@ -873,7 +873,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         logger.info("Launching `estimate_all_angles` kernel.")
         toc0 = perf_counter()
-        for j in range(0, self.n_img):
+        for j in range(self.n_img):
 
             # ------------------------------------------
             # Zero histogram and k mapping for each `j`.
