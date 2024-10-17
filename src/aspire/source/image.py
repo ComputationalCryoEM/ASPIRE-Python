@@ -9,7 +9,7 @@ from collections.abc import Iterable
 import mrcfile
 import numpy as np
 
-from aspire.abinitio import CLOrient3D, CLSyncVoting
+from aspire.abinitio import CLOrient3D, CLSync3N
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
     Downsample,
@@ -1525,7 +1525,7 @@ class OrientedSource(IndexedSource):
 
         :param src: Source used for orientation estimation
         :param orientation_estimator: CLOrient3D subclass used for orientation estimation.
-            Default uses the CLSyncVoting method.
+            Default uses the CLSync3N method.
         """
 
         self.src = src
@@ -1549,7 +1549,7 @@ class OrientedSource(IndexedSource):
         self._oriented = False
 
         if orientation_estimator is None:
-            orientation_estimator = CLSyncVoting(src)
+            orientation_estimator = CLSync3N(src)
 
         self.orientation_estimator = orientation_estimator
         if not isinstance(self.orientation_estimator, CLOrient3D):
