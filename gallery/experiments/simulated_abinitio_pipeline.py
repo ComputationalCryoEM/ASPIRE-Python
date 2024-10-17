@@ -20,7 +20,7 @@ import logging
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aspire.abinitio import CLSyncVoting
+from aspire.abinitio import CLSync3N
 from aspire.denoising import DefaultClassAvgSource, DenoisedSource, DenoiserCov2D
 from aspire.downloader import emdb_2660
 from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
@@ -184,7 +184,7 @@ indices = avgs.index_map  # Also available from avgs.src.selection_indices[:n_cl
 true_rotations = src.rotations[indices]
 
 # Create a custom orientation estimation object for ``avgs``.
-orient_est = CLSyncVoting(avgs, n_theta=180)
+orient_est = CLSync3N(avgs, n_theta=180)
 
 # Initialize an ``OrientedSource`` class instance that performs orientation
 # estimation in a lazy fashion upon request of images or rotations.
