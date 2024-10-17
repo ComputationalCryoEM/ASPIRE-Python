@@ -28,6 +28,8 @@ class CLOrient3D:
         full_width=6,
         max_shift=0.15,
         shift_step=1,
+        est_shifts_max_shift=None,
+        est_shift_shift_step=None,
         mask=True,
     ):
         """
@@ -41,10 +43,17 @@ class CLOrient3D:
         :param n_check: For each image/projection find its common-lines with
             n_check images. If n_check is less than the total number of images,
             a random subset of n_check images is used.
-        :param max_shift: Determines maximum range for shifts as a proportion
-            of the resolution. Default is 0.15.
-        :param shift_step: Resolution of shift estimation in pixels.
-            Default is 1 pixel.
+        :param max_shift: Determines maximum range for shifts for
+            common-line detection as a proportion of the
+            resolution. Default is 0.15.
+        :param shift_step: Resolution of shift estimation for
+            common-line detection in pixels.  Default is 1 pixel.
+        :param offsets_max_shift: Determines maximum range for shifts
+            for 2D offset estimation as a proportion of the
+            resolution. Default `None` inherits from `max_shift`.
+        :param offsets_shift_step: Resolution of shift estimation for
+            2D offset estimation in pixels.  Default `None` inherits
+            from `shift_step`.
         :param hist_bin_width: Bin width in smoothing histogram (degrees).
         :param full_width: Selection width around smoothed histogram peak (degrees).
             `adaptive` will attempt to automatically find the smallest number of
@@ -66,6 +75,10 @@ class CLOrient3D:
         self.full_width = int(full_width)
         self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
+        self.offsets_max_shift = self.max_shift
+        if offsets_max_shift is not None:
+            self.offsets_max_shift = math.ceil(offsets_max_shift * self.n_res)
+        self.offsets_shift_step = offsets_shift_step or self.shift_step
         self.mask = mask
         self._pf = None
 
@@ -547,11 +560,9 @@ class CLOrient3D:
         # The shift phases are pre-defined in a range of max_shift that can be
         # applied to maximize the common line calculation. The common-line filter
         # is also applied to the radial direction for easier detection.
-        max_shift = self.max_shift
-        shift_step = self.shift_step
         r_max = pf.shape[2]
         _, shift_phases, h = self._generate_shift_phase_and_filter(
-            r_max, max_shift, shift_step
+            r_max, self.offsets_max_shift, self.offsets_shift_step
         )
 
         d_theta = np.pi / n_theta_half
@@ -598,7 +609,7 @@ class CLOrient3D:
             sidx1 = np.argmax(c1)
             sidx2 = np.argmax(c2)
             sidx = sidx1 if c1[sidx1] > c2[sidx2] else sidx2
-            dx = -max_shift + sidx * shift_step
+            dx = -self.offsets_max_shift + sidx * self.offsets_shift_step
 
             # angle of common ray in image i
             shift_alpha = c_ij * d_theta
