@@ -27,6 +27,8 @@ class CLOrient3D:
         full_width=6,
         max_shift=0.15,
         shift_step=1,
+        est_shifts_max_shift=None,
+        est_shift_shift_step=None,
         mask=True,
     ):
         """
@@ -40,10 +42,17 @@ class CLOrient3D:
         :param n_check: For each image/projection find its common-lines with
             n_check images. If n_check is less than the total number of images,
             a random subset of n_check images is used.
-        :param max_shift: Determines maximum range for shifts as a proportion
-            of the resolution. Default is 0.15.
-        :param shift_step: Resolution of shift estimation in pixels.
-            Default is 1 pixel.
+        :param max_shift: Determines maximum range for shifts for
+            common-line detection as a proportion of the
+            resolution. Default is 0.15.
+        :param shift_step: Resolution of shift estimation for
+            common-line detection in pixels.  Default is 1 pixel.
+        :param offsets_max_shift: Determines maximum range for shifts
+            for 2D offset estimation as a proportion of the
+            resolution. Default `None` inherits from `max_shift`.
+        :param offsets_shift_step: Resolution of shift estimation for
+            2D offset estimation in pixels.  Default `None` inherits
+            from `shift_step`.
         :param hist_bin_width: Bin width in smoothing histogram (degrees).
         :param full_width: Selection width around smoothed histogram peak (degrees).
             `adaptive` will attempt to automatically find the smallest number of
@@ -61,12 +70,19 @@ class CLOrient3D:
         self.n_check = n_check
         self.hist_bin_width = hist_bin_width
         self.full_width = full_width
-        self.clmatrix = None
         self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
+        self.offsets_max_shift = self.max_shift
+        if offsets_max_shift is not None:
+            self.offsets_max_shift = math.ceil(offsets_max_shift * self.n_res)
+        self.offsets_shift_step = offsets_shift_step or self.shift_step
         self.mask = mask
-        self.rotations = None
         self._pf = None
+
+        # Outputs
+        self.clmatrix = None
+        self.rotations = None
+        self.shifts = None
 
         self._build()
 
@@ -127,6 +143,63 @@ class CLOrient3D:
         Subclasses should implement this function.
         """
         raise NotImplementedError("subclasses should implement this")
+
+    @property
+    def clmatrix(self):
+        """
+        Returns Common Lines Matrix.
+
+        Computes if `clmatrix` is None.
+
+        :return: Common Lines Matrix
+        """
+        if self._clmatrix is None:
+            self.build_clmatrix()
+        else:
+            logger.info("Using existing estimated `clmatrix`.")
+        return self._clmatrix
+
+    @clmatrix.setter
+    def clmatrix(self, value):
+        self._clmatrix = value
+
+    @property
+    def rotations(self):
+        """
+        Returns estimated rotations.
+
+        Computes if `rotations` is None.
+
+        :return: Estimated rotations
+        """
+        if self._rotations is None:
+            self.estimate_rotations()
+        else:
+            logger.info("Using existing estimated `rotations`.")
+        return self._rotations
+
+    @rotations.setter
+    def rotations(self, value):
+        self._rotations = value
+
+    @property
+    def shifts(self):
+        """
+        Returns estimated shifts.
+
+        Computes if `shifts` is None.
+
+        :return: Estimated shifts
+        """
+        if self._shifts is None:
+            self.estimate_shifts()
+        else:
+            logger.info("Using existing estimated `shifts`.")
+        return self._shifts
+
+    @shifts.setter
+    def shifts(self, value):
+        self._shifts = value
 
     def build_clmatrix(self):
         """
@@ -234,7 +307,9 @@ class CLOrient3D:
         pbar.close()
 
         self.clmatrix = clmatrix
-        self.shifts_1d = shifts_1d
+        self._shifts_1d = shifts_1d
+
+        return self.clmatrix
 
     def estimate_shifts(self, equations_factor=1, max_memory=4000):
         """
@@ -277,9 +352,21 @@ class CLOrient3D:
 
         # Estimate shifts.
         est_shifts = sparse.linalg.lsqr(shift_equations, shift_b, show=show)[0]
-        est_shifts = est_shifts.reshape((self.n_img, 2))
+        self.shifts = est_shifts.reshape((self.n_img, 2))
 
-        return est_shifts
+        return self.shifts
+
+    def estimate(self, **kwargs):
+        """
+        Estimate orientation and shifts for all 2D images.
+
+        :return: (rotations, shifts)
+        """
+
+        self.estimate_rotations(**kwargs)
+        self.estimate_shifts(**kwargs)
+
+        return self.rotations, self.shifts
 
     def _get_shift_equations_approx(self, equations_factor=1, max_memory=4000):
         """
@@ -311,8 +398,6 @@ class CLOrient3D:
         n_img = self.n_img
 
         # `estimate_shifts()` requires that rotations have already been estimated.
-        if self.rotations is None:
-            self.estimate_rotations()
         rotations = self.rotations
 
         pf = self.pf.copy()
@@ -337,11 +422,9 @@ class CLOrient3D:
         # The shift phases are pre-defined in a range of max_shift that can be
         # applied to maximize the common line calculation. The common-line filter
         # is also applied to the radial direction for easier detection.
-        max_shift = self.max_shift
-        shift_step = self.shift_step
         r_max = pf.shape[2]
         _, shift_phases, h = self._generate_shift_phase_and_filter(
-            r_max, max_shift, shift_step
+            r_max, self.offsets_max_shift, self.offsets_shift_step
         )
 
         d_theta = np.pi / n_theta_half
@@ -388,7 +471,7 @@ class CLOrient3D:
             sidx1 = np.argmax(c1)
             sidx2 = np.argmax(c2)
             sidx = sidx1 if c1[sidx1] > c2[sidx2] else sidx2
-            dx = -max_shift + sidx * shift_step
+            dx = -self.offsets_max_shift + sidx * self.offsets_shift_step
 
             # angle of common ray in image i
             shift_alpha = c_ij * d_theta

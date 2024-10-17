@@ -161,7 +161,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
                 shifts_1d[1, i, j] = shifts[second_shift]
 
         self.clmatrix = clmatrix
-        self.shifts_1d = shifts_1d
+        self._shifts_1d = shifts_1d
 
     @staticmethod
     def _compute_correlations(a, b):
@@ -230,6 +230,8 @@ class CLSymmetryC2(CLSymmetryC3C4):
         Ris = self._estimate_inplane_rotations(vis, Rijs, Rijgs)
 
         self.rotations = Ris
+
+        return self.rotations
 
     ###########################################
     # Primary Methods                         #
