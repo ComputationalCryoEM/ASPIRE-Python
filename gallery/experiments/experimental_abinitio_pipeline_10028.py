@@ -28,7 +28,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from aspire.abinitio import CLSyncVoting
+from aspire.abinitio import CLSync3N
 from aspire.denoising import DefaultClassAvgSource, DenoisedSource, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
@@ -164,7 +164,7 @@ if interactive:
 logger.info("Begin Orientation Estimation")
 
 # Create a custom orientation estimation object for ``avgs``.
-orient_est = CLSyncVoting(avgs, n_theta=72)
+orient_est = CLSync3N(avgs, n_theta=360)
 
 # Create an ``OrientedSource`` class instance that performs orientation
 # estimation in a lazy fashion upon request of images or rotations.
