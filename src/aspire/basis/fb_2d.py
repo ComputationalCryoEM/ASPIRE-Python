@@ -5,8 +5,6 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
-from aspire.utils import roll_dim, unroll_dim
-from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +187,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
-        mask = m_flatten(self.basis_coords["mask"])
+        mask = self.basis_coords["mask"].flatten()
 
         ind = 0
         ind_radial = 0
