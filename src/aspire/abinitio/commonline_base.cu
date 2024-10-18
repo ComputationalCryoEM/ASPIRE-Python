@@ -31,13 +31,13 @@ void build_clmatrix_kernel(
   int s;
   int cl1, cl2;
   int best_cl1, best_cl2;
-  double dist, best_cl_dist;
+  double xcorr, best_cl_xcorr;
   double p1, p2;
   complex<double> pfik, pfjk;
 
   best_cl1 = -1;
   best_cl2 = -1;
-  best_cl_dist = -INFINITY;
+  best_cl_xcorr = -INFINITY;
 
   for(cl1=0; cl1<m; cl1++){
     for(cl2=0; cl2<m; cl2++){
@@ -52,16 +52,16 @@ void build_clmatrix_kernel(
           p2 += imag(pfik) * imag(pfjk);
         } /* k */
 
-        dist = p1 - p2;
-        if(dist > best_cl_dist){
-          best_cl_dist = dist;
+        xcorr = p1 - p2;
+        if(xcorr > best_cl_xcorr){
+          best_cl_xcorr = xcorr;
           best_cl1 = cl1;
           best_cl2 = cl2;
         }
 
-        dist = p1 + p2;
-        if(dist > best_cl_dist){
-          best_cl_dist = dist;
+        xcorr = p1 + p2;
+        if(xcorr > best_cl_xcorr){
+          best_cl_xcorr = xcorr;
           best_cl1 = cl1;
           best_cl2 = cl2 + m; /* m is pf.shape[1], which should be n_theta//2 */
         }
@@ -105,13 +105,13 @@ void fbuild_clmatrix_kernel(
   int s;
   int cl1, cl2;
   int best_cl1, best_cl2;
-  float dist, best_cl_dist;
+  float xcorr, best_cl_xcorr;
   float p1, p2;
   complex<float> pfik, pfjk;
 
   best_cl1 = -1;
   best_cl2 = -1;
-  best_cl_dist = -INFINITY;
+  best_cl_xcorr = -INFINITY;
 
   for(cl1=0; cl1<m; cl1++){
     for(cl2=0; cl2<m; cl2++){
@@ -126,16 +126,16 @@ void fbuild_clmatrix_kernel(
           p2 += imag(pfik) * imag(pfjk);
         } /* k */
 
-        dist = p1 - p2;
-        if(dist > best_cl_dist){
-          best_cl_dist = dist;
+        xcorr = p1 - p2;
+        if(xcorr > best_cl_xcorr){
+          best_cl_xcorr = xcorr;
           best_cl1 = cl1;
           best_cl2 = cl2;
         }
 
-        dist = p1 + p2;
-        if(dist > best_cl_dist){
-          best_cl_dist = dist;
+        xcorr = p1 + p2;
+        if(xcorr > best_cl_xcorr){
+          best_cl_xcorr = xcorr;
           best_cl1 = cl1;
           best_cl2 = cl2 + m; /* m is pf.shape[1], which should be n_theta//2 */
         }
