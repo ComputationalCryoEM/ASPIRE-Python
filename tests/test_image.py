@@ -1,6 +1,8 @@
 import logging
 import os.path
 import tempfile
+from datetime import datetime
+from unittest import mock
 
 import mrcfile
 import numpy as np
@@ -388,20 +390,23 @@ def test_save_overwrite(caplog):
             im3.save(mrc_path, overwrite=False)
 
         # Case 3: overwrite=None (should rename the existing file and save im3 with original filename)
-        with caplog.at_level(logging.INFO):
-            im3.save(mrc_path, overwrite=None)
+        # Mock datetime to return a fixed timestamp.
+        mock_timestamp = datetime(1879, 3, 14, 12, 0, 0).strftime("%y%m%d_%H%M%S")
+        with mock.patch("aspire.utils.misc.datetime") as mock_datetime:
+            mock_datetime.now.return_value = datetime(1879, 3, 14, 12, 0, 0)
+            mock_datetime.strftime = datetime.strftime
 
-            # Check that the existing file was renamed and logged
-            assert f"Renaming {mrc_path}" in caplog.text
+            with caplog.at_level(logging.INFO):
+                im3.save(mrc_path, overwrite=None)
 
-            # Find the renamed file by checking the directory contents
-            renamed_file = None
-            for filename in os.listdir(tmpdir_name):
-                if filename.startswith("og_") and filename.endswith(".mrc"):
-                    renamed_file = os.path.join(tmpdir_name, filename)
-                    break
+                # Check that the existing file was renamed and logged
+                assert f"Renaming {mrc_path}" in caplog.text
 
-            assert renamed_file is not None, "Renamed file not found"
+                # Construct the expected renamed filename using the mock timestamp
+                renamed_file = f"{base}_{mock_timestamp}{ext}"
+
+                # Assert that the renamed file exists
+                assert os.path.exists(renamed_file), "Renamed file not found"
 
         # Load and check that im3 was saved to the original path
         im3_loaded = Image.load(mrc_path)
