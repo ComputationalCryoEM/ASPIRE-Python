@@ -66,7 +66,11 @@ def timestamp_filename(filepath, move=True):
 
     # Rename the existing file by appending the timestamp.
     if move:
-        os.rename(filepath, renamed_filepath)
+        try:
+            os.rename(filepath, renamed_filepath)
+        except FileNotFoundError:
+            logger.warning(f"File '{filepath}' not found, could not rename.")
+            return None
 
     return renamed_filepath
 
