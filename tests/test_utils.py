@@ -21,7 +21,7 @@ from aspire.utils import (
     num_procs_suggestion,
     physical_core_cpu_suggestion,
     powerset,
-    rename_file,
+    timestamp_filename,
     utest_tolerance,
     virtual_core_cpu_suggestion,
 )
@@ -114,7 +114,7 @@ def test_get_full_version_unexpected(monkeypatch):
         assert get_full_version() == __version__ + ".x"
 
 
-def test_rename_file():
+def test_timestamp_filename():
     with tempfile.TemporaryDirectory() as tmpdir_name:
         filepath = os.path.join(tmpdir_name, "test_file.name")
         base, ext = os.path.splitext(filepath)
@@ -124,14 +124,14 @@ def test_rename_file():
             f.write("Test file")
 
         # Case 1: move=False should return the new file name with apended timestamp.
-        renamed_file = rename_file(filepath, move=False)
+        renamed_file = timestamp_filename(filepath, move=False)
         timestamp = datetime.now().strftime("%y%m%d_%H%M")
         assert renamed_file.startswith(f"{base}_{timestamp}") and renamed_file.endswith(
             f"{ext}"
         )
 
         # Case 2: move=True (default) should rename file on disk.
-        renamed_file = rename_file(filepath)
+        renamed_file = timestamp_filename(filepath)
 
         # Check that the original file no longer exists.
         assert not os.path.exists(filepath)
