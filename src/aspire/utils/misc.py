@@ -50,7 +50,7 @@ def importlib_path(package, resource):
     return p
 
 
-def rename_file(filepath, move=True):
+def timestamp_filename(filepath, move=True):
     """
     Rename a file by appending a timestamp to the end of the filename.
 

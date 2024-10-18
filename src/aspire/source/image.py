@@ -28,7 +28,7 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation, grid_2d, rename_file, support_mask, trange
+from aspire.utils import Rotation, grid_2d, support_mask, timestamp_filename, trange
 from aspire.volume import IdentitySymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
@@ -997,7 +997,7 @@ class ImageSource(ABC):
         """
         if overwrite is None and os.path.exists(starfile_filepath):
             # If the file exists, append the timestamp to the old file and rename it
-            renamed_filepath = rename_file(starfile_filepath, move=False)
+            renamed_filepath = timestamp_filename(starfile_filepath, move=False)
 
             # Retrieve original ImageSource and save with new starfile name.
             from aspire.source import RelionSource
