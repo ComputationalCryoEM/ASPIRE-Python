@@ -869,10 +869,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         blksz = 1024
         nblk = (self.n_img + blksz - 1) // blksz
 
-        from time import perf_counter
-
-        logger.info("Launching `estimate_all_angles` kernel.")
-        toc0 = perf_counter()
         for j in range(self.n_img):
 
             # ------------------------------------------
@@ -918,10 +914,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
                 ),
             )
 
-        # Force all kernels to complete before timing
+        # Force all kernels to complete
         cp.cuda.runtime.deviceSynchronize()
-        toc1 = perf_counter()
-        logger.info(f"estimate_all_angles: {toc1-toc0}s")
 
         # Explicitly inform CuPy we longer need these workspace vars
         del hist
@@ -947,9 +941,8 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             ),
         )
 
+        # Force all kernels to complete
         cp.cuda.runtime.deviceSynchronize()
-        toc2 = perf_counter()
-        logger.info(f"angles_to_rots: {toc2-toc1}s")
 
         # transfer results device to host
         rotations = rotations.get()
