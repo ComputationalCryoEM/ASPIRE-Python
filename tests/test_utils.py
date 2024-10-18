@@ -125,7 +125,7 @@ def test_timestamp_filename(caplog):
             f.write("Test file")
 
         # Mock datetime to return a fixed timestamp.
-        mock_datetime_value = datetime(1707, 4, 15, 12, 0, 0)
+        mock_datetime_value = datetime(2024, 10, 18, 12, 0, 0)
         mock_timestamp = mock_datetime_value.strftime("%y%m%d_%H%M%S")
 
         with mock.patch("aspire.utils.misc.datetime") as mock_datetime:

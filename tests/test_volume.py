@@ -334,7 +334,7 @@ def test_save_overwrite(caplog):
 
         # Case 3: overwrite=None (should rename the existing file and save vol3 with original filename)
         # Mock datetime to return a fixed timestamp
-        mock_datetime_value = datetime(1768, 3, 21, 12, 0, 0)
+        mock_datetime_value = datetime(2024, 10, 18, 12, 0, 0)
         with mock.patch("aspire.utils.misc.datetime") as mock_datetime:
             mock_datetime.now.return_value = mock_datetime_value
             mock_datetime.strftime = datetime.strftime
