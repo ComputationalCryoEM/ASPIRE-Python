@@ -4,6 +4,7 @@ import tempfile
 import warnings
 from contextlib import contextmanager
 from datetime import datetime
+from unittest import mock
 
 import matplotlib
 import numpy as np
@@ -114,7 +115,7 @@ def test_get_full_version_unexpected(monkeypatch):
         assert get_full_version() == __version__ + ".x"
 
 
-def test_timestamp_filename():
+def test_timestamp_filename(caplog):
     with tempfile.TemporaryDirectory() as tmpdir_name:
         filepath = os.path.join(tmpdir_name, "test_file.name")
         base, ext = os.path.splitext(filepath)
@@ -123,21 +124,44 @@ def test_timestamp_filename():
         with open(filepath, "w") as f:
             f.write("Test file")
 
-        # Case 1: move=False should return the new file name with apended timestamp.
-        renamed_file = timestamp_filename(filepath, move=False)
-        timestamp = datetime.now().strftime("%y%m%d_%H%M")
-        assert renamed_file.startswith(f"{base}_{timestamp}") and renamed_file.endswith(
-            f"{ext}"
-        )
+        # Mock datetime to return a fixed timestamp.
+        mock_datetime_value = datetime(1707, 4, 15, 12, 0, 0)
+        mock_timestamp = mock_datetime_value.strftime("%y%m%d_%H%M%S")
 
-        # Case 2: move=True (default) should rename file on disk.
-        renamed_file = timestamp_filename(filepath)
+        with mock.patch("aspire.utils.misc.datetime") as mock_datetime:
+            mock_datetime.now.return_value = mock_datetime_value
+            mock_datetime.strftime = datetime.strftime
 
-        # Check that the original file no longer exists.
-        assert not os.path.exists(filepath)
+            # Case 1: move=False should return the new file name with appended timestamp.
+            renamed_file = timestamp_filename(filepath, move=False)
+            assert renamed_file == f"{base}_{mock_timestamp}{ext}"
 
-        # Check that the new file exists on disk with the expected name.
-        assert os.path.exists(renamed_file)
+            # Case 2: move=True (default) should rename file on disk.
+            with caplog.at_level(logging.INFO):
+                renamed_file = timestamp_filename(filepath)
+
+                # Check log for renaming operation.
+                assert f"Renaming {filepath} as {renamed_file}" in caplog.text
+
+                # Check that the original file no longer exists.
+                assert not os.path.exists(filepath)
+
+                # Check that the new file exists on disk with the expected name.
+                assert os.path.exists(renamed_file)
+
+        # Case 3: Test when the file does not exist.
+        non_existent_file = os.path.join(tmpdir_name, "non_existent_file.name")
+        with caplog.at_level(logging.WARNING):
+            result = timestamp_filename(non_existent_file)
+
+            # Check that None is returned since the file doesn't exist.
+            assert result is None
+
+            # Check log for the warning about file not found.
+            assert (
+                f"File '{non_existent_file}' not found, could not rename."
+                in caplog.text
+            )
 
 
 def test_power_set():
