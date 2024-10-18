@@ -163,7 +163,7 @@ jobs:
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} python -c \
         "import aspire; print(aspire.config['ray']['temp_dir'])"
-        ASPIREDIR=${{ env.WORK_DIR }} PYTHONWARNINGS=error python -m pytest --durations=50
+        ASPIREDIR=${{ env.WORK_DIR }} PYTHONWARNINGS=error python -m pytest --durations=50 --cov=aspire --cov-report=xml
     - name: Upload Coverage to CodeCov
       uses: codecov/codecov-action@v4
       with:
