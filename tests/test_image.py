@@ -1,6 +1,8 @@
 import logging
 import os.path
 import tempfile
+from datetime import datetime
+from unittest import mock
 
 import mrcfile
 import numpy as np
@@ -351,6 +353,69 @@ def test_asnumpy_readonly():
     # Attempt assignment
     with raises(ValueError, match=r".*destination is read-only.*"):
         vw[0, 0, 0] = 123
+
+
+def test_save_overwrite(caplog):
+    """
+    Test that the overwrite flag behaves as expected.
+    - overwrite=True: Overwrites the existing file.
+    - overwrite=False: Raises an error if the file exists.
+    - overwrite=None: Renames the existing file and saves the new one.
+    """
+    im1 = Image(np.ones((1, 8, 8), dtype=np.float32))
+    im2 = Image(2 * np.ones((1, 8, 8), dtype=np.float32))
+    im3 = Image(3 * np.ones((1, 8, 8), dtype=np.float32))
+
+    # Create a tmp dir for this test output
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        mrc_path = os.path.join(tmpdir_name, "og.mrc")
+        base, ext = os.path.splitext(mrc_path)
+
+        # Create and save the first image
+        im1.save(mrc_path, overwrite=True)
+
+        # Case 1: overwrite=True (should overwrite the existing file)
+        im2.save(mrc_path, overwrite=True)
+
+        # Load and check if im2 has overwritten im1
+        im2_loaded = Image.load(mrc_path)
+        np.testing.assert_allclose(im2.asnumpy(), im2_loaded.asnumpy())
+
+        # Case 2: overwrite=False (should raise an overwrite error)
+        with pytest.raises(
+            ValueError,
+            match="File '.*' already exists; set overwrite=True to overwrite it",
+        ):
+            im3.save(mrc_path, overwrite=False)
+
+        # Case 3: overwrite=None (should rename the existing file and save im3 with original filename)
+        # Mock datetime to return a fixed timestamp.
+        mock_datetime_value = datetime(2024, 10, 18, 12, 0, 0)
+        with mock.patch("aspire.utils.misc.datetime") as mock_datetime:
+            mock_datetime.now.return_value = mock_datetime_value
+            mock_datetime.strftime = datetime.strftime
+
+            with caplog.at_level(logging.INFO):
+                im3.save(mrc_path, overwrite=None)
+
+                # Check that the existing file was renamed and logged
+                assert f"Renaming {mrc_path}" in caplog.text
+
+                # Construct the expected renamed filename using the mock timestamp
+                mock_timestamp = mock_datetime_value.strftime("%y%m%d_%H%M%S")
+                renamed_file = f"{base}_{mock_timestamp}{ext}"
+
+                # Assert that the renamed file exists
+                assert os.path.exists(renamed_file), "Renamed file not found"
+
+        # Load and check that im3 was saved to the original path
+        im3_loaded = Image.load(mrc_path)
+        np.testing.assert_allclose(im3.asnumpy(), im3_loaded.asnumpy())
+
+        # Also check that the renamed file still contains im2's data
+        im2_loaded_renamed = Image.load(renamed_file)
+        np.testing.assert_allclose(im2.asnumpy(), im2_loaded_renamed.asnumpy())
 
 
 def test_corrupt_mrc_load(caplog):
