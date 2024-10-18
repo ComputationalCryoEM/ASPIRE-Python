@@ -1,8 +1,36 @@
+#include "stdint.h"
+#include "math.h"
 
-/* from i,j indices to the common index in the N-choose-2 sized array */
+/* From i,j indices to the common index in the N-choose-2 sized array */
+/* Careful, this is strictly the upper triangle! */
 #define PAIR_IDX(N,I,J) ((2*N-I-1)*I/2 + J-I-1)
 
 
+/* convert euler angles (a,b,c) in ZYZ to rotation matrix r */
+__host__ __device__
+inline void ang2orth(double* r, double a, double b, double c){
+  double sa = sin(a);
+  double sb = sin(b);
+  double sc = sin(c);
+  double ca = cos(a);
+  double cb = cos(b);
+  double cc = cos(c);
+
+  /* ZYZ Proper Euler angles */
+  /* https://en.wikipedia.org/wiki/Euler_angles#Rotation_matrix */
+  r[0] = ca*cb*cc - sa*sc;
+  r[1] = -cc*sa -ca*cb*sc;
+  r[2] = ca*sb;
+  r[3] = ca*sc + cb*cc*sa;
+  r[4] = ca*cc - cb*sa*sc;
+  r[5] = sa*sb;
+  r[6] = -cc*sb;
+  r[7] = sb*sc;
+  r[8] = cb;
+}
+
+
+__host__ __device__
 inline void mult_3x3(double *out, double *R1, double *R2) {
   /* 3X3 matrices multiplication: out = R1*R2
    * Note, this differs from the MATLAB mult_3x3.
@@ -20,6 +48,7 @@ inline void mult_3x3(double *out, double *R1, double *R2) {
   }
 }
 
+__host__ __device__
 inline void JRJ(double *R, double *A) {
   /* multiple 3X3 matrix by J from both sizes: A = JRJ */
   A[0]=R[0];
@@ -33,6 +62,7 @@ inline void JRJ(double *R, double *A) {
   A[8]=R[8];
 }
 
+__host__ __device__
 inline double diff_norm_3x3(const double *R1, const double *R2) {
   /* difference 2 matrices and return squared norm: ||R1-R2||^2 */
   int i;
@@ -413,3 +443,273 @@ void triangle_scores_inner(int n, double* Rijs, int n_intervals, unsigned int* s
 
   return;
 };
+
+extern "C" __global__
+void estimate_all_angles1(int j,
+                          int n,
+                          int n_theta,
+                          double hist_bin_width,
+                          int full_width,
+                          double sigma,
+                          int sync,
+                          int16_t* __restrict__ clmatrix,
+                          double* __restrict__ hist,
+                          uint16_t* __restrict__ k_map,
+                          double* __restrict__ angles_map,
+                          double* __restrict__ angles)
+{
+  /* n n_img */
+  /* j is image j index */
+
+  /* thread index represents "i" index */
+  const unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+  /* thread index represents "k" index */
+  const unsigned int k = blockDim.y * blockIdx.y + threadIdx.y;
+
+  int cl_diff1, cl_diff2, cl_diff3;
+  double theta1, theta2, theta3;
+  double c1, c2, c3;
+  double cond;
+  double cos_phi2;
+  double w_theta_need;
+
+  /* no-op when out of bounds */
+  if(i >= n) return;
+  if(k >= n) return;
+  if(i >= j) return;
+  /*
+    These are also tested later via the clmatrix values,
+    testing now avoids extra reads.
+  */
+  if(k==i) return;
+  if(k==j) return;
+
+  int map_idx; /* tmp index var */
+
+  int cl_idx12, cl_idx21;
+  int cl_idx13, cl_idx31;
+  int cl_idx23, cl_idx32;
+  const int ntics = 180. / hist_bin_width;
+  const double TOL_idx = 1e-12;
+  bool ind1, ind2;
+  double grid_angle, angle_diff, angle;
+  int b;
+  const double two_sigma_sq = 2*sigma*sigma;
+
+
+  const int pair_idx = PAIR_IDX(n,i,j);
+
+  cl_idx12 = clmatrix[i*n + j];
+  cl_idx21 = clmatrix[j*n + i];
+  /*
+    MATLAB code indicated this condition might occur outside i==j;
+    Ask Yoel what other reasons this would occur.
+  */
+  if(cl_idx12 == -1) return;
+
+  /* Assume that k_list starts as all n images */
+
+  cl_idx13 = clmatrix[i*n + k];
+  cl_idx31 = clmatrix[k*n + i];
+  cl_idx23 = clmatrix[j*n + k];
+  cl_idx32 = clmatrix[k*n + j];
+
+  /* test `k` values */
+  if(cl_idx13 == -1) return;  /* i, k */
+  if(cl_idx23 == -1) return;  /* j, k */
+
+  /* get cosine angles */
+  cl_diff1 = cl_idx13 - cl_idx12;
+  cl_diff2 = cl_idx23 - cl_idx21;
+  cl_diff3 = cl_idx32 - cl_idx31;
+
+  theta1 = cl_diff1 * 2 * M_PI / n_theta;
+  theta2 = cl_diff2 * 2 * M_PI / n_theta;
+  theta3 = cl_diff3 * 2 * M_PI / n_theta;
+
+  c1 = cos(theta1);
+  c2 = cos(theta2);
+  c3 = cos(theta3);
+
+  /* test if we have a good index */
+  cond = 1 + 2 * c1 * c2 * c3 - (c1*c1 + c2*c2 + c3*c3);
+  if(cond <= 1e-5) return;  /* current value of k is not good, skip */
+
+  /* Calculated cos values of angle between i and j images */
+  if( sync == 1){
+
+    cos_phi2 = (c3 - c1*c2) / (sqrt(1 - c1*c1) * sqrt(1 - c2*c2));
+
+    /*
+      Some synchronization must be applied when common line is out by 180 degrees.
+      Here fix the angles between c_ij(c_ji) and c_ik(c_jk) to be smaller than pi/2,
+      otherwise there will be an ambiguity between alpha and pi-alpha.
+    */
+
+    /* Check sync conditions */
+    ind1 = (theta1 > (M_PI + TOL_idx)) || (
+        (theta1 < -TOL_idx) && (theta1 > -M_PI)
+                                           );
+    ind2 = (theta2 > (M_PI + TOL_idx)) || (
+        (theta2 < -TOL_idx) && (theta2 > -M_PI)
+                                           );
+    if( (ind1 && !ind2) || (!ind1 && ind2)){
+      /* Apply sync */
+      cos_phi2 = -cos_phi2;
+    }
+
+  }  /* end sync */
+  else{
+    cos_phi2 = (c3 - c1*c2 ) / (sin(theta1) * sin(theta2));
+  } /* end not sync */
+
+  /* clip cosine phi between [-1,1] */
+  if(cos_phi2 > 1){
+    cos_phi2 = 1;
+  }
+  if(cos_phi2 < -1){
+    cos_phi2 = -1;
+  }
+
+  /* compute histogram contribution, angle mapping, and index mappings. */
+  angle = acos(cos_phi2) * 180. / M_PI;
+  /* index of angle's bin */
+  map_idx = i*n + k;
+  /*
+    For each k, keep track of bin and angles.
+    Note, this is slightly different than the host
+    which uses slightly different angle/hist grids (likely an oversight).
+  */
+  k_map[map_idx] = angle / hist_bin_width;
+  angles_map[map_idx] = angle;  /* degrees */
+  for(b=0; b<ntics; b++){
+    /* Potential optimization, just compute in radians to avoid extra arithmetic. */
+    grid_angle = b * (180./ntics);  /* grid angle */
+    angle_diff = (grid_angle - angle);
+    /* accumulate histogram contribution, atomic due to concurrent `k` */
+    atomicAdd(&(hist[i*ntics + b ]),
+              exp(-(angle_diff*angle_diff) / ( two_sigma_sq)));
+  } /* b bins */
+
+  /*
+    At this point, the kernel should have accumulated all "good"
+    k contributions into the histogram for I, j.
+    The next kernel solves the histogram.
+
+    The two known euler angles are initialized while we have the cl_idx values.
+  */
+
+  /* Initialize euler angles */
+  /* Can be done once, but checking seemed to make the kernel slower... */
+  {
+    map_idx = pair_idx*3;
+    angles[map_idx    ] = cl_idx12 * 2 * M_PI / n_theta + M_PI / 2;
+    angles[map_idx + 1] = 0;
+    angles[map_idx + 2] = -M_PI / 2 - cl_idx21 * 2 * M_PI / n_theta;
+  }
+} /* estimate_all_angles1 kernel */
+
+
+
+
+extern "C" __global__
+void estimate_all_angles2(int j,
+                          int n,
+                          double hist_bin_width,
+                          int full_width,
+                          double* __restrict__ hist,
+                          uint16_t* __restrict__ k_map,
+                          double* __restrict__ angles_map,
+                          double* __restrict__ angles)
+{
+  /* n n_img */
+  /* j is image j index */
+
+  /* thread index (1d), represents image i index */
+  const unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+  int k;
+  int cnt;
+  double w_theta_needed;
+
+  /* no-op when out of bounds */
+  if(i >= n) return;
+  if(i >= j) return;
+
+  int map_idx; /* tmp index var */
+
+  const int ntics = 180. / hist_bin_width;
+  int b;
+  int peak_idx;
+  double peak;
+
+  const int pair_idx = PAIR_IDX(n,i,j);
+
+  /* Find peak and peak index in histogram */
+  peak = -99999;
+  peak_idx = -1;
+  for(b=0; b<ntics; b++){
+    map_idx = i*ntics + b;
+    if(hist[map_idx] > peak){
+      peak = hist[map_idx];
+      peak_idx = b;
+    }
+  }
+
+  /* find mean of rotations */
+
+  if(full_width==-1){
+    /* adaptive width*/
+    w_theta_needed = 0;
+    cnt = 0;
+    while(cnt == 0){
+      /* broaden search width */
+      w_theta_needed += hist_bin_width;
+      /* find satisfying indices */
+      for(k=0; k<n; k++){
+        /* determine if image k in peak bin(s) */
+        // Perhaps transpose the maps so thread i fast
+        map_idx = i*n + k;
+        if(abs(k_map[map_idx] - peak_idx) < w_theta_needed){
+          cnt += 1;  /* count this image */
+          angles[pair_idx*3 + 1] += angles_map[map_idx];  /* accumulate angle */
+        } /* < w_theta_needed */
+      } /* k */
+    } /* cnt */
+  } /* full_width -1, adaptive */
+  else {
+    /* fixed width */
+    cnt = 0;
+    /* determine if image k in peak bin(s) */
+    for(k=0; k<n; k++){
+      map_idx = i*n + k;
+      if(abs(k_map[map_idx] - peak_idx) < full_width){
+        cnt += 1;  /* count this image */
+        angles[pair_idx*3 + 1] += angles_map[map_idx];  /* accumulate angle */
+      } /* full_width */
+    } /* k */
+  } /* fixed width */
+
+  /* Divide accumulated angles (resulting in the mean alpha angle) */
+  // (todo, can we have cnt = 0?)
+  /* convert degree to radian */
+  angles[pair_idx*3 + 1] *= M_PI / (180*cnt);
+
+} /* estimate_all_angles2 kernel */
+
+extern "C" __global__
+void angles_to_rots(int n,
+                    double* __restrict__ angles,
+                    double* __restrict__ rotations)
+{
+  /* Convert stack of ZYZ Euler angles to stack of rotation matrices */
+
+  /* thread index (1d), represents "i" index */
+  unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
+
+  /* no-op when out of bounds */
+  if(i >= n) return;
+
+  ang2orth(&(rotations[i*9]), angles[i*3], angles[i*3+1], angles[i*3+2]);
+
+}

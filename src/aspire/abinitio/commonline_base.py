@@ -1,12 +1,13 @@
 import logging
 import math
+import os
 
 import numpy as np
 import scipy.sparse as sparse
 
 from aspire.image import Image
 from aspire.operators import PolarFT
-from aspire.utils import common_line_from_rots, fuzzy_mask, tqdm
+from aspire.utils import common_line_from_rots, complex_type, fuzzy_mask, tqdm
 from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
@@ -60,13 +61,38 @@ class CLOrient3D:
         self.n_theta = n_theta
         self.n_check = n_check
         self.hist_bin_width = hist_bin_width
-        self.full_width = full_width
+        if str(full_width).lower() == "adaptive":
+            full_width = -1
+        self.full_width = int(full_width)
         self.clmatrix = None
         self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
         self.mask = mask
         self.rotations = None
         self._pf = None
+
+        # Sanity limit to match potential clmatrix dtype of int16.
+        if self.n_img > (2**15 - 1):
+            raise NotImplementedError(
+                "Commonlines implementation limited to <2**15 images."
+            )
+
+        # Auto configure GPU
+        self.__gpu_module = None
+        try:
+            import cupy as cp
+
+            if cp.cuda.runtime.getDeviceCount() >= 1:
+                gpu_id = cp.cuda.runtime.getDevice()
+                logger.info(
+                    f"cupy and GPU {gpu_id} found by cuda runtime; enabling cupy."
+                )
+                self.__gpu_module = self.__init_cupy_module()
+            else:
+                logger.info("GPU not found, defaulting to numpy.")
+
+        except ModuleNotFoundError:
+            logger.info("cupy not found, defaulting to numpy.")
 
         self._build()
 
@@ -129,6 +155,24 @@ class CLOrient3D:
         raise NotImplementedError("subclasses should implement this")
 
     def build_clmatrix(self):
+        """
+        Build common-lines matrix from Fourier stack of 2D images
+
+        Wrapper for cpu/gpu dispatch.
+        """
+
+        logger.info("Begin building Common Lines Matrix")
+
+        # host/gpu dispatch
+        if self.__gpu_module:
+            res = self.build_clmatrix_cu()
+        else:
+            res = self.build_clmatrix_host()
+
+        # Unpack result
+        self.shifts_1d, self.clmatrix = res
+
+    def build_clmatrix_host(self):
         """
         Build common-lines matrix from Fourier stack of 2D images
         """
@@ -233,8 +277,102 @@ class CLOrient3D:
                 pbar.update()
         pbar.close()
 
-        self.clmatrix = clmatrix
-        self.shifts_1d = shifts_1d
+        return shifts_1d, clmatrix
+
+    def build_clmatrix_cu(self):
+        """
+        Build common-lines matrix from Fourier stack of 2D images
+        """
+
+        import cupy as cp
+
+        n_img = self.n_img
+        r = self.pf.shape[2]
+
+        if self.n_theta % 2 == 1:
+            msg = "n_theta must be even"
+            logger.error(msg)
+            raise NotImplementedError(msg)
+
+        # Copy to prevent modifying self.pf for other functions
+        # Simultaneously place on GPU
+        pf = cp.array(self.pf)
+
+        # Allocate local variables for return
+        # clmatrix represents the common lines matrix.
+        # Namely, clmatrix[i,j] contains the index in image i of
+        # the common line with image j. Note the common line index
+        # starts from 0 instead of 1 as Matlab version. -1 means
+        # there is no common line such as clmatrix[i,i].
+        clmatrix = -cp.ones((n_img, n_img), dtype=np.int16)
+
+        # Allocate variables used for shift estimation
+        #
+        # Set maximum value of 1D shift (in pixels) to search
+        # between common-lines.
+        # Set resolution of shift estimation in pixels. Note that
+        # shift_step can be any positive real number.
+        #
+        # Prepare the shift phases to try and generate filter for common-line detection
+        #
+        # Note the CUDA implementation has been optimized to not
+        # compute or return diagnostic 1d shifts.
+        _, shift_phases, h = self._generate_shift_phase_and_filter(
+            r, self.max_shift, self.shift_step
+        )
+        # Transfer to device, dtypes must match kernel header.
+        shift_phases = cp.asarray(shift_phases, dtype=complex_type(self.dtype))
+
+        # Apply bandpass filter, normalize each ray of each image
+        # Note that this only uses half of each ray
+        pf = self._apply_filter_and_norm("ijk, k -> ijk", pf, r, h)
+
+        # Tranpose `pf` for better (CUDA) memory access pattern, and cast as needed.
+        pf = cp.ascontiguousarray(pf.T, dtype=complex_type(self.dtype))
+
+        # Get kernel
+        if self.dtype == np.float64:
+            build_clmatrix_kernel = self.__gpu_module.get_function(
+                "build_clmatrix_kernel"
+            )
+        elif self.dtype == np.float32:
+            build_clmatrix_kernel = self.__gpu_module.get_function(
+                "fbuild_clmatrix_kernel"
+            )
+        else:
+            raise NotImplementedError(
+                "build_clmatrix_kernel only implemented for float32 and float64."
+            )
+
+        # Configure grid of blocks
+        blkszx = 32
+        # Enough blocks to cover n_img-1
+        nblkx = (self.n_img + blkszx - 2) // blkszx
+        blkszy = 32
+        # Enough blocks to cover n_img
+        nblky = (self.n_img + blkszy - 1) // blkszy
+
+        # Launch
+        logger.info("Launching `build_clmatrix_kernel`.")
+        build_clmatrix_kernel(
+            (nblkx, nblky),
+            (blkszx, blkszy),
+            (
+                n_img,
+                pf.shape[1],
+                r,
+                pf,
+                clmatrix,
+                len(shift_phases),
+                shift_phases,
+            ),
+        )
+
+        # Copy result device arrays to host
+        clmatrix = clmatrix.get().astype(self.dtype, copy=False)
+
+        # Note diagnostic 1d shifts are not computed in the CUDA implementation.
+        return None, clmatrix
 
     def estimate_shifts(self, equations_factor=1, max_memory=4000):
         """
@@ -488,10 +626,10 @@ class CLOrient3D:
         n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
 
         # only half of ray, excluding the DC component.
-        rk = np.arange(1, r_max + 1)
+        rk = np.arange(1, r_max + 1, dtype=self.dtype)
 
         # Generate all shift phases
-        shifts = -max_shift + shift_step * np.arange(n_shifts)
+        shifts = -max_shift + shift_step * np.arange(n_shifts, dtype=self.dtype)
         shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
         # Set filter for common-line detection
         h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
@@ -556,7 +694,7 @@ class CLOrient3D:
 
         # Note if we'd rather not have the dtype and casting args,
         #   we can control h.dtype instead.
-        np.einsum(subscripts, pf, h, out=pf, dtype=pf.dtype, casting="same_kind")
+        pf = np.einsum(subscripts, pf, h, dtype=pf.dtype)
 
         # This is a high pass filter, cutting out the lowest frequency
         # (DC has already been removed).
@@ -564,3 +702,27 @@ class CLOrient3D:
         pf /= np.linalg.norm(pf, axis=-1)[..., np.newaxis]
 
         return pf
+
+    @staticmethod
+    def __init_cupy_module():
+        """
+        Private utility method to read in CUDA source and return as
+        compiled CuPy module.
+        """
+
+        import cupy as cp
+
+        # Read in contents of file
+        fp = os.path.join(os.path.dirname(__file__), "commonline_base.cu")
+        with open(fp, "r") as fh:
+            module_code = fh.read()
+
+        # CuPy compile the CUDA code
+        # Note these optimizations are to steer aggresive optimization
+        # for single precision code.  Fast math will potentionally
+        # reduce accuracy in single precision.
+        return cp.RawModule(
+            code=module_code,
+            backend="nvcc",
+            options=("-O3", "--use_fast_math", "--extra-device-vectorization"),
+        )
