@@ -2,7 +2,9 @@ import logging
 import os
 import tempfile
 import warnings
+from datetime import datetime
 from itertools import product
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -331,20 +333,24 @@ def test_save_overwrite(caplog):
             vol3.save(mrc_path, overwrite=False)
 
         # Case 3: overwrite=None (should rename the existing file and save vol3 with original filename)
-        with caplog.at_level(logging.INFO):
-            vol3.save(mrc_path, overwrite=None)
+        # Mock datetime to return a fixed timestamp
+        mock_datetime_value = datetime(1768, 3, 21, 12, 0, 0)
+        with mock.patch("aspire.utils.misc.datetime") as mock_datetime:
+            mock_datetime.now.return_value = mock_datetime_value
+            mock_datetime.strftime = datetime.strftime
 
-            # Check that the existing file was renamed and logged
-            assert f"Renaming {mrc_path}" in caplog.text
+            with caplog.at_level(logging.INFO):
+                vol3.save(mrc_path, overwrite=None)
 
-            # Find the renamed file by checking the directory contents
-            renamed_file = None
-            for filename in os.listdir(tmpdir_name):
-                if filename.startswith("og_") and filename.endswith(".mrc"):
-                    renamed_file = os.path.join(tmpdir_name, filename)
-                    break
+                # Check that the existing file was renamed and logged
+                assert f"Renaming {mrc_path}" in caplog.text
 
-            assert renamed_file is not None, "Renamed file not found"
+                # Construct the expected renamed filename using the mock timestamp
+                mock_timestamp = mock_datetime_value.strftime("%y%m%d_%H%M%S")
+                renamed_file = f"{base}_{mock_timestamp}{ext}"
+
+                # Assert that the renamed file exists
+                assert os.path.exists(renamed_file), "Renamed file not found"
 
         # Load and check that vol3 was saved to the original path
         vol3_loaded = Volume.load(mrc_path)
