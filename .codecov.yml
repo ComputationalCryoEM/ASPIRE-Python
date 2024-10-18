@@ -11,3 +11,6 @@ coverage:
         informational: true
 ignore:
   - "*/tests/*"
+# Remove path prefix for CodeCov processing on caf/decaf
+fixes:
+  - "/var/ci/_work/::"
