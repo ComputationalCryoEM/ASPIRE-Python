@@ -1624,9 +1624,9 @@ class OrientedSource(IndexedSource):
         self._orient()
         return super().offsets
 
-    @IndexedSource.offsets.setter
+    @offsets.setter
     def offsets(self, values):
-        IndexedSource.offsets.fset(self, values)
+        super(__class__, self.__class__).offsets.fset(self, values)
 
     def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
         self._orient()
