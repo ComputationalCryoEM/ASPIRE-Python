@@ -28,8 +28,8 @@ class CLOrient3D:
         full_width=6,
         max_shift=0.15,
         shift_step=1,
-        est_shifts_max_shift=None,
-        est_shift_shift_step=None,
+        offsets_max_shift=None,
+        offsets_shift_step=None,
         mask=True,
     ):
         """
