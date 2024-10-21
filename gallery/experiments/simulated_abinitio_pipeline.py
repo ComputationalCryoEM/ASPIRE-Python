@@ -66,7 +66,7 @@ def noise_function(x, y):
     # White
     f1 = noise_variance
     # Violet-ish
-    f2 = noise_variance * (x * x + y * y) / img_size * img_size
+    f2 = noise_variance * (x * x + y * y) / (img_size * img_size)
     return (alpha * f1 + beta * f2) / 2.0
 
 
