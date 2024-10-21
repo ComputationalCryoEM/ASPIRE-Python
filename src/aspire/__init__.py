@@ -98,4 +98,5 @@ if parse_version(np.version.version) >= parse_version("2.0.0"):
             "crash relating to mismatched dtypes or a Numpy call please try"
             ' `pip install "numpy<2"` and report to ASPIRE developers.',
             ImportWarning,
+            stacklevel=1,
         )
