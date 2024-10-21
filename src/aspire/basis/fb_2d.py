@@ -5,8 +5,6 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
-from aspire.utils import roll_dim, unroll_dim
-from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +187,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
-        mask = m_flatten(self.basis_coords["mask"])
+        mask = self.basis_coords["mask"].flatten()
 
         ind = 0
         ind_radial = 0
@@ -220,32 +218,28 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return x
 
-    def _evaluate_t(self, v):
+    def _evaluate_t(self, x):
         """
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
-        :param v: The coefficient array to be evaluated. The last dimensions
+        :param x: The coefficient array to be evaluated. The last dimensions
             must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual basis
             of `basis`. This is an array of vectors whose last dimension equals
             `self.count` and whose first dimensions correspond to
             first dimensions of `v`.
         """
-        v = v.T
-        x, sz_roll = unroll_dim(v, self.ndim + 1)
-        x = m_reshape(
-            x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
-        )
+        x = x.reshape(x.shape[0], -1)
 
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
-        mask = m_flatten(self.basis_coords["mask"])
+        mask = self.basis_coords["mask"].flatten()
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])), dtype=v.dtype)
+        v = np.zeros((x.shape[0], self.count), dtype=x.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
@@ -259,14 +253,13 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
                 ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, k_max)
-                v[idx] = ang_radial.T @ x[mask]
+                v[:, idx] = x[:, mask] @ ang_radial
                 ind += len(idx)
                 ind_ang += 1
 
             ind_radial += len(idx_radial)
 
-        v = roll_dim(v, sz_roll)
-        return v.T  # RCOPT
+        return v
 
     def calculate_bispectrum(
         self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
