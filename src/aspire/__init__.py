@@ -95,7 +95,7 @@ if parse_version(np.version.version) >= parse_version("2.0.0"):
         warnings.simplefilter("default")
         warnings.warn(
             "ASPIRE's Numpy 2 support is in beta.  If you experience a runtime"
-            "crash relating to mismatched dtypes or a Numpy call please try"
+            " crash relating to mismatched dtypes or a Numpy call please try"
             ' `pip install "numpy<2"` and report to ASPIRE developers.',
             ImportWarning,
             stacklevel=1,
