@@ -731,7 +731,7 @@ class ImageSource(ABC):
         )
 
     @_as_copy
-    def cache(self):
+    def cache(self, batch_size=512):
         """
         Computes all queued pipeline transformations and stores the
         generated images in an array.  This trades memory for fast
@@ -739,7 +739,11 @@ class ImageSource(ABC):
         queried since it avoids recomputing on-the-fly.
         """
         logger.info("Caching source images")
-        self._cached_im = self.images[:]
+        im = np.empty((len(self), self.L, self.L), self.dtype)
+        for start in trange(0, len(self), batch_size):
+            end = min(start + batch_size, len(self))
+            im[start:end] = self.images[start:end]
+        self._cached_im = Image(im)
         self.generation_pipeline.reset()
 
     @property
