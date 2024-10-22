@@ -1,5 +1,5 @@
 """
-Miscellaneous Utilities that have no better place (yet).
+Miscellaneous utilities that have no better place (yet).
 """
 
 import hashlib

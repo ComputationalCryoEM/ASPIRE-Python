@@ -31,9 +31,9 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             May be a 2-tuple or an integer, in which case a square basis is assumed.
             Currently only square images are supported.
         :ell_max: The maximum order ell of the basis elements. If no input
-            (= None), it will be set to np.Inf and the basis includes all
+            (= None), it will be set to np.inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
-            below the Nyquist frequency (default Inf).
+            below the Nyquist frequency (default inf).
         """
 
         if isinstance(size, int):

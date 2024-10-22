@@ -264,7 +264,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         # Enforce we are returning actual rotations
         rotations = nearest_rotations(rotations, allow_reflection=True)
 
-        return rotations.astype(self.dtype)
+        return rotations.astype(self.dtype, copy=False)
 
     def _construct_sync3n_matrix(self, Rij):
         """
