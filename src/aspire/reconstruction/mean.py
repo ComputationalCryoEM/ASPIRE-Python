@@ -5,9 +5,10 @@ import numpy as np
 from scipy.linalg import norm
 from scipy.sparse.linalg import LinearOperator
 
+from aspire import config
 from aspire.basis import Coef
 from aspire.nufft import anufft
-from aspire.numeric import config, fft
+from aspire.numeric import fft
 from aspire.numeric.scipy import cg
 from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel, FourierKernelMatrix
@@ -211,7 +212,6 @@ class WeightedVolumesEstimator(Estimator):
             precond_kernel = self.precond_kernel
             if regularizer > 0:
                 precond_kernel += regularizer
-
             M = LinearOperator(
                 (self.r * count, self.r * count),
                 matvec=partial(self.apply_kernel, kernel=precond_kernel),
