@@ -2,6 +2,8 @@ import itertools
 import logging
 import os
 import tempfile
+from datetime import datetime
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -301,6 +303,84 @@ def test_sim_save():
             img_src.get_metadata("_rlnDefocusU"),
             mg_sim.simulation.get_metadata("_rlnDefocusU"),
         )
+
+
+def test_save_overwrite(caplog):
+    """
+    Tests MicrographSimulation.save functionality.
+
+    Specifically tests interoperability with CentersCoordinateSource
+    """
+
+    v = AsymmetricVolume(L=16, C=1, dtype=np.float64).generate()
+    ctfs = [
+        RadialCTFFilter(
+            pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
+        )
+    ]
+
+    mg_sim = MicrographSimulation(
+        volume=v,
+        particles_per_micrograph=3,
+        interparticle_distance=v.resolution,
+        micrograph_count=2,
+        micrograph_size=512,
+        ctf_filters=ctfs,
+    )
+
+    mg_sim_new = MicrographSimulation(
+        volume=v,
+        particles_per_micrograph=4,
+        interparticle_distance=v.resolution,
+        micrograph_count=3,
+        micrograph_size=512,
+        ctf_filters=ctfs,
+    )
+
+    with tempfile.TemporaryDirectory() as tmp_output_dir:
+        path = os.path.join(tmp_output_dir, "test")
+
+        # Write MRC and STAR files
+        save_paths_1 = mg_sim.save(path, overwrite=True)
+
+        # Case 1: overwrite=True (should overwrite the existing file)
+        save_paths_2 = mg_sim.save(path, overwrite=True)
+        np.testing.assert_array_equal(save_paths_1, save_paths_2)
+
+        # Case2: overwrite=False (should raise error)
+        with pytest.raises(
+            FileExistsError,
+            match="File exists: '.*'",
+        ):
+            _ = mg_sim.save(path, overwrite=False)
+
+        # Case 3: overwrite=None (should rename the existing directory)
+        mock_datetime_value = datetime(2024, 10, 18, 12, 0, 0)
+        with mock.patch("aspire.utils.misc.datetime") as mock_datetime:
+            mock_datetime.now.return_value = mock_datetime_value
+            mock_datetime.strftime = datetime.strftime
+
+            with caplog.at_level(logging.INFO):
+                _ = mg_sim_new.save(path, overwrite=None)
+
+                # Check that the existing directory was renamed and logged
+                assert f"Renaming {path}" in caplog.text
+                assert os.path.exists(path), "Directory not found"
+
+                # Construct the expected renamed directory using the mock timestamp
+                mock_timestamp = mock_datetime_value.strftime("%y%m%d_%H%M%S")
+                renamed_dir = f"{path}_{mock_timestamp}"
+
+                # Assert that the renamed file exists
+                assert os.path.exists(renamed_dir), "Renamed directory not found"
+
+                # Load renamed directory and check images against orignal sim.
+                mg_src = DiskMicrographSource(renamed_dir)
+                np.testing.assert_allclose(mg_src.asnumpy(), mg_sim.asnumpy())
+
+                # Load new directory and check images against orignal sim.
+                mg_src_new = DiskMicrographSource(path)
+                np.testing.assert_allclose(mg_src_new.asnumpy(), mg_sim_new.asnumpy())
 
 
 def test_bad_amplitudes(vol_fixture):
