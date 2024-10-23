@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import pytest
 
-from aspire.abinitio import CLSymmetryC3C4, CLSymmetryCn, CLSyncVoting
+from aspire.abinitio import CLSymmetryC3C4, CLSymmetryCn, CLSync3N, CLSyncVoting
 from aspire.source import OrientedSource, Simulation
 from aspire.volume import CnSymmetricVolume
 
@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 ESTIMATOR_SYMMETRY = [
     (CLSyncVoting, None),
+    (CLSync3N, None),
     (CLSymmetryC3C4, "C4"),
     pytest.param((CLSymmetryCn, "C6"), marks=pytest.mark.expensive),
 ]
@@ -80,7 +81,7 @@ def test_default_estimator(src_fixture):
 
     # Instantiate OrientedSource without providing orientation estimator.
     oriented_src = OrientedSource(og_src)
-    assert isinstance(oriented_src.orientation_estimator, CLSyncVoting)
+    assert isinstance(oriented_src.orientation_estimator, CLSync3N)
 
 
 def test_estimator_error(src_fixture):

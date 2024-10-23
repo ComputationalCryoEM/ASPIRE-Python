@@ -9,7 +9,7 @@ from collections.abc import Iterable
 import mrcfile
 import numpy as np
 
-from aspire.abinitio import CLOrient3D, CLSyncVoting
+from aspire.abinitio import CLOrient3D, CLSync3N
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
     Downsample,
@@ -731,7 +731,7 @@ class ImageSource(ABC):
         )
 
     @_as_copy
-    def cache(self):
+    def cache(self, batch_size=512):
         """
         Computes all queued pipeline transformations and stores the
         generated images in an array.  This trades memory for fast
@@ -739,7 +739,11 @@ class ImageSource(ABC):
         queried since it avoids recomputing on-the-fly.
         """
         logger.info("Caching source images")
-        self._cached_im = self.images[:]
+        im = np.empty((len(self), self.L, self.L), self.dtype)
+        for start in trange(0, len(self), batch_size):
+            end = min(start + batch_size, len(self))
+            im[start:end] = self.images[start:end]
+        self._cached_im = Image(im)
         self.generation_pipeline.reset()
 
     @property
@@ -1506,7 +1510,7 @@ class OrientedSource(IndexedSource):
 
         :param src: Source used for orientation estimation
         :param orientation_estimator: CLOrient3D subclass used for orientation estimation.
-            Default uses the CLSyncVoting method.
+            Default uses the CLSync3N method.
         """
 
         self.src = src
@@ -1530,7 +1534,7 @@ class OrientedSource(IndexedSource):
         self._oriented = False
 
         if orientation_estimator is None:
-            orientation_estimator = CLSyncVoting(src)
+            orientation_estimator = CLSync3N(src)
 
         self.orientation_estimator = orientation_estimator
         if not isinstance(self.orientation_estimator, CLOrient3D):
@@ -1553,13 +1557,14 @@ class OrientedSource(IndexedSource):
             return
 
         logger.info(
-            f"Estimating rotations for {self.src} using {self.orientation_estimator}."
+            f"Estimating rotations and shifts for {self.src} using {self.orientation_estimator}."
         )
-        self.orientation_estimator.estimate_rotations()
+        self.orientation_estimator.estimate()
 
         # Allow mutability to set rotations.
         self._mutable = True
         self.rotations = self.orientation_estimator.rotations
+        self.offsets = self.orientation_estimator.shifts
         self._mutable = False
 
         self._oriented = True
@@ -1569,7 +1574,13 @@ class OrientedSource(IndexedSource):
         Remove orientation information passed in by original source.
         """
         _info_removed = False
-        rot_keys = ["_rlnAngleRot", "_rlnAngleTilt", "_rlnAnglePsi"]
+        rot_keys = [
+            "_rlnAngleRot",
+            "_rlnAngleTilt",
+            "_rlnAnglePsi",
+            "_rlnOriginX",
+            "_rlnOriginY",
+        ]
         for key in rot_keys:
             if self.has_metadata(key):
                 del self._metadata[key]
@@ -1592,6 +1603,15 @@ class OrientedSource(IndexedSource):
     def _angles(self):
         self._orient()
         return super()._angles()
+
+    @property
+    def offsets(self):
+        self._orient()
+        return super().offsets
+
+    @offsets.setter
+    def offsets(self, values):
+        super(__class__, self.__class__).offsets.fset(self, values)
 
     def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
         self._orient()
