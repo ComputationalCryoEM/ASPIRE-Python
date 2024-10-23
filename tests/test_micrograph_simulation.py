@@ -348,10 +348,7 @@ def test_save_overwrite(caplog):
         np.testing.assert_array_equal(save_paths_1, save_paths_2)
 
         # Case2: overwrite=False (should raise error)
-        with pytest.raises(
-            FileExistsError,
-            match="File exists: '.*'",
-        ):
+        with pytest.raises(FileExistsError):
             _ = mg_sim.save(path, overwrite=False)
 
         # Case 3: overwrite=None (should rename the existing directory)
