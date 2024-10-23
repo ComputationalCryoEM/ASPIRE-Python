@@ -92,10 +92,13 @@ rots_true = sim.rotations
 # when searching for common-lines between pairs of images. Additionally, since we are
 # processing images with no noise, we opt not to use a ``fuzzy_mask``, an option that
 # improves common-line detection in higher noise regimes.
-logger.info("Estimate rotation angles using synchronization matrix and voting method.")
+logger.info(
+    "Estimate rotation angles and offsets using synchronization matrix and voting method."
+)
 orient_est = CLSyncVoting(sim, n_theta=36, mask=False)
 oriented_src = OrientedSource(sim, orient_est)
 rots_est = oriented_src.rotations
+
 
 # %%
 # Mean Angular Distance
@@ -110,3 +113,21 @@ logger.info(
 
 # Basic Check
 assert mean_ang_dist < 10
+
+# %%
+# Offsets Estimation
+# ------------------
+
+# The ground truth offsets from the simulation can be compared to
+# those estimated by the commonlines method above as ``offs_est``.
+
+offs_sim = sim.offsets
+
+# Calculate Estimation error in pixels for each image.
+offs_diff = np.sqrt(np.sum((oriented_src.offsets - sim.offsets) ** 2, axis=1))
+
+# Calculate the mean error in pixels across all images.
+offs_err = offs_diff.mean()
+logger.info(
+    f"Mean offset error in pixels {offs_err}, approx {offs_err/img_size*100:.1f}%"
+)
