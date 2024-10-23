@@ -10,7 +10,7 @@ from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
 from aspire.storage import StarFile
-from aspire.utils import Random, grid_2d
+from aspire.utils import Random, grid_2d, timestamp_filename
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class MicrographSource(ABC):
         """
         return self.micrograph_count
 
-    def save(self, path, name_prefix="micrograph", overwrite=True):
+    def save(self, path, name_prefix="micrograph", overwrite=None):
         """
         Save micrographs to `path`.
 
@@ -54,10 +54,17 @@ class MicrographSource(ABC):
 
         :param path: Directory to save data.
         :param name_prefix: Optional, name prefix string for micrograph files.
-        :param overwrite: Optional, bool. Allow writing to existing directory,
-            and overwriting existing files.
+        :param overwrite: Options to control overwrite behavior (default is None):
+            - True: Overwrites the existing path if it exists.
+            - False: Raises an error if the path exists.
+            - None: Renames the old path by appending a time/date stamp.
         :return: List of saved `.mrc` files.
         """
+
+        if overwrite is None and os.path.exists(path):
+            # If the directory exists, append a timestamp to existing directory.
+            _ = timestamp_filename(path)
+            overwrite = True
 
         # Make dir if does not exist.
         Path(path).mkdir(parents=True, exist_ok=overwrite)
