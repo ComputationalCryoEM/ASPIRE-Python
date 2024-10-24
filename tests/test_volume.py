@@ -2,7 +2,9 @@ import logging
 import os
 import tempfile
 import warnings
+from datetime import datetime
 from itertools import product
+from unittest import mock
 
 import numpy as np
 import pytest
@@ -294,6 +296,69 @@ def test_save_load(vols_1):
         assert np.allclose(vols_1, vols_loaded_double)
         assert vols_loaded_single.pixel_size is None, "Pixel size should be None"
         assert vols_loaded_double.pixel_size is None, "Pixel size should be None"
+
+
+def test_save_overwrite(caplog):
+    """
+    Test that the overwrite flag behaves as expected.
+    - overwrite=True: Overwrites the existing file.
+    - overwrite=False: Raises an error if the file exists.
+    - overwrite=None: Renames the existing file and saves the new one.
+    """
+    vol1 = Volume(np.ones((1, 8, 8, 8), dtype=np.float32))
+    vol2 = Volume(2 * np.ones((1, 8, 8, 8), dtype=np.float32))
+    vol3 = Volume(3 * np.ones((1, 8, 8, 8), dtype=np.float32))
+
+    # Create a tmp dir for this test output
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        mrc_path = os.path.join(tmpdir_name, "og.mrc")
+        base, ext = os.path.splitext(mrc_path)
+
+        # Create and save the first image
+        vol1.save(mrc_path, overwrite=True)
+
+        # Case 1: overwrite=True (should overwrite the existing file)
+        vol2.save(mrc_path, overwrite=True)
+
+        # Load and check if vol2 has overwritten vol1
+        vol2_loaded = Volume.load(mrc_path)
+        np.testing.assert_allclose(vol2.asnumpy(), vol2_loaded.asnumpy())
+
+        # Case 2: overwrite=False (should raise an overwrite error)
+        with pytest.raises(
+            ValueError,
+            match="File '.*' already exists; set overwrite=True to overwrite it",
+        ):
+            vol3.save(mrc_path, overwrite=False)
+
+        # Case 3: overwrite=None (should rename the existing file and save vol3 with original filename)
+        # Mock datetime to return a fixed timestamp
+        mock_datetime_value = datetime(2024, 10, 18, 12, 0, 0)
+        with mock.patch("aspire.utils.misc.datetime") as mock_datetime:
+            mock_datetime.now.return_value = mock_datetime_value
+            mock_datetime.strftime = datetime.strftime
+
+            with caplog.at_level(logging.INFO):
+                vol3.save(mrc_path, overwrite=None)
+
+                # Check that the existing file was renamed and logged
+                assert f"Renaming {mrc_path}" in caplog.text
+
+                # Construct the expected renamed filename using the mock timestamp
+                mock_timestamp = mock_datetime_value.strftime("%y%m%d_%H%M%S")
+                renamed_file = f"{base}_{mock_timestamp}{ext}"
+
+                # Assert that the renamed file exists
+                assert os.path.exists(renamed_file), "Renamed file not found"
+
+        # Load and check that vol3 was saved to the original path
+        vol3_loaded = Volume.load(mrc_path)
+        np.testing.assert_allclose(vol3.asnumpy(), vol3_loaded.asnumpy())
+
+        # Also check that the renamed file still contains vol2's data
+        vol2_loaded_renamed = Volume.load(renamed_file)
+        np.testing.assert_allclose(vol2.asnumpy(), vol2_loaded_renamed.asnumpy())
 
 
 def test_volume_pixel_size(vols_2):

@@ -12,7 +12,13 @@ import aspire.sinogram
 import aspire.volume
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
-from aspire.utils import FourierRingCorrelation, anorm, crop_pad_2d, grid_2d
+from aspire.utils import (
+    FourierRingCorrelation,
+    anorm,
+    crop_pad_2d,
+    grid_2d,
+    rename_with_timestamp,
+)
 from aspire.volume import SymmetryGroup
 
 logger = logging.getLogger(__name__)
@@ -484,9 +490,24 @@ class Image:
     def rotate(self):
         raise NotImplementedError
 
-    def save(self, mrcs_filepath, overwrite=False):
+    def save(self, mrcs_filepath, overwrite=None):
+        """
+        Save Image to disk as mrcs file
+
+        :param filename: Filepath where Image will be saved.
+        :param overwrite: Options to control overwrite behavior (default is None):
+            - True: Overwrites the existing file if it exists.
+            - False: Raises an error if the file exists.
+            - None: Renames the old file by appending a time/date stamp.
+        """
         if self.stack_ndim > 1:
             raise NotImplementedError("`save` is currently limited to 1D image stacks.")
+
+        if overwrite is None and os.path.exists(mrcs_filepath):
+            # If the file exists, append a timestamp to the old file and rename it
+            _ = rename_with_timestamp(mrcs_filepath)
+        elif overwrite is None:
+            overwrite = False
 
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)

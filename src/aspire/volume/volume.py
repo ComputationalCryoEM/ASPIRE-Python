@@ -1,4 +1,5 @@
 import logging
+import os
 import warnings
 
 import mrcfile
@@ -16,6 +17,7 @@ from aspire.utils import (
     grid_2d,
     grid_3d,
     mat_to_vec,
+    rename_with_timestamp,
     vec_to_mat,
 )
 from aspire.volume import IdentitySymmetryGroup, SymmetryGroup
@@ -635,19 +637,26 @@ class Volume:
     def denoise(self):
         raise NotImplementedError
 
-    def save(self, filename, overwrite=False):
+    def save(self, filename, overwrite=None):
         """
         Save volume to disk as mrc file
 
-        :param filename: Filepath where volume will be saved
-
-        :param overwrite: Option to overwrite file when set to True.
-            Defaults to overwrite=False.
+        :param filename: Filepath where volume will be saved.
+        :param overwrite: Options to control overwrite behavior (default is None):
+            - True: Overwrites the existing file if it exists.
+            - False: Raises an error if the file exists.
+            - None: Renames the old file by appending a time/date stamp.
         """
         if self.stack_ndim > 1:
             raise NotImplementedError(
                 "`save` is currently limited to 1D Volume stacks."
             )
+
+        if overwrite is None and os.path.exists(filename):
+            # If the file exists, append a timestamp to the old file and rename it
+            _ = rename_with_timestamp(filename)
+        elif overwrite is None:
+            overwrite = False
 
         with mrcfile.new(filename, overwrite=overwrite) as mrc:
             mrc.set_data(self._data.astype(np.float32))
