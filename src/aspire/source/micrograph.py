@@ -10,7 +10,7 @@ from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
 from aspire.storage import StarFile
-from aspire.utils import Random, grid_2d, timestamp_filename
+from aspire.utils import Random, grid_2d, rename_with_timestamp
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class MicrographSource(ABC):
 
         if overwrite is None and os.path.exists(path):
             # If the directory exists, append a timestamp to existing directory.
-            _ = timestamp_filename(path)
+            _ = rename_with_timestamp(path)
             overwrite = True
 
         # Make dir if does not exist.
