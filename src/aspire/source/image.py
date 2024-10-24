@@ -1008,6 +1008,9 @@ class ImageSource(ABC):
             # Allow overwriting old files.
             overwrite = True
 
+        elif overwrite is None:
+            overwrite = False
+
         logger.info("save metadata into STAR file")
         filename_indices = self.save_metadata(
             starfile_filepath,
@@ -1021,7 +1024,7 @@ class ImageSource(ABC):
             starfile_filepath,
             filename_indices=filename_indices,
             batch_size=batch_size,
-            overwrite=bool(overwrite),
+            overwrite=overwrite,
         )
         # return some information about the saved files
         info = {"starfile": starfile_filepath, "mrcs": unique_filenames}
