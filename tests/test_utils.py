@@ -22,7 +22,7 @@ from aspire.utils import (
     num_procs_suggestion,
     physical_core_cpu_suggestion,
     powerset,
-    timestamp_filename,
+    rename_with_timestamp,
     utest_tolerance,
     virtual_core_cpu_suggestion,
 )
@@ -115,7 +115,7 @@ def test_get_full_version_unexpected(monkeypatch):
         assert get_full_version() == __version__ + ".x"
 
 
-def test_timestamp_filename(caplog):
+def test_rename_with_timestamp(caplog):
     with tempfile.TemporaryDirectory() as tmpdir_name:
         filepath = os.path.join(tmpdir_name, "test_file.name")
         base, ext = os.path.splitext(filepath)
@@ -133,12 +133,12 @@ def test_timestamp_filename(caplog):
             mock_datetime.strftime = datetime.strftime
 
             # Case 1: move=False should return the new file name with appended timestamp.
-            renamed_file = timestamp_filename(filepath, move=False)
+            renamed_file = rename_with_timestamp(filepath, move=False)
             assert renamed_file == f"{base}_{mock_timestamp}{ext}"
 
             # Case 2: move=True (default) should rename file on disk.
             with caplog.at_level(logging.INFO):
-                renamed_file = timestamp_filename(filepath)
+                renamed_file = rename_with_timestamp(filepath)
 
                 # Check log for renaming operation.
                 assert f"Renaming {filepath} as {renamed_file}" in caplog.text
@@ -152,7 +152,7 @@ def test_timestamp_filename(caplog):
         # Case 3: Test when the file does not exist.
         non_existent_file = os.path.join(tmpdir_name, "non_existent_file.name")
         with caplog.at_level(logging.WARNING):
-            result = timestamp_filename(non_existent_file)
+            result = rename_with_timestamp(non_existent_file)
 
             # Check that None is returned since the file doesn't exist.
             assert result is None
