@@ -506,8 +506,10 @@ class Image:
         if overwrite is None and os.path.exists(mrcs_filepath):
             # If the file exists, append a timestamp to the old file and rename it
             _ = rename_with_timestamp(mrcs_filepath)
+        elif overwrite is None:
+            overwrite = False
 
-        with mrcfile.new(mrcs_filepath, overwrite=bool(overwrite)) as mrc:
+        with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)
             mrc.set_data(self._data.astype(np.float32))
             # Note assigning voxel_size must come after `set_data`

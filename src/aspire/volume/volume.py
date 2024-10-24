@@ -655,8 +655,10 @@ class Volume:
         if overwrite is None and os.path.exists(filename):
             # If the file exists, append a timestamp to the old file and rename it
             _ = rename_with_timestamp(filename)
+        elif overwrite is None:
+            overwrite = False
 
-        with mrcfile.new(filename, overwrite=bool(overwrite)) as mrc:
+        with mrcfile.new(filename, overwrite=overwrite) as mrc:
             mrc.set_data(self._data.astype(np.float32))
             # Note assigning voxel_size must come after `set_data`
             if self.pixel_size is not None:
