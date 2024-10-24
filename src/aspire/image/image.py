@@ -17,7 +17,7 @@ from aspire.utils import (
     anorm,
     crop_pad_2d,
     grid_2d,
-    timestamp_filename,
+    rename_with_timestamp,
 )
 from aspire.volume import SymmetryGroup
 
@@ -505,7 +505,7 @@ class Image:
 
         if overwrite is None and os.path.exists(mrcs_filepath):
             # If the file exists, append a timestamp to the old file and rename it
-            _ = timestamp_filename(mrcs_filepath)
+            _ = rename_with_timestamp(mrcs_filepath)
 
         with mrcfile.new(mrcs_filepath, overwrite=bool(overwrite)) as mrc:
             # original input format (the image index first)
