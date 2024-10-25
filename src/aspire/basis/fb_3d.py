@@ -4,8 +4,6 @@ import numpy as np
 
 from aspire.basis import Basis, FBBasisMixin
 from aspire.basis.basis_utils import real_sph_harmonic, sph_bessel, unique_coords_nd
-from aspire.utils import roll_dim, unroll_dim
-from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -150,21 +148,17 @@ class FBBasis3D(Basis, FBBasisMixin):
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
         """
-
-        v = v.T
-        v, sz_roll = unroll_dim(v, 2)
+        v = v.reshape(v.shape[0], -1)
 
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
-        mask = m_flatten(self.basis_coords["mask"])
+        mask = self.basis_coords["mask"].flatten()
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        x = np.zeros(
-            shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=self.dtype
-        )
+        x = np.zeros((v.shape[0], np.prod(self.sz)), dtype=self.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
@@ -176,43 +170,35 @@ class FBBasis3D(Basis, FBBasisMixin):
                 ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, len(idx_radial))
-                x[mask] += ang_radial @ v[idx]
+                x[:, mask] += v[:, idx] @ ang_radial.T
                 ind += len(idx)
                 ind_ang += 1
 
             ind_radial += len(idx_radial)
 
-        x = m_reshape(x, self.sz + x.shape[1:])
-        x = roll_dim(x, sz_roll)
+        return x.reshape(v.shape[0], *self.sz)
 
-        return x.T
-
-    def _evaluate_t(self, v):
+    def _evaluate_t(self, x):
         """
         Evaluate coefficient in FB basis from those in standard 3D coordinate basis
 
-        :param v: The coefficient array to be evaluated. The first dimensions
+        :param x: The coefficient array to be evaluated. The first dimensions
             must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual
             basis of `basis`. This is an array of vectors whose first dimension
             equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
-        v = v.T
-        x, sz_roll = unroll_dim(v, self.ndim + 1)
-        x = m_reshape(
-            x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
-        )
-
+        x = x.reshape(x.shape[0], -1)
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
-        mask = m_flatten(self.basis_coords["mask"])
+        mask = self.basis_coords["mask"].flatten()
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])), dtype=self.dtype)
+        v = np.zeros((x.shape[0], self.count), dtype=self.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
@@ -224,11 +210,10 @@ class FBBasis3D(Basis, FBBasisMixin):
                 ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, len(idx_radial))
-                v[idx] = np.real(ang_radial.T @ x[mask])
+                v[:, idx] = x[:, mask] @ ang_radial
                 ind += len(idx)
                 ind_ang += 1
 
             ind_radial += len(idx_radial)
 
-        v = roll_dim(v, sz_roll)
-        return v.T
+        return v
