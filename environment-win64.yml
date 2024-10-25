@@ -1,0 +1,14 @@
+name: 'aspire'
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - pip
+  - python=3.9
+  - numpy=1.23.5
+  - scipy=1.9.3
+  - scikit-learn
+  - scikit-image
+  - mkl!=2024.2.2  # possible regression impacts eig solver
