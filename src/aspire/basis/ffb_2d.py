@@ -121,13 +121,13 @@ class FFBBasis2D(FBBasis2D):
         n_r = self._precomp["freqs"].shape[1]
 
         # go through  each basis function and find corresponding coefficient
-        pf = xp.zeros((n_data, n_r, 2 * n_theta), dtype=complex_type(self.dtype))
+        pf = xp.zeros((2 * n_theta, n_data, n_r), dtype=complex_type(self.dtype))
 
         ind = 0
 
         idx = ind + np.arange(self.k_max[0], dtype=int)
 
-        pf[:, :, 0] = v[:, self._zero_angular_inds] @ self.radial_norm[idx]
+        pf[0] = v[:, self._zero_angular_inds] @ self.radial_norm[idx]
         ind = ind + idx.size
 
         ind_pos = ind
@@ -143,23 +143,24 @@ class FFBBasis2D(FBBasis2D):
                 v_ell = 1j * v_ell
 
             pf_ell = v_ell @ self.radial_norm[idx]
-            pf[:, :, ell] = pf_ell
+            pf[ell] = pf_ell
 
             if np.mod(ell, 2) == 0:
-                pf[:, :, 2 * n_theta - ell] = pf_ell.conjugate()
+                pf[2 * n_theta - ell] = pf_ell.conjugate()
             else:
-                pf[:, :, 2 * n_theta - ell] = -pf_ell.conjugate()
+                pf[2 * n_theta - ell] = -pf_ell.conjugate()
 
             ind = ind + idx.size
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
         # 1D inverse FFT in the degree of polar angle
-        pf = 2 * xp.pi * fft.ifft(pf, axis=2)
+        pf = 2 * xp.pi * fft.ifft(pf, axis=0)
 
         # Only need "positive" frequencies.
-        hsize = int(pf.shape[2] / 2)
-        pf = pf[:, :, 0:hsize]
-        pf *= self.gl_weighted_nodes[None, :, None]
+        hsize = int(pf.shape[0] / 2)
+        pf = pf[0:hsize]
+        pf *= self.gl_weighted_nodes[None, None, :]
+        pf = pf.transpose(1, 2, 0)
         pf = pf.reshape(n_data, n_r * n_theta)
 
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
