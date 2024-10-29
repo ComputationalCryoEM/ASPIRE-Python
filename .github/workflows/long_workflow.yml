@@ -27,15 +27,12 @@ jobs:
         echo "WORK_DIR=${WORK_DIR}"
         echo "Stash the WORK_DIR to GitHub env so we can clean it up later."
         echo "WORK_DIR=${WORK_DIR}" >> $GITHUB_ENV
-        echo -e "ray:\n    temp_dir: ${WORK_DIR}\n" > ${WORK_DIR}/config.yaml
         echo -e "nufft:\n    backends: [finufft, pynfft]\n" >> ${WORK_DIR}/config.yaml
         echo "Log the config: ${WORK_DIR}/config.yaml"
         cat ${WORK_DIR}/config.yaml
     - name: Run
       run: |
         export OMP_NUM_THREADS=1
-        ASPIREDIR=${{ env.WORK_DIR }} python -c \
-        "import aspire; print(aspire.config['ray']['temp_dir'])"
         ASPIREDIR=${{ env.WORK_DIR }} python -m pytest -n8 -m "expensive" --durations=0
     - name: Cleanup
       run: rm -rf ${{ env.WORK_DIR }}

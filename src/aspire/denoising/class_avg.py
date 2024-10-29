@@ -391,7 +391,6 @@ class DebugClassAvgSource(ClassAvgSource):
         self,
         src,
         n_nbor=10,
-        num_procs=1,  # Change to "auto" if your machine has many processors
         classifier=None,
         class_selector=None,
         averager=None,
@@ -401,9 +400,6 @@ class DebugClassAvgSource(ClassAvgSource):
 
         :param src: Source used for image classification.
         :param n_nbor: Number of nearest neighbors. Default 10.
-        :param num_procs: Number of processors. Default of 1 runs serially.
-            `None` attempts to compute a reasonable value
-            based on available cores and memory.
         :param classifier: `Class2D` classifier instance.
             Default `None` creates `RIRClass2D`.
             See code for parameter details.
@@ -432,7 +428,6 @@ class DebugClassAvgSource(ClassAvgSource):
             averager = BFRAverager2D(
                 self._get_classifier_basis(classifier),
                 src,
-                num_procs=num_procs,
                 dtype=dtype,
             )
 
@@ -450,7 +445,6 @@ class DebugClassAvgSource(ClassAvgSource):
 def DefaultClassAvgSource(
     src,
     n_nbor=50,
-    num_procs=None,
     classifier=None,
     class_selector=None,
     averager=None,
@@ -465,9 +459,6 @@ def DefaultClassAvgSource(
 
     :param src: Source used for image classification.
     :param n_nbor: Number of nearest neighbors. Default 50.
-    :param num_procs: Number of processors. Use 1 to run serially.
-        Default `None` attempts to compute a reasonable value
-        based on available cores and memory.
     :param classifier: `Class2D` classifier instance.
         Default `None` creates `RIRClass2D`.
         See code for parameter details.
@@ -498,7 +489,6 @@ def DefaultClassAvgSource(
     return cls(
         src,
         n_nbor=n_nbor,
-        num_procs=num_procs,
         classifier=classifier,
         class_selector=class_selector,
         averager=averager,
@@ -521,7 +511,6 @@ class ClassAvgSourcev110(ClassAvgSource):
         self,
         src,
         n_nbor=50,
-        num_procs=None,
         classifier=None,
         class_selector=None,
         averager=None,
@@ -532,9 +521,6 @@ class ClassAvgSourcev110(ClassAvgSource):
 
         :param src: Source used for image classification.
         :param n_nbor: Number of nearest neighbors. Default 50.
-        :param num_procs: Number of processors. Use 1 to run serially.
-            Default `None` attempts to compute a reasonable value
-            based on available cores and memory.
         :param classifier: `Class2D` classifier instance.
             Default `None` creates `RIRClass2D`.
             See code for parameter details.
@@ -572,7 +558,6 @@ class ClassAvgSourcev110(ClassAvgSource):
             averager = BFSRAverager2D(
                 composite_basis=basis_2d,
                 src=averager_src,
-                num_procs=num_procs,
                 dtype=dtype,
             )
         elif averager_src is not None:

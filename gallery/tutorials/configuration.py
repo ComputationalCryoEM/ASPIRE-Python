@@ -28,16 +28,16 @@ and common patterns for overriding.
 # Items in this file will take precedence over the default configuration.
 # For other platforms, refer to the `confuse` documentation.
 #
-# As an example, suppose you want to change the ``ray`` ``temp_dir`` variable
+# As an example, suppose you want to change the ``foo_module`` ``temp_dir`` variable
 # when working on a specific machine.
 # By creating ``$HOME/.config/ASPIRE/config.yaml`` with the following contents
 # on that machine, ASPIRE's configuration utility will overload
-# the ``temp_dir`` directory from a ``/tmp/ray`` folder to ``/scratch/tmp/ray``.
+# the ``temp_dir`` directory from a ``/tmp/bar`` folder to ``/scratch/tmp/bar``.
 #
 #     .. code-block:: yaml
 #
-#       ray:
-#         temp_dir: /scratch/tmp/ray
+#       foo_module:
+#         temp_dir: /scratch/tmp/bar
 #
 
 # %%
