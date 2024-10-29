@@ -48,7 +48,6 @@ DTYPES = [
 ]
 CLS_SRCS = [DebugClassAvgSource, DefaultClassAvgSource]
 # For very small problems, it usually isn't worth running in parallel.
-NUM_PROCS = 1
 
 
 BASIS = [
@@ -175,9 +174,7 @@ def test_basic_averaging(class_sim_fixture, test_src_cls, basis, classifier):
 
     cmp_n = 5
 
-    test_src = test_src_cls(
-        src=class_sim_fixture, classifier=classifier, num_procs=NUM_PROCS
-    )
+    test_src = test_src_cls(src=class_sim_fixture, classifier=classifier)
 
     test_imgs = test_src.images[:cmp_n]
 
@@ -295,7 +292,7 @@ QUALITY_FUNCTIONS = [
 def test_global_selector(
     class_sim_fixture, cls_fixture, selector, quality_function, basis
 ):
-    averager = BFRAverager2D(basis, class_sim_fixture, num_procs=NUM_PROCS)
+    averager = BFRAverager2D(basis, class_sim_fixture)
 
     fun = quality_function()
 
@@ -336,9 +333,7 @@ def test_contrast_selector(dtype):
 
 
 def test_avg_src_starfileio(class_sim_fixture, test_src_cls, classifier):
-    src = test_src_cls(
-        src=class_sim_fixture, classifier=classifier, num_procs=NUM_PROCS
-    )
+    src = test_src_cls(src=class_sim_fixture, classifier=classifier)
 
     # Save and load the source as a STAR file.
     # Saving should force classification and selection to occur,

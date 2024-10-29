@@ -95,7 +95,7 @@ logger.info("Begin Class Averaging")
 # Build up the customized components.
 basis = FFBBasis2D(src.L, dtype=src.dtype)
 classifier = RIRClass2D(src, n_nbor=n_nbor, nn_implementation="sklearn")
-averager = BFRAverager2D(basis, src, num_procs=16)
+averager = BFRAverager2D(basis, src)
 quality_function = BandedSNRImageQualityFunction()
 class_selector = GlobalWithRepulsionClassSelector(averager, quality_function)
 
