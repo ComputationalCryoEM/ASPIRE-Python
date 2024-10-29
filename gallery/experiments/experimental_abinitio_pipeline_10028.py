@@ -142,7 +142,6 @@ avgs = DefaultClassAvgSource(
     classification_src,
     n_nbor=n_nbor,
     averager_src=src,
-    num_procs=None,  # Automatically configure parallel processing
 )
 # We'll continue our pipeline with the first `n_classes` from `avgs`.
 avgs = avgs[:n_classes]

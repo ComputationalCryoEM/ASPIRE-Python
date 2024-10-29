@@ -35,11 +35,3 @@ nufft:
     # NUFFT backends should be one of finufft, cufinufft, pynfft.
     # They will be attempted in order from left to right.
     backends: [cufinufft, finufft, pynfft]
-
-ray:
-    # Ray will default to a OS specific tmp dir.
-    #   By default on linux this is `/tmp/ray`.
-    # If you find your machine has a very small /tmp,
-    #   try setting `temp_dir` to `/dev/shm`
-    #   or some other fast scratch dir.
-    temp_dir: /tmp/ray

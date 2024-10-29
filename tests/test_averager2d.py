@@ -20,37 +20,13 @@ from aspire.classification import (
 )
 from aspire.operators import PolarFT
 from aspire.source import Simulation
-from aspire.utils import Rotation, num_procs_suggestion
+from aspire.utils import Rotation
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
 
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
-
-
-def xfail_ray_dev():
-    """
-    Currently ray multiprocessing of the averager is xfail for numpy>=1.22.
-    This unsupported configuration is forced in the '-dev' test environments.
-    Return whether we expect test to fail using ray multiprocessing.
-
-    While Ray seems to work fine locally for OSX, we have experienced
-    timeouts due to hangs on Azure.  This code will disable the flaky
-    environments by only attempting to run on Linux platforms.
-    """
-    xfail = all(
-        [
-            importlib.util.find_spec("ray"),  # 'ray' installed
-            parse_version(version("numpy"))
-            >= parse_version("1.22.0"),  # with unsupported numpy combo
-            num_procs_suggestion() > 1,  # and code would attempt to use multiprocessing
-        ]
-    )
-    # Don't run for OSX/Windows and don't abuse GitHub Actions
-    skip = (platform.system != "Linux") or (os.getenv("GITHUB_ACTIONS") == "true")
-
-    return xfail or skip
 
 
 def check_angle_diff(est, ref, tol):
@@ -114,7 +90,7 @@ class Averager2DBase:
             test_dtype = np.float32
 
         with self._caplog.at_level(logging.WARN):
-            self.averager(self.basis, self._getSrc(), dtype=test_dtype, num_procs=1)
+            self.averager(self.basis, self._getSrc(), dtype=test_dtype)
             assert "does not match dtype" in self._caplog.text
 
     def _construct_rotations(self):
@@ -155,7 +131,6 @@ class AligningAverager2DBase(Averager2DBase):
     """
 
     averager = AligningAverager2D
-    num_procs = 1 if xfail_ray_dev() else 2
 
     def setUp(self):
         super().setUp()
@@ -171,7 +146,7 @@ class AligningAverager2DBase(Averager2DBase):
 
     def _call_averager(self):
         # Construct the Averager
-        avgr = self.averager(self.basis, self._getSrc(), num_procs=self.num_procs)
+        avgr = self.averager(self.basis, self._getSrc())
         # Call the `align` method
         _ = avgr.align(self.classes, self.reflections, self.coefs)
         _ = avgr.average(self.classes, self.reflections, self.coefs)
@@ -216,7 +191,7 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
 
         # and that should raise an error during instantiation.
         with pytest.raises(RuntimeError, match=r".* must provide a `rotate` method."):
-            _ = self.averager(basis, self._getSrc(), num_procs=1)
+            _ = self.averager(basis, self._getSrc())
 
     def testAverager(self):
         """
@@ -230,7 +205,6 @@ class BFRAverager2DTestCase(AligningAverager2DBase, TestCase):
             self.basis,
             self._getSrc(),
             n_angles=self.n_search_angles,
-            num_procs=self.num_procs,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
@@ -272,7 +246,6 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
             self._getSrc(),
             n_angles=self.n_search_angles,
             radius=3,
-            num_procs=self.num_procs,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)
 
@@ -296,7 +269,6 @@ class BFSRAverager2DTestCase(BFRAverager2DTestCase):
 
 class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
     averager = ReddyChatterjiAverager2D
-    num_procs = 1 if xfail_ray_dev() else 2
 
     def testAverager(self):
         """
@@ -309,7 +281,6 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
         avgr = self.averager(
             composite_basis=self.basis,
             src=self._getSrc(),
-            num_procs=self.num_procs,
             dtype=self.dtype,
         )
         _rotations, _shifts, _ = avgr.align(self.classes, self.reflections, self.coefs)

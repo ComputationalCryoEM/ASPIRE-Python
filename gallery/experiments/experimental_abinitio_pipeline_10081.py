@@ -91,7 +91,7 @@ logger.info("Begin Class Averaging")
 
 # Now perform classification and averaging for each class.
 # Automatically configure parallel processing
-avgs = DefaultClassAvgSource(src, n_nbor=n_nbor, num_procs=None)
+avgs = DefaultClassAvgSource(src, n_nbor=n_nbor)
 
 # We'll continue our pipeline with the first ``n_classes`` from ``avgs``.
 avgs = avgs[:n_classes]

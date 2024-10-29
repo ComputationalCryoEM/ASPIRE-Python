@@ -4,19 +4,12 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-# Ray has DeprecationWarning issues that are not related to ASPIRE.
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    import ray
-    from ray.util.multiprocessing import Pool
-
 from aspire import config
 from aspire.basis import Coef
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image, ImageStacker, MeanImageStacker
 from aspire.utils import trange
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.multiprocessing import num_procs_suggestion
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +19,10 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(self, composite_basis, src, num_procs=None, dtype=None):
+    def __init__(self, composite_basis, src, dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
-        :param num_procs: Number of processes to use.
-            `None` will attempt computing a suggestion based on machine resources.
-            Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -47,17 +37,6 @@ class Averager2D(ABC):
                 raise RuntimeError("You must supply a basis/src/dtype.")
         else:
             self.dtype = np.dtype(dtype)
-
-        if num_procs is None:
-            num_procs = num_procs_suggestion()
-            # Only enable multiprocessing when several cores available
-            if num_procs < 3:
-                num_procs = 1
-        elif not (isinstance(num_procs, int) and num_procs > 0):
-            raise ValueError(
-                f"num_procs should be a positive integer, passed {num_procs}."
-            )
-        self.num_procs = num_procs
 
         if self.src and self.dtype != self.src.dtype:
             logger.warning(
@@ -119,7 +98,6 @@ class AligningAverager2D(Averager2D):
         src,
         alignment_basis=None,
         image_stacker=None,
-        num_procs=None,
         dtype=None,
     ):
         """
@@ -128,16 +106,12 @@ class AligningAverager2D(Averager2D):
         :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA).
         :param image_stacker: Optional, provide a user defined `ImageStacker` instance,
             used during image stacking (averaging).  Defaults to MeanImageStacker.
-        :param num_procs: Number of processes to use.
-            `None` will attempt computing a suggestion based on machine resources.
-            Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
         super().__init__(
             composite_basis=composite_basis,
             src=src,
-            num_procs=num_procs,
             dtype=dtype,
         )
         # If alignment_basis is None, use composite_basis
@@ -233,25 +207,8 @@ class AligningAverager2D(Averager2D):
             # Averaging in composite_basis
             return self.image_stacker(neighbors_coefs.asnumpy())
 
-        if self.num_procs <= 1:
-            for i in trange(n_classes):
-                b_avgs[i] = _innerloop(i)
-        else:
-            logger.info(
-                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.average"
-            )
-            ray.init(
-                _temp_dir=config["ray"]["temp_dir"].as_filename(),
-                num_cpus=self.num_procs,
-                num_gpus=0,
-            )
-            with Pool(self.num_procs) as p:
-                results = p.map(_innerloop, range(n_classes))
-            ray.shutdown()
-
-            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
-            for i, result in enumerate(results):
-                b_avgs[i] = result
+        for i in trange(n_classes):
+            b_avgs[i] = _innerloop(i)
 
         # Now we convert the averaged images from Basis to Cartesian.
         return Coef(self.composite_basis, b_avgs).evaluate()
@@ -294,7 +251,6 @@ class BFRAverager2D(AligningAverager2D):
         src,
         alignment_basis=None,
         n_angles=360,
-        num_procs=None,
         dtype=None,
     ):
         """
@@ -302,9 +258,7 @@ class BFRAverager2D(AligningAverager2D):
 
         :param n_angles: Number of brute force rotations to attempt, defaults 360.
         """
-        super().__init__(
-            composite_basis, src, alignment_basis, num_procs=num_procs, dtype=dtype
-        )
+        super().__init__(composite_basis, src, alignment_basis, dtype=dtype)
 
         self.n_angles = n_angles
         self._base_image_shift = None
@@ -382,27 +336,9 @@ class BFRAverager2D(AligningAverager2D):
 
             return test_angles[angle_idx], _correlations
 
-        if self.num_procs <= 1:
-            for k in trange(n_classes):
-                # Store angles and correlations for this class
-                rotations[k], correlations[k] = _innerloop(k)
-
-        else:
-            logger.info(
-                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.align"
-            )
-            ray.init(
-                _temp_dir=config["ray"]["temp_dir"].as_filename(),
-                num_cpus=self.num_procs,
-                num_gpus=0,
-            )
-            with Pool(self.num_procs) as p:
-                results = p.map(_innerloop, range(n_classes))
-            ray.shutdown()
-
-            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
-            for k, result in enumerate(results):
-                rotations[k], correlations[k] = result
+        for k in trange(n_classes):
+            # Store angles and correlations for this class
+            rotations[k], correlations[k] = _innerloop(k)
 
         return rotations, None, correlations
 
@@ -425,7 +361,6 @@ class BFSRAverager2D(BFRAverager2D):
         alignment_basis=None,
         n_angles=360,
         radius=None,
-        num_procs=None,
         dtype=None,
     ):
         """
@@ -440,7 +375,6 @@ class BFSRAverager2D(BFRAverager2D):
             src,
             alignment_basis,
             n_angles,
-            num_procs=num_procs,
             dtype=dtype,
         )
 
@@ -560,7 +494,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         composite_basis,
         src,
         alignment_src=None,
-        num_procs=None,
         dtype=None,
     ):
         """
@@ -568,9 +501,6 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         :param src: Source of original images.
         :param alignment_src: Optional, source to be used during class average alignment.
             Must be the same resolution as `src`.
-        :param num_procs: Number of processes to use.
-            `None` will attempt computing a suggestion based on machine resources.
-            Note some underlying code may already use threading.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -585,9 +515,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         self.mask = grid_2d(src.L, normalized=False)["r"] < src.L // 2
 
-        super().__init__(
-            composite_basis, src, composite_basis, num_procs=num_procs, dtype=dtype
-        )
+        super().__init__(composite_basis, src, composite_basis, dtype=dtype)
 
     def align(self, classes, reflections, basis_coefficients):
         """
@@ -617,26 +545,8 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 dtype=self.dtype,
             )
 
-        if self.num_procs <= 1:
-            for k in trange(n_classes):
-                rotations[k], shifts[k], correlations[k] = _innerloop(k)
-
-        else:
-            logger.info(
-                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.align"
-            )
-            ray.init(
-                _temp_dir=config["ray"]["temp_dir"].as_filename(),
-                num_cpus=self.num_procs,
-                num_gpus=0,
-            )
-            with Pool(self.num_procs) as p:
-                results = p.map(_innerloop, range(n_classes))
-            ray.shutdown()
-
-            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
-            for k, result in enumerate(results):
-                rotations[k], shifts[k], correlations[k] = result
+        for k in trange(n_classes):
+            rotations[k], shifts[k], correlations[k] = _innerloop(k)
 
         return rotations, shifts, correlations
 
@@ -684,25 +594,8 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             # Averaging in composite_basis
             return self.image_stacker(neighbors_coefs.asnumpy())
 
-        if self.num_procs <= 1:
-            for i in trange(n_classes):
-                b_avgs[i] = _innerloop(i)
-        else:
-            logger.info(
-                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.average"
-            )
-            ray.init(
-                _temp_dir=config["ray"]["temp_dir"].as_filename(),
-                num_cpus=self.num_procs,
-                num_gpus=0,
-            )
-            with Pool(self.num_procs) as p:
-                results = p.map(_innerloop, range(n_classes))
-            ray.shutdown()
-
-            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
-            for i, result in enumerate(results):
-                b_avgs[i] = result
+        for i in trange(n_classes):
+            b_avgs[i] = _innerloop(i)
 
         # Now we convert the averaged images from Basis to Cartesian.
         return Coef(self.composite_basis, b_avgs).evaluate()
@@ -730,7 +623,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         src,
         alignment_src=None,
         radius=None,
-        num_procs=None,
         dtype=None,
     ):
         """
@@ -744,17 +636,12 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         :param radius: Brute force translation search radius.
             Defaults to src.L//8.
         :param dtype: Numpy dtype to be used during alignment.
-        :param num_procs: Number of processes to use.
-            `None` will attempt computing a suggestion based on machine resources.
-            Note some underlying code may already use threading.
-        :param dtype: Numpy dtype to be used during alignment.
         """
 
         super().__init__(
             composite_basis,
             src,
             alignment_src,
-            num_procs=num_procs,
             dtype=dtype,
         )
 
@@ -816,25 +703,8 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
 
             return _rotations, _shifts, _correlations
 
-        if self.num_procs <= 1:
-            for k in trange(n_classes):
-                rotations[k], shifts[k], correlations[k] = _innerloop(k)
-        else:
-            logger.info(
-                f"Starting Pool({self.num_procs}) for {self.__class__.__name__}.align"
-            )
-            ray.init(
-                _temp_dir=config["ray"]["temp_dir"].as_filename(),
-                num_cpus=self.num_procs,
-                num_gpus=0,
-            )
-            with Pool(self.num_procs) as p:
-                results = p.map(_innerloop, range(n_classes))
-            ray.shutdown()
-
-            logger.info(f"Terminated Pool({self.num_procs}), unpacking results.")
-            for k, result in enumerate(results):
-                rotations[k], shifts[k], correlations[k] = result
+        for k in trange(n_classes):
+            rotations[k], shifts[k], correlations[k] = _innerloop(k)
 
         return rotations, shifts, correlations
 

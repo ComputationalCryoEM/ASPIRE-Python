@@ -148,7 +148,6 @@ jobs:
         echo "WORK_DIR=${WORK_DIR}"
         echo "Stash the WORK_DIR to GitHub env so we can clean it up later."
         echo "WORK_DIR=${WORK_DIR}" >> $GITHUB_ENV
-        echo -e "ray:\n    temp_dir: ${WORK_DIR}\n" > ${WORK_DIR}/config.yaml
         echo -e "common:" >> ${WORK_DIR}/config.yaml
         echo -e "    cache_dir: ${CI_CACHE_DIR}" >> ${WORK_DIR}/config.yaml
         echo -e "    numeric: cupy" >> ${WORK_DIR}/config.yaml
@@ -161,8 +160,6 @@ jobs:
         "import aspire; print(aspire.config['common']['cache_dir']); import aspire.downloader; aspire.downloader.emdb_2660()"
     - name: Run
       run: |
-        ASPIREDIR=${{ env.WORK_DIR }} python -c \
-        "import aspire; print(aspire.config['ray']['temp_dir'])"
         ASPIREDIR=${{ env.WORK_DIR }} PYTHONWARNINGS=error python -m pytest --durations=50 --cov=aspire --cov-report=xml
     - name: Upload Coverage to CodeCov
       uses: codecov/codecov-action@v4
