@@ -88,7 +88,7 @@ class SymmetryGroup(ABC):
         }
         if symmetry_type not in map_to_sym_group.keys():
             raise ValueError(
-                f"Symmetry type {symmetry_type} not supported. Try: {*map_to_sym_group.keys(),}."
+                f"Symmetry type {symmetry_type} not supported. Try: {*map_to_sym_group.keys(), }."
             )
 
         symmetry_group = map_to_sym_group[symmetry_type]
