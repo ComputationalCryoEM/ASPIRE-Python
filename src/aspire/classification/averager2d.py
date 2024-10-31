@@ -1,10 +1,8 @@
 import logging
-import warnings
 from abc import ABC, abstractmethod
 
 import numpy as np
 
-from aspire import config
 from aspire.basis import Coef
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image, ImageStacker, MeanImageStacker
