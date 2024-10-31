@@ -119,9 +119,7 @@ assert mean_ang_dist < 10
 # ------------------
 
 # The ground truth offsets from the simulation can be compared to
-# those estimated by the commonlines method above as ``offs_est``.
-
-offs_sim = sim.offsets
+# those estimated by the commonlines method above.
 
 # Calculate Estimation error in pixels for each image.
 offs_diff = np.sqrt(np.sum((oriented_src.offsets - sim.offsets) ** 2, axis=1))
