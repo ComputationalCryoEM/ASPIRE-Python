@@ -33,7 +33,6 @@ dependencies = [
     "cvxpy",
     "finufft==2.3.0",
     "gemmi >= 0.6.5",
-    "grpcio >= 1.54.2",
     "joblib",
     "matplotlib >= 3.2.0",
     "mrcfile",
