@@ -60,15 +60,15 @@ class FFBBasis3D(FBBasis3D):
 
         r, wt_r = lgwt(n_r, 0.0, self.kcut, dtype=self.dtype)
         z, wt_z = lgwt(n_phi, -1, 1, dtype=self.dtype)
-        r = m_reshape(xp.asarray(r), (n_r, 1))
+        r = r.reshape(n_r, 1)
         rh = xp.asnumpy(r)
-        wt_r = m_reshape(xp.asarray(wt_r), (n_r, 1))
-        z = m_reshape(xp.asarray(z), (n_phi, 1))
-        wt_z = m_reshape(xp.asarray(wt_z), (n_phi, 1))
+        wt_r = xp.asarray(wt_r.reshape(n_r, 1))
+        z = xp.asarray(z.reshape(n_phi, 1))
+        wt_z = xp.asarray(wt_z.reshape(n_phi, 1))
         phi = xp.arccos(z)
         wt_phi = wt_z
         theta = 2 * xp.pi * xp.arange(n_theta, dtype=self.dtype).T / (2 * n_theta)
-        theta = m_reshape(theta, (n_theta, 1))
+        theta = theta.reshape(n_theta, 1)
 
         # evaluate basis function in the radial dimension
         radial_wtd = xp.zeros(
@@ -119,13 +119,12 @@ class FFBBasis3D(FBBasis3D):
 
         # evaluate basis function in the theta dimension
         ang_theta = xp.zeros((n_theta, 2 * self.ell_max + 1), dtype=theta.dtype)
-
         ang_theta[:, 0 : self.ell_max] = np.sqrt(2) * xp.sin(
-            theta @ m_reshape(xp.arange(self.ell_max, 0, -1), (1, self.ell_max))
+            theta @ xp.arange(self.ell_max, 0, -1).reshape(1, self.ell_max)
         )
         ang_theta[:, self.ell_max] = xp.ones(n_theta, dtype=theta.dtype)
         ang_theta[:, self.ell_max + 1 : 2 * self.ell_max + 1] = np.sqrt(2) * xp.cos(
-            theta @ m_reshape(xp.arange(1, self.ell_max + 1), (1, self.ell_max))
+            theta @ xp.arange(1, self.ell_max + 1).reshape(1, self.ell_max)
         )
 
         ang_theta_wtd = (2 * np.pi / n_theta) * ang_theta
@@ -133,6 +132,7 @@ class FFBBasis3D(FBBasis3D):
         theta_grid, phi_grid, r_grid = xp.meshgrid(
             theta.flatten(), phi.flatten(), r.flatten(), sparse=False, indexing="ij"
         )
+
         fourier_x = m_flatten(r_grid * xp.cos(theta_grid) * xp.sin(phi_grid))
         fourier_y = m_flatten(r_grid * xp.sin(theta_grid) * xp.sin(phi_grid))
         fourier_z = m_flatten(r_grid * xp.cos(phi_grid))
@@ -200,7 +200,6 @@ class FFBBasis3D(FBBasis3D):
             radial_wtd = self._precomp["radial_wtd"][:, 0:k_max_ell, ell]
 
             ind = self._indices["ells"] == ell
-
             v_ell = m_reshape(v[:, ind].T, (k_max_ell, (2 * ell + 1) * n_data))
             v_ell = radial_wtd @ v_ell
             v_ell = m_reshape(v_ell, (n_r, 2 * ell + 1, n_data))
@@ -273,8 +272,7 @@ class FFBBasis3D(FBBasis3D):
         pf = xp.moveaxis(pf, 0, -1)
 
         # perform inverse non-uniformly FFT transformation back to 3D rectangular coordinates
-        freqs = m_reshape(self._precomp["fourier_pts"], (3, n_r * n_theta * n_phi))
-        x = anufft(pf, freqs, self.sz, real=True)
+        x = anufft(pf, self._precomp["fourier_pts"], self.sz, real=True)
 
         # Roll, return the x with the last three dimensions as self.sz
         # Higher dimensions should be like v.
