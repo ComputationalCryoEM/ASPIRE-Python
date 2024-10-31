@@ -135,7 +135,7 @@ avgs.save("experimental_10073_class_averages_global.star", overwrite=True)
 logger.info("Begin Orientation Estimation")
 
 # Create a custom orientation estimation object for ``avgs``.
-orient_est = CLSync3N(avgs, n_theta=360)
+orient_est = CLSync3N(avgs, n_theta=72)
 
 # Create an ``OrientedSource`` class instance that performs orientation
 # estimation in a lazy fashion upon request of images or rotations.
