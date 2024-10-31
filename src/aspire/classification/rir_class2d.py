@@ -195,7 +195,7 @@ class RIRClass2D(Class2D):
             # Report some information about reflections
             logger.info(
                 f"Count reflected: {np.sum(self.reflections)}"
-                f" {100 * np.mean(self.reflections) } %"
+                f" {100 * np.mean(self.reflections)} %"
             )
 
         return self.classes, self.reflections, self.distances

@@ -84,7 +84,7 @@ def test_estimate_CTF():
                         "Defocus Angle (degrees):"
                         f"\n\tASPIRE= {defocus_ang_degrees:0.2f}*"
                         f'\n\tCTFFIND4= {TEST_OUTPUT["defocus_ang"]:0.2f}*'
-                        f'\n\tError: {abs((TEST_OUTPUT["defocus_ang"]- defocus_ang_degrees)/TEST_OUTPUT["defocus_ang"]) * 100:0.2f}%'
+                        f'\n\tError: {abs((TEST_OUTPUT["defocus_ang"] - defocus_ang_degrees)/TEST_OUTPUT["defocus_ang"]) * 100:0.2f}%'
                     )
 
                 for param in ["cs", "amplitude_contrast", "voltage", "pixel_size"]:

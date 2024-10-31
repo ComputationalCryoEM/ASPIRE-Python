@@ -1,13 +1,9 @@
-import importlib
 import logging
 import os
-import platform
-from importlib.metadata import version
 from unittest import TestCase
 
 import numpy as np
 import pytest
-from packaging.version import parse as parse_version
 
 from aspire.basis import FFBBasis2D
 from aspire.classification import (
