@@ -144,7 +144,7 @@ avgs = DefaultClassAvgSource(
     averager_src=src,
 )
 # We'll continue our pipeline with the first `n_classes` from `avgs`.
-avgs = avgs[:n_classes]
+avgs = avgs[:n_classes].cache()
 
 # Save off the set of class average images.
 avgs.save("experimental_10028_class_averages.star", overwrite=True)
