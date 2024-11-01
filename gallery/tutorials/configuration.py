@@ -23,21 +23,24 @@ and common patterns for overriding.
 # %%
 # System Overrides
 # ----------------
-# From here we can override with a custom config file in your home dir,
-# specifically ``$HOME/.config/ASPIRE/config.yaml`` on most Linux platforms.
+# From here we can override with a persistent custom config file in
+# your home dir, specifically ``$HOME/.config/ASPIRE/config.yaml`` on
+# most Linux platforms.
 # Items in this file will take precedence over the default configuration.
 # For other platforms, refer to the `confuse` documentation.
 #
-# As an example, suppose you want to change the ``foo_module`` ``temp_dir`` variable
-# when working on a specific machine.
+# As an example, suppose you want to change the ``common`` section's
+# ``numeric`` and ``fft`` variables to enable GPU acceleration when
+# working on a specific machine.
 # By creating ``$HOME/.config/ASPIRE/config.yaml`` with the following contents
 # on that machine, ASPIRE's configuration utility will overload
-# the ``temp_dir`` directory from a ``/tmp/bar`` folder to ``/scratch/tmp/bar``.
+# the ``numeric`` and ``fft`` settings.
 #
 #     .. code-block:: yaml
 #
-#       foo_module:
-#         temp_dir: /scratch/tmp/bar
+#       common:
+#         numeric: cupy
+#         fft: cupy
 #
 
 # %%
