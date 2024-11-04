@@ -111,6 +111,9 @@ src = src.phase_flip()
 aiso_noise_estimator = AnisotropicNoiseEstimator(src)
 src = src.whiten(aiso_noise_estimator)
 
+# Cache to memory for some speedup
+src = src.cache()
+
 # Plot the noise profile for inspection
 if interactive:
     plt.imshow(aiso_noise_estimator.filter.evaluate_grid(img_size))
@@ -119,9 +122,6 @@ if interactive:
 # Peek, what do the whitened images look like...
 if interactive:
     src.images[:10].show()
-
-# Cache to memory for some speedup
-src = src.cache()
 
 # %%
 # Optional: CWF Denoising
