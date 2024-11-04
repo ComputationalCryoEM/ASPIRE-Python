@@ -287,8 +287,8 @@ def test_gaussian_scalar_param():
     g_3d = gaussian_3d(L, mu_3d, sigma_3d)
     g_3d_scalar = gaussian_3d(L, mu_3d, sigma)
 
-    assert np.allclose(g_2d, g_2d_scalar)
-    assert np.allclose(g_3d, g_3d_scalar)
+    np.testing.assert_allclose(g_2d, g_2d_scalar)
+    np.testing.assert_allclose(g_3d, g_3d_scalar)
 
 
 @pytest.mark.parametrize("L", [29, 30])

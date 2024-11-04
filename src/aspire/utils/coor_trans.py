@@ -4,6 +4,7 @@ General purpose math functions, mostly geometric in nature.
 
 import logging
 import math
+from functools import cache
 
 import numpy as np
 from numpy.linalg import norm
@@ -83,6 +84,7 @@ def _mgrid_slice(n, shifted, normalized):
     return slice(start, end, num_points)
 
 
+@cache
 def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate one dimensional grid.
@@ -98,6 +100,7 @@ def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     return {"x": x, "r": r}
 
 
+@cache
 def grid_2d(n, shifted=False, normalized=True, indexing="yx", dtype=np.float32):
     """
     Generate two dimensional grid.
@@ -124,6 +127,7 @@ def grid_2d(n, shifted=False, normalized=True, indexing="yx", dtype=np.float32):
     return {"x": x, "y": y, "phi": phi, "r": r}
 
 
+@cache
 def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32):
     """
     Generate three dimensional grid.

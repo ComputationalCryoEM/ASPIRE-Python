@@ -170,15 +170,15 @@ def gaussian_2d(size, mu=(0, 0), sigma=(1, 1), indexing="yx", dtype=np.float64):
     # Construct centered mesh
     g = grid_2d(size, shifted=False, normalized=False, indexing=indexing, dtype=dtype)
 
+    X, Y = g["x"], g["y"]
+
     if indexing == "yx":
         mu, sigma = mu[::-1], sigma[::-1]
-        g["x"], g["y"] = g["y"], g["x"]
+        X, Y = Y, X
     elif indexing != "xy":
         raise ValueError("Indexing must be `yx` or `xy`.")
 
-    p = (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2) + (g["y"] - mu[1]) ** 2 / (
-        2 * sigma[1] ** 2
-    )
+    p = (X - mu[0]) ** 2 / (2 * sigma[0] ** 2) + (Y - mu[1]) ** 2 / (2 * sigma[1] ** 2)
 
     return np.exp(-p).astype(dtype, copy=False)
 
@@ -216,16 +216,18 @@ def gaussian_3d(size, mu=(0, 0, 0), sigma=(1, 1, 1), indexing="zyx", dtype=np.fl
     # Construct centered mesh
     g = grid_3d(size, shifted=False, normalized=False, indexing=indexing, dtype=dtype)
 
+    X, Y, Z = g["x"], g["y"], g["z"]
+
     if indexing == "zyx":
         mu, sigma = mu[::-1], sigma[::-1]
-        g["x"], g["y"], g["z"] = g["z"], g["y"], g["x"]
+        X, Y, Z = Z, Y, X
     elif indexing != "xyz":
         raise ValueError("Indexing must be `zyx` or `xyz`.")
 
     p = (
-        (g["x"] - mu[0]) ** 2 / (2 * sigma[0] ** 2)
-        + (g["y"] - mu[1]) ** 2 / (2 * sigma[1] ** 2)
-        + (g["z"] - mu[2]) ** 2 / (2 * sigma[2] ** 2)
+        (X - mu[0]) ** 2 / (2 * sigma[0] ** 2)
+        + (Y - mu[1]) ** 2 / (2 * sigma[1] ** 2)
+        + (Z - mu[2]) ** 2 / (2 * sigma[2] ** 2)
     )
 
     return np.exp(-p).astype(dtype, copy=False)
