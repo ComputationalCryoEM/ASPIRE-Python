@@ -115,7 +115,6 @@ src = src.cache()
 # you may remove this code block and associated variables.
 
 classification_src = src
-custom_averager = None
 if do_cov2d:
     # Use CWF denoising
     cwf_denoiser = DenoiserCov2D(src)
@@ -163,6 +162,7 @@ if interactive:
 logger.info("Begin Orientation Estimation")
 
 # Create a custom orientation estimation object for ``avgs``.
+# This is done to customize the ``n_theta`` value.
 orient_est = CLSync3N(avgs, n_theta=72)
 
 # Create an ``OrientedSource`` class instance that performs orientation
