@@ -19,7 +19,8 @@ cache:
     # In YAML `null` translates to a limit of `None` in Python,
     # which corresponds to unlimited calls.
     grid_cache_size: null
-    filter_cache_size: null
+    # Using unlimited `filter_cache_size` may cause excessive memory use.
+    filter_cache_size: 2
 
 logging:
     # Set log_dir to a relative or absolute directory
