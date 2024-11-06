@@ -1,9 +1,11 @@
 import inspect
 import logging
+from functools import lru_cache
 
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
+from aspire import config
 from aspire.utils import grid_2d, voltage_to_wavelength
 
 logger = logging.getLogger(__name__)
@@ -110,6 +112,7 @@ class Filter:
         """
         return ScaledFilter(self, c)
 
+    @lru_cache(maxsize=config["cache"]["filter_cache_size"].get())
     def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
         """
         Generates a two dimensional grid with prescribed dtype,

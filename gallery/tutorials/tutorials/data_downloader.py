@@ -46,7 +46,7 @@ downloader.available_downloads()
 #
 #    .. code-block:: yaml
 #
-#      common:
+#      cache:
 #        cache_dir: /tmp/ASPIRE-data
 #
 # See the `ASPIRE Conguration
