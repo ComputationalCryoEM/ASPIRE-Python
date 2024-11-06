@@ -5,6 +5,7 @@ common:
     # fft backend to use - one of pyfftw/scipy/cupy/mkl
     fft: scipy
 
+cache:
     # Set cache directory for ASPIRE example data.
     # By default the cache location will be set by pooch.os_cache(),
     # which sets cache based on operating system as follows:
@@ -12,6 +13,13 @@ common:
     # Unix: ~/.cache/<AppName> or the value of the XDG_CACHE_HOME environment variable, if defined.
     # Windows: C:\Users\<user>\AppData\Local\<AppAuthor>\<AppName>\Cache
     cache_dir: ""
+
+    # The following control runtime cache sizes for various components,
+    # where `size` is the number of cached function calls.
+    # In YAML `null` translates to a limit of `None` in Python,
+    # which corresponds to unlimited calls.
+    grid_cache_size: null
+    filter_cache_size: null
 
 logging:
     # Set log_dir to a relative or absolute directory

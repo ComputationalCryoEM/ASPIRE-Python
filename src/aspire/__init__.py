@@ -63,8 +63,8 @@ logging.debug(
 logging.debug(f"Resolved config.yaml:\n{aspire.config.dump()}\n")
 
 # Set cache location for ASPIRE example data.
-if not config["common"]["cache_dir"].get():
-    config["common"]["cache_dir"] = pooch.os_cache("ASPIRE-data").as_posix()
+if not config["cache"]["cache_dir"].get():
+    config["cache"]["cache_dir"] = pooch.os_cache("ASPIRE-data").as_posix()
 
 # Implements some code that writes out exceptions to 'aspire.err.log'.
 if config["logging"]["log_exceptions"].get(int):

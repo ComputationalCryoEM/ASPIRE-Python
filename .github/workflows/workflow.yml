@@ -149,15 +149,16 @@ jobs:
         echo "Stash the WORK_DIR to GitHub env so we can clean it up later."
         echo "WORK_DIR=${WORK_DIR}" >> $GITHUB_ENV
         echo -e "common:" >> ${WORK_DIR}/config.yaml
-        echo -e "    cache_dir: ${CI_CACHE_DIR}" >> ${WORK_DIR}/config.yaml
         echo -e "    numeric: cupy" >> ${WORK_DIR}/config.yaml
         echo -e "    fft: cupy\n" >> ${WORK_DIR}/config.yaml
+        echo -e "cache:" >> ${WORK_DIR}/config.yaml
+        echo -e "    cache_dir: ${CI_CACHE_DIR}" >> ${WORK_DIR}/config.yaml
         echo "Log the config: ${WORK_DIR}/config.yaml"
         cat ${WORK_DIR}/config.yaml
     - name: Cache Data
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} python -c \
-        "import aspire; print(aspire.config['common']['cache_dir']); import aspire.downloader; aspire.downloader.emdb_2660()"
+        "import aspire; print(aspire.config['cache']['cache_dir']); import aspire.downloader; aspire.downloader.emdb_2660()"
     - name: Run
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} PYTHONWARNINGS=error python -m pytest --durations=50 --cov=aspire --cov-report=xml
