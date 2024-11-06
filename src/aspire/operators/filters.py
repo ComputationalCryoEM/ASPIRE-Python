@@ -205,6 +205,7 @@ class PowerFilter(Filter):
     def _evaluate(self, omega):
         return self._filter.evaluate(omega) ** self._power
 
+    @lru_cache(maxsize=config["cache"]["filter_cache_size"].get())
     def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
         """
         Calls the provided filter's evaluate_grid method in case there is an optimization.
@@ -355,6 +356,7 @@ class ArrayFilter(Filter):
 
         return result
 
+    # No need to cache ArrayFilter
     def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
         """
         Optimized evaluate_grid method for ArrayFilter.
