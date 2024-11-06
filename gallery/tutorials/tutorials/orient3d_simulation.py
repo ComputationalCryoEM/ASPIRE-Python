@@ -83,15 +83,17 @@ logger.info("Get true rotation angles generated randomly by the simulation objec
 rots_true = sim.rotations
 
 # %%
-# Estimate Orientation and Rotation Angles
-# ----------------------------------------
+# Estimate Orientation
+# --------------------
 
-# Initialize an orientation estimation object and create an ``OrientedSource`` object
-# to perform viewing angle estimation. Here, because of the small image size of the
-# ``Simulation``, we customize the ``CLSyncVoting`` method to use fewer theta values
-# when searching for common-lines between pairs of images. Additionally, since we are
-# processing images with no noise, we opt not to use a ``fuzzy_mask``, an option that
-# improves common-line detection in higher noise regimes.
+# Initialize an orientation estimation object and create an
+# ``OrientedSource`` object to perform viewing angle and image offset
+# estimation. Here, because of the small image size of the
+# ``Simulation``, we customize the ``CLSyncVoting`` method to use
+# fewer theta values when searching for common-lines between pairs of
+# images. Additionally, since we are processing images with no noise,
+# we opt not to use a ``fuzzy_mask``, an option that improves
+# common-line detection in higher noise regimes.
 logger.info(
     "Estimate rotation angles and offsets using synchronization matrix and voting method."
 )
