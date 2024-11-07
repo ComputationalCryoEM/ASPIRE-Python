@@ -321,8 +321,8 @@ class FFBBasis3D(FBBasis3D):
         )
 
         # Transpose and copy as contiguous for faster slicing and matrix multiplication.
-        u_even = np.ascontiguousarray(u_even.transpose(3, 0, 1, 2))
-        u_odd = np.ascontiguousarray(u_odd.transpose(3, 0, 1, 2))
+        u_even = xp.ascontiguousarray(u_even.transpose(3, 0, 1, 2))
+        u_odd = xp.ascontiguousarray(u_odd.transpose(3, 0, 1, 2))
 
         for m in range(0, self.ell_max + 1):
             ang_phi_wtd_m_even = self._precomp["ang_phi_wtd_even"][m]
