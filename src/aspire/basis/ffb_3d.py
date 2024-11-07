@@ -60,7 +60,7 @@ class FFBBasis3D(FBBasis3D):
 
         r, wt_r = lgwt(n_r, 0.0, self.kcut, dtype=self.dtype)
         z, wt_z = lgwt(n_phi, -1, 1, dtype=self.dtype)
-        r = r.reshape(n_r, 1)
+        r = xp.asarray(r.reshape(n_r, 1))
         rh = xp.asnumpy(r)
         wt_r = xp.asarray(wt_r.reshape(n_r, 1))
         z = xp.asarray(z.reshape(n_phi, 1))
