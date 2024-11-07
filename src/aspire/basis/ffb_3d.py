@@ -300,32 +300,30 @@ class FFBBasis3D(FBBasis3D):
         n_phi = np.size(self._precomp["ang_phi_wtd_even"][0], 0)
         n_theta = np.size(self._precomp["ang_theta_wtd"], 0)
 
-        # resamping x in a polar Fourier gird using nonuniform discrete Fourier transform
+        # resamping x in a polar Fourier grid using nonuniform discrete Fourier transform
         pf = nufft(x, self._precomp["fourier_pts"])
-
-        pf = m_reshape(pf.T, (n_theta, n_phi * n_r * n_data))
+        pf = pf.reshape(n_data * n_r * n_phi, n_theta)
 
         # evaluate the theta parts
-        ang_theta_wtd_trans = self._precomp["ang_theta_wtd"].T
-        u_even = ang_theta_wtd_trans @ pf.real
-        u_odd = ang_theta_wtd_trans @ pf.imag
+        u_even = pf.real @ self._precomp["ang_theta_wtd"]
+        u_odd = pf.imag @ self._precomp["ang_theta_wtd"]
 
-        u_even = m_reshape(u_even, (2 * self.ell_max + 1, n_phi, n_r, n_data))
-        u_odd = m_reshape(u_odd, (2 * self.ell_max + 1, n_phi, n_r, n_data))
-
-        u_even = u_even.transpose((1, 2, 3, 0))
-        u_odd = u_odd.transpose((1, 2, 3, 0))
+        u_even = u_even.reshape(n_data, n_r, n_phi, 2 * self.ell_max + 1)
+        u_odd = u_odd.reshape(n_data, n_r, n_phi, 2 * self.ell_max + 1)
 
         w_even = xp.zeros(
-            (int(np.floor(self.ell_max / 2) + 1), n_r, 2 * self.ell_max + 1, n_data),
+            (n_data, 2 * self.ell_max + 1, n_r, int(np.floor(self.ell_max / 2) + 1)),
             dtype=x.dtype,
         )
         w_odd = xp.zeros(
-            (int(np.ceil(self.ell_max / 2)), n_r, 2 * self.ell_max + 1, n_data),
+            (n_data, 2 * self.ell_max + 1, n_r, int(np.ceil(self.ell_max / 2))),
             dtype=x.dtype,
         )
 
-        # evaluate the phi parts
+        # Transpose and copy as contiguous for faster slicing and matrix multiplication.
+        u_even = np.ascontiguousarray(u_even.transpose(3, 0, 1, 2))
+        u_odd = np.ascontiguousarray(u_odd.transpose(3, 0, 1, 2))
+
         for m in range(0, self.ell_max + 1):
             ang_phi_wtd_m_even = self._precomp["ang_phi_wtd_even"][m]
             ang_phi_wtd_m_odd = self._precomp["ang_phi_wtd_odd"][m]
@@ -339,24 +337,22 @@ class FFBBasis3D(FBBasis3D):
                 sgns = (1, -1)
 
             for sgn in sgns:
-                u_m_even = u_even[:, :, :, self.ell_max + sgn * m]
-                u_m_odd = u_odd[:, :, :, self.ell_max + sgn * m]
+                u_m_even = u_even[self.ell_max + sgn * m]
+                u_m_odd = u_odd[self.ell_max + sgn * m]
 
-                u_m_even = m_reshape(u_m_even, (n_phi, n_r * n_data))
-                u_m_odd = m_reshape(u_m_odd, (n_phi, n_r * n_data))
+                u_m_even = u_m_even.reshape(n_data * n_r, n_phi)
+                u_m_odd = u_m_odd.reshape(n_data * n_r, n_phi)
 
-                w_m_even = ang_phi_wtd_m_even.T @ u_m_even
-                w_m_odd = ang_phi_wtd_m_odd.T @ u_m_odd
+                w_m_even = u_m_even @ ang_phi_wtd_m_even
+                w_m_odd = u_m_odd @ ang_phi_wtd_m_odd
 
-                w_m_even = m_reshape(w_m_even, (n_even_ell, n_r, n_data))
-                w_m_odd = m_reshape(w_m_odd, (n_odd_ell, n_r, n_data))
-                end = np.size(w_even, 0)
-                w_even[end - n_even_ell : end, :, self.ell_max + sgn * m, :] = w_m_even
-                end = np.size(w_odd, 0)
-                w_odd[end - n_odd_ell : end, :, self.ell_max + sgn * m, :] = w_m_odd
+                w_m_even = w_m_even.reshape(n_data, n_r, n_even_ell)
+                w_m_odd = w_m_odd.reshape(n_data, n_r, n_odd_ell)
 
-        w_even = w_even.transpose((1, 2, 3, 0))
-        w_odd = w_odd.transpose((1, 2, 3, 0))
+                end = np.size(w_even, -1)
+                w_even[:, self.ell_max + sgn * m, :, end - n_even_ell : end] = w_m_even
+                end = np.size(w_odd, -1)
+                w_odd[:, self.ell_max + sgn * m, :, end - n_odd_ell : end] = w_m_odd
 
         # evaluate the radial parts
         v = xp.zeros((n_data, self.count), dtype=x.dtype)
@@ -379,15 +375,13 @@ class FFBBasis3D(FBBasis3D):
                     int((ell - 1) / 2),
                 ]
 
-            v_ell = m_reshape(v_ell, (n_r, (2 * ell + 1) * n_data))
-
-            v_ell = radial_wtd.T @ v_ell
-
-            v_ell = m_reshape(v_ell, (k_max_ell * (2 * ell + 1), n_data))
+            v_ell = v_ell.reshape(n_data * (2 * ell + 1), n_r)
+            v_ell = v_ell @ radial_wtd
+            v_ell = v_ell.reshape(n_data, (2 * ell + 1) * k_max_ell)
 
             # TODO: Fix this to avoid lookup each time.
             ind = self._indices["ells"] == ell
-            v[:, ind] = v_ell.T
+            v[:, ind] = v_ell
 
         # Roll dimensions, last dimension should be self.count,
         # Higher dimensions like x.
