@@ -128,13 +128,13 @@ class FFBBasis3D(FBBasis3D):
 
         ang_theta_wtd = (2 * np.pi / n_theta) * ang_theta
 
-        theta_grid, phi_grid, r_grid = xp.meshgrid(
-            theta.flatten(), phi.flatten(), r.flatten(), sparse=False, indexing="ij"
+        r_grid, phi_grid, theta_grid = xp.meshgrid(
+            r.flatten(), phi.flatten(), theta.flatten(), sparse=False, indexing="ij"
         )
 
-        fourier_x = m_flatten(r_grid * xp.cos(theta_grid) * xp.sin(phi_grid))
-        fourier_y = m_flatten(r_grid * xp.sin(theta_grid) * xp.sin(phi_grid))
-        fourier_z = m_flatten(r_grid * xp.cos(phi_grid))
+        fourier_x = (r_grid * xp.cos(theta_grid) * xp.sin(phi_grid)).flatten()
+        fourier_y = (r_grid * xp.sin(theta_grid) * xp.sin(phi_grid)).flatten()
+        fourier_z = (r_grid * xp.cos(phi_grid)).flatten()
         fourier_pts = (
             2
             * xp.pi
