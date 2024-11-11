@@ -8,7 +8,6 @@ from aspire.utils import (
     Rotation,
     best_rank1_approximation,
     fix_signs,
-    im_to_vec,
     mat_to_vec,
     mean_aligned_angular_distance,
     nearest_rotations,
@@ -17,7 +16,6 @@ from aspire.utils import (
     symmat_to_vec_iso,
     unroll_dim,
     utest_tolerance,
-    vec_to_im,
     vec_to_symmat,
     vec_to_symmat_iso,
     vec_to_vol,
@@ -58,30 +56,6 @@ class MatrixTestCase(TestCase):
         self.assertEqual(m2.shape, (5, 2, 10, 3, 4))
         # The values should still be filled in with the first axis values changing fastest
         self.assertTrue(np.allclose(m2[:, 0, 0, 0, 0], np.array([1, 2, 3, 4, 5])))
-
-    def testImToVec1(self):
-        m = np.empty((3, 3, 10))
-        m2 = im_to_vec(m)
-
-        self.assertEqual(m2.shape, (9, 10))
-
-    def testImToVec2(self):
-        m = np.empty((3, 3))
-        m2 = im_to_vec(m)
-
-        self.assertEqual(m2.shape, (9,))
-
-    def testVecToIm1(self):
-        m = np.empty((25, 10))
-        m2 = vec_to_im(m)
-
-        self.assertEqual(m2.shape, (5, 5, 10))
-
-    def testVecToIm2(self):
-        m = np.empty((16,))
-        m2 = vec_to_im(m)
-
-        self.assertEqual(m2.shape, (4, 4))
 
     def testVolToVec1(self):
         m = np.empty((3, 3, 3, 10))

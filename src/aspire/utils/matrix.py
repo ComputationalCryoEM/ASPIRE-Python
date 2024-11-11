@@ -35,20 +35,6 @@ def roll_dim(X, dim):
     return Y
 
 
-def im_to_vec(im):
-    """
-    Roll up images into vectors
-
-    :param im: An N-by-N-by-... array.
-    :return: An N^2-by-... array.
-    """
-    shape = im.shape
-    assert im.ndim >= 2, "Array should have at least 2 dimensions"
-    assert shape[0] == shape[1], "Array should have first 2 dimensions identical"
-
-    return m_reshape(im, (shape[0] ** 2,) + (shape[2:]))
-
-
 def vol_to_vec(X):
     """
     Roll up volumes into vectors
@@ -63,20 +49,6 @@ def vol_to_vec(X):
     ), "Array should have first 3 dimensions identical"
 
     return m_reshape(X, (shape[0] ** 3,) + (shape[3:]))
-
-
-def vec_to_im(X):
-    """
-    Unroll vectors to images
-
-    :param X: N^2-by-... array.
-    :return: An N-by-N-by-... array.
-    """
-    shape = X.shape
-    N = round(shape[0] ** (1 / 2))
-    assert N**2 == shape[0], "First dimension of X must be square"
-
-    return m_reshape(X, (N, N) + (shape[1:]))
 
 
 def vec_to_vol(X):
