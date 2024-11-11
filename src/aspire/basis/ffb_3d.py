@@ -6,7 +6,6 @@ from aspire.basis import FBBasis3D
 from aspire.basis.basis_utils import lgwt, norm_assoc_legendre, sph_bessel
 from aspire.nufft import anufft, nufft
 from aspire.numeric import xp
-from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -181,15 +180,15 @@ class FFBBasis3D(FBBasis3D):
 
         u_even = xp.zeros(
             (
-                n_r,
-                int(2 * self.ell_max + 1),
-                n_data,
                 int(np.floor(self.ell_max / 2) + 1),
+                n_data,
+                int(2 * self.ell_max + 1),
+                n_r,
             ),
             dtype=v.dtype,
         )
         u_odd = xp.zeros(
-            (n_r, int(2 * self.ell_max + 1), n_data, int(np.ceil(self.ell_max / 2))),
+            (int(np.ceil(self.ell_max / 2)), n_data, int(2 * self.ell_max + 1), n_r),
             dtype=v.dtype,
         )
 
@@ -200,29 +199,27 @@ class FFBBasis3D(FBBasis3D):
             radial_wtd = self._precomp["radial_wtd"][:, 0:k_max_ell, ell]
 
             ind = self._indices["ells"] == ell
-            v_ell = m_reshape(v[:, ind].T, (k_max_ell, (2 * ell + 1) * n_data))
-            v_ell = radial_wtd @ v_ell
-            v_ell = m_reshape(v_ell, (n_r, 2 * ell + 1, n_data))
+            v_ell = v[:, ind].reshape((2 * ell + 1) * n_data, k_max_ell)
+            v_ell = v_ell @ radial_wtd.T
+            v_ell = v_ell.reshape(n_data, 2 * ell + 1, n_r)
 
             if np.mod(ell, 2) == 0:
                 u_even[
+                    int(ell / 2),
                     :,
                     int(self.ell_max - ell) : int(self.ell_max + ell + 1),
                     :,
-                    int(ell / 2),
                 ] = v_ell
             else:
                 u_odd[
+                    int((ell - 1) / 2),
                     :,
                     int(self.ell_max - ell) : int(self.ell_max + ell + 1),
                     :,
-                    int((ell - 1) / 2),
                 ] = v_ell
 
-        u_even = u_even.transpose((3, 0, 1, 2))
-        u_odd = u_odd.transpose((3, 0, 1, 2))
-        w_even = xp.zeros((n_phi, n_r, n_data, 2 * self.ell_max + 1), dtype=v.dtype)
-        w_odd = xp.zeros((n_phi, n_r, n_data, 2 * self.ell_max + 1), dtype=v.dtype)
+        w_even = xp.zeros((2 * self.ell_max + 1, n_phi, n_data, n_r), dtype=v.dtype)
+        w_odd = xp.zeros((2 * self.ell_max + 1, n_phi, n_data, n_r), dtype=v.dtype)
 
         # evaluate the phi parts
         for m in range(0, self.ell_max + 1):
@@ -243,33 +240,32 @@ class FFBBasis3D(FBBasis3D):
                 end = np.size(u_odd, 0)
                 u_m_odd = u_odd[end - n_odd_ell : end, :, self.ell_max + sgn * m, :]
 
-                u_m_even = m_reshape(u_m_even, (n_even_ell, n_r * n_data))
-                u_m_odd = m_reshape(u_m_odd, (n_odd_ell, n_r * n_data))
+                u_m_even = u_m_even.reshape(n_even_ell, n_data * n_r)
+                u_m_odd = u_m_odd.reshape(n_odd_ell, n_data * n_r)
 
                 w_m_even = ang_phi_wtd_m_even @ u_m_even
                 w_m_odd = ang_phi_wtd_m_odd @ u_m_odd
 
-                w_m_even = m_reshape(w_m_even, (n_phi, n_r, n_data))
-                w_m_odd = m_reshape(w_m_odd, (n_phi, n_r, n_data))
+                w_m_even = w_m_even.reshape(n_phi, n_data, n_r)
+                w_m_odd = w_m_odd.reshape(n_phi, n_data, n_r)
 
-                w_even[:, :, :, self.ell_max + sgn * m] = w_m_even
-                w_odd[:, :, :, self.ell_max + sgn * m] = w_m_odd
+                w_even[self.ell_max + sgn * m] = w_m_even
+                w_odd[self.ell_max + sgn * m] = w_m_odd
 
-        w_even = w_even.transpose((3, 0, 1, 2))
-        w_odd = w_odd.transpose((3, 0, 1, 2))
+        w_even = w_even.transpose((2, 3, 1, 0))
+        w_odd = w_odd.transpose((2, 3, 1, 0))
         u_even = w_even
         u_odd = w_odd
 
-        u_even = m_reshape(u_even, (2 * self.ell_max + 1, n_phi * n_r * n_data))
-        u_odd = m_reshape(u_odd, (2 * self.ell_max + 1, n_phi * n_r * n_data))
+        u_even = u_even.reshape(n_data * n_r * n_phi, 2 * self.ell_max + 1)
+        u_odd = u_odd.reshape(n_data * n_r * n_phi, 2 * self.ell_max + 1)
 
         # evaluate the theta parts
-        w_even = self._precomp["ang_theta_wtd"] @ u_even
-        w_odd = self._precomp["ang_theta_wtd"] @ u_odd
+        w_even = u_even @ self._precomp["ang_theta_wtd"].T
+        w_odd = u_odd @ self._precomp["ang_theta_wtd"].T
 
         pf = w_even + 1j * w_odd
-        pf = m_reshape(pf, (n_theta * n_phi * n_r, n_data))
-        pf = xp.moveaxis(pf, 0, -1)
+        pf = pf.reshape(n_data, n_r * n_phi * n_theta)
 
         # perform inverse non-uniformly FFT transformation back to 3D rectangular coordinates
         x = anufft(pf, self._precomp["fourier_pts"], self.sz, real=True)
