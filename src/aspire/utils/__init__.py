@@ -54,9 +54,7 @@ from .matrix import (
     vec_to_mat,
     vec_to_symmat,
     vec_to_symmat_iso,
-    vec_to_vol,
     vecmat_to_volmat,
-    vol_to_vec,
     volmat_to_vecmat,
 )
 from .multiprocessing import (
