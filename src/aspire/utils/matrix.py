@@ -35,36 +35,6 @@ def roll_dim(X, dim):
     return Y
 
 
-def vol_to_vec(X):
-    """
-    Roll up volumes into vectors
-
-    :param X: N-by-N-by-N-by-... array.
-    :return: An N^3-by-... array.
-    """
-    shape = X.shape
-    assert X.ndim >= 3, "Array should have at least 3 dimensions"
-    assert (
-        shape[0] == shape[1] == shape[2]
-    ), "Array should have first 3 dimensions identical"
-
-    return m_reshape(X, (shape[0] ** 3,) + (shape[3:]))
-
-
-def vec_to_vol(X):
-    """
-    Unroll vectors to volumes
-
-    :param X: N^3-by-... array.
-    :return: An N-by-N-by-N-by-... array.
-    """
-    shape = X.shape
-    N = round(shape[0] ** (1 / 3))
-    assert N**3 == shape[0], "First dimension of X must be cubic"
-
-    return m_reshape(X, (N, N, N) + (shape[1:]))
-
-
 def vecmat_to_volmat(X):
     """
     Roll up vector matrices into volume matrices

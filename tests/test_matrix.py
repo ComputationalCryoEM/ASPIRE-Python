@@ -18,9 +18,7 @@ from aspire.utils import (
     utest_tolerance,
     vec_to_symmat,
     vec_to_symmat_iso,
-    vec_to_vol,
     vecmat_to_volmat,
-    vol_to_vec,
     volmat_to_vecmat,
 )
 
@@ -56,30 +54,6 @@ class MatrixTestCase(TestCase):
         self.assertEqual(m2.shape, (5, 2, 10, 3, 4))
         # The values should still be filled in with the first axis values changing fastest
         self.assertTrue(np.allclose(m2[:, 0, 0, 0, 0], np.array([1, 2, 3, 4, 5])))
-
-    def testVolToVec1(self):
-        m = np.empty((3, 3, 3, 10))
-        m2 = vol_to_vec(m)
-
-        self.assertEqual(m2.shape, (27, 10))
-
-    def testVolToVec2(self):
-        m = np.empty((3, 3, 3))
-        m2 = vol_to_vec(m)
-
-        self.assertEqual(m2.shape, (27,))
-
-    def testVecToVol1(self):
-        m = np.empty((27, 10))
-        m2 = vec_to_vol(m)
-
-        self.assertEqual(m2.shape, (3, 3, 3, 10))
-
-    def testVecToVol2(self):
-        m = np.empty((27,))
-        m2 = vec_to_vol(m)
-
-        self.assertEqual(m2.shape, (3, 3, 3))
 
     def testVecmatToVolmat(self):
         m = np.empty((8, 27, 10))
