@@ -16,7 +16,6 @@ from aspire.utils import (
     anorm,
     make_symmat,
     uniform_random_angles,
-    vecmat_to_volmat,
 )
 from aspire.utils.random import rand, randi, randn
 from aspire.volume import AsymmetricVolume, Volume
@@ -399,7 +398,8 @@ class Simulation(ImageSource):
         eigs_true = eigs_true.T.to_vec()
 
         covar_true = eigs_true.T @ lamdbas_true @ eigs_true
-        covar_true = vecmat_to_volmat(covar_true)
+        # Hrmm
+        covar_true = covar_true.reshape((self.L,) * 6).transpose(2, 1, 0, 5, 4, 3)
 
         return covar_true
 
