@@ -154,6 +154,7 @@ class CovarianceEstimator(Estimator):
         result = self.basis.mat_evaluate_t(
             kernel.convolve_volume_matrix(self.basis.mat_evaluate(coef))
         )
+
         return symmat_to_vec_iso(result) if packed else result
 
     def src_backward(self, mean_vol, noise_variance, shrink_method=None):
