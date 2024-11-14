@@ -148,6 +148,8 @@ class FBBasis3D(Basis, FBBasisMixin):
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
         """
+        stack_shape = v.shape[:-1]
+        v = v.reshape(-1, v.shape[-1])
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
         mask = self.basis_coords["mask"].flatten()
@@ -174,7 +176,7 @@ class FBBasis3D(Basis, FBBasisMixin):
 
             ind_radial += len(idx_radial)
 
-        return x.reshape(-1, *self.sz)
+        return x.reshape(*stack_shape, *self.sz)
 
     def _evaluate_t(self, x):
         """
@@ -187,6 +189,7 @@ class FBBasis3D(Basis, FBBasisMixin):
             equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
+        stack_shape = x.shape[: -self.ndim]
         x = x.reshape(-1, np.prod(self.sz))
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
@@ -214,4 +217,4 @@ class FBBasis3D(Basis, FBBasisMixin):
 
             ind_radial += len(idx_radial)
 
-        return v
+        return v.reshape(*stack_shape, self.count)
