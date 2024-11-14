@@ -59,11 +59,11 @@ class FFBBasis3D(FBBasis3D):
 
         r, wt_r = lgwt(n_r, 0.0, self.kcut, dtype=self.dtype)
         z, wt_z = lgwt(n_phi, -1, 1, dtype=self.dtype)
-        r = xp.asarray(r.reshape(n_r, 1))
+        r = xp.asarray(r).reshape(n_r, 1)
         rh = xp.asnumpy(r)
-        wt_r = xp.asarray(wt_r.reshape(n_r, 1))
-        z = xp.asarray(z.reshape(n_phi, 1))
-        wt_z = xp.asarray(wt_z.reshape(n_phi, 1))
+        wt_r = xp.asarray(wt_r).reshape(n_r, 1)
+        z = xp.asarray(z).reshape(n_phi, 1)
+        wt_z = xp.asarray(wt_z).reshape(n_phi, 1)
         phi = xp.arccos(z)
         wt_phi = wt_z
         theta = 2 * xp.pi * xp.arange(n_theta, dtype=self.dtype).T / (2 * n_theta)
