@@ -11,4 +11,4 @@ dependencies:
   - scipy=1.9.3
   - scikit-learn
   - scikit-image
-  - mkl!=2024.2.*  # possible regression impacts eig solver
+  - mkl=2024.1.*  # possible regression impacts eig solver in later versions up to 2025.0
