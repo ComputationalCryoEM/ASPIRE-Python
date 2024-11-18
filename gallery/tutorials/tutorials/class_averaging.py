@@ -194,7 +194,7 @@ review_class = 5
 # ``noise_src``.
 classes = avgs.class_indices[review_class]
 reflections = avgs.class_refl[review_class]
-print(f"Class {review_class}'s neighors: {classes}")
+print(f"Class {review_class}'s neighbors: {classes}")
 print(f"Class {review_class}'s reflections: {reflections}")
 
 # The original image is the initial image in the class array.

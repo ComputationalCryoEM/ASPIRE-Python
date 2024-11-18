@@ -15,8 +15,6 @@ Abinitio model components as a pipeline.
 # In addition, import some classes from
 # the ASPIRE package that will be used throughout this experiment.
 
-import logging
-
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -28,8 +26,6 @@ from aspire.operators import FunctionFilter, RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, Simulation
 from aspire.utils import mean_aligned_angular_distance
-
-logger = logging.getLogger(__name__)
 
 
 # %%
@@ -55,7 +51,7 @@ noise_variance = 5e-7  # Set a target noise variance
 # Start with the hi-res volume map EMDB-2660 sourced from EMDB,
 # https://www.ebi.ac.uk/emdb/EMD-2660, and dowloaded via ASPIRE's downloader utility.
 og_v = emdb_2660()
-logger.info("Original volume map data" f" shape: {og_v.shape} dtype:{og_v.dtype}")
+print("Original volume map data" f" shape: {og_v.shape} dtype:{og_v.dtype}")
 
 
 # Then create a filter based on that variance
@@ -72,7 +68,7 @@ def noise_function(x, y):
 
 custom_noise = CustomNoiseAdder(noise_filter=FunctionFilter(noise_function))
 
-logger.info("Initialize CTF filters.")
+print("Initialize CTF filters.")
 # Create some CTF effects
 pixel_size = og_v.pixel_size  # Pixel size (in angstroms)
 voltage = 200  # Voltage (in KV)
@@ -104,7 +100,7 @@ if interactive:
     src.images[:10].show()
 
 # Use phase_flip to attempt correcting for CTF.
-logger.info("Perform phase flip to input images.")
+print("Perform phase flip to input images.")
 src = src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
@@ -175,7 +171,7 @@ avgs.save("simulated_abinitio_pipeline_class_averages.star", overwrite=True)
 # Next create a CL instance for estimating orientation of projections
 # using the Common Line with Synchronization Voting method.
 
-logger.info("Begin Orientation Estimation")
+print("Begin Orientation Estimation")
 
 # Stash true rotations for later comparison.
 # Note class selection re-ordered our images, so we remap the indices back to the original source.
@@ -189,11 +185,11 @@ orient_est = CLSync3N(avgs, n_theta=180)
 # estimation in a lazy fashion upon request of images or rotations.
 oriented_src = OrientedSource(avgs, orient_est)
 
-logger.info("Compare with known rotations")
+print("Compare with known rotations")
 # Compare with known true rotations. ``mean_aligned_angular_distance`` globally aligns the estimated
 # rotations to the ground truth and finds the mean angular distance between them.
 mean_ang_dist = mean_aligned_angular_distance(oriented_src.rotations, true_rotations)
-logger.info(
+print(
     f"Mean angular distance between globally aligned estimates and ground truth rotations: {mean_ang_dist}\n"
 )
 
@@ -203,7 +199,7 @@ logger.info(
 #
 # Using the estimated rotations, attempt to reconstruct a volume.
 
-logger.info("Begin Volume reconstruction")
+print("Begin Volume reconstruction")
 
 # Setup an estimator to perform the back projection.
 estimator = MeanEstimator(oriented_src)
