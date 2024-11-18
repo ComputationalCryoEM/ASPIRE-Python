@@ -26,11 +26,6 @@ file_path = os.path.join(
 )
 
 
-print(
-    "This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package."
-)
-
-
 # %%
 # Image Formatting
 # ----------------
@@ -89,7 +84,7 @@ vols[0] /= np.max(vols[0])
 vols = vols.downsample(img_size)
 
 # Create a simulation object with specified filters and the downsampled 3D map
-print("Use downsampled map to creat simulation object.")
+print("Use downsampled map to create simulation object.")
 sim = Simulation(
     L=img_size,
     n=num_imgs,
@@ -154,9 +149,7 @@ coef_noise = ffbbasis.evaluate_t(imgs_noise)
 # mean and covariance estimates will allow us to evaluate the mean and
 # covariance estimates from the filtered, noisy data, later.
 
-print(
-    "Get 2D covariance matrices of clean and noisy images using FB coefficients."
-)
+print("Get 2D covariance matrices of clean and noisy images using FB coefficients.")
 cov2d = RotCov2D(ffbbasis)
 mean_coef = cov2d.get_mean(coef_clean)
 covar_coef = cov2d.get_covar(coef_clean, mean_coef, noise_var=0)

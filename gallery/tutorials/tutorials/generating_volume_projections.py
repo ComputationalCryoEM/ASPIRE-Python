@@ -16,7 +16,6 @@ from aspire.source.simulation import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
 
-
 # %%
 # Configure how many images we'd like to project
 # ----------------------------------------------

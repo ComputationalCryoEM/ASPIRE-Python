@@ -15,10 +15,7 @@ import numpy as np
 from aspire.basis import FBBasis2D, FFBBasis2D, FPSWFBasis2D, PSWFBasis2D
 from aspire.utils import anorm
 
-
-print(
-    "This script illustrates different image expansion methods in ASPIRE package."
-)
+print("This script illustrates different image expansion methods in ASPIRE package.")
 
 # %%
 # Load Initial Images

@@ -20,7 +20,6 @@ from aspire.utils import eigs
 from aspire.utils.random import Random
 from aspire.volume import LegacyVolume, Volume
 
-
 # %%
 # Create Simulation Object
 # ------------------------
