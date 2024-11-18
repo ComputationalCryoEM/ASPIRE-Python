@@ -6,7 +6,6 @@ This script illustrates the estimation of orientation angles using a synchroniza
 matrix and the voting method, based on simulated data projected from a 3D cryo-EM map.
 """
 
-import logging
 import os
 
 import numpy as np
@@ -17,13 +16,11 @@ from aspire.source import OrientedSource, Simulation
 from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import Volume
 
-logger = logging.getLogger(__name__)
-
 file_path = os.path.join(
     os.path.dirname(os.getcwd()), "data", "clean70SRibosome_vol_65p.mrc"
 )
 
-logger.info(
+print(
     "This script illustrates orientation estimation using "
     "synchronization matrix and voting method"
 )
@@ -51,7 +48,7 @@ defocus_ct = 7  # Number of defocus groups.
 Cs = 2.0  # Spherical aberration
 alpha = 0.1  # Amplitude contrast
 
-logger.info("Initialize simulation object and CTF filters.")
+print("Initialize simulation object and CTF filters.")
 # Create CTF filters
 filters = [
     RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
@@ -64,7 +61,7 @@ filters = [
 
 # Load the map file of a 70S Ribosome and downsample the 3D map to desired resolution.
 # The downsampling can be done by the internal function of Volume object.
-logger.info(
+print(
     f"Load 3D map and downsample 3D map to desired grids "
     f"of {img_size} x {img_size} x {img_size}."
 )
@@ -76,10 +73,10 @@ vols = vols.downsample(img_size)
 # --------------------------------------------------------
 
 # Create a simulation object with specified filters and the downsampled 3D map
-logger.info("Use downsampled map to creat simulation object.")
+print("Use downsampled map to creat simulation object.")
 sim = Simulation(L=img_size, n=num_imgs, vols=vols, unique_filters=filters, dtype=dtype)
 
-logger.info("Get true rotation angles generated randomly by the simulation object.")
+print("Get true rotation angles generated randomly by the simulation object.")
 rots_true = sim.rotations
 
 # %%
@@ -94,7 +91,7 @@ rots_true = sim.rotations
 # images. Additionally, since we are processing images with no noise,
 # we opt not to use a ``fuzzy_mask``, an option that improves
 # common-line detection in higher noise regimes.
-logger.info(
+print(
     "Estimate rotation angles and offsets using synchronization matrix and voting method."
 )
 orient_est = CLSyncVoting(sim, n_theta=36, mask=False)
@@ -109,7 +106,7 @@ rots_est = oriented_src.rotations
 # ``mean_aligned_angular_distance`` will perform global alignment of the estimated rotations
 # to the ground truth and find the mean angular distance between them (in degrees).
 mean_ang_dist = mean_aligned_angular_distance(rots_est, rots_true)
-logger.info(
+print(
     f"Mean angular distance between estimates and ground truth: {mean_ang_dist} degrees"
 )
 
@@ -128,6 +125,6 @@ offs_diff = np.sqrt(np.sum((oriented_src.offsets - sim.offsets) ** 2, axis=1))
 
 # Calculate the mean error in pixels across all images.
 offs_err = offs_diff.mean()
-logger.info(
+print(
     f"Mean offset error in pixels {offs_err}, approx {offs_err/img_size*100:.1f}%"
 )

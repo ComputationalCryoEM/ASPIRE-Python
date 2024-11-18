@@ -22,7 +22,6 @@ https://www.ebi.ac.uk/emdb/EMD-8511
 # In addition, import some classes from
 # the ASPIRE package that will be used throughout this experiment.
 
-import logging
 from pathlib import Path
 
 from aspire.abinitio import CLSymmetryC3C4
@@ -30,8 +29,6 @@ from aspire.denoising import DefaultClassAvgSource
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource
-
-logger = logging.getLogger(__name__)
 
 
 # %%
@@ -67,11 +64,11 @@ src = RelionSource(
 )
 
 # Downsample the images
-logger.info(f"Set the resolution to {img_size} X {img_size}")
+print(f"Set the resolution to {img_size} X {img_size}")
 src = src.downsample(img_size)
 
 # Use phase_flip to attempt correcting for CTF.
-logger.info("Perform phase flip to input images.")
+print("Perform phase flip to input images.")
 src = src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
@@ -87,7 +84,7 @@ src = src.cache()
 #
 # Now perform classification and averaging for each class.
 
-logger.info("Begin Class Averaging")
+print("Begin Class Averaging")
 
 # Now perform classification and averaging for each class.
 # Automatically configure parallel processing
@@ -106,7 +103,7 @@ avgs.save("experimental_10081_class_averages.star", overwrite=True)
 # Next create a CL instance for estimating orientation of projections
 # using the Common Line with Synchronization Voting method.
 
-logger.info("Begin Orientation Estimation")
+print("Begin Orientation Estimation")
 
 # Create a custom orientation estimation object for ``avgs``.
 orient_est = CLSymmetryC3C4(avgs, symmetry="C4", n_theta=72, max_shift=0)
@@ -127,7 +124,7 @@ oriented_src = OrientedSource(avgs, orient_est)
 # back-projection.  This boosts the effective number of images used in
 # the reconstruction from ``n_classes`` to ``4*n_classes``.
 
-logger.info("Begin Volume reconstruction")
+print("Begin Volume reconstruction")
 
 
 # Setup an estimator to perform the back projection.
@@ -136,4 +133,4 @@ estimator = MeanEstimator(oriented_src)
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
 estimated_volume.save(volume_output_filename, overwrite=True)
-logger.info(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")
+print(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")

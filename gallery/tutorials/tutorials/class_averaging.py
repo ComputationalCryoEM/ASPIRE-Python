@@ -6,8 +6,6 @@ We demonstrate class averaging using the rotationally invariant
 representation algorithm.
 """
 
-import logging
-
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image as PILImage
@@ -17,7 +15,6 @@ from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
 from aspire.utils import gaussian_2d
 
-logger = logging.getLogger(__name__)
 
 # %%
 # Build Simulated Data
@@ -197,8 +194,8 @@ review_class = 5
 # ``noise_src``.
 classes = avgs.class_indices[review_class]
 reflections = avgs.class_refl[review_class]
-logger.info(f"Class {review_class}'s neighors: {classes}")
-logger.info(f"Class {review_class}'s reflections: {reflections}")
+print(f"Class {review_class}'s neighors: {classes}")
+print(f"Class {review_class}'s reflections: {reflections}")
 
 # The original image is the initial image in the class array.
 original_image_idx = classes[0]
@@ -230,9 +227,9 @@ est_rotations = avgs.averager.rotations
 est_shifts = avgs.averager.shifts
 est_correlations = avgs.averager.correlations
 
-logger.info(f"Estimated Rotations: {est_rotations}")
-logger.info(f"Estimated Shifts: {est_shifts}")
-logger.info(f"Estimated Correlations: {est_correlations}")
+print(f"Estimated Rotations: {est_rotations}")
+print(f"Estimated Shifts: {est_shifts}")
+print(f"Estimated Correlations: {est_correlations}")
 
 # Compare the original unaligned images with the estimated alignment.
 # Get the indices from the classification results.
@@ -247,7 +244,7 @@ original_img_nbr = noisy_src.images[original_img_nbr_idx].asnumpy()[0]
 # Rotate using estimated rotations.
 angle = est_rotations[0, nbr] * 180 / np.pi
 if reflections[nbr]:
-    logger.info("Reflection reported.")
+    print("Reflection reported.")
     original_img_nbr = np.flipud(original_img_nbr)
 rotated_img_nbr = np.asarray(PILImage.fromarray(original_img_nbr).rotate(angle))
 
