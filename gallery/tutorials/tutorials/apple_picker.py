@@ -5,15 +5,12 @@ Apple Picker
 We demonstrate ASPIRE's particle picking methods using the ``Apple`` class.
 """
 
-import logging
 import os
 
 import matplotlib.pyplot as plt
 import mrcfile
 
 from aspire.apple.apple import Apple
-
-logger = logging.getLogger(__name__)
 
 # %%
 # Read and Plot Micrograph
@@ -63,8 +60,8 @@ centers, particles_img = apple_picker.process_micrograph(file_path, create_jpg=T
 
 img_dim = micro_img.shape
 particles = centers.shape[0]
-logger.info(f"Dimensions of the micrograph are {img_dim}")
-logger.info(f"{particles} particles were picked")
+print(f"Dimensions of the micrograph are {img_dim}")
+print(f"{particles} particles were picked")
 
 # sphinx_gallery_thumbnail_number = 2
 plt.imshow(particles_img, cmap="gray")

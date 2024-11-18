@@ -8,7 +8,6 @@ images in a Fourier-Bessel basis and applying the Wiener filter induced by
 that covariance matrix.
 """
 
-import logging
 import os
 
 import matplotlib.pyplot as plt
@@ -22,14 +21,12 @@ from aspire.source.simulation import Simulation
 from aspire.utils import anorm
 from aspire.volume import Volume
 
-logger = logging.getLogger(__name__)
-
 file_path = os.path.join(
     os.path.dirname(os.getcwd()), "data", "clean70SRibosome_vol_65p.mrc"
 )
 
 
-logger.info(
+print(
     "This script illustrates 2D covariance Wiener filtering functionality in ASPIRE package."
 )
 
@@ -44,7 +41,7 @@ img_size = 64
 num_imgs = 1024
 # Set dtype for this experiment
 dtype = np.float32
-logger.info(f"Simulation running in {dtype} precision.")
+print(f"Simulation running in {dtype} precision.")
 
 
 # %%
@@ -73,7 +70,7 @@ alpha = 0.1  # Amplitude contrast
 # Initialize Simulation Object and CTF Filters
 # --------------------------------------------
 
-logger.info("Initialize simulation object and CTF filters.")
+print("Initialize simulation object and CTF filters.")
 # Create filters
 ctf_filters = [
     RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
@@ -81,7 +78,7 @@ ctf_filters = [
 ]
 
 # Load the map file of a 70S Ribosome
-logger.info(
+print(
     f"Load 3D map and downsample 3D map to desired grids "
     f"of {img_size} x {img_size} x {img_size}."
 )
@@ -92,7 +89,7 @@ vols[0] /= np.max(vols[0])
 vols = vols.downsample(img_size)
 
 # Create a simulation object with specified filters and the downsampled 3D map
-logger.info("Use downsampled map to creat simulation object.")
+print("Use downsampled map to creat simulation object.")
 sim = Simulation(
     L=img_size,
     n=num_imgs,
@@ -119,12 +116,12 @@ h_idx = sim.filter_indices
 h_ctf_fb = [ffbbasis.filter_to_basis_mat(filt) for filt in ctf_filters]
 
 # Get clean images from projections of 3D map.
-logger.info("Apply CTF filters to clean images.")
+print("Apply CTF filters to clean images.")
 imgs_clean = sim.projections[:]
 imgs_ctf_clean = sim.clean_images[:]
 power_clean = imgs_ctf_clean.norm() ** 2 / imgs_ctf_clean.size
 sn_ratio = power_clean / noise_var
-logger.info(f"Signal to noise ratio is {sn_ratio}.")
+print(f"Signal to noise ratio is {sn_ratio}.")
 
 # get noisy images after applying CTF and noise filters
 imgs_noise = sim.images[:num_imgs]
@@ -139,7 +136,7 @@ imgs_noise = sim.images[:num_imgs]
 # expansion by applying the adjoint of the evaluation mapping using
 # ``basis.evaluate_t``.
 
-logger.info("Get coefficients of clean and noisy images in FFB basis.")
+print("Get coefficients of clean and noisy images in FFB basis.")
 coef_clean = ffbbasis.evaluate_t(imgs_clean)
 coef_noise = ffbbasis.evaluate_t(imgs_noise)
 
@@ -157,7 +154,7 @@ coef_noise = ffbbasis.evaluate_t(imgs_noise)
 # mean and covariance estimates will allow us to evaluate the mean and
 # covariance estimates from the filtered, noisy data, later.
 
-logger.info(
+print(
     "Get 2D covariance matrices of clean and noisy images using FB coefficients."
 )
 cov2d = RotCov2D(ffbbasis)
@@ -202,7 +199,7 @@ covar_coef_est = cov2d.get_covar(
 # covariance, and the variance of the noise. The resulting estimator has
 # the lowest expected mean square error out of all linear estimators.
 
-logger.info("Get the CWF coefficients of noising images.")
+print("Get the CWF coefficients of noising images.")
 coef_est = cov2d.get_cwf_coefs(
     coef_noise,
     h_ctf_fb,
@@ -230,9 +227,9 @@ diff_covar = covar_coef_diff.norm() / covar_coef.norm()
 
 # Calculate the normalized RMSE of the estimated images.
 nrmse_ims = (imgs_est - imgs_clean).norm() / imgs_clean.norm()
-logger.info(f"Deviation of the noisy mean estimate: {diff_mean}")
-logger.info(f"Deviation of the noisy covariance estimate: {diff_covar}")
-logger.info(f"Estimated images normalized RMSE: {nrmse_ims}")
+print(f"Deviation of the noisy mean estimate: {diff_mean}")
+print(f"Deviation of the noisy covariance estimate: {diff_covar}")
+print(f"Estimated images normalized RMSE: {nrmse_ims}")
 
 # plot the first images at different stages
 idm = 0

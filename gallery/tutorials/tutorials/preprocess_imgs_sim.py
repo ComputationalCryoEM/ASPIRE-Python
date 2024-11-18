@@ -6,7 +6,6 @@ This script illustrates the preprocess steps implemented prior to starting the p
 reconstructing a 3D map using simulated 2D images.
 """
 
-import logging
 import os
 
 import matplotlib.pyplot as plt
@@ -16,8 +15,6 @@ from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import Simulation
 from aspire.volume import Volume
-
-logger = logging.getLogger(__name__)
 
 file_path = os.path.join(
     os.path.dirname(os.getcwd()), "data", "clean70SRibosome_vol_65p.mrc"
@@ -54,7 +51,7 @@ alpha = 0.1  # Amplitude contrast
 # Build Simulation Object and Apply Noise
 # ---------------------------------------
 
-logger.info("Initialize simulation object and CTF filters.")
+print("Initialize simulation object and CTF filters.")
 # Create CTF filters
 ctf_filters = [
     RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
@@ -62,16 +59,16 @@ ctf_filters = [
 ]
 
 # Load the map file of a 70S ribosome and downsample the 3D map to desired image size.
-logger.info("Load 3D map from mrc file")
+print("Load 3D map from mrc file")
 vols = Volume.load(file_path)
 
 # Downsample the volume to a desired image size and increase density
 # by 1.0e5 time for a better graph view
-logger.info(f"Downsample map to a image size of {img_size} x {img_size} x {img_size}")
+print(f"Downsample map to a image size of {img_size} x {img_size} x {img_size}")
 vols = vols.downsample(img_size) * 1.0e5
 
 # Create a simulation object with specified filters and the downsampled 3D map
-logger.info("Use downsampled map to create simulation object.")
+print("Use downsampled map to create simulation object.")
 source = Simulation(
     L=img_size,
     n=num_imgs,
@@ -89,22 +86,22 @@ source = Simulation(
 # variable ``source_*``.  That leaves the original ``source`` object
 # untouched.
 
-logger.info("Obtain original images.")
+print("Obtain original images.")
 imgs_od = source.images[0].asnumpy()
 
-logger.info("Perform phase flip to input images.")
+print("Perform phase flip to input images.")
 source_pf = source.phase_flip()
 
-logger.info(f"Downsample image size to {ds_img_size} X {ds_img_size}")
+print(f"Downsample image size to {ds_img_size} X {ds_img_size}")
 source_ds = source.downsample(ds_img_size)
 
-logger.info("Normalize images to background noise.")
+print("Normalize images to background noise.")
 source_nb = source.normalize_background()
 
-logger.info("Whiten noise of images")
+print("Whiten noise of images")
 source_wt = source.whiten()
 
-logger.info("Invert the global density contrast if need")
+print("Invert the global density contrast if need")
 source_rc = source.invert_contrast()
 
 
@@ -113,7 +110,7 @@ source_rc = source.invert_contrast()
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Plot the first images.
 
-logger.info("Plot first image from each preprocess steps")
+print("Plot first image from each preprocess steps")
 idm = 0
 plt.subplot(2, 3, 1)
 plt.imshow(imgs_od[idm], cmap="gray")
@@ -160,26 +157,26 @@ plt.tight_layout()
 # we can copy a source just by copying the object.
 source_copy = source
 
-logger.info("Obtain original images.")
+print("Obtain original images.")
 imgs_seq_od = source.images[0].asnumpy()
 
-logger.info("Perform phase flip to input images.")
+print("Perform phase flip to input images.")
 source = source.phase_flip()
 imgs_seq_pf = source.images[0].asnumpy()
 
-logger.info(f"Downsample image size to {ds_img_size} X {ds_img_size}")
+print(f"Downsample image size to {ds_img_size} X {ds_img_size}")
 source = source.downsample(ds_img_size)
 imgs_seq_ds = source.images[0].asnumpy()
 
-logger.info("Normalize images to background noise.")
+print("Normalize images to background noise.")
 source = source.normalize_background()
 imgs_seq_nb = source.images[0].asnumpy()
 
-logger.info("Whiten noise of images")
+print("Whiten noise of images")
 source = source.whiten()
 imgs_seq_wt = source.images[0].asnumpy()
 
-logger.info("Invert the global density contrast if need")
+print("Invert the global density contrast if need")
 source = source.invert_contrast()
 imgs_seq_rc = source.images[0].asnumpy()
 
@@ -189,7 +186,7 @@ imgs_seq_rc = source.images[0].asnumpy()
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Plot the first images.
 
-logger.info("Plot first image from each preprocess steps")
+print("Plot first image from each preprocess steps")
 idm = 0
 plt.subplot(2, 3, 1)
 plt.imshow(imgs_od[idm], cmap="gray")
@@ -231,11 +228,11 @@ plt.tight_layout()
 # We'll reset our ``source`` to the reference copy we started with.
 source = source_copy
 
-logger.info("Perform phase flip to input images.")
-logger.info(f"Downsample image size to {ds_img_size} X {ds_img_size}")
-logger.info("Normalize images to background noise.")
-logger.info("Whiten noise of images")
-logger.info("Invert the global density contrast if need")
+print("Perform phase flip to input images.")
+print(f"Downsample image size to {ds_img_size} X {ds_img_size}")
+print("Normalize images to background noise.")
+print("Whiten noise of images")
+print("Invert the global density contrast if need")
 source = (
     source.phase_flip()
     .downsample(ds_img_size)
