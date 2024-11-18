@@ -15,7 +15,6 @@ from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource  # Helpful hint if you want to BYO array.
 from aspire.utils import gaussian_2d
 
-
 # %%
 # Build Simulated Data
 # --------------------

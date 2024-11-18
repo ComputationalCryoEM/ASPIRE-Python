@@ -27,7 +27,6 @@ from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, Simulation
 from aspire.utils import mean_aligned_angular_distance
 
-
 # %%
 # Parameters
 # ---------------

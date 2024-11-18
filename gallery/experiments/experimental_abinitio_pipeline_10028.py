@@ -33,7 +33,6 @@ from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource
 
-
 # %%
 # Parameters
 # ---------------

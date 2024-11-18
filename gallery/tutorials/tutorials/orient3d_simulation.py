@@ -125,6 +125,4 @@ offs_diff = np.sqrt(np.sum((oriented_src.offsets - sim.offsets) ** 2, axis=1))
 
 # Calculate the mean error in pixels across all images.
 offs_err = offs_diff.mean()
-print(
-    f"Mean offset error in pixels {offs_err}, approx {offs_err/img_size*100:.1f}%"
-)
+print(f"Mean offset error in pixels {offs_err}, approx {offs_err/img_size*100:.1f}%")

@@ -41,7 +41,6 @@ from aspire.denoising import ClassAvgSource
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource
 
-
 # %%
 # Parameters
 # ---------------
