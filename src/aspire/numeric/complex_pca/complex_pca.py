@@ -13,8 +13,6 @@ Unfortunately we need a complex valued PCA, so we wrap theirs for now.
 
 import numpy as np
 import scipy.sparse as sp
-import sklearn
-from packaging.version import Version
 from sklearn.decomposition import PCA
 from sklearn.utils._array_api import get_namespace
 
@@ -71,22 +69,11 @@ class ComplexPCA(PCA):
             else:
                 self._fit_svd_solver = "full"
 
-        # sci-kit changed `_fit_*()` API in latest release v1.5.0
-        # which supports Python 3.9 - 3.12. This can be removed after
-        # our minimal support is Python 3.9.
-        API_dep = Version(sklearn.__version__) < Version("1.5.0")
-
         # Call different fits for either full or truncated SVD
         if self._fit_svd_solver == "full":
-            if API_dep:
-                return self._fit_full(X, n_components)
-            else:
-                return self._fit_full(X, n_components, xp, is_array_api_compliant)
+            return self._fit_full(X, n_components, xp, is_array_api_compliant)
         elif self._fit_svd_solver in ["arpack", "randomized"]:
-            if API_dep:
-                return self._fit_truncated(X, n_components, self._fit_svd_solver)
-            else:
-                return self._fit_truncated(X, n_components, xp)
+            return self._fit_truncated(X, n_components, xp)
         else:
             raise ValueError(
                 "Unrecognized svd_solver='{0}'" "".format(self._fit_svd_solver)
