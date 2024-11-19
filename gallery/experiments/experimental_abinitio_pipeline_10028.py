@@ -22,6 +22,7 @@ https://www.ebi.ac.uk/emdb/EMD-2660
 # In addition, import some classes from
 # the ASPIRE package that will be used throughout this experiment.
 
+import logging
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -32,6 +33,9 @@ from aspire.denoising import DefaultClassAvgSource, DenoisedSource, DenoiserCov2
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource
+
+logger = logging.getLogger(__name__)
+
 
 # %%
 # Parameters
@@ -64,7 +68,7 @@ src = RelionSource(
 )
 
 # Downsample the images
-print(f"Set the resolution to {img_size} X {img_size}")
+logger.info(f"Set the resolution to {img_size} X {img_size}")
 src = src.downsample(img_size)
 
 # Peek
@@ -72,7 +76,7 @@ if interactive:
     src.images[:10].show()
 
 # Use phase_flip to attempt correcting for CTF.
-print("Perform phase flip to input images.")
+logger.info("Perform phase flip to input images.")
 src = src.phase_flip()
 
 # Estimate the noise and `Whiten` based on the estimated noise
@@ -90,7 +94,7 @@ if interactive:
 
 # # Optionally invert image contrast, depends on data convention.
 # # This is not needed for 10028, but included anyway.
-# print("Invert the global density contrast")
+# logger.info("Invert the global density contrast")
 # src = src.invert_contrast()
 
 # Caching is used for speeding up large datasets on high memory machines.
@@ -128,7 +132,7 @@ if do_cov2d:
 #
 # Now perform classification and averaging for each class.
 
-print("Begin Class Averaging")
+logger.info("Begin Class Averaging")
 
 # Now perform classification and averaging for each class.
 # This also demonstrates the potential to use a different source for classification and averaging.
@@ -155,7 +159,7 @@ if interactive:
 # Next create a CL instance for estimating orientation of projections
 # using the Common Line with Synchronization Voting method.
 
-print("Begin Orientation Estimation")
+logger.info("Begin Orientation Estimation")
 
 # Create a custom orientation estimation object for ``avgs``.
 # This is done to customize the ``n_theta`` value.
@@ -171,7 +175,7 @@ oriented_src = OrientedSource(avgs, orient_est)
 #
 # Using the oriented source, attempt to reconstruct a volume.
 
-print("Begin Volume reconstruction")
+logger.info("Begin Volume reconstruction")
 
 # Setup an estimator to perform the back projection.
 estimator = MeanEstimator(oriented_src)
@@ -179,7 +183,7 @@ estimator = MeanEstimator(oriented_src)
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
 estimated_volume.save(volume_output_filename, overwrite=True)
-print(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")
+logger.info(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")
 
 # Peek at result
 if interactive:
