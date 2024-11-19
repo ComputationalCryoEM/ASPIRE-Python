@@ -25,6 +25,7 @@ https://www.ebi.ac.uk/emdb/EMD-8012
 # In addition, import some classes from
 # the ASPIRE package that will be used throughout this experiment.
 
+import logging
 from pathlib import Path
 
 import numpy as np
@@ -40,6 +41,9 @@ from aspire.classification import (
 from aspire.denoising import ClassAvgSource
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource
+
+logger = logging.getLogger(__name__)
+
 
 # %%
 # Parameters
@@ -70,7 +74,7 @@ src = RelionSource(
 )
 
 # Downsample the images
-print(f"Set the resolution to {img_size} X {img_size}")
+logger.info(f"Set the resolution to {img_size} X {img_size}")
 src = src.downsample(img_size)
 
 src = src.cache()
@@ -81,7 +85,7 @@ src = src.cache()
 #
 # Now perform classification and averaging for each class.
 
-print("Begin Class Averaging")
+logger.info("Begin Class Averaging")
 
 # Now perform classification and averaging for each class.
 # This also demonstrates customizing a ClassAvgSource, by using global
@@ -128,7 +132,7 @@ avgs.save("experimental_10073_class_averages_global.star", overwrite=True)
 # Next create a CL instance for estimating orientation of projections
 # using the Common Line with Synchronization Voting method.
 
-print("Begin Orientation Estimation")
+logger.info("Begin Orientation Estimation")
 
 # Create a custom orientation estimation object for ``avgs``.
 orient_est = CLSync3N(avgs, n_theta=72)
@@ -143,7 +147,7 @@ oriented_src = OrientedSource(avgs, orient_est)
 #
 # Using the oriented source, attempt to reconstruct a volume.
 
-print("Begin Volume reconstruction")
+logger.info("Begin Volume reconstruction")
 
 # Setup an estimator to perform the back projection.
 estimator = MeanEstimator(oriented_src)
@@ -151,4 +155,4 @@ estimator = MeanEstimator(oriented_src)
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
 estimated_volume.save(volume_output_filename, overwrite=True)
-print(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")
+logger.info(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")
