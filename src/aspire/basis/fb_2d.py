@@ -183,7 +183,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             dimensions correspond to first dimensions of `v`.
         """
         # Transpose here once, instead of several times below  #RCOPT
-        v = v.reshape(-1, self.count).T
+        v = v.T
 
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
