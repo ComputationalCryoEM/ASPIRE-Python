@@ -121,18 +121,17 @@ def symmat_to_vec_iso(mat):
     """
     Isometrically maps a symmetric matrix to a packed vector
 
-    :param mat: An array of size N-by-N-by-... where the first two dimensions constitute symmetric or Hermitian
+    :param mat: An array of size ...-by-N-by-N where the last two dimensions constitute symmetric or Hermitian
         matrices.
-    :return: A vector of size N*(N+1)/2-by-... consisting of the lower triangular part of each matrix, reweighted so
+    :return: A vector of size ...-by-N*(N+1)/2 consisting of the lower triangular part of each matrix, reweighted so
         that the Frobenius inner product is mapped to the Euclidean inner product.
     """
-    mat, sz_roll = unroll_dim(mat, 3)
-    N = mat.shape[0]
-    mat = mat_to_vec(mat)
-    mat[np.arange(0, N**2, N + 1)] *= SQRT2_R
-    mat *= SQRT2
-    mat = vec_to_mat(mat)
-    mat = roll_dim(mat, sz_roll)
+    sz = mat.shape[:-2]
+    N = mat.shape[-1]
+    vec = mat.reshape(*sz, -1)
+    vec[..., np.arange(0, N**2, N + 1)] *= SQRT2_R
+    vec *= SQRT2
+    mat = vec.reshape(*sz, N, N)
     vec = symmat_to_vec(mat)
 
     return vec
@@ -142,65 +141,59 @@ def vec_to_symmat_iso(vec):
     """
     Isometrically map packed vector to symmetric matrix
 
-    :param vec: A vector of size N*(N+1)/2-by-... describing a symmetric (or Hermitian) matrix.
-    :return: An array of size N-by-N-by-... which indexes symmetric/Hermitian matrices that occupy the first two
+    :param vec: A vector of size ...-by-N*(N+1)/2 describing a symmetric (or Hermitian) matrix.
+    :return: An array of size ...-by-N-by-N which indexes symmetric/Hermitian matrices that occupy the first two
         dimensions. The lower triangular parts of these matrices consists of the corresponding vectors in vec,
         reweighted so that the Euclidean inner product maps to the Frobenius inner product.
     """
+
     mat = vec_to_symmat(vec)
-    mat, sz_roll = unroll_dim(mat, 3)
-    N = mat.shape[0]
+    N = mat.shape[-1]
     mat = mat_to_vec(mat)
-    mat[np.arange(0, N**2, N + 1)] *= SQRT2
+    mat[..., np.arange(0, N**2, N + 1)] *= SQRT2
     mat *= SQRT2_R
     mat = vec_to_mat(mat)
-    mat = roll_dim(mat, sz_roll)
     return mat
 
 
 def symmat_to_vec(mat):
     """
-    Packs a symmetric matrix into a lower triangular vector
+    Packs a symmetric matrix into a upper triangular vector
 
-    :param mat: An array of size N-by-N-by-... where the first two dimensions constitute symmetric or
+    :param mat: An array of size ...-by-N-by-N where the first two dimensions constitute symmetric or
         Hermitian matrices.
-    :return: A vector of size N*(N+1)/2-by-... consisting of the lower triangular part of each matrix.
-
-    Note that a lot of acrobatics happening here (swapaxes/triu instead of tril etc.) are so that we can get
-    column-major ordering of elements (to get behavior consistent with MATLAB), since masking in numpy only returns
-    data in row-major order.
+    :return: A vector of size ...-by-N*(N+1)/2 consisting of the upper triangular part of each matrix.
     """
-    N = mat.shape[0]
-    assert mat.shape[1] == N, "Matrix must be square"
 
-    mat, sz_roll = unroll_dim(mat, 3)
-    triu_indices = np.triu_indices(N)
-    vec = mat.swapaxes(0, 1)[triu_indices]
-    vec = roll_dim(vec, sz_roll)
+    N = mat.shape[-1]
+    assert mat.shape[-2] == N, "Matrix must be square"
+
+    sz = mat.shape[:-2]
+    tri_indices = np.triu_indices(N)
+    vec = mat[..., *tri_indices].reshape(*sz, N * (N + 1) // 2)
 
     return vec
 
 
 def vec_to_symmat(vec):
     """
-    Convert packed lower triangular vector to symmetric matrix
+    Convert packed upper triangular vector to symmetric matrix
 
-    :param vec: A vector of size N*(N+1)/2-by-... describing a symmetric (or Hermitian) matrix.
-    :return: An array of size N-by-N-by-... which indexes symmetric/Hermitian matrices that occupy the first two
-        dimensions. The lower triangular parts of these matrices consists of the corresponding vectors in vec.
+    :param vec: A vector of size ...-by-N*(N+1)/2 describing a symmetric (or Hermitian) matrix.
+    :return: An array of size ...-by-N-by-N which indexes symmetric/Hermitian matrices that occupy the first two
+        dimensions. The upper triangular parts of these matrices consists of the corresponding vectors in vec.
     """
     # TODO: Handle complex values in vec
     if np.iscomplex(vec).any():
         raise NotImplementedError("Coming soon")
 
-    # M represents N(N+1)/2
-    M = vec.shape[0]
+    M = vec.shape[-1]
     N = int(round(np.sqrt(2 * M + 0.25) - 0.5))
     assert (
         M == 0.5 * N * (N + 1)
     ) and N != 0, "Vector must be of size N*(N+1)/2 for some N>0."
 
-    vec, sz_roll = unroll_dim(vec, 2)
+    sz = vec.shape[:-1]
     index_matrix = np.empty((N, N))
     i_upper = np.triu_indices_from(index_matrix)
     index_matrix[i_upper] = np.arange(
@@ -208,9 +201,8 @@ def vec_to_symmat(vec):
     )  # Incrementally populate upper triangle in row major order
     index_matrix.T[i_upper] = index_matrix[i_upper]  # Copy to lower triangle
 
-    mat = vec[index_matrix.flatten("F").astype("int")]
-    mat = m_reshape(mat, (N, N) + mat.shape[1:])
-    mat = roll_dim(mat, sz_roll)
+    mat = vec[..., index_matrix.astype("int")]
+    mat = mat.reshape(*sz, N, N)
 
     return mat
 
@@ -219,17 +211,17 @@ def mat_to_vec(mat, is_symmat=False):
     """
     Converts a matrix into vectorized form
 
-    :param mat: An array of size N-by-N-by-... containing the matrices to be vectorized.
+    :param mat: An array of size ...-by-N-by-N-by containing the matrices to be vectorized.
     :param is_symmat: Specifies whether the matrices are symmetric/Hermitian, in which case they are stored in packed
         form using symmat_to_vec (default False).
-    :return: The vectorized form of the matrices, with dimension N^2-by-... or N*(N+1)/2-by-... depending on the value
+    :return: The vectorized form of the matrices, with dimension ...-by-N^2 or ...-by-N*(N+1)/2 depending on the value
         of is_symmat.
     """
     if not is_symmat:
         sz = mat.shape
-        N = sz[0]
-        assert sz[1] == N, "Matrix must be square"
-        return m_reshape(mat, (N**2,) + sz[2:])
+        N = sz[-1]
+        assert sz[-2] == N, "Matrix must be square"
+        return mat.reshape(*sz[:-2], N**2)
     else:
         return symmat_to_vec(mat)
 
@@ -239,15 +231,15 @@ def vec_to_mat(vec, is_symmat=False):
     Converts a vectorized matrix into a matrix
 
     :param vec: The vectorized representations. If the matrix is non-symmetric, this array has the dimensions
-        N^2-by-..., but if the matrix is symmetric, the dimensions are N*(N+1)/2-by-... .
+        ...-by-N^2, but if the matrix is symmetric, the dimensions are ...-by-N*(N+1)/2 .
     :param is_symmat: True if the vectors represent symmetric matrices (default False)
-    :return: The array of size N-by-N-by-... representing the matrices.
+    :return: The array of size ...-by-N-by-N representing the matrices.
     """
     if not is_symmat:
         sz = vec.shape
-        N = int(round(np.sqrt(sz[0])))
-        assert sz[0] == N**2, "Vector must represent square matrix."
-        return m_reshape(vec, (N, N) + sz[1:])
+        N = int(round(np.sqrt(sz[-1])))
+        assert sz[-1] == N**2, "Vector must represent square matrix."
+        return vec.reshape(*sz[:-1], N, N)
     else:
         return vec_to_symmat(vec)
 

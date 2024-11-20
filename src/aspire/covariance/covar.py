@@ -91,7 +91,7 @@ class CovarianceEstimator(Estimator):
 
         return covar_est
 
-    def conj_grad(self, b_coef, tol=1e-5, regularizer=0):        
+    def conj_grad(self, b_coef, tol=1e-5, regularizer=0):
         b_coef = symmat_to_vec_iso(b_coef)
         N = b_coef.shape[0]
         kernel = self.kernel

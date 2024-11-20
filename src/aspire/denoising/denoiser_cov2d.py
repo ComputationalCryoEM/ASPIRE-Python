@@ -84,16 +84,13 @@ def src_wiener_coords(
         Qs, Rs = qr_vols_forward(sim, i, batch_n, eig_vols, k)
 
         Q_vecs = mat_to_vec(Qs)
-
-        # RCOPT
-        ims = np.moveaxis(ims.asnumpy(), 0, 2)
-        im_vecs = mat_to_vec(ims)
+        im_vecs = mat_to_vec(ims.asnumpy())
 
         for j in range(batch_n):
-            im_coords = Q_vecs[:, :, j].T @ im_vecs[:, j]
-            covar_im = (Rs[:, :, j] @ lambdas @ Rs[:, :, j].T) + covar_noise
+            im_coords = Q_vecs[j] @ im_vecs[j]
+            covar_im = (Rs[j] @ lambdas @ Rs[j].T) + covar_noise
             xx = solve(covar_im, im_coords)
-            im_coords = lambdas @ Rs[:, :, j].T @ xx
+            im_coords = lambdas @ Rs[j].T @ xx
             coords[:, i + j] = im_coords
 
     return coords
