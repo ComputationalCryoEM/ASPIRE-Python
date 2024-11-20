@@ -38,16 +38,17 @@ def qr_vols_forward(sim, s, n, vols, k):
     ims = np.zeros((k, n, sim.L, sim.L), dtype=vols.dtype)
     for ell in range(k):
         ims[ell] = sim.vol_forward(vols[ell], s, n).asnumpy()
-    ims = ims.transpose((2, 3, 0, 1))
 
-    Q_vecs = np.zeros((sim.L**2, k, n), dtype=vols.dtype)
-    Rs = np.zeros((k, k, n), dtype=vols.dtype)
+    ims = ims.transpose((1, 0, 2, 3))  # n, k, L, L
+
+    Q_vecs = np.zeros((n, sim.L**2, k), dtype=vols.dtype)
+    Rs = np.zeros((n, k, k), dtype=vols.dtype)
 
     im_vecs = ims.reshape(sim.L**2, k, n)
 
     for i in range(n):
-        Q_vecs[:, :, i], Rs[:, :, i] = qr(im_vecs[:, :, i])
-    Qs = Q_vecs.reshape(sim.L, sim.L, k, n)
+        Q_vecs[i], Rs[i] = qr(im_vecs[i].T)  # column vectors
+    Qs = vec_to_mat(Q_vecs.transpose(0, 2, 1))  # n, k, L, L
 
     return Qs, Rs
 

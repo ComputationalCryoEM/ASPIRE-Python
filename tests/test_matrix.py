@@ -71,37 +71,20 @@ class MatrixTestCase(TestCase):
         m = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 
         v = mat_to_vec(m)
-        self.assertTrue(np.allclose(v, np.array([1, 4, 7, 2, 5, 8, 3, 6, 9])))
+        self.assertTrue(np.allclose(v, np.array([1, 2, 3, 4, 5, 6, 7, 8, 9])))
 
     def testMatToVec2(self):
-        m = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        _m = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         # Make 2 copies depthwise
-        m = np.dstack((m, m))
+        m = np.stack((_m, _m))
 
         v = mat_to_vec(m)
-        self.assertTrue(
-            np.allclose(
-                v,
-                np.array(
-                    [
-                        [1, 1],
-                        [4, 4],
-                        [7, 7],
-                        [2, 2],
-                        [5, 5],
-                        [8, 8],
-                        [3, 3],
-                        [6, 6],
-                        [9, 9],
-                    ]
-                ),
-            )
-        )
+        self.assertTrue(np.allclose(v, np.stack((_m.flatten(),) * 2)))
 
     def testMatToVecSymm1(self):
         # We create an unsymmetric matrix and pass it to the functions as a symmetric matrix,
         # just so we can closely inspect the returned values without confusion
-        m = np.array([[0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15]])
+        m = np.arange(16).reshape(4, 4)
         v = mat_to_vec(m, is_symmat=True)
         # Notice the order of the elements in symmetric matrix - axis 0 first, then axis 1
         self.assertTrue(np.allclose(v, np.array([0, 1, 2, 3, 5, 6, 7, 10, 11, 15])))
@@ -109,29 +92,18 @@ class MatrixTestCase(TestCase):
     def testMatToVecSymm2(self):
         # We create an unsymmetric matrix and pass it to the functions as a symmetric matrix,
         # just so we can closely inspect the returned values without confusion
-        m = np.array([[0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15]])
+        m = np.arange(16).reshape(4, 4)
+
         # Make 2 copies depthwise
-        m = np.dstack((m, m))
+        m = np.stack((m, m))
 
         v = mat_to_vec(m, is_symmat=True)
         # Notice the order of the elements in symmetric matrix - axis 0 first, then axis 1
+
         self.assertTrue(
             np.allclose(
                 v,
-                np.array(
-                    [
-                        [0, 0],
-                        [1, 1],
-                        [2, 2],
-                        [3, 3],
-                        [5, 5],
-                        [6, 6],
-                        [7, 7],
-                        [10, 10],
-                        [11, 11],
-                        [15, 15],
-                    ]
-                ),
+                np.stack((np.array([0, 1, 2, 3, 5, 6, 7, 10, 11, 15]),) * 2),
             )
         )
 
@@ -140,32 +112,35 @@ class MatrixTestCase(TestCase):
 
         # We create an unsymmetric matrix and pass it to the functions as a symmetric matrix,
         # just so we can closely inspect the returned values without confusion
-        m = np.array(
-            [[0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15]],
-            dtype=np.float32,
-        )
+        m = np.arange(16).reshape(4, 4).astype(dtype=np.float64)
 
         # Make 2 copies depthwise
-        m = np.dstack((m, m))
+        m = np.stack((m, m))
 
         v = symmat_to_vec_iso(m)
         # Notice the order of the elements in symmetric matrix - axis 0 first, then axis 1
+
         self.assertTrue(
             np.allclose(
                 v,
-                np.array(
-                    [
-                        [0, 0],
-                        [1.4142, 1.4142],
-                        [2.8284, 2.8284],
-                        [4.2426, 4.2426],
-                        [5, 5],
-                        [8.4853, 8.4853],
-                        [9.8995, 9.8995],
-                        [10, 10],
-                        [15.5563, 15.5563],
-                        [15, 15],
-                    ]
+                np.stack(
+                    (
+                        np.array(
+                            [
+                                0.0,
+                                1.41421356,
+                                2.82842712,
+                                4.24264069,
+                                5.0,
+                                8.48528137,
+                                9.89949494,
+                                10.0,
+                                15.55634919,
+                                15.0,
+                            ]
+                        ),
+                    )
+                    * 2
                 ),
             )
         )
@@ -184,18 +159,18 @@ class MatrixTestCase(TestCase):
                 [11, 11],
                 [15, 15],
             ]
-        )
+        ).transpose(1, 0)
 
         m = vec_to_symmat(v)
         self.assertTrue(
             np.allclose(
-                m[:, :, 0],
+                m[0],
                 np.array([[0, 1, 2, 3], [1, 5, 6, 7], [2, 6, 10, 11], [3, 7, 11, 15]]),
             )
         )
         self.assertTrue(
             np.allclose(
-                m[:, :, 1],
+                m[1],
                 np.array([[0, 1, 2, 3], [1, 5, 6, 7], [2, 6, 10, 11], [3, 7, 11, 15]]),
             )
         )
@@ -213,46 +188,26 @@ class MatrixTestCase(TestCase):
 
     def testVecToMatSymmIso(self):
         # Very similar to the case above, except that the resulting matrix is reweighted.
-        v = np.array(
-            [
-                [0, 0],
-                [1, 1],
-                [2, 2],
-                [3, 3],
-                [5, 5],
-                [6, 6],
-                [7, 7],
-                [10, 10],
-                [11, 11],
-                [15, 15],
-            ],
-            dtype=np.float32,
+        v = np.stack((np.array([0, 1, 2, 3, 5, 6, 7, 10, 11, 15]),) * 2).astype(
+            np.float32
         )
 
         m = vec_to_symmat_iso(v)
         self.assertTrue(
             np.allclose(
-                m[:, :, 0],
-                np.array(
-                    [
-                        [0, 0.70710678, 1.41421356, 2.12132034],
-                        [0.70710678, 5, 4.24264069, 4.94974747],
-                        [1.41421356, 4.24264069, 10, 7.77817459],
-                        [2.12132034, 4.94974747, 7.77817459, 15],
-                    ]
-                ),
-            )
-        )
-        self.assertTrue(
-            np.allclose(
-                m[:, :, 1],
-                np.array(
-                    [
-                        [0, 0.70710678, 1.41421356, 2.12132034],
-                        [0.70710678, 5, 4.24264069, 4.94974747],
-                        [1.41421356, 4.24264069, 10, 7.77817459],
-                        [2.12132034, 4.94974747, 7.77817459, 15],
-                    ]
+                m,
+                np.stack(
+                    (
+                        np.array(
+                            [
+                                [0, 0.70710678, 1.41421356, 2.12132034],
+                                [0.70710678, 5, 4.24264069, 4.94974747],
+                                [1.41421356, 4.24264069, 10, 7.77817459],
+                                [2.12132034, 4.94974747, 7.77817459, 15],
+                            ]
+                        ),
+                    )
+                    * 2
                 ),
             )
         )
