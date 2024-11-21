@@ -5,8 +5,6 @@ Utilities for arrays/n-dimensional matrices.
 import numpy as np
 from scipy.linalg import eigh
 
-from aspire.utils.matlab_compat import m_reshape
-
 SQRT2 = np.sqrt(2)
 SQRT2_R = 1 / SQRT2
 
@@ -260,7 +258,7 @@ def eigs(A, k):
     """
     sig_sz = A.shape[: int(A.ndim / 2)]
     sig_len = np.prod(sig_sz)
-    A = m_reshape(A, (sig_len, sig_len))
+    A = A.reshape((sig_len, sig_len))
 
     dtype = A.dtype
     w, v = eigh(
@@ -271,8 +269,7 @@ def eigs(A, k):
     w = w[::-1].astype(dtype)
     v = np.fliplr(v)
 
-    v = m_reshape(v, sig_sz + (k,)).astype(dtype)
-
+    v = v.reshape(sig_sz + (k,)).astype(dtype)
     return v, np.diag(w)
 
 
