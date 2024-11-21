@@ -2,6 +2,8 @@
 Utilities for controlling and generating random numbers.
 """
 
+import warnings
+
 import numpy as np
 from scipy.special import erfinv
 
@@ -60,6 +62,13 @@ def rand(size, seed=None):
 
     For all other uses prefer `random`.
     """
+    warnings.warn(
+        "`rand` is deprecated and included only for MATLAB"
+        " reference applications.  It may be removed in future"
+        " releases.  Use `random` for new development.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     with Random(seed):
         return np.random.random(size).reshape(size, order="F")
 

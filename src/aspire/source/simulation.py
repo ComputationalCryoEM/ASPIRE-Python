@@ -17,7 +17,7 @@ from aspire.utils import (
     make_symmat,
     uniform_random_angles,
 )
-from aspire.utils.random import rand, randi, randn
+from aspire.utils.random import randi, randn, random
 from aspire.volume import AsymmetricVolume, Volume
 
 logger = logging.getLogger(__name__)
@@ -143,7 +143,7 @@ class Simulation(ImageSource):
 
         if amplitudes is None:
             min_, max_ = 2.0 / 3, 3.0 / 2
-            amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
+            amplitudes = min_ + random(n, seed=seed).astype(dtype) * (max_ - min_)
 
         self.C = self.vols.n_vols
 
