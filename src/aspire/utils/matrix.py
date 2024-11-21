@@ -88,12 +88,6 @@ def mdim_mat_fun_conj(X, d1, d2, f):
         and columns of the multidimensional matrix X.
     """
 
-    # Roll up outer dimensions if any.
-    dim = 2 * d1 + 1
-    sz_roll = X.shape[:-dim]
-    shp = X.shape[-dim:]
-    X = X.reshape((-1, *shp))
-
     X = f(X)
 
     # Swap the last d2 axes with the first d1 axes
@@ -110,9 +104,6 @@ def mdim_mat_fun_conj(X, d1, d2, f):
     X = np.moveaxis(X, dims1, dims2)
 
     X = np.conj(X)
-
-    # Unroll outer dimensions.
-    X = X.reshape(*sz_roll, *X.shape[1:])
 
     return X
 
