@@ -12,9 +12,7 @@ from aspire.utils import (
     mean_aligned_angular_distance,
     nearest_rotations,
     randn,
-    roll_dim,
     symmat_to_vec_iso,
-    unroll_dim,
     utest_tolerance,
     vec_to_symmat,
     vec_to_symmat_iso,
@@ -31,29 +29,6 @@ class MatrixTestCase(TestCase):
 
     def tearDown(self):
         pass
-
-    def testUnrollDims(self):
-        m = np.arange(1, 1201).reshape((5, 2, 10, 3, 4), order="F")
-        m2, sz = unroll_dim(
-            m, 2
-        )  # second argument is 1-indexed - all dims including and after this are unrolled
-
-        # m2 will now have shape (5, (2x10x3x4)) = (5, 240)
-        self.assertEqual(m2.shape, (5, 240))
-        # The values should still be filled in with the first axis values changing fastest
-        self.assertTrue(np.allclose(m2[:, 0], np.array([1, 2, 3, 4, 5])))
-
-        # sz are the dimensions that were unrolled
-        self.assertEqual(sz, (2, 10, 3, 4))
-
-    def testRollDims(self):
-        m = np.arange(1, 1201).reshape((5, 2, 120), order="F")
-        m2 = roll_dim(m, (10, 3, 4))
-
-        # m2 will now have shape (5, 2, 10, 3, 4)
-        self.assertEqual(m2.shape, (5, 2, 10, 3, 4))
-        # The values should still be filled in with the first axis values changing fastest
-        self.assertTrue(np.allclose(m2[:, 0, 0, 0, 0], np.array([1, 2, 3, 4, 5])))
 
     def testVecmatToVolmat(self):
         m = np.empty((8, 27, 10))

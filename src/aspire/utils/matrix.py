@@ -11,30 +11,6 @@ SQRT2 = np.sqrt(2)
 SQRT2_R = 1 / SQRT2
 
 
-def unroll_dim(X, dim):
-    # TODO: dim is still 1-indexed like in MATLAB to reduce headaches for now
-    # TODO: unroll/roll are great candidates for a context manager since they're always used in conjunction.
-    dim = dim - 1
-    old_shape = X.shape
-    new_shape = old_shape[:dim]
-
-    new_shape += (-1,)
-
-    Y = m_reshape(X, new_shape)
-
-    removed_dims = old_shape[dim:]
-
-    return Y, removed_dims
-
-
-def roll_dim(X, dim):
-    # TODO: dim is still 1-indexed like in MATLAB to reduce headaches for now
-    old_shape = X.shape
-    new_shape = old_shape[:-1] + dim
-    Y = m_reshape(X, new_shape)
-    return Y
-
-
 def vecmat_to_volmat(X):
     """
     Roll up vector matrices into volume matrices
