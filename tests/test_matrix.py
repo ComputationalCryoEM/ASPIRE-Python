@@ -16,8 +16,6 @@ from aspire.utils import (
     utest_tolerance,
     vec_to_symmat,
     vec_to_symmat_iso,
-    vecmat_to_volmat,
-    volmat_to_vecmat,
 )
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -29,18 +27,6 @@ class MatrixTestCase(TestCase):
 
     def tearDown(self):
         pass
-
-    def testVecmatToVolmat(self):
-        m = np.empty((8, 27, 10))
-        m2 = vecmat_to_volmat(m)
-
-        self.assertEqual(m2.shape, (2, 2, 2, 3, 3, 3, 10))
-
-    def testVolmatToVecmat(self):
-        m = np.empty((3, 3, 3, 2, 2, 2, 5))
-        m2 = volmat_to_vecmat(m)
-
-        self.assertEqual(m2.shape, (27, 8, 5))
 
     def testMatToVec1(self):
         m = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
