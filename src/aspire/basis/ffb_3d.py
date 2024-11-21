@@ -166,9 +166,6 @@ class FFBBasis3D(FBBasis3D):
             `self.sz` and the remaining dimensions correspond to `v`.
         """
         v = xp.asarray(v)
-        # roll dimensions of v
-        sz_roll = v.shape[:-1]
-        v = v.reshape((-1, self.count))
 
         # get information on polar grids from precomputed data
         n_theta = np.size(self._precomp["ang_theta_wtd"], 0)
@@ -270,9 +267,6 @@ class FFBBasis3D(FBBasis3D):
         # perform inverse non-uniformly FFT transformation back to 3D rectangular coordinates
         x = anufft(pf, self._precomp["fourier_pts"], self.sz, real=True)
 
-        # Roll, return the x with the last three dimensions as self.sz
-        # Higher dimensions should be like v.
-        x = x.reshape((*sz_roll, *self.sz))
         return xp.asnumpy(x)
 
     def _evaluate_t(self, x):
@@ -287,9 +281,6 @@ class FFBBasis3D(FBBasis3D):
             dimensions of `x`.
         """
         x = xp.asarray(x)
-        # roll dimensions
-        sz_roll = x.shape[:-3]
-        x = x.reshape((-1, *self.sz))
 
         n_data = x.shape[0]
         n_r = np.size(self._precomp["radial_wtd"], 0)
@@ -379,7 +370,4 @@ class FFBBasis3D(FBBasis3D):
             ind = self._indices["ells"] == ell
             v[:, ind] = v_ell
 
-        # Roll dimensions, last dimension should be self.count,
-        # Higher dimensions like x.
-        v = v.reshape((*sz_roll, self.count))
         return xp.asnumpy(v)
