@@ -148,8 +148,6 @@ class FBBasis3D(Basis, FBBasisMixin):
             This is an array whose first dimensions equal `self.z` and the
             remaining dimensions correspond to dimensions two and higher of `v`.
         """
-        stack_shape = v.shape[:-1]
-        v = v.reshape(-1, v.shape[-1])
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
         mask = self.basis_coords["mask"].flatten()
@@ -216,4 +214,4 @@ class FBBasis3D(Basis, FBBasisMixin):
 
             ind_radial += len(idx_radial)
 
-        return v.reshape(*stack_shape, self.count)
+        return v
