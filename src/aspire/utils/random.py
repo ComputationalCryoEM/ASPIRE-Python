@@ -67,7 +67,7 @@ def rand(size, seed=None):
         " reference applications.  It may be removed in future"
         " releases.  Use `random` for new development.",
         DeprecationWarning,
-        stacklevel=2
+        stacklevel=2,
     )
     with Random(seed):
         return np.random.random(size).reshape(size, order="F")
