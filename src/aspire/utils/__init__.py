@@ -52,8 +52,6 @@ from .matrix import (
     vec_to_mat,
     vec_to_symmat,
     vec_to_symmat_iso,
-    vecmat_to_volmat,
-    volmat_to_vecmat,
 )
 from .multiprocessing import (
     mem_based_cpu_suggestion,

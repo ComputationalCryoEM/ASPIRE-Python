@@ -11,45 +11,6 @@ SQRT2 = np.sqrt(2)
 SQRT2_R = 1 / SQRT2
 
 
-def vecmat_to_volmat(X):
-    """
-    Roll up vector matrices into volume matrices
-
-    :param X: A vector matrix of size L1^3-by-L2^3-by-...
-    :return: A volume "matrix" of size L1-by-L1-by-L1-by-L2-by-L2-by-L2-by-...
-    """
-    # TODO: Use context manager?
-    shape = X.shape
-    assert X.ndim >= 2, "Array should have at least 2 dimensions"
-
-    L1 = round(shape[0] ** (1 / 3))
-    L2 = round(shape[1] ** (1 / 3))
-
-    assert L1**3 == shape[0], "First dimension of X must be cubic"
-    assert L2**3 == shape[1], "Second dimension of X must be cubic"
-
-    return m_reshape(X, (L1, L1, L1, L2, L2, L2) + (shape[2:]))
-
-
-def volmat_to_vecmat(X):
-    """
-    Unroll volume matrices to vector matrices
-
-    :param X: A volume "matrix" of size L1-by-L1-by-L1-by-L2-by-L2-by-L2-by-...
-    :return: A vector matrix of size L1^3-by-L2^3-by-...
-    """
-    # TODO: Use context manager?
-    shape = X.shape
-    assert X.ndim >= 6, "Array should have at least 6 dimensions"
-    assert shape[0] == shape[1] == shape[2], "Dimensions 1-3 should be identical"
-    assert shape[3] == shape[4] == shape[5], "Dimensions 4-6 should be identical"
-
-    l1 = shape[0]
-    l2 = shape[3]
-
-    return m_reshape(X, (l1**3, l2**3) + (shape[6:]))
-
-
 def mdim_mat_fun_conj(X, d1, d2, f):
     """
     Conjugate a multidimensional matrix using a linear mapping
