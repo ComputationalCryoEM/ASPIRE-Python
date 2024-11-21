@@ -126,7 +126,6 @@ class Filter:
         :return: Filter values at omega's points.
         """
 
-        # Note we can probably unwind the "F"/m_reshape here
         grid2d = grid_2d(L, indexing="yx", dtype=dtype)
         omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
         h = self.evaluate(omega, *args, **kwargs)
