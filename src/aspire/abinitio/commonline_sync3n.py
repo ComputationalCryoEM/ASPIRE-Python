@@ -12,11 +12,11 @@ from aspire.utils import (
     Rotation,
     all_pairs,
     nearest_rotations,
+    random,
     tqdm,
     trange,
 )
 from aspire.utils.matlab_compat import stable_eigsh
-from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
 
@@ -1029,7 +1029,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Initialize candidate eigenvectors
         n_Rijs = Rijs.shape[0]
-        vec = rand(n_Rijs, seed=self.seed)
+        vec = random(n_Rijs, seed=self.seed)
         vec = vec / norm(vec)
         residual = 1
         itr = 0
