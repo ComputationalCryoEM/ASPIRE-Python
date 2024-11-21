@@ -182,8 +182,9 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             This is an array whose last dimensions equal `self.sz` and the remaining
             dimensions correspond to first dimensions of `v`.
         """
-        # Transpose here once, instead of several times below  #RCOPT
-        v = v.T
+        n_data = v.shape[0]
+        # Transpose here once, instead of several times below
+        v = v.reshape(n_data, self.count).T
 
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
@@ -193,7 +194,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
         ind_radial = 0
         ind_ang = 0
 
-        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=v.dtype)
+        x = np.zeros((np.prod(self.sz), n_data), dtype=v.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max, dtype=int)
@@ -214,7 +215,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
             ind_radial += len(idx_radial)
 
-        x = x.T.reshape(-1, *self.sz)  # RCOPT
+        x = x.T.reshape(n_data, *self.sz)
 
         return x
 
@@ -229,7 +230,7 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             `self.count` and whose first dimensions correspond to
             first dimensions of `v`.
         """
-        x = x.reshape(x.shape[0], -1)
+        x = x.reshape(x.shape[0], np.prod(self.sz))
 
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
