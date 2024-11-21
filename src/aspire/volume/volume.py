@@ -16,7 +16,9 @@ from aspire.utils import (
     crop_pad_3d,
     grid_2d,
     grid_3d,
+    mat_to_vec,
     rename_with_timestamp,
+    vec_to_mat,
 )
 from aspire.volume import IdentitySymmetryGroup, SymmetryGroup
 
@@ -44,8 +46,7 @@ def qr_vols_forward(sim, s, n, vols, k):
     Q_vecs = np.zeros((n, sim.L**2, k), dtype=vols.dtype)
     Rs = np.zeros((n, k, k), dtype=vols.dtype)
 
-    im_vecs = ims.reshape(sim.L**2, k, n)
-
+    im_vecs = mat_to_vec(ims)
     for i in range(n):
         Q_vecs[i], Rs[i] = qr(im_vecs[i].T)  # column vectors
     Qs = vec_to_mat(Q_vecs.transpose(0, 2, 1))  # n, k, L, L
