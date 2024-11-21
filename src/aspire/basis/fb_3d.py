@@ -176,7 +176,7 @@ class FBBasis3D(Basis, FBBasisMixin):
 
             ind_radial += len(idx_radial)
 
-        return x.reshape(*stack_shape, *self.sz)
+        return x.reshape(v.shape[0], *self.sz)
 
     def _evaluate_t(self, x):
         """
@@ -189,8 +189,7 @@ class FBBasis3D(Basis, FBBasisMixin):
             equals `self.count` and whose remaining dimensions correspond
             to higher dimensions of `v`.
         """
-        stack_shape = x.shape[: -self.ndim]
-        x = x.reshape(-1, np.prod(self.sz))
+        x = x.reshape(x.shape[0], np.prod(self.sz))
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
         mask = self.basis_coords["mask"].flatten()

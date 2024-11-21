@@ -110,8 +110,6 @@ class FFBBasis2D(FBBasis2D):
             and the first dimension correspond to remaining dimension of `v`.
         """
         v = xp.asarray(v)
-        sz_roll = v.shape[:-1]
-        v = v.reshape(-1, self.count)
 
         # number of 2D image samples
         n_data = v.shape[0]
@@ -169,7 +167,7 @@ class FFBBasis2D(FBBasis2D):
         x = 2 * anufft(pf, 2 * pi * freqs, self.sz, real=True)
 
         # Return X as Image instance with the last two dimensions as *self.sz
-        x = x.reshape((*sz_roll, *self.sz))
+        x = x.reshape((n_data, *self.sz))
 
         return xp.asnumpy(x)
 
