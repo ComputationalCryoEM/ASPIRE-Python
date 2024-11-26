@@ -96,7 +96,10 @@ def symmat_to_vec(mat):
 
     sz = mat.shape[:-2]
     tri_indices = np.triu_indices(N)
-    vec = mat[..., *tri_indices].reshape(*sz, N * (N + 1) // 2)
+    # Python 3.11 this can change to mat[..., *tri_indices]
+    #   See PEP 646, variadics
+    #   https://peps.python.org/pep-0646/#multiple-unpackings-in-a-tuple-not-allowed
+    vec = mat[..., tri_indices[0], tri_indices[1]].reshape(*sz, N * (N + 1) // 2)
 
     return vec
 
