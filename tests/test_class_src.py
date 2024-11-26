@@ -24,7 +24,11 @@ from aspire.classification import (
     VarianceImageQualityFunction,
 )
 from aspire.classification.class_selection import _HeapItem
-from aspire.denoising import DebugClassAvgSource, DefaultClassAvgSource
+from aspire.denoising import (
+    ClassAvgSourceLegacy,
+    DebugClassAvgSource,
+    DefaultClassAvgSource,
+)
 from aspire.image import Image
 from aspire.source import RelionSource, Simulation
 from aspire.utils import Rotation
@@ -46,8 +50,7 @@ DTYPES = [
     np.float64,
     pytest.param(np.float32, marks=pytest.mark.expensive),
 ]
-CLS_SRCS = [DebugClassAvgSource, DefaultClassAvgSource]
-# For very small problems, it usually isn't worth running in parallel.
+CLS_SRCS = [DebugClassAvgSource, DefaultClassAvgSource, ClassAvgSourceLegacy]
 
 
 BASIS = [
