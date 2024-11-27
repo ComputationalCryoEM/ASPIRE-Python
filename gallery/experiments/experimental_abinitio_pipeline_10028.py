@@ -146,7 +146,7 @@ avgs = ClassAvgSourceLegacy(
 avgs = avgs[:n_classes].cache()
 
 # Save off the set of class average images.
-avgs.save("experimental_10028_class_averages.star", overwrite=True)
+avgs.save("experimental_10028_class_averages.star")
 
 if interactive:
     avgs.images[:10].show()
