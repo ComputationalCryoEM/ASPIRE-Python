@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from aspire.abinitio import CLSync3N
-from aspire.denoising import DefaultClassAvgSource, DenoisedSource, DenoiserCov2D
+from aspire.denoising import ClassAvgSourceLegacy, DenoisedSource, DenoiserCov2D
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource
@@ -137,7 +137,7 @@ logger.info("Begin Class Averaging")
 # Now perform classification and averaging for each class.
 # This also demonstrates the potential to use a different source for classification and averaging.
 
-avgs = DefaultClassAvgSource(
+avgs = ClassAvgSourceLegacy(
     classification_src,
     n_nbor=n_nbor,
     averager_src=src,
