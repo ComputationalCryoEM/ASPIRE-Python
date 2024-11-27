@@ -97,7 +97,7 @@ avgs = ClassAvgSourceLegacy(src, n_nbor=n_nbor)
 avgs = avgs[:n_classes]
 
 # Save off the set of class average images.
-avgs.save("experimental_10081_class_averages.star", overwrite=True)
+avgs.save("experimental_10081_class_averages.star")
 
 # %%
 # Common Line Estimation

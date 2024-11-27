@@ -122,7 +122,7 @@ np.save(
 avgs = avgs[:n_classes].cache()
 
 # Save off the set of class average images.
-avgs.save("experimental_10073_class_averages_global.star", overwrite=True)
+avgs.save("experimental_10073_class_averages_global.star")
 
 
 # %%
