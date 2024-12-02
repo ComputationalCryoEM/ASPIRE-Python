@@ -25,9 +25,9 @@ from aspire.classification import (
 )
 from aspire.classification.class_selection import _HeapItem
 from aspire.denoising import (
-    ClassAvgSourceLegacy,
     DebugClassAvgSource,
     DefaultClassAvgSource,
+    LegacyClassAvgSource,
 )
 from aspire.image import Image
 from aspire.source import RelionSource, Simulation
@@ -50,7 +50,7 @@ DTYPES = [
     np.float64,
     pytest.param(np.float32, marks=pytest.mark.expensive),
 ]
-CLS_SRCS = [DebugClassAvgSource, DefaultClassAvgSource, ClassAvgSourceLegacy]
+CLS_SRCS = [DebugClassAvgSource, DefaultClassAvgSource, LegacyClassAvgSource]
 
 
 BASIS = [

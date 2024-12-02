@@ -49,8 +49,8 @@ required component and assign them here for complete control.
 
 """"""""""
 
-While that allows for full customization, two helper classes are
-provided that supply defaults as a jumping off point.  Both of these
+While that allows for full customization, helper classes are
+provided that supply defaults as a jumping off point.  These
 helper sources only require an input ``Source`` to be instantiated.
 They can still be fully customized, but they are intended to start
 with sensible defaults, so users only need to instantiate the specific
@@ -61,6 +61,7 @@ components they wish to configure.
    classDiagram
       ClassAvgSource <|-- DebugClassAvgSource
       ClassAvgSource <|-- DefaultClassAvgSource
+      ClassAvgSource <|-- LegacyClassAvgSource
       class DebugClassAvgSource{
 	 src: ImageSource
 	 classifier: RIRClass2D
@@ -68,11 +69,19 @@ components they wish to configure.
 	 averager: BFRAverager2D
 	 +images()
       }
+      class LegacyClassAvgSource{
+	 src: ImageSource
+	 classifier: RIRClass2D
+	 class_selector: GlobalVarianceClassSelector
+	 averager: BFRAverager2D
+	 +images()
+      }
       class DefaultClassAvgSource{
-	 version="0.11.0"
+	 version="0.13.2"
 	 src: ImageSource
 	 classifier: RIRClass2D
 	 class_selector: NeighborVarianceWithRepulsionClassSelector
+	 quality_function: BandedSNRImageQualityFunction
 	 averager: BFSRAverager2D
 	 +images()
       }
@@ -86,7 +95,7 @@ mappings etc.
 
 ``DefaultClassAvgSource`` applies the most sensible defaults available
 in the current ASPIRE release.  ``DefaultClassAvgSource`` takes a
-version string, such as ``0.11.0`` which will return a specific
+version string, such as ``0.13.2`` which will return a specific
 configuration.  This version should allow users to perform a similar
 experiment across releases as ASPIRE implements improved methods.
 When a version is not provided, ``DefaultClassAvgSource`` defaults to
@@ -160,6 +169,7 @@ can reduce pipeline run times by an order of magnitude.
        ClassSelector <|-- TopClassSelector
        ClassSelector <|-- RandomClassSelector
        ClassSelector <|-- NeighborVarianceClassSelector
+       ClassSelector <|-- GlobalVarianceClassSelector
        ClassSelector <|-- DistanceClassSelector
        ClassSelector o-- GreedyClassRepulsionMixin
 

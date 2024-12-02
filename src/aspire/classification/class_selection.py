@@ -647,3 +647,29 @@ class RampWeightedVarianceImageQualityFunction(
     """
     Computes the variance of pixels after weighting with Ramp function.
     """
+
+
+class GlobalVarianceClassSelector(GlobalClassSelector):
+    """
+    GlobalClassSelector with VarianceImageQualityFunction.
+
+    Computes per image variance for all images provided by
+    `averager`, and selects for highest variance.
+
+    Requires aligning the entire set of class averages.
+    """
+
+    def __init__(self, averager, heap_size_limit_bytes=2e9):
+        """
+        See `GlobalClassSelector` and `VarianceImageQualityFunction`
+        for additional documentation.
+
+        :param averager: An Averager2D subclass.
+        :param heap_size_limit_bytes: Max heap size in Bytes.
+            Defaults 2GB, 0 will disable.
+        """
+        super().__init__(
+            averager=averager,
+            quality_function=VarianceImageQualityFunction(),
+            heap_size_limit_bytes=heap_size_limit_bytes,
+        )
