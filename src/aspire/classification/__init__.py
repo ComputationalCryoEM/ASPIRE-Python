@@ -16,6 +16,7 @@ from .class_selection import (
     ClassSelector,
     DistanceClassSelector,
     GlobalClassSelector,
+    GlobalVarianceClassSelector,
     GlobalWithRepulsionClassSelector,
     NeighborVarianceClassSelector,
     NeighborVarianceWithRepulsionClassSelector,

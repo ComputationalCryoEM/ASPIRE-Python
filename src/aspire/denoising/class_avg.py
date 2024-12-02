@@ -10,11 +10,11 @@ from aspire.classification import (
     BFSRAverager2D,
     Class2D,
     ClassSelector,
-    GlobalClassSelector,
+    GlobalVarianceClassSelector,
+    GlobalWithRepulsionClassSelector,
     NeighborVarianceWithRepulsionClassSelector,
     RIRClass2D,
     TopClassSelector,
-    VarianceImageQualityFunction,
 )
 from aspire.image import Image
 from aspire.source import ImageSource
@@ -445,7 +445,7 @@ class DebugClassAvgSource(ClassAvgSource):
         )
 
 
-class ClassAvgSourceLegacy(ClassAvgSource):
+class LegacyClassAvgSource(ClassAvgSource):
     """
     Source for denoised 2D images using class average methods.
 
@@ -515,7 +515,7 @@ class ClassAvgSourceLegacy(ClassAvgSource):
             )
 
         if class_selector is None:
-            class_selector = NeighborVarianceWithRepulsionClassSelector()
+            class_selector = GlobalVarianceClassSelector(averager=averager)
 
         super().__init__(
             src=src,

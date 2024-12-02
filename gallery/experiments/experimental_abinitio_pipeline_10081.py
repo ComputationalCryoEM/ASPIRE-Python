@@ -26,7 +26,7 @@ import logging
 from pathlib import Path
 
 from aspire.abinitio import CLSymmetryC3C4
-from aspire.denoising import ClassAvgSourceLegacy
+from aspire.denoising import LegacyClassAvgSource
 from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource
@@ -91,7 +91,7 @@ logger.info("Begin Class Averaging")
 
 # Now perform classification and averaging for each class.
 # Automatically configure parallel processing
-avgs = ClassAvgSourceLegacy(src, n_nbor=n_nbor)
+avgs = LegacyClassAvgSource(src, n_nbor=n_nbor)
 
 # We'll continue our pipeline with the first ``n_classes`` from ``avgs``.
 avgs = avgs[:n_classes]
