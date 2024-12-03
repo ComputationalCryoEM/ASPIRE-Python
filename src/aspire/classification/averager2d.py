@@ -6,6 +6,7 @@ import numpy as np
 from aspire.basis import Coef
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image, ImageStacker, MeanImageStacker
+from aspire.numeric import xp
 from aspire.utils import trange
 from aspire.utils.coor_trans import grid_2d
 
@@ -719,6 +720,90 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         # For brute force, we'd like shifts then rotations,
         #   as is done in general in AligningAverager2D
         return AligningAverager2D.average(self, classes, reflections, coefs)
+
+
+class BBFSR(BFSRAverager2D):
+    """
+    Batch Brute Force Shift and Rotational alignment.
+    """
+
+    def align(self, classes, reflections, basis_coefficients):
+        """
+        During this process `rotations`, `reflections`, `shifts` and
+        `correlations` properties will be computed for aligners.
+
+        `rotations` is an (src.n, n_nbor) array of angles,
+        which should represent the rotations needed to align images within
+        that class. `rotations` is measured in CCW radians.
+
+        `shifts` is None or an (src.n, n_nbor) array of 2D shifts
+        which should represent the translation needed to best align the images
+        within that class.
+
+        `correlations` is an (src.n, n_nbor) array representing
+        a correlation like measure between classified images and their base
+        image (image index 0).
+
+        Subclasses of should implement and extend this method.
+
+        :param classes: (src.n, n_nbor) integer array of img indices.
+        :param reflections: (src.n, n_nbor) bool array of corresponding reflections,
+        :param basis_coefficients: (n_img, self.alignment_basis.count) basis coefficients,
+
+        :returns: (rotations, shifts, correlations)
+        """
+        # Construct array of angles to brute force.
+        _angles = xp.linspace(0, -2 * np.pi, self.n_angles, endpoint=False).reshape(
+            self.n_angles, 1
+        )
+        _rot_ops = xp.exp(
+            1j * self.alignment_basis.complex_angular_indices.reshape(-1, 1) * _angles
+        )
+        # xxx ensure shape
+        assert _rot_ops.shape == (self.alignment_basis.complex_count, self.n_angles)
+
+        # Result arrays
+        n_classes, n_nbor = classes.shape
+        rots = np.empty((n_classes, n_nbor), dtype=self.dtype)
+        correlations = np.empty((n_classes, n_nbor), dtype=self.dtype)
+
+        for k in trange(n_classes):
+            # Get the coefs for these neighbors
+            if basis_coefficients is None:
+                # Retrieve relevant images
+                neighbors_imgs = Image(self._cls_images(classes[k]))
+
+                # Evaluate_t into basis
+                nbr_coef = self.composite_basis.evaluate_t(neighbors_imgs)
+            else:
+                nbr_coef = basis_coefficients[classes[k]]
+
+            # Convert to array of complex coef, implicit copy.
+            nbr_coef = xp.array(nbr_coef.to_complex().asnumpy())
+
+            # Handle reflections
+            refl = reflections[k]
+            nbr_coef[refl] = xp.conj(nbr_coef[refl])
+
+            # Generate table of translations for image 0.
+            # Note we invert the translation, applying -rot to image 0
+            #   to avoid translating each member of the class
+            #   for the alignment test (each a dot product,
+            #   performed as a large matmul).
+            base_img = nbr_coef[0].reshape(self.complex_count, 1)
+
+            # (cnt, n_transl) * (cnt, 1) -> (cnt, n_transl)
+            rot_base_imgs = _rot_ops * base_img
+
+            # (n_nbor, cnt) @ (cnt, n_transl) = (n_nbor, n_transl)
+            dots = nbr_coef @ rot_base_imgs
+            idx = np.argmax(dots, axis=1)
+
+            # Assign results for this class
+            correlations[k] = dots[:, idx].asnumpy()
+            rots[k] = -1 * _angles[idx].asnumpy()  # return the reverse rot
+
+        return rots, correlations
 
 
 class EMAverager2D(Averager2D):
