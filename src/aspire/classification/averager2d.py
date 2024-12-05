@@ -753,19 +753,17 @@ class BBFSR(BFSRAverager2D):
         :returns: (rotations, shifts, correlations)
         """
         # Construct array of angles to brute force.
-        _angles = xp.linspace(0, -2 * np.pi, self.n_angles, endpoint=False).reshape(
-            self.n_angles, 1
-        )
+        _angles = xp.linspace(0, 2 * np.pi, self.n_angles, endpoint=False)
+
         _rot_ops = xp.exp(
             1j * self.alignment_basis.complex_angular_indices.reshape(-1, 1) * _angles
         )
-        # xxx ensure shape
-        assert _rot_ops.shape == (self.alignment_basis.complex_count, self.n_angles)
 
         # Result arrays
         n_classes, n_nbor = classes.shape
+        print('dbg n_classes, n_nbor', n_classes, n_nbor)
         rots = np.empty((n_classes, n_nbor), dtype=self.dtype)
-        correlations = np.empty((n_classes, n_nbor), dtype=self.dtype)
+        correlations = np.zeros((n_classes, n_nbor), dtype=self.dtype)
 
         for k in trange(n_classes):
             # Get the coefs for these neighbors
@@ -790,20 +788,26 @@ class BBFSR(BFSRAverager2D):
             #   to avoid translating each member of the class
             #   for the alignment test (each a dot product,
             #   performed as a large matmul).
-            base_img = nbr_coef[0].reshape(self.complex_count, 1)
+            base_img = nbr_coef[0].reshape(self.alignment_basis.complex_count, 1)
 
             # (cnt, n_transl) * (cnt, 1) -> (cnt, n_transl)
             rot_base_imgs = _rot_ops * base_img
+            ## try factoring rot_base_imgs.conj() to here
 
             # (n_nbor, cnt) @ (cnt, n_transl) = (n_nbor, n_transl)
-            dots = nbr_coef @ rot_base_imgs
-            idx = np.argmax(dots, axis=1)
+            dots = xp.real(nbr_coef @ rot_base_imgs.conj())
+            idx = xp.argmax(dots, axis=1)
+            idx[0] = 0  # Force base image, just in case.
 
             # Assign results for this class
-            correlations[k] = dots[:, idx].asnumpy()
-            rots[k] = -1 * _angles[idx].asnumpy()  # return the reverse rot
+            correlations[k,:] = xp.take_along_axis(dots, idx.reshape(n_nbor,1), axis=1).flatten()
+            correlations[k,0] = 1  # Force base correlation, just in case
+            #  Todo, make an actual correlation, (normalize)
+            
+            # Assign the reverse rotation
+            rots[k] = -1 * xp.asnumpy( _angles[idx]) 
 
-        return rots, correlations
+        return rots, None, correlations
 
 
 class EMAverager2D(Averager2D):
