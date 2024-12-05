@@ -755,9 +755,9 @@ class BBFSR(BFSRAverager2D):
         # Construct array of angles to brute force.
         _angles = xp.linspace(0, 2 * np.pi, self.n_angles, endpoint=False)
 
-        _rot_ops = xp.exp(
+        _rot_ops_conj = xp.exp(
             1j * self.alignment_basis.complex_angular_indices.reshape(-1, 1) * _angles
-        )
+        ).conj()
 
         # Result arrays
         n_classes, n_nbor = classes.shape
@@ -791,11 +791,10 @@ class BBFSR(BFSRAverager2D):
             base_img = nbr_coef[0].reshape(self.alignment_basis.complex_count, 1)
 
             # (cnt, n_transl) * (cnt, 1) -> (cnt, n_transl)
-            rot_base_imgs = _rot_ops * base_img
-            ## try factoring rot_base_imgs.conj() to here
+            rot_base_imgs_conj = _rot_ops_conj * base_img.conj()
 
             # (n_nbor, cnt) @ (cnt, n_transl) = (n_nbor, n_transl)
-            dots = xp.real(nbr_coef @ rot_base_imgs.conj())
+            dots = xp.real(nbr_coef @ rot_base_imgs_conj)
             idx = xp.argmax(dots, axis=1)
             idx[0] = 0  # Force base image, just in case.
 
