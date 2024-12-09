@@ -395,11 +395,10 @@ class Simulation(ImageSource):
 
     def covar_true(self):
         eigs_true, lamdbas_true = self.eigs()
-        eigs_true = eigs_true.T.to_vec()
+        eigs_true = eigs_true.to_vec()
 
         covar_true = eigs_true.T @ lamdbas_true @ eigs_true
-        # Hrmm
-        covar_true = covar_true.reshape((self.L,) * 6).transpose(2, 1, 0, 5, 4, 3)
+        covar_true = covar_true.reshape((self.L,) * 6)
 
         return covar_true
 
@@ -415,7 +414,6 @@ class Simulation(ImageSource):
         vols_c = self.vols - self.mean_true()
 
         p = np.ones(C) / C
-        # RCOPT, we may be able to do better here if we dig in.
         Q, R = qr(vols_c.to_vec().T, mode="economic")
 
         # Rank is at most C-1, so remove last vector
@@ -423,11 +421,10 @@ class Simulation(ImageSource):
         R = R[:-1, :]
 
         w, v = eigh(make_symmat(R @ np.diag(p) @ R.T))
-        eigs_true = Volume.from_vec((Q @ v).T)
-
         # Arrange in descending order (flip column order in eigenvector matrix)
-        w = w[::-1]
-        eigs_true = Volume(eigs_true.asnumpy()[::-1])
+        w, v = w[::-1], v[::-1]
+
+        eigs_true = Volume.from_vec((Q @ v).T)
 
         return eigs_true, np.diag(w)
 
