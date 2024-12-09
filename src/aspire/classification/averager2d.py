@@ -272,23 +272,19 @@ class BFRAverager2D(AligningAverager2D):
         Performs the actual rotational alignment estimation,
         returning parameters needed for averaging.
         """
-
-        # Admit simple case of single case alignment
-        classes = np.atleast_2d(classes)
-        reflections = np.atleast_2d(reflections)
-
-        n_classes, n_nbor = classes.shape
-
         # Construct array of angles to brute force.
-        test_angles = np.linspace(0, -2 * np.pi, self.n_angles, endpoint=False)
+        _angles = xp.linspace(0, 2 * np.pi, self.n_angles, endpoint=False)
 
-        # Instantiate matrices for results
-        rotations = np.empty(classes.shape, dtype=self.dtype)
-        correlations = np.empty(classes.shape, dtype=self.dtype)
+        _rot_ops_conj = xp.exp(
+            1j * self.alignment_basis.complex_angular_indices.reshape(-1, 1) * _angles
+        ).conj()
 
-        def _innerloop(k):
-            _correlations = np.full((n_nbor, self.n_angles), fill_value=-np.inf)
-            _correlations[0, 0] = 1  # Set this now so we can skip it in the loop.
+        # Result arrays
+        n_classes, n_nbor = classes.shape
+        rots = np.zeros((n_classes, n_nbor), dtype=self.dtype)
+        correlations = np.zeros((n_classes, n_nbor), dtype=self.dtype)
+
+        for k in trange(n_classes):
             # Get the coefs for these neighbors
             if basis_coefficients is None:
                 # Retrieve relevant images
@@ -308,38 +304,39 @@ class BFRAverager2D(AligningAverager2D):
             else:
                 nbr_coef = basis_coefficients[classes[k]]
 
-            norm_0 = np.linalg.norm(nbr_coef[0])
-            for i, angle in enumerate(test_angles):
-                # Rotate the set of neighbors by angle,
-                rotated_nbrs = self.alignment_basis.rotate(
-                    nbr_coef, angle, reflections[k]
-                )
+            # Convert to array of complex coef, implicit copy.
+            nbr_coef = xp.array(nbr_coef.to_complex().asnumpy())
 
-                # then store dot between class base image (0) and each nbor
-                for j, nbor in enumerate(rotated_nbrs.asnumpy()):
-                    # Skip the base image.
-                    if j == 0:
-                        continue
-                    norm_nbor = np.linalg.norm(nbor)
-                    _correlations[j, i] = np.dot(nbr_coef.asnumpy()[0], nbor) / (
-                        norm_nbor * norm_0
-                    )
+            # Handle reflections
+            refl = reflections[k]
+            nbr_coef[refl] = xp.conj(nbr_coef[refl])
 
-            # Now find the index of the angle reporting highest correlation
-            angle_idx = np.argmax(_correlations, axis=1)
+            # Generate table of rotations for image 0.
+            # Note we invert the rotation, applying -rot to image 0
+            #   to avoid rotating each member of the class
+            #   for the argmax alignment test (each a dot product,
+            #   performed as a large matmul).
+            base_img = nbr_coef[0].reshape(self.alignment_basis.complex_count, 1)
 
-            # Take the correlation corresponding to angle_idx
-            _correlations = np.take_along_axis(
-                _correlations, np.expand_dims(angle_idx, axis=1), axis=1
-            ).reshape(n_nbor)
+            # (cnt, n_transl) * (cnt, 1) -> (cnt, n_transl)
+            rot_base_imgs_conj = _rot_ops_conj * base_img.conj()
 
-            return test_angles[angle_idx], _correlations
+            # (n_nbor, cnt) @ (cnt, n_transl) = (n_nbor, n_transl)
+            dots = xp.real(nbr_coef @ rot_base_imgs_conj)
+            idx = xp.argmax(dots, axis=1)
+            idx[0] = 0  # Force base image, just in case.
 
-        for k in trange(n_classes):
-            # Store angles and correlations for this class
-            rotations[k], correlations[k] = _innerloop(k)
+            # Assign results for this class
+            correlations[k, :] = xp.take_along_axis(
+                dots, idx.reshape(n_nbor, 1), axis=1
+            ).flatten()
+            # correlations[k,0] = 1  # Force base correlation, just in case
+            #  Todo, do we care to spend the compute to make an actual correlation? (normalize)
 
-        return rotations, None, correlations
+            # Assign the reverse rotation
+            rots[k] = -1 * xp.asnumpy(_angles[idx])
+
+        return rots, None, correlations
 
 
 class BFSRAverager2D(BFRAverager2D):
@@ -720,93 +717,6 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         # For brute force, we'd like shifts then rotations,
         #   as is done in general in AligningAverager2D
         return AligningAverager2D.average(self, classes, reflections, coefs)
-
-
-class BBFSR(BFSRAverager2D):
-    """
-    Batch Brute Force Shift and Rotational alignment.
-    """
-
-    def align(self, classes, reflections, basis_coefficients):
-        """
-        During this process `rotations`, `reflections`, `shifts` and
-        `correlations` properties will be computed for aligners.
-
-        `rotations` is an (src.n, n_nbor) array of angles,
-        which should represent the rotations needed to align images within
-        that class. `rotations` is measured in CCW radians.
-
-        `shifts` is None or an (src.n, n_nbor) array of 2D shifts
-        which should represent the translation needed to best align the images
-        within that class.
-
-        `correlations` is an (src.n, n_nbor) array representing
-        a correlation like measure between classified images and their base
-        image (image index 0).
-
-        Subclasses of should implement and extend this method.
-
-        :param classes: (src.n, n_nbor) integer array of img indices.
-        :param reflections: (src.n, n_nbor) bool array of corresponding reflections,
-        :param basis_coefficients: (n_img, self.alignment_basis.count) basis coefficients,
-
-        :returns: (rotations, shifts, correlations)
-        """
-        # Construct array of angles to brute force.
-        _angles = xp.linspace(0, 2 * np.pi, self.n_angles, endpoint=False)
-
-        _rot_ops_conj = xp.exp(
-            1j * self.alignment_basis.complex_angular_indices.reshape(-1, 1) * _angles
-        ).conj()
-
-        # Result arrays
-        n_classes, n_nbor = classes.shape
-        print('dbg n_classes, n_nbor', n_classes, n_nbor)
-        rots = np.empty((n_classes, n_nbor), dtype=self.dtype)
-        correlations = np.zeros((n_classes, n_nbor), dtype=self.dtype)
-
-        for k in trange(n_classes):
-            # Get the coefs for these neighbors
-            if basis_coefficients is None:
-                # Retrieve relevant images
-                neighbors_imgs = Image(self._cls_images(classes[k]))
-
-                # Evaluate_t into basis
-                nbr_coef = self.composite_basis.evaluate_t(neighbors_imgs)
-            else:
-                nbr_coef = basis_coefficients[classes[k]]
-
-            # Convert to array of complex coef, implicit copy.
-            nbr_coef = xp.array(nbr_coef.to_complex().asnumpy())
-
-            # Handle reflections
-            refl = reflections[k]
-            nbr_coef[refl] = xp.conj(nbr_coef[refl])
-
-            # Generate table of translations for image 0.
-            # Note we invert the translation, applying -rot to image 0
-            #   to avoid translating each member of the class
-            #   for the alignment test (each a dot product,
-            #   performed as a large matmul).
-            base_img = nbr_coef[0].reshape(self.alignment_basis.complex_count, 1)
-
-            # (cnt, n_transl) * (cnt, 1) -> (cnt, n_transl)
-            rot_base_imgs_conj = _rot_ops_conj * base_img.conj()
-
-            # (n_nbor, cnt) @ (cnt, n_transl) = (n_nbor, n_transl)
-            dots = xp.real(nbr_coef @ rot_base_imgs_conj)
-            idx = xp.argmax(dots, axis=1)
-            idx[0] = 0  # Force base image, just in case.
-
-            # Assign results for this class
-            correlations[k,:] = xp.take_along_axis(dots, idx.reshape(n_nbor,1), axis=1).flatten()
-            correlations[k,0] = 1  # Force base correlation, just in case
-            #  Todo, make an actual correlation, (normalize)
-            
-            # Assign the reverse rotation
-            rots[k] = -1 * xp.asnumpy( _angles[idx]) 
-
-        return rots, None, correlations
 
 
 class EMAverager2D(Averager2D):
