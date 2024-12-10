@@ -275,9 +275,8 @@ class BFRAverager2D(AligningAverager2D):
         # Construct array of angles to brute force.
         _angles = xp.linspace(0, 2 * np.pi, self.n_angles, endpoint=False)
 
-        _rot_ops_conj = xp.exp(
-            1j * self.alignment_basis.complex_angular_indices.reshape(-1, 1) * _angles
-        ).conj()
+        ks = xp.asarray(self.alignment_basis.complex_angular_indices).reshape(-1, 1)
+        _rot_ops_conj = xp.exp(1j * ks * _angles).conj()
 
         # Result arrays
         n_classes, n_nbor = classes.shape
@@ -327,9 +326,9 @@ class BFRAverager2D(AligningAverager2D):
             idx[0] = 0  # Force base image, just in case.
 
             # Assign results for this class
-            correlations[k, :] = xp.take_along_axis(
-                dots, idx.reshape(n_nbor, 1), axis=1
-            ).flatten()
+            correlations[k, :] = xp.asnumpy(
+                xp.take_along_axis(dots, idx.reshape(n_nbor, 1), axis=1).flatten()
+            )
             # correlations[k,0] = 1  # Force base correlation, just in case
             #  Todo, do we care to spend the compute to make an actual correlation? (normalize)
 
