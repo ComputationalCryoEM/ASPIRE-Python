@@ -20,30 +20,30 @@ class CommonlineLUD(CLOrient3D):
     """
 
     def __init__(self, *args, **kwargs):
-        # Call the parent class initializer
-        super().__init__(*args, **kwargs)
-
         # Handle additional parameters specific to CommonlineLUD
-        self.alpha = kwargs.get("alpha", 2 / 3)
-        self.tol = kwargs.get("tol", 1e-3)
-        self.mu = kwargs.get("mu", 1)
-        self.gam = kwargs.get("gam", 1.618)
-        self.EPS = kwargs.get("EPS", 1e-12)
-        self.maxit = kwargs.get("maxit", 1000)
-        self.adp_proj = kwargs.get("adp_proj", 1)
-        self.max_rankZ = kwargs.get("max_rankZ", None)
-        self.max_rankW = kwargs.get("max_rankW", None)
+        self.alpha = kwargs.pop("alpha", 2 / 3)
+        self.tol = kwargs.pop("tol", 1e-3)
+        self.mu = kwargs.pop("mu", 1)
+        self.gam = kwargs.pop("gam", 1.618)
+        self.EPS = kwargs.pop("EPS", 1e-12)
+        self.maxit = kwargs.pop("maxit", 1000)
+        self.adp_proj = kwargs.pop("adp_proj", 1)
+        self.max_rankZ = kwargs.pop("max_rankZ", None)
+        self.max_rankW = kwargs.pop("max_rankW", None)
 
         # Parameters for adjusting mu
-        self.adp_mu = kwargs.get("adp_mu", 1)
-        self.dec_mu = kwargs.get("dec_mu", 0.5)
-        self.inc_mu = kwargs.get("inc_mu", 2)
-        self.mu_min = kwargs.get("mu_min", 1e-4)
-        self.mu_max = kwargs.get("mu_max", 1e4)
-        self.min_mu_itr = kwargs.get("min_mu_itr", 5)
-        self.max_mu_itr = kwargs.get("max_mu_itr", 20)
-        self.delta_mu_l = kwargs.get("delta_mu_l", 0.1)
-        self.delta_mu_u = kwargs.get("delta_mu_u", 10)
+        self.adp_mu = kwargs.pop("adp_mu", 1)
+        self.dec_mu = kwargs.pop("dec_mu", 0.5)
+        self.inc_mu = kwargs.pop("inc_mu", 2)
+        self.mu_min = kwargs.pop("mu_min", 1e-4)
+        self.mu_max = kwargs.pop("mu_max", 1e4)
+        self.min_mu_itr = kwargs.pop("min_mu_itr", 5)
+        self.max_mu_itr = kwargs.pop("max_mu_itr", 20)
+        self.delta_mu_l = kwargs.pop("delta_mu_l", 0.1)
+        self.delta_mu_u = kwargs.pop("delta_mu_u", 10)
+
+        # Call the parent class initializer
+        super().__init__(*args, **kwargs)
 
     def estimate_rotations(self):
         """
