@@ -1,32 +1,452 @@
 import logging
 
+import numpy as np
+from scipy.sparse import csr_array
+from scipy.sparse.linalg import eigs
+
 from aspire.abinitio import CLOrient3D
+from aspire.utils import nearest_rotations
+from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
 
 
-class CommLineLUD(CLOrient3D):
+class CommonlineLUD(CLOrient3D):
     """
-    Define a derived class to estimate 3D orientations using Least Unsquared Deviations described as below:
-    L. Wang, A. Singer, and  Z. Wen, Orientation Determination of Cryo-EM Images Using Least Unsquared Deviations,
-    SIAM J. Imaging Sciences, 6, 2450-2483 (2013).
-
+    Define a derived class to estimate 3D orientations using Least Unsquared
+    Deviations described as below:
+    L. Wang, A. Singer, and  Z. Wen, Orientation Determination of Cryo-EM Images Using
+    Least Unsquared Deviations, SIAM J. Imaging Sciences, 6, 2450-2483 (2013).
     """
 
-    def __init__(self, src):
-        """
-        constructor of an object for estimating 3D orientations
-        """
-        pass
+    def __init__(self, *args, **kwargs):
+        # Call the parent class initializer
+        super().__init__(*args, **kwargs)
 
-    def estimate(self):
-        """
-        perform estimation of orientations
-        """
-        pass
+        # Handle additional parameters specific to CommonlineLUD
+        self.alpha = kwargs.get("alpha", 2 / 3)
+        self.tol = kwargs.get("tol", 1e-3)
+        self.mu = kwargs.get("mu", 1)
+        self.gam = kwargs.get("gam", 1.618)
+        self.EPS = kwargs.get("EPS", 1e-12)
+        self.maxit = kwargs.get("maxit", 1000)
+        self.adp_proj = kwargs.get("adp_proj", 1)
+        self.max_rankZ = kwargs.get("max_rankZ", None)
+        self.max_rankW = kwargs.get("max_rankW", None)
 
-    def output(self):
+        # Parameters for adjusting mu
+        self.adp_mu = kwargs.get("adp_mu", 1)
+        self.dec_mu = kwargs.get("dec_mu", 0.5)
+        self.inc_mu = kwargs.get("inc_mu", 2)
+        self.mu_min = kwargs.get("mu_min", 1e-4)
+        self.mu_max = kwargs.get("mu_max", 1e4)
+        self.min_mu_itr = kwargs.get("min_mu_itr", 5)
+        self.max_mu_itr = kwargs.get("max_mu_itr", 20)
+        self.delta_mu_l = kwargs.get("delta_mu_l", 0.1)
+        self.delta_mu_u = kwargs.get("delta_mu_u", 10)
+
+    def estimate_rotations(self):
         """
-        Output the 3D orientations
+        Estimate rotation matrices using the common lines method with semi-definite programming.
         """
-        pass
+        logger.info("Computing the common lines matrix.")
+        self.build_clmatrix()
+
+        C = self.cl_to_C(self.clmatrix)
+        gram, _, _, _, _ = self.cryoEMSDPL12N(C)
+        gram = self._restructure_Gram(gram)
+        self.rotations = self._deterministic_rounding(gram)
+
+        return self.rotations
+
+    def cryoEMSDPL12N(self, C):
+        # Initialize problem parameters
+        lambda_ = self.alpha * self.n_img
+        n = 2 * self.n_img
+        b = np.concatenate([np.ones(n), np.zeros(self.n_img)])
+
+        # Adjust rank limits
+        self.max_rankZ = self.max_rankZ or max(6, self.n_img // 2)
+        self.max_rankW = self.max_rankW or max(6, self.n_img // 2)
+
+        # Initialize variables
+        G = np.eye(n, dtype=self.dtype)
+        W = np.eye(n, dtype=self.dtype)
+        Z = W
+        Phi = G / self.mu
+
+        # Compute initial values
+        S, theta = self.Qtheta(Phi, C, self.mu)
+        S = (S + S.T) / 2
+        AS = self.ComputeAX(S)
+        resi = self.ComputeAX(G) - b
+
+        kk = 0
+        nev = 0
+
+        itmu_pinf = 0
+        itmu_dinf = 0
+
+        # Maybe initialize values for first iteration prior to loop.
+        zz = 0  # take this out later
+        dH = 0  # take this out later
+        for itr in range(self.maxit):
+            y = -(AS + self.ComputeAX(W) - self.ComputeAX(Z)) - resi / self.mu
+            ATy = self.ComputeATy(y)
+            Phi = W + ATy - Z + G / self.mu
+            S, theta = self.Qtheta(Phi, C, self.mu)
+            S = (S + S.T) / 2
+
+            B = S + W + ATy + G / self.mu
+            B = (B + B.T) / 2
+
+            if self.adp_proj == 0:
+                U, pi = np.linalg.eigh(B)
+            else:
+                if itr == 0:
+                    kk = self.max_rankZ
+                else:
+                    if kk > 0:
+                        # Weird logic here to account for matlab behavior
+                        # for empty array or divide by zero.
+                        rel_drp = 0
+                        if len(zz) == 2:
+                            rel_drp = np.inf
+                        if len(zz) > 2:
+                            drops = zz[:-1] / zz[1:]
+                            dmx, imx = max(
+                                (val, idx) for idx, val in enumerate(drops)
+                            )  # Find max drop and its index
+                            rel_drp = (nev - 1) * dmx / (np.sum(drops) - dmx)
+                        if rel_drp > 10:
+                            kk = max(imx, 6)
+                        else:
+                            kk += 3
+                    else:
+                        kk = 6
+
+                kk = min(kk, n)
+                pi, U = eigs(
+                    B, k=kk, which="LM"
+                )  # Compute top `kk` eigenvalues and eigenvectors
+
+                # Sort by eigenvalue magnitude.
+                idx = np.argsort(np.abs(pi))[::-1]
+                pi = pi[idx]
+                U = U[:, idx].real
+                pi = pi.real  # Ensure real eigenvalues for subsequent calculations
+
+            zz = np.sign(pi) * np.maximum(np.abs(pi) - lambda_ / self.mu, 0)
+            nD = zz > 0
+            kk = np.count_nonzero(nD)
+            if kk > 0:
+                zz = zz[nD]
+                Z = U[:, nD] @ np.diag(zz) @ U[:, nD].T
+            else:
+                Z = np.zeros_like(B)
+
+            H = Z - S - ATy - G / self.mu
+            H = (H + H.T) / 2
+
+            if self.adp_proj == 0:
+                D, V = np.linalg.eigh(H)
+                D = np.diag(D)
+                W = V[:, D > self.EPS] @ np.diag(D[D > self.EPS]) @ V[:, D > self.EPS].T
+            else:
+                if itr == 0:
+                    nev = self.max_rankW
+                else:
+                    if nev > 0:
+                        drops = dH[:-1] / dH[1:]
+                        dmx, imx = max((val, idx) for idx, val in enumerate(drops))
+                        rel_drp = (nev - 1) * dmx / (np.sum(drops) - dmx)
+
+                        if rel_drp > 50:
+                            nev = max(imx + 1, 6)
+                        else:
+                            nev = nev + 5
+                    else:
+                        nev = 6
+
+                dH, V = eigs(-H, k=min(nev, n), which="LR")
+
+                # Sort by eigenvalue magnitude.
+                dH = dH.real
+                idx = np.argsort(dH)[::-1]
+                dH = dH[idx]
+                V = V[:, idx].real
+                nD = dH > self.EPS
+                dH = dH[nD]
+                nev = np.count_nonzero(nD)
+                W = V[:, nD] @ np.diag(dH) @ V[:, nD].T + H if nD.any() else H
+
+            G = (1 - self.gam) * G + self.gam * self.mu * (W - H)
+            resi = self.ComputeAX(G) - b
+            pinf = np.linalg.norm(resi) / max(np.linalg.norm(b), 1)
+            dinf = np.linalg.norm(S + W + ATy - Z, "fro") / max(
+                np.linalg.norm(S, np.inf), 1
+            )
+
+            if max(pinf, dinf) <= self.tol:
+                return (
+                    G,
+                    Z,
+                    W,
+                    y,
+                    {"exit": "optimal", "itr": itr, "pinf": pinf, "dinf": dinf},
+                )
+
+            if self.adp_mu:
+                if pinf / dinf <= self.delta_mu_l:
+                    itmu_pinf = itmu_pinf + 1
+                    itmu_dinf = 0
+                    if itmu_pinf > self.max_mu_itr:
+                        self.mu = max(self.mu * self.inc_mu, self.mu_min)
+                        itmu_pinf = 0
+                elif pinf / dinf > self.delta_mu_u:
+                    itmu_dinf = itmu_dinf + 1
+                    itmu_pinf = 0
+                    if itmu_dinf > self.max_mu_itr:
+                        self.mu = min(self.mu * self.dec_mu, self.mu_max)
+                        itmu_dinf = 0
+
+        return G, Z, W, y, {"exit": "max_iter_reached", "itr": self.maxit}
+
+    def Qtheta(self, phi, C, mu):
+        """
+        Python equivalent of Qtheta MEX function.
+        """
+        # Initialize outputs
+        S = np.zeros((2 * self.n_img, 2 * self.n_img))
+        theta = np.zeros_like(C)
+
+        # Main routine
+        for i in range(self.n_img - 1):
+            for j in range(i + 1, self.n_img):
+                t = 0
+                for k in range(2):
+                    theta[i, j, k] = C[i, j, k] - mu * (
+                        phi[2 * i + k, 2 * j] * C[j, i, 0]
+                        + phi[2 * i + k, 2 * j + 1] * C[j, i, 1]
+                    )
+                    t += theta[i, j, k] ** 2
+
+                t = np.sqrt(t)
+                for k in range(2):
+                    theta[i, j, k] /= t
+                    S[2 * i + k, 2 * j] = theta[i, j, k] * C[j, i, 0]
+                    S[2 * i + k, 2 * j + 1] = theta[i, j, k] * C[j, i, 1]
+
+        return S, theta
+
+    def cl_to_C(self, clmatrix):
+        C = np.zeros((self.n_img, self.n_img, 2), dtype=self.dtype)
+        for i in range(self.n_img):
+            for j in range(i + 1, self.n_img):  # Only process i < j
+                cl_ij = clmatrix[i, j]
+                cl_ji = clmatrix[j, i]
+
+                # Compute (xij, yij) and (xji, yji) from common lines
+                C[i, j, 0] = np.cos(2 * np.pi * cl_ij / self.n_theta)
+                C[i, j, 1] = np.sin(2 * np.pi * cl_ij / self.n_theta)
+                C[j, i, 0] = np.cos(2 * np.pi * cl_ji / self.n_theta)
+                C[j, i, 1] = np.sin(2 * np.pi * cl_ji / self.n_theta)
+
+        return C
+
+    def ComputeAX(self, X):
+        n = 2 * self.n_img
+        rows = np.arange(1, n, 2)
+        cols = np.arange(0, n, 2)
+
+        # Create diagonal matrix with X on the main diagonal
+        diags = np.diag(X)
+
+        # Compute the second part of AX
+        sqrt_2_X_col = np.sqrt(2) * X[rows, cols]
+
+        # Concatenate results vertically
+        AX = np.concatenate((diags, sqrt_2_X_col))
+
+        return AX
+
+    def ComputeATy(self, y):
+        n = 2 * self.n_img
+        m = 3 * self.n_img
+        idx = np.arange(n)
+        rows = np.arange(1, n, 2)
+        cols = np.arange(0, n, 2)
+
+        ATy = csr_array((n, n), dtype=self.dtype)
+        ATy[rows, cols] = (np.sqrt(2) / 2) * y[n:m]
+        ATy = ATy + ATy.T
+        ATy += csr_array((y[:n], (idx, idx)), shape=(n, n))
+
+        return ATy.tocsr()
+
+    def _lud_prep(self):
+        """
+        Prepare optimization problem constraints.
+
+        The constraints for the SDP optimization, max tr(SG), performed in `_compute_gram_matrix()`
+        as min tr(-SG), are that the Gram matrix, G, is semidefinite positive and G11_ii = G22_ii = 1,
+        G12_ii = G21_ii = 0, i=1,2,...,N, for the block representation of G = [[G11, G12], [G21, G22]].
+
+        We build a corresponding constraint for CVXPY in the form of tr(A_j @ G) = b_j, j = 1,...,p.
+        For the constraint G11_ii = G22_ii = 1, we have A_j[i, i] = 1 (zeros elsewhere) and b_j = 1.
+        For the constraint G12_ii = G21_ii = 0, we have A_j[i, i] = 1 (zeros elsewhere) and b_j = 0.
+
+        :returns: Constraint data A, b.
+        """
+        logger.info("Preparing SDP optimization constraints.")
+
+        n = 2 * self.n_img
+        A = []
+        b = []
+        data = np.ones(1, dtype=self.dtype)
+        for i in range(n):
+            row_ind = np.array([i])
+            col_ind = np.array([i])
+            A_i = csr_array((data, (row_ind, col_ind)), shape=(n, n), dtype=self.dtype)
+            A.append(A_i)
+            b.append(1)
+
+        for i in range(self.n_img):
+            row_ind = np.array([i])
+            col_ind = np.array([self.n_img + i])
+            A_i = csr_array((data, (row_ind, col_ind)), shape=(n, n), dtype=self.dtype)
+            A.append(A_i)
+            b.append(0)
+
+        b = np.array(b, dtype=self.dtype)
+
+        return A, b
+
+    def _restructure_Gram(self, G):
+        """
+        Restructures the input Gram matrix into a block structure based on odd and even
+        indexed rows and columns.
+
+        The new structure is:
+            New G = [[Top Left Block,  Top Right Block],
+                     [Bottom Left Block, Bottom Right Block]]
+
+        Blocks:
+        - Top Left Block: Rows and columns with odd indices.
+        - Top Right Block: Odd rows and even columns.
+        - Bottom Left Block: Even rows and odd columns.
+        - Bottom Right Block: Even rows and columns.
+        """
+        # Get odd and even indices
+        odd_indices = np.arange(0, G.shape[0], 2)
+        even_indices = np.arange(1, G.shape[0], 2)
+
+        # Extract blocks
+        top_left = G[np.ix_(odd_indices, odd_indices)]
+        top_right = G[np.ix_(odd_indices, even_indices)]
+        bottom_left = G[np.ix_(even_indices, odd_indices)]
+        bottom_right = G[np.ix_(even_indices, even_indices)]
+
+        # Combine blocks into the new structure
+        restructured_G = np.block([[top_left, top_right], [bottom_left, bottom_right]])
+
+        return restructured_G
+
+    def _deterministic_rounding(self, gram):
+        """
+        Deterministic rounding procedure to recover the rotations from the Gram matrix.
+
+        The Gram matrix contains information about the first two columns of every rotation
+        matrix. These columns are extracted and used to form the remaining column of every
+        rotation matrix.
+
+        :param gram: A 2n_img x 2n_img Gram matrix.
+
+        :return: An n_img x 3 x 3 stack of rotation matrices.
+        """
+        logger.info("Recovering rotations from Gram matrix.")
+
+        # Obtain top eigenvectors from Gram matrix.
+        d, v = stable_eigsh(gram, 5)
+        sort_idx = np.argsort(-d)
+        logger.info(f"Top 5 eigenvalues from (rank-3) Gram matrix: {d[sort_idx]}")
+
+        # Only need the top 3 eigen-vectors.
+        v = v[:, sort_idx[:3]]
+
+        # According to the structure of the Gram matrix, the first `n_img` rows, denoted v1,
+        # correspond to the linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of
+        # column 1 of all rotation matrices. Similarly, the second `n_img` rows of v,
+        # denoted v2, are linear combinations of R_{i}^{2}, i=1,...,K, that is, the second
+        # column of all rotation matrices.
+        v1 = v[: self.n_img].T
+        v2 = v[self.n_img : 2 * self.n_img].T
+
+        # Use a least-squares method to get A.T*A and a Cholesky decomposition to find A.
+        A = self._ATA_solver(v1, v2)
+
+        # Recover the rotations. The first two columns of all rotation
+        # matrices are given by unmixing V1 and V2 using A. The third
+        # column is the cross product of the first two.
+        r1 = np.dot(A.T, v1)
+        r2 = np.dot(A.T, v2)
+        r3 = np.cross(r1, r2, axis=0)
+        rotations = np.stack((r1.T, r2.T, r3.T), axis=-1)
+
+        # Make sure that we got rotations by enforcing R to be
+        # a rotation (in case the error is large)
+        rotations = nearest_rotations(rotations)
+
+        return rotations
+
+    @staticmethod
+    def _ATA_solver(v1, v2):
+        """
+        Uses a least squares method to solve for the linear transformation A
+        such that A*v1=R1 and A*v2=R2 correspond to the first and second columns
+        of a sequence of rotation matrices.
+
+        :param v1: 3 x n_img array corresponding to linear combinations of the first
+            columns of all rotation matrices.
+        :param v2: 3 x n_img array corresponding to linear combinations of the second
+            columns of all rotation matrices.
+
+        :return: 3x3 linear transformation mapping v1, v2 to first two columns of rotations.
+        """
+        # We look for a linear transformation (3 x 3 matrix) A such that
+        # A*v1'=R1 and A*v2=R2 are the columns of the rotations matrices.
+        # Therefore:
+        # v1 * A'*A v1' = 1
+        # v2 * A'*A v2' = 1
+        # v1 * A'*A v2' = 0
+        # These are 3*K linear equations for 9 matrix entries of A'*A
+        # Actually, there are only 6 unknown variables, because A'*A is symmetric.
+        # So we will truncate from 9 variables to 6 variables corresponding
+        # to the upper half of the matrix A'*A
+        n_img = v1.shape[-1]
+        truncated_equations = np.zeros((3 * n_img, 9), dtype=v1.dtype)
+        k = 0
+        for i in range(3):
+            for j in range(3):
+                truncated_equations[0::3, k] = v1[i] * v1[j]
+                truncated_equations[1::3, k] = v2[i] * v2[j]
+                truncated_equations[2::3, k] = v1[i] * v2[j]
+                k += 1
+
+        # b = [1 1 0 1 1 0 ...]' is the right hand side vector
+        b = np.ones(3 * n_img)
+        b[2::3] = 0
+
+        # Find the least squares approximation of A'*A in vector form
+        ATA_vec = np.linalg.lstsq(truncated_equations, b, rcond=None)[0]
+
+        # Construct the matrix A'*A from the vectorized matrix.
+        # Note, this is only the lower triangle of A'*A.
+        ATA = ATA_vec.reshape(3, 3)
+
+        # The Cholesky decomposition of A'*A gives A (lower triangle).
+        # Note, that `np.linalg.cholesky()` only uses the lower-triangular
+        # and diagonal elements of ATA.
+        A = np.linalg.cholesky(ATA)
+
+        return A
