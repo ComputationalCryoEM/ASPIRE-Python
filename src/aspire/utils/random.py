@@ -55,7 +55,7 @@ def randn(*args, **kwargs):
         return result
 
 
-def rand(size, seed=None):
+def matlab_rand(size, seed=None):
     """
     Wraps numpy.random.random with ASPIRE Random context manager.
     Note this is re-packed from F order, only for MATLAB repro.
@@ -63,7 +63,7 @@ def rand(size, seed=None):
     For all other uses prefer `random`.
     """
     warnings.warn(
-        "`rand` is deprecated and included only for MATLAB"
+        "`matlab_rand` is deprecated and included only for MATLAB"
         " reference applications.  It may be removed in future"
         " releases.  Use `random` for new development.",
         DeprecationWarning,
