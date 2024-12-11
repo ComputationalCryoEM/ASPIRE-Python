@@ -260,7 +260,6 @@ class BFRAverager2D(AligningAverager2D):
         super().__init__(composite_basis, src, alignment_basis, dtype=dtype)
 
         self.n_angles = n_angles
-        self._base_image_shift = None
 
         if not hasattr(self.alignment_basis, "rotate"):
             raise RuntimeError(
@@ -287,19 +286,10 @@ class BFRAverager2D(AligningAverager2D):
             # Get the coefs for these neighbors
             if basis_coefficients is None:
                 # Retrieve relevant images
-                neighbors_imgs = self._cls_images(classes[k]).copy()
-
-                # We optionally can shift the base image by `_base_image_shift`
-                # Shift in real space to avoid extra conversions
-                if self._base_image_shift is not None:
-                    neighbors_imgs[0] = (
-                        Image(neighbors_imgs[0])
-                        .shift(self._base_image_shift)
-                        .asnumpy()[0]
-                    )
+                neighbors_imgs = Image(self._cls_images(classes[k]))
 
                 # Evaluate_t into basis
-                nbr_coef = self.composite_basis.evaluate_t(Image(neighbors_imgs))
+                nbr_coef = self.alignment_basis.evaluate_t(neighbors_imgs)
             else:
                 nbr_coef = basis_coefficients[classes[k]]
 
@@ -392,7 +382,22 @@ class BFSRAverager2D(BFRAverager2D):
         classes = np.atleast_2d(classes)
         reflections = np.atleast_2d(reflections)
 
-        n_classes = classes.shape[0]
+        # Result arrays
+        # These arrays will incrementally store our best alignment.
+        n_classes, n_nbor = classes.shape
+        rotations = np.zeros((n_classes, n_nbor), dtype=self.dtype)
+        correlations = np.ones((n_classes, n_nbor), dtype=self.dtype) * -np.inf
+        shifts = np.empty((*classes.shape, 2), dtype=int)
+
+        # Work arrays
+        _rotations = np.zeros((1, n_nbor), dtype=self.dtype)
+        _correlations = np.ones((1, n_nbor), dtype=self.dtype) * -np.inf
+
+        # Construct array of angles to brute force.
+        _angles = xp.linspace(0, 2 * np.pi, self.n_angles, endpoint=False)
+
+        ks = xp.asarray(self.alignment_basis.complex_angular_indices).reshape(-1, 1)
+        _rot_ops_conj = xp.exp(1j * ks * _angles).conj()
 
         # Create a search grid and force initial pair to (0,0)
         # This is done primarily in case of a tie later, we would take unshifted.
@@ -400,68 +405,86 @@ class BFSRAverager2D(BFRAverager2D):
             self.src.L, self.radius, roll_zero=True
         )
 
-        # These arrays will incrementally store our best alignment.
-        rotations = np.empty(classes.shape, dtype=self.dtype)
-        correlations = np.ones(classes.shape, dtype=self.dtype) * -np.inf
-        shifts = np.empty((*classes.shape, 2), dtype=int)
-
-        # We want to maintain the original coefs for the base images,
-        #  because we will mutate them with shifts in the loop.
-        if basis_coefficients is None:
-            original_coef = self.composite_basis.evaluate_t(
-                Image(self._cls_images(classes[:, 0], src=self.src))
-            )
-        else:
-            original_coef = basis_coefficients[classes[:, 0], :].copy()
-
-        # Sanity check the original_coef shape
-        assert original_coef.shape == (n_classes, self.alignment_basis.count)
-
-        # Loop over shift search space, updating best result
-        for x, y in zip(x_shifts, y_shifts):
-            shift = np.array([x, y], dtype=int)
-            logger.debug(f"Computing rotational alignment after shift ({x},{y}).")
-
-            # Shift the coef representing the first (base) entry in each class
-            #   by the negation of the shift
-            # Shifting one image is more efficient than shifting every neighbor
-            if basis_coefficients is not None:
-                basis_coefficients[classes[:, 0], :] = self.alignment_basis.shift(
-                    original_coef, -shift
-                )
-            else:
-                # Store the latest shift so that super class can access it.
-                # This allows us to retrieve and shift coefficients on the fly,
-                #   instead of storing them all.
-                self._base_image_shift = -shift
-
-            _rotations, _, _correlations = self._bfr_align(
-                classes, reflections, basis_coefficients
-            )
-
-            # Each class-neighbor pair may have a best shift-rot from a different shift.
-            # Test and update
-            improved_indices = _correlations > correlations
-            rotations[improved_indices] = _rotations[improved_indices]
-            correlations[improved_indices] = _correlations[improved_indices]
-            shifts[improved_indices] = shift
-
-            # Cleanup/Restore unshifted base coefs
+        for k in trange(n_classes):
+            # We want to locally cache the original images,
+            #  because we will mutate them with shifts in the next loop.
+            #  This avoids recomputing them before each shift
             if basis_coefficients is None:
-                # Reset this flag
-                self._base_image_shift = None
+                original_images = Image(self._cls_images(classes[k], src=self.src))
             else:
-                basis_coefficients[classes[:, 0], :] = original_coef
+                original_coef = basis_coefficients[classes[k], :]
+                # batch here? or maybe just force always passing images....?
+                original_images = self.alignment_basis.evaluate(original_coef)
 
-            if (x, y) == (0, 0):
-                logger.debug("Initial rotational alignment complete (shift (0,0))")
-                assert np.sum(improved_indices) == np.size(
-                    classes
-                ), f"{np.sum(improved_indices)} =?= {np.size(classes)}"
-            else:
-                logger.debug(
-                    f"Shift ({x},{y}) complete. Improved {np.sum(improved_indices)} alignments."
+            # Working copy
+            _images = original_images.asnumpy().copy()
+
+            # Loop over shift search space, updating best result
+            for x, y in zip(x_shifts, y_shifts):
+                shift = np.array([x, y], dtype=int)
+                logger.debug(f"Computing rotational alignment after shift ({x},{y}).")
+
+                # For each shift, the set of neighbor images is shifted.
+                #   This order is chosen because:
+                #   i) allows concatenation of shifts and rotation
+                #   operations after orientation estimation
+                #   ii) because generally the number of neighbors << the
+                #   number of test rotations.
+
+                # Note the base image[0] is never shifted.
+                _images[1:] = original_images[1:].shift(shift).asnumpy()
+
+                # Convert to array of complex coef, implicit copy.
+                _coef = self.alignment_basis.evaluate_t(_images)
+                _coef = xp.array(_coef.to_complex().asnumpy())
+
+                # Handle reflections
+                # XXXX should we do this earlier via Images? (flipud?)
+                # How would we communicate this reflection to other areas of the code...
+                refl = reflections[k]
+                _coef[refl] = xp.conj(_coef[refl])
+
+                # Generate table of rotations for image 0.
+                # Note we invert the rotation, applying -rot to image 0
+                #   to avoid rotating each member of the class
+                #   for the argmax alignment test (each a dot product,
+                #   performed as a large matmul).
+                base_img = _coef[0].reshape(self.alignment_basis.complex_count, 1)
+
+                # (cnt, n_transl) * (cnt, 1) -> (cnt, n_transl)
+                rot_base_imgs_conj = _rot_ops_conj * base_img.conj()
+
+                # (n_nbor, cnt) @ (cnt, n_transl) = (n_nbor, n_transl)
+                dots = xp.real(_coef @ rot_base_imgs_conj)
+                idx = xp.argmax(dots, axis=1)
+                idx[0] = 0  # Force base image, just in case.
+
+                # Assign results for this class
+                _correlations[:] = xp.asnumpy(
+                    xp.take_along_axis(dots, idx.reshape(n_nbor, 1), axis=1).flatten()
                 )
+                # _correlations[0] = 1  # Force base correlation, just in case
+                #  Todo, do we care to spend the compute to make an actual correlation? (normalize)
+
+                # Assign the reverse rotation
+                _rotations[:] = -1 * xp.asnumpy(_angles[idx])
+
+                # Each class-neighbor pair may have a best shift-rot from a different shift.
+                # Test and update
+                improved_indices = _correlations[0] > correlations[k]
+                rotations[k, improved_indices] = _rotations[0, improved_indices]
+                correlations[k, improved_indices] = _correlations[0, improved_indices]
+                shifts[k, improved_indices] = shift
+
+                if (x, y) == (0, 0):
+                    logger.debug("Initial rotational alignment complete (shift (0,0))")
+                    assert np.sum(improved_indices) == np.size(
+                        classes[0]
+                    ), f"{np.sum(improved_indices)} =?= {np.size(classes)}"
+                else:
+                    logger.debug(
+                        f"Shift ({x},{y}) complete. Improved {np.sum(improved_indices)} alignments."
+                    )
 
         return rotations, shifts, correlations
 
