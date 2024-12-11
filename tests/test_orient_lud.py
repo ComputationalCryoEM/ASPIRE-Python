@@ -4,13 +4,7 @@ import pytest
 from aspire.abinitio import CommonlineLUD
 from aspire.nufft import backend_available
 from aspire.source import Simulation
-from aspire.utils import (
-    Rotation,
-    get_aligned_rotations,
-    mean_aligned_angular_distance,
-    register_rotations,
-    rots_to_clmatrix,
-)
+from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import AsymmetricVolume
 
 RESOLUTION = [
