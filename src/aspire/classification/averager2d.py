@@ -235,7 +235,7 @@ class AligningAverager2D(Averager2D):
         return X, Y
 
 
-class BFRAverager2D(AligningAverager2D):
+class _BFRAverager2D(AligningAverager2D):
     """
     This perfoms a Brute Force Rotational alignment.
 
@@ -328,7 +328,7 @@ class BFRAverager2D(AligningAverager2D):
         return rots, None, correlations
 
 
-class BFSRAverager2D(BFRAverager2D):
+class BFSRAverager2D(AligningAverager2D):
     """
     This perfoms a Brute Force Shift and Rotational alignment.
     It is potentially expensive to brute force this search space.
@@ -359,19 +359,24 @@ class BFSRAverager2D(BFRAverager2D):
             composite_basis,
             src,
             alignment_basis,
-            n_angles,
             dtype=dtype,
         )
 
+        self.n_angles = n_angles
+
+        if not hasattr(self.alignment_basis, "rotate"):
+            raise RuntimeError(
+                f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `rotate` method."
+            )
+
         self.radius = radius if radius is not None else src.L // 16
 
-        # Each shift will require calling the parent BFRAverager2D.align
-        self._bfr_align = super().align
+        if self.radius != 0:
 
-        if not hasattr(self.alignment_basis, "shift"):
-            raise RuntimeError(
-                f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
-            )
+            if not hasattr(self.alignment_basis, "shift"):
+                raise RuntimeError(
+                    f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
+                )
 
     def align(self, classes, reflections, basis_coefficients):
         """
@@ -487,6 +492,21 @@ class BFSRAverager2D(BFRAverager2D):
                     )
 
         return rotations, shifts, correlations
+
+
+class BFRAverager2D(BFSRAverager2D):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, radius=0, **kwargs)
+
+    def align(self, *args, **kwargs):
+        """
+        See `AligningAverager2D.align`
+        """
+        # BFR shifts should all be zeros.
+        # Replace with `None` to induce short ciruit shifting during stacking.
+        rotations, _, correlations = super().align(*args, **kwargs)
+
+        return rotations, None, correlations
 
 
 class ReddyChatterjiAverager2D(AligningAverager2D):
