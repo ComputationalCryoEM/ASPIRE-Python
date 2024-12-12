@@ -274,15 +274,21 @@ class CommonlineLUD(CLOrient3D):
         n = 2 * self.n_img
         m = 3 * self.n_img
         idx = np.arange(n)
-        rows = np.arange(1, n, 2)
-        cols = np.arange(0, n, 2)
+        rows = np.concatenate([np.arange(1, n, 2), np.arange(0, n, 2)])
+        cols = np.concatenate([np.arange(0, n, 2), np.arange(1, n, 2)])
+        data = np.concatenate([(np.sqrt(2) / 2) * y[n:m], (np.sqrt(2) / 2) * y[n:m]])
 
-        ATy = csr_array((n, n), dtype=self.dtype)
-        ATy[rows, cols] = (np.sqrt(2) / 2) * y[n:m]
-        ATy = ATy + ATy.T
-        ATy += csr_array((y[:n], (idx, idx)), shape=(n, n))
+        # Combine diagonal elements
+        diag_data = y[:n]
+        diag_idx = idx
 
-        return ATy.tocsr()
+        # Construct the full matrix
+        data = np.concatenate([data, diag_data])
+        rows = np.concatenate([rows, diag_idx])
+        cols = np.concatenate([cols, diag_idx])
+
+        ATy = csr_array((data, (rows, cols)), shape=(n, n))
+        return ATy
 
     def _lud_prep(self):
         """
