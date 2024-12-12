@@ -147,6 +147,7 @@ class Image:
     # Map file extensions to their respective readers
     extensions = {
         ".mrc": load_mrc,
+        ".mrcs": load_mrc,
         ".tif": load_tiff,
         ".tiff": load_tiff,
     }
