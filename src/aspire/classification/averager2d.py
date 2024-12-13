@@ -7,7 +7,7 @@ from aspire.basis import Coef
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image, ImageStacker, MeanImageStacker
 from aspire.numeric import xp
-from aspire.utils import trange
+from aspire.utils import tqdm, trange
 from aspire.utils.coor_trans import grid_2d
 
 logger = logging.getLogger(__name__)
@@ -131,7 +131,7 @@ class AligningAverager2D(Averager2D):
             )
 
     @abstractmethod
-    def align(self, classes, reflections, basis_coefficients):
+    def align(self, classes, reflections, basis_coefficients=None):
         """
         During this process `rotations`, `reflections`, `shifts` and
         `correlations` properties will be computed for aligners.
@@ -206,7 +206,7 @@ class AligningAverager2D(Averager2D):
             # Averaging in composite_basis
             return self.image_stacker(neighbors_coefs.asnumpy())
 
-        for i in trange(n_classes):
+        for i in trange(n_classes, desc="Stacking class averages"):
             b_avgs[i] = _innerloop(i)
 
         # Now we convert the averaged images from Basis to Cartesian.
@@ -266,7 +266,7 @@ class _BFRAverager2D(AligningAverager2D):
                 f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `rotate` method."
             )
 
-    def align(self, classes, reflections, basis_coefficients):
+    def align(self, classes, reflections, basis_coefficients=None):
         """
         Performs the actual rotational alignment estimation,
         returning parameters needed for averaging.
@@ -282,7 +282,7 @@ class _BFRAverager2D(AligningAverager2D):
         rots = np.zeros((n_classes, n_nbor), dtype=self.dtype)
         correlations = np.zeros((n_classes, n_nbor), dtype=self.dtype)
 
-        for k in trange(n_classes):
+        for k in trange(n_classes, desc="Rotationally aligning classes"):
             # Get the coefs for these neighbors
             if basis_coefficients is None:
                 # Retrieve relevant images
@@ -349,7 +349,7 @@ class BFSRAverager2D(AligningAverager2D):
         dtype=None,
     ):
         """
-        See AligningAverager2D and BFRAverager2D, adds: radius
+        See AligningAverager2D adds `n_angles` and `radius`.
 
         :params n_angles: Number of brute force rotations to attempt, defaults 360.
         :param radius: Brute force translation search radius.
@@ -378,7 +378,7 @@ class BFSRAverager2D(AligningAverager2D):
                     f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
                 )
 
-    def align(self, classes, reflections, basis_coefficients):
+    def align(self, classes, reflections, basis_coefficients=None):
         """
         See `AligningAverager2D.align`
         """
@@ -410,7 +410,7 @@ class BFSRAverager2D(AligningAverager2D):
             self.src.L, self.radius, roll_zero=True
         )
 
-        for k in trange(n_classes):
+        for k in trange(n_classes, desc="Rotationally aligning classes"):
             # We want to locally cache the original images,
             #  because we will mutate them with shifts in the next loop.
             #  This avoids recomputing them before each shift
@@ -425,7 +425,13 @@ class BFSRAverager2D(AligningAverager2D):
             _images = original_images.asnumpy().copy()
 
             # Loop over shift search space, updating best result
-            for x, y in zip(x_shifts, y_shifts):
+            for x, y in tqdm(
+                zip(x_shifts, y_shifts),
+                total=len(x_shifts),
+                desc="\tmaximizing over shifts",
+                disable=len(x_shifts) == 1,
+                leave=False,
+            ):
                 shift = np.array([x, y], dtype=int)
                 logger.debug(f"Computing rotational alignment after shift ({x},{y}).")
 
@@ -440,7 +446,7 @@ class BFSRAverager2D(AligningAverager2D):
                 _images[1:] = original_images[1:].shift(shift).asnumpy()
 
                 # Convert to array of complex coef, implicit copy.
-                _coef = self.alignment_basis.evaluate_t(_images)
+                _coef = self.alignment_basis.evaluate_t(Image(_images))
                 _coef = xp.array(_coef.to_complex().asnumpy())
 
                 # Handle reflections
@@ -500,11 +506,19 @@ class BFRAverager2D(BFSRAverager2D):
 
     def align(self, *args, **kwargs):
         """
-        See `AligningAverager2D.align`
+        See `BFSRAverager2D.align`
         """
         # BFR shifts should all be zeros.
         # Replace with `None` to induce short ciruit shifting during stacking.
-        rotations, _, correlations = super().align(*args, **kwargs)
+        rotations, shifts, correlations = super().align(*args, **kwargs)
+
+        # RM?
+        if not np.all(shifts.flatten() == 0):
+            logger.error(
+                "BFR should return zero shifts."
+                "  BFSR returned non zero shifts."
+                "  Forcing to `None`."
+            )
 
         return rotations, None, correlations
 
@@ -555,7 +569,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         super().__init__(composite_basis, src, composite_basis, dtype=dtype)
 
-    def align(self, classes, reflections, basis_coefficients):
+    def align(self, classes, reflections, basis_coefficients=None):
         """
         Performs the actual rotational alignment estimation,
         returning parameters needed for averaging.
@@ -583,7 +597,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 dtype=self.dtype,
             )
 
-        for k in trange(n_classes):
+        for k in trange(n_classes, desc="Rotationally aligning classes"):
             rotations[k], shifts[k], correlations[k] = _innerloop(k)
 
         return rotations, shifts, correlations
@@ -632,7 +646,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             # Averaging in composite_basis
             return self.image_stacker(neighbors_coefs.asnumpy())
 
-        for i in trange(n_classes):
+        for i in trange(n_classes, desc="Stacking class averages"):
             b_avgs[i] = _innerloop(i)
 
         # Now we convert the averaged images from Basis to Cartesian.
@@ -686,7 +700,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         # Assign search radius
         self.radius = radius if radius is not None else src.L // 8
 
-    def align(self, classes, reflections, basis_coefficients):
+    def align(self, classes, reflections, basis_coefficients=None):
         """
         Performs the actual rotational alignment estimation,
         returning parameters needed for averaging.
@@ -712,7 +726,14 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             _correlations = np.ones(classes.shape[1:], dtype=self.dtype) * -np.inf
             _shifts = np.zeros((*classes.shape[1:], 2), dtype=int)
 
-            for xs, ys in zip(X, Y):
+            for xs, ys in tqdm(
+                zip(X, Y),
+                total=len(X),
+                desc="\tmaximizing over shifts",
+                disable=len(X) == 1,
+                leave=False,
+            ):
+
                 s = np.array([xs, ys])
                 # Get the array of images for this class
 
@@ -741,7 +762,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
 
             return _rotations, _shifts, _correlations
 
-        for k in trange(n_classes):
+        for k in trange(n_classes, desc="Rotationally aligning classes"):
             rotations[k], shifts[k], correlations[k] = _innerloop(k)
 
         return rotations, shifts, correlations

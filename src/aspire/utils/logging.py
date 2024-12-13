@@ -72,10 +72,16 @@ def tqdm(*args, **kwargs):
     Currently setting `aspire.config['logging']['tqdm_disable']`
     true/false will disable/enable tqdm progress bars.
     """
+    # Calling code may use disable kwarg
+    caller_disable = kwargs.pop("disable", False)
 
     disable = config["logging"]["tqdm_disable"] or (
         getConsoleLoggingLevel() not in ["DEBUG", "INFO"]
     )
+
+    # Disable if calling code flag is true or when configured to disable.
+    disable = disable or caller_disable
+
     return _tqdm.tqdm(*args, **kwargs, disable=disable)
 
 
@@ -86,10 +92,16 @@ def trange(*args, **kwargs):
     Currently setting `aspire.config['logging']['tqdm_disable']`
     true/false will disable/enable tqdm progress bars.
     """
+    # Calling code may use disable kwarg
+    caller_disable = kwargs.pop("disable", False)
 
     disable = config["logging"]["tqdm_disable"] or (
         getConsoleLoggingLevel() not in ["DEBUG", "INFO"]
     )
+
+    # Disable if calling code flag is true or when configured to disable.
+    disable = disable or caller_disable
+
     return _tqdm.trange(*args, **kwargs, disable=disable)
 
 
