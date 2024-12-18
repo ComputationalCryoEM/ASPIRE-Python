@@ -61,7 +61,7 @@ def src_orient_est_fixture(resolution, offsets, dtype):
         shift_step = 1
 
     orient_est = CommonlineLUD(
-        src, max_shift=max_shift, shift_step=shift_step, mask=False
+        src, max_shift=max_shift, shift_step=shift_step, mask=False,
     )
 
     return src, orient_est
