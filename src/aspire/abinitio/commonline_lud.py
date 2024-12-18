@@ -20,6 +20,51 @@ class CommonlineLUD(CLOrient3D):
     """
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize a class for estimating 3D orientations using a Least Unsquared Deviations algorithm.
+
+        This class extends the `CLOrient3D` class, inheriting its initialization parameters.
+
+        :param alpha: Spectral norm constraint for ADMM algorithm. Default is 2/3.
+        :param tol: Tolerance for convergence. The algorithm stops when conditions reach this threshold.
+            Default is 1e-3.
+        :param mu: The penalty parameter (or dual variable scaling factor) in the optimization problem.
+            Default is 1.
+        :param gam: Relaxation factor for updating variables in the algorithm (typically between 1 and 2).
+            Default is 1.618.
+        :param EPS: Small positive value used to filter out negligible eigenvalues or avoid numerical issues.
+            Default is 1e-12.
+        :param maxit: Maximum number of iterations allowed for the algorithm.
+            Default is 1000.
+        :param adp_proj: Flag for using adaptive projection during eigenvalue computation:
+            - 0: Full eigenvalue decomposition.
+            - 1: Adaptive rank selection (Default).
+        :param max_rankZ: Maximum rank used for projecting the Z matrix (for adaptive projection).
+            Default is None (will be computed based on `n_img`).
+        :param max_rankW: Maximum rank used for projecting the W matrix (for adaptive projection).
+            Default is None (will be computed based on `n_img`).
+        :param adp_mu: Adaptive adjustment of the penalty parameter `mu`:
+            - 1: Enabled.
+            - 0: Disabled.
+            Default is 1.
+        :param dec_mu: Scaling factor for decreasing `mu` when conditions warrant.
+            Default is 0.5.
+        :param inc_mu: Scaling factor for increasing `mu` when conditions warrant.
+            Default is 2.
+        :param mu_min: Minimum allowable value for `mu`.
+            Default is 1e-4.
+        :param mu_max: Maximum allowable value for `mu`.
+            Default is 1e4.
+        :param min_mu_itr: Minimum number of iterations before `mu` is adjusted.
+            Default is 5.
+        :param max_mu_itr: Maximum number of iterations allowed for `mu` adjustment.
+            Default is 20.
+        :param delta_mu_l: Lower bound for relative drop ratio to trigger a decrease in `mu`.
+            Default is 0.1.
+        :param delta_mu_u: Upper bound for relative drop ratio to trigger an increase in `mu`.
+            Default is 10.
+        """
+
         # Handle additional parameters specific to CommonlineLUD
         self.alpha = kwargs.pop("alpha", 2 / 3)
         self.tol = kwargs.pop("tol", 1e-3)
@@ -53,7 +98,7 @@ class CommonlineLUD(CLOrient3D):
         self.build_clmatrix()
 
         C = self.cl_to_C(self.clmatrix)
-        gram, _, _, _, _ = self.cryoEMSDPL12N(C)
+        gram = self.cryoEMSDPL12N(C)
         gram = self._restructure_Gram(gram)
         self.rotations = self._deterministic_rounding(gram)
 
@@ -81,7 +126,6 @@ class CommonlineLUD(CLOrient3D):
         AS = self.ComputeAX(S)
         resi = self.ComputeAX(G) - b
 
-        kk = 0
         nev = 0
 
         itmu_pinf = 0
@@ -150,7 +194,6 @@ class CommonlineLUD(CLOrient3D):
 
             if self.adp_proj == 0:
                 D, V = np.linalg.eigh(H)
-                D = np.diag(D)
                 W = V[:, D > self.EPS] @ np.diag(D[D > self.EPS]) @ V[:, D > self.EPS].T
             else:
                 if itr == 0:
@@ -188,13 +231,7 @@ class CommonlineLUD(CLOrient3D):
             )
 
             if max(pinf, dinf) <= self.tol:
-                return (
-                    G,
-                    Z,
-                    W,
-                    y,
-                    {"exit": "optimal", "itr": itr, "pinf": pinf, "dinf": dinf},
-                )
+                return G
 
             if self.adp_mu:
                 if pinf / dinf <= self.delta_mu_l:
@@ -210,7 +247,7 @@ class CommonlineLUD(CLOrient3D):
                         self.mu = min(self.mu * self.dec_mu, self.mu_max)
                         itmu_dinf = 0
 
-        return G, Z, W, y, {"exit": "max_iter_reached", "itr": self.maxit}
+        return G
 
     def Qtheta(self, phi, C, mu):
         """
@@ -294,7 +331,7 @@ class CommonlineLUD(CLOrient3D):
         """
         Prepare optimization problem constraints.
 
-        The constraints for the SDP optimization, max tr(SG), performed in `_compute_gram_matrix()`
+        The constraints for the LUD optimization, max tr(SG), performed in `_compute_gram_matrix()`
         as min tr(-SG), are that the Gram matrix, G, is semidefinite positive and G11_ii = G22_ii = 1,
         G12_ii = G21_ii = 0, i=1,2,...,N, for the block representation of G = [[G11, G12], [G21, G22]].
 
@@ -304,7 +341,7 @@ class CommonlineLUD(CLOrient3D):
 
         :returns: Constraint data A, b.
         """
-        logger.info("Preparing SDP optimization constraints.")
+        logger.info("Preparing LUD optimization constraints.")
 
         n = 2 * self.n_img
         A = []
