@@ -466,7 +466,7 @@ class LegacyClassAvgSource(ClassAvgSource):
         averager_src=None,
     ):
         """
-        Instantiates ClassAvgSourcev132 with the following parameters.
+        Instantiates `ClassAvgSource` with the following parameters.
 
         :param src: Source used for image classification.
         :param n_nbor: Number of nearest neighbors. Default 50.
@@ -474,14 +474,15 @@ class LegacyClassAvgSource(ClassAvgSource):
             Default `None` creates `RIRClass2D`.
             See code for parameter details.
         :param class_selector: `ClassSelector` instance.
-            Default `None` creates `NeighborVarianceWithRepulsionClassSelector`.
+            Default `None` creates `GlobalVarianceClassSelector`.
         :param averager: `Averager2D` instance.
             Default `None` ceates `BFRAverager2D` instance.
             See code for parameter details.
-        :param averager_src: Optionally explicitly assign source
-            to BFSRAverager2D during initialization.
-            Raises error when combined with an explicit `averager`
-            argument.
+        :param averager_src: Optionally explicitly assign source to
+            `BFRAverager2D` during initialization.  Allows users to
+             provide distinct sources for classification and
+             averaging.  Raises error when combined with an explicit
+             `averager` argument.
 
         :return: ClassAvgSource instance.
         """
@@ -548,18 +549,19 @@ def DefaultClassAvgSource(
         See code for parameter details.
     :param class_selector: `ClassSelector` instance.
     :param averager: `Averager2D` instance.
-    :param averager_src: Optionally explicitly assign source
-        to `averager` during initialization.
-        Raises error when combined with an explicit `averager`
-        argument.
+    :param averager_src: Optionally explicitly assign source to
+        `averager` during initialization.  Allows users to
+         provide distinct sources for classification and
+         averaging.  Raises error when combined with an explicit
+         `averager` argument.
     :param version: Optionally selects a versioned `DefaultClassAvgSource`.
         Defaults to latest available.
     :return: ClassAvgSource instance.
     """
 
     _versions = {
-        None: ClassAvgSourcev110,
-        "latest": ClassAvgSourcev110,
+        None: ClassAvgSourcev132,
+        "latest": ClassAvgSourcev132,
         "0.13.2": ClassAvgSourcev132,
         "0.11.0": ClassAvgSourcev110,
     }
@@ -611,10 +613,11 @@ class ClassAvgSourcev132(ClassAvgSource):
         :param averager: `Averager2D` instance.
             Default `None` ceates `BFRAverager2D` instance.
             See code for parameter details.
-        :param averager_src: Optionally explicitly assign source
-            to BFSRAverager2D during initialization.
-            Raises error when combined with an explicit `averager`
-            argument.
+        :param averager_src: Optionally explicitly assign source to
+            `averager` during initialization.  Allows users to
+             provide distinct sources for classification and
+             averaging.  Raises error when combined with an explicit
+             `averager` argument.
 
         :return: ClassAvgSource instance.
         """
