@@ -384,8 +384,13 @@ class BFSRAverager2D(AligningAverager2D):
                     xp.take_along_axis(dots, idx.reshape(n_nbor, 1), axis=1).flatten()
                 )
                 # _correlations[0] = 1  # Force base correlation, just in case
-                #  Todo, do we care to spend the compute to make an actual correlation? (normalizing).
-                #  The matlab code did do something like this, but only for diagnostic purposes.
+                #  Todo, discuss:
+                #      If we care to compute the an actual correlation?
+                #      This involves a lot of somewhat careful normalizing.
+                #      The MATLAB code did do something like this,
+                #      but only for diagnostic purposes.
+                #      In our code anything beyond a relative calculation
+                #      would currently be superflous.
 
                 # Assign the reverse rotation
                 _rotations[:] = -1 * xp.asnumpy(_angles[idx])
@@ -422,12 +427,10 @@ class BFRAverager2D(BFSRAverager2D):
         # Replace with `None` to induce short ciruit shifting during stacking.
         rotations, shifts, correlations = super().align(*args, **kwargs)
 
-        # RM?
+        # Sanity check the results did not indicate shifts.
         if not np.all(shifts.flatten() == 0):
-            logger.error(
-                "BFR should return zero shifts."
-                "  BFSR returned non zero shifts."
-                "  Forcing to `None`."
+            raise RuntimeError(
+                "BFR should return zero shifts." "  BFSR returned non zero shifts."
             )
 
         return rotations, None, correlations
