@@ -235,99 +235,6 @@ class AligningAverager2D(Averager2D):
         return X, Y
 
 
-class _BFRAverager2D(AligningAverager2D):
-    """
-    This perfoms a Brute Force Rotational alignment.
-
-    For each class,
-        constructs n_angles rotations of all class members,
-        and then identifies angle yielding largest correlation(dot).
-    """
-
-    def __init__(
-        self,
-        composite_basis,
-        src,
-        alignment_basis=None,
-        n_angles=360,
-        dtype=None,
-    ):
-        """
-        See AligningAverager2D, adds:
-
-        :param n_angles: Number of brute force rotations to attempt, defaults 360.
-        """
-        super().__init__(composite_basis, src, alignment_basis, dtype=dtype)
-
-        self.n_angles = n_angles
-
-        if not hasattr(self.alignment_basis, "rotate"):
-            raise RuntimeError(
-                f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `rotate` method."
-            )
-
-    def align(self, classes, reflections, basis_coefficients=None):
-        """
-        Performs the actual rotational alignment estimation,
-        returning parameters needed for averaging.
-        """
-        # Construct array of angles to brute force.
-        _angles = xp.linspace(0, 2 * np.pi, self.n_angles, endpoint=False)
-
-        ks = xp.asarray(self.alignment_basis.complex_angular_indices).reshape(-1, 1)
-        _rot_ops_conj = xp.exp(1j * ks * _angles).conj()
-
-        # Result arrays
-        n_classes, n_nbor = classes.shape
-        rots = np.zeros((n_classes, n_nbor), dtype=self.dtype)
-        correlations = np.zeros((n_classes, n_nbor), dtype=self.dtype)
-
-        for k in trange(n_classes, desc="Rotationally aligning classes"):
-            # Get the coefs for these neighbors
-            if basis_coefficients is None:
-                # Retrieve relevant images
-                neighbors_imgs = Image(self._cls_images(classes[k]))
-
-                # Evaluate_t into basis
-                nbr_coef = self.alignment_basis.evaluate_t(neighbors_imgs)
-            else:
-                nbr_coef = basis_coefficients[classes[k]]
-
-            # Convert to array of complex coef, implicit copy.
-            nbr_coef = xp.array(nbr_coef.to_complex().asnumpy())
-
-            # Handle reflections
-            refl = reflections[k]
-            nbr_coef[refl] = xp.conj(nbr_coef[refl])
-
-            # Generate table of rotations for image 0.
-            # Note we invert the rotation, applying -rot to image 0
-            #   to avoid rotating each member of the class
-            #   for the argmax alignment test (each a dot product,
-            #   performed as a large matmul).
-            base_img = nbr_coef[0].reshape(self.alignment_basis.complex_count, 1)
-
-            # (cnt, n_transl) * (cnt, 1) -> (cnt, n_transl)
-            rot_base_imgs_conj = _rot_ops_conj * base_img.conj()
-
-            # (n_nbor, cnt) @ (cnt, n_transl) = (n_nbor, n_transl)
-            dots = xp.real(nbr_coef @ rot_base_imgs_conj)
-            idx = xp.argmax(dots, axis=1)
-            idx[0] = 0  # Force base image, just in case.
-
-            # Assign results for this class
-            correlations[k, :] = xp.asnumpy(
-                xp.take_along_axis(dots, idx.reshape(n_nbor, 1), axis=1).flatten()
-            )
-            # correlations[k,0] = 1  # Force base correlation, just in case
-            #  Todo, do we care to spend the compute to make an actual correlation? (normalize)
-
-            # Assign the reverse rotation
-            rots[k] = -1 * xp.asnumpy(_angles[idx])
-
-        return rots, None, correlations
-
-
 class BFSRAverager2D(AligningAverager2D):
     """
     This perfoms a Brute Force Shift and Rotational alignment.
@@ -395,8 +302,8 @@ class BFSRAverager2D(AligningAverager2D):
         shifts = np.empty((*classes.shape, 2), dtype=int)
 
         # Work arrays
-        _rotations = np.zeros((1, n_nbor), dtype=self.dtype)
-        _correlations = np.ones((1, n_nbor), dtype=self.dtype) * -np.inf
+        _rotations = np.zeros((n_nbor), dtype=self.dtype)
+        _correlations = np.ones((n_nbor), dtype=self.dtype) * -np.inf
 
         # Construct array of angles to brute force.
         _angles = xp.linspace(0, 2 * np.pi, self.n_angles, endpoint=False)
@@ -418,7 +325,6 @@ class BFSRAverager2D(AligningAverager2D):
                 original_images = Image(self._cls_images(classes[k], src=self.src))
             else:
                 original_coef = basis_coefficients[classes[k], :]
-                # batch here? or maybe just force always passing images....?
                 original_images = self.alignment_basis.evaluate(original_coef)
 
             # Working copy
@@ -442,29 +348,32 @@ class BFSRAverager2D(AligningAverager2D):
                 #   ii) because generally the number of neighbors << the
                 #   number of test rotations.
 
-                # Note the base image[0] is never shifted.
-                _images[1:] = original_images[1:].shift(shift).asnumpy()
+                # Skip zero shifting.
+                if np.any(shift != 0):
+                    # Note the base image[0] is never shifted.
+                    _images[1:] = original_images[1:].shift(shift).asnumpy()
 
                 # Convert to array of complex coef, implicit copy.
                 _coef = self.alignment_basis.evaluate_t(Image(_images))
                 _coef = xp.array(_coef.to_complex().asnumpy())
 
                 # Handle reflections
-                # XXXX should we do this earlier via Images? (flipud?)
-                # How would we communicate this reflection to other areas of the code...
                 refl = reflections[k]
                 _coef[refl] = xp.conj(_coef[refl])
 
                 # Generate table of rotations for image 0.
-                # Note we invert the rotation, applying -rot to image 0
-                #   to avoid rotating each member of the class
-                #   for the argmax alignment test (each a dot product,
-                #   performed as a large matmul).
+                # Note we invert the rotations later.
+                #   Applying rot to image 0
+                #   avoids rotating each member of the class
+                #   for the argmax alignment test.
                 base_img = _coef[0].reshape(self.alignment_basis.complex_count, 1)
 
                 # (cnt, n_transl) * (cnt, 1) -> (cnt, n_transl)
                 rot_base_imgs_conj = _rot_ops_conj * base_img.conj()
 
+                # Compute dot product of each base-neighbor pair.
+                #   The collection of dots is performed in bulk
+                #   as a large matmul.
                 # (n_nbor, cnt) @ (cnt, n_transl) = (n_nbor, n_transl)
                 dots = xp.real(_coef @ rot_base_imgs_conj)
                 idx = xp.argmax(dots, axis=1)
@@ -475,16 +384,17 @@ class BFSRAverager2D(AligningAverager2D):
                     xp.take_along_axis(dots, idx.reshape(n_nbor, 1), axis=1).flatten()
                 )
                 # _correlations[0] = 1  # Force base correlation, just in case
-                #  Todo, do we care to spend the compute to make an actual correlation? (normalize)
+                #  Todo, do we care to spend the compute to make an actual correlation? (normalizing).
+                #  The matlab code did do something like this, but only for diagnostic purposes.
 
                 # Assign the reverse rotation
                 _rotations[:] = -1 * xp.asnumpy(_angles[idx])
 
-                # Each class-neighbor pair may have a best shift-rot from a different shift.
                 # Test and update
-                improved_indices = _correlations[0] > correlations[k]
-                rotations[k, improved_indices] = _rotations[0, improved_indices]
-                correlations[k, improved_indices] = _correlations[0, improved_indices]
+                # Each base-neighbor pair may have a best shift+rot from a different shift iteration.
+                improved_indices = _correlations > correlations[k]
+                rotations[k, improved_indices] = _rotations[improved_indices]
+                correlations[k, improved_indices] = _correlations[improved_indices]
                 shifts[k, improved_indices] = shift
 
                 if (x, y) == (0, 0):
