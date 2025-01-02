@@ -29,6 +29,7 @@ from aspire.denoising import (
     DefaultClassAvgSource,
     LegacyClassAvgSource,
 )
+from aspire.denoising.class_avg import ClassAvgSourcev110
 from aspire.image import Image
 from aspire.source import RelionSource, Simulation
 from aspire.utils import Rotation
@@ -50,7 +51,12 @@ DTYPES = [
     np.float64,
     pytest.param(np.float32, marks=pytest.mark.expensive),
 ]
-CLS_SRCS = [DebugClassAvgSource, DefaultClassAvgSource, LegacyClassAvgSource]
+CLS_SRCS = [
+    DebugClassAvgSource,
+    DefaultClassAvgSource,
+    LegacyClassAvgSource,
+    ClassAvgSourcev110,
+]
 
 
 BASIS = [
