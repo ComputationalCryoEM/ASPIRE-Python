@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class CommonlineLUD(CLOrient3D):
     """
     Define a derived class to estimate 3D orientations using Least Unsquared
-    Deviations described as below:
+    Deviations as described in the following publication:
     L. Wang, A. Singer, and  Z. Wen, Orientation Determination of Cryo-EM Images Using
     Least Unsquared Deviations, SIAM J. Imaging Sciences, 6, 2450-2483 (2013).
     """
@@ -105,8 +105,19 @@ class CommonlineLUD(CLOrient3D):
         return self.rotations
 
     def cryoEMSDPL12N(self, C):
+        """
+        Perform the alternating direction method of multipliers (ADMM) for the SDP
+        problem:
+
+        min sum_{i<j} ||c_ij - G_ij c_ji||
+        s.t. A(G) = b, G psd
+            ||G||_2 <= lambda
+
+        :param C:
+        :return: The gram matrix G.
+        """
         # Initialize problem parameters
-        lambda_ = self.alpha * self.n_img
+        lambda_ = self.alpha * self.n_img  # Spectral norm bound
         n = 2 * self.n_img
         b = np.concatenate([np.ones(n), np.zeros(self.n_img)])
 
@@ -252,6 +263,26 @@ class CommonlineLUD(CLOrient3D):
     def Qtheta(self, phi, C, mu):
         """
         Python equivalent of Qtheta MEX function.
+
+        Compute the matrix S and auxiliary variables theta for the optimization problem.
+
+        This function calculates the fidelity matrix S and the auxiliary variable theta as part of
+        the ADMM framework for solving the semidefinite programming (SDP) relaxation of the
+        Least Unsquared Deviations (LUD) problem. It ensures consistency between the Gram
+        matrix G and the detected common-line coordinates.
+
+        :param phi: ndarray, A 2*n_img x 2*n_img scaled dual variable matrix (Phi) used in the ADMM iterations.
+        :param C: ndarray, A 3D array (n_img x n_img x 2) containing commonline coordinates (in Cartesian form)
+            between pairs of images. Each C[i, j] stores the x and y coordinates of the common
+            line between image i and image j.
+        :param mu: float, The penalty parameter in the augmented Lagrangian. It controls the scaling of the
+            dual variable contribution in the ADMM updates.
+        :returns:
+            - S, A 2*n_img x 2*n_img matrix representing the fidelity term. It is a symmetric matrix
+                derived from the commonline constraints, normalized by theta.
+            - theta, A 3D array (n_img x n_img x 2) containing the normalized commonline directions
+                used to compute S. Each theta[i, j] stores the normalized adjustments for the common
+                line between image i and image j.
         """
         # Initialize outputs
         S = np.zeros((2 * self.n_img, 2 * self.n_img))
@@ -277,9 +308,16 @@ class CommonlineLUD(CLOrient3D):
         return S, theta
 
     def cl_to_C(self, clmatrix):
+        """
+        For each pair of commonline indices cl[i, j] and cl[j, i], convert
+        from polar commonline indices to cartesion coordinates.
+
+        :param clmatrix: n_img x n_img commonline matrix.
+        :return: n_img x n_img x 2 array of commonline cartesian coordinates.
+        """
         C = np.zeros((self.n_img, self.n_img, 2), dtype=self.dtype)
         for i in range(self.n_img):
-            for j in range(i + 1, self.n_img):  # Only process i < j
+            for j in range(i + 1, self.n_img):
                 cl_ij = clmatrix[i, j]
                 cl_ji = clmatrix[j, i]
 
@@ -335,7 +373,7 @@ class CommonlineLUD(CLOrient3D):
         as min tr(-SG), are that the Gram matrix, G, is semidefinite positive and G11_ii = G22_ii = 1,
         G12_ii = G21_ii = 0, i=1,2,...,N, for the block representation of G = [[G11, G12], [G21, G22]].
 
-        We build a corresponding constraint for CVXPY in the form of tr(A_j @ G) = b_j, j = 1,...,p.
+        We build a corresponding constraint in the form of tr(A_j @ G) = b_j, j = 1,...,p.
         For the constraint G11_ii = G22_ii = 1, we have A_j[i, i] = 1 (zeros elsewhere) and b_j = 1.
         For the constraint G12_ii = G21_ii = 0, we have A_j[i, i] = 1 (zeros elsewhere) and b_j = 0.
 
