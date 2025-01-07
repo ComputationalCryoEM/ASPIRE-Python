@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 import numpy as np
-from scipy.special import sph_harm as sp_sph_harm
+from scipy.special import sph_harm_y
 
 from aspire.basis.basis_utils import (
     all_besselj_zeros,
@@ -24,14 +24,14 @@ def test_sph_harm_low_order():
     x = np.linspace(0, np.pi, 42)
     y = np.linspace(0, 2 * np.pi, 42)
 
-    ref = sp_sph_harm(m, j, y, x)  # Note calling convention is different
+    ref = sph_harm_y(j, m, x, y)  # Note Scipy calling convention is different
     # Prescribe an atol because some of the ref values can be very
     # small, which can impact relative tolerance.
     np.testing.assert_allclose(sph_harm(j, m, x, y), ref, atol=1e-8)
 
     # negative m
     m *= -1
-    ref = sp_sph_harm(m, j, y, x)  # Note calling convention is different
+    ref = sph_harm_y(j, m, x, y)  # Note Scipy calling convention is different
     # Prescribe an atol because some of the ref values can be very
     # small, which can impact relative tolerance.
     np.testing.assert_allclose(sph_harm(j, m, x, y), ref, atol=1e-8)
