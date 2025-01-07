@@ -420,12 +420,15 @@ class CTFFilter(Filter):
         """
         A CTF (Contrast Transfer Function) Filter
 
+        Note if comparing to legacy MATLAB cryo_CTF_Relion,
+        take care regarding defocus unit conversion to nm.
+
         :param pixel_size:  Pixel size in angstrom, default 1.
         :param voltage:     Electron voltage in kV
         :param defocus_u:   Defocus depth along the u-axis in angstrom
         :param defocus_v:   Defocus depth along the v-axis in angstrom
         :param defocus_ang: Angle between the x-axis and the u-axis in radians
-        :param Cs:          Spherical aberration constant
+        :param Cs:          Spherical aberration constant in mm
         :param alpha:       Amplitude contrast phase in radians
         :param B:           Envelope decay in inverse square angstrom (default 0)
         """
@@ -440,11 +443,13 @@ class CTFFilter(Filter):
         self.alpha = alpha
         self.B = B
 
-        self.defocus_mean = 0.5 * (self.defocus_u + self.defocus_v)
-        self.defocus_diff = 0.5 * (self.defocus_u - self.defocus_v)
+        # Convert angstrom to nm and divide by 2
+        self._defocus_mean_nm = 0.05 * (self.defocus_u + self.defocus_v)
+        self._defocus_diff_nm = 0.05 * (self.defocus_u - self.defocus_v)
 
     def _evaluate(self, omega):
-        om_y, om_x = np.vsplit(omega / (2 * np.pi * self.pixel_size), 2)
+        # Note the grid is wrt nm.
+        om_y, om_x = np.vsplit(omega / (2 * np.pi * self.pixel_size / 10), 2)
 
         eps = np.finfo(np.pi).eps
         ind_nz = (np.abs(om_x) > eps) | (np.abs(om_y) > eps)
@@ -452,10 +457,15 @@ class CTFFilter(Filter):
         angles_nz -= self.defocus_ang
 
         defocus = np.zeros_like(om_x)
-        defocus[ind_nz] = self.defocus_mean + self.defocus_diff * np.cos(2 * angles_nz)
+        # Note the division by 2  for _defocus_diff_nm is in `__init__`.
+        defocus[ind_nz] = self._defocus_mean_nm + self._defocus_diff_nm * np.cos(
+            2 * angles_nz
+        )
 
-        c2 = -np.pi * self.wavelength * defocus
-        c4 = 0.5 * np.pi * (self.Cs * 1e7) * self.wavelength**3
+        # Note lambda must be in nm, and `Cs` must be converted from mm to nm.
+        lambda_nm = self.wavelength / 10
+        c2 = -np.pi * lambda_nm * defocus
+        c4 = 0.5 * np.pi * (self.Cs * 1e6) * lambda_nm**3
 
         r2 = om_x**2 + om_y**2
         r4 = r2**2
