@@ -138,20 +138,27 @@ class CommonlineLUD(CLOrient3D):
         resi = self.ComputeAX(G) - b
 
         nev = 0
-
         itmu_pinf = 0
         itmu_dinf = 0
-
-        # Maybe initialize values for first iteration prior to loop.
-        zz = 0  # take this out later
-        dH = 0  # take this out later
+        zz = 0
+        dH = 0
         for itr in range(self.maxit):
+            #############
+            # Compute y #
+            #############
             y = -(AS + self.ComputeAX(W) - self.ComputeAX(Z)) - resi / self.mu
+
+            #################
+            # Compute theta #
+            #################
             ATy = self.ComputeATy(y)
             Phi = W + ATy - Z + G / self.mu
             S, theta = self.Qtheta(Phi, C, self.mu)
             S = (S + S.T) / 2
 
+            #############
+            # Compute Z #
+            #############
             B = S + W + ATy + G / self.mu
             B = (B + B.T) / 2
 
@@ -162,21 +169,21 @@ class CommonlineLUD(CLOrient3D):
                     kk = self.max_rankZ
                 else:
                     if kk > 0:
-                        # Weird logic here to account for matlab behavior
-                        # for empty array or divide by zero.
+                        # Initialize relative drop
                         rel_drp = 0
+
+                        # Calculate relative drop based on `zz`
                         if len(zz) == 2:
                             rel_drp = np.inf
-                        if len(zz) > 2:
+                        elif len(zz) > 2:
                             drops = zz[:-1] / zz[1:]
                             dmx, imx = max(
                                 (val, idx) for idx, val in enumerate(drops)
                             )  # Find max drop and its index
                             rel_drp = (nev - 1) * dmx / (np.sum(drops) - dmx)
-                        if rel_drp > 10:
-                            kk = max(imx, 6)
-                        else:
-                            kk += 3
+
+                        # Update `kk` based on relative drop
+                        kk = max(imx, 6) if rel_drp > 10 else kk + 3
                     else:
                         kk = 6
 
@@ -191,6 +198,7 @@ class CommonlineLUD(CLOrient3D):
                 U = U[:, idx].real
                 pi = pi.real  # Ensure real eigenvalues for subsequent calculations
 
+            # Apply soft-threshold to eigenvalues to enforce spectral norm constraint.
             zz = np.sign(pi) * np.maximum(np.abs(pi) - lambda_ / self.mu, 0)
             nD = zz > 0
             kk = np.count_nonzero(nD)
@@ -200,6 +208,9 @@ class CommonlineLUD(CLOrient3D):
             else:
                 Z = np.zeros_like(B)
 
+            #############
+            # Compute W #
+            #############
             H = Z - S - ATy - G / self.mu
             H = (H + H.T) / 2
 
@@ -234,7 +245,12 @@ class CommonlineLUD(CLOrient3D):
                 nev = np.count_nonzero(nD)
                 W = V[:, nD] @ np.diag(dH) @ V[:, nD].T + H if nD.any() else H
 
+            ############
+            # Update G #
+            ############
             G = (1 - self.gam) * G + self.gam * self.mu * (W - H)
+
+            # Check optimality
             resi = self.ComputeAX(G) - b
             pinf = np.linalg.norm(resi) / max(np.linalg.norm(b), 1)
             dinf = np.linalg.norm(S + W + ATy - Z, "fro") / max(
@@ -244,6 +260,7 @@ class CommonlineLUD(CLOrient3D):
             if max(pinf, dinf) <= self.tol:
                 return G
 
+            # Update mu adaptively
             if self.adp_mu:
                 if pinf / dinf <= self.delta_mu_l:
                     itmu_pinf = itmu_pinf + 1
