@@ -1,7 +1,22 @@
 from unittest import TestCase
 
 import numpy as np
-from scipy.special import sph_harm_y
+
+# This can be removed when project requires scipy>=1.15.0
+# scipy<1.15.0 provide `sph_harm`
+import scipy
+from packaging.version import Version
+
+if Version(scipy.__version__) < Version("1.15.0"):
+    from scipy.special import sph_harm as sp_sph_harm
+
+    # This has a different convention from upstream sph_harm_y
+    def sph_harm_y(j, m, x, y):
+        return sp_sph_harm(m, j, y, x)
+
+else:
+    # scipy>=1.15.0 provide `sph_harm_y`
+    from scipy.special import sph_harm_y
 
 from aspire.basis.basis_utils import (
     all_besselj_zeros,
