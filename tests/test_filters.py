@@ -399,3 +399,36 @@ def test_array_filter_dtype_passthrough(dtype):
     filt_vals = filt.evaluate_grid(L, dtype=dtype)
 
     assert filt_vals.dtype == dtype
+
+
+def test_ctf_reference():
+    """
+    Test CTFFilter against a MATLAB reference.
+    """
+    fltr = CTFFilter(
+        pixel_size=4.56,
+        voltage=200,
+        defocus_u=10000,
+        defocus_v=15000,
+        defocus_ang=1.23,
+        Cs=2.0,
+        alpha=0.1,
+    )
+    h = fltr.evaluate_grid(5)
+
+    # Compare with MATLAB.  Note DF converted to nm
+    # >> n=5; V=200; DF1=1000; DF2=1500; theta=1.23; Cs=2.0; A=0.1; pxA=4.56;
+    # >> ref_h=cryo_CTF_Relion(n,V,DF1,DF2,theta,Cs,pxA,A)
+    ref_h = np.array(
+        [
+            [-0.6152, 0.0299, -0.5638, 0.9327, 0.9736],
+            [-0.9865, 0.2598, -0.7543, 0.9383, 0.1733],
+            [-0.1876, -0.9918, -0.1000, -0.9918, -0.1876],
+            [0.1733, 0.9383, -0.7543, 0.2598, -0.9865],
+            [0.9736, 0.9327, -0.5638, 0.0299, -0.6152],
+        ]
+    )
+
+    # Test we're within 1%.
+    #   There are minor differences in the formulas for wavelength and grids.
+    np.testing.assert_allclose(h, ref_h, rtol=0.01)
