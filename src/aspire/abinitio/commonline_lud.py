@@ -63,7 +63,7 @@ class CommonlineLUD(CLOrient3D):
             Default is 10.
         """
 
-        # Handle additional parameters specific to CommonlineLUD
+        # Handle parameters specific to CommonlineLUD
         self.alpha = kwargs.pop("alpha", 2 / 3)
         self.tol = kwargs.pop("tol", 1e-3)
         self.mu = kwargs.pop("mu", 1)
@@ -115,7 +115,6 @@ class CommonlineLUD(CLOrient3D):
         :return: The gram matrix G.
         """
         # Initialize problem parameters
-        lambda_ = self.alpha * self.n_img  # Spectral norm bound
         n = 2 * self.n_img
         b = np.concatenate([np.ones(n), np.zeros(self.n_img)])
 
@@ -139,6 +138,7 @@ class CommonlineLUD(CLOrient3D):
         itmu_pinf = 0
         itmu_dinf = 0
         zz = 0
+        kk = 0
         dH = 0
         for itr in range(self.maxit):
             #############
@@ -157,54 +157,7 @@ class CommonlineLUD(CLOrient3D):
             #############
             # Compute Z #
             #############
-            B = S + W + ATy + G / self.mu
-            B = (B + B.T) / 2
-
-            if self.adp_proj == 0:
-                U, pi = np.linalg.eigh(B)
-            else:
-                if itr == 0:
-                    kk = self.max_rankZ
-                else:
-                    if kk > 0:
-                        # Initialize relative drop
-                        rel_drp = 0
-
-                        # Calculate relative drop based on `zz`
-                        if len(zz) == 2:
-                            rel_drp = np.inf
-                        elif len(zz) > 2:
-                            drops = zz[:-1] / zz[1:]
-                            dmx, imx = max(
-                                (val, idx) for idx, val in enumerate(drops)
-                            )  # Find max drop and its index
-                            rel_drp = (nev - 1) * dmx / (np.sum(drops) - dmx)
-
-                        # Update `kk` based on relative drop
-                        kk = max(imx, 6) if rel_drp > 10 else kk + 3
-                    else:
-                        kk = 6
-
-                kk = min(kk, n)
-                pi, U = eigs(
-                    B, k=kk, which="LM"
-                )  # Compute top `kk` eigenvalues and eigenvectors
-
-                # Sort by eigenvalue magnitude.
-                idx = np.argsort(np.abs(pi))[::-1]
-                pi = pi[idx]
-                U = U[:, idx].real
-                pi = pi.real  # Ensure real eigenvalues for subsequent calculations
-
-            # Apply soft-threshold to eigenvalues to enforce spectral norm constraint.
-            zz = np.sign(pi) * np.maximum(np.abs(pi) - lambda_ / self.mu, 0)
-            nD = zz > 0
-            kk = np.count_nonzero(nD)
-            if kk > 0:
-                zz = zz[nD]
-                Z = U[:, nD] @ np.diag(zz) @ U[:, nD].T
-            else:
-                Z = np.zeros_like(B)
+            Z, kk, zz = self._compute_Z(S, W, ATy, G, zz, itr, kk, nev)
 
             #############
             # Compute W #
@@ -274,6 +227,62 @@ class CommonlineLUD(CLOrient3D):
                         itmu_dinf = 0
 
         return G
+
+    def _compute_Z(self, S, W, ATy, G, zz, itr, kk, nev):
+        """
+        Update ADMM subproblem for enforcing the spectral norm constraint.
+        """
+        lambda_ = self.alpha * self.n_img  # Spectral norm bound
+        B = S + W + ATy + G / self.mu
+        B = (B + B.T) / 2
+
+        if self.adp_proj == 0:
+            U, pi = np.linalg.eigh(B)
+        else:
+            if itr == 0:
+                kk = self.max_rankZ
+            else:
+                if kk > 0:
+                    # Initialize relative drop
+                    rel_drp = 0
+                    imx = 0
+                    # Calculate relative drop based on `zz`
+                    if len(zz) == 2:
+                        rel_drp = np.inf
+                    elif len(zz) > 2:
+                        drops = zz[:-1] / zz[1:]
+                        dmx, imx = max(
+                            (val, idx) for idx, val in enumerate(drops)
+                        )  # Find max drop and its index
+                        rel_drp = (nev - 1) * dmx / (np.sum(drops) - dmx)
+
+                    # Update `kk` based on relative drop
+                    kk = max(imx, 6) if rel_drp > 10 else kk + 3
+                else:
+                    kk = 6
+
+            kk = min(kk, 2 * self.n_img)
+            pi, U = eigs(
+                B, k=kk, which="LM"
+            )  # Compute top `kk` eigenvalues and eigenvectors
+
+            # Sort by eigenvalue magnitude.
+            idx = np.argsort(np.abs(pi))[::-1]
+            pi = pi[idx]
+            U = U[:, idx].real
+            pi = pi.real  # Ensure real eigenvalues for subsequent calculations
+
+        # Apply soft-threshold to eigenvalues to enforce spectral norm constraint.
+        zz = np.sign(pi) * np.maximum(np.abs(pi) - lambda_ / self.mu, 0)
+        nD = zz > 0
+        kk = np.count_nonzero(nD)
+        if kk > 0:
+            zz = zz[nD]
+            Z = U[:, nD] @ np.diag(zz) @ U[:, nD].T
+        else:
+            Z = np.zeros_like(B)
+
+        return Z, kk, zz
 
     def Qtheta(self, phi, C, mu):
         """
