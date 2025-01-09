@@ -22,6 +22,11 @@ DTYPES = [
     pytest.param(np.float64, marks=pytest.mark.expensive),
 ]
 
+SPECTRAL_NORM_CONSTRAINT = [
+    2 / 3,
+    pytest.param(None, marks=pytest.mark.expensive),
+]
+
 
 @pytest.fixture(params=RESOLUTION, ids=lambda x: f"resolution={x}")
 def resolution(request):
@@ -38,8 +43,13 @@ def dtype(request):
     return request.param
 
 
+@pytest.fixture(params=SPECTRAL_NORM_CONSTRAINT, ids=lambda x: f"alpha={x}")
+def alpha(request):
+    return request.param
+
+
 @pytest.fixture
-def src_orient_est_fixture(resolution, offsets, dtype):
+def src_orient_est_fixture(resolution, offsets, dtype, alpha):
     """Fixture for simulation source and orientation estimation object."""
     src = Simulation(
         n=60,
@@ -62,6 +72,7 @@ def src_orient_est_fixture(resolution, offsets, dtype):
 
     orient_est = CommonlineLUD(
         src,
+        alpha=alpha,
         max_shift=max_shift,
         shift_step=shift_step,
         mask=False,
