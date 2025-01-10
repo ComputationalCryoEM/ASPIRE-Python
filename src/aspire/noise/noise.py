@@ -345,3 +345,136 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         noise_psd_est[mid, mid] -= mean_est**2
 
         return noise_psd_est
+
+
+class IsotropicNoiseEstimator(NoiseEstimator):
+    """
+    Isotropic Noise Estimator.
+    """
+
+    def estimate(self):
+        """
+        :return: The estimated noise variance of the images.
+        """
+
+        # AnisotropicNoiseEstimator.filter is an ArrayFilter.
+        #   We average the variance over all frequencies,
+
+        return np.mean(self.filter.evaluate_grid(self.src.L))
+
+    def _create_filter(self, noise_psd=None):
+        """
+        :param noise_psd: Noise PSD of images
+        :return: The estimated noise power spectral distribution (PSD) of the images in the form of a filter object.
+        """
+        if noise_psd is None:
+            noise_psd = self.estimate_noise_psd()
+        return ArrayFilter(noise_psd)
+
+    def estimate_noise_psd(self):
+        """
+        :return: The estimated noise variance of the images in the Source used to create this estimator.
+        TODO: How's this initial estimate of variance different from the 'estimate' method?
+        """
+
+        return noise_psd_est
+
+    @staticmethod
+    def epsdR(images, samples_idx, max_d=None):
+        """
+        Estimate the 1D isotropic autocorrelation function of `images`.
+        The samples to use in each image are given by `samples_idx` mask.
+        The correlation is computed up to a maximal distance of `max_d`.
+
+        :param images: Images as a Numpy array shaped (n_img,L,L).
+        :param samples_idx: Boolean mask shaped (L,L).
+        :param max_d: Max computed correlation distance in pixels.
+        :return: Tuple radial PSD, distances map, count of nonzero correlations.
+        """
+
+        n, L, L2 = images.shape
+        if L != L2:
+            raise RuntimeError(f"Images must be square, received {images.shape}")
+
+        # Correlations more than `max_d` pixels apart are not computed.
+        if max_d is None:
+            max_d = L - 1
+        if max_d > L - 1:
+            logger.info(
+                f"`max_d` value {max_d}greater than number of image pixels {L}, clipping to {L-1}."
+            )
+        max_d = min(max_d, L - 1)
+
+        # Compute distances
+        # Note grid_2d['r'] is not used because we always want zero centered integer grid,
+        #   yielding integer dists (radius**2) values.
+        J, I = np.mgrid[0:max_d, 0:max_d]
+        dists = I * I + J * J
+        dsquare = np.sort(np.unique(dists[dists <= max_d**2]))
+        x = np.sqrt(dsquare)  # actual distance
+
+        # corrs[i] is the sum of all x[j]x[j+d] where d = x[i]
+        corrs = np.zeros_like(dsquare)
+        # corrcount[i] is the number of pairs summed in corr[i]
+        corrcount = np.zeros_like(dsquare, dtype=int)
+
+        # distmap maps [i,j] to k where dsquare[k] = i**2 + j**2.
+        #   -1 indicates distance is larger than max_d
+        distmap = np.full(shape=dists.shape, fill_value=-1)
+
+        # This differs from the MATLAB code because Numpy does not directly provide `bsearch`.
+        for i, d in enumerate(dsquare):
+            inds = dists == d  # locations having distance `d`
+            distmap[inds] = i  # assign index into dsquare `i`
+        # # Mapped distance indices where i**2+j**2 <= max_d**2
+        # validdists = np.where(distmap != -1)  # Note this is a 2-tuple
+
+        # Compute Ncorr using a constant unit image.
+        mask = np.zeros((L, L))
+        mask[samples_idx] = 1
+        tmp = np.zeros((2 * L + 1, 2 * L + 1))  # pad
+        tmp[:L, :L] = mask
+        ftmp = fft.fft2(tmp)
+        Ncorr = fft.ifft2(ftmp * ftmp.conj())
+        Ncorr = Ncorr[:max_d, :max_d]  # crop
+        Ncorr = np.round(Ncorr)
+
+        # Values of isotropic autocorrelation function
+        # R[i] is value of ACF at distance x[i]
+        R = np.zeros(len(corrs))
+
+        samples = np.zeros((L, L))
+        tmp[:, :] = 0  # reset tmp
+        for k in trange(n, desc="Processing image autocorrelations"):
+            # Mask unused pixels (note, think can merge these lines later)
+            samples[samples_idx] = images[k][samples_idx]
+
+            # Compute non-preiodic autocorrelation
+            tmp[:L, :L] = samples  # pad
+            ftmp = fft.fft2(tmp)
+            s = fft.ifft2(ftmp * ftmp.conj()).real  # matlab code does not cast here
+            s = s[:max_d, :max_d]  # crop
+
+            # I didn't port this correctly.  (MATLAB auto (un/)raveling)
+            # # Accumulate all autocorrelation values R[k1,k2] such that
+            # # k1^2+k2^2=const (all autocorrelations of a certain distance).
+            # for j in range(np.size(validdists)):
+            #     currdist = validdists[j]
+            #     dmidx = distmap[currdist]
+            #     corrs[dmidx] = corrs[dmidx] + s[currdist]
+            #     corrcount[dmidx] = corrcount[dmidx] + Ncorr[currdist]
+
+            for i in range(max_d):
+                for j in range(max_d):
+                    idx = distmap[i, j]
+                    if idx != -1:
+                        corrs[idx] = corrs[idx] + s[i, j]
+                        corrcount[idx] = corrcount[idx] + Ncorr[i, j]
+
+        # Remove distances which had no samples
+        idx = np.where(corrcount != 0)  # [0]
+        R = corrs[idx] / corrcount[idx]
+        x = x[idx]
+        cnt = corrcount[idx]
+
+        return R, x, cnt
