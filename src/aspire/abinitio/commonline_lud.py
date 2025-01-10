@@ -151,10 +151,10 @@ class CommonlineLUD(CLOrient3D):
             Phi = W + G / self.mu
 
         # Compute initial values
-        S, theta = self.Qtheta(Phi, C, self.mu)
+        S, theta = self._Q_theta(Phi, C, self.mu)
         S = (S + S.T) / 2
-        AS = self.ComputeAX(S)
-        resi = self.ComputeAX(G) - b
+        AS = self._compute_AX(S)
+        resi = self._compute_AX(G) - b
 
         nev = 0
         itmu_pinf = 0
@@ -166,18 +166,18 @@ class CommonlineLUD(CLOrient3D):
             #############
             # Compute y #
             #############
-            y = -(AS + self.ComputeAX(W)) - resi / self.mu
+            y = -(AS + self._compute_AX(W)) - resi / self.mu
             if self.spectral_norm_constraint:
-                y += self.ComputeAX(Z)
+                y += self._compute_AX(Z)
 
             #################
             # Compute theta #
             #################
-            ATy = self.ComputeATy(y)
+            ATy = self._compute_ATy(y)
             Phi = W + ATy + G / self.mu
             if self.spectral_norm_constraint:
                 Phi -= Z
-            S, theta = self.Qtheta(Phi, C, self.mu)
+            S, theta = self._Q_theta(Phi, C, self.mu)
             S = (S + S.T) / 2
 
             #############
@@ -234,7 +234,7 @@ class CommonlineLUD(CLOrient3D):
             G = (1 - self.gam) * G + self.gam * self.mu * (W - H)
 
             # Check optimality
-            resi = self.ComputeAX(G) - b
+            resi = self._compute_AX(G) - b
             pinf = np.linalg.norm(resi) / max(np.linalg.norm(b), 1)
 
             dinf_term = S + W + ATy
@@ -318,7 +318,7 @@ class CommonlineLUD(CLOrient3D):
 
         return Z, kk, zz
 
-    def Qtheta(self, phi, C, mu):
+    def _Q_theta(self, phi, C, mu):
         """
         Python equivalent of Qtheta MEX function.
 
@@ -390,7 +390,7 @@ class CommonlineLUD(CLOrient3D):
 
         return C
 
-    def ComputeAX(self, X):
+    def _compute_AX(self, X):
         n = 2 * self.n_img
         rows = np.arange(1, n, 2)
         cols = np.arange(0, n, 2)
@@ -406,7 +406,7 @@ class CommonlineLUD(CLOrient3D):
 
         return AX
 
-    def ComputeATy(self, y):
+    def _compute_ATy(self, y):
         n = 2 * self.n_img
         m = 3 * self.n_img
         idx = np.arange(n)
