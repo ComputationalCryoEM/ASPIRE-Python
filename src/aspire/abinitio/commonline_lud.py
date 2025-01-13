@@ -21,7 +21,8 @@ class CommonlineLUD(CLOrient3D):
         """
         Initialize a class for estimating 3D orientations using a Least Unsquared Deviations algorithm.
 
-        This class extends the `CLOrient3D` class, inheriting its initialization parameters.
+        This class extends the `CLOrient3D` class, inheriting its initialization parameters. Additional
+        parameters detailed below.
 
         :param alpha: Spectral norm constraint for ADMM algorithm. Default is None, which
             does not apply a spectral norm constraint. To apply a spectral norm constraint provide
@@ -32,24 +33,23 @@ class CommonlineLUD(CLOrient3D):
             Default is 1.
         :param gam: Relaxation factor for updating variables in the algorithm (typically between 1 and 2).
             Default is 1.618.
-        :param EPS: Small positive value used to filter out negligible eigenvalues or avoid numerical issues.
+        :param EPS: Small positive value used to filter out negligible eigenvalues.
             Default is 1e-12.
         :param maxit: Maximum number of iterations allowed for the algorithm.
             Default is 1000.
         :param adp_proj: Flag for using adaptive projection during eigenvalue computation:
-            - 0: Full eigenvalue decomposition.
-            - 1: Adaptive rank selection (Default).
+            - True: Adaptive rank selection (Default).
+            - False: Full eigenvalue decomposition.
         :param max_rankZ: Maximum rank used for projecting the Z matrix (for adaptive projection).
             Default is None (will be computed based on `n_img`).
         :param max_rankW: Maximum rank used for projecting the W matrix (for adaptive projection).
             Default is None (will be computed based on `n_img`).
         :param adp_mu: Adaptive adjustment of the penalty parameter `mu`:
-            - 1: Enabled.
-            - 0: Disabled.
-            Default is 1.
-        :param dec_mu: Scaling factor for decreasing `mu` when conditions warrant.
+            - True: Enabled (Default).
+            - False: Disabled.
+        :param dec_mu: Scaling factor for decreasing `mu`.
             Default is 0.5.
-        :param inc_mu: Scaling factor for increasing `mu` when conditions warrant.
+        :param inc_mu: Scaling factor for increasing `mu`.
             Default is 2.
         :param mu_min: Minimum allowable value for `mu`.
             Default is 1e-4.
@@ -88,12 +88,12 @@ class CommonlineLUD(CLOrient3D):
         self.gam = kwargs.pop("gam", 1.618)
         self.EPS = kwargs.pop("EPS", 1e-12)
         self.maxit = kwargs.pop("maxit", 1000)
-        self.adp_proj = kwargs.pop("adp_proj", 1)
+        self.adp_proj = kwargs.pop("adp_proj", True)
         self.max_rankZ = kwargs.pop("max_rankZ", None)
         self.max_rankW = kwargs.pop("max_rankW", None)
 
         # Parameters for adjusting mu
-        self.adp_mu = kwargs.pop("adp_mu", 1)
+        self.adp_mu = kwargs.pop("adp_mu", True)
         self.dec_mu = kwargs.pop("dec_mu", 0.5)
         self.inc_mu = kwargs.pop("inc_mu", 2)
         self.mu_min = kwargs.pop("mu_min", 1e-4)
@@ -108,19 +108,19 @@ class CommonlineLUD(CLOrient3D):
 
     def estimate_rotations(self):
         """
-        Estimate rotation matrices using the common lines method with semi-definite programming.
+        Estimate rotation matrices using the common lines method with LUD optimization.
         """
         logger.info("Computing the common lines matrix.")
         self.build_clmatrix()
 
-        C = self.cl_to_C(self.clmatrix)
-        gram = self.cryoEMSDPL12N(C)
+        C = self._cl_to_C(self.clmatrix)
+        gram = self._compute_Gram(C)
         gram = self._restructure_Gram(gram)
         self.rotations = self._deterministic_rounding(gram)
 
         return self.rotations
 
-    def cryoEMSDPL12N(self, C):
+    def _compute_Gram(self, C):
         """
         Perform the alternating direction method of multipliers (ADMM) for the SDP
         problem:
@@ -129,7 +129,11 @@ class CommonlineLUD(CLOrient3D):
         s.t. A(G) = b, G psd
             ||G||_2 <= lambda
 
-        :param C:
+        Equivalent to matlab functions cryoEMSDPL12N/cryoEMSDPL12N_vsimple.
+
+        :param C: ndarray, A 3D array (n_img x n_img x 2) containing commonline coordinates (in Cartesian form)
+            between pairs of images. Each C[i, j] stores the x and y coordinates of the common
+            line between image i and image j.
         :return: The gram matrix G.
         """
         # Initialize problem parameters
@@ -194,7 +198,7 @@ class CommonlineLUD(CLOrient3D):
                 H += Z
             H = (H + H.T) / 2
 
-            if self.adp_proj == 0:
+            if not self.adp_proj:
                 D, V = np.linalg.eigh(H)
                 W = V[:, D > self.EPS] @ np.diag(D[D > self.EPS]) @ V[:, D > self.EPS].T
             else:
@@ -270,7 +274,7 @@ class CommonlineLUD(CLOrient3D):
         B = S + W + ATy + G / self.mu
         B = (B + B.T) / 2
 
-        if self.adp_proj == 0:
+        if not self.adp_proj:
             U, pi = np.linalg.eigh(B)
         else:
             if itr == 0:
@@ -320,14 +324,14 @@ class CommonlineLUD(CLOrient3D):
 
     def _Q_theta(self, phi, C, mu):
         """
-        Python equivalent of Qtheta MEX function.
-
         Compute the matrix S and auxiliary variables theta for the optimization problem.
 
         This function calculates the fidelity matrix S and the auxiliary variable theta as part of
         the ADMM framework for solving the semidefinite programming (SDP) relaxation of the
         Least Unsquared Deviations (LUD) problem. It ensures consistency between the Gram
         matrix G and the detected common-line coordinates.
+
+        Python equivalent of matlab Qtheta MEX function.
 
         :param phi: ndarray, A 2*n_img x 2*n_img scaled dual variable matrix (Phi) used in the ADMM iterations.
         :param C: ndarray, A 3D array (n_img x n_img x 2) containing commonline coordinates (in Cartesian form)
@@ -368,7 +372,7 @@ class CommonlineLUD(CLOrient3D):
 
         return S, theta
 
-    def cl_to_C(self, clmatrix):
+    def _cl_to_C(self, clmatrix):
         """
         For each pair of commonline indices cl[i, j] and cl[j, i], convert
         from polar commonline indices to cartesion coordinates.
@@ -391,6 +395,12 @@ class CommonlineLUD(CLOrient3D):
         return C
 
     def _compute_AX(self, X):
+        """
+        Compute the application of the linear operator A to the input matrix X.
+
+        The operator A extracts diagonal elements of X and computes a scaled
+        subset of off-diagonal elements, combining them into a single vector.
+        """
         n = 2 * self.n_img
         rows = np.arange(1, n, 2)
         cols = np.arange(0, n, 2)
@@ -407,16 +417,21 @@ class CommonlineLUD(CLOrient3D):
         return AX
 
     def _compute_ATy(self, y):
+        """
+        Compute the application of the adjoint operator A^T to the input vector y.
+
+        The adjoint operator reconstructs a sparse matrix from the input vector,
+        placing the values onto the diagonal and selected off-diagonal positions.
+        """
         n = 2 * self.n_img
         m = 3 * self.n_img
-        idx = np.arange(n)
         rows = np.concatenate([np.arange(1, n, 2), np.arange(0, n, 2)])
         cols = np.concatenate([np.arange(0, n, 2), np.arange(1, n, 2)])
         data = np.concatenate([(np.sqrt(2) / 2) * y[n:m], (np.sqrt(2) / 2) * y[n:m]])
 
         # Combine diagonal elements
         diag_data = y[:n]
-        diag_idx = idx
+        diag_idx = np.arange(n)
 
         # Construct the full matrix
         data = np.concatenate([data, diag_data])
@@ -466,30 +481,36 @@ class CommonlineLUD(CLOrient3D):
 
     def _restructure_Gram(self, G):
         """
-        Restructures the input Gram matrix into a block structure based on odd and even
-        indexed rows and columns.
+        Restructures the input Gram matrix into a block structure based on the following
+        format:
 
-        The new structure is:
-            New G = [[Top Left Block,  Top Right Block],
-                     [Bottom Left Block, Bottom Right Block]]
+        .. math::
 
-        Blocks:
-        - Top Left Block: Rows and columns with odd indices.
-        - Top Right Block: Odd rows and even columns.
-        - Bottom Left Block: Even rows and odd columns.
-        - Bottom Right Block: Even rows and columns.
+            G = 
+            \\begin{pmatrix}
+                G^{11} & G^{12} \\\\
+                G^{21} & G^{22}
+            \\end{pmatrix}
+            =
+            \\begin{pmatrix}
+                {R^1}^T R^1 & {R^1}^T R^2 \\\\
+                {R^2}^T R^1 & {R^2}^T R^2
+            \\end{pmatrix}
+
+        :param G: Gram matrix from ADMM method.
+        :return: Restructured Gram matrix.
         """
         # Get odd and even indices
         odd_indices = np.arange(0, G.shape[0], 2)
         even_indices = np.arange(1, G.shape[0], 2)
 
         # Extract blocks
-        top_left = G[np.ix_(odd_indices, odd_indices)]
-        top_right = G[np.ix_(odd_indices, even_indices)]
-        bottom_left = G[np.ix_(even_indices, odd_indices)]
-        bottom_right = G[np.ix_(even_indices, even_indices)]
+        G_11 = G[np.ix_(odd_indices, odd_indices)]
+        G_12 = G[np.ix_(odd_indices, even_indices)]
+        G_21 = G[np.ix_(even_indices, odd_indices)]
+        G_22 = G[np.ix_(even_indices, even_indices)]
 
         # Combine blocks into the new structure
-        restructured_G = np.block([[top_left, top_right], [bottom_left, bottom_right]])
+        restructured_G = np.block([[G_11, G_12], [G_21, G_22]])
 
         return restructured_G
