@@ -54,10 +54,13 @@ def src_orient_est_fixture(resolution, offsets, dtype, alpha):
     src = Simulation(
         n=60,
         L=resolution,
-        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=10).generate(),
+        vols=AsymmetricVolume(
+            L=resolution, C=1, K=100, seed=10, dtype=dtype
+        ).generate(),
         offsets=offsets,
         amplitudes=1,
         seed=0,
+        dtype=dtype,
     )
 
     # Increase max_shift and set shift_step to be sub-pixel when using
@@ -87,9 +90,12 @@ def test_estimate_rotations(src_orient_est_fixture):
     if backend_available("cufinufft") and src.dtype == np.float32:
         pytest.skip("CI on GPU fails for singles.")
 
-    orient_est.estimate_rotations()
+    est_rots = orient_est.estimate_rotations()
 
     # Register estimates to ground truth rotations and compute the
     # angular distance between them (in degrees).
     # Assert that mean aligned angular distance is less than 3 degrees.
-    mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=3)
+    mean_aligned_angular_distance(est_rots, src.rotations, degree_tol=3)
+
+    # Check dtype pass-through
+    np.testing.assert_equal(src.dtype, est_rots.dtype)
