@@ -24,6 +24,7 @@ from .misc import (  # isort:skip
     gaussian_1d,
     gaussian_2d,
     gaussian_3d,
+    gaussian_window,
     importlib_path,
     inverse_r,
     J_conjugate,

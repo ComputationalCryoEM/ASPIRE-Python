@@ -13,7 +13,7 @@ from aspire.operators import (
     PowerFilter,
     ScalarFilter,
 )
-from aspire.utils import grid_2d, randn, trange
+from aspire.utils import gaussian_window, grid_2d, randn, trange
 
 logger = logging.getLogger(__name__)
 
@@ -488,22 +488,6 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         return R, x, cnt
 
     @staticmethod
-    def gwindow(L, max_d, alpha=3.0):
-        """
-        Create a 2D gaussian window used for 2D power spectrum estimation.
-
-        Given `L` retuns a `(2L-1, 2L-1)` Gaussian window where
-        `max_d` is the width of the Gaussian and `alpha` is the
-        reciprical of the standard deviation of the Gaussian window.
-        See Harris 78.
-        """
-
-        X, Y = np.mgrid[-(L - 1) : L, -(L - 1) : L]  # -(L-1) to (L-1) inclusive
-        W = np.exp(-alpha * (X**2 + Y**2) / (2 * max_d**2))
-
-        return W
-
-    @staticmethod
     def epsdS(images, samples_idx, max_d=None):
         """
         Estimate the 2D isotropic power spectrum of `images`.
@@ -543,7 +527,7 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         # Window te 2D autocorrelation and Fourier transform it to get the power
         # spectrum. Always use the Gaussian window, as it has positive Fourier
         # transform.
-        w = IsotropicNoiseEstimator.gwindow(L, max_d)
+        w = gaussian_window(L, max_d)
         P2 = fft.centered_fft2(R2 * w)
         if (err := np.linalg.norm(P2.imag) / np.linalg.norm(P2)) > 1e-12:
             logger.warning(f"Large imaginary components in P2 {err}.")
