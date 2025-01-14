@@ -392,7 +392,7 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         :return: Tuple radial PSD, distances map, count of nonzero correlations.
         """
 
-        n, L, L2 = images.shape
+        n_img, L, L2 = images.shape
         if L != L2:
             raise RuntimeError(f"Images must be square, received {images.shape}")
 
@@ -445,9 +445,10 @@ class IsotropicNoiseEstimator(NoiseEstimator):
 
         samples = np.zeros((L, L))
         tmp[:, :] = 0  # reset tmp
-        for k in trange(n, desc="Processing image autocorrelations"):
+        for k in trange(n_img, desc="Processing image autocorrelations"):
             # Mask unused pixels (note, think can merge these lines later)
             samples[samples_idx] = images[k][samples_idx]
+            # Note, we can also compute the noise energy estimate used later at this time to avoid looping over images twice.
 
             # Compute non-preiodic autocorrelation
             tmp[:L, :L] = samples  # pad
@@ -485,3 +486,83 @@ class IsotropicNoiseEstimator(NoiseEstimator):
 
     @staticmethod
     def epsdS(images, samples_idx, max_d=None):
+        """
+        Estimate the 2D isotropic power spectrum of `images`.
+        The samples to use in each image are given by `samples_idx` mask.
+        The correlation is computed up to a maximal distance of `max_d`.
+        """
+        R, x, _ = IsotropicNoiseEstimator.epsdR(images=images, samples_idx=samples_idx, max_d=max_d)
+
+        n_img, L, L2 = images.shape
+        if L != L2:
+            raise RuntimeError(f"Images must be square, received {images.shape}")
+
+        # Correlations more than `max_d` pixels apart are not computed.
+        if max_d is None:
+            max_d = np.floor(L/3)
+        if max_d > L - 1:
+            logger.info(
+                f"`max_d` value {max_d}greater than number of image pixels {L}, clipping to {L-1}."
+            )
+        max_d = int(min(max_d, L - 1))
+
+        # Use the 1D autocorrelation estimted above to populate an
+        # array of the 2D isotropic autocorrelction. This
+        # autocorrelation is later Fourier transformed to get the
+        # power spectrum.
+        R2 = np.zeros((2*L-1, 2*L-1), dtype=np.float64)
+
+        J, I = np.mgrid[-L+1:L, -L+1:L]
+        dists2 = I * I + J * J
+        dsquare2 = np.sort(np.unique(dists2[dists2 <= max_d**2]))
+        for i,d in enumerate(dsquare2):
+            idx = dists2==d
+            R2[idx] = R[i]
+
+        # R2 seems okay here.
+        #breakpoint()
+
+        # Window te 2D autocorrelation and Fourier transform it to get the power
+        # spectrum. Always use the Gaussian window, as it has positive Fourier
+        # transform.
+        w = gwrindor(L, max_d)
+        P2 = fft.centered_fft2(R2*w)
+        if (err := np.linalg.norm(P2.imag) / np.linalg.norm(P2)) > 1e-12:
+            logger.warning(f'Large imaginary components in P2 {err}.')
+        P2 = P2.real
+        
+        # Normalize the power spectrum P2. The power spectrum is normalized such
+        # that its energy is equal to the average energy of the noise samples used
+        # to estimate it.
+
+        E=0  # Total energy of the noise samples used to estimate the power spectrum.
+        samples = np.zeros((L, L))        
+        for k in trange(n_img, desc="Estimating image noise energy"):
+            samples[samples_idx] = images[k][samples_idx]            
+            E += np.sum( (samples - np.mean(samples))**2)
+        # Mean energy of the noise samples
+        meanE = E / (samples.size * n_img)
+
+        # Normalize P2 such that its mean energy is preserved and is equal to
+        # meanE, that is, mean(P2)==meanE. That way the mean energy does not
+        # go down if the number of pixels is artifically changed (say be
+        # upsampling, downsampling, or cropping). Note that P2 is already in
+        # units of energy, and so the total energy is given by sum(P2) and
+        # not by norm(P2).
+        P2 = P2 / np.sum(P2) * meanE * P2.size
+
+        # Check that P2 has no negative values.
+        # Due to the truncation of the Gaussian window, we get small negative
+        # values. So unless they are very big, we just ignore them.
+        negidx = P2 < 0
+        if np.count_nonzero(negidx):
+            maxnegerr = np.max(np.abs(P2[negidx]))
+            logger.debug(f'Maximal negative P2 value = {maxnegerr}')
+            if maxnegerr > 1e-2:
+                negnorm = np.linalg.norm(P2[negidx])
+                logger.warning(f'Power spectrum P2 has negative values with energy {negnorm}.')
+            P2[negidx] = 0  # zero out negative estimates
+
+        return P2, R, R2, x
+            
+        
