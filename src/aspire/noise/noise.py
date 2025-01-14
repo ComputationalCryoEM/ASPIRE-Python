@@ -398,23 +398,23 @@ class IsotropicNoiseEstimator(NoiseEstimator):
 
         # Correlations more than `max_d` pixels apart are not computed.
         if max_d is None:
-            max_d = L - 1
+            max_d = np.floor(L/3)
         if max_d > L - 1:
             logger.info(
                 f"`max_d` value {max_d}greater than number of image pixels {L}, clipping to {L-1}."
             )
-        max_d = min(max_d, L - 1)
+        max_d = int(min(max_d, L - 1))
 
         # Compute distances
         # Note grid_2d['r'] is not used because we always want zero centered integer grid,
         #   yielding integer dists (radius**2) values.
-        J, I = np.mgrid[0:max_d, 0:max_d]
+        J, I = np.mgrid[0:max_d+1, 0:max_d+1]
         dists = I * I + J * J
         dsquare = np.sort(np.unique(dists[dists <= max_d**2]))
         x = np.sqrt(dsquare)  # actual distance
 
         # corrs[i] is the sum of all x[j]x[j+d] where d = x[i]
-        corrs = np.zeros_like(dsquare)
+        corrs = np.zeros_like(dsquare,dtype=np.float64)
         # corrcount[i] is the number of pairs summed in corr[i]
         corrcount = np.zeros_like(dsquare, dtype=int)
 
@@ -435,8 +435,8 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         tmp = np.zeros((2 * L + 1, 2 * L + 1))  # pad
         tmp[:L, :L] = mask
         ftmp = fft.fft2(tmp)
-        Ncorr = fft.ifft2(ftmp * ftmp.conj())
-        Ncorr = Ncorr[:max_d, :max_d]  # crop
+        Ncorr = fft.ifft2(ftmp * ftmp.conj()).real  # matlab code does not cast here, but internally detects conj sym...
+        Ncorr = Ncorr[:max_d+1, :max_d+1]  # crop
         Ncorr = np.round(Ncorr)
 
         # Values of isotropic autocorrelation function
@@ -452,25 +452,29 @@ class IsotropicNoiseEstimator(NoiseEstimator):
             # Compute non-preiodic autocorrelation
             tmp[:L, :L] = samples  # pad
             ftmp = fft.fft2(tmp)
-            s = fft.ifft2(ftmp * ftmp.conj()).real  # matlab code does not cast here
-            s = s[:max_d, :max_d]  # crop
-
-            # I didn't port this correctly.  (MATLAB auto (un/)raveling)
+            s = fft.ifft2(ftmp * ftmp.conj()).real  # matlab code does not cast here, but internally detects conj sym...
+            s = s[0:max_d+1, 0:max_d+1]  # crop
+            
             # # Accumulate all autocorrelation values R[k1,k2] such that
             # # k1^2+k2^2=const (all autocorrelations of a certain distance).
+            for i in range(max_d+1):
+                for j in range(max_d+1):
+                    idx = distmap[i, j]
+                    if idx != -1:
+                        corrs[idx] = corrs[idx] + s[i, j]
+                        corrcount[idx] = corrcount[idx] + Ncorr[i, j]
+
+            # TODO, fix this MATLAB optmized implementation and compare with the clearer code above.
+            # I didn't port this validdist slice optimized version correctly(yet).
+            # it uses implicit (MATLAB auto flat (un/)raveling)
+            # im not sure the speedup would be similar in python anyway.
             # for j in range(np.size(validdists)):
             #     currdist = validdists[j]
             #     dmidx = distmap[currdist]
             #     corrs[dmidx] = corrs[dmidx] + s[currdist]
             #     corrcount[dmidx] = corrcount[dmidx] + Ncorr[currdist]
 
-            for i in range(max_d):
-                for j in range(max_d):
-                    idx = distmap[i, j]
-                    if idx != -1:
-                        corrs[idx] = corrs[idx] + s[i, j]
-                        corrcount[idx] = corrcount[idx] + Ncorr[i, j]
-
+                        
         # Remove distances which had no samples
         idx = np.where(corrcount != 0)  # [0]
         R = corrs[idx] / corrcount[idx]
@@ -478,3 +482,6 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         cnt = corrcount[idx]
 
         return R, x, cnt
+
+    @staticmethod
+    def epsdS(images, samples_idx, max_d=None):
