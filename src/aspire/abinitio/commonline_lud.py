@@ -156,7 +156,6 @@ class CommonlineLUD(CLOrient3D):
 
         # Compute initial values
         S, theta = self._Q_theta(Phi, C, self.mu)
-        S = (S + S.T) / 2
         AS = self._compute_AX(S)
         resi = self._compute_AX(G) - b
 
@@ -182,7 +181,6 @@ class CommonlineLUD(CLOrient3D):
             if self.spectral_norm_constraint:
                 Phi -= Z
             S, theta = self._Q_theta(Phi, C, self.mu)
-            S = (S + S.T) / 2
 
             #############
             # Compute Z #
@@ -370,6 +368,9 @@ class CommonlineLUD(CLOrient3D):
                     S[2 * i + k, 2 * j] = theta[i, j, k] * C[j, i, 0]
                     S[2 * i + k, 2 * j + 1] = theta[i, j, k] * C[j, i, 1]
 
+        # Ensure S is symmetric
+        S = (S + S.T) / 2
+
         return S, theta
 
     def _cl_to_C(self, clmatrix):
@@ -394,16 +395,27 @@ class CommonlineLUD(CLOrient3D):
 
         return C
 
-    def _compute_AX(self, X):
+    @staticmethod
+    def _compute_AX(X):
         """
-        Compute the application of the linear operator A to the input matrix X.
+        Compute the application of the linear operator A to the input matrix X,
+        where A(X) is defined as:
 
-        The operator A extracts diagonal elements of X and computes a scaled
-        subset of off-diagonal elements, combining them into a single vector.
+        A(X) = [
+            X_ii^(11),
+            X_ii^(22),
+            sqrt(2) X_ii^(12) + sqrt(2) X_ii^(21)
+        ]
+
+        i = 1, 2, ..., K
+
+        where X_{ii}^{pq} denotes the (p,q)-th element in the 2x2 subblock X_{ii}.
+
+        :param X: 2D square array.
+        :return: A(X)
         """
-        n = 2 * self.n_img
-        rows = np.arange(1, n, 2)
-        cols = np.arange(0, n, 2)
+        rows = np.arange(1, X.shape[0], 2)
+        cols = np.arange(0, X.shape[0], 2)
 
         # Create diagonal matrix with X on the main diagonal
         diags = np.diag(X)
@@ -416,15 +428,36 @@ class CommonlineLUD(CLOrient3D):
 
         return AX
 
-    def _compute_ATy(self, y):
+    @staticmethod
+    def _compute_ATy(y):
         """
-        Compute the application of the adjoint operator A^T to the input vector y.
+        Compute the application of the adjoint operator A^T to the input vector y,
+        where
 
-        The adjoint operator reconstructs a sparse matrix from the input vector,
-        placing the values onto the diagonal and selected off-diagonal positions.
+            y = [
+                y_i^1,
+                y_i^2,
+                y_i^3
+            ]   for i = 1, 2, ..., K,
+
+        and the adjoint of the operator A is defined as:
+
+            AT(y) = Y = [
+                [Y_ii^(11), Y_ii^(12)],
+                [Y_ii^(21), Y_ii^(22)]
+            ],
+
+        where for i = 1, 2, ..., K:
+
+            Y_ii^(11) = y_i^1,
+            Y_ii^(22) = y_i^2,
+            Y_ii^(12) = Y_ii^(21) = y_i^3 / sqrt(2).
+
+        :param y: 1D array of length 3 * n_img.
+        :return: Sparse matrix AT(y)
         """
-        n = 2 * self.n_img
-        m = 3 * self.n_img
+        n = 2 * len(y) // 3
+        m = len(y)
         rows = np.concatenate([np.arange(1, n, 2), np.arange(0, n, 2)])
         cols = np.concatenate([np.arange(0, n, 2), np.arange(1, n, 2)])
         data = np.concatenate([(np.sqrt(2) / 2) * y[n:m], (np.sqrt(2) / 2) * y[n:m]])
