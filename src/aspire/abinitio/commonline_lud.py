@@ -136,9 +136,13 @@ class CommonlineLUD(CLOrient3D):
             line between image i and image j.
         :return: The gram matrix G.
         """
+        logger.info("Performing ADMM to compute Gram matrix.")
+
         # Initialize problem parameters
         n = 2 * self.n_img
-        b = np.concatenate([np.ones(n), np.zeros(self.n_img)])
+        b = np.concatenate(
+            [np.ones(n, dtype=self.dtype), np.zeros(self.n_img, dtype=self.dtype)]
+        )
 
         # Adjust rank limits
         self.max_rankW = self.max_rankW or max(6, self.n_img // 2)
@@ -205,7 +209,12 @@ class CommonlineLUD(CLOrient3D):
                 else:
                     if nev > 0:
                         drops = dH[:-1] / dH[1:]
-                        dmx, imx = max((val, idx) for idx, val in enumerate(drops))
+
+                        # Find max drop
+                        imx = np.argmax(drops)
+                        dmx = drops[imx]
+
+                        # Relative drop
                         rel_drp = (nev - 1) * dmx / (np.sum(drops) - dmx)
 
                         if rel_drp > 50:
@@ -287,9 +296,12 @@ class CommonlineLUD(CLOrient3D):
                         rel_drp = np.inf
                     elif len(zz) > 2:
                         drops = zz[:-1] / zz[1:]
-                        dmx, imx = max(
-                            (val, idx) for idx, val in enumerate(drops)
-                        )  # Find max drop and its index
+
+                        # Find max drop
+                        imx = np.argmax(drops)
+                        dmx = drops[imx]
+
+                        # Relative drop
                         rel_drp = (nev - 1) * dmx / (np.sum(drops) - dmx)
 
                     # Update `kk` based on relative drop
@@ -345,7 +357,7 @@ class CommonlineLUD(CLOrient3D):
                 line between image i and image j.
         """
         # Initialize outputs
-        S = np.zeros((2 * self.n_img, 2 * self.n_img))
+        S = np.zeros((2 * self.n_img, 2 * self.n_img), dtype=self.dtype)
         theta = np.zeros_like(C)
 
         # Main routine
@@ -421,7 +433,7 @@ class CommonlineLUD(CLOrient3D):
         diags = np.diag(X)
 
         # Compute the second part of AX
-        sqrt_2_X_col = np.sqrt(2) * X[rows, cols]
+        sqrt_2_X_col = np.sqrt(2, dtype=X.dtype) * X[rows, cols]
 
         # Concatenate results vertically
         AX = np.concatenate((diags, sqrt_2_X_col))
@@ -460,7 +472,12 @@ class CommonlineLUD(CLOrient3D):
         m = len(y)
         rows = np.concatenate([np.arange(1, n, 2), np.arange(0, n, 2)])
         cols = np.concatenate([np.arange(0, n, 2), np.arange(1, n, 2)])
-        data = np.concatenate([(np.sqrt(2) / 2) * y[n:m], (np.sqrt(2) / 2) * y[n:m]])
+        data = np.concatenate(
+            [
+                (np.sqrt(2, dtype=y.dtype) / 2) * y[n:m],
+                (np.sqrt(2, dtype=y.dtype) / 2) * y[n:m],
+            ]
+        )
 
         # Combine diagonal elements
         diag_data = y[:n]
@@ -517,18 +534,15 @@ class CommonlineLUD(CLOrient3D):
         Restructures the input Gram matrix into a block structure based on the following
         format:
 
-        .. math::
+        G =
+        [ G^(11)   G^(12) ]
+        [ G^(21)   G^(22) ]
 
-            G =
-            \\begin{pmatrix}
-                G^{11} & G^{12} \\\\
-                G^{21} & G^{22}
-            \\end{pmatrix}
-            =
-            \\begin{pmatrix}
-                {R^1}^T R^1 & {R^1}^T R^2 \\\\
-                {R^2}^T R^1 & {R^2}^T R^2
-            \\end{pmatrix}
+        =
+        [ (R^1)^T R^1   (R^1)^T R^2 ]
+        [ (R^2)^T R^1   (R^2)^T R^2 ]
+
+        where R^i is the concatenation of all i'th columns of the rotations R.
 
         :param G: Gram matrix from ADMM method.
         :return: Restructured Gram matrix.

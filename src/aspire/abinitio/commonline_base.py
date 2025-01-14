@@ -830,7 +830,6 @@ class CLOrient3D:
         :return: An n_img x 3 x 3 stack of rotation matrices.
         """
         logger.info("Recovering rotations from Gram matrix.")
-
         # Obtain top eigenvectors from Gram matrix.
         d, v = stable_eigsh(gram, 5)
         sort_idx = np.argsort(-d)
@@ -899,7 +898,7 @@ class CLOrient3D:
                 k += 1
 
         # b = [1 1 0 1 1 0 ...]' is the right hand side vector
-        b = np.ones(3 * n_img)
+        b = np.ones(3 * n_img, dtype=v1.dtype)
         b[2::3] = 0
 
         # Find the least squares approximation of A'*A in vector form
