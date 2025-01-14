@@ -398,7 +398,7 @@ class IsotropicNoiseEstimator(NoiseEstimator):
 
         # Correlations more than `max_d` pixels apart are not computed.
         if max_d is None:
-            max_d = np.floor(L/3)
+            max_d = np.floor(L / 3)
         if max_d > L - 1:
             logger.info(
                 f"`max_d` value {max_d}greater than number of image pixels {L}, clipping to {L-1}."
@@ -408,13 +408,13 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         # Compute distances
         # Note grid_2d['r'] is not used because we always want zero centered integer grid,
         #   yielding integer dists (radius**2) values.
-        J, I = np.mgrid[0:max_d+1, 0:max_d+1]
+        J, I = np.mgrid[0 : max_d + 1, 0 : max_d + 1]
         dists = I * I + J * J
         dsquare = np.sort(np.unique(dists[dists <= max_d**2]))
         x = np.sqrt(dsquare)  # actual distance
 
         # corrs[i] is the sum of all x[j]x[j+d] where d = x[i]
-        corrs = np.zeros_like(dsquare,dtype=np.float64)
+        corrs = np.zeros_like(dsquare, dtype=np.float64)
         # corrcount[i] is the number of pairs summed in corr[i]
         corrcount = np.zeros_like(dsquare, dtype=int)
 
@@ -435,8 +435,10 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         tmp = np.zeros((2 * L + 1, 2 * L + 1))  # pad
         tmp[:L, :L] = mask
         ftmp = fft.fft2(tmp)
-        Ncorr = fft.ifft2(ftmp * ftmp.conj()).real  # matlab code does not cast here, but internally detects conj sym...
-        Ncorr = Ncorr[:max_d+1, :max_d+1]  # crop
+        Ncorr = fft.ifft2(
+            ftmp * ftmp.conj()
+        ).real  # matlab code does not cast here, but internally detects conj sym...
+        Ncorr = Ncorr[: max_d + 1, : max_d + 1]  # crop
         Ncorr = np.round(Ncorr)
 
         # Values of isotropic autocorrelation function
@@ -453,13 +455,15 @@ class IsotropicNoiseEstimator(NoiseEstimator):
             # Compute non-preiodic autocorrelation
             tmp[:L, :L] = samples  # pad
             ftmp = fft.fft2(tmp)
-            s = fft.ifft2(ftmp * ftmp.conj()).real  # matlab code does not cast here, but internally detects conj sym...
-            s = s[0:max_d+1, 0:max_d+1]  # crop
-            
+            s = fft.ifft2(
+                ftmp * ftmp.conj()
+            ).real  # matlab code does not cast here, but internally detects conj sym...
+            s = s[0 : max_d + 1, 0 : max_d + 1]  # crop
+
             # # Accumulate all autocorrelation values R[k1,k2] such that
             # # k1^2+k2^2=const (all autocorrelations of a certain distance).
-            for i in range(max_d+1):
-                for j in range(max_d+1):
+            for i in range(max_d + 1):
+                for j in range(max_d + 1):
                     idx = distmap[i, j]
                     if idx != -1:
                         corrs[idx] = corrs[idx] + s[i, j]
@@ -475,7 +479,6 @@ class IsotropicNoiseEstimator(NoiseEstimator):
             #     corrs[dmidx] = corrs[dmidx] + s[currdist]
             #     corrcount[dmidx] = corrcount[dmidx] + Ncorr[currdist]
 
-                        
         # Remove distances which had no samples
         idx = np.where(corrcount != 0)  # [0]
         R = corrs[idx] / corrcount[idx]
@@ -485,13 +488,31 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         return R, x, cnt
 
     @staticmethod
+    def gwindow(L, max_d, alpha=3.0):
+        """
+        Create a 2D gaussian window used for 2D power spectrum estimation.
+
+        Given `L` retuns a `(2L-1, 2L-1)` Gaussian window where
+        `max_d` is the width of the Gaussian and `alpha` is the
+        reciprical of the standard deviation of the Gaussian window.
+        See Harris 78.
+        """
+
+        X, Y = np.mgrid[-(L - 1) : L, -(L - 1) : L]  # -(L-1) to (L-1) inclusive
+        W = np.exp(-alpha * (X**2 + Y**2) / (2 * max_d**2))
+
+        return W
+
+    @staticmethod
     def epsdS(images, samples_idx, max_d=None):
         """
         Estimate the 2D isotropic power spectrum of `images`.
         The samples to use in each image are given by `samples_idx` mask.
         The correlation is computed up to a maximal distance of `max_d`.
         """
-        R, x, _ = IsotropicNoiseEstimator.epsdR(images=images, samples_idx=samples_idx, max_d=max_d)
+        R, x, _ = IsotropicNoiseEstimator.epsdR(
+            images=images, samples_idx=samples_idx, max_d=max_d
+        )
 
         n_img, L, L2 = images.shape
         if L != L2:
@@ -499,7 +520,7 @@ class IsotropicNoiseEstimator(NoiseEstimator):
 
         # Correlations more than `max_d` pixels apart are not computed.
         if max_d is None:
-            max_d = np.floor(L/3)
+            max_d = np.floor(L / 3)
         if max_d > L - 1:
             logger.info(
                 f"`max_d` value {max_d}greater than number of image pixels {L}, clipping to {L-1}."
@@ -510,38 +531,36 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         # array of the 2D isotropic autocorrelction. This
         # autocorrelation is later Fourier transformed to get the
         # power spectrum.
-        R2 = np.zeros((2*L-1, 2*L-1), dtype=np.float64)
+        R2 = np.zeros((2 * L - 1, 2 * L - 1), dtype=np.float64)
 
-        J, I = np.mgrid[-L+1:L, -L+1:L]
+        J, I = np.mgrid[-L + 1 : L, -L + 1 : L]
         dists2 = I * I + J * J
         dsquare2 = np.sort(np.unique(dists2[dists2 <= max_d**2]))
-        for i,d in enumerate(dsquare2):
-            idx = dists2==d
+        for i, d in enumerate(dsquare2):
+            idx = dists2 == d
             R2[idx] = R[i]
-
-        # R2 seems okay here.
-        #breakpoint()
 
         # Window te 2D autocorrelation and Fourier transform it to get the power
         # spectrum. Always use the Gaussian window, as it has positive Fourier
         # transform.
-        w = gwrindor(L, max_d)
-        P2 = fft.centered_fft2(R2*w)
+        w = IsotropicNoiseEstimator.gwindow(L, max_d)
+        P2 = fft.centered_fft2(R2 * w)
         if (err := np.linalg.norm(P2.imag) / np.linalg.norm(P2)) > 1e-12:
-            logger.warning(f'Large imaginary components in P2 {err}.')
+            logger.warning(f"Large imaginary components in P2 {err}.")
         P2 = P2.real
-        
+
         # Normalize the power spectrum P2. The power spectrum is normalized such
         # that its energy is equal to the average energy of the noise samples used
         # to estimate it.
 
-        E=0  # Total energy of the noise samples used to estimate the power spectrum.
-        samples = np.zeros((L, L))        
+        E = 0.0  # Total energy of the noise samples used to estimate the power spectrum.
+        samples = np.zeros((L, L))
         for k in trange(n_img, desc="Estimating image noise energy"):
-            samples[samples_idx] = images[k][samples_idx]            
-            E += np.sum( (samples - np.mean(samples))**2)
+            samples[samples_idx] = images[k][samples_idx]
+            E += np.sum((samples - np.mean(samples)) ** 2)
         # Mean energy of the noise samples
-        meanE = E / (samples.size * n_img)
+        n_samples_per_img = np.count_nonzero(samples_idx)
+        meanE = E / (n_samples_per_img * n_img)
 
         # Normalize P2 such that its mean energy is preserved and is equal to
         # meanE, that is, mean(P2)==meanE. That way the mean energy does not
@@ -557,12 +576,12 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         negidx = P2 < 0
         if np.count_nonzero(negidx):
             maxnegerr = np.max(np.abs(P2[negidx]))
-            logger.debug(f'Maximal negative P2 value = {maxnegerr}')
+            logger.debug(f"Maximal negative P2 value = {maxnegerr}")
             if maxnegerr > 1e-2:
                 negnorm = np.linalg.norm(P2[negidx])
-                logger.warning(f'Power spectrum P2 has negative values with energy {negnorm}.')
+                logger.warning(
+                    f"Power spectrum P2 has negative values with energy {negnorm}."
+                )
             P2[negidx] = 0  # zero out negative estimates
 
         return P2, R, R2, x
-            
-        
