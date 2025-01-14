@@ -486,7 +486,7 @@ class CommonlineLUD(CLOrient3D):
 
         .. math::
 
-            G = 
+            G =
             \\begin{pmatrix}
                 G^{11} & G^{12} \\\\
                 G^{21} & G^{22}
