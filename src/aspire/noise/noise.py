@@ -376,8 +376,7 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         :return: The estimated noise variance of the images in the Source used to create this estimator.
         TODO: How's this initial estimate of variance different from the 'estimate' method?
         """
-
-        return noise_psd_est
+        pass
 
     @staticmethod
     def epsdR(images, samples_idx, max_d=None):
@@ -408,8 +407,8 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         # Compute distances
         # Note grid_2d['r'] is not used because we always want zero centered integer grid,
         #   yielding integer dists (radius**2) values.
-        J, I = np.mgrid[0 : max_d + 1, 0 : max_d + 1]
-        dists = I * I + J * J
+        X, Y = np.mgrid[0 : max_d + 1, 0 : max_d + 1]
+        dists = X * X + Y * Y
         dsquare = np.sort(np.unique(dists[dists <= max_d**2]))
         x = np.sqrt(dsquare)  # actual distance
 
@@ -517,8 +516,8 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         # power spectrum.
         R2 = np.zeros((2 * L - 1, 2 * L - 1), dtype=np.float64)
 
-        J, I = np.mgrid[-L + 1 : L, -L + 1 : L]
-        dists2 = I * I + J * J
+        X, Y = np.mgrid[-L + 1 : L, -L + 1 : L]
+        dists2 = X * X + Y * Y
         dsquare2 = np.sort(np.unique(dists2[dists2 <= max_d**2]))
         for i, d in enumerate(dsquare2):
             idx = dists2 == d

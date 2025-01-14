@@ -1,4 +1,3 @@
-import itertools
 import logging
 import os.path
 
@@ -16,6 +15,7 @@ from aspire.noise import (
 )
 from aspire.operators import FunctionFilter, ScalarFilter
 from aspire.source.simulation import Simulation
+from aspire.utils import gaussian_2d, gaussian_window, utest_tolerance
 from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -42,9 +42,19 @@ def sim_fixture_id(params):
     return f"res={res}, dtype={dtype.__name__}"
 
 
-@pytest.fixture(params=itertools.product(RESOLUTIONS, DTYPES), ids=sim_fixture_id)
-def sim_fixture(request):
-    resolution, dtype = request.param
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}")
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture(params=RESOLUTIONS, ids=lambda x: f"resolution={x}")
+def resolution(request):
+    return request.param
+
+
+@pytest.fixture
+def sim_fixture(resolution, dtype):
+    # resolution, dtype = request.param
     # Setup a sim with no noise, no ctf, no shifts,
     #   using a compactly supported volume.
     # ie, clean centered projections.
@@ -285,3 +295,23 @@ def test_pink_aniso_noise_estimation(sim_fixture, target_noise_variance):
 
     # Check we're within 5%
     assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)
+
+
+def test_gaussian_window(resolution, dtype):
+    """
+    Tests `gaussian_window` by comparing with `gaussian_2d`.
+    """
+
+    # Used by both tests below
+    max_d = resolution // 3
+    g2d = gaussian_2d(size=2 * resolution - 1, sigma=max_d, dtype=dtype)
+
+    # Test unit alpha
+    w = gaussian_window(L=resolution, max_d=max_d, dtype=dtype, alpha=1)
+    np.testing.assert_allclose(w, g2d, atol=utest_tolerance(dtype))
+
+    # Test default alpha=3, e**(alpha * ...) == (e**(...))**alpha
+    #   where (e**(...)) is provided by g2d.
+    a = 3.0
+    w = gaussian_window(L=resolution, max_d=max_d, alpha=a, dtype=dtype)
+    np.testing.assert_allclose(w, g2d**a, atol=utest_tolerance(dtype))
