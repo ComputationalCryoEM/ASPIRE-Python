@@ -359,7 +359,7 @@ def fuzzy_mask(L, dtype, r0=None, risetime=None):
     return m
 
 
-def gaussian_window(L, max_d, alpha=3.0):
+def gaussian_window(L, max_d, alpha=3.0, dtype=np.float64):
     """
     Create a 2D gaussian window used for 2D power spectrum estimation.
 
@@ -369,7 +369,7 @@ def gaussian_window(L, max_d, alpha=3.0):
     See Harris 78.
 
     When `alpha=1`, this function should be equivalent to
-    `gaussian_2d(L=2*L-1, sigma=max_d)`.
+    `gaussian_2d(size=2*L-1, sigma=max_d)`.
 
     :param L: Number of radial pixels
     :param max_d: Width of Gaussian (stddev)
@@ -378,6 +378,8 @@ def gaussian_window(L, max_d, alpha=3.0):
     """
 
     X, Y = np.mgrid[-(L - 1) : L, -(L - 1) : L]  # -(L-1) to (L-1) inclusive
+    X = X.astype(dtype, copy=False)
+    Y = Y.astype(dtype, copy=False)
     W = np.exp(-alpha * (X**2 + Y**2) / (2 * max_d**2))
 
     return W
