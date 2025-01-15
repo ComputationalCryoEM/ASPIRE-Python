@@ -227,13 +227,13 @@ class CommonlineLUD(CLOrient3D):
                 n_eigs = nev
                 if self.spectral_norm_constraint:
                     n_eigs = min(nev, n)
-                dH, V = eigs(-H, k=n_eigs, which="LR")
+                dH, V = eigs(-H.astype(np.float64), k=n_eigs, which="LR")
 
                 # Sort by eigenvalue magnitude.
-                dH = dH.real
+                dH = dH.real.astype(self.dtype, copy=False)
                 idx = np.argsort(dH)[::-1]
                 dH = dH[idx]
-                V = V[:, idx].real
+                V = V[:, idx].real.astype(self.dtype, copy=False)
                 nD = dH > self.EPS
                 dH = dH[nD]
                 nev = np.count_nonzero(nD)
