@@ -48,7 +48,6 @@ class _ImageAccessor:
         self.fun = fun
         self.n_images = n_images
 
-
     def __getitem__(self, indices):
         """
         ImageAccessor can be indexed via Python slice object, 1-D NumPy array, list, or a single integer,
