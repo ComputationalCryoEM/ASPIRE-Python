@@ -352,23 +352,39 @@ class IsotropicNoiseEstimator(NoiseEstimator):
     Isotropic Noise Estimator.
     """
 
+    def __init__(self, src, bgRadius=None, max_d=None, batchSize=512):
+        """
+        Any additional args/kwargs are passed on to the Source's 'images' method
+
+        :param src: A Source object which can give us images on demand
+        :param bgRadius: The radius of the disk whose complement is used to estimate the noise.
+            Radius is relative proportion, where `1` represents
+            the radius of disc inscribing a `(src.L, src.L)` image.
+            Default of `None` uses `(np.floor(src.L / 2) - 1) / L`
+        :param max_d: Max computed correlation distance as a proportion of `src.L`.
+            Default of `None` uses `np.floor(src.L/3) / L`.
+        :param batchSize:  The size of the batches in which to compute the variance estimate.
+        """
+        self.src = src
+        self.dtype = self.src.dtype
+        self.bgRadius = (np.floor(self.src.L / 2) - 1) / self.src.L
+        self.batchSize = batchSize
+        self.max_d = np.floor(self.src.L / 3) / self.src.L
+
+        self.filter = self._create_filter()
+
     def estimate(self):
         """
         :return: The estimated noise variance of the images.
         """
 
-        # AnisotropicNoiseEstimator.filter is an ArrayFilter.
-        #   We average the variance over all frequencies,
-
         return np.mean(self.filter.evaluate_grid(self.src.L))
 
-    def _create_filter(self, noise_psd=None):
+    def _create_filter(self):
         """
-        :param noise_psd: Noise PSD of images
         :return: The estimated noise power spectral distribution (PSD) of the images in the form of a filter object.
         """
-        if noise_psd is None:
-            noise_psd = self.estimate_noise_psd()
+        noise_psd = self.estimate_noise_psd()
         return ArrayFilter(noise_psd)
 
     def estimate_noise_psd(self):
@@ -376,7 +392,13 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         :return: The estimated noise variance of the images in the Source used to create this estimator.
         TODO: How's this initial estimate of variance different from the 'estimate' method?
         """
-        pass
+        # Setup
+        samples_idx = grid_2d(self.src.L, normalized=True)["r"] >= self.bgRadius
+        max_d_pixels = round(self.max_d * self.src.L)
+
+        psd = IsotropicNoiseEstimator.epsdS(self.src.images, samples_idx, max_d_pixels)[0]
+
+        return psd
 
     @staticmethod
     def epsdR(images, samples_idx, max_d=None):
@@ -385,15 +407,17 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         The samples to use in each image are given by `samples_idx` mask.
         The correlation is computed up to a maximal distance of `max_d`.
 
-        :param images: Images as a Numpy array shaped (n_img,L,L).
+        :param images: Images instance
         :param samples_idx: Boolean mask shaped (L,L).
         :param max_d: Max computed correlation distance in pixels.
-        :return: Tuple radial PSD, distances map, count of nonzero correlations.
+        :return:
+            - Radial PSD array of shape
+            - Distances map array
+            - Count of nonzero correlations array
         """
 
-        n_img, L, L2 = images.shape
-        if L != L2:
-            raise RuntimeError(f"Images must be square, received {images.shape}")
+        n_img = images.n_images
+        L = samples_idx.shape[-1]
 
         # Correlations more than `max_d` pixels apart are not computed.
         if max_d is None:
@@ -448,7 +472,7 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         tmp[:, :] = 0  # reset tmp
         for k in trange(n_img, desc="Processing image autocorrelations"):
             # Mask unused pixels (note, think can merge these lines later)
-            samples[samples_idx] = images[k][samples_idx]
+            samples[samples_idx] = images[k].asnumpy()[0][samples_idx]
             # Note, we can also compute the noise energy estimate used later at this time to avoid looping over images twice.
 
             # Compute non-preiodic autocorrelation
@@ -492,14 +516,23 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         Estimate the 2D isotropic power spectrum of `images`.
         The samples to use in each image are given by `samples_idx` mask.
         The correlation is computed up to a maximal distance of `max_d`.
+
+        :param images: Images instance
+        :param samples_idx: Boolean mask shaped (L,L).
+        :param max_d: Max computed correlation distance in pixels.
+        :return:
+            - 2D PSD array
+            - Radial PSD array
+            - Distances map array
+            - Count of nonzero correlations array
         """
+
+        n_img = images.n_images
+        L = samples_idx.shape[-1]
+
         R, x, _ = IsotropicNoiseEstimator.epsdR(
             images=images, samples_idx=samples_idx, max_d=max_d
         )
-
-        n_img, L, L2 = images.shape
-        if L != L2:
-            raise RuntimeError(f"Images must be square, received {images.shape}")
 
         # Correlations more than `max_d` pixels apart are not computed.
         if max_d is None:
@@ -539,7 +572,7 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         E = 0.0  # Total energy of the noise samples used to estimate the power spectrum.
         samples = np.zeros((L, L))
         for k in trange(n_img, desc="Estimating image noise energy"):
-            samples[samples_idx] = images[k][samples_idx]
+            samples[samples_idx] = images[k].asnumpy()[0][samples_idx]
             E += np.sum((samples - np.mean(samples)) ** 2)
         # Mean energy of the noise samples
         n_samples_per_img = np.count_nonzero(samples_idx)
