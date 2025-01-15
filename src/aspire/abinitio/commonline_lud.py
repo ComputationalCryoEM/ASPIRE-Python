@@ -103,7 +103,7 @@ class CommonlineLUD(CLOrient3D):
         self.delta_mu_l = kwargs.pop("delta_mu_l", 0.1)
         self.delta_mu_u = kwargs.pop("delta_mu_u", 10)
 
-        # Call the parent class initializer
+        # Initialize commonline base class
         super().__init__(*args, **kwargs)
 
     def estimate_rotations(self):
@@ -311,7 +311,7 @@ class CommonlineLUD(CLOrient3D):
 
             kk = min(kk, 2 * self.n_img)
             pi, U = eigs(
-                B, k=kk, which="LM"
+                B.astype(np.float64, copy=False), k=kk, which="LM"
             )  # Compute top `kk` eigenvalues and eigenvectors
 
             # Sort by eigenvalue magnitude.
