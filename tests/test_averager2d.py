@@ -123,7 +123,7 @@ class AligningAverager2DBase(Averager2DBase):
 
     `.rotations`
     `.shifts`
-    `.correlations`
+    `.dot_products`
     """
 
     averager = AligningAverager2D
@@ -155,7 +155,7 @@ class AligningAverager2DBase(Averager2DBase):
 
         self.assertTrue(hasattr(avgr, "shifts"))
 
-        self.assertTrue(hasattr(avgr, "correlations"))
+        self.assertTrue(hasattr(avgr, "dot_products"))
 
     def _getSrc(self):
         if not hasattr(self, "shifts"):
