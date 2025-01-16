@@ -215,30 +215,6 @@ jobs:
     - name: Cleanup
       run: rm -rf ${{ env.WORK_DIR }}
 
-  # Create cache and download data for Github Actions CI.
-  data-cache:
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Create Cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ASPIRE-data
-          key: ${{ runner.os }}-cached-data
-      - name: Download EMDB 2660
-        run: |
-          python -c \
-          "from aspire.downloader import emdb_2660; emdb_2660()"
-
   # Build branch's docs and gallery.
   docs:
     needs: [check, data-cache]
