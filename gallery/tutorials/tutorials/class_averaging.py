@@ -224,11 +224,11 @@ avgs.images[review_class].show()
 
 est_rotations = avgs.averager.rotations
 est_shifts = avgs.averager.shifts
-est_correlations = avgs.averager.correlations
+est_dot_products = avgs.averager.dot_products
 
 print(f"Estimated Rotations: {est_rotations}")
 print(f"Estimated Shifts: {est_shifts}")
-print(f"Estimated Correlations: {est_correlations}")
+print(f"Estimated Dot Products: {est_dot_products}")
 
 # Compare the original unaligned images with the estimated alignment.
 # Get the indices from the classification results.

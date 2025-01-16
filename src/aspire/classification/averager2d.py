@@ -134,7 +134,7 @@ class AligningAverager2D(Averager2D):
     def align(self, classes, reflections, basis_coefficients=None):
         """
         During this process `rotations`, `reflections`, `shifts` and
-        `correlations` properties will be computed for aligners.
+        `dot_products` properties will be computed for aligners.
 
         `rotations` is an (src.n, n_nbor) array of angles,
         which should represent the rotations needed to align images within
@@ -144,8 +144,8 @@ class AligningAverager2D(Averager2D):
         which should represent the translation needed to best align the images
         within that class.
 
-        `correlations` is an (src.n, n_nbor) array representing
-        a correlation like measure between classified images and their base
+        `dot_products` is an (src.n, n_nbor) array representing
+        the dot between classified images and their base
         image (image index 0).
 
         Subclasses of should implement and extend this method.
@@ -154,7 +154,7 @@ class AligningAverager2D(Averager2D):
         :param reflections: (src.n, n_nbor) bool array of corresponding reflections,
         :param basis_coefficients: (n_img, self.alignment_basis.count) basis coefficients,
 
-        :returns: (rotations, shifts, correlations)
+        :returns: (rotations, shifts, dot_products)
         """
 
     def average(
@@ -170,7 +170,7 @@ class AligningAverager2D(Averager2D):
         classes = np.atleast_2d(classes)
         reflections = np.atleast_2d(reflections)
 
-        self.rotations, self.shifts, self.correlations = self.align(
+        self.rotations, self.shifts, self.dot_products = self.align(
             classes, reflections, coefs
         )
 
@@ -298,12 +298,12 @@ class BFSRAverager2D(AligningAverager2D):
         # These arrays will incrementally store our best alignment.
         n_classes, n_nbor = classes.shape
         rotations = np.zeros((n_classes, n_nbor), dtype=self.dtype)
-        correlations = np.ones((n_classes, n_nbor), dtype=self.dtype) * -np.inf
+        dot_products = np.ones((n_classes, n_nbor), dtype=self.dtype) * -np.inf
         shifts = np.empty((*classes.shape, 2), dtype=int)
 
         # Work arrays
         _rotations = np.zeros((n_nbor), dtype=self.dtype)
-        _correlations = np.ones((n_nbor), dtype=self.dtype) * -np.inf
+        _dot_products = np.ones((n_nbor), dtype=self.dtype) * -np.inf
 
         # Construct array of angles to brute force.
         _angles = xp.linspace(0, 2 * np.pi, self.n_angles, endpoint=False)
@@ -380,26 +380,21 @@ class BFSRAverager2D(AligningAverager2D):
                 idx[0] = 0  # Force base image, just in case.
 
                 # Assign results for this class
-                _correlations[:] = xp.asnumpy(
+                _dot_products[:] = xp.asnumpy(
                     xp.take_along_axis(dots, idx.reshape(n_nbor, 1), axis=1).flatten()
                 )
-                # _correlations[0] = 1  # Force base correlation, just in case
-                #  Todo, discuss:
-                #      If we care to compute the an actual correlation?
-                #      This involves a lot of somewhat careful normalizing.
-                #      The MATLAB code did do something like this,
-                #      but only for diagnostic purposes.
-                #      In our code anything beyond a relative calculation
-                #      would currently be superflous.
+                # Note, legacy codes would normalize to form correlations.
+                #   These were only used for diagnostic purposes.
+                #   Normalizing is skipped here to save computation.
 
                 # Assign the reverse rotation
                 _rotations[:] = -1 * xp.asnumpy(_angles[idx])
 
                 # Test and update
                 # Each base-neighbor pair may have a best shift+rot from a different shift iteration.
-                improved_indices = _correlations > correlations[k]
+                improved_indices = _dot_products > dot_products[k]
                 rotations[k, improved_indices] = _rotations[improved_indices]
-                correlations[k, improved_indices] = _correlations[improved_indices]
+                dot_products[k, improved_indices] = _dot_products[improved_indices]
                 shifts[k, improved_indices] = shift
 
                 if (x, y) == (0, 0):
@@ -412,7 +407,7 @@ class BFSRAverager2D(AligningAverager2D):
                         f"Shift ({x},{y}) complete. Improved {np.sum(improved_indices)} alignments."
                     )
 
-        return rotations, shifts, correlations
+        return rotations, shifts, dot_products
 
 
 class BFRAverager2D(BFSRAverager2D):
@@ -425,7 +420,7 @@ class BFRAverager2D(BFSRAverager2D):
         """
         # BFR shifts should all be zeros.
         # Replace with `None` to induce short ciruit shifting during stacking.
-        rotations, shifts, correlations = super().align(*args, **kwargs)
+        rotations, shifts, dot_products = super().align(*args, **kwargs)
 
         # Sanity check the results did not indicate shifts.
         if not np.all(shifts.flatten() == 0):
@@ -433,7 +428,7 @@ class BFRAverager2D(BFSRAverager2D):
                 "BFR should return zero shifts." "  BFSR returned non zero shifts."
             )
 
-        return rotations, None, correlations
+        return rotations, None, dot_products
 
 
 class ReddyChatterjiAverager2D(AligningAverager2D):
@@ -496,7 +491,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         # Instantiate matrices for results
         rotations = np.zeros(classes.shape, dtype=self.dtype)
-        correlations = np.zeros(classes.shape, dtype=self.dtype)
+        dot_products = np.zeros(classes.shape, dtype=self.dtype)
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
         def _innerloop(k):
@@ -511,9 +506,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             )
 
         for k in trange(n_classes, desc="Rotationally aligning classes"):
-            rotations[k], shifts[k], correlations[k] = _innerloop(k)
+            rotations[k], shifts[k], dot_products[k] = _innerloop(k)
 
-        return rotations, shifts, correlations
+        return rotations, shifts, dot_products
 
     def average(
         self,
@@ -526,7 +521,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         Otherwise is similar to `AligningAverager2D.average`.
         """
 
-        self.rotations, self.shifts, self.correlations = self.align(
+        self.rotations, self.shifts, self.dot_products = self.align(
             classes, reflections, coefs
         )
 
@@ -627,7 +622,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
 
         # Instantiate matrices for inner loop, and best results.
         rotations = np.zeros(classes.shape, dtype=self.dtype)
-        correlations = np.ones(classes.shape, dtype=self.dtype) * -np.inf
+        dot_products = np.ones(classes.shape, dtype=self.dtype) * -np.inf
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
         X, Y = self._shift_search_grid(self.alignment_src.L, self.radius)
@@ -636,7 +631,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             unshifted_images = self._cls_images(classes[k])
             # Instantiate matrices for inner loop, and best results.
             _rotations = np.zeros(classes.shape[1:], dtype=self.dtype)
-            _correlations = np.ones(classes.shape[1:], dtype=self.dtype) * -np.inf
+            _dot_products = np.ones(classes.shape[1:], dtype=self.dtype) * -np.inf
             _shifts = np.zeros((*classes.shape[1:], 2), dtype=int)
 
             for xs, ys in tqdm(
@@ -657,7 +652,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
                 images[1:] = Image(unshifted_images[1:]).shift(s).asnumpy()
 
                 # returned shifts ignored since we are forcing shift of `s` above
-                __rotations, _, __correlations = reddy_chatterji_register(
+                __rotations, _, __dot_products = reddy_chatterji_register(
                     images,
                     reflections[k],
                     mask=self.mask,
@@ -667,18 +662,18 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
 
                 # Where corr has improved
                 #  update our rolling best results with this loop.
-                improved = __correlations > _correlations
-                _correlations = np.where(improved, __correlations, _correlations)
+                improved = __dot_products > _dot_products
+                _dot_products = np.where(improved, __dot_products, _dot_products)
                 _rotations = np.where(improved, __rotations, _rotations)
                 _shifts = np.where(improved[..., np.newaxis], s, _shifts)
                 logger.debug(f"Shift {s} has improved {np.sum(improved)} results")
 
-            return _rotations, _shifts, _correlations
+            return _rotations, _shifts, _dot_products
 
         for k in trange(n_classes, desc="Rotationally aligning classes"):
-            rotations[k], shifts[k], correlations[k] = _innerloop(k)
+            rotations[k], shifts[k], dot_products[k] = _innerloop(k)
 
-        return rotations, shifts, correlations
+        return rotations, shifts, dot_products
 
     def average(
         self,
