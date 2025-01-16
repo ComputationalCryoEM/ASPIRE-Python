@@ -17,7 +17,29 @@ class CommonlineLUD(CLOrient3D):
     Least Unsquared Deviations, SIAM J. Imaging Sciences, 6, 2450-2483 (2013).
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        src,
+        alpha=None,
+        tol=1e-3,
+        mu=1,
+        gam=1.618,
+        EPS=1e-12,
+        maxit=1000,
+        adp_proj=True,
+        max_rankZ=None,
+        max_rankW=None,
+        adp_mu=True,
+        dec_mu=0.5,
+        inc_mu=2,
+        mu_min=1e-4,
+        mu_max=1e4,
+        min_mu_itr=5,
+        max_mu_itr=20,
+        delta_mu_l=0.1,
+        delta_mu_u=10,
+        **kwargs,
+    ):
         """
         Initialize a class for estimating 3D orientations using a Least Unsquared Deviations algorithm.
 
@@ -66,7 +88,7 @@ class CommonlineLUD(CLOrient3D):
         """
 
         # Handle parameters specific to CommonlineLUD
-        self.alpha = kwargs.pop("alpha", None)  # Spectral norm constraint bound
+        self.alpha = alpha  # Spectral norm constraint bound
         if self.alpha is not None:
             if not (2 / 3 <= self.alpha < 1):
                 raise ValueError(
@@ -83,28 +105,28 @@ class CommonlineLUD(CLOrient3D):
             )
             self.spectral_norm_constraint = False
 
-        self.tol = kwargs.pop("tol", 1e-3)
-        self.mu = kwargs.pop("mu", 1)
-        self.gam = kwargs.pop("gam", 1.618)
-        self.EPS = kwargs.pop("EPS", 1e-12)
-        self.maxit = kwargs.pop("maxit", 1000)
-        self.adp_proj = kwargs.pop("adp_proj", True)
-        self.max_rankZ = kwargs.pop("max_rankZ", None)
-        self.max_rankW = kwargs.pop("max_rankW", None)
+        self.tol = tol
+        self.mu = mu
+        self.gam = gam
+        self.EPS = EPS
+        self.maxit = maxit
+        self.adp_proj = adp_proj
+        self.max_rankZ = max_rankZ
+        self.max_rankW = max_rankW
 
         # Parameters for adjusting mu
-        self.adp_mu = kwargs.pop("adp_mu", True)
-        self.dec_mu = kwargs.pop("dec_mu", 0.5)
-        self.inc_mu = kwargs.pop("inc_mu", 2)
-        self.mu_min = kwargs.pop("mu_min", 1e-4)
-        self.mu_max = kwargs.pop("mu_max", 1e4)
-        self.min_mu_itr = kwargs.pop("min_mu_itr", 5)
-        self.max_mu_itr = kwargs.pop("max_mu_itr", 20)
-        self.delta_mu_l = kwargs.pop("delta_mu_l", 0.1)
-        self.delta_mu_u = kwargs.pop("delta_mu_u", 10)
+        self.adp_mu = adp_mu
+        self.dec_mu = dec_mu
+        self.inc_mu = inc_mu
+        self.mu_min = mu_min
+        self.mu_max = mu_max
+        self.min_mu_itr = min_mu_itr
+        self.max_mu_itr = max_mu_itr
+        self.delta_mu_l = delta_mu_l
+        self.delta_mu_u = delta_mu_u
 
         # Initialize commonline base class
-        super().__init__(*args, **kwargs)
+        super().__init__(src, **kwargs)
 
     def estimate_rotations(self):
         """
