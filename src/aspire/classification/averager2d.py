@@ -321,14 +321,28 @@ class BFSRAverager2D(AligningAverager2D):
             # We want to locally cache the original images,
             #  because we will mutate them with shifts in the next loop.
             #  This avoids recomputing them before each shift
+            # The coefficient for the base images are also computed here.
             if basis_coefficients is None:
                 original_images = Image(self._cls_images(classes[k], src=self.src))
+                _coef0 = self.alignment_basis.evaluate_t(original_images[0])
             else:
                 original_coef = basis_coefficients[classes[k], :]
                 original_images = self.alignment_basis.evaluate(original_coef)
+                _coef0 = original_coef[0]
 
             # Working copy
             _images = original_images.asnumpy().copy()
+
+            # Generate table of rotations for image 0.
+            # Note we invert the rotations later.
+            #   Applying rot to image 0
+            #   avoids rotating each member of the class
+            #   for the argmax alignment test.
+            # Convert to array of complex coef, implicit copy.
+            _coef0 = xp.array(_coef0.to_complex().asnumpy())
+            base_img = _coef0.reshape(self.alignment_basis.complex_count, 1)
+            # (cnt, n_rot) * (cnt, 1) -> (cnt, n_rot)
+            rot_base_imgs_conj = _rot_ops_conj * base_img.conj()
 
             # Loop over shift search space, updating best result
             for x, y in tqdm(
@@ -360,16 +374,6 @@ class BFSRAverager2D(AligningAverager2D):
                 # Handle reflections
                 refl = reflections[k]
                 _coef[refl] = xp.conj(_coef[refl])
-
-                # Generate table of rotations for image 0.
-                # Note we invert the rotations later.
-                #   Applying rot to image 0
-                #   avoids rotating each member of the class
-                #   for the argmax alignment test.
-                base_img = _coef[0].reshape(self.alignment_basis.complex_count, 1)
-
-                # (cnt, n_rot) * (cnt, 1) -> (cnt, n_rot)
-                rot_base_imgs_conj = _rot_ops_conj * base_img.conj()
 
                 # Compute dot product of each base-neighbor pair.
                 #   The collection of dots is performed in bulk
