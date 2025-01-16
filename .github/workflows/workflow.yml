@@ -58,8 +58,40 @@ jobs:
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
 
-  conda-build:
+  data-cache:
     needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Create Custom Cache Directory Config
+        run: |
+          CACHE_DIR=/tmp/ASPIRE-data
+          mkdir -p ${CACHE_DIR}
+          echo "common:" > ${CACHE_DIR}/config.yaml
+          echo "    cache_dir: ${CACHE_DIR}" >> ${CACHE_DIR}/config.yaml
+          echo "Logging config.yaml for verification:"
+          cat ${CACHE_DIR}/config.yaml
+          echo "POOCH_CACHE_DIR=${CACHE_DIR}" >> $GITHUB_ENV
+      - name: Download EMDB 2660
+        run: |
+          python -c \
+          "from aspire.downloader import emdb_2660; emdb_2660()"
+      - name: Create Cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/ASPIRE-data
+          key: ${{ runner.os }}-cached-data
+
+  conda-build:
+    needs: [check, data-cache]
     runs-on: ${{ matrix.os }}
     # Only run on review ready pull_requests
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
@@ -90,6 +122,11 @@ jobs:
         activate-environment: aspire
         environment-file: environment-${{ matrix.backend }}.yml
         auto-activate-base: false
+    - name: Restore Cache
+      uses: actions/cache@v4
+      with:
+        path: /tmp/ASPIRE-data
+        key: ${{ runner.os }}-cached-data
     - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         conda info
@@ -97,6 +134,15 @@ jobs:
         pip install -e ".[dev]"
         pip freeze
         python -c "import numpy; numpy.show_config()"
+    - name: Restore Cache
+      uses: actions/cache@v4
+      with:
+        path: /tmp/ASPIRE-data
+        key: ${{ runner.os }}-cached-data
+    - name: Set Cache Directory
+      run: |
+        mkdir -p $HOME/.config/ASPIRE
+        echo -e "common:\n  cache_dir: /tmp/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
     - name: Execute Pytest Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         export OMP_NUM_THREADS=2
