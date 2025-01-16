@@ -1,5 +1,6 @@
 import abc
 import logging
+from functools import cached_property
 
 import numpy as np
 
@@ -241,13 +242,28 @@ class NoiseEstimator:
         self.bgRadius = bgRadius
         self.batchSize = batchSize
 
-        self.filter = self._create_filter()
+    @cached_property
+    def filter(self):
+        """
+        Property returning `Filter` object for this noise estimator.
+        This property will be computed and cached on first call.
 
+        :return: `Filter` object.
+        """
+
+        return self._create_filter()
+
+    @abc.abstractmethod
     def estimate(self):
         """
         :return: The estimated noise variance of the images.
         """
-        raise NotImplementedError("Subclasses implement the `estimate` method.")
+
+    @abc.abstractmethod
+    def _create_filter(self):
+        """
+        Private method for computing and returning `Filter` object.
+        """
 
 
 class WhiteNoiseEstimator(NoiseEstimator):
@@ -263,21 +279,17 @@ class WhiteNoiseEstimator(NoiseEstimator):
         #   so we only evaluate for the zero frequencies.
         return self.filter.evaluate(np.zeros((2, 1), dtype=self.dtype)).item()
 
-    def _create_filter(self, noise_variance=None):
+    def _create_filter(self):
         """
-        :param noise_variance: Noise variance of images
         :return: The estimated noise power spectral distribution (PSD) of the images in the form of a filter object.
         """
-        if noise_variance is None:
-            logger.info(f"Determining Noise variance in batches of {self.batchSize}")
-            noise_variance = self._estimate_noise_variance()
-            logger.info(f"Noise variance = {noise_variance}")
+        logger.info(f"Determining Noise variance in batches of {self.batchSize}")
+        noise_variance = self._estimate_noise_variance()
+        logger.info(f"Noise variance = {noise_variance}")
         return ScalarFilter(dim=2, value=noise_variance)
 
     def _estimate_noise_variance(self):
         """
-        Any additional arguments/keyword-arguments are passed on to the Source's 'images' method
-
         :return: The estimated noise variance of the images in the Source used to create this estimator.
         TODO: How's this initial estimate of variance different from the 'estimate' method?
         """
@@ -312,16 +324,13 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
 
         return np.mean(self.filter.evaluate_grid(self.src.L))
 
-    def _create_filter(self, noise_psd=None):
+    def _create_filter(self):
         """
-        :param noise_psd: Noise PSD of images
         :return: The estimated noise power spectral distribution (PSD) of the images in the form of a filter object.
         """
-        if noise_psd is None:
-            noise_psd = self.estimate_noise_psd()
-        return ArrayFilter(noise_psd)
+        return ArrayFilter(self._estimate_noise_psd())
 
-    def estimate_noise_psd(self):
+    def _estimate_noise_psd(self):
         """
         :return: The estimated noise variance of the images in the Source used to create this estimator.
         TODO: How's this initial estimate of variance different from the 'estimate' method?
@@ -350,9 +359,11 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
 class IsotropicNoiseEstimator(NoiseEstimator):
     """
     Isotropic Noise Estimator.
+
+    Ported from MATLAB `cryo_noise_estimation`.
     """
 
-    def __init__(self, src, bgRadius=None, max_d=None, batchSize=512):
+    def __init__(self, src, bgRadius=None, max_d=None):
         """
         Any additional args/kwargs are passed on to the Source's 'images' method
 
@@ -363,15 +374,16 @@ class IsotropicNoiseEstimator(NoiseEstimator):
             Default of `None` uses `(np.floor(src.L / 2) - 1) / L`
         :param max_d: Max computed correlation distance as a proportion of `src.L`.
             Default of `None` uses `np.floor(src.L/3) / L`.
-        :param batchSize:  The size of the batches in which to compute the variance estimate.
         """
-        self.src = src
-        self.dtype = self.src.dtype
-        self.bgRadius = (np.floor(self.src.L / 2) - 1) / self.src.L
-        self.batchSize = batchSize
-        self.max_d = np.floor(self.src.L / 3) / self.src.L
 
-        self.filter = self._create_filter()
+        if bgRadius is None:
+            bgRadius = (np.floor(src.L / 2) - 1) / src.L
+
+        super().__init__(src=src, bgRadius=bgRadius, batchSize=1)
+
+        self.max_d = max_d
+        if self.max_d is None:
+            self.max_d = np.floor(src.L / 3) / src.L
 
     def estimate(self):
         """
@@ -384,10 +396,9 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         """
         :return: The estimated noise power spectral distribution (PSD) of the images in the form of a filter object.
         """
-        noise_psd = self.estimate_noise_psd()
-        return ArrayFilter(noise_psd)
+        return ArrayFilter(self._estimate_noise_psd())
 
-    def estimate_noise_psd(self):
+    def _estimate_noise_psd(self):
         """
         :return: The estimated noise variance of the images in the Source used to create this estimator.
         TODO: How's this initial estimate of variance different from the 'estimate' method?
@@ -396,7 +407,7 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         samples_idx = grid_2d(self.src.L, normalized=True)["r"] >= self.bgRadius
         max_d_pixels = round(self.max_d * self.src.L)
 
-        psd = IsotropicNoiseEstimator.epsdS(self.src.images, samples_idx, max_d_pixels)[0]
+        psd = self.epsdS(self.src.images, samples_idx, max_d_pixels)[0]
 
         return psd
 
