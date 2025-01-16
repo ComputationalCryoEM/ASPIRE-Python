@@ -37,7 +37,7 @@ class SimTestCase(TestCase):
 
     def testAnisotropicNoisePSD(self):
         noise_estimator = AnisotropicNoiseEstimator(self.sim, batchSize=512)
-        noise_psd = noise_estimator.estimate_noise_psd()
+        noise_psd = noise_estimator._estimate_noise_psd()
         self.assertTrue(
             np.allclose(
                 noise_psd,
