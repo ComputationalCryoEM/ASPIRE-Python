@@ -21,8 +21,68 @@ jobs:
     - name: Run Tox Check
       run: tox -e check
 
-  build:
+  data-cache:
     needs: check
+    runs-on: ubuntu-latest
+    outputs:
+      cache_hash: ${{ steps.compute-cache-hash.outputs.cache_hash }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Restore Cache
+        uses: actions/cache@v4
+        with:
+          key: cached-data-${{ hashFiles('**/registry.py', '**/*workflow.yml') }}
+          restore-keys: |
+            cached-data-
+          path: .github_cache/ASPIRE-data
+          enableCrossOsArchive: true
+      - name: Create Cache Directory
+        run: |
+          # Create cache and config directories
+          mkdir -p .github_cache/ASPIRE-data
+          chmod -R 777 .github_cache/ASPIRE-data
+          echo "cache:" > config.yaml
+          echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
+          echo "Logging config.yaml for verification:"
+          cat config.yaml
+      - name: Download Cache Files
+        run: |
+          export ASPIREDIR=.
+          python -c "
+          from aspire.downloader import emdb_2660, simulated_channelspin
+          emdb_2660()
+          simulated_channelspin()
+          "
+      - name: Compute Cache Directory Hash
+        id: compute-cache-hash
+        run: |
+          echo "Computing hash for .github_cache/ASPIRE-data..."
+          # Compute a hash on the sorted file listing.
+          cache_hash=$(ls -1 .github_cache/ASPIRE-data/** | md5sum)
+          echo "Computed cache hash: $cache_hash"
+          # Expose the computed hash to subsequent steps/jobs.
+          echo "cache_hash=${cache_hash}" >> $GITHUB_OUTPUT
+      - name: Verify Cache Directory Before Saving
+        run: |
+          ls -lhR .github_cache/ASPIRE-data
+          [ -f config.yaml ]
+      - name: Save Cache
+        uses: actions/cache@v4
+        with:
+          key: cached-data-${{ hashFiles('**/registry.py', '**/*workflow.yml') }}
+          path: .github_cache/ASPIRE-data
+          enableCrossOsArchive: true
+
+  build:
+    needs: [check, data-cache]
     runs-on: ubuntu-latest
     # Run on every code push, but only on review ready PRs
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}    
@@ -39,7 +99,6 @@ jobs:
           - python-version: '3.9'
             pyenv: pip,docs
 
-
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }} ${{ matrix.pyenv }}
@@ -51,44 +110,40 @@ jobs:
         pip install tox tox-gh-actions
         # Optional packages
         pip install pyfftw  # `test_fft` runs for pyfftw when installed
+    - name: Restore Cache
+      uses: actions/cache@v4
+      with:
+        key: cached-data-${{ hashFiles('**/registry.py', '**/*workflow.yml') }}
+        restore-keys: |
+          cached-data-
+        path: .github_cache/ASPIRE-data
+        enableCrossOsArchive: true
+    - name: Set Cache Directory
+      run: |
+        echo "cache:" > config.yaml
+        echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
+    - name: Verify Restored Cache Directory
+      run: |
+        ls -lhR .github_cache/ASPIRE-data
+        [ -f config.yaml ]
     - name: Test with tox
-      run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
+      run: |
+        export ASPIREDIR=.
+        tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
+    - name: Validate Cache Directory Hash
+      run: |
+        echo "Computing hash for .github_cache/ASPIRE-data..."
+        new_hash=$(ls -1 .github_cache/ASPIRE-data/** | md5sum)
+        echo "Hash from data-cache job: ${{ needs.data-cache.outputs.cache_hash }}"
+        echo "Computed hash now: $new_hash"
+        if [ "${{ needs.data-cache.outputs.cache_hash }}" != "$new_hash" ]; then
+          echo "Error: Cache directory hash has changed!"
+          exit 1
+        fi
     - name: Upload Coverage to CodeCov
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-
-  data-cache:
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Create Custom Cache Directory Config
-        run: |
-          CACHE_DIR=/tmp/ASPIRE-data
-          mkdir -p ${CACHE_DIR}
-          echo "common:" > ${CACHE_DIR}/config.yaml
-          echo "    cache_dir: ${CACHE_DIR}" >> ${CACHE_DIR}/config.yaml
-          echo "Logging config.yaml for verification:"
-          cat ${CACHE_DIR}/config.yaml
-          echo "POOCH_CACHE_DIR=${CACHE_DIR}" >> $GITHUB_ENV
-      - name: Download EMDB 2660
-        run: |
-          python -c \
-          "from aspire.downloader import emdb_2660; emdb_2660()"
-      - name: Create Cache
-        uses: actions/cache@v4
-        with:
-          path: /tmp/ASPIRE-data
-          key: ${{ runner.os }}-cached-data
 
   conda-build:
     needs: [check, data-cache]
@@ -122,11 +177,6 @@ jobs:
         activate-environment: aspire
         environment-file: environment-${{ matrix.backend }}.yml
         auto-activate-base: false
-    - name: Restore Cache
-      uses: actions/cache@v4
-      with:
-        path: /tmp/ASPIRE-data
-        key: ${{ runner.os }}-cached-data
     - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         conda info
@@ -137,14 +187,18 @@ jobs:
     - name: Restore Cache
       uses: actions/cache@v4
       with:
-        path: /tmp/ASPIRE-data
-        key: ${{ runner.os }}-cached-data
+        key: cached-data-${{ hashFiles('**/registry.py', '**/*workflow.yml') }}
+        restore-keys: |
+          cached-data-
+        path: .github_cache/ASPIRE-data
+        enableCrossOsArchive: true
     - name: Set Cache Directory
       run: |
-        mkdir -p $HOME/.config/ASPIRE
-        echo -e "common:\n  cache_dir: /tmp/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
+        echo "cache:" > config.yaml
+        echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
     - name: Execute Pytest Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
+        export ASPIREDIR=.
         export OMP_NUM_THREADS=2
         # -n runs test in parallel using pytest-xdist
         pytest -n2 --durations=50 -s
@@ -215,30 +269,6 @@ jobs:
     - name: Cleanup
       run: rm -rf ${{ env.WORK_DIR }}
 
-  # Create cache and download data for Github Actions CI.
-  data-cache:
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Create Cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ASPIRE-data
-          key: ${{ runner.os }}-cached-data
-      - name: Download EMDB 2660
-        run: |
-          python -c \
-          "from aspire.downloader import emdb_2660; emdb_2660()"
-
   # Build branch's docs and gallery.
   docs:
     needs: [check, data-cache]
@@ -256,10 +286,18 @@ jobs:
       - name: Restore Cache
         uses: actions/cache@v4
         with:
-          path: ~/.cache/ASPIRE-data
-          key: ${{ runner.os }}-cached-data
+          key: cached-data-${{ hashFiles('**/registry.py', '**/*workflow.yml') }}
+          restore-keys: |
+            cached-data-
+          path: .github_cache/ASPIRE-data
+          enableCrossOsArchive: true
+      - name: Set Cache Directory
+        run: |
+          echo "cache:" > config.yaml
+          echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
       - name: Build Sphinx docs
         run: |
+          export ASPIREDIR=.
           make distclean
           sphinx-apidoc -f -o ./source ../src -H Modules
           make html
@@ -272,7 +310,7 @@ jobs:
           retention-days: 7
 
   osx_arm:
-    needs: check
+    needs: [check, data-cache]
     runs-on: macos-14
     # Run on every code push, but only on review ready PRs
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
@@ -286,5 +324,23 @@ jobs:
         python --version
         pip install -e ".[dev]"  # install aspire
         pip freeze
+    - name: Restore Cache
+      uses: actions/cache@v4
+      with:
+        key: cached-data-${{ hashFiles('**/registry.py', '**/*workflow.yml') }}
+        restore-keys: |
+          cached-data-
+        path: .github_cache/ASPIRE-data
+        enableCrossOsArchive: true
+    - name: Set Cache Directory
+      run: |
+        echo "cache:" > config.yaml
+        echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
+    - name: Verify Restored Cache Directory
+      run: |
+        ls -lhR .github_cache/ASPIRE-data
+        [ -f config.yaml ]
     - name: Test
-      run: python -m pytest -n3 --durations=50
+      run: |
+        export ASPIREDIR=.
+        python -m pytest -n3 --durations=50
