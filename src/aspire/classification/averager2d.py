@@ -368,13 +368,13 @@ class BFSRAverager2D(AligningAverager2D):
                 #   for the argmax alignment test.
                 base_img = _coef[0].reshape(self.alignment_basis.complex_count, 1)
 
-                # (cnt, n_transl) * (cnt, 1) -> (cnt, n_transl)
+                # (cnt, n_rot) * (cnt, 1) -> (cnt, n_rot)
                 rot_base_imgs_conj = _rot_ops_conj * base_img.conj()
 
                 # Compute dot product of each base-neighbor pair.
                 #   The collection of dots is performed in bulk
                 #   as a large matmul.
-                # (n_nbor, cnt) @ (cnt, n_transl) = (n_nbor, n_transl)
+                # (n_nbor, cnt) @ (cnt, n_rot) = (n_nbor, n_rot)
                 dots = xp.real(_coef @ rot_base_imgs_conj)
                 idx = xp.argmax(dots, axis=1)
                 idx[0] = 0  # Force base image, just in case.
