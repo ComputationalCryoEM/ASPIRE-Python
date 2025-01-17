@@ -43,6 +43,7 @@ jobs:
           echo "Logging config.yaml for verification:"
           cat ${CACHE_DIR}/config.yaml
           echo "POOCH_CACHE_DIR=${CACHE_DIR}" >> $GITHUB_ENV
+          chmod -R 777 ${CACHE_DIR}
       - name: Download EMDB 2660
         run: |
           python -c \
