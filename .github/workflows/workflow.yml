@@ -53,7 +53,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: $HOME/.cache/ASPIRE-data
-          key: ${{ runner.os }}-cached-data
+          key: cached-data
 
   build:
     needs: [check, data-cache]
@@ -88,7 +88,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: $HOME/.cache/ASPIRE-data
-        key: ${{ runner.os }}-cached-data
+        key: cached-data
     - name: Verify Restored Cache Directory
       run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
@@ -138,7 +138,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: $HOME/.cache/ASPIRE-data
-        key: ${{ runner.os }}-cached-data
+        key: cached-data
     - name: Verify Restored Cache Directory
       run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
@@ -242,7 +242,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: $HOME/.cache/ASPIRE-data
-          key: ${{ runner.os }}-cached-data
+          key: cached-data
       - name: Build Sphinx docs
         run: |
           make distclean
