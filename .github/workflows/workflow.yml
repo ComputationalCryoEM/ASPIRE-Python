@@ -34,24 +34,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: Create Custom Cache Directory Config
+      - name: Create Cache Directory and Set Permissions
         run: |
-          CACHE_DIR=$HOME/.cache/ASPIRE-data
-          mkdir -p ${CACHE_DIR}
-          echo "common:" > ${CACHE_DIR}/config.yaml
-          echo "    cache_dir: ${CACHE_DIR}" >> ${CACHE_DIR}/config.yaml
+          mkdir -p $HOME/.cache/ASPIRE-data
+          chmod -R 777 $HOME/.cache/ASPIRE-data
+          echo "common:" > $HOME/.cache/ASPIRE-data/config.yaml
+          echo "    cache_dir: $HOME/.cache/ASPIRE-data" >> $HOME/.cache/ASPIRE-data/config.yaml
           echo "Logging config.yaml for verification:"
-          cat ${CACHE_DIR}/config.yaml
-          echo "POOCH_CACHE_DIR=${CACHE_DIR}" >> $GITHUB_ENV
-          chmod -R 777 ${CACHE_DIR}
+          cat $HOME/.cache/ASPIRE-data/config.yaml
       - name: Download EMDB 2660
         run: |
           python -c \
           "from aspire.downloader import emdb_2660; emdb_2660()"
-          chmod 644 /home/runner/.cache/ASPIRE-data/emdb_2660.map
       - name: Verify Cache Directory Before Saving
         run: ls -lhR $HOME/.cache/ASPIRE-data
-      - name: Create Cache
+      - name: Save Cache
         uses: actions/cache@v4
         with:
           path: $HOME/.cache/ASPIRE-data
