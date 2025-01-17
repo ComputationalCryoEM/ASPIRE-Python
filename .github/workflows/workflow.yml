@@ -47,6 +47,7 @@ jobs:
         run: |
           python -c \
           "from aspire.downloader import emdb_2660; emdb_2660()"
+          chmod 644 /home/runner/.cache/ASPIRE-data/emdb_2660.map
       - name: Verify Cache Directory Before Saving
         run: ls -lhR $HOME/.cache/ASPIRE-data
       - name: Create Cache
