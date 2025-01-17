@@ -21,43 +21,6 @@ jobs:
     - name: Run Tox Check
       run: tox -e check
 
-  build:
-    needs: check
-    runs-on: ubuntu-latest
-    # Run on every code push, but only on review ready PRs
-    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}    
-    strategy:
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-        pyenv: [pip]
-        exclude:
-          # Exclude 3.9-pip so we can add pre/post tasks to that environment.
-          - python-version: '3.9'
-            pyenv: pip
-        include:
-          # Re-include 3.9 with additional tox tasks.
-          - python-version: '3.9'
-            pyenv: pip,docs
-
-
-    steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }} ${{ matrix.pyenv }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        pip install tox tox-gh-actions
-        # Optional packages
-        pip install pyfftw  # `test_fft` runs for pyfftw when installed
-    - name: Test with tox
-      run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
-    - name: Upload Coverage to CodeCov
-      uses: codecov/codecov-action@v4
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-
   data-cache:
     needs: check
     runs-on: ubuntu-latest
@@ -89,6 +52,52 @@ jobs:
         with:
           path: /tmp/ASPIRE-data
           key: ${{ runner.os }}-cached-data
+
+  build:
+    needs: [check, data-cache]
+    runs-on: ubuntu-latest
+    # Run on every code push, but only on review ready PRs
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+        pyenv: [pip]
+        exclude:
+          # Exclude 3.9-pip so we can add pre/post tasks to that environment.
+          - python-version: '3.9'
+            pyenv: pip
+        include:
+          # Re-include 3.9 with additional tox tasks.
+          - python-version: '3.9'
+            pyenv: pip,docs
+
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }} ${{ matrix.pyenv }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        pip install tox tox-gh-actions
+        # Optional packages
+        pip install pyfftw  # `test_fft` runs for pyfftw when installed
+    - name: Restore Cache
+      uses: actions/cache@v4
+      with:
+        path: /tmp/ASPIRE-data
+        key: ${{ runner.os }}-cached-data
+    - name: Set Cache Directory
+      run: |
+        mkdir -p $HOME/.config/ASPIRE
+        echo -e "common:\n  cache_dir: /tmp/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
+    - name: Test with tox
+      run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
+    - name: Upload Coverage to CodeCov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   conda-build:
     needs: [check, data-cache]
