@@ -53,6 +53,7 @@ jobs:
         with:
           path: $HOME/.cache/ASPIRE-data
           key: cached-data-${{ runner.os }}
+          save-always: true
 
   build:
     needs: [check, data-cache]
