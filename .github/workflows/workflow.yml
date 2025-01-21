@@ -49,10 +49,10 @@ jobs:
       - name: Verify Cache Directory Before Saving
         run: ls -lhR $HOME/.cache/ASPIRE-data
       - name: Save Cache
-        uses: actions/cache/save@v4
+        uses: actions/cache@v4
         with:
           key: cached-data-${{ runner.os }}
-          path: $HOME/.cache/ASPIRE-data
+          path: /home/runner/.cache/ASPIRE-data/emdb_2660.map
 
   build:
     needs: [check, data-cache]
@@ -84,10 +84,10 @@ jobs:
         # Optional packages
         pip install pyfftw  # `test_fft` runs for pyfftw when installed
     - name: Restore Cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache@v4
       with:
         key: cached-data-${{ runner.os }}
-        path: $HOME/.cache/ASPIRE-data
+        path: /home/runner/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
       run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
@@ -134,10 +134,10 @@ jobs:
         environment-file: environment-${{ matrix.backend }}.yml
         auto-activate-base: false
     - name: Restore Cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache@v4
       with:
         key: cached-data-${{ runner.os }}
-        path: $HOME/.cache/ASPIRE-data
+        path: /home/runner/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
       run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
@@ -238,10 +238,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
       - name: Restore Cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache@v4
         with:
           key: cached-data-${{ runner.os }}
-          path: $HOME/.cache/ASPIRE-data
+          path: /home/runner/.cache/ASPIRE-data
       - name: Build Sphinx docs
         run: |
           make distclean
