@@ -90,6 +90,21 @@ def emdb_2660():
     return vol
 
 
+def emdb_51751():
+    """
+    Downloads the EMDB-51751 volume map and returns a `Volume` instance.
+
+    Cryo-EM map of shaped pulse revitrified 50S ribosomal subunit. Resolution
+    of 2.9 Angstrom.
+
+    :return: A `Volume` instance.
+    """
+    file_path = fetch_data("emdb_51751.map")
+    vol = Volume.load(file_path, symmetry_group="C1")
+
+    return vol
+
+
 def emdb_8012():
     """
     Downloads the EMDB-8012 volume map and returns the file path.
