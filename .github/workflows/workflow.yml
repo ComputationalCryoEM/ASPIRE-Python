@@ -88,7 +88,6 @@ jobs:
       with:
         key: cached-data-${{ runner.os }}
         restore-keys: |
-	  cached-data-${{ runner.os }}
           cached-data-
         path: /home/runner/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
@@ -141,7 +140,6 @@ jobs:
       with:
         key: cached-data-${{ runner.os }}
         restore-keys: |
-	  cached-data-${{ runner.os }}
           cached-data-
         path: /home/runner/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
@@ -248,7 +246,6 @@ jobs:
         with:
           key: cached-data-${{ runner.os }}
 	  restore-keys: |
-            cached-data-${{ runner.os }}
             cached-data-
           path: /home/runner/.cache/ASPIRE-data
       - name: Build Sphinx docs
