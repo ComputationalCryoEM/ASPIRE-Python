@@ -262,7 +262,7 @@ jobs:
           retention-days: 7
 
   osx_arm:
-    needs: check
+    needs: [check, data-cache]
     runs-on: macos-14
     # Run on every code push, but only on review ready PRs
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
@@ -276,5 +276,18 @@ jobs:
         python --version
         pip install -e ".[dev]"  # install aspire
         pip freeze
+    - name: Restore Cache
+      uses: actions/cache@v4
+      with:
+        key: cached-data-${{ runner.os }}
+        restore-keys: |
+          cached-data-
+        path: /home/runner/.cache/ASPIRE-data
+    - name: Verify Restored Cache Directory
+      run: ls -lhR $HOME/.cache/ASPIRE-data
+    - name: Set Cache Directory
+      run: |
+        mkdir -p $HOME/.config/ASPIRE
+        echo -e "common:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
     - name: Test
       run: python -m pytest -n3 --durations=50
