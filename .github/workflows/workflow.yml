@@ -245,7 +245,7 @@ jobs:
         uses: actions/cache@v4
         with:
           key: cached-data-${{ runner.os }}
-	  restore-keys: |
+          restore-keys: |
             cached-data-
           path: /home/runner/.cache/ASPIRE-data
       - name: Build Sphinx docs
