@@ -23,7 +23,10 @@ jobs:
 
   data-cache:
     needs: check
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-20.04, macOS-latest, macOS-13]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
@@ -52,7 +55,7 @@ jobs:
         uses: actions/cache@v4
         with:
           key: cached-data-${{ runner.os }}
-          path: /home/runner/.cache/ASPIRE-data/emdb_2660.map
+          path: ~/.cache/ASPIRE-data/emdb_2660.map
 
   build:
     needs: [check, data-cache]
@@ -89,7 +92,7 @@ jobs:
         key: cached-data-${{ runner.os }}
         restore-keys: |
           cached-data-
-        path: /home/runner/.cache/ASPIRE-data
+        path: ~/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
       run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
@@ -142,7 +145,7 @@ jobs:
         key: cached-data-${{ runner.os }}
         restore-keys: |
           cached-data-
-        path: /home/runner/.cache/ASPIRE-data
+        path: ~/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
       run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
@@ -248,7 +251,7 @@ jobs:
           key: cached-data-${{ runner.os }}
           restore-keys: |
             cached-data-
-          path: /home/runner/.cache/ASPIRE-data
+          path: ~/.cache/ASPIRE-data
       - name: Build Sphinx docs
         run: |
           make distclean
@@ -283,7 +286,7 @@ jobs:
         key: cached-data-${{ runner.os }}
         restore-keys: |
           cached-data-
-        path: /home/runner/.cache/ASPIRE-data
+        path: ~/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
       run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
