@@ -9,7 +9,7 @@ from aspire.noise import (
     AnisotropicNoiseEstimator,
     BlueNoiseAdder,
     CustomNoiseAdder,
-    IsotropicNoiseEstimator,
+    LegacyNoiseEstimator,
     PinkNoiseAdder,
     WhiteNoiseAdder,
     WhiteNoiseEstimator,
@@ -29,7 +29,7 @@ DTYPES = [np.float32, np.float64]
 VARS = [0.1] + [
     pytest.param(10 ** (-x), marks=pytest.mark.expensive) for x in range(2, 5)
 ]
-NOISE_ESTIMATORS = [AnisotropicNoiseEstimator, IsotropicNoiseEstimator]
+NOISE_ESTIMATORS = [AnisotropicNoiseEstimator, LegacyNoiseEstimator]
 
 
 def _noise_function(x, y):
