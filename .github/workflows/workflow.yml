@@ -47,7 +47,7 @@ jobs:
           cat $HOME/.cache/ASPIRE-data/config.yaml
       - name: Download EMDB 2660
         run: |
-          python -c \
+          ASPIREDIR=$HOME/.cache/ASPIRE-data python -c \
           "from aspire.downloader import emdb_2660; emdb_2660()"
       - name: Verify Cache Directory Before Saving
         run: ls -lhR $HOME/.cache/ASPIRE-data
