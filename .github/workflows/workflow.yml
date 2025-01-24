@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir -p $HOME/.cache/ASPIRE-data
           chmod -R 777 $HOME/.cache/ASPIRE-data
-          echo "common:" > $HOME/.cache/ASPIRE-data/config.yaml
+          echo "cache:" > $HOME/.cache/ASPIRE-data/config.yaml
           echo "    cache_dir: $HOME/.cache/ASPIRE-data" >> $HOME/.cache/ASPIRE-data/config.yaml
           echo "Logging config.yaml for verification:"
           cat $HOME/.cache/ASPIRE-data/config.yaml
@@ -98,7 +98,7 @@ jobs:
     - name: Set Cache Directory
       run: |
         mkdir -p $HOME/.config/ASPIRE
-        echo -e "common:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
+        echo -e "cache:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
     - name: Test with tox
       run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
     - name: Upload Coverage to CodeCov
@@ -151,7 +151,7 @@ jobs:
     - name: Set Cache Directory
       run: |
         mkdir -p $HOME/.config/ASPIRE
-        echo -e "common:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
+        echo -e "cache:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
     - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         conda info
@@ -292,6 +292,6 @@ jobs:
     - name: Set Cache Directory
       run: |
         mkdir -p $HOME/.config/ASPIRE
-        echo -e "common:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
+        echo -e "cache:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
     - name: Test
       run: python -m pytest -n3 --durations=50
