@@ -356,11 +356,9 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         return noise_psd_est
 
 
-class IsotropicNoiseEstimator(NoiseEstimator):
+class LegacyNoiseEstimator(NoiseEstimator):
     """
-    Isotropic Noise Estimator.
-
-    Ported from MATLAB `cryo_noise_estimation`.
+    Isotropic noise estimator ported from MATLAB `cryo_noise_estimation`.
     """
 
     def __init__(self, src, bgRadius=None, max_d=None):
@@ -541,7 +539,7 @@ class IsotropicNoiseEstimator(NoiseEstimator):
         n_img = images.n_images
         L = samples_idx.shape[-1]
 
-        R, x, _ = IsotropicNoiseEstimator.epsdR(
+        R, x, _ = LegacyNoiseEstimator.epsdR(
             images=images, samples_idx=samples_idx, max_d=max_d
         )
 
