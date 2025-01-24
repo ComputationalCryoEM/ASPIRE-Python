@@ -416,6 +416,76 @@ class Image:
 
         return self._im_translate(shifts)
 
+    def legacy_whiten(self, psd, delta):
+        """
+        Apply the legacy MATLAB whitening transformation to `im`.
+
+        :param psd: PSD (as computed by LegacyNoiseEstimator)
+        :param delta: Threshold used to determine which frequencies to whiten
+            and which to set to zero. By default all sqrt(PSD) values in the `noise_estimate`
+            less than eps(self.dtype) are zeroed out in the whitening filter.
+        """
+        n = self.n_images
+        L = self.resolution
+        j = L // 2
+        K = psd.shape[-1]
+        k = int(np.ceil(K / 2))
+
+        # Create result array
+        res = np.empty((n, L, L), dtype=self.dtype)
+
+        # The whitening filter is the sqrt of the power spectrum of the noise, normalized to unit energy.
+        psd = xp.asarray(psd, dtype=np.float64)
+        fltr = xp.sqrt(psd)
+        fltr = fltr / xp.linalg.norm(fltr)
+
+        assert xp.linalg.norm(fltr.imag) < 10 * delta
+        assert xp.linalg.norm(fltr - xp.flipud(fltr)) < 10 * delta
+        assert xp.linalg.norm(fltr - xp.fliplr(fltr)) < 10 * delta
+
+        # Enforce symmetry
+        fltr = (fltr + xp.flipud(fltr)) / 2
+        fltr = (fltr + xp.fliplr(fltr)) / 2
+
+        # The filter may have very small values or even zeros.
+        # We don't want to process these, so make a list of all large entries.
+        nzidx = fltr > 100 * delta
+        fnz = fltr[nzidx]
+
+        pp = xp.zeros((K, K), dtype=np.float64)
+        p = xp.zeros((K, K), dtype=np.complex128)
+        for i, proj in enumerate(self.asnumpy()):
+
+            # Zero pad the image to twice the size
+            if L % 2 == 1:
+                pp[k - j - 1 : k + j, k - j - 1 : k + j] = xp.asarray(proj)
+            else:
+                pp[k - j - 2 : k + j, k - j - 1 : k + j - 1] = xp.asarray(proj)
+
+            # Take the Fourier Transform of the padded image.
+            fp = fft.centered_fft2(pp)
+
+            # Divide the image by the whitening filter but only in
+            # places where the filter is large.  In frequencies where
+            # the filter is tiny we cannot whiten so we just put
+            # zeros.
+            p[nzidx] = fp[nzidx] / fnz
+            p2 = fft.centered_ifft2(p)
+
+            # The resulting image should be real.
+            if xp.linalg.norm(p2.imag) / xp.linalg.norm(p2) > 1e-13:
+                raise RuntimeError("Whitened image has strong imaginary component.")
+
+            if L % 2 == 1:
+                p2 = p2[k - j - 1 : k + j, k - j - 1 : k + j].real
+            else:
+                p2 = p2[k - j - 1 : k + j - 1, k - j - 1 : k + j - 1].real
+
+            # Assign the resulting image.
+            res[i] = xp.asnumpy(p2)
+
+        return Image(res)
+
     def downsample(self, ds_res, zero_nyquist=True):
         """
         Downsample Image to a specific resolution. This method returns a new Image.

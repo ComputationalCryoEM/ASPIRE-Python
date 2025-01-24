@@ -16,10 +16,11 @@ from aspire.image.xform import (
     FilterXform,
     IndexedXform,
     LambdaXform,
+    LegacyWhiten,
     Multiply,
     Pipeline,
 )
-from aspire.noise import NoiseEstimator, WhiteNoiseEstimator
+from aspire.noise import LegacyNoiseEstimator, NoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import (
     CTFFilter,
     Filter,
@@ -823,6 +824,39 @@ class ImageSource(ABC):
         ]
         logger.info("Adding Whitening Filter Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
+
+    @_as_copy
+    def legacy_whiten(self, noise_response=None, delta=None):
+        """
+        Reproduce the legacy MATLAB whitening process.
+
+        :param noise_response: Noise response is provided either
+            directly as an array, or a `LegacyNoiseEstimator` instance.
+        :param delta: Threshold used to determine which frequencies to whiten
+            and which to set to zero. By default all sqrt(PSD) values in the `noise_estimate`
+            less than eps(self.dtype) are zeroed out in the whitening filter.
+        """
+
+        if noise_response is None:
+            logger.info("Computing noise response.")
+            psd = LegacyNoiseEstimator(self).filter.xfer_fn_array
+        elif isinstance(noise_response, LegacyNoiseEstimator):
+            psd = noise_response.filter.xfer_fn_array
+        elif isinstance(noise_response, np.ndarray):
+            if not noise_response.shape == (self.L * 2 - 1,) * 2:
+                raise ValueError(
+                    f"Unexepected `noise_response` array shape {noise_response.shape}."
+                )
+            # Take the array directly
+            psd = noise_response
+        else:
+            raise ValueError("Unexepected `noise_response` type.")
+
+        if delta is None:
+            delta = np.finfo(np.float32).eps
+
+        logger.info("Adding LegacyWhiten Filter Xform to end of generation pipeline")
+        self.generation_pipeline.add_xform(LegacyWhiten(psd, delta))
 
     @_as_copy
     def phase_flip(self):

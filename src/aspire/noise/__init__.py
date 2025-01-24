@@ -2,7 +2,7 @@ from .noise import (
     AnisotropicNoiseEstimator,
     BlueNoiseAdder,
     CustomNoiseAdder,
-    IsotropicNoiseEstimator,
+    LegacyNoiseEstimator,
     NoiseAdder,
     NoiseEstimator,
     PinkNoiseAdder,
