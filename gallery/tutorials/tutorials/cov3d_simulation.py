@@ -56,7 +56,7 @@ num_vols = sim.C
 basis = FBBasis3D(img_size)
 
 # Estimate the noise variance. This is needed for the covariance estimation step below.
-noise_estimator = WhiteNoiseEstimator(sim, batchSize=500)
+noise_estimator = WhiteNoiseEstimator(sim, batch_size=500)
 noise_variance = noise_estimator.estimate()
 print(f"Noise Variance = {noise_variance}")
 
