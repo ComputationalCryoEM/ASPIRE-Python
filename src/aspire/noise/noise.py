@@ -227,19 +227,19 @@ class NoiseEstimator:
     Noise Estimator base class.
     """
 
-    def __init__(self, src, bgRadius=1, batch_size=512):
+    def __init__(self, src, bg_radius=1, batch_size=512):
         """
         Any additional args/kwargs are passed on to the Source's 'images' method
 
         :param src: A Source object which can give us images on demand
-        :param bgRadius: The radius of the disk whose complement is used to estimate the noise.
+        :param bg_radius: The radius of the disk whose complement is used to estimate the noise.
             Radius is relative proportion, where `1` represents
             the radius of disc inscribing a `(src.L, src.L)` image.
         :param batch_size:  The size of the batches in which to compute the variance estimate.
         """
         self.src = src
         self.dtype = self.src.dtype
-        self.bgRadius = bgRadius
+        self.bg_radius = bg_radius
         self.batch_size = batch_size
 
     @cached_property
@@ -295,7 +295,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
         """
         # Run estimate using saved parameters
         g2d = grid_2d(self.src.L, indexing="yx", dtype=self.dtype)
-        mask = g2d["r"] >= self.bgRadius
+        mask = g2d["r"] >= self.bg_radius
 
         first_moment = 0
         second_moment = 0
@@ -337,7 +337,7 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
         """
         # Run estimate using saved parameters
         g2d = grid_2d(self.src.L, indexing="yx", dtype=self.dtype)
-        mask = g2d["r"] >= self.bgRadius
+        mask = g2d["r"] >= self.bg_radius
 
         mean_est = 0
         noise_psd_est = np.zeros((self.src.L, self.src.L)).astype(self.src.dtype)
@@ -361,12 +361,12 @@ class LegacyNoiseEstimator(NoiseEstimator):
     Isotropic noise estimator ported from MATLAB `cryo_noise_estimation`.
     """
 
-    def __init__(self, src, bgRadius=None, max_d=None):
+    def __init__(self, src, bg_radius=None, max_d=None):
         """
         Given an `ImageSource`, constructs
 
         :param src: A `ImageSource` object.
-        :param bgRadius: The radius of the disk whose complement is used to estimate the noise.
+        :param bg_radius: The radius of the disk whose complement is used to estimate the noise.
             Radius is relative proportion, where `1` represents
             the radius of disc inscribing a `(src.L, src.L)` image.
             Default of `None` uses `(np.floor(src.L / 2) - 1) / L`
@@ -374,10 +374,10 @@ class LegacyNoiseEstimator(NoiseEstimator):
             Default of `None` uses `np.floor(src.L/3) / L`.
         """
 
-        if bgRadius is None:
-            bgRadius = (np.floor(src.L / 2) - 1) / src.L
+        if bg_radius is None:
+            bg_radius = (np.floor(src.L / 2) - 1) / src.L
 
-        super().__init__(src=src, bgRadius=bgRadius, batch_size=1)
+        super().__init__(src=src, bg_radius=bg_radius, batch_size=1)
 
         self.max_d = max_d
         if self.max_d is None:
@@ -401,7 +401,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         :return: The estimated noise variance of the images in the Source used to create this estimator.
         """
         # Setup parameters
-        samples_idx = grid_2d(self.src.L, normalized=True)["r"] >= self.bgRadius
+        samples_idx = grid_2d(self.src.L, normalized=True)["r"] >= self.bg_radius
         max_d_pixels = round(self.max_d * self.src.L)
 
         psd = self.epsdS(self.src.images, samples_idx, max_d_pixels)[0]
