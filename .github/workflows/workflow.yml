@@ -50,10 +50,18 @@ jobs:
           echo "    cache_dir: $HOME/.cache/ASPIRE-data" >> $HOME/.cache/ASPIRE-data/config.yaml
           echo "Logging config.yaml for verification:"
           cat $HOME/.cache/ASPIRE-data/config.yaml
-      - name: Download EMDB 2660
+      - name: Download EMDB 2660 (Linux/Mac)
+        if: runner.os != 'Windows'
+        env:
+          ASPIREDIR: $HOME/.cache/ASPIRE-data
         run: |
-          ASPIREDIR=$HOME/.cache/ASPIRE-data python -c \
-          "from aspire.downloader import emdb_2660; emdb_2660()"
+          python -c "from aspire.downloader import emdb_2660; emdb_2660()"
+      - name: Download EMDB 2660 (Windows)
+        if: runner.os == 'Windows'
+        env:
+          ASPIREDIR: D:\a\_temp\.cache\ASPIRE-data
+        run: |
+          python -c "from aspire.downloader import emdb_2660; emdb_2660()"
       - name: Verify Cache Directory Before Saving
         run: ls -lhR $HOME/.cache/ASPIRE-data
       - name: Save Cache
