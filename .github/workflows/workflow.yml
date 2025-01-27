@@ -41,7 +41,7 @@ jobs:
         uses: actions/cache@v4
         with:
           key: cached-data-${{ runner.os }}
-          path: $HOME/.cache/ASPIRE-data/
+          path: ~/.cache/ASPIRE-data/
       - name: Create Cache Directory and Set Permissions
         run: |
           mkdir -p $HOME/.cache/ASPIRE-data
@@ -59,14 +59,14 @@ jobs:
       - name: Download EMDB 2660 (Windows)
         if: runner.os == 'Windows'
         env:
-          ASPIREDIR: D:\a\_temp\.cache\ASPIRE-data
+          ASPIREDIR: C:\Users\runneradmin/.cache/ASPIRE-data
         run: |
           python -c "from aspire.downloader import emdb_2660; emdb_2660()"
       - name: Save Cache
         uses: actions/cache@v4
         with:
           key: cached-data-${{ runner.os }}
-          path: $HOME/.cache/ASPIRE-data/
+          path: ~/.cache/ASPIRE-data/
 
   build:
     needs: [check, data-cache]
@@ -103,7 +103,7 @@ jobs:
         key: cached-data-${{ runner.os }}
         restore-keys: |
           cached-data-
-        path: $HOME/.cache/ASPIRE-data
+        path: ~/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
       run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
@@ -248,7 +248,7 @@ jobs:
           key: cached-data-${{ runner.os }}
           restore-keys: |
             cached-data-
-          path: $HOME/.cache/ASPIRE-data
+          path: ~/.cache/ASPIRE-data
       - name: Build Sphinx docs
         run: |
           make distclean
@@ -283,7 +283,7 @@ jobs:
         key: cached-data-${{ runner.os }}
         restore-keys: |
           cached-data-
-        path: $HOME/.cache/ASPIRE-data
+        path: ~/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
       run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
