@@ -363,9 +363,9 @@ class LegacyNoiseEstimator(NoiseEstimator):
 
     def __init__(self, src, bgRadius=None, max_d=None):
         """
-        Any additional args/kwargs are passed on to the Source's 'images' method
+        Given an `ImageSource`, constructs
 
-        :param src: A Source object which can give us images on demand
+        :param src: A `ImageSource` object.
         :param bgRadius: The radius of the disk whose complement is used to estimate the noise.
             Radius is relative proportion, where `1` represents
             the radius of disc inscribing a `(src.L, src.L)` image.
@@ -399,9 +399,8 @@ class LegacyNoiseEstimator(NoiseEstimator):
     def _estimate_noise_psd(self):
         """
         :return: The estimated noise variance of the images in the Source used to create this estimator.
-        TODO: How's this initial estimate of variance different from the 'estimate' method?
         """
-        # Setup
+        # Setup parameters
         samples_idx = grid_2d(self.src.L, normalized=True)["r"] >= self.bgRadius
         max_d_pixels = round(self.max_d * self.src.L)
 
@@ -416,9 +415,10 @@ class LegacyNoiseEstimator(NoiseEstimator):
         The samples to use in each image are given by `samples_idx` mask.
         The correlation is computed up to a maximal distance of `max_d`.
 
-        :param images: Images instance
-        :param samples_idx: Boolean mask shaped (L,L).
+        :param images: `Image` instance
+        :param samples_idx: Boolean mask shaped `(L,L)`.
         :param max_d: Max computed correlation distance in pixels.
+           Default of `None` yields `np.floor(L / 3)`.
         :return:
             - Radial PSD array of shape
             - Distances map array
@@ -438,28 +438,26 @@ class LegacyNoiseEstimator(NoiseEstimator):
         max_d = int(min(max_d, L - 1))
 
         # Compute distances
-        # Note grid_2d['r'] is not used because we always want zero centered integer grid,
-        #   yielding integer dists (radius**2) values.
+        # Note grid_2d['r'] is not used because we want an integer grid directly;
+        #   yields integer dists (radius**2) values.
         X, Y = np.mgrid[0 : max_d + 1, 0 : max_d + 1]
         dists = X * X + Y * Y
         dsquare = np.sort(np.unique(dists[dists <= max_d**2]))
-        x = np.sqrt(dsquare)  # actual distance
+        x = np.sqrt(dsquare)  # actual distances
 
         # corrs[i] is the sum of all x[j]x[j+d] where d = x[i]
         corrs = np.zeros_like(dsquare, dtype=np.float64)
         # corrcount[i] is the number of pairs summed in corr[i]
-        corrcount = np.zeros_like(dsquare, dtype=int)
+        corrcount = np.zeros_like(dsquare, dtype=np.int64)
 
         # distmap maps [i,j] to k where dsquare[k] = i**2 + j**2.
         #   -1 indicates distance is larger than max_d
         distmap = np.full(shape=dists.shape, fill_value=-1)
 
-        # This differs from the MATLAB code because Numpy does not directly provide `bsearch`.
+        # This differs from the MATLAB code, avoids `bisect`.
         for i, d in enumerate(dsquare):
             inds = dists == d  # locations having distance `d`
             distmap[inds] = i  # assign index into dsquare `i`
-        # # Mapped distance indices where i**2+j**2 <= max_d**2
-        # validdists = np.where(distmap != -1)  # Note this is a 2-tuple
 
         # Compute Ncorr using a constant unit image.
         mask = np.zeros((L, L))
@@ -467,9 +465,10 @@ class LegacyNoiseEstimator(NoiseEstimator):
         tmp = np.zeros((2 * L + 1, 2 * L + 1))  # pad
         tmp[:L, :L] = mask
         ftmp = fft.fft2(tmp)
-        Ncorr = fft.ifft2(
-            ftmp * ftmp.conj()
-        ).real  # matlab code does not cast here, but internally detects conj sym...
+        # MATLAB code internally detects sym and implicitly casts,
+        #   we explicitly cast.
+        # Optimization note: This and the later fft call could be optimized with real/herm sym FFT calls.
+        Ncorr = fft.ifft2(ftmp * ftmp.conj()).real
         Ncorr = Ncorr[: max_d + 1, : max_d + 1]  # crop
         Ncorr = np.round(Ncorr)
 
@@ -480,20 +479,26 @@ class LegacyNoiseEstimator(NoiseEstimator):
         samples = np.zeros((L, L))
         tmp[:, :] = 0  # reset tmp
         for k in trange(n_img, desc="Processing image autocorrelations"):
-            # Mask unused pixels (note, think can merge these lines later)
+            # Mask off unused pixels
             samples[samples_idx] = images[k].asnumpy()[0][samples_idx]
-            # Note, we can also compute the noise energy estimate used later at this time to avoid looping over images twice.
+            # Optimization note: We could also compute the noise
+            # energy estimate used later at this time to avoid looping
+            # over images twice.
 
             # Compute non-preiodic autocorrelation
             tmp[:L, :L] = samples  # pad
             ftmp = fft.fft2(tmp)
-            s = fft.ifft2(
-                ftmp * ftmp.conj()
-            ).real  # matlab code does not cast here, but internally detects conj sym...
+            # MATLAB code internally detects conj sym and implicitly casts,
+            #   we explicitly cast.
+            s = fft.ifft2(ftmp * ftmp.conj()).real
             s = s[0 : max_d + 1, 0 : max_d + 1]  # crop
 
-            # # Accumulate all autocorrelation values R[k1,k2] such that
-            # # k1^2+k2^2=const (all autocorrelations of a certain distance).
+            # Accumulate all autocorrelation values R[k1,k2] such that
+            # k1**2 + k2**2 = dist (all autocorrelations of a certain distance).
+            # Optimization note: The MATLAB code used another map
+            #   layer `validdists` to remove one loop layer here, but
+            #   it relied primarily on MATLABs implicit ravel/unravel
+            #   and would be less clear in Python. Simpler code was ported.
             for i in range(max_d + 1):
                 for j in range(max_d + 1):
                     idx = distmap[i, j]
@@ -501,18 +506,8 @@ class LegacyNoiseEstimator(NoiseEstimator):
                         corrs[idx] = corrs[idx] + s[i, j]
                         corrcount[idx] = corrcount[idx] + Ncorr[i, j]
 
-            # TODO, fix this MATLAB optmized implementation and compare with the clearer code above.
-            # I didn't port this validdist slice optimized version correctly(yet).
-            # it uses implicit (MATLAB auto flat (un/)raveling)
-            # im not sure the speedup would be similar in python anyway.
-            # for j in range(np.size(validdists)):
-            #     currdist = validdists[j]
-            #     dmidx = distmap[currdist]
-            #     corrs[dmidx] = corrs[dmidx] + s[currdist]
-            #     corrcount[dmidx] = corrcount[dmidx] + Ncorr[currdist]
-
         # Remove distances which had no samples
-        idx = np.where(corrcount != 0)  # [0]
+        idx = np.where(corrcount != 0)
         R = corrs[idx] / corrcount[idx]
         x = x[idx]
         cnt = corrcount[idx]
@@ -529,6 +524,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         :param images: Images instance
         :param samples_idx: Boolean mask shaped (L,L).
         :param max_d: Max computed correlation distance in pixels.
+           Default of `None` yields `np.floor(L / 3)`.
         :return:
             - 2D PSD array
             - Radial PSD array
@@ -539,10 +535,6 @@ class LegacyNoiseEstimator(NoiseEstimator):
         n_img = images.n_images
         L = samples_idx.shape[-1]
 
-        R, x, _ = LegacyNoiseEstimator.epsdR(
-            images=images, samples_idx=samples_idx, max_d=max_d
-        )
-
         # Correlations more than `max_d` pixels apart are not computed.
         if max_d is None:
             max_d = np.floor(L / 3)
@@ -552,7 +544,11 @@ class LegacyNoiseEstimator(NoiseEstimator):
             )
         max_d = int(min(max_d, L - 1))
 
-        # Use the 1D autocorrelation estimted above to populate an
+        R, x, _ = LegacyNoiseEstimator.epsdR(
+            images=images, samples_idx=samples_idx, max_d=max_d
+        )
+
+        # Use the 1D autocorrelation estimated above to populate an
         # array of the 2D isotropic autocorrelction. This
         # autocorrelation is later Fourier transformed to get the
         # power spectrum.
@@ -565,7 +561,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
             idx = dists2 == d
             R2[idx] = R[i]
 
-        # Window te 2D autocorrelation and Fourier transform it to get the power
+        # Window the 2D autocorrelation and Fourier transform it to get the power
         # spectrum. Always use the Gaussian window, as it has positive Fourier
         # transform.
         w = gaussian_window(L, max_d)
@@ -579,7 +575,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         # to estimate it.
 
         E = 0.0  # Total energy of the noise samples used to estimate the power spectrum.
-        samples = np.zeros((L, L))
+        samples = np.zeros((L, L), dtype=np.float64)
         for k in trange(n_img, desc="Estimating image noise energy"):
             samples[samples_idx] = images[k].asnumpy()[0][samples_idx]
             E += np.sum((samples - np.mean(samples)) ** 2)
@@ -605,7 +601,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
             if maxnegerr > 1e-2:
                 negnorm = np.linalg.norm(P2[negidx])
                 logger.warning(
-                    f"Power spectrum P2 has negative values with energy {negnorm}."
+                    f"Power spectrum P2 has non trivial negative values with energy {negnorm}."
                 )
             P2[negidx] = 0  # zero out negative estimates
 
