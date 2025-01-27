@@ -44,16 +44,16 @@ jobs:
           path: ~/.cache/ASPIRE-data/
       - name: Create Cache Directory and Set Permissions
         run: |
-          mkdir -p $HOME/.cache/ASPIRE-data
-          chmod -R 777 $HOME/.cache/ASPIRE-data
-          echo "cache:" > $HOME/.cache/ASPIRE-data/config.yaml
-          echo "    cache_dir: $HOME/.cache/ASPIRE-data" >> $HOME/.cache/ASPIRE-data/config.yaml
+          mkdir -p ~/.cache/ASPIRE-data
+          chmod -R 777 ~/.cache/ASPIRE-data
+          echo "cache:" > ~/.cache/ASPIRE-data/config.yaml
+          echo "    cache_dir: ~/.cache/ASPIRE-data" >> ~/.cache/ASPIRE-data/config.yaml
           echo "Logging config.yaml for verification:"
-          cat $HOME/.cache/ASPIRE-data/config.yaml
+          cat ~/.cache/ASPIRE-data/config.yaml
       - name: Download EMDB 2660 (Linux/Mac)
         if: runner.os != 'Windows'
         env:
-          ASPIREDIR: $HOME/.cache/ASPIRE-data
+          ASPIREDIR: ~/.cache/ASPIRE-data
         run: |
           python -c "from aspire.downloader import emdb_2660; emdb_2660()"
       - name: Download EMDB 2660 (Windows)
@@ -105,11 +105,11 @@ jobs:
           cached-data-
         path: ~/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
-      run: ls -lhR $HOME/.cache/ASPIRE-data
+      run: ls -lhR ~/.cache/ASPIRE-data
     - name: Set Cache Directory
       run: |
-        mkdir -p $HOME/.config/ASPIRE
-        echo -e "cache:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
+        mkdir -p ~/.config/ASPIRE
+        echo -e "cache:\n  cache_dir: ~/.cache/ASPIRE-data" > ~/.config/ASPIRE/config.yaml
     - name: Test with tox
       run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
     - name: Upload Coverage to CodeCov
@@ -285,10 +285,10 @@ jobs:
           cached-data-
         path: ~/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
-      run: ls -lhR $HOME/.cache/ASPIRE-data
+      run: ls -lhR ~/.cache/ASPIRE-data
     - name: Set Cache Directory
       run: |
-        mkdir -p $HOME/.config/ASPIRE
-        echo -e "cache:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
+        mkdir -p ~/.config/ASPIRE
+        echo -e "cache:\n  cache_dir: ~/.cache/ASPIRE-data" > ~/.config/ASPIRE/config.yaml
     - name: Test
       run: python -m pytest -n3 --durations=50
