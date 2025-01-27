@@ -26,7 +26,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-20.04, macOS-latest, macOS-13]
+        os: [ubuntu-latest, ubuntu-20.04, macOS-latest, macOS-13, windows-2019]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
