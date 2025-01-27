@@ -23,7 +23,10 @@ jobs:
 
   data-cache:
     needs: check
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
@@ -36,23 +39,23 @@ jobs:
           pip install -e ".[dev]"
       - name: Create Cache Directory and Set Permissions
         run: |
-          mkdir -p ${{ github.workspace }}/.cache/ASPIRE-data
-          chmod -R 777 ${{ github.workspace }}/.cache/ASPIRE-data
-          echo "cache:" > ${{ github.workspace }}/.cache/ASPIRE-data/config.yaml
-          echo "    cache_dir: ${{ github.workspace }}/.cache/ASPIRE-data" >> ${{ github.workspace }}/.cache/ASPIRE-data/config.yaml
+          mkdir -p $HOME/.cache/ASPIRE-data
+          chmod -R 777 $HOME/.cache/ASPIRE-data
+          echo "cache:" > $HOME/.cache/ASPIRE-data/config.yaml
+          echo "    cache_dir: $HOME/.cache/ASPIRE-data" >> $HOME/.cache/ASPIRE-data/config.yaml
           echo "Logging config.yaml for verification:"
-          cat ${{ github.workspace }}/.cache/ASPIRE-data/config.yaml
+          cat $HOME/.cache/ASPIRE-data/config.yaml
       - name: Download EMDB 2660
         run: |
-          ASPIREDIR=${{ github.workspace }}/.cache/ASPIRE-data python -c \
+          ASPIREDIR=$HOME/.cache/ASPIRE-data python -c \
           "from aspire.downloader import emdb_2660; emdb_2660()"
       - name: Verify Cache Directory Before Saving
-        run: ls -lhR ${{ github.workspace }}/.cache/ASPIRE-data
+        run: ls -lhR $HOME/.cache/ASPIRE-data
       - name: Save Cache
         uses: actions/cache@v4
         with:
-          key: cached-data
-          path: ${{ github.workspace }}/.cache/ASPIRE-data/emdb_2660.map
+          key: cached-data-${{ runner.os }}
+          path: ~/.cache/ASPIRE-data/emdb_2660.map
 
   build:
     needs: [check, data-cache]
@@ -86,16 +89,16 @@ jobs:
     - name: Restore Cache
       uses: actions/cache@v4
       with:
-        key: cached-data
+        key: cached-data-${{ runner.os }}
         restore-keys: |
-          cached-data
-        path: ${{ github.workspace }}/.cache/ASPIRE-data
+          cached-data-
+        path: ~/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
-      run: ls -lhR ${{ github.workspace }}/.cache/ASPIRE-data
+      run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
       run: |
-        mkdir -p ${{ github.workspace }}/.config/ASPIRE
-        echo -e "cache:\n  cache_dir: ${{ github.workspace }}/.cache/ASPIRE-data" > ${{ github.workspace }}/.config/ASPIRE/config.yaml
+        mkdir -p $HOME/.config/ASPIRE
+        echo -e "cache:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
     - name: Test with tox
       run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
     - name: Upload Coverage to CodeCov
@@ -104,11 +107,10 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
 
   conda-build:
-    needs: [check, data-cache]
+    needs: check
     runs-on: ${{ matrix.os }}
-    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
     # Only run on review ready pull_requests
-    # if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
     defaults:
       run:
         shell: bash -el {0}
@@ -136,19 +138,6 @@ jobs:
         activate-environment: aspire
         environment-file: environment-${{ matrix.backend }}.yml
         auto-activate-base: false
-    - name: Restore Cache
-      uses: actions/cache@v4
-      with:
-        key: cached-data
-        restore-keys: |
-          cached-data
-        path: ${{ github.workspace }}/.cache/ASPIRE-data
-    - name: Verify Restored Cache Directory
-      run: ls -lhR ${{ github.workspace }}/.cache/ASPIRE-data
-    - name: Set Cache Directory
-      run: |
-        mkdir -p ${{ github.workspace }}/.config/ASPIRE
-        echo -e "cache:\n  cache_dir: ${{ github.workspace }}/.cache/ASPIRE-data" > ${{ github.workspace }}/.config/ASPIRE/config.yaml
     - name: Complete Install and Log Environment ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
         conda info
@@ -245,10 +234,10 @@ jobs:
       - name: Restore Cache
         uses: actions/cache@v4
         with:
-          key: cached-data
+          key: cached-data-${{ runner.os }}
           restore-keys: |
-            cached-data
-          path: ${{ github.workspace }}/.cache/ASPIRE-data
+            cached-data-
+          path: ~/.cache/ASPIRE-data
       - name: Build Sphinx docs
         run: |
           make distclean
@@ -280,15 +269,15 @@ jobs:
     - name: Restore Cache
       uses: actions/cache@v4
       with:
-        key: cached-data
+        key: cached-data-${{ runner.os }}
         restore-keys: |
-          cached-data
-        path: ${{ github.workspace }}/.cache/ASPIRE-data
+          cached-data-
+        path: ~/.cache/ASPIRE-data
     - name: Verify Restored Cache Directory
-      run: ls -lhR ${{ github.workspace }}/.cache/ASPIRE-data
+      run: ls -lhR $HOME/.cache/ASPIRE-data
     - name: Set Cache Directory
       run: |
-        mkdir -p ${{ github.workspace }}/.config/ASPIRE
-        echo -e "cache:\n  cache_dir: ${{ github.workspace }}/.cache/ASPIRE-data" > ${{ github.workspace }}/.config/ASPIRE/config.yaml
+        mkdir -p $HOME/.config/ASPIRE
+        echo -e "cache:\n  cache_dir: $HOME/.cache/ASPIRE-data" > $HOME/.config/ASPIRE/config.yaml
     - name: Test
       run: python -m pytest -n3 --durations=50
