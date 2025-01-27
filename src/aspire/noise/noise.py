@@ -440,19 +440,19 @@ class LegacyNoiseEstimator(NoiseEstimator):
         # Compute distances
         # Note grid_2d['r'] is not used because we want an integer grid directly;
         #   yields integer dists (radius**2) values.
-        X, Y = np.mgrid[0 : max_d + 1, 0 : max_d + 1]
+        X, Y = xp.mgrid[0 : max_d + 1, 0 : max_d + 1]
         dists = X * X + Y * Y
-        dsquare = np.sort(np.unique(dists[dists <= max_d**2]))
-        x = np.sqrt(dsquare)  # actual distances
+        dsquare = xp.sort(xp.unique(dists[dists <= max_d**2]))
+        x = xp.sqrt(dsquare)  # actual distances
 
         # corrs[i] is the sum of all x[j]x[j+d] where d = x[i]
-        corrs = np.zeros_like(dsquare, dtype=np.float64)
+        corrs = xp.zeros_like(dsquare, dtype=np.float64)
         # corrcount[i] is the number of pairs summed in corr[i]
-        corrcount = np.zeros_like(dsquare, dtype=np.int64)
+        corrcount = xp.zeros_like(dsquare, dtype=np.int64)
 
         # distmap maps [i,j] to k where dsquare[k] = i**2 + j**2.
         #   -1 indicates distance is larger than max_d
-        distmap = np.full(shape=dists.shape, fill_value=-1)
+        distmap = xp.full(shape=dists.shape, fill_value=-1)
 
         # This differs from the MATLAB code, avoids `bisect`.
         for i, d in enumerate(dsquare):
@@ -460,9 +460,9 @@ class LegacyNoiseEstimator(NoiseEstimator):
             distmap[inds] = i  # assign index into dsquare `i`
 
         # Compute Ncorr using a constant unit image.
-        mask = np.zeros((L, L))
+        mask = xp.zeros((L, L))
         mask[samples_idx] = 1
-        tmp = np.zeros((2 * L + 1, 2 * L + 1))  # pad
+        tmp = xp.zeros((2 * L + 1, 2 * L + 1))  # pad
         tmp[:L, :L] = mask
         ftmp = fft.fft2(tmp)
         # MATLAB code internally detects sym and implicitly casts,
@@ -470,13 +470,13 @@ class LegacyNoiseEstimator(NoiseEstimator):
         # Optimization note: This and the later fft call could be optimized with real/herm sym FFT calls.
         Ncorr = fft.ifft2(ftmp * ftmp.conj()).real
         Ncorr = Ncorr[: max_d + 1, : max_d + 1]  # crop
-        Ncorr = np.round(Ncorr)
+        Ncorr = xp.round(Ncorr)
 
         # Values of isotropic autocorrelation function
         # R[i] is value of ACF at distance x[i]
-        R = np.zeros(len(corrs))
+        R = xp.zeros(len(corrs))
 
-        samples = np.zeros((L, L))
+        samples = xp.zeros((L, L))
         tmp[:, :] = 0  # reset tmp
         for k in trange(n_img, desc="Processing image autocorrelations"):
             # Mask off unused pixels
@@ -507,10 +507,10 @@ class LegacyNoiseEstimator(NoiseEstimator):
                         corrcount[idx] = corrcount[idx] + Ncorr[i, j]
 
         # Remove distances which had no samples
-        idx = np.where(corrcount != 0)
-        R = corrs[idx] / corrcount[idx]
-        x = x[idx]
-        cnt = corrcount[idx]
+        idx = xp.where(corrcount != 0)
+        R = xp.asnumpy(corrs[idx] / corrcount[idx])
+        x = xp.asnumpy(x[idx])
+        cnt = xp.asnumpy(corrcount[idx])
 
         return R, x, cnt
 
@@ -535,6 +535,9 @@ class LegacyNoiseEstimator(NoiseEstimator):
         n_img = images.n_images
         L = samples_idx.shape[-1]
 
+        # Migrate mask to GPU as needed
+        _samples_idx = xp.asarray(samples_idx)
+
         # Correlations more than `max_d` pixels apart are not computed.
         if max_d is None:
             max_d = np.floor(L / 3)
@@ -547,26 +550,27 @@ class LegacyNoiseEstimator(NoiseEstimator):
         R, x, _ = LegacyNoiseEstimator.epsdR(
             images=images, samples_idx=samples_idx, max_d=max_d
         )
+        _R = xp.asarray(R)  # Migrate to GPU for assignments below
 
         # Use the 1D autocorrelation estimated above to populate an
         # array of the 2D isotropic autocorrelction. This
         # autocorrelation is later Fourier transformed to get the
         # power spectrum.
-        R2 = np.zeros((2 * L - 1, 2 * L - 1), dtype=np.float64)
+        R2 = xp.zeros((2 * L - 1, 2 * L - 1), dtype=np.float64)
 
-        X, Y = np.mgrid[-L + 1 : L, -L + 1 : L]
+        X, Y = xp.mgrid[-L + 1 : L, -L + 1 : L]
         dists2 = X * X + Y * Y
-        dsquare2 = np.sort(np.unique(dists2[dists2 <= max_d**2]))
+        dsquare2 = xp.sort(xp.unique(dists2[dists2 <= max_d**2]))
         for i, d in enumerate(dsquare2):
             idx = dists2 == d
-            R2[idx] = R[i]
+            R2[idx] = _R[i]
 
         # Window the 2D autocorrelation and Fourier transform it to get the power
         # spectrum. Always use the Gaussian window, as it has positive Fourier
         # transform.
-        w = gaussian_window(L, max_d)
+        w = xp.asarray(gaussian_window(L, max_d))
         P2 = fft.centered_fft2(R2 * w)
-        if (err := np.linalg.norm(P2.imag) / np.linalg.norm(P2)) > 1e-12:
+        if (err := xp.linalg.norm(P2.imag) / xp.linalg.norm(P2)) > 1e-12:
             logger.warning(f"Large imaginary components in P2 {err}.")
         P2 = P2.real
 
@@ -575,12 +579,12 @@ class LegacyNoiseEstimator(NoiseEstimator):
         # to estimate it.
 
         E = 0.0  # Total energy of the noise samples used to estimate the power spectrum.
-        samples = np.zeros((L, L), dtype=np.float64)
+        samples = xp.zeros((L, L), dtype=np.float64)
         for k in trange(n_img, desc="Estimating image noise energy"):
-            samples[samples_idx] = images[k].asnumpy()[0][samples_idx]
-            E += np.sum((samples - np.mean(samples)) ** 2)
+            samples[_samples_idx] = images[k].asnumpy()[0][samples_idx]
+            E += xp.sum((samples - xp.mean(samples)) ** 2)
         # Mean energy of the noise samples
-        n_samples_per_img = np.count_nonzero(samples_idx)
+        n_samples_per_img = xp.count_nonzero(_samples_idx)
         meanE = E / (n_samples_per_img * n_img)
 
         # Normalize P2 such that its mean energy is preserved and is equal to
@@ -589,20 +593,23 @@ class LegacyNoiseEstimator(NoiseEstimator):
         # upsampling, downsampling, or cropping). Note that P2 is already in
         # units of energy, and so the total energy is given by sum(P2) and
         # not by norm(P2).
-        P2 = P2 / np.sum(P2) * meanE * P2.size
+        P2 = P2 / xp.sum(P2) * meanE * P2.size
 
         # Check that P2 has no negative values.
         # Due to the truncation of the Gaussian window, we get small negative
         # values. So unless they are very big, we just ignore them.
         negidx = P2 < 0
-        if np.count_nonzero(negidx):
-            maxnegerr = np.max(np.abs(P2[negidx]))
+        if xp.count_nonzero(negidx):
+            maxnegerr = xp.max(xp.abs(P2[negidx]))
             logger.debug(f"Maximal negative P2 value = {maxnegerr}")
             if maxnegerr > 1e-2:
-                negnorm = np.linalg.norm(P2[negidx])
+                negnorm = xp.linalg.norm(P2[negidx])
                 logger.warning(
                     f"Power spectrum P2 has non trivial negative values with energy {negnorm}."
                 )
             P2[negidx] = 0  # zero out negative estimates
 
+        P2 = xp.asnumpy(P2)
+        R2 = xp.asnumpy(R2)
+        # R, x already on host
         return P2, R, R2, x
