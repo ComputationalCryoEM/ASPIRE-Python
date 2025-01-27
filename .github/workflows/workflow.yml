@@ -62,8 +62,6 @@ jobs:
           ASPIREDIR: D:\a\_temp\.cache\ASPIRE-data
         run: |
           python -c "from aspire.downloader import emdb_2660; emdb_2660()"
-      - name: Verify Cache Directory Before Saving
-        run: ls -lhR $HOME/.cache/ASPIRE-data
       - name: Save Cache
         uses: actions/cache@v4
         with:
