@@ -1412,7 +1412,7 @@ class ImageSource(ABC):
             support_radius_proportion = support_radius / (self.L // 2)
 
         est = WhiteNoiseEstimator(
-            src=self, bgRadius=support_radius_proportion, batchSize=batch_size
+            src=self, bgRadius=support_radius_proportion, batch_size=batch_size
         )
 
         return est.estimate()

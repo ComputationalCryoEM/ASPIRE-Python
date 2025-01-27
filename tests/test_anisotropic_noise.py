@@ -36,7 +36,7 @@ class SimTestCase(TestCase):
         pass
 
     def testAnisotropicNoisePSD(self):
-        noise_estimator = AnisotropicNoiseEstimator(self.sim, batchSize=512)
+        noise_estimator = AnisotropicNoiseEstimator(self.sim, batch_size=512)
         noise_psd = noise_estimator._estimate_noise_psd()
         self.assertTrue(
             np.allclose(
@@ -128,7 +128,7 @@ class SimTestCase(TestCase):
         )
 
     def testAnisotropicNoiseVariance(self):
-        noise_estimator = AnisotropicNoiseEstimator(self.sim, batchSize=512)
+        noise_estimator = AnisotropicNoiseEstimator(self.sim, batch_size=512)
         noise_variance = noise_estimator.estimate()
         self.assertTrue(
             np.allclose(
@@ -154,9 +154,9 @@ class SimTestCase(TestCase):
         wht_noise = np.random.randn(1024, 128, 128).astype(self.dtype)
         src = ArrayImageSource(wht_noise)
 
-        wht_noise_estimator = WhiteNoiseEstimator(src, batchSize=512)
+        wht_noise_estimator = WhiteNoiseEstimator(src, batch_size=512)
         wht_noise_variance = wht_noise_estimator.estimate()
-        noise_estimator = AnisotropicNoiseEstimator(src, batchSize=512)
+        noise_estimator = AnisotropicNoiseEstimator(src, batch_size=512)
         noise_variance = noise_estimator.estimate()
 
         self.assertTrue(np.allclose(noise_variance, wht_noise_variance))

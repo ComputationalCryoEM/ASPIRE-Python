@@ -227,7 +227,7 @@ class NoiseEstimator:
     Noise Estimator base class.
     """
 
-    def __init__(self, src, bgRadius=1, batchSize=512):
+    def __init__(self, src, bgRadius=1, batch_size=512):
         """
         Any additional args/kwargs are passed on to the Source's 'images' method
 
@@ -235,12 +235,12 @@ class NoiseEstimator:
         :param bgRadius: The radius of the disk whose complement is used to estimate the noise.
             Radius is relative proportion, where `1` represents
             the radius of disc inscribing a `(src.L, src.L)` image.
-        :param batchSize:  The size of the batches in which to compute the variance estimate.
+        :param batch_size:  The size of the batches in which to compute the variance estimate.
         """
         self.src = src
         self.dtype = self.src.dtype
         self.bgRadius = bgRadius
-        self.batchSize = batchSize
+        self.batch_size = batch_size
 
     @cached_property
     def filter(self):
@@ -283,7 +283,7 @@ class WhiteNoiseEstimator(NoiseEstimator):
         """
         :return: The estimated noise power spectral distribution (PSD) of the images in the form of a filter object.
         """
-        logger.info(f"Determining Noise variance in batches of {self.batchSize}")
+        logger.info(f"Determining Noise variance in batches of {self.batch_size}")
         noise_variance = self._estimate_noise_variance()
         logger.info(f"Noise variance = {noise_variance}")
         return ScalarFilter(dim=2, value=noise_variance)
@@ -299,8 +299,8 @@ class WhiteNoiseEstimator(NoiseEstimator):
 
         first_moment = 0
         second_moment = 0
-        for i in trange(0, self.src.n, self.batchSize):
-            images = self.src.images[i : i + self.batchSize].asnumpy()
+        for i in trange(0, self.src.n, self.batch_size):
+            images = self.src.images[i : i + self.batch_size].asnumpy()
             images_masked = images * mask
 
             _denominator = self.src.n * np.sum(mask)
@@ -341,8 +341,8 @@ class AnisotropicNoiseEstimator(NoiseEstimator):
 
         mean_est = 0
         noise_psd_est = np.zeros((self.src.L, self.src.L)).astype(self.src.dtype)
-        for i in trange(0, self.src.n, self.batchSize):
-            images = self.src.images[i : i + self.batchSize].asnumpy()
+        for i in trange(0, self.src.n, self.batch_size):
+            images = self.src.images[i : i + self.batch_size].asnumpy()
             images_masked = images * mask
 
             _denominator = self.src.n * np.sum(mask)
@@ -377,7 +377,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         if bgRadius is None:
             bgRadius = (np.floor(src.L / 2) - 1) / src.L
 
-        super().__init__(src=src, bgRadius=bgRadius, batchSize=1)
+        super().__init__(src=src, bgRadius=bgRadius, batch_size=1)
 
         self.max_d = max_d
         if self.max_d is None:
