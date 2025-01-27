@@ -833,8 +833,9 @@ class ImageSource(ABC):
         :param noise_response: Noise response is provided either
             directly as an array, or a `LegacyNoiseEstimator` instance.
         :param delta: Threshold used to determine which frequencies to whiten
-            and which to set to zero. By default all sqrt(PSD) values in the `noise_estimate`
-            less than eps(self.dtype) are zeroed out in the whitening filter.
+            and which to set to zero. By default all `sqrt(psd)` values
+            less than `delta` are zeroed out in the whitening filter.
+            Default of `None` yields `np.finfo(np.float32).eps`.
         """
 
         if noise_response is None:
@@ -855,7 +856,7 @@ class ImageSource(ABC):
         if delta is None:
             delta = np.finfo(np.float32).eps
 
-        logger.info("Adding LegacyWhiten Filter Xform to end of generation pipeline")
+        logger.info("Adding LegacyWhiten Filter Xform to end of generation pipeline.")
         self.generation_pipeline.add_xform(LegacyWhiten(psd, delta))
 
     @_as_copy
