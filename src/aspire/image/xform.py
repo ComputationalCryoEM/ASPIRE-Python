@@ -223,10 +223,10 @@ class LegacyWhiten(Xform):
         """
         Initialize LegacyWhiten Xform.
 
-        :param psd: PSD (as computed by LegacyNoiseEstimator)
+        :param psd: PSD (as computed by LegacyNoiseEstimator).
         :param delta: Threshold used to determine which frequencies to whiten
-            and which to set to zero. By default all sqrt(PSD) values in the `noise_estimate`
-            less than eps(self.dtype) are zeroed out in the whitening filter.
+            and which to set to zero. By default all `sqrt(psd)` values
+            less than `delta` are zeroed out in the whitening filter.
         """
 
         self.psd = psd
@@ -236,6 +236,8 @@ class LegacyWhiten(Xform):
     def _forward(self, im, indices):
         """
         Apply the legacy MATLAB whitening transformation to `im`.
+
+        The tranform is applied to all of `im`, `indices` are unused.
         """
         return im.legacy_whiten(self.psd, self.delta)
 

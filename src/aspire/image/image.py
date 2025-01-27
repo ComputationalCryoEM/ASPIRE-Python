@@ -418,12 +418,17 @@ class Image:
 
     def legacy_whiten(self, psd, delta):
         """
-        Apply the legacy MATLAB whitening transformation to `im`.
+        Apply the legacy MATLAB whitening transformation.
 
-        :param psd: PSD (as computed by LegacyNoiseEstimator)
+        Note that this legacy method will compute the convolution in
+        (complex)double precision regardless of this instances
+        `dtype`.  However, the resulting image stack will be cast to
+        the instance `dtype`.
+
+        :param psd: PSD as computed by `LegacyNoiseEstimator`.
         :param delta: Threshold used to determine which frequencies to whiten
-            and which to set to zero. By default all sqrt(PSD) values in the `noise_estimate`
-            less than eps(self.dtype) are zeroed out in the whitening filter.
+            and which to set to zero. By default all `sqrt(psd)` values
+            less than `delta` are zeroed out in the whitening filter.
         """
         n = self.n_images
         L = self.resolution
@@ -439,9 +444,17 @@ class Image:
         fltr = xp.sqrt(psd)
         fltr = fltr / xp.linalg.norm(fltr)
 
-        assert xp.linalg.norm(fltr.imag) < 10 * delta
-        assert xp.linalg.norm(fltr - xp.flipud(fltr)) < 10 * delta
-        assert xp.linalg.norm(fltr - xp.fliplr(fltr)) < 10 * delta
+        # Error checking
+        if (err := xp.linalg.norm(fltr.imag)) < 10 * delta:
+            raise RuntimeError(
+                f"Whitening filter has non trivial imaginary component {err}."
+            )
+        err_ud = xp.linalg.norm(fltr - xp.flipud(fltr))
+        err_lr = xp.linalg.norm(fltr - xp.fliplr(fltr))
+        if (err_ud < 10 * delta) or (err_lr < 10 * delta):
+            raise RuntimeError(
+                f"Whitening filter has non trivial symmetry lr {err_lr}, ud {err_ud}."
+            )
 
         # Enforce symmetry
         fltr = (fltr + xp.flipud(fltr)) / 2
@@ -467,7 +480,7 @@ class Image:
 
             # Divide the image by the whitening filter but only in
             # places where the filter is large.  In frequencies where
-            # the filter is tiny we cannot whiten so we just put
+            # the filter is tiny we cannot whiten so we just use
             # zeros.
             p[nzidx] = fp[nzidx] / fnz
             p2 = fft.centered_ifft2(p)
