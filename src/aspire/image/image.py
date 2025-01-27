@@ -445,13 +445,13 @@ class Image:
         fltr = fltr / xp.linalg.norm(fltr)
 
         # Error checking
-        if (err := xp.linalg.norm(fltr.imag)) < 10 * delta:
+        if (err := xp.linalg.norm(fltr.imag)) > 10 * delta:
             raise RuntimeError(
                 f"Whitening filter has non trivial imaginary component {err}."
             )
         err_ud = xp.linalg.norm(fltr - xp.flipud(fltr))
         err_lr = xp.linalg.norm(fltr - xp.fliplr(fltr))
-        if (err_ud < 10 * delta) or (err_lr < 10 * delta):
+        if (err_ud > 10 * delta) or (err_lr > 10 * delta):
             raise RuntimeError(
                 f"Whitening filter has non trivial symmetry lr {err_lr}, ud {err_ud}."
             )

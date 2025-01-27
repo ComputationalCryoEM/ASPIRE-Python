@@ -485,7 +485,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
             # energy estimate used later at this time to avoid looping
             # over images twice.
 
-            # Compute non-preiodic autocorrelation
+            # Compute non-periodic autocorrelation
             tmp[:L, :L] = samples  # pad
             ftmp = fft.fft2(tmp)
             # MATLAB code internally detects conj sym and implicitly casts,
