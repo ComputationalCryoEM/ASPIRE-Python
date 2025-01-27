@@ -34,13 +34,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: Cache Build
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/.cache/ASPIRE-data
-          key: cached-data
       - name: Create Cache Directory and Set Permissions
         run: |
+          mkdir -p ${{ github.workspace }}/.cache/ASPIRE-data
+          chmod -R 777 ${{ github.workspace }}/.cache/ASPIRE-data
           echo "cache:" > ${{ github.workspace }}/.cache/ASPIRE-data/config.yaml
           echo "    cache_dir: ${{ github.workspace }}/.cache/ASPIRE-data" >> ${{ github.workspace }}/.cache/ASPIRE-data/config.yaml
           echo "Logging config.yaml for verification:"
@@ -49,8 +46,13 @@ jobs:
         run: |
           ASPIREDIR=${{ github.workspace }}/.cache/ASPIRE-data python -c \
           "from aspire.downloader import emdb_2660; emdb_2660()"
-      - name: Verify Cache Directory
+      - name: Verify Cache Directory Before Saving
         run: ls -lhR ${{ github.workspace }}/.cache/ASPIRE-data
+      - name: Save Cache
+        uses: actions/cache@v4
+        with:
+          key: cached-data
+          path: ${{ github.workspace }}/.cache/ASPIRE-data/emdb_2660.map
 
   build:
     needs: [check, data-cache]
@@ -286,6 +288,7 @@ jobs:
       run: ls -lhR ${{ github.workspace }}/.cache/ASPIRE-data
     - name: Set Cache Directory
       run: |
+        mkdir -p ${{ github.workspace }}/.config/ASPIRE
         echo -e "cache:\n  cache_dir: ${{ github.workspace }}/.cache/ASPIRE-data" > ${{ github.workspace }}/.config/ASPIRE/config.yaml
     - name: Test
       run: python -m pytest -n3 --durations=50
