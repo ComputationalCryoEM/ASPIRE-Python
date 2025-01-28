@@ -401,7 +401,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         :return: The estimated noise variance of the images in the Source used to create this estimator.
         """
         # Setup parameters
-        samples_idx = grid_2d(self.src.L, normalized=False)["r"] >= (
+        samples_idx = grid_2d(self.src.L, normalized=False, shifted=True)["r"] >= (
             self.bg_radius * self.src.L
         )
         max_d_pixels = round(self.max_d * self.src.L)

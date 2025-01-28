@@ -473,7 +473,7 @@ class Image:
             if L % 2 == 1:
                 pp[k - j - 1 : k + j, k - j - 1 : k + j] = xp.asarray(proj)
             else:
-                pp[k - j - 2 : k + j, k - j - 1 : k + j - 1] = xp.asarray(proj)
+                pp[k - j - 1 : k + j - 1, k - j - 1 : k + j - 1] = xp.asarray(proj)
 
             # Take the Fourier Transform of the padded image.
             fp = fft.centered_fft2(pp)
