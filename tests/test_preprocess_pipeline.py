@@ -4,7 +4,11 @@ import os.path
 import numpy as np
 import pytest
 
-from aspire.noise import AnisotropicNoiseEstimator, CustomNoiseAdder
+from aspire.noise import (
+    AnisotropicNoiseEstimator,
+    CustomNoiseAdder,
+    LegacyNoiseEstimator,
+)
 from aspire.operators.filters import FunctionFilter, RadialCTFFilter
 from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation
@@ -180,6 +184,49 @@ def test_whiten_safeguard_default(dtype):
 
     # Check that no values in the whiten filter have been zeroed out by safeguard.
     assert np.count_nonzero(whiten_filt == 0) == 0
+
+
+@pytest.mark.parametrize(
+    "dtype", [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
+)
+def test_legacy_whiten(dtype):
+    """
+    Test `legacy_whiten` method.
+    """
+    L = 64
+    sim = get_sim_object(L, dtype)
+    sim = sim.legacy_whiten()
+    imgs_wt = sim.images[:num_images].asnumpy()
+
+    # calculate correlation between two neighboring pixels from background
+    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
+
+    # correlation matrix should be close to identity
+    np.testing.assert_allclose(np.eye(2), corr_coef, atol=1e-1)
+    # dtype of returned images should be the same
+    assert dtype == imgs_wt.dtype
+
+
+@pytest.mark.parametrize(
+    "dtype", [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
+)
+def test_legacy_whiten_2(dtype):
+    """
+    Test `legacy_whiten` method with alternate invocation.
+    """
+    L = 63
+    sim = get_sim_object(L, dtype)
+    noise_estimator = LegacyNoiseEstimator(sim)
+    sim = sim.legacy_whiten(noise_estimator)
+    imgs_wt = sim.images[:num_images].asnumpy()
+
+    # calculate correlation between two neighboring pixels from background
+    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
+
+    # correlation matrix should be close to identity
+    np.testing.assert_allclose(np.eye(2), corr_coef, atol=1e-1)
+    # dtype of returned images should be the same
+    assert dtype == imgs_wt.dtype
 
 
 @pytest.mark.parametrize("L, dtype", params)
