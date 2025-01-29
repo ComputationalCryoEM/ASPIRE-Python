@@ -30,7 +30,6 @@ import numpy as np
 
 from aspire.abinitio import CLSync3N
 from aspire.denoising import DenoisedSource, DenoiserCov2D, LegacyClassAvgSource
-from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource
 
@@ -43,11 +42,11 @@ logger = logging.getLogger(__name__)
 # Example simulation configuration.
 
 interactive = False  # Draw blocking interactive plots?
-do_cov2d = True  # Use CWF coefficients
+do_cov2d = False  # Use CWF coefficients
 n_imgs = None  # Set to None for all images in starfile, can set smaller for tests.
 img_size = 32  # Downsample the images/reconstruction to a desired resolution
-n_classes = 2000  # How many class averages to compute.
-n_nbor = 100  # How many neighbors to stack
+n_classes = 3000  # How many class averages to compute.
+n_nbor = 50  # How many neighbors to stack
 starfile_in = "10028/data/shiny_2sets_fixed9.star"
 data_folder = "."  # This depends on the specific starfile entries.
 volume_output_filename = f"10028_abinitio_c{n_classes}_m{n_nbor}_{img_size}.mrc"
@@ -68,8 +67,9 @@ src = RelionSource(
 )
 
 # Downsample the images
+# Caching is used for speeding up large datasets on high memory machines.
 logger.info(f"Set the resolution to {img_size} X {img_size}")
-src = src.downsample(img_size)
+src = src.downsample(img_size).cache()
 
 # Peek
 if interactive:
@@ -77,28 +77,19 @@ if interactive:
 
 # Use phase_flip to attempt correcting for CTF.
 logger.info("Perform phase flip to input images.")
-src = src.phase_flip()
+src = src.phase_flip().cache()
 
 # Estimate the noise and `Whiten` based on the estimated noise
-aiso_noise_estimator = AnisotropicNoiseEstimator(src)
-src = src.whiten(aiso_noise_estimator)
-
-# Plot the noise profile for inspection
-if interactive:
-    plt.imshow(aiso_noise_estimator.filter.evaluate_grid(img_size))
-    plt.show()
+src = src.legacy_whiten().cache()
 
 # Peek, what do the whitened images look like...
 if interactive:
     src.images[:10].show()
 
-# # Optionally invert image contrast, depends on data convention.
-# # This is not needed for 10028, but included anyway.
-# logger.info("Invert the global density contrast")
-# src = src.invert_contrast()
+# Optionally invert image contrast, depends on data conventions.
+logger.info("Invert the global density contrast")
+src = src.invert_contrast().cache()
 
-# Caching is used for speeding up large datasets on high memory machines.
-src = src.cache()
 
 # %%
 # Optional: CWF Denoising
@@ -163,7 +154,7 @@ logger.info("Begin Orientation Estimation")
 
 # Create a custom orientation estimation object for ``avgs``.
 # This is done to customize the ``n_theta`` value.
-orient_est = CLSync3N(avgs, n_theta=72)
+orient_est = CLSync3N(avgs, n_theta=360)
 
 # Create an ``OrientedSource`` class instance that performs orientation
 # estimation in a lazy fashion upon request of images or rotations.
