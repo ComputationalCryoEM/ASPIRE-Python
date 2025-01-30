@@ -33,6 +33,7 @@ class ClassAvgSource(ImageSource):
         classifier,
         class_selector,
         averager,
+        batch_size=512,
     ):
         """
         Constructor of an object for denoising 2D images using class averaging methods.
@@ -42,8 +43,10 @@ class ClassAvgSource(ImageSource):
             Example, RIRClass2D.
         :param class_selector: A ClassSelector subclass.
         :param averager: An Averager2D subclass.
+        :param batch_size: Integer size for batched operations.
         """
         self.src = src
+        self.batch_size = int(batch_size)
         if not isinstance(self.src, ImageSource):
             raise ValueError(
                 f"`src` should be subclass of `ImageSource`, found {self.src}."
@@ -397,6 +400,7 @@ class DebugClassAvgSource(ClassAvgSource):
         classifier=None,
         class_selector=None,
         averager=None,
+        batch_size=512,
     ):
         """
         Instantiates with default debug paramaters.
@@ -411,6 +415,7 @@ class DebugClassAvgSource(ClassAvgSource):
         :param averager: `Averager2D` instance.
             Default `None` ceates `BFRAverager2D` instance.
             See code for parameter details.
+        :param batch_size: Integer size for batched operations.
 
         :return: ClassAvgSource instance.
         """
@@ -432,6 +437,7 @@ class DebugClassAvgSource(ClassAvgSource):
                 self._get_classifier_basis(classifier),
                 src,
                 dtype=dtype,
+                batch_size=batch_size,
             )
 
         if class_selector is None:
@@ -442,6 +448,7 @@ class DebugClassAvgSource(ClassAvgSource):
             classifier=classifier,
             class_selector=class_selector,
             averager=averager,
+            batch_size=batch_size,
         )
 
 
@@ -464,6 +471,7 @@ class LegacyClassAvgSource(ClassAvgSource):
         class_selector=None,
         averager=None,
         averager_src=None,
+        batch_size=512,
     ):
         """
         Instantiates `ClassAvgSource` with the following parameters.
@@ -483,6 +491,7 @@ class LegacyClassAvgSource(ClassAvgSource):
              provide distinct sources for classification and
              averaging.  Raises error when combined with an explicit
              `averager` argument.
+        :param batch_size: Integer size for batched operations.
 
         :return: ClassAvgSource instance.
         """
@@ -508,6 +517,7 @@ class LegacyClassAvgSource(ClassAvgSource):
             averager = BFRAverager2D(
                 composite_basis=basis_2d,
                 src=averager_src,
+                batch_size=batch_size,
                 dtype=dtype,
             )
         elif averager_src is not None:
@@ -523,6 +533,7 @@ class LegacyClassAvgSource(ClassAvgSource):
             classifier=classifier,
             class_selector=class_selector,
             averager=averager,
+            batch_size=batch_size,
         )
 
 
@@ -533,6 +544,7 @@ def DefaultClassAvgSource(
     class_selector=None,
     averager=None,
     averager_src=None,
+    batch_size=512,
     version=None,
 ):
     """
@@ -554,6 +566,7 @@ def DefaultClassAvgSource(
          provide distinct sources for classification and
          averaging.  Raises error when combined with an explicit
          `averager` argument.
+    :param batch_size: Integer size for batched operations.
     :param version: Optionally selects a versioned `DefaultClassAvgSource`.
         Defaults to latest available.
     :return: ClassAvgSource instance.
@@ -577,6 +590,7 @@ def DefaultClassAvgSource(
         class_selector=class_selector,
         averager=averager,
         averager_src=averager_src,
+        batch_size=batch_size,
     )
 
 
@@ -597,6 +611,7 @@ class ClassAvgSourcev132(ClassAvgSource):
         class_selector=None,
         averager=None,
         averager_src=None,
+        batch_size=512,
     ):
         """
         Instantiates ClassAvgSourcev132 with the following parameters.
@@ -618,6 +633,7 @@ class ClassAvgSourcev132(ClassAvgSource):
              provide distinct sources for classification and
              averaging.  Raises error when combined with an explicit
              `averager` argument.
+        :param batch_size: Integer size for batched operations.
 
         :return: ClassAvgSource instance.
         """
@@ -643,6 +659,7 @@ class ClassAvgSourcev132(ClassAvgSource):
             averager = BFRAverager2D(
                 composite_basis=basis_2d,
                 src=averager_src,
+                batch_size=batch_size,
                 dtype=dtype,
             )
         elif averager_src is not None:
@@ -661,6 +678,7 @@ class ClassAvgSourcev132(ClassAvgSource):
             classifier=classifier,
             class_selector=class_selector,
             averager=averager,
+            batch_size=batch_size,
         )
 
 
@@ -681,6 +699,7 @@ class ClassAvgSourcev110(ClassAvgSource):
         class_selector=None,
         averager=None,
         averager_src=None,
+        batch_size=512,
     ):
         """
         Instantiates ClassAvgSourcev110 with the following parameters.
@@ -699,6 +718,7 @@ class ClassAvgSourcev110(ClassAvgSource):
             to BFSRAverager2D during initialization.
             Raises error when combined with an explicit `averager`
             argument.
+        :param batch_size: Integer size for batched operations.
 
         :return: ClassAvgSource instance.
         """
@@ -724,6 +744,7 @@ class ClassAvgSourcev110(ClassAvgSource):
             averager = BFSRAverager2D(
                 composite_basis=basis_2d,
                 src=averager_src,
+                batch_size=batch_size,
                 dtype=dtype,
             )
         elif averager_src is not None:
@@ -739,4 +760,5 @@ class ClassAvgSourcev110(ClassAvgSource):
             classifier=classifier,
             class_selector=class_selector,
             averager=averager,
+            batch_size=batch_size,
         )
