@@ -18,15 +18,18 @@ class Averager2D(ABC):
     Base class for 2D Image Averaging methods.
     """
 
-    def __init__(self, composite_basis, src, dtype=None):
+    def __init__(self, composite_basis, src, batch_size=512, dtype=None):
         """
         :param composite_basis:  Basis to be used during class average composition (eg FFB2D)
         :param src: Source of original images.
+        :param batch_size: Integer size of batches used for basis conversion.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
         self.composite_basis = composite_basis
         self.src = src
+        self.batch_size = int(batch_size)
+
         if dtype is None:
             if self.composite_basis:
                 self.dtype = self.composite_basis.dtype
@@ -97,6 +100,7 @@ class AligningAverager2D(Averager2D):
         src,
         alignment_basis=None,
         image_stacker=None,
+        batch_size=512,
         dtype=None,
     ):
         """
@@ -105,12 +109,14 @@ class AligningAverager2D(Averager2D):
         :param alignment_basis: Optional, basis to be used only during alignment (eg FSPCA).
         :param image_stacker: Optional, provide a user defined `ImageStacker` instance,
             used during image stacking (averaging).  Defaults to MeanImageStacker.
+        :param batch_size: Integer size of batches used for basis conversion.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
         super().__init__(
             composite_basis=composite_basis,
             src=src,
+            batch_size=batch_size,
             dtype=dtype,
         )
         # If alignment_basis is None, use composite_basis
@@ -176,7 +182,12 @@ class AligningAverager2D(Averager2D):
 
         n_classes, n_nbor = classes.shape
 
-        b_avgs = np.empty((n_classes, self.composite_basis.count), dtype=self.src.dtype)
+        # Result (image) array
+        avgs = np.empty((n_classes, *self.composite_basis.sz), dtype=self.src.dtype)
+        # Tmp (basis) batch result array)
+        b_avgs = np.empty(
+            (self.batch_size, self.composite_basis.count), dtype=self.src.dtype
+        )
 
         def _innerloop(i):
             # Get coefs in Composite_Basis if not provided as an argument.
@@ -206,11 +217,22 @@ class AligningAverager2D(Averager2D):
             # Averaging in composite_basis
             return self.image_stacker(neighbors_coefs.asnumpy())
 
-        for i in trange(n_classes, desc="Stacking class averages"):
-            b_avgs[i] = _innerloop(i)
+        desc = f"Stacking and evaluating class averages from {self.composite_basis.__class__.__name__} to Cartesian"
+        for start in trange(0, n_classes, self.batch_size, desc=desc):
+            end = min(start + self.batch_size, n_classes)
+            for i, cls in enumerate(
+                trange(start, end, desc="Stacking batch", leave=False)
+            ):
+                b_avgs[i] = _innerloop(cls)  # average stacked in basis
 
-        # Now we convert the averaged images from Basis to Cartesian.
-        return Coef(self.composite_basis, b_avgs).evaluate()
+            # Now we convert the averaged images from Basis to Cartesian,
+            #   assigning to result array.
+            # Note i should usually be batch_size, but may be less on final batch.
+            avgs[start:end] = (
+                Coef(self.composite_basis, b_avgs[: i + 1]).evaluate().asnumpy()
+            )
+
+        return Image(avgs)
 
     def _shift_search_grid(self, L, radius, roll_zero=False):
         """
@@ -253,6 +275,7 @@ class BFSRAverager2D(AligningAverager2D):
         alignment_basis=None,
         n_angles=360,
         radius=None,
+        batch_size=512,
         dtype=None,
     ):
         """
@@ -266,6 +289,7 @@ class BFSRAverager2D(AligningAverager2D):
             composite_basis,
             src,
             alignment_basis,
+            batch_size=batch_size,
             dtype=dtype,
         )
 
@@ -458,6 +482,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         composite_basis,
         src,
         alignment_src=None,
+        batch_size=512,
         dtype=None,
     ):
         """
@@ -465,6 +490,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         :param src: Source of original images.
         :param alignment_src: Optional, source to be used during class average alignment.
             Must be the same resolution as `src`.
+        :param batch_size: Integer size of batches used for basis conversion.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -479,7 +505,9 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
         self.mask = grid_2d(src.L, normalized=False)["r"] < src.L // 2
 
-        super().__init__(composite_basis, src, composite_basis, dtype=dtype)
+        super().__init__(
+            composite_basis, src, composite_basis, batch_size=batch_size, dtype=dtype
+        )
 
     def align(self, classes, reflections, basis_coefficients=None):
         """
@@ -587,6 +615,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         src,
         alignment_src=None,
         radius=None,
+        batch_size=512,
         dtype=None,
     ):
         """
@@ -599,6 +628,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             Must be the same resolution as `src`.
         :param radius: Brute force translation search radius.
             Defaults to src.L//8.
+        :param batch_size: Integer size of batches used for basis conversion.
         :param dtype: Numpy dtype to be used during alignment.
         """
 
@@ -606,6 +636,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             composite_basis,
             src,
             alignment_src,
+            batch_size=batch_size,
             dtype=dtype,
         )
 
