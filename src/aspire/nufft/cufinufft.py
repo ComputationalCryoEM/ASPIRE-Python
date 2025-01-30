@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 import cupy as cp
 import numpy as np
@@ -65,9 +66,11 @@ class CufinufftPlan(Plan):
         self.adjoint_opts = dict()
         if self.dtype is np.float64 and self.dim == 3 and self.epsilon < 1e3:
             # Note this is an algorithmic implementation dictated by shmem.
-            logger.info(
+            warnings.warn(
                 "Converting cufinufft gpu_method=1 from default of 2 for 3D1 transform,"
-                f"to support computation in double precision with tol={self.epsilon}."
+                f"to support computation in double precision with tol={self.epsilon}.",
+                RuntimeWarning,
+                stacklevel=2,
             )
             self.adjoint_opts["gpu_method"] = 1
 
