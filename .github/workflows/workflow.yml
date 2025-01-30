@@ -70,7 +70,7 @@ jobs:
     needs: [check, data-cache]
     runs-on: ubuntu-latest
     # Run on every code push, but only on review ready PRs
-    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}    
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
@@ -122,7 +122,8 @@ jobs:
     needs: check
     runs-on: ${{ matrix.os }}
     # Only run on review ready pull_requests
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
+    # if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
     defaults:
       run:
         shell: bash -el {0}
