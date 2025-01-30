@@ -23,10 +23,7 @@ jobs:
 
   data-cache:
     needs: check
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python
@@ -41,38 +38,39 @@ jobs:
         uses: actions/cache@v4
         with:
           key: cached-data-${{ runner.os }}
-          path: ~/.cache/ASPIRE-data/
-      - name: Create Cache Directory and Set Permissions
+          restore-keys: |
+            cached-data-
+          path: .github_cache/ASPIRE-data
+          enableCrossOsArchive: true
+      - name: Create Cache Directory
         run: |
-          mkdir -p ~/.cache/ASPIRE-data
-          chmod -R 777 ~/.cache/ASPIRE-data
-          echo "cache:" > ~/.cache/ASPIRE-data/config.yaml
-          echo "    cache_dir: ~/.cache/ASPIRE-data" >> ~/.cache/ASPIRE-data/config.yaml
+          # Create cache and config directories
+          mkdir -p .github_cache/ASPIRE-data
+          chmod -R 777 .github_cache/ASPIRE-data
+          echo "cache:" > config.yaml
+          echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
           echo "Logging config.yaml for verification:"
-          cat ~/.cache/ASPIRE-data/config.yaml
-      - name: Download EMDB 2660 (Linux/Mac)
-        if: runner.os != 'Windows'
-        env:
-          ASPIREDIR: ~/.cache/ASPIRE-data
+          cat config.yaml
+      - name: Download EMDB 2660
         run: |
+          export ASPIREDIR=.
           python -c "from aspire.downloader import emdb_2660; emdb_2660()"
-      - name: Download EMDB 2660 (Windows)
-        if: runner.os == 'Windows'
-        env:
-          ASPIREDIR: C:\Users\runneradmin/.cache/ASPIRE-data
-        run: |
-          python -c "from aspire.downloader import emdb_2660; emdb_2660()"
+      - name: Verify Cache Directory Before Saving
+        run: find . -name config.yaml
       - name: Save Cache
         uses: actions/cache@v4
         with:
           key: cached-data-${{ runner.os }}
-          path: ~/.cache/ASPIRE-data/
+          restore-keys: |
+            cached-data-
+          path: .github_cache/ASPIRE-data
+          enableCrossOsArchive: true
 
   build:
     needs: [check, data-cache]
     runs-on: ubuntu-latest
     # Run on every code push, but only on review ready PRs
-    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}    
     strategy:
       matrix:
         python-version: ['3.9', '3.10', '3.11', '3.12']
@@ -103,15 +101,18 @@ jobs:
         key: cached-data-${{ runner.os }}
         restore-keys: |
           cached-data-
-        path: ~/.cache/ASPIRE-data
+        path: .github_cache/ASPIRE-data
+        enableCrossOsArchive: true
     - name: Verify Restored Cache Directory
-      run: ls -lhR ~/.cache/ASPIRE-data
+      run: ls -lhR .github_cache/ASPIRE-data
     - name: Set Cache Directory
       run: |
-        mkdir -p ~/.config/ASPIRE
-        echo -e "cache:\n  cache_dir: ~/.cache/ASPIRE-data" > ~/.config/ASPIRE/config.yaml
+        echo "cache:" > config.yaml
+        echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
     - name: Test with tox
-      run: tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
+      run: |
+        export ASPIREDIR=.
+        tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
     - name: Upload Coverage to CodeCov
       uses: codecov/codecov-action@v4
       with:
@@ -156,8 +157,21 @@ jobs:
         pip install -e ".[dev]"
         pip freeze
         python -c "import numpy; numpy.show_config()"
+    - name: Restore Cache
+      uses: actions/cache@v4
+      with:
+        key: cached-data-${{ runner.os }}
+        restore-keys: |
+          cached-data-
+        path: .github_cache/ASPIRE-data
+        enableCrossOsArchive: true
+    - name: Set Cache Directory
+      run: |
+        echo "cache:" > config.yaml
+        echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
     - name: Execute Pytest Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
       run: |
+        export ASPIREDIR=.
         export OMP_NUM_THREADS=2
         # -n runs test in parallel using pytest-xdist
         pytest -n2 --durations=50 -s
@@ -248,9 +262,15 @@ jobs:
           key: cached-data-${{ runner.os }}
           restore-keys: |
             cached-data-
-          path: ~/.cache/ASPIRE-data
+          path: .github_cache/ASPIRE-data
+          enableCrossOsArchive: true
+      - name: Set Cache Directory
+        run: |
+          echo "cache:" > config.yaml
+          echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
       - name: Build Sphinx docs
         run: |
+          export ASPIREDIR=.
           make distclean
           sphinx-apidoc -f -o ./source ../src -H Modules
           make html
@@ -283,12 +303,15 @@ jobs:
         key: cached-data-${{ runner.os }}
         restore-keys: |
           cached-data-
-        path: ~/.cache/ASPIRE-data
+        path: .github_cache/ASPIRE-data
+        enableCrossOsArchive: true
     - name: Verify Restored Cache Directory
-      run: ls -lhR ~/.cache/ASPIRE-data
+      run: ls -lhR .github_cache/ASPIRE-data
     - name: Set Cache Directory
       run: |
-        mkdir -p ~/.config/ASPIRE
-        echo -e "cache:\n  cache_dir: ~/.cache/ASPIRE-data" > ~/.config/ASPIRE/config.yaml
+        echo "cache:" > config.yaml
+        echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
     - name: Test
-      run: python -m pytest -n3 --durations=50
+      run: |
+        export ASPIREDIR=.
+        python -m pytest -n3 --durations=50
