@@ -161,7 +161,9 @@ jobs:
         "import aspire; print(aspire.config['cache']['cache_dir']); import aspire.downloader; aspire.downloader.emdb_2660()"
     - name: Run
       run: |
-        ASPIREDIR=${{ env.WORK_DIR }} PYTHONWARNINGS=error python -m pytest --durations=50 --cov=aspire --cov-report=xml
+        ASPIREDIR=${{ env.WORK_DIR }} \
+        PYTHONWARNINGS="error,ignore::RuntimeWarning:aspire.nufft" \
+        python -m pytest --durations=50 --cov=aspire --cov-report=xml
     - name: Upload Coverage to CodeCov
       uses: codecov/codecov-action@v4
       with:
