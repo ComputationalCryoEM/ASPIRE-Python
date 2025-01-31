@@ -406,16 +406,20 @@ class LegacyNoiseEstimator(NoiseEstimator):
         )
         max_d_pixels = round(self.max_d * self.src.L)
 
-        psd = self.epsdS(self.src.images, samples_idx, max_d_pixels)[0]
+        psd = self.estimate_power_spectrum_distribution_2d(
+            self.src.images, samples_idx, max_d_pixels
+        )[0]
 
         return psd
 
     @staticmethod
-    def epsdR(images, samples_idx, max_d=None):
+    def estimate_power_spectrum_distribution_1d(images, samples_idx, max_d=None):
         """
         Estimate the 1D isotropic autocorrelation function of `images`.
         The samples to use in each image are given by `samples_idx` mask.
         The correlation is computed up to a maximal distance of `max_d`.
+
+        Port of MATLAB `cryo_epsdR`.
 
         :param images: `Image` instance
         :param samples_idx: Boolean mask shaped `(L,L)`.
@@ -517,11 +521,13 @@ class LegacyNoiseEstimator(NoiseEstimator):
         return R, x, cnt
 
     @staticmethod
-    def epsdS(images, samples_idx, max_d=None):
+    def estimate_power_spectrum_distribution_2d(images, samples_idx, max_d=None):
         """
         Estimate the 2D isotropic power spectrum of `images`.
         The samples to use in each image are given by `samples_idx` mask.
         The correlation is computed up to a maximal distance of `max_d`.
+
+        Port of MATLAB `cryo_epsdS`.
 
         :param images: Images instance
         :param samples_idx: Boolean mask shaped (L,L).
@@ -549,7 +555,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
             )
         max_d = int(min(max_d, L - 1))
 
-        R, x, _ = LegacyNoiseEstimator.epsdR(
+        R, x, _ = LegacyNoiseEstimator.estimate_power_spectrum_distribution_1d(
             images=images, samples_idx=samples_idx, max_d=max_d
         )
         _R = xp.asarray(R)  # Migrate to GPU for assignments below
