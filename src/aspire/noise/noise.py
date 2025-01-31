@@ -363,7 +363,9 @@ class LegacyNoiseEstimator(NoiseEstimator):
 
     def __init__(self, src, bg_radius=None, max_d=None):
         """
-        Given an `ImageSource`, constructs
+        Given an `ImageSource`, prepares for estimation of noise spectrum.
+
+        Estimate is delayed and computed on first access of `filter` attribute.
 
         :param src: A `ImageSource` object.
         :param bg_radius: The radius of the disk whose complement is used to estimate the noise.
