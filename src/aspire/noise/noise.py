@@ -480,11 +480,10 @@ class LegacyNoiseEstimator(NoiseEstimator):
         mask[samples_idx] = 1
         tmp = xp.zeros((batch_size, 2 * L + 1, 2 * L + 1))  # pad
         tmp[0, :L, :L] = mask
-        ftmp = fft.fft2(tmp[0])
-        # MATLAB code internally detects sym and implicitly casts,
-        #   we explicitly cast.
-        # Optimization note: This and the later fft call could be optimized with real/herm sym FFT calls.
-        Ncorr = fft.ifft2(ftmp * ftmp.conj()).real
+        # MATLAB code internally detects/implicitly casts,
+        #   we explicitly call rfft2/irfft2.
+        ftmp = fft.rfft2(tmp[0])
+        Ncorr = fft.irfft2(ftmp * ftmp.conj(), s=tmp.shape[1:])
         Ncorr = Ncorr[: max_d + 1, : max_d + 1]  # crop
         Ncorr = xp.asnumpy(xp.round(Ncorr))
 
@@ -507,10 +506,10 @@ class LegacyNoiseEstimator(NoiseEstimator):
 
             # Compute non-periodic autocorrelation
             tmp[:count, :L, :L] = samples[:count]  # pad
-            ftmp = fft.fft2(tmp[:count])
-            # MATLAB code internally detects conj sym and implicitly casts,
-            #   we explicitly cast.
-            s = fft.ifft2(ftmp * ftmp.conj()).real
+            # MATLAB code internally detects/implicitly casts,
+            #   we explicitly call rfft2/irfft2.
+            ftmp = fft.rfft2(tmp[:count])
+            s = fft.irfft2(ftmp * ftmp.conj(), s=tmp.shape[1:])
             s = s[:, 0 : max_d + 1, 0 : max_d + 1]  # crop
 
             # Accumulate all autocorrelation values R[k1,k2] such that
@@ -613,7 +612,8 @@ class LegacyNoiseEstimator(NoiseEstimator):
 
             samples[:cnt, _samples_idx] = images[start:end].asnumpy()[0][samples_idx]
             E += xp.sum(
-                (samples[:cnt] - xp.mean(samples[:cnt], axis=(1, 2)).reshape(cnt, 1, 1)) ** 2
+                (samples[:cnt] - xp.mean(samples[:cnt], axis=(1, 2)).reshape(cnt, 1, 1))
+                ** 2
             )
         # Mean energy of the noise samples
         n_samples_per_img = xp.count_nonzero(_samples_idx)
