@@ -462,9 +462,9 @@ class LegacyNoiseEstimator(NoiseEstimator):
         x = xp.sqrt(dsquare)  # actual distances
 
         # corrs[i] is the sum of all x[j]x[j+d] where d = x[i]
-        corrs = np.zeros_like(dsquare, dtype=np.float64)
+        corrs = xp.zeros_like(dsquare, dtype=np.float64)
         # corrcount[i] is the number of pairs summed in corr[i]
-        corrcount = np.zeros_like(dsquare, dtype=np.int64)
+        corrcount = xp.zeros_like(dsquare, dtype=np.int64)
 
         # distmap maps [i,j] to k where dsquare[k] = i**2 + j**2.
         #   -1 indicates distance is larger than max_d
@@ -474,6 +474,9 @@ class LegacyNoiseEstimator(NoiseEstimator):
         for i, d in enumerate(dsquare):
             inds = dists == d  # locations having distance `d`
             distmap[inds] = i  # assign index into dsquare `i`
+        # From here on, distmap will be accessed with flat indices
+        distmap = distmap.flatten()
+        validdists = xp.argwhere(distmap != -1)
 
         # Compute Ncorr using a constant unit image.
         mask = xp.zeros((L, L))
@@ -485,7 +488,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         ftmp = fft.rfft2(tmp[0])
         Ncorr = fft.irfft2(ftmp * ftmp.conj(), s=tmp.shape[1:])
         Ncorr = Ncorr[: max_d + 1, : max_d + 1]  # crop
-        Ncorr = xp.asnumpy(xp.round(Ncorr))
+        Ncorr = xp.round(Ncorr)
 
         # Values of isotropic autocorrelation function
         # R[i] is value of ACF at distance x[i]
@@ -493,6 +496,8 @@ class LegacyNoiseEstimator(NoiseEstimator):
 
         samples = xp.zeros((batch_size, L, L))
         tmp[0, :, :] = 0  # reset tmp
+        corrs = corrs.flatten()
+        corrcount = corrcount.flatten()
         for start in trange(
             0, n_img, batch_size, desc="Processing image autocorrelations"
         ):
@@ -514,23 +519,21 @@ class LegacyNoiseEstimator(NoiseEstimator):
 
             # Accumulate all autocorrelation values R[k1,k2] such that
             # k1**2 + k2**2 = dist (all autocorrelations of a certain distance).
-            # Optimization note: The MATLAB code used another map
-            #   layer `validdists` to remove one loop layer here, but
-            #   it relied primarily on MATLABs implicit ravel/unravel
-            #   and would be less clear in Python. Simpler code was ported.
-            s = xp.asnumpy(xp.sum(s, axis=0))
-            for i in range(max_d + 1):
-                for j in range(max_d + 1):
-                    idx = distmap[i, j]
-                    if idx != -1:
-                        corrs[idx] = corrs[idx] + s[i, j]
-                        corrcount[idx] = corrcount[idx] + Ncorr[i, j]
+            s = xp.sum(s, axis=0).flatten()
+            Ncorr = Ncorr.flatten()
+            for d in validdists:
+                idx = distmap[d]
+                corrs[idx] = corrs[idx] + s[d]
+                corrcount[idx] = corrcount[idx] + Ncorr[d]
 
         # Remove distances which had no samples
-        idx = np.where(corrcount != 0)
+        idx = xp.where(corrcount != 0)
         R = corrs[idx] / corrcount[idx]
         x = xp.asnumpy(x[idx])
         cnt = corrcount[idx]
+
+        R = xp.asnumpy(R)
+        cnt = xp.asnumpy(cnt)
 
         return R, x, cnt
 
