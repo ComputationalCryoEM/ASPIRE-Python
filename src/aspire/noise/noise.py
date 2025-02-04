@@ -504,7 +504,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
             end = min(n_img, start + batch_size)
             count = end - start
             # Mask off unused pixels
-            samples[:count, samples_idx] = images[start:end].asnumpy()[0][samples_idx]
+            samples[:count, samples_idx] = images[start:end].asnumpy()[:, samples_idx]
             # Optimization note: We could also compute the noise
             # energy estimate used later at this time to avoid looping
             # over images twice.
@@ -520,11 +520,11 @@ class LegacyNoiseEstimator(NoiseEstimator):
             # Accumulate all autocorrelation values R[k1,k2] such that
             # k1**2 + k2**2 = dist (all autocorrelations of a certain distance).
             s = xp.sum(s, axis=0).flatten()
-            Ncorr = Ncorr.flatten()
+            _Ncorr = Ncorr.flatten() * count
             for d in validdists:
                 idx = distmap[d]
                 corrs[idx] = corrs[idx] + s[d]
-                corrcount[idx] = corrcount[idx] + Ncorr[d]
+                corrcount[idx] = corrcount[idx] + _Ncorr[d]
 
         # Remove distances which had no samples
         idx = xp.where(corrcount != 0)
