@@ -826,7 +826,7 @@ class ImageSource(ABC):
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
     @_as_copy
-    def legacy_whiten(self, noise_response=None, delta=None):
+    def legacy_whiten(self, noise_response=None, delta=None, batch_size=512):
         """
         Reproduce the legacy MATLAB whitening process.
 
@@ -840,7 +840,7 @@ class ImageSource(ABC):
 
         if noise_response is None:
             logger.info("Computing noise response.")
-            psd = LegacyNoiseEstimator(self).filter.xfer_fn_array
+            psd = LegacyNoiseEstimator(self, batch_size=batch_size).filter.xfer_fn_array
         elif isinstance(noise_response, LegacyNoiseEstimator):
             psd = noise_response.filter.xfer_fn_array
         elif isinstance(noise_response, np.ndarray):
