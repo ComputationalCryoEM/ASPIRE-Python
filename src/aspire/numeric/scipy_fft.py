@@ -48,3 +48,9 @@ class ScipyFFT(FFT):
 
     def rfft(self, x, **kwargs):
         return sp.fft.rfft(x, **kwargs)
+
+    def irfft2(self, x, **kwargs):
+        return sp.fft.irfft2(x, **kwargs)
+
+    def rfft2(self, x, **kwargs):
+        return sp.fft.rfft2(x, **kwargs)

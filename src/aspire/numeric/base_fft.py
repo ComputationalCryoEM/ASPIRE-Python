@@ -18,6 +18,18 @@ class FFT:
     def ifft2(self, x, axes=(-2, -1), workers=-1):
         raise NotImplementedError("subclasses must implement this")
 
+    def rfft(self, x, axis=-1, workers=-1):
+        raise NotImplementedError("subclasses must implement this")
+
+    def irfft(self, x, axis=-1, workers=-1):
+        raise NotImplementedError("subclasses must implement this")
+
+    def rfft2(self, x, axes=(-2, -1), workers=-1):
+        raise NotImplementedError("subclasses must implement this")
+
+    def irfft2(self, x, axes=(-2, -1), workers=-1):
+        raise NotImplementedError("subclasses must implement this")
+
     def fftn(self, x, axes=None, workers=-1):
         raise NotImplementedError("subclasses must implement this")
 

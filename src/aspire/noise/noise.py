@@ -361,7 +361,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
     Isotropic noise estimator ported from MATLAB `cryo_noise_estimation`.
     """
 
-    def __init__(self, src, bg_radius=None, max_d=None):
+    def __init__(self, src, bg_radius=None, max_d=None, batch_size=512):
         """
         Given an `ImageSource`, prepares for estimation of noise spectrum.
 
@@ -374,12 +374,13 @@ class LegacyNoiseEstimator(NoiseEstimator):
             Default of `None` uses `(np.floor(src.L / 2) - 1) / L`
         :param max_d: Max computed correlation distance as a proportion of `src.L`.
             Default of `None` uses `np.floor(src.L/3) / L`.
+        :param batch_size:  The size of the batches in which to compute the variance estimate.
         """
 
         if bg_radius is None:
             bg_radius = (np.floor(src.L / 2) - 1) / src.L
 
-        super().__init__(src=src, bg_radius=bg_radius, batch_size=1)
+        super().__init__(src=src, bg_radius=bg_radius, batch_size=batch_size)
 
         self.max_d = max_d
         if self.max_d is None:
@@ -409,13 +410,18 @@ class LegacyNoiseEstimator(NoiseEstimator):
         max_d_pixels = round(self.max_d * self.src.L)
 
         psd = self.estimate_power_spectrum_distribution_2d(
-            self.src.images, samples_idx, max_d_pixels
+            self.src.images,
+            samples_idx,
+            max_d_pixels,
+            batch_size=self.batch_size,
         )[0]
 
         return psd
 
     @staticmethod
-    def estimate_power_spectrum_distribution_1d(images, samples_idx, max_d=None):
+    def estimate_power_spectrum_distribution_1d(
+        images, samples_idx, max_d=None, batch_size=512
+    ):
         """
         Estimate the 1D isotropic autocorrelation function of `images`.
         The samples to use in each image are given by `samples_idx` mask.
@@ -427,6 +433,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         :param samples_idx: Boolean mask shaped `(L,L)`.
         :param max_d: Max computed correlation distance in pixels.
            Default of `None` yields `np.floor(L / 3)`.
+        :param batch_size:  The size of the batches in which to compute the variance estimate.
         :return:
             - Radial PSD array of shape
             - Distances map array
@@ -435,6 +442,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
 
         n_img = images.n_images
         L = samples_idx.shape[-1]
+        batch_size = min(batch_size, n_img)
 
         # Correlations more than `max_d` pixels apart are not computed.
         if max_d is None:
@@ -466,17 +474,19 @@ class LegacyNoiseEstimator(NoiseEstimator):
         for i, d in enumerate(dsquare):
             inds = dists == d  # locations having distance `d`
             distmap[inds] = i  # assign index into dsquare `i`
+        # From here on, distmap will be accessed with flat indices
+        distmap = distmap.flatten()
+        validdists = xp.argwhere(distmap != -1)
 
         # Compute Ncorr using a constant unit image.
         mask = xp.zeros((L, L))
         mask[samples_idx] = 1
-        tmp = xp.zeros((2 * L + 1, 2 * L + 1))  # pad
-        tmp[:L, :L] = mask
-        ftmp = fft.fft2(tmp)
-        # MATLAB code internally detects sym and implicitly casts,
-        #   we explicitly cast.
-        # Optimization note: This and the later fft call could be optimized with real/herm sym FFT calls.
-        Ncorr = fft.ifft2(ftmp * ftmp.conj()).real
+        tmp = xp.zeros((batch_size, 2 * L + 1, 2 * L + 1))  # pad
+        tmp[0, :L, :L] = mask
+        # MATLAB code internally detects/implicitly casts,
+        #   we explicitly call rfft2/irfft2.
+        ftmp = fft.rfft2(tmp[0])
+        Ncorr = fft.irfft2(ftmp * ftmp.conj(), s=tmp.shape[1:])
         Ncorr = Ncorr[: max_d + 1, : max_d + 1]  # crop
         Ncorr = xp.round(Ncorr)
 
@@ -484,46 +494,53 @@ class LegacyNoiseEstimator(NoiseEstimator):
         # R[i] is value of ACF at distance x[i]
         R = xp.zeros(len(corrs))
 
-        samples = xp.zeros((L, L))
-        tmp[:, :] = 0  # reset tmp
-        for k in trange(n_img, desc="Processing image autocorrelations"):
+        samples = xp.zeros((batch_size, L, L))
+        tmp[0, :, :] = 0  # reset tmp
+        corrs = corrs.flatten()
+        corrcount = corrcount.flatten()
+        for start in trange(
+            0, n_img, batch_size, desc="Processing image autocorrelations"
+        ):
+            end = min(n_img, start + batch_size)
+            count = end - start
             # Mask off unused pixels
-            samples[samples_idx] = images[k].asnumpy()[0][samples_idx]
+            samples[:count, samples_idx] = images[start:end].asnumpy()[:, samples_idx]
             # Optimization note: We could also compute the noise
             # energy estimate used later at this time to avoid looping
             # over images twice.
 
             # Compute non-periodic autocorrelation
-            tmp[:L, :L] = samples  # pad
-            ftmp = fft.fft2(tmp)
-            # MATLAB code internally detects conj sym and implicitly casts,
-            #   we explicitly cast.
-            s = fft.ifft2(ftmp * ftmp.conj()).real
-            s = s[0 : max_d + 1, 0 : max_d + 1]  # crop
+            tmp[:count, :L, :L] = samples[:count]  # pad
+            # MATLAB code internally detects/implicitly casts,
+            #   we explicitly call rfft2/irfft2.
+            ftmp = fft.rfft2(tmp[:count])
+            s = fft.irfft2(ftmp * ftmp.conj(), s=tmp.shape[1:])
+            s = s[:, 0 : max_d + 1, 0 : max_d + 1]  # crop
 
             # Accumulate all autocorrelation values R[k1,k2] such that
             # k1**2 + k2**2 = dist (all autocorrelations of a certain distance).
-            # Optimization note: The MATLAB code used another map
-            #   layer `validdists` to remove one loop layer here, but
-            #   it relied primarily on MATLABs implicit ravel/unravel
-            #   and would be less clear in Python. Simpler code was ported.
-            for i in range(max_d + 1):
-                for j in range(max_d + 1):
-                    idx = distmap[i, j]
-                    if idx != -1:
-                        corrs[idx] = corrs[idx] + s[i, j]
-                        corrcount[idx] = corrcount[idx] + Ncorr[i, j]
+            s = xp.sum(s, axis=0).flatten()
+            _Ncorr = Ncorr.flatten() * count
+            for d in validdists:
+                idx = distmap[d]
+                corrs[idx] = corrs[idx] + s[d]
+                corrcount[idx] = corrcount[idx] + _Ncorr[d]
 
         # Remove distances which had no samples
         idx = xp.where(corrcount != 0)
-        R = xp.asnumpy(corrs[idx] / corrcount[idx])
+        R = corrs[idx] / corrcount[idx]
         x = xp.asnumpy(x[idx])
-        cnt = xp.asnumpy(corrcount[idx])
+        cnt = corrcount[idx]
+
+        R = xp.asnumpy(R)
+        cnt = xp.asnumpy(cnt)
 
         return R, x, cnt
 
     @staticmethod
-    def estimate_power_spectrum_distribution_2d(images, samples_idx, max_d=None):
+    def estimate_power_spectrum_distribution_2d(
+        images, samples_idx, max_d=None, batch_size=512
+    ):
         """
         Estimate the 2D isotropic power spectrum of `images`.
         The samples to use in each image are given by `samples_idx` mask.
@@ -535,6 +552,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         :param samples_idx: Boolean mask shaped (L,L).
         :param max_d: Max computed correlation distance in pixels.
            Default of `None` yields `np.floor(L / 3)`.
+        :param batch_size:  The size of the batches in which to compute the variance estimate.
         :return:
             - 2D PSD array
             - Radial PSD array
@@ -544,6 +562,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
 
         n_img = images.n_images
         L = samples_idx.shape[-1]
+        batch_size = min(batch_size, n_img)
 
         # Migrate mask to GPU as needed
         _samples_idx = xp.asarray(samples_idx)
@@ -558,7 +577,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         max_d = int(min(max_d, L - 1))
 
         R, x, _ = LegacyNoiseEstimator.estimate_power_spectrum_distribution_1d(
-            images=images, samples_idx=samples_idx, max_d=max_d
+            images=images, samples_idx=samples_idx, max_d=max_d, batch_size=batch_size
         )
         _R = xp.asarray(R)  # Migrate to GPU for assignments below
 
@@ -589,10 +608,16 @@ class LegacyNoiseEstimator(NoiseEstimator):
         # to estimate it.
 
         E = 0.0  # Total energy of the noise samples used to estimate the power spectrum.
-        samples = xp.zeros((L, L), dtype=np.float64)
-        for k in trange(n_img, desc="Estimating image noise energy"):
-            samples[_samples_idx] = images[k].asnumpy()[0][samples_idx]
-            E += xp.sum((samples - xp.mean(samples)) ** 2)
+        samples = xp.zeros((batch_size, L, L), dtype=np.float64)
+        for start in trange(0, n_img, batch_size, desc="Estimating image noise energy"):
+            end = min(n_img, start + batch_size)
+            cnt = end - start
+
+            samples[:cnt, _samples_idx] = images[start:end].asnumpy()[0][samples_idx]
+            E += xp.sum(
+                (samples[:cnt] - xp.mean(samples[:cnt], axis=(1, 2)).reshape(cnt, 1, 1))
+                ** 2
+            )
         # Mean energy of the noise samples
         n_samples_per_img = xp.count_nonzero(_samples_idx)
         meanE = E / (n_samples_per_img * n_img)
