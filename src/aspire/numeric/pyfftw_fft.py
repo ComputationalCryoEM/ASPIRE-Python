@@ -154,6 +154,18 @@ class PyfftwFFT(FFT):
 
         return b
 
+    def rfft(self, x, **kwargs):
+        return pyfftw.interfaces.numpy_fft.rfft(x, **kwargs)
+
+    def irfft(self, x, **kwargs):
+        return pyfftw.interfaces.numpy_fft.irfft(x, **kwargs)
+
+    def rfft2(self, x, **kwargs):
+        return pyfftw.interfaces.numpy_fft.rfft2(x, **kwargs)
+
+    def irfft2(self, x, **kwargs):
+        return pyfftw.interfaces.numpy_fft.irfft2(x, **kwargs)
+
     def fftshift(self, a, axes=None):
         return scipy_fft.fftshift(a, axes=axes)
 
@@ -165,3 +177,6 @@ class PyfftwFFT(FFT):
 
     def idct(self, x, **kwargs):
         return scipy_fft.idct(x, **kwargs)
+
+    def rfftfreq(self, x, **kwargs):
+        return scipy_fft.rfftfreq(x, **kwargs)

@@ -42,6 +42,15 @@ class FFT:
     def ifftshift(self, x, axes=None):
         raise NotImplementedError("subclasses must implement this")
 
+    def dct(self, x, **kwargs):
+        raise NotImplementedError("subclasses must implement this")
+
+    def idct(self, x, **kwargs):
+        raise NotImplementedError("subclasses must implement this")
+
+    def rfftfreq(self, x, **kwargs):
+        raise NotImplementedError("subclasses must implement this")
+
     def centered_ifft(self, x, axis=-1, workers=-1):
         x = self.ifftshift(x, axes=axis)
         x = self.ifft(x, axis=axis, workers=workers)
