@@ -409,7 +409,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         )
         max_d_pixels = round(self.max_d * self.src.L)
 
-        psd = self.estimate_power_spectrum_distribution_2d(
+        psd = self._estimate_power_spectrum_distribution_2d(
             self.src.images,
             samples_idx,
             max_d_pixels,
@@ -419,7 +419,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         return psd
 
     @staticmethod
-    def estimate_power_spectrum_distribution_1d(
+    def _estimate_power_spectrum_distribution_1d(
         images, samples_idx, max_d=None, batch_size=512
     ):
         """
@@ -538,7 +538,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         return R, x, cnt
 
     @staticmethod
-    def estimate_power_spectrum_distribution_2d(
+    def _estimate_power_spectrum_distribution_2d(
         images, samples_idx, max_d=None, batch_size=512
     ):
         """
@@ -576,7 +576,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
             )
         max_d = int(min(max_d, L - 1))
 
-        R, x, _ = LegacyNoiseEstimator.estimate_power_spectrum_distribution_1d(
+        R, x, _ = LegacyNoiseEstimator._estimate_power_spectrum_distribution_1d(
             images=images, samples_idx=samples_idx, max_d=max_d, batch_size=batch_size
         )
         _R = xp.asarray(R)  # Migrate to GPU for assignments below
