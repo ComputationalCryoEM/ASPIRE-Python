@@ -488,17 +488,10 @@ class LegacyNoiseEstimator(NoiseEstimator):
         fmask_padded = fft.rfft2(mask_padded[0])
         n_mask_pairs = fft.irfft2(fmask_padded * fmask_padded.conj(), s=mask_padded.shape[1:])
         n_mask_pairs = n_mask_pairs[: max_d + 1, : max_d + 1]  # crop
-        breakpoint()
         n_mask_pairs = xp.round(n_mask_pairs)
-
-        # Values of isotropic autocorrelation function
-        # R[i] is value of ACF at distance x[i]
-        R = xp.zeros(len(corrs))
 
         samples = xp.zeros((batch_size, L, L))
         mask_padded[0, :, :] = 0  # reset mask_padded
-        corrs = corrs.flatten()
-        corrcount = corrcount.flatten()
         for start in trange(
             0, n_img, batch_size, desc="Processing image autocorrelations"
         ):
@@ -527,6 +520,8 @@ class LegacyNoiseEstimator(NoiseEstimator):
                 corrs[idx] = corrs[idx] + s[d]
                 corrcount[idx] = corrcount[idx] + _n_mask_pairs[d]
 
+        # Values of isotropic autocorrelation function
+        # R[i] is value of ACF at distance x[i]
         # Remove distances which had no samples
         idx = xp.where(corrcount != 0)
         R = corrs[idx] / corrcount[idx]
