@@ -486,7 +486,9 @@ class LegacyNoiseEstimator(NoiseEstimator):
         # MATLAB code internally detects/implicitly casts,
         #   we explicitly call rfft2/irfft2.
         fmask_padded = fft.rfft2(mask_padded[0])
-        n_mask_pairs = fft.irfft2(fmask_padded * fmask_padded.conj(), s=mask_padded.shape[1:])
+        n_mask_pairs = fft.irfft2(
+            fmask_padded * fmask_padded.conj(), s=mask_padded.shape[1:]
+        )
         n_mask_pairs = n_mask_pairs[: max_d + 1, : max_d + 1]  # crop
         n_mask_pairs = xp.round(n_mask_pairs)
 
