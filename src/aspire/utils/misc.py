@@ -368,19 +368,13 @@ def gaussian_window(L, max_d, alpha=3.0, dtype=np.float64):
     reciprical of the standard deviation of the Gaussian window.
     See Harris 78.
 
-    When `alpha=1`, this function should be equivalent to
-    `gaussian_2d(size=2*L-1, sigma=max_d)`.
-
     :param L: Number of radial pixels
     :param max_d: Width of Gaussian (stddev)
     :param alpha: Reciprical of stddev of window
     :return: Numpy array with shape `(2L-1, 2L-1)`x
     """
 
-    X, Y = np.mgrid[-(L - 1) : L, -(L - 1) : L]  # -(L-1) to (L-1) inclusive
-    X = X.astype(dtype, copy=False)
-    Y = Y.astype(dtype, copy=False)
-    W = np.exp(-alpha * (X**2 + Y**2) / (2 * max_d**2))
+    W = gaussian_2d(size=2 * L - 1, sigma=max_d / np.sqrt(alpha), dtype=dtype)
 
     return W
 
