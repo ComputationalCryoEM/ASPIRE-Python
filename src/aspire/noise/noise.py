@@ -457,23 +457,23 @@ class LegacyNoiseEstimator(NoiseEstimator):
         # Note grid_2d['r'] is not used because we want an integer grid directly;
         #   yields integer dists (radius**2) values.
         X, Y = xp.mgrid[0 : max_d + 1, 0 : max_d + 1]
-        dists = X * X + Y * Y
-        dsquare = xp.sort(xp.unique(dists[dists <= max_d**2]))
-        x = xp.sqrt(dsquare)  # actual distances
+        dsquare = X * X + Y * Y
+        uniq_dsquare = xp.sort(xp.unique(dsquare[dsquare <= max_d**2]))
+        x = xp.sqrt(uniq_dsquare)  # actual distances
 
         # corrs[i] is the sum of all x[j]x[j+d] where d = x[i]
-        corrs = xp.zeros_like(dsquare, dtype=np.float64)
+        corrs = xp.zeros_like(uniq_dsquare, dtype=np.float64)
         # corrcount[i] is the number of pairs summed in corr[i]
-        corrcount = xp.zeros_like(dsquare, dtype=np.int64)
+        corrcount = xp.zeros_like(uniq_dsquare, dtype=np.int64)
 
-        # distmap maps [i,j] to k where dsquare[k] = i**2 + j**2.
+        # distmap maps [i,j] to k where uniq_dsquare[k] = i**2 + j**2.
         #   -1 indicates distance is larger than max_d
-        distmap = xp.full(shape=dists.shape, fill_value=-1)
+        distmap = xp.full(shape=dsquare.shape, fill_value=-1)
 
         # This differs from the MATLAB code, avoids `bisect`.
-        for i, d in enumerate(dsquare):
-            inds = dists == d  # locations having distance `d`
-            distmap[inds] = i  # assign index into dsquare `i`
+        for i, d in enumerate(uniq_dsquare):
+            inds = dsquare == d  # locations having distance `d`
+            distmap[inds] = i  # assign index into uniq_dsquare `i`
         # From here on, distmap will be accessed with flat indices
         distmap = distmap.flatten()
         valid_dists = xp.argwhere(distmap != -1)
@@ -589,10 +589,10 @@ class LegacyNoiseEstimator(NoiseEstimator):
         R2 = xp.zeros((2 * L - 1, 2 * L - 1), dtype=np.float64)
 
         X, Y = xp.mgrid[-L + 1 : L, -L + 1 : L]
-        dists2 = X * X + Y * Y
-        dsquare2 = xp.sort(xp.unique(dists2[dists2 <= max_d**2]))
-        for i, d in enumerate(dsquare2):
-            idx = dists2 == d
+        dists = X * X + Y * Y
+        uniq_dsquare = xp.sort(xp.unique(dists[dists <= max_d**2]))
+        for i, d in enumerate(uniq_dsquare):
+            idx = dists == d
             R2[idx] = _R[i]
 
         # Window the 2D autocorrelation and Fourier transform it to get the power
