@@ -476,26 +476,27 @@ class LegacyNoiseEstimator(NoiseEstimator):
             distmap[inds] = i  # assign index into dsquare `i`
         # From here on, distmap will be accessed with flat indices
         distmap = distmap.flatten()
-        validdists = xp.argwhere(distmap != -1)
+        valid_dists = xp.argwhere(distmap != -1)
 
         # Compute Ncorr using a constant unit image.
         mask = xp.zeros((L, L))
         mask[samples_idx] = 1
-        tmp = xp.zeros((batch_size, 2 * L + 1, 2 * L + 1))  # pad
-        tmp[0, :L, :L] = mask
+        mask_padded = xp.zeros((batch_size, 2 * L + 1, 2 * L + 1))  # pad
+        mask_padded[0, :L, :L] = mask
         # MATLAB code internally detects/implicitly casts,
         #   we explicitly call rfft2/irfft2.
-        ftmp = fft.rfft2(tmp[0])
-        Ncorr = fft.irfft2(ftmp * ftmp.conj(), s=tmp.shape[1:])
-        Ncorr = Ncorr[: max_d + 1, : max_d + 1]  # crop
-        Ncorr = xp.round(Ncorr)
+        fmask_padded = fft.rfft2(mask_padded[0])
+        n_mask_pairs = fft.irfft2(fmask_padded * fmask_padded.conj(), s=mask_padded.shape[1:])
+        n_mask_pairs = n_mask_pairs[: max_d + 1, : max_d + 1]  # crop
+        breakpoint()
+        n_mask_pairs = xp.round(n_mask_pairs)
 
         # Values of isotropic autocorrelation function
         # R[i] is value of ACF at distance x[i]
         R = xp.zeros(len(corrs))
 
         samples = xp.zeros((batch_size, L, L))
-        tmp[0, :, :] = 0  # reset tmp
+        mask_padded[0, :, :] = 0  # reset mask_padded
         corrs = corrs.flatten()
         corrcount = corrcount.flatten()
         for start in trange(
@@ -510,21 +511,21 @@ class LegacyNoiseEstimator(NoiseEstimator):
             # over images twice.
 
             # Compute non-periodic autocorrelation
-            tmp[:count, :L, :L] = samples[:count]  # pad
+            mask_padded[:count, :L, :L] = samples[:count]  # pad
             # MATLAB code internally detects/implicitly casts,
             #   we explicitly call rfft2/irfft2.
-            ftmp = fft.rfft2(tmp[:count])
-            s = fft.irfft2(ftmp * ftmp.conj(), s=tmp.shape[1:])
+            fmask_padded = fft.rfft2(mask_padded[:count])
+            s = fft.irfft2(fmask_padded * fmask_padded.conj(), s=mask_padded.shape[1:])
             s = s[:, 0 : max_d + 1, 0 : max_d + 1]  # crop
 
             # Accumulate all autocorrelation values R[k1,k2] such that
             # k1**2 + k2**2 = dist (all autocorrelations of a certain distance).
             s = xp.sum(s, axis=0).flatten()
-            _Ncorr = Ncorr.flatten() * count
-            for d in validdists:
+            _n_mask_pairs = n_mask_pairs.flatten() * count
+            for d in valid_dists:
                 idx = distmap[d]
                 corrs[idx] = corrs[idx] + s[d]
-                corrcount[idx] = corrcount[idx] + _Ncorr[d]
+                corrcount[idx] = corrcount[idx] + _n_mask_pairs[d]
 
         # Remove distances which had no samples
         idx = xp.where(corrcount != 0)
