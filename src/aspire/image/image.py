@@ -426,6 +426,7 @@ class Image:
         the instance `dtype`.
 
         :param psd: PSD as computed by `LegacyNoiseEstimator`.
+            `psd` in this case is shape (2 * self.src.L - 1, 2 * self.src.L - 1).
         :param delta: Threshold used to determine which frequencies to whiten
             and which to set to zero. By default all `sqrt(psd)` values
             less than `delta` are zeroed out in the whitening filter.
@@ -435,6 +436,11 @@ class Image:
         L_half = L // 2
         K = psd.shape[-1]
         k = int(np.ceil(K / 2))
+
+        # Check PSD
+        shp = (2 * L - 1, 2 * L - 1)
+        if psd.shape != shp:
+            raise RuntimeError(f"Incorrect PSD shape {psd.shape}, expectect {shp}.")
 
         # Create result array
         res = np.empty((n, L, L), dtype=self.dtype)
