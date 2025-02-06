@@ -537,7 +537,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
 
     @staticmethod
     def _estimate_power_spectrum_distribution_2d(
-        images, samples_idx, max_d=None, batch_size=512
+        images, samples_idx, max_d=None, batch_size=512, normalize_psd=False
     ):
         """
         Estimate the 2D isotropic power spectrum of `images`.
@@ -551,6 +551,11 @@ class LegacyNoiseEstimator(NoiseEstimator):
         :param max_d: Max computed correlation distance in pixels.
            Default of `None` yields `np.floor(L / 3)`.
         :param batch_size:  The size of the batches in which to compute the variance estimate.
+        :normalize_psd:  Optionally normalize returned PSD.
+            Disabled by default because it will typiccally be
+            renormalized later in preperation for the convolution
+            application in `Image.legacy_whiten`.
+            Enable to reproduce legacy PSD.
         :return:
             - 2D PSD array
             - Radial PSD array
@@ -601,32 +606,40 @@ class LegacyNoiseEstimator(NoiseEstimator):
             logger.warning(f"Large imaginary components in P2 {err}.")
         P2 = P2.real
 
-        # Normalize the power spectrum P2. The power spectrum is normalized such
-        # that its energy is equal to the average energy of the noise samples used
-        # to estimate it.
+        if normalize_psd:
+            # Normalize the power spectrum P2. The power spectrum is normalized such
+            # that its energy is equal to the average energy of the noise samples used
+            # to estimate it.
 
-        E = 0.0  # Total energy of the noise samples used to estimate the power spectrum.
-        samples = xp.zeros((batch_size, L, L), dtype=np.float64)
-        for start in trange(0, n_img, batch_size, desc="Estimating image noise energy"):
-            end = min(n_img, start + batch_size)
-            cnt = end - start
+            E = 0.0  # Total energy of the noise samples used to estimate the power spectrum.
+            samples = xp.zeros((batch_size, L, L), dtype=np.float64)
+            for start in trange(
+                0, n_img, batch_size, desc="Estimating image noise energy"
+            ):
+                end = min(n_img, start + batch_size)
+                cnt = end - start
 
-            samples[:cnt, _samples_idx] = images[start:end].asnumpy()[0][samples_idx]
-            E += xp.sum(
-                (samples[:cnt] - xp.mean(samples[:cnt], axis=(1, 2)).reshape(cnt, 1, 1))
-                ** 2
-            )
-        # Mean energy of the noise samples
-        n_samples_per_img = xp.count_nonzero(_samples_idx)
-        meanE = E / (n_samples_per_img * n_img)
+                samples[:cnt, _samples_idx] = images[start:end].asnumpy()[0][
+                    samples_idx
+                ]
+                E += xp.sum(
+                    (
+                        samples[:cnt]
+                        - xp.mean(samples[:cnt], axis=(1, 2)).reshape(cnt, 1, 1)
+                    )
+                    ** 2
+                )
+            # Mean energy of the noise samples
+            n_samples_per_img = xp.count_nonzero(_samples_idx)
+            meanE = E / (n_samples_per_img * n_img)
 
-        # Normalize P2 such that its mean energy is preserved and is equal to
-        # meanE, that is, mean(P2)==meanE. That way the mean energy does not
-        # go down if the number of pixels is artifically changed (say be
-        # upsampling, downsampling, or cropping). Note that P2 is already in
-        # units of energy, and so the total energy is given by sum(P2) and
-        # not by norm(P2).
-        P2 = P2 / xp.sum(P2) * meanE * P2.size
+            # Normalize P2 such that its mean energy is preserved and is equal to
+            # meanE, that is, mean(P2)==meanE. That way the mean energy does not
+            # go down if the number of pixels is artifically changed (say be
+            # upsampling, downsampling, or cropping). Note that P2 is already in
+            # units of energy, and so the total energy is given by sum(P2) and
+            # not by norm(P2).
+            P2 = P2 / xp.sum(P2) * meanE * P2.size
 
         # Check that P2 has no negative values.
         # Due to the truncation of the Gaussian window, we get small negative
