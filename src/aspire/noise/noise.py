@@ -497,7 +497,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
         ):
             end = min(n_img, start + batch_size)
             count = end - start
-            # Mask off unused pixels
+            # Pack masked `sample_idx` pixels from `images` batch into `samples`
             samples[:count, samples_idx] = images[start:end].asnumpy()[:, samples_idx]
             # Optimization note: We could also compute the noise
             # energy estimate used later at this time to avoid looping
