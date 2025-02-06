@@ -432,7 +432,7 @@ class Image:
         """
         n = self.n_images
         L = self.resolution
-        j = L // 2
+        L_half = L // 2
         K = psd.shape[-1]
         k = int(np.ceil(K / 2))
 
@@ -463,39 +463,44 @@ class Image:
         # The filter may have very small values or even zeros.
         # We don't want to process these, so make a list of all large entries.
         nzidx = fltr > 100 * delta
-        fnz = fltr[nzidx]
+        fltr_nz = fltr[nzidx]
 
-        pp = xp.zeros((K, K), dtype=np.float64)
-        p = xp.zeros((K, K), dtype=np.complex128)
+        padded_proj = xp.zeros((K, K), dtype=np.float64)
+        filtered_fpadded_proj = xp.zeros((K, K), dtype=np.complex128)
+
+        # Precompute the slices
+        if L % 2 == 1:
+            slc = slice(k - L_half - 1, k + L_half)
+        else:
+            slc = slice(k - L_half - 1, k + L_half - 1)
+
         for i, proj in enumerate(self.asnumpy()):
 
             # Zero pad the image to twice the size
-            if L % 2 == 1:
-                pp[k - j - 1 : k + j, k - j - 1 : k + j] = xp.asarray(proj)
-            else:
-                pp[k - j - 1 : k + j - 1, k - j - 1 : k + j - 1] = xp.asarray(proj)
+            padded_proj[slc, slc] = xp.asarray(proj)
 
             # Take the Fourier Transform of the padded image.
-            fp = fft.centered_fft2(pp)
+            fpadded_proj = fft.centered_fft2(padded_proj)
 
             # Divide the image by the whitening filter but only in
             # places where the filter is large.  In frequencies where
             # the filter is tiny we cannot whiten so we just use
             # zeros.
-            p[nzidx] = fp[nzidx] / fnz
-            p2 = fft.centered_ifft2(p)
+            filtered_fpadded_proj[nzidx] = fpadded_proj[nzidx] / fltr_nz
+            # `filtered_proj` is still padded and complex. Masked and cast below.
+            filtered_proj = fft.centered_ifft2(filtered_fpadded_proj)
 
             # The resulting image should be real.
-            if xp.linalg.norm(p2.imag) / xp.linalg.norm(p2) > 1e-13:
+            if (
+                xp.linalg.norm(filtered_proj.imag) / xp.linalg.norm(filtered_proj)
+                > 1e-13
+            ):
                 raise RuntimeError("Whitened image has strong imaginary component.")
 
-            if L % 2 == 1:
-                p2 = p2[k - j - 1 : k + j, k - j - 1 : k + j].real
-            else:
-                p2 = p2[k - j - 1 : k + j - 1, k - j - 1 : k + j - 1].real
+            filtered_proj = filtered_proj[slc, slc].real
 
             # Assign the resulting image.
-            res[i] = xp.asnumpy(p2)
+            res[i] = xp.asnumpy(filtered_proj)
 
         return Image(res)
 
