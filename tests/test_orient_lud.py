@@ -79,6 +79,7 @@ def src_orient_est_fixture(resolution, offsets, dtype, alpha):
         max_shift=max_shift,
         shift_step=shift_step,
         mask=False,
+        tol=0.005,
     )
 
     return src, orient_est

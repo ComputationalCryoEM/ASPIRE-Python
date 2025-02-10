@@ -275,6 +275,9 @@ class CommonlineLUD(CLOrient3D):
                 dinf_term -= Z
             dinf = np.linalg.norm(dinf_term, "fro") / max(np.linalg.norm(S, np.inf), 1)
 
+            logger.info(
+                f"Iteration: {itr}, residual: {max(pinf, dinf)}, target: {self.tol}"
+            )
             if max(pinf, dinf) <= self.tol:
                 return G
 
