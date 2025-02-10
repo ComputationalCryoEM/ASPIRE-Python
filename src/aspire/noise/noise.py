@@ -481,19 +481,19 @@ class LegacyNoiseEstimator(NoiseEstimator):
         # Compute Ncorr using a constant unit image.
         mask = xp.zeros((L, L))
         mask[samples_idx] = 1
-        mask_padded = xp.zeros((batch_size, 2 * L + 1, 2 * L + 1))  # pad
-        mask_padded[0, :L, :L] = mask
+        buf_padded = xp.zeros((batch_size, 2 * L + 1, 2 * L + 1))  # pad
+        buf_padded[0, :L, :L] = mask
         # MATLAB code internally detects/implicitly casts,
         #   we explicitly call rfft2/irfft2.
-        fmask_padded = fft.rfft2(mask_padded[0])
+        fbuf_padded = fft.rfft2(buf_padded[0])
         n_mask_pairs = fft.irfft2(
-            fmask_padded * fmask_padded.conj(), s=mask_padded.shape[1:]
+            fbuf_padded * fbuf_padded.conj(), s=buf_padded.shape[1:]
         )
         n_mask_pairs = n_mask_pairs[: max_d + 1, : max_d + 1]  # crop
         n_mask_pairs = xp.round(n_mask_pairs)
 
         samples = xp.zeros((batch_size, L, L))
-        mask_padded[0, :, :] = 0  # reset mask_padded
+        buf_padded[0, :, :] = 0  # reset buf_padded
         for start in trange(
             0, n_img, batch_size, desc="Processing image autocorrelations"
         ):
@@ -506,11 +506,11 @@ class LegacyNoiseEstimator(NoiseEstimator):
             # over images twice.
 
             # Compute non-periodic autocorrelation
-            mask_padded[:count, :L, :L] = samples[:count]  # pad
+            buf_padded[:count, :L, :L] = samples[:count]  # pad
             # MATLAB code internally detects/implicitly casts,
             #   we explicitly call rfft2/irfft2.
-            fmask_padded = fft.rfft2(mask_padded[:count])
-            s = fft.irfft2(fmask_padded * fmask_padded.conj(), s=mask_padded.shape[1:])
+            fbuf_padded = fft.rfft2(buf_padded[:count])
+            s = fft.irfft2(fbuf_padded * fbuf_padded.conj(), s=buf_padded.shape[1:])
             s = s[:, 0 : max_d + 1, 0 : max_d + 1]  # crop
 
             # Accumulate all autocorrelation values R[k1,k2] such that
