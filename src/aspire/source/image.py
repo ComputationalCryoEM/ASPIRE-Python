@@ -1519,10 +1519,19 @@ class IndexedSource(ImageSource):
             pixel_size=src.pixel_size,
         )
 
-        # Create filter indices, these are required to pass unharmed through filter eval code
-        #   that is potentially called by other methods later.
-        self.filter_indices = np.zeros(self.n, dtype=int)
-        self.unique_filters = [IdentityFilter()]
+        if src.unique_filters:
+            # Remap the filter indices to be unique.
+            #   Removes duplicates and filters that are unused in new source.
+            _filter_indices = src.filter_indices[self.index_map]
+            # _unq[_inv] reconstructs _filter_indices
+            _unq, _inv = np.unique(_filter_indices, return_inverse=True)
+            # Repack unique_filters
+            self.filter_indices = _inv
+            self.unique_filters = [copy.copy(src.unique_filters[i]) for i in _unq]
+        else:
+            # Pass through the None case
+            self.unique_filters = src.unique_filters
+            self.filter_indices = np.zeros(self.n)
 
         # Any further operations should not mutate this instance.
         self._mutable = False
