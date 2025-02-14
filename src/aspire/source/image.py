@@ -1531,7 +1531,7 @@ class IndexedSource(ImageSource):
         else:
             # Pass through the None case
             self.unique_filters = src.unique_filters
-            self.filter_indices = np.zeros(self.n)
+            self.filter_indices = np.zeros(self.n, dtype=int)
 
         # Any further operations should not mutate this instance.
         self._mutable = False
