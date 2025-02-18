@@ -54,7 +54,7 @@ def test_repr(sim_fixture):
     assert f"{sim2.n} of {sim.n}" in repr(sim2)
 
 
-@pytest.mark.expensive
+# @pytest.mark.expensive
 def test_filter_mapping():
     """
     This test is designed to ensure that `unique_filters` and `filter_indices`
