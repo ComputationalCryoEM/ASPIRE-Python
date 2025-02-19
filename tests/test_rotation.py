@@ -1,10 +1,12 @@
 import logging
+from itertools import product
 
 import numpy as np
 import pytest
 from scipy.spatial.transform import Rotation as sp_rot
 
-from aspire.utils import Rotation, utest_tolerance
+from aspire.downloader import emdb_2660
+from aspire.utils import Rotation, nearest_rotations, utest_tolerance
 
 logger = logging.getLogger(__name__)
 
@@ -184,3 +186,50 @@ def test_mean_angular_distance(dtype):
     mean_ang_dist = Rotation.mean_angular_distance(rots_z, rots_id)
 
     assert np.allclose(mean_ang_dist, np.pi / 4)
+
+
+def test_rot_with_refl(dtype):
+    """
+    Given random orthogonal matrices, test nearest_rotation returns a
+    pure rotation which preserves our 2D projection operation.
+    """
+
+    N = 10  # Number of random rots
+    SEED = 123
+    L = 128  # Pixel size for projections
+    atol = 1e-7  # Picked to cover both singles and doubles
+
+    # Generate a sample of random rotations
+    random_rot_mats = Rotation.generate_random_rotations(
+        N, seed=SEED, dtype=dtype
+    ).matrices
+
+    # Sanity check we are starting with pure rotations
+    np.testing.assert_allclose(np.linalg.det(random_rot_mats), 1, atol=atol)
+
+    # Reflection operations
+    refls = np.array([[1, 1, -1], [1, -1, 1], [-1, 1, 1], [-1, -1, -1]], dtype=dtype)
+
+    # Enumerate every combination of rot and refl into M
+    M = np.empty((len(random_rot_mats) * len(refls), 3, 3), dtype=dtype)
+    for i, (r, s) in enumerate(product(random_rot_mats, refls)):
+        M[i] = r * s
+
+    # Sanity check all entries are not pure rotations
+    np.testing.assert_allclose(np.linalg.det(M), -1, atol=atol)
+
+    R = nearest_rotations(M, allow_reflection=False)
+    # Sanity check all entries are pure rotations
+    np.testing.assert_allclose(np.linalg.det(R), 1, atol=atol)
+
+    # Create a volume to use for projections
+    v = emdb_2660().astype(dtype).downsample(L)
+
+    # Project using set of transforms M
+    ref_projections = v.project(M)
+
+    # Project using set of rotations R
+    rot_projections = v.project(R)
+
+    # Validate we are equivalent
+    np.testing.assert_allclose(rot_projections, ref_projections, atol=atol)
