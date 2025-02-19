@@ -316,18 +316,22 @@ def nearest_rotations(A, allow_reflection=False):
             f"Array must be of shape (3, 3) or (n, 3, 3). Found shape {A.shape}."
         )
 
-    # For the singular value decomposition A = U @ S @ V,
-    # we compute the nearest rotation matrices R = U @ V.
-    U, _, V = np.linalg.svd(A)
+    # For the singular value decomposition A = U @ S @ VT,
+    # we compute the nearest rotation matrices R = U @ VT.
+    U, _, VT = np.linalg.svd(A)
 
     if not allow_reflection:
-        # If det(U)*det(V) = -1, apply reflection about the origin
-        neg_det_idx = np.linalg.det(U) * np.linalg.det(V) < 0
+        # If det(U)*det(V) = -1,
+        #   apply reflection about the origin,
+        #   rotate around projection axis.
+        r_proj = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]], dtype=dtype)
+        neg_det_idx = np.linalg.det(U) * np.linalg.det(VT) < 0
         U[neg_det_idx] = U[neg_det_idx] @ np.diag((-1, -1, -1)).astype(
             dtype, copy=False
         )
+        VT[neg_det_idx] = VT[neg_det_idx] @ r_proj
 
-    rots = U @ V
+    rots = U @ VT
 
     return rots.reshape(og_shape)
 
