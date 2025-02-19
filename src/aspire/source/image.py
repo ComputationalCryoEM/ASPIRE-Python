@@ -775,7 +775,8 @@ class ImageSource(ABC):
         ds_factor = self.L / L
         self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
         self.offsets /= ds_factor
-        self.pixel_size *= ds_factor
+        if self.pixel_size is not None:
+            self.pixel_size *= ds_factor
 
         self.L = L
 
