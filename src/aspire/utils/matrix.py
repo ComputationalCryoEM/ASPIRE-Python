@@ -322,14 +322,23 @@ def nearest_rotations(A, allow_reflection=False):
 
     if not allow_reflection:
         # If det(U)*det(V) = -1,
-        #   apply reflection about the origin,
-        #   rotate around projection axis.
-        r_proj = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]], dtype=dtype)
+        #   we want to find a pure rotation R that is closest to the
+        #   preserving the 2D projection induced by the  orthogonal transform A.
+        #
+        #   This can be done by reflecting about the origin,
+        #   then rotating around projection axis.
+        #
+        #     R = (U @ diag([-1,-1,-1]) @ VT) @ r_projection
+        #
+        # This is accomplished by the single application of d to elements of VT.
+        #
+        #     R = (U @ diag([-1,-1,-1]) @ VT) @ diag([-1,-1,1])
+        #     R = (U * -1 @ VT) * [-1,-1,1]
+        #     R =  (U @ VT) * (-1 * [-1,-1,1])
+        #     R =  U @ (VT * [1,1,-1])
+        d = np.array([1, 1, -1], dtype=dtype)
         neg_det_idx = np.linalg.det(U) * np.linalg.det(VT) < 0
-        U[neg_det_idx] = U[neg_det_idx] @ np.diag((-1, -1, -1)).astype(
-            dtype, copy=False
-        )
-        VT[neg_det_idx] = VT[neg_det_idx] @ r_proj
+        VT[neg_det_idx] = VT[neg_det_idx] * d
 
     rots = U @ VT
 
