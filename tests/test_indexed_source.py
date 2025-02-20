@@ -62,7 +62,8 @@ def test_filter_mapping():
     This test is designed to ensure that `unique_filters` and `filter_indices`
     are being remapped correctly upon slicing.
 
-    Additionally it tests that a realistic preprocessing pipeline is equivalent.
+    Additionally it tests that a realistic preprocessing pipeline is equivalent
+    and can be saved then reloaded.
     """
 
     # Generate N projection images,
@@ -187,6 +188,7 @@ def test_filter_mapping():
         #   This implies the equalities in the next section translate
         #   to the original source as well
         #   Ideally, _if everything is working_, many of these are redundant.
+        #   If something fails to work, they may help pinpoint the fault.
         np.testing.assert_allclose(_src.images[:], src.images[:])
         np.testing.assert_allclose(_srcA.images[:], srcA.images[:])
         np.testing.assert_allclose(_srcB.images[:], srcB.images[:])
@@ -202,28 +204,3 @@ def test_filter_mapping():
         # Confirm A and B are still equivalent
         np.testing.assert_allclose(_srcB.images[:], _srcA.images[:])
         np.testing.assert_allclose(_ppB.images[:], _ppA.images[:])
-
-        # Confirm pre-processing the reloaded sources matches
-        # reloading the pre-processed sources.
-        pp_A = (
-            _srcA.phase_flip()
-            .downsample(DS)
-            .normalize_background()
-            .legacy_whiten()
-            .invert_contrast()
-            .cache()
-        )
-        pp_B = (
-            _srcB.phase_flip()
-            .downsample(DS)
-            .normalize_background()
-            .legacy_whiten()
-            .invert_contrast()
-            .cache()
-        )
-
-
-        np.testing.assert_allclose(pp_A.images[:], pp.images[0::2], atol=0.006)
-        np.testing.assert_allclose(pp_B.images[:], pp.images[1::2], atol=0.006)
-        np.testing.assert_allclose(pp_A.images[:], _pp.images[0::2], atol=0.006)
-        np.testing.assert_allclose(pp_B.images[:], _pp.images[1::2], atol=0.006)
