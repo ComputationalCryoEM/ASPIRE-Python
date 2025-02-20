@@ -5,7 +5,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from aspire.downloader import emdb_2660
+from aspire.downloader import emdb_2660, emdb_8012
 from aspire.image import Image
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
@@ -277,3 +277,7 @@ def test_pixel_size():
         img.pixel_size * L / dsL,
         err_msg="Incorrect pixel size.",
     )
+
+
+def test_x():
+    _ = emdb_8012()
