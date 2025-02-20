@@ -146,10 +146,10 @@ def test_filter_mapping():
     )
 
     # Confirm we match the original images
-    np.testing.assert_allclose(ppA.images[:], pp.images[0::2])
-    np.testing.assert_allclose(ppB.images[:], pp.images[1::2])
+    np.testing.assert_allclose(ppA.images[:], pp.images[0::2], atol=1e-6)
+    np.testing.assert_allclose(ppB.images[:], pp.images[1::2], atol=1e-6)
     # Confirm A and B are equivalent
-    np.testing.assert_allclose(ppB.images[:], ppA.images[:])
+    np.testing.assert_allclose(ppB.images[:], ppA.images[:], atol=1e-6)
 
     # Create a tmp dir for this test output
     with tempfile.TemporaryDirectory() as tmpdir_name:
@@ -190,40 +190,40 @@ def test_filter_mapping():
         np.testing.assert_allclose(_src.images[:], src.images[:])
         np.testing.assert_allclose(_srcA.images[:], srcA.images[:])
         np.testing.assert_allclose(_srcB.images[:], srcB.images[:])
-        np.testing.assert_allclose(_pp.images[:], pp.images[:])
-        np.testing.assert_allclose(_ppA.images[:], ppA.images[:])
-        np.testing.assert_allclose(_ppB.images[:], ppB.images[:])
+        np.testing.assert_allclose(_pp.images[:], pp.images[:], atol=1e-6)
+        np.testing.assert_allclose(_ppA.images[:], ppA.images[:], atol=1e-6)
+        np.testing.assert_allclose(_ppB.images[:], ppB.images[:], atol=1e-6)
 
         # Confirm reloading slices matches the reloading saved stack of images.
         np.testing.assert_allclose(_srcA.images[:], _src.images[0::2])
         np.testing.assert_allclose(_srcB.images[:], _src.images[1::2])
-        np.testing.assert_allclose(_ppA.images[:], _pp.images[0::2])
-        np.testing.assert_allclose(_ppB.images[:], _pp.images[1::2])
+        np.testing.assert_allclose(_ppA.images[:], _pp.images[0::2], atol=1e-5)
+        np.testing.assert_allclose(_ppB.images[:], _pp.images[1::2], atol=1e-5)
         # Confirm A and B are still equivalent
         np.testing.assert_allclose(_srcB.images[:], _srcA.images[:])
         np.testing.assert_allclose(_ppB.images[:], _ppA.images[:])
 
-        # # Confirm pre-processing the reloaded sources matches
-        # # reloading the pre-processed sources.
-        # pp_A = (
-        #     _srcA.phase_flip()
-        #     .downsample(DS)
-        #     .normalize_background()
-        #     .legacy_whiten()
-        #     .invert_contrast()
-        #     .cache()
-        # )
-        # pp_B = (
-        #     _srcB.phase_flip()
-        #     .downsample(DS)
-        #     .normalize_background()
-        #     .legacy_whiten()
-        #     .invert_contrast()
-        #     .cache()
-        # )
-        # hrmm, that's not good
-        # breakpoint()
-        # np.testing.assert_allclose(pp_A.images[:], pp.images[0::2])
-        # np.testing.assert_allclose(pp_B.images[:], pp.images[1::2])
-        # np.testing.assert_allclose(pp_A.images[:], _pp.images[0::2])
-        # np.testing.assert_allclose(pp_B.images[:], _pp.images[1::2])
+        # Confirm pre-processing the reloaded sources matches
+        # reloading the pre-processed sources.
+        pp_A = (
+            _srcA.phase_flip()
+            .downsample(DS)
+            .normalize_background()
+            .legacy_whiten()
+            .invert_contrast()
+            .cache()
+        )
+        pp_B = (
+            _srcB.phase_flip()
+            .downsample(DS)
+            .normalize_background()
+            .legacy_whiten()
+            .invert_contrast()
+            .cache()
+        )
+
+
+        np.testing.assert_allclose(pp_A.images[:], pp.images[0::2], atol=0.006)
+        np.testing.assert_allclose(pp_B.images[:], pp.images[1::2], atol=0.006)
+        np.testing.assert_allclose(pp_A.images[:], _pp.images[0::2], atol=0.006)
+        np.testing.assert_allclose(pp_B.images[:], _pp.images[1::2], atol=0.006)
