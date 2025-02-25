@@ -128,6 +128,11 @@ class CommonlineLUD(CLOrient3D):
         # Initialize commonline base class
         super().__init__(src, **kwargs)
 
+        # Upper-triangular mask
+        ut_mask = np.zeros((self.n_img, self.n_img), dtype=bool)
+        ut_mask[np.triu_indices(self.n_img, k=1)] = True
+        self.ut_mask = ut_mask
+
     def estimate_rotations(self):
         """
         Estimate rotation matrices using the common lines method with LUD optimization.
@@ -135,14 +140,14 @@ class CommonlineLUD(CLOrient3D):
         logger.info("Computing the common lines matrix.")
         self.build_clmatrix()
 
-        C = self._cl_to_C(self.clmatrix)
-        gram = self._compute_Gram(C)
+        self._cl_to_C(self.clmatrix)
+        gram = self._compute_Gram()
         gram = self._restructure_Gram(gram)
         self.rotations = self._deterministic_rounding(gram)
 
         return self.rotations
 
-    def _compute_Gram(self, C):
+    def _compute_Gram(self):
         """
         Perform the alternating direction method of multipliers (ADMM) for the SDP
         problem:
@@ -181,7 +186,7 @@ class CommonlineLUD(CLOrient3D):
             Phi = W + G / self.mu
 
         # Compute initial values
-        S, theta = self._Q_theta(Phi, C, self.mu)
+        S, theta = self._Q_theta(Phi)
         AS = self._compute_AX(S)
         resi = self._compute_AX(G) - b
 
@@ -206,7 +211,7 @@ class CommonlineLUD(CLOrient3D):
             Phi = W + ATy + G / self.mu
             if self.spectral_norm_constraint:
                 Phi -= Z
-            S, theta = self._Q_theta(Phi, C, self.mu)
+            S, theta = self._Q_theta(Phi)
 
             #############
             # Compute Z #
@@ -357,7 +362,7 @@ class CommonlineLUD(CLOrient3D):
 
         return Z, kk, zz
 
-    def _Q_theta(self, phi, C, mu):
+    def _Q_theta(self, phi):
         """
         Compute the matrix S and auxiliary variables theta for the optimization problem.
 
@@ -369,11 +374,6 @@ class CommonlineLUD(CLOrient3D):
         Python equivalent of matlab Qtheta MEX function.
 
         :param phi: ndarray, A 2*n_img x 2*n_img scaled dual variable matrix (Phi) used in the ADMM iterations.
-        :param C: ndarray, A 3D array (n_img x n_img x 2) containing commonline coordinates (in Cartesian form)
-            between pairs of images. Each C[i, j] stores the x and y coordinates of the common
-            line between image i and image j.
-        :param mu: float, The penalty parameter in the augmented Lagrangian. It controls the scaling of the
-            dual variable contribution in the ADMM updates.
         :returns:
             - S, A 2*n_img x 2*n_img matrix representing the fidelity term. It is a symmetric matrix
                 derived from the commonline constraints, normalized by theta.
@@ -381,29 +381,24 @@ class CommonlineLUD(CLOrient3D):
                 used to compute S. Each theta[i, j] stores the normalized adjustments for the common
                 line between image i and image j.
         """
-        # Initialize outputs
-        S = np.zeros((2 * self.n_img, 2 * self.n_img), dtype=self.dtype)
-        theta = np.zeros_like(C)
+        # Initialize theta, shape = (n_img, n_img, 2).
+        theta = np.zeros_like(self.C)
 
-        # Main routine
-        for i in range(self.n_img - 1):
-            for j in range(i + 1, self.n_img):
-                t = 0
-                for k in range(2):
-                    theta[i, j, k] = C[i, j, k] - mu * (
-                        phi[2 * i + k, 2 * j] * C[j, i, 0]
-                        + phi[2 * i + k, 2 * j + 1] * C[j, i, 1]
-                    )
-                    t += theta[i, j, k] ** 2
+        # Compute theta
+        phi = phi.reshape(self.n_img, 2, self.n_img, 2).transpose(0, 2, 1, 3)
+        sum_prod = (phi[self.ut_mask] * self.C_t[self.ut_mask, None]).sum(axis=2)
+        theta[self.ut_mask] = self.C[self.ut_mask] - self.mu * sum_prod
 
-                t = np.sqrt(t)
-                for k in range(2):
-                    if self.spectral_norm_constraint:
-                        theta[i, j, k] /= t
-                    else:
-                        theta[i, j, k] /= max(t, self.mu)
-                    S[2 * i + k, 2 * j] = theta[i, j, k] * C[j, i, 0]
-                    S[2 * i + k, 2 * j + 1] = theta[i, j, k] * C[j, i, 1]
+        # Normalize theta
+        theta_norm = np.linalg.norm(theta[self.ut_mask], axis=-1)[..., None]
+        if self.spectral_norm_constraint:
+            theta[self.ut_mask] /= theta_norm
+        else:
+            theta[self.ut_mask] /= np.maximum(theta_norm, self.mu)
+
+        # Construct S
+        S = theta[..., None] * self.C_t[:, :, None]
+        S = S.transpose(0, 2, 1, 3).reshape(2 * self.n_img, 2 * self.n_img)
 
         # Ensure S is symmetric
         S = (S + S.T) / 2
@@ -430,7 +425,8 @@ class CommonlineLUD(CLOrient3D):
                 C[j, i, 0] = np.cos(2 * np.pi * cl_ji / self.n_theta)
                 C[j, i, 1] = np.sin(2 * np.pi * cl_ji / self.n_theta)
 
-        return C
+        self.C = C
+        self.C_t = np.ascontiguousarray(C.transpose(1, 0, 2))
 
     @staticmethod
     def _compute_AX(X):
