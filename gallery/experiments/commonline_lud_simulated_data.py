@@ -93,4 +93,3 @@ mse = aligned_mse(oriented_src.rotations, src.rotations)
 logger.info(
     f"Mean squared error between globally aligned estimates and ground truth rotations: {mse}\n"
 )
-
