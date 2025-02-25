@@ -128,7 +128,7 @@ class CommonlineLUD(CLOrient3D):
         # Initialize commonline base class
         super().__init__(src, **kwargs)
 
-        # Upper-triangular mask
+        # Upper-triangular mask used in `_Q_theta`
         ut_mask = np.zeros((self.n_img, self.n_img), dtype=bool)
         ut_mask[np.triu_indices(self.n_img, k=1)] = True
         self.ut_mask = ut_mask
@@ -251,10 +251,9 @@ class CommonlineLUD(CLOrient3D):
                     else:
                         nev = 6
 
-                n_eigs = nev
                 if self.spectral_norm_constraint:
-                    n_eigs = min(nev, n)
-                dH, V = eigs(-H.astype(np.float64), k=n_eigs, which="LR")
+                    nev = min(nev, n)
+                dH, V = eigs(-H.astype(np.float64), k=nev, which="LR")
 
                 # Sort by eigenvalue magnitude.
                 dH = dH.real.astype(self.dtype, copy=False)
