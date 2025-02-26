@@ -129,6 +129,8 @@ jobs:
     - name: Test with tox
       run: |
         export ASPIREDIR=.
+        python -c \
+        "from aspire.downloader.data_fetcher import _data_fetcher; print(_data_fetcher.path)"
         tox --skip-missing-interpreters false -e py${{ matrix.python-version }}-${{ matrix.pyenv }}
     - name: Validate Cache Directory Hash
       run: |
