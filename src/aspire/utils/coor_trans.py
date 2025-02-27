@@ -317,25 +317,6 @@ def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):
     return mean_ang_dist
 
 
-def aligned_mse(rots_est, rots_gt):
-    """
-    Register estimates to ground truth rotations and compute the
-    mean angular distance between them (in degrees).
-
-    :param rots_est: A set of estimated rotations of size nx3x3.
-    :param rots_gt: A set of ground truth rotations of size nx3x3.
-
-    :return: The mean squared error between ground truth rotations
-        and globally aligned estimated rotations.
-    """
-    Q_mat, flag = register_rotations(rots_est, rots_gt)
-    logger.debug(f"Registration Q_mat: {Q_mat}\nflag: {flag}")
-    regrot = get_aligned_rotations(rots_est, Q_mat, flag)
-    mse = get_rots_mse(regrot, rots_gt)
-
-    return mse
-
-
 def common_line_from_rots(r1, r2, ell):
     """
     Compute the common line induced by rotation matrices r1 and r2.
