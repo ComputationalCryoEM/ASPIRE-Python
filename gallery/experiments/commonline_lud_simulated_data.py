@@ -21,7 +21,7 @@ import numpy as np
 from aspire.abinitio import CommonlineLUD
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import OrientedSource, Simulation
-from aspire.utils import aligned_mse, mean_aligned_angular_distance
+from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -85,11 +85,4 @@ oriented_src = OrientedSource(src, orient_est)
 mean_ang_dist = mean_aligned_angular_distance(oriented_src.rotations, src.rotations)
 logger.info(
     f"Mean angular distance between globally aligned estimates and ground truth rotations: {mean_ang_dist}\n"
-)
-
-# Additionally, we can compute the mean squared error between the ground truth rotations
-# and the globally aligned estimated rotations.
-mse = aligned_mse(oriented_src.rotations, src.rotations)
-logger.info(
-    f"Mean squared error between globally aligned estimates and ground truth rotations: {mse}\n"
 )
