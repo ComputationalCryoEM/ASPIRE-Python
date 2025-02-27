@@ -305,6 +305,20 @@ class CommonlineLUD(CLOrient3D):
     def _compute_Z(self, S, W, ATy, G, zz, itr, kk, nev):
         """
         Update ADMM subproblem for enforcing the spectral norm constraint.
+
+        :param S: A 2*n_img x 2*n_img symmetric matrix representing the fidelity term.
+        :param W: A 2*n_img x 2*n_img array, primary ADMM subproblem matrix.
+        :param ATy: A 2*n_img x 2*n_img array.
+        :param G: Current value of the 2*n_img x 2*n_img optimization solution matrix.
+        :param zz: eigenvalues from previous iteration.
+        :param itr: ADMM loop iteration.
+        :param kk: Number of eigenvalues of Z to use to enforce spectral norm constraint.
+        :param nev: Number of eigenvalues of W used in previous iteration of ADMM.
+
+        :returns:
+            - Z, Updated 2*n_img x 2*n_img matrix for spectral norm constraint ADMM subproblem.
+            - kk, Number of eigenvalues of Z to use to enforce spectral norm constraint in next iteration.
+            - nev, Number of eigenvalues of W to use in this iteration of ADMM.
         """
         lambda_ = self.alpha * self.n_img  # Spectral norm bound
         B = S + W + ATy + G / self.mu
