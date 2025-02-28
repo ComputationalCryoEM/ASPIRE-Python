@@ -179,7 +179,7 @@ logger.info("Begin Orientation Estimation")
 
 # Stash true rotations for later comparison.
 # Note class selection re-ordered our images, so we remap the indices back to the original source.
-indices = avgs.index_map  # Also available from avgs.src.selection_indices[:n_classes]
+indices = avgs.src.selection_indices[:n_classes]
 true_rotations = src.rotations[indices]
 
 # Create a custom orientation estimation object for ``avgs``.
@@ -217,3 +217,8 @@ estimated_volume.save(fn, overwrite=True)
 if interactive:
     plt.imshow(np.sum(estimated_volume.asnumpy()[0], axis=-1))
     plt.show()
+
+# FSC with ground truth volume
+ds_v = og_v.downsample(img_size)
+fsc, _ = estimated_volume.fsc(ds_v, cutoff=0.5)
+logger.info(f"Estimated FSC {fsc} Angstroms at {ds_v.pixel_size} Angstrom per pixel.")
