@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 #
 # Use of GPU is expected for a large configuration.  If running on a
 # less capable machine, or simply experimenting, it is strongly
-# recommened to reduce the problem size by altering ``img_size``,
+# recommended to reduce the problem size by altering ``img_size``,
 # ``n_classes``, ``n_nbor``, ``max_rows`` etc.
 
 img_size = 179  # Downsample the images/reconstruction to a desired resolution
@@ -75,7 +75,7 @@ pipelines = {
 # --------------
 # Preprocess by downsampling, correcting for CTF, and applying noise
 # correction.  After preprocessing, class averages are generated then
-# autmatically selected for use in reconstruction.
+# automatically selected for use in reconstruction.
 #
 # Each of the above steps are performed totally independently
 # for each dataset, first for A, then for B.

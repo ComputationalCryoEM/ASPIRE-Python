@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 #
 # Use of GPU is expected for a large configuration.
 # If running on a less capable machine, or simply experimenting, it is
-# strongly recommened to reduce ``img_size``, ``n_imgs``, and
+# strongly recommended to reduce ``img_size``, ``n_imgs``, and
 # ``n_nbor``.
 
 # Inputs
@@ -72,8 +72,8 @@ volume_output_filename = f"10028_abinitio_c{n_classes}_m{n_nbor}_{img_size}px.mr
 # ASPIRE-Python has the ability to automatically adjust CTF filters
 # for downsampling, and this can be employed simply by changing the
 # order of preprocessing steps, saving time by phase flipping lower
-# resolution images.  Howver,tThis script intentionally follows the order
-# described in the original publication.
+# resolution images.  However, this script intentionally follows the
+# order described in the original publication.
 
 # Create a source object for the experimental images
 src = RelionSource(
@@ -100,7 +100,7 @@ logger.info("Invert the global density contrast")
 src = src.invert_contrast().cache()
 
 # Save the preprocessed images.
-# These can be resused to experiment with later stages of the pipeline
+# These can be reused to experiment with later stages of the pipeline
 # without repeating the preprocessing computations.
 src.save(preprocessed_fn, save_mode="single", overwrite=True)
 
@@ -149,7 +149,7 @@ oriented_src.save(oriented_fn, save_mode="single", overwrite=True)
 
 logger.info("Begin Volume reconstruction")
 
-# Setup an estimator to perform the back projection.
+# Setup an estimator to perform the back-projection.
 estimator = MeanEstimator(oriented_src)
 
 # Perform the estimation and save the volume.

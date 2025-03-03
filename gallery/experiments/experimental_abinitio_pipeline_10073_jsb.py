@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 #
 # Use of GPU is expected for a large configuration.
 # If running on a less capable machine, or simply experimenting, it is
-# strongly recommened to reduce ``img_size``, ``n_imgs``, and
+# strongly recommended to reduce ``img_size``, ``n_imgs``, and
 # ``n_nbor``.
 
 # Inputs
@@ -110,7 +110,7 @@ logger.info("Begin Class Averaging")
 
 avgs = LegacyClassAvgSource(src, n_nbor=n_nbor).cache()
 
-# Save the entire set of class averages to disk so they can be re-used.
+# Save the entire set of class averages to disk so they can be reused.
 avgs.save(class_avg_fn, save_mode="single", overwrite=True)
 
 # We'll continue our pipeline by selecting``n_classes`` from ``avgs``.
@@ -123,7 +123,7 @@ avgs = avgs[::k].cache()
 # Common Line Estimation
 # ----------------------
 #
-# Estimating orientation of projections and assign to source by
+# Estimate orientation of projections and assign to source by
 # applying ``OrientedSource`` to the class averages from the prior
 # step. By default this applies the Common Line with Synchronization
 # Voting ``CLSync3N`` method.  Here additional weighting techniques
@@ -132,13 +132,13 @@ avgs = avgs[::k].cache()
 
 logger.info("Apply custom mask")
 # 10073 benefits from a masking procedure that is more aggressive than the default.
-# Note, since we've manually masked, the default masking is disabled below in ``CLSync3N``.
+# Note, since we've manually masked, the default masking is disabled below in `CLSync3N`.
 # This also upcasts to double precision, which is helpful for this reconstruction.
 mask = fuzzy_mask((img_size, img_size), np.float64, r0=0.4 * img_size, risetime=2)
 avgs = ArrayImageSource(avgs.images[:] * mask)
 
 logger.info("Begin Orientation Estimation")
-# Configure the CLSync3N algorithm,
+# Configure the `CLSync3N` algorithm,
 #  customized by enabling weighting and disabling default mask.
 ori_est = CLSync3N(avgs, mask=False, S_weighting=True, J_weighting=True)
 # Handles calling code to find and assign orientations and shifts.
@@ -156,7 +156,7 @@ oriented_src.save(oriented_fn, save_mode="single", overwrite=True)
 
 logger.info("Begin Volume reconstruction")
 
-# Setup an estimator to perform the back projection.
+# Setup an estimator to perform the back-projection.
 estimator = MeanEstimator(oriented_src)
 
 # Perform the estimation and save the volume.
