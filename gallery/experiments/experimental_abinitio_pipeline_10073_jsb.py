@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 #
 # Use of GPU is expected for a large configuration.
 # If running on a less capable machine, or simply experimenting, it is
-# strongly recommened to reduce ``img_size``, ``_n_imgs``, and
+# strongly recommened to reduce ``img_size``, ``n_imgs``, and
 # ``n_nbor``.
 
 # Inputs
@@ -108,10 +108,7 @@ src.save(preprocessed_fn, save_mode="single", overwrite=True)
 
 logger.info("Begin Class Averaging")
 
-avgs = LegacyClassAvgSource(
-    src,
-    n_nbor=n_nbor,
-).cache()
+avgs = LegacyClassAvgSource(src, n_nbor=n_nbor).cache()
 
 # Save the entire set of class averages to disk so they can be re-used.
 avgs.save(class_avg_fn, save_mode="single", overwrite=True)

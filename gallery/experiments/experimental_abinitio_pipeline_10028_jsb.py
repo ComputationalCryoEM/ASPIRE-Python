@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 #
 # Use of GPU is expected for a large configuration.
 # If running on a less capable machine, or simply experimenting, it is
-# strongly recommened to reduce ``img_size``, ``_n_imgs``, and
+# strongly recommened to reduce ``img_size``, ``n_imgs``, and
 # ``n_nbor``.
 
 # Inputs
@@ -56,6 +56,7 @@ n_nbor = 50  # How many neighbors to stack
 
 # Outputs
 preprocessed_fn = f"10028_preprocessed_{img_size}px.star"
+class_avg_fn = f"10028_var_sorted_cls_avgs_m{n_nbor}_{img_size}px.star"
 oriented_fn = f"10028_oriented_class_averages_{img_size}px.star"
 volume_output_filename = f"10028_abinitio_c{n_classes}_m{n_nbor}_{img_size}px.mrc"
 
@@ -110,7 +111,10 @@ src.save(preprocessed_fn, save_mode="single", overwrite=True)
 # Now perform classification and averaging for each class.
 
 logger.info("Begin Class Averaging")
-avgs = LegacyClassAvgSource(src, n_nbor=n_nbor)
+avgs = LegacyClassAvgSource(src, n_nbor=n_nbor).cache()
+
+# Save the entire set of class averages to disk so they can be re-used.
+avgs.save(class_avg_fn, save_mode="single", overwrite=True)
 
 # We'll continue our pipeline with the first ``n_classes`` from
 # ``avgs``.  The classes will be selected by the ``class_selector`` of a

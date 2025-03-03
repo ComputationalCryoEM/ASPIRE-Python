@@ -29,10 +29,10 @@ logger = logging.getLogger(__name__)
 # ---------------
 # Example configuration.
 #
-# Use of GPU is expected for a large configuration.
-# If running on a less capable machine, or simply experimenting, it is
-# strongly recommened to reduce ``img_size``, ``_n_imgs``, and
-# ``n_nbor``.
+# Use of GPU is expected for a large configuration.  If running on a
+# less capable machine, or simply experimenting, it is strongly
+# recommened to reduce the problem size by altering ``img_size``,
+# ``n_classes``, ``n_nbor``, ``max_rows`` etc.
 
 img_size = 179  # Downsample the images/reconstruction to a desired resolution
 n_classes = 3000  # How many class averages to compute.
