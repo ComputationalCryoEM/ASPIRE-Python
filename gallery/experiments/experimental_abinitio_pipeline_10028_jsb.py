@@ -7,11 +7,13 @@ components corresponding to loading real Relion picked
 particle cryo-EM data and running key ASPIRE-Python
 Abinitio model components as a pipeline.
 
-This demonstrates reproducing results similar to those found in::
+This demonstrates reproducing results similar to those found in:
 
-  Common lines modeling for reference free Ab-initio reconstruction in cryo-EM
-  Journal of Structural Biology 2017
-  https://doi.org/10.1016/j.jsb.2017.09.007
+.. admonition:: Publication
+
+   | Common lines modeling for reference free Ab-initio reconstruction in cryo-EM
+   | Journal of Structural Biology 2017
+   | https://doi.org/10.1016/j.jsb.2017.09.007
 
 Specifically this pipeline uses the
 EMPIAR 10028 picked particles data, available here:
