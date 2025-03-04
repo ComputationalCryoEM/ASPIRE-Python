@@ -5,7 +5,7 @@ Abinitio Pipeline - Experimental Data EMPIAR 10073
 This notebook introduces a selection of
 components corresponding to loading real Relion picked
 particle cryo-EM data and running key ASPIRE-Python
-Abinitio model components as a pipeline.
+ab initio model components as a pipeline.
 
 This demonstrates reproducing results similar to those found in:
 
@@ -115,7 +115,7 @@ avgs = LegacyClassAvgSource(src, n_nbor=n_nbor).cache()
 # Save the entire set of class averages to disk so they can be reused.
 avgs.save(class_avg_fn, save_mode="single", overwrite=True)
 
-# We'll continue our pipeline by selecting``n_classes`` from ``avgs``.
+# We'll continue our pipeline by selecting ``n_classes`` from ``avgs``.
 # To capture a broader range of viewing angles, uniformly select every ``k`` image.
 k = (avgs.n - 1) // n_classes
 avgs = avgs[::k].cache()
@@ -158,7 +158,7 @@ oriented_src.save(oriented_fn, save_mode="single", overwrite=True)
 
 logger.info("Begin Volume reconstruction")
 
-# Setup an estimator to perform the back-projection.
+# Set up an estimator to perform the backprojection.
 estimator = MeanEstimator(oriented_src)
 
 # Perform the estimation and save the volume.
