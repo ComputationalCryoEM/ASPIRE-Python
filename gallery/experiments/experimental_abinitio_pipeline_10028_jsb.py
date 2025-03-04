@@ -5,7 +5,7 @@ Abinitio Pipeline - Experimental Data EMPIAR 10028
 This notebook introduces a selection of
 components corresponding to loading real Relion picked
 particle cryo-EM data and running key ASPIRE-Python
-Abinitio model components as a pipeline.
+ab initio model components as a pipeline.
 
 This demonstrates reproducing results similar to those found in:
 
@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 # ``n_nbor``.
 
 # Inputs
+# Note the published ``shiny_2sets.star`` requires removal of a stray '9' character on line 5476.
 starfile_in = "10028/data/shiny_2sets_fixed9.star"
 data_folder = "."  # This depends on the specific starfile entries.
 pixel_size = 1.34  # Defined with the dataset from EMPIAR
@@ -151,7 +152,7 @@ oriented_src.save(oriented_fn, save_mode="single", overwrite=True)
 
 logger.info("Begin Volume reconstruction")
 
-# Setup an estimator to perform the back-projection.
+# Set up an estimator to perform the backprojection.
 estimator = MeanEstimator(oriented_src)
 
 # Perform the estimation and save the volume.
