@@ -71,7 +71,7 @@ def weights(sim):
     # Construct simple test weights;
     # one uniform positive and negative weighted volume respectively.
     r = 2  # Number of weighted volumes
-    weights = np.ones((sim.n, r)) / np.sqrt(sim.n)
+    weights = np.ones((sim.n, r), dtype=sim.dtype) / np.sqrt(sim.n, dtype=sim.dtype)
     weights[:, 1] *= -1  # negate second weight vector
 
     return weights

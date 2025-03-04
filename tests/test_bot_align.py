@@ -74,10 +74,10 @@ def vol_data_fixture(snr, dtype):
     L = v.resolution
     shape = (L, L, L)
     ns_std = np.sqrt(norm(v) ** 2 / (L**3 * snr)).astype(v.dtype)
-    reference_vol = v + normal(0, ns_std, shape)
+    reference_vol = v + normal(0, ns_std, shape).astype(dtype, copy=False)
     r = Rotation.generate_random_rotations(1, dtype=v.dtype, seed=1234)
     R_true = r.matrices[0]
-    test_vol = v.rotate(r) + normal(0, ns_std, shape)
+    test_vol = v.rotate(r) + normal(0, ns_std, shape).astype(dtype, copy=False)
 
     return reference_vol, test_vol, R_true
 

@@ -305,9 +305,10 @@ class MeanEstimator(WeightedVolumesEstimator):
 
     def __init__(self, src, **kwargs):
         # Note, Handle boosting by adjusting weights based on symmetric order.
-        weights = np.ones((src.n, 1)) / np.sqrt(
-            src.n * len(src.symmetry_group.matrices)
+        weights = np.ones((src.n, 1), dtype=src.dtype) / np.sqrt(
+            src.n * len(src.symmetry_group.matrices), dtype=src.dtype
         )
+
         super().__init__(weights, src, **kwargs)
 
     def __getattr__(self, name):

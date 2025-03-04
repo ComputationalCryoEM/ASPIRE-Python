@@ -80,6 +80,20 @@ def test_group_rotations(group_fixture):
     assert isinstance(rotations, Rotation)
 
 
+def test_astype(group_fixture):
+    """Test `astype` returns correct SymmetryGroup with correct dtype."""
+    sym_group_singles = group_fixture.astype(np.float32)
+    sym_group_doubles = group_fixture.astype(np.float64)
+
+    # Check that astype returns the correct SymmetryGroup
+    np.testing.assert_equal(sym_group_singles, group_fixture)
+    np.testing.assert_equal(sym_group_doubles, group_fixture)
+
+    # Check that we have specified dtype
+    np.testing.assert_equal(sym_group_singles.dtype, np.float32)
+    np.testing.assert_equal(sym_group_doubles.dtype, np.float64)
+
+
 def test_parser_identity():
     result = SymmetryGroup.parse("C1", dtype=np.float32)
     assert isinstance(result, IdentitySymmetryGroup)
@@ -92,16 +106,15 @@ def test_parser_with_group(group_fixture):
     assert result.dtype == group_fixture.dtype
 
 
-def test_parser_dtype_casting(group_fixture, caplog):
+def test_parser_dtype_casting(group_fixture):
     """Test that dtype gets re-cast and warns."""
     dtype = np.float32
     if group_fixture.dtype == np.float32:
         dtype = np.float64
 
-    caplog.clear()
     msg = f"Recasting SymmetryGroup with dtype {dtype}."
-    _ = SymmetryGroup.parse(group_fixture, dtype)
-    assert msg in caplog.text
+    with pytest.warns(UserWarning, match=msg):
+        _ = SymmetryGroup.parse(group_fixture, dtype)
 
 
 def test_parser_error():
