@@ -5,6 +5,7 @@ import tempfile
 from unittest import TestCase
 
 import numpy as np
+import pytest
 from pytest import raises
 
 from aspire.basis import FBBasis3D
@@ -242,3 +243,21 @@ class ImageTestCase(TestCase):
             # Test the content matched when loaded
             src2 = RelionSource(star_path)
             np.testing.assert_allclose(src.images[:], src2.images[:])
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_dtype_passthrough(dtype):
+    """
+    Test dtypes are passed appropriately to metadata.
+    """
+    n_ims = 10
+    res = 32
+    ims = np.ones((n_ims, res, res), dtype=dtype)
+
+    src = ArrayImageSource(ims)
+
+    # Check dtypes
+    np.testing.assert_equal(src.dtype, dtype)
+    np.testing.assert_equal(src.images[:].dtype, dtype)
+    np.testing.assert_equal(src.amplitudes.dtype, dtype)
+    np.testing.assert_equal(src.offsets.dtype, dtype)

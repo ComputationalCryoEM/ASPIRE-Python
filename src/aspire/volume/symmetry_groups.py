@@ -1,4 +1,5 @@
 import logging
+import warnings
 from abc import ABC, abstractmethod, abstractproperty
 
 import numpy as np
@@ -61,7 +62,11 @@ class SymmetryGroup(ABC):
 
         if isinstance(symmetry, SymmetryGroup):
             if symmetry.dtype != dtype:
-                logger.warning(f"Recasting SymmetryGroup with dtype {dtype}.")
+                warnings.warn(
+                    f"Recasting SymmetryGroup with dtype {dtype}.",
+                    category=UserWarning,
+                    stacklevel=2,
+                )
                 group_kwargs = dict(dtype=dtype)
                 if getattr(symmetry, "order", False) and symmetry.order > 1:
                     group_kwargs["order"] = symmetry.order
@@ -97,6 +102,10 @@ class SymmetryGroup(ABC):
             group_kwargs["order"] = int(symmetric_order)
 
         return symmetry_group(**group_kwargs)
+
+    def astype(self, dtype):
+        """Copy of the SymmetryGroup object, cast to a specified dtype."""
+        return SymmetryGroup.parse(self.to_string, dtype)
 
 
 class CnSymmetryGroup(SymmetryGroup):

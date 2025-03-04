@@ -413,7 +413,7 @@ class Simulation(ImageSource):
         C = self.C
         vols_c = self.vols - self.mean_true()
 
-        p = np.ones(C) / C
+        p = np.ones(C, dtype=self.dtype) / C.astype(self.dtype)
         Q, R = qr(vols_c.to_vec().T, mode="economic")
 
         # Rank is at most C-1, so remove last vector

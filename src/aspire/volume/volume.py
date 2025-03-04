@@ -150,7 +150,7 @@ class Volume:
         return self.__class__(
             self.asnumpy().astype(dtype, copy=copy),
             pixel_size=self.pixel_size,
-            symmetry_group=self.symmetry_group,
+            symmetry_group=self.symmetry_group.astype(dtype),
         )
 
     def _check_key_dims(self, key):

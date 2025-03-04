@@ -419,7 +419,10 @@ class ImageSource(ABC):
     @property
     def offsets(self):
         return np.atleast_2d(
-            self.get_metadata(["_rlnOriginX", "_rlnOriginY"], default_value=0.0)
+            self.get_metadata(
+                ["_rlnOriginX", "_rlnOriginY"],
+                default_value=np.array(0.0, dtype=self.dtype),
+            )
         )
 
     @offsets.setter
@@ -430,7 +433,11 @@ class ImageSource(ABC):
 
     @property
     def amplitudes(self):
-        return np.atleast_1d(self.get_metadata("_rlnAmplitude", default_value=1.0))
+        return np.atleast_1d(
+            self.get_metadata(
+                "_rlnAmplitude", default_value=np.array(1.0, dtype=self.dtype)
+            )
+        )
 
     @amplitudes.setter
     def amplitudes(self, values):
