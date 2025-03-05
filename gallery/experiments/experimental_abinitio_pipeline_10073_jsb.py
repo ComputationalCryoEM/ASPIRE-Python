@@ -27,14 +27,12 @@ https://www.ebi.ac.uk/empiar/EMPIAR-10073
 # Import packages that will be used throughout this experiment.
 
 import logging
-import os
 from pathlib import Path
 
 import numpy as np
 
 from aspire.abinitio import CLSync3N
 from aspire.denoising import LegacyClassAvgSource
-from aspire.image import Image
 from aspire.reconstruction import MeanEstimator
 from aspire.source import ArrayImageSource, OrientedSource, RelionSource
 from aspire.utils import fuzzy_mask
