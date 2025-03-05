@@ -400,7 +400,6 @@ class SimTestCase(TestCase):
 
     def testSimulationVolCoords(self):
         coords, norms, inners = self.sim.vol_coords()
-
         np.testing.assert_allclose([4.72837704, -4.72837709], coords, atol=1e-4)
         np.testing.assert_allclose([8.20515764e-07, 1.17550184e-06], norms, atol=1e-4)
         np.testing.assert_allclose(
