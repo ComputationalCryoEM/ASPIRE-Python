@@ -308,7 +308,6 @@ class MeanEstimator(WeightedVolumesEstimator):
         weights = np.ones((src.n, 1), dtype=src.dtype) / np.sqrt(
             src.n * len(src.symmetry_group.matrices), dtype=src.dtype
         )
-
         super().__init__(weights, src, **kwargs)
 
     def __getattr__(self, name):
