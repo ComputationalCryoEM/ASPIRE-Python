@@ -20,7 +20,7 @@ import numpy as np
 
 from aspire.abinitio import CommonlineLUD
 from aspire.noise import WhiteNoiseAdder
-from aspire.source import OrientedSource, Simulation
+from aspire.source import Simulation
 from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import Volume
 
@@ -28,61 +28,83 @@ logger = logging.getLogger(__name__)
 
 
 # %%
-# Generate Simulated Data
-# -----------------------
-# We generate simulated noisy images from a low res volume map of
-# the 50S ribosomal subunit of E. coli.
+# Parameters
+# ----------
+# Set up some initializing parameters. We will run the LUD algorithm
+# for various levels of noise and output a table of results.
 
-n_imgs = 500  # Number of images in our source
-snr = 1 / 8  # Signal-to-noise ratio
+SNR = [1 / 8, 1 / 16, 1 / 32]  # Signal-to-noise ratio
+n_imgs = 50  # Number of images in our source
 dtype = np.float64
-res = 129
+pad_size = 129
+results = {
+    "SNR": ["1/8", "1/16", "1/32"],
+    "Mean Angular Distance": [],
+}  # Dictionary to store results
 
-# We download the volume map and zero-pad to the indicated resolution.
+# %%
+# Load Volume Map
+# ---------------
+# We will generate simulated noisy images from a low res volume
+# map available in our data folder. This volume map is a 65 x 65 x 65
+# voxel volume which we intend to upsample to 129 x 129 x 129.
+# To do this we use our ``downsample`` method which, when provided a voxel
+# size larger than the input volume, internally zero-pads in Fourier
+# space to increase the overall shape of the volume.
 vol = (
     Volume.load("../tutorials/data/clean70SRibosome_vol_65p.mrc")
     .astype(dtype)
-    .downsample(res)
+    .downsample(pad_size)
 )
 logger.info("Volume map data" f" shape: {vol.shape} dtype:{vol.dtype}")
 
-# We generate a white noise adder with specifid SNR.
-noise_adder = WhiteNoiseAdder.from_snr(snr=snr)
+# %%
+# Generate Noisy Images and Estimate Rotations
+# --------------------------------------------
+# A ``Simulation`` object is used to generate simulated data at various
+# noise levels. Then rotations are estimated using ``CommonlineLUD` algorithm.
+# Results are measured by computing the mean aligned angular distance between
+# the ground truth rotations and the globally aligned estimated rotations.
+for snr in SNR:
+    # Generate a white noise adder with specifid SNR.
+    noise_adder = WhiteNoiseAdder.from_snr(snr=snr)
 
-# Now we initialize a Simulation source to generate noisy, centered images.
-src = Simulation(
-    n=n_imgs,
-    vols=vol,
-    offsets=0,
-    noise_adder=noise_adder,
-    dtype=dtype,
-)
+    # Initialize a Simulation source to generate noisy, centered images.
+    src = Simulation(
+        n=n_imgs,
+        vols=vol,
+        offsets=0,
+        amplitudes=1,
+        noise_adder=noise_adder,
+        dtype=dtype,
+    ).cache()
 
-# We can view the noisy images.
-src.images[:5].show()
+    # Estimate rotations using the LUD algorithm.
+    orient_est = CommonlineLUD(src)
+    est_rotations = orient_est.estimate_rotations()
+
+    # Find the mean aligned angular distance between estimates and ground truth rotations.
+    mean_ang_dist = mean_aligned_angular_distance(est_rotations, src.rotations)
+
+    # Store results.
+    results["Mean Angular Distance"].append(mean_ang_dist)
 
 # %%
-# Estimate Orientations
-# ---------------------
-# We use the LUD commonline algorithm to estimate the orientation of the noisy images.
+# Display Results
+# ---------------
+# Display table of results for various noise levels.
 
-logger.info("Begin Orientation Estimation")
+# Column widths
+col1_width = 10
+col2_width = 22
 
-# Create a custom orientation estimation object which uses the LUD algorithm.
-# By default, we use the algortihm without spectral norm constraint.
-orient_est = CommonlineLUD(src, n_theta=360)
+# Create table as a string
+table = []
+table.append(f"{'SNR':<{col1_width}} {'Mean Angular Distance':<{col2_width}}")
+table.append("-" * (col1_width + col2_width))
 
-# Initialize an ``OrientedSource`` class instance that performs orientation
-# estimation in a lazy fashion upon request of images or rotations.
-oriented_src = OrientedSource(src, orient_est)
+for snr, angle in zip(results["SNR"], results["Mean Angular Distance"]):
+    table.append(f"{snr:<{col1_width}} {angle:<{col2_width}}")
 
-# %%
-# Results
-# -------
-# We measure our results by finding the mean angular distance between the
-# ground truth rotations and the estimated rotations adjusted by the best
-# global alignment.
-mean_ang_dist = mean_aligned_angular_distance(oriented_src.rotations, src.rotations)
-logger.info(
-    f"Mean angular distance between globally aligned estimates and ground truth rotations: {mean_ang_dist}\n"
-)
+# Log the table
+logger.info("\n" + "\n".join(table))
