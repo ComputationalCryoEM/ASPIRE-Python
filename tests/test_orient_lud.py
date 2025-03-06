@@ -63,12 +63,16 @@ def src_orient_est_fixture(resolution, offsets, dtype, alpha):
         dtype=dtype,
     )
 
+    # Cache source to prevent regenerating images.
+    src = src.cache()
+
     # Increase max_shift and set shift_step to be sub-pixel when using
     # random offsets in the Simulation. This improves common-line detection.
     max_shift = 0.20
     shift_step = 0.25
 
     # Set max_shift 1 pixel and shift_step to 1 pixel when using 0 offsets.
+    # This reduces the search space for commonline detection and improves test speed.
     if np.all(src.offsets == 0.0):
         max_shift = 1 / src.L
         shift_step = 1
@@ -79,7 +83,7 @@ def src_orient_est_fixture(resolution, offsets, dtype, alpha):
         max_shift=max_shift,
         shift_step=shift_step,
         mask=False,
-        tol=0.005,
+        tol=0.005,  # Improves test speed
     )
 
     return src, orient_est
@@ -88,9 +92,7 @@ def src_orient_est_fixture(resolution, offsets, dtype, alpha):
 def test_estimate_rotations(src_orient_est_fixture):
     src, orient_est = src_orient_est_fixture
 
-    if backend_available("cufinufft") and src.dtype == np.float32:
-        pytest.skip("CI on GPU fails for singles.")
-
+    # Estimate rotations
     est_rots = orient_est.estimate_rotations()
 
     # Register estimates to ground truth rotations and compute the
