@@ -48,8 +48,8 @@ def alpha(request):
 
 
 @pytest.fixture
-def src_orient_est_fixture(resolution, offsets, dtype, alpha):
-    """Fixture for simulation source and orientation estimation object."""
+def source(resolution, offsets, dtype):
+    """Fixture for simulation source object."""
     src = Simulation(
         n=60,
         L=resolution,
@@ -65,20 +65,24 @@ def src_orient_est_fixture(resolution, offsets, dtype, alpha):
     # Cache source to prevent regenerating images.
     src = src.cache()
 
+    return src
+
+
+@pytest.fixture
+def orient_est(source, alpha):
+    """Fixture for LUD orientation estimation object."""
     # Generate LUD orientation estimation object.
     orient_est = CommonlineLUD(
-        src,
+        source,
         alpha=alpha,
         mask=False,
         tol=0.005,  # Improves test speed
     )
 
-    return src, orient_est
+    return orient_est
 
 
-def test_estimate_rotations(src_orient_est_fixture):
-    src, orient_est = src_orient_est_fixture
-
+def test_estimate_rotations(source, orient_est):
     # Estimate rotations
     est_rots = orient_est.estimate_rotations()
 
@@ -90,9 +94,9 @@ def test_estimate_rotations(src_orient_est_fixture):
     # Using LUD without spectral norm constraint, ie. alpha=None,
     # on shifted images reduces estimated rotations accuracy.
     # This can be improved by using subpixel shift_step in CommonlineLUD.
-    if orient_est.alpha is None and src.offsets.all() != 0:
+    if orient_est.alpha is None and source.offsets.all() != 0:
         tol = 9
-    mean_aligned_angular_distance(est_rots, src.rotations, degree_tol=tol)
+    mean_aligned_angular_distance(est_rots, source.rotations, degree_tol=tol)
 
     # Check dtype pass-through
-    np.testing.assert_equal(src.dtype, est_rots.dtype)
+    np.testing.assert_equal(source.dtype, est_rots.dtype)
