@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 from aspire.abinitio import CommonlineLUD
-from aspire.nufft import backend_available
 from aspire.source import Simulation
 from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import AsymmetricVolume
