@@ -1,7 +1,6 @@
 # dataset registry for ASPIRE example data.
 registry = {
     "emdb_2660.map": "49aecfd4efce09afc937d1786bbed6f18c2a353c73a4e16a643a304342d0660e",
-    "emdb_51751.map": "811cd15ab6414903bbe462a3bbbe8bd9060e07405b451cc9f239c0c060390888",
     "emdb_8012.map": "85a1c9ab958b1dd051d011515212d58decaf2537351b9c016acd3e5852e30d63",
     "emdb_2984.map": "0194f44cb28f2a8daa5d477d25852de9cc81ed093487de181ee4b30b0d77ef90",
     "emdb_8511.map": "1f03ec4a0cadb407b6b972c803ffe1e97ff5087d4c2ce9fec2c404747a7fb3fe",
@@ -19,7 +18,6 @@ registry = {
 
 registry_urls = {
     "emdb_2660.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2660/map/emd_2660.map.gz",
-    "emdb_51751.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-51751/map/emd_51751.map.gz",
     "emdb_8012.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-8012/map/emd_8012.map.gz",
     "emdb_2984.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2984/map/emd_2984.map.gz",
     "emdb_8511.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-8511/map/emd_8511.map.gz",
@@ -37,7 +35,6 @@ registry_urls = {
 
 file_to_method_map = {
     "emdb_2660.map": "emdb_2660",
-    "emdb_51751.map": "emdb_51751",
     "emdb_8012.map": "emdb_8012",
     "emdb_2984.map": "emdb_2984",
     "emdb_8511.map": "emdb_8511",
