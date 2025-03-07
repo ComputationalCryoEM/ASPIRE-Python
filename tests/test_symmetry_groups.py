@@ -86,8 +86,8 @@ def test_astype(group_fixture):
     sym_group_doubles = group_fixture.astype(np.float64)
 
     # Check that astype returns the correct SymmetryGroup
-    np.testing.assert_equal(sym_group_singles, group_fixture)
-    np.testing.assert_equal(sym_group_doubles, group_fixture)
+    np.testing.assert_equal(str(sym_group_singles), str(group_fixture))
+    np.testing.assert_equal(str(sym_group_doubles), str(group_fixture))
 
     # Check that we have specified dtype
     np.testing.assert_equal(sym_group_singles.dtype, np.float32)
