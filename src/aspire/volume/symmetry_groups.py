@@ -107,7 +107,7 @@ class SymmetryGroup(ABC):
         """Copy of the SymmetryGroup object, cast to a specified dtype."""
         kwargs = {"dtype": dtype}
 
-        if hasattr(self, "order"):
+        if hasattr(self, "order") and self.order > 1:
             kwargs["order"] = self.order
 
         return self.__class__(**kwargs)
