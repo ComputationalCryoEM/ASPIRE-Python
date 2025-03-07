@@ -18,7 +18,7 @@ OFFSETS = [
 
 DTYPES = [
     np.float32,
-    np.float64,
+    pytest.param(np.float64, marks=pytest.mark.expensive),
 ]
 
 SPECTRAL_NORM_CONSTRAINT = [
