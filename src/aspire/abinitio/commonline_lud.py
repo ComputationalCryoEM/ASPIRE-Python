@@ -98,12 +98,10 @@ class CommonlineLUD(CLOrient3D):
                 logger.info(
                     f"Initializing LUD algorithm using ADMM with spectral norm constraint {self.alpha}."
                 )
-                self.spectral_norm_constraint = True
         else:
             logger.info(
                 "Initializing LUD algorithm using ADMM without spectral norm constraint."
             )
-            self.spectral_norm_constraint = False
 
         self.tol = tol
         self.mu = mu
@@ -173,13 +171,13 @@ class CommonlineLUD(CLOrient3D):
 
         # Adjust rank limits
         self.max_rankW = self.max_rankW or max(6, self.n_img // 2)
-        if self.spectral_norm_constraint:
+        if self.alpha is not None:
             self.max_rankZ = self.max_rankZ or max(6, self.n_img // 2)
 
         # Initialize variables
         G = np.eye(n, dtype=self.dtype)
         W = np.eye(n, dtype=self.dtype)
-        if self.spectral_norm_constraint:
+        if self.alpha is not None:
             Z = W
             Phi = G / self.mu
         else:
@@ -201,7 +199,7 @@ class CommonlineLUD(CLOrient3D):
             # Compute y #
             #############
             y = -(AS + self._compute_AX(W)) - resi / self.mu
-            if self.spectral_norm_constraint:
+            if self.alpha is not None:
                 y += self._compute_AX(Z)
 
             #################
@@ -209,21 +207,21 @@ class CommonlineLUD(CLOrient3D):
             #################
             ATy = self._compute_ATy(y)
             Phi = W + ATy + G / self.mu
-            if self.spectral_norm_constraint:
+            if self.alpha is not None:
                 Phi -= Z
             S, theta = self._Q_theta(Phi)
 
             #############
             # Compute Z #
             #############
-            if self.spectral_norm_constraint:
+            if self.alpha is not None:
                 Z, kk, zz = self._compute_Z(S, W, ATy, G, zz, itr, kk, nev)
 
             #############
             # Compute W #
             #############
             H = -S - ATy - G / self.mu
-            if self.spectral_norm_constraint:
+            if self.alpha is not None:
                 H += Z
             H = (H + H.T) / 2
 
@@ -251,7 +249,7 @@ class CommonlineLUD(CLOrient3D):
                     else:
                         nev = 6
 
-                if self.spectral_norm_constraint:
+                if self.alpha is not None:
                     nev = min(nev, n)
                 dH, V = eigs(-H.astype(np.float64), k=nev, which="LR")
 
@@ -275,7 +273,7 @@ class CommonlineLUD(CLOrient3D):
             pinf = np.linalg.norm(resi) / max(np.linalg.norm(b), 1)
 
             dinf_term = S + W + ATy
-            if self.spectral_norm_constraint:
+            if self.alpha is not None:
                 dinf_term -= Z
             dinf = np.linalg.norm(dinf_term, "fro") / max(np.linalg.norm(S, np.inf), 1)
 
@@ -404,7 +402,7 @@ class CommonlineLUD(CLOrient3D):
 
         # Normalize theta
         theta_norm = np.linalg.norm(theta[self.ut_mask], axis=-1)[..., None]
-        if self.spectral_norm_constraint:
+        if self.alpha is not None:
             theta[self.ut_mask] /= theta_norm
         else:
             theta[self.ut_mask] /= np.maximum(theta_norm, self.mu)
