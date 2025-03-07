@@ -525,44 +525,6 @@ class CommonlineLUD(CLOrient3D):
         ATy = csr_array((data, (rows, cols)), shape=(n, n))
         return ATy
 
-    def _lud_prep(self):
-        """
-        Prepare optimization problem constraints.
-
-        The constraints for the LUD optimization, max tr(SG), performed in `_compute_gram_matrix()`
-        as min tr(-SG), are that the Gram matrix, G, is semidefinite positive and G11_ii = G22_ii = 1,
-        G12_ii = G21_ii = 0, i=1,2,...,N, for the block representation of G = [[G11, G12], [G21, G22]].
-
-        We build a corresponding constraint in the form of tr(A_j @ G) = b_j, j = 1,...,p.
-        For the constraint G11_ii = G22_ii = 1, we have A_j[i, i] = 1 (zeros elsewhere) and b_j = 1.
-        For the constraint G12_ii = G21_ii = 0, we have A_j[i, i] = 1 (zeros elsewhere) and b_j = 0.
-
-        :returns: Constraint data A, b.
-        """
-        logger.info("Preparing LUD optimization constraints.")
-
-        n = 2 * self.n_img
-        A = []
-        b = []
-        data = np.ones(1, dtype=self.dtype)
-        for i in range(n):
-            row_ind = np.array([i])
-            col_ind = np.array([i])
-            A_i = csr_array((data, (row_ind, col_ind)), shape=(n, n), dtype=self.dtype)
-            A.append(A_i)
-            b.append(1)
-
-        for i in range(self.n_img):
-            row_ind = np.array([i])
-            col_ind = np.array([self.n_img + i])
-            A_i = csr_array((data, (row_ind, col_ind)), shape=(n, n), dtype=self.dtype)
-            A.append(A_i)
-            b.append(0)
-
-        b = np.array(b, dtype=self.dtype)
-
-        return A, b
-
     def _restructure_Gram(self, G):
         """
         Restructures the input Gram matrix into a block structure based on the following
