@@ -43,6 +43,11 @@ def dtype(request):
     return request.param
 
 
+@pytest.fixture(params=DTYPE, ids=lambda x: f"weights_dtype={x}", scope="module")
+def weights_dtype(request):
+    return request.param
+
+
 @pytest.fixture(scope="module")
 def sim(L, dtype):
     sim = Simulation(
@@ -67,11 +72,13 @@ def basis(L, dtype):
 
 
 @pytest.fixture(scope="module")
-def weights(sim):
+def weights(sim, weights_dtype):
     # Construct simple test weights;
     # one uniform positive and negative weighted volume respectively.
     r = 2  # Number of weighted volumes
-    weights = np.ones((sim.n, r), dtype=sim.dtype) / np.sqrt(sim.n, dtype=sim.dtype)
+    weights = np.ones((sim.n, r), dtype=weights_dtype) / np.sqrt(
+        sim.n, dtype=weights_dtype
+    )
     weights[:, 1] *= -1  # negate second weight vector
 
     return weights
