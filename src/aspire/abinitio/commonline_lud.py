@@ -93,7 +93,7 @@ class CommonlineLUD(CLOrient3D):
             raise ValueError("Spectral norm constraint, alpha, must be in [2/3, 1).")
 
         logger.info(
-            f"Initializing LUD algorithm using ADMM"
+            "Initializing LUD algorithm using ADMM"
             + (
                 f" with spectral norm constraint: {self.alpha}."
                 if self.alpha is not None
