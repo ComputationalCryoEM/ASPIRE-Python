@@ -105,7 +105,12 @@ class SymmetryGroup(ABC):
 
     def astype(self, dtype):
         """Copy of the SymmetryGroup object, cast to a specified dtype."""
-        return SymmetryGroup.parse(self.to_string, dtype)
+        kwargs = {"dtype": dtype}
+
+        if hasattr(self, "order"):
+            kwargs["order"] = self.order
+
+        return self.__class__(**kwargs)
 
 
 class CnSymmetryGroup(SymmetryGroup):
