@@ -21,36 +21,30 @@ GROUPS_WITH_ORDER = [
     DnSymmetryGroup,
 ]
 GROUPS_WITHOUT_ORDER = [
-    TSymmetryGroup,
-    OSymmetryGroup,
+    (TSymmetryGroup,),
+    (OSymmetryGroup,),
 ]
 ORDERS = [2, 3, 4, 5]
-DTYPES = [np.float32, np.float64]
-PARAMS_ORDER = list(itertools.product(GROUPS_WITH_ORDER, DTYPES, ORDERS))
-PARAMS = list(itertools.product(GROUPS_WITHOUT_ORDER, DTYPES))
+PARAMS_ORDER = list(itertools.product(GROUPS_WITH_ORDER, ORDERS))
 
 
 def group_fixture_id(params):
     group_class = params[0]
-    dtype = params[1]
-    if len(params) > 2:
-        order = params[2]
-        return f"{group_class.__name__}, order={order}, dtype={dtype}"
+    if len(params) > 1:
+        order = params[1]
+        return f"{group_class.__name__}, order={order}"
     else:
-        return f"{group_class.__name__}, dtype={dtype}"
+        return f"{group_class.__name__}"
 
 
 # Create SymmetryGroup fixture for the set of parameters.
-@pytest.fixture(params=PARAMS + PARAMS_ORDER, ids=group_fixture_id)
+@pytest.fixture(params=GROUPS_WITHOUT_ORDER + PARAMS_ORDER, ids=group_fixture_id)
 def group_fixture(request):
     params = request.param
     group_class = params[0]
-    dtype = params[1]
-    group_kwargs = dict(
-        dtype=dtype,
-    )
-    if len(params) > 2:
-        group_kwargs["order"] = params[2]
+    group_kwargs = dict()
+    if len(params) > 1:
+        group_kwargs["order"] = params[1]
 
     return group_class(**group_kwargs)
 
@@ -68,7 +62,7 @@ def test_group_str(group_fixture):
 
 
 def test_group_equivalence(group_fixture):
-    C2_symmetry_group = CnSymmetryGroup(order=2, dtype=group_fixture.dtype)
+    C2_symmetry_group = CnSymmetryGroup(order=2)
     if str(group_fixture) == "C2":
         assert C2_symmetry_group == group_fixture
     else:
@@ -80,41 +74,20 @@ def test_group_rotations(group_fixture):
     assert isinstance(rotations, Rotation)
 
 
-def test_astype(group_fixture):
-    """Test `astype` returns correct SymmetryGroup with correct dtype."""
-    sym_group_singles = group_fixture.astype(np.float32)
-    sym_group_doubles = group_fixture.astype(np.float64)
-
-    # Check that astype returns the correct SymmetryGroup
-    np.testing.assert_equal(str(sym_group_singles), str(group_fixture))
-    np.testing.assert_equal(str(sym_group_doubles), str(group_fixture))
-
-    # Check that we have specified dtype
-    np.testing.assert_equal(sym_group_singles.dtype, np.float32)
-    np.testing.assert_equal(sym_group_doubles.dtype, np.float64)
+def test_dtype(group_fixture):
+    """Test SymmetryGroup matrices are always doubles."""
+    np.testing.assert_equal(group_fixture.matrices.dtype, np.float64)
 
 
 def test_parser_identity():
-    result = SymmetryGroup.parse("C1", dtype=np.float32)
+    result = SymmetryGroup.parse("C1")
     assert isinstance(result, IdentitySymmetryGroup)
 
 
 def test_parser_with_group(group_fixture):
     """Test SymmetryGroup instance are parsed correctly."""
-    result = SymmetryGroup.parse(group_fixture, group_fixture.dtype)
+    result = SymmetryGroup.parse(group_fixture)
     assert result == group_fixture
-    assert result.dtype == group_fixture.dtype
-
-
-def test_parser_dtype_casting(group_fixture):
-    """Test that dtype gets re-cast and warns."""
-    dtype = np.float32
-    if group_fixture.dtype == np.float32:
-        dtype = np.float64
-
-    msg = f"Recasting SymmetryGroup with dtype {dtype}."
-    with pytest.warns(UserWarning, match=msg):
-        _ = SymmetryGroup.parse(group_fixture, dtype)
 
 
 def test_parser_error():
@@ -122,4 +95,4 @@ def test_parser_error():
     with pytest.raises(
         ValueError, match=f"Symmetry type {junk_symmetry[0]} not supported.*"
     ):
-        _ = SymmetryGroup.parse(junk_symmetry, dtype=np.float32)
+        _ = SymmetryGroup.parse(junk_symmetry)
