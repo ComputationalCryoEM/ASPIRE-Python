@@ -225,7 +225,9 @@ class CommonlineLUD(CLOrient3D):
 
             if not self.adp_proj:
                 D, V = np.linalg.eigh(H)
-                W = V[:, D > self.EPS] @ np.diag(D[D > self.EPS]) @ V[:, D > self.EPS].T
+                eigs_mask = D > self.EPS
+                V = V[:, eigs_mask]
+                W = V @ np.diag(D[eigs_mask]) @ V.T
             else:
                 if itr == 0:
                     nev = self.max_rankW
