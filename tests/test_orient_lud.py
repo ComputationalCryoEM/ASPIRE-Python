@@ -26,6 +26,11 @@ SPECTRAL_NORM_CONSTRAINT = [
     pytest.param(None, marks=pytest.mark.expensive),
 ]
 
+ADAPTIVE_PROJECTION = [
+    True,
+    False,
+]
+
 
 @pytest.fixture(params=RESOLUTION, ids=lambda x: f"resolution={x}")
 def resolution(request):
@@ -44,6 +49,11 @@ def dtype(request):
 
 @pytest.fixture(params=SPECTRAL_NORM_CONSTRAINT, ids=lambda x: f"alpha={x}")
 def alpha(request):
+    return request.param
+
+
+@pytest.fixture(params=ADAPTIVE_PROJECTION, ids=lambda x: f"adp_proj={x}")
+def adp_proj(request):
     return request.param
 
 
@@ -69,12 +79,14 @@ def source(resolution, offsets, dtype):
 
 
 @pytest.fixture
-def orient_est(source, alpha):
+def orient_est(source, alpha, adp_proj):
     """Fixture for LUD orientation estimation object."""
     # Generate LUD orientation estimation object.
     orient_est = CommonlineLUD(
         source,
         alpha=alpha,
+        adp_proj=adp_proj,
+        delta_mu_l=0.4,  # Ensures branch is tested
         mask=False,
         tol=0.005,  # Improves test speed
     )
