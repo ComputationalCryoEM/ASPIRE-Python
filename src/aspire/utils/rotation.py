@@ -274,6 +274,8 @@ class Rotation:
 
         :return: Rotation object
         """
+        if isinstance(angles, float):
+            dtype = np.float64
         dtype = dtype or getattr(angles, "dtype", np.float32)
         axes = ["x", "y", "z"]
         if axis.lower() not in axes:

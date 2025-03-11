@@ -143,6 +143,18 @@ def test_dtype(dtype, rot_obj):
     assert dtype == rot_obj.dtype
 
 
+def test_about_axis_dtype(dtype):
+    angles = np.random.uniform(0, 2 * np.pi, 10).astype(dtype, copy=False)
+    rots = Rotation.about_axis("x", angles).matrices
+    np.testing.assert_equal(rots.dtype, dtype)
+
+
+def test_about_axis_float_dtype():
+    angle = np.pi
+    rot = Rotation.about_axis("y", angle).matrices
+    np.testing.assert_equal(rot.dtype, np.float64)
+
+
 def test_from_rotvec(rot_obj):
     # Build random rotation vectors.
     axis = np.array([1, 0, 0], dtype=rot_obj.dtype)
