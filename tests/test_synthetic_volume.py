@@ -146,7 +146,7 @@ def test_volume_symmetry(vol_fixture, dtype_fixture):
     vol = vol_fixture.generate()
 
     # Rotations in symmetry group, excluding the Identity.
-    rots = vol_fixture.symmetry_group.matrices[1:].astype(dtype_fixture, copy=False)
+    rots = vol_fixture.symmetry_group.matrices[1:].astype(dtype_fixture)
 
     for rot in rots:
         # Rotate volume by an element of the symmetric group.
