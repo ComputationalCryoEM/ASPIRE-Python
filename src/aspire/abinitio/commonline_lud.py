@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 from scipy.sparse import csr_array
-from scipy.sparse.linalg import eigs
+from scipy.sparse.linalg import eigsh
 
 from aspire.abinitio import CLOrient3D
 
@@ -251,13 +251,12 @@ class CommonlineLUD(CLOrient3D):
 
                 if self.alpha is not None:
                     nev = min(nev, n)
-                dH, V = eigs(-H.astype(np.float64), k=nev, which="LR")
 
-                # Sort by eigenvalue magnitude.
-                dH = dH.real.astype(self.dtype, copy=False)
-                idx = np.argsort(dH)[::-1]
-                dH = dH[idx]
-                V = V[:, idx].real.astype(self.dtype, copy=False)
+                # Compute Eigenvectors and sort by largest algebraic eigenvalue
+                dH, V = eigsh(-H.astype(np.float64), k=nev, which="LA")
+                dH = dH[::-1].astype(self.dtype, copy=False)
+                V = V[:, ::-1].astype(self.dtype, copy=False)
+
                 nD = dH > self.EPS
                 dH = dH[nD]
                 nev = np.count_nonzero(nD)
@@ -351,15 +350,15 @@ class CommonlineLUD(CLOrient3D):
                     kk = 6
 
             kk = min(kk, 2 * self.n_img)
-            pi, U = eigs(
+            pi, U = eigsh(
                 B.astype(np.float64, copy=False), k=kk, which="LM"
             )  # Compute top `kk` eigenvalues and eigenvectors
 
-            # Sort by eigenvalue magnitude.
+            # Sort by eigenvalue magnitude. Note, eigsh does not return
+            # ordered eigenvalues/vectors.
             idx = np.argsort(np.abs(pi))[::-1]
             pi = pi[idx]
-            U = U[:, idx].real
-            pi = pi.real  # Ensure real eigenvalues for subsequent calculations
+            U = U[:, idx]
 
         # Apply soft-threshold to eigenvalues to enforce spectral norm constraint.
         zz = np.sign(pi) * np.maximum(np.abs(pi) - lambda_ / self.mu, 0)
