@@ -54,7 +54,7 @@ class WeightedVolumesEstimator(Estimator):
         """
 
         super().__init__(*args, **kwargs)
-        self.weights = weights.astype(self.src.dtype)
+        self.weights = weights.astype(self.src.dtype, copy=False)
         self.r = self.weights.shape[1]
         assert self.src.n == self.weights.shape[0]
 
