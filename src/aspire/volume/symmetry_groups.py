@@ -124,9 +124,7 @@ class CnSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Cn symmetry group and the identity.
         """
-        angles = (2 * np.pi * np.arange(self.order) / self.order).astype(
-            self.dtype, copy=False
-        )
+        angles = np.linspace(0, 2 * np.pi, self.order, endpoint=False, dtype=self.dtype)
         return Rotation.about_axis("z", angles)
 
 
@@ -176,9 +174,7 @@ class DnSymmetryGroup(SymmetryGroup):
         """
 
         # Rotations to induce cyclic symmetry
-        angles = (2 * np.pi * np.arange(self.order) / self.order).astype(
-            self.dtype, copy=False
-        )
+        angles = np.linspace(0, 2 * np.pi, self.order, endpoint=False, dtype=self.dtype)
         rot_z = Rotation.about_axis("z", angles).matrices
 
         # Perpendicular rotation to induce dihedral symmetry
