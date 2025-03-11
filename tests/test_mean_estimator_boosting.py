@@ -148,7 +148,7 @@ def test_boost_flag(source, estimated_volume):
     """Manually boost a source and reconstruct without boosting."""
     ims = source.projections[:]
     rots = source.rotations
-    sym_rots = source.symmetry_group.matrices.astype(dtype=source.dtype)
+    sym_rots = source.symmetry_group.matrices.astype(dtype=source.dtype, copy=False)
     sym_order = len(sym_rots)
 
     # Manually boosted images and rotations.
