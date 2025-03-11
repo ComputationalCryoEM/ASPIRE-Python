@@ -126,7 +126,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         """
         Called to add symmetry to Volumes by generating for each Gaussian blob duplicates in symmetric positions.
         """
-        rots = self.symmetry_group.matrices.astype(self.dtype)
+        rots = self.symmetry_group.matrices.astype(self.dtype, copy=False)
 
         Q_rot = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
         D_sym = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
