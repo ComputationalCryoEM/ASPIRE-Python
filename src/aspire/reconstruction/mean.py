@@ -96,7 +96,7 @@ class WeightedVolumesEstimator(Estimator):
         # Handle symmetry boosting.
         sym_rots = np.eye(3, dtype=self.dtype)[None]
         if self.boost:
-            sym_rots = self.src.symmetry_group.matrices.astype(self.dtype)
+            sym_rots = self.src.symmetry_group.matrices.astype(self.dtype, copy=False)
 
         for i in range(0, self.src.n, self.batch_size):
             _range = np.arange(i, min(self.src.n, i + self.batch_size), dtype=int)
