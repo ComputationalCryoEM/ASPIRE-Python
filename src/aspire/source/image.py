@@ -233,7 +233,7 @@ class ImageSource(ABC):
                 f"This source is no longer mutable. Try new_source = source.update(symmetry_group='{value}')."
             )
 
-        self._symmetry_group = SymmetryGroup.parse(value, dtype=self.dtype)
+        self._symmetry_group = SymmetryGroup.parse(value)
         self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
 
     def _populate_symmetry_group(self, symmetry_group):
@@ -249,10 +249,9 @@ class ImageSource(ABC):
             else:
                 symmetry_group = SymmetryGroup.parse(
                     symmetry=self.get_metadata(["_rlnSymmetryGroup"])[0],
-                    dtype=self.dtype,
                 )
 
-        self.symmetry_group = symmetry_group or IdentitySymmetryGroup(dtype=self.dtype)
+        self.symmetry_group = symmetry_group or IdentitySymmetryGroup()
 
     def __getitem__(self, indices):
         """

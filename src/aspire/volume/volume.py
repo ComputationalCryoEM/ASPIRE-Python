@@ -150,7 +150,7 @@ class Volume:
         return self.__class__(
             self.asnumpy().astype(dtype, copy=copy),
             pixel_size=self.pixel_size,
-            symmetry_group=self.symmetry_group.astype(dtype),
+            symmetry_group=self.symmetry_group,
         )
 
     def _check_key_dims(self, key):
@@ -185,7 +185,7 @@ class Volume:
 
         :param value: A `SymmetryGroup` instance or string indicating symmetry, ie. "C5", "D7", "T", etc.
         """
-        self._symmetry_group = SymmetryGroup.parse(value, dtype=self.dtype)
+        self._symmetry_group = SymmetryGroup.parse(value)
 
     def _symmetry_group_warning(self, stacklevel):
         """
@@ -228,7 +228,7 @@ class Volume:
 
         if any([axes_altering_transformation, incompat_syms, arbitrary_array]):
             self._symmetry_group_warning(stacklevel=stacklevel)
-            result_symmetry = IdentitySymmetryGroup(dtype=self.dtype)
+            result_symmetry = IdentitySymmetryGroup()
 
         return result_symmetry
 
