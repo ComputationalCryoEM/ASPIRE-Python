@@ -172,12 +172,13 @@ class DnSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Dn symmetry group and the identity.
         """
+
         # Rotations to induce cyclic symmetry
         angles = 2 * np.pi * np.arange(self.order) / self.order
-        rot_z = Rotation.about_axis("z", angles).matrices
+        rot_z = Rotation.about_axis("z", angles, dtype=np.float64).matrices
 
         # Perpendicular rotation to induce dihedral symmetry
-        rot_perp = Rotation.about_axis("y", np.pi).matrices
+        rot_perp = Rotation.about_axis("y", np.pi, dtype=np.float64).matrices
 
         # Full set of rotations.
         rots = np.concatenate((rot_z, rot_z @ rot_perp[0]))
@@ -215,7 +216,9 @@ class TSymmetryGroup(SymmetryGroup):
         :return: Rotation object containing the tetrahedral symmetry group and the identity.
         """
         # C3 rotation vectors, ie. angle * axis.
-        axes_C3 = np.array([[1, 1, 1], [-1, -1, 1], [1, -1, -1], [-1, 1, -1]], dtype=np.float64)
+        axes_C3 = np.array(
+            [[1, 1, 1], [-1, -1, 1], [1, -1, -1], [-1, 1, -1]], dtype=np.float64
+        )
         axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
         angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3], dtype=np.float64)
         rot_vecs_C3 = np.concatenate([angle * axes_C3 for angle in angles_C3])
@@ -225,7 +228,7 @@ class TSymmetryGroup(SymmetryGroup):
         rot_vecs_C2 = np.pi * axes_C2
 
         # The full set of rotation vectors inducing tetrahedral symmetry.
-        rot_vec_I = np.zeros((1, 3))
+        rot_vec_I = np.zeros((1, 3), dtype=np.float64)
         rot_vecs = np.concatenate((rot_vec_I, rot_vecs_C3, rot_vecs_C2))
 
         # Return rotations.
@@ -267,15 +270,19 @@ class OSymmetryGroup(SymmetryGroup):
         axes_C4 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float64)
         angles_C4 = np.array([np.pi / 2, np.pi, 3 * np.pi / 2], dtype=np.float64)
         rot_vecs_C4 = np.array(
-            [angle * axes_C4 for angle in angles_C4], dtype=np.float64,
+            [angle * axes_C4 for angle in angles_C4],
+            dtype=np.float64,
         ).reshape((9, 3))
 
         # C3 rotation vectors
-        axes_C3 = np.array([[1, 1, 1], [-1, 1, 1], [1, -1, 1], [1, 1, -1]], dtype=np.float64)
+        axes_C3 = np.array(
+            [[1, 1, 1], [-1, 1, 1], [1, -1, 1], [1, 1, -1]], dtype=np.float64
+        )
         axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
         angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3], dtype=np.float64)
         rot_vecs_C3 = np.array(
-            [angle * axes_C3 for angle in angles_C3], dtype=np.float64,
+            [angle * axes_C3 for angle in angles_C3],
+            dtype=np.float64,
         ).reshape((8, 3))
 
         # C2 rotation vectors
@@ -287,7 +294,7 @@ class OSymmetryGroup(SymmetryGroup):
         rot_vecs_C2 = np.pi * axes_C2
 
         # The full set of rotation vectors inducing octahedral symmetry.
-        rot_vec_I = np.zeros((1, 3))
+        rot_vec_I = np.zeros((1, 3), dtype=np.float64)
         rot_vecs = np.concatenate((rot_vec_I, rot_vecs_C4, rot_vecs_C3, rot_vecs_C2))
 
         # Return rotations.

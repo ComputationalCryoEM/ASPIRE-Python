@@ -338,7 +338,7 @@ def test_backproject_symmetry_group(dtype):
     assert isinstance(vol.symmetry_group, CnSymmetryGroup)
 
     # Symmetry from instance.
-    vol = im.backproject(rots, symmetry_group=CnSymmetryGroup(order=3, dtype=dtype))
+    vol = im.backproject(rots, symmetry_group=CnSymmetryGroup(order=3))
     assert isinstance(vol.symmetry_group, CnSymmetryGroup)
 
 

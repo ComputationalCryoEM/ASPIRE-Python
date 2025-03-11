@@ -732,7 +732,7 @@ class Image:
         ), "Number of rotation matrices must match the number of images"
 
         # Get symmetry rotations from SymmetryGroup.
-        symmetry_rots = SymmetryGroup.parse(symmetry_group, dtype=self.dtype).matrices
+        symmetry_rots = SymmetryGroup.parse(symmetry_group).matrices.astype(self.dtype)
         if len(symmetry_rots) > 1:
             logger.info(f"Boosting with {len(symmetry_rots)} rotational symmetries.")
 
