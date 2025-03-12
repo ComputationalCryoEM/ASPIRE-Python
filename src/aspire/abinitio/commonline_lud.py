@@ -229,26 +229,13 @@ class CommonlineLUD(CLOrient3D):
                 V = V[:, eigs_mask]
                 W = V @ np.diag(D[eigs_mask]) @ V.T
             else:
+                # Determine number of eigenvalues to compute for adaptive projection
                 if itr == 0:
                     nev = self.max_rankW
                 else:
-                    if nev > 0:
-                        drops = dH[:-1] / dH[1:]
+                    nev = self._compute_num_eigs(nev, dH, nev, 50, 5)
 
-                        # Find max drop
-                        imx = np.argmax(drops)
-                        dmx = drops[imx]
-
-                        # Relative drop
-                        rel_drp = (nev - 1) * dmx / (np.sum(drops) - dmx)
-
-                        if rel_drp > 50:
-                            nev = max(imx + 1, 6)
-                        else:
-                            nev = nev + 5
-                    else:
-                        nev = 6
-
+                # If using a spectral norm constraint cap num_eigs at 2*n_img
                 if self.alpha is not None:
                     nev = min(nev, n)
 
@@ -324,30 +311,11 @@ class CommonlineLUD(CLOrient3D):
         if not self.adp_proj:
             U, pi = np.linalg.eigh(B)
         else:
+            # Determine number of eigenvalues to compute for adaptive projection
             if itr == 0:
                 kk = self.max_rankZ
             else:
-                if kk > 0:
-                    # Initialize relative drop
-                    rel_drp = 0
-                    imx = 0
-                    # Calculate relative drop based on `zz`
-                    if len(zz) == 2:
-                        rel_drp = np.inf
-                    elif len(zz) > 2:
-                        drops = zz[:-1] / zz[1:]
-
-                        # Find max drop
-                        imx = np.argmax(drops)
-                        dmx = drops[imx]
-
-                        # Relative drop
-                        rel_drp = (nev - 1) * dmx / (np.sum(drops) - dmx)
-
-                    # Update `kk` based on relative drop
-                    kk = max(imx, 6) if rel_drp > 10 else kk + 3
-                else:
-                    kk = 6
+                kk = self._compute_num_eigs(kk, zz, nev, 10, 3)
 
             kk = min(kk, 2 * self.n_img)
             pi, U = eigsh(
@@ -355,7 +323,7 @@ class CommonlineLUD(CLOrient3D):
             )  # Compute top `kk` eigenvalues and eigenvectors
 
             # Sort by eigenvalue magnitude. Note, eigsh does not return
-            # ordered eigenvalues/vectors.
+            # ordered eigenvalues/vectors for which="LM".
             idx = np.argsort(np.abs(pi))[::-1]
             pi = pi[idx]
             U = U[:, idx]
@@ -437,6 +405,48 @@ class CommonlineLUD(CLOrient3D):
 
         self.C = C
         self.C_t = np.ascontiguousarray(C.transpose(1, 0, 2))
+
+    @staticmethod
+    def _compute_num_eigs(num_eigs_prev, eig_vec, num_eigs_W, rel_drp_thresh, eigs_inc):
+        """
+        Compute number of eigenvalues to use when implementing adaptive projection.
+
+        :param num_eigs_prev: Number of eigenvalues used in previous iteration of ADMM.
+        :param eig_vec: Eigenvector result from previous iteration of ADMM.
+        :param num_eigs_W: Number of eigenvalues used in previous computation of
+            ADMM subproblem for solving W.
+        :param rel_drp_thresh: Relative drop threshold for determining number of
+            eigenvalues to use.
+        :param eigs_inc: Number of eigenvalues to increase by if relative drop
+            threshold is not met.
+
+        :return: Number of eigenvalues to use in current iteration.
+        """
+        if num_eigs_prev > 0:
+            # Initialize relative drop
+            rel_drp = 0
+            imx = 0
+            # Calculate relative drop based on `eig_vec`
+            if len(eig_vec) == 2:
+                rel_drp = np.inf
+            elif len(eig_vec) > 2:
+                drops = eig_vec[:-1] / eig_vec[1:]
+
+                # Find max drop
+                imx = np.argmax(drops)
+                dmx = drops[imx]
+
+                # Relative drop
+                rel_drp = (num_eigs_W - 1) * dmx / (np.sum(drops) - dmx)
+
+            # Update `num_eigs_prev` based on relative drop
+            num_eigs = (
+                max(imx, 6) if rel_drp > rel_drp_thresh else num_eigs_prev + eigs_inc
+            )
+        else:
+            num_eigs = 6
+
+        return num_eigs
 
     @staticmethod
     def _compute_AX(X):
