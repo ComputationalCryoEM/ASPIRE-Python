@@ -112,3 +112,18 @@ def test_estimate_rotations(source, orient_est):
 
     # Check dtype pass-through
     np.testing.assert_equal(source.dtype, est_rots.dtype)
+
+
+def test_compute_AX():
+    n = 3
+    X = np.ones((2 * n, 2 * n))
+
+    # Create symmetric 2x2 blocks to go along the diagonal of X
+    X[:2, :2] = np.array([[1.0, 2.0], [2.0, 1.0]])
+    X[2:4, 2:4] = np.array([[3.0, 4.0], [4.0, 3.0]])
+    X[4:, 4:] = np.array([[5.0, 6.0], [6.0, 5.0]])
+
+    # Check the result. We should have:
+    AX = np.array([1, 1, 3, 3, 5, 5, np.sqrt(2) * 2, np.sqrt(2) * 4, np.sqrt(2) * 6])
+    breakpoint()
+    np.testing.assert_allclose(CommonlineLUD._compute_AX(X), AX)

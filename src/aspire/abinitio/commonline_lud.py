@@ -451,13 +451,13 @@ class CommonlineLUD(CLOrient3D):
     @staticmethod
     def _compute_AX(X):
         """
-        Compute the application of the linear operator A to the input matrix X,
-        where A(X) is defined as:
+        Compute the application of the linear operator A to the symmetric input
+        matrix X, where A(X) is defined as:
 
         A(X) = [
             X_ii^(11),
             X_ii^(22),
-            sqrt(2) X_ii^(12) + sqrt(2) X_ii^(21)
+            sqrt(2)/2 * X_ii^(12) + sqrt(2)/2 * X_ii^(21)
         ]
 
         i = 1, 2, ..., K
@@ -467,16 +467,21 @@ class CommonlineLUD(CLOrient3D):
         :param X: 2D square array.
         :return: A(X)
         """
+        # Extract the diagonal entries of X.
+        diags = np.diag(X)
+
+        # Get row/column indices of the lower left entry of the 2x2 blocks
+        # along the diagonal of X.
         rows = np.arange(1, X.shape[0], 2)
         cols = np.arange(0, X.shape[0], 2)
 
-        # Create diagonal matrix with X on the main diagonal
-        diags = np.diag(X)
-
-        # Compute the second part of AX
+        # Compute the second part of AX, which is sqrt(2)/2 times the sum of
+        # the off-diagonal entries of each 2x2 sub-block on the diagonal of X.
+        # Since each sub-block is symmetric, we take just one entry and multiply
+        # by sqrt(2).
         sqrt_2_X_col = np.sqrt(2, dtype=X.dtype) * X[rows, cols]
 
-        # Concatenate results vertically
+        # Form AX by concatenating the results.
         AX = np.concatenate((diags, sqrt_2_X_col))
 
         return AX
