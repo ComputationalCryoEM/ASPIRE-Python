@@ -462,24 +462,22 @@ class CommonlineLUD(CLOrient3D):
 
         i = 1, 2, ..., K
 
-        where X_{ii}^{pq} denotes the (p,q)-th element in the 2x2 subblock X_{ii}.
+        where X_{ii}^{pq} denotes the (p,q)-th element in the 2x2 sub-block X_{ii}.
 
-        :param X: 2D square array.
-        :return: A(X)
+        :param X: 2D square array of shape (2K, 2K)..
+        :return: Flattened array representing A(X)
         """
-        # Extract the diagonal entries of X.
+        # Extract the diagonal elements of (X_ii^(11) and X_ii^(22))
         diags = np.diag(X)
 
-        # Get row/column indices of the lower left entry of the 2x2 blocks
-        # along the diagonal of X.
-        rows = np.arange(1, X.shape[0], 2)
-        cols = np.arange(0, X.shape[0], 2)
+        # Extract the off-diagonal elements from each 2x2 sub-block
+        off_diag_vals = np.diag(X, k=1)[::2]  # Every other superdiagonal element
 
         # Compute the second part of AX, which is sqrt(2)/2 times the sum of
         # the off-diagonal entries of each 2x2 sub-block on the diagonal of X.
         # Since each sub-block is symmetric, we take just one entry and multiply
         # by sqrt(2).
-        sqrt_2_X_col = np.sqrt(2, dtype=X.dtype) * X[rows, cols]
+        sqrt_2_X_col = np.sqrt(2, dtype=X.dtype) * off_diag_vals
 
         # Form AX by concatenating the results.
         AX = np.concatenate((diags, sqrt_2_X_col))

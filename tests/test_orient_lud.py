@@ -115,8 +115,22 @@ def test_estimate_rotations(source, orient_est):
 
 
 def test_compute_AX():
-    n = 3
-    X = np.ones((2 * n, 2 * n))
+    """
+    Test we get the intended result for `_compute_AX()`, where A(X) is defined as:
+
+        A(X) = [
+            X_ii^(11),
+            X_ii^(22),
+            sqrt(2)/2 * X_ii^(12) + sqrt(2)/2 * X_ii^(21)
+        ]
+
+        i = 1, 2, ..., K
+
+        where X_{ii}^{pq} denotes the (p,q)-th element in the 2x2 sub-block X_{ii}.
+    """
+    # We create a symmetric 2k x 2k matrix with specific 2x2 blocks along the diagonal
+    k = 3
+    X = np.ones((2 * k, 2 * k))
 
     # Create symmetric 2x2 blocks to go along the diagonal of X
     X[:2, :2] = np.array([[1.0, 2.0], [2.0, 1.0]])
@@ -125,5 +139,4 @@ def test_compute_AX():
 
     # Check the result. We should have:
     AX = np.array([1, 1, 3, 3, 5, 5, np.sqrt(2) * 2, np.sqrt(2) * 4, np.sqrt(2) * 6])
-    breakpoint()
     np.testing.assert_allclose(CommonlineLUD._compute_AX(X), AX)
