@@ -114,6 +114,51 @@ def test_estimate_rotations(source, orient_est):
     np.testing.assert_equal(source.dtype, est_rots.dtype)
 
 
+def test_compute_num_eigs():
+    eig_vec = np.array([2, 2, 2, 2, 2, 2, 2, 2, 1])  # max drop = 2/1 at idx=7
+    rel_drp_thresh = 5
+    eigs_inc = 2
+    num_eigs_W = 15
+
+    # Case for num_eigs_prev = 0:
+    num_eigs_prev = 0
+    num_eigs = CommonlineLUD._compute_num_eigs(
+        num_eigs_prev, eig_vec, num_eigs_W, rel_drp_thresh, eigs_inc
+    )
+    np.testing.assert_equal(num_eigs, 6)
+
+    # Cases for num_eigs_prev > 0:
+    num_eigs_prev = 7
+
+    # For len(eig_vec) = 1 , output = num_eigs_prev + eigs_inc = 7 + 2
+    ev = eig_vec[:1]
+    num_eigs = CommonlineLUD._compute_num_eigs(
+        num_eigs_prev, ev, num_eigs_W, rel_drp_thresh, eigs_inc
+    )
+    np.testing.assert_equal(num_eigs, 9)
+
+    # For len(eig_vec) = 2 , output = 6
+    ev = eig_vec[:2]
+    num_eigs = CommonlineLUD._compute_num_eigs(
+        num_eigs_prev, ev, num_eigs_W, rel_drp_thresh, eigs_inc
+    )
+    np.testing.assert_equal(num_eigs, 6)
+
+    # For len(eig_vec) > 2 and rel_drp > rel_drp_thresh, output = num_eigs_prev + eigs_inc = 7 + 2
+    # where rel_drp = (num_eigs_W - 1) * max_drop / (np.sum(drops) - max_drop) = 14 * 2 / (9 - 2) = 4
+    num_eigs = CommonlineLUD._compute_num_eigs(
+        num_eigs_prev, eig_vec, num_eigs_W, rel_drp_thresh, eigs_inc
+    )
+    np.testing.assert_equal(num_eigs, 9)
+
+    # For len(eig_vec) > 2 and rel_drp <= rel_drp_thresh, output = index of max drop in elements of eig_vec = 7
+    # Setting rel_drp_thresh = 3 (ie. < 4)
+    num_eigs = CommonlineLUD._compute_num_eigs(
+        num_eigs_prev, eig_vec, num_eigs_W, 3, eigs_inc
+    )
+    np.testing.assert_equal(num_eigs, 7)
+
+
 def test_compute_AX():
     """
     Test we get the intended result for `_compute_AX()`, where A(X) is defined as:

@@ -422,27 +422,21 @@ class CommonlineLUD(CLOrient3D):
 
         :return: Number of eigenvalues to use in current iteration.
         """
+        if len(eig_vec) == 1:
+            # Handles the case were `drops` will be empty
+            return num_eigs_prev + eigs_inc
+
         if num_eigs_prev > 0:
-            # Initialize relative drop
-            rel_drp = 0
-            imx = 0
-            # Calculate relative drop based on `eig_vec`
-            if len(eig_vec) == 2:
-                rel_drp = np.inf
-            elif len(eig_vec) > 2:
-                drops = eig_vec[:-1] / eig_vec[1:]
+            drops = eig_vec[:-1] / eig_vec[1:]
+            imx = np.argmax(drops)
+            dmx = drops[imx]
 
-                # Find max drop
-                imx = np.argmax(drops)
-                dmx = drops[imx]
-
-                # Relative drop
-                rel_drp = (num_eigs_W - 1) * dmx / (np.sum(drops) - dmx)
-
-            # Update `num_eigs_prev` based on relative drop
-            num_eigs = (
-                max(imx, 6) if rel_drp > rel_drp_thresh else num_eigs_prev + eigs_inc
-            )
+            # Relative drop
+            rel_drp = (num_eigs_W - 1) * dmx / (np.sum(drops) - dmx)
+            if rel_drp > rel_drp_thresh:
+                num_eigs = max(imx, 6)
+            else:
+                num_eigs = num_eigs_prev + eigs_inc
         else:
             num_eigs = 6
 
