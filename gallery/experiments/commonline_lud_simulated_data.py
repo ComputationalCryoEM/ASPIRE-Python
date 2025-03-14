@@ -34,13 +34,10 @@ logger = logging.getLogger(__name__)
 # for various levels of noise and output a table of results.
 
 SNR = [1 / 8, 1 / 16, 1 / 32]  # Signal-to-noise ratio
-n_imgs = 500  # Number of images in our source
+n_imgs = 50  # Number of images in our source
 dtype = np.float64
 pad_size = 129
-results = {
-    "SNR": ["1/8", "1/16", "1/32"],
-    "Mean Angular Distance": [],
-}  # Dictionary to store results
+results = {}  # Dictionary to store results
 
 # %%
 # Load Volume Map
@@ -87,7 +84,7 @@ for snr in SNR:
     mean_ang_dist = mean_aligned_angular_distance(est_rotations, src.rotations)
 
     # Store results.
-    results["Mean Angular Distance"].append(mean_ang_dist)
+    results[snr] = mean_ang_dist
 
 # %%
 # Display Results
@@ -103,7 +100,7 @@ table = []
 table.append(f"{'SNR':<{col1_width}} {'Mean Angular Distance':<{col2_width}}")
 table.append("-" * (col1_width + col2_width))
 
-for snr, angle in zip(results["SNR"], results["Mean Angular Distance"]):
+for snr, angle in results.items():
     table.append(f"{snr:<{col1_width}} {angle:<{col2_width}}")
 
 # Log the table
