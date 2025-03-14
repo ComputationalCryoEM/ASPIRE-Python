@@ -4,7 +4,7 @@ import numpy as np
 from scipy.sparse import csr_array
 from scipy.sparse.linalg import eigsh
 
-from aspire.abinitio import CLOrient3D
+from aspire.abinitio import CLOrient3D, CommonlineSDP
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +134,7 @@ class CommonlineLUD(CLOrient3D):
         self._cl_to_C(self.clmatrix)
         gram = self._compute_Gram()
         gram = self._restructure_Gram(gram)
-        self.rotations = self._deterministic_rounding(gram)
+        self.rotations = CommonlineSDP._deterministic_rounding(gram)
 
         return self.rotations
 
