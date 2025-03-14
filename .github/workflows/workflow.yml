@@ -308,6 +308,16 @@ jobs:
           name: sphinx-docs
           path: docs/build
           retention-days: 7
+      - name: Validate Cache Directory Hash
+	run: |
+	  echo "Computing hash for .github_cache/ASPIRE-data..."
+	  new_hash=$(ls -1 .github_cache/ASPIRE-data/** | md5sum)
+	  echo "Hash from data-cache job: ${{ needs.data-cache.outputs.cache_hash }}"
+	  echo "Computed hash now: $new_hash"
+	  if [ "${{ needs.data-cache.outputs.cache_hash }}" != "$new_hash" ]; then
+	    echo "Error: Cache directory hash has changed!"
+	    exit 1
+	  fi
 
   osx_arm:
     needs: [check, data-cache]
