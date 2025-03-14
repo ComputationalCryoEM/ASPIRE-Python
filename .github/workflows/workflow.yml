@@ -300,7 +300,7 @@ jobs:
         run: |
           make distclean
           sphinx-apidoc -f -o ./source ../src -H Modules
-          ASPIREDIR=. make html
+          ASPIREDIR=. make html SPHINXOPTS="-v"
         working-directory: ./docs
       - name: Archive Sphinx docs
         uses: actions/upload-artifact@v4

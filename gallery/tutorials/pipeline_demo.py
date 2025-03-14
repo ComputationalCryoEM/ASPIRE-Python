@@ -18,6 +18,7 @@ reconstruction pipeline using synthetic data generated with ASPIRE's
 # flake8: noqa
 # sphinx_gallery_end_ignore
 from aspire.downloader import emdb_2660
+from aspire.downloader.data_fetcher import _data_fetcher
 
 # Load 80s Ribosome as a ``Volume`` object.
 original_vol = emdb_2660()
@@ -25,6 +26,7 @@ original_vol = emdb_2660()
 # Downsample the volume
 res = 41
 vol = original_vol.downsample(res)
+print(_data_fetcher.path)
 
 # %%
 # .. note::
