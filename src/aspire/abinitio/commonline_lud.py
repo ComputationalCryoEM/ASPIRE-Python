@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from scipy.sparse import csr_array
 from scipy.sparse.linalg import eigsh
 
 from aspire.abinitio import CLOrient3D, CommonlineSDP
