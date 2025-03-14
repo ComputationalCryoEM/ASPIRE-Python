@@ -15,6 +15,7 @@ L. Wang, A. Singer, and  Z. Wen, SIAM J. Imaging Sciences, 6, 2450-2483 (2013).
 # -------
 
 import logging
+from fractions import Fraction
 
 import numpy as np
 
@@ -33,8 +34,8 @@ logger = logging.getLogger(__name__)
 # Set up some initializing parameters. We will run the LUD algorithm
 # for various levels of noise and output a table of results.
 
-SNR = [1 / 8, 1 / 16, 1 / 32]  # Signal-to-noise ratio
-n_imgs = 50  # Number of images in our source
+SNR = ["1/8", "1/16", "1/32"]  # Signal-to-noise ratio
+n_imgs = 500  # Number of images in our source
 dtype = np.float64
 pad_size = 129
 results = {}  # Dictionary to store results
@@ -64,7 +65,7 @@ logger.info("Volume map data" f" shape: {vol.shape} dtype:{vol.dtype}")
 # the ground truth rotations and the globally aligned estimated rotations.
 for snr in SNR:
     # Generate a white noise adder with specifid SNR.
-    noise_adder = WhiteNoiseAdder.from_snr(snr=snr)
+    noise_adder = WhiteNoiseAdder.from_snr(snr=Fraction(snr))
 
     # Initialize a Simulation source to generate noisy, centered images.
     src = Simulation(
