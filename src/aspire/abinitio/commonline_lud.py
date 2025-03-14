@@ -497,30 +497,21 @@ class CommonlineLUD(CLOrient3D):
             Y_ii^(22) = y_i^2,
             Y_ii^(12) = Y_ii^(21) = y_i^3 / sqrt(2).
 
-        :param y: 1D array of length 3 * n_img.
-        :return: Sparse matrix AT(y)
+        :param y: 1D NumPy array of length 3K.
+        :return: 2D NumPy array of shape (2K, 2K).
         """
-        n = 2 * len(y) // 3
-        m = len(y)
-        rows = np.concatenate([np.arange(1, n, 2), np.arange(0, n, 2)])
-        cols = np.concatenate([np.arange(0, n, 2), np.arange(1, n, 2)])
-        data = np.concatenate(
-            [
-                (np.sqrt(2, dtype=y.dtype) / 2) * y[n:m],
-                (np.sqrt(2, dtype=y.dtype) / 2) * y[n:m],
-            ]
-        )
+        K = len(y) // 3
+        n = 2 * K  # Size of the output matrix
+        ATy = np.zeros((n, n), dtype=y.dtype)
 
-        # Combine diagonal elements
-        diag_data = y[:n]
-        diag_idx = np.arange(n)
+        # Assign diagonal elements
+        ATy[::1, ::1] = np.diag(y[:n])
 
-        # Construct the full matrix
-        data = np.concatenate([data, diag_data])
-        rows = np.concatenate([rows, diag_idx])
-        cols = np.concatenate([cols, diag_idx])
+        # Assign symmetric off-diagonal elements
+        off_diag_vals = np.sqrt(2, dtype=y.dtype) / 2 * y[n:]
+        ATy[::2, 1::2] = np.diag(off_diag_vals)  # Y_ii^(12)
+        ATy[1::2, ::2] = np.diag(off_diag_vals)  # Y_ii^(21)
 
-        ATy = csr_array((data, (rows, cols)), shape=(n, n))
         return ATy
 
     def _restructure_Gram(self, G):
