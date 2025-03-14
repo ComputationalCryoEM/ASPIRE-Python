@@ -298,7 +298,7 @@ jobs:
           echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
       - name: Build Sphinx docs
         run: |
-          export ASPIREDIR=..
+          export ASPIREDIR=${{ github.workspace }}
           make distclean
           sphinx-apidoc -f -o ./source ../src -H Modules
           make html
