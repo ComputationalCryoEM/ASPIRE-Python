@@ -426,7 +426,11 @@ class CommonlineLUD(CLOrient3D):
             dmx = drops[imx]
 
             # Relative drop
-            rel_drp = (num_eigs_W - 1) * dmx / (np.sum(drops) - dmx)
+            rel_drp = (
+                (num_eigs_W - 1) * dmx / (np.sum(drops) - dmx)
+                if len(drops) > 1
+                else np.inf
+            )
             if rel_drp > rel_drp_thresh:
                 num_eigs = max(imx, 6)
             else:
