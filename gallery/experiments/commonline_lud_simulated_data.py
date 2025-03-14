@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 # for various levels of noise and output a table of results.
 
 SNR = [1 / 8, 1 / 16, 1 / 32]  # Signal-to-noise ratio
-n_imgs = 50  # Number of images in our source
+n_imgs = 500  # Number of images in our source
 dtype = np.float64
 pad_size = 129
 results = {
