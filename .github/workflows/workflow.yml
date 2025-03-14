@@ -298,10 +298,9 @@ jobs:
           echo "    cache_dir: .github_cache/ASPIRE-data" >> config.yaml
       - name: Build Sphinx docs
         run: |
-          export ASPIREDIR=.
           make distclean
           sphinx-apidoc -f -o ./source ../src -H Modules
-          make html
+          ASPIREDIR=. make html
         working-directory: ./docs
       - name: Archive Sphinx docs
         uses: actions/upload-artifact@v4
