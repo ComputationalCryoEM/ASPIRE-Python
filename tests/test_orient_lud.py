@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import warnings
 
 from aspire.abinitio import CommonlineLUD
 from aspire.source import Simulation
@@ -108,7 +109,8 @@ def test_estimate_rotations(source, orient_est):
     # This can be improved by using subpixel shift_step in CommonlineLUD.
     if orient_est.alpha is None and source.offsets.all() != 0:
         tol = 9
-    mean_aligned_angular_distance(est_rots, source.rotations, degree_tol=tol)
+    maad = mean_aligned_angular_distance(est_rots, source.rotations, degree_tol=tol)
+    warnings.warn(f"MEAN_ALIGNED_ANGULAR_DISTANCE: {maad}", stacklevel=1)
 
     # Check dtype pass-through
     np.testing.assert_equal(source.dtype, est_rots.dtype)
