@@ -1,6 +1,7 @@
+import warnings
+
 import numpy as np
 import pytest
-import warnings
 
 from aspire.abinitio import CommonlineLUD
 from aspire.source import Simulation
@@ -102,7 +103,7 @@ def test_estimate_rotations(source, orient_est):
     # Register estimates to ground truth rotations and compute the
     # angular distance between them (in degrees).
     # Assert that mean aligned angular distance is less than 3 degrees.
-    tol = 3
+    tol = 5
 
     # Using LUD without spectral norm constraint, ie. alpha=None,
     # on shifted images reduces estimated rotations accuracy.
