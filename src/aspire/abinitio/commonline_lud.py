@@ -169,10 +169,10 @@ class CommonlineLUD(CLOrient3D):
         # Initialize variables
         G = np.eye(n, dtype=self.dtype)
         W = np.eye(n, dtype=self.dtype)
-        Phi = W + G / self.mu
-        if self.alpha is not None:
-            Z = W
-            Phi -= Z
+        Z = np.eye(n, dtype=self.dtype)
+        Phi = G / self.mu
+        if self.alpha is None:
+            Phi += W
 
         # Compute initial values
         S, theta = self._Q_theta(Phi)
