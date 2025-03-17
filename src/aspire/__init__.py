@@ -15,7 +15,7 @@ import aspire
 from aspire.exceptions import handle_exception
 
 # version in maj.min.bld format
-__version__ = "0.13.1"
+__version__ = "0.13.2"
 
 
 # Setup `confuse` config
