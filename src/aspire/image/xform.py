@@ -145,7 +145,7 @@ class Multiply(SymmetricXform):
 
     def _forward(self, im, indices):
         if self.multipliers.size == 1:  # if we have a scalar multiplier
-            im_new = im * self.multipliers
+            im_new = im * self.multipliers.astype(im.dtype)
         else:
             im_new = im * self.multipliers[indices]
 
@@ -212,6 +212,37 @@ class Downsample(LinearXform):
 
     def __str__(self):
         return f"Downsample (Resolution {self.resolution})"
+
+
+class LegacyWhiten(Xform):
+    """
+    A Xform that implements MATLAB legacy whitening.
+    """
+
+    def __init__(self, psd, delta):
+        """
+        Initialize LegacyWhiten Xform.
+
+        :param psd: PSD (as computed by LegacyNoiseEstimator).
+        :param delta: Threshold used to determine which frequencies to whiten
+            and which to set to zero. By default all `sqrt(psd)` values
+            less than `delta` are zeroed out in the whitening filter.
+        """
+
+        self.psd = psd
+        self.delta = delta
+        super().__init__()
+
+    def _forward(self, im, indices):
+        """
+        Apply the legacy MATLAB whitening transformation to `im`.
+
+        The tranform is applied to all of `im`, `indices` are unused.
+        """
+        return im.legacy_whiten(self.psd, self.delta)
+
+    def __str__(self):
+        return "Legacy Whitening Xform."
 
 
 class FilterXform(SymmetricXform):

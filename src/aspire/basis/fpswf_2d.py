@@ -87,7 +87,7 @@ class FPSWFBasis2D(PSWFBasis2D):
         self.quad_rule_radial_wts = e
         self.num_angular_pts = f
 
-        us_fft_pts = np.row_stack((self.quad_rule_pts_x, self.quad_rule_pts_y))
+        us_fft_pts = np.vstack((self.quad_rule_pts_x, self.quad_rule_pts_y))
         us_fft_pts = self.bandlimit / self.rcut * us_fft_pts
         (
             blk_r,

@@ -41,16 +41,15 @@ def qr_vols_forward(sim, s, n, vols, k):
     for ell in range(k):
         ims[ell] = sim.vol_forward(vols[ell], s, n).asnumpy()
 
-    ims = np.swapaxes(ims, 1, 3)
-    ims = np.swapaxes(ims, 0, 2)
+    ims = ims.transpose((1, 0, 2, 3))  # n, k, L, L
 
-    Q_vecs = np.zeros((sim.L**2, k, n), dtype=vols.dtype)
-    Rs = np.zeros((k, k, n), dtype=vols.dtype)
+    Q_vecs = np.zeros((n, sim.L**2, k), dtype=vols.dtype)
+    Rs = np.zeros((n, k, k), dtype=vols.dtype)
 
     im_vecs = mat_to_vec(ims)
     for i in range(n):
-        Q_vecs[:, :, i], Rs[:, :, i] = qr(im_vecs[:, :, i])
-    Qs = vec_to_mat(Q_vecs)
+        Q_vecs[i], Rs[i] = qr(im_vecs[i].T)  # column vectors
+    Qs = vec_to_mat(Q_vecs.transpose(0, 2, 1))  # n, k, L, L
 
     return Qs, Rs
 
@@ -186,7 +185,7 @@ class Volume:
 
         :param value: A `SymmetryGroup` instance or string indicating symmetry, ie. "C5", "D7", "T", etc.
         """
-        self._symmetry_group = SymmetryGroup.parse(value, dtype=self.dtype)
+        self._symmetry_group = SymmetryGroup.parse(value)
 
     def _symmetry_group_warning(self, stacklevel):
         """
@@ -229,7 +228,7 @@ class Volume:
 
         if any([axes_altering_transformation, incompat_syms, arbitrary_array]):
             self._symmetry_group_warning(stacklevel=stacklevel)
-            result_symmetry = IdentitySymmetryGroup(dtype=self.dtype)
+            result_symmetry = IdentitySymmetryGroup()
 
         return result_symmetry
 

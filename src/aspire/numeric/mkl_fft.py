@@ -1,5 +1,6 @@
 import mkl_fft
 import numpy as np
+import scipy as sp
 
 from aspire.numeric.base_fft import FFT
 
@@ -55,3 +56,26 @@ class MKLFFT(FFT):
     def ifftshift(self, x, axes=None):
         # N/A in mkl_fft, use np
         return np.fft.ifftshift(x, axes=axes)
+
+    def rfft(self, x, **kwargs):
+        return mkl_fft._numpy_fft.rfft(x, **kwargs)
+
+    def irfft(self, x, **kwargs):
+        return mkl_fft._numpy_fft.irfft(x, **kwargs)
+
+    def rfft2(self, x, **kwargs):
+        return mkl_fft._numpy_fft.rfft2(x, **kwargs)
+
+    def irfft2(self, x, **kwargs):
+        return mkl_fft._numpy_fft.irfft2(x, **kwargs)
+
+    # These are not currently exposed in mkl_fft,
+    #   fall back to scipy.
+    def dct(self, x, **kwargs):
+        return sp.fft.dct(x, **kwargs)
+
+    def idct(self, x, **kwargs):
+        return sp.fft.idct(x, **kwargs)
+
+    def rfftfreq(self, x, **kwargs):
+        return sp.fft.rfftfreq(x, **kwargs)

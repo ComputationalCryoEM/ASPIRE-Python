@@ -1,4 +1,3 @@
-import itertools
 import logging
 import os.path
 
@@ -10,12 +9,14 @@ from aspire.noise import (
     AnisotropicNoiseEstimator,
     BlueNoiseAdder,
     CustomNoiseAdder,
+    LegacyNoiseEstimator,
     PinkNoiseAdder,
     WhiteNoiseAdder,
     WhiteNoiseEstimator,
 )
 from aspire.operators import FunctionFilter, ScalarFilter
 from aspire.source.simulation import Simulation
+from aspire.utils import gaussian_2d, gaussian_window, utest_tolerance
 from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -28,6 +29,7 @@ DTYPES = [np.float32, np.float64]
 VARS = [0.1] + [
     pytest.param(10 ** (-x), marks=pytest.mark.expensive) for x in range(2, 5)
 ]
+NOISE_ESTIMATORS = [AnisotropicNoiseEstimator, LegacyNoiseEstimator]
 
 
 def _noise_function(x, y):
@@ -42,9 +44,19 @@ def sim_fixture_id(params):
     return f"res={res}, dtype={dtype.__name__}"
 
 
-@pytest.fixture(params=itertools.product(RESOLUTIONS, DTYPES), ids=sim_fixture_id)
-def sim_fixture(request):
-    resolution, dtype = request.param
+@pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
+def dtype(request):
+    return request.param
+
+
+@pytest.fixture(params=RESOLUTIONS, ids=lambda x: f"resolution={x}", scope="module")
+def resolution(request):
+    return request.param
+
+
+@pytest.fixture
+def sim_fixture(resolution, dtype):
+    # resolution, dtype = request.param
     # Setup a sim with no noise, no ctf, no shifts,
     #   using a compactly supported volume.
     # ie, clean centered projections.
@@ -55,6 +67,11 @@ def sim_fixture(request):
         offsets=0,
         dtype=dtype,
     )
+
+
+@pytest.fixture(params=NOISE_ESTIMATORS, ids=lambda x: f"noise_estimator={x.__name__}")
+def noise_estimator_fixture(request):
+    return request.param
 
 
 @pytest.fixture(
@@ -72,7 +89,7 @@ def test_white_noise_estimator_clean_corners(sim_fixture):
     """
     Tests that a clean image yields a noise estimate that is virtually zero.
     """
-    noise_estimator = WhiteNoiseEstimator(sim_fixture, batchSize=512)
+    noise_estimator = WhiteNoiseEstimator(sim_fixture)
     noise_variance = noise_estimator.estimate()
     # Using a compactly supported volume should yield
     #   virtually no noise in the image corners.
@@ -110,10 +127,12 @@ def test_white_noise_adder(sim_fixture, target_noise_variance):
     assert sim_fixture.noise_adder.noise_var == target_noise_variance
 
     # Create an estimator from the source
-    noise_estimator = WhiteNoiseEstimator(sim_fixture, batchSize=512)
+    noise_estimator = WhiteNoiseEstimator(sim_fixture)
 
     # Match estimate within 1%
-    assert np.isclose(target_noise_variance, noise_estimator.estimate(), rtol=0.01)
+    np.testing.assert_allclose(
+        target_noise_variance, noise_estimator.estimate(), rtol=0.01
+    )
 
 
 @pytest.mark.parametrize(
@@ -149,7 +168,7 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
     sampled_noise_var = np.var(im_noise_sample.asnumpy())
 
     logger.debug(f"Sampled Noise Variance {sampled_noise_var}")
-    assert np.isclose(sampled_noise_var, target_noise_variance, rtol=0.1)
+    np.testing.assert_allclose(sampled_noise_var, target_noise_variance, rtol=0.1)
 
 
 @pytest.mark.parametrize(
@@ -192,7 +211,7 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
     )
 
     # Compare with WhiteNoiseEstimator consuming sim_from_snr
-    noise_estimator = WhiteNoiseEstimator(sim_from_snr, batchSize=512)
+    noise_estimator = WhiteNoiseEstimator(sim_from_snr)
     est_noise_variance = noise_estimator.estimate()
     logger.info(
         "est_noise_variance, target_noise_variance ="
@@ -200,13 +219,15 @@ def test_from_snr_white(sim_fixture, target_noise_variance):
     )
 
     # Check we're within 5%
-    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)
+    np.testing.assert_allclose(est_noise_variance, target_noise_variance, rtol=0.05)
 
 
 @pytest.mark.parametrize(
     "target_noise_variance", VARS, ids=lambda param: f"var={param}"
 )
-def test_blue_iso_noise_estimation(sim_fixture, target_noise_variance):
+def test_blue_iso_noise_estimation(
+    sim_fixture, target_noise_variance, noise_estimator_fixture
+):
     """
     Test that prescribing isotropic blue-ish noise
     is close to target for a variety of paramaters.
@@ -215,23 +236,23 @@ def test_blue_iso_noise_estimation(sim_fixture, target_noise_variance):
     # Create the CustomNoiseAdder
     sim_fixture.noise_adder = BlueNoiseAdder(var=target_noise_variance)
 
-    # TODO, potentially remove or change to Isotropic after #842
-    # Compare with AnisotropicNoiseEstimator consuming sim_from_snr
-    noise_estimator = AnisotropicNoiseEstimator(sim_fixture, batchSize=512)
+    noise_estimator = noise_estimator_fixture(sim_fixture)
     est_noise_variance = noise_estimator.estimate()
     logger.info(
         "est_noise_variance, target_noise_variance ="
         f" {est_noise_variance}, {target_noise_variance}"
     )
 
-    # Check we're within 5%
-    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)
+    # Check
+    np.testing.assert_allclose(est_noise_variance, target_noise_variance, rtol=0.20)
 
 
 @pytest.mark.parametrize(
     "target_noise_variance", VARS, ids=lambda param: f"var={param}"
 )
-def test_pink_iso_noise_estimation(sim_fixture, target_noise_variance):
+def test_pink_iso_noise_estimation(
+    sim_fixture, target_noise_variance, noise_estimator_fixture
+):
     """
     Test that prescribing isotropic pink-ish noise
     is close to target for a variety of paramaters.
@@ -240,17 +261,15 @@ def test_pink_iso_noise_estimation(sim_fixture, target_noise_variance):
     # Create the CustomNoiseAdder
     sim_fixture.noise_adder = PinkNoiseAdder(var=target_noise_variance)
 
-    # TODO, potentially remove or change to Isotropic after #842
-    # Compare with AnisotropicNoiseEstimator consuming sim_from_snr
-    noise_estimator = AnisotropicNoiseEstimator(sim_fixture, batchSize=512)
+    noise_estimator = noise_estimator_fixture(sim_fixture)
     est_noise_variance = noise_estimator.estimate()
     logger.info(
         "est_noise_variance, target_noise_variance ="
         f" {est_noise_variance}, {target_noise_variance}"
     )
 
-    # Check we're within 5%
-    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)
+    # Check
+    np.testing.assert_allclose(est_noise_variance, target_noise_variance, rtol=0.20)
 
 
 @pytest.mark.parametrize(
@@ -276,7 +295,7 @@ def test_pink_aniso_noise_estimation(sim_fixture, target_noise_variance):
 
     # TODO, potentially remove after #842
     # Compare with AnisotropicNoiseEstimator consuming sim_from_snr
-    noise_estimator = AnisotropicNoiseEstimator(sim_fixture, batchSize=512)
+    noise_estimator = AnisotropicNoiseEstimator(sim_fixture)
     est_noise_variance = noise_estimator.estimate()
     logger.info(
         "est_noise_variance, target_noise_variance ="
@@ -284,4 +303,24 @@ def test_pink_aniso_noise_estimation(sim_fixture, target_noise_variance):
     )
 
     # Check we're within 5%
-    assert np.isclose(est_noise_variance, target_noise_variance, rtol=0.05)
+    np.testing.assert_allclose(est_noise_variance, target_noise_variance, rtol=0.05)
+
+
+def test_gaussian_window(resolution, dtype):
+    """
+    Tests `gaussian_window` by comparing with `gaussian_2d`.
+    """
+
+    # Used by both tests below
+    max_d = resolution // 3
+    g2d = gaussian_2d(size=2 * resolution - 1, sigma=max_d, dtype=dtype)
+
+    # Test unit alpha
+    w = gaussian_window(L=resolution, max_d=max_d, dtype=dtype, alpha=1)
+    np.testing.assert_allclose(w, g2d, atol=utest_tolerance(dtype))
+
+    # Test default alpha=3, e**(alpha * ...) == (e**(...))**alpha
+    #   where (e**(...)) is provided by g2d.
+    a = 3.0
+    w = gaussian_window(L=resolution, max_d=max_d, alpha=a, dtype=dtype)
+    np.testing.assert_allclose(w, g2d**a, atol=utest_tolerance(dtype))

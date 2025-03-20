@@ -8,7 +8,6 @@ from aspire.basis import Coef, FFBBasis2D
 from aspire.operators import BlkDiagMatrix, DiagMatrix
 from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import make_symmat
-from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -351,32 +350,30 @@ class RotCov2D:
         def precond_fun(S, x):
             p = np.size(S, 0)
             assert np.size(x) == p * p, "The sizes of S and x are not consistent."
-            x = m_reshape(x, (p, p))
+            x = x.reshape(p, p)
             y = S @ x @ S
-            y = m_reshape(y, (p**2,))
-            return y
+            return y.flatten()
 
         def apply(A, x):
             p = np.size(A[0], 0)
-            x = m_reshape(x, (p, p))
+            x = x.reshape(p, p)
             y = np.zeros_like(x)
             for k in range(0, len(A)):
                 y = y + A[k] @ x @ A[k].T
-            y = m_reshape(y, (p**2,))
-            return y
+            return y.flatten()
 
         for ell in range(0, len(b)):
             A_ell = []
             for k in range(0, len(A)):
                 A_ell.append(A[k][ell])
             p = np.size(A_ell[0], 0)
-            b_ell = m_reshape(b[ell], (p**2,))
+            b_ell = b[ell].flatten()
             S = inv(M[ell])
             cg_opt["preconditioner"] = lambda x, S=S: precond_fun(S, x)
             covar_coef_ell, _, _ = conj_grad(
                 lambda x, A_ell=A_ell: apply(A_ell, x), b_ell, cg_opt
             )
-            covar_coef[ell] = m_reshape(covar_coef_ell, (p, p))
+            covar_coef[ell] = covar_coef_ell.reshape(p, p)
 
         if not covar_coef.check_psd():
             logger.warning("Covariance matrix in Cov2D is not positive semidefinite.")
@@ -607,7 +604,7 @@ class BatchedRotCov2D(RotCov2D):
             ctf_basis_k_sq = ctf_basis_k_t @ ctf_basis_k
             A_mean_k = weight * ctf_basis_k_sq
             A_mean += A_mean_k
-            A_covar_k = np.sqrt(weight) * ctf_basis_k_sq
+            A_covar_k = np.sqrt(weight).astype(self.dtype) * ctf_basis_k_sq
             A_covar[k] = A_covar_k
 
             M_covar += A_covar_k
@@ -685,19 +682,17 @@ class BatchedRotCov2D(RotCov2D):
         def precond_fun(S, x):
             p = np.size(S, 0)
             assert np.size(x) == p * p, "The sizes of S and x are not consistent."
-            x = m_reshape(x, (p, p))
+            x = x.reshape(p, p)
             y = S @ x @ S
-            y = m_reshape(y, (p**2,))
-            return y
+            return y.flatten()
 
         def apply(A, x):
             p = np.size(A[0], 0)
-            x = m_reshape(x, (p, p))
+            x = x.reshape(p, p)
             y = np.zeros_like(x)
             for k in range(0, len(A)):
                 y = y + A[k] @ x @ A[k].T
-            y = m_reshape(y, (p**2,))
-            return y
+            return y.flatten()
 
         cg_opt = covar_est_opt
         covar_coef = BlkDiagMatrix.zeros(
@@ -709,13 +704,13 @@ class BatchedRotCov2D(RotCov2D):
             for k in range(0, len(A_covar)):
                 A_ell.append(A_covar[k][ell])
             p = np.size(A_ell[0], 0)
-            b_ell = m_reshape(b_covar[ell], (p**2,))
+            b_ell = b_covar[ell].flatten()
             S = inv(M[ell])
             cg_opt["preconditioner"] = lambda x, S=S: precond_fun(S, x)
             covar_coef_ell, _, _ = conj_grad(
                 lambda x, A_ell=A_ell: apply(A_ell, x), b_ell, cg_opt
             )
-            covar_coef[ell] = m_reshape(covar_coef_ell, (p, p))
+            covar_coef[ell] = covar_coef_ell.reshape(p, p)
 
         return covar_coef
 

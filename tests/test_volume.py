@@ -821,7 +821,7 @@ def test_project_broadcast(dtype):
 # SYM_GROUP_PARAMS consists of (initializing method, string representation).
 # Testing just the basic cases of setting the symmetry group from
 # a SymmetryGroup instance, a string, and the default.
-SYM_GROUP_PARAMS = [(TSymmetryGroup(np.float32), "T"), ("D2", "D2"), (None, "C1")]
+SYM_GROUP_PARAMS = [(TSymmetryGroup(), "T"), ("D2", "D2"), (None, "C1")]
 
 
 @pytest.mark.parametrize("sym_group, sym_string", SYM_GROUP_PARAMS)

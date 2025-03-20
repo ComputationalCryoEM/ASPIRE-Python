@@ -373,9 +373,9 @@ class Basis:
         :param size: The size of the vectors for which to define the basis.
             Currently only square images and cubic volumes are supported.
         :param ell_max: The maximum order ell of the basis elements. If no input
-            (= None), it will be set to np.Inf and the basis includes all
+            (= None), it will be set to np.inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
-            below the Nyquist frequency (default Inf).
+            below the Nyquist frequency (default inf).
         """
         if ell_max is None:
             ell_max = np.inf
@@ -506,7 +506,12 @@ class Basis:
             -`self.sz` corresponding to the evaluation of `V` in
             this basis.
         """
-        return mdim_mat_fun_conj(V, 1, len(self.sz), self._evaluate)
+
+        def f(V):
+            """Wrapper to handle dimension rolling."""
+            return self.evaluate(Coef(self, V)).asnumpy()
+
+        return mdim_mat_fun_conj(V, 1, len(self.sz), f)
 
     def mat_evaluate_t(self, X):
         """
@@ -522,7 +527,12 @@ class Basis:
             function calculates V = B' * X * B, where the rows of `B`, rows
             of 'X', and columns of `X` are read as vectorized arrays.
         """
-        return mdim_mat_fun_conj(X, len(self.sz), 1, self._evaluate_t)
+
+        def f(X):
+            """Wrapper to handle dimension rolling."""
+            return self.evaluate_t(Volume(X)).asnumpy()
+
+        return mdim_mat_fun_conj(X, len(self.sz), 1, f)
 
     def expand(self, x, tol=None, atol=0):
         """

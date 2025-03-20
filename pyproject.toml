@@ -1,6 +1,6 @@
 [project]
 name = "aspire"
-version = "0.13.1"
+version = "0.13.2"
 description = "Algorithms for Single Particle Reconstruction"
 readme = "README.md" # Optional
 requires-python = ">=3.9"
@@ -36,7 +36,7 @@ dependencies = [
     "joblib",
     "matplotlib >= 3.2.0",
     "mrcfile",
-    "numpy>=1.21.5, <2.0.0",
+    "numpy>=1.21.5",
     "packaging",
     "pooch>=1.7.0",
     "pillow",
@@ -44,7 +44,7 @@ dependencies = [
     "pymanopt",
     "PyWavelets",
     "scipy >= 1.10.0",
-    "scikit-learn",
+    "scikit-learn >= 1.5.0",
     "scikit-image",
     "setuptools >= 0.41",
     "tqdm",

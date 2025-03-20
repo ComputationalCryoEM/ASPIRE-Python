@@ -114,6 +114,12 @@ def test_volume_generate(vol_fixture):
         np.testing.assert_approx_equal(v.pixel_size, PXSZ)
 
 
+def test_dtype_passthrough(vol_fixture, dtype_fixture):
+    """Test Volume are generated with correct dtype."""
+    vol = vol_fixture.generate()
+    np.testing.assert_equal(vol._data.dtype, dtype_fixture)
+
+
 def test_simulation_init(vol_fixture):
     """Test that a Simulation initializes provided a synthetic Volume."""
     _ = Simulation(L=vol_fixture.L, vols=vol_fixture.generate())
@@ -135,12 +141,12 @@ def test_compact_support(vol_fixture):
 
 # Supress expected warnings due to rotation of symmetric volume.
 @pytest.mark.filterwarnings("ignore:`symmetry_group` attribute is being set to `C1`")
-def test_volume_symmetry(vol_fixture):
+def test_volume_symmetry(vol_fixture, dtype_fixture):
     """Test that volumes have intended symmetry."""
     vol = vol_fixture.generate()
 
     # Rotations in symmetry group, excluding the Identity.
-    rots = vol_fixture.symmetry_group.matrices[1:]
+    rots = vol_fixture.symmetry_group.matrices[1:].astype(dtype_fixture)
 
     for rot in rots:
         # Rotate volume by an element of the symmetric group.

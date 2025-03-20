@@ -126,7 +126,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         """
         Called to add symmetry to Volumes by generating for each Gaussian blob duplicates in symmetric positions.
         """
-        rots = self.symmetry_group.matrices
+        rots = self.symmetry_group.matrices.astype(self.dtype, copy=False)
 
         Q_rot = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
         D_sym = np.zeros(shape=(self.n_blobs, 3, 3)).astype(self.dtype)
@@ -207,7 +207,7 @@ class CnSymmetricVolume(GaussianBlobsVolume):
             )
 
     def _set_symmetry_group(self):
-        self._symmetry_group = CnSymmetryGroup(order=self.order, dtype=self.dtype)
+        self._symmetry_group = CnSymmetryGroup(order=self.order)
 
     @property
     def n_blobs(self):
@@ -220,7 +220,7 @@ class DnSymmetricVolume(CnSymmetricVolume):
     """
 
     def _set_symmetry_group(self):
-        self._symmetry_group = DnSymmetryGroup(order=self.order, dtype=self.dtype)
+        self._symmetry_group = DnSymmetryGroup(order=self.order)
 
     @property
     def n_blobs(self):
@@ -233,7 +233,7 @@ class TSymmetricVolume(GaussianBlobsVolume):
     """
 
     def _set_symmetry_group(self):
-        self._symmetry_group = TSymmetryGroup(dtype=self.dtype)
+        self._symmetry_group = TSymmetryGroup()
 
     @property
     def n_blobs(self):
@@ -246,7 +246,7 @@ class OSymmetricVolume(GaussianBlobsVolume):
     """
 
     def _set_symmetry_group(self):
-        self._symmetry_group = OSymmetryGroup(dtype=self.dtype)
+        self._symmetry_group = OSymmetryGroup()
 
     @property
     def n_blobs(self):
@@ -270,7 +270,7 @@ class AsymmetricVolume(CnSymmetricVolume):
             )
 
     def _set_symmetry_group(self):
-        self._symmetry_group = IdentitySymmetryGroup(dtype=self.dtype)
+        self._symmetry_group = IdentitySymmetryGroup()
 
     def _symmetrize_gaussians(self, Q, D, mu):
         return Q, D, mu

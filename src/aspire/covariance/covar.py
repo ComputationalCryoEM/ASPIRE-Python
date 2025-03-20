@@ -10,14 +10,7 @@ from aspire.numeric import fft
 from aspire.numeric.scipy import cg
 from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel, MeanEstimator
-from aspire.utils import (
-    make_symmat,
-    symmat_to_vec_iso,
-    trange,
-    vec_to_symmat_iso,
-    vecmat_to_volmat,
-    volmat_to_vecmat,
-)
+from aspire.utils import make_symmat, symmat_to_vec_iso, trange, vec_to_symmat_iso
 from aspire.volume import Volume, rotated_grids
 
 logger = logging.getLogger(__name__)
@@ -90,9 +83,12 @@ class CovarianceEstimator(Estimator):
         b_coef = self.src_backward(mean_vol, noise_variance)
         est_coef = self.conj_grad(b_coef, tol=tol, regularizer=regularizer)
         covar_est = self.basis.mat_evaluate(est_coef)
-        # Note, notice these cancel out, but requires a lot of changes elsewhere in this file,
-        # basically totally removing all the `utils/matrix` hacks ... todo.
-        covar_est = vecmat_to_volmat(make_symmat(volmat_to_vecmat(covar_est)))
+
+        L = covar_est.shape[-1]
+        covar_est = covar_est.reshape((L**3, L**3))
+        covar_est = make_symmat(covar_est)
+        covar_est = covar_est.reshape((L,) * 6)
+
         return covar_est
 
     def conj_grad(self, b_coef, tol=1e-5, regularizer=0):

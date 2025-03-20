@@ -16,7 +16,7 @@ _data_fetcher = pooch.create(
     # folder operating system dependent, set by `pooch.os_cache`.
     # Pooch uses appdirs (https://github.com/ActiveState/appdirs) to
     # select an appropriate directory for the cache on each platform.
-    path=config["common"]["cache_dir"].as_filename(),
+    path=config["cache"]["cache_dir"].as_filename(),
     # The remote data is on Zenodo, `base_url` is a required param,
     # even though we override using individual urls in the registry.
     base_url="https://zenodo.org/communities/computationalcryoem/",

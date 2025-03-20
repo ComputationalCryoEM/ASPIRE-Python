@@ -494,7 +494,9 @@ class SimTestCase(TestCase):
         np.testing.assert_allclose(result, covar[:, :, 4, 4, 4, 4], atol=1e-4)
 
     def testSimulationEvalMean(self):
-        mean_est = Volume(np.load(os.path.join(DATA_DIR, "mean_8_8_8.npy")))
+        mean_est = Volume(
+            np.load(os.path.join(DATA_DIR, "mean_8_8_8.npy")), dtype=self.dtype
+        )
         result = self.sim.eval_mean(mean_est)
 
         np.testing.assert_allclose(result["err"], 2.664116055950763, atol=1e-4)
@@ -510,14 +512,17 @@ class SimTestCase(TestCase):
         np.testing.assert_allclose(result["corr"], 0.8405347287741631, atol=1e-4)
 
     def testSimulationEvalCoords(self):
-        mean_est = Volume(np.load(os.path.join(DATA_DIR, "mean_8_8_8.npy")))
+        mean_est = Volume(
+            np.load(os.path.join(DATA_DIR, "mean_8_8_8.npy")), dtype=self.dtype
+        )
         eigs_est = Volume(
-            np.load(os.path.join(DATA_DIR, "eigs_est_8_8_8_1.npy"))[..., 0]
+            np.load(os.path.join(DATA_DIR, "eigs_est_8_8_8_1.npy"))[..., 0],
+            dtype=self.dtype,
         )
 
         clustered_coords_est = np.load(
             os.path.join(DATA_DIR, "clustered_coords_est.npy")
-        )
+        ).astype(dtype=self.dtype)
 
         result = self.sim.eval_coords(mean_est, eigs_est, clustered_coords_est)
 
@@ -551,6 +556,8 @@ class SimTestCase(TestCase):
                 0.11048937,
                 0.11048937,
             ],
+            rtol=1e-05,
+            atol=1e-08,
         )
 
         np.testing.assert_allclose(

@@ -3,7 +3,6 @@ import logging
 import numpy as np
 
 from aspire.numeric import fft
-from aspire.utils.matlab_compat import m_reshape
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -32,7 +31,7 @@ class FourierKernel(Kernel):
             to be able to use it within optimization loops. This operator allows one to use the FourierKernel object
             with the underlying 'kernel' attribute tweaked with a regularization parameter.
         """
-        new_kernel = self.kernel + delta
+        new_kernel = self.kernel + float(delta)
         return FourierKernel(new_kernel)
 
     def circularize(self):
@@ -59,10 +58,10 @@ class FourierKernel(Kernel):
         mult_shape[dim] = N
         mult_shape = tuple(mult_shape)
 
-        mult = m_reshape((np.arange(N, dtype=self.dtype) / N), mult_shape)
+        mult = (np.arange(N, dtype=self.dtype) / N).reshape(mult_shape)
         kernel_circ = mult * top
 
-        mult = m_reshape((np.arange(N, 0, -1, dtype=self.dtype) / N), mult_shape)
+        mult = (np.arange(N, 0, -1, dtype=self.dtype) / N).reshape(mult_shape)
         kernel_circ += mult * bottom
 
         return fft.fftshift(kernel_circ, dim)
@@ -191,7 +190,7 @@ class FourierKernelMatrix(FourierKernel):
 
     def circularize(self):
         _L = self.M // 2
-        xx = np.empty((self.r, self.r, _L, _L, _L))
+        xx = np.empty((self.r, self.r, _L, _L, _L), self.dtype)
         for k in range(self.r):
             for j in range(self.r):
                 xx[k, j] = FourierKernel(self.kermat[k, j]).circularize().real

@@ -10,7 +10,6 @@ from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import complex_type
-from aspire.utils.matlab_compat import m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -93,14 +92,9 @@ class FFBBasis2D(FBBasis2D):
                 ind_radial += 1
 
         # Only calculate "positive" frequencies in one half-plane.
-        freqs_x = m_reshape(r, (n_r, 1)) @ m_reshape(
-            np.cos(np.arange(n_theta, dtype=self.dtype) * 2 * pi / (2 * n_theta)),
-            (1, n_theta),
-        )
-        freqs_y = m_reshape(r, (n_r, 1)) @ m_reshape(
-            np.sin(np.arange(n_theta, dtype=self.dtype) * 2 * pi / (2 * n_theta)),
-            (1, n_theta),
-        )
+        theta_grid = np.arange(n_theta, dtype=self.dtype) * 2 * pi / (2 * n_theta)
+        freqs_x = r[:, None] @ np.cos(theta_grid)[None, :]
+        freqs_y = r[:, None] @ np.sin(theta_grid)[None, :]
         freqs = np.vstack((freqs_y[np.newaxis, ...], freqs_x[np.newaxis, ...]))
 
         return {"gl_nodes": r, "gl_weights": w, "radial": radial, "freqs": freqs}
@@ -116,8 +110,6 @@ class FFBBasis2D(FBBasis2D):
             and the first dimension correspond to remaining dimension of `v`.
         """
         v = xp.asarray(v)
-        sz_roll = v.shape[:-1]
-        v = v.reshape(-1, self.count)
 
         # number of 2D image samples
         n_data = v.shape[0]
@@ -127,13 +119,13 @@ class FFBBasis2D(FBBasis2D):
         n_r = self._precomp["freqs"].shape[1]
 
         # go through  each basis function and find corresponding coefficient
-        pf = xp.zeros((n_data, 2 * n_theta, n_r), dtype=complex_type(self.dtype))
+        pf = xp.zeros((2 * n_theta, n_data, n_r), dtype=complex_type(self.dtype))
 
         ind = 0
 
         idx = ind + np.arange(self.k_max[0], dtype=int)
 
-        pf[:, 0, :] = v[:, self._zero_angular_inds] @ self.radial_norm[idx]
+        pf[0] = v[:, self._zero_angular_inds] @ self.radial_norm[idx]
         ind = ind + idx.size
 
         ind_pos = ind
@@ -149,32 +141,33 @@ class FFBBasis2D(FBBasis2D):
                 v_ell = 1j * v_ell
 
             pf_ell = v_ell @ self.radial_norm[idx]
-            pf[:, ell, :] = pf_ell
+            pf[ell] = pf_ell
 
             if np.mod(ell, 2) == 0:
-                pf[:, 2 * n_theta - ell, :] = pf_ell.conjugate()
+                pf[2 * n_theta - ell] = pf_ell.conjugate()
             else:
-                pf[:, 2 * n_theta - ell, :] = -pf_ell.conjugate()
+                pf[2 * n_theta - ell] = -pf_ell.conjugate()
 
             ind = ind + idx.size
             ind_pos = ind_pos + 2 * self.k_max[ell]
 
         # 1D inverse FFT in the degree of polar angle
-        pf = 2 * xp.pi * fft.ifft(pf, axis=1)
+        pf = 2 * xp.pi * fft.ifft(pf, axis=0)
 
         # Only need "positive" frequencies.
-        hsize = int(pf.shape[1] / 2)
-        pf = pf[:, 0:hsize, :]
+        hsize = int(pf.shape[0] / 2)
+        pf = pf[0:hsize]
         pf *= self.gl_weighted_nodes[None, None, :]
+        pf = pf.transpose(1, 2, 0)
         pf = pf.reshape(n_data, n_r * n_theta)
 
         # perform inverse non-uniformly FFT transform back to 2D coordinate basis
-        freqs = m_reshape(self._precomp["freqs"], (2, n_r * n_theta))
+        freqs = self._precomp["freqs"].reshape(2, n_r * n_theta)
 
         x = 2 * anufft(pf, 2 * pi * freqs, self.sz, real=True)
 
         # Return X as Image instance with the last two dimensions as *self.sz
-        x = x.reshape((*sz_roll, *self.sz))
+        x = x.reshape((n_data, *self.sz))
 
         return xp.asnumpy(x)
 

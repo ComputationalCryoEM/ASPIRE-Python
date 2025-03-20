@@ -16,10 +16,11 @@ from aspire.image.xform import (
     FilterXform,
     IndexedXform,
     LambdaXform,
+    LegacyWhiten,
     Multiply,
     Pipeline,
 )
-from aspire.noise import NoiseEstimator, WhiteNoiseEstimator
+from aspire.noise import LegacyNoiseEstimator, NoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import (
     CTFFilter,
     Filter,
@@ -39,20 +40,20 @@ class _ImageAccessor:
     Helper class for accessing images from an ImageSource as slices via the `src.images[start:stop:step]` API.
     """
 
-    def __init__(self, fun, num_imgs):
+    def __init__(self, fun, n_images):
         """
         :param fun: The private image-accessing method specific to the ImageSource associated with this ImageAccessor.
                     Generally _images() but can be substituted with a custom method.
-        :param num_imgs: The max number of images that this ImageAccessor can load (generally ImageSource.n).
+        :param n_images: The max number of images that this ImageAccessor can load (generally ImageSource.n).
         """
         self.fun = fun
-        self.num_imgs = num_imgs
+        self.n_images = n_images
 
     def __getitem__(self, indices):
         """
         ImageAccessor can be indexed via Python slice object, 1-D NumPy array, list, or a single integer,
         corresponding to the indices of the requested images. By default, slices default to a start of 0,
-        an end of self.num_imgs, and a step of 1.
+        an end of self.n_images, and a step of 1.
 
         :return: An Image object containing the requested images.
         """
@@ -71,11 +72,11 @@ class _ImageAccessor:
             if start < 0 and stop is None:
                 # slice(-10, None, None) -> slice(-10, *0* ,1)
                 stop = 0
-            # All other cases, limit to num_imgs
-            #   slice(s, None, None) -> slice(s, num_imgs, 1)
-            #   slice(s, 10**10, None) -> slice(0, num_imgs, 1)
-            elif not stop or stop > self.num_imgs:
-                stop = self.num_imgs
+            # All other cases, limit to n_images
+            #   slice(s, None, None) -> slice(s, n_images, 1)
+            #   slice(s, 10**10, None) -> slice(0, n_images, 1)
+            elif not stop or stop > self.n_images:
+                stop = self.n_images
 
             if not step:
                 step = 1
@@ -92,12 +93,12 @@ class _ImageAccessor:
             raise KeyError("Only one-dimensional indexing is allowed for images.")
 
         # final check for out-of-range indices
-        out_of_range = indices >= self.num_imgs
+        out_of_range = indices >= self.n_images
         if out_of_range.any():
             raise KeyError(f"Out-of-range indices: {list(indices[out_of_range])}")
 
         # check for negative indices and flip to positive
-        indices = indices % self.num_imgs
+        indices = indices % self.n_images
 
         return self.fun(indices)
 
@@ -232,7 +233,7 @@ class ImageSource(ABC):
                 f"This source is no longer mutable. Try new_source = source.update(symmetry_group='{value}')."
             )
 
-        self._symmetry_group = SymmetryGroup.parse(value, dtype=self.dtype)
+        self._symmetry_group = SymmetryGroup.parse(value)
         self.set_metadata(["_rlnSymmetryGroup"], str(self.symmetry_group))
 
     def _populate_symmetry_group(self, symmetry_group):
@@ -248,10 +249,9 @@ class ImageSource(ABC):
             else:
                 symmetry_group = SymmetryGroup.parse(
                     symmetry=self.get_metadata(["_rlnSymmetryGroup"])[0],
-                    dtype=self.dtype,
                 )
 
-        self.symmetry_group = symmetry_group or IdentitySymmetryGroup(dtype=self.dtype)
+        self.symmetry_group = symmetry_group or IdentitySymmetryGroup()
 
     def __getitem__(self, indices):
         """
@@ -262,7 +262,7 @@ class ImageSource(ABC):
 
         :param indices: Requested indices as a Python slice object,
             1-D NumPy array, list, or a single integer. Slices default
-            to a start of 0, an end of self.num_imgs, and a step of 1.
+            to a start of 0, an end of self.n_images, and a step of 1.
             See _ImageAccessor.
         :return: Source composed of the images and metadata at `indices`.
         """
@@ -388,7 +388,7 @@ class ImageSource(ABC):
             raise TypeError("`n` must be an integer")
         n = int(n)
 
-        self._img_accessor.num_imgs = n
+        self._img_accessor.n_images = n
         self._n = n
 
     @property
@@ -418,7 +418,10 @@ class ImageSource(ABC):
     @property
     def offsets(self):
         return np.atleast_2d(
-            self.get_metadata(["_rlnOriginX", "_rlnOriginY"], default_value=0.0)
+            self.get_metadata(
+                ["_rlnOriginX", "_rlnOriginY"],
+                default_value=np.array(0.0, dtype=self.dtype),
+            )
         )
 
     @offsets.setter
@@ -429,7 +432,11 @@ class ImageSource(ABC):
 
     @property
     def amplitudes(self):
-        return np.atleast_1d(self.get_metadata("_rlnAmplitude", default_value=1.0))
+        return np.atleast_1d(
+            self.get_metadata(
+                "_rlnAmplitude", default_value=np.array(1.0, dtype=self.dtype)
+            )
+        )
 
     @amplitudes.setter
     def amplitudes(self, values):
@@ -774,6 +781,8 @@ class ImageSource(ABC):
         ds_factor = self.L / L
         self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
         self.offsets /= ds_factor
+        if self.pixel_size is not None:
+            self.pixel_size *= ds_factor
 
         self.L = L
 
@@ -823,6 +832,40 @@ class ImageSource(ABC):
         ]
         logger.info("Adding Whitening Filter Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
+
+    @_as_copy
+    def legacy_whiten(self, noise_response=None, delta=None, batch_size=512):
+        """
+        Reproduce the legacy MATLAB whitening process.
+
+        :param noise_response: Noise response is provided either
+            directly as an array, or a `LegacyNoiseEstimator` instance.
+        :param delta: Threshold used to determine which frequencies to whiten
+            and which to set to zero. By default all `sqrt(psd)` values
+            less than `delta` are zeroed out in the whitening filter.
+            Default of `None` yields `np.finfo(np.float32).eps`.
+        """
+
+        if noise_response is None:
+            logger.info("Computing noise response.")
+            psd = LegacyNoiseEstimator(self, batch_size=batch_size).filter.xfer_fn_array
+        elif isinstance(noise_response, LegacyNoiseEstimator):
+            psd = noise_response.filter.xfer_fn_array
+        elif isinstance(noise_response, np.ndarray):
+            if not noise_response.shape == (self.L * 2 - 1,) * 2:
+                raise ValueError(
+                    f"Unexepected `noise_response` array shape {noise_response.shape}."
+                )
+            # Take the array directly
+            psd = noise_response
+        else:
+            raise ValueError("Unexepected `noise_response` type.")
+
+        if delta is None:
+            delta = np.finfo(np.float32).eps
+
+        logger.info("Adding LegacyWhiten Filter Xform to end of generation pipeline.")
+        self.generation_pipeline.add_xform(LegacyWhiten(psd, delta))
 
     @_as_copy
     def phase_flip(self):
@@ -1378,7 +1421,7 @@ class ImageSource(ABC):
             support_radius_proportion = support_radius / (self.L // 2)
 
         est = WhiteNoiseEstimator(
-            src=self, bgRadius=support_radius_proportion, batchSize=batch_size
+            src=self, bg_radius=support_radius_proportion, batch_size=batch_size
         )
 
         return est.estimate()
@@ -1484,10 +1527,19 @@ class IndexedSource(ImageSource):
             pixel_size=src.pixel_size,
         )
 
-        # Create filter indices, these are required to pass unharmed through filter eval code
-        #   that is potentially called by other methods later.
-        self.filter_indices = np.zeros(self.n, dtype=int)
-        self.unique_filters = [IdentityFilter()]
+        if src.unique_filters:
+            # Remap the filter indices to be unique.
+            #   Removes duplicates and filters that are unused in new source.
+            _filter_indices = src.filter_indices[self.index_map]
+            # _unq[_inv] reconstructs _filter_indices
+            _unq, _inv = np.unique(_filter_indices, return_inverse=True)
+            # Repack unique_filters
+            self.filter_indices = _inv
+            self.unique_filters = [copy.copy(src.unique_filters[i]) for i in _unq]
+        else:
+            # Pass through the None case
+            self.unique_filters = src.unique_filters
+            self.filter_indices = np.zeros(self.n, dtype=int)
 
         # Any further operations should not mutate this instance.
         self._mutable = False

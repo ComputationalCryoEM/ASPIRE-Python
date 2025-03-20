@@ -4,11 +4,13 @@ General purpose math functions, mostly geometric in nature.
 
 import logging
 import math
+from functools import lru_cache
 
 import numpy as np
 from numpy.linalg import norm
 from scipy.linalg import svd
 
+from aspire import config
 from aspire.numeric import xp
 from aspire.utils.random import Random
 from aspire.utils.rotation import Rotation
@@ -83,6 +85,7 @@ def _mgrid_slice(n, shifted, normalized):
     return slice(start, end, num_points)
 
 
+@lru_cache(maxsize=config["cache"]["grid_cache_size"].get())
 def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     """
     Generate one dimensional grid.
@@ -98,6 +101,7 @@ def grid_1d(n, shifted=False, normalized=True, dtype=np.float32):
     return {"x": x, "r": r}
 
 
+@lru_cache(maxsize=config["cache"]["grid_cache_size"].get())
 def grid_2d(n, shifted=False, normalized=True, indexing="yx", dtype=np.float32):
     """
     Generate two dimensional grid.
@@ -124,6 +128,7 @@ def grid_2d(n, shifted=False, normalized=True, indexing="yx", dtype=np.float32):
     return {"x": x, "y": y, "phi": phi, "r": r}
 
 
+@lru_cache(maxsize=config["cache"]["grid_cache_size"].get())
 def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32):
     """
     Generate three dimensional grid.

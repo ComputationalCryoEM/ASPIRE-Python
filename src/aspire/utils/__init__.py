@@ -24,6 +24,7 @@ from .misc import (  # isort:skip
     gaussian_1d,
     gaussian_2d,
     gaussian_3d,
+    gaussian_window,
     importlib_path,
     inverse_r,
     J_conjugate,
@@ -42,24 +43,16 @@ from .matrix import (
     best_rank1_approximation,
     eigs,
     fix_signs,
-    im_to_vec,
     make_psd,
     make_symmat,
     mat_to_vec,
     mdim_mat_fun_conj,
     nearest_rotations,
-    roll_dim,
     symmat_to_vec,
     symmat_to_vec_iso,
-    unroll_dim,
-    vec_to_im,
     vec_to_mat,
     vec_to_symmat,
     vec_to_symmat_iso,
-    vec_to_vol,
-    vecmat_to_volmat,
-    vol_to_vec,
-    volmat_to_vecmat,
 )
 from .multiprocessing import (
     mem_based_cpu_suggestion,
@@ -67,7 +60,7 @@ from .multiprocessing import (
     physical_core_cpu_suggestion,
     virtual_core_cpu_suggestion,
 )
-from .random import Random, choice, rand, randi, randn, random
+from .random import Random, choice, matlab_rand, randi, randn, random
 from .relion_interop import RelionStarFile, relion_metadata_fields
 from .resolution_estimation import FourierRingCorrelation, FourierShellCorrelation
 from .rotation import Rotation

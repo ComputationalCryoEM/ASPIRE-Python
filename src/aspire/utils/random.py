@@ -2,10 +2,10 @@
 Utilities for controlling and generating random numbers.
 """
 
+import warnings
+
 import numpy as np
 from scipy.special import erfinv
-
-from aspire.utils.matlab_compat import m_reshape
 
 # A list of random states, used as a stack
 random_states = []
@@ -49,19 +49,28 @@ def randn(*args, **kwargs):
     with Random(seed):
         uniform = np.random.rand(*args, **kwargs)
         result = np.sqrt(2) * erfinv(2 * uniform - 1)
-        # TODO: Rearranging elements to get consistent behavior with MATLAB 'randn2'
-        result = m_reshape(result.flatten(), args)
+        # Note, rearranging elements to get consistent behavior with MATLAB 'randn2'
+        result = result.T.reshape(args, order="F")
+
         return result
 
 
-def rand(size, seed=None):
+def matlab_rand(size, seed=None):
     """
-    Note this is for MATLAB repro (see m_reshape).
+    Wraps numpy.random.random with ASPIRE Random context manager.
+    Note this is re-packed from F order, only for MATLAB repro.
 
-    Other uses prefer use of `random`.
+    For all other uses prefer `random`.
     """
+    warnings.warn(
+        "`matlab_rand` is deprecated and included only for MATLAB"
+        " reference applications.  It may be removed in future"
+        " releases.  Use `random` for new development.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     with Random(seed):
-        return m_reshape(np.random.random(np.prod(size)), size)
+        return np.random.random(size).reshape(size, order="F")
 
 
 def random(*args, **kwargs):

@@ -5,8 +5,6 @@ from scipy.special import jv
 
 from aspire.basis import FBBasisMixin, SteerableBasis2D
 from aspire.basis.basis_utils import unique_coords_nd
-from aspire.utils import roll_dim, unroll_dim
-from aspire.utils.matlab_compat import m_flatten, m_reshape
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +29,9 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             May be a 2-tuple or an integer, in which case a square basis is assumed.
             Currently only square images are supported.
         :ell_max: The maximum order ell of the basis elements. If no input
-            (= None), it will be set to np.Inf and the basis includes all
+            (= None), it will be set to np.inf and the basis includes all
             ell such that the resulting basis vectors are concentrated
-            below the Nyquist frequency (default Inf).
+            below the Nyquist frequency (default inf).
         """
 
         if isinstance(size, int):
@@ -184,18 +182,19 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             This is an array whose last dimensions equal `self.sz` and the remaining
             dimensions correspond to first dimensions of `v`.
         """
-        # Transpose here once, instead of several times below  #RCOPT
-        v = v.reshape(-1, self.count).T
+        n_data = v.shape[0]
+        # Transpose here once, instead of several times below
+        v = v.reshape(n_data, self.count).T
 
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
-        mask = m_flatten(self.basis_coords["mask"])
+        mask = self.basis_coords["mask"].flatten()
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        x = np.zeros(shape=tuple([np.prod(self.sz)] + list(v.shape[1:])), dtype=v.dtype)
+        x = np.zeros((np.prod(self.sz), n_data), dtype=v.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max, dtype=int)
@@ -216,36 +215,32 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
 
             ind_radial += len(idx_radial)
 
-        x = x.T.reshape(-1, *self.sz)  # RCOPT
+        x = x.T.reshape(n_data, *self.sz)
 
         return x
 
-    def _evaluate_t(self, v):
+    def _evaluate_t(self, x):
         """
         Evaluate coefficient in FB basis from those in standard 2D coordinate basis
 
-        :param v: The coefficient array to be evaluated. The last dimensions
+        :param x: The coefficient array to be evaluated. The last dimensions
             must equal `self.sz`.
         :return: The evaluation of the coefficient array `v` in the dual basis
             of `basis`. This is an array of vectors whose last dimension equals
             `self.count` and whose first dimensions correspond to
             first dimensions of `v`.
         """
-        v = v.T
-        x, sz_roll = unroll_dim(v, self.ndim + 1)
-        x = m_reshape(
-            x, new_shape=tuple([np.prod(self.sz)] + list(x.shape[self.ndim :]))
-        )
+        x = x.reshape(x.shape[0], np.prod(self.sz))
 
         r_idx = self.basis_coords["r_idx"]
         ang_idx = self.basis_coords["ang_idx"]
-        mask = m_flatten(self.basis_coords["mask"])
+        mask = self.basis_coords["mask"].flatten()
 
         ind = 0
         ind_radial = 0
         ind_ang = 0
 
-        v = np.zeros(shape=tuple([self.count] + list(x.shape[1:])), dtype=v.dtype)
+        v = np.zeros((x.shape[0], self.count), dtype=x.dtype)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
             idx_radial = ind_radial + np.arange(0, k_max)
@@ -259,14 +254,13 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
                 ang = self._precomp["ang"][:, ind_ang]
                 ang_radial = np.expand_dims(ang[ang_idx], axis=1) * radial[r_idx]
                 idx = ind + np.arange(0, k_max)
-                v[idx] = ang_radial.T @ x[mask]
+                v[:, idx] = x[:, mask] @ ang_radial
                 ind += len(idx)
                 ind_ang += 1
 
             ind_radial += len(idx_radial)
 
-        v = roll_dim(v, sz_roll)
-        return v.T  # RCOPT
+        return v
 
     def calculate_bispectrum(
         self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None

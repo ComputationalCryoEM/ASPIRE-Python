@@ -1,7 +1,22 @@
 from unittest import TestCase
 
 import numpy as np
-from scipy.special import sph_harm as sp_sph_harm
+
+# This can be removed when project requires scipy>=1.15.0
+# scipy<1.15.0 provide `sph_harm`
+import scipy
+from packaging.version import Version
+
+if Version(scipy.__version__) < Version("1.15.0"):
+    from scipy.special import sph_harm as sp_sph_harm
+
+    # This has a different convention from upstream sph_harm_y
+    def sph_harm_y(j, m, x, y):
+        return sp_sph_harm(m, j, y, x)
+
+else:
+    # scipy>=1.15.0 provide `sph_harm_y`
+    from scipy.special import sph_harm_y
 
 from aspire.basis.basis_utils import (
     all_besselj_zeros,
@@ -24,28 +39,34 @@ def test_sph_harm_low_order():
     x = np.linspace(0, np.pi, 42)
     y = np.linspace(0, 2 * np.pi, 42)
 
-    ref = sp_sph_harm(m, j, y, x)  # Note calling convention is different
-    np.testing.assert_allclose(sph_harm(j, m, x, y), ref)
+    ref = sph_harm_y(j, m, x, y)  # Note Scipy calling convention is different
+    # Prescribe an atol because some of the ref values can be very
+    # small, which can impact relative tolerance.
+    np.testing.assert_allclose(sph_harm(j, m, x, y), ref, atol=1e-8)
 
     # negative m
     m *= -1
-    ref = sp_sph_harm(m, j, y, x)  # Note calling convention is different
-    np.testing.assert_allclose(sph_harm(j, m, x, y), ref)
+    ref = sph_harm_y(j, m, x, y)  # Note Scipy calling convention is different
+    # Prescribe an atol because some of the ref values can be very
+    # small, which can impact relative tolerance.
+    np.testing.assert_allclose(sph_harm(j, m, x, y), ref, atol=1e-8)
 
 
 def test_sph_harm_high_order():
     """
-    Test we remain finite at higher orders where `scipy.special.sph_harm` overflows.
+    Test we remain finite at higher orders where legacy `scipy.special.sph_harm` overflowed.
     """
+    # Older (<1.15.0) versions of Scipy overflowed with these values.
+    # Scipy>=1.15.0 has better overflow behavior,
+    #   but the method `sph_harm` will be deprecated in 1.17.0.
+
     m = 87
     j = 87
     x = 0.12345
     y = 0.56789
 
-    # If scipy fixed their implementation for higher orders in the future,
-    # this check should fail and we can reconsider that package.
-    ref = sp_sph_harm(m, j, y, x)  # Note calling convention is different
-    assert not np.isfinite(ref)
+    # Check we are finite.
+    assert np.isfinite(sph_harm(j, m, x, y))
 
     # Can manually check against pyshtools,
     # but we are avoiding that package dependency.
@@ -60,9 +81,6 @@ def test_sph_harm_high_order():
     #     csphase=-1,
     #     normalization="ortho",
     # )
-
-    # Check we are finite.
-    assert np.isfinite(sph_harm(j, m, x, y))
 
 
 class BesselTestCase(TestCase):

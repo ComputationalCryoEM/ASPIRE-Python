@@ -217,6 +217,10 @@ class _HeapItem:
         :param index: Image index
         :param image: Image object
         """
+        # Numpy scalar deprecation
+        if isinstance(value, np.ndarray) and value.ndim > 0:
+            value = value.item()
+
         self.value = float(value)
         self.index = int(index)
         self.image = image
@@ -323,6 +327,10 @@ class GlobalClassSelector(ClassSelector):
     def _select(self, classes, reflections, distances):
         for i, im in enumerate(self.averager.average(classes, reflections)):
             quality_score = self._quality_function(im)
+
+            # Numpy scalar deprecation
+            if isinstance(quality_score, np.ndarray) and quality_score.ndim > 0:
+                quality_score = quality_score.item()
 
             # Assign in global quality score array
             self._quality_scores[i] = quality_score
@@ -512,7 +520,7 @@ class VarianceImageQualityFunction(ImageQualityFunction):
 
         :return: Pixel variance.
         """
-        return np.var(img)
+        return np.var(img).item()
 
 
 class BandedSNRImageQualityFunction(ImageQualityFunction):
@@ -547,7 +555,7 @@ class BandedSNRImageQualityFunction(ImageQualityFunction):
                 f"Band of ({outer_band_start}, {outer_band_end}) empty for image size {L}, adjust band boundaries."
             )
 
-        return np.var(img[center_mask]) / np.var(img[outer_mask])
+        return (np.var(img[center_mask]) / np.var(img[outer_mask])).item()
 
 
 class BandpassImageQualityFunction(ImageQualityFunction):
@@ -647,3 +655,29 @@ class RampWeightedVarianceImageQualityFunction(
     """
     Computes the variance of pixels after weighting with Ramp function.
     """
+
+
+class GlobalVarianceClassSelector(GlobalClassSelector):
+    """
+    GlobalClassSelector with VarianceImageQualityFunction.
+
+    Computes per image variance for all images provided by
+    `averager`, and selects for highest variance.
+
+    Requires aligning the entire set of class averages.
+    """
+
+    def __init__(self, averager, heap_size_limit_bytes=2e9):
+        """
+        See `GlobalClassSelector` and `VarianceImageQualityFunction`
+        for additional documentation.
+
+        :param averager: An Averager2D subclass.
+        :param heap_size_limit_bytes: Max heap size in Bytes.
+            Defaults 2GB, 0 will disable.
+        """
+        super().__init__(
+            averager=averager,
+            quality_function=VarianceImageQualityFunction(),
+            heap_size_limit_bytes=heap_size_limit_bytes,
+        )

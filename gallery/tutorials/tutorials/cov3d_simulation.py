@@ -6,8 +6,6 @@ This script illustrates the example of Covariance 3D estimation using simulation
 generated from Gaussian blob volumes.
 """
 
-import logging
-
 import numpy as np
 from scipy.cluster.vq import kmeans2
 
@@ -21,8 +19,6 @@ from aspire.source.simulation import Simulation
 from aspire.utils import eigs
 from aspire.utils.random import Random
 from aspire.volume import LegacyVolume, Volume
-
-logger = logging.getLogger(__name__)
 
 # %%
 # Create Simulation Object
@@ -60,9 +56,9 @@ num_vols = sim.C
 basis = FBBasis3D(img_size)
 
 # Estimate the noise variance. This is needed for the covariance estimation step below.
-noise_estimator = WhiteNoiseEstimator(sim, batchSize=500)
+noise_estimator = WhiteNoiseEstimator(sim, batch_size=500)
 noise_variance = noise_estimator.estimate()
-logger.info(f"Noise Variance = {noise_variance}")
+print(f"Noise Variance = {noise_variance}")
 
 # %%
 # Estimate Mean Volume and Covariance
@@ -150,19 +146,19 @@ coords_perf = sim.eval_coords(mean_est, eigs_est_trunc, clustered_coords_est)
 
 # Output estimated covariance spectrum.
 
-logger.info(f"Population Covariance Spectrum = {np.diag(lambdas_est)}")
+print(f"Population Covariance Spectrum = {np.diag(lambdas_est)}")
 
 
 # Output performance results.
 
-logger.info(f'Mean (rel. error) = {mean_perf["rel_err"]}')
-logger.info(f'Mean (correlation) = {mean_perf["corr"]}')
-logger.info(f'Covariance (rel. error) = {covar_perf["rel_err"]}')
-logger.info(f'Covariance (correlation) = {covar_perf["corr"]}')
-logger.info(f'Eigendecomposition (rel. error) = {eigs_perf["rel_err"]}')
-logger.info(f"Clustering (accuracy) = {clustering_accuracy}")
-logger.info(f'Coordinates (mean rel. error) = {coords_perf["rel_err"]}')
-logger.info(f'Coordinates (mean correlation) = {np.mean(coords_perf["corr"])}')
+print(f'Mean (rel. error) = {mean_perf["rel_err"]}')
+print(f'Mean (correlation) = {mean_perf["corr"]}')
+print(f'Covariance (rel. error) = {covar_perf["rel_err"]}')
+print(f'Covariance (correlation) = {covar_perf["corr"]}')
+print(f'Eigendecomposition (rel. error) = {eigs_perf["rel_err"]}')
+print(f"Clustering (accuracy) = {clustering_accuracy}")
+print(f'Coordinates (mean rel. error) = {coords_perf["rel_err"]}')
+print(f'Coordinates (mean correlation) = {np.mean(coords_perf["corr"])}')
 
 # Basic Check
 assert covar_perf["rel_err"] <= 0.80

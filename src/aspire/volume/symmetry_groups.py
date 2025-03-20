@@ -13,11 +13,11 @@ class SymmetryGroup(ABC):
     Base class for symmetry groups.
     """
 
-    def __init__(self, dtype):
+    def __init__(self):
         """
-        :param dtype: Numpy dtype to be used for rotation matrices.
+        Abstract class for symmetry groups.
         """
-        self.dtype = np.dtype(dtype)
+        self.dtype = np.float64
         self.rotations = self.generate_rotations()
 
     @abstractmethod
@@ -46,26 +46,19 @@ class SymmetryGroup(ABC):
         return f"{self.to_string}"
 
     @staticmethod
-    def parse(symmetry, dtype):
+    def parse(symmetry):
         """
-        Takes a SymmetryGroup instance or a string, ie. 'C1', 'C7', 'D3', 'T', 'O', and returns a concrete
-        SymmetryGroup object with the specified dtype.
+        Takes a SymmetryGroup instance or a string, ie. 'C1', 'C7', 'D3', 'T', 'O',
+        and returns a concrete SymmetryGroup object.
 
         :param symmetry: A string (or SymmetryGroup instance) indicating the symmetry of a molecule.
-        :param dtype: dtype for rotation matrices.
         :return: Concrete SymmetryGroup object.
         """
 
         if symmetry is None:
-            return IdentitySymmetryGroup(dtype=dtype)
+            return IdentitySymmetryGroup()
 
         if isinstance(symmetry, SymmetryGroup):
-            if symmetry.dtype != dtype:
-                logger.warning(f"Recasting SymmetryGroup with dtype {dtype}.")
-                group_kwargs = dict(dtype=dtype)
-                if getattr(symmetry, "order", False) and symmetry.order > 1:
-                    group_kwargs["order"] = symmetry.order
-                symmetry = symmetry.__class__(**group_kwargs)
             return symmetry
 
         if not isinstance(symmetry, str):
@@ -73,9 +66,10 @@ class SymmetryGroup(ABC):
                 f"`symmetry` must be a string or `SymmetryGroup` instance. Found {type(symmetry)}"
             )
 
+        # Parse symmetry provided as a string.
         symmetry = symmetry.upper()
         if symmetry == "C1":
-            return IdentitySymmetryGroup(dtype=dtype)
+            return IdentitySymmetryGroup()
 
         symmetry_type = symmetry[0]
         symmetric_order = symmetry[1:]
@@ -92,7 +86,7 @@ class SymmetryGroup(ABC):
             )
 
         symmetry_group = map_to_sym_group[symmetry_type]
-        group_kwargs = dict(dtype=dtype)
+        group_kwargs = dict()
         if symmetric_order:
             group_kwargs["order"] = int(symmetric_order)
 
@@ -104,18 +98,17 @@ class CnSymmetryGroup(SymmetryGroup):
     Cyclic symmetry group.
     """
 
-    def __init__(self, order, dtype):
+    def __init__(self, order):
         """
         `CnSymmetryGroup` instance that serves up a `Rotation` object
         containing rotation matrices of the symmetry group (including
         the identity) accessed via the `matrices` attribute.
 
         :param order: The cyclic order for the symmetry group (int).
-        :param dtype: Numpy dtype to be used for rotation matrices.
         """
 
         self.order = int(order)
-        super().__init__(dtype=dtype)
+        super().__init__()
 
     @property
     def to_string(self):
@@ -131,7 +124,7 @@ class CnSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Cn symmetry group and the identity.
         """
-        angles = 2 * np.pi * np.arange(self.order) / self.order
+        angles = np.linspace(0, 2 * np.pi, self.order, endpoint=False)
         return Rotation.about_axis("z", angles, dtype=self.dtype)
 
 
@@ -140,15 +133,13 @@ class IdentitySymmetryGroup(CnSymmetryGroup):
     The identity symmetry group.
     """
 
-    def __init__(self, dtype):
+    def __init__(self):
         """
         `IdentitySymmetryGroup` instance that serves up a `Rotation` object
         containing the identity matrix.
-
-        :param dtype: Numpy dtype to be used for rotation matrices.
         """
 
-        super().__init__(order=1, dtype=dtype)
+        super().__init__(order=1)
 
 
 class DnSymmetryGroup(SymmetryGroup):
@@ -156,7 +147,7 @@ class DnSymmetryGroup(SymmetryGroup):
     Dihedral symmetry group.
     """
 
-    def __init__(self, order, dtype):
+    def __init__(self, order):
         """
         `DnSymmetryGroup` instance that serves up a `Rotation` object
         containing rotation matrices of the symmetry group (including
@@ -164,11 +155,10 @@ class DnSymmetryGroup(SymmetryGroup):
         is the chiral dihedral symmetry group which does contain reflections.
 
         :param order: The cyclic order for the symmetry group (int).
-        :param dtype: Numpy dtype to be used for rotation matrices.
         """
 
         self.order = int(order)
-        super().__init__(dtype=dtype)
+        super().__init__()
 
     @property
     def to_string(self):
@@ -182,15 +172,16 @@ class DnSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Dn symmetry group and the identity.
         """
+
         # Rotations to induce cyclic symmetry
-        angles = 2 * np.pi * np.arange(self.order, dtype=self.dtype) / self.order
-        rot_z = Rotation.about_axis("z", angles).matrices
+        angles = np.linspace(0, 2 * np.pi, self.order, endpoint=False)
+        rot_z = Rotation.about_axis("z", angles, dtype=self.dtype).matrices
 
         # Perpendicular rotation to induce dihedral symmetry
         rot_perp = Rotation.about_axis("y", np.pi, dtype=self.dtype).matrices
 
         # Full set of rotations.
-        rots = np.concatenate((rot_z, rot_z @ rot_perp[0]), dtype=self.dtype)
+        rots = np.concatenate((rot_z, rot_z @ rot_perp[0]))
 
         return Rotation(rots)
 
@@ -200,17 +191,15 @@ class TSymmetryGroup(SymmetryGroup):
     Tetrahedral symmetry group.
     """
 
-    def __init__(self, dtype):
+    def __init__(self):
         """
         `TSymmetryGroup` instance that serves up a `Rotation` object
         containing rotation matrices of the symmetry group (including the
         Identity) accessed via the `matrices` attribute. Note, this is the
         chiral tetrahedral symmetry group which does not contain reflections.
-
-        :param dtype: Numpy dtype to be used for rotation matrices.
         """
 
-        super().__init__(dtype=dtype)
+        super().__init__()
 
     @property
     def to_string(self):
@@ -228,23 +217,19 @@ class TSymmetryGroup(SymmetryGroup):
         """
         # C3 rotation vectors, ie. angle * axis.
         axes_C3 = np.array(
-            [[1, 1, 1], [-1, -1, 1], [1, -1, -1], [-1, 1, -1]], dtype=self.dtype
+            [[1.0, 1.0, 1.0], [-1.0, -1.0, 1.0], [1.0, -1.0, -1.0], [-1.0, 1.0, -1.0]],
         )
         axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
-        angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3], dtype=self.dtype)
-        rot_vecs_C3 = np.concatenate(
-            [angle * axes_C3 for angle in angles_C3], dtype=self.dtype
-        )
+        angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3])
+        rot_vecs_C3 = np.concatenate([angle * axes_C3 for angle in angles_C3])
 
         # C2 rotation vectors.
-        axes_C2 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=self.dtype)
+        axes_C2 = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
         rot_vecs_C2 = np.pi * axes_C2
 
         # The full set of rotation vectors inducing tetrahedral symmetry.
-        rot_vec_I = np.zeros((1, 3), dtype=self.dtype)
-        rot_vecs = np.concatenate(
-            (rot_vec_I, rot_vecs_C3, rot_vecs_C2), dtype=self.dtype
-        )
+        rot_vec_I = np.zeros((1, 3))
+        rot_vecs = np.concatenate((rot_vec_I, rot_vecs_C3, rot_vecs_C2))
 
         # Return rotations.
         return Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
@@ -255,16 +240,14 @@ class OSymmetryGroup(SymmetryGroup):
     Octahedral symmetry group.
     """
 
-    def __init__(self, dtype):
+    def __init__(self):
         """
         `OSymmetryGroup` instance that serves up a `Rotation` object
         containing rotation matrices of the symmetry group (including the
         Identity) accessed via the `matrices` attribute. Note, this is the
         chiral octahedral symmetry group which does not contain reflections.
-
-        :param dtype: Numpy dtype to be used for rotation matrices.
         """
-        super().__init__(dtype=dtype)
+        super().__init__()
 
         self._symmetry_group = self.generate_rotations()
 
@@ -284,35 +267,39 @@ class OSymmetryGroup(SymmetryGroup):
         """
 
         # C4 rotation vectors, ie angle * axis
-        axes_C4 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=self.dtype)
-        angles_C4 = np.array([np.pi / 2, np.pi, 3 * np.pi / 2], dtype=self.dtype)
+        axes_C4 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        angles_C4 = np.array([np.pi / 2, np.pi, 3 * np.pi / 2])
         rot_vecs_C4 = np.array(
-            [angle * axes_C4 for angle in angles_C4], dtype=self.dtype
+            [angle * axes_C4 for angle in angles_C4],
         ).reshape((9, 3))
 
         # C3 rotation vectors
         axes_C3 = np.array(
-            [[1, 1, 1], [-1, 1, 1], [1, -1, 1], [1, 1, -1]], dtype=self.dtype
+            [[1.0, 1.0, 1.0], [-1.0, 1.0, 1.0], [1.0, -1.0, 1.0], [1.0, 1.0, -1.0]]
         )
         axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
-        angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3], dtype=self.dtype)
+        angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3])
         rot_vecs_C3 = np.array(
-            [angle * axes_C3 for angle in angles_C3], dtype=self.dtype
+            [angle * axes_C3 for angle in angles_C3],
         ).reshape((8, 3))
 
         # C2 rotation vectors
         axes_C2 = np.array(
-            [[1, 1, 0], [-1, 1, 0], [1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1]],
-            dtype=self.dtype,
+            [
+                [1.0, 1.0, 0.0],
+                [-1.0, 1.0, 0.0],
+                [1.0, 0.0, 1.0],
+                [-1.0, 0.0, 1.0],
+                [0.0, 1.0, 1.0],
+                [0.0, -1.0, 1.0],
+            ],
         )
         axes_C2 /= np.linalg.norm(axes_C2, axis=-1)[..., np.newaxis]
         rot_vecs_C2 = np.pi * axes_C2
 
         # The full set of rotation vectors inducing octahedral symmetry.
-        rot_vec_I = np.zeros((1, 3), dtype=self.dtype)
-        rot_vecs = np.concatenate(
-            (rot_vec_I, rot_vecs_C4, rot_vecs_C3, rot_vecs_C2), dtype=self.dtype
-        )
+        rot_vec_I = np.zeros((1, 3))
+        rot_vecs = np.concatenate((rot_vec_I, rot_vecs_C4, rot_vecs_C3, rot_vecs_C2))
 
         # Return rotations.
         return Rotation.from_rotvec(rot_vecs, dtype=self.dtype)

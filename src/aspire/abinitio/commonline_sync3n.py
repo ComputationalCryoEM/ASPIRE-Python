@@ -12,11 +12,11 @@ from aspire.utils import (
     Rotation,
     all_pairs,
     nearest_rotations,
+    random,
     tqdm,
     trange,
 )
 from aspire.utils.matlab_compat import stable_eigsh
-from aspire.utils.random import rand
 
 logger = logging.getLogger(__name__)
 
@@ -264,9 +264,9 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         rotations = v.reshape(self.n_img, 3, 3).transpose(0, 2, 1)
 
         # Enforce we are returning actual rotations
-        rotations = nearest_rotations(rotations, allow_reflection=True)
+        rotations = nearest_rotations(rotations, allow_reflection=False)
 
-        return rotations.astype(self.dtype)
+        return rotations.astype(self.dtype, copy=False)
 
     def _construct_sync3n_matrix(self, Rij):
         """
@@ -1029,7 +1029,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
 
         # Initialize candidate eigenvectors
         n_Rijs = Rijs.shape[0]
-        vec = rand(n_Rijs, seed=self.seed)
+        vec = random(n_Rijs, seed=self.seed)
         vec = vec / norm(vec)
         residual = 1
         itr = 0

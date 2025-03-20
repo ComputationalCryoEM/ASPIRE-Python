@@ -2,17 +2,20 @@ import importlib
 import logging.config
 import os
 import pkgutil
+import warnings
 from datetime import datetime
 from pathlib import Path
 
 import confuse
+import numpy as np
 import pooch
+from packaging.version import parse as parse_version
 
 import aspire
 from aspire.exceptions import handle_exception
 
 # version in maj.min.bld format
-__version__ = "0.13.1"
+__version__ = "0.13.2"
 
 
 # Setup `confuse` config
@@ -60,8 +63,8 @@ logging.debug(
 logging.debug(f"Resolved config.yaml:\n{aspire.config.dump()}\n")
 
 # Set cache location for ASPIRE example data.
-if not config["common"]["cache_dir"].get():
-    config["common"]["cache_dir"] = pooch.os_cache("ASPIRE-data").as_posix()
+if not config["cache"]["cache_dir"].get():
+    config["cache"]["cache_dir"] = pooch.os_cache("ASPIRE-data").as_posix()
 
 # Implements some code that writes out exceptions to 'aspire.err.log'.
 if config["logging"]["log_exceptions"].get(int):
@@ -84,3 +87,16 @@ def __getattr__(attr):
         return importlib.import_module(f"aspire.{attr}")
     else:
         raise AttributeError(f"module `{__name__}` has no attribute `{attr}`.")
+
+
+if parse_version(np.version.version) >= parse_version("2.0.0"):
+    # ImportWarnings are generally filtered, but raise this one for now.
+    with warnings.catch_warnings():
+        warnings.simplefilter("default")
+        warnings.warn(
+            "ASPIRE's Numpy 2 support is in beta.  If you experience a runtime"
+            " crash relating to mismatched dtypes or a Numpy call please try"
+            ' `pip install "numpy<2"` and report to ASPIRE developers.',
+            ImportWarning,
+            stacklevel=1,
+        )

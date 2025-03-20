@@ -72,7 +72,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
 
     # Apply mask images and calculate mean and std values of background
     imgs_masked = imgs * mask
-    denominator = np.sum(mask)
+    denominator = np.count_nonzero(mask)  # scalar int
     first_moment = np.sum(imgs_masked, axis=(1, 2)) / denominator
     second_moment = np.sum(imgs_masked**2, axis=(1, 2)) / denominator
     mean = first_moment.reshape(-1, 1, 1)
@@ -147,6 +147,7 @@ class Image:
     # Map file extensions to their respective readers
     extensions = {
         ".mrc": load_mrc,
+        ".mrcs": load_mrc,
         ".tif": load_tiff,
         ".tiff": load_tiff,
     }
@@ -415,6 +416,100 @@ class Image:
 
         return self._im_translate(shifts)
 
+    def legacy_whiten(self, psd, delta):
+        """
+        Apply the legacy MATLAB whitening transformation.
+
+        Note that this legacy method will compute the convolution in
+        (complex)double precision regardless of this instances
+        `dtype`.  However, the resulting image stack will be cast to
+        the instance `dtype`.
+
+        :param psd: PSD as computed by `LegacyNoiseEstimator`.
+            `psd` in this case is shape (2 * self.src.L - 1, 2 * self.src.L - 1).
+        :param delta: Threshold used to determine which frequencies to whiten
+            and which to set to zero. By default all `sqrt(psd)` values
+            less than `delta` are zeroed out in the whitening filter.
+        """
+        n = self.n_images
+        L = self.resolution
+        L_half = L // 2
+        K = psd.shape[-1]
+        k = int(np.ceil(K / 2))
+
+        # Check PSD
+        shp = (2 * L - 1, 2 * L - 1)
+        if psd.shape != shp:
+            raise RuntimeError(f"Incorrect PSD shape {psd.shape}, expectect {shp}.")
+
+        # Create result array
+        res = np.empty((n, L, L), dtype=self.dtype)
+
+        # The whitening filter is the sqrt of the power spectrum of the noise, normalized to unit energy.
+        psd = xp.asarray(psd, dtype=np.float64)
+        fltr = xp.sqrt(psd)
+        fltr = fltr / xp.linalg.norm(fltr)
+
+        # Error checking
+        if (err := xp.linalg.norm(fltr.imag)) > 10 * delta:
+            raise RuntimeError(
+                f"Whitening filter has non trivial imaginary component {err}."
+            )
+        err_ud = xp.linalg.norm(fltr - xp.flipud(fltr))
+        err_lr = xp.linalg.norm(fltr - xp.fliplr(fltr))
+        if (err_ud > 10 * delta) or (err_lr > 10 * delta):
+            raise RuntimeError(
+                f"Whitening filter has non trivial symmetry lr {err_lr}, ud {err_ud}."
+            )
+
+        # Enforce symmetry
+        fltr = (fltr + xp.flipud(fltr)) / 2
+        fltr = (fltr + xp.fliplr(fltr)) / 2
+
+        # The filter may have very small values or even zeros.
+        # We don't want to process these, so make a list of all large entries.
+        nzidx = fltr > 100 * delta
+        fltr_nz = fltr[nzidx]
+
+        padded_proj = xp.zeros((K, K), dtype=np.float64)
+        filtered_fpadded_proj = xp.zeros((K, K), dtype=np.complex128)
+
+        # Precompute the slices
+        if L % 2 == 1:
+            slc = slice(k - L_half - 1, k + L_half)
+        else:
+            slc = slice(k - L_half - 1, k + L_half - 1)
+
+        for i, proj in enumerate(self.asnumpy()):
+
+            # Zero pad the image to twice the size
+            padded_proj[slc, slc] = xp.asarray(proj)
+
+            # Take the Fourier Transform of the padded image.
+            fpadded_proj = fft.centered_fft2(padded_proj)
+
+            # Divide the image by the whitening filter but only in
+            # places where the filter is large.  In frequencies where
+            # the filter is tiny we cannot whiten so we just use
+            # zeros.
+            filtered_fpadded_proj[nzidx] = fpadded_proj[nzidx] / fltr_nz
+            # `filtered_proj` is still padded and complex. Masked and cast below.
+            filtered_proj = fft.centered_ifft2(filtered_fpadded_proj)
+
+            # The resulting image should be real.
+            if (
+                xp.linalg.norm(filtered_proj.imag) / xp.linalg.norm(filtered_proj)
+                > 1e-13
+            ):
+                raise RuntimeError("Whitened image has strong imaginary component.")
+
+            filtered_proj = filtered_proj[slc, slc].real
+
+            # Assign the resulting image.
+            res[i] = xp.asnumpy(filtered_proj)
+
+        return Image(res)
+
     def downsample(self, ds_res, zero_nyquist=True):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
@@ -637,7 +732,9 @@ class Image:
         ), "Number of rotation matrices must match the number of images"
 
         # Get symmetry rotations from SymmetryGroup.
-        symmetry_rots = SymmetryGroup.parse(symmetry_group, dtype=self.dtype).matrices
+        symmetry_rots = SymmetryGroup.parse(symmetry_group).matrices.astype(
+            self.dtype, copy=False
+        )
         if len(symmetry_rots) > 1:
             logger.info(f"Boosting with {len(symmetry_rots)} rotational symmetries.")
 

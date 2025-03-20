@@ -1,5 +1,10 @@
 from .adaptive_support import adaptive_support
-from .class_avg import ClassAvgSource, DebugClassAvgSource, DefaultClassAvgSource
+from .class_avg import (
+    ClassAvgSource,
+    DebugClassAvgSource,
+    DefaultClassAvgSource,
+    LegacyClassAvgSource,
+)
 
 # isort: off
 from .denoiser import Denoiser

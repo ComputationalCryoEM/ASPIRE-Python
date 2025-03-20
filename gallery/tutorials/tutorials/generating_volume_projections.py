@@ -7,7 +7,6 @@ generate projections of a Volume using prescribed rotations.
 
 """
 
-import logging
 import os
 
 import numpy as np
@@ -16,8 +15,6 @@ from aspire.noise import WhiteNoiseAdder
 from aspire.source.simulation import Simulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
-
-logger = logging.getLogger(__name__)
 
 # %%
 # Configure how many images we'd like to project

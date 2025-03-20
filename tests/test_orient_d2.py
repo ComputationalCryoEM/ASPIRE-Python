@@ -405,7 +405,7 @@ def g_sync_d2(rots, rots_gt):
     n_img = len(rots)
     dtype = rots.dtype
 
-    rots_symm = DnSymmetryGroup(2, dtype).matrices
+    rots_symm = DnSymmetryGroup(2).matrices.astype(dtype, copy=False)
     order = len(rots_symm)
 
     A_g = np.zeros((n_img, n_img), dtype=complex)

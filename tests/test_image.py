@@ -338,7 +338,7 @@ def test_backproject_symmetry_group(dtype):
     assert isinstance(vol.symmetry_group, CnSymmetryGroup)
 
     # Symmetry from instance.
-    vol = im.backproject(rots, symmetry_group=CnSymmetryGroup(order=3, dtype=dtype))
+    vol = im.backproject(rots, symmetry_group=CnSymmetryGroup(order=3))
     assert isinstance(vol.symmetry_group, CnSymmetryGroup)
 
 
@@ -458,7 +458,7 @@ def test_load_bad_ext():
 
 def test_load_mrc(dtype):
     """
-    Test `Image.load` round-trip.
+    Test `Image.load` round-trip for `mrc` extension.
     """
 
     # `sample.mrc` is single precision
@@ -470,6 +470,30 @@ def test_load_mrc(dtype):
     with tempfile.TemporaryDirectory() as tmpdir_name:
         # tmp filename
         test_filepath = os.path.join(tmpdir_name, "test.mrc")
+
+        im.save(test_filepath)
+
+        im2 = Image.load(test_filepath, dtype)
+
+    # Check the single precision round-trip
+    assert np.array_equal(im, im2)
+    assert im2.dtype == dtype
+
+
+def test_load_mrcs(dtype):
+    """
+    Test `Image.load` round-trip for `mrcs` extension.
+    """
+
+    # `sample.mrcs` is single precision
+    filepath = os.path.join(DATA_DIR, "sample.mrcs")
+
+    # Load data from file
+    im = Image.load(filepath, dtype=dtype)
+
+    with tempfile.TemporaryDirectory() as tmpdir_name:
+        # tmp filename
+        test_filepath = os.path.join(tmpdir_name, "test.mrcs")
 
         im.save(test_filepath)
 

@@ -16,9 +16,8 @@ from aspire.utils import (
     anorm,
     make_symmat,
     uniform_random_angles,
-    vecmat_to_volmat,
 )
-from aspire.utils.random import rand, randi, randn
+from aspire.utils.random import randi, randn, random
 from aspire.volume import AsymmetricVolume, Volume
 
 logger = logging.getLogger(__name__)
@@ -144,7 +143,7 @@ class Simulation(ImageSource):
 
         if amplitudes is None:
             min_, max_ = 2.0 / 3, 3.0 / 2
-            amplitudes = min_ + rand(n, seed=seed).astype(dtype) * (max_ - min_)
+            amplitudes = min_ + random(n, seed=seed).astype(dtype) * (max_ - min_)
 
         self.C = self.vols.n_vols
 
@@ -396,10 +395,10 @@ class Simulation(ImageSource):
 
     def covar_true(self):
         eigs_true, lamdbas_true = self.eigs()
-        eigs_true = eigs_true.T.to_vec()
+        eigs_true = eigs_true.to_vec()
 
         covar_true = eigs_true.T @ lamdbas_true @ eigs_true
-        covar_true = vecmat_to_volmat(covar_true)
+        covar_true = covar_true.reshape((self.L,) * 6)
 
         return covar_true
 
@@ -414,8 +413,7 @@ class Simulation(ImageSource):
         C = self.C
         vols_c = self.vols - self.mean_true()
 
-        p = np.ones(C) / C
-        # RCOPT, we may be able to do better here if we dig in.
+        p = np.full(C, 1 / C, dtype=self.dtype)
         Q, R = qr(vols_c.to_vec().T, mode="economic")
 
         # Rank is at most C-1, so remove last vector
@@ -423,11 +421,10 @@ class Simulation(ImageSource):
         R = R[:-1, :]
 
         w, v = eigh(make_symmat(R @ np.diag(p) @ R.T))
-        eigs_true = Volume.from_vec((Q @ v).T)
-
         # Arrange in descending order (flip column order in eigenvector matrix)
-        w = w[::-1]
-        eigs_true = Volume(eigs_true.asnumpy()[::-1])
+        w, v = w[::-1], v[::-1]
+
+        eigs_true = Volume.from_vec((Q @ v).T)
 
         return eigs_true, np.diag(w)
 
