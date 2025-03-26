@@ -60,11 +60,11 @@ logger.info("Volume map data" f" shape: {vol.shape} dtype:{vol.dtype}")
 # Generate Noisy Images and Estimate Rotations
 # --------------------------------------------
 # A ``Simulation`` object is used to generate simulated data at various
-# noise levels. Then rotations are estimated using ``CommonlineLUD` algorithm.
+# noise levels. Then rotations are estimated using the ``CommonlineLUD`` algorithm.
 # Results are measured by computing the mean aligned angular distance between
 # the ground truth rotations and the globally aligned estimated rotations.
 for snr in SNR:
-    # Generate a white noise adder with specifid SNR.
+    # Generate a white noise adder with specified SNR.
     noise_adder = WhiteNoiseAdder.from_snr(snr=Fraction(snr))
 
     # Initialize a Simulation source to generate noisy, centered images.
