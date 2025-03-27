@@ -23,7 +23,7 @@ class CommonlineLUD(CLOrient3D):
         tol=1e-3,
         mu=1,
         gam=1.618,
-        EPS=1e-12,
+        eps=1e-12,
         maxit=1000,
         adp_proj=True,
         max_rankZ=None,
@@ -54,7 +54,7 @@ class CommonlineLUD(CLOrient3D):
             Default is 1.
         :param gam: Relaxation factor for updating variables in the algorithm (typically between 1 and 2).
             Default is 1.618.
-        :param EPS: Small positive value used to filter out negligible eigenvalues.
+        :param eps: Small positive value used to filter out negligible eigenvalues.
             Default is 1e-12.
         :param maxit: Maximum number of iterations allowed for the algorithm.
             Default is 1000.
@@ -62,9 +62,9 @@ class CommonlineLUD(CLOrient3D):
             - True: Adaptive rank selection (Default).
             - False: Full eigenvalue decomposition.
         :param max_rankZ: Maximum rank used for projecting the Z matrix (for adaptive projection).
-            Default is None (will be computed based on `n_img`).
+            If None, defaults to max(6, n_img // 2).
         :param max_rankW: Maximum rank used for projecting the W matrix (for adaptive projection).
-            Default is None (will be computed based on `n_img`).
+            If None, defaults to max(6, n_img // 2).
         :param adp_mu: Adaptive adjustment of the penalty parameter `mu`:
             - True: Enabled (Default).
             - False: Disabled.
@@ -98,11 +98,9 @@ class CommonlineLUD(CLOrient3D):
         self.tol = tol
         self.mu = mu
         self.gam = gam
-        self.EPS = EPS
+        self.eps = eps
         self.maxit = maxit
         self.adp_proj = adp_proj
-        self.max_rankZ = max_rankZ
-        self.max_rankW = max_rankW
 
         # Parameters for adjusting mu
         self.adp_mu = adp_mu
@@ -117,6 +115,10 @@ class CommonlineLUD(CLOrient3D):
 
         # Initialize commonline base class
         super().__init__(src, **kwargs)
+
+        # Adjust rank limits
+        self.max_rankZ = max_rankW or max(6, self.n_img // 2)
+        self.max_rankW = max_rankW or max(6, self.n_img // 2)
 
         # Upper-triangular mask used in `_Q_theta`
         ut_mask = np.zeros((self.n_img, self.n_img), dtype=bool)
@@ -161,11 +163,6 @@ class CommonlineLUD(CLOrient3D):
             [np.ones(n, dtype=self.dtype), np.zeros(self.n_img, dtype=self.dtype)]
         )
 
-        # Adjust rank limits
-        self.max_rankW = self.max_rankW or max(6, self.n_img // 2)
-        if self.alpha is not None:
-            self.max_rankZ = self.max_rankZ or max(6, self.n_img // 2)
-
         # Initialize variables
         G = np.eye(n, dtype=self.dtype)
         W = np.eye(n, dtype=self.dtype)
@@ -179,12 +176,12 @@ class CommonlineLUD(CLOrient3D):
         AS = self._compute_AX(S)
         resi = self._compute_AX(G) - b
 
-        nev = 0
+        num_eigs = 0
         itmu_pinf = 0
         itmu_dinf = 0
-        zz = 0
-        kk = 0
-        dH = 0
+        eigs_Z = 0
+        num_eigs_Z = None
+        eigs_H = 0
         for itr in range(self.maxit):
             #############
             # Compute y #
@@ -206,7 +203,9 @@ class CommonlineLUD(CLOrient3D):
             # Compute Z #
             #############
             if self.alpha is not None:
-                Z, kk, zz = self._compute_Z(S, W, ATy, G, zz, itr, kk, nev)
+                Z, num_eigs_Z, eigs_Z = self._compute_Z(
+                    S, W, ATy, G, eigs_Z, num_eigs_Z, num_eigs
+                )
 
             #############
             # Compute W #
@@ -218,29 +217,29 @@ class CommonlineLUD(CLOrient3D):
 
             if not self.adp_proj:
                 D, V = np.linalg.eigh(H)
-                eigs_mask = D > self.EPS
+                eigs_mask = D > self.eps
                 V = V[:, eigs_mask]
                 W = V @ np.diag(D[eigs_mask]) @ V.T
             else:
                 # Determine number of eigenvalues to compute for adaptive projection
                 if itr == 0:
-                    nev = self.max_rankW
+                    num_eigs = self.max_rankW
                 else:
-                    nev = self._compute_num_eigs(nev, dH, nev, 50, 5)
+                    num_eigs = self._compute_num_eigs(num_eigs, eigs_H, num_eigs, 50, 5)
 
                 # If using a spectral norm constraint cap num_eigs at 2*n_img
                 if self.alpha is not None:
-                    nev = min(nev, n)
+                    num_eigs = min(num_eigs, n)
 
                 # Compute Eigenvectors and sort by largest algebraic eigenvalue
-                dH, V = eigsh(-H.astype(np.float64), k=nev, which="LA")
-                dH = dH[::-1].astype(self.dtype, copy=False)
+                eigs_H, V = eigsh(-H.astype(np.float64), k=num_eigs, which="LA")
+                eigs_H = eigs_H[::-1].astype(self.dtype, copy=False)
                 V = V[:, ::-1].astype(self.dtype, copy=False)
 
-                nD = dH > self.EPS
-                dH = dH[nD]
-                nev = np.count_nonzero(nD)
-                W = V[:, nD] @ np.diag(dH) @ V[:, nD].T + H if nD.any() else H
+                nD = eigs_H > self.eps
+                eigs_H = eigs_H[nD]
+                num_eigs = np.count_nonzero(nD)
+                W = (V[:, nD] @ np.diag(eigs_H) @ V[:, nD].T + H) if nD.any() else H
 
             ############
             # Update G #
@@ -279,7 +278,7 @@ class CommonlineLUD(CLOrient3D):
 
         return G
 
-    def _compute_Z(self, S, W, ATy, G, zz, itr, kk, nev):
+    def _compute_Z(self, S, W, ATy, G, eigs_Z, num_eigs_Z, num_eigs):
         """
         Update ADMM subproblem for enforcing the spectral norm constraint.
 
@@ -287,15 +286,14 @@ class CommonlineLUD(CLOrient3D):
         :param W: A 2*n_img x 2*n_img array, primary ADMM subproblem matrix.
         :param ATy: A 2*n_img x 2*n_img array.
         :param G: Current value of the 2*n_img x 2*n_img optimization solution matrix.
-        :param zz: eigenvalues from previous iteration.
-        :param itr: ADMM loop iteration.
-        :param kk: Number of eigenvalues of Z to use to enforce spectral norm constraint.
-        :param nev: Number of eigenvalues of W used in previous iteration of ADMM.
+        :param eigs_Z: eigenvalues from previous iteration.
+        :param num_eigs_Z: Number of eigenvalues of Z to use to enforce spectral norm constraint.
+        :param num_eigs: Number of eigenvalues of W used in previous iteration of ADMM.
 
         :returns:
             - Z, Updated 2*n_img x 2*n_img matrix for spectral norm constraint ADMM subproblem.
-            - kk, Number of eigenvalues of Z to use to enforce spectral norm constraint in next iteration.
-            - nev, Number of eigenvalues of W to use in this iteration of ADMM.
+            - num_eigs_Z, Number of eigenvalues of Z to use to enforce spectral norm constraint in next iteration.
+            - num_eigs, Number of eigenvalues of W to use in this iteration of ADMM.
         """
         lambda_ = self.alpha * self.n_img  # Spectral norm bound
         B = S + W + ATy + G / self.mu
@@ -305,15 +303,15 @@ class CommonlineLUD(CLOrient3D):
             U, pi = np.linalg.eigh(B)
         else:
             # Determine number of eigenvalues to compute for adaptive projection
-            if itr == 0:
-                kk = self.max_rankZ
+            if num_eigs_Z is None:
+                num_eigs_Z = self.max_rankZ
             else:
-                kk = self._compute_num_eigs(kk, zz, nev, 10, 3)
+                num_eigs_Z = self._compute_num_eigs(num_eigs_Z, eigs_Z, num_eigs, 10, 3)
 
-            kk = min(kk, 2 * self.n_img)
+            num_eigs_Z = min(num_eigs_Z, 2 * self.n_img)
             pi, U = eigsh(
-                B.astype(np.float64, copy=False), k=kk, which="LM"
-            )  # Compute top `kk` eigenvalues and eigenvectors
+                B.astype(np.float64, copy=False), k=num_eigs_Z, which="LM"
+            )  # Compute top `num_eigs_Z` eigenvalues and eigenvectors
 
             # Sort by eigenvalue magnitude. Note, eigsh does not return
             # ordered eigenvalues/vectors for which="LM".
@@ -322,16 +320,16 @@ class CommonlineLUD(CLOrient3D):
             U = U[:, idx]
 
         # Apply soft-threshold to eigenvalues to enforce spectral norm constraint.
-        zz = np.sign(pi) * np.maximum(np.abs(pi) - lambda_ / self.mu, 0)
-        nD = zz > 0
-        kk = np.count_nonzero(nD)
-        if kk > 0:
-            zz = zz[nD]
-            Z = U[:, nD] @ np.diag(zz) @ U[:, nD].T
+        eigs_Z = np.sign(pi) * np.maximum(np.abs(pi) - lambda_ / self.mu, 0)
+        nD = eigs_Z > 0
+        num_eigs_Z = np.count_nonzero(nD)
+        if num_eigs_Z > 0:
+            eigs_Z = eigs_Z[nD]
+            Z = U[:, nD] @ np.diag(eigs_Z) @ U[:, nD].T
         else:
             Z = np.zeros_like(B)
 
-        return Z, kk, zz
+        return Z, num_eigs_Z, eigs_Z
 
     def _Q_theta(self, phi):
         """
@@ -379,10 +377,13 @@ class CommonlineLUD(CLOrient3D):
     def _cl_to_C(self, clmatrix):
         """
         For each pair of commonline indices cl[i, j] and cl[j, i], convert
-        from polar commonline indices to cartesion coordinates.
+        from polar commonline indices to Cartesion coordinates.
+
+        This method sets the attribute `self.C` and its transpose `self.C_t`.
+        `self.C` is an n_img x n_img x 2 array where `self.C[i, j]` gives the
+        (x, y)-coordinates for cl[i, j].
 
         :param clmatrix: n_img x n_img commonline matrix.
-        :return: n_img x n_img x 2 array of commonline cartesian coordinates.
         """
         C = np.zeros((self.n_img, self.n_img, 2), dtype=self.dtype)
         for i in range(self.n_img):
