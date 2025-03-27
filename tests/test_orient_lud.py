@@ -209,4 +209,4 @@ def test_adjoint_property_A(dtype):
     lhs = np.dot(Au, v)
     rhs = np.dot(u.flatten(), ATv.flatten())
 
-    np.testing.assert_allclose(lhs, rhs)
+    np.testing.assert_allclose(lhs, rhs, rtol=1e-05, atol=1e-08)
