@@ -245,9 +245,11 @@ class AligningAverager2D(Averager2D):
         """
 
         # We'll brute force all shifts in a grid.
-        g = grid_2d(L, normalized=False)
-        disc = g["r"] <= radius
+        sub_pixel = 1  # XXX
+        g = grid_2d(sub_pixel * L, normalized=False)
+        disc = g["r"] <= sub_pixel * radius
         X, Y = g["x"][disc], g["y"][disc]
+        X, Y = X / sub_pixel, Y / sub_pixel
 
         # Optionally roll arrays so 0 is first.
         if roll_zero:
@@ -778,7 +780,7 @@ class BFTAverager2D(AligningAverager2D):
                     f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
                 )
 
-        # XXX todo config
+        # XXX todo, better config
         ntheta = 360
         nrad = self.src.L
 
@@ -828,7 +830,7 @@ class BFTAverager2D(AligningAverager2D):
         n_classes, n_nbor = classes.shape
         rotations = np.zeros((n_classes, n_nbor), dtype=self.dtype)
         dot_products = np.ones((n_classes, n_nbor), dtype=self.dtype) * -np.inf
-        shifts = np.zeros((*classes.shape, 2), dtype=int)
+        shifts = np.zeros((*classes.shape, 2), dtype=self.dtype)
 
         # Work arrays
         _rotations = np.zeros((n_nbor), dtype=self.dtype)
@@ -839,6 +841,9 @@ class BFTAverager2D(AligningAverager2D):
         x_shifts, y_shifts = self._shift_search_grid(
             self.src.L, self.radius, roll_zero=True
         )
+        print(x_shifts, y_shifts)
+
+        mask = grid_2d(self.src.L, normalized=True)["r"] < 1
 
         for k in trange(n_classes, desc="Rotationally aligning classes"):
             # We want to locally cache the original images,
@@ -851,7 +856,7 @@ class BFTAverager2D(AligningAverager2D):
                 original_coef = basis_coefficients[classes[k], :]
                 original_images = self.alignment_basis.evaluate(original_coef)
 
-            template_image = original_images[0]
+            template_image = original_images[0] * mask
 
             # Loop over shift search space, updating best result
             for x, y in tqdm(
@@ -861,8 +866,8 @@ class BFTAverager2D(AligningAverager2D):
                 disable=len(x_shifts) == 1,
                 leave=False,
             ):
-                shift = np.array([x, y], dtype=int)
-                logger.debug(f"Computing rotational alignment after shift ({x},{y}).")
+                shift = np.array([x, y], dtype=shifts.dtype)
+                logger.debug(f"Computing rotational alignment after shift {shift}.")
 
                 # For each shift, the set of neighbor images is shifted.
                 #   This order is chosen because:
@@ -876,8 +881,11 @@ class BFTAverager2D(AligningAverager2D):
                 # Skip zero shifting.
                 # XXXX we can try inverting this later, shifting base image for less compute
                 if np.any(shift != 0):
-                    _images = _images.shift(shift)
+                    _images = _images.shift(-shift)
                 _images = _images.asnumpy().copy()
+
+                # mask
+                _images = _images * mask
 
                 # XXXX I think we might need to do this before shifting?!
                 # Handle reflections
