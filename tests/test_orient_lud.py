@@ -191,3 +191,22 @@ def test_compute_AX_ATy():
 
     # Check ATy(y) = X
     np.testing.assert_allclose(CommonlineLUD._compute_ATy(y), X)
+
+
+def test_adjoint_property_A(dtype):
+    """
+    Test <A u, v> = <u, AT v> for random symmetric matrix `u` and
+    random vector `v`.
+    """
+    n = 10
+    u = np.random.rand(2 * n, 2 * n).astype(dtype, copy=False)
+    u = (u + u.T) / 2
+    v = np.random.rand(3 * n).astype(dtype, copy=False)
+
+    Au = CommonlineLUD._compute_AX(u)
+    ATv = CommonlineLUD._compute_ATy(v)
+
+    lhs = np.dot(Au, v)
+    rhs = np.dot(u.flatten(), ATv.flatten())
+
+    np.testing.assert_allclose(lhs, rhs)
