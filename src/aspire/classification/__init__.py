@@ -4,6 +4,7 @@ from .averager2d import (
     BFRAverager2D,
     BFSRAverager2D,
     BFSReddyChatterjiAverager2D,
+    BFTAverager2D,
     EMAverager2D,
     FTKAverager2D,
     ReddyChatterjiAverager2D,

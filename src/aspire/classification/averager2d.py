@@ -6,7 +6,8 @@ import numpy as np
 from aspire.basis import Coef
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image, ImageStacker, MeanImageStacker
-from aspire.numeric import xp
+from aspire.numeric import fft, xp
+from aspire.operators import PolarFT
 from aspire.utils import tqdm, trange
 from aspire.utils.coor_trans import grid_2d
 
@@ -723,6 +724,194 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         # For brute force, we'd like shifts then rotations,
         #   as is done in general in AligningAverager2D
         return AligningAverager2D.average(self, classes, reflections, coefs)
+
+
+class BFTAverager2D(AligningAverager2D):
+    """
+    This perfoms a Brute Force Translations and fast rotational alignment.
+
+    For each pair of x_shifts and y_shifts,
+       Perform cross correlation based rotational alignment
+
+    Return the rotation and shift yielding the best results.
+    """
+
+    def __init__(
+        self,
+        composite_basis,
+        src,
+        alignment_basis=None,
+        n_angles=360,
+        radius=None,
+        batch_size=512,
+        dtype=None,
+    ):
+        """
+        See AligningAverager2D adds `n_angles` and `radius`.
+
+        :params n_angles: Number of brute force rotations to attempt, defaults 360.
+        :param radius: Brute force translation search radius.
+            Defaults to src.L//16.
+        """
+        super().__init__(
+            composite_basis,
+            src,
+            alignment_basis,
+            batch_size=batch_size,
+            dtype=dtype,
+        )
+
+        self.n_angles = n_angles
+
+        # # XXX Will use polar for rotate
+        # if not hasattr(self.alignment_basis, "rotate"):
+        #     raise RuntimeError(
+        #         f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `rotate` method."
+        #     )
+
+        self.radius = radius if radius is not None else src.L // 16
+
+        if self.radius != 0:
+
+            if not hasattr(self.alignment_basis, "shift"):
+                raise RuntimeError(
+                    f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
+                )
+
+        # XXX todo config
+        ntheta = 360
+        nrad = self.src.L
+
+        # Setup Polar Transform
+        self._pft = PolarFT(self.src.L, ntheta=ntheta, nrad=nrad, dtype=self.dtype)
+
+    def _fast_rotational_alignment(self, A, B):
+        """
+        Perform fast rotational alignment using Polar Fourier cross correlation.
+        """
+
+        if not isinstance(A, Image):
+            A = Image(A)
+        if not isinstance(B, Image):
+            B = Image(B)
+
+        pftA = self._pft.half_to_full(self._pft.transform(A))
+        pftB = self._pft.half_to_full(self._pft.transform(B))
+
+        # 2 hats one sum
+        pftA = fft.fft(pftA, axis=-2)
+        pftB = fft.fft(pftB, axis=-2)
+        x = (pftA * pftB.conj())[0]
+        # x = x /np.linalg.norm(x)  # waste of compute, just for diagnostics
+        circ_corr = abs(fft.ifft2(x))
+        angular = np.sum(circ_corr, axis=-1)  # sum all radial contributions
+
+        # Resolve the angle maximizing the correlation through the angular dimension
+        ind = np.argmax(angular)
+        max_theta_deg = 360 / self._pft.ntheta * ind
+        max_theta = np.deg2rad(max_theta_deg)
+        peak = angular[ind]
+
+        return max_theta, peak
+
+    def align(self, classes, reflections, basis_coefficients=None):
+        """
+        See `AligningAverager2D.align`
+        """
+
+        # Admit simple case of single case alignment
+        classes = np.atleast_2d(classes)
+        reflections = np.atleast_2d(reflections)
+
+        # Result arrays
+        # These arrays will incrementally store our best alignment.
+        n_classes, n_nbor = classes.shape
+        rotations = np.zeros((n_classes, n_nbor), dtype=self.dtype)
+        dot_products = np.ones((n_classes, n_nbor), dtype=self.dtype) * -np.inf
+        shifts = np.zeros((*classes.shape, 2), dtype=int)
+
+        # Work arrays
+        _rotations = np.zeros((n_nbor), dtype=self.dtype)
+        _dot_products = np.ones((n_nbor), dtype=self.dtype) * -np.inf
+
+        # Create a search grid and force initial pair to (0,0)
+        # This is done primarily in case of a tie later, we would take unshifted.
+        x_shifts, y_shifts = self._shift_search_grid(
+            self.src.L, self.radius, roll_zero=True
+        )
+
+        for k in trange(n_classes, desc="Rotationally aligning classes"):
+            # We want to locally cache the original images,
+            #  because we will mutate them with shifts in the next loop.
+            #  This avoids recomputing them before each shift
+            # The coefficient for the base images are also computed here.
+            if basis_coefficients is None:
+                original_images = Image(self._cls_images(classes[k], src=self.src))
+            else:
+                original_coef = basis_coefficients[classes[k], :]
+                original_images = self.alignment_basis.evaluate(original_coef)
+
+            template_image = original_images[0]
+
+            # Loop over shift search space, updating best result
+            for x, y in tqdm(
+                zip(x_shifts, y_shifts),
+                total=len(x_shifts),
+                desc="\tmaximizing over shifts",
+                disable=len(x_shifts) == 1,
+                leave=False,
+            ):
+                shift = np.array([x, y], dtype=int)
+                logger.debug(f"Computing rotational alignment after shift ({x},{y}).")
+
+                # For each shift, the set of neighbor images is shifted.
+                #   This order is chosen because:
+                #   i) allows concatenation of shifts and rotation
+                #   operations after orientation estimation
+                #   ii) because generally the number of neighbors << the
+                #   number of test rotations.
+
+                # Note the base original_image[0] should remain unprocessed
+                _images = original_images[1:]
+                # Skip zero shifting.
+                # XXXX we can try inverting this later, shifting base image for less compute
+                if np.any(shift != 0):
+                    _images = _images.shift(shift)
+                _images = _images.asnumpy().copy()
+
+                # XXXX I think we might need to do this before shifting?!
+                # Handle reflections
+                refl = reflections[k][1:]  # skips original_image 0
+                _images[refl] = np.flipud(_images[refl])
+
+                # Compute and assign the best rotation found with this translation
+                # TODO, vectorize FRA
+                for i in range(1, n_nbor):
+                    # note offset of 1 for skipped original_image 0
+                    _rotations[i], _dot_products[i] = self._fast_rotational_alignment(
+                        template_image, _images[i - 1]
+                    )
+
+                # Test and update
+                # Each base-neighbor pair may have a best shift+rot from a different shift iteration.
+                improved_indices = _dot_products > dot_products[k]
+                rotations[k, improved_indices] = _rotations[improved_indices]
+                dot_products[k, improved_indices] = _dot_products[improved_indices]
+                shifts[k, improved_indices] = (
+                    shift  # when conver to shifting original_image, commute_shift_rot(shift, rot)
+                )
+
+                if (x, y) == (0, 0):
+                    logger.debug("Initial rotational alignment complete (shift (0,0))")
+                    # skipped original_image 0, f"{np.sum(improved_indices)} =?= {np.size(classes)}"
+                    expected = np.size(classes[0]) - 1
+                    assert np.sum(improved_indices) == expected
+                else:
+                    logger.debug(
+                        f"Shift ({x},{y}) complete. Improved {np.sum(improved_indices)} alignments."
+                    )
+
+        return rotations, shifts, dot_products
 
 
 class EMAverager2D(Averager2D):
