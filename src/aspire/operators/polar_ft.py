@@ -4,6 +4,7 @@ import numpy as np
 
 from aspire.image import Image
 from aspire.nufft import nufft
+from aspire.numeric import xp
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
@@ -100,13 +101,13 @@ class PolarFT:
                 f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
             )
 
-        if not isinstance(x, Image):
-            raise TypeError(
-                f"{self.__class__.__name__}.transform"
-                f" passed numpy array instead of {Image}."
-            )
-        else:
-            x = x.asnumpy()
+        # if not isinstance(x, Image):
+        #     raise TypeError(
+        #         f"{self.__class__.__name__}.transform"
+        #         f" passed numpy array instead of {Image}."
+        #     )
+        if isinstance(x, Image):
+            x = xp.asarray(x.asnumpy())
 
         # Flatten stack
         stack_shape = x.shape[: -self.ndim]
@@ -114,7 +115,7 @@ class PolarFT:
 
         # We expect the Image `x` to be real in order to take advantage of the conjugate
         # symmetry of the Fourier transform of a real valued image.
-        if not np.isreal(x).all():
+        if not xp.isreal(x).all():
             raise TypeError(
                 f"The Image `x` must be real valued. Found dtype {x.dtype}."
             )
@@ -136,4 +137,9 @@ class PolarFT:
         :return: The full polar Fourier transform with shape (*stack_shape, ntheta, nrad)
         """
 
-        return np.concatenate((pf, np.conj(pf)), axis=-2)
+        # cheap way to interop for now
+        concatenate = xp.concatenate
+        if isinstance(pf, np.ndarray):
+            concatenate = np.concatenate
+
+        return concatenate((pf, pf.conj()), axis=-2)
