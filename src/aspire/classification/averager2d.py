@@ -851,6 +851,13 @@ class BFTAverager2D(AligningAverager2D):
             sub_pixel=self.sub_pixel,
         )
 
+        # XXX
+        # maybe just change _shift_search_grid to output this later,
+        # it was first written that way to use sequential pixelrolls in each dimension,
+
+        # (num_shifts, 2)
+        test_shifts = np.stack((x_shifts, y_shifts), axis=1)
+
         for k in trange(n_classes, desc="Rotationally aligning classes"):
             # We want to locally cache the original images,
             #  because we will mutate them with shifts in the next loop.
@@ -874,53 +881,56 @@ class BFTAverager2D(AligningAverager2D):
             # Convert to polar Fourier
             pf_images = self._pft.half_to_full(self._pft.transform(_images))
 
-            # Loop over shift search space, updating best results
-            for x, y in tqdm(
-                zip(x_shifts, y_shifts),
-                total=len(x_shifts),
+            # Batch over shift search space, updating best results
+            for start in trange(
+                0,
+                len(test_shifts),
+                self.batch_size,
                 desc="\tmaximizing over shifts",
                 disable=len(x_shifts) == 1,
                 leave=False,
             ):
-                shift = np.array([x, y], dtype=shifts.dtype)
-                logger.debug(f"Computing rotational alignment after shift {shift}.")
 
-                # Note the base original_image[0] should remain unprocessed
-                # Skip zero shifting.
-                template_image = original_images[0]
-                if np.any(shift != 0):
-                    template_image = template_image.shift(shift)
+                end = min(start + self.batch_size, len(test_shifts))
+                batch_shifts = test_shifts[start:end]
+
+                template_images = xp.zeros(
+                    (len(batch_shifts), self.src.L, self.src.L), dtype=self.dtype
+                )
+
+                # HACK, unwind later by broadcasting in `.shift`
+                for i, shift in enumerate(batch_shifts):
+
+                    # Note the base original_image[0] should remain unprocessed
+                    # Skip zero shifting.
+                    template_image = original_images[0]
+                    if np.any(shift != 0):
+                        template_image = template_image.shift(shift)
+                    template_images[i] = xp.asarray(template_image)
 
                 # Mask off
-                template_image = xp.asarray(template_image) * self._mask
+                template_images = template_images * self._mask
 
-                pf_template_image = self._pft.half_to_full(
-                    self._pft.transform(template_image)
+                pf_template_images = self._pft.half_to_full(
+                    self._pft.transform(template_images)
                 )
 
-                # Compute and assign the best rotation found with this translation
-                # note offset of 1 for skipped original_image 0
-                _rotations[1:], _dot_products[1:] = self._fast_rotational_alignment(
-                    pf_template_image, pf_images
-                )
+                # unwind, table broadcast in _fast_rotational_alignment
+                for shift, pf_template_image in zip(batch_shifts, pf_template_images):
 
-                # Test and update
-                # Each base-neighbor pair may have a best shift+rot from a different shift iteration.
-                improved_indices = _dot_products > dot_products[k]
-                rotations[k, improved_indices] = _rotations[improved_indices]
-                dot_products[k, improved_indices] = _dot_products[improved_indices]
-                # base shifts assigned here, commutation resolved end of loop
-                shifts[k, improved_indices] = shift
-
-                if (x, y) == (0, 0):
-                    logger.debug("Initial rotational alignment complete (shift (0,0))")
-                    # skipped original_image 0, f"{np.sum(improved_indices)} =?= {np.size(classes)}"
-                    expected = np.size(classes[0]) - 1
-                    assert np.sum(improved_indices) == expected
-                else:
-                    logger.debug(
-                        f"Shift ({x},{y}) complete. Improved {np.sum(improved_indices)} alignments."
+                    # Compute and assign the best rotation found with this translation
+                    # note offset of 1 for skipped original_image 0
+                    _rotations[1:], _dot_products[1:] = self._fast_rotational_alignment(
+                        pf_template_image, pf_images
                     )
+
+                    # Test and update
+                    # Each base-neighbor pair may have a best shift+rot from a different shift iteration.
+                    improved_indices = _dot_products > dot_products[k]
+                    rotations[k, improved_indices] = _rotations[improved_indices]
+                    dot_products[k, improved_indices] = _dot_products[improved_indices]
+                    # base shifts assigned here, commutation resolved end of loop
+                    shifts[k, improved_indices] = shift
 
             # Commute the rotation and shift (code shifted the base image instead of all class members)
             shifts[k] = commute_shift_rot(shifts[k], -rotations[k])
