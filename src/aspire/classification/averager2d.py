@@ -801,17 +801,17 @@ class BFTAverager2D(AligningAverager2D):
 
         # Setup Polar Transform
         self._pft = PolarFT(self.src.L, ntheta=ntheta, nrad=nrad, dtype=self.dtype)
-        self._mask = grid_2d(self.src.L, normalized=True)["r"] < 1
+        self._mask = xp.asarray(grid_2d(self.src.L, normalized=True)["r"] < 1)
 
     def _fast_rotational_alignment(self, A, B):
         """
         Perform fast rotational alignment using Polar Fourier cross correlation.
         """
 
-        if not isinstance(A, Image):
-            A = Image(A)
-        if not isinstance(B, Image):
-            B = Image(B)
+        # if not isinstance(A, Image):
+        #     A = Image(A)
+        # if not isinstance(B, Image):
+        #     B = Image(B)
 
         pftA = self._pft.half_to_full(self._pft.transform(A))
         pftB = self._pft.half_to_full(self._pft.transform(B))
@@ -820,15 +820,15 @@ class BFTAverager2D(AligningAverager2D):
         pftA = fft.fft(pftA, axis=-2)
         pftB = fft.fft(pftB, axis=-2)
         x = pftA * pftB.conj()
-        angular = np.sum(np.abs(fft.ifft2(x)), axis=-1)  # sum all radial contributions
+        angular = xp.sum(xp.abs(fft.ifft2(x)), axis=-1)  # sum all radial contributions
 
         # Resolve the angle maximizing the correlation through the angular dimension
-        inds = np.argmax(angular, axis=-1)
+        inds = xp.argmax(angular, axis=-1)
         max_thetas_deg = 360 / self._pft.ntheta * inds
-        max_thetas = np.deg2rad(max_thetas_deg)
-        peaks = np.take_along_axis(angular, inds.reshape(-1, 1), axis=1).flatten()
+        max_thetas = xp.deg2rad(max_thetas_deg)
+        peaks = xp.take_along_axis(angular, inds.reshape(-1, 1), axis=1).flatten()
 
-        return max_thetas, peaks
+        return xp.asnumpy(max_thetas), xp.asnumpy(peaks)
 
     def align(self, classes, reflections, basis_coefficients=None):
         """
@@ -889,20 +889,20 @@ class BFTAverager2D(AligningAverager2D):
                 #   number of test rotations.
 
                 # Note the base original_image[0] should remain unprocessed
-                _images = original_images[1:].asnumpy().copy()
+                _images = xp.array(original_images[1:].asnumpy())  # implicit .copy()
                 # Skip zero shifting.
                 template_image = original_images[0]
                 if np.any(shift != 0):
                     template_image = template_image.shift(shift)
 
                 # mask
-                template_image = template_image * self._mask
+                template_image = xp.asarray(template_image) * self._mask
                 _images = _images * self._mask
 
                 # XXXX think if we need to do this before shifting?!
                 # Handle reflections
                 refl = reflections[k][1:]  # skips original_image 0
-                _images[refl] = np.flipud(_images[refl])
+                _images[refl] = xp.flipud(_images[refl])
 
                 # Compute and assign the best rotation found with this translation
                 # note offset of 1 for skipped original_image 0
