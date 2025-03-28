@@ -803,23 +803,15 @@ class BFTAverager2D(AligningAverager2D):
         self._pft = PolarFT(self.src.L, ntheta=ntheta, nrad=nrad, dtype=self.dtype)
         self._mask = xp.asarray(grid_2d(self.src.L, normalized=True)["r"] < 1)
 
-    def _fast_rotational_alignment(self, A, B):
+    def _fast_rotational_alignment(self, pfA, pfB):
         """
         Perform fast rotational alignment using Polar Fourier cross correlation.
         """
 
-        # if not isinstance(A, Image):
-        #     A = Image(A)
-        # if not isinstance(B, Image):
-        #     B = Image(B)
-
-        pftA = self._pft.half_to_full(self._pft.transform(A))
-        pftB = self._pft.half_to_full(self._pft.transform(B))
-
         # 2 hats one sum
-        pftA = fft.fft(pftA, axis=-2)
-        pftB = fft.fft(pftB, axis=-2)
-        x = pftA * pftB.conj()
+        pfA = fft.fft(pfA, axis=-2)
+        pfB = fft.fft(pfB, axis=-2)
+        x = pfA * pfB.conj()
         angular = xp.sum(xp.abs(fft.ifft2(x)), axis=-1)  # sum all radial contributions
 
         # Resolve the angle maximizing the correlation through the angular dimension
@@ -870,7 +862,19 @@ class BFTAverager2D(AligningAverager2D):
                 original_coef = basis_coefficients[classes[k], :]
                 original_images = self.alignment_basis.evaluate(original_coef)
 
-            # Loop over shift search space, updating best result
+            _images = xp.array(original_images[1:].asnumpy())  # implicit .copy()
+
+            # Handle reflections
+            refl = reflections[k][1:]  # skips original_image 0
+            _images[refl] = xp.flipud(_images[refl])
+
+            # Mask off
+            _images = _images * self._mask
+
+            # Convert to polar Fourier
+            pf_images = self._pft.half_to_full(self._pft.transform(_images))
+
+            # Loop over shift search space, updating best results
             for x, y in tqdm(
                 zip(x_shifts, y_shifts),
                 total=len(x_shifts),
@@ -881,33 +885,23 @@ class BFTAverager2D(AligningAverager2D):
                 shift = np.array([x, y], dtype=shifts.dtype)
                 logger.debug(f"Computing rotational alignment after shift {shift}.")
 
-                # For each shift, the set of neighbor images is shifted.
-                #   This order is chosen because:
-                #   i) allows concatenation of shifts and rotation
-                #   operations after orientation estimation
-                #   ii) because generally the number of neighbors << the
-                #   number of test rotations.
-
                 # Note the base original_image[0] should remain unprocessed
-                _images = xp.array(original_images[1:].asnumpy())  # implicit .copy()
                 # Skip zero shifting.
                 template_image = original_images[0]
                 if np.any(shift != 0):
                     template_image = template_image.shift(shift)
 
-                # mask
+                # Mask off
                 template_image = xp.asarray(template_image) * self._mask
-                _images = _images * self._mask
 
-                # XXXX think if we need to do this before shifting?!
-                # Handle reflections
-                refl = reflections[k][1:]  # skips original_image 0
-                _images[refl] = xp.flipud(_images[refl])
+                pf_template_image = self._pft.half_to_full(
+                    self._pft.transform(template_image)
+                )
 
                 # Compute and assign the best rotation found with this translation
                 # note offset of 1 for skipped original_image 0
                 _rotations[1:], _dot_products[1:] = self._fast_rotational_alignment(
-                    template_image, _images[:]
+                    pf_template_image, pf_images
                 )
 
                 # Test and update
