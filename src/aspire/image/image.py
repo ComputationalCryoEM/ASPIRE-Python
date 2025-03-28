@@ -418,7 +418,8 @@ class Image:
 
         if not shifts.shape[1] == 2:
             raise ValueError("Input shifts must be of shape (n_images, 2) or (1, 2).")
-        if not n_shifts == 1 and not n_shifts == self.n_images:
+
+        if not (n_shifts == 1 or self.n_images == 1 or n_shifts == self.n_images):
             raise ValueError(
                 "The number of shifts must be 1 or equal to self.n_images."
             )
@@ -686,17 +687,18 @@ class Image:
 
     def _im_translate(self, shifts):
         """
-        Translate image by shifts
+        Translate image by `shifts`.
 
-        :param im: An array of size n-by-L-by-L containing images to be translated.
+        Note broadcasting special case
+        Image shape (n,L,L) x shifts shape (n,2) -> (n,L,L) shifted images
+        Image shape (1,L,L) x shifts shape (n,2) -> (n,L,L) shifted images
+
+        :param im: An array of size m-by-L-by-L containing images to be translated.
+            m may be 1 or n.
         :param shifts: An array of size n-by-2 specifying the shifts in pixels.
             Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
         :return: The images translated by the shifts, with periodic boundaries.
         """
-
-        # Note original stack shape and flatten stack
-        stack_shape = self.stack_shape
-        im = self.stack_reshape(-1)._data
 
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
@@ -704,8 +706,15 @@ class Image:
 
         assert shifts.shape[-1] == 2, "shifts must be nx2"
 
+        # Note original stack shape and flatten stack
+        stack_shape = self.stack_shape
+        if self.n_images == 1 and n_shifts > 1:
+            # XXX special case, cleanup broadcasting later
+            stack_shape = n_shifts
+        im = self.stack_reshape(-1)._data
+
         assert (
-            n_shifts == 1 or n_shifts == self.n_images
+            n_shifts == 1 or self.n_images == 1 or n_shifts == self.n_images
         ), "number of shifts must be 1 or match the number of images"
         # Cast shifts to this instance's internal dtype
         shifts = xp.asarray(shifts, dtype=self.dtype)

@@ -875,6 +875,7 @@ class BFTAverager2D(AligningAverager2D):
         _rotations = np.zeros((bs, n_nbor), dtype=self.dtype)
         _dot_products = np.ones((bs, n_nbor), dtype=self.dtype) * -np.inf
         template_images = xp.empty((bs, self.src.L, self.src.L), dtype=self.dtype)
+        _images = xp.empty((n_nbor - 1, self.src.L, self.src.L), dtype=self.dtype)
 
         for k in trange(n_classes, desc="Rotationally aligning classes"):
             # We want to locally cache the original images,
@@ -887,14 +888,14 @@ class BFTAverager2D(AligningAverager2D):
                 original_coef = basis_coefficients[classes[k], :]
                 original_images = self.alignment_basis.evaluate(original_coef)
 
-            _images = xp.array(original_images[1:].asnumpy())  # implicit .copy()
+            _images[:] = xp.asarray(original_images[1:].asnumpy())
 
-            # Handle reflections
+            # Handle reflections, XXX confirm location in sequence
             refl = reflections[k][1:]  # skips original_image 0
             _images[refl] = xp.flipud(_images[refl])
 
             # Mask off
-            _images = _images * self._mask
+            _images[:] = _images[:] * self._mask
 
             # Convert to polar Fourier
             pf_images = self._pft.half_to_full(self._pft.transform(_images))
@@ -911,19 +912,14 @@ class BFTAverager2D(AligningAverager2D):
                 bs = end - start  # handle a small last batch
                 batch_shifts = test_shifts[start:end]
 
-                # HACK, unwind later by broadcasting in `.shift`
-                # template_images[:bs] = template_image.shift(batch_shifts)
-                for i, shift in enumerate(batch_shifts):
-
-                    # Note the base original_image[0] should remain unprocessed
-                    # Skip zero shifting.
-                    template_image = original_images[0]
-                    if np.any(shift != 0):
-                        template_image = template_image.shift(shift)
-                    template_images[i] = xp.asarray(template_image)
+                # Note the base original_image[0] needs to remain unprocessed
+                # XXX This is shifting for zero, consider carving that out.
+                template_images[:bs] = xp.asarray(
+                    original_images[0].shift(batch_shifts)
+                )
 
                 # Mask off
-                template_images = template_images * self._mask
+                template_images[:] = template_images[:] * self._mask
 
                 pf_template_images = self._pft.half_to_full(
                     self._pft.transform(template_images)
