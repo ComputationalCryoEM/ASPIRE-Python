@@ -510,7 +510,7 @@ class Image:
 
         return Image(res)
 
-    def downsample(self, ds_res, zero_nyquist=True):
+    def downsample(self, ds_res, zero_nyquist=True, legacy=False):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
 
@@ -518,6 +518,8 @@ class Image:
             of this Image
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
             Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param legacy: Option to match legacy Matlab downsample method.
+            Default of False uses `centered_fft` to maintain ASPIRE-Python centering conventions.
         :return: The downsampled Image object.
         """
 
@@ -528,19 +530,26 @@ class Image:
         # because all of the subsequent calls until `asnumpy` are GPU
         # when xp and fft in `cupy` mode.
 
-        # compute FT with centered 0-frequency
-        fx = fft.centered_fft2(xp.asarray(im._data))
+        if legacy:
+            fx = fft.fftshift(fft.fft2(xp.asarray(im._data)))
+        else:
+            # compute FT with centered 0-frequency
+            fx = fft.centered_fft2(xp.asarray(im._data))
+
         # crop 2D Fourier transform for each image
         crop_fx = crop_pad_2d(fx, ds_res)
 
         # If downsampled resolution is even, optionally zero out the nyquist frequency.
-        if ds_res % 2 == 0 and zero_nyquist is True:
+        if ds_res % 2 == 0 and zero_nyquist and not legacy:
             crop_fx[:, 0, :] = 0
             crop_fx[:, :, 0] = 0
 
         # take back to real space, discard complex part, and scale
-        out = fft.centered_ifft2(crop_fx).real * (ds_res**2 / self.resolution**2)
-        out = xp.asnumpy(out)
+        if legacy:
+            out = fft.ifft2(fft.ifftshift(crop_fx))
+        else:
+            out = fft.centered_ifft2(crop_fx)
+        out = xp.asnumpy(out.real * ds_res**2 / self.resolution**2)
 
         # Optionally scale pixel size
         ds_pixel_size = self.pixel_size
