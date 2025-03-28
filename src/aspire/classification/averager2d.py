@@ -803,18 +803,17 @@ class BFTAverager2D(AligningAverager2D):
         # 2 hats one sum
         pftA = fft.fft(pftA, axis=-2)
         pftB = fft.fft(pftB, axis=-2)
-        x = (pftA * pftB.conj())[0]
-        # x = x /np.linalg.norm(x)  # waste of compute, just for diagnostics
+        x = pftA * pftB.conj()
         circ_corr = abs(fft.ifft2(x))
         angular = np.sum(circ_corr, axis=-1)  # sum all radial contributions
 
         # Resolve the angle maximizing the correlation through the angular dimension
-        ind = np.argmax(angular)
-        max_theta_deg = 360 / self._pft.ntheta * ind
-        max_theta = np.deg2rad(max_theta_deg)
-        peak = angular[ind]
+        inds = np.argmax(angular, axis=-1)
+        max_thetas_deg = 360 / self._pft.ntheta * inds
+        max_thetas = np.deg2rad(max_thetas_deg)
+        peaks = np.take_along_axis(angular, inds.reshape(-1, 1), axis=1).flatten()
 
-        return max_theta, peak
+        return max_thetas, peaks
 
     def align(self, classes, reflections, basis_coefficients=None):
         """
@@ -893,12 +892,10 @@ class BFTAverager2D(AligningAverager2D):
                 _images[refl] = np.flipud(_images[refl])
 
                 # Compute and assign the best rotation found with this translation
-                # TODO, vectorize FRA
-                for i in range(1, n_nbor):
-                    # note offset of 1 for skipped original_image 0
-                    _rotations[i], _dot_products[i] = self._fast_rotational_alignment(
-                        template_image, _images[i - 1]
-                    )
+                # note offset of 1 for skipped original_image 0
+                _rotations[1:], _dot_products[1:] = self._fast_rotational_alignment(
+                    template_image, _images[:]
+                )
 
                 # Test and update
                 # Each base-neighbor pair may have a best shift+rot from a different shift iteration.
