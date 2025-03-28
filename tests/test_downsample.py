@@ -176,6 +176,40 @@ def test_downsample_project(volume, res_ds, legacy):
     np.testing.assert_allclose(im_ds_proj, im_proj_ds, atol=tol)
 
 
+def test_downsample_legacy(volume, res_ds):
+    """
+    The legay Matlab downsample method differs from ASPIRE-Python
+    downsample in that is uses a different centering convention,
+    off by a half pixel for odd images, and does not zero out
+    the nyquist frequency. By making these alterations to the
+    ASPIRE-Python downsampled images we can match legacy downsample
+    upt to `allclose`.
+    """
+    n_img = 10
+    dtype = volume.dtype
+    src = Simulation(
+        n=n_img,
+        vols=volume,
+        amplitudes=1,
+        dtype=dtype,
+        seed=1980,
+    )
+    ims = src.images[:]
+
+    # Legacy downsampled images.
+    ims_ds_legacy = ims.downsample(res_ds, legacy=True)
+
+    # ASPIRE-Python downsample with centering adjustments for odd resolution images.
+    shifts = 0.5 * np.ones((n_img, 2), dtype=dtype)
+    if src.L % 2 == 1:
+        ims = ims.shift(shifts)
+    ims_ds_py = ims.downsample(res_ds, zero_nyquist=False)
+    if res_ds % 2 == 1:
+        ims_ds_py = ims_ds_py.shift(-shifts)
+
+    np.testing.assert_allclose(ims_ds_legacy, ims_ds_py, atol=1e-08)
+
+
 def test_simulation_relion_downsample():
     """
     Test that Simulation.downsample corresponds to RelionSource.downsample
