@@ -124,6 +124,7 @@ def test_integer_offsets():
 DTYPES = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
 RES = [65, 66]
 RES_DS = [32, 33]
+LEGACY = [True, False]
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
@@ -141,6 +142,11 @@ def res_ds(request):
     return request.param
 
 
+@pytest.fixture(params=LEGACY, ids=lambda x: f"legacy={x}", scope="module")
+def legacy(request):
+    return request.param
+
+
 @pytest.fixture(scope="module")
 def emdb_vol():
     return emdb_2660()
@@ -153,17 +159,20 @@ def volume(emdb_vol, res, dtype):
     return vol
 
 
-def test_downsample_project(volume, res_ds):
+def test_downsample_project(volume, res_ds, legacy):
     """
     Test that vol.downsample.project == vol.project.downsample.
     """
     rot = np.eye(3, dtype=volume.dtype)  # project along z-axis
-    im_ds_proj = volume.downsample(res_ds).project(rot)
-    im_proj_ds = volume.project(rot).downsample(res_ds)
+    im_ds_proj = volume.downsample(res_ds, legacy=legacy).project(rot)
+    im_proj_ds = volume.project(rot).downsample(res_ds, legacy=legacy)
 
-    tol = 1e-07
-    if volume.dtype == np.float64:
-        tol = 1e-09
+    tol = 1e-09
+    if volume.dtype == np.float32:
+        tol = 1e-07
+        if legacy:
+            tol = 1e-03
+
     np.testing.assert_allclose(im_ds_proj, im_proj_ds, atol=tol)
 
 
