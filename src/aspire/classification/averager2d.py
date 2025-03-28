@@ -820,8 +820,7 @@ class BFTAverager2D(AligningAverager2D):
         pftA = fft.fft(pftA, axis=-2)
         pftB = fft.fft(pftB, axis=-2)
         x = pftA * pftB.conj()
-        circ_corr = abs(fft.ifft2(x))
-        angular = np.sum(circ_corr, axis=-1)  # sum all radial contributions
+        angular = np.sum(np.abs(fft.ifft2(x)), axis=-1)  # sum all radial contributions
 
         # Resolve the angle maximizing the correlation through the angular dimension
         inds = np.argmax(angular, axis=-1)
@@ -852,14 +851,13 @@ class BFTAverager2D(AligningAverager2D):
         _dot_products = np.ones((n_nbor), dtype=self.dtype) * -np.inf
 
         # Create a search grid and force initial pair to (0,0)
-        # This is done primarily in case of a tie later, we would take unshifted.
+        # This is done primarily in case of a tie later, we would prefer unshifted.
         x_shifts, y_shifts = self._shift_search_grid(
             self.src.L,
             self.radius,
             roll_zero=True,
             sub_pixel=self.sub_pixel,
         )
-        print(x_shifts, y_shifts)
 
         for k in trange(n_classes, desc="Rotationally aligning classes"):
             # We want to locally cache the original images,
@@ -901,7 +899,7 @@ class BFTAverager2D(AligningAverager2D):
                 template_image = template_image * self._mask
                 _images = _images * self._mask
 
-                # XXXX I think we might need to do this before shifting?!
+                # XXXX think if we need to do this before shifting?!
                 # Handle reflections
                 refl = reflections[k][1:]  # skips original_image 0
                 _images[refl] = np.flipud(_images[refl])
