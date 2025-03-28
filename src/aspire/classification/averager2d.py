@@ -806,19 +806,35 @@ class BFTAverager2D(AligningAverager2D):
     def _fast_rotational_alignment(self, pfA, pfB):
         """
         Perform fast rotational alignment using Polar Fourier cross correlation.
+
+        Note broadcasting is specialized for this problem.
+        pfA.shape (m, nt, nr)
+        pfB.shape (n, nt, nr)
+        yields thetas (m,n), peaks (m,n)
+
         """
+
+        if pfA.ndim == 2:
+            pfA = pfA[None]
+        if pfB.ndim == 2:
+            pfB = pfB[None]
 
         # 2 hats one sum
         pfA = fft.fft(pfA, axis=-2)
         pfB = fft.fft(pfB, axis=-2)
-        x = pfA * pfB.conj()
+        # x = pfA * pfB.conj()
+        x = xp.expand_dims(pfA, 1) * xp.expand_dims(pfB.conj(), 0)
         angular = xp.sum(xp.abs(fft.ifft2(x)), axis=-1)  # sum all radial contributions
 
         # Resolve the angle maximizing the correlation through the angular dimension
         inds = xp.argmax(angular, axis=-1)
         max_thetas_deg = 360 / self._pft.ntheta * inds
         max_thetas = xp.deg2rad(max_thetas_deg)
-        peaks = xp.take_along_axis(angular, inds.reshape(-1, 1), axis=1).flatten()
+        peaks = xp.take_along_axis(angular, inds[..., None], axis=-1).squeeze(-1)
+
+        # sanity check, can mv to unit test later
+        assert max_thetas.shape == peaks.shape
+        assert max_thetas.shape == (pfA.shape[0], pfB.shape[0])
 
         return xp.asnumpy(max_thetas), xp.asnumpy(peaks)
 
@@ -838,10 +854,6 @@ class BFTAverager2D(AligningAverager2D):
         dot_products = np.ones((n_classes, n_nbor), dtype=self.dtype) * -np.inf
         shifts = np.zeros((*classes.shape, 2), dtype=self.dtype)
 
-        # Work arrays
-        _rotations = np.zeros((n_nbor), dtype=self.dtype)
-        _dot_products = np.ones((n_nbor), dtype=self.dtype) * -np.inf
-
         # Create a search grid and force initial pair to (0,0)
         # This is done primarily in case of a tie later, we would prefer unshifted.
         x_shifts, y_shifts = self._shift_search_grid(
@@ -857,6 +869,12 @@ class BFTAverager2D(AligningAverager2D):
 
         # (num_shifts, 2)
         test_shifts = np.stack((x_shifts, y_shifts), axis=1)
+
+        # Work arrays
+        bs = min(self.batch_size, len(test_shifts))
+        _rotations = np.zeros((bs, n_nbor), dtype=self.dtype)
+        _dot_products = np.ones((bs, n_nbor), dtype=self.dtype) * -np.inf
+        template_images = xp.empty((bs, self.src.L, self.src.L), dtype=self.dtype)
 
         for k in trange(n_classes, desc="Rotationally aligning classes"):
             # We want to locally cache the original images,
@@ -882,23 +900,19 @@ class BFTAverager2D(AligningAverager2D):
             pf_images = self._pft.half_to_full(self._pft.transform(_images))
 
             # Batch over shift search space, updating best results
-            for start in trange(
-                0,
-                len(test_shifts),
-                self.batch_size,
+            pbar = tqdm(
+                total=len(test_shifts),
                 desc="\tmaximizing over shifts",
                 disable=len(x_shifts) == 1,
                 leave=False,
-            ):
-
+            )
+            for start in range(0, len(test_shifts), self.batch_size):
                 end = min(start + self.batch_size, len(test_shifts))
+                bs = end - start  # handle a small last batch
                 batch_shifts = test_shifts[start:end]
 
-                template_images = xp.zeros(
-                    (len(batch_shifts), self.src.L, self.src.L), dtype=self.dtype
-                )
-
                 # HACK, unwind later by broadcasting in `.shift`
+                # template_images[:bs] = template_image.shift(batch_shifts)
                 for i, shift in enumerate(batch_shifts):
 
                     # Note the base original_image[0] should remain unprocessed
@@ -915,22 +929,29 @@ class BFTAverager2D(AligningAverager2D):
                     self._pft.transform(template_images)
                 )
 
-                # unwind, table broadcast in _fast_rotational_alignment
-                for shift, pf_template_image in zip(batch_shifts, pf_template_images):
+                # # Compute and assign the best rotation found with this translation
+                # # note offset of 1 for skipped original_image 0
+                _rotations[:bs, 1:], _dot_products[:bs, 1:] = (
+                    self._fast_rotational_alignment(pf_template_images[:bs], pf_images)
+                )
 
-                    # Compute and assign the best rotation found with this translation
-                    # note offset of 1 for skipped original_image 0
-                    _rotations[1:], _dot_products[1:] = self._fast_rotational_alignment(
-                        pf_template_image, pf_images
-                    )
+                # vectorize these
+                for i in range(bs):
 
                     # Test and update
                     # Each base-neighbor pair may have a best shift+rot from a different shift iteration.
-                    improved_indices = _dot_products > dot_products[k]
-                    rotations[k, improved_indices] = _rotations[improved_indices]
-                    dot_products[k, improved_indices] = _dot_products[improved_indices]
+                    improved_indices = _dot_products[i] > dot_products[k]
+                    rotations[k, improved_indices] = _rotations[i, improved_indices]
+                    dot_products[k, improved_indices] = _dot_products[
+                        i, improved_indices
+                    ]
                     # base shifts assigned here, commutation resolved end of loop
-                    shifts[k, improved_indices] = shift
+                    shifts[k, improved_indices] = batch_shifts[i]
+
+                pbar.update(bs)
+
+            # Completed batching over shifts
+            pbar.close()
 
             # Commute the rotation and shift (code shifted the base image instead of all class members)
             shifts[k] = commute_shift_rot(shifts[k], -rotations[k])
