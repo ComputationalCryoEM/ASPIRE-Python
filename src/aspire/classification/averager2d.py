@@ -14,6 +14,17 @@ from aspire.utils.coor_trans import grid_2d
 logger = logging.getLogger(__name__)
 
 
+def commute_shift_rot(shifts, rots):
+    """
+    Rotate `shifts` points by `rots` ccw radians.
+    """
+    sx = shifts[:, 0]
+    sy = shifts[:, 1]
+    x = sx * np.cos(rots) - sy * np.sin(rots)
+    y = sx * np.sin(rots) + sy * np.cos(rots)
+    return np.stack((x, y), axis=1)
+
+
 class Averager2D(ABC):
     """
     Base class for 2D Image Averaging methods.
@@ -235,21 +246,22 @@ class AligningAverager2D(Averager2D):
 
         return Image(avgs)
 
-    def _shift_search_grid(self, L, radius, roll_zero=False):
+    def _shift_search_grid(self, L, radius, roll_zero=False, sub_pixel=1):
         """
         Returns two 1-D arrays representing the X and Y grid points in the defined
         shift search space (disc <= self.radius).
 
         :param radius: Disc radius in pixels
+        :param roll_zero: Roll (0,0) to zero'th element. Defaults to False.
+        :param sub_pixel: Sub pixel decimation.  1 is integer, 0.1 is 1/10 pixel, etc.
         :returns: Grid points as 2-tuple of vectors X,Y.
         """
 
         # We'll brute force all shifts in a grid.
-        sub_pixel = 1  # XXX
-        g = grid_2d(sub_pixel * L, normalized=False)
-        disc = g["r"] <= sub_pixel * radius
+        g = grid_2d(1 / sub_pixel * L, normalized=False)
+        disc = g["r"] <= 1 / sub_pixel * radius
         X, Y = g["x"][disc], g["y"][disc]
-        X, Y = X / sub_pixel, Y / sub_pixel
+        X, Y = X * sub_pixel, Y * sub_pixel
 
         # Optionally roll arrays so 0 is first.
         if roll_zero:
@@ -745,6 +757,7 @@ class BFTAverager2D(AligningAverager2D):
         alignment_basis=None,
         n_angles=360,
         radius=None,
+        sub_pixel=0.1,
         batch_size=512,
         dtype=None,
     ):
@@ -780,12 +793,15 @@ class BFTAverager2D(AligningAverager2D):
                     f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
                 )
 
+        self.sub_pixel = sub_pixel
+
         # XXX todo, better config
         ntheta = 360
         nrad = self.src.L
 
         # Setup Polar Transform
         self._pft = PolarFT(self.src.L, ntheta=ntheta, nrad=nrad, dtype=self.dtype)
+        self._mask = grid_2d(self.src.L, normalized=True)["r"] < 1
 
     def _fast_rotational_alignment(self, A, B):
         """
@@ -838,11 +854,12 @@ class BFTAverager2D(AligningAverager2D):
         # Create a search grid and force initial pair to (0,0)
         # This is done primarily in case of a tie later, we would take unshifted.
         x_shifts, y_shifts = self._shift_search_grid(
-            self.src.L, self.radius, roll_zero=True
+            self.src.L,
+            self.radius,
+            roll_zero=True,
+            sub_pixel=self.sub_pixel,
         )
         print(x_shifts, y_shifts)
-
-        mask = grid_2d(self.src.L, normalized=True)["r"] < 1
 
         for k in trange(n_classes, desc="Rotationally aligning classes"):
             # We want to locally cache the original images,
@@ -854,8 +871,6 @@ class BFTAverager2D(AligningAverager2D):
             else:
                 original_coef = basis_coefficients[classes[k], :]
                 original_images = self.alignment_basis.evaluate(original_coef)
-
-            template_image = original_images[0] * mask
 
             # Loop over shift search space, updating best result
             for x, y in tqdm(
@@ -876,15 +891,15 @@ class BFTAverager2D(AligningAverager2D):
                 #   number of test rotations.
 
                 # Note the base original_image[0] should remain unprocessed
-                _images = original_images[1:]
+                _images = original_images[1:].asnumpy().copy()
                 # Skip zero shifting.
-                # XXXX we can try inverting this later, shifting base image for less compute
+                template_image = original_images[0]
                 if np.any(shift != 0):
-                    _images = _images.shift(-shift)
-                _images = _images.asnumpy().copy()
+                    template_image = template_image.shift(shift)
 
                 # mask
-                _images = _images * mask
+                template_image = template_image * self._mask
+                _images = _images * self._mask
 
                 # XXXX I think we might need to do this before shifting?!
                 # Handle reflections
@@ -902,9 +917,8 @@ class BFTAverager2D(AligningAverager2D):
                 improved_indices = _dot_products > dot_products[k]
                 rotations[k, improved_indices] = _rotations[improved_indices]
                 dot_products[k, improved_indices] = _dot_products[improved_indices]
-                shifts[k, improved_indices] = (
-                    shift  # when conver to shifting original_image, commute_shift_rot(shift, rot)
-                )
+                # base shifts assigned here, commutation resolved end of loop
+                shifts[k, improved_indices] = shift
 
                 if (x, y) == (0, 0):
                     logger.debug("Initial rotational alignment complete (shift (0,0))")
@@ -915,6 +929,9 @@ class BFTAverager2D(AligningAverager2D):
                     logger.debug(
                         f"Shift ({x},{y}) complete. Improved {np.sum(improved_indices)} alignments."
                     )
+
+            # Commute the rotation and shift (code shifted the base image instead of all class members)
+            shifts[k] = commute_shift_rot(shifts[k], -rotations[k])
 
         return rotations, shifts, dot_products
 
