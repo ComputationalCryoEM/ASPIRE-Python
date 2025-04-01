@@ -696,3 +696,38 @@ class CoordinateSourceTestCase(TestCase):
         self.assertTrue(result_coord.exit_code == 0)
         self.assertTrue(result_star.exit_code == 0)
         self.assertTrue(result_preprocess.exit_code == 0)
+
+
+def create_test_rectangular_micrograph_and_star(tmp_path):
+    # Create a rectangular micrograph (e.g., 128x256)
+    data = np.random.rand(128, 256).astype(np.float32)
+    mrc_path = tmp_path / "test_micrograph.mrc"
+
+    with mrcfile.new(mrc_path, overwrite=True) as mrc:
+        mrc.set_data(data)
+
+    # Two sample coordinates
+    coordinates = [(50.0, 30.0), (200.0, 100.0)]
+
+    # Write a simple STAR file
+    star_path = tmp_path / "test_coordinates.star"
+    with open(star_path, "w") as f:
+        f.write("data_particles\n\n")
+        f.write("loop_\n")
+        f.write("_rlnCoordinateX #1\n")
+        f.write("_rlnCoordinateY #2\n")
+        for x, y in coordinates:
+            f.write(f"{x:.1f} {y:.1f}\n")
+
+    return mrc_path, star_path
+
+
+def test_restangular_coordinate_source(tmp_path):
+    mrc_file, star_file = create_test_rectangular_micrograph_and_star(tmp_path)
+    file_list = [(mrc_file, star_file)]
+
+    # Check we can instantiate a CoordinateSource with a rectangular micrograph.
+    coord_src = CentersCoordinateSource(file_list, particle_size=32)
+
+    # Check we can access images.
+    _ = coord_src.images[:]
