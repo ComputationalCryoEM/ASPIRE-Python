@@ -115,8 +115,6 @@ def all_backends():
 
     :return: A list of strings representing available NFFT backends
     """
-    global backends
-
     if backends is None:
         check_backends(raise_errors=False)
     return [k for k, v in backends.items() if v is not None]
