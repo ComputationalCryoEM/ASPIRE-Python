@@ -598,6 +598,10 @@ class Image:
         if self.stack_ndim > 1:
             raise NotImplementedError("`save` is currently limited to 1D image stacks.")
 
+        data = self._data.astype(np.float32)
+        if self.n_images == 1:
+            data = data[0]
+
         if overwrite is None and os.path.exists(mrcs_filepath):
             # If the file exists, append a timestamp to the old file and rename it
             _ = rename_with_timestamp(mrcs_filepath)
@@ -606,7 +610,7 @@ class Image:
 
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)
-            mrc.set_data(self._data.astype(np.float32))
+            mrc.set_data(data)
             # Note assigning voxel_size must come after `set_data`
             if self.pixel_size is not None:
                 mrc.voxel_size = self.pixel_size
