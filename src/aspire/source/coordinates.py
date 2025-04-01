@@ -308,7 +308,7 @@ class CoordinateSource(ImageSource, ABC):
 
         mrc_shapes = np.zeros((self.num_micrographs, 2), dtype=int)
         for i, mrc in enumerate(self.mrc_paths):
-            mrc_shapes[i, :] = Image.load(mrc).resolution
+            mrc_shapes[i, :] = Image._load(mrc)[0].shape
 
         return mrc_shapes
 
@@ -469,7 +469,7 @@ class CoordinateSource(ImageSource, ABC):
         # their origin micrograph
         for mrc_index, coord_list in grouped.items():
             # Load file as 2D numpy array.
-            arr = Image.load(self.mrc_paths[mrc_index]).asnumpy()[0]
+            arr = Image._load(self.mrc_paths[mrc_index])[0]
 
             # create iterable of the coordinates in this mrc
             # we don't need to worry about exhausting this iter

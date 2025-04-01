@@ -612,7 +612,7 @@ class Image:
                 mrc.voxel_size = self.pixel_size
 
     @staticmethod
-    def load(filepath, dtype=None):
+    def _load(filepath, dtype=None):
         """
         Load raw data from supported files.
 
@@ -621,7 +621,9 @@ class Image:
         :param filepath: File path (string).
         :param dtype: Optionally force cast to `dtype`.
              Default dtype is inferred from the file contents.
-        :return: numpy array of image data.
+        :returns:
+            - numpy array of image data.
+            - pixel size
         """
 
         # Get the file extension
@@ -639,6 +641,23 @@ class Image:
         # Attempt casting when user provides dtype
         if dtype is not None:
             im = im.astype(dtype, copy=False)
+
+        return im, pixel_size
+
+    @staticmethod
+    def load(filepath, dtype=None):
+        """
+        Load raw data from supported files.
+
+        Currently MRC and TIFF are supported.
+
+        :param filepath: File path (string).
+        :param dtype: Optionally force cast to `dtype`.
+             Default dtype is inferred from the file contents.
+        :return: Image instance
+        """
+        # Load raw data from filepath with pixel size
+        im, pixel_size = Image._load(filepath, dtype=dtype)
 
         # Return as Image instance
         return Image(im, pixel_size=pixel_size)
