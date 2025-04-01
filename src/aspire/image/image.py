@@ -886,7 +886,7 @@ class Image:
         #   checks uniformity.
         if isinstance(vx, np.recarray):
             if vx.x != vx.y:
-                raise ValueError(f"Voxel sizes are not uniform: {vx}")
+                logger.warning(f"Voxel sizes are not uniform: {vx}")
             vx = vx.x
 
         # Convert `0` to `None`
