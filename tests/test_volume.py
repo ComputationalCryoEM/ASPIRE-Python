@@ -11,6 +11,7 @@ import pytest
 from numpy import pi
 from pytest import raises, skip
 
+from aspire.downloader import emdb_2660
 from aspire.source import _LegacySimulation
 from aspire.utils import Rotation, anorm, grid_2d, powerset, utest_tolerance
 from aspire.volume import (
@@ -32,11 +33,17 @@ def res_id(params):
 
 
 RES = [42, 43]
+RES_DS = [32, 33]
 TEST_PX_SZ = 4.56
 
 
 @pytest.fixture(params=RES, ids=res_id, scope="module")
 def res(request):
+    return request.param
+
+
+@pytest.fixture(params=RES_DS, ids=lambda x: f"resolution_ds={x}", scope="module")
+def res_ds(request):
     return request.param
 
 
@@ -120,6 +127,18 @@ def vols_hot_cold(res, dtype):
     vols = Volume(vols)
 
     return vols, hot_cold_locs, vol_center
+
+
+@pytest.fixture(scope="module")
+def emdb_vol():
+    return emdb_2660()
+
+
+@pytest.fixture(scope="module")
+def volume(emdb_vol, res, dtype):
+    vol = emdb_vol.astype(dtype, copy=False)
+    vol = vol.downsample(res)
+    return vol
 
 
 @pytest.fixture
@@ -671,6 +690,17 @@ def test_downsample(res):
         result.asnumpy()[:, ds_res // 2, ds_res // 2, ds_res // 2],
         atol=1e-4,
     )
+
+
+def test_downsample_legacy(volume, res_ds):
+    """
+    Smoke test for the downsample legacy flag.
+    """
+    # Legacy downsampled images.
+    vol_ds = volume.downsample(res_ds, legacy=True)
+
+    # Check downsampled volume resolution.
+    np.testing.assert_equal(vol_ds.resolution, res_ds)
 
 
 def test_shape(vols_1, res):

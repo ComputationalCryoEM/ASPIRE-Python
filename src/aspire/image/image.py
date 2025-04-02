@@ -516,9 +516,9 @@ class Image:
 
         :param ds_res: int - new resolution, should be <= the current resolution
             of this Image
-        :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-            Defaults to zero_nyquist=True, removing the Nyquist frequency.
-        :param legacy: Option to match legacy Matlab downsample method.
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even
+            resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param legacy: Option to match legacy Matlab downsample method (boolean).
             Default of False uses `centered_fft` to maintain ASPIRE-Python centering conventions.
         :return: The downsampled Image object.
         """

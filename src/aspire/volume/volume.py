@@ -522,10 +522,10 @@ class Volume:
         Downsample each volume to a desired resolution (only cubic supported).
 
         :param ds_res: Desired resolution.
-        :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-            Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even
+            resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
         :param mask: Optional NumPy array mask to multiply in Fourier space.
-        :param legacy: Option to match legacy Matlab downsample method.
+        :param legacy: Option to match legacy Matlab downsample method (boolean).
             Default of False uses `centered_fft` to maintain ASPIRE-Python centering conventions.
         :return: The downsampled Volume object.
         """
