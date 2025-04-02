@@ -744,6 +744,6 @@ def test_coordinate_source_pixel_warning(tmp_path, caplog):
     vx = (2.3, 2.1, 1.0)
     file_list = create_test_rectangular_micrograph_and_star(tmp_path, voxel_size=vx)
     with caplog.at_level(logging.WARNING):
-        caplog.clear()
         _ = CentersCoordinateSource(file_list, particle_size=32)
         assert f"Voxel sizes are not uniform: {vx}" in caplog.text
+        caplog.clear()
