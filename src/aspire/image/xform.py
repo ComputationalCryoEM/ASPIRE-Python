@@ -199,12 +199,26 @@ class Downsample(LinearXform):
     A Xform that downsamples an Image object to a resolution specified by this Xform's resolution.
     """
 
-    def __init__(self, resolution):
+    def __init__(self, resolution, zero_nyquist=True, legacy=False):
+        """
+        Initialize Xform to downsample Image to a specific resolution.
+
+        :param resolution: int - new resolution, should be <= the current resolution
+            of this Image
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even
+            resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param legacy: Option to match legacy Matlab downsample method (boolean).
+            Default of False uses `centered_fft` to maintain ASPIRE-Python centering conventions.
+        """
         self.resolution = resolution
+        self.zero_nyquist = zero_nyquist
+        self.legacy = legacy
         super().__init__()
 
     def _forward(self, im, indices):
-        return im.downsample(self.resolution)
+        return im.downsample(
+            self.resolution, zero_nyquist=self.zero_nyquist, legacy=self.legacy
+        )
 
     def _adjoint(self, im, indices):
         # TODO: Implement up-sampling with zero-padding
