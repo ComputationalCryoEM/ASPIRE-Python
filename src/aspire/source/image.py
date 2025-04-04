@@ -769,14 +769,16 @@ class ImageSource(ABC):
         """
 
     @_as_copy
-    def downsample(self, L):
+    def downsample(self, L, zero_nyquist=True, legacy=False):
         if L > self.L:
             raise ValueError(
                 "Max desired resolution {L} should be less than the current resolution {self.L}."
             )
         logger.info(f"Setting max. resolution of source = {L}")
 
-        self.generation_pipeline.add_xform(Downsample(resolution=L))
+        self.generation_pipeline.add_xform(
+            Downsample(resolution=L, zero_nyquist=zero_nyquist, legacy=legacy)
+        )
 
         ds_factor = self.L / L
         self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
