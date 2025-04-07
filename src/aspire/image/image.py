@@ -24,7 +24,7 @@ from aspire.volume import SymmetryGroup
 logger = logging.getLogger(__name__)
 
 
-def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
+def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, legacy=False):
     """
     Normalize backgrounds and apply to a stack of images
 
@@ -33,16 +33,30 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
+    :param legacy: Option to match Matlab legacy normalize_background. Default, False,
+        uses ASPIRE-Python implementation. When True, ramping is disable, a shifted
+        2d grid and alternative `bg_radius` is used to generate the background mask,
+        and standard deviation is computed using N - 1 degrees of freedom.
     :return: The modified images
     """
     if imgs.ndim > 3:
         raise NotImplementedError(
             "`normalize_bg` is currently limited to 1D image stacks."
         )
-
     L = imgs.shape[-1]
+
+    # Make adjustments for legacy mode
+    shifted = False
+    ddof = 0  # Degrees of freedom for standard deviation
+    if legacy:
+        do_ramp = False
+        shifted = True  # Shifts 2d grid by 1/2 pixel for even resolution
+        bg_radius = 2 * (L // 2) / L
+        ddof = 1
+
+    # Generate background mask
     input_dtype = imgs.dtype
-    grid = grid_2d(L, indexing="yx", dtype=input_dtype)
+    grid = grid_2d(L, shifted=shifted, indexing="yx", dtype=input_dtype)
     mask = grid["r"] > bg_radius
 
     if do_ramp:
@@ -71,15 +85,10 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
         imgs = imgs.reshape((-1, L, L))
 
     # Apply mask images and calculate mean and std values of background
-    imgs_masked = imgs * mask
-    denominator = np.count_nonzero(mask)  # scalar int
-    first_moment = np.sum(imgs_masked, axis=(1, 2)) / denominator
-    second_moment = np.sum(imgs_masked**2, axis=(1, 2)) / denominator
-    mean = first_moment.reshape(-1, 1, 1)
-    variance = second_moment.reshape(-1, 1, 1) - mean**2
-    std = np.sqrt(variance)
+    mean = np.mean(imgs[:, mask], axis=1)
+    std = np.std(imgs[:, mask], ddof=ddof, axis=1)
 
-    return (imgs - mean) / std
+    return (imgs - mean[:, None, None]) / std[:, None, None]
 
 
 def load_mrc(filepath):

@@ -75,8 +75,6 @@ def _mgrid_slice(n, shifted, normalized):
     if normalized:
         # Compute the denominator for normalization
         denom = n / 2
-        if shifted and n % 2 == 0:
-            denom -= 1 / 2
 
         # Apply the normalization
         start /= denom
