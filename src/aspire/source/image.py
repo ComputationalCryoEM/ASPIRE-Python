@@ -945,7 +945,7 @@ class ImageSource(ABC):
         self.generation_pipeline.add_xform(Multiply(scale_factor))
 
     @_as_copy
-    def normalize_background(self, bg_radius=1.0, do_ramp=True):
+    def normalize_background(self, bg_radius=1.0, do_ramp=True, legacy=False):
         """
         Normalize the images by the noise background
 
@@ -958,6 +958,10 @@ class ImageSource(ABC):
         :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
+        :param legacy: Option to match Matlab legacy normalize_background. Default, False,
+            uses ASPIRE-Python implementation. When True, ramping is disable, a shifted
+            2d grid and alternative `bg_radius` is used to generate the background mask,
+            and standard deviation is computed using N - 1 degrees of freedom.
         :return: On return, the `ImageSource` object has been modified in place.
         """
 
@@ -966,7 +970,9 @@ class ImageSource(ABC):
             f"size of {bg_radius} and do_ramp of {do_ramp}"
         )
         self.generation_pipeline.add_xform(
-            LambdaXform(normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp)
+            LambdaXform(
+                normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp, legacy=legacy
+            )
         )
 
     def im_backward(self, im, start, weights=None, symmetry_group=None):
