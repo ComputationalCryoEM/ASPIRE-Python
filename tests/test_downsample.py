@@ -170,10 +170,10 @@ def test_downsample_project(volume, res_ds, legacy):
     tol = 1e-09
     if volume.dtype == np.float32:
         tol = 1e-07
-        if legacy:
-            # project does not enforce legacy centering convention,
-            # so this property will not hold up to allclose tolerance.
-            tol = 1e-03
+    if legacy:
+        # project does not enforce legacy centering convention,
+        # so this property will not hold up to allclose tolerance.
+        tol = 1e-03
 
     np.testing.assert_allclose(im_ds_proj, im_proj_ds, atol=tol)
 
