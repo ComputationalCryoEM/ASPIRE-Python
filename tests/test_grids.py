@@ -1413,7 +1413,7 @@ class LegacyGridsTestCase(TestCase):
                 a = self.legacy_references_2d[k][j]
                 b = grid_2d(*k, indexing="xy")[j]
                 if j != "phi":
-                    assert np.allclose(a, b, atol=utest_tolerance(np.float32))
+                    np.testing.assert_allclose(a, b, atol=utest_tolerance(np.float32))
 
     def test_grid_3d(self):
         for k in product(self.ns, self.shifts, self.norms):
@@ -1425,6 +1425,6 @@ class LegacyGridsTestCase(TestCase):
                     continue
                 elif j == "theta":
                     a, b = np.mod(a, np.pi), np.mod(b, np.pi)
-                    assert np.allclose(a, b, atol=utest_tolerance(np.float32))
+                    np.testing.assert_allclose(a, b, atol=utest_tolerance(np.float32))
                 else:
-                    assert np.allclose(a, b, atol=utest_tolerance(np.float32))
+                    np.testing.assert_allclose(a, b, atol=utest_tolerance(np.float32))
