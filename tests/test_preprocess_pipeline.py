@@ -96,7 +96,18 @@ def testNormBackground(L, dtype):
 def test_norm_background_legacy(L, dtype):
     sim = get_sim_object(L, dtype)
     bg_radius = 2 * (L // 2) / L
-    grid = grid_2d(sim.L, shifted=True, indexing="yx", dtype=dtype)
+
+    # ASPIRE-Python grid convention for even/shifted/normalized grids
+    # differs from legacy grid. Rolling custom grid for this case.
+    if L % 2 == 0:
+        start = (-L // 2 + 1 / 2) / (L / 2)
+        end = (L // 2 - 1 / 2) / (L / 2)
+        grid_slice = slice(start, end, L * 1j)
+        y, x = np.mgrid[grid_slice, grid_slice].astype(dtype)
+        phi, r = np.arctan2(y, x), np.hypot(x, y)
+        grid = {"x": x, "y": y, "phi": phi, "r": r}
+    else:
+        grid = grid_2d(sim.L, shifted=True, indexing="yx", dtype=dtype)
     mask = grid["r"] > bg_radius
     sim = sim.normalize_background(legacy=True)
     imgs_nb = sim.images[:num_images].asnumpy()
