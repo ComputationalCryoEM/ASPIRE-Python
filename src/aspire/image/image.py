@@ -616,7 +616,7 @@ class Image:
                 mrc.voxel_size = self.pixel_size
 
     @staticmethod
-    def _load(filepath, dtype=None):
+    def _load_raw(filepath, dtype=None):
         """
         Load raw data from supported files.
 
@@ -661,7 +661,7 @@ class Image:
         :return: Image instance
         """
         # Load raw data from filepath with pixel size
-        im, pixel_size = Image._load(filepath, dtype=dtype)
+        im, pixel_size = Image._load_raw(filepath, dtype=dtype)
 
         # Return as Image instance
         return Image(im, pixel_size=pixel_size)
