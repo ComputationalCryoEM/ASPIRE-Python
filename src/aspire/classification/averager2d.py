@@ -801,7 +801,7 @@ class BFTAverager2D(AligningAverager2D):
         self._pft = PolarFT(self.src.L, ntheta=ntheta, nrad=nrad, dtype=self.dtype)
         self._mask = xp.asarray(grid_2d(self.src.L, normalized=True)["r"] < 1)
 
-    def _fast_rotational_alignment(self, pfA, pfB):
+    def _fast_rotational_alignment(self, pfA, pfB, do_interp=False):
         """
         Perform fast rotational alignment using Polar Fourier cross correlation.
 
@@ -826,9 +826,38 @@ class BFTAverager2D(AligningAverager2D):
 
         # Resolve the angle maximizing the correlation through the angular dimension
         inds = xp.argmax(angular, axis=-1)
-        max_thetas_deg = 360 / self._pft.ntheta * inds
-        max_thetas = xp.deg2rad(max_thetas_deg)
-        peaks = xp.take_along_axis(angular, inds[..., None], axis=-1).squeeze(-1)
+        breakpoint()
+
+        if do_interp:
+            half_width = 5
+            fine_steps = 100
+            thetas = np.linspace(0, 2*np.pi, self._pft.ntheta)
+            shp = (pfA.shape[0], pfB.shape[0])
+            max_thetas = np.empty(shp, dtype=self.dtype)
+            peaks = np.empty(shp, dtype=self.dtype)
+            
+            for i,ind in enumerate(inds):
+                # Select windows around peak
+                x = thetas[ind-half_width:ind+half_width]
+                y = angular[ind-half_width:ind+half_width]
+
+                # Setup an interpolator for the window
+                f_interp = interp1d(x,y,kind="cubic")
+                
+                # fine grid
+                xfine = np.linspace(thetas[0], thetas[-1], fine_steps)
+                yfine = f_interp(xfine)
+                
+                indfine = xp.argmax(yfine)
+                max_thetas[i] = xfine[indfine]
+                peaks[i] = y_fine[indfine]
+                
+                # # opt
+                # # Search for max in interpolation window            
+            
+        else:
+            max_thetas = 2*np.pi / self._pft.ntheta * inds            
+            peaks = xp.take_along_axis(angular, inds[..., None], axis=-1).squeeze(-1)
 
         # sanity check, can mv to unit test later
         assert max_thetas.shape == peaks.shape
