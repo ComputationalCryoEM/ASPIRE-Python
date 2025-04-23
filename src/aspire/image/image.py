@@ -709,7 +709,7 @@ class Image:
         # Note original stack shape and flatten stack
         stack_shape = self.stack_shape
         if self.n_images == 1 and n_shifts > 1:
-            # XXX special case, cleanup broadcasting later
+            # Handle the shift broadcast special case
             stack_shape = n_shifts
         im = self.stack_reshape(-1)._data
 
