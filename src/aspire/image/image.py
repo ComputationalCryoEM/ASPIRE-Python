@@ -408,7 +408,7 @@ class Image:
 
         :param shifts: An array of size n-by-2 specifying the shifts in pixels.
             Alternatively, it can be a column vector of length 2, in which case
-            the same shifts is applied to each image.
+            the same shift is applied to each image.
         :return: The Image translated by the shifts, with periodic boundaries.
         """
         if shifts.ndim == 1:
