@@ -17,6 +17,10 @@ logger = logging.getLogger(__name__)
 def commute_shift_rot(shifts, rots):
     """
     Rotate `shifts` points by `rots` ccw radians.
+
+    :param shifts: Array of shift points shaped (..., 2)
+    :param rots: Array of rotations (radians)
+    :returns: Array of rotated shift points shaped (..., 2)
     """
     sx = shifts[:, 0]
     sy = shifts[:, 1]
@@ -777,12 +781,6 @@ class BFTAverager2D(AligningAverager2D):
         )
 
         self.n_angles = n_angles
-
-        # # XXX Will use polar for rotate
-        # if not hasattr(self.alignment_basis, "rotate"):
-        #     raise RuntimeError(
-        #         f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `rotate` method."
-        #     )
 
         self.radius = radius if radius is not None else src.L // 16
 
