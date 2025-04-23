@@ -89,25 +89,38 @@ class PolarFT:
         """
         Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
 
-        :param x: The Image instance representing coefficient array in the
+        :param x: The `Image` instance representing coefficient array in the
             standard 2D coordinate basis to be evaluated.
+        :return: Numpy array holding the evaluation of the coefficient
+            array `x` in the polar Fourier grid. This is an array of
+            vectors whose first dimension corresponds to `x.shape[0]`,
+            and last dimension equals `self.count`.
+        """
+        if not isinstance(x, Image):
+            raise TypeError(
+                f"{self.__class__.__name__}.transform"
+                f" passed numpy array instead of {Image}."
+            )
+
+        return xp.asnumpy(self._transform(x.asnumpy()))
+
+    def _transform(self, x):
+        """
+        Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
+
+        :param x: Coefficients array in the standard 2D coordinate basis to be evaluated.
         :return: The evaluation of the coefficient array `x` in the polar
             Fourier grid. This is an array of vectors whose first dimension
             corresponds to `x.shape[0]`, and last dimension equals `self.count`.
         """
+
+        x = xp.asarray(x)
+
         if x.dtype != self.dtype:
             raise TypeError(
                 f"{self.__class__.__name__}.transform"
                 f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
             )
-
-        # if not isinstance(x, Image):
-        #     raise TypeError(
-        #         f"{self.__class__.__name__}.transform"
-        #         f" passed numpy array instead of {Image}."
-        #     )
-        if isinstance(x, Image):
-            x = xp.asarray(x.asnumpy())
 
         # Flatten stack
         stack_shape = x.shape[: -self.ndim]
@@ -122,6 +135,7 @@ class PolarFT:
 
         resolution = x.shape[-1]
 
+        # nufft call should return `pf` as array type (np or cp) of `x`
         pf = nufft(x, self.freqs) / resolution**2
 
         return pf.reshape(*stack_shape, self.ntheta // 2, self.nrad)

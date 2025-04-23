@@ -898,7 +898,7 @@ class BFTAverager2D(AligningAverager2D):
             _images[:] = _images[:] * self._mask
 
             # Convert to polar Fourier
-            pf_images = self._pft.half_to_full(self._pft.transform(_images))
+            pf_images = self._pft.half_to_full(self._pft._transform(_images))
 
             # Batch over shift search space, updating best results
             pbar = tqdm(
@@ -922,7 +922,7 @@ class BFTAverager2D(AligningAverager2D):
                 template_images[:] = template_images[:] * self._mask
 
                 pf_template_images = self._pft.half_to_full(
-                    self._pft.transform(template_images)
+                    self._pft._transform(template_images)
                 )
 
                 # # Compute and assign the best rotation found with this translation
