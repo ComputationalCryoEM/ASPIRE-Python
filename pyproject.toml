@@ -4,7 +4,7 @@ version = "0.13.2"
 description = "Algorithms for Single Particle Reconstruction"
 readme = "README.md" # Optional
 requires-python = ">=3.9"
-license = "GPL-3.0-or-later"
+license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 maintainers = [
   {name = "ASPIRE Developers", email = "ASPIRE-DEVS@princeton.edu"}
