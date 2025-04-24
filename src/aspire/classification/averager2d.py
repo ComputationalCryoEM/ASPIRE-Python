@@ -2,6 +2,8 @@ import logging
 from abc import ABC, abstractmethod
 
 import numpy as np
+from scipy.interpolate import interp1d
+from scipy.optimize import minimize_scalar
 
 from aspire.basis import Coef
 from aspire.classification.reddy_chatterji import reddy_chatterji_register
@@ -826,37 +828,60 @@ class BFTAverager2D(AligningAverager2D):
 
         # Resolve the angle maximizing the correlation through the angular dimension
         inds = xp.argmax(angular, axis=-1)
-        breakpoint()
 
         if do_interp:
             half_width = 5
             fine_steps = 100
-            thetas = np.linspace(0, 2*np.pi, self._pft.ntheta)
+            thetas = np.linspace(0, 2 * np.pi, self._pft.ntheta, endpoint=False)
             shp = (pfA.shape[0], pfB.shape[0])
             max_thetas = np.empty(shp, dtype=self.dtype)
             peaks = np.empty(shp, dtype=self.dtype)
-            
-            for i,ind in enumerate(inds):
-                # Select windows around peak
-                x = thetas[ind-half_width:ind+half_width]
-                y = angular[ind-half_width:ind+half_width]
 
-                # Setup an interpolator for the window
-                f_interp = interp1d(x,y,kind="cubic")
-                
-                # fine grid
-                xfine = np.linspace(thetas[0], thetas[-1], fine_steps)
-                yfine = f_interp(xfine)
-                
-                indfine = xp.argmax(yfine)
-                max_thetas[i] = xfine[indfine]
-                peaks[i] = y_fine[indfine]
-                
-                # # opt
-                # # Search for max in interpolation window            
-            
+            for i in range(inds.shape[0]):
+                for j in range(inds.shape[1]):
+                    ind = inds[i, j]
+
+                    # Select windows around peak
+                    #   Want slice, [ind-half_width:ind+half_width], with wrapping
+                    #   Note, could alternatively use halfwidth "pad" with wrap
+                    window = range(ind - half_width, ind + half_width)
+                    xw = thetas.take(window, mode="wrap")
+                    mask = xw < xw[0]
+                    xw[mask] = xw[mask] + 2 * np.pi
+                    yw = angular[i, j].take(window, mode="wrap")
+
+                    # Setup an interpolator for the window
+                    f_interp = interp1d(xw, yw, kind="cubic")
+
+                    if do_interp == "opt":
+                        # Negate the function we want to maximize
+                        def f(x, _f=f_interp):
+                            return -_f(x)
+
+                        # Call the optimizer
+                        res = minimize_scalar(f, bounds=(xw[0], xw[-1]))
+
+                        # Assign results
+                        max_thetas[i, j] = res.x
+                        peaks[i, j] = f_interp(res.x)
+
+                    else:
+                        # Create fine grid window
+                        xfine = np.linspace(xw[0], xw[-1], fine_steps)
+                        yfine = f_interp(xfine)
+
+                        # Find the maximal value in the fine grid window
+                        indfine = xp.argmax(yfine)
+
+                        # Assign results
+                        max_thetas[i, j] = xfine[indfine]
+                        peaks[i, j] = yfine[indfine]
+
+            # Modulate the interpolants wraping around the circle.
+            max_thetas = max_thetas % (2 * np.pi)
+
         else:
-            max_thetas = 2*np.pi / self._pft.ntheta * inds            
+            max_thetas = 2 * np.pi / self._pft.ntheta * inds
             peaks = xp.take_along_axis(angular, inds[..., None], axis=-1).squeeze(-1)
 
         # sanity check, can mv to unit test later
