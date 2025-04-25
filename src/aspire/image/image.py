@@ -56,17 +56,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, legacy=False):
 
     # Generate background mask
     input_dtype = imgs.dtype
-    if legacy and L % 2 == 0:
-        # ASPIRE-Python grid convention for even/shifted/normalized grids
-        # differs from legacy grid. Rolling custom grid for this case.
-        start = (-L // 2 + 1 / 2) / (L / 2)
-        end = (L // 2 - 1 / 2) / (L / 2)
-        grid_slice = slice(start, end, L * 1j)
-        y, x = np.mgrid[grid_slice, grid_slice].astype(input_dtype)
-        phi, r = np.arctan2(y, x), np.hypot(x, y)
-        grid = {"x": x, "y": y, "phi": phi, "r": r}
-    else:
-        grid = grid_2d(L, shifted=shifted, indexing="yx", dtype=input_dtype)
+    grid = grid_2d(L, shifted=shifted, indexing="yx", dtype=input_dtype)
     mask = grid["r"] > bg_radius
 
     if do_ramp:

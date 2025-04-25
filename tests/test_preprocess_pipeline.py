@@ -94,32 +94,24 @@ def testNormBackground(L, dtype):
 
 @pytest.mark.parametrize("L, dtype", params)
 def test_norm_background_legacy(L, dtype):
+    # Legacy normalize_background uses a shifted grid, a different
+    # mask radius, disabled ramping, and N - 1 degrees of freedom
+    # when computing standard deviation.
     sim = get_sim_object(L, dtype)
     bg_radius = 2 * (L // 2) / L
-
-    # ASPIRE-Python grid convention for even/shifted/normalized grids
-    # differs from legacy grid. Rolling custom grid for this case.
-    if L % 2 == 0:
-        start = (-L // 2 + 1 / 2) / (L / 2)
-        end = (L // 2 - 1 / 2) / (L / 2)
-        grid_slice = slice(start, end, L * 1j)
-        y, x = np.mgrid[grid_slice, grid_slice].astype(dtype)
-        phi, r = np.arctan2(y, x), np.hypot(x, y)
-        grid = {"x": x, "y": y, "phi": phi, "r": r}
-    else:
-        grid = grid_2d(sim.L, shifted=True, indexing="yx", dtype=dtype)
+    grid = grid_2d(sim.L, shifted=True, indexing="yx", dtype=dtype)
     mask = grid["r"] > bg_radius
     sim = sim.normalize_background(legacy=True)
-    imgs_nb = sim.images[:num_images].asnumpy()
+    imgs_nb = sim.images[:].asnumpy()
     new_mean = np.mean(imgs_nb[:, mask])
     new_variance = np.var(imgs_nb[:, mask], ddof=1)
 
     # new mean of noise should be close to zero and variance should be close to 1
-    assert new_mean < utest_tolerance(dtype)
-    assert abs(new_variance - 1) < 2e-3
+    np.testing.assert_array_less(new_mean, utest_tolerance(dtype))
+    np.testing.assert_array_less(abs(new_variance - 1), 2e-3)
 
     # dtype of returned images should be the same
-    assert dtype == imgs_nb.dtype
+    np.testing.assert_equal(dtype, imgs_nb.dtype)
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
