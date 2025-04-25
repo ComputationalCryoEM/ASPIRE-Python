@@ -989,12 +989,12 @@ class BFTAverager2D(AligningAverager2D):
                     # Test and update
                     # Each base-neighbor pair may have a best shift+rot from a different shift iteration.
                     improved_indices = _dot_products[i] > dot_products[k]
-                    rotations[k, improved_indices] = _rotations[i, improved_indices]
+                    rotations[k, improved_indices] = -_rotations[i, improved_indices]
                     dot_products[k, improved_indices] = _dot_products[
                         i, improved_indices
                     ]
                     # base shifts assigned here, commutation resolved end of loop
-                    shifts[k, improved_indices] = batch_shifts[i]
+                    shifts[k, improved_indices] = -batch_shifts[i]
 
                 pbar.update(bs)
 
@@ -1002,7 +1002,7 @@ class BFTAverager2D(AligningAverager2D):
             pbar.close()
 
             # Commute the rotation and shift (code shifted the base image instead of all class members)
-            shifts[k] = commute_shift_rot(shifts[k], -rotations[k])
+            shifts[k] = commute_shift_rot(shifts[k], rotations[k])
 
         return rotations, shifts, dot_products
 
