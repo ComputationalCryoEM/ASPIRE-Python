@@ -3,6 +3,7 @@ from .commonline_base import CLOrient3D
 # isort: off
 from .commonline_sdp import CommonlineSDP
 from .commonline_lud import CommonlineLUD
+from .commonline_irls import CommonlineIRLS
 from .sync_voting import SyncVotingMixin
 from .commonline_sync import CLSyncVoting
 from .commonline_sync3n import CLSync3N
