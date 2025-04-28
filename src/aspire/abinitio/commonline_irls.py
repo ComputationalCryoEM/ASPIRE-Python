@@ -278,8 +278,8 @@ class CommonlineIRLS(CommonlineLUD):
             # Sort by eigenvalue magnitude. Note, eigsh does not return
             # ordered eigenvalues/vectors for which="LM".
             idx = np.argsort(np.abs(pi))[::-1]
-            pi = pi[idx]
-            U = U[:, idx]
+            pi = pi[idx].astype(self.dtype, copy=False)
+            U = U[:, idx].astype(self.dtype, copy=False)
 
         # Apply soft-threshold to eigenvalues to enforce spectral norm constraint.
         # Compute eigenvalues based on constraint type.
