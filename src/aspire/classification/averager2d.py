@@ -460,6 +460,12 @@ class BFSRAverager2D(AligningAverager2D):
 
 
 class BFRAverager2D(BFSRAverager2D):
+    """
+    Brute Force Rotation only reference implementation.
+
+    See BFT with `radius=0` for a more performant implementation using a fast rotational alignment.
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, radius=0, **kwargs)
 
@@ -751,7 +757,7 @@ class BFTAverager2D(AligningAverager2D):
     This perfoms a Brute Force Translations and fast rotational alignment.
 
     For each pair of x_shifts and y_shifts,
-       Perform cross correlation based rotational alignment
+       Perform polar Fourier cross correlation based rotational alignment.
 
     Return the rotation and shift yielding the best results.
     """
@@ -762,17 +768,21 @@ class BFTAverager2D(AligningAverager2D):
         src,
         alignment_basis=None,
         n_angles=360,
+        n_radial=None,
         radius=None,
         sub_pixel=0.1,
         batch_size=512,
         dtype=None,
     ):
         """
-        See AligningAverager2D adds `n_angles` and `radius`.
+        See AligningAverager2D. Adds `n_angles`, `n_radial`, `radius`, `sub_pixel`.
 
-        :params n_angles: Number of brute force rotations to attempt, defaults 360.
+        :params n_angles: Number of PFT angular components, defaults 360.
+        :param n_radial: Number of PFT radial components, defaults `self.src.L`.
         :param radius: Brute force translation search radius.
-            Defaults to src.L//16.
+            `0` disables translation search, rotations only.
+            Defaults to `src.L//16`.
+        :param sub_pixel: Subpixel shift size used in brute force shift search.
         """
         super().__init__(
             composite_basis,
@@ -784,7 +794,7 @@ class BFTAverager2D(AligningAverager2D):
 
         self.n_angles = n_angles
 
-        self.radius = radius if radius is not None else src.L // 16
+        self.radius = radius if radius is not None else src.L // 32
 
         if self.radius != 0:
 
@@ -795,12 +805,13 @@ class BFTAverager2D(AligningAverager2D):
 
         self.sub_pixel = sub_pixel
 
-        # XXX todo, better config
-        ntheta = 360
-        nrad = self.src.L
+        # Configure number of radial points
+        self.n_radial = n_radial or self.src.L
 
         # Setup Polar Transform
-        self._pft = PolarFT(self.src.L, ntheta=ntheta, nrad=nrad, dtype=self.dtype)
+        self._pft = PolarFT(
+            self.src.L, ntheta=n_angles, nrad=n_radial, dtype=self.dtype
+        )
         self._mask = xp.asarray(grid_2d(self.src.L, normalized=True)["r"] < 1)
 
     def _fast_rotational_alignment(self, pfA, pfB, do_interp=False):
