@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.sparse.linalg import eigsh
 
-from aspire.abinitio import CLOrient3D, CommonlineLUD, CommonlineSDP
+from aspire.abinitio import CommonlineLUD, CommonlineSDP
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,7 @@ class CommonlineIRLS(CommonlineLUD):
         self.S = CommonlineSDP._construct_S(self, self.clmatrix)
         weights = np.ones(2 * self.n_img, dtype=self.dtype)
         gram = np.eye(2 * self.n_img, dtype=self.dtype)
-        for itr in range(self.num_itrs):
+        for _ in range(self.num_itrs):
             S = weights * self.S
             gram = self._compute_Gram(gram, S)
             weights = self._update_weights(gram)
@@ -203,9 +203,10 @@ class CommonlineIRLS(CommonlineLUD):
 
             # Check optimality
             if self.ctype:
-                spG = eigsh(G.astype(np.float64, copy=False), k=1, which="LM")
-                pobj = -np.sum(S * G) + self.lambda_
-                dobj = b.T @ y
+                pass
+            #     spG = eigsh(G.astype(np.float64, copy=False), k=1, which="LM")
+            #     pobj = -np.sum(S * G) + self.lambda_
+            #     dobj = b.T @ y
             else:
                 pobj = -np.sum(S * G)
                 dobj = (b.T @ y) - self.lambda_ * np.sum(abs(eigs_Z))
