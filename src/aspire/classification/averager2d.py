@@ -953,9 +953,11 @@ class BFTAverager2D(AligningAverager2D):
 
             _images[:] = xp.asarray(original_images[1:].asnumpy())
 
-            # Handle reflections, XXX confirm location in sequence
-            refl = reflections[k][1:]  # skips original_image 0
-            _images[refl] = xp.flipud(_images[refl])
+            # Handle reflections
+            refl = reflections[k]
+            _images[refl[1:]] = xp.flip(
+                _images[refl[1:]], axis=-2
+            )  # 1: skips original_image 0
 
             # Mask off
             _images[:] = _images[:] * self._mask
