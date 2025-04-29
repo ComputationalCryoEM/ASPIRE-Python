@@ -98,7 +98,7 @@ def test_estimate_rotations(source, orient_est):
     # Register estimates to ground truth rotations and compute the
     # angular distance between them (in degrees).
     # Assert that mean aligned angular distance is less than 5 degrees.
-    tol = 3
+    tol = 5
     mean_aligned_angular_distance(est_rots, source.rotations, degree_tol=tol)
 
     # Check dtype pass-through
