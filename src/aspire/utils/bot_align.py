@@ -65,10 +65,6 @@ def align_BO(
     :param seed: Random seed for reproducible results. Integer, defaults None.
     :return: Rotation matrix R_init (without refinement) or (R_init, R_est) (with refinement).
     """
-    # Generate sequence of seeds for pymanopt initial points
-    ss = np.random.SeedSequence(seed)
-    point_seeds = ss.generate_state(max_iters, dtype=np.uint32)
-
     # Avoid utils/operators/utils circular import
     from aspire.operators import wemd_embed
 
@@ -175,12 +171,12 @@ def align_BO(
         )
 
         # If provided, use seed to set initial point for optimizer
+        initial = None
         if seed is not None:
-            with Random(int(point_seeds[t])):
+            with Random(seed + t):
                 initial = manifold.random_point()
-                result = optimizer.run(problem, initial_point=initial)
-        else:
-            result = optimizer.run(problem)
+
+        result = optimizer.run(problem, initial_point=initial)
         R_new = result.point.astype(dtype, copy=False)
 
         loss[t] = loss_fun(R_new)
