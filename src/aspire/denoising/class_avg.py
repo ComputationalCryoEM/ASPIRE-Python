@@ -7,13 +7,11 @@ from aspire.classification import (
     Averager2D,
     BandedSNRImageQualityFunction,
     BFRAverager2D,
-    BFSRAverager2D,
     BFTAverager2D,
     Class2D,
     ClassSelector,
     GlobalVarianceClassSelector,
     GlobalWithRepulsionClassSelector,
-    NeighborVarianceWithRepulsionClassSelector,
     RIRClass2D,
     TopClassSelector,
 )
