@@ -260,7 +260,7 @@ class AligningAverager2D(Averager2D):
         :param radius: Disc radius in pixels
         :param roll_zero: Roll (0,0) to zero'th element. Defaults to False.
         :param sub_pixel: Sub pixel decimation.  1 is integer, 0.1 is 1/10 pixel, etc.
-        :returns: Grid points as 2-tuple of vectors X,Y.
+        :returns: Grid points as array of 2-tuples [(x0,y0),... (xi,yi)].
         """
 
         # We'll brute force all shifts in a grid.
@@ -275,7 +275,9 @@ class AligningAverager2D(Averager2D):
             X, Y = np.roll(X, -zero_ind), np.roll(Y, -zero_ind)
             assert (X[0], Y[0]) == (0, 0), (radius, zero_ind, X, Y)
 
-        return X, Y
+        shifts = np.stack((X, Y), axis=1)
+
+        return shifts
 
 
 class BFSRAverager2D(AligningAverager2D):
@@ -358,9 +360,7 @@ class BFSRAverager2D(AligningAverager2D):
 
         # Create a search grid and force initial pair to (0,0)
         # This is done primarily in case of a tie later, we would take unshifted.
-        x_shifts, y_shifts = self._shift_search_grid(
-            self.src.L, self.radius, roll_zero=True
-        )
+        test_shifts = self._shift_search_grid(self.src.L, self.radius, roll_zero=True)
 
         for k in trange(n_classes, desc="Rotationally aligning classes"):
             # We want to locally cache the original images,
@@ -391,10 +391,10 @@ class BFSRAverager2D(AligningAverager2D):
 
             # Loop over shift search space, updating best result
             for x, y in tqdm(
-                zip(x_shifts, y_shifts),
-                total=len(x_shifts),
+                test_shifts,
+                total=len(shifts),
                 desc="\tmaximizing over shifts",
-                disable=len(x_shifts) == 1,
+                disable=len(shifts) == 1,
                 leave=False,
             ):
                 shift = np.array([x, y], dtype=int)
@@ -687,7 +687,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
         dot_products = np.ones(classes.shape, dtype=self.dtype) * -np.inf
         shifts = np.zeros((*classes.shape, 2), dtype=int)
 
-        X, Y = self._shift_search_grid(self.alignment_src.L, self.radius)
+        test_shifts = self._shift_search_grid(self.alignment_src.L, self.radius)
 
         def _innerloop(k):
             unshifted_images = self._cls_images(classes[k])
@@ -697,10 +697,10 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
             _shifts = np.zeros((*classes.shape[1:], 2), dtype=int)
 
             for xs, ys in tqdm(
-                zip(X, Y),
-                total=len(X),
+                test_shifts,
+                total=len(test_shifts),
                 desc="\tmaximizing over shifts",
-                disable=len(X) == 1,
+                disable=len(test_shifts) == 1,
                 leave=False,
             ):
 
@@ -756,7 +756,7 @@ class BFTAverager2D(AligningAverager2D):
     """
     This perfoms a Brute Force Translations and fast rotational alignment.
 
-    For each pair of x_shifts and y_shifts,
+    For each shift,
        Perform polar Fourier cross correlation based rotational alignment.
 
     Return the rotation and shift yielding the best results.
@@ -919,19 +919,12 @@ class BFTAverager2D(AligningAverager2D):
 
         # Create a search grid and force initial pair to (0,0)
         # This is done primarily in case of a tie later, we would prefer unshifted.
-        x_shifts, y_shifts = self._shift_search_grid(
+        test_shifts = self._shift_search_grid(
             self.src.L,
             self.radius,
             roll_zero=True,
             sub_pixel=self.sub_pixel,
         )
-
-        # XXX
-        # maybe just change _shift_search_grid to output this later,
-        # it was first written that way to use sequential pixelrolls in each dimension,
-
-        # (num_shifts, 2)
-        test_shifts = np.stack((x_shifts, y_shifts), axis=1)
 
         # Work arrays
         bs = min(self.batch_size, len(test_shifts))
@@ -969,7 +962,7 @@ class BFTAverager2D(AligningAverager2D):
             pbar = tqdm(
                 total=len(test_shifts),
                 desc="\tmaximizing over shifts",
-                disable=len(x_shifts) == 1,
+                disable=len(test_shifts) == 1,
                 leave=False,
             )
             for start in range(0, len(test_shifts), self.batch_size):
