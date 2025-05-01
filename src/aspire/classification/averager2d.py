@@ -944,13 +944,11 @@ class BFTAverager2D(AligningAverager2D):
                 original_coef = basis_coefficients[classes[k], :]
                 original_images = self.alignment_basis.evaluate(original_coef)
 
-            _images[:] = xp.asarray(original_images[1:].asnumpy())
+            _images[:] = xp.asarray(original_images[1:].asnumpy(), copy=True)
 
             # Handle reflections
-            refl = reflections[k]
-            _images[refl[1:]] = xp.flip(
-                _images[refl[1:]], axis=-2
-            )  # 1: skips original_image 0
+            refl = reflections[k][1:]  # skips original_image 0
+            _images[refl] = xp.flip(_images[refl], axis=-2)
 
             # Mask off
             _images[:] = _images[:] * self._mask
@@ -970,8 +968,8 @@ class BFTAverager2D(AligningAverager2D):
                 bs = end - start  # handle a small last batch
                 batch_shifts = test_shifts[start:end]
 
-                # Note the base original_image[0] needs to remain unprocessed
-                # XXX This is shifting for zero, consider carving that out.
+                # Shift the base, original_image[0], for each shift in this batch
+                # Note this includes shifting for the zero case
                 template_images[:bs] = xp.asarray(
                     original_images[0].shift(batch_shifts)
                 )
