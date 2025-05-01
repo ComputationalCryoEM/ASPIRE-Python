@@ -289,12 +289,16 @@ class ClassAvgSource(ImageSource):
 
         # Check if this src cached images.
         if self._cached_im is not None:
-            logger.debug(f"Loading {len(indices)} images from image cache")
-            im = self._cached_im[indices, :, :]
+            logger.debug(
+                f"Loading {len(indices)} images from image cache, indices {_indices}"
+            )
+            im = self._cached_im[_indices, :, :]
 
         # Check for heap cached image sets from class_selector.
         elif heap_inds:
-            logger.debug(f"Mapping {len(heap_inds)} images from heap cache.")
+            logger.debug(
+                f"Mapping {len(heap_inds)} images from heap cache, indices {indices}"
+            )
 
             # Images in heap_inds can be fetched from class_selector.
             # For others, create an indexing map that preserves
@@ -346,9 +350,11 @@ class ClassAvgSource(ImageSource):
 
         else:
             # Perform image averaging for the requested images (classes)
-            logger.debug(f"Averaging {len(_indices)} images from source")
+            logger.debug(
+                f"Averaging {len(indices)} images from source, indices: {indices}"
+            )
             im = self.averager.average(
-                self.class_indices[_indices], self.class_refl[_indices]
+                self.class_indices[indices], self.class_refl[indices]
             )
 
         # Finally, apply transforms to resulting Images
