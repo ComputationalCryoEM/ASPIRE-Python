@@ -944,7 +944,7 @@ class BFTAverager2D(AligningAverager2D):
                 original_coef = basis_coefficients[classes[k], :]
                 original_images = self.alignment_basis.evaluate(original_coef)
 
-            _images[:] = xp.asarray(original_images[1:].asnumpy(), copy=True)
+            _images[:] = xp.asarray(original_images[1:].asnumpy().copy())
 
             # Handle reflections
             refl = reflections[k][1:]  # skips original_image 0
