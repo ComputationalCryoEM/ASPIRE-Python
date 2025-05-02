@@ -172,8 +172,13 @@ class CommonlineIRLS(CommonlineLUD):
             if not self.adp_proj:
                 D, V = np.linalg.eigh(H)
                 eigs_mask = D > self.eps
-                V = V[:, eigs_mask]
-                W = V @ np.diag(D[eigs_mask]) @ V.T
+                num_eigs = np.count_nonzero(eigs_mask)
+                if num_eigs < n / 2:  # few positive eigenvalues
+                    V = V[:, eigs_mask]
+                    W = V @ np.diag(D[eigs_mask]) @ V.T
+                else:  # few negative eigenvalues
+                    V = V[:, ~eigs_mask]
+                    W = V @ np.diag(-D[~eigs_mask]) @ V.T + H
             else:
                 # Determine number of eigenvalues to compute for adaptive projection
                 if itr == 0:
@@ -220,7 +225,7 @@ class CommonlineIRLS(CommonlineLUD):
             dinf = np.linalg.norm(dinf_term, "fro") / max(np.linalg.norm(S, np.inf), 1)
 
             logger.info(
-                f"Iteration: {itr}, residual: {max(pinf, dinf)}, target: {self.tol}"
+                f"Iteration: {itr}, residual: {max(pinf, dinf, gap)}, target: {self.tol}"
             )
             if max(pinf, dinf, gap) <= self.tol:
                 return G
@@ -262,7 +267,7 @@ class CommonlineIRLS(CommonlineLUD):
         B = (B + B.T) / 2
 
         if not self.adp_proj:
-            U, pi = np.linalg.eigh(B)
+            pi, U = np.linalg.eigh(B)
         else:
             # Determine number of eigenvalues to compute for adaptive projection
             if num_eigs_Z is None:

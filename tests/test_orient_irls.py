@@ -8,15 +8,17 @@ from aspire.volume import AsymmetricVolume
 
 RESOLUTION = [
     32,
-    33,
+    pytest.param(33, marks=pytest.mark.expensive),
 ]
 
 OFFSETS = [
+    0,
     None,  # Defaults to random offsets.
 ]
 
 DTYPES = [
-    np.float64,
+    np.float32,
+    pytest.param(np.float64, marks=pytest.mark.expensive),
 ]
 
 SPECTRAL_NORM_CONSTRAINT = [
