@@ -22,6 +22,7 @@ DTYPES = [
 ]
 
 SPECTRAL_NORM_CONSTRAINT = [
+    None,
     2 / 3,
 ]
 
@@ -88,6 +89,7 @@ def orient_est(source, alpha, adp_proj):
         delta_mu_l=0.4,  # Ensures branch is tested
         mask=False,
         tol=0.005,  # Improves test speed
+        num_itrs=3,  # Improves test speed
     )
 
     return orient_est
