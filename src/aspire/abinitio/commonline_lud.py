@@ -300,7 +300,7 @@ class CommonlineLUD(CLOrient3D):
         B = (B + B.T) / 2
 
         if not self.adp_proj:
-            U, pi = np.linalg.eigh(B)
+            pi, U = np.linalg.eigh(B)
         else:
             # Determine number of eigenvalues to compute for adaptive projection
             if num_eigs_Z is None:
