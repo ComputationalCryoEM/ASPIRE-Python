@@ -91,11 +91,9 @@ class CommonlineIRLS(CommonlineLUD):
             **kwargs,
         )
 
-        self.lambda_ = self.alpha * self.n_img  # Spectral norm bound
-
     def estimate_rotations(self):
         """
-        Estimate rotation matrices using the common lines method with LUD optimization.
+        Estimate rotation matrices using the common lines method with IRLS optimization.
         """
         logger.info("Computing the common lines matrix.")
         self.build_clmatrix()
@@ -103,10 +101,18 @@ class CommonlineIRLS(CommonlineLUD):
         self.S = CommonlineSDP._construct_S(self, self.clmatrix)
         weights = np.ones(2 * self.n_img, dtype=self.dtype)
         gram = np.eye(2 * self.n_img, dtype=self.dtype)
-        for _ in range(self.num_itrs):
-            S = weights * self.S
-            gram = self._compute_Gram(gram, S)
-            weights = self._update_weights(gram)
+        if self.alpha is None:
+            A, b = CommonlineSDP._sdp_prep(self)
+            for _ in range(self.num_itrs):
+                S = weights * self.S
+                gram = CommonlineSDP._compute_gram_matrix(self, S, A, b)
+                weights = self._update_weights(gram)
+        else:
+            self.lambda_ = self.alpha * self.n_img  # Spectral norm bound
+            for _ in range(self.num_itrs):
+                S = weights * self.S
+                gram = self._compute_Gram(gram, S)
+                weights = self._update_weights(gram)
         self.rotations = CommonlineSDP._deterministic_rounding(gram)
 
         return self.rotations
@@ -120,7 +126,7 @@ class CommonlineIRLS(CommonlineLUD):
         s.t. A(G) = b, G psd
             ||G||_2 <= lambda
 
-        Equivalent to matlab functions cryoEMSDPL12N/cryoEMSDPL12N_vsimple.
+        Equivalent to matlab function cryoEMADM.
         :param G: Gram matrix from previous iteration.
         :param S: Reweighted S matrix.
         :return: The updated gram matrix G.

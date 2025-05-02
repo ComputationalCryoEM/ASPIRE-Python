@@ -149,7 +149,7 @@ class CommonlineSDP(CLOrient3D):
         prob = cp.Problem(cp.Minimize(cp.trace(-S @ G)), constraints)
         prob.solve()
 
-        return G.value
+        return G.value.astype(self.dtype, copy=False)
 
     @staticmethod
     def _deterministic_rounding(gram):
