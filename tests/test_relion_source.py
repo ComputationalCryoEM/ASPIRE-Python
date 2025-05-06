@@ -1,6 +1,7 @@
 import logging
 import os
 
+import numpy as np
 import pytest
 
 from aspire.source import RelionSource
@@ -56,3 +57,40 @@ def test_symmetry_group(caplog):
 
     assert isinstance(src_override_sym.symmetry_group, SymmetryGroup)
     assert str(src_override_sym.symmetry_group) == "C6"
+
+
+def test_pixel_size(caplog):
+    """
+    Instantiate RelionSource from starfiles containing the following pixel size
+    field variations:
+        - "_rlnImagePixelSize"
+        - "_rlnDetectorPixelSize" and "_rlnMagnification"
+        - User provided pixel size
+        - No pixel size provided
+    and check src.pixel_size is correct.
+    """
+    starfile_im_pix_size = os.path.join(DATA_DIR, "sample_particles_relion31.star")
+    starfile_detector_pix_size = os.path.join(
+        DATA_DIR, "sample_particles_relion30.star"
+    )
+    starfile_no_pix_size = os.path.join(DATA_DIR, "rln_proj_64.star")
+
+    # Check pixel size from _rlnImagePixelSize, set to 1.4000 in starfile.
+    src = RelionSource(starfile_im_pix_size)
+    np.testing.assert_equal(src.pixel_size, 1.4)
+
+    # Check pixel size calculated from _rlnDetectorPixelSize and _rlnMagnification
+    src = RelionSource(starfile_detector_pix_size)
+    det_pix_size = src.get_metadata(["_rlnDetectorPixelSize"])[0]
+    mag = src.get_metadata("_rlnMagnification")[0]
+    pix_size = 10000 * det_pix_size / mag
+    np.testing.assert_equal(src.pixel_size, pix_size)
+
+    # Check user provided pixel size
+    pix_size = 1.234
+    src = RelionSource(starfile_no_pix_size, pixel_size=pix_size)
+    np.testing.assert_equal(src.pixel_size, pix_size)
+
+    # Check pixel size defaults to 1 if not provided.
+    src = RelionSource(starfile_no_pix_size)
+    np.testing.assert_equal(src.pixel_size, 1.0)
