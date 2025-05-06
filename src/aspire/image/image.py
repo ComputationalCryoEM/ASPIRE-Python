@@ -34,7 +34,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, legacy=False):
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
     :param legacy: Option to match Matlab legacy normalize_background. Default, False,
-        uses ASPIRE-Python implementation. When True, ramping is disable, a shifted
+        uses ASPIRE-Python implementation. When True, ramping is disabled, a shifted
         2d grid and alternative `bg_radius` is used to generate the background mask,
         and standard deviation is computed using N - 1 degrees of freedom.
     :return: The modified images
