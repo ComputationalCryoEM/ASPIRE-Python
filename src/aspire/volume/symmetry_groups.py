@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod, abstractproperty
+from scipy.spatial.transform import Rotation as R
 
 import numpy as np
 
@@ -79,6 +80,7 @@ class SymmetryGroup(ABC):
             "D": DnSymmetryGroup,
             "T": TSymmetryGroup,
             "O": OSymmetryGroup,
+            "I": ISymmetryGroup,
         }
         if symmetry_type not in map_to_sym_group.keys():
             raise ValueError(
@@ -303,3 +305,37 @@ class OSymmetryGroup(SymmetryGroup):
 
         # Return rotations.
         return Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
+
+class ISymmetryGroup(SymmetryGroup):
+    """
+    Icosahedral symmetry group.
+    """
+
+    def __init__(self):
+        """
+        `ISymmetryGroup` instance that serves up a `Rotation` object
+        containing rotation matrices of the symmetry group (including the
+        Identity) accessed via the `matrices` attribute. Note, this is the
+        chiral icosahedral symmetry group which does not contain reflections.
+        """
+        super().__init__()
+
+        self._symmetry_group = self.generate_rotations()
+
+    @property
+    def to_string(self):
+        return "I"
+
+    def generate_rotations(self):
+        """
+        Icosahedral rotation group I (60 elements):
+        - 1 identity rotation (order 1)
+        - 24 rotations of order 5: ±72°, ±144° around 6 face-center axes
+        - 20 rotations of order 3: ±120° around 10 vertex axes
+        - 15 rotations of order 2: 180° around 15 edge-midpoint axes
+        The icosahedral rotation group I has 60 elements:
+
+        :return: Rotation object containing the icosahedral symmetry group and the identity.
+        """
+        scipy_rotations = R.create_group("I").as_matrix()
+        return Rotation(scipy_rotations)
