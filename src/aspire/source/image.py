@@ -1695,7 +1695,7 @@ class OrientedSource(IndexedSource):
     def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
         self._orient()
         return super().save_metadata(
-            starfile_filepath, batch_size=batch_size, save_mode=None
+            starfile_filepath, batch_size=batch_size, save_mode=save_mode
         )
 
     def get_metadata(
