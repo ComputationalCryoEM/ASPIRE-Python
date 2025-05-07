@@ -21,9 +21,8 @@ class CommonlineIRLS(CommonlineLUD):
         src,
         *,
         num_itrs=10,
-        ctype=False,
         eps_weighting=1e-3,
-        alpha=2 / 3,
+        alpha=None,
         max_rankZ=None,
         max_rankW=None,
         **kwargs,
@@ -31,9 +30,8 @@ class CommonlineIRLS(CommonlineLUD):
         """
         Initialize a class for estimating 3D orientations using an IRLS-based optimization.
 
-        :param ctype: Constraint type for the optimization:
-            - 1: ||G||_2 as a regularization term in the objective.
-            - 0: ||G||_2 as a constraint in the optimization.
+        :param num_itrs: Number of iterations for iterative reweighting. Default is 10.
+        :param eps_weighting: Regularization value for reweighting factor. Default is 1e-3.
         :param alpha: Spectral norm constraint for ADMM algorithm. Default is None, which
             does not apply a spectral norm constraint. To apply a spectral norm constraint provide
             a value in the range [2/3, 1), 2/3 is recommended.
@@ -76,7 +74,6 @@ class CommonlineIRLS(CommonlineLUD):
         """
 
         self.num_itrs = num_itrs
-        self.ctype = ctype
         self.eps_weighting = eps_weighting
 
         # Adjust rank limits
@@ -159,8 +156,7 @@ class CommonlineIRLS(CommonlineLUD):
             # Compute y #
             #############
             y = -(AS + self._compute_AX(W) - self._compute_AX(Z)) - resi / self._mu
-            # if self.ITR == 2:
-            #     breakpoint()
+
             #############
             # Compute Z #
             #############
@@ -213,14 +209,8 @@ class CommonlineIRLS(CommonlineLUD):
             G = (1 - self.gam) * G + self.gam * self._mu * (W - H)
 
             # Check optimality
-            if self.ctype:
-                pass
-            #     spG = eigsh(G.astype(np.float64, copy=False), k=1, which="LM")
-            #     pobj = -np.sum(S * G) + self.lambda_
-            #     dobj = b.T @ y
-            else:
-                pobj = -np.sum(S * G)
-                dobj = (b.T @ y) - self.lambda_ * np.sum(abs(eigs_Z))
+            pobj = -np.sum(S * G)
+            dobj = (b.T @ y) - self.lambda_ * np.sum(abs(eigs_Z))
 
             gap = abs(dobj - pobj) / (1 + abs(dobj) + abs(pobj))
 
@@ -295,13 +285,7 @@ class CommonlineIRLS(CommonlineLUD):
 
         # Apply soft-threshold to eigenvalues to enforce spectral norm constraint.
         # Compute eigenvalues based on constraint type.
-        if self.ctype:
-            pass
-            # Need to make this branch work. Compute projection onto simplex.
-            # eigs_Z = projsplx(np.abs(pi) / self.lambda_)
-            # eigs_Z = (self.lambda_ * np.sign(pi)) * eigs_Z
-        else:
-            eigs_Z = np.sign(pi) * np.maximum(np.abs(pi) - self.lambda_ / self._mu, 0)
+        eigs_Z = np.sign(pi) * np.maximum(np.abs(pi) - self.lambda_ / self._mu, 0)
 
         nD = abs(eigs_Z) > 0
         num_eigs_Z = np.count_nonzero(nD)
