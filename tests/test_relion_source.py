@@ -79,16 +79,16 @@ def test_pixel_size(caplog):
     src = RelionSource(starfile_im_pix_size)
     np.testing.assert_equal(src.pixel_size, 1.4)
 
-    # Check pixel size calculated from _rlnDetectorPixelSize and _rlnMagnification
+    # Check pixel size calculated from _rlnDetectorPixelSize and _rlnMagnification.
     src = RelionSource(starfile_detector_pix_size)
     det_pix_size = src.get_metadata(["_rlnDetectorPixelSize"])[0]
     mag = src.get_metadata("_rlnMagnification")[0]
     pix_size = 10000 * det_pix_size / mag
     np.testing.assert_equal(src.pixel_size, pix_size)
 
-    # Check user provided pixel size
+    # Check user provided pixel size.
     pix_size = 1.234
-    src = RelionSource(starfile_no_pix_size, pixel_size=pix_size)
+    src = RelionSource(starfile_im_pix_size, pixel_size=pix_size)
     np.testing.assert_equal(src.pixel_size, pix_size)
 
     # Check pixel size defaults to 1 if not provided.
