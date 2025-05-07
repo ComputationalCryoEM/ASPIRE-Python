@@ -59,7 +59,7 @@ def test_symmetry_group(caplog):
     assert str(src_override_sym.symmetry_group) == "C6"
 
 
-def test_pixel_size(caplog):
+def test_pixel_size():
     """
     Instantiate RelionSource from starfiles containing the following pixel size
     field variations:
