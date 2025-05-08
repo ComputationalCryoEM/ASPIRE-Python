@@ -107,3 +107,22 @@ def test_estimate_rotations(source, orient_est):
 
     # Check dtype pass-through
     np.testing.assert_equal(source.dtype, est_rots.dtype)
+
+
+def test_adjoint_property_A(dtype):
+    """
+    Test <A u, v> = <u, AT v> for random symmetric matrix `u` and
+    random vector `v`.
+    """
+    n = 10
+    u = np.random.rand(2 * n, 2 * n).astype(dtype, copy=False)
+    u = (u + u.T) / 2
+    v = np.random.rand(3 * n).astype(dtype, copy=False)
+
+    Au = CommonlineIRLS._compute_AX(u)
+    ATv = CommonlineIRLS._compute_ATy(v)
+
+    lhs = np.dot(Au, v)
+    rhs = np.dot(u.flatten(), ATv.flatten())
+
+    np.testing.assert_allclose(lhs, rhs, rtol=1e-05, atol=1e-08)
