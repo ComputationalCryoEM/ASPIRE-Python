@@ -105,7 +105,6 @@ class CommonlineIRLS(CommonlineLUD):
                 gram = CommonlineSDP._compute_gram_matrix(self, S, A, b)
                 weights = self._update_weights(gram)
         else:
-            self.lambda_ = self.alpha * self.n_img  # Spectral norm bound
             for _ in range(self.num_itrs):
                 S = weights * self.S
                 gram = self._compute_Gram(gram, S)
@@ -241,61 +240,6 @@ class CommonlineIRLS(CommonlineLUD):
                         self._mu = min(self._mu * self.dec_mu, self.mu_max)
                         itmu_dinf = 0
         return G
-
-    def _compute_Z(self, S, W, ATy, G, eigs_Z, num_eigs_Z, num_eigs):
-        """
-        Update ADMM subproblem for enforcing the spectral norm constraint.
-
-        :param S: A 2*n_img x 2*n_img symmetric matrix representing the fidelity term.
-        :param W: A 2*n_img x 2*n_img array, primary ADMM subproblem matrix.
-        :param ATy: A 2*n_img x 2*n_img array.
-        :param G: Current value of the 2*n_img x 2*n_img optimization solution matrix.
-        :param eigs_Z: eigenvalues from previous iteration.
-        :param num_eigs_Z: Number of eigenvalues of Z to use to enforce spectral norm constraint.
-        :param num_eigs: Number of eigenvalues of W used in previous iteration of ADMM.
-
-        :returns:
-            - Z, Updated 2*n_img x 2*n_img matrix for spectral norm constraint ADMM subproblem.
-            - num_eigs_Z, Number of eigenvalues of Z to use to enforce spectral norm constraint in next iteration.
-            - num_eigs, Number of eigenvalues of W to use in this iteration of ADMM.
-        """
-        B = S + W + ATy + G / self._mu
-        B = (B + B.T) / 2
-
-        if not self.adp_proj:
-            pi, U = np.linalg.eigh(B)
-        else:
-            # Determine number of eigenvalues to compute for adaptive projection
-            if num_eigs_Z is None:
-                num_eigs_Z = self.max_rankZ
-            else:
-                num_eigs_Z = self._compute_num_eigs(num_eigs_Z, eigs_Z, num_eigs, 10, 3)
-
-            pi, U = eigsh(
-                B.astype(np.float64, copy=False),
-                k=num_eigs_Z,
-                which="LM",
-            )  # Compute top `num_eigs_Z` eigenvalues and eigenvectors
-
-            # Sort by eigenvalue magnitude. Note, eigsh does not return
-            # ordered eigenvalues/vectors for which="LM".
-            idx = np.argsort(np.abs(pi))[::-1]
-            pi = pi[idx].astype(self.dtype, copy=False)
-            U = U[:, idx].astype(self.dtype, copy=False)
-
-        # Apply soft-threshold to eigenvalues to enforce spectral norm constraint.
-        # Compute eigenvalues based on constraint type.
-        eigs_Z = np.sign(pi) * np.maximum(np.abs(pi) - self.lambda_ / self._mu, 0)
-
-        nD = abs(eigs_Z) > 0
-        num_eigs_Z = np.count_nonzero(nD)
-        if num_eigs_Z > 0:
-            eigs_Z = eigs_Z[nD]
-            Z = U[:, nD] @ np.diag(eigs_Z) @ U[:, nD].T
-        else:
-            Z = np.zeros_like(B)
-
-        return Z, num_eigs_Z, eigs_Z
 
     def _update_weights(self, gram):
         K = self.n_img
