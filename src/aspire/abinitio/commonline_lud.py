@@ -88,9 +88,14 @@ class CommonlineLUD(CLOrient3D):
 
         # Handle parameters specific to CommonlineLUD
         self.alpha = alpha  # Spectral norm constraint bound
-        if self.alpha is not None and not (2 / 3 <= self.alpha < 1):
-            raise ValueError("Spectral norm constraint, alpha, must be in [2/3, 1).")
-
+        if self.alpha is not None:
+            if not (2 / 3 <= self.alpha < 1):
+                raise ValueError(
+                    "Spectral norm constraint, alpha, must be in [2/3, 1)."
+                )
+            else:
+                # Set spectral norm bound
+                self.lambda_ = self.alpha * src.n
         logger.info(
             f"Initializing LUD algorithm using ADMM with spectral norm constraint: {self.alpha}"
         )
@@ -158,6 +163,7 @@ class CommonlineLUD(CLOrient3D):
         logger.info("Performing ADMM to compute Gram matrix.")
 
         # Initialize problem parameters
+        self._mu = self.mu
         n = 2 * self.n_img
         b = np.concatenate(
             [np.ones(n, dtype=self.dtype), np.zeros(self.n_img, dtype=self.dtype)]
@@ -167,7 +173,7 @@ class CommonlineLUD(CLOrient3D):
         G = np.eye(n, dtype=self.dtype)
         W = np.eye(n, dtype=self.dtype)
         Z = np.eye(n, dtype=self.dtype)
-        Phi = G / self.mu
+        Phi = G / self._mu
         if self.alpha is None:
             Phi += W
 
@@ -186,7 +192,7 @@ class CommonlineLUD(CLOrient3D):
             #############
             # Compute y #
             #############
-            y = -(AS + self._compute_AX(W)) - resi / self.mu
+            y = -(AS + self._compute_AX(W)) - resi / self._mu
             if self.alpha is not None:
                 y += self._compute_AX(Z)
 
@@ -194,7 +200,7 @@ class CommonlineLUD(CLOrient3D):
             # Compute theta #
             #################
             ATy = self._compute_ATy(y)
-            Phi = W + ATy + G / self.mu
+            Phi = W + ATy + G / self._mu
             if self.alpha is not None:
                 Phi -= Z
             S, theta = self._Q_theta(Phi)
@@ -210,7 +216,7 @@ class CommonlineLUD(CLOrient3D):
             #############
             # Compute W #
             #############
-            H = -S - ATy - G / self.mu
+            H = -S - ATy - G / self._mu
             if self.alpha is not None:
                 H += Z
             H = (H + H.T) / 2
@@ -244,7 +250,7 @@ class CommonlineLUD(CLOrient3D):
             ############
             # Update G #
             ############
-            G = (1 - self.gam) * G + self.gam * self.mu * (W - H)
+            G = (1 - self.gam) * G + self.gam * self._mu * (W - H)
 
             # Check optimality
             resi = self._compute_AX(G) - b
@@ -267,13 +273,13 @@ class CommonlineLUD(CLOrient3D):
                     itmu_pinf = itmu_pinf + 1
                     itmu_dinf = 0
                     if itmu_pinf > self.max_mu_itr:
-                        self.mu = max(self.mu * self.inc_mu, self.mu_min)
+                        self._mu = max(self._mu * self.inc_mu, self.mu_min)
                         itmu_pinf = 0
                 elif pinf / dinf > self.delta_mu_u:
                     itmu_dinf = itmu_dinf + 1
                     itmu_pinf = 0
                     if itmu_dinf > self.max_mu_itr:
-                        self.mu = min(self.mu * self.dec_mu, self.mu_max)
+                        self._mu = min(self._mu * self.dec_mu, self.mu_max)
                         itmu_dinf = 0
 
         return G
@@ -295,8 +301,7 @@ class CommonlineLUD(CLOrient3D):
             - num_eigs_Z, Number of eigenvalues of Z to use to enforce spectral norm constraint in next iteration.
             - num_eigs, Number of eigenvalues of W to use in this iteration of ADMM.
         """
-        lambda_ = self.alpha * self.n_img  # Spectral norm bound
-        B = S + W + ATy + G / self.mu
+        B = S + W + ATy + G / self._mu
         B = (B + B.T) / 2
 
         if not self.adp_proj:
@@ -316,12 +321,12 @@ class CommonlineLUD(CLOrient3D):
             # Sort by eigenvalue magnitude. Note, eigsh does not return
             # ordered eigenvalues/vectors for which="LM".
             idx = np.argsort(np.abs(pi))[::-1]
-            pi = pi[idx]
-            U = U[:, idx]
+            pi = pi[idx].astype(self.dtype, copy=False)
+            U = U[:, idx].astype(self.dtype, copy=False)
 
         # Apply soft-threshold to eigenvalues to enforce spectral norm constraint.
-        eigs_Z = np.sign(pi) * np.maximum(np.abs(pi) - lambda_ / self.mu, 0)
-        nD = eigs_Z > 0
+        eigs_Z = np.sign(pi) * np.maximum(np.abs(pi) - self.lambda_ / self._mu, 0)
+        nD = abs(eigs_Z) > 0
         num_eigs_Z = np.count_nonzero(nD)
         if num_eigs_Z > 0:
             eigs_Z = eigs_Z[nD]
@@ -356,14 +361,14 @@ class CommonlineLUD(CLOrient3D):
         # Compute theta
         phi = phi.reshape(self.n_img, 2, self.n_img, 2).transpose(0, 2, 1, 3)
         sum_prod = (phi[self.ut_mask] * self.C_t[self.ut_mask, None]).sum(axis=2)
-        theta[self.ut_mask] = self.C[self.ut_mask] - self.mu * sum_prod
+        theta[self.ut_mask] = self.C[self.ut_mask] - self._mu * sum_prod
 
         # Normalize theta
         theta_norm = np.linalg.norm(theta[self.ut_mask], axis=-1)[..., None]
         if self.alpha is not None:
             theta[self.ut_mask] /= theta_norm
         else:
-            theta[self.ut_mask] /= np.maximum(theta_norm, self.mu)
+            theta[self.ut_mask] /= np.maximum(theta_norm, self._mu)
 
         # Construct S
         S = theta[..., None] * self.C_t[:, :, None]
