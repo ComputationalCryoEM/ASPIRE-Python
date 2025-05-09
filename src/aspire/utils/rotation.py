@@ -6,11 +6,10 @@ import warnings
 
 import numpy as np
 from numpy.linalg import norm
-from scipy.linalg import svd
 from scipy.spatial.transform import Rotation as sp_rot
 
-from aspire.utils.random import Random
 from aspire.utils.matrix import nearest_rotations
+from aspire.utils.random import Random
 
 
 class Rotation:
@@ -139,10 +138,15 @@ class Rotation:
         # matrix is either Q1 if we recover the non-reflected solution, or Q2,
         # if we got the reflected one.
 
-        err1 = np.sum([norm(Q1.T @ R - Rref, "fro") ** 2
-                       for R, Rref in zip(rots, rots_ref)])
-        err2 = np.sum([norm(Q2.T @ (J @ R @ J) - Rref, "fro") ** 2
-                       for R, Rref in zip(rots, rots_ref)])
+        err1 = np.sum(
+            [norm(Q1.T @ R - Rref, "fro") ** 2 for R, Rref in zip(rots, rots_ref)]
+        )
+        err2 = np.sum(
+            [
+                norm(Q2.T @ (J @ R @ J) - Rref, "fro") ** 2
+                for R, Rref in zip(rots, rots_ref)
+            ]
+        )
 
         if err1 < err2:
             return Q1, False
