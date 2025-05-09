@@ -59,7 +59,7 @@ def test_symmetry_group(caplog):
     assert str(src_override_sym.symmetry_group) == "C6"
 
 
-def test_pixel_size():
+def test_pixel_size(caplog):
     """
     Instantiate RelionSource from starfiles containing the following pixel size
     field variations:
@@ -92,5 +92,8 @@ def test_pixel_size():
     np.testing.assert_equal(src.pixel_size, pix_size)
 
     # Check pixel size defaults to 1 if not provided.
-    src = RelionSource(starfile_no_pix_size)
-    np.testing.assert_equal(src.pixel_size, 1.0)
+    with caplog.at_level(logging.WARNING):
+        msg = "No pixel size found in STAR file. Defaulting to 1.0 Angstrom"
+        src = RelionSource(starfile_no_pix_size)
+        assert msg in caplog.text
+        np.testing.assert_equal(src.pixel_size, 1.0)

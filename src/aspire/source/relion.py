@@ -124,6 +124,9 @@ class RelionSource(ImageSource):
                 magnification = self.get_metadata(["_rlnMagnification"])[0]
                 pixel_size = 10000 * detector_pixel_size / magnification
             else:
+                logger.warning(
+                    "No pixel size found in STAR file. Defaulting to 1.0 Angstrom"
+                )
                 pixel_size = 1.0
         self.pixel_size = float(pixel_size)
 
