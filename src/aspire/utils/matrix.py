@@ -336,6 +336,15 @@ def nearest_rotations(A, allow_reflection=False):
         #     R = (U * -1 @ VT) * [-1,-1,1]
         #     R =  (U @ VT) * (-1 * [-1,-1,1])
         #     R =  U @ (VT * [1,1,-1])
+        #
+        # See:
+        #
+        #       Gower, J.C. (1976), Procrustes rotation problems. The
+        #       Mathematical Scientist, 1 (Supplement), 12-15.
+        #
+        #       Ten Berge, J.M.F. (2006), The Rigid Orthogonal Procrustes
+        #       Rotation Problem. Psychometrika, vol. 71, no., 1, 201-205.
+
         d = np.array([1, 1, -1], dtype=dtype)
         neg_det_idx = np.linalg.det(U) * np.linalg.det(VT) < 0
         VT[neg_det_idx] = VT[neg_det_idx] * d
