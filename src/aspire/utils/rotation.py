@@ -129,20 +129,16 @@ class Rotation:
             Q1 = Q1 + R @ Rref.T
             Q2 = Q2 + (J @ R @ J) @ Rref.T
 
-        # Compute the two possible orthogonal matrices which register the
-        # estimated rotations to the true ones.
-        Q1 = Q1 / K
-        Q2 = Q2 / K
-
         # We are registering one set of rotations (the estimated ones) to
         # another set of rotations (the true ones). Thus, the transformation
         # matrix between the two sets of rotations should be orthogonal. This
         # matrix is either Q1 if we recover the non-reflected solution, or Q2,
-        # if we got the reflected one. In any case, one of them should be
-        # orthogonal.
+        # if we got the reflected one.
 
-        err1 = norm(Q1 @ Q1.T - np.eye(3), ord="fro")
-        err2 = norm(Q2 @ Q2.T - np.eye(3), ord="fro")
+        err1 = np.sum([norm(Q1.T @ R - Rref, "fro") ** 2
+                       for R, Rref in zip(rots, rots_ref)])
+        err2 = np.sum([norm(Q2.T @ (J @ R @ J) - Rref, "fro") ** 2
+                       for R, Rref in zip(rots, rots_ref)])
 
         # In any case, enforce the registering matrix O to be a rotation.
         if err1 < err2:
