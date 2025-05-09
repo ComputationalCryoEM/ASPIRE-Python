@@ -5,10 +5,11 @@ import numpy as np
 import pytest
 
 from aspire.utils import Rotation
-from aspire.volume import (
+from aspire.volume.symmetry_groups import (
     CnSymmetryGroup,
     DnSymmetryGroup,
     IdentitySymmetryGroup,
+    ISymmetryGroup,
     OSymmetryGroup,
     SymmetryGroup,
     TSymmetryGroup,
@@ -23,6 +24,7 @@ GROUPS_WITH_ORDER = [
 GROUPS_WITHOUT_ORDER = [
     (TSymmetryGroup,),
     (OSymmetryGroup,),
+    (ISymmetryGroup,),
 ]
 ORDERS = [2, 3, 4, 5]
 PARAMS_ORDER = list(itertools.product(GROUPS_WITH_ORDER, ORDERS))
@@ -96,3 +98,21 @@ def test_parser_error():
         ValueError, match=f"Symmetry type {junk_symmetry[0]} not supported.*"
     ):
         _ = SymmetryGroup.parse(junk_symmetry)
+
+
+def test_group_order(group_fixture):
+    """Check the number of elements (order) in each symmetry group."""
+    if type(group_fixture) in GROUPS_WITH_ORDER:
+        expected_orders = {
+            CnSymmetryGroup: 1 * group_fixture.order,
+            DnSymmetryGroup: 2 * group_fixture.order,
+        }
+    else:
+        expected_orders = {
+            IdentitySymmetryGroup: 1,
+            TSymmetryGroup: 12,
+            OSymmetryGroup: 24,
+            ISymmetryGroup: 60,
+        }
+    expected_order = expected_orders[type(group_fixture)]
+    assert len(group_fixture.matrices) == expected_order
