@@ -108,8 +108,8 @@ class Rotation:
 
         :param rots_ref: The reference Rotation object to which we would like to align
             with data matrices in the form of a n-by-3-by-3 array.
-        :return: o_mat, optimal orthogonal 3x3 matrix to align the two sets;
-                flag, flag==1 then J conjugacy is required and 0 is not.
+        :return: Q, optimal orthogonal 3x3 matrix to align the two sets;
+                J_conj, specifies whether J-conjugacy is needed.
         """
         rots = self._matrices
         rots_ref = rots_ref.matrices.astype(self.dtype)
@@ -145,19 +145,19 @@ class Rotation:
                        for R, Rref in zip(rots, rots_ref)])
 
         if err1 < err2:
-            return Q1, 0
+            return Q1, False
         else:
-            return Q2, 1
+            return Q2, True
 
-    def apply_registration(self, Q_mat, flag):
+    def apply_registration(self, Q, J_conj):
         """
         Get aligned Rotation object to reference ones.
 
         Calculated aligned rotation matrices from the orthogonal transformation
         that best aligns the estimated rotations to the reference rotations.
 
-        :param Q_mat:  optimal orthogonal 3x3 transformation matrix
-        :param flag:  flag==1 then J conjugacy is required and 0 is not
+        :param Q:  optimal orthogonal 3x3 transformation matrix
+        :param J_conj:  whether J-conjugacy is required
         :return: regrot, aligned Rotation object
         """
         rots = self._matrices
@@ -169,9 +169,9 @@ class Rotation:
         regrot = np.zeros_like(rots)
         for k in range(K):
             R = rots[k, :, :]
-            if flag == 1:
+            if J_conj:
                 R = J @ R @ J
-            regrot[k, :, :] = Q_mat.T @ R
+            regrot[k, :, :] = Q.T @ R
         aligned_rots = Rotation(regrot)
         return aligned_rots
 
@@ -183,8 +183,8 @@ class Rotation:
             to align with data matrices in the form of a n-by-3-by-3 array.
         :return: an aligned Rotation object
         """
-        Q_mat, flag = self.find_registration(rots_ref)
-        return self.apply_registration(Q_mat, flag)
+        Q, J_conj = self.find_registration(rots_ref)
+        return self.apply_registration(Q, J_conj)
 
     def mse(self, rots_ref):
         """
