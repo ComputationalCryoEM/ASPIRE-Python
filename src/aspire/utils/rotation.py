@@ -10,6 +10,7 @@ from scipy.linalg import svd
 from scipy.spatial.transform import Rotation as sp_rot
 
 from aspire.utils.random import Random
+from aspire.utils.matrix import nearest_rotations
 
 
 class Rotation:
@@ -129,6 +130,9 @@ class Rotation:
             Q1 = Q1 + R @ Rref.T
             Q2 = Q2 + (J @ R @ J) @ Rref.T
 
+        Q1 = nearest_rotations(Q1)
+        Q2 = nearest_rotations(Q2)
+
         # We are registering one set of rotations (the estimated ones) to
         # another set of rotations (the true ones). Thus, the transformation
         # matrix between the two sets of rotations should be orthogonal. This
@@ -140,19 +144,10 @@ class Rotation:
         err2 = np.sum([norm(Q2.T @ (J @ R @ J) - Rref, "fro") ** 2
                        for R, Rref in zip(rots, rots_ref)])
 
-        # In any case, enforce the registering matrix O to be a rotation.
         if err1 < err2:
-            # Use Q1 as the registering matrix
-            U, _, V = svd(Q1)
-            flag = 0
+            return Q1, 0
         else:
-            # Use Q2 as the registering matrix
-            U, _, V = svd(Q2)
-            flag = 1
-
-        Q_mat = U @ V
-
-        return Q_mat, flag
+            return Q2, 1
 
     def apply_registration(self, Q_mat, flag):
         """
