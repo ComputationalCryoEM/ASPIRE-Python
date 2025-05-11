@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from aspire.utils import Rotation
-from aspire.volume.symmetry_groups import (
+from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
     IdentitySymmetryGroup,
