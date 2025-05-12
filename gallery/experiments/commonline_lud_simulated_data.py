@@ -16,10 +16,11 @@ L. Wang, A. Singer, and  Z. Wen, SIAM J. Imaging Sciences, 6, 2450-2483 (2013).
 
 import logging
 from fractions import Fraction
+from itertools import product
 
 import numpy as np
 
-from aspire.abinitio import CommonlineLUD
+from aspire.abinitio import CommonlineIRLS, CommonlineLUD
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 from aspire.utils import mean_aligned_angular_distance
@@ -31,14 +32,15 @@ logger = logging.getLogger(__name__)
 # %%
 # Parameters
 # ----------
-# Set up some initializing parameters. We will run the LUD algorithm
-# for various levels of noise and output a table of results.
+# Set up some initializing parameters. We will run the LUD algorithm using ADMM
+# and IRLS methods under various spectral norm constraints and levels of noise.
 
 SNR = ["1/8", "1/16", "1/32"]  # Signal-to-noise ratio
+METHOD = ["ADMM", "IRLS"]
+ALPHA = [None, 0.90, 0.75, 0.67]  # Spectral norm constraint
 n_imgs = 500  # Number of images in our source
 dtype = np.float64
 pad_size = 129
-results = {}  # Dictionary to store results
 
 # %%
 # Load Volume Map
@@ -60,10 +62,20 @@ logger.info("Volume map data" f" shape: {vol.shape} dtype:{vol.dtype}")
 # Generate Noisy Images and Estimate Rotations
 # --------------------------------------------
 # A ``Simulation`` object is used to generate simulated data at various
-# noise levels. Then rotations are estimated using the ``CommonlineLUD`` algorithm.
-# Results are measured by computing the mean aligned angular distance between
-# the ground truth rotations and the globally aligned estimated rotations.
-for snr in SNR:
+# noise levels. Then rotations are estimated using the ``CommonlineLUD`` and
+# ``CommonlineIRLS`` algorithms. Results are measured by computing the mean
+# aligned angular distance between the ground truth rotations and the globally
+# aligned estimated rotations.
+
+# Build table to dislay results.
+col_width = 15
+table = []
+table.append(
+    f"{'METHOD':<{col_width}} {'SNR':<{col_width}} {'ALPHA':<{col_width}} {'Mean Angular Distance':<{col_width}}"
+)
+table.append("-" * (col_width * 4))
+
+for method, snr, alpha in product(METHOD, SNR, ALPHA):
     # Generate a white noise adder with specified SNR.
     noise_adder = WhiteNoiseAdder.from_snr(snr=Fraction(snr))
 
@@ -78,31 +90,24 @@ for snr in SNR:
     ).cache()
 
     # Estimate rotations using the LUD algorithm.
-    orient_est = CommonlineLUD(src)
+    if method == "ADMM":
+        orient_est = CommonlineLUD(src, alpha=alpha)
+    else:
+        orient_est = CommonlineIRLS(src, alpha=alpha)
     est_rotations = orient_est.estimate_rotations()
 
     # Find the mean aligned angular distance between estimates and ground truth rotations.
     mean_ang_dist = mean_aligned_angular_distance(est_rotations, src.rotations)
 
-    # Store results.
-    results[snr] = mean_ang_dist
+    # Append results to table.
+    table.append(
+        f"{method:<{col_width}} {snr:<{col_width}} {str(alpha):<{col_width}} {mean_ang_dist:<{col_width}}"
+    )
 
 # %%
 # Display Results
 # ---------------
-# Display table of results for various noise levels.
+# Display table of results for both methods using various spectral norm
+# constraints and noise levels.
 
-# Column widths
-col1_width = 10
-col2_width = 22
-
-# Create table as a string
-table = []
-table.append(f"{'SNR':<{col1_width}} {'Mean Angular Distance':<{col2_width}}")
-table.append("-" * (col1_width + col2_width))
-
-for snr, angle in results.items():
-    table.append(f"{snr:<{col1_width}} {angle:<{col2_width}}")
-
-# Log the table
 logger.info("\n" + "\n".join(table))
