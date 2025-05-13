@@ -929,7 +929,9 @@ class BFTAverager2D(AligningAverager2D):
                     self._fast_rotational_alignment(pf_template_images[:bs], pf_images)
                 )
 
-                # vectorize these
+                # Note, these could be vectorized, but the code block
+                # wasn't appreciably faster when I compared them for
+                # current problem sizes.
                 for i in range(bs):
 
                     # Test and update
