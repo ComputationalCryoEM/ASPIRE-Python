@@ -418,7 +418,7 @@ class DebugClassAvgSource(ClassAvgSource):
         :param class_selector: `ClassSelector` instance.
             Default `None` creates `TopClassSelector`.
         :param averager: `Averager2D` instance.
-            Default `None` ceates `BFRAverager2D` instance.
+            Default `None` creates `BFRAverager2D` instance.
             See code for parameter details.
         :param batch_size: Integer size for batched operations.
 
@@ -489,7 +489,7 @@ class LegacyClassAvgSource(ClassAvgSource):
         :param class_selector: `ClassSelector` instance.
             Default `None` creates `GlobalVarianceClassSelector`.
         :param averager: `Averager2D` instance.
-            Default `None` ceates `BFTAverager2D` instance.
+            Default `None` creates `BFTAverager2D` instance.
             See code for parameter details.
         :param averager_src: Optionally explicitly assign source to
             `BFRAverager2D` during initialization.  Allows users to
@@ -632,7 +632,7 @@ class ClassAvgSourcev140(ClassAvgSource):
         :param class_selector: `ClassSelector` instance.
             Default `None` creates `GlobalVarianceClassSelector`.
         :param averager: `Averager2D` instance.
-            Default `None` ceates `BFTAverager2D` instance.
+            Default `None` creates `BFTAverager2D` instance.
             See code for parameter details.
         :param averager_src: Optionally explicitly assign source to
             `averager` during initialization.  Allows users to
@@ -717,7 +717,7 @@ class ClassAvgSourcev132(ClassAvgSource):
             `BandedSNRImageQualityFunction`. This will select the
             images with the highest banded SNR.
         :param averager: `Averager2D` instance.
-            Default `None` ceates `BFRAverager2D` instance.
+            Default `None` creates `BFRAverager2D` instance.
             See code for parameter details.
         :param averager_src: Optionally explicitly assign source to
             `averager` during initialization.  Allows users to
