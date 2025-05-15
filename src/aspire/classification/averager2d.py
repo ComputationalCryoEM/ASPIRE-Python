@@ -304,7 +304,7 @@ class BFSRAverager2D(AligningAverager2D):
 
         :params n_angles: Number of brute force rotations to attempt, defaults 360.
         :param radius: Brute force translation search radius.
-            Defaults to src.L//16.
+            Defaults to src.L//32.
         """
         super().__init__(
             composite_basis,
@@ -321,7 +321,7 @@ class BFSRAverager2D(AligningAverager2D):
                 f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `rotate` method."
             )
 
-        self.radius = radius if radius is not None else src.L // 16
+        self.radius = radius if radius is not None else src.L // 32
 
         if self.radius != 0:
 
@@ -779,7 +779,7 @@ class BFTAverager2D(AligningAverager2D):
         :param n_radial: Number of PFT radial components, defaults `self.src.L`.
         :param radius: Brute force translation search radius.
             `0` disables translation search, rotations only.
-            Defaults to `src.L//16`.
+            Defaults to `src.L//32`.
         :param sub_pixel: Subpixel shift size used in brute force shift search.
         """
         super().__init__(
