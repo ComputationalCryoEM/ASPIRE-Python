@@ -808,7 +808,7 @@ class BFTAverager2D(AligningAverager2D):
 
         # Setup Polar Transform
         self._pft = PolarFT(
-            self.src.L, ntheta=n_angles, nrad=n_radial, dtype=self.dtype
+            self.src.L, ntheta=n_angles, nrad=self.n_radial, dtype=self.dtype
         )
         self._mask = xp.asarray(grid_2d(self.src.L, normalized=True)["r"] < 1)
 
