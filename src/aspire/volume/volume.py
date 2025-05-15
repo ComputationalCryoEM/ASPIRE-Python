@@ -607,8 +607,12 @@ class Volume:
                 f"{self.__class__.__name__}"
                 f" rot_matrices.dtype {rot_matrices.dtype}"
                 f" != self.dtype {self.dtype}."
-                " In the future this will raise an error."
+                f" rot_matrices will be cast to {self.dtype}."
             )
+
+        # Enforce `rots_inverted.dtype` is always `vol.dtype`
+        # On mismatch the above warning should have been emitted.
+        rots_inverted = rots_inverted.astype(self.dtype, copy=False)
 
         # If K = 1 we broadcast the single Rotation object across each volume.
         if K == 1:
