@@ -1,4 +1,5 @@
 import shutil
+import warnings
 
 import numpy as np
 import pooch
@@ -40,7 +41,21 @@ def fetch_data(dataset_name):
     :return: The absolute path (including the file name) of the file in
         local storage.
     """
-    return _data_fetcher.fetch(dataset_name)
+    try:
+        return _data_fetcher.fetch(dataset_name)
+    except ValueError as e:
+        warnings.warn(
+            f"Hash mismatch for {dataset_name}, proceeding with download. "
+            "Source file may have been updated."
+        )
+        # force download without hash check
+        url = _data_fetcher.get_url(dataset_name)
+        return pooch.retrieve(
+            url=url,
+            known_hash=None,
+            fname=dataset_name,
+            path=_data_fetcher.path,
+        )
 
 
 def download_all():
