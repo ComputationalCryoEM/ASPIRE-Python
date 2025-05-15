@@ -461,8 +461,11 @@ class LegacyClassAvgSource(ClassAvgSource):
     """
     Source for denoised 2D images using class average methods.
 
-    Defaults to using global variance based class selection,
-    and a brute force image alignment (rotational only).
+    Defaults to using global variance based class selection, and a
+    rotational image alignment.  Translational alignment is skipped by
+    default (images are assumed reasonably centered), but can be
+    configured by supplying a custom `averager=BFTAverager2D(...)`
+    argument.
 
     This is similar to what was reported for papers using the
     MATLAB code.
@@ -492,7 +495,7 @@ class LegacyClassAvgSource(ClassAvgSource):
             Default `None` creates `BFTAverager2D` instance.
             See code for parameter details.
         :param averager_src: Optionally explicitly assign source to
-            `BFRAverager2D` during initialization.  Allows users to
+            `averager` during initialization.  Allows users to
              provide distinct sources for classification and
              averaging.  Raises error when combined with an explicit
              `averager` argument.
