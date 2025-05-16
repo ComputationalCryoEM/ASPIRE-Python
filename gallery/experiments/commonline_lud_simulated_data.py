@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 SNR = ["1/8", "1/16", "1/32"]  # Signal-to-noise ratio
 METHOD = ["ADMM", "IRLS"]
-ALPHA = [None, 0.90, 0.75, 0.67]  # Spectral norm constraint
+ALPHA = [0.90, 0.75, 0.67]  # Spectral norm constraint
 n_imgs = 500  # Number of images in our source
 dtype = np.float64
 pad_size = 129
@@ -68,7 +68,7 @@ logger.info("Volume map data" f" shape: {vol.shape} dtype:{vol.dtype}")
 # aligned estimated rotations.
 
 # Build table to dislay results.
-col_width = 15
+col_width = 21
 table = []
 table.append(
     f"{'METHOD':<{col_width}} {'SNR':<{col_width}} {'ALPHA':<{col_width}} {'Mean Angular Distance':<{col_width}}"
