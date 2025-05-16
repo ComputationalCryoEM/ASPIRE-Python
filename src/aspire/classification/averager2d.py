@@ -776,7 +776,7 @@ class BFTAverager2D(AligningAverager2D):
         See AligningAverager2D. Adds `n_angles`, `n_radial`, `radius`, `sub_pixel`.
 
         :params n_angles: Number of PFT angular components, defaults 360.
-        :param n_radial: Number of PFT radial components, defaults `self.src.L`.
+        :param n_radial: Number of PFT radial components, defaults `self.src.L//2`.
         :param radius: Brute force translation search radius.
             `0` disables translation search, rotations only.
             Defaults to `src.L//32`.
@@ -804,7 +804,7 @@ class BFTAverager2D(AligningAverager2D):
         self.sub_pixel = sub_pixel
 
         # Configure number of radial points
-        self.n_radial = n_radial or self.src.L
+        self.n_radial = n_radial or self.src.L // 2
 
         # Setup Polar Transform
         self._pft = PolarFT(
