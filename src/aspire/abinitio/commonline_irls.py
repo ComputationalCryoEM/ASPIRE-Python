@@ -32,7 +32,7 @@ class CommonlineIRLS(CommonlineLUD):
 
         :param num_itrs: Number of iterations for iterative reweighting. Default is 10.
         :param eps_weighting: Regularization value for reweighting factor. Default is 1e-3.
-        :param alpha: Spectral norm constraint for ADMM algorithm. Default is None, which
+        :param alpha: Spectral norm constraint for IRLS algorithm. Default is None, which
             does not apply a spectral norm constraint. To apply a spectral norm constraint provide
             a value in the range [2/3, 1), 2/3 is recommended.
         :param tol: Tolerance for convergence. The algorithm stops when conditions reach this threshold.
@@ -242,6 +242,12 @@ class CommonlineIRLS(CommonlineLUD):
         return G
 
     def _update_weights(self, gram):
+        """
+        Update the weight matrix for the IRLS algorithm.
+
+        :param gram: 2K x 2K Gram matrix.
+        :return: 2K x 2K updated weight matrix.
+        """
         K = self.n_img
         W = self.S * gram
         weights = W[:K, :K] + W[:K, K:] + W[K:, :K] + W[K:, K:]
