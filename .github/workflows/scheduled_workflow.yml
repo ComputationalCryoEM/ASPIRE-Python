@@ -5,14 +5,12 @@ on:
     branches:
       - develop
   schedule:
-    - cron: '0 0 * * 0'  # Every Sunday at 00:00 UTC
-      branches:
-        - develop
+    - cron: '15 0 * * 0'  # Every Sunday at 00:15 UTC
 
 
 jobs:
   scheduled-tests:
-    needs: check
+    if: github.ref == 'refs/heads/develop'  # Ensure only runs on develop
     runs-on: ubuntu-latest
 
     steps:
