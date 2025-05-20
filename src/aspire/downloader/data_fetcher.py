@@ -1,5 +1,5 @@
+import logging
 import shutil
-import warnings
 
 import numpy as np
 import pooch
@@ -10,6 +10,9 @@ from aspire.image import Image
 from aspire.source import _LegacySimulation
 from aspire.utils import Rotation
 from aspire.volume import Volume
+
+logger = logging.getLogger(__name__)
+
 
 # Initialize pooch data fetcher instance.
 _data_fetcher = pooch.create(
@@ -44,11 +47,9 @@ def fetch_data(dataset_name):
     try:
         return _data_fetcher.fetch(dataset_name)
     except ValueError:
-        warnings.warn(
+        logger.warning(
             f"Hash mismatch for {dataset_name}, proceeding with download. "
-            "Source file may have been updated.",
-            UserWarning,
-            stacklevel=1,
+            "Source file may have been updated."
         )
 
         # force download without hash check
