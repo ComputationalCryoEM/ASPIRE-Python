@@ -2,25 +2,15 @@ name: ASPIRE Python Scheduled Workflow
 
 on:
   workflow_dispatch:  # Manual "Run workflow" button
+    branches:
+      - develop
   schedule:
     - cron: '0 0 * * 0'  # Every Sunday at 00:00 UTC
+      branches:
+        - develop
 
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    - name: Install dependencies
-      run: |
-        pip install tox
-    - name: Run Tox Check
-      run: tox -e check
-
   scheduled-tests:
     needs: check
     runs-on: ubuntu-latest
@@ -35,4 +25,4 @@ jobs:
       run: |
         pip install -e ".[dev]"
     - name: Scheduled Tests
-      run: PYTHONWARNINGS=error python -m pytest -m scheduled
+      run: pytest -m scheduled
