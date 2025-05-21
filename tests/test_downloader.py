@@ -17,6 +17,7 @@ def test_download_all(caplog):
         pytest.fail(f"Hash mismatch warning was logged.\nCaptured logs:\n{caplog.text}")
 
 
+@pytest.mark.scheduled
 def test_fetch_data_warning(caplog):
     """Test that we get expected warning on hash mismatch."""
     # Use the smallest dataset in the registry
