@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.sparse.linalg import eigsh
 
-from aspire.abinitio import CommonlineLUD, CommonlineSDP
+from aspire.abinitio import CommonlineLUD
 
 logger = logging.getLogger(__name__)
 
@@ -95,21 +95,21 @@ class CommonlineIRLS(CommonlineLUD):
         logger.info("Computing the common lines matrix.")
         self.build_clmatrix()
 
-        self.S = CommonlineSDP._construct_S(self, self.clmatrix)
+        self.S = self._construct_S(self.clmatrix)
         weights = np.ones(2 * self.n_img, dtype=self.dtype)
         gram = np.eye(2 * self.n_img, dtype=self.dtype)
         if self.alpha is None:
-            A, b = CommonlineSDP._sdp_prep(self)
+            A, b = self._sdp_prep()
             for _ in range(self.num_itrs):
                 S = weights * self.S
-                gram = CommonlineSDP._compute_gram_matrix(self, S, A, b)
+                gram = self._compute_gram_matrix(S, A, b)
                 weights = self._update_weights(gram)
         else:
             for _ in range(self.num_itrs):
                 S = weights * self.S
                 gram = self._compute_Gram(gram, S)
                 weights = self._update_weights(gram)
-        self.rotations = CommonlineSDP._deterministic_rounding(gram)
+        self.rotations = self._deterministic_rounding(gram)
 
         return self.rotations
 
