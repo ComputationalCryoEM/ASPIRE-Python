@@ -3,12 +3,12 @@ import logging
 import numpy as np
 from scipy.sparse.linalg import eigsh
 
-from aspire.abinitio import CLOrient3D, CommonlineSDP
+from aspire.abinitio import CommonlineSDP
 
 logger = logging.getLogger(__name__)
 
 
-class CommonlineLUD(CLOrient3D):
+class CommonlineLUD(CommonlineSDP):
     """
     Define a derived class to estimate 3D orientations using Least Unsquared
     Deviations as described in the following publication:
@@ -140,7 +140,7 @@ class CommonlineLUD(CLOrient3D):
         self._cl_to_C(self.clmatrix)
         gram = self._compute_Gram()
         gram = self._restructure_Gram(gram)
-        self.rotations = CommonlineSDP._deterministic_rounding(gram)
+        self.rotations = self._deterministic_rounding(gram)
 
         return self.rotations
 
