@@ -1,9 +1,6 @@
 name: ASPIRE Python Scheduled Workflow
 
 on:
-  workflow_dispatch:  # Manual "Run workflow" button
-    branches:
-      - develop
   schedule:
     - cron: '15 0 * * 0'  # Every Sunday at 00:15 UTC
 
