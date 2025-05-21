@@ -390,9 +390,9 @@ class BFSRAverager2D(AligningAverager2D):
             # Loop over shift search space, updating best result
             for x, y in tqdm(
                 test_shifts,
-                total=len(shifts),
+                total=len(test_shifts),
                 desc="\tmaximizing over shifts",
-                disable=len(shifts) == 1,
+                disable=len(test_shifts) == 1,
                 leave=False,
             ):
                 shift = np.array([x, y], dtype=int)
