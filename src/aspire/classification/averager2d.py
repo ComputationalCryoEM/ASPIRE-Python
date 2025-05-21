@@ -257,13 +257,15 @@ class AligningAverager2D(Averager2D):
 
         :param radius: Disc radius in pixels
         :param roll_zero: Roll (0,0) to zero'th element. Defaults to False.
-        :param sub_pixel: Sub pixel decimation.  1 is integer, 0.1 is 1/10 pixel, etc.
+        :param sub_pixel: Sub-pixel decimation .  1 yields 1 pixel, 10 yields 1/10 pixel, etc.
+            Values will be cast to integers.
         :returns: Grid points as array of 2-tuples [(x0,y0),... (xi,yi)].
         """
+        sub_pixel = int(sub_pixel)
 
         # We'll brute force all shifts in a grid.
-        g = grid_2d(1 / sub_pixel * L, normalized=False)
-        disc = g["r"] <= 1 / sub_pixel * radius
+        g = grid_2d(sub_pixel * L, normalized=False)
+        disc = g["r"] <= (sub_pixel * radius)
         X, Y = g["x"][disc], g["y"][disc]
         X, Y = X * sub_pixel, Y * sub_pixel
 
@@ -768,7 +770,7 @@ class BFTAverager2D(AligningAverager2D):
         n_angles=360,
         n_radial=None,
         radius=None,
-        sub_pixel=0.1,
+        sub_pixel=10,
         batch_size=512,
         dtype=None,
     ):
@@ -780,7 +782,8 @@ class BFTAverager2D(AligningAverager2D):
         :param radius: Brute force translation search radius.
             `0` disables translation search, rotations only.
             Defaults to `src.L//32`.
-        :param sub_pixel: Subpixel shift size used in brute force shift search.
+        :param sub_pixel: Sub-pixel decimation used in brute force shift search.
+            Defaults to 10 sub-pixel to pixel, ie 0.1 spaced sub-pixel.
         """
         super().__init__(
             composite_basis,
@@ -794,12 +797,10 @@ class BFTAverager2D(AligningAverager2D):
 
         self.radius = radius if radius is not None else src.L // 32
 
-        if self.radius != 0:
-
-            if not hasattr(self.alignment_basis, "shift"):
-                raise RuntimeError(
-                    f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
-                )
+        if self.radius != 0 and not hasattr(self.alignment_basis, "shift"):
+            raise RuntimeError(
+                f"{self.__class__.__name__}'s alignment_basis {self.alignment_basis} must provide a `shift` method."
+            )
 
         self.sub_pixel = sub_pixel
 
@@ -817,8 +818,8 @@ class BFTAverager2D(AligningAverager2D):
         Perform fast rotational alignment using Polar Fourier cross correlation.
 
         Note broadcasting is specialized for this problem.
-        pfA.shape (m, nt, nr)
-        pfB.shape (n, nt, nr)
+        pfA.shape (m, ntheta, nrad)
+        pfB.shape (n, ntheta, nrad)
         yields thetas (m,n), peaks (m,n)
 
         """
@@ -923,8 +924,8 @@ class BFTAverager2D(AligningAverager2D):
                     self._pft._transform(template_images)
                 )
 
-                # # Compute and assign the best rotation found with this translation
-                # # note offset of 1 for skipped original_image 0
+                # Compute and assign the best rotation found with this translation
+                # note offset of 1 for skipped original_image 0
                 _rotations[:bs, 1:], _dot_products[:bs, 1:] = (
                     self._fast_rotational_alignment(pf_template_images[:bs], pf_images)
                 )
