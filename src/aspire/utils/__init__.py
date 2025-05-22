@@ -11,7 +11,6 @@ from .coor_trans import (  # isort:skip
     grid_3d,
     register_rotations,
     rots_to_clmatrix,
-    uniform_random_angles,
 )
 
 from .misc import (  # isort:skip
