@@ -12,7 +12,6 @@ from aspire.utils import (
     grid_3d,
     mean_aligned_angular_distance,
     register_rotations,
-    uniform_random_angles,
 )
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -70,8 +69,7 @@ class UtilsTestCase(TestCase):
         )
 
     def testRegisterRots(self):
-        angles = uniform_random_angles(32, seed=0)
-        rots_ref = Rotation.from_euler(angles).matrices
+        rots_ref = Rotation.generate_random_rotations(32, seed=0).matrices
 
         q_ang = [[np.pi / 4, np.pi / 4, np.pi / 4]]
         q_mat = Rotation.from_euler(q_ang).matrices[0]

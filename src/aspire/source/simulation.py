@@ -9,14 +9,7 @@ from aspire.image import Image
 from aspire.noise import NoiseAdder
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
-from aspire.utils import (
-    Rotation,
-    acorr,
-    ainner,
-    anorm,
-    make_symmat,
-    uniform_random_angles,
-)
+from aspire.utils import Rotation, acorr, ainner, anorm, make_symmat
 from aspire.utils.random import randi, randn, random
 from aspire.volume import AsymmetricVolume, Volume
 
@@ -202,7 +195,12 @@ class Simulation(ImageSource):
 
     def _init_angles(self, angles):
         if angles is None:
-            angles = uniform_random_angles(self.n, seed=self.seed, dtype=self.dtype)
+            angles = Rotation.generate_random_rotations(
+                self.n,
+                seed=self.seed,
+                dtype=self.dtype,
+            ).angles
+
         return angles
 
     def _populate_ctf_metadata(self, filter_indices):

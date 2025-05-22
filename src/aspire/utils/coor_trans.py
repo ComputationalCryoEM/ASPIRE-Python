@@ -12,7 +12,6 @@ from scipy.linalg import svd
 
 from aspire import config
 from aspire.numeric import xp
-from aspire.utils.random import Random
 from aspire.utils.rotation import Rotation
 
 logger = logging.getLogger(__name__)
@@ -151,26 +150,6 @@ def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32)
     theta = np.pi / 2 - theta
 
     return {"x": x, "y": y, "z": z, "phi": phi, "theta": theta, "r": r}
-
-
-def uniform_random_angles(n, seed=None, dtype=np.float32):
-    """
-    Generate random 3D rotation angles
-
-    :param n: The number of rotation angles to generate
-    :param seed: Random integer seed to use. If None, the current random state is used.
-    :return: A n-by-3 ndarray of rotation angles
-    """
-    # Generate random rotation angles, in radians
-    with Random(seed):
-        angles = np.column_stack(
-            (
-                np.random.random(n) * 2 * np.pi,
-                np.arccos(2 * np.random.random(n) - 1),
-                np.random.random(n) * 2 * np.pi,
-            )
-        )
-    return angles.astype(dtype)
 
 
 def register_rotations(rots, rots_ref):
