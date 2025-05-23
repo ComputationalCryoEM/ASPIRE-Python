@@ -7,11 +7,9 @@ from aspire.utils import (
     Rotation,
     crop_pad_2d,
     crop_pad_3d,
-    get_aligned_rotations,
     grid_2d,
     grid_3d,
     mean_aligned_angular_distance,
-    register_rotations,
 )
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -67,17 +65,6 @@ class UtilsTestCase(TestCase):
                 grid3d["theta"], np.load(os.path.join(DATA_DIR, "grid3d_8_theta.npy"))
             )
         )
-
-    def testRegisterRots(self):
-        rots_ref = Rotation.generate_random_rotations(32, seed=0).matrices
-
-        q_ang = [[np.pi / 4, np.pi / 4, np.pi / 4]]
-        q_mat = Rotation.from_euler(q_ang).matrices[0]
-        flag = 0
-        regrots_ref = get_aligned_rotations(rots_ref, q_mat, flag)
-        q_mat_est, flag_est = register_rotations(rots_ref, regrots_ref)
-
-        self.assertTrue(np.allclose(flag_est, flag) and np.allclose(q_mat_est, q_mat))
 
     def testSquareCrop2D(self):
         # Test even/odd cases based on the convention that the center of a sequence of length n

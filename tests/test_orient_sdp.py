@@ -4,13 +4,7 @@ import pytest
 from aspire.abinitio import CommonlineSDP
 from aspire.nufft import backend_available
 from aspire.source import Simulation
-from aspire.utils import (
-    Rotation,
-    get_aligned_rotations,
-    mean_aligned_angular_distance,
-    register_rotations,
-    rots_to_clmatrix,
-)
+from aspire.utils import Rotation, mean_aligned_angular_distance, rots_to_clmatrix
 from aspire.volume import AsymmetricVolume
 
 RESOLUTION = [
@@ -189,7 +183,4 @@ def test_deterministic_rounding(src_orient_est_fixture):
     est_rots = orient_est._deterministic_rounding(gt_gram)
 
     # Check that the estimated rotations are close to ground truth after global alignment.
-    Q_mat, flag = register_rotations(est_rots, gt_rots)
-    regrot = get_aligned_rotations(est_rots, Q_mat, flag)
-
-    np.testing.assert_allclose(regrot, gt_rots)
+    mean_aligned_angular_distance(est_rots, gt_rots, degree_tol=1e-5)
