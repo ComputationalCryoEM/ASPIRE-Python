@@ -7,8 +7,6 @@ import math
 from functools import lru_cache
 
 import numpy as np
-from numpy.linalg import norm
-from scipy.linalg import svd
 
 from aspire import config
 from aspire.numeric import xp
@@ -150,119 +148,6 @@ def grid_3d(n, shifted=False, normalized=True, indexing="zyx", dtype=np.float32)
     theta = np.pi / 2 - theta
 
     return {"x": x, "y": y, "z": z, "phi": phi, "theta": theta, "r": r}
-
-
-def register_rotations(rots, rots_ref):
-    """
-    Register estimated orientations to reference ones.
-
-    Finds the orthogonal transformation that best aligns the estimated rotations
-    to the reference rotations.
-
-    :param rots: The rotations to be aligned in the form of a n-by-3-by-3 array.
-    :param rots_ref: The reference rotations to which we would like to align in
-        the form of a n-by-3-by-3 array.
-    :return: o_mat, optimal orthogonal 3x3 matrix to align the two sets;
-        flag, flag==1 then J conjugacy is required and 0 is not.
-    """
-
-    assert (
-        rots.shape == rots_ref.shape
-    ), "Two sets of rotations must have same dimensions."
-    K = rots.shape[0]
-
-    # Reflection matrix
-    J = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
-
-    Q1 = np.zeros((3, 3), dtype=rots.dtype)
-    Q2 = np.zeros((3, 3), dtype=rots.dtype)
-
-    for k in range(K):
-        R = rots[k, :, :]
-        Rref = rots_ref[k, :, :]
-        Q1 = Q1 + R @ Rref.T
-        Q2 = Q2 + (J @ R @ J) @ Rref.T
-
-    # Compute the two possible orthogonal matrices which register the
-    # estimated rotations to the true ones.
-    Q1 = Q1 / K
-    Q2 = Q2 / K
-
-    # We are registering one set of rotations (the estimated ones) to
-    # another set of rotations (the true ones). Thus, the transformation
-    # matrix between the two sets of rotations should be orthogonal. This
-    # matrix is either Q1 if we recover the non-reflected solution, or Q2,
-    # if we got the reflected one. In any case, one of them should be
-    # orthogonal.
-
-    err1 = norm(Q1 @ Q1.T - np.eye(3, dtype=rots.dtype), ord="fro")
-    err2 = norm(Q2 @ Q2.T - np.eye(3, dtype=rots.dtype), ord="fro")
-
-    # In any case, enforce the registering matrix O to be a rotation.
-    if err1 < err2:
-        # Use Q1 as the registering matrix
-        U, _, V = svd(Q1)
-        flag = 0
-    else:
-        # Use Q2 as the registering matrix
-        U, _, V = svd(Q2)
-        flag = 1
-
-    Q_mat = U @ V
-
-    return Q_mat, flag
-
-
-def get_aligned_rotations(rots, Q_mat, flag):
-    """
-    Get aligned rotation matrices to reference ones.
-
-    Calculated aligned rotation matrices from the orthogonal transformation
-    that best aligns the estimated rotations to the reference rotations.
-
-    :param rots: The reference rotations to which we would like to align in
-        the form of a n-by-3-by-3 array.
-    :param Q_mat:  optimal orthogonal 3x3 transformation matrix
-    :param flag:  flag==1 then J conjugacy is required and 0 is not
-    :return: regrot, aligned rotation matrices
-    """
-
-    K = rots.shape[0]
-
-    # Reflection matrix
-    J = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]])
-
-    regrot = np.zeros_like(rots)
-    for k in range(K):
-        R = rots[k, :, :]
-        if flag == 1:
-            R = J @ R @ J
-        regrot[k, :, :] = Q_mat.T @ R
-
-    return regrot
-
-
-def get_rots_mse(rots_reg, rots_ref):
-    """
-    Calculate MSE between the estimated orientations to reference ones.
-
-    :param rots_reg: The estimated rotations after alignment in the form of
-        a n-by-3-by-3 array.
-    :param rots_ref: The reference rotations.
-    :return: The MSE value between two sets of rotations.
-    """
-    assert (
-        rots_reg.shape == rots_ref.shape
-    ), "Two sets of rotations must have same dimensions."
-    K = rots_reg.shape[0]
-
-    diff = np.zeros(K)
-    mse = 0
-    for k in range(K):
-        diff[k] = norm(rots_reg[k, :, :] - rots_ref[k, :, :], ord="fro")
-        mse += diff[k] ** 2
-    mse = mse / K
-    return mse
 
 
 def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):

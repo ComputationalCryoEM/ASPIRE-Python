@@ -4,12 +4,9 @@ from .coor_trans import (  # isort:skip
     mean_aligned_angular_distance,
     crop_pad_2d,
     crop_pad_3d,
-    get_aligned_rotations,
-    get_rots_mse,
     grid_1d,
     grid_2d,
     grid_3d,
-    register_rotations,
     rots_to_clmatrix,
 )
 
