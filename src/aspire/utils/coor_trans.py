@@ -279,9 +279,11 @@ def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):
     :return: The mean angular distance between registered estimates
         and the ground truth (in degrees).
     """
-    Q_mat, flag = register_rotations(rots_est, rots_gt)
+    rots_est = Rotation(rots_est)
+    rots_gt = Rotation(rots_gt)
+    Q_mat, flag = rots_est.find_registration(rots_gt)
     logger.debug(f"Registration Q_mat: {Q_mat}\nflag: {flag}")
-    regrot = get_aligned_rotations(rots_est, Q_mat, flag)
+    regrot = rots_est.apply_registration(Q_mat, flag)
     mean_ang_dist = Rotation.mean_angular_distance(regrot, rots_gt) * 180 / np.pi
 
     if degree_tol is not None:
