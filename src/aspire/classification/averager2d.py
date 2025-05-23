@@ -267,7 +267,7 @@ class AligningAverager2D(Averager2D):
         g = grid_2d(sub_pixel * L, normalized=False)
         disc = g["r"] <= (sub_pixel * radius)
         X, Y = g["x"][disc], g["y"][disc]
-        X, Y = X * sub_pixel, Y * sub_pixel
+        X, Y = X / sub_pixel, Y / sub_pixel
 
         # Optionally roll arrays so 0 is first.
         if roll_zero:
