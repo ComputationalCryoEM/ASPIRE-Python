@@ -62,7 +62,7 @@ def gaussian(img_size, dtype):
     gauss = Image(
         gaussian_2d(img_size, sigma=(img_size // 10, img_size // 10), dtype=dtype)
     )
-    pf = pf_transform(gauss)
+    pf = pf_transform(gauss)[0]
 
     return pf
 
@@ -74,7 +74,7 @@ def symmetric_image(img_size, dtype):
         img_size, C=1, order=4, K=25, seed=10, dtype=dtype
     ).generate()
     symmetric_image = symmetric_vol.project(np.eye(3, dtype=dtype))
-    pf = pf_transform(symmetric_image)
+    pf = pf_transform(symmetric_image)[0]
 
     return pf
 
@@ -84,16 +84,16 @@ def asymmetric_image(img_size, dtype):
     """Asymetric image."""
     asymmetric_vol = AsymmetricVolume(img_size, C=1, dtype=dtype).generate()
     asymmetric_image = asymmetric_vol.project(np.eye(3, dtype=dtype))
-    pf = pf_transform(asymmetric_image)
+    pf, pft = pf_transform(asymmetric_image)
 
-    return asymmetric_image, pf
+    return asymmetric_image, pf, pft
 
 
 @pytest.fixture
 def radial_mode_image(img_size, dtype, radial_mode):
     g = grid_2d(img_size, dtype=dtype)
     image = Image(np.sin(radial_mode * np.pi * g["r"]))
-    pf = pf_transform(image)
+    pf = pf_transform(image)[0]
 
     return pf, radial_mode
 
@@ -107,7 +107,7 @@ def pf_transform(image):
     pft = PolarFT(img_size, nrad=nrad, ntheta=ntheta, dtype=image.dtype)
     pf = pft.transform(image)[0]
 
-    return pf
+    return pf, pft
 
 
 # =============
@@ -117,7 +117,7 @@ def pf_transform(image):
 
 def test_dc_component(asymmetric_image):
     """Test that the DC component equals the mean of the signal."""
-    image, pf = asymmetric_image
+    image, pf, _ = asymmetric_image
     signal_mean = np.mean(image)
     dc_components = abs(pf[:, 0])
 
@@ -220,3 +220,32 @@ def test_half_to_full_transform(stack_shape):
         np.testing.assert_allclose(
             full_pf[..., ray, :], np.conj(full_pf[..., ray + pft.ntheta // 2, :])
         )
+
+
+def test_shift(asymmetric_image):
+    """
+    Compare shifting using PolarFT.shift against Image.shift.
+    """
+
+    # Test image, PolarFT coef, and PolarFT instance.
+    img, pf_coef, pft = asymmetric_image
+    # For some reason the utils in this file strip off the stack axis.
+    #     put it back so it matches what the `transform` function actually returns.
+    pf_coef = pf_coef[None]
+
+    # Test shift
+    shift = np.array([[3, 5]], dtype=img.dtype)
+
+    # Shift using `PolarFT` class
+    pf_shifted_coef = pft.shift(pf_coef, shift)
+
+    # Shift using `Image` class
+    img_shifted = img.shift(shift)
+    #   then transform to PolarFT coef
+    img_shifted_coef = pft.transform(img_shifted)
+
+    # Compare resulting coefs, look for <1% error (loose).
+    err = np.linalg.norm(pf_shifted_coef - img_shifted_coef)
+    norm = np.linalg.norm(img_shifted_coef)
+    percent_error = err / norm * 100
+    np.testing.assert_array_less(percent_error, 1, err_msg="Shifting error too high.")

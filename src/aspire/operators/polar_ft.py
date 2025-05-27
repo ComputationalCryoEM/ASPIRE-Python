@@ -157,3 +157,31 @@ class PolarFT:
             concatenate = np.concatenate
 
         return concatenate((pf, pf.conj()), axis=-2)
+
+    def shift(self, pfx, shifts):
+        """
+        Shift `pfx` by `shifts` pixels using `PolarFT`.
+
+        :param pfx: Array of `PolarFT` coefs shaped `(n_img, ntheta//2, nrad)`.
+        :param shifts: Array of (x,y) shifts shaped `(n_img, 2).
+        :return: Array of shifted coefs shaped `(n_img, ntheta//2, nrad)`.
+        """
+
+        n_img = pfx.shape[0]
+
+        # Handle a single shift
+        shifts = np.atleast_2d(shifts)
+
+        # Flip shift XY axis?!
+        shifts = shifts[..., ::-1]
+
+        # Broadcast and accumulate phase shifts
+        freqs = np.tile(self.freqs, (n_img, 1, 1))
+        phase_shifts = np.exp(-1j * np.sum(freqs * -shifts[:, :, None], axis=1))
+
+        # Reshape flat frequency grid back to (..., ntheta//2, self.nrad)
+        phase_shifts = phase_shifts.reshape(n_img, self.ntheta // 2, self.nrad)
+        # Apply the phase shifts elementwise
+        shifted_pfx = phase_shifts * pfx
+
+        return shifted_pfx
