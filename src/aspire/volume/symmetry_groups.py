@@ -126,7 +126,7 @@ class CnSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Cn symmetry group and the identity.
         """
-        rots = R.create_group("C" + str(self.order)).as_matrix()
+        rots = R.create_group(self.to_string).as_matrix()
         return Rotation(rots.astype(self.dtype, copy=False))
 
 
@@ -174,7 +174,7 @@ class DnSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Dn symmetry group and the identity.
         """
-        rots = R.create_group("D" + str(self.order)).as_matrix()
+        rots = R.create_group(self.to_string).as_matrix()
         return Rotation(rots.astype(self.dtype, copy=False))
 
 
