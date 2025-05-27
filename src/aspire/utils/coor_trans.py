@@ -180,31 +180,6 @@ def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):
     return mean_ang_dist
 
 
-def common_line_from_rots(r1, r2, ell):
-    """
-    Compute the common line induced by rotation matrices r1 and r2.
-
-    :param r1: The first rotation matrix of 3-by-3 array.
-    :param r2: The second rotation matrix of 3-by-3 array.
-    :param ell: The total number of common lines.
-    :return: The common line indices for both first and second rotations.
-    """
-
-    assert r1.dtype == r2.dtype, "Ambiguous dtypes"
-
-    ut = np.dot(r2, r1.T)
-    alpha_ij = np.arctan2(ut[2, 0], -ut[2, 1]) + np.pi
-    alpha_ji = np.arctan2(-ut[0, 2], ut[1, 2]) + np.pi
-
-    ell_ij = alpha_ij * ell / (2 * np.pi)
-    ell_ji = alpha_ji * ell / (2 * np.pi)
-
-    ell_ij = int(np.mod(np.round(ell_ij), ell))
-    ell_ji = int(np.mod(np.round(ell_ji), ell))
-
-    return ell_ij, ell_ji
-
-
 def rots_to_clmatrix(rots, n_theta):
     """
     Compute the common lines matrix induced by all pairs of rotation
