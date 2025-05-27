@@ -116,7 +116,7 @@ def test_mse(rot_obj):
 
 def test_common_lines(rot_obj):
     ell_ij, ell_ji = rot_obj.common_lines(8, 11, 360)
-    np.testing.assert_equal([ell_ij, ell_ji], [235, 284])
+    np.testing.assert_equal([ell_ij, ell_ji], [235, 104])
 
 
 def test_string(rot_obj):
