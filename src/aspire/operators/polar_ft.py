@@ -167,11 +167,16 @@ class PolarFT:
         :return: Array of shifted coefs shaped `(n_img, ntheta//2, nrad)`.
         """
 
+        # Convert to xp array as needed
+        input_on_host = isinstance(pfx, np.ndarray)
+        pfx = xp.asarray(pfx)
+        shifts = xp.asarray(shifts)
+
         # Number of input images
         n_img = pfx.shape[0]
 
         # Handle a single shift
-        shifts = np.atleast_2d(shifts)
+        shifts = xp.atleast_2d(shifts)
         n_shifts = shifts.shape[0]
 
         # Handle broadcast case, calculate number of output images `n`
@@ -187,12 +192,16 @@ class PolarFT:
         shifts = shifts[..., ::-1]
 
         # Broadcast and accumulate phase shifts
-        freqs = np.tile(self.freqs, (n, 1, 1))
-        phase_shifts = np.exp(-1j * np.sum(freqs * -shifts[:, :, None], axis=1))
+        freqs = xp.tile(xp.asarray(self.freqs), (n, 1, 1))
+        phase_shifts = xp.exp(-1j * xp.sum(freqs * -shifts[:, :, None], axis=1))
 
         # Reshape flat frequency grid back to (..., ntheta//2, self.nrad)
         phase_shifts = phase_shifts.reshape(n, self.ntheta // 2, self.nrad)
         # Apply the phase shifts elementwise
         shifted_pfx = phase_shifts * pfx
+
+        # If we started on host, return as host array.
+        if input_on_host:
+            shifted_pfx = xp.asnumpy(shifted_pfx)
 
         return shifted_pfx
