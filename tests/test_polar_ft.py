@@ -222,12 +222,12 @@ def test_half_to_full_transform(stack_shape):
         )
 
 
-def test_shift(asymmetric_image):
+def test_shift_1d(asymmetric_image):
     """
     Compare shifting using PolarFT.shift against Image.shift.
     """
 
-    # Test image, PolarFT coef, and PolarFT instance.
+    # Test image, `PolarFT` coef, and `PolarFT` instance.
     img, pf_coef, pft = asymmetric_image
     # For some reason the utils in this file strip off the stack axis.
     #     put it back so it matches what the `transform` function actually returns.
@@ -241,11 +241,40 @@ def test_shift(asymmetric_image):
 
     # Shift using `Image` class
     img_shifted = img.shift(shift)
-    #   then transform to PolarFT coef
+    #   then transform to `PolarFT` coef
     img_shifted_coef = pft.transform(img_shifted)
 
     # Compare resulting coefs, look for <1% error (loose).
     err = np.linalg.norm(pf_shifted_coef - img_shifted_coef)
     norm = np.linalg.norm(img_shifted_coef)
+    percent_error = err / norm * 100
+    np.testing.assert_array_less(percent_error, 1, err_msg="Shifting error too high.")
+
+
+def test_shift_2d(asymmetric_image):
+    """
+    Compare shifting using PolarFT.shift against Image.shift.
+    """
+
+    # Test image, `PolarFT` coef, and `PolarFT` instance.
+    img, pf_coef, pft = asymmetric_image
+    # For some reason the utils in this file strip off the stack axis.
+    #     put it back so it matches what the `transform` function actually returns.
+    pf_coef = np.tile(pf_coef, (3, 1, 1))
+
+    # Test shift
+    shift = np.array([[3, 5], [-2, -1], [4, -3]], dtype=img.dtype)
+
+    # Shift using `PolarFT` class
+    pf_shifted_coef = pft.shift(pf_coef, shift)
+
+    # Shift using `Image` class
+    img_shifted = img.shift(shift)
+    #   then transform to `PolarFT` coef
+    img_shifted_coef = pft.transform(img_shifted)
+
+    # Compare resulting coefs, look for <1% error (loose).
+    err = np.linalg.norm(pf_shifted_coef - img_shifted_coef, axis=(1, 2))
+    norm = np.linalg.norm(img_shifted_coef, axis=(1, 2))
     percent_error = err / norm * 100
     np.testing.assert_array_less(percent_error, 1, err_msg="Shifting error too high.")
