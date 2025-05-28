@@ -8,7 +8,7 @@ from aspire.classification.reddy_chatterji import reddy_chatterji_register
 from aspire.image import Image, ImageStacker, MeanImageStacker
 from aspire.numeric import fft, xp
 from aspire.operators import PolarFT
-from aspire.utils import tqdm, trange
+from aspire.utils import complex_type, tqdm, trange
 from aspire.utils.coor_trans import grid_2d
 
 logger = logging.getLogger(__name__)
@@ -873,7 +873,9 @@ class BFTAverager2D(AligningAverager2D):
         bs = min(self.batch_size, len(test_shifts))
         _rotations = np.zeros((bs, n_nbor), dtype=self.dtype)
         _dot_products = np.ones((bs, n_nbor), dtype=self.dtype) * -np.inf
-        template_images = xp.empty((bs, self.src.L, self.src.L), dtype=self.dtype)
+        template_images = xp.empty(
+            (bs, self._pft.ntheta // 2, self._pft.nrad), dtype=complex_type(self.dtype)
+        )
         _images = xp.empty((n_nbor - 1, self.src.L, self.src.L), dtype=self.dtype)
 
         for k in trange(n_classes, desc="Rotationally aligning classes"):
@@ -887,6 +889,7 @@ class BFTAverager2D(AligningAverager2D):
                 original_coef = basis_coefficients[classes[k], :]
                 original_images = self.alignment_basis.evaluate(original_coef)
 
+            _img0 = original_images[0].asnumpy().copy()
             _images[:] = xp.asarray(original_images[1:].asnumpy().copy())
 
             # Handle reflections
@@ -897,6 +900,7 @@ class BFTAverager2D(AligningAverager2D):
             _images[:] = _images[:] * self._mask
 
             # Convert to polar Fourier
+            pf_img0 = self._pft._transform(_img0)
             pf_images = self._pft.half_to_full(self._pft._transform(_images))
 
             # Batch over shift search space, updating best results
@@ -911,18 +915,13 @@ class BFTAverager2D(AligningAverager2D):
                 bs = end - start  # handle a small last batch
                 batch_shifts = test_shifts[start:end]
 
-                # Shift the base, original_image[0], for each shift in this batch
-                # Note this includes shifting for the zero case
+                # Shift the base, pf_img0, for each shift in this batch
+                # Note this includes shifting for the zero shift case
                 template_images[:bs] = xp.asarray(
-                    original_images[0].shift(batch_shifts)
+                    self._pft.shift(pf_img0, batch_shifts)
                 )
 
-                # Mask off
-                template_images[:] = template_images[:] * self._mask
-
-                pf_template_images = self._pft.half_to_full(
-                    self._pft._transform(template_images)
-                )
+                pf_template_images = self._pft.half_to_full(template_images)
 
                 # Compute and assign the best rotation found with this translation
                 # note offset of 1 for skipped original_image 0
