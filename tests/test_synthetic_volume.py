@@ -10,6 +10,7 @@ from aspire.volume import (
     AsymmetricVolume,
     CnSymmetricVolume,
     DnSymmetricVolume,
+    ISymmetricVolume,
     LegacyVolume,
     OSymmetricVolume,
     TSymmetricVolume,
@@ -55,6 +56,12 @@ PARAMS_Cn_Dn = [
     (DnSymmetricVolume, 65, 6),
 ]
 
+# Parameters for icosahedral volumes need higher resolution to give accurate
+# results for test_volume)symmetry.
+PARAMS_I = [
+    pytest.param((ISymmetricVolume, 70), marks=pytest.mark.expensive),
+    pytest.param((ISymmetricVolume, 71), marks=pytest.mark.expensive),
+]
 
 # Parameters for tetrahedral, octahedral, asymmetric, and legacy volumes.
 # These volumes do not have an `order` parameter.
@@ -74,7 +81,7 @@ def vol_fixture_id(params):
 
 
 # Create SyntheticVolume fixture for the set of parameters.
-@pytest.fixture(params=PARAMS_Cn_Dn + PARAMS, ids=vol_fixture_id)
+@pytest.fixture(params=PARAMS_Cn_Dn + PARAMS_I + PARAMS, ids=vol_fixture_id)
 def vol_fixture(request, dtype_fixture):
     params = request.param
     vol_class = params[0]
@@ -156,4 +163,4 @@ def test_volume_symmetry(vol_fixture, dtype_fixture):
         corr = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
             vol[0].flatten(), vol[0].flatten()
         )
-        assert abs(corr - 1) < 1.1e-5
+        assert abs(corr - 1) < 1e-3

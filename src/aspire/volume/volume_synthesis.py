@@ -9,6 +9,7 @@ from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
     IdentitySymmetryGroup,
+    ISymmetryGroup,
     OSymmetryGroup,
     TSymmetryGroup,
     Volume,
@@ -251,6 +252,19 @@ class OSymmetricVolume(GaussianBlobsVolume):
     @property
     def n_blobs(self):
         return 24 * self.K
+
+
+class ISymmetricVolume(GaussianBlobsVolume):
+    """
+    A Volume object with Icosahedral symmetry constructed of random 3D Gaussian blobs.
+    """
+
+    def _set_symmetry_group(self):
+        self._symmetry_group = ISymmetryGroup()
+
+    @property
+    def n_blobs(self):
+        return 60 * self.K
 
 
 class AsymmetricVolume(CnSymmetricVolume):
