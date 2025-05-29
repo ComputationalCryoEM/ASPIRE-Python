@@ -1,5 +1,5 @@
 import logging
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractproperty
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -21,11 +21,12 @@ class SymmetryGroup(ABC):
         self.dtype = np.float64
         self.rotations = self.generate_rotations()
 
-    @abstractmethod
     def generate_rotations(self):
         """
         Method for generating a Rotation object for the symmetry group.
         """
+        rots = R.create_group(self.to_string).as_matrix()
+        return Rotation(rots.astype(self.dtype, copy=False))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -126,8 +127,7 @@ class CnSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Cn symmetry group and the identity.
         """
-        rots = R.create_group(self.to_string).as_matrix()
-        return Rotation(rots.astype(self.dtype, copy=False))
+        return super().generate_rotations()
 
 
 class IdentitySymmetryGroup(CnSymmetryGroup):
@@ -174,8 +174,7 @@ class DnSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Dn symmetry group and the identity.
         """
-        rots = R.create_group(self.to_string).as_matrix()
-        return Rotation(rots.astype(self.dtype, copy=False))
+        return super().generate_rotations()
 
 
 class TSymmetryGroup(SymmetryGroup):
@@ -205,8 +204,7 @@ class TSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the tetrahedral symmetry group and the identity.
         """
-        rots = R.create_group("T").as_matrix()
-        return Rotation(rots.astype(self.dtype, copy=False))
+        return super().generate_rotations()
 
 
 class OSymmetryGroup(SymmetryGroup):
@@ -239,8 +237,7 @@ class OSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the octahedral symmetry group and the identity.
         """
-        rots = R.create_group("O").as_matrix()
-        return Rotation(rots.astype(self.dtype, copy=False))
+        return super().generate_rotations()
 
 
 class ISymmetryGroup(SymmetryGroup):
@@ -273,5 +270,4 @@ class ISymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the icosahedral symmetry group and the identity.
         """
-        rots = R.create_group("I").as_matrix()
-        return Rotation(rots.astype(self.dtype, copy=False))
+        return super().generate_rotations()
