@@ -57,7 +57,7 @@ PARAMS_Cn_Dn = [
 ]
 
 # Parameters for icosahedral volumes need higher resolution to give accurate
-# results for test_volume)symmetry.
+# results for test_volume_symmetry.
 PARAMS_I = [
     pytest.param((ISymmetricVolume, 70), marks=pytest.mark.expensive),
     pytest.param((ISymmetricVolume, 71), marks=pytest.mark.expensive),
