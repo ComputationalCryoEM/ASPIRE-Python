@@ -164,7 +164,7 @@ jobs:
             backend: intel
           - os: macOS-latest
             backend: accelerate
-          - os: windows-2019
+          - os: windows-2022
             backend: win64
 
     steps:
