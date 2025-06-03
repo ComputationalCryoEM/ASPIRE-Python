@@ -155,8 +155,10 @@ def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):
     Register estimates to ground truth rotations and compute the
     mean angular distance between them (in degrees).
 
-    :param rots_est: A set of estimated rotations of size nx3x3.
-    :param rots_gt: A set of ground truth rotations of size nx3x3.
+    :param rots_est: A set of estimated rotations. A Rotation object or
+        array of size nx3x3.
+    :param rots_gt: A set of ground truth rotations. A Rotation object or
+        array of size nx3x3.
     :param degree_tol: Option to assert if the mean angular distance is
         less than `degree_tol` degrees. If `None`, returns the mean
         aligned angular distance.
