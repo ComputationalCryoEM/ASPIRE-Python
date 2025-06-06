@@ -88,9 +88,9 @@ def testRepr(get_mdim_images):
 
 
 def testNonSquare():
-    """Test that an irregular Image array raises."""
-    with raises(ValueError, match=r".* square .*"):
-        _ = Image(np.empty((4, 5)))
+    """Test that an irregular Image array does not raise."""
+    _ = Image(np.empty((4, 5)))
+    _ = Image(np.empty((3, 4, 5)))
 
 
 def testImShift(get_images, dtype):

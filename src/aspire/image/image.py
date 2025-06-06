@@ -203,19 +203,18 @@ class Image:
         else:
             self.dtype = np.dtype(dtype)
 
-        if not data.shape[-1] == data.shape[-2]:
-            raise ValueError("Only square ndarrays are supported.")
-
         self._data = data.astype(self.dtype, copy=False)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
         self.stack_ndim = self._data.ndim - 2
         self.stack_shape = self._data.shape[:-2]
         self.n_images = np.prod(self.stack_shape)
-        self.resolution = self._data.shape[-1]
         self.pixel_size = None
         if pixel_size is not None:
             self.pixel_size = float(pixel_size)
+
+        self._is_square = data.shape[-1] == data.shape[-2]
+        self.resolution = self._data.shape[-1]  # XXXXX
 
         # Numpy interop
         # https://numpy.org/devdocs/user/basics.interoperability.html#the-array-interface-protocol
@@ -234,6 +233,12 @@ class Image:
         :return: Radon transform of the Image Stack.
         :rtype: Ndarray (stack size, number of angles, image resolution)
         """
+
+        if not self._is_square:
+            raise NotImplementedError(
+                "`Image.project` is not currently implemented for non-square images."
+            )
+
         # number of points to sample on radial line in polar grid
         n_points = self.resolution
         original_stack = self.stack_shape
@@ -309,19 +314,19 @@ class Image:
         )
 
     def __add__(self, other):
-        if isinstance(other, Image):
+        if isinstance(other, self.__class__):
             other = other._data
 
         return self.__class__(self._data + other, pixel_size=self.pixel_size)
 
     def __sub__(self, other):
-        if isinstance(other, Image):
+        if isinstance(other, self.__class__):
             other = other._data
 
         return self.__class__(self._data - other, pixel_size=self.pixel_size)
 
     def __mul__(self, other):
-        if isinstance(other, Image):
+        if isinstance(other, self.__class__):
             other = other._data
 
         return self.__class__(self._data * other, pixel_size=self.pixel_size)
@@ -385,7 +390,7 @@ class Image:
             px_msg = f" with pixel_size={self.pixel_size} angstroms."
 
         msg = f"{self.n_images} {self.dtype} images arranged as a {self.stack_shape} stack"
-        msg += f" each of size {self.resolution}x{self.resolution}{px_msg}"
+        msg += f" each of size {self.shape[-2:]}{px_msg}"
         return msg
 
     def asnumpy(self):
@@ -442,6 +447,12 @@ class Image:
             and which to set to zero. By default all `sqrt(psd)` values
             less than `delta` are zeroed out in the whitening filter.
         """
+
+        if not self._is_square:
+            raise NotImplementedError(
+                "`Image.legacy_whiten` is not currently implemented for non-square images."
+            )
+
         n = self.n_images
         L = self.resolution
         L_half = L // 2
@@ -607,6 +618,11 @@ class Image:
         :param filter: An object of type `Filter`.
         :return: A new filtered `Image` object.
         """
+        if not self._is_square:
+            raise NotImplementedError(
+                "`Image.filter` is not currently implemented for non-square images."
+            )
+
         original_stack_shape = self.stack_shape
 
         im = self.stack_reshape(-1)
@@ -777,8 +793,8 @@ class Image:
 
         return im, pixel_size
 
-    @staticmethod
-    def load(filepath, dtype=None):
+    @classmethod
+    def load(cls, filepath, dtype=None):
         """
         Load raw data from supported files.
 
@@ -793,7 +809,7 @@ class Image:
         im, pixel_size = Image._load_raw(filepath, dtype=dtype)
 
         # Return as Image instance
-        return Image(im, pixel_size=pixel_size)
+        return cls(im, pixel_size=pixel_size)
 
     def _im_translate(self, shifts):
         """
@@ -809,6 +825,10 @@ class Image:
             Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
         :return: The images translated by the shifts, with periodic boundaries.
         """
+        if not self._is_square:
+            raise NotImplementedError(
+                "`Image._im_translate` is not currently implemented for non-square images."
+            )
 
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
@@ -879,6 +899,10 @@ class Image:
 
         :return: Volume instance corresonding to the backprojected images.
         """
+        if not self._is_square:
+            raise NotImplementedError(
+                "`Image.legacy_whiten` is not currently implemented for non-square images."
+            )
 
         if self.stack_ndim > 1:
             raise NotImplementedError(
@@ -996,6 +1020,10 @@ class Image:
             where `estimated_resolution` is in angstrom
             and FRC is a Numpy array of correlations.
         """
+        if not self._is_square:
+            raise NotImplementedError(
+                "`Image.frc` is not currently implemented for non-square images."
+            )
 
         if not isinstance(other, Image):
             raise TypeError(
