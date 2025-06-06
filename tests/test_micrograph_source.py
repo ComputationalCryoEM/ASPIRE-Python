@@ -271,12 +271,11 @@ def test_wrong_dim_micrograph_source():
 
 def test_rectangular_micrograph_source_array():
     """
-    Test non-square micrograph source raises.
+    Test non-square micrograph source does not raises.
     """
     # Test with Numpy array input
     imgs_np = np.empty((3, 7, 8))
-    with pytest.raises(RuntimeError, match=r"Incompatible.*"):
-        ArrayMicrographSource(imgs_np)
+    _ = ArrayMicrographSource(imgs_np)
 
 
 def test_rectangular_micrograph_source_files():
