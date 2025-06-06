@@ -85,11 +85,11 @@ def test_micrograph_source_has_correct_values(vol_fixture, micrograph_fixture):
     assert v.resolution == m.particle_box_size
     assert v == m.simulation.vols
     assert len(m) == m.micrograph_count
-    assert m.clean_images[0].shape[1] == m.micrograph_size
-    assert m.clean_images[0].shape[2] == m.micrograph_size
+    assert m.clean_images[0].shape[1] == m.micrograph_size[0]
+    assert m.clean_images[0].shape[2] == m.micrograph_size[1]
     assert (
         repr(m)
-        == f"{m.__class__.__name__} with {m.micrograph_count} {m.dtype.name} micrographs of size {m.micrograph_size}x{m.micrograph_size}"
+        == f"{m.__class__.__name__} with {m.micrograph_count} {m.dtype.name} micrographs of size {m.micrograph_size}"
     )
     _ = m.clean_images[:]
     _ = m.images[:]
@@ -188,9 +188,9 @@ def test_micrograph_centers_match(micrograph_fixture):
     for i, center in enumerate(centers):
         if (
             center[0] >= 0
-            and center[0] < m.micrograph_size
+            and center[0] < m.micrograph_size[0]
             and center[1] >= 0
-            and center[1] < m.micrograph_size
+            and center[1] < m.micrograph_size[1]
         ):
             assert m.clean_images[i // m.particles_per_micrograph].asnumpy()[0][
                 tuple(center)
