@@ -82,6 +82,7 @@ class ClassAvgSource(ImageSource):
             n=self.averager.src.n,
             dtype=self.averager.src.dtype,
             symmetry_group=self.src.symmetry_group,
+            pixel_size=self.src.pixel_size,
         )
 
         # Any further operations should not mutate this instance.
