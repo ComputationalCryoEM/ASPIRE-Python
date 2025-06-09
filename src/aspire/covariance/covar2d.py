@@ -626,7 +626,7 @@ class BatchedRotCov2D(RotCov2D):
         b_covar = b_covar.copy()
 
         for k in np.unique(ctf_idx):
-            weight = np.count_nonzero(ctf_idx == k) / src.n
+            weight = (np.count_nonzero(ctf_idx == k) / src.n).astype(self.dtype)
 
             ctf_basis_k = ctf_basis[k]
             ctf_basis_k_t = ctf_basis_k.T
