@@ -763,6 +763,42 @@ def check_metadata(sim_src, relion_src):
             )
 
 
+def test_pixel_size(caplog):
+    """
+    Check pixel size is instantiated properly and warnings occur if pixel
+    size is overridden.
+    """
+    vol_px_sz = 10.0
+    L = 8
+    data = np.ones(L**3).reshape(L, L, L)
+    vol = Volume(data, pixel_size=vol_px_sz)
+
+    # Ensure vol pixel size
+    assert vol.pixel_size == vol_px_sz
+
+    # Generate Simulation and check pixel_size is inhereted from vol
+    sim = Simulation(vols=vol)
+    assert sim.pixel_size == vol_px_sz
+
+    # Generate Simulation with provided pixel_size and check
+    # that vol.pixel_size is overridden.
+    caplog.clear()
+    caplog.set_level(logging.WARN)
+
+    sim_px_sz = 5.0
+    msg = (
+        f"Overriding volume pixel size, {vol_px_sz}, with "
+        f"user provided pixel size of {sim_px_sz} angstrom."
+    )
+
+    assert msg not in caplog.text
+
+    sim = Simulation(vols=vol, pixel_size=sim_px_sz)
+
+    assert msg in caplog.text
+    assert sim.pixel_size == sim_px_sz
+
+
 def test_mismatched_pixel_size():
     """
     Confirm raises error when explicit Simulation and CTFFilter pixel sizes mismatch.
