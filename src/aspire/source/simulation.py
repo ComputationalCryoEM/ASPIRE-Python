@@ -110,6 +110,13 @@ class Simulation(ImageSource):
             )
         symmetry_group = symmetry_group or self.vols.symmetry_group
 
+        if pixel_size and (pixel_size != self.vols.pixel_size):
+            logger.warning(
+                f"Overriding volume pixel size, {self.vols.pixel_size}, with "
+                f"user provided pixel size of {pixel_size} angstrom."
+            )
+        pixel_size = pixel_size or self.vols.pixel_size
+
         # Infer the details from volume when possible.
         super().__init__(
             L=self.vols.resolution,
@@ -117,7 +124,7 @@ class Simulation(ImageSource):
             dtype=self.vols.dtype,
             memory=memory,
             symmetry_group=symmetry_group,
-            pixel_size=self.vols.pixel_size,
+            pixel_size=pixel_size,
         )
 
         # If a user provides both `L` and `vols`, resolution should match.
