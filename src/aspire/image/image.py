@@ -618,10 +618,6 @@ class Image:
         :param filter: An object of type `Filter`.
         :return: A new filtered `Image` object.
         """
-        if not self._is_square:
-            raise NotImplementedError(
-                "`Image.filter` is not currently implemented for non-square images."
-            )
 
         original_stack_shape = self.stack_shape
 
@@ -634,11 +630,13 @@ class Image:
         # Second note, filter and grid dtype may not match image dtype,
         # upcast both here for most accurate convolution.
         filter_values = xp.asarray(
-            filter.evaluate_grid(
-                self.resolution, dtype=np.float64, pixel_size=self.pixel_size
-            ),
-            dtype=np.float64,
+            filter.evaluate_grid(self.shape[-2:]), dtype=self.dtype, pixel_size=self.pixel_size
         )
+
+        # sanity check
+        assert (
+            filter_values.shape == im._data.shape[-2:]
+        ), f"{filter_values.shape} != {im._data.shape[:-2]}"
 
         # Convolve
         _im = xp.asarray(im._data, dtype=np.float64)

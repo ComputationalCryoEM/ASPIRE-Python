@@ -98,6 +98,7 @@ def grid_2d(n, shifted=False, normalized=True, indexing="yx", dtype=np.float32):
     Generate two dimensional grid.
 
     :param n: the number of grid points in each dimension.
+        May be a single integer value or 2-tuple of integers.
     :param shifted: shifted by half of grid or not when n is even.
     :param normalized: normalize the grid in the range of (-1, 1) or not.
     :param indexing: 'yx' (C) or 'xy' (F), defaulting to 'yx'.
@@ -105,8 +106,14 @@ def grid_2d(n, shifted=False, normalized=True, indexing="yx", dtype=np.float32):
     :return: the rectangular and polar coordinates of all grid points.
     """
 
-    grid = _mgrid_slice(n, shifted, normalized)
-    y, x = np.mgrid[grid, grid].astype(dtype)
+    if isinstance(n, int):
+        n = (n, n)
+    rows, cols = n
+
+    rows = _mgrid_slice(rows, shifted, normalized)
+    cols = _mgrid_slice(cols, shifted, normalized)
+
+    y, x = np.mgrid[rows, cols].astype(dtype)
     if indexing == "xy":
         x, y = y, x
     elif indexing != "yx":
