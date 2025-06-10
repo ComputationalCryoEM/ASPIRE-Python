@@ -596,8 +596,8 @@ class BatchedRotCov2D(RotCov2D):
         M_covar = BlkDiagMatrix.zeros_like(A_mean)
 
         for k in np.unique(ctf_idx):
-            weight = (np.count_nonzero(ctf_idx == k) / src.n).astype(self.dtype)
-
+            weight = float(np.count_nonzero(ctf_idx == k) / src.n)
+            breakpoint()
             ctf_basis_k = ctf_basis[k]
             ctf_basis_k_t = ctf_basis_k.T
 
@@ -626,7 +626,7 @@ class BatchedRotCov2D(RotCov2D):
         b_covar = b_covar.copy()
 
         for k in np.unique(ctf_idx):
-            weight = (np.count_nonzero(ctf_idx == k) / src.n).astype(self.dtype)
+            weight = float(np.count_nonzero(ctf_idx == k) / src.n)
 
             ctf_basis_k = ctf_basis[k]
             ctf_basis_k_t = ctf_basis_k.T
