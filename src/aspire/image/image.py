@@ -588,10 +588,6 @@ class Image:
         :param filter: An object of type `Filter`.
         :return: A new filtered `Image` object.
         """
-        if not self._is_square:
-            raise NotImplementedError(
-                "`Image.filter` is not currently implemented for non-square images."
-            )
 
         original_stack_shape = self.stack_shape
 
@@ -603,8 +599,13 @@ class Image:
         #
         # Second note, filter dtype may not match image dtype.
         filter_values = xp.asarray(
-            filter.evaluate_grid(self.resolution), dtype=self.dtype
+            filter.evaluate_grid(self.shape[-2:]), dtype=self.dtype
         )
+
+        # sanity check
+        assert (
+            filter_values.shape == im._data.shape[-2:]
+        ), f"{filter_values.shape} != {im._data.shape[:-2]}"
 
         # Convolve
         im_f = fft.centered_fft2(xp.asarray(im._data))
