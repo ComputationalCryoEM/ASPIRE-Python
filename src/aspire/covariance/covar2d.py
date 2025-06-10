@@ -597,7 +597,7 @@ class BatchedRotCov2D(RotCov2D):
 
         for k in np.unique(ctf_idx):
             weight = float(np.count_nonzero(ctf_idx == k) / src.n)
-            breakpoint()
+
             ctf_basis_k = ctf_basis[k]
             ctf_basis_k_t = ctf_basis_k.T
 
