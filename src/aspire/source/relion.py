@@ -72,7 +72,7 @@ class RelionSource(ImageSource):
 
         # Peek into the first image and populate some attributes
         first_mrc_filepath = metadata["__mrc_filepath"][0]
-        mrc = mrcfile.open(first_mrc_filepath)
+        mrc = mrcfile.open(first_mrc_filepath, mode="r", permissive=True)
 
         # Get the 'mode' (data type) - TODO: There's probably a more direct way to do this.
         mode = int(mrc.header.mode)
@@ -247,7 +247,7 @@ class RelionSource(ImageSource):
         logger.debug(f"Indices: {indices}")
 
         def load_single_mrcs(filepath, indices):
-            arr = mrcfile.open(filepath).data
+            arr = mrcfile.open(filepath, mode="r", permissive=True).data
             # if the stack only contains one image, arr will have shape (resolution, resolution)
             # the code below reshapes it to (1, resolution, resolution)
             if len(arr.shape) == 2:

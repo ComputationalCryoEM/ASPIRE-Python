@@ -77,7 +77,7 @@ class CoordinateSource(ImageSource, ABC):
         dtype = "float32"
         # If file is MRC, we can get dtype from header.
         if self._ext == ".mrc":
-            with mrcfile.open(first_mrc) as mrc:
+            with mrcfile.open(first_mrc, mode="r", permissive=True) as mrc:
                 # get dtype from first micrograph
                 mode = int(mrc.header.mode)
                 dtypes = {0: "int8", 1: "int16", 2: "float32", 6: "uint16"}
