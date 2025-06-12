@@ -163,6 +163,8 @@ class CommonlineLUD(CommonlineSDP):
         logger.info("Performing ADMM to compute Gram matrix.")
 
         # Initialize problem parameters
+        # Note, local self._mu must be reset each iteration when
+        # this method is used for IRLS.
         self._mu = self.mu
         n = 2 * self.n_img
         b = np.concatenate(
