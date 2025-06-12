@@ -29,48 +29,17 @@ class CommonlineIRLS(CommonlineLUD):
     ):
         """
         Initialize a class for estimating 3D orientations using an IRLS-based optimization.
+        See CommonlineLUD for additional arguments.
 
         :param num_itrs: Number of iterations for iterative reweighting. Default is 10.
         :param eps_weighting: Regularization value for reweighting factor. Default is 1e-3.
         :param alpha: Spectral norm constraint for IRLS algorithm. Default is None, which
             does not apply a spectral norm constraint. To apply a spectral norm constraint provide
             a value in the range [2/3, 1), 2/3 is recommended.
-        :param tol: Tolerance for convergence. The algorithm stops when conditions reach this threshold.
-            Default is 1e-3.
-        :param mu: The penalty parameter (or dual variable scaling factor) in the optimization problem.
-            Default is 1.
-        :param gam: Relaxation factor for updating variables in the algorithm (typically between 1 and 2).
-            Default is 1.618.
-        :param eps: Small positive value used to filter out negligible eigenvalues.
-            Default is 1e-12.
-        :param maxit: Maximum number of iterations allowed for the algorithm.
-            Default is 1000.
-        :param adp_proj: Flag for using adaptive projection during eigenvalue computation:
-            - True: Adaptive rank selection (Default).
-            - False: Full eigenvalue decomposition.
         :param max_rankZ: Maximum rank used for projecting the Z matrix (for adaptive projection).
             If None, defaults to max(6, n_img // 4).
         :param max_rankW: Maximum rank used for projecting the W matrix (for adaptive projection).
             If None, defaults to max(6, n_img // 4).
-        :param adp_mu: Adaptive adjustment of the penalty parameter `mu`:
-            - True: Enabled (Default).
-            - False: Disabled.
-        :param dec_mu: Scaling factor for decreasing `mu`.
-            Default is 0.5.
-        :param inc_mu: Scaling factor for increasing `mu`.
-            Default is 2.
-        :param mu_min: Minimum allowable value for `mu`.
-            Default is 1e-4.
-        :param mu_max: Maximum allowable value for `mu`.
-            Default is 1e4.
-        :param min_mu_itr: Minimum number of iterations before `mu` is adjusted.
-            Default is 5.
-        :param max_mu_itr: Maximum number of iterations allowed for `mu` adjustment.
-            Default is 20.
-        :param delta_mu_l: Lower bound for relative drop ratio to trigger a decrease in `mu`.
-            Default is 0.1.
-        :param delta_mu_u: Upper bound for relative drop ratio to trigger an increase in `mu`.
-            Default is 10.
         """
 
         self.num_itrs = num_itrs
