@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 class CommonlineIRLS(CommonlineLUD):
     """
-    Define a derived class to estimate 3D orientations using Iteratively Reweighted
-    Least Squares (IRLS) as described in the following publication:
+    Estimate 3D orientations using Iteratively Reweighted Least Squares
+    (IRLS) as described in the following publication:
     L. Wang, A. Singer, and  Z. Wen, Orientation Determination of Cryo-EM Images Using
     Least Unsquared Deviations, SIAM J. Imaging Sciences, 6, 2450-2483 (2013).
     """
