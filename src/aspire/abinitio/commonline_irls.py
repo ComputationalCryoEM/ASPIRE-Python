@@ -144,11 +144,10 @@ class CommonlineIRLS(CommonlineLUD):
                 eigs_mask = D > self.eps
                 num_eigs = np.count_nonzero(eigs_mask)
                 if num_eigs < n / 2:  # few positive eigenvalues
-                    V = V[:, eigs_mask]
-                    W = V @ np.diag(D[eigs_mask]) @ V.T
+                    # Equivalent to V D V', computed with broadcasting for efficiency
+                    W = (V[:, eigs_mask] * D[eigs_mask][None, :]) @ V[:, eigs_mask].T
                 else:  # few negative eigenvalues
-                    V = V[:, ~eigs_mask]
-                    W = V @ np.diag(-D[~eigs_mask]) @ V.T + H
+                    W = (V[:, ~eigs_mask] * (-D[~eigs_mask])[None, :]) @ V[:, ~eigs_mask].T + H
             else:
                 # Determine number of eigenvalues to compute for adaptive projection
                 if itr == 0:
@@ -169,7 +168,11 @@ class CommonlineIRLS(CommonlineLUD):
                 nD = eigs_H > self.eps
                 eigs_H = eigs_H[nD]
                 num_eigs = np.count_nonzero(nD)
-                W = V[:, nD] @ np.diag(eigs_H) @ V[:, nD].T + H if nD.any() else H
+                if nD.any():
+                    # Low-rank update: V diag(eigs_H) V^T + H, done via broadcasting
+                    W1 = (V[:, nD] * eigs_H[None, :]) @ V[:, nD].T + H
+                else:
+                    W = H
 
             ############
             # Update G #
