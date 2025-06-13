@@ -172,7 +172,7 @@ class CommonlineIRLS(CommonlineLUD):
                 num_eigs = np.count_nonzero(nD)
                 if nD.any():
                     # Low-rank update: V diag(eigs_H) V^T + H, done via broadcasting
-                    W1 = (V[:, nD] * eigs_H[None, :]) @ V[:, nD].T + H
+                    W = (V[:, nD] * eigs_H[None, :]) @ V[:, nD].T + H
                 else:
                     W = H
 
