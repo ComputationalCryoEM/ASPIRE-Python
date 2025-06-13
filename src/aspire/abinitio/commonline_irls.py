@@ -147,7 +147,9 @@ class CommonlineIRLS(CommonlineLUD):
                     # Equivalent to V D V', computed with broadcasting for efficiency
                     W = (V[:, eigs_mask] * D[eigs_mask][None, :]) @ V[:, eigs_mask].T
                 else:  # few negative eigenvalues
-                    W = (V[:, ~eigs_mask] * (-D[~eigs_mask])[None, :]) @ V[:, ~eigs_mask].T + H
+                    W = (V[:, ~eigs_mask] * (-D[~eigs_mask])[None, :]) @ V[
+                        :, ~eigs_mask
+                    ].T + H
             else:
                 # Determine number of eigenvalues to compute for adaptive projection
                 if itr == 0:

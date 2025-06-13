@@ -23,7 +23,7 @@ class CommonlineLUD(CommonlineSDP):
         tol=1e-3,
         mu=1,
         gam=1.618,
-        eps=1e-12,
+        eps=None,
         maxit=1000,
         adp_proj=True,
         max_rankZ=None,
@@ -55,7 +55,7 @@ class CommonlineLUD(CommonlineSDP):
         :param gam: Relaxation factor for updating variables in the algorithm (typically between 1 and 2).
             Default is 1.618.
         :param eps: Small positive value used to filter out negligible eigenvalues.
-            Default is 1e-12.
+            Default is 1e-5 if src.dtype is singles, otherwise 1e-12.
         :param maxit: Maximum number of iterations allowed for the algorithm.
             Default is 1000.
         :param adp_proj: Flag for using adaptive projection during eigenvalue computation:
@@ -103,7 +103,6 @@ class CommonlineLUD(CommonlineSDP):
         self.tol = tol
         self.mu = mu
         self.gam = gam
-        self.eps = eps
         self.maxit = maxit
         self.adp_proj = adp_proj
 
@@ -120,6 +119,11 @@ class CommonlineLUD(CommonlineSDP):
 
         # Initialize commonline base class
         super().__init__(src, **kwargs)
+
+        # Set eps for eigenvalue filter
+        if eps is None:
+            eps = 1e-5 if self.dtype == np.float32 else 1e-12
+        self.eps = eps
 
         # Adjust rank limits
         self.max_rankZ = max_rankW or max(6, self.n_img // 2)
