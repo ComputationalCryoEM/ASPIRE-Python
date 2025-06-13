@@ -70,13 +70,13 @@ class CommonlineIRLS(CommonlineLUD):
         if self.alpha is None:
             A, b = self._sdp_prep()
             for _ in range(self.num_itrs):
-                S = weights * self.S
-                gram = self._compute_gram_matrix(S, A, b)
+                S_weighted = weights * self.S
+                gram = self._compute_gram_matrix(S_weighted, A, b)
                 weights = self._update_weights(gram)
         else:
             for _ in range(self.num_itrs):
-                S = weights * self.S
-                gram = self._compute_Gram(gram, S)
+                S_weighted = weights * self.S
+                gram = self._compute_Gram(gram, S_weighted)
                 weights = self._update_weights(gram)
         self.rotations = self._deterministic_rounding(gram)
 
