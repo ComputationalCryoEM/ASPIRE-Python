@@ -4,6 +4,7 @@ import numpy as np
 from scipy.sparse.linalg import eigsh
 
 from aspire.abinitio import CommonlineLUD
+from aspire.utils import trange
 
 logger = logging.getLogger(__name__)
 
@@ -69,12 +70,12 @@ class CommonlineIRLS(CommonlineLUD):
         gram = np.eye(2 * self.n_img, dtype=self.dtype)
         if self.alpha is None:
             A, b = self._sdp_prep()
-            for _ in range(self.num_itrs):
+            for _ in trange(self.num_itrs, desc="Performing iterative re-weighting."):
                 S_weighted = weights * self.S
                 gram = self._compute_gram_matrix(S_weighted, A, b)
                 weights = self._update_weights(gram)
         else:
-            for _ in range(self.num_itrs):
+            for _ in trange(self.num_itrs, desc="Performing iterative re-weighting."):
                 S_weighted = weights * self.S
                 gram = self._compute_Gram(gram, S_weighted)
                 weights = self._update_weights(gram)
