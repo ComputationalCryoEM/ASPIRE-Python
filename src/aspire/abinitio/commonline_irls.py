@@ -20,7 +20,7 @@ class CommonlineIRLS(CommonlineLUD):
     def __init__(
         self,
         src,
-        *,
+        *args,
         num_itrs=10,
         eps_weighting=1e-3,
         alpha=None,
@@ -52,6 +52,7 @@ class CommonlineIRLS(CommonlineLUD):
 
         super().__init__(
             src,
+            *args,
             max_rankZ=max_rankZ,
             max_rankW=max_rankW,
             alpha=alpha,
