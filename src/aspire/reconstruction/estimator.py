@@ -144,6 +144,7 @@ class Estimator:
             b_coef = self.src_backward()
         est_coef = self.conj_grad(b_coef, x0=x0, tol=tol, regularizer=regularizer)
         est = Coef(self.basis, est_coef).evaluate()
+        est.pixel_size = self.src.pixel_size
 
         return est
 
