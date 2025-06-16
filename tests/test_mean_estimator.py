@@ -56,6 +56,7 @@ def sim(L, dtype):
         ],
         dtype=dtype,
         seed=SEED,
+        pixel_size=1,
     )
 
     sim = sim.cache()  # precompute images
@@ -103,6 +104,9 @@ def test_estimate(sim, estimator, mask):
     np.testing.assert_allclose(
         est / np.linalg.norm(est), vol / np.linalg.norm(vol), atol=0.1
     )
+
+    # Check pixel_size pass-through
+    np.testing.assert_array_equal(sim.pixel_size, estimate.pixel_size)
 
 
 def test_adjoint(sim, basis, estimator):
