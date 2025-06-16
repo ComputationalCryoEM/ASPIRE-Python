@@ -84,10 +84,10 @@ class CommonlineIRLS(CommonlineLUD):
 
     def _compute_Gram(self, G, S):
         """
-        Perform the alternating direction method of multipliers (ADMM) for the SDP
-        problem:
+        Given G^(k), solve for G^(k+1) using the alternating direction method of multipliers (ADMM)
+        for the IRLS problem:
 
-        min sum_{i<j} ||c_ij - G_ij c_ji||
+        G^(k+1) = min -<S^k, G^k>
         s.t. A(G) = b, G psd
             ||G||_2 <= lambda
 
