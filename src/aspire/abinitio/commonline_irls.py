@@ -234,19 +234,27 @@ class CommonlineIRLS(CommonlineLUD):
     @staticmethod
     def _compute_AX(X):
         """
-        Compute the application of the linear operator A to the symmetric input
-        matrix X, where A(X) is defined as:
+        Compute the application of the linear operator A to a symmetric input matrix X,
+        where X is a 2K x 2K matrix composed of four K x K blocks:
 
-        A(X) = [
-            diag(X_11),
-            diag(X_22),
-            sqrt(2)/2 * diag(X_12 + sqrt(2)/2 * diag(X_21)
-        ]
+            X = [X_11  X_12]
+                [X_21  X_22]
 
-        where X_{ij} is the (i, j)'th K x K sub-block of X.
+        The operator A maps X to a 3K-dimensional vector as:
 
-        :param X: 2D square array of shape (2K, 2K)..
-        :return: Flattened array representing A(X)
+            A(X) = [
+                diag(X_11),
+                diag(X_22),
+                sqrt(2) * diag(X_21)
+            ]
+
+        where:
+          - diag(X_11) and diag(X_22) extract the diagonals of the top-left and bottom-right K x K blocks,
+          - diag(X_21) (i.e., the lower-left block) extracts the diagonal of the off-diagonal block,
+            scaled by sqrt(2) to account for symmetry.
+
+        :param X: 2D symmetric NumPy array of shape (2K, 2K).
+        :return: 1D NumPy array of length 3K representing A(X).
         """
         K = X.shape[0] // 2
 
@@ -277,18 +285,17 @@ class CommonlineIRLS(CommonlineLUD):
                 y_i^3
             ]   for i = 1, 2, ..., K,
 
-        and the adjoint of the operator A is defined as:
+        and the adjoint operator produces a 2K×2K symmetric matrix Y, where:
 
-            AT(y) = Y = [
-                [Y_ii^(11), Y_ii^(12)],
-                [Y_ii^(21), Y_ii^(22)]
-            ],
+          - The first K elements y_i^1 are placed on the diagonal entries Y_ii for i = 0 to K−1.
+          - The next K elements y_i^2 are placed on the diagonal entries Y_ii for i = K to 2K−1.
+          - The final K elements y_i^3 are scaled by 1/√2 and placed as diagonal entries in the
+            upper-right block ([:K, K:]) and symmetrically in the lower-left block ([K:, :K]).
 
-        where for i = 1, 2, ..., K:
+        This results in a matrix of the form:
 
-            Y_ii^(11) = y_i^1,
-            Y_ii^(22) = y_i^2,
-            Y_ii^(12) = Y_ii^(21) = y_i^3 / sqrt(2).
+            Y = [ diag(y^1)       diag(y^3 / sqrt(2)) ]
+                [ diag(y^3 / sqrt(2))  diag(y^2)      ]
 
         :param y: 1D NumPy array of length 3K.
         :return: 2D NumPy array of shape (2K, 2K).
