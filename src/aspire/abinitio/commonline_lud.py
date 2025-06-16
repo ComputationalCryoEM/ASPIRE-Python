@@ -454,21 +454,26 @@ class CommonlineLUD(CommonlineSDP):
     @staticmethod
     def _compute_AX(X):
         """
-        Compute the application of the linear operator A to the symmetric input
-        matrix X, where A(X) is defined as:
+        Compute the application of the linear operator A to a symmetric input matrix X,
+        where X is a 2K x 2K matrix consisting of K diagonal 2 x 2 blocks.
 
-        A(X) = [
-            X_ii^(11),
-            X_ii^(22),
-            sqrt(2)/2 * X_ii^(12) + sqrt(2)/2 * X_ii^(21)
-        ]
+        The operator A maps X to a 3K-dimensional vector as follows:
 
-        i = 1, 2, ..., K
+            For each 2 x 2 diagonal block X_i:
 
-        where X_{ii}^{pq} denotes the (p,q)-th element in the 2x2 sub-block X_{ii}.
+                A(X_i) = [
+                    X_i[0, 0],
+                    X_i[1, 1],
+                    sqrt(2) * X_i[0, 1]
+                ]
 
-        :param X: 2D square array of shape (2K, 2K)..
-        :return: Flattened array representing A(X)
+        That is:
+          - The first K entries are the (0,0) elements from each 2 x 2 block,
+          - The next K are the (1,1) elements,
+          - The final K are sqrt(2) times the off-diagonal (0,1) elements.
+
+        :param X: 2D symmetric NumPy array of shape (2K, 2K), with 2 x 2 blocks along the diagonal.
+        :return: 1D NumPy array of length 3K representing A(X).
         """
         # Extract the diagonal elements of (X_ii^(11) and X_ii^(22))
         diags = np.diag(X)
@@ -499,21 +504,18 @@ class CommonlineLUD(CommonlineSDP):
                 y_i^3
             ]   for i = 1, 2, ..., K,
 
-        and the adjoint of the operator A is defined as:
+        and the adjoint operator produces a 2K×2K matrix Y, where each 2×2 block
+        along the diagonal has the form:
 
-            AT(y) = Y = [
-                [Y_ii^(11), Y_ii^(12)],
-                [Y_ii^(21), Y_ii^(22)]
-            ],
+        Y_i = [
+            [y_i^1,           y_i^3 / sqrt(2)],
+            [y_i^3 / sqrt(2),           y_i^2]
+        ]
 
-        where for i = 1, 2, ..., K:
-
-            Y_ii^(11) = y_i^1,
-            Y_ii^(22) = y_i^2,
-            Y_ii^(12) = Y_ii^(21) = y_i^3 / sqrt(2).
+        All off-diagonal blocks in Y are zero.
 
         :param y: 1D NumPy array of length 3K.
-        :return: 2D NumPy array of shape (2K, 2K).
+        :return: 2D NumPy array of shape (2K, 2K) with 2×2 symmetric blocks on the diagonal..
         """
         K = len(y) // 3
         n = 2 * K  # Size of the output matrix
