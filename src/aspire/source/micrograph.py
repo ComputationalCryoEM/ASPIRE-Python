@@ -11,7 +11,13 @@ from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
 from aspire.storage import StarFile
-from aspire.utils import Random, check_pixel_size, grid_2d, rename_with_timestamp
+from aspire.utils import (
+    Random,
+    check_pixel_size,
+    grid_2d,
+    rename_with_timestamp,
+    trange,
+)
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -120,6 +126,42 @@ class MicrographSource(ABC):
         :param indices: A 1-D Numpy array of integer indices.
         :return: An `Image` object representing the micrographs for `indices`.
         """
+
+    def phase_flip(self, filters):
+        """
+        Perform phase flip on micrographs in the source object using CTF information.
+        If no CTFFilters exist this will emit a warning and otherwise no-op.
+        """
+
+        logger.info("Perform phase flip on source object")
+        filters = list(filters)  # unpack any generators
+
+        if len(filters) >= 1:
+            assert len(filters) == self.micrograph_count
+
+            logger.info("Phaseflipping")
+            phase_flipped_micrographs = np.empty(
+                (self.micrograph_count, *self.micrograph_size), dtype=self.dtype
+            )
+            for i in trange(self.micrograph_count, desc=f"Phaseflipping micrograph"):
+                # micrograph = self.images[i]
+                # f = filters[i].sign
+                # ... = micrograph.filter(f)
+                phase_flipped_micrographs[i] = self.images[i].filter(filters[i].sign)
+
+            return ArrayMicrographSource(
+                micrographs=phase_flipped_micrographs, pixel_size=self.pixel_size
+            )
+
+        else:
+            # No CTF filters found
+            logger.warning(
+                "No Filters found."
+                "  `phase_flip` is a no-op without Filters."
+                "  Confirm you have correctly populated CTFFilters."
+            )
+
+            return self
 
 
 class ArrayMicrographSource(MicrographSource):
@@ -287,7 +329,7 @@ class DiskMicrographSource(MicrographSource):
 
             # Continually compare with initial pixel_size
             if _pixel_size is not None and _pixel_size != self.pixel_size:
-                msg = f"Mismatched pixel size. {micrograph.pixel_size} angstroms defined in {self.micrograph_files[ind]}, but provided {self.pixel_size} angstroms."
+                msg = f"Mismatched pixel size. {_pixel_size} angstroms defined in {self.micrograph_files[ind]}, but provided {self.pixel_size} angstroms."
                 warnings.warn(msg, UserWarning, stacklevel=2)
 
             # Assign to array, implicitly performs casting to dtype
