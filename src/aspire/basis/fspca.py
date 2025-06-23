@@ -341,7 +341,7 @@ class FSPCABasis(SteerableBasis2D):
 
         assert c_fspca.shape == (x.shape[0], self.count)
 
-        return Coef(self, c_fspca)
+        return Coef(self, c_fspca, pixel_size=x.pixel_size)
 
     def evaluate_to_image_basis(self, c):
         """
@@ -379,7 +379,7 @@ class FSPCABasis(SteerableBasis2D):
         # corrected_c[:, self.angular_indices!=0] *= 2
         # return corrected_c @ eigvecs.T
 
-        return Coef(self.basis, c @ eigvecs.T)
+        return Coef(self.basis, c @ eigvecs.T, pixel_size=c.pixel_size)
 
     # TODO: Python>=3.8 @cached_property
     def _get_compressed_indices(self):
@@ -477,6 +477,7 @@ class FSPCABasis(SteerableBasis2D):
         """
         if not isinstance(coef, Coef):
             raise TypeError(f"'coef' should be `Coef` instance, received {type(coef)}.")
+        px_sz = coef.pixel_size
         coef = coef.asnumpy()
 
         if coef.dtype not in (np.float64, np.float32):
@@ -514,7 +515,7 @@ class FSPCABasis(SteerableBasis2D):
         for i, k in enumerate(ccoef_d.keys()):
             ccoef[:, i] = ccoef_d[k]
 
-        return ComplexCoef(self, ccoef)
+        return ComplexCoef(self, ccoef, pixel_size=px_sz)
 
     def to_real(self, complex_coef):
         """
@@ -554,7 +555,7 @@ class FSPCABasis(SteerableBasis2D):
                 coef[:, pos_i] = 2.0 * complex_coef[:, i].real
                 coef[:, neg_i] = -2.0 * complex_coef[:, i].imag
 
-        return Coef(self, coef)
+        return Coef(self, coef, pixel_size=complex_coef.pixel_size)
 
     def calculate_bispectrum(
         self, coef, flatten=False, filter_nonzero_freqs=False, freq_cutoff=None
