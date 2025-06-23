@@ -588,7 +588,9 @@ class Basis:
 
         """
 
+        px_sz = None
         if isinstance(x, Image) or isinstance(x, Volume):
+            px_sz = x.pixel_size
             x = x.asnumpy()
 
         if x.dtype != self.dtype:
@@ -633,4 +635,4 @@ class Basis:
         # return v coefficients with the last dimension of self.count
         v = v.reshape((*sz_roll, self.count))
 
-        return Coef(self, v)
+        return Coef(self, v, pixel_size=px_sz)
