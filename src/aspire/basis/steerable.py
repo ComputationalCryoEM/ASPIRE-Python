@@ -173,6 +173,7 @@ class SteerableBasis2D(Basis, abc.ABC):
         if not isinstance(coef, Coef):
             raise TypeError(f"`coef` must be `Coef` instance, received {type(coef)}.")
 
+        px_sz = coef.pixel_size
         coef = coef.asnumpy()
 
         # Covert radians to a broadcastable shape
@@ -226,7 +227,7 @@ class SteerableBasis2D(Basis, abc.ABC):
             ks_neg
         ) - coef_pos * np.sin(ks_pos)
 
-        return Coef(self, coef)
+        return Coef(self, coef, pixel_size=px_sz)
 
     def complex_rotate(self, complex_coef, radians, refl=None):
         """
