@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable
@@ -46,7 +47,17 @@ class CoordinateSource(ImageSource, ABC):
     This also allows the CoordinateSource to be saved to an `.mrcs` stack.
     """
 
-    def __init__(self, files, particle_size, max_rows, B, symmetry_group):
+    def __init__(
+        self, files, particle_size, max_rows, B, symmetry_group, pixel_size=None
+    ):
+        """
+        :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
+        :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
+        :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
+        :param B: CTF envelope decay factor
+        :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
+        :param pixel_size: Pixel size of the images in angstroms, default `None`.
+        """
         mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
         # and is used in self._populate_particles
@@ -134,7 +145,14 @@ class CoordinateSource(ImageSource, ABC):
         # total particles loaded (specific to this instance)
         logger.info(f"CoordinateSource object contains {n} particles.")
 
-        ImageSource.__init__(self, L=L, n=n, dtype=dtype, symmetry_group=symmetry_group)
+        ImageSource.__init__(
+            self,
+            L=L,
+            n=n,
+            dtype=dtype,
+            symmetry_group=symmetry_group,
+            pixel_size=pixel_size,
+        )
 
         # map mrc indices to particle indices
         # i'th element contains a list of particle indices corresponding to i'th mrc
@@ -385,6 +403,32 @@ class CoordinateSource(ImageSource, ABC):
         # convert defocus_ang from degrees to radians
         filter_params[:, 3] *= np.pi / 180.0
 
+        # Check pixel_size
+        # Get pixel_sizes from CTFFilters
+        ctf_pixel_sizes = list(set(filter_params[:, 6]))
+        # Compare with source.pixel_size if assigned
+        if (self.pixel_size is not None) and (
+            not np.allclose(ctf_pixel_sizes, self.pixel_size)
+        ):
+            warnings.warn(
+                "Pixel size mismatch."
+                f"\n\tSource: {self.pixel_size}"
+                f"\n\tCTFs: {ctf_pixel_sizes}.",
+                stacklevel=2,
+            )
+        # When source is not assigned we can try to assign it from CTF,
+        #   but only do this if all the CTFFilter pixel_sizes are consistent
+        elif self.pixel_size is None:
+            if len(ctf_pixel_sizes) == 1:
+                self.pixel_size = ctf_pixel_sizes[0]  # take the unique single element
+                logger.info(
+                    f"Assigning source pixel_size={self.pixel_size} from CTFFilters."
+                )
+            elif len(ctf_pixel_sizes) > 1:
+                logger.warning(
+                    "Unable to assign source pixel_size from CTFFilters, multiple pixel_sizes found."
+                )
+
         # construct filters
         self.unique_filters = [
             CTFFilter(
@@ -516,16 +560,25 @@ class BoxesCoordinateSource(CoordinateSource):
         max_rows=None,
         B=0,
         symmetry_group=None,
+        pixel_size=None,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
         :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
+        :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
+        :param pixel_size: Pixel size of the images in angstroms, default `None`.
         """
         # instantiate super
         CoordinateSource.__init__(
-            self, files, particle_size, max_rows, B, symmetry_group
+            self,
+            files,
+            particle_size,
+            max_rows,
+            B,
+            symmetry_group,
+            pixel_size=pixel_size,
         )
 
     def _extract_box_size(self, box_file):
@@ -629,17 +682,33 @@ class CentersCoordinateSource(CoordinateSource):
     Represents a data source consisting of micrographs and coordinate files specifying particle centers only. Files can be text (.coord) or STAR files.
     """
 
-    def __init__(self, files, particle_size, max_rows=None, B=0, symmetry_group=None):
+    def __init__(
+        self,
+        files,
+        particle_size,
+        max_rows=None,
+        B=0,
+        symmetry_group=None,
+        pixel_size=None,
+    ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
         :particle_size: Desired size of cropped particles (mandatory)
         :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
+        :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
+        :param pixel_size: Pixel size of the images in angstroms, default `None`.
         """
         # instantiate super
         CoordinateSource.__init__(
-            self, files, particle_size, max_rows, B, symmetry_group
+            self,
+            files,
+            particle_size,
+            max_rows,
+            B,
+            symmetry_group,
+            pixel_size=pixel_size,
         )
 
     def _validate_centers_file(self, coord_file):
