@@ -9,6 +9,7 @@ from unittest import TestCase
 
 import mrcfile
 import numpy as np
+import pytest
 from click.testing import CliRunner
 
 import tests.saved_test_data
@@ -31,6 +32,7 @@ class CoordinateSourceTestCase(TestCase):
             self.original_mrc_path = str(test_path)
         # save test data root dir
         self.test_dir_root = os.path.dirname(self.original_mrc_path)
+        self.pixel_size = 1.23  # Used for generating and comparing metadata
 
         # We will construct a source with two micrographs and two coordinate
         # files by using the same micrograph, but dividing the coordinates
@@ -261,7 +263,7 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnSphericalAberration": 700 + index,
             "_rlnAmplitudeContrast": 600 + index,
             "_rlnVoltage": 500 + index,
-            "_rlnMicrographPixelSize": 400 + index,
+            "_rlnMicrographPixelSize": self.pixel_size,
         }
         blocks = OrderedDict({"root": params_dict})
         starfile = StarFile(blocks=blocks)
@@ -284,8 +286,8 @@ class CoordinateSourceTestCase(TestCase):
         ]
         # using same unique values as in createTestCtfFiles
         optics_block = [
-            ["opticsGroup1", 1, 500.0, 700.0, 600.0, 400.0],
-            ["opticsGroup2", 2, 501.0, 701.0, 601.0, 401.0],
+            ["opticsGroup1", 1, 500.0, 700.0, 600.0, self.pixel_size],
+            ["opticsGroup2", 2, 501.0, 701.0, 601.0, self.pixel_size],
         ]
         # Since optics block rows are self-contained,
         # reversing their order should have no affect anywhere.
@@ -565,7 +567,15 @@ class CoordinateSourceTestCase(TestCase):
         self.assertTrue(
             np.allclose(
                 np.array(
-                    [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, 400.0],
+                    [
+                        1000.0,
+                        900.0,
+                        800.0 * np.pi / 180.0,
+                        700.0,
+                        600.0,
+                        500.0,
+                        self.pixel_size,
+                    ],
                     dtype=src.dtype,
                 ),
                 np.array(
@@ -585,7 +595,15 @@ class CoordinateSourceTestCase(TestCase):
         self.assertTrue(
             np.allclose(
                 np.array(
-                    [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, 401.0],
+                    [
+                        1001.0,
+                        901.0,
+                        801.0 * np.pi / 180.0,
+                        701.0,
+                        601.0,
+                        501.0,
+                        self.pixel_size,
+                    ],
                     dtype=src.dtype,
                 ),
                 np.array(
@@ -644,10 +662,10 @@ class CoordinateSourceTestCase(TestCase):
         ]
         ctf_metadata = np.zeros((src.n, len(ctf_cols)), dtype=src.dtype)
         ctf_metadata[:200] = np.array(
-            [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, 400.0]
+            [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, self.pixel_size]
         )
         ctf_metadata[200:400] = np.array(
-            [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, 401.0]
+            [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, self.pixel_size]
         )
         self.assertTrue(np.array_equal(ctf_metadata, src.get_metadata(ctf_cols)))
 
@@ -699,6 +717,33 @@ class CoordinateSourceTestCase(TestCase):
         self.assertTrue(result_coord.exit_code == 0)
         self.assertTrue(result_star.exit_code == 0)
         self.assertTrue(result_preprocess.exit_code == 0)
+
+    def testPixelSizeWarning(self):
+        """
+        Test source haveing a pixel size that conflicts with the CTFFilter instances.
+        """
+        manual_pixel_size = 0.789
+        src = BoxesCoordinateSource(self.files_box, pixel_size=manual_pixel_size)
+        # Capture and compare warning message
+        with pytest.warns(UserWarning, match=r".*Pixel size mismatch.*"):
+            src.import_relion_ctf(self.relion_ctf_file)
+            assert src.pixel_size == manual_pixel_size
+
+    def testPixelSize(self):
+        """
+        Test explicitly providing correct pixel_size.
+        """
+        src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
+        src.import_relion_ctf(self.relion_ctf_file)
+        assert src.pixel_size == self.pixel_size
+
+    def testPixelSizeNone(self):
+        """
+        Test not providing pixel_size.
+        """
+        src = BoxesCoordinateSource(self.files_box)
+        src.import_relion_ctf(self.relion_ctf_file)
+        assert src.pixel_size == self.pixel_size
 
 
 def create_test_rectangular_micrograph_and_star(tmp_path, voxel_size=(2.0, 2.0, 1.0)):
