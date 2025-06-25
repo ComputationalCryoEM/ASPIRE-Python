@@ -138,6 +138,12 @@ class CoordinateSourceTestCase(TestCase):
     def tearDown(self):
         self.tmpdir.cleanup()
 
+    # This is a workaround to use a `pytest` fixture with `unittest` style cases.
+    # We use it below to capture and inspect the log
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        self._caplog = caplog
+
     def createTestBoxFiles(self, centers, index):
         """
         Create a .box file storing particle coordinates as
@@ -252,6 +258,8 @@ class CoordinateSourceTestCase(TestCase):
     def createTestCtfFiles(self, index):
         """
         Creates example ASPIRE-generated CTF files.
+
+        Note two distinct pixel sizes.
         """
         star_fp = os.path.join(self.data_folder, f"ctf{index+1}.star")
         # note that values are arbitrary and not representative of actual CTF data
@@ -263,7 +271,7 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnSphericalAberration": 700 + index,
             "_rlnAmplitudeContrast": 600 + index,
             "_rlnVoltage": 500 + index,
-            "_rlnMicrographPixelSize": self.pixel_size,
+            "_rlnMicrographPixelSize": self.pixel_size + index * 0.01,
         }
         blocks = OrderedDict({"root": params_dict})
         starfile = StarFile(blocks=blocks)
@@ -272,6 +280,8 @@ class CoordinateSourceTestCase(TestCase):
     def createTestRelionCtfFile(self, reverse_optics_block_rows=False):
         """
         Creates example RELION-generated CTF file for a set of micrographs.
+
+        Note uniform pixel size.
         """
         star_fp = os.path.join(self.data_folder, "micrographs_ctf.star")
         blocks = OrderedDict()
@@ -532,8 +542,8 @@ class CoordinateSourceTestCase(TestCase):
     def testImportCtfFromList(self):
         src = BoxesCoordinateSource(self.files_box)
         src.import_aspire_ctf(self.ctf_files)
-        self._testCtfFilters(src)
-        self._testCtfMetadata(src)
+        self._testCtfFilters(src, uniform_pixel_sizes=False)
+        self._testCtfMetadata(src, uniform_pixel_sizes=False)
 
     def testImportCtfFromRelion(self):
         src = BoxesCoordinateSource(self.files_box)
@@ -556,7 +566,7 @@ class CoordinateSourceTestCase(TestCase):
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
-    def _testCtfFilters(self, src):
+    def _testCtfFilters(self, src, uniform_pixel_sizes=True):
         # there are two micrographs and two CTF files, so there should be two
         # unique CTF filters
         self.assertEqual(len(src.unique_filters), 2)
@@ -592,6 +602,9 @@ class CoordinateSourceTestCase(TestCase):
             )
         )
         filter1 = src.unique_filters[1]
+        pixel_size1 = self.pixel_size
+        if not uniform_pixel_sizes:
+            pixel_size1 += 0.01
         self.assertTrue(
             np.allclose(
                 np.array(
@@ -602,7 +615,7 @@ class CoordinateSourceTestCase(TestCase):
                         701.0,
                         601.0,
                         501.0,
-                        self.pixel_size,
+                        pixel_size1,
                     ],
                     dtype=src.dtype,
                 ),
@@ -629,7 +642,7 @@ class CoordinateSourceTestCase(TestCase):
             np.array_equal(np.where(src.filter_indices == 1)[0], np.arange(200, 400))
         )
 
-    def _testCtfMetadata(self, src):
+    def _testCtfMetadata(self, src, uniform_pixel_sizes=True):
         # ensure metadata is populated correctly when adding CTF info
         # __mrc_filepath
         mrc_fp_metadata = np.array(
@@ -664,8 +677,11 @@ class CoordinateSourceTestCase(TestCase):
         ctf_metadata[:200] = np.array(
             [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, self.pixel_size]
         )
+        pixel_size1 = self.pixel_size
+        if not uniform_pixel_sizes:
+            pixel_size1 += 0.01
         ctf_metadata[200:400] = np.array(
-            [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, self.pixel_size]
+            [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, pixel_size1]
         )
         self.assertTrue(np.array_equal(ctf_metadata, src.get_metadata(ctf_cols)))
 
@@ -728,6 +744,17 @@ class CoordinateSourceTestCase(TestCase):
         with pytest.warns(UserWarning, match=r".*Pixel size mismatch.*"):
             src.import_relion_ctf(self.relion_ctf_file)
             np.testing.assert_approx_equal(src.pixel_size, manual_pixel_size)
+
+    def testMultiplePixelSizeWarning(self):
+        """
+        Test source haveing a multiple pixel sizes in CTFFilter instances.
+        """
+        src = BoxesCoordinateSource(self.files_box)  # pixel_size=None
+        # Capture and compare warning message
+        with self._caplog.at_level(logging.WARNING):
+            src.import_aspire_ctf(self.ctf_files)  # not uniform_pixel_sizes
+            assert src.pixel_size is None
+            assert "multiple pixel_sizes found" in self._caplog.text
 
     def testPixelSize(self):
         """
