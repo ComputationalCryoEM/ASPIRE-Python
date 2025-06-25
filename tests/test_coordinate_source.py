@@ -727,7 +727,7 @@ class CoordinateSourceTestCase(TestCase):
         # Capture and compare warning message
         with pytest.warns(UserWarning, match=r".*Pixel size mismatch.*"):
             src.import_relion_ctf(self.relion_ctf_file)
-            assert src.pixel_size == manual_pixel_size
+            np.testing.assert_approx_equal(src.pixel_size, manual_pixel_size)
 
     def testPixelSize(self):
         """
@@ -735,7 +735,7 @@ class CoordinateSourceTestCase(TestCase):
         """
         src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
         src.import_relion_ctf(self.relion_ctf_file)
-        assert src.pixel_size == self.pixel_size
+        np.testing.assert_approx_equal(src.pixel_size, self.pixel_size)
 
     def testPixelSizeNone(self):
         """
@@ -743,7 +743,7 @@ class CoordinateSourceTestCase(TestCase):
         """
         src = BoxesCoordinateSource(self.files_box)
         src.import_relion_ctf(self.relion_ctf_file)
-        assert src.pixel_size == self.pixel_size
+        np.testing.assert_approx_equal(src.pixel_size, self.pixel_size)
 
 
 def create_test_rectangular_micrograph_and_star(tmp_path, voxel_size=(2.0, 2.0, 1.0)):
