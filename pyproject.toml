@@ -31,7 +31,7 @@ dependencies = [
     "click",
     "confuse >= 2.0.0",
     "cvxpy",
-    "finufft==2.3.0",
+    "finufft==2.4.0",
     "gemmi >= 0.6.5",
     "joblib",
     "matplotlib >= 3.2.0",
@@ -56,7 +56,7 @@ dependencies = [
 "Source" = "https://github.com/ComputationalCryoEM/ASPIRE-Python"
 
 [project.optional-dependencies]
-gpu-12x = ["cupy-cuda12x", "cufinufft==2.3.0"]
+gpu-12x = ["cupy-cuda12x", "cufinufft==2.4.0"]
 dev = [
     "black",
     "bumpversion",
