@@ -52,7 +52,7 @@ class CoordinateSource(ImageSource, ABC):
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
-        :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
+        :param particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
@@ -417,13 +417,14 @@ class CoordinateSource(ImageSource, ABC):
                 stacklevel=2,
             )
         # When source is not assigned we can try to assign it from CTF,
-        #   but only do this if all the CTFFilter pixel_sizes are consistent
         elif self.pixel_size is None:
+            # but only do this if all the CTFFilter pixel_sizes are consistent
             if len(ctf_pixel_sizes) == 1:
                 self.pixel_size = ctf_pixel_sizes[0]  # take the unique single element
                 logger.info(
                     f"Assigning source pixel_size={self.pixel_size} from CTFFilters."
                 )
+            # otherwise let the user know
             elif len(ctf_pixel_sizes) > 1:
                 logger.warning(
                     "Unable to assign source pixel_size from CTFFilters, multiple pixel_sizes found."
@@ -564,7 +565,7 @@ class BoxesCoordinateSource(CoordinateSource):
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
-        :particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
+        :param particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
@@ -693,7 +694,7 @@ class CentersCoordinateSource(CoordinateSource):
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
-        :particle_size: Desired size of cropped particles (mandatory)
+        :param particle_size: Desired size of cropped particles (mandatory)
         :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
         :param B: CTF envelope decay factor
