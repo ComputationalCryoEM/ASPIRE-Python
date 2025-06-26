@@ -47,16 +47,18 @@ def dtype(request):
 
 @pytest.fixture(scope="module")
 def sim(L, dtype):
+    px_sz = 1.234
     sim = Simulation(
         L=L,
         n=256,
         C=1,  # single volume
         unique_filters=[
-            RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
+            RadialCTFFilter(defocus=d, pixel_size=px_sz)
+            for d in np.linspace(1.5e4, 2.5e4, 7)
         ],
         dtype=dtype,
         seed=SEED,
-        pixel_size=1,
+        pixel_size=px_sz,
     )
 
     sim = sim.cache()  # precompute images

@@ -142,7 +142,7 @@ def class_sim_fixture(dtype, img_size):
         C=1,
         angles=true_rots.angles,
         symmetry_group="C4",  # For testing symmetry_group pass-through.
-        pixel_size=1,  # For testing pixel_size pass-through
+        pixel_size=1.234,  # For testing pixel_size pass-through
     )
     # Prefetch all the images
     src = src.cache()
