@@ -22,16 +22,18 @@ from aspire.downloader import emdb_2660
 # Load 80s Ribosome as a ``Volume`` object.
 original_vol = emdb_2660()
 
-# Downsample the volume
-res = 41
-vol = original_vol.downsample(res)
+# During the preprocessing stages of the pipeline we will downsample
+# the images to an image size of 64 pixels. Here, we also downsample the
+# volume so we can compare to our reconstruction later.
+res = 64
+vol_ds = original_vol.downsample(res)
 
 # %%
 # .. note::
 #     A ``Volume`` can be saved using the ``Volume.save()`` method as follows::
 #
 #         fn = f"downsampled_80s_ribosome_size{res}.mrc"
-#         vol.save(fn, overwrite=True)
+#         vol_ds.save(fn, overwrite=True)
 
 
 # %%
@@ -63,7 +65,7 @@ defocus_max = 25000
 defocus_ct = 7
 
 ctf_filters = [
-    RadialCTFFilter(pixel_size=vol.pixel_size, defocus=d)
+    RadialCTFFilter(pixel_size=original_vol.pixel_size, defocus=d)
     for d in np.linspace(defocus_min, defocus_max, defocus_ct)
 ]
 
@@ -72,8 +74,8 @@ ctf_filters = [
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # We feed our ``Volume`` and filters into ``Simulation`` to generate
 # the dataset of images.  When controlled white Gaussian noise is
-# desired, ``WhiteNoiseAdder.from_snr()`` can be used to generate a
-# simulation data set around a specific SNR.
+# desired, ``WhiteNoiseAdder(var=VAR)`` can be used to generate a
+# simulation data set around a specific noise variance.
 #
 # Alternatively, users can bring their own images using an
 # ``ArrayImageSource``, or define their own custom noise functions via
@@ -84,28 +86,23 @@ ctf_filters = [
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 
-# set parameters
-n_imgs = 2500
-
-# SNR target for white gaussian noise.
-snr = 0.5
-
-# %%
-# .. note::
-#   Note, the SNR value was chosen based on other parameters for this
-#   quick tutorial, and can be changed to adjust the power of the
-#   additive noise.
-
 # For this ``Simulation`` we set all 2D offset vectors to zero,
 # but by default offset vectors will be randomly distributed.
 src = Simulation(
-    n=n_imgs,  # number of projections
-    vols=vol,  # volume source
+    n=2500,  # number of projections
+    vols=original_vol,  # volume source
     offsets=0,  # Default: images are randomly shifted
     unique_filters=ctf_filters,
-    noise_adder=WhiteNoiseAdder.from_snr(snr=snr),  # desired SNR
+    noise_adder=WhiteNoiseAdder(var=0.0002),  # desired noise variance
 )
 
+# %%
+# .. note::
+#   The noise variance value above was chosen based on other parameters for this
+#   quick tutorial, and can be changed to adjust the power of the additive noise.
+#   Alternatively, an SNR value can be prescribed as follows::
+#
+#       Simulation(..., noise_adder=WhiteNoiseAdder.from_snr(SNR))
 
 # %%
 # Several Views of the Projection Images
@@ -125,6 +122,24 @@ src.clean_images[0:10].show()
 # with noise and CTF corruption
 src.images[0:10].show()
 
+# %%
+# Image Preprocessing
+# -------------------
+# We apply some image preprocessing techniques to prepare the
+# the images for denoising via Class Averaging. When processing
+# experimental data additional preproccesing methods such as
+# noise whitening, contrast inversion, and background normalization
+# can be applied in a similar fashion.
+
+# %%
+# Downsampling
+# ------------
+# We downsample the images to remove high frequency noise and improve the
+# efficiency of subsequent pipeline stages. Metadata such as pixel size is
+# scaled appropriately to correspond correctly with the image resolution.
+
+src = src.downsample(res)
+src.images[:10].show()
 
 # %%
 # CTF Correction
@@ -132,6 +147,7 @@ src.images[0:10].show()
 # We apply ``phase_flip()`` to correct for CTF effects.
 
 src = src.phase_flip()
+src.images[:10].show()
 
 # %%
 # Cache
@@ -146,39 +162,17 @@ src.images[0:10].show()
 # %%
 # Class Averaging
 # ---------------
-# We use ``RIRClass2D`` object to classify the images via the
-# rotationally invariant representation (RIR) algorithm. Class
-# selection is customizable. The classification module also includes a
-# set of protocols for selecting a set of images to be used after
-# classification.  Here we're using the simplest
-# ``DebugClassAvgSource`` which internally uses the
-# ``TopClassSelector`` to select the first ``n_classes`` images from
-# the source.  In practice, the selection is done by sorting class
-# averages based on some configurable notion of quality (contrast,
-# neighbor distance etc).
-
-from aspire.classification import RIRClass2D
-
-# set parameters
-n_classes = 200
-n_nbor = 6
-
-# We will customize our class averaging source. Note that the
-# ``fspca_components`` and ``bispectrum_components`` were selected for
-# this small tutorial.
-rir = RIRClass2D(
-    src,
-    fspca_components=40,
-    bispectrum_components=30,
-    n_nbor=n_nbor,
-)
+# For this tutorial we use the ``DebugClassAvgSource`` to generate an ``ImageSource``
+# of class averages. Internally, ``DebugClassAvgSource`` uses the ``RIRClass2D``
+# object to classify the source images via the rotationally invariant representation
+# (RIR) algorithm and the ``TopClassSelector`` object to select the first ``n_classes``
+# images from the source. In practice, class selection is commonly done by sorting class
+# averages based on some configurable notion of quality (contrast, neighbor distance etc)
+# which can be accomplished by providing a custom class selector to ``ClassAverageSource``.
 
 from aspire.denoising import DebugClassAvgSource
 
-avgs = DebugClassAvgSource(
-    src=src,
-    classifier=rir,
-)
+avgs = DebugClassAvgSource(src=src)
 
 # We'll continue our pipeline using only the first ``n_classes`` from
 # ``avgs``.  The ``cache()`` call is used here to precompute results
@@ -187,6 +181,7 @@ avgs = DebugClassAvgSource(
 # the following ``CLSyncVoting`` algorithm.  Outside of demonstration
 # purposes, where we are repeatedly peeking at various stage results,
 # such caching can be dropped allowing for more lazy evaluation.
+n_classes = 250
 avgs = avgs[:n_classes].cache()
 
 
@@ -222,7 +217,7 @@ true_rotations = src.rotations[:n_classes]
 
 # For this low resolution example we will customize the ``CLSyncVoting``
 # instance to use fewer theta points ``n_theta`` then the default value of 360.
-orient_est = CLSyncVoting(avgs, n_theta=72)
+orient_est = CLSyncVoting(avgs)
 
 # Instantiate an ``OrientedSource``.
 oriented_src = OrientedSource(avgs, orient_est)
@@ -278,3 +273,33 @@ projections_est.show()
 
 # For comparison, we view the first 10 source projections.
 src.projections[0:10].show()
+
+
+# %%
+# Fourier Shell Correlation
+# -------------------------
+# Additionally, we can compare our reconstruction to the known source volume
+# by performing a Fourier shell correlation (FSC). We use a Bayesian Optimal
+# Transport Alignment method to align the estimated volume to the source
+# volume and compute the FSC.
+
+# Due to the inherent handedness ambiguity involved in cryo-EM reconstructions
+# we will attempt aligning both the estimated volume and a flipped volume
+# to the original volume which has been downsampled to the same resolution.
+from aspire.utils import Rotation, align_BO
+
+# Use BOT Alignment to find the best aligning rotation.
+align_rot = align_BO(vol_ds, estimated_volume)
+
+# Align the volume and compute the FSC.
+aligned_vol = estimated_volume.rotate(Rotation(align_rot[1]))
+vol_ds.fsc(aligned_vol, cutoff=0.143, plot=True)
+
+
+# %%
+
+# Perform alignment and FSC on a flipped volume.
+align_rot = align_BO(vol_ds, estimated_volume.flip())
+aligned_vol = estimated_volume.flip().rotate(Rotation(align_rot[1]))
+vol_ds.fsc(aligned_vol, cutoff=0.143, plot=True)
+
