@@ -405,7 +405,7 @@ class CoordinateSource(ImageSource, ABC):
 
         # Check pixel_size
         # Get pixel_sizes from CTFFilters
-        ctf_pixel_sizes = list(set(filter_params[:, 6]))
+        ctf_pixel_sizes = np.unique(filter_params[:, 6])
         # Compare with source.pixel_size if assigned
         if (self.pixel_size is not None) and (
             not np.allclose(ctf_pixel_sizes, self.pixel_size)
