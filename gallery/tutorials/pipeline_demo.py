@@ -302,4 +302,3 @@ vol_ds.fsc(aligned_vol, cutoff=0.143, plot=True)
 align_rot = align_BO(vol_ds, estimated_volume.flip())
 aligned_vol = estimated_volume.flip().rotate(Rotation(align_rot[1]))
 vol_ds.fsc(aligned_vol, cutoff=0.143, plot=True)
-
