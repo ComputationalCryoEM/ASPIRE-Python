@@ -33,6 +33,8 @@ class Coef:
         :param basis: `Basis` associated with `data` coefficients.
         :param data: Numpy array containing image data with shape
             `(..., count)`.
+        :param pixel_size: Pixel size of underlying image data in
+            angstroms, default `None`.
         :param dtype: Optionally cast `data` to this dtype.
             Defaults to `data.dtype`.
 
