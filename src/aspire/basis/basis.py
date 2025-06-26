@@ -478,8 +478,10 @@ class Basis:
         if not isinstance(v, Coef):
             raise TypeError(f"`evaluate` should be passed a `Coef`, received {type(v)}")
 
-        # Flatten stack
+        # Store pixel_size for passthrough
         px_sz = v.pixel_size
+
+        # Flatten stack
         stack_shape = v.stack_shape
         v = v.stack_reshape(-1).asnumpy()
 
@@ -517,6 +519,7 @@ class Basis:
             )
             px_sz = None
         else:
+            # Store pixel_size for passthrough
             px_sz = v.pixel_size
             v = v.asnumpy()
 
