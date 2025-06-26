@@ -736,7 +736,7 @@ class CoordinateSourceTestCase(TestCase):
 
     def testPixelSizeWarning(self):
         """
-        Test source haveing a pixel size that conflicts with the CTFFilter instances.
+        Test source having a pixel size that conflicts with the CTFFilter instances.
         """
         manual_pixel_size = 0.789
         src = BoxesCoordinateSource(self.files_box, pixel_size=manual_pixel_size)
@@ -747,7 +747,7 @@ class CoordinateSourceTestCase(TestCase):
 
     def testMultiplePixelSizeWarning(self):
         """
-        Test source haveing a multiple pixel sizes in CTFFilter instances.
+        Test source having multiple pixel sizes in CTFFilter instances.
         """
         src = BoxesCoordinateSource(self.files_box)  # pixel_size=None
         # Capture and compare warning message
