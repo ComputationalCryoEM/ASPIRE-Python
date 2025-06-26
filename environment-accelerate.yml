@@ -7,8 +7,8 @@ channels:
 dependencies:
   - pip
   - python=3.9
-  - numpy=1.24.1
-  - scipy=1.10.1
+  - numpy=2.0.2
+  - scipy=1.13.1
   - scikit-learn
   - scikit-image
   - libblas=*=*accelerate
