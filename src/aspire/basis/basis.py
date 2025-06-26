@@ -247,10 +247,10 @@ class Coef:
         :return: `Coef` instance.
         """
 
+        px_sz = self._check_pixel_size(other)
+
         if isinstance(other, Coef):
             other = other._data
-
-        px_sz = self._check_pixel_size(other)
 
         return self.__class__(self.basis, self._data * other, pixel_size=px_sz)
 
@@ -263,10 +263,10 @@ class Coef:
         :return: `Coef` instance.
         """
 
+        px_sz = self._check_pixel_size(other)
+
         if isinstance(other, Coef):
             other = other._data
-
-        px_sz = self._check_pixel_size(other)
 
         return self.__class__(self.basis, self._data + other, pixel_size=px_sz)
 
@@ -279,10 +279,10 @@ class Coef:
         :return: `Coef` instance.
         """
 
+        px_sz = self._check_pixel_size(other)
+
         if isinstance(other, Coef):
             other = other._data
-
-        px_sz = self._check_pixel_size(other)
 
         return self.__class__(self.basis, self._data - other, pixel_size=px_sz)
 
