@@ -127,7 +127,7 @@ src.images[0:10].show()
 # -------------------
 # We apply some image preprocessing techniques to prepare the
 # the images for denoising via Class Averaging. When processing
-# experimental data additional preproccesing methods such as
+# experimental data additional preprocesing methods such as
 # noise whitening, contrast inversion, and background normalization
 # can be applied in a similar fashion.
 
@@ -136,7 +136,7 @@ src.images[0:10].show()
 # ------------
 # We downsample the images to remove high frequency noise and improve the
 # efficiency of subsequent pipeline stages. Metadata such as pixel size is
-# scaled appropriately to correspond correctly with the image resolution.
+# scaled accordingly to correspond correctly with the image resolution.
 
 src = src.downsample(res)
 src.images[:10].show()
