@@ -51,6 +51,7 @@ class FinufftPlan(Plan):
             eps=self.epsilon,
             n_trans=self.ntransforms,
             dtype=self.complex_dtype,
+            upsampfac=2,  # revert <2.4.0 default
         )
 
         self._adjoint_plan = finufft.Plan(
@@ -59,6 +60,7 @@ class FinufftPlan(Plan):
             eps=self.epsilon,
             n_trans=self.ntransforms,
             dtype=self.complex_dtype,
+            upsampfac=2,  # revert <2.4.0 default
         )
 
         self._transform_plan.setpts(*self.fourier_pts)
