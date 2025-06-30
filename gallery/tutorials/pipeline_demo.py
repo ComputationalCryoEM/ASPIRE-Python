@@ -211,9 +211,10 @@ src.images[0:10].show()
 
 from aspire.abinitio import CLSyncVoting
 from aspire.source import OrientedSource
+from aspire.utils import Rotation
 
 # Stash true rotations for later comparison
-true_rotations = src.rotations[:n_classes]
+true_rotations = Rotation(src.rotations[:n_classes])
 
 # For this low resolution example we will customize the ``CLSyncVoting``
 # instance to use fewer theta points ``n_theta`` then the default value of 360.
@@ -279,26 +280,15 @@ src.projections[0:10].show()
 # Fourier Shell Correlation
 # -------------------------
 # Additionally, we can compare our reconstruction to the known source volume
-# by performing a Fourier shell correlation (FSC). We use a Bayesian Optimal
-# Transport Alignment method to align the estimated volume to the source
-# volume and compute the FSC.
+# by performing a Fourier shell correlation (FSC). We first find a rotation
+# matrix which best aligns the estimated rotations to the ground truth rotations
+# using the ``find_registration`` method. We then use that rotation to align
+# the reconstructed volume to the ground truth volume.
 
-# Due to the inherent handedness ambiguity involved in cryo-EM reconstructions
-# we will attempt aligning both the estimated volume and a flipped volume
-# to the original volume which has been downsampled to the same resolution.
-from aspire.utils import Rotation, align_BO
-
-# Use BOT Alignment to find the best aligning rotation.
-align_rot = align_BO(vol_ds, estimated_volume)
-
-# Align the volume and compute the FSC.
-aligned_vol = estimated_volume.rotate(Rotation(align_rot[1]))
-vol_ds.fsc(aligned_vol, cutoff=0.143, plot=True)
-
-
-# %%
-
-# Perform alignment and FSC on a flipped volume.
-align_rot = align_BO(vol_ds, estimated_volume.flip())
-aligned_vol = estimated_volume.flip().rotate(Rotation(align_rot[1]))
+# `find_registration` returns the best aligning rotation, `Q`, as well as
+# a `flag` which indicates if the volume needs to be reflected.
+Q, flag = Rotation(oriented_src.rotations).find_registration(true_rotations)
+aligned_vol = estimated_volume.rotate(Rotation(Q.T))
+if flag == 1:
+    aligned_vol = aligned_vol.flip()
 vol_ds.fsc(aligned_vol, cutoff=0.143, plot=True)
