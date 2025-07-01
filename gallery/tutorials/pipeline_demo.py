@@ -126,10 +126,7 @@ src.images[0:10].show()
 # Image Preprocessing
 # -------------------
 # We apply some image preprocessing techniques to prepare the
-# the images for denoising via Class Averaging. When processing
-# experimental data additional preprocesing methods such as
-# noise whitening, contrast inversion, and background normalization
-# can be applied in a similar fashion.
+# the images for denoising via Class Averaging.
 
 # %%
 # Downsampling
@@ -150,14 +147,38 @@ src = src.phase_flip()
 src.images[:10].show()
 
 # %%
-# Cache
-# -----
+# Normalize Background
+# --------------------
+# We apply ``normalize_background()`` to prepare the image class averaging.
+
+src = src.normalize_background()
+src.images[:10].show()
+
+# %%
+# Caching
+# -------
 # We apply ``cache`` to store the results of the ``ImageSource``
 # pipeline up to this point.  This is optional, but can provide
 # benefit when used intently on machines with adequate memory.
-
+# Since the remaining preprocessing steps, whitening and contrast
+# inversion, as well as class averaging require passing over the
+# full set of images, caching at this point saves compute time.
 src = src.cache()
-src.images[0:10].show()
+
+# %%
+# Noise Whitening
+# ---------------
+# We apply ``whiten()`` to estimate and whiten the noise.
+
+src = src.whiten()
+src.images[:10].show()
+
+# %%
+# Contrast Inversion
+# ------------------
+# We apply ``invert_contrast()`` to ensure a positive valued signal.
+
+src = src.invert_contrast()
 
 # %%
 # Class Averaging
