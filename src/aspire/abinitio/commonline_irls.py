@@ -78,13 +78,13 @@ class CommonlineIRLS(CommonlineLUD):
         else:
             for _ in trange(self.num_itrs, desc="Performing iterative re-weighting."):
                 S_weighted = weights * self.S
-                gram = self._compute_Gram(gram, S_weighted)
+                gram = self._compute_gram_IRLS(gram, S_weighted)
                 weights = self._update_weights(gram)
         self.rotations = self._deterministic_rounding(gram)
 
         return self.rotations
 
-    def _compute_Gram(self, G, S):
+    def _compute_gram_IRLS(self, G, S):
         """
         Given G^(k), solve for G^(k+1) using the alternating direction method of multipliers (ADMM)
         for the IRLS problem:
