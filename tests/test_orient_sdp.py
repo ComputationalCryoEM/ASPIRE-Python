@@ -122,7 +122,7 @@ def test_gram_matrix(src_orient_est_fixture):
 
     # Estimate the Gram matrix
     A, b = orient_est._sdp_prep()
-    gram = orient_est._compute_gram_matrix(S, A, b)
+    gram = orient_est._compute_gram_SDP(S, A, b)
 
     # Construct the ground truth Gram matrix, G = R @ R.T, where R = [R1, R2]
     # with R1 and R2 being the concatenation of the first and second columns

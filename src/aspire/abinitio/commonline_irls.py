@@ -73,7 +73,7 @@ class CommonlineIRLS(CommonlineLUD):
             A, b = self._sdp_prep()
             for _ in trange(self.num_itrs, desc="Performing iterative re-weighting."):
                 S_weighted = weights * self.S
-                gram = self._compute_gram_matrix(S_weighted, A, b)
+                gram = self._compute_gram_SDP(S_weighted, A, b)
                 weights = self._update_weights(gram)
         else:
             for _ in trange(self.num_itrs, desc="Performing iterative re-weighting."):
