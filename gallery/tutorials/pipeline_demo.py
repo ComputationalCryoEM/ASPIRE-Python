@@ -131,7 +131,7 @@ src.images[0:10].show()
 # %%
 # Downsampling
 # ------------
-# We downsample the images to remove high frequency noise and improve the
+# We downsample the images. Reducing the image size will improve the
 # efficiency of subsequent pipeline stages. Metadata such as pixel size is
 # scaled accordingly to correspond correctly with the image resolution.
 
@@ -187,9 +187,11 @@ src = src.invert_contrast()
 # of class averages. Internally, ``DebugClassAvgSource`` uses the ``RIRClass2D``
 # object to classify the source images via the rotationally invariant representation
 # (RIR) algorithm and the ``TopClassSelector`` object to select the first ``n_classes``
-# images from the source. In practice, class selection is commonly done by sorting class
-# averages based on some configurable notion of quality (contrast, neighbor distance etc)
-# which can be accomplished by providing a custom class selector to ``ClassAverageSource``.
+# images in the original order from the source. In practice, class selection is commonly
+# done by sorting class averages based on some configurable notion of quality
+# (contrast, neighbor distance etc) which can be accomplished by providing a custom
+# class selector to ``ClassAverageSource``, which changes the ordering of the classes
+# returned by ``ClassAverageSource``.
 
 from aspire.denoising import DebugClassAvgSource
 
@@ -237,8 +239,7 @@ from aspire.utils import Rotation
 # Stash true rotations for later comparison
 true_rotations = Rotation(src.rotations[:n_classes])
 
-# For this low resolution example we will customize the ``CLSyncVoting``
-# instance to use fewer theta points ``n_theta`` then the default value of 360.
+# Instantiate a ``CLSyncVoting`` object for estimating orientations.
 orient_est = CLSyncVoting(avgs)
 
 # Instantiate an ``OrientedSource``.
