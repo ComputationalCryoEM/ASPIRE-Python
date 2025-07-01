@@ -88,13 +88,15 @@ from aspire.source import Simulation
 
 # For this ``Simulation`` we set all 2D offset vectors to zero,
 # but by default offset vectors will be randomly distributed.
+# We cache the Simulation to prevent regenerating the projections
+# for each preproccesing stage.
 src = Simulation(
     n=2500,  # number of projections
     vols=original_vol,  # volume source
     offsets=0,  # Default: images are randomly shifted
     unique_filters=ctf_filters,
     noise_adder=WhiteNoiseAdder(var=0.0002),  # desired noise variance
-)
+).cache()
 
 # %%
 # .. note::
@@ -135,7 +137,7 @@ src.images[0:10].show()
 # efficiency of subsequent pipeline stages. Metadata such as pixel size is
 # scaled accordingly to correspond correctly with the image resolution.
 
-src = src.downsample(res)
+src = src.downsample(res).cache()
 src.images[:10].show()
 
 # %%
@@ -143,7 +145,7 @@ src.images[:10].show()
 # --------------
 # We apply ``phase_flip()`` to correct for CTF effects.
 
-src = src.phase_flip()
+src = src.phase_flip().cache()
 src.images[:10].show()
 
 # %%
@@ -151,26 +153,15 @@ src.images[:10].show()
 # --------------------
 # We apply ``normalize_background()`` to prepare the image class averaging.
 
-src = src.normalize_background()
+src = src.normalize_background().cache()
 src.images[:10].show()
-
-# %%
-# Caching
-# -------
-# We apply ``cache`` to store the results of the ``ImageSource``
-# pipeline up to this point.  This is optional, but can provide
-# benefit when used intently on machines with adequate memory.
-# Since the remaining preprocessing steps, whitening and contrast
-# inversion, as well as class averaging require passing over the
-# full set of images, caching at this point saves compute time.
-src = src.cache()
 
 # %%
 # Noise Whitening
 # ---------------
 # We apply ``whiten()`` to estimate and whiten the noise.
 
-src = src.whiten()
+src = src.whiten().cache()
 src.images[:10].show()
 
 # %%
@@ -178,7 +169,7 @@ src.images[:10].show()
 # ------------------
 # We apply ``invert_contrast()`` to ensure a positive valued signal.
 
-src = src.invert_contrast()
+src = src.invert_contrast().cache()
 
 # %%
 # Class Averaging
@@ -310,7 +301,10 @@ src.projections[0:10].show()
 # `find_registration` returns the best aligning rotation, `Q`, as well as
 # a `flag` which indicates if the volume needs to be reflected.
 Q, flag = Rotation(oriented_src.rotations).find_registration(true_rotations)
-aligned_vol = estimated_volume.rotate(Rotation(Q.T))
+aligned_vol = estimated_volume
 if flag == 1:
     aligned_vol = aligned_vol.flip()
+aligned_vol = aligned_vol.rotate(Rotation(Q.T))
+
+# Compute the FSC.
 vol_ds.fsc(aligned_vol, cutoff=0.143, plot=True)
