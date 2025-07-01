@@ -56,7 +56,9 @@ class CoordinateSource(ImageSource, ABC):
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms, default `None`.
+        :param pixel_size: Pixel size of the images in angstroms.
+            Default `None` will attempt to infer `pixel_size` from
+            `CTFFilter` objects when available.
         """
         mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
@@ -569,7 +571,9 @@ class BoxesCoordinateSource(CoordinateSource):
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms, default `None`.
+        :param pixel_size: Pixel size of the images in angstroms.
+            Default `None` will attempt to infer `pixel_size` from
+            `CTFFilter` objects when available.
         """
         # instantiate super
         CoordinateSource.__init__(
@@ -699,7 +703,9 @@ class CentersCoordinateSource(CoordinateSource):
         attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms, default `None`.
+        :param pixel_size: Pixel size of the images in angstroms.
+            Default `None` will attempt to infer `pixel_size` from
+            `CTFFilter` objects when available.
         """
         # instantiate super
         CoordinateSource.__init__(
