@@ -89,7 +89,7 @@ from aspire.source import Simulation
 # For this ``Simulation`` we set all 2D offset vectors to zero,
 # but by default offset vectors will be randomly distributed.
 # We cache the Simulation to prevent regenerating the projections
-# for each preproccesing stage.
+# for each preprocessing stage.
 src = Simulation(
     n=2500,  # number of projections
     vols=original_vol,  # volume source
@@ -137,7 +137,7 @@ src.images[0:10].show()
 # efficiency of subsequent pipeline stages. Metadata such as pixel size is
 # scaled accordingly to correspond correctly with the image resolution.
 
-src = src.downsample(res).cache()
+src = src.downsample(res)
 src.images[:10].show()
 
 # %%
@@ -145,7 +145,7 @@ src.images[:10].show()
 # --------------
 # We apply ``phase_flip()`` to correct for CTF effects.
 
-src = src.phase_flip().cache()
+src = src.phase_flip()
 src.images[:10].show()
 
 # %%
@@ -153,7 +153,7 @@ src.images[:10].show()
 # --------------------
 # We apply ``normalize_background()`` to prepare the image class averaging.
 
-src = src.normalize_background().cache()
+src = src.normalize_background()
 src.images[:10].show()
 
 # %%
@@ -161,7 +161,7 @@ src.images[:10].show()
 # ---------------
 # We apply ``whiten()`` to estimate and whiten the noise.
 
-src = src.whiten().cache()
+src = src.whiten()
 src.images[:10].show()
 
 # %%
@@ -169,7 +169,15 @@ src.images[:10].show()
 # ------------------
 # We apply ``invert_contrast()`` to ensure a positive valued signal.
 
-src = src.invert_contrast().cache()
+src = src.invert_contrast()
+
+# %%
+# Caching
+# -------
+# We apply ``cache`` to store the results of the ``ImageSource``
+# pipeline up to this point.  This is optional, but can provide
+# benefit when used intently on machines with adequate memory.
+src = src.cache()
 
 # %%
 # Class Averaging
