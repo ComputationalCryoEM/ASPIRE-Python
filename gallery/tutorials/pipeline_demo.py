@@ -14,9 +14,11 @@ reconstruction pipeline using synthetic data generated with ASPIRE's
 # Ribosome, sourced from EMDB: https://www.ebi.ac.uk/emdb/EMD-2660.
 # This is one of several volume maps that can be downloaded with
 # ASPIRE's data downloading utility by using the following import.
+
 # sphinx_gallery_start_ignore
 # flake8: noqa
 # sphinx_gallery_end_ignore
+
 from aspire.downloader import emdb_2660
 
 # Load 80s Ribosome as a ``Volume`` object.
@@ -244,6 +246,8 @@ orient_est = CLSyncVoting(avgs)
 # Instantiate an ``OrientedSource``.
 oriented_src = OrientedSource(avgs, orient_est)
 
+# Estimate Rotations.
+est_rotations = oriented_src.rotations
 
 # %%
 # Mean Error of Estimated Rotations
@@ -255,7 +259,7 @@ oriented_src = OrientedSource(avgs, orient_est)
 from aspire.utils import mean_aligned_angular_distance
 
 # Compare with known true rotations
-mean_ang_dist = mean_aligned_angular_distance(oriented_src.rotations, true_rotations)
+mean_ang_dist = mean_aligned_angular_distance(est_rotations, true_rotations)
 print(f"Mean aligned angular distance: {mean_ang_dist} degrees")
 
 
@@ -286,7 +290,7 @@ estimated_volume = estimator.estimate()
 # Get the first 10 projections from the estimated volume using the
 # estimated orientations.  Recall that ``project`` returns an
 # ``Image`` instance, which we can peek at with ``show``.
-projections_est = estimated_volume.project(oriented_src.rotations[0:10])
+projections_est = estimated_volume.project(est_rotations[0:10])
 
 # We view the first 10 projections of the estimated volume.
 projections_est.show()
@@ -308,7 +312,7 @@ src.projections[0:10].show()
 
 # `find_registration` returns the best aligning rotation, `Q`, as well as
 # a `flag` which indicates if the volume needs to be reflected.
-Q, flag = Rotation(oriented_src.rotations).find_registration(true_rotations)
+Q, flag = Rotation(est_rotations).find_registration(true_rotations)
 aligned_vol = estimated_volume
 if flag == 1:
     aligned_vol = aligned_vol.flip()
