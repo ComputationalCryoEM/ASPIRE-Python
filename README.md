@@ -5,7 +5,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5657281.svg)](https://doi.org/10.5281/zenodo.5657281)
 [![Downloads](https://static.pepy.tech/badge/aspire/month)](https://pepy.tech/project/aspire)
 
-# ASPIRE - Algorithms for Single Particle Reconstruction - v0.13.2
+# ASPIRE - Algorithms for Single Particle Reconstruction - v0.14.0
 
 The ASPIRE-Python project supersedes [Matlab ASPIRE](https://github.com/PrincetonUniversity/aspire).
 
@@ -20,7 +20,7 @@ For more information about the project, algorithms, and related publications ple
 Please cite using the following DOI. This DOI represents all versions, and will always resolve to the latest one.
 
 ```
-ComputationalCryoEM/ASPIRE-Python: v0.13.2 https://doi.org/10.5281/zenodo.5657281
+ComputationalCryoEM/ASPIRE-Python: v0.14.0 https://doi.org/10.5281/zenodo.5657281
 
 ```
 
