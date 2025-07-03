@@ -564,6 +564,7 @@ class Image:
         # differs between Numpy 1, 2, and CuPy.
         # At time of writing CuPy is consistent with Numpy1.
         # The additional parenths yield consistent out.dtype.
+        # See #1298 for relevant debugger output.
         out = xp.asnumpy(out.real * (ds_res**2 / self.resolution**2))
 
         # Optionally scale pixel size
