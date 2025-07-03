@@ -559,7 +559,12 @@ class Image:
             out = fft.ifft2(fft.ifftshift(crop_fx))
         else:
             out = fft.centered_ifft2(crop_fx)
-        out = xp.asnumpy(out.real * ds_res**2 / self.resolution**2)
+
+        # The parenths are required because dtype casting semantics
+        # differs between Numpy 1, 2, and CuPy.
+        # At time of writing CuPy is consistent with Numpy1.
+        # The additional parenths yield consistent out.dtype.
+        out = xp.asnumpy(out.real * (ds_res**2 / self.resolution**2))
 
         # Optionally scale pixel size
         ds_pixel_size = self.pixel_size
