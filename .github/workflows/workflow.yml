@@ -42,8 +42,9 @@ jobs:
         pip freeze
         python -c "import numpy; numpy.show_config()"
         sysctl -a
-      # run: |
-        # export ASPIREDIR=.
-        # export OMP_NUM_THREADS=2
+    - name: Run tests
+      run: |
+        export ASPIREDIR=.
+        export OMP_NUM_THREADS=2
         # -n runs test in parallel using pytest-xdist
-        # pytest -n2 --durations=50 -s
+        pytest -n2 --durations=50 -s
