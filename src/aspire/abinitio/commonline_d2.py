@@ -82,7 +82,7 @@ class CLSymmetryD2(CLOrient3D):
         # Rearrange in order Identity, about_x, about_y, about_z.
         # This ordering is necessary for reproducing MATLAB code results.
         self.gs = DnSymmetryGroup(order=2).matrices.astype(self.dtype, copy=False)[
-            [0, 3, 2, 1]
+            [0, 2, 3, 1]
         ]
 
     def estimate_rotations(self):

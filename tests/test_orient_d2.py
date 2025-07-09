@@ -405,7 +405,7 @@ def g_sync_d2(rots, rots_gt):
     n_img = len(rots)
     dtype = rots.dtype
 
-    rots_symm = DnSymmetryGroup(2).matrices.astype(dtype, copy=False)
+    rots_symm = DnSymmetryGroup(2).matrices.astype(dtype, copy=False)[[0, 2, 1, 3]]
     order = len(rots_symm)
 
     A_g = np.zeros((n_img, n_img), dtype=complex)
@@ -438,7 +438,6 @@ def g_sync_d2(rots, rots_gt):
     # Diagonal elements correspond to exp(-i*0) so put 1.
     # This is important only for verification purposes that spectrum is (K,0,0,0...,0).
     A_g += np.conj(A_g).T + np.eye(n_img)
-
     _, eig_vecs = np.linalg.eigh(A_g)
     leading_eig_vec = eig_vecs[:, -1]
 

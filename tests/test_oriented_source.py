@@ -1,10 +1,13 @@
+import glob
 import logging
+import os
+import tempfile
 
 import numpy as np
 import pytest
 
 from aspire.abinitio import CLSymmetryC3C4, CLSymmetryCn, CLSync3N, CLSyncVoting
-from aspire.source import OrientedSource, Simulation
+from aspire.source import OrientedSource, RelionSource, Simulation
 from aspire.volume import CnSymmetricVolume
 
 logger = logging.getLogger(__name__)
@@ -16,6 +19,7 @@ ESTIMATOR_SYMMETRY = [
     (CLSymmetryC3C4, "C4"),
     pytest.param((CLSymmetryCn, "C6"), marks=pytest.mark.expensive),
 ]
+SAVE_MODES = [None, "single"]
 
 
 def src_fixture_id(params):
@@ -44,6 +48,11 @@ def src_fixture(request):
     oriented_src = OrientedSource(og_src, orient_est)
 
     return og_src, oriented_src
+
+
+@pytest.fixture(params=SAVE_MODES, ids=lambda x: f"save_mode={x}")
+def save_mode(request):
+    return request.param
 
 
 def test_repr(src_fixture):
@@ -122,3 +131,42 @@ def test_lazy_evaluation(src_fixture, caplog):
     assert msg not in caplog.text
     _ = oriented_src.rotations
     assert msg in caplog.text
+
+
+def test_save(src_fixture, save_mode):
+    """
+    Test save function and save_mode.
+    """
+
+    src = src_fixture[1]
+
+    # Make a fresh tmp_dir
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        # Construct file path
+        fn = os.path.join(tmp_dir, f"test_oriented_source-save_mode-{save_mode}.star")
+
+        # Sanity check test configuration
+        assert src.n % 2 == 0, "Test expects even number of source images"
+
+        # Configure save
+        #   Ensure we have a (small) unit test sized `batch_size`
+        batch_size = src.n // 2
+        # Set expected output file counts
+        if save_mode == "single":
+            num_batches = 1
+        else:
+            num_batches = src.n // batch_size
+
+        # Save
+        src.save(fn, save_mode=save_mode, batch_size=batch_size)
+
+        # Load from saved `fn`
+        reloaded_src = RelionSource(fn)
+
+        # Assert reloaded image data identical
+        np.testing.assert_allclose(reloaded_src.images[:], src.images[:])
+
+        # Assert the correct number of mrcs files were created
+        mrc_filelist = glob.glob(os.path.join(tmp_dir, "*.mrcs"))
+        num_mrc_files = len(mrc_filelist)
+        assert num_mrc_files == num_batches, "Incorrect number of mrcs files"

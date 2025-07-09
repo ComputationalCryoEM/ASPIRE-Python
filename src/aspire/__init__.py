@@ -15,7 +15,7 @@ import aspire
 from aspire.exceptions import handle_exception
 
 # version in maj.min.bld format
-__version__ = "0.13.2"
+__version__ = "0.14.0"
 
 
 # Setup `confuse` config
@@ -87,16 +87,3 @@ def __getattr__(attr):
         return importlib.import_module(f"aspire.{attr}")
     else:
         raise AttributeError(f"module `{__name__}` has no attribute `{attr}`.")
-
-
-if parse_version(np.version.version) >= parse_version("2.0.0"):
-    # ImportWarnings are generally filtered, but raise this one for now.
-    with warnings.catch_warnings():
-        warnings.simplefilter("default")
-        warnings.warn(
-            "ASPIRE's Numpy 2 support is in beta.  If you experience a runtime"
-            " crash relating to mismatched dtypes or a Numpy call please try"
-            ' `pip install "numpy<2"` and report to ASPIRE developers.',
-            ImportWarning,
-            stacklevel=1,
-        )

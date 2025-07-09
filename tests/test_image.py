@@ -148,14 +148,24 @@ def testImShiftStack(get_stacks, dtype):
     np.testing.assert_allclose(im0.asnumpy(), im3, atol=atol)
 
 
-def testImageShiftErrors(get_images):
-    _, im = get_images
-    # test bad shift shape
+def testImageShiftShapeErrors():
+    # Test images
+    im = Image(np.ones((1, 8, 8)))
+    im3 = Image(np.ones((3, 8, 8)))
+
+    # Single image, broadcast multiple shifts is allowed
+    _ = im.shift(np.array([[100, 200], [100, 200]]))
+
+    # Multiple image, broadcast single shifts is allowed
+    _ = im3.shift(np.array([[100, 200]]))
+
+    # Bad shift shape, must be (..., 2)
     with pytest.raises(ValueError, match="Input shifts must be of shape"):
         _ = im.shift(np.array([100, 100, 100]))
-    # test bad number of shifts
+
+    # Incoherent number of shifts (number of images != number of shifts when neither 1).
     with pytest.raises(ValueError, match="The number of shifts"):
-        _ = im.shift(np.array([[100, 200], [100, 200]]))
+        _ = im3.shift(np.array([[100, 200], [100, 200]]))
 
 
 def testImageSqrt(get_images, get_stacks):

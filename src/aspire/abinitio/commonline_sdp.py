@@ -32,7 +32,7 @@ class CommonlineSDP(CLOrient3D):
 
         S = self._construct_S(self.clmatrix)
         A, b = self._sdp_prep()
-        gram = self._compute_gram_matrix(S, A, b)
+        gram = self._compute_gram_SDP(S, A, b)
         self.rotations = self._deterministic_rounding(gram)
 
         return self.rotations
@@ -83,7 +83,7 @@ class CommonlineSDP(CLOrient3D):
         """
         Prepare optimization problem constraints.
 
-        The constraints for the SDP optimization, max tr(SG), performed in `_compute_gram_matrix()`
+        The constraints for the SDP optimization, max tr(SG), performed in `_compute_gram_SDP()`
         as min tr(-SG), are that the Gram matrix, G, is semidefinite positive and G11_ii = G22_ii = 1,
         G12_ii = G21_ii = 0, i=1,2,...,N, for the block representation of G = [[G11, G12], [G21, G22]].
 
@@ -117,7 +117,7 @@ class CommonlineSDP(CLOrient3D):
 
         return A, b
 
-    def _compute_gram_matrix(self, S, A, b):
+    def _compute_gram_SDP(self, S, A, b):
         """
         Compute the Gram matrix by solving an SDP optimization.
 
@@ -149,9 +149,10 @@ class CommonlineSDP(CLOrient3D):
         prob = cp.Problem(cp.Minimize(cp.trace(-S @ G)), constraints)
         prob.solve()
 
-        return G.value
+        return G.value.astype(self.dtype, copy=False)
 
-    def _deterministic_rounding(self, gram):
+    @staticmethod
+    def _deterministic_rounding(gram):
         """
         Deterministic rounding procedure to recover the rotations from the Gram matrix.
 
@@ -159,12 +160,13 @@ class CommonlineSDP(CLOrient3D):
         matrix. These columns are extracted and used to form the remaining column of every
         rotation matrix.
 
-        :param gram: A 2n_img x 2n_img Gram matrix.
+        :param gram: A 2K x 2K Gram matrix.
 
-        :return: An n_img x 3 x 3 stack of rotation matrices.
+        :return: An K x 3 x 3 stack of rotation matrices.
         """
-        logger.info("Recovering rotations from Gram matrix.")
+        K = gram.shape[0] // 2
 
+        logger.info("Recovering rotations from Gram matrix.")
         # Obtain top eigenvectors from Gram matrix.
         d, v = stable_eigsh(gram, 5)
         sort_idx = np.argsort(-d)
@@ -173,16 +175,16 @@ class CommonlineSDP(CLOrient3D):
         # Only need the top 3 eigen-vectors.
         v = v[:, sort_idx[:3]]
 
-        # According to the structure of the Gram matrix, the first `n_img` rows, denoted v1,
+        # According to the structure of the Gram matrix, the first `K` rows, denoted v1,
         # correspond to the linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of
-        # column 1 of all rotation matrices. Similarly, the second `n_img` rows of v,
+        # column 1 of all rotation matrices. Similarly, the second `K` rows of v,
         # denoted v2, are linear combinations of R_{i}^{2}, i=1,...,K, that is, the second
         # column of all rotation matrices.
-        v1 = v[: self.n_img].T
-        v2 = v[self.n_img : 2 * self.n_img].T
+        v1 = v[:K].T
+        v2 = v[K : 2 * K].T
 
         # Use a least-squares method to get A.T*A and a Cholesky decomposition to find A.
-        A = self._ATA_solver(v1, v2)
+        A = CommonlineSDP._ATA_solver(v1, v2)
 
         # Recover the rotations. The first two columns of all rotation
         # matrices are given by unmixing V1 and V2 using A. The third
@@ -233,7 +235,7 @@ class CommonlineSDP(CLOrient3D):
                 k += 1
 
         # b = [1 1 0 1 1 0 ...]' is the right hand side vector
-        b = np.ones(3 * n_img)
+        b = np.ones(3 * n_img, dtype=v1.dtype)
         b[2::3] = 0
 
         # Find the least squares approximation of A'*A in vector form

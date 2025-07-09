@@ -11,7 +11,7 @@ import pymanopt
 from numpy.linalg import norm
 from scipy.optimize import minimize
 
-from aspire.utils.rotation import Rotation
+from aspire.utils.rotation import Random, Rotation
 
 # Store parameters specific to each loss_type.
 # `lengthscale` is used to scale the modeled covariance
@@ -38,6 +38,7 @@ def align_BO(
     surrogate_min_step=0.1,
     verbosity=0,
     dtype=None,
+    seed=None,
 ):
     """
     This function returns a rotation matrix R that best aligns vol_ref with the rotated version of vol_given.
@@ -61,6 +62,7 @@ def align_BO(
     :param verbosity: Surrogate problem optimization detail level. integer, defaults 0 (silent). 2 is most verbose.
     :param dtype: Numeric dtype to perform computations with.
         Default `None` infers dtype from `vol_ref`.
+    :param seed: Random seed for reproducible results. Integer, defaults None.
     :return: Rotation matrix R_init (without refinement) or (R_init, R_est) (with refinement).
     """
     # Avoid utils/operators/utils circular import
@@ -167,7 +169,14 @@ def align_BO(
             min_step_size=surrogate_min_step,
             verbosity=verbosity,
         )
-        result = optimizer.run(problem)
+
+        # If provided, use seed to set initial point for optimizer
+        initial = None
+        if seed is not None:
+            with Random(seed + t):
+                initial = manifold.random_point()
+
+        result = optimizer.run(problem, initial_point=initial)
         R_new = result.point.astype(dtype, copy=False)
 
         loss[t] = loss_fun(R_new)

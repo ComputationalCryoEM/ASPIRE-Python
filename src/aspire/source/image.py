@@ -769,14 +769,16 @@ class ImageSource(ABC):
         """
 
     @_as_copy
-    def downsample(self, L):
+    def downsample(self, L, zero_nyquist=True, legacy=False):
         if L > self.L:
             raise ValueError(
                 "Max desired resolution {L} should be less than the current resolution {self.L}."
             )
         logger.info(f"Setting max. resolution of source = {L}")
 
-        self.generation_pipeline.add_xform(Downsample(resolution=L))
+        self.generation_pipeline.add_xform(
+            Downsample(resolution=L, zero_nyquist=zero_nyquist, legacy=legacy)
+        )
 
         ds_factor = self.L / L
         self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
@@ -943,7 +945,7 @@ class ImageSource(ABC):
         self.generation_pipeline.add_xform(Multiply(scale_factor))
 
     @_as_copy
-    def normalize_background(self, bg_radius=1.0, do_ramp=True):
+    def normalize_background(self, bg_radius=1.0, do_ramp=True, legacy=False):
         """
         Normalize the images by the noise background
 
@@ -956,6 +958,10 @@ class ImageSource(ABC):
         :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
+        :param legacy: Option to match Matlab legacy normalize_background. Default, False,
+            uses ASPIRE-Python implementation. When True, ramping is disable, a shifted
+            2d grid and alternative `bg_radius` is used to generate the background mask,
+            and standard deviation is computed using N - 1 degrees of freedom.
         :return: On return, the `ImageSource` object has been modified in place.
         """
 
@@ -964,7 +970,9 @@ class ImageSource(ABC):
             f"size of {bg_radius} and do_ramp of {do_ramp}"
         )
         self.generation_pipeline.add_xform(
-            LambdaXform(normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp)
+            LambdaXform(
+                normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp, legacy=legacy
+            )
         )
 
     def im_backward(self, im, start, weights=None, symmetry_group=None):
@@ -1687,7 +1695,7 @@ class OrientedSource(IndexedSource):
     def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
         self._orient()
         return super().save_metadata(
-            starfile_filepath, batch_size=batch_size, save_mode=None
+            starfile_filepath, batch_size=batch_size, save_mode=save_mode
         )
 
     def get_metadata(

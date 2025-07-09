@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import shutil
@@ -8,6 +9,7 @@ from unittest import TestCase
 
 import mrcfile
 import numpy as np
+import pytest
 from click.testing import CliRunner
 
 import tests.saved_test_data
@@ -16,6 +18,8 @@ from aspire.noise import WhiteNoiseEstimator
 from aspire.source import BoxesCoordinateSource, CentersCoordinateSource
 from aspire.storage import StarFile
 from aspire.utils import RelionStarFile, importlib_path
+
+logger = logging.getLogger(__name__)
 
 
 class CoordinateSourceTestCase(TestCase):
@@ -28,6 +32,7 @@ class CoordinateSourceTestCase(TestCase):
             self.original_mrc_path = str(test_path)
         # save test data root dir
         self.test_dir_root = os.path.dirname(self.original_mrc_path)
+        self.pixel_size = 1.23  # Used for generating and comparing metadata
 
         # We will construct a source with two micrographs and two coordinate
         # files by using the same micrograph, but dividing the coordinates
@@ -132,6 +137,12 @@ class CoordinateSourceTestCase(TestCase):
 
     def tearDown(self):
         self.tmpdir.cleanup()
+
+    # This is a workaround to use a `pytest` fixture with `unittest` style cases.
+    # We use it below to capture and inspect the log
+    @pytest.fixture(autouse=True)
+    def inject_fixtures(self, caplog):
+        self._caplog = caplog
 
     def createTestBoxFiles(self, centers, index):
         """
@@ -247,6 +258,8 @@ class CoordinateSourceTestCase(TestCase):
     def createTestCtfFiles(self, index):
         """
         Creates example ASPIRE-generated CTF files.
+
+        Note two distinct pixel sizes.
         """
         star_fp = os.path.join(self.data_folder, f"ctf{index+1}.star")
         # note that values are arbitrary and not representative of actual CTF data
@@ -258,7 +271,7 @@ class CoordinateSourceTestCase(TestCase):
             "_rlnSphericalAberration": 700 + index,
             "_rlnAmplitudeContrast": 600 + index,
             "_rlnVoltage": 500 + index,
-            "_rlnMicrographPixelSize": 400 + index,
+            "_rlnMicrographPixelSize": self.pixel_size + index * 0.01,
         }
         blocks = OrderedDict({"root": params_dict})
         starfile = StarFile(blocks=blocks)
@@ -267,6 +280,8 @@ class CoordinateSourceTestCase(TestCase):
     def createTestRelionCtfFile(self, reverse_optics_block_rows=False):
         """
         Creates example RELION-generated CTF file for a set of micrographs.
+
+        Note uniform pixel size.
         """
         star_fp = os.path.join(self.data_folder, "micrographs_ctf.star")
         blocks = OrderedDict()
@@ -281,8 +296,8 @@ class CoordinateSourceTestCase(TestCase):
         ]
         # using same unique values as in createTestCtfFiles
         optics_block = [
-            ["opticsGroup1", 1, 500.0, 700.0, 600.0, 400.0],
-            ["opticsGroup2", 2, 501.0, 701.0, 601.0, 401.0],
+            ["opticsGroup1", 1, 500.0, 700.0, 600.0, self.pixel_size],
+            ["opticsGroup2", 2, 501.0, 701.0, 601.0, self.pixel_size],
         ]
         # Since optics block rows are self-contained,
         # reversing their order should have no affect anywhere.
@@ -527,8 +542,8 @@ class CoordinateSourceTestCase(TestCase):
     def testImportCtfFromList(self):
         src = BoxesCoordinateSource(self.files_box)
         src.import_aspire_ctf(self.ctf_files)
-        self._testCtfFilters(src)
-        self._testCtfMetadata(src)
+        self._testCtfFilters(src, uniform_pixel_sizes=False)
+        self._testCtfMetadata(src, uniform_pixel_sizes=False)
 
     def testImportCtfFromRelion(self):
         src = BoxesCoordinateSource(self.files_box)
@@ -551,7 +566,7 @@ class CoordinateSourceTestCase(TestCase):
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
-    def _testCtfFilters(self, src):
+    def _testCtfFilters(self, src, uniform_pixel_sizes=True):
         # there are two micrographs and two CTF files, so there should be two
         # unique CTF filters
         self.assertEqual(len(src.unique_filters), 2)
@@ -562,7 +577,15 @@ class CoordinateSourceTestCase(TestCase):
         self.assertTrue(
             np.allclose(
                 np.array(
-                    [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, 400.0],
+                    [
+                        1000.0,
+                        900.0,
+                        800.0 * np.pi / 180.0,
+                        700.0,
+                        600.0,
+                        500.0,
+                        self.pixel_size,
+                    ],
                     dtype=src.dtype,
                 ),
                 np.array(
@@ -579,10 +602,21 @@ class CoordinateSourceTestCase(TestCase):
             )
         )
         filter1 = src.unique_filters[1]
+        pixel_size1 = self.pixel_size
+        if not uniform_pixel_sizes:
+            pixel_size1 += 0.01
         self.assertTrue(
             np.allclose(
                 np.array(
-                    [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, 401.0],
+                    [
+                        1001.0,
+                        901.0,
+                        801.0 * np.pi / 180.0,
+                        701.0,
+                        601.0,
+                        501.0,
+                        pixel_size1,
+                    ],
                     dtype=src.dtype,
                 ),
                 np.array(
@@ -608,7 +642,7 @@ class CoordinateSourceTestCase(TestCase):
             np.array_equal(np.where(src.filter_indices == 1)[0], np.arange(200, 400))
         )
 
-    def _testCtfMetadata(self, src):
+    def _testCtfMetadata(self, src, uniform_pixel_sizes=True):
         # ensure metadata is populated correctly when adding CTF info
         # __mrc_filepath
         mrc_fp_metadata = np.array(
@@ -641,10 +675,13 @@ class CoordinateSourceTestCase(TestCase):
         ]
         ctf_metadata = np.zeros((src.n, len(ctf_cols)), dtype=src.dtype)
         ctf_metadata[:200] = np.array(
-            [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, 400.0]
+            [1000.0, 900.0, 800.0 * np.pi / 180.0, 700.0, 600.0, 500.0, self.pixel_size]
         )
+        pixel_size1 = self.pixel_size
+        if not uniform_pixel_sizes:
+            pixel_size1 += 0.01
         ctf_metadata[200:400] = np.array(
-            [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, 401.0]
+            [1001.0, 901.0, 801.0 * np.pi / 180.0, 701.0, 601.0, 501.0, pixel_size1]
         )
         self.assertTrue(np.array_equal(ctf_metadata, src.get_metadata(ctf_cols)))
 
@@ -696,3 +733,88 @@ class CoordinateSourceTestCase(TestCase):
         self.assertTrue(result_coord.exit_code == 0)
         self.assertTrue(result_star.exit_code == 0)
         self.assertTrue(result_preprocess.exit_code == 0)
+
+    def testPixelSizeWarning(self):
+        """
+        Test source having a pixel size that conflicts with the CTFFilter instances.
+        """
+        manual_pixel_size = 0.789
+        src = BoxesCoordinateSource(self.files_box, pixel_size=manual_pixel_size)
+        # Capture and compare warning message
+        with pytest.warns(UserWarning, match=r".*Pixel size mismatch.*"):
+            src.import_relion_ctf(self.relion_ctf_file)
+            np.testing.assert_approx_equal(src.pixel_size, manual_pixel_size)
+
+    def testMultiplePixelSizeWarning(self):
+        """
+        Test source having multiple pixel sizes in CTFFilter instances.
+        """
+        src = BoxesCoordinateSource(self.files_box)  # pixel_size=None
+        # Capture and compare warning message
+        with self._caplog.at_level(logging.WARNING):
+            src.import_aspire_ctf(self.ctf_files)  # not uniform_pixel_sizes
+            assert src.pixel_size is None
+            assert "multiple pixel_sizes found" in self._caplog.text
+
+    def testPixelSize(self):
+        """
+        Test explicitly providing correct pixel_size.
+        """
+        src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
+        src.import_relion_ctf(self.relion_ctf_file)
+        np.testing.assert_approx_equal(src.pixel_size, self.pixel_size)
+
+    def testPixelSizeNone(self):
+        """
+        Test not providing pixel_size.
+        """
+        src = BoxesCoordinateSource(self.files_box)
+        src.import_relion_ctf(self.relion_ctf_file)
+        np.testing.assert_approx_equal(src.pixel_size, self.pixel_size)
+
+
+def create_test_rectangular_micrograph_and_star(tmp_path, voxel_size=(2.0, 2.0, 1.0)):
+    # Create a rectangular micrograph (e.g., 128x256)
+    data = np.random.rand(128, 256).astype(np.float32)
+    mrc_path = tmp_path / "test_micrograph.mrc"
+
+    with mrcfile.new(mrc_path, overwrite=True) as mrc:
+        mrc.set_data(data)
+        mrc.voxel_size = voxel_size
+
+    # Two sample coordinates
+    coordinates = [(50.0, 30.0), (200.0, 100.0)]
+
+    # Write a simple STAR file
+    star_path = tmp_path / "test_coordinates.star"
+    with open(star_path, "w") as f:
+        f.write("data_particles\n\n")
+        f.write("loop_\n")
+        f.write("_rlnCoordinateX #1\n")
+        f.write("_rlnCoordinateY #2\n")
+        for x, y in coordinates:
+            f.write(f"{x:.1f} {y:.1f}\n")
+
+    # Pack files into a list of tuples for consumption by CoordinatSource
+    file_list = [(mrc_path, star_path)]
+
+    return file_list
+
+
+def test_rectangular_coordinate_source(tmp_path):
+    file_list = create_test_rectangular_micrograph_and_star(tmp_path)
+
+    # Check we can instantiate a CoordinateSource with a rectangular micrograph.
+    coord_src = CentersCoordinateSource(file_list, particle_size=32)
+
+    # Check we can access images.
+    _ = coord_src.images[:]
+
+
+def test_coordinate_source_pixel_warning(tmp_path, caplog):
+    # Create micrograph with mismatched pixel dimensions.
+    vx = (2.3, 2.1, 1.0)
+    file_list = create_test_rectangular_micrograph_and_star(tmp_path, voxel_size=vx)
+    with caplog.at_level(logging.WARNING):
+        _ = CentersCoordinateSource(file_list, particle_size=32)
+        assert "Voxel sizes are not uniform" in caplog.text

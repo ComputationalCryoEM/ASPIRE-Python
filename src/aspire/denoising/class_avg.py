@@ -7,12 +7,11 @@ from aspire.classification import (
     Averager2D,
     BandedSNRImageQualityFunction,
     BFRAverager2D,
-    BFSRAverager2D,
+    BFTAverager2D,
     Class2D,
     ClassSelector,
     GlobalVarianceClassSelector,
     GlobalWithRepulsionClassSelector,
-    NeighborVarianceWithRepulsionClassSelector,
     RIRClass2D,
     TopClassSelector,
 )
@@ -290,12 +289,16 @@ class ClassAvgSource(ImageSource):
 
         # Check if this src cached images.
         if self._cached_im is not None:
-            logger.debug(f"Loading {len(indices)} images from image cache")
-            im = self._cached_im[indices, :, :]
+            logger.debug(
+                f"Loading {len(indices)} images from image cache, indices {_indices}"
+            )
+            im = self._cached_im[_indices, :, :]
 
         # Check for heap cached image sets from class_selector.
         elif heap_inds:
-            logger.debug(f"Mapping {len(heap_inds)} images from heap cache.")
+            logger.debug(
+                f"Mapping {len(heap_inds)} images from heap cache, indices {indices}"
+            )
 
             # Images in heap_inds can be fetched from class_selector.
             # For others, create an indexing map that preserves
@@ -347,9 +350,11 @@ class ClassAvgSource(ImageSource):
 
         else:
             # Perform image averaging for the requested images (classes)
-            logger.debug(f"Averaging {len(_indices)} images from source")
+            logger.debug(
+                f"Averaging {len(indices)} images from source, indices: {indices}"
+            )
             im = self.averager.average(
-                self.class_indices[_indices], self.class_refl[_indices]
+                self.class_indices[indices], self.class_refl[indices]
             )
 
         # Finally, apply transforms to resulting Images
@@ -413,7 +418,7 @@ class DebugClassAvgSource(ClassAvgSource):
         :param class_selector: `ClassSelector` instance.
             Default `None` creates `TopClassSelector`.
         :param averager: `Averager2D` instance.
-            Default `None` ceates `BFRAverager2D` instance.
+            Default `None` creates `BFRAverager2D` instance.
             See code for parameter details.
         :param batch_size: Integer size for batched operations.
 
@@ -456,10 +461,13 @@ class LegacyClassAvgSource(ClassAvgSource):
     """
     Source for denoised 2D images using class average methods.
 
-    Defaults to using global variance based class selection,
-    and a brute force image alignment (rotational only).
+    Defaults to using global variance based class selection, and a
+    rotational image alignment.  Translational alignment is skipped by
+    default (images are assumed reasonably centered), but can be
+    configured by supplying a custom `averager=BFTAverager2D(...)`
+    argument.
 
-    This is most similar to what was reported for papers using the
+    This is similar to what was reported for papers using the
     MATLAB code.
     """
 
@@ -484,10 +492,10 @@ class LegacyClassAvgSource(ClassAvgSource):
         :param class_selector: `ClassSelector` instance.
             Default `None` creates `GlobalVarianceClassSelector`.
         :param averager: `Averager2D` instance.
-            Default `None` ceates `BFRAverager2D` instance.
+            Default `None` creates `BFTAverager2D` instance.
             See code for parameter details.
         :param averager_src: Optionally explicitly assign source to
-            `BFRAverager2D` during initialization.  Allows users to
+            `averager` during initialization.  Allows users to
              provide distinct sources for classification and
              averaging.  Raises error when combined with an explicit
              `averager` argument.
@@ -514,9 +522,10 @@ class LegacyClassAvgSource(ClassAvgSource):
 
             basis_2d = self._get_classifier_basis(classifier)
 
-            averager = BFRAverager2D(
+            averager = BFTAverager2D(
                 composite_basis=basis_2d,
                 src=averager_src,
+                radius=0,  # disables translation search
                 batch_size=batch_size,
                 dtype=dtype,
             )
@@ -573,10 +582,10 @@ def DefaultClassAvgSource(
     """
 
     _versions = {
-        None: ClassAvgSourcev132,
-        "latest": ClassAvgSourcev132,
+        None: ClassAvgSourcev140,
+        "latest": ClassAvgSourcev140,
+        "0.14.0": ClassAvgSourcev140,
         "0.13.2": ClassAvgSourcev132,
-        "0.11.0": ClassAvgSourcev110,
     }
 
     if version not in _versions:
@@ -592,6 +601,91 @@ def DefaultClassAvgSource(
         averager_src=averager_src,
         batch_size=batch_size,
     )
+
+
+class ClassAvgSourcev140(ClassAvgSource):
+    """
+    Source for denoised 2D images using class average methods.
+
+    Defaults to using global variance based class selection,
+    and a brute force image alignment (rotational only).
+
+    This is most similar to what was reported for papers using the
+    MATLAB code, but takes significant time to compute.
+    """
+
+    def __init__(
+        self,
+        src,
+        n_nbor=50,
+        classifier=None,
+        class_selector=None,
+        averager=None,
+        averager_src=None,
+        batch_size=512,
+    ):
+        """
+        Instantiates ClassAvgSourcev140 with the following parameters.
+
+        :param src: Source used for image classification.
+        :param n_nbor: Number of nearest neighbors. Default 50.
+        :param classifier: `Class2D` classifier instance.
+            Default `None` creates `RIRClass2D`.
+            See code for parameter details.
+        :param class_selector: `ClassSelector` instance.
+            Default `None` creates `GlobalVarianceClassSelector`.
+        :param averager: `Averager2D` instance.
+            Default `None` creates `BFTAverager2D` instance.
+            See code for parameter details.
+        :param averager_src: Optionally explicitly assign source to
+            `averager` during initialization.  Allows users to
+             provide distinct sources for classification and
+             averaging.  Raises error when combined with an explicit
+             `averager` argument.
+        :param batch_size: Integer size for batched operations.
+
+        :return: ClassAvgSource instance.
+        """
+        dtype = src.dtype
+
+        if classifier is None:
+            classifier = RIRClass2D(
+                src,
+                fspca_components=400,
+                bispectrum_components=300,  # Compressed Features after last PCA stage.
+                n_nbor=n_nbor,
+                large_pca_implementation="legacy",
+                nn_implementation="sklearn",  # Note this is different than debug
+                bispectrum_implementation="legacy",
+            )
+
+        if averager is None:
+            if averager_src is None:
+                averager_src = src
+
+            basis_2d = self._get_classifier_basis(classifier)
+
+            averager = BFTAverager2D(
+                composite_basis=basis_2d,
+                src=averager_src,
+                batch_size=batch_size,
+                dtype=dtype,
+            )
+        elif averager_src is not None:
+            raise RuntimeError(
+                "When providing an instantiated `averager`, cannot assign `averager_src`."
+            )
+
+        if class_selector is None:
+            class_selector = GlobalVarianceClassSelector(averager=averager)
+
+        super().__init__(
+            src=src,
+            classifier=classifier,
+            class_selector=class_selector,
+            averager=averager,
+            batch_size=batch_size,
+        )
 
 
 class ClassAvgSourcev132(ClassAvgSource):
@@ -626,7 +720,7 @@ class ClassAvgSourcev132(ClassAvgSource):
             `BandedSNRImageQualityFunction`. This will select the
             images with the highest banded SNR.
         :param averager: `Averager2D` instance.
-            Default `None` ceates `BFRAverager2D` instance.
+            Default `None` creates `BFRAverager2D` instance.
             See code for parameter details.
         :param averager_src: Optionally explicitly assign source to
             `averager` during initialization.  Allows users to
@@ -672,88 +766,6 @@ class ClassAvgSourcev132(ClassAvgSource):
             class_selector = GlobalWithRepulsionClassSelector(
                 averager, quality_function
             )
-
-        super().__init__(
-            src=src,
-            classifier=classifier,
-            class_selector=class_selector,
-            averager=averager,
-            batch_size=batch_size,
-        )
-
-
-class ClassAvgSourcev110(ClassAvgSource):
-    """
-    Source for denoised 2D images using class average methods.
-
-    Defaults to using Contrast based class selection (on the fly, compressed),
-    avoiding neighbors of previous classes,
-    and a brute force image alignment.
-    """
-
-    def __init__(
-        self,
-        src,
-        n_nbor=50,
-        classifier=None,
-        class_selector=None,
-        averager=None,
-        averager_src=None,
-        batch_size=512,
-    ):
-        """
-        Instantiates ClassAvgSourcev110 with the following parameters.
-
-        :param src: Source used for image classification.
-        :param n_nbor: Number of nearest neighbors. Default 50.
-        :param classifier: `Class2D` classifier instance.
-            Default `None` creates `RIRClass2D`.
-            See code for parameter details.
-        :param class_selector: `ClassSelector` instance.
-            Default `None` creates `NeighborVarianceWithRepulsionClassSelector`.
-        :param averager: `Averager2D` instance.
-            Default `None` ceates `BFSRAverager2D` instance.
-            See code for parameter details.
-        :param averager_src: Optionally explicitly assign source
-            to BFSRAverager2D during initialization.
-            Raises error when combined with an explicit `averager`
-            argument.
-        :param batch_size: Integer size for batched operations.
-
-        :return: ClassAvgSource instance.
-        """
-        dtype = src.dtype
-
-        if classifier is None:
-            classifier = RIRClass2D(
-                src,
-                fspca_components=400,
-                bispectrum_components=300,  # Compressed Features after last PCA stage.
-                n_nbor=n_nbor,
-                large_pca_implementation="legacy",
-                nn_implementation="sklearn",  # Note this is different than debug
-                bispectrum_implementation="legacy",
-            )
-
-        if averager is None:
-            if averager_src is None:
-                averager_src = src
-
-            basis_2d = self._get_classifier_basis(classifier)
-
-            averager = BFSRAverager2D(
-                composite_basis=basis_2d,
-                src=averager_src,
-                batch_size=batch_size,
-                dtype=dtype,
-            )
-        elif averager_src is not None:
-            raise RuntimeError(
-                "When providing an instantiated `averager`, cannot assign `averager_src`."
-            )
-
-        if class_selector is None:
-            class_selector = NeighborVarianceWithRepulsionClassSelector()
 
         super().__init__(
             src=src,

@@ -12,6 +12,7 @@ from aspire.classification import (
     BFRAverager2D,
     BFSRAverager2D,
     BFSReddyChatterjiAverager2D,
+    BFTAverager2D,
     ReddyChatterjiAverager2D,
 )
 from aspire.operators import PolarFT
@@ -299,3 +300,7 @@ class ReddyChatterjiAverager2DTestCase(BFSRAverager2DTestCase):
 
 class BFSReddyChatterjiAverager2DTestCase(ReddyChatterjiAverager2DTestCase):
     averager = BFSReddyChatterjiAverager2D
+
+
+class BFTAverager2DTestCase(BFSRAverager2DTestCase):
+    averager = BFTAverager2D

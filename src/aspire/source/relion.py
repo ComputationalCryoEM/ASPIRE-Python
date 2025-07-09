@@ -28,7 +28,7 @@ class RelionSource(ImageSource):
         self,
         filepath,
         data_folder=None,
-        pixel_size=1,
+        pixel_size=None,
         B=0,
         n_workers=-1,
         max_rows=None,
@@ -42,7 +42,8 @@ class RelionSource(ImageSource):
         :param filepath: Absolute or relative path to STAR file
         :param data_folder: Path to folder w.r.t which all relative paths to .mrcs files are resolved.
             If None, the folder corresponding to filepath is used.
-        :param pixel_size: the pixel size of the images in angstroms (Default 1)
+        :param pixel_size: The pixel size of the images in angstroms. By default, pixel size is
+            populated from the STAR file if relevant metadata fields exist, otherwise set to 1.
         :param B: the envelope decay of the CTF in inverse square angstrom (Default 0)
         :param n_workers: Number of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
         :param max_rows: Maximum number of rows in STAR file to read. If None, all rows are read.
@@ -71,7 +72,7 @@ class RelionSource(ImageSource):
 
         # Peek into the first image and populate some attributes
         first_mrc_filepath = metadata["__mrc_filepath"][0]
-        mrc = mrcfile.open(first_mrc_filepath)
+        mrc = mrcfile.open(first_mrc_filepath, mode="r", permissive=True)
 
         # Get the 'mode' (data type) - TODO: There's probably a more direct way to do this.
         mode = int(mrc.header.mode)
@@ -113,6 +114,21 @@ class RelionSource(ImageSource):
             memory=memory,
             pixel_size=pixel_size,
         )
+
+        # Populate pixel_size with metadata if possible.
+        if pixel_size is None:
+            if self.has_metadata(["_rlnImagePixelSize"]):
+                pixel_size = self.get_metadata(["_rlnImagePixelSize"])[0]
+            elif self.has_metadata(["_rlnDetectorPixelSize", "_rlnMagnification"]):
+                detector_pixel_size = self.get_metadata(["_rlnDetectorPixelSize"])[0]
+                magnification = self.get_metadata(["_rlnMagnification"])[0]
+                pixel_size = 10000 * detector_pixel_size / magnification
+            else:
+                logger.warning(
+                    "No pixel size found in STAR file. Defaulting to 1.0 Angstrom"
+                )
+                pixel_size = 1.0
+        self.pixel_size = float(pixel_size)
 
         # CTF estimation parameters coming from Relion
         CTF_params = [
@@ -231,7 +247,7 @@ class RelionSource(ImageSource):
         logger.debug(f"Indices: {indices}")
 
         def load_single_mrcs(filepath, indices):
-            arr = mrcfile.open(filepath).data
+            arr = mrcfile.open(filepath, mode="r", permissive=True).data
             # if the stack only contains one image, arr will have shape (resolution, resolution)
             # the code below reshapes it to (1, resolution, resolution)
             if len(arr.shape) == 2:

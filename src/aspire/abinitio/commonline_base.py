@@ -7,7 +7,7 @@ import scipy.sparse as sparse
 
 from aspire.image import Image
 from aspire.operators import PolarFT
-from aspire.utils import common_line_from_rots, complex_type, fuzzy_mask, tqdm
+from aspire.utils import Rotation, complex_type, fuzzy_mask, tqdm
 from aspire.utils.random import choice
 
 logger = logging.getLogger(__name__)
@@ -536,7 +536,7 @@ class CLOrient3D:
         n_img = self.n_img
 
         # `estimate_shifts()` requires that rotations have already been estimated.
-        rotations = self.rotations
+        rotations = Rotation(self.rotations)
 
         pf = self.pf.copy()
 
@@ -741,16 +741,14 @@ class CLOrient3D:
         """
         Get common line indices based on the rotations from i and j images
 
-        :param rotations: Array of rotation matrices
+        :param rotations: Rotation object
         :param i: Index for i image
         :param j: Index for j image
         :param n_theta: Total number of common lines
         :return: Common line indices for i and j images
         """
         # get the common line indices based on the rotations from i and j images
-        r_i = rotations[i]
-        r_j = rotations[j]
-        c_ij, c_ji = common_line_from_rots(r_i.T, r_j.T, 2 * n_theta)
+        c_ij, c_ji = rotations.invert().common_lines(i, j, 2 * n_theta)
 
         # To match clmatrix, c_ij is always less than PI
         # and c_ji may be be larger than PI.

@@ -100,13 +100,13 @@ estimated_volume = estimator.estimate()
 # demonstrate that we are in fact generating spectral volumes that
 # appear reasonably similar to the input volumes.
 
-from aspire.utils import Rotation, uniform_random_angles
+from aspire.utils import Rotation
 
 reference_v = 0  # Actual volume under comparison
 spectral_v = 0  # Estimated spectral volume
 m = 3  # Number of projections
 
-random_rotations = Rotation.from_euler(uniform_random_angles(m, dtype=src.dtype))
+random_rotations = Rotation.generate_random_rotations(m, dtype=src.dtype)
 
 # Estimated volume projections
 estimated_volume[spectral_v].project(random_rotations).show()

@@ -1,7 +1,8 @@
 import logging
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractproperty
 
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 from aspire.utils import Rotation
 
@@ -20,11 +21,12 @@ class SymmetryGroup(ABC):
         self.dtype = np.float64
         self.rotations = self.generate_rotations()
 
-    @abstractmethod
     def generate_rotations(self):
         """
         Method for generating a Rotation object for the symmetry group.
         """
+        rots = R.create_group(self.to_string).as_matrix()
+        return Rotation(rots.astype(self.dtype, copy=False))
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
@@ -79,6 +81,7 @@ class SymmetryGroup(ABC):
             "D": DnSymmetryGroup,
             "T": TSymmetryGroup,
             "O": OSymmetryGroup,
+            "I": ISymmetryGroup,
         }
         if symmetry_type not in map_to_sym_group.keys():
             raise ValueError(
@@ -124,8 +127,7 @@ class CnSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Cn symmetry group and the identity.
         """
-        angles = np.linspace(0, 2 * np.pi, self.order, endpoint=False)
-        return Rotation.about_axis("z", angles, dtype=self.dtype)
+        return super().generate_rotations()
 
 
 class IdentitySymmetryGroup(CnSymmetryGroup):
@@ -172,18 +174,7 @@ class DnSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the Dn symmetry group and the identity.
         """
-
-        # Rotations to induce cyclic symmetry
-        angles = np.linspace(0, 2 * np.pi, self.order, endpoint=False)
-        rot_z = Rotation.about_axis("z", angles, dtype=self.dtype).matrices
-
-        # Perpendicular rotation to induce dihedral symmetry
-        rot_perp = Rotation.about_axis("y", np.pi, dtype=self.dtype).matrices
-
-        # Full set of rotations.
-        rots = np.concatenate((rot_z, rot_z @ rot_perp[0]))
-
-        return Rotation(rots)
+        return super().generate_rotations()
 
 
 class TSymmetryGroup(SymmetryGroup):
@@ -209,30 +200,11 @@ class TSymmetryGroup(SymmetryGroup):
         """
         A tetrahedron has C3 symmetry along the 4 axes through each vertex and
         perpendicular to the opposite face, and C2 symmetry along the axes through
-        the midpoints of opposite edges. We convert from axis-angle representation of
-        the symmetry group elements into rotation vectors to generate the rotation
-        matrices via the `from_rotvec()` method.
+        the midpoints of opposite edges.
 
         :return: Rotation object containing the tetrahedral symmetry group and the identity.
         """
-        # C3 rotation vectors, ie. angle * axis.
-        axes_C3 = np.array(
-            [[1.0, 1.0, 1.0], [-1.0, -1.0, 1.0], [1.0, -1.0, -1.0], [-1.0, 1.0, -1.0]],
-        )
-        axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
-        angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3])
-        rot_vecs_C3 = np.concatenate([angle * axes_C3 for angle in angles_C3])
-
-        # C2 rotation vectors.
-        axes_C2 = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
-        rot_vecs_C2 = np.pi * axes_C2
-
-        # The full set of rotation vectors inducing tetrahedral symmetry.
-        rot_vec_I = np.zeros((1, 3))
-        rot_vecs = np.concatenate((rot_vec_I, rot_vecs_C3, rot_vecs_C2))
-
-        # Return rotations.
-        return Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
+        return super().generate_rotations()
 
 
 class OSymmetryGroup(SymmetryGroup):
@@ -265,41 +237,37 @@ class OSymmetryGroup(SymmetryGroup):
 
         :return: Rotation object containing the octahedral symmetry group and the identity.
         """
+        return super().generate_rotations()
 
-        # C4 rotation vectors, ie angle * axis
-        axes_C4 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        angles_C4 = np.array([np.pi / 2, np.pi, 3 * np.pi / 2])
-        rot_vecs_C4 = np.array(
-            [angle * axes_C4 for angle in angles_C4],
-        ).reshape((9, 3))
 
-        # C3 rotation vectors
-        axes_C3 = np.array(
-            [[1.0, 1.0, 1.0], [-1.0, 1.0, 1.0], [1.0, -1.0, 1.0], [1.0, 1.0, -1.0]]
-        )
-        axes_C3 /= np.linalg.norm(axes_C3, axis=-1)[..., np.newaxis]
-        angles_C3 = np.array([2 * np.pi / 3, 4 * np.pi / 3])
-        rot_vecs_C3 = np.array(
-            [angle * axes_C3 for angle in angles_C3],
-        ).reshape((8, 3))
+class ISymmetryGroup(SymmetryGroup):
+    """
+    Icosahedral symmetry group.
+    """
 
-        # C2 rotation vectors
-        axes_C2 = np.array(
-            [
-                [1.0, 1.0, 0.0],
-                [-1.0, 1.0, 0.0],
-                [1.0, 0.0, 1.0],
-                [-1.0, 0.0, 1.0],
-                [0.0, 1.0, 1.0],
-                [0.0, -1.0, 1.0],
-            ],
-        )
-        axes_C2 /= np.linalg.norm(axes_C2, axis=-1)[..., np.newaxis]
-        rot_vecs_C2 = np.pi * axes_C2
+    def __init__(self):
+        """
+        `ISymmetryGroup` instance that serves up a `Rotation` object
+        containing rotation matrices of the symmetry group (including the
+        Identity) accessed via the `matrices` attribute. Note, this is the
+        chiral icosahedral symmetry group which does not contain reflections.
+        """
+        super().__init__()
 
-        # The full set of rotation vectors inducing octahedral symmetry.
-        rot_vec_I = np.zeros((1, 3))
-        rot_vecs = np.concatenate((rot_vec_I, rot_vecs_C4, rot_vecs_C3, rot_vecs_C2))
+        self._symmetry_group = self.generate_rotations()
 
-        # Return rotations.
-        return Rotation.from_rotvec(rot_vecs, dtype=self.dtype)
+    @property
+    def to_string(self):
+        return "I"
+
+    def generate_rotations(self):
+        """
+        Icosahedral rotation group I (60 elements):
+        - 1 identity rotation (order 1)
+        - 24 rotations of order 5: ±72°, ±144° around 6 face-center axes
+        - 20 rotations of order 3: ±120° around 10 vertex axes
+        - 15 rotations of order 2: 180° around 15 edge-midpoint axes
+
+        :return: Rotation object containing the icosahedral symmetry group and the identity.
+        """
+        return super().generate_rotations()

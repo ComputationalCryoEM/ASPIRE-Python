@@ -1,17 +1,12 @@
 from .types import complex_type, real_type, utest_tolerance  # isort:skip
 from .coor_trans import (  # isort:skip
-    common_line_from_rots,
     mean_aligned_angular_distance,
     crop_pad_2d,
     crop_pad_3d,
-    get_aligned_rotations,
-    get_rots_mse,
     grid_1d,
     grid_2d,
     grid_3d,
-    register_rotations,
     rots_to_clmatrix,
-    uniform_random_angles,
 )
 
 from .misc import (  # isort:skip

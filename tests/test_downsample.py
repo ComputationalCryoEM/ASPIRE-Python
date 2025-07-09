@@ -124,6 +124,7 @@ def test_integer_offsets():
 DTYPES = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
 RES = [65, 66]
 RES_DS = [32, 33]
+LEGACY = [True, False]
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
@@ -141,6 +142,11 @@ def res_ds(request):
     return request.param
 
 
+@pytest.fixture(params=LEGACY, ids=lambda x: f"legacy={x}", scope="module")
+def legacy(request):
+    return request.param
+
+
 @pytest.fixture(scope="module")
 def emdb_vol():
     return emdb_2660()
@@ -153,18 +159,57 @@ def volume(emdb_vol, res, dtype):
     return vol
 
 
-def test_downsample_project(volume, res_ds):
+def test_downsample_project(volume, res_ds, legacy):
     """
     Test that vol.downsample.project == vol.project.downsample.
     """
     rot = np.eye(3, dtype=volume.dtype)  # project along z-axis
-    im_ds_proj = volume.downsample(res_ds).project(rot)
-    im_proj_ds = volume.project(rot).downsample(res_ds)
+    im_ds_proj = volume.downsample(res_ds, legacy=legacy).project(rot)
+    im_proj_ds = volume.project(rot).downsample(res_ds, legacy=legacy)
 
-    tol = 1e-07
-    if volume.dtype == np.float64:
-        tol = 1e-09
+    tol = 1e-09
+    if volume.dtype == np.float32:
+        tol = 1e-07
+    if legacy:
+        # project does not enforce legacy centering convention,
+        # so this property will not hold up to allclose tolerance.
+        tol = 1e-03
+
     np.testing.assert_allclose(im_ds_proj, im_proj_ds, atol=tol)
+
+
+def test_downsample_legacy(volume, res_ds):
+    """
+    The legay Matlab downsample method differs from ASPIRE-Python
+    downsample in that is uses a different centering convention,
+    off by a half pixel for odd images, and does not zero out
+    the nyquist frequency. By making these alterations to the
+    ASPIRE-Python downsampled images we can match legacy downsample
+    upt to `allclose`.
+    """
+    n_img = 10
+    dtype = volume.dtype
+    src = Simulation(
+        n=n_img,
+        vols=volume,
+        amplitudes=1,
+        dtype=dtype,
+        seed=1980,
+    )
+    ims = src.images[:]
+
+    # Legacy downsampled images.
+    ims_ds_legacy = ims.downsample(res_ds, legacy=True)
+
+    # ASPIRE-Python downsample with centering adjustments for odd resolution images.
+    shifts = 0.5 * np.ones((n_img, 2), dtype=dtype)
+    if src.L % 2 == 1:
+        ims = ims.shift(shifts)
+    ims_ds_py = ims.downsample(res_ds, zero_nyquist=False)
+    if res_ds % 2 == 1:
+        ims_ds_py = ims_ds_py.shift(-shifts)
+
+    np.testing.assert_allclose(ims_ds_legacy, ims_ds_py, atol=1e-08)
 
 
 def test_simulation_relion_downsample():

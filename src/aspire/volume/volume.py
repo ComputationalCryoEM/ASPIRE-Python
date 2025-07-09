@@ -517,27 +517,33 @@ class Volume:
             symmetry_group=symmetry,
         )
 
-    def downsample(self, ds_res, mask=None, zero_nyquist=True):
+    def downsample(self, ds_res, mask=None, zero_nyquist=True, legacy=False):
         """
         Downsample each volume to a desired resolution (only cubic supported).
 
         :param ds_res: Desired resolution.
-        :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-            Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even
+            resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
         :param mask: Optional NumPy array mask to multiply in Fourier space.
+        :param legacy: Option to match legacy Matlab downsample method (boolean).
+            Default of False uses `centered_fft` to maintain ASPIRE-Python centering conventions.
+        :return: The downsampled Volume object.
         """
 
         original_stack_shape = self.stack_shape
         v = self.stack_reshape(-1)
 
         # take 3D Fourier transform of each volume in the stack
-        fx = fft.centered_fftn(xp.asarray(v._data))
+        if legacy:
+            fx = fft.fftshift(fft.fftn(xp.asarray(v._data)))
+        else:
+            fx = fft.centered_fftn(xp.asarray(v._data))
 
         # crop each volume to the desired resolution in frequency space
         fx = crop_pad_3d(fx, ds_res)
 
         # If downsample resolution is even, optionally zero out the nyquist frequency.
-        if ds_res % 2 == 0 and zero_nyquist is True:
+        if ds_res % 2 == 0 and zero_nyquist and not legacy:
             fx[:, 0, :, :] = 0
             fx[:, :, 0, :] = 0
             fx[:, :, :, 0] = 0
@@ -547,7 +553,10 @@ class Volume:
             fx = fx * xp.asarray(mask)
 
         # inverse Fourier transform of each volume
-        out = fft.centered_ifftn(fx)
+        if legacy:
+            out = fft.ifftn(fft.ifftshift(fx))
+        else:
+            out = fft.centered_ifftn(fx)
         out = out.real * (ds_res**3 / self.resolution**3)
 
         # Optionally scale pixel size
@@ -598,8 +607,12 @@ class Volume:
                 f"{self.__class__.__name__}"
                 f" rot_matrices.dtype {rot_matrices.dtype}"
                 f" != self.dtype {self.dtype}."
-                " In the future this will raise an error."
+                f" rot_matrices will be cast to {self.dtype}."
             )
+
+        # Enforce `rots_inverted.dtype` is always `vol.dtype`
+        # On mismatch the above warning should have been emitted.
+        rots_inverted = rots_inverted.astype(self.dtype, copy=False)
 
         # If K = 1 we broadcast the single Rotation object across each volume.
         if K == 1:

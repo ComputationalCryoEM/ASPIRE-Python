@@ -24,7 +24,7 @@ from aspire.volume import SymmetryGroup
 logger = logging.getLogger(__name__)
 
 
-def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
+def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, legacy=False):
     """
     Normalize backgrounds and apply to a stack of images
 
@@ -33,16 +33,30 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
     :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
+    :param legacy: Option to match Matlab legacy normalize_background. Default, False,
+        uses ASPIRE-Python implementation. When True, ramping is disabled, a shifted
+        2d grid and alternative `bg_radius` is used to generate the background mask,
+        and standard deviation is computed using N - 1 degrees of freedom.
     :return: The modified images
     """
     if imgs.ndim > 3:
         raise NotImplementedError(
             "`normalize_bg` is currently limited to 1D image stacks."
         )
-
     L = imgs.shape[-1]
+
+    # Make adjustments for legacy mode
+    shifted = False
+    ddof = 0  # Degrees of freedom for standard deviation
+    if legacy:
+        do_ramp = False
+        shifted = True  # Shifts 2d grid by 1/2 pixel for even resolution
+        bg_radius = 2 * (L // 2) / L
+        ddof = 1
+
+    # Generate background mask
     input_dtype = imgs.dtype
-    grid = grid_2d(L, indexing="yx", dtype=input_dtype)
+    grid = grid_2d(L, shifted=shifted, indexing="yx", dtype=input_dtype)
     mask = grid["r"] > bg_radius
 
     if do_ramp:
@@ -71,15 +85,10 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True):
         imgs = imgs.reshape((-1, L, L))
 
     # Apply mask images and calculate mean and std values of background
-    imgs_masked = imgs * mask
-    denominator = np.count_nonzero(mask)  # scalar int
-    first_moment = np.sum(imgs_masked, axis=(1, 2)) / denominator
-    second_moment = np.sum(imgs_masked**2, axis=(1, 2)) / denominator
-    mean = first_moment.reshape(-1, 1, 1)
-    variance = second_moment.reshape(-1, 1, 1) - mean**2
-    std = np.sqrt(variance)
+    mean = np.mean(imgs[:, mask], axis=1)
+    std = np.std(imgs[:, mask], ddof=ddof, axis=1)
 
-    return (imgs - mean) / std
+    return (imgs - mean[:, None, None]) / std[:, None, None]
 
 
 def load_mrc(filepath):
@@ -399,7 +408,7 @@ class Image:
 
         :param shifts: An array of size n-by-2 specifying the shifts in pixels.
             Alternatively, it can be a column vector of length 2, in which case
-            the same shifts is applied to each image.
+            the same shift is applied to each image.
         :return: The Image translated by the shifts, with periodic boundaries.
         """
         if shifts.ndim == 1:
@@ -409,7 +418,8 @@ class Image:
 
         if not shifts.shape[1] == 2:
             raise ValueError("Input shifts must be of shape (n_images, 2) or (1, 2).")
-        if not n_shifts == 1 and not n_shifts == self.n_images:
+
+        if not (n_shifts == 1 or self.n_images == 1 or n_shifts == self.n_images):
             raise ValueError(
                 "The number of shifts must be 1 or equal to self.n_images."
             )
@@ -510,14 +520,16 @@ class Image:
 
         return Image(res)
 
-    def downsample(self, ds_res, zero_nyquist=True):
+    def downsample(self, ds_res, zero_nyquist=True, legacy=False):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
 
         :param ds_res: int - new resolution, should be <= the current resolution
             of this Image
-        :param zero_nyquist: Option to keep or remove Nyquist frequency for even resolution.
-            Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even
+            resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param legacy: Option to match legacy Matlab downsample method (boolean).
+            Default of False uses `centered_fft` to maintain ASPIRE-Python centering conventions.
         :return: The downsampled Image object.
         """
 
@@ -528,19 +540,32 @@ class Image:
         # because all of the subsequent calls until `asnumpy` are GPU
         # when xp and fft in `cupy` mode.
 
-        # compute FT with centered 0-frequency
-        fx = fft.centered_fft2(xp.asarray(im._data))
+        if legacy:
+            fx = fft.fftshift(fft.fft2(xp.asarray(im._data)))
+        else:
+            # compute FT with centered 0-frequency
+            fx = fft.centered_fft2(xp.asarray(im._data))
+
         # crop 2D Fourier transform for each image
         crop_fx = crop_pad_2d(fx, ds_res)
 
         # If downsampled resolution is even, optionally zero out the nyquist frequency.
-        if ds_res % 2 == 0 and zero_nyquist is True:
+        if ds_res % 2 == 0 and zero_nyquist and not legacy:
             crop_fx[:, 0, :] = 0
             crop_fx[:, :, 0] = 0
 
         # take back to real space, discard complex part, and scale
-        out = fft.centered_ifft2(crop_fx).real * (ds_res**2 / self.resolution**2)
-        out = xp.asnumpy(out)
+        if legacy:
+            out = fft.ifft2(fft.ifftshift(crop_fx))
+        else:
+            out = fft.centered_ifft2(crop_fx)
+
+        # The parenths are required because dtype casting semantics
+        # differs between Numpy 1, 2, and CuPy.
+        # At time of writing CuPy is consistent with Numpy1.
+        # The additional parenths yield consistent out.dtype.
+        # See #1298 for relevant debugger output.
+        out = xp.asnumpy(out.real * (ds_res**2 / self.resolution**2))
 
         # Optionally scale pixel size
         ds_pixel_size = self.pixel_size
@@ -598,6 +623,10 @@ class Image:
         if self.stack_ndim > 1:
             raise NotImplementedError("`save` is currently limited to 1D image stacks.")
 
+        data = self._data.astype(np.float32)
+        if self.n_images == 1:
+            data = data[0]
+
         if overwrite is None and os.path.exists(mrcs_filepath):
             # If the file exists, append a timestamp to the old file and rename it
             _ = rename_with_timestamp(mrcs_filepath)
@@ -606,13 +635,13 @@ class Image:
 
         with mrcfile.new(mrcs_filepath, overwrite=overwrite) as mrc:
             # original input format (the image index first)
-            mrc.set_data(self._data.astype(np.float32))
+            mrc.set_data(data)
             # Note assigning voxel_size must come after `set_data`
             if self.pixel_size is not None:
                 mrc.voxel_size = self.pixel_size
 
     @staticmethod
-    def load(filepath, dtype=None):
+    def _load_raw(filepath, dtype=None):
         """
         Load raw data from supported files.
 
@@ -621,7 +650,9 @@ class Image:
         :param filepath: File path (string).
         :param dtype: Optionally force cast to `dtype`.
              Default dtype is inferred from the file contents.
-        :return: numpy array of image data.
+        :returns:
+            - numpy array of image data.
+            - pixel size
         """
 
         # Get the file extension
@@ -640,22 +671,40 @@ class Image:
         if dtype is not None:
             im = im.astype(dtype, copy=False)
 
+        return im, pixel_size
+
+    @staticmethod
+    def load(filepath, dtype=None):
+        """
+        Load raw data from supported files.
+
+        Currently MRC and TIFF are supported.
+
+        :param filepath: File path (string).
+        :param dtype: Optionally force cast to `dtype`.
+             Default dtype is inferred from the file contents.
+        :return: Image instance
+        """
+        # Load raw data from filepath with pixel size
+        im, pixel_size = Image._load_raw(filepath, dtype=dtype)
+
         # Return as Image instance
         return Image(im, pixel_size=pixel_size)
 
     def _im_translate(self, shifts):
         """
-        Translate image by shifts
+        Translate image by `shifts`.
 
-        :param im: An array of size n-by-L-by-L containing images to be translated.
+        Note broadcasting special case
+        Image shape (n,L,L) x shifts shape (n,2) -> (n,L,L) shifted images
+        Image shape (1,L,L) x shifts shape (n,2) -> (n,L,L) shifted images
+
+        :param im: An array of size m-by-L-by-L containing images to be translated.
+            m may be 1 or n.
         :param shifts: An array of size n-by-2 specifying the shifts in pixels.
             Alternatively, it can be a row vector of length 2, in which case the same shifts is applied to each image.
         :return: The images translated by the shifts, with periodic boundaries.
         """
-
-        # Note original stack shape and flatten stack
-        stack_shape = self.stack_shape
-        im = self.stack_reshape(-1)._data
 
         if shifts.ndim == 1:
             shifts = shifts[np.newaxis, :]
@@ -663,8 +712,15 @@ class Image:
 
         assert shifts.shape[-1] == 2, "shifts must be nx2"
 
+        # Note original stack shape and flatten stack
+        stack_shape = self.stack_shape
+        if self.n_images == 1 and n_shifts > 1:
+            # Handle the shift broadcast special case
+            stack_shape = n_shifts
+        im = self.stack_reshape(-1)._data
+
         assert (
-            n_shifts == 1 or n_shifts == self.n_images
+            n_shifts == 1 or self.n_images == 1 or n_shifts == self.n_images
         ), "number of shifts must be 1 or match the number of images"
         # Cast shifts to this instance's internal dtype
         shifts = xp.asarray(shifts, dtype=self.dtype)
@@ -867,7 +923,7 @@ class Image:
         #   checks uniformity.
         if isinstance(vx, np.recarray):
             if vx.x != vx.y:
-                raise ValueError(f"Voxel sizes are not uniform: {vx}")
+                logger.warning(f"Voxel sizes are not uniform: {vx}")
             vx = vx.x
 
         # Convert `0` to `None`

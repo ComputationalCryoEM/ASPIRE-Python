@@ -1,10 +1,11 @@
 [project]
 name = "aspire"
-version = "0.13.2"
+version = "0.14.0"
 description = "Algorithms for Single Particle Reconstruction"
 readme = "README.md" # Optional
 requires-python = ">=3.9"
-license = {file = "LICENSE"}
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
 maintainers = [
   {name = "ASPIRE Developers", email = "ASPIRE-DEVS@princeton.edu"}
 ]
@@ -23,15 +24,15 @@ authors = [
 
 classifiers = [
      "Development Status :: 3 - Alpha",
-     "Programming Language :: Python",
-     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"
+     "Programming Language :: Python"
 ]
 
 dependencies = [
     "click",
     "confuse >= 2.0.0",
     "cvxpy",
-    "finufft==2.3.0",
+    "finufft==2.4.0 ; sys_platform!='darwin'",
+    "finufft==2.3.0 ; sys_platform=='darwin'",
     "gemmi >= 0.6.5",
     "joblib",
     "matplotlib >= 3.2.0",
@@ -56,7 +57,7 @@ dependencies = [
 "Source" = "https://github.com/ComputationalCryoEM/ASPIRE-Python"
 
 [project.optional-dependencies]
-gpu-12x = ["cupy-cuda12x", "cufinufft==2.3.0"]
+gpu-12x = ["cupy-cuda12x", "cufinufft==2.4.0"]
 dev = [
     "black",
     "bumpversion",

@@ -4,6 +4,7 @@ import numpy as np
 
 from aspire.image import Image
 from aspire.nufft import nufft
+from aspire.numeric import xp
 from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
@@ -88,25 +89,38 @@ class PolarFT:
         """
         Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
 
-        :param x: The Image instance representing coefficient array in the
+        :param x: The `Image` instance representing coefficient array in the
             standard 2D coordinate basis to be evaluated.
-        :return: The evaluation of the coefficient array `x` in the polar
-            Fourier grid. This is an array of vectors whose first dimension
-            corresponds to `x.shape[0]`, and last dimension equals `self.count`.
+        :return: Numpy array holding the evaluation of the coefficient
+            array `x` in the polar Fourier grid. This is an array of
+            vectors whose first dimension corresponds to `x.shape[0]`,
+            and last dimension equals `self.count`.
         """
-        if x.dtype != self.dtype:
-            raise TypeError(
-                f"{self.__class__.__name__}.transform"
-                f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
-            )
-
         if not isinstance(x, Image):
             raise TypeError(
                 f"{self.__class__.__name__}.transform"
                 f" passed numpy array instead of {Image}."
             )
-        else:
-            x = x.asnumpy()
+
+        return xp.asnumpy(self._transform(x.asnumpy()))
+
+    def _transform(self, x):
+        """
+        Evaluate coefficient in polar Fourier grid from those in standard 2D coordinate basis
+
+        :param x: Coefficients array in the standard 2D coordinate basis to be evaluated.
+        :return: The evaluation of the coefficient array `x` in the polar
+            Fourier grid. This is an array of vectors whose first dimension
+            corresponds to `x.shape[0]`, and last dimension equals `self.count`.
+        """
+
+        x = xp.asarray(x)
+
+        if x.dtype != self.dtype:
+            raise TypeError(
+                f"{self.__class__.__name__}.transform"
+                f" Inconsistent dtypes x: {x.dtype} self: {self.dtype}"
+            )
 
         # Flatten stack
         stack_shape = x.shape[: -self.ndim]
@@ -114,13 +128,14 @@ class PolarFT:
 
         # We expect the Image `x` to be real in order to take advantage of the conjugate
         # symmetry of the Fourier transform of a real valued image.
-        if not np.isreal(x).all():
+        if not xp.isreal(x).all():
             raise TypeError(
                 f"The Image `x` must be real valued. Found dtype {x.dtype}."
             )
 
         resolution = x.shape[-1]
 
+        # nufft call should return `pf` as array type (np or cp) of `x`
         pf = nufft(x, self.freqs) / resolution**2
 
         return pf.reshape(*stack_shape, self.ntheta // 2, self.nrad)
@@ -136,4 +151,57 @@ class PolarFT:
         :return: The full polar Fourier transform with shape (*stack_shape, ntheta, nrad)
         """
 
-        return np.concatenate((pf, np.conj(pf)), axis=-2)
+        # cheap way to interop for now
+        concatenate = xp.concatenate
+        if isinstance(pf, np.ndarray):
+            concatenate = np.concatenate
+
+        return concatenate((pf, pf.conj()), axis=-2)
+
+    def shift(self, pfx, shifts):
+        """
+        Shift `pfx` by `shifts` pixels using `PolarFT`.
+
+        :param pfx: Array of `PolarFT` coefs shaped `(n_img, ntheta//2, nrad)`.
+        :param shifts: Array of (x,y) shifts shaped `(n_img, 2).
+        :return: Array of shifted coefs shaped `(n_img, ntheta//2, nrad)`.
+        """
+
+        # Convert to xp array as needed
+        input_on_host = isinstance(pfx, np.ndarray)
+        pfx = xp.asarray(pfx)
+        shifts = xp.asarray(shifts)
+
+        # Number of input images
+        n_img = pfx.shape[0]
+
+        # Handle a single shift
+        shifts = xp.atleast_2d(shifts)
+        n_shifts = shifts.shape[0]
+
+        # Handle broadcast case, calculate number of output images `n`
+        n = n_img
+        if n_img == 1:
+            n = n_shifts
+        elif n_shifts != n_img:
+            raise ValueError(
+                f"Incompatible number of images {n_img} and shifts {n_shifts}"
+            )
+
+        # Flip shift XY axis?!
+        shifts = shifts[..., ::-1]
+
+        # Broadcast and accumulate phase shifts
+        freqs = xp.tile(xp.asarray(self.freqs), (n, 1, 1))
+        phase_shifts = xp.exp(-1j * xp.sum(freqs * -shifts[:, :, None], axis=1))
+
+        # Reshape flat frequency grid back to (..., ntheta//2, self.nrad)
+        phase_shifts = phase_shifts.reshape(n, self.ntheta // 2, self.nrad)
+        # Apply the phase shifts elementwise
+        shifted_pfx = phase_shifts * pfx
+
+        # If we started on host, return as host array.
+        if input_on_host:
+            shifted_pfx = xp.asnumpy(shifted_pfx)
+
+        return shifted_pfx

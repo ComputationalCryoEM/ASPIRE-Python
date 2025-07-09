@@ -92,6 +92,28 @@ def testNormBackground(L, dtype):
     assert dtype == imgs_nb.dtype
 
 
+@pytest.mark.parametrize("L, dtype", params)
+def test_norm_background_legacy(L, dtype):
+    # Legacy normalize_background uses a shifted grid, a different
+    # mask radius, disabled ramping, and N - 1 degrees of freedom
+    # when computing standard deviation.
+    sim = get_sim_object(L, dtype)
+    bg_radius = 2 * (L // 2) / L
+    grid = grid_2d(sim.L, shifted=True, indexing="yx", dtype=dtype)
+    mask = grid["r"] > bg_radius
+    sim = sim.normalize_background(legacy=True)
+    imgs_nb = sim.images[:].asnumpy()
+    new_mean = np.mean(imgs_nb[:, mask])
+    new_variance = np.var(imgs_nb[:, mask], ddof=1)
+
+    # new mean of noise should be close to zero and variance should be close to 1
+    np.testing.assert_array_less(new_mean, utest_tolerance(dtype))
+    np.testing.assert_array_less(abs(new_variance - 1), 2e-3)
+
+    # dtype of returned images should be the same
+    np.testing.assert_equal(dtype, imgs_nb.dtype)
+
+
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def testWhiten(dtype):
     # Note this atol holds only for L even. Odd tested in testWhiten2.
