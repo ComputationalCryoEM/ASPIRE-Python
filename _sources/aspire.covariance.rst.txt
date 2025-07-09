@@ -1,0 +1,29 @@
+aspire.covariance package
+=========================
+
+Submodules
+----------
+
+aspire.covariance.covar module
+------------------------------
+
+.. automodule:: aspire.covariance.covar
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.covariance.covar2d module
+--------------------------------
+
+.. automodule:: aspire.covariance.covar2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.covariance
+   :members:
+   :undoc-members:
+   :show-inheritance:
