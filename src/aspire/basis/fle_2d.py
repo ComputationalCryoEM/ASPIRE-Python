@@ -690,6 +690,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                 f"`coefs` should be a `Coef` instance, received {type(coefs)}."
             )
 
+        px_sz = coefs.pixel_size
+
         # Copy to mutate the coefs.
         coefs = coefs.asnumpy().copy()
 
@@ -699,7 +701,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                 k = k - 1
         coefs[:, k + 1 :] = 0
 
-        return Coef(self, coefs)
+        return Coef(self, coefs, pixel_size=px_sz)
 
     def radial_convolve(self, coefs, radial_img):
         """
@@ -719,6 +721,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             raise NotImplementedError(
                 "`radial_convolve` currently only implemented for 1D stacks."
             )
+
+        px_sz = coefs.pixel_size
 
         # Potentially migrate to GPU
         coefs = xp.asarray(coefs.asnumpy())
@@ -743,7 +747,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         coefs_conv = coefs_conv[..., self._fle_to_fb_indices]
 
         # Return as Coef on host
-        return Coef(self, xp.asnumpy(coefs_conv))
+        return Coef(self, xp.asnumpy(coefs_conv), pixel_size=px_sz)
 
     def _radial_convolve_weights(self, b):
         """

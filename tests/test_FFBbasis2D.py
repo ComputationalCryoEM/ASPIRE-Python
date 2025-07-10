@@ -95,7 +95,8 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         v = Volume(
             np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol.npy")).astype(
                 basis.dtype
-            )
+            ),
+            pixel_size=1.234,
         ).downsample(basis.nres)
 
         src = Simulation(L=basis.nres, n=n_img, vols=v, dtype=basis.dtype)
@@ -122,6 +123,9 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         rmse = np.sqrt(np.mean(np.square(diff), axis=(1, 2)))
         logger.info(f"RMSE shifted image diffs {rmse}")
         assert np.allclose(rmse, 0, atol=1e-5)
+
+        # Check pixel_size passthrough
+        np.testing.assert_array_equal(f_imgs.pixel_size, f_shifted_imgs.pixel_size)
 
 
 params = [pytest.param(512, np.float32, marks=pytest.mark.expensive)]

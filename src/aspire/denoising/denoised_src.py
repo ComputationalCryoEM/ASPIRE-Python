@@ -19,7 +19,13 @@ class DenoisedSource(ImageSource):
         :param denoiser: A `Denoiser` object for specifying a method for denoising
         """
 
-        super().__init__(src.L, src.n, dtype=src.dtype, metadata=src._metadata.copy())
+        super().__init__(
+            src.L,
+            src.n,
+            dtype=src.dtype,
+            pixel_size=src.pixel_size,
+            metadata=src._metadata.copy(),
+        )
         # TODO, we can probably setup a reasonable default here.
         self.denoiser = denoiser
         if not isinstance(denoiser, Denoiser):

@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 import numpy as np
 from scipy.sparse.linalg import LinearOperator
@@ -19,7 +20,7 @@ class Coef:
 
     _allowed_dtypes = (np.float32, np.float64)
 
-    def __init__(self, basis, data, dtype=None):
+    def __init__(self, basis, data, pixel_size=None, dtype=None):
         """
         A stack of one or more coefficient arrays.
 
@@ -32,6 +33,8 @@ class Coef:
         :param basis: `Basis` associated with `data` coefficients.
         :param data: Numpy array containing image data with shape
             `(..., count)`.
+        :param pixel_size: Pixel size of underlying image data in
+            angstroms, default `None`.
         :param dtype: Optionally cast `data` to this dtype.
             Defaults to `data.dtype`.
 
@@ -62,6 +65,7 @@ class Coef:
             )
         self.basis = basis
 
+        self.pixel_size = pixel_size
         self._data = data.astype(self.dtype, copy=False)
         self.ndim = self._data.ndim
         self.shape = self._data.shape
@@ -127,9 +131,31 @@ class Coef:
                 f"Coef stack_dim is {self.stack_ndim}, slice length must be =< {self.ndim}"
             )
 
+    def _check_pixel_size(self, other):
+        """
+        Check pixel size. In the case of only one of self or other having a pixel
+        size, use that pixel size. If self and other do not have matching pixel size
+        emit a warning and use self.pixel_size.
+        """
+        px_sz = self.pixel_size  # default
+
+        if isinstance(other, Coef):
+            if self.pixel_size is None:
+                px_sz = other.pixel_size
+            elif other.pixel_size is not None and not np.isclose(
+                self.pixel_size, other.pixel_size
+            ):
+                warnings.warn(
+                    f"Pixel sizes do not match. Using pixel size {self.pixel_size}.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        return px_sz
+
     def __getitem__(self, key):
         self._check_key_dims(key)
-        return self.__class__(self.basis, self._data[key])
+        return self.__class__(self.basis, self._data[key], pixel_size=self.pixel_size)
 
     def __setitem__(self, key, value):
         self._check_key_dims(key)
@@ -158,14 +184,16 @@ class Coef:
             )
 
         return self.__class__(
-            self.basis, self._data.reshape(*shape, self._data.shape[-1])
+            self.basis,
+            self._data.reshape(*shape, self._data.shape[-1]),
+            pixel_size=self.pixel_size,
         )
 
     def copy(self):
         """
         Return a new `Coef` instance with a deep copy of the data.
         """
-        return self.__class__(self.basis, self._data.copy())
+        return self.__class__(self.basis, self._data.copy(), pixel_size=self.pixel_size)
 
     def evaluate(self):
         """
@@ -219,10 +247,12 @@ class Coef:
         :return: `Coef` instance.
         """
 
+        px_sz = self._check_pixel_size(other)
+
         if isinstance(other, Coef):
             other = other._data
 
-        return self.__class__(self.basis, self._data * other)
+        return self.__class__(self.basis, self._data * other, pixel_size=px_sz)
 
     def __add__(self, other):
         """
@@ -233,10 +263,12 @@ class Coef:
         :return: `Coef` instance.
         """
 
+        px_sz = self._check_pixel_size(other)
+
         if isinstance(other, Coef):
             other = other._data
 
-        return self.__class__(self.basis, self._data + other)
+        return self.__class__(self.basis, self._data + other, pixel_size=px_sz)
 
     def __sub__(self, other):
         """
@@ -247,10 +279,12 @@ class Coef:
         :return: `Coef` instance.
         """
 
+        px_sz = self._check_pixel_size(other)
+
         if isinstance(other, Coef):
             other = other._data
 
-        return self.__class__(self.basis, self._data - other)
+        return self.__class__(self.basis, self._data - other, pixel_size=px_sz)
 
     def __neg__(self):
         """
@@ -259,7 +293,7 @@ class Coef:
         :return: `Coef` instance.
         """
 
-        return self.__class__(self.basis, -self._data)
+        return self.__class__(self.basis, -self._data, pixel_size=self.pixel_size)
 
     @property
     def size(self):
@@ -444,6 +478,9 @@ class Basis:
         if not isinstance(v, Coef):
             raise TypeError(f"`evaluate` should be passed a `Coef`, received {type(v)}")
 
+        # Store pixel_size for passthrough
+        px_sz = v.pixel_size
+
         # Flatten stack
         stack_shape = v.stack_shape
         v = v.stack_reshape(-1).asnumpy()
@@ -454,7 +491,7 @@ class Basis:
         x = x.reshape(*stack_shape, *self.sz)
 
         # Return the appropriate class
-        return self._cls(x)
+        return self._cls(x, pixel_size=px_sz)
 
     def _evaluate(self, v):
         raise NotImplementedError("subclasses must implement this")
@@ -480,7 +517,10 @@ class Basis:
                 f"{self.__class__.__name__}::evaluate_t"
                 f" passed numpy array instead of {self._cls}."
             )
+            px_sz = None
         else:
+            # Store pixel_size for passthrough
+            px_sz = v.pixel_size
             v = v.asnumpy()
 
         # Flatten stack, ndim is wrt Basis (2 or 3)
@@ -491,7 +531,7 @@ class Basis:
         # Restore stack shape
         x = x.reshape(*stack_shape, self.count)
 
-        return Coef(self, x)
+        return Coef(self, x, pixel_size=px_sz)
 
     def _evaluate_t(self, v):
         raise NotImplementedError("Subclasses should implement this")
@@ -553,7 +593,9 @@ class Basis:
 
         """
 
+        px_sz = None
         if isinstance(x, Image) or isinstance(x, Volume):
+            px_sz = x.pixel_size
             x = x.asnumpy()
 
         if x.dtype != self.dtype:
@@ -598,4 +640,4 @@ class Basis:
         # return v coefficients with the last dimension of self.count
         v = v.reshape((*sz_roll, self.count))
 
-        return Coef(self, v)
+        return Coef(self, v, pixel_size=px_sz)
