@@ -42,7 +42,7 @@ class Simulation(ImageSource):
         memory=None,
         noise_adder=None,
         symmetry_group=None,
-        pixel_size=None,
+        pixel_size=1,
     ):
         """
         A `Simulation` object that supplies images along with other parameters for image manipulation.
@@ -72,7 +72,7 @@ class Simulation(ImageSource):
         :param noise_adder: Optionally append instance of `NoiseAdder`
             to generation pipeline.
         :param symmetry_group: A SymmetryGroup instance or string indicating symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms, default `None`.
+        :param pixel_size: Pixel size of the images in angstroms, default 1.0.
 
         :return: A Simulation object.
         """

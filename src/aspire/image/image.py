@@ -519,10 +519,12 @@ class Image:
 
         return Image(res)
 
-    def downsample(self, ds_res, zero_nyquist=True, centered_fft=True):
+    @staticmethod
+    def _downsample(data, ds_res, zero_nyquist=True, centered_fft=True):
         """
-        Downsample Image to a specific resolution. This method returns a new Image.
+        Downsample Image data to a specific resolution.
 
+        :param data: Numpy array of Image data, shape (n_imgs, resolution, resolution).
         :param ds_res: int - new resolution, should be <= the current resolution
             of this Image
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even
@@ -533,18 +535,16 @@ class Image:
         :return: The downsampled Image object.
         """
 
-        original_stack_shape = self.stack_shape
-        im = self.stack_reshape(-1)
-
         # Note image data is intentionally migrated via `xp.asarray`
         # because all of the subsequent calls until `asnumpy` are GPU
         # when xp and fft in `cupy` mode.
+        resolution = data.shape[-1]
 
         if centered_fft:
             # compute FT with centered 0-frequency
-            fx = fft.centered_fft2(xp.asarray(im._data))
+            fx = fft.centered_fft2(xp.asarray(data))
         else:
-            fx = fft.fftshift(fft.fft2(xp.asarray(im._data)))
+            fx = fft.fftshift(fft.fft2(xp.asarray(data)))
 
         # crop 2D Fourier transform for each image
         crop_fx = crop_pad_2d(fx, ds_res)
@@ -565,14 +565,35 @@ class Image:
         # At time of writing CuPy is consistent with Numpy1.
         # The additional parenths yield consistent out.dtype.
         # See #1298 for relevant debugger output.
-        out = xp.asnumpy(out.real * (ds_res**2 / self.resolution**2))
+        out = xp.asnumpy(out.real * (ds_res**2 / resolution**2))
+
+        return out
+
+    def downsample(self, ds_res, zero_nyquist=True, centered_fft=True):
+        """
+        Downsample Image to a specific resolution. This method returns a new Image.
+
+        :param ds_res: int - new resolution, should be <= the current resolution
+            of this Image
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even
+            resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param centered_fft: Default of True uses `centered_fft` to
+            maintain ASPIRE-Python centering conventions.
+        :return: The downsampled Image object.
+        """
+        original_stack_shape = self.stack_shape
+        data = self.stack_reshape(-1)._data
+
+        ims_ds = self._downsample(
+            data, ds_res, zero_nyquist=zero_nyquist, centered_fft=centered_fft
+        )
 
         # Optionally scale pixel size
         ds_pixel_size = self.pixel_size
         if ds_pixel_size is not None:
             ds_pixel_size *= self.resolution / ds_res
 
-        return self.__class__(out, pixel_size=ds_pixel_size).stack_reshape(
+        return self.__class__(ims_ds, pixel_size=ds_pixel_size).stack_reshape(
             original_stack_shape
         )
 

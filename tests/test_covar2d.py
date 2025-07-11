@@ -79,6 +79,7 @@ def cov2d_fixture(volume, basis, ctf_enabled):
     n = 32
 
     # Default CTF params
+    pixel_size = 5.0 * 65 / volume.resolution
     unique_filters = None
     h_idx = None
     h_ctf_fb = None
@@ -106,6 +107,7 @@ def cov2d_fixture(volume, basis, ctf_enabled):
         filter_indices=h_idx,
         offsets=0.0,
         amplitudes=1.0,
+        pixel_size=pixel_size,
         dtype=volume.dtype,
         noise_adder=noise_adder,
     )
