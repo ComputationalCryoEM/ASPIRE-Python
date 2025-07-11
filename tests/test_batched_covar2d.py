@@ -24,6 +24,7 @@ class BatchedRotCov2DTestCase(TestCase):
         L = 8
         self.dtype = np.float32
         self.noise_var = 0.1848
+        self.pixel_size = 5
 
         # Initial noise filter to generate noise images.
         # Noise variance is set to a value far away that is used to calculate
@@ -38,6 +39,7 @@ class BatchedRotCov2DTestCase(TestCase):
             pixel_size=5,
             dtype=self.dtype,
             noise_adder=noise_adder,
+            pixel_size=self.pixel_size,
         )
         self.basis = FFBBasis2D((L, L), dtype=self.dtype)
         self.coef = self.basis.evaluate_t(self.src.images[:])

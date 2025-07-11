@@ -217,10 +217,18 @@ class Downsample(LinearXform):
         super().__init__()
 
     def _forward(self, im, indices):
-        return im.downsample(
+        original_stack_shape = im.stack_shape
+        data = im.stack_reshape(-1)._data
+
+        im_ds = Image._downsample(
+            data,
             self.resolution,
             zero_nyquist=self.zero_nyquist,
             centered_fft=self.centered_fft,
+        )
+
+        return Image(im_ds, pixel_size=im.pixel_size).stack_reshape(
+            original_stack_shape
         )
 
     def _adjoint(self, im, indices):
