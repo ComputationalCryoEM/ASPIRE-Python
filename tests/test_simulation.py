@@ -660,7 +660,12 @@ def test_cached_image_accessors():
     ctf = [RadialCTFFilter(pixel_size=5)]
     # Create a Simulation with noise and `ctf`
     src = Simulation(
-        L=32, n=3, C=1, noise_adder=WhiteNoiseAdder(var=0.123), unique_filters=ctf
+        L=32,
+        n=3,
+        C=1,
+        pixel_size=5,
+        noise_adder=WhiteNoiseAdder(var=0.123),
+        unique_filters=ctf,
     )
     # Cache the simulation
     cached_src = src.cache()

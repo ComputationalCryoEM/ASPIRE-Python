@@ -15,13 +15,16 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 class SimTestCase(TestCase):
     def setUp(self):
         self.dtype = np.float32
-        self.vol = LegacyVolume(L=8, dtype=self.dtype).generate()
+        self.pixel_size = 10
+        self.vol = LegacyVolume(
+            L=8, dtype=self.dtype, pixel_size=self.pixel_size
+        ).generate()
         self.sim = _LegacySimulation(
             n=1024,
             vols=self.vol,
             unique_filters=[
                 # Set legacy pixel size
-                RadialCTFFilter(pixel_size=10, defocus=d)
+                RadialCTFFilter(pixel_size=self.pixel_size, defocus=d)
                 for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             dtype=self.dtype,

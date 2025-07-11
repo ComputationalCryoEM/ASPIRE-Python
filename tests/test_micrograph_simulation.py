@@ -251,10 +251,15 @@ def test_sim_save():
     Specifically tests interoperability with CentersCoordinateSource
     """
 
-    v = AsymmetricVolume(L=16, C=1, dtype=np.float64).generate()
+    v = AsymmetricVolume(L=16, C=1, pixel_size=4, dtype=np.float64).generate()
     ctfs = [
         RadialCTFFilter(
-            pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
+            pixel_size=v.pixel_size,
+            voltage=200,
+            defocus=15000,
+            Cs=2.26,
+            alpha=0.07,
+            B=0,
         )
     ]
 
@@ -311,11 +316,11 @@ def test_save_overwrite(caplog):
 
     Specifically tests interoperability with CentersCoordinateSource
     """
-
-    v = AsymmetricVolume(L=16, C=1, dtype=np.float64).generate()
+    pixel_size = 4
+    v = AsymmetricVolume(L=16, C=1, pixel_size=pixel_size, dtype=np.float64).generate()
     ctfs = [
         RadialCTFFilter(
-            pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
+            pixel_size=pixel_size, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
         )
     ]
 

@@ -13,9 +13,10 @@ dtype = np.float32
 img_size = 32
 num_imgs = 1024
 noise_var = 0.1848
+pixel_size = 5
 noise_adder = WhiteNoiseAdder(var=noise_var)
 filters = [
-    RadialCTFFilter(5, 200, defocus=d, Cs=2.0, alpha=0.1)
+    RadialCTFFilter(pixel_size, 200, defocus=d, Cs=2.0, alpha=0.1)
     for d in np.linspace(1.5e4, 2.5e4, 7)
 ]
 
@@ -61,6 +62,7 @@ def sim():
         unique_filters=filters,
         offsets=0.0,
         amplitudes=1.0,
+        pixel_size=pixel_size,
         dtype=dtype,
         noise_adder=noise_adder,
     )
