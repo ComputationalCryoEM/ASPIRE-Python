@@ -34,6 +34,8 @@ relion_metadata_fields = {
     "_rlnGroupNumber": str,
     "_rlnOriginX": float,
     "_rlnOriginY": float,
+    "_rlnOriginXAngst": float,
+    "_rlnOriginYAngst": float,
     "_rlnAngleRot": float,
     "_rlnAngleTilt": float,
     "_rlnAnglePsi": float,

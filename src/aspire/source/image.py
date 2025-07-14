@@ -418,17 +418,21 @@ class ImageSource(ABC):
 
     @property
     def offsets(self):
-        return np.atleast_2d(
+        # offsets are pixel units in code and angstroms in metadata.
+        offsets_angst = np.atleast_2d(
             self.get_metadata(
-                ["_rlnOriginX", "_rlnOriginY"],
+                ["_rlnOriginXAngst", "_rlnOriginYAngst"],
                 default_value=np.array(0.0, dtype=self.dtype),
             )
         )
+        return offsets_angst / self.pixel_size
 
     @offsets.setter
     def offsets(self, values):
+        # offsets are pixel units in code and angstroms in metadata.
         return self.set_metadata(
-            ["_rlnOriginX", "_rlnOriginY"], np.array(values, dtype=self.dtype)
+            ["_rlnOriginXAngst", "_rlnOriginYAngst"],
+            np.array(values * self.pixel_size, dtype=self.dtype),
         )
 
     @property
@@ -809,7 +813,6 @@ class ImageSource(ABC):
 
         ds_factor = self.L / L
         self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
-        self.offsets /= ds_factor
         if self.pixel_size is not None:
             self.pixel_size *= ds_factor
 
@@ -1810,7 +1813,7 @@ class ArrayImageSource(ImageSource):
     """
 
     def __init__(
-        self, im, metadata=None, angles=None, symmetry_group=None, pixel_size=None
+        self, im, metadata=None, angles=None, symmetry_group=None, pixel_size=1.0
     ):
         """
         Initialize from an `Image` object.
@@ -1820,7 +1823,8 @@ class ArrayImageSource(ImageSource):
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
         :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms, default `None`.
+        :param pixel_size: Pixel size of the images in angstroms. Infered from `Image`, otherwise
+            defaults to 1.0 angstroms.
         """
 
         if not isinstance(im, Image):
@@ -1846,7 +1850,7 @@ class ArrayImageSource(ImageSource):
             metadata=metadata,
             memory=None,
             symmetry_group=symmetry_group,
-            pixel_size=im.pixel_size,
+            pixel_size=im.pixel_size or pixel_size,
         )
 
         self._cached_im = im

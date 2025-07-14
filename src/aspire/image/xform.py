@@ -219,7 +219,6 @@ class Downsample(LinearXform):
     def _forward(self, im, indices):
         original_stack_shape = im.stack_shape
         data = im.stack_reshape(-1)._data
-
         im_ds = Image._downsample(
             data,
             self.resolution,

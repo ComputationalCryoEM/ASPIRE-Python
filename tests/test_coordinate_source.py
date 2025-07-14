@@ -523,7 +523,9 @@ class CoordinateSourceTestCase(TestCase):
 
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
-        src = BoxesCoordinateSource(self.files_box, max_rows=5)
+        src = BoxesCoordinateSource(
+            self.files_box, max_rows=5, pixel_size=self.pixel_size
+        )
         src = src.downsample(60)
         src = src.normalize_background()
         noise_estimator = WhiteNoiseEstimator(src)
@@ -729,6 +731,28 @@ class CoordinateSourceTestCase(TestCase):
         self.assertTrue(result_coord.exit_code == 0)
         self.assertTrue(result_star.exit_code == 0)
         self.assertTrue(result_preprocess.exit_code == 0)
+
+    def testPixelSizeWarning(self):
+        """
+        Test source having a pixel size that conflicts with the CTFFilter instances.
+        """
+        manual_pixel_size = 0.789
+        src = BoxesCoordinateSource(self.files_box, pixel_size=manual_pixel_size)
+        # Capture and compare warning message
+        with pytest.warns(UserWarning, match=r".*Pixel size mismatch.*"):
+            src.import_relion_ctf(self.relion_ctf_file)
+            np.testing.assert_approx_equal(src.pixel_size, manual_pixel_size)
+
+    def testMultiplePixelSizeWarning(self):
+        """
+        Test source having multiple pixel sizes in CTFFilter instances.
+        """
+        src = BoxesCoordinateSource(self.files_box)  # pixel_size=None
+        # Capture and compare warning message
+        with self._caplog.at_level(logging.WARNING):
+            src.import_aspire_ctf(self.ctf_files)  # not uniform_pixel_sizes
+            assert src._default_pixel_size
+            assert "multiple pixel_sizes found" in self._caplog.text
 
     def testPixelSize(self):
         """
