@@ -130,6 +130,15 @@ class RelionSource(ImageSource):
                 pixel_size = 1.0
         self.pixel_size = float(pixel_size)
 
+        # Ensure Relion >= 3.1 convention for offsets
+        offset_keys = ["_rlnOriginX", "_rlnOriginY"]
+        if self.has_metadata(offset_keys):
+            # The setter will store offsets as _rlnOriginX(Y)Angst in metadata
+            self.offsets = np.atleast_2d(self.get_metadata(offset_keys))
+            # Remove old convention from metadata
+            for key in offset_keys:
+                del self._metadata[key]
+
         # CTF estimation parameters coming from Relion
         CTF_params = [
             "_rlnVoltage",

@@ -41,7 +41,7 @@ class ImageTestCase(TestCase):
 
         # Expose images as numpy array.
         self.ims_np = sim.images[:].asnumpy()
-        self.im = Image(self.ims_np)
+        self.im = Image(self.ims_np, pixel_size=sim.pixel_size)
 
         # Vol estimation requires a 3D basis
         self.basis = FBBasis3D((self.resolution,) * 3, dtype=self.dtype)

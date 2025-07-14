@@ -42,7 +42,7 @@ class Simulation(ImageSource):
         memory=None,
         noise_adder=None,
         symmetry_group=None,
-        pixel_size=1,
+        pixel_size=1.0,
     ):
         """
         A `Simulation` object that supplies images along with other parameters for image manipulation.
