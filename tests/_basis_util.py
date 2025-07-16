@@ -208,7 +208,7 @@ class UniversalBasisMixin:
         )
         assert isinstance(result, Coef)
         assert result.dtype == basis.coefficient_dtype
-        assert result.pixel_size == 1.234
+        np.testing.assert_array_equal(result.pixel_size, px_sz)
 
     def testInitWithIntSize(self, basis):
         # make sure we can instantiate with just an int as a shortcut

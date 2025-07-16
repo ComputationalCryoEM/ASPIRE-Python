@@ -774,11 +774,11 @@ def test_pixel_size(caplog):
     vol = Volume(data, pixel_size=vol_px_sz)
 
     # Ensure vol pixel size
-    assert vol.pixel_size == vol_px_sz
+    np.testing.assert_array_equal(vol.pixel_size, vol_px_sz)
 
     # Generate Simulation and check pixel_size is inhereted from vol
     sim = Simulation(vols=vol)
-    assert sim.pixel_size == vol_px_sz
+    np.testing.assert_array_equal(sim.pixel_size, vol_px_sz)
 
     # Generate Simulation with provided pixel_size and check
     # that vol.pixel_size is overridden.
@@ -796,7 +796,7 @@ def test_pixel_size(caplog):
     sim = Simulation(vols=vol, pixel_size=sim_px_sz)
 
     assert msg in caplog.text
-    assert sim.pixel_size == sim_px_sz
+    np.testing.assert_array_equal(sim.pixel_size, sim_px_sz)
 
 
 def test_mismatched_pixel_size():
