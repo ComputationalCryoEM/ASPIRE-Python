@@ -113,7 +113,7 @@ def test_batched_rotcov2d_MSE(sim, basis):
     )
 
     # Test pixel_size pass-through.
-    assert sim.pixel_size == src.pixel_size
+    np.testing.assert_array_equal(sim.pixel_size, src.pixel_size)
 
 
 def test_source_mismatch(sim, basis):

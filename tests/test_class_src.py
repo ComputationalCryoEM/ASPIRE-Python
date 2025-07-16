@@ -209,7 +209,7 @@ def test_basic_averaging(class_sim_fixture, test_src_cls, basis, classifier):
     assert test_src.symmetry_group == class_sim_fixture.symmetry_group
 
     # Check pixel_size pass-through.
-    assert test_src.pixel_size == class_sim_fixture.pixel_size
+    np.testing.assert_array_equal(test_src.pixel_size, class_sim_fixture.pixel_size)
 
 
 # Test the _HeapItem helper class
