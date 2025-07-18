@@ -176,12 +176,6 @@ class CoordinateSource(ImageSource, ABC):
         self.unique_filters = [IdentityFilter()]
         self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
 
-        # If pixel_size is None, set default pixel_size to 1.0.
-        self._default_pixel_size = False
-        if pixel_size is None:
-            self.pixel_size = 1.0
-            self._default_pixel_size = True
-
         # populate __mrc_filename and __mrc_index
         for mrc_index, particle_indices in enumerate(self.mrc_index_to_particles):
             self.set_metadata(
@@ -414,29 +408,29 @@ class CoordinateSource(ImageSource, ABC):
         # Check pixel_size
         # Get pixel_sizes from CTFFilters
         ctf_pixel_sizes = np.unique(filter_params[:, 6])
-        # Compare with source.pixel_size if assigned
-        if (not self._default_pixel_size) and (
-            not np.allclose(ctf_pixel_sizes, self.pixel_size)
-        ):
+        # Compare with source.pixel_size
+        if not np.allclose(ctf_pixel_sizes, self.pixel_size):
             warnings.warn(
                 "Pixel size mismatch."
                 f"\n\tSource: {self.pixel_size}"
                 f"\n\tCTFs: {ctf_pixel_sizes}.",
                 stacklevel=2,
             )
-        # When source is not assigned we can try to assign it from CTF,
-        elif self._default_pixel_size:
-            # but only do this if all the CTFFilter pixel_sizes are consistent
-            if len(ctf_pixel_sizes) == 1:
-                self.pixel_size = ctf_pixel_sizes[0]  # take the unique single element
-                logger.info(
-                    f"Assigning source pixel_size={self.pixel_size} from CTFFilters."
-                )
-            # otherwise let the user know
-            elif len(ctf_pixel_sizes) > 1:
-                logger.warning(
-                    "Unable to assign source pixel_size from CTFFilters, multiple pixel_sizes found."
-                )
+
+        # Assign pixel_size from CTF,
+        # but only do this if all the CTFFilter pixel_sizes are consistent
+        if len(ctf_pixel_sizes) == 1:
+            self.pixel_size = ctf_pixel_sizes[0]  # take the unique single element
+            logger.info(
+                f"Assigning source pixel_size={self.pixel_size} from CTFFilters."
+            )
+        # otherwise let the user know
+        elif len(ctf_pixel_sizes) > 1:
+            logger.warning(
+                f"Unable to assign source pixel_size from CTFFilters, multiple pixel_sizes found. "
+                f"Using user provided pixel_size: {self.pixel_size} angstrom."
+            )
+
         # construct filters
         self.unique_filters = [
             CTFFilter(

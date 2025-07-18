@@ -274,7 +274,9 @@ def test_sim_save():
         np.testing.assert_allclose(mg_src.asnumpy(), mg_sim.asnumpy())
 
         # Test we can load via CentersCoordinateSource (STAR files)
-        img_src = CentersCoordinateSource(results, mg_sim.particle_box_size)
+        img_src = CentersCoordinateSource(
+            results, mg_sim.particle_box_size, pixel_size=v.pixel_size
+        )
         np.testing.assert_allclose(
             img_src.images[:].asnumpy(),  # loaded image stack
             mg_sim.simulation.images[:].asnumpy(),  # simulated image stack

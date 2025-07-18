@@ -51,7 +51,11 @@ class LoadImagesTestCase(TestCase):
         StarFile(blocks=starfile_data).write(self.starfile_path)
 
         # create source
-        self.src = RelionSource(self.starfile_path, data_folder=self.data_folder)
+        self.src = RelionSource(
+            self.starfile_path,
+            data_folder=self.data_folder,
+            pixel_size=1.0,
+        )
 
     def tearDown(self):
         self.tmpdir.cleanup()
@@ -197,7 +201,11 @@ class LoadImagesTestCase(TestCase):
             _ = self.src.images[np.zeros((3, 3))]
 
     def testRelionSourceCached(self):
-        src_cached = RelionSource(self.starfile_path, data_folder=self.data_folder)
+        src_cached = RelionSource(
+            self.starfile_path,
+            data_folder=self.data_folder,
+            pixel_size=1.0,
+        )
         src_cached = src_cached.cache()
         self.assertTrue(
             np.array_equal(src_cached.images[:].asnumpy(), self.src.images[:].asnumpy())

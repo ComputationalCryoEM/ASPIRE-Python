@@ -181,9 +181,6 @@ class ImageSource(ABC):
         self._n = None
         self.n = n
         self.dtype = np.dtype(dtype)
-        if pixel_size is not None:
-            pixel_size = float(pixel_size)
-        self.pixel_size = pixel_size
 
         # The private attribute '_cached_im' can be populated by calling this object's cache() method explicitly
         self._cached_im = None
@@ -206,6 +203,23 @@ class ImageSource(ABC):
                         )
                     )
                 )
+
+        # Populate pixel_size with metadata if possible.
+        if pixel_size is None:
+            if self.has_metadata(["_rlnImagePixelSize"]):
+                pixel_size = self.get_metadata(["_rlnImagePixelSize"])[0]
+            elif self.has_metadata(["_rlnDetectorPixelSize", "_rlnMagnification"]):
+                detector_pixel_size = self.get_metadata(["_rlnDetectorPixelSize"])[0]
+                magnification = self.get_metadata(["_rlnMagnification"])[0]
+                pixel_size = 10000 * detector_pixel_size / magnification
+            else:
+                raise ValueError(
+                    "No pixel size found in metadata. Pixel size must be provided."
+                )
+        else:
+            self.set_metadata("_rlnImagePixelSize", pixel_size)
+
+        self.pixel_size = float(pixel_size)
 
         self._populate_symmetry_group(symmetry_group)
 
