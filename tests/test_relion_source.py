@@ -91,9 +91,6 @@ def test_pixel_size(caplog):
     src = RelionSource(starfile_im_pix_size, pixel_size=pix_size)
     np.testing.assert_equal(src.pixel_size, pix_size)
 
-    # Check pixel size defaults to 1 if not provided.
-    with caplog.at_level(logging.WARNING):
-        msg = "No pixel size found in STAR file. Defaulting to 1.0 Angstrom"
+    # Check we raise if pixel_size not provided and not found in metadata.
+    with pytest.raises(ValueError, match=r".*No pixel size found in metadata.*"):
         src = RelionSource(starfile_no_pix_size)
-        assert msg in caplog.text
-        np.testing.assert_equal(src.pixel_size, 1.0)

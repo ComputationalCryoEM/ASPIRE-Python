@@ -115,21 +115,6 @@ class RelionSource(ImageSource):
             pixel_size=pixel_size,
         )
 
-        # Populate pixel_size with metadata if possible.
-        if pixel_size is None:
-            if self.has_metadata(["_rlnImagePixelSize"]):
-                pixel_size = self.get_metadata(["_rlnImagePixelSize"])[0]
-            elif self.has_metadata(["_rlnDetectorPixelSize", "_rlnMagnification"]):
-                detector_pixel_size = self.get_metadata(["_rlnDetectorPixelSize"])[0]
-                magnification = self.get_metadata(["_rlnMagnification"])[0]
-                pixel_size = 10000 * detector_pixel_size / magnification
-            else:
-                logger.warning(
-                    "No pixel size found in STAR file. Defaulting to 1.0 Angstrom"
-                )
-                pixel_size = 1.0
-        self.pixel_size = float(pixel_size)
-
         # Ensure Relion >= 3.1 convention for offsets
         offset_keys = ["_rlnOriginX", "_rlnOriginY"]
         if self.has_metadata(offset_keys):

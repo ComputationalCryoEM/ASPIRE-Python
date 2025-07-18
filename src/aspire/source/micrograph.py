@@ -300,6 +300,7 @@ class MicrographSimulation(MicrographSource):
         particles_per_micrograph=100,
         particle_amplitudes=None,
         projection_angles=None,
+        pixel_size=None,
         seed=None,
         ctf_filters=None,
         noise_adder=None,
@@ -337,6 +338,10 @@ class MicrographSimulation(MicrographSource):
             raise TypeError("`volume` should be of type `Volume`.")
         self.volume = volume
 
+        # Infer pixel size from Volume if not explicitly provided.
+        if pixel_size is None:
+            pixel_size = self.volume.pixel_size
+
         self.seed = seed
 
         # Note pixel_size is taken from `volume`.
@@ -345,6 +350,7 @@ class MicrographSimulation(MicrographSource):
             micrograph_size=micrograph_size,
             pixel_size=self.volume.pixel_size,
             dtype=self.volume.dtype,
+            pixel_size=pixel_size,
         )
 
         self.particle_box_size = volume.resolution  # L

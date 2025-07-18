@@ -30,6 +30,12 @@ logger = logging.getLogger(__name__)
     help="Path to starfile of the particle stack to be created",
 )
 @click.option(
+    "--pixel_size",
+    default=None,
+    type=float,
+    help="Pixel size of micrograph in angstroms.",
+)
+@click.option(
     "--particle_size",
     default=None,
     type=int,
@@ -77,6 +83,7 @@ def extract_particles(
     mrc_paths,
     coord_paths,
     starfile_out,
+    pixel_size,
     particle_size,
     centers,
     downsample,
@@ -134,11 +141,13 @@ def extract_particles(
         src = CentersCoordinateSource(
             files,
             particle_size=particle_size,
+            pixel_size=pixel_size,
         )
     else:
         src = BoxesCoordinateSource(
             files,
             particle_size=particle_size,
+            pixel_size=pixel_size,
         )
 
     # optional preprocessing steps
