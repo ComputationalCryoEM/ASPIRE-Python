@@ -808,7 +808,7 @@ class CoordinateSourceTestCase(TestCase):
         Test not providing pixel_size.
         """
         with pytest.raises(ValueError, match=r".*No pixel size found in metadata.*"):
-            src = BoxesCoordinateSource(self.files_box)
+            _ = BoxesCoordinateSource(self.files_box)
 
 
 def create_test_rectangular_micrograph_and_star(tmp_path, voxel_size=(2.0, 2.0, 1.0)):
