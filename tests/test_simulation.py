@@ -630,6 +630,27 @@ def test_default_symmetry_group():
     assert str(sim.symmetry_group) == "C1"
 
 
+def test_pixel_size():
+    data = np.arange(8**3, dtype=np.float32).reshape(8, 8, 8)
+
+    # Default to 1 angstrom when not provided.
+    sim = Simulation()
+    np.testing.assert_array_equal(sim.pixel_size, 1.0)
+
+    # Check pixel_size inhereted from volume.
+    vol = Volume(data, pixel_size=1.23)
+    sim = Simulation(vols=vol)
+    np.testing.assert_array_equal(sim.pixel_size, vol.pixel_size)
+
+    # Check pixel_size passes from sim to default volume.
+    sim = Simulation(pixel_size=2.34)
+    np.testing.assert_array_equal(sim.pixel_size, sim.vols.pixel_size)
+
+    # Check error is raised for mismatched pixel_size
+    with raises(RuntimeError, match=r".*does not match volume pixel_size.*"):
+        _ = Simulation(vols=vol, pixel_size=vol.pixel_size / 2)
+
+
 def test_symmetry_group_inheritence():
     # Check SymmetryGroup inheritence from Volume.
     data = np.arange(8**3, dtype=np.float32).reshape(8, 8, 8)

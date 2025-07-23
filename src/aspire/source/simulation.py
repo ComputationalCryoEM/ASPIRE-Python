@@ -42,7 +42,7 @@ class Simulation(ImageSource):
         memory=None,
         noise_adder=None,
         symmetry_group=None,
-        pixel_size=1.0,
+        pixel_size=None,
     ):
         """
         A `Simulation` object that supplies images along with other parameters for image manipulation.
@@ -72,7 +72,8 @@ class Simulation(ImageSource):
         :param noise_adder: Optionally append instance of `NoiseAdder`
             to generation pipeline.
         :param symmetry_group: A SymmetryGroup instance or string indicating symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms, default 1.0.
+        :param pixel_size: Pixel size of the images in angstroms. By default, pixel_size is inferred
+            from `vols` if possible, otherwise set to 1.0 angstrom.
 
         :return: A Simulation object.
         """
@@ -110,12 +111,19 @@ class Simulation(ImageSource):
             )
         symmetry_group = symmetry_group or self.vols.symmetry_group
 
-        if pixel_size and (pixel_size != self.vols.pixel_size):
-            logger.warning(
-                f"Overriding volume pixel size, {self.vols.pixel_size}, with "
-                f"user provided pixel size of {pixel_size} angstrom."
+        # Infer pixel_size from volume. Otherwise default to 1.0 angstrom.
+        if pixel_size is None:
+            if self.vols.pixel_size is None:
+                pixel_size = 1.0
+            else:
+                pixel_size = self.vols.pixel_size
+        elif (self.vols.pixel_size is not None) and not np.isclose(
+            pixel_size, self.vols.pixel_size
+        ):
+            raise RuntimeError(
+                f"`pixel_size`: {pixel_size} does not match volume pixel_size: {self.vols.pixel_size}."
+                " Set `pixel_size=None` to use volume pixel_size."
             )
-        pixel_size = pixel_size or self.vols.pixel_size
 
         # Infer the details from volume when possible.
         super().__init__(
