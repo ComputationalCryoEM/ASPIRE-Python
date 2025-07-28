@@ -1751,6 +1751,12 @@ class ArrayImageSource(ImageSource):
                     f" Original error: {str(e)}"
                 )
 
+        # Now that we are an `Image`, check stack is 1D
+        if im.stack_ndim != 1:
+            raise RuntimeError(
+                "`ArrayImageSource` expects a single stack axis, received shape {im.shape}."
+            )
+
         super().__init__(
             L=im.resolution,
             n=im.n_images,
