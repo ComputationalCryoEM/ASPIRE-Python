@@ -1,7 +1,5 @@
 import logging
 import os.path
-from concurrent import futures
-from multiprocessing import cpu_count
 
 import mrcfile
 import numpy as np
@@ -246,44 +244,46 @@ class RelionSource(ImageSource):
         # Log the indices in case needed to debug a crash
         logger.debug(f"Indices: {indices}")
 
-        def load_single_mrcs(filepath, indices):
-            arr = mrcfile.open(filepath, mode="r", permissive=True).data
-            # if the stack only contains one image, arr will have shape (resolution, resolution)
-            # the code below reshapes it to (1, resolution, resolution)
-            if len(arr.shape) == 2:
-                arr = arr.reshape((1,) + arr.shape)
+        def _load_single_mrcs(filepath, indices):
+            """
+            Local utility to wrap up loading a slice of MRC data.
+
+            :param filepath: String filepath to MRC file.
+            :param indices: Requested indices from STAR file.
+            :return: Slice of array data (as mmap).
+            """
             # __mrc_index is the 1-based index of the particle in the stack
-            data = arr[self._metadata["__mrc_index"][indices] - 1, :, :]
+            mrc_indices = self._metadata["__mrc_index"][indices] - 1
 
-            return indices, data
+            with mrcfile.mmap(filepath, mode="r", permissive=True) as fh:
+                arr = fh.data
+                # if the stack only contains one image, arr will have shape (resolution, resolution)
+                # the code below reshapes it to (1, resolution, resolution)
+                if len(arr.shape) == 2:
+                    arr = arr.reshape((1,) + arr.shape)
+                data = arr[mrc_indices, :, :]
 
-        n_workers = self.n_workers
-        if n_workers < 0:
-            n_workers = cpu_count() - 1
+            return data
 
+        # Array to hold requested data
         im = np.empty(
             (len(indices), self._original_resolution, self._original_resolution),
             dtype=self.dtype,
         )
 
-        filepaths, filepath_indices = np.unique(
+        # Map all requested indices to a set of files and images per file.
+        requested_filepaths, requested_filepath_indices = np.unique(
             self._metadata["__mrc_filepath"], return_inverse=True
         )
-        n_workers = min(n_workers, len(filepaths))
 
-        with futures.ThreadPoolExecutor(n_workers) as executor:
-            to_do = []
-            for i, filepath in enumerate(filepaths):
-                this_filepath_indices = np.where(filepath_indices == i)[0]
-                future = executor.submit(
-                    load_single_mrcs, filepath, this_filepath_indices
-                )
-                to_do.append(future)
+        # Loop over the requested files and load (slice) the requested images per file.
+        for _i, _filepath in enumerate(requested_filepaths):
+            _filepath_indices = np.where(requested_filepath_indices == _i)[0]
+            _data = _load_single_mrcs(_filepath, _filepath_indices)
 
-            for future in futures.as_completed(to_do):
-                data_indices, data = future.result()
-                for idx, d in enumerate(data_indices):
-                    im[np.where(indices == d)] = data[idx, :, :]
+            # Pack this files data contribution into `im` array.
+            for idx, d in enumerate(_filepath_indices):
+                im[np.where(indices == d)] = _data[idx, :, :]
 
         logger.debug(f"Loading {len(indices)} images complete")
 
