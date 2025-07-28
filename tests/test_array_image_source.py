@@ -261,3 +261,14 @@ def test_dtype_passthrough(dtype):
     np.testing.assert_equal(src.images[:].dtype, dtype)
     np.testing.assert_equal(src.amplitudes.dtype, dtype)
     np.testing.assert_equal(src.offsets.dtype, dtype)
+
+
+def test_stack_1d_only():
+    d = np.empty((2, 3, 4, 4))
+    img = Image(d)
+
+    with raises(RuntimeError, match=r"expects a single stack axis"):
+        _ = ArrayImageSource(d)
+
+    with raises(RuntimeError, match=r"expects a single stack axis"):
+        _ = ArrayImageSource(img)
