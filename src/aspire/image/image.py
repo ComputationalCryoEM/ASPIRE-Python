@@ -24,19 +24,21 @@ from aspire.volume import SymmetryGroup
 logger = logging.getLogger(__name__)
 
 
-def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, legacy=False):
+def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, shifted=False, ddof=0):
     """
-    Normalize backgrounds and apply to a stack of images
+    Normalize backgrounds and apply to a stack of images.
+
+    To recreate legacy MATLAB workflow results, review parameters used in
+    `ImageSource.legacy_normalize_background`.
 
     :param imgs: A stack of images in N-by-L-by-L array
     :param bg_radius: Radius cutoff to be considered as background (in image size)
     :param do_ramp: When it is `True`, fit a ramping background to the data
-            and subtract. Namely perform normalization based on values from each image.
-            Otherwise, a constant background level from all images is used.
-    :param legacy: Option to match Matlab legacy normalize_background. Default, False,
-        uses ASPIRE-Python implementation. When True, ramping is disabled, a shifted
-        2d grid and alternative `bg_radius` is used to generate the background mask,
-        and standard deviation is computed using N - 1 degrees of freedom.
+        and subtract. Namely perform normalization based on values from each image.
+        Otherwise, a constant background level from all images is used.
+    :param shifted: Optionally shifts 2d grid by 1/2 pixel for even
+        resolution to replicate MATLAB.
+    :param ddof: Degrees of freedom for standard deviation.
     :return: The modified images
     """
     if imgs.ndim > 3:
@@ -44,15 +46,6 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, legacy=False):
             "`normalize_bg` is currently limited to 1D image stacks."
         )
     L = imgs.shape[-1]
-
-    # Make adjustments for legacy mode
-    shifted = False
-    ddof = 0  # Degrees of freedom for standard deviation
-    if legacy:
-        do_ramp = False
-        shifted = True  # Shifts 2d grid by 1/2 pixel for even resolution
-        bg_radius = 2 * (L // 2) / L
-        ddof = 1
 
     # Generate background mask
     input_dtype = imgs.dtype
