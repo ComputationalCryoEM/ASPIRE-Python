@@ -513,7 +513,7 @@ class Image:
 
         return Image(res)
 
-    def downsample(self, ds_res, zero_nyquist=True, legacy=False):
+    def downsample(self, ds_res, zero_nyquist=True, centered_fft=True):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
 
@@ -521,8 +521,9 @@ class Image:
             of this Image
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even
             resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
-        :param legacy: Option to match legacy Matlab downsample method (boolean).
-            Default of False uses `centered_fft` to maintain ASPIRE-Python centering conventions.
+        :param centered_fft: Default of True uses `centered_fft` to
+            maintain ASPIRE-Python centering conventions.
+
         :return: The downsampled Image object.
         """
 
@@ -533,25 +534,25 @@ class Image:
         # because all of the subsequent calls until `asnumpy` are GPU
         # when xp and fft in `cupy` mode.
 
-        if legacy:
-            fx = fft.fftshift(fft.fft2(xp.asarray(im._data)))
-        else:
+        if centered_fft:
             # compute FT with centered 0-frequency
             fx = fft.centered_fft2(xp.asarray(im._data))
+        else:
+            fx = fft.fftshift(fft.fft2(xp.asarray(im._data)))
 
         # crop 2D Fourier transform for each image
         crop_fx = crop_pad_2d(fx, ds_res)
 
         # If downsampled resolution is even, optionally zero out the nyquist frequency.
-        if ds_res % 2 == 0 and zero_nyquist and not legacy:
+        if ds_res % 2 == 0 and zero_nyquist:
             crop_fx[:, 0, :] = 0
             crop_fx[:, :, 0] = 0
 
         # take back to real space, discard complex part, and scale
-        if legacy:
-            out = fft.ifft2(fft.ifftshift(crop_fx))
-        else:
+        if centered_fft:
             out = fft.centered_ifft2(crop_fx)
+        else:
+            out = fft.ifft2(fft.ifftshift(crop_fx))
 
         # The parenths are required because dtype casting semantics
         # differs between Numpy 1, 2, and CuPy.

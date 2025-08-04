@@ -769,8 +769,32 @@ class ImageSource(ABC):
         Subclasses handle cached image check as well as applying transforms in the generation pipeline.
         """
 
+    def legacy_downsample(self, L):
+        """
+        Reproduce MATLAB's `downsample` workflow method.
+
+        Downsample Image to `L-by-L` pixels.
+
+        :param L: int - new resolution, should be <= the current resolution
+            of this Image
+        :return: The downsampled `ImageSource` object.
+        """
+        return self.downsample(L=L, zero_nyquist=False, centered_fft=False)
+
     @_as_copy
-    def downsample(self, L, zero_nyquist=True, legacy=False):
+    def downsample(self, L, zero_nyquist=True, centered_fft=True):
+        """
+        Downsample Image to `L-by-L` pixels.
+
+        :param L: int - new resolution, should be <= the current resolution
+            of this Image
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even
+            resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param centered_fft: Default of True uses `centered_fft` to
+            maintain ASPIRE-Python centering conventions.
+        :return: The downsampled `ImageSource` object.
+        """
+
         if L > self.L:
             raise ValueError(
                 "Max desired resolution {L} should be less than the current resolution {self.L}."
@@ -778,7 +802,9 @@ class ImageSource(ABC):
         logger.info(f"Setting max. resolution of source = {L}")
 
         self.generation_pipeline.add_xform(
-            Downsample(resolution=L, zero_nyquist=zero_nyquist, legacy=legacy)
+            Downsample(
+                resolution=L, zero_nyquist=zero_nyquist, centered_fft=centered_fft
+            )
         )
 
         ds_factor = self.L / L
@@ -968,7 +994,7 @@ class ImageSource(ABC):
 
     def legacy_normalize_background(self):
         """
-        Match MATLAB's `normalize_background` workflow method.
+        Reproduce MATLAB's `normalize_background` workflow method.
 
         Ramping is disabled.
         A shifted 2d grid and alternative `bg_radius` is used to generate the background mask.
