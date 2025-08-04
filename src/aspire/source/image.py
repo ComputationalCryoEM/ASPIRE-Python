@@ -966,8 +966,25 @@ class ImageSource(ABC):
         logger.info("Adding Scaling Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(Multiply(scale_factor))
 
+    def legacy_normalize_background(self):
+        """
+        Match MATLAB's `normalize_background` workflow method.
+
+        Ramping is disabled.
+        A shifted 2d grid and alternative `bg_radius` is used to generate the background mask.
+        Standard deviation is computed using N - 1 degrees of freedom.
+        """
+
+        # Radius definition is here:
+        # https://github.com/PrincetonUniversity/aspire/blob/760a43b35453e55ff2d9354339e9ffa109a25371/workflow/cryo_workflow_preprocess_execute.m#L166
+        bg_radius = 2 * np.floor(self.L * 0.45) / self.L
+
+        return self.normalize_background(
+            bg_radius=bg_radius, do_ramp=False, shifted=True, ddof=1
+        )
+
     @_as_copy
-    def normalize_background(self, bg_radius=1.0, do_ramp=True, legacy=False):
+    def normalize_background(self, bg_radius=1.0, do_ramp=True, shifted=False, ddof=0):
         """
         Normalize the images by the noise background
 
@@ -980,11 +997,8 @@ class ImageSource(ABC):
         :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
-        :param legacy: Option to match Matlab legacy normalize_background. Default, False,
-            uses ASPIRE-Python implementation. When True, ramping is disable, a shifted
-            2d grid and alternative `bg_radius` is used to generate the background mask,
-            and standard deviation is computed using N - 1 degrees of freedom.
-        :return: On return, the `ImageSource` object has been modified in place.
+
+        :return: Returns`ImageSource` object.
         """
 
         logger.info(
@@ -993,7 +1007,11 @@ class ImageSource(ABC):
         )
         self.generation_pipeline.add_xform(
             LambdaXform(
-                normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp, legacy=legacy
+                normalize_bg,
+                bg_radius=bg_radius,
+                do_ramp=do_ramp,
+                shifted=shifted,
+                ddof=ddof,
             )
         )
 
