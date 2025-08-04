@@ -228,6 +228,28 @@ class Downsample(LinearXform):
         return f"Downsample (Resolution {self.resolution})"
 
 
+class Crop(Xform):
+    """
+    A Xform that crops an Image object to a size specified by this Xform's size.
+    """
+
+    def __init__(self, L):
+        """
+        Initialize Xform to crop Image to a specific size.
+
+        :param L: int - new size, should be <= the current size
+            of this Image
+        """
+        self.L = L
+        super().__init__()
+
+    def _forward(self, im, indices):
+        return im[..., : self.L, : self.L]
+
+    def __str__(self):
+        return f"Crop (Size {self.L})"
+
+
 class LegacyWhiten(Xform):
     """
     A Xform that implements MATLAB legacy whitening.
