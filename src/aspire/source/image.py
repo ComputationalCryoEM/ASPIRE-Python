@@ -12,6 +12,7 @@ import numpy as np
 from aspire.abinitio import CLOrient3D, CLSync3N
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
+    Crop,
     Downsample,
     FilterXform,
     IndexedXform,
@@ -785,6 +786,27 @@ class ImageSource(ABC):
         self.offsets /= ds_factor
         if self.pixel_size is not None:
             self.pixel_size *= ds_factor
+
+        self.L = L
+
+    @_as_copy
+    def crop(self, L):
+        """
+        Crop images down to size L.
+
+        Used for reproducing legacy MATLAB workflows.
+        For other applications, `downsample` is preferred.
+
+        Note, cropping makes no adjustments for centering/offsets etc.
+        """
+
+        if L > self.L:
+            raise ValueError(
+                "Max desired resolution {L} should be less than the current resolution {self.L}."
+            )
+        logger.info(f"Cropping shape of source images = {L,L}")
+
+        self.generation_pipeline.add_xform(Crop(L=L))
 
         self.L = L
 
