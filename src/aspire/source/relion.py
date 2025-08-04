@@ -7,7 +7,7 @@ import mrcfile
 import numpy as np
 
 from aspire.image import Image
-from aspire.operators import CTFFilter, IdentityFilter
+from aspire.operators import IdentityFilter, m_CTFFilter
 from aspire.source import ImageSource
 from aspire.utils import RelionStarFile
 
@@ -152,7 +152,7 @@ class RelionSource(ImageSource):
             # for each unique CTF configuration, create a CTFFilter object
             for row in filter_params:
                 filters.append(
-                    CTFFilter(
+                    m_CTFFilter(
                         pixel_size=self.pixel_size,
                         voltage=row[0],
                         defocus_u=row[1],
