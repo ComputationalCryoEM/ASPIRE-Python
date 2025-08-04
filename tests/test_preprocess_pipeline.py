@@ -93,15 +93,24 @@ def testNormBackground(L, dtype):
 
 
 @pytest.mark.parametrize("L, dtype", params)
-def test_norm_background_legacy(L, dtype):
-    # Legacy normalize_background uses a shifted grid, a different
+def test_norm_background_legacy_outofcore(L, dtype):
+    """
+    This executes normalize_background with the parameters found to reproduce MATLAB's "outofcore" method.
+    """
+    # Legacy "outofcore" normalize_background defaults to a shifted grid, a different
     # mask radius, disabled ramping, and N - 1 degrees of freedom
     # when computing standard deviation.
+    norm_bg_outofcore_flags = {
+        "bg_radius": 2 * (L // 2) / L,
+        "do_ramp": False,
+        "shifted": True,
+        "ddof": 1,
+    }
+
     sim = get_sim_object(L, dtype)
-    bg_radius = 2 * (L // 2) / L
     grid = grid_2d(sim.L, shifted=True, indexing="yx", dtype=dtype)
-    mask = grid["r"] > bg_radius
-    sim = sim.legacy_normalize_background()
+    mask = grid["r"] > norm_bg_outofcore_flags["bg_radius"]
+    sim = sim.normalize_background(**norm_bg_outofcore_flags)
     imgs_nb = sim.images[:].asnumpy()
     new_mean = np.mean(imgs_nb[:, mask])
     new_variance = np.var(imgs_nb[:, mask], ddof=1)
