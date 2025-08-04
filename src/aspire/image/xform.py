@@ -199,7 +199,7 @@ class Downsample(LinearXform):
     A Xform that downsamples an Image object to a resolution specified by this Xform's resolution.
     """
 
-    def __init__(self, resolution, zero_nyquist=True, legacy=False):
+    def __init__(self, resolution, zero_nyquist=True, centered_fft=True):
         """
         Initialize Xform to downsample Image to a specific resolution.
 
@@ -207,17 +207,19 @@ class Downsample(LinearXform):
             of this Image
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even
             resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
-        :param legacy: Option to match legacy Matlab downsample method (boolean).
-            Default of False uses `centered_fft` to maintain ASPIRE-Python centering conventions.
+        :param centered_fft: Default of True uses `centered_fft` to
+            maintain ASPIRE-Python centering conventions.
         """
         self.resolution = resolution
         self.zero_nyquist = zero_nyquist
-        self.legacy = legacy
+        self.centered_fft = centered_fft
         super().__init__()
 
     def _forward(self, im, indices):
         return im.downsample(
-            self.resolution, zero_nyquist=self.zero_nyquist, legacy=self.legacy
+            self.resolution,
+            zero_nyquist=self.zero_nyquist,
+            centered_fft=self.centered_fft,
         )
 
     def _adjoint(self, im, indices):
@@ -225,7 +227,7 @@ class Downsample(LinearXform):
         raise NotImplementedError("Adjoint of downsampling not implemented yet.")
 
     def __str__(self):
-        return f"Downsample (Resolution {self.resolution})"
+        return f"Downsample (resolution={self.resolution}, zero_nyquist={self.zero_nyquist}, centered_fft={self.centered_fft}) Xform"
 
 
 class Crop(Xform):
@@ -247,7 +249,7 @@ class Crop(Xform):
         return im[..., : self.L, : self.L]
 
     def __str__(self):
-        return f"Crop (Size {self.L})"
+        return f"Crop({self.L}) Xform"
 
 
 class LegacyWhiten(Xform):
@@ -278,7 +280,7 @@ class LegacyWhiten(Xform):
         return im.legacy_whiten(self.psd, self.delta)
 
     def __str__(self):
-        return "Legacy Whitening Xform."
+        return "LegacyWhiten() Xform"
 
 
 class FilterXform(SymmetricXform):

@@ -101,7 +101,7 @@ def test_norm_background_legacy(L, dtype):
     bg_radius = 2 * (L // 2) / L
     grid = grid_2d(sim.L, shifted=True, indexing="yx", dtype=dtype)
     mask = grid["r"] > bg_radius
-    sim = sim.normalize_background(legacy=True)
+    sim = sim.legacy_normalize_background()
     imgs_nb = sim.images[:].asnumpy()
     new_mean = np.mean(imgs_nb[:, mask])
     new_variance = np.var(imgs_nb[:, mask], ddof=1)
