@@ -511,6 +511,45 @@ class RadialCTFFilter(CTFFilter):
         )
 
 
+class m_CTFFilter(Filter):
+    """
+    Reproduce MATLAB's cryo_CTF_relion  CTF (Contrast Transfer Function) Filter
+
+    Note if comparing to legacy MATLAB cryo_CTF_Relion,
+    take care regarding defocus unit conversion to nm.
+    """
+
+    def _evaluate(self, omega):
+        # disregard omega, we'll be making our own grids.
+        n = omega.shape[-1]
+
+        # Wavelength in nm.
+        lamb = 1.22639 / np.sqrt(self.voltage * 1000 + 0.97845 * self.voltage**2)
+
+        # Divide by 10 to make pixel size in nm. BW is the
+        # bandwidth of the signal corresponding to the given pixel size.
+        BW = 1 / (self.pixel_size / 10)
+
+        # RadiusNorm returns radii such that when multiplied by the
+        # bandwidth of the signal, we get the correct radial frequencies
+        # corresponding to each pixel in our nxn grid.
+        s, theta = self._RadiusNorm(n, fctr(n))
+
+        s = s * BW
+        DFavg = self._defocus_mean_nm * 10  # (DefocusU+DefocusV)/2
+        DFdiff = self._defocus_diff_nm * 10  # (DefocusU-DefocusV)
+        df = DFavg + DFdiff * cos(2 * (theta - self.defocus_ang)) / 2
+
+        k2 = np.pi * lamb * df
+        # 10*6 converts Cs from mm to nm.
+        k4 = np.pi / 2 * 10**6 * self.Cs * lamb**3
+        chi = k4 * s**4 - k2 * s**2
+
+        h = np.sqrt(1 - self.alpha ^ 2) * sin(chi) - self.alpha * cos(chi)
+
+        return h
+
+
 class BlueFilter(Filter):
     """
     Filter where power increases with frequency.
