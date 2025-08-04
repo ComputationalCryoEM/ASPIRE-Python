@@ -126,6 +126,12 @@ RES = [65, 66]
 RES_DS = [32, 33]
 LEGACY = [True, False]
 
+# These parameters are defined in the top level `ImageSource.legacy_downsample` wrapper.
+im_ds_legacy_flags = {
+    "zero_nyquist": False,
+    "centered_fft": False,
+}
+
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
 def dtype(request):
@@ -165,7 +171,10 @@ def test_downsample_project(volume, res_ds, legacy):
     """
     rot = np.eye(3, dtype=volume.dtype)  # project along z-axis
     im_ds_proj = volume.downsample(res_ds, legacy=legacy).project(rot)
-    im_proj_ds = volume.project(rot).downsample(res_ds, legacy=legacy)
+    if legacy:
+        im_proj_ds = volume.project(rot).downsample(res_ds, **im_ds_legacy_flags)
+    else:
+        im_proj_ds = volume.project(rot).downsample(res_ds)
 
     tol = 1e-09
     if volume.dtype == np.float32:
@@ -199,7 +208,8 @@ def test_downsample_legacy(volume, res_ds):
     ims = src.images[:]
 
     # Legacy downsampled images.
-    ims_ds_legacy = ims.downsample(res_ds, legacy=True)
+    #   Params are defined in `ImageSource.legacy_downsample`
+    ims_ds_legacy = ims.downsample(res_ds, **im_ds_legacy_flags)
 
     # ASPIRE-Python downsample with centering adjustments for odd resolution images.
     shifts = 0.5 * np.ones((n_img, 2), dtype=dtype)
