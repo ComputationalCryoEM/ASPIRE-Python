@@ -511,7 +511,7 @@ class RadialCTFFilter(CTFFilter):
         )
 
 
-class m_CTFFilter(Filter):
+class m_CTFFilter(CTFFilter):
     """
     Reproduce MATLAB's cryo_CTF_relion  CTF (Contrast Transfer Function) Filter
 
@@ -520,8 +520,8 @@ class m_CTFFilter(Filter):
     """
 
     def _evaluate(self, omega):
-        # disregard omega, we'll be making our own grids.
-        n = omega.shape[-1]
+        # disregard omega, we'll be making our own grids for now
+        L = int(np.sqrt(omega.shape[-1]))
 
         # Wavelength in nm.
         lamb = 1.22639 / np.sqrt(self.voltage * 1000 + 0.97845 * self.voltage**2)
@@ -530,22 +530,26 @@ class m_CTFFilter(Filter):
         # bandwidth of the signal corresponding to the given pixel size.
         BW = 1 / (self.pixel_size / 10)
 
-        # RadiusNorm returns radii such that when multiplied by the
+        # Returns radii such that when multiplied by the
         # bandwidth of the signal, we get the correct radial frequencies
         # corresponding to each pixel in our nxn grid.
-        s, theta = self._RadiusNorm(n, fctr(n))
+        #
+        # s, theta should match MATLAB's RadiusNorm
+        g = grid_2d(L, normalized=True, indexing="xy", dtype=np.float64)
+        s, theta = g["r"] / 2, g["phi"]
 
         s = s * BW
-        DFavg = self._defocus_mean_nm * 10  # (DefocusU+DefocusV)/2
-        DFdiff = self._defocus_diff_nm * 10  # (DefocusU-DefocusV)
-        df = DFavg + DFdiff * cos(2 * (theta - self.defocus_ang)) / 2
+        DFavg = self._defocus_mean_nm  # (DefocusU+DefocusV)/2
+        DFdiff = self._defocus_diff_nm  # (DefocusU-DefocusV)
+        # Note the missing / 2 is already in _defocus_diff_nm
+        df = DFavg + DFdiff * np.cos(2 * (theta - self.defocus_ang))
 
         k2 = np.pi * lamb * df
         # 10*6 converts Cs from mm to nm.
         k4 = np.pi / 2 * 10**6 * self.Cs * lamb**3
         chi = k4 * s**4 - k2 * s**2
 
-        h = np.sqrt(1 - self.alpha ^ 2) * sin(chi) - self.alpha * cos(chi)
+        h = np.sqrt(1 - self.alpha**2) * np.sin(chi) - self.alpha * np.cos(chi)
 
         return h
 
