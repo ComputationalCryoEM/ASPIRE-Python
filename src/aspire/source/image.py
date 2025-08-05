@@ -420,6 +420,7 @@ class ImageSource(ABC):
         """
         Get pixel offsets.
         """
+        # Use pixel_size = 1 for sources agnostic to pixel_size.
         px_sz = self.pixel_size or 1.0
         return (
             np.atleast_2d(
@@ -436,6 +437,7 @@ class ImageSource(ABC):
         """
         Set angstrom valued offsets from pixel offset values.
         """
+        # Use pixel_size = 1 for sources agnostic to pixel_size.
         px_sz = self.pixel_size or 1.0
         return self.set_metadata(
             ["_rlnOriginXAngst", "_rlnOriginYAngst"],
@@ -797,6 +799,7 @@ class ImageSource(ABC):
         if self.pixel_size is not None:
             self.pixel_size *= ds_factor
         else:
+            # For sources agnostic to pixel size, offsets must be explicitly scaled.
             self.offsets /= ds_factor
 
         self.L = L
