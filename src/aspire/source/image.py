@@ -417,17 +417,29 @@ class ImageSource(ABC):
 
     @property
     def offsets(self):
-        return np.atleast_2d(
-            self.get_metadata(
-                ["_rlnOriginX", "_rlnOriginY"],
-                default_value=np.array(0.0, dtype=self.dtype),
+        """
+        Get pixel offsets.
+        """
+        px_sz = self.pixel_size or 1.0
+        return (
+            np.atleast_2d(
+                self.get_metadata(
+                    ["_rlnOriginXAngst", "_rlnOriginYAngst"],
+                    default_value=np.array(0.0, dtype=self.dtype),
+                )
             )
+            / px_sz
         )
 
     @offsets.setter
     def offsets(self, values):
+        """
+        Set angstrom valued offsets from pixel offset values.
+        """
+        px_sz = self.pixel_size or 1.0
         return self.set_metadata(
-            ["_rlnOriginX", "_rlnOriginY"], np.array(values, dtype=self.dtype)
+            ["_rlnOriginXAngst", "_rlnOriginYAngst"],
+            np.array(values * px_sz, dtype=self.dtype),
         )
 
     @property
@@ -782,9 +794,10 @@ class ImageSource(ABC):
 
         ds_factor = self.L / L
         self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
-        self.offsets /= ds_factor
         if self.pixel_size is not None:
             self.pixel_size *= ds_factor
+        else:
+            self.offsets /= ds_factor
 
         self.L = L
 
@@ -1657,8 +1670,8 @@ class OrientedSource(IndexedSource):
             "_rlnAngleRot",
             "_rlnAngleTilt",
             "_rlnAnglePsi",
-            "_rlnOriginX",
-            "_rlnOriginY",
+            "_rlnOriginXAngst",
+            "_rlnOriginYAngst",
         ]
         for key in rot_keys:
             if self.has_metadata(key):
