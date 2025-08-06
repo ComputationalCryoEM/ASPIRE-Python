@@ -118,7 +118,7 @@ def test_offsets():
     assert "_rlnOriginX" not in src._metadata
     assert "_rlnOriginY" not in src._metadata
 
-    # Check that offsets in metadata match upto pixel/angstrom conversion.
+    # Check that offsets in metadata match up to pixel/angstrom conversion.
     np.testing.assert_allclose(angst_offsets / src.pixel_size, pixel_offsets)
 
     # src.offsets should still return pixel valued offsets.
