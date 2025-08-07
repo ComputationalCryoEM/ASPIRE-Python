@@ -834,7 +834,9 @@ class BFTAverager2D(AligningAverager2D):
         pfB = fft.fft(pfB, axis=-2)
         # Tabulate elements of pfA cross pfB.conj() using broadcast multiply
         x = xp.expand_dims(pfA, 1) * xp.expand_dims(pfB.conj(), 0)
-        angular = xp.sum(xp.abs(fft.ifft2(x)), axis=-1)  # sum all radial contributions
+        angular = xp.sum(
+            fft.ifft(x, axis=-2).real, axis=-1
+        )  # sum all radial contributions
 
         # Resolve the angle maximizing the correlation through the angular dimension
         inds = xp.argmax(angular, axis=-1)
