@@ -770,7 +770,7 @@ class BFTAverager2D(AligningAverager2D):
         n_angles=360,
         n_radial=None,
         radius=None,
-        sub_pixel=10,
+        sub_pixel=1,
         batch_size=512,
         dtype=None,
     ):
