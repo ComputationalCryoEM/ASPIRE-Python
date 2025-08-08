@@ -607,6 +607,42 @@ class Image:
             original_stack_shape
         )
 
+    def filter64(self, filter):
+        """
+        Apply a `Filter` object to the Image and returns a new Image.
+
+        :param filter: An object of type `Filter`.
+        :return: A new filtered `Image` object.
+        """
+        original_stack_shape = self.stack_shape
+
+        im = self.stack_reshape(-1)
+
+        # Note image and filter data is intentionally migrated via
+        # `xp.asarray` because all of the subsequent calls until
+        # `asnumpy` are GPU when xp and fft in `cupy` mode.
+        #
+        # Second note, filter dtype may not match image dtype.
+        filter_values = xp.asarray(
+            filter.evaluate_grid(self.resolution), dtype=np.float64
+        )
+
+        #breakpoint()
+        # Convolve
+        _im = xp.asarray(im._data, dtype=np.float64).transpose(0,2,1)
+        im_f = fft.fftshift(fft.fft2(_im), axes=(-1,-2))
+        im_f = filter_values * im_f
+        im = fft.ifft2(fft.ifftshift(im_f, axes=(-1,-2)))
+
+        im = xp.asnumpy(im.real.transpose(0,2,1)).astype(
+            self.dtype, copy=False
+        )  # restore to original dtype
+        # this matches for first image up to transposing, what now
+
+        return self.__class__(im, pixel_size=self.pixel_size).stack_reshape(
+            original_stack_shape
+        )
+
     def rotate(self):
         raise NotImplementedError
 
