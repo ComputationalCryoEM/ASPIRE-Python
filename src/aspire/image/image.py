@@ -627,17 +627,15 @@ class Image:
             filter.evaluate_grid(self.resolution), dtype=np.float64
         )
 
-        #breakpoint()
         # Convolve
-        _im = xp.asarray(im._data, dtype=np.float64).transpose(0,2,1)
-        im_f = fft.fftshift(fft.fft2(_im), axes=(-1,-2))
+        _im = xp.asarray(im._data, dtype=np.float64)
+        im_f = fft.fftshift(fft.fft2(_im), axes=(-1, -2))
         im_f = filter_values * im_f
-        im = fft.ifft2(fft.ifftshift(im_f, axes=(-1,-2)))
+        im = fft.ifft2(fft.ifftshift(im_f, axes=(-1, -2)))
 
-        im = xp.asnumpy(im.real.transpose(0,2,1)).astype(
+        im = xp.asnumpy(im.real).astype(
             self.dtype, copy=False
         )  # restore to original dtype
-        # this matches for first image up to transposing, what now
 
         return self.__class__(im, pixel_size=self.pixel_size).stack_reshape(
             original_stack_shape

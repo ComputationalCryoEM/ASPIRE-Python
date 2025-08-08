@@ -534,8 +534,8 @@ class m_CTFFilter(CTFFilter):
         # bandwidth of the signal, we get the correct radial frequencies
         # corresponding to each pixel in our nxn grid.
         #
-        # s, theta should match MATLAB's RadiusNorm
-        g = grid_2d(L, normalized=True, indexing="xy", dtype=np.float64)
+        # s, theta should match MATLAB's RadiusNorm up to a transpose
+        g = grid_2d(L, normalized=True, indexing="yx", dtype=np.float64)
         s, theta = g["r"] / 2, g["phi"]
 
         s = s * BW
