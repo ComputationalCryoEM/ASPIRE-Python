@@ -88,6 +88,9 @@ src = RelionSource(
 logger.info("Perform phase flip to input images.")
 src = src.phase_flip().cache()
 
+# Legacy MATLAB right cropped the images to an odd resolution.
+src = src.crop(src.L - 1).cache()
+
 # Downsample the images.
 logger.info(f"Set the resolution to {img_size} X {img_size}")
 src = src.legacy_downsample(img_size).cache()
