@@ -830,7 +830,7 @@ class ImageSource(ABC):
             raise ValueError(
                 "Max desired resolution {L} should be less than the current resolution {self.L}."
             )
-        logger.info(f"Cropping shape of source images = {L,L}")
+        logger.info(f"Cropping shape of source images = {L, L}")
 
         self.generation_pipeline.add_xform(Crop(L=L))
 

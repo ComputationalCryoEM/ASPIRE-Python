@@ -29,6 +29,7 @@ https://www.ebi.ac.uk/empiar/EMPIAR-10028
 import logging
 from pathlib import Path
 
+from aspire.basis import DiracBasis3D
 from aspire.denoising import LegacyClassAvgSource
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource
@@ -156,7 +157,9 @@ oriented_src.save(oriented_fn, save_mode="single", overwrite=True)
 logger.info("Begin Volume reconstruction")
 
 # Set up an estimator to perform the backprojection.
-estimator = MeanEstimator(oriented_src)
+# Legacy MATLAB FIRM used Dirac basis.
+basis3d = DiracBasis3D(oriented_src.L)
+estimator = MeanEstimator(oriented_src, basis=basis3d)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
