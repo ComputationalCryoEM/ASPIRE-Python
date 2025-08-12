@@ -158,7 +158,7 @@ logger.info("Begin Volume reconstruction")
 
 # Set up an estimator to perform the backprojection.
 # Legacy MATLAB FIRM used Dirac basis.
-basis3d = DiracBasis3D(oriented_src.L)
+basis3d = DiracBasis3D(oriented_src.L, dtype=oriented_src.dtype)
 estimator = MeanEstimator(oriented_src, basis=basis3d)
 
 # Perform the estimation and save the volume.
