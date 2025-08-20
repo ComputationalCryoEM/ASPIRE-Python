@@ -12,7 +12,7 @@ import numpy as np
 from aspire.abinitio import CLOrient3D, CLSync3N
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
-    Crop,
+    CropPad,
     Downsample,
     FilterXform,
     IndexedXform,
@@ -826,13 +826,13 @@ class ImageSource(ABC):
         Note, cropping makes no adjustments for centering/offsets etc.
         """
 
-        if L > self.L:
+        if L >= self.L:
             raise ValueError(
                 "Max desired resolution {L} should be less than the current resolution {self.L}."
             )
         logger.info(f"Cropping shape of source images = {L, L}")
 
-        self.generation_pipeline.add_xform(Crop(L=L))
+        self.generation_pipeline.add_xform(CropPad(L=L))
 
         self.L = L
 
