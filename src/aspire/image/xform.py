@@ -5,6 +5,7 @@ import numpy as np
 from joblib import Memory
 
 from aspire.image import Image
+from aspire.utils import crop_pad_2d
 
 logger = logging.getLogger(__name__)
 
@@ -230,26 +231,27 @@ class Downsample(LinearXform):
         return f"Downsample (resolution={self.resolution}, zero_nyquist={self.zero_nyquist}, centered_fft={self.centered_fft}) Xform"
 
 
-class Crop(Xform):
+class CropPad(Xform):
     """
     A Xform that crops an Image object to a size specified by this Xform's size.
     """
 
-    def __init__(self, L):
+    def __init__(self, L, fill_value=0):
         """
         Initialize Xform to crop Image to a specific size.
 
         :param L: int - new size, should be <= the current size
-            of this Image
+            of this Image.
         """
         self.L = L
+        self.fill_value = fill_value
         super().__init__()
 
     def _forward(self, im, indices):
-        return im[..., : self.L, : self.L]
+        return crop_pad_2d(im, self.L, self.fill_value)
 
     def __str__(self):
-        return f"Crop({self.L}) Xform"
+        return f"CropPad({self.L}, {self.fill_value}) Xform"
 
 
 class LegacyWhiten(Xform):
