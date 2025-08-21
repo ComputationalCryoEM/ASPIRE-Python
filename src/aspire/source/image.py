@@ -816,9 +816,9 @@ class ImageSource(ABC):
         self.L = L
 
     @_as_copy
-    def crop(self, L):
+    def crop_pad(self, L, fill_value=0):
         """
-        Crop images down to size L.
+        Crop or pad images to size L.
 
         Used for reproducing legacy MATLAB workflows.
         For other applications, `downsample` is preferred.
@@ -826,13 +826,17 @@ class ImageSource(ABC):
         Note, cropping makes no adjustments for centering/offsets etc.
         """
 
-        if L >= self.L:
-            raise ValueError(
-                "Max desired resolution {L} should be less than the current resolution {self.L}."
+        if L < self.L:
+            logger.info(f"Cropping shape of source images = {L, L}")
+        elif L > self.L:
+            logger.info(
+                f"Padding shape of source images = {L, L} with fill_value={fill_value}"
             )
-        logger.info(f"Cropping shape of source images = {L, L}")
+        else:
+            logger.info(f"Shape of source images already {L, L}, skipping.")
+            return
 
-        self.generation_pipeline.add_xform(CropPad(L=L))
+        self.generation_pipeline.add_xform(CropPad(L=L, fill_value=fill_value))
 
         self.L = L
 
