@@ -488,10 +488,11 @@ class Image:
         else:
             slc = slice(k - L_half - 1, k + L_half - 1)
 
+        # Note these computations should be in double precision
         for i, proj in enumerate(self.asnumpy()):
 
             # Zero pad the image to twice the size
-            padded_proj[slc, slc] = xp.asarray(proj)
+            padded_proj[slc, slc] = xp.asarray(proj, dtype=np.float64)
 
             # Take the Fourier Transform of the padded image.
             fpadded_proj = fft.centered_fft2(padded_proj)
@@ -513,8 +514,8 @@ class Image:
 
             filtered_proj = filtered_proj[slc, slc].real
 
-            # Assign the resulting image.
-            res[i] = xp.asnumpy(filtered_proj)
+            # Assign the resulting image, cast if required.
+            res[i] = xp.asnumpy(filtered_proj).astype(res.dtype, copy=False)
 
         return Image(res)
 
