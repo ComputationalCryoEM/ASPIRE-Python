@@ -46,10 +46,11 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, shifted=False, ddof=0):
             "`normalize_bg` is currently limited to 1D image stacks."
         )
     L = imgs.shape[-1]
+    input_dtype = imgs.dtype
 
     # Generate background mask
-    input_dtype = imgs.dtype
-    grid = grid_2d(L, shifted=shifted, indexing="yx", dtype=input_dtype)
+    grid_dtype = np.float64
+    grid = grid_2d(L, shifted=shifted, indexing="yx", dtype=grid_dtype)
     mask = grid["r"] > bg_radius
 
     if do_ramp:
@@ -59,14 +60,14 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, shifted=False, ddof=0):
             (
                 grid["x"][mask].flatten(),
                 grid["y"][mask].flatten(),
-                np.ones(grid["y"][mask].flatten().size, dtype=input_dtype),
+                np.ones(grid["y"][mask].flatten().size, dtype=grid_dtype),
             )
         ).T
         ramp_all = np.vstack(
             (
                 grid["x"].flatten(),
                 grid["y"].flatten(),
-                np.ones(L * L, dtype=input_dtype),
+                np.ones(L * L, dtype=grid_dtype),
             )
         ).T
         mask_reshape = mask.reshape((L * L))
@@ -78,10 +79,14 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, shifted=False, ddof=0):
         imgs = imgs.reshape((-1, L, L))
 
     # Apply mask images and calculate mean and std values of background
-    mean = np.mean(imgs[:, mask], axis=1)
-    std = np.std(imgs[:, mask], ddof=ddof, axis=1)
+    # These should be computed and normalized as doubles
+    bg_pixels = imgs[:, mask].astype(np.float64, copy=False)
+    mean = np.mean(bg_pixels, axis=1)
+    std = np.std(bg_pixels, ddof=ddof, axis=1)
+    imgs = (imgs - mean[:, None, None]) / std[:, None, None]
 
-    return (imgs - mean[:, None, None]) / std[:, None, None]
+    # Restore input dtype
+    return imgs.astype(input_dtype, copy=False)
 
 
 def load_mrc(filepath):
