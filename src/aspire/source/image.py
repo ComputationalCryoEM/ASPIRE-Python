@@ -771,9 +771,9 @@ class ImageSource(ABC):
 
     def legacy_downsample(self, L):
         """
-        Reproduce MATLAB's `downsample` workflow method.
+        Reproduce MATLAB's workflow downsampling.
 
-        Downsample Image to `L-by-L` pixels.
+        For uses other than MALTAB reproduction, prefer `downsample`.
 
         :param L: int - new resolution, should be <= the current resolution
             of this Image
@@ -821,9 +821,20 @@ class ImageSource(ABC):
         Crop or pad images to size L.
 
         Used for reproducing legacy MATLAB workflows.
-        For other applications, `downsample` is preferred.
+        For most applications, `downsample` is preferred.
 
-        Note, cropping makes no adjustments for centering/offsets etc.
+        Cropping and padding makes no adjustments for centering conventions,
+        but does maintain `pixel_size`.
+
+        Take care regarding the cropping convention.
+        Cropping a single pixel from even down to odd left crops.
+        Cropping a single pixel from odd down to even right crops.
+        Calling this crop method for multiple pixels will crop equally from both
+        sides with any single remainder pixel following applied as above.
+
+        :param L: int - new image size in pixels.
+        :param fill_value: Value used in padding, defaults to 0.
+        :return: Cropped or padded `ImageSource`.
         """
 
         if L < self.L:
@@ -833,7 +844,9 @@ class ImageSource(ABC):
                 f"Padding shape of source images = {L, L} with fill_value={fill_value}"
             )
         else:
-            logger.info(f"Shape of source images already {L, L}, skipping.")
+            logger.warning(
+                f"Shape of source images already {L, L}, skipping `CropPad`."
+            )
             return
 
         self.generation_pipeline.add_xform(CropPad(L=L, fill_value=fill_value))
@@ -998,11 +1011,13 @@ class ImageSource(ABC):
 
     def legacy_normalize_background(self):
         """
-        Reproduce MATLAB's `normalize_background` workflow method.
+        Reproduce MATLAB's Normalize Background workflow method.
 
         Ramping is disabled.
         A shifted 2d grid and alternative `bg_radius` is used to generate the background mask.
         Standard deviation is computed using N - 1 degrees of freedom.
+
+        :return: `ImageSource` with normalized background.
         """
 
         # Radius definition is here:
@@ -1016,19 +1031,19 @@ class ImageSource(ABC):
     @_as_copy
     def normalize_background(self, bg_radius=1.0, do_ramp=True, shifted=False, ddof=0):
         """
-        Normalize the images by the noise background
+        Normalize the images by the noise background.
 
         This is done by shifting the image density by the mean value of background
         and scaling the image density by the standard deviation of background.
-        From the implementation level, we modify the `ImageSource` in-place by
-        appending the `Add` and `Multiple` filters to the generation pipeline.
 
         :param bg_radius: Radius cutoff to be considered as background (in image size)
         :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
-
-        :return: Returns`ImageSource` object.
+        :param shifted: Optionally shifts 2d grid by 1/2 pixel for even
+            resolution to replicate MATLAB.
+        :param ddof: Degrees of freedom for standard deviation.
+        :return: `ImageSource` object with normalized background.
         """
 
         logger.info(
