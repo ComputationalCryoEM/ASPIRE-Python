@@ -32,7 +32,6 @@ from pathlib import Path
 import numpy as np
 
 from aspire.abinitio import CLSync3N
-from aspire.basis import DiracBasis3D
 from aspire.denoising import LegacyClassAvgSource
 from aspire.reconstruction import MeanEstimator
 from aspire.source import ArrayImageSource, OrientedSource, RelionSource
@@ -161,9 +160,7 @@ oriented_src.save(oriented_fn, save_mode="single", overwrite=True)
 logger.info("Begin Volume reconstruction")
 
 # Set up an estimator to perform the backprojection.
-# Legacy MATLAB FIRM used Dirac basis.
-basis3d = DiracBasis3D(oriented_src.L, dtype=oriented_src.dtype)
-estimator = MeanEstimator(oriented_src, basis=basis3d)
+estimator = MeanEstimator(oriented_src)
 
 # Perform the estimation and save the volume.
 estimated_volume = estimator.estimate()
