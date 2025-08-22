@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.linalg import eigh
 
-from aspire.abinitio import CLSymmetryC3C4
+from aspire.abinitio import CLSymmetryC3C4, estimate_third_rows
 from aspire.utils import J_conjugate, Rotation, all_pairs
 
 logger = logging.getLogger(__name__)
@@ -224,7 +224,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         viis = np.vstack((np.eye(3, dtype=self.dtype),) * self.n_img).reshape(
             self.n_img, 3, 3
         )
-        vis = self._estimate_third_rows(vijs, viis)
+        vis = estimate_third_rows(vijs, viis)
 
         logger.info("Estimating in-plane rotations and rotations matrices.")
         Ris = self._estimate_inplane_rotations(vis, Rijs, Rijgs)
