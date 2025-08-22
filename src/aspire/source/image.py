@@ -830,7 +830,7 @@ class ImageSource(ABC):
         Cropping a single pixel from even down to odd left crops.
         Cropping a single pixel from odd down to even right crops.
         Calling this crop method for multiple pixels will crop equally from both
-        sides with any single remainder pixel following applied as above.
+        sides with any single remainder pixel applied as above.
 
         :param L: int - new image size in pixels.
         :param fill_value: Value used in padding, defaults to 0.
