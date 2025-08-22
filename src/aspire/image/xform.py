@@ -233,7 +233,7 @@ class Downsample(LinearXform):
 
 class CropPad(Xform):
     """
-    A Xform that crops an Image object to a size specified by this Xform's size.
+    A Xform that crops or pads an Image object to a specified size.
     """
 
     def __init__(self, L, fill_value=0):
@@ -242,6 +242,7 @@ class CropPad(Xform):
 
         :param L: int - new size, should be <= the current size
             of this Image.
+        :param fill_value: Optional value for padding, default 0.
         """
         self.L = L
         self.fill_value = fill_value
