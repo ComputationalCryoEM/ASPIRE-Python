@@ -1,6 +1,7 @@
 from .commonline_base import CLOrient3D
 
 # isort: off
+from .commonline_utils import estimate_third_rows
 from .commonline_sdp import CommonlineSDP
 from .commonline_lud import CommonlineLUD
 from .commonline_irls import CommonlineIRLS

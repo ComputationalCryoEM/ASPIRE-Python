@@ -3,7 +3,12 @@ import pytest
 from numpy import pi, random
 from numpy.linalg import det, norm
 
-from aspire.abinitio import CLSymmetryC2, CLSymmetryC3C4, CLSymmetryCn
+from aspire.abinitio import (
+    CLSymmetryC2,
+    CLSymmetryC3C4,
+    CLSymmetryCn,
+    estimate_third_rows,
+)
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
 from aspire.source import Simulation
 from aspire.utils import (
@@ -479,17 +484,14 @@ def test_global_J_sync(n_img, dtype):
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_estimate_third_rows(dtype):
-    L = 16
     n_img = 20
-    order = 3  # test not dependent on order
-    _, orient_est = source_orientation_objs(n_img, L, order, dtype)
 
     # Build outer products vijs, viis, and get ground truth third rows.
     vijs, viis, gt_vis = build_outer_products(n_img, dtype)
 
     # Estimate third rows from outer products.
     # Due to factorization of V, these might be negated third rows.
-    vis = orient_est._estimate_third_rows(vijs, viis)
+    vis = estimate_third_rows(vijs, viis)
 
     # Check if all-close up to difference of sign
     ground_truth = np.sign(gt_vis[0, 0]) * gt_vis
