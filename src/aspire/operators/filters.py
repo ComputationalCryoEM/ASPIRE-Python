@@ -439,8 +439,7 @@ class CTFFilter(Filter):
         :param alpha:       Amplitude contrast phase in radians
         :param B:           Envelope decay in inverse square angstrom (default 0)
         """
-        # super().__init__(dim=2, radial=defocus_u == defocus_v)
-        super().__init__(dim=2)
+        super().__init__(dim=2, radial=defocus_u == defocus_v)
         self.pixel_size = float(pixel_size)
         self.voltage = voltage
         self.wavelength = voltage_to_wavelength(self.voltage)
@@ -455,9 +454,7 @@ class CTFFilter(Filter):
         self._defocus_mean_nm = 0.05 * (self.defocus_u + self.defocus_v)
         self._defocus_diff_nm = 0.05 * (self.defocus_u - self.defocus_v)
 
-    def _evaluate(self, omega):
-        # disregard omega, we'll be making our own grids for now
-        L = int(np.sqrt(omega.shape[-1]))
+    def _evaluate(self, L):
 
         # Wavelength in nm.
         lamb = 1.22639 / np.sqrt(self.voltage * 1000 + 0.97845 * self.voltage**2)
@@ -500,6 +497,16 @@ class CTFFilter(Filter):
             alpha=self.alpha,
             B=self.B,
         )
+
+    def evaluate(self, omega):
+        # disregard omega, CTF will be making its own grids for now
+        L = int(np.sqrt(omega.shape[-1]))
+        h = self._evaluate(L)
+        return h.flatten()
+
+    @lru_cache(maxsize=config["cache"]["filter_cache_size"].get())  # noqa: B019
+    def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
+        return self._evaluate(L)
 
 
 class RadialCTFFilter(CTFFilter):

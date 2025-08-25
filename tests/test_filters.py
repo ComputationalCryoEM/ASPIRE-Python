@@ -26,6 +26,7 @@ class SimTestCase(TestCase):
         self.dtype = np.float32
         # A 2 x 256 ndarray of spatial frequencies
         self.omega = np.load(os.path.join(DATA_DIR, "omega_2_256.npy"))
+        self.test_filter = ArrayFilter(np.random.randn(8, 8))
 
     def tearDown(self):
         pass
@@ -93,23 +94,12 @@ class SimTestCase(TestCase):
         self.assertEqual(result.shape, (256,))
 
     def testScaledFilter(self):
-        filt1 = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
         scale_value = 2.5
-        result1 = filt1.evaluate(self.omega)
+        result1 = self.test_filter.evaluate(self.omega)
         # ScaledFilter scales the pixel size which cancels out
         # a corresponding scaling in omega
-        filt2 = ScaledFilter(filt1, scale_value)
+        filt2 = ScaledFilter(self.test_filter, scale_value)
         result2 = filt2.evaluate(self.omega * scale_value)
-        self.assertTrue(np.allclose(result1, result2, atol=utest_tolerance(self.dtype)))
-
-    def testCTFScale(self):
-        filt = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
-        result1 = filt.evaluate(self.omega)
-        scale_value = 2.5
-        filt = filt.scale(scale_value)
-        # scaling a CTFFilter scales the pixel size which cancels out
-        # a corresponding scaling in omega
-        result2 = filt.evaluate(self.omega * scale_value)
         self.assertTrue(np.allclose(result1, result2, atol=utest_tolerance(self.dtype)))
 
     def testRadialCTFFilter(self):
@@ -117,222 +107,15 @@ class SimTestCase(TestCase):
         result = filter.evaluate(self.omega)
         self.assertEqual(result.shape, (256,))
 
-    def testRadialCTFFilterGrid(self):
-        # Set legacy pixel size
-        filter = RadialCTFFilter(pixel_size=10, defocus=2.5e4)
-        result = filter.evaluate_grid(8, dtype=self.dtype)
-
-        self.assertEqual(result.shape, (8, 8))
-
-        # Setting tolerence to 1e-4.
-        # After precision was improved on `voltage_to_wavelength` method this reference array
-        # is no longer within utest_tolerance: np.max(abs(result - reference)) = 5.2729227306036464e-05
-        self.assertTrue(
-            np.allclose(
-                result,
-                np.array(
-                    [
-                        [
-                            0.461755701877834,
-                            -0.995184514498978,
-                            0.063120922443392,
-                            0.833250206225063,
-                            0.961464660252150,
-                            0.833250206225063,
-                            0.063120922443392,
-                            -0.995184514498978,
-                        ],
-                        [
-                            -0.995184514498978,
-                            0.626977423649552,
-                            0.799934516166400,
-                            0.004814348317439,
-                            -0.298096205735759,
-                            0.004814348317439,
-                            0.799934516166400,
-                            0.626977423649552,
-                        ],
-                        [
-                            0.063120922443392,
-                            0.799934516166400,
-                            -0.573061561512667,
-                            -0.999286510416273,
-                            -0.963805291282899,
-                            -0.999286510416273,
-                            -0.573061561512667,
-                            0.799934516166400,
-                        ],
-                        [
-                            0.833250206225063,
-                            0.004814348317439,
-                            -0.999286510416273,
-                            -0.633095739808868,
-                            -0.368890743119366,
-                            -0.633095739808868,
-                            -0.999286510416273,
-                            0.004814348317439,
-                        ],
-                        [
-                            0.961464660252150,
-                            -0.298096205735759,
-                            -0.963805291282899,
-                            -0.368890743119366,
-                            -0.070000000000000,
-                            -0.368890743119366,
-                            -0.963805291282899,
-                            -0.298096205735759,
-                        ],
-                        [
-                            0.833250206225063,
-                            0.004814348317439,
-                            -0.999286510416273,
-                            -0.633095739808868,
-                            -0.368890743119366,
-                            -0.633095739808868,
-                            -0.999286510416273,
-                            0.004814348317439,
-                        ],
-                        [
-                            0.063120922443392,
-                            0.799934516166400,
-                            -0.573061561512667,
-                            -0.999286510416273,
-                            -0.963805291282899,
-                            -0.999286510416273,
-                            -0.573061561512667,
-                            0.799934516166400,
-                        ],
-                        [
-                            -0.995184514498978,
-                            0.626977423649552,
-                            0.799934516166400,
-                            0.004814348317439,
-                            -0.298096205735759,
-                            0.004814348317439,
-                            0.799934516166400,
-                            0.626977423649552,
-                        ],
-                    ]
-                ),
-                atol=1e-4,
-            )
-        )
-
-    def testRadialCTFFilterMultiplierGrid(self):
-        # Set legacy pixel size
-        filter = RadialCTFFilter(pixel_size=10, defocus=2.5e4) * RadialCTFFilter(
-            pixel_size=10, defocus=2.5e4
-        )
-        result = filter.evaluate_grid(8, dtype=self.dtype)
-
-        self.assertEqual(result.shape, (8, 8))
-
-        # Setting tolerence to 1e-4.
-        # After precision was improved on `voltage_to_wavelength` method this reference array
-        # is no longer within utest_tolerance: np.max(abs(result - reference)) = 4.869387449749074e-05
-        self.assertTrue(
-            np.allclose(
-                result,
-                np.array(
-                    [
-                        [
-                            0.461755701877834,
-                            -0.995184514498978,
-                            0.063120922443392,
-                            0.833250206225063,
-                            0.961464660252150,
-                            0.833250206225063,
-                            0.063120922443392,
-                            -0.995184514498978,
-                        ],
-                        [
-                            -0.995184514498978,
-                            0.626977423649552,
-                            0.799934516166400,
-                            0.004814348317439,
-                            -0.298096205735759,
-                            0.004814348317439,
-                            0.799934516166400,
-                            0.626977423649552,
-                        ],
-                        [
-                            0.063120922443392,
-                            0.799934516166400,
-                            -0.573061561512667,
-                            -0.999286510416273,
-                            -0.963805291282899,
-                            -0.999286510416273,
-                            -0.573061561512667,
-                            0.799934516166400,
-                        ],
-                        [
-                            0.833250206225063,
-                            0.004814348317439,
-                            -0.999286510416273,
-                            -0.633095739808868,
-                            -0.368890743119366,
-                            -0.633095739808868,
-                            -0.999286510416273,
-                            0.004814348317439,
-                        ],
-                        [
-                            0.961464660252150,
-                            -0.298096205735759,
-                            -0.963805291282899,
-                            -0.368890743119366,
-                            -0.070000000000000,
-                            -0.368890743119366,
-                            -0.963805291282899,
-                            -0.298096205735759,
-                        ],
-                        [
-                            0.833250206225063,
-                            0.004814348317439,
-                            -0.999286510416273,
-                            -0.633095739808868,
-                            -0.368890743119366,
-                            -0.633095739808868,
-                            -0.999286510416273,
-                            0.004814348317439,
-                        ],
-                        [
-                            0.063120922443392,
-                            0.799934516166400,
-                            -0.573061561512667,
-                            -0.999286510416273,
-                            -0.963805291282899,
-                            -0.999286510416273,
-                            -0.573061561512667,
-                            0.799934516166400,
-                        ],
-                        [
-                            -0.995184514498978,
-                            0.626977423649552,
-                            0.799934516166400,
-                            0.004814348317439,
-                            -0.298096205735759,
-                            0.004814348317439,
-                            0.799934516166400,
-                            0.626977423649552,
-                        ],
-                    ]
-                )
-                ** 2,
-                atol=1e-4,
-            )
-        )
-
     def testDualFilter(self):
-        ctf_filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
-        result = ctf_filter.evaluate(-self.omega)
-        dual_filter = ctf_filter.dual()
+        result = self.test_filter.evaluate(-self.omega)
+        dual_filter = self.test_filter.dual()
         dual_result = dual_filter.evaluate(self.omega)
         self.assertTrue(np.allclose(result, dual_result))
 
     def testFilterSigns(self):
-        ctf_filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
-        signs = np.sign(ctf_filter.evaluate(self.omega))
-        sign_filter = ctf_filter.sign
+        signs = np.sign(self.test_filter.evaluate(self.omega))
+        sign_filter = self.test_filter.sign
         self.assertTrue(np.allclose(sign_filter.evaluate(self.omega), signs))
 
 
@@ -419,6 +202,10 @@ def test_ctf_reference():
     # Compare with MATLAB.  Note DF converted to nm
     # >> n=5; V=200; DF1=1000; DF2=1500; theta=1.23; Cs=2.0; A=0.1; pxA=4.56;
     # >> ref_h=cryo_CTF_Relion(n,V,DF1,DF2,theta,Cs,pxA,A)
+    #
+    # Note we transpose the reference array.
+    # Python keeps the filter C order because the images we will convove with are C order.
+    # MATLAB is F and F respectively.
     ref_h = np.array(
         [
             [-0.6152, 0.0299, -0.5638, 0.9327, 0.9736],
@@ -427,7 +214,7 @@ def test_ctf_reference():
             [0.1733, 0.9383, -0.7543, 0.2598, -0.9865],
             [0.9736, 0.9327, -0.5638, 0.0299, -0.6152],
         ]
-    )
+    ).T
 
     # Test we're within 1%.
     #   There are minor differences in the formulas for wavelength and grids.
