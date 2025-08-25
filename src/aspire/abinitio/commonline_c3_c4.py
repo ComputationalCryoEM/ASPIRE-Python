@@ -369,35 +369,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         return Rijs
 
-    def _syncmatrix_ij_vote_3n(self, clmatrix, i, j, k_list, n_theta):
-        """
-        Compute the (i,j) rotation block of the synchronization matrix using voting method
-
-        Given the common lines matrix `clmatrix`, a list of images specified in k_list
-        and the number of common lines n_theta, find the (i, j) rotation block Rij.
-
-        :param clmatrix: The common lines matrix
-        :param i: The i image
-        :param j: The j image
-        :param k_list: The list of images for the third image for voting algorithm
-        :param n_theta: The number of points in the theta direction (common lines)
-        :return: The (i,j) rotation block of the synchronization matrix
-        """
-        _, good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
-
-        rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
-
-        if rots is not None:
-            rot_mean = np.mean(rots, 0)
-
-        else:
-            # This is for the case that images i and j correspond to the same
-            # viewing direction and differ only by in-plane rotation.
-            # We set to zero as in the Matlab code.
-            rot_mean = np.zeros((3, 3))
-
-        return rot_mean
-
     def _local_J_sync_c3_c4(self, Rijs, Riis):
         """
         Estimate viis and vijs. In order to estimate vij = vi @ vj.T, it is necessary for Rii, Rjj,
