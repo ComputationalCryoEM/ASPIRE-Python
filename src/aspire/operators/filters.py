@@ -36,6 +36,7 @@ def evaluate_src_filters_on_grid(src, indices=None):
         idx_k = np.where(src.filter_indices[indices] == i)[0]
         if len(idx_k) > 0:
             filter_values = filt.evaluate(omega)
+            breakpoint()
             h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
     h = np.reshape(h, grid2d["x"].shape + (len(indices),))
@@ -406,6 +407,13 @@ class IdentityFilter(ScalarFilter):
 
 
 class CTFFilter(Filter):
+    """
+    Reproduce MATLAB's cryo_CTF_relion CTF (Contrast Transfer Function) Filter
+
+    Note if comparing to legacy MATLAB cryo_CTF_Relion,
+    take care regarding defocus unit conversion to/from nm.
+    """
+
     def __init__(
         self,
         pixel_size=1,
@@ -432,7 +440,8 @@ class CTFFilter(Filter):
         :param alpha:       Amplitude contrast phase in radians
         :param B:           Envelope decay in inverse square angstrom (default 0)
         """
-        super().__init__(dim=2, radial=defocus_u == defocus_v)
+        #super().__init__(dim=2, radial=defocus_u == defocus_v)
+        super().__init__(dim=2)
         self.pixel_size = float(pixel_size)
         self.voltage = voltage
         self.wavelength = voltage_to_wavelength(self.voltage)
@@ -446,78 +455,6 @@ class CTFFilter(Filter):
         # Convert angstrom to nm and divide by 2
         self._defocus_mean_nm = 0.05 * (self.defocus_u + self.defocus_v)
         self._defocus_diff_nm = 0.05 * (self.defocus_u - self.defocus_v)
-
-    def _evaluate(self, omega):
-        # Note the grid is wrt nm.
-        om_y, om_x = np.vsplit(omega / (2 * np.pi * self.pixel_size / 10), 2)
-
-        eps = np.finfo(np.pi).eps
-        ind_nz = (np.abs(om_x) > eps) | (np.abs(om_y) > eps)
-        angles_nz = np.arctan2(om_y[ind_nz], om_x[ind_nz])
-        angles_nz -= self.defocus_ang
-
-        defocus = np.zeros_like(om_x)
-        # Note the division by 2  for _defocus_diff_nm is in `__init__`.
-        defocus[ind_nz] = self._defocus_mean_nm + self._defocus_diff_nm * np.cos(
-            2 * angles_nz
-        )
-
-        # Note lambda must be in nm, and `Cs` must be converted from mm to nm.
-        lambda_nm = self.wavelength / 10
-        c2 = -np.pi * lambda_nm * defocus
-        c4 = 0.5 * np.pi * (self.Cs * 1e6) * lambda_nm**3
-
-        r2 = om_x**2 + om_y**2
-        r4 = r2**2
-        gamma = c2 * r2 + c4 * r4
-        h = np.sqrt(1 - self.alpha**2) * np.sin(gamma) - self.alpha * np.cos(gamma)
-
-        # For historical reference, below is a translated formula from the legacy MATLAB code.
-        # The two implementations seem to agree for odd images, but the original MATLAB code
-        # behaves differently for even image sizes.
-        # h = np.sin(c2*r2 + c4*r2*r2 - self.alpha)
-
-        if self.B:
-            h *= np.exp(-self.B * r2)
-
-        return h.squeeze()
-
-    def scale(self, c=1):
-        return CTFFilter(
-            pixel_size=self.pixel_size * c,
-            voltage=self.voltage,
-            defocus_u=self.defocus_u,
-            defocus_v=self.defocus_v,
-            defocus_ang=self.defocus_ang,
-            Cs=self.Cs,
-            alpha=self.alpha,
-            B=self.B,
-        )
-
-
-class RadialCTFFilter(CTFFilter):
-    def __init__(
-        self, pixel_size=1, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
-    ):
-        super().__init__(
-            pixel_size=pixel_size,
-            voltage=voltage,
-            defocus_u=defocus,
-            defocus_v=defocus,
-            defocus_ang=0,
-            Cs=Cs,
-            alpha=alpha,
-            B=B,
-        )
-
-
-class m_CTFFilter(CTFFilter):
-    """
-    Reproduce MATLAB's cryo_CTF_relion  CTF (Contrast Transfer Function) Filter
-
-    Note if comparing to legacy MATLAB cryo_CTF_Relion,
-    take care regarding defocus unit conversion to nm.
-    """
 
     def _evaluate(self, omega):
         # disregard omega, we'll be making our own grids for now
@@ -552,6 +489,34 @@ class m_CTFFilter(CTFFilter):
         h = np.sqrt(1 - self.alpha**2) * np.sin(chi) - self.alpha * np.cos(chi)
 
         return h
+
+    def scale(self, c=1):
+        return CTFFilter(
+            pixel_size=self.pixel_size * c,
+            voltage=self.voltage,
+            defocus_u=self.defocus_u,
+            defocus_v=self.defocus_v,
+            defocus_ang=self.defocus_ang,
+            Cs=self.Cs,
+            alpha=self.alpha,
+            B=self.B,
+        )
+
+
+class RadialCTFFilter(CTFFilter):
+    def __init__(
+        self, pixel_size=1, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
+    ):
+        super().__init__(
+            pixel_size=pixel_size,
+            voltage=voltage,
+            defocus_u=defocus,
+            defocus_v=defocus,
+            defocus_ang=0,
+            Cs=Cs,
+            alpha=alpha,
+            B=B,
+        )
 
 
 class BlueFilter(Filter):

@@ -17,7 +17,6 @@ from .filters import (
     ScaledFilter,
     ZeroFilter,
     evaluate_src_filters_on_grid,
-    m_CTFFilter,
 )
 from .polar_ft import PolarFT
 from .wemd import wemd_embed, wemd_norm
