@@ -7,6 +7,8 @@ from aspire.abinitio import (
     CLSymmetryC2,
     CLSymmetryC3C4,
     CLSymmetryCn,
+    cl_angles_to_ind,
+    complete_third_row_to_rot,
     estimate_third_rows,
 )
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
@@ -509,7 +511,7 @@ def test_complete_third_row(dtype):
     r3[0] = np.array([0, 0, 1], dtype=dtype)
 
     # Generate rotations.
-    R = CLSymmetryC3C4._complete_third_row_to_rot(r3)
+    R = complete_third_row_to_rot(r3)
 
     # Assert that first rotation is the identity matrix.
     assert np.allclose(R[0], np.eye(3, dtype=dtype))
@@ -640,10 +642,6 @@ def _gt_cl_c2(n_theta, rots_gt):
                 U = Ri.T @ g @ Rj
                 c1 = np.array([-U[1, 2], U[0, 2]])
                 c2 = np.array([U[2, 1], -U[2, 0]])
-                clmatrix_gt[idx, i, j] = CLSymmetryC3C4.cl_angles_to_ind(
-                    c1[np.newaxis, :], n_theta
-                )
-                clmatrix_gt[idx, j, i] = CLSymmetryC3C4.cl_angles_to_ind(
-                    c2[np.newaxis, :], n_theta
-                )
+                clmatrix_gt[idx, i, j] = cl_angles_to_ind(c1[np.newaxis, :], n_theta)
+                clmatrix_gt[idx, j, i] = cl_angles_to_ind(c2[np.newaxis, :], n_theta)
     return clmatrix_gt
