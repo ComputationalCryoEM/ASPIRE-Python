@@ -410,7 +410,7 @@ def test_pad(L, dtype):
         np.testing.assert_allclose(pad_odd_to_even_many.images[:], ref)
 
         # Padding odd to odd by many should pad the first and last cols equally.
-        # This test will also excecise `fill_value`
+        # This test will also excercise `fill_value`
         many_even = 32
         fill = -1
         pad_odd_to_odd_many = sim1.crop_pad(L + many_even, fill_value=fill)
@@ -440,7 +440,7 @@ def test_pad(L, dtype):
         np.testing.assert_allclose(pad_even_to_even_many.images[:], ref)
 
         # Padding even to odd by many should pad the first and last+1 cols equally.
-        # This test will also excecise `fill_value`
+        # This test will also excercise `fill_value`
         many_odd = 33
         fill = -1
         pad_even_to_odd_many = sim1.crop_pad(L + many_odd, fill_value=fill)
