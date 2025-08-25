@@ -487,6 +487,9 @@ class CTFFilter(Filter):
 
         h = np.sqrt(1 - self.alpha**2) * np.sin(chi) - self.alpha * np.cos(chi)
 
+        if self.B:
+            h *= np.exp(-self.B * s**2)
+
         return h
 
     def scale(self, c=1):
