@@ -6,7 +6,7 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
 from aspire import config
-from aspire.utils import grid_2d, voltage_to_wavelength
+from aspire.utils import cart2pol, grid_2d, voltage_to_wavelength
 
 logger = logging.getLogger(__name__)
 
@@ -454,7 +454,18 @@ class CTFFilter(Filter):
         self._defocus_mean_nm = 0.05 * (self.defocus_u + self.defocus_v)
         self._defocus_diff_nm = 0.05 * (self.defocus_u - self.defocus_v)
 
-    def _evaluate(self, L):
+    def _evaluate(self, omega):
+        # s, theta should match MATLAB's RadiusNorm up to a transpose
+        # To accomplish this given ASPIRE-Python's defaul `omega`,
+        # we unpack and remove the pi scaling here,
+        # and further rescale the radii `s` by half below.
+        # Additionally we upcast so downstream computations remain in doubles.
+        x, y = omega.astype(np.float64, copy=False) / np.pi
+        # Returns radii such that when multiplied by the
+        # bandwidth of the signal, we get the correct radial frequencies
+        # corresponding to each pixel in our nxn grid.
+        theta, s = cart2pol(x, y)
+        s = s / 2
 
         # Wavelength in nm.
         lamb = 1.22639 / np.sqrt(self.voltage * 1000 + 0.97845 * self.voltage**2)
@@ -462,14 +473,6 @@ class CTFFilter(Filter):
         # Divide by 10 to make pixel size in nm. BW is the
         # bandwidth of the signal corresponding to the given pixel size.
         BW = 1 / (self.pixel_size / 10)
-
-        # Returns radii such that when multiplied by the
-        # bandwidth of the signal, we get the correct radial frequencies
-        # corresponding to each pixel in our nxn grid.
-        #
-        # s, theta should match MATLAB's RadiusNorm up to a transpose
-        g = grid_2d(L, normalized=True, indexing="yx", dtype=np.float64)
-        s, theta = g["r"] / 2, g["phi"]
 
         s = s * BW
         DFavg = self._defocus_mean_nm  # (DefocusU+DefocusV)/2
@@ -497,16 +500,6 @@ class CTFFilter(Filter):
             alpha=self.alpha,
             B=self.B,
         )
-
-    def evaluate(self, omega):
-        # disregard omega, CTF will be making its own grids for now
-        L = int(np.sqrt(omega.shape[-1]))
-        h = self._evaluate(L)
-        return h.flatten()
-
-    @lru_cache(maxsize=config["cache"]["filter_cache_size"].get())  # noqa: B019
-    def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
-        return self._evaluate(L)
 
 
 class RadialCTFFilter(CTFFilter):

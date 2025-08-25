@@ -292,7 +292,8 @@ def test_get_covar_ctf(cov2d_fixture, ctf_enabled):
 
     covar_coef_ctf = cov2d.get_covar(coef, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
     for im, mat in enumerate(results.tolist()):
-        np.testing.assert_allclose(mat, covar_coef_ctf[im], rtol=1e-05, atol=1e-08)
+        # These tolerances were adjusted slightly (1e-8 to 3e-8) to accomodate MATLAB CTF repro changes
+        np.testing.assert_allclose(mat, covar_coef_ctf[im], rtol=3e-05, atol=3e-08)
 
 
 def test_get_covar_ctf_shrink(cov2d_fixture, ctf_enabled):
