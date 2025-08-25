@@ -240,8 +240,7 @@ class CropPad(Xform):
         """
         Initialize Xform to crop Image to a specific size.
 
-        :param L: int - new size, should be <= the current size
-            of this Image.
+        :param L: int - new size
         :param fill_value: Optional value for padding, default 0.
         """
         self.L = L
