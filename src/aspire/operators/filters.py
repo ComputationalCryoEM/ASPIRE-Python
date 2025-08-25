@@ -36,7 +36,6 @@ def evaluate_src_filters_on_grid(src, indices=None):
         idx_k = np.where(src.filter_indices[indices] == i)[0]
         if len(idx_k) > 0:
             filter_values = filt.evaluate(omega)
-            breakpoint()
             h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
     h = np.reshape(h, grid2d["x"].shape + (len(indices),))
@@ -440,7 +439,7 @@ class CTFFilter(Filter):
         :param alpha:       Amplitude contrast phase in radians
         :param B:           Envelope decay in inverse square angstrom (default 0)
         """
-        #super().__init__(dim=2, radial=defocus_u == defocus_v)
+        # super().__init__(dim=2, radial=defocus_u == defocus_v)
         super().__init__(dim=2)
         self.pixel_size = float(pixel_size)
         self.voltage = voltage
