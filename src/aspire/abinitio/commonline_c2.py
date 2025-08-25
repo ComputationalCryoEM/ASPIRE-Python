@@ -3,7 +3,11 @@ import logging
 import numpy as np
 from scipy.linalg import eigh
 
-from aspire.abinitio import CLSymmetryC3C4, estimate_third_rows
+from aspire.abinitio import (
+    CLSymmetryC3C4,
+    complete_third_row_to_rot,
+    estimate_third_rows,
+)
 from aspire.utils import J_conjugate, Rotation, all_pairs
 
 logger = logging.getLogger(__name__)
@@ -301,7 +305,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         H = np.zeros((self.n_img, self.n_img), dtype=complex)
         # Step 1: Construct all rotation matrices Ris_tilde whose third rows are equal to
         # the corresponding third rows vis.
-        Ris_tilde = self._complete_third_row_to_rot(vis)
+        Ris_tilde = complete_third_row_to_rot(vis)
 
         pairs = all_pairs(self.n_img)
         for idx, (i, j) in enumerate(pairs):
