@@ -300,7 +300,7 @@ class FilterXform(SymmetricXform):
         self.filter = filter
 
     def _forward(self, im, indices):
-        return im.filter64(self.filter)
+        return im.filter(self.filter)
 
     def __str__(self):
         return f"FilterXform ({self.filter})"
