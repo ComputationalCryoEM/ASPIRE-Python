@@ -1,7 +1,12 @@
 from .commonline_base import CLOrient3D
 
 # isort: off
-from .commonline_utils import estimate_third_rows
+from .commonline_utils import (
+    cl_angles_to_ind,
+    estimate_third_rows,
+    complete_third_row_to_rot,
+    estimate_inplane_rotations,
+)
 from .commonline_sdp import CommonlineSDP
 from .commonline_lud import CommonlineLUD
 from .commonline_irls import CommonlineIRLS

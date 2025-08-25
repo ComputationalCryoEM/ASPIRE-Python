@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from numpy.linalg import norm
 
-from aspire.abinitio import CLSymmetryC3C4
+from aspire.abinitio import CLSymmetryC3C4, cl_angles_to_ind, complete_third_row_to_rot
 from aspire.operators import PolarFT
 from aspire.utils import (
     J_conjugate,
@@ -298,8 +298,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
         c1s = np.array((-relative_rots[:, 1, 2], relative_rots[:, 0, 2])).T
         c2s = np.array((relative_rots[:, 2, 1], -relative_rots[:, 2, 0])).T
 
-        c1s = CLSymmetryC3C4.cl_angles_to_ind(c1s, n_theta)
-        c2s = CLSymmetryC3C4.cl_angles_to_ind(c2s, n_theta)
+        c1s = cl_angles_to_ind(c1s, n_theta)
+        c2s = cl_angles_to_ind(c2s, n_theta)
 
         inds = np.where(c1s >= n_theta // 2)
         c1s[inds] -= n_theta // 2
@@ -331,7 +331,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
             while counter < n:
                 third_row = randn(3)
                 third_row /= anorm(third_row, axes=(-1,))
-                Ri_tilde = CLSymmetryC3C4._complete_third_row_to_rot(third_row)
+                Ri_tilde = complete_third_row_to_rot(third_row)
 
                 # Exclude candidates that represent equator images. Equator candidates
                 # induce collinear self-common-lines, which always have perfect correlation.
