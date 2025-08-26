@@ -455,12 +455,18 @@ class CTFFilter(Filter):
         self._defocus_diff_nm = 0.05 * (self.defocus_u - self.defocus_v)
 
     def _evaluate(self, omega):
+        # Reference MATLAB code, includes reference to paper
+        #    Mindell, J. A.; Grigorieff, N. (2003).
+        # https://github.com/PrincetonUniversity/aspire/blob/760a43b35453e55ff2d9354339e9ffa109a25371/projections/cryo_CTF_Relion.m#L34
+        #
         # s, theta should match MATLAB's RadiusNorm up to a transpose
-        # To accomplish this given ASPIRE-Python's defaul `omega`,
-        # we unpack and remove the pi scaling here,
+        # To accomplish this given ASPIRE-Python's default `omega` grid,
+        # we unpack and remove the pi scaling,
         # and further rescale the radii `s` by half below.
+        #
         # Additionally we upcast so downstream computations remain in doubles.
         x, y = omega.astype(np.float64, copy=False) / np.pi
+
         # Returns radii such that when multiplied by the
         # bandwidth of the signal, we get the correct radial frequencies
         # corresponding to each pixel in our nxn grid.
@@ -477,7 +483,7 @@ class CTFFilter(Filter):
         s = s * BW
         DFavg = self._defocus_mean_nm  # (DefocusU+DefocusV)/2
         DFdiff = self._defocus_diff_nm  # (DefocusU-DefocusV)
-        # Note the missing / 2 is already in _defocus_diff_nm
+        # Note division by 2 is pre-computed in _defocus_diff_nm
         df = DFavg + DFdiff * np.cos(2 * (theta - self.defocus_ang))
 
         k2 = np.pi * lamb * df

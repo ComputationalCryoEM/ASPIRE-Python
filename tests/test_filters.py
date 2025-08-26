@@ -204,8 +204,10 @@ def test_ctf_reference():
     # >> ref_h=cryo_CTF_Relion(n,V,DF1,DF2,theta,Cs,pxA,A)
     #
     # Note we transpose the reference array.
-    # Python keeps the filter C order because the images we will convove with are C order.
+    # Python keeps the filter C order because the images we will convolve with are C order.
     # MATLAB is F and F respectively.
+    #
+    # The floating point values were truncated to four decimal digits.
     ref_h = np.array(
         [
             [-0.6152, 0.0299, -0.5638, 0.9327, 0.9736],
@@ -216,6 +218,5 @@ def test_ctf_reference():
         ]
     ).T
 
-    # Test we're within 1%.
-    #   There are minor differences in the formulas for wavelength and grids.
-    np.testing.assert_allclose(h, ref_h, rtol=0.01)
+    # Test match all significant digits above
+    np.testing.assert_allclose(h, ref_h, atol=5e-5)
