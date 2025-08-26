@@ -7,15 +7,7 @@ from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
 from aspire.abinitio import CLOrient3D, SyncVotingMixin
-from aspire.utils import (
-    J_conjugate,
-    Rotation,
-    all_pairs,
-    nearest_rotations,
-    random,
-    tqdm,
-    trange,
-)
+from aspire.utils import J_conjugate, all_pairs, nearest_rotations, random, tqdm, trange
 from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
@@ -968,7 +960,6 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             )
 
         return Rijs
-
 
     #######################################
     # Secondary Methods for Global J Sync #
