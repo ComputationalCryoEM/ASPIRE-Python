@@ -1,5 +1,7 @@
 import logging
 import os.path
+from itertools import groupby, islice
+from operator import itemgetter
 
 import mrcfile
 import numpy as np
@@ -10,6 +12,26 @@ from aspire.source import ImageSource
 from aspire.utils import RelionStarFile
 
 logger = logging.getLogger(__name__)
+
+
+def _optimize_contiguous_slice(inds):
+    """
+    Given an iterable of indices `inds`,
+    determine if `inds` is a contiguous slice,
+    and in that case return an equivalent `slice` object,
+    otherwise return inds and an array.
+
+    :param inds: iterable of indices
+    :return: slice or array
+    """
+    inds = np.array(inds, dtype=int)
+
+    head, tail = inds[0], inds[-1]
+    # if we're a contiguous range, short circuit if not correct size
+    if (len(inds) == (tail + 1) - head) and (inds == np.arange(head, tail + 1)).all():
+        # use a slice instead
+        inds = slice(head, tail + 1)
+    return inds
 
 
 class RelionSource(ImageSource):
@@ -244,16 +266,14 @@ class RelionSource(ImageSource):
         # Log the indices in case needed to debug a crash
         logger.debug(f"Indices: {indices}")
 
-        def _load_single_mrcs(filepath, indices):
+        def _load_single_mrcs(filepath, mrc_indices):
             """
             Local utility to wrap up loading a slice of MRC data.
 
             :param filepath: String filepath to MRC file.
-            :param indices: Requested indices from STAR file.
+            :param indices: Requested indices from MRC file.
             :return: Slice of array data (as mmap).
             """
-            # __mrc_index is the 1-based index of the particle in the stack
-            mrc_indices = self._metadata["__mrc_index"][indices] - 1
 
             with mrcfile.mmap(filepath, mode="r", permissive=True) as fh:
                 arr = fh.data
@@ -271,23 +291,42 @@ class RelionSource(ImageSource):
             dtype=self.dtype,
         )
 
-        # Map all requested indices to a set of files and images per file.
-        requested_filepaths, requested_filepath_indices = np.unique(
-            self._metadata["__mrc_filepath"], return_inverse=True
-        )
+        # Map the requested source indices to individual filenames and file indices
+        # file_requests = [(f_name, f_idx, req_idx), ...]
+        file_requests = self._decompose_source_request(indices)
 
-        # Loop over the requested files and load (slice) the requested images per file.
-        for _i, _filepath in enumerate(requested_filepaths):
-            _filepath_indices = np.where(requested_filepath_indices == _i)[0]
-            _data = _load_single_mrcs(_filepath, _filepath_indices)
+        # sort `file_requests` by (fname, f_idx) for the upcoming groupby
+        file_requests = sorted(file_requests, key=itemgetter(0, 1))
 
-            # Pack this files data contribution into `im` array.
-            for idx, d in enumerate(_filepath_indices):
-                im[np.where(indices == d)] = _data[idx, :, :]
+        for fpath, grp in groupby(file_requests, key=itemgetter(0)):
+            # unpack from iter of rows to columns,
+            #   also dropping fname column via slice.
+            f_indices, req_indices = islice(zip(*grp), 1, None)
+
+            im[list(req_indices)] = _load_single_mrcs(
+                fpath, _optimize_contiguous_slice(f_indices)
+            )
 
         logger.debug(f"Loading {len(indices)} images complete")
 
         # Finally, apply transforms to resulting Image
         return self.generation_pipeline.forward(
             Image(im, pixel_size=self.pixel_size), indices
+        )
+
+    def _decompose_source_request(self, indices):
+        """
+        Given requested `indices`, lookup the corresponding image
+        files and indexing within that file from metadata.
+        Return as an iterable of tuples.
+
+        :param indices: Iterable containing source indices.
+        :return: [(filepath, file_index, req_index),...]
+        """
+
+        return zip(
+            self._metadata["__mrc_filepath"][indices],
+            self._metadata["__mrc_index"][indices]
+            - 1,  # convert from STAR one based to zero based
+            range(len(indices)),
         )
