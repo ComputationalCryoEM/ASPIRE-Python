@@ -14,26 +14,6 @@ from aspire.utils import RelionStarFile
 logger = logging.getLogger(__name__)
 
 
-def _optimize_contiguous_slice(inds):
-    """
-    Given an iterable of indices `inds`,
-    determine if `inds` is a contiguous slice,
-    and in that case return an equivalent `slice` object,
-    otherwise return inds and an array.
-
-    :param inds: iterable of indices
-    :return: slice or array
-    """
-    inds = np.array(inds, dtype=int)
-
-    head, tail = inds[0], inds[-1]
-    # if we're a contiguous range, short circuit if not correct size
-    if (len(inds) == (tail + 1) - head) and (inds == np.arange(head, tail + 1)).all():
-        # use a slice instead
-        inds = slice(head, tail + 1)
-    return inds
-
-
 class RelionSource(ImageSource):
     """
     A RelionSource represents a source of picked and cropped particles stored as slices in a `.mrcs` stack.
@@ -266,46 +246,31 @@ class RelionSource(ImageSource):
         # Log the indices in case needed to debug a crash
         logger.debug(f"Indices: {indices}")
 
-        def _load_single_mrcs(filepath, mrc_indices):
-            """
-            Local utility to wrap up loading a slice of MRC data.
-
-            :param filepath: String filepath to MRC file.
-            :param indices: Requested indices from MRC file.
-            :return: Slice of array data (as mmap).
-            """
-
-            with mrcfile.mmap(filepath, mode="r", permissive=True) as fh:
-                arr = fh.data
-                # if the stack only contains one image, arr will have shape (resolution, resolution)
-                # the code below reshapes it to (1, resolution, resolution)
-                if len(arr.shape) == 2:
-                    arr = arr.reshape((1,) + arr.shape)
-                data = arr[mrc_indices, :, :]
-
-            return data
-
         # Array to hold requested data
         im = np.empty(
             (len(indices), self._original_resolution, self._original_resolution),
             dtype=self.dtype,
         )
 
-        # Map the requested source indices to individual filenames and file indices
-        # file_requests = [(f_name, f_idx, req_idx), ...]
+        # Map the requested source indices to individual filename and
+        # the indices inside that file.  Returns an iterable of tuples
+        # (f_name, f_idx, req_idx), ...
         file_requests = self._decompose_source_request(indices)
 
         # sort `file_requests` by (fname, f_idx) for the upcoming groupby
         file_requests = sorted(file_requests, key=itemgetter(0, 1))
 
+        # Group requested images by filename,
+        # and for each file, load the requested `images`.
         for fpath, grp in groupby(file_requests, key=itemgetter(0)):
             # unpack from iter of rows to columns,
             #   also dropping fname column via slice.
             f_indices, req_indices = islice(zip(*grp), 1, None)
 
-            im[list(req_indices)] = _load_single_mrcs(
-                fpath, _optimize_contiguous_slice(f_indices)
-            )
+            # Load the relevant `f_indices` images from `fpath`
+            # and assign to batch array `im`.
+            #   Converts tuple of tuples `req_indices` to list.
+            im[list(req_indices)] = _load_single_mrcs(fpath, f_indices)
 
         logger.debug(f"Loading {len(indices)} images complete")
 
@@ -330,3 +295,46 @@ class RelionSource(ImageSource):
             - 1,  # convert from STAR one based to zero based
             range(len(indices)),
         )
+
+
+def _optimize_contiguous_slice(inds):
+    """
+    Given an iterable of indices `inds`,
+    determine if `inds` is a contiguous slice,
+    and in that case return an equivalent `slice` object,
+    otherwise return inds and an array.
+
+    :param inds: iterable of indices
+    :return: slice or array
+    """
+    inds = np.array(inds, dtype=int)
+
+    head, tail = inds[0], inds[-1]
+    # Short circuit incorrect size, then test if a contiguous range
+    if (len(inds) == (tail + 1) - head) and (inds == np.arange(head, tail + 1)).all():
+        # coniguous range, replace with a slice
+        inds = slice(head, tail + 1)
+    return inds
+
+
+def _load_single_mrcs(filepath, mrc_indices):
+    """
+    Local utility to wrap up loading a slice of MRC data.
+
+    :param filepath: String filepath to MRC file.
+    :param indices: Requested indices from MRC file.
+    :return: Slice of array data (as mmap).
+    """
+
+    # Attempt to optimize `f_indices` as a slice.
+    mrc_indices = _optimize_contiguous_slice(mrc_indices)
+
+    with mrcfile.mmap(filepath, mode="r", permissive=True) as fh:
+        arr = fh.data
+        # if the stack only contains one image, arr will have shape (resolution, resolution)
+        # the code below reshapes it to (1, resolution, resolution)
+        if len(arr.shape) == 2:
+            arr = arr.reshape((1,) + arr.shape)
+        data = arr[mrc_indices, :, :]
+
+    return data
