@@ -153,7 +153,6 @@ class RelionSource(ImageSource):
             for row in filter_params:
                 filters.append(
                     CTFFilter(
-                        pixel_size=self.pixel_size,
                         voltage=row[0],
                         defocus_u=row[1],
                         defocus_v=row[2],

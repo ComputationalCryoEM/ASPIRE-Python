@@ -11,7 +11,7 @@ from aspire.utils import cart2pol, grid_2d, voltage_to_wavelength
 logger = logging.getLogger(__name__)
 
 
-def evaluate_src_filters_on_grid(src, indices=None):
+def evaluate_src_filters_on_grid(src, indices=None, **kwargs):
     """
     Given an ImageSource object, compute the source's unique filters
     at the filter_indices specified in its metadata.
@@ -35,7 +35,7 @@ def evaluate_src_filters_on_grid(src, indices=None):
     for i, filt in enumerate(src.unique_filters):
         idx_k = np.where(src.filter_indices[indices] == i)[0]
         if len(idx_k) > 0:
-            filter_values = filt.evaluate(omega)
+            filter_values = filt.evaluate(omega, **kwargs)
             h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
     h = np.reshape(h, grid2d["x"].shape + (len(indices),))
@@ -60,7 +60,7 @@ class Filter:
         """
         return self.__class__.__name__
 
-    def evaluate(self, omega):
+    def evaluate(self, omega, **kwargs):
         """
         Evaluate the filter at specified frequencies.
 
@@ -82,14 +82,14 @@ class Filter:
             omega, idx = np.unique(omega, return_inverse=True)
             omega = np.vstack((omega, np.zeros_like(omega)))
 
-        h = self._evaluate(omega)
+        h = self._evaluate(omega, **kwargs)
 
         if self.radial:
             h = np.take(h, idx)
 
         return h
 
-    def _evaluate(self, omega):
+    def _evaluate(self, omega, **kwargs):
         raise NotImplementedError("Subclasses should implement this method")
 
     def basis_mat(self, basis):
@@ -177,7 +177,7 @@ class FunctionFilter(Filter):
         # (i.e. at runtime, we will still expect the incoming omega values to have x and y components).
         super().__init__(dim=dim, radial=dim > n_args)
 
-    def _evaluate(self, omega):
+    def _evaluate(self, omega, **kwargs):
         return self.f(*omega)
 
 
@@ -201,8 +201,8 @@ class PowerFilter(Filter):
         self._epsilon = epsilon
         super().__init__(dim=filter.dim, radial=filter.radial)
 
-    def _evaluate(self, omega):
-        return self._filter.evaluate(omega) ** self._power
+    def _evaluate(self, omega, **kwargs):
+        return self._filter.evaluate(omega, **kwargs) ** self._power
 
     @lru_cache(maxsize=config["cache"]["filter_cache_size"].get())  # noqa: B019
     def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
@@ -245,7 +245,7 @@ class LambdaFilter(Filter):
         self._f = f
         super().__init__(dim=filter.dim, radial=filter.radial)
 
-    def _evaluate(self, omega):
+    def _evaluate(self, omega, **kwargs):
         return self._f(self._filter.evaluate(omega))
 
 
@@ -258,7 +258,7 @@ class MultiplicativeFilter(Filter):
         super().__init__(dim=args[0].dim, radial=all(c.radial for c in args))
         self._components = args
 
-    def _evaluate(self, omega):
+    def _evaluate(self, omega, **kwargs):
         res = 1
         for c in self._components:
             res *= c.evaluate(omega)
@@ -275,7 +275,7 @@ class ScaledFilter(Filter):
         self._scale = scale
         super().__init__(dim=filt.dim, radial=filt.radial)
 
-    def _evaluate(self, omega):
+    def _evaluate(self, omega, **kwargs):
         return self._filter.evaluate(omega / self._scale)
 
     def __str__(self):
@@ -323,7 +323,7 @@ class ArrayFilter(Filter):
 
         self.xfer_fn_array = xfer_fn_array
 
-    def _evaluate(self, omega):
+    def _evaluate(self, omega, **kwargs):
         _input_pts = tuple(np.linspace(1, x, x) for x in self.xfer_fn_array.shape)
 
         # TODO: This part could do with some documentation - not intuitive!
@@ -391,7 +391,7 @@ class ScalarFilter(Filter):
     def __repr__(self):
         return f"Scalar Filter (dim={self.dim}, value={self.value})"
 
-    def _evaluate(self, omega):
+    def _evaluate(self, omega, **kwargs):
         return self.value * np.ones_like(omega)
 
 
@@ -415,7 +415,6 @@ class CTFFilter(Filter):
 
     def __init__(
         self,
-        pixel_size=1,
         voltage=200,
         defocus_u=15000,
         defocus_v=15000,
@@ -430,7 +429,6 @@ class CTFFilter(Filter):
         Note if comparing to legacy MATLAB cryo_CTF_Relion,
         take care regarding defocus unit conversion to nm.
 
-        :param pixel_size:  Pixel size in angstrom, default 1.
         :param voltage:     Electron voltage in kV
         :param defocus_u:   Defocus depth along the u-axis in angstrom
         :param defocus_v:   Defocus depth along the v-axis in angstrom
@@ -440,7 +438,6 @@ class CTFFilter(Filter):
         :param B:           Envelope decay in inverse square angstrom (default 0)
         """
         super().__init__(dim=2, radial=defocus_u == defocus_v)
-        self.pixel_size = float(pixel_size)
         self.voltage = voltage
         self.wavelength = voltage_to_wavelength(self.voltage)
         self.defocus_u = defocus_u
@@ -454,7 +451,16 @@ class CTFFilter(Filter):
         self._defocus_mean_nm = 0.05 * (self.defocus_u + self.defocus_v)
         self._defocus_diff_nm = 0.05 * (self.defocus_u - self.defocus_v)
 
-    def _evaluate(self, omega):
+    def _evaluate(self, omega, **kwargs):
+        # Ensure we have a pixel size,
+        pixel_size = kwargs.get("pixel_size", None)
+        if pixel_size is None:
+            raise RuntimeError(
+                f"{self.__class__.__name__}.evaluate must be passed kwarg `pixel_size`."
+            )
+        # and that it is a floating point value.
+        pixel_size = float(pixel_size)
+        
         # Reference MATLAB code, includes reference to paper
         #    Mindell, J. A.; Grigorieff, N. (2003).
         # https://github.com/PrincetonUniversity/aspire/blob/760a43b35453e55ff2d9354339e9ffa109a25371/projections/cryo_CTF_Relion.m#L34
@@ -478,7 +484,7 @@ class CTFFilter(Filter):
 
         # Divide by 10 to make pixel size in nm. BW is the
         # bandwidth of the signal corresponding to the given pixel size.
-        BW = 1 / (self.pixel_size / 10)
+        BW = 1 / (pixel_size / 10)
 
         s = s * BW
         DFavg = self._defocus_mean_nm  # (DefocusU+DefocusV)/2
@@ -498,25 +504,9 @@ class CTFFilter(Filter):
 
         return h
 
-    def scale(self, c=1):
-        return CTFFilter(
-            pixel_size=self.pixel_size * c,
-            voltage=self.voltage,
-            defocus_u=self.defocus_u,
-            defocus_v=self.defocus_v,
-            defocus_ang=self.defocus_ang,
-            Cs=self.Cs,
-            alpha=self.alpha,
-            B=self.B,
-        )
-
-
 class RadialCTFFilter(CTFFilter):
-    def __init__(
-        self, pixel_size=1, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
-    ):
+    def __init__(self, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0):
         super().__init__(
-            pixel_size=pixel_size,
             voltage=voltage,
             defocus_u=defocus,
             defocus_v=defocus,
@@ -539,7 +529,7 @@ class BlueFilter(Filter):
     def __repr__(self):
         return f"BlueFilter(dim={self.dim}, var={self.var})"
 
-    def _evaluate(self, omega):
+    def _evaluate(self, omega, **kwargs):
         f = np.sqrt(omega[0])
         m = np.mean(f)
         f = f / m
@@ -559,7 +549,7 @@ class PinkFilter(Filter):
     def __repr__(self):
         return f"PinkFilter(dim={self.dim}, var={self.var})"
 
-    def _evaluate(self, omega):
+    def _evaluate(self, omega, **kwargs):
         step = np.abs(np.subtract(*omega[0][:2]))
         # Avoid zero division
         f = np.sqrt(2 * step / (omega[0] + step))
