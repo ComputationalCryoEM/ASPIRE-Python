@@ -22,11 +22,12 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 
 class SimTestCase(TestCase):
+    test_filter = ArrayFilter(np.random.randn(8, 8))
+
     def setUp(self):
         self.dtype = np.float32
         # A 2 x 256 ndarray of spatial frequencies
         self.omega = np.load(os.path.join(DATA_DIR, "omega_2_256.npy"))
-        self.test_filter = ArrayFilter(np.random.randn(8, 8))
 
     def tearDown(self):
         pass
@@ -117,6 +118,14 @@ class SimTestCase(TestCase):
         signs = np.sign(self.test_filter.evaluate(self.omega))
         sign_filter = self.test_filter.sign
         self.assertTrue(np.allclose(sign_filter.evaluate(self.omega), signs))
+
+
+class SimTestCaseCTFFilter(SimTestCase):
+    """
+    Covers same tests as SimTestCase, but use CTFFilter in place of ArrayFilter.
+    """
+
+    test_filter = CTFFilter()
 
 
 DTYPES = [np.float32, np.float64]
