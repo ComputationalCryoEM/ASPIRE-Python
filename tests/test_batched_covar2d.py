@@ -35,6 +35,7 @@ class BatchedRotCov2DTestCase(TestCase):
             L,
             n,
             unique_filters=self.filters,
+            pixel_size=5,
             dtype=self.dtype,
             noise_adder=noise_adder,
         )
@@ -253,7 +254,7 @@ class BatchedRotCov2DTestCaseCTF(BatchedRotCov2DTestCase):
     @property
     def filters(self):
         return [
-            RadialCTFFilter(5, 200, defocus=d, Cs=2.0, alpha=0.1)
+            RadialCTFFilter(200, defocus=d, Cs=2.0, alpha=0.1)
             for d in np.linspace(1.5e4, 2.5e4, 7)
         ]
 
@@ -263,4 +264,7 @@ class BatchedRotCov2DTestCaseCTF(BatchedRotCov2DTestCase):
 
     @property
     def ctf_basis(self):
-        return [self.basis.filter_to_basis_mat(f) for f in self.src.unique_filters]
+        return [
+            self.basis.filter_to_basis_mat(f, pixel_size=self.src.pixel_size)
+            for f in self.src.unique_filters
+        ]

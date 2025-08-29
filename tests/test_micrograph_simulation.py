@@ -251,12 +251,8 @@ def test_sim_save():
     Specifically tests interoperability with CentersCoordinateSource
     """
 
-    v = AsymmetricVolume(L=16, C=1, dtype=np.float64).generate()
-    ctfs = [
-        RadialCTFFilter(
-            pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
-        )
-    ]
+    v = AsymmetricVolume(L=16, C=1, pixel_size=4, dtype=np.float64).generate()
+    ctfs = [RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0)]
 
     mg_sim = MicrographSimulation(
         volume=v,
@@ -312,12 +308,8 @@ def test_save_overwrite(caplog):
     Specifically tests interoperability with CentersCoordinateSource
     """
 
-    v = AsymmetricVolume(L=16, C=1, dtype=np.float64).generate()
-    ctfs = [
-        RadialCTFFilter(
-            pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
-        )
-    ]
+    v = AsymmetricVolume(L=16, C=1, pixel_size=4, dtype=np.float64).generate()
+    ctfs = [RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0)]
 
     mg_sim = MicrographSimulation(
         volume=v,

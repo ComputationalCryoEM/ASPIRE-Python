@@ -309,7 +309,7 @@ class MicrographSimulation(MicrographSource):
         """
         A cryo-EM MicrographSimulation object that supplies micrographs.
 
-        `dtype` and `particle_box_size` are inferred from `volume`, where `dtype` is the data type of the micrographs and `particle_box_size` is the size of the particle images.
+        `pixel_size`, `dtype` and `particle_box_size` are inferred from `volume`, where `dtype` is the data type of the micrographs and `particle_box_size` is the size of the particle images.
 
         :param volume: `Volume` instance to be used in `Simulation`.
              An `(L,L,L)` `Volume` will generate `(L,L)` particle images.
@@ -339,9 +339,11 @@ class MicrographSimulation(MicrographSource):
 
         self.seed = seed
 
+        # Note pixel_size is taken from `volume`.
         super().__init__(
             micrograph_count=micrograph_count,
             micrograph_size=micrograph_size,
+            pixel_size=self.volume.pixel_size,
             dtype=self.volume.dtype,
         )
 
@@ -397,6 +399,7 @@ class MicrographSimulation(MicrographSource):
 
         self.ctf_filters = ctf_filters
 
+        # Note pixel_size is taken from `volume`.
         self.simulation = Simulation(
             n=self.total_particle_count,
             vols=self.volume,

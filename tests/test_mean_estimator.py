@@ -56,6 +56,7 @@ def sim(L, dtype):
             RadialCTFFilter(defocus=d, pixel_size=px_sz)
             for d in np.linspace(1.5e4, 2.5e4, 7)
         ],
+        pixel_size=1,
         dtype=dtype,
         seed=SEED,
         pixel_size=px_sz,

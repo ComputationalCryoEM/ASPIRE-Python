@@ -24,7 +24,7 @@ class Covar3DTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dtype = np.float32
-        cls.vols = LegacyVolume(L=8, dtype=cls.dtype).generate()
+        cls.vols = LegacyVolume(L=8, dtype=cls.dtype, pixel_size=1).generate()
         cls.sim = _LegacySimulation(
             n=1024,
             vols=cls.vols,
@@ -38,7 +38,8 @@ class Covar3DTestCase(TestCase):
 
         cls.mean_estimator = MeanEstimator(cls.sim, basis=basis)
         cls.mean_est = Volume(
-            np.load(os.path.join(DATA_DIR, "mean_8_8_8.npy")).astype(cls.dtype)
+            np.load(os.path.join(DATA_DIR, "mean_8_8_8.npy")).astype(cls.dtype),
+            pixel_size=1,
         )
 
         # Passing in a mean_kernel argument to the following constructor speeds up some calculations
@@ -402,7 +403,7 @@ class Covar3DTestCase(TestCase):
 
         # TODO, alter refs after RCOPT complete
         eigs_est_trunc = np.moveaxis(eigs_est[:, :, :, : C - 1], -1, 0)
-        eigs_est_trunc = Volume(eigs_est_trunc)
+        eigs_est_trunc = Volume(eigs_est_trunc, pixel_size=1)
 
         lambdas_est_trunc = lambdas_est[: C - 1, : C - 1]
 

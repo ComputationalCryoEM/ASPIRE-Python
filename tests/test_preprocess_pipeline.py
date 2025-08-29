@@ -33,6 +33,7 @@ def get_sim_object(L, dtype):
             RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
         ],
         noise_adder=noise_adder,
+        pixel_size=1,
         dtype=dtype,
     )
     return sim
@@ -64,6 +65,7 @@ def testEmptyPhaseFlip(caplog):
     sim = Simulation(
         L=8,
         n=num_images,
+        pixel_size=1,
         dtype=np.float32,
     )
     # assert we log a warning to the user

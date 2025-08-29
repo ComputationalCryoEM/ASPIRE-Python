@@ -751,7 +751,7 @@ class ImageSource(ABC):
         for start in trange(0, len(self), batch_size):
             end = min(start + batch_size, len(self))
             im[start:end] = self.images[start:end]
-        self._cached_im = Image(im)
+        self._cached_im = Image(im, pixel_size=self.pixel_size)
         self.generation_pipeline.reset()
 
     @property

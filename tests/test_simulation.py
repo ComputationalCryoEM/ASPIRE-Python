@@ -124,8 +124,7 @@ class SimTestCase(TestCase):
             L=self.L,
             vols=self.vols,
             unique_filters=[
-                RadialCTFFilter(pixel_size=self._pixel_size, defocus=d)
-                for d in np.linspace(1.5e4, 2.5e4, 7)
+                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
@@ -173,9 +172,7 @@ class SimTestCase(TestCase):
             vols=self.vols,
             offsets=self.sim.offsets,
             unique_filters=[
-                # Set legacy pixel size
-                RadialCTFFilter(pixel_size=self._pixel_size, defocus=d)
-                for d in np.linspace(1.5e4, 2.5e4, 7)
+                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
@@ -657,10 +654,15 @@ def test_cached_image_accessors():
     Test the behavior of image caching.
     """
     # Create a CTF
-    ctf = [RadialCTFFilter(pixel_size=5)]
+    ctf = [RadialCTFFilter()]
     # Create a Simulation with noise and `ctf`
     src = Simulation(
-        L=32, n=3, C=1, noise_adder=WhiteNoiseAdder(var=0.123), unique_filters=ctf
+        L=32,
+        n=3,
+        C=1,
+        noise_adder=WhiteNoiseAdder(var=0.123),
+        unique_filters=ctf,
+        pixel_size=5,
     )
     # Cache the simulation
     cached_src = src.cache()
@@ -761,51 +763,3 @@ def check_metadata(sim_src, relion_src):
             np.testing.assert_allclose(
                 v, np.array(relion_src._metadata[k]).astype(type(v[0]))
             )
-
-
-def test_pixel_size(caplog):
-    """
-    Check pixel size is instantiated properly and warnings occur if pixel
-    size is overridden.
-    """
-    vol_px_sz = 10.0
-    L = 8
-    data = np.ones(L**3).reshape(L, L, L)
-    vol = Volume(data, pixel_size=vol_px_sz)
-
-    # Ensure vol pixel size
-    np.testing.assert_array_equal(vol.pixel_size, vol_px_sz)
-
-    # Generate Simulation and check pixel_size is inhereted from vol
-    sim = Simulation(vols=vol)
-    np.testing.assert_array_equal(sim.pixel_size, vol_px_sz)
-
-    # Generate Simulation with provided pixel_size and check
-    # that vol.pixel_size is overridden.
-    caplog.clear()
-    caplog.set_level(logging.WARN)
-
-    sim_px_sz = 5.0
-    msg = (
-        f"Overriding volume pixel size, {vol_px_sz}, with "
-        f"user provided pixel size of {sim_px_sz} angstrom."
-    )
-
-    assert msg not in caplog.text
-
-    sim = Simulation(vols=vol, pixel_size=sim_px_sz)
-
-    assert msg in caplog.text
-    np.testing.assert_array_equal(sim.pixel_size, sim_px_sz)
-
-
-def test_mismatched_pixel_size():
-    """
-    Confirm raises error when explicit Simulation and CTFFilter pixel sizes mismatch.
-    """
-    # Create a CTF with a pixel_size
-    filts = [RadialCTFFilter(pixel_size=5)]
-
-    # Try to create a Simulation with a different pixel_size
-    with raises(ValueError, match=r"pixel_size.*does not match filter.*"):
-        _ = Simulation(L=8, n=1, C=1, pixel_size=10, unique_filters=filts)

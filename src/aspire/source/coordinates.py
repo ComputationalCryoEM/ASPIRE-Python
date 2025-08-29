@@ -431,11 +431,9 @@ class CoordinateSource(ImageSource, ABC):
                 logger.warning(
                     "Unable to assign source pixel_size from CTFFilters, multiple pixel_sizes found."
                 )
-
         # construct filters
         self.unique_filters = [
             CTFFilter(
-                pixel_size=filter_params[i, 6],
                 voltage=filter_params[i, 0],
                 defocus_u=filter_params[i, 1],
                 defocus_v=filter_params[i, 2],
