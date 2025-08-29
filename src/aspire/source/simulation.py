@@ -156,7 +156,6 @@ class Simulation(ImageSource):
         if unique_filters is None:
             unique_filters = []
         self.unique_filters = unique_filters
-        self._check_filter_pixel_size(unique_filters)
         # sim_filters must be a deep copy so that it is not changed
         # when unique_filters is changed
         self.sim_filters = copy.deepcopy(unique_filters)
@@ -244,29 +243,6 @@ class Simulation(ImageSource):
             ],
             filter_values,
         )
-
-    def _check_filter_pixel_size(self, unique_filters):
-        """
-        Private method to ensure user provided filters match `Simulation` pixel size.
-
-        When `Simulation.pixel_size` is not `None`, any
-        `unique_filters` having a non-matching `pixel_size` attribute
-        will raise.
-        """
-
-        # Skip when Simulation pixel_size is not explicitly provided.
-        if self.pixel_size is None:
-            return
-
-        for f in unique_filters:
-            f_pixel_size = getattr(f, "pixel_size", None)
-            if f_pixel_size is not None and not np.isclose(
-                f_pixel_size, self.pixel_size
-            ):
-                raise ValueError(
-                    f"`Simulation.pixel_size` {self.pixel_size} does not match filter {f} pixel size {f_pixel_size}."
-                    "Ensure provided `pixel_size` attributes match."
-                )
 
     @property
     def projections(self):

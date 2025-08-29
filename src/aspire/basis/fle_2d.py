@@ -779,6 +779,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
                 "`FLEBasis2D.filter_to_basis_mat` method {method} not supported."
                 "  Use `method=None`."
             )
+        pixel_size = kwargs.get("pixel_size", None)
 
         # Get the filter's evaluate function.
         h_fun = f.evaluate
@@ -802,7 +803,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         omega = 2 * xp.pi * xp.vstack((omegax.flatten("C"), omegay.flatten("C")))
 
         h_vals2d = (
-            xp.asarray(h_fun(omega))
+            xp.asarray(h_fun(omega, pixel_size=pixel_size))
             .reshape(n_k, n_theta)
             .astype(self.dtype, copy=False)
         )

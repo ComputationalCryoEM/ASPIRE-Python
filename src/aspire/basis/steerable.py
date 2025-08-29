@@ -481,7 +481,7 @@ class SteerableBasis2D(Basis, abc.ABC):
     # implemented.  This is intended to encourage future basis authors
     # to consider this method for their application.
     @abc.abstractmethod
-    def filter_to_basis_mat(self, f, method="evaluate_t", truncate=True):
+    def filter_to_basis_mat(self, f, method="evaluate_t", truncate=True, **kwargs):
         """
         Convert a filter into a basis operator representation.
 
@@ -506,6 +506,7 @@ class SteerableBasis2D(Basis, abc.ABC):
 
         coef = Coef(self, np.eye(self.count, dtype=self.dtype))
         img = coef.evaluate()
+        img.pixel_size = 1  # In future maybe can get pixel_Size from `Coef`
 
         # Expansion can fail for some filters on specific basis vectors.
         # Loop over the expanding the filtered basis vectors one by one,

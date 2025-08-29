@@ -61,7 +61,7 @@ class NoiseAdder(Xform):
             im_s = Image(im_s).filter(self.noise_filter).asnumpy()[0]
             _im[i] += im_s[: im.resolution, : im.resolution]
 
-        return Image(_im)
+        return Image(_im, pixel_size=im.pixel_size)
 
     @abc.abstractproperty
     def noise_var(self):

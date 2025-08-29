@@ -258,6 +258,7 @@ def test_simulation_relion_downsample():
 
         # Downsample and test that images and attributes correspond to src_ds
         rln_src_ds = rln_src.downsample(src.L // 2)
+
         np.testing.assert_allclose(
             src_ds.images[:], rln_src_ds.images[:], atol=utest_tolerance(src.dtype)
         )

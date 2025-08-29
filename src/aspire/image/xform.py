@@ -423,7 +423,7 @@ class IndexedXform(Xform):
                 fn_handle = getattr(xform, which)
                 im_data[im_data_indices] = fn_handle(im[im_data_indices]).asnumpy()
 
-        return Image(im_data)
+        return Image(im_data, pixel_size=im.pixel_size)
 
     def _forward(self, im, indices):
         return self._indexed_operation(im, indices, "forward")

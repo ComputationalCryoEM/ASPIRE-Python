@@ -11,7 +11,7 @@ from aspire.utils import cart2pol, grid_2d, voltage_to_wavelength
 logger = logging.getLogger(__name__)
 
 
-def evaluate_src_filters_on_grid(src, indices=None, **kwargs):
+def evaluate_src_filters_on_grid(src, indices=None):
     """
     Given an ImageSource object, compute the source's unique filters
     at the filter_indices specified in its metadata.
@@ -35,7 +35,7 @@ def evaluate_src_filters_on_grid(src, indices=None, **kwargs):
     for i, filt in enumerate(src.unique_filters):
         idx_k = np.where(src.filter_indices[indices] == i)[0]
         if len(idx_k) > 0:
-            filter_values = filt.evaluate(omega, **kwargs)
+            filter_values = filt.evaluate(omega, pixel_size=src.pixel_size)
             h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
 
     h = np.reshape(h, grid2d["x"].shape + (len(indices),))
@@ -92,7 +92,7 @@ class Filter:
     def _evaluate(self, omega, **kwargs):
         raise NotImplementedError("Subclasses should implement this method")
 
-    def basis_mat(self, basis):
+    def basis_mat(self, basis, **kwargs):
         """
         Represent the filter in `basis`.
 
@@ -100,7 +100,7 @@ class Filter:
         :return: `basis` representation of this filter.
             Return type will depend on `basis`.
         """
-        return basis.filter_to_basis_mat(self)
+        return basis.filter_to_basis_mat(self, **kwargs)
 
     def scale(self, c=1):
         """
@@ -178,7 +178,8 @@ class FunctionFilter(Filter):
         super().__init__(dim=dim, radial=dim > n_args)
 
     def _evaluate(self, omega, **kwargs):
-        return self.f(*omega, **kwargs)
+        # Note kwargs are not used here, this might be trouble
+        return self.f(*omega)
 
 
 class PowerFilter(Filter):

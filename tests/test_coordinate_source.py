@@ -584,7 +584,6 @@ class CoordinateSourceTestCase(TestCase):
                         700.0,
                         600.0,
                         500.0,
-                        self.pixel_size,
                     ],
                     dtype=src.dtype,
                 ),
@@ -596,7 +595,6 @@ class CoordinateSourceTestCase(TestCase):
                         filter0.Cs,
                         filter0.alpha,
                         filter0.voltage,
-                        filter0.pixel_size,
                     ]
                 ),
             )
@@ -615,7 +613,6 @@ class CoordinateSourceTestCase(TestCase):
                         701.0,
                         601.0,
                         501.0,
-                        pixel_size1,
                     ],
                     dtype=src.dtype,
                 ),
@@ -627,7 +624,6 @@ class CoordinateSourceTestCase(TestCase):
                         filter1.Cs,
                         filter1.alpha,
                         filter1.voltage,
-                        filter1.pixel_size,
                     ]
                 ),
             )
@@ -734,41 +730,11 @@ class CoordinateSourceTestCase(TestCase):
         self.assertTrue(result_star.exit_code == 0)
         self.assertTrue(result_preprocess.exit_code == 0)
 
-    def testPixelSizeWarning(self):
-        """
-        Test source having a pixel size that conflicts with the CTFFilter instances.
-        """
-        manual_pixel_size = 0.789
-        src = BoxesCoordinateSource(self.files_box, pixel_size=manual_pixel_size)
-        # Capture and compare warning message
-        with pytest.warns(UserWarning, match=r".*Pixel size mismatch.*"):
-            src.import_relion_ctf(self.relion_ctf_file)
-            np.testing.assert_approx_equal(src.pixel_size, manual_pixel_size)
-
-    def testMultiplePixelSizeWarning(self):
-        """
-        Test source having multiple pixel sizes in CTFFilter instances.
-        """
-        src = BoxesCoordinateSource(self.files_box)  # pixel_size=None
-        # Capture and compare warning message
-        with self._caplog.at_level(logging.WARNING):
-            src.import_aspire_ctf(self.ctf_files)  # not uniform_pixel_sizes
-            assert src.pixel_size is None
-            assert "multiple pixel_sizes found" in self._caplog.text
-
     def testPixelSize(self):
         """
         Test explicitly providing correct pixel_size.
         """
         src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
-        src.import_relion_ctf(self.relion_ctf_file)
-        np.testing.assert_approx_equal(src.pixel_size, self.pixel_size)
-
-    def testPixelSizeNone(self):
-        """
-        Test not providing pixel_size.
-        """
-        src = BoxesCoordinateSource(self.files_box)
         src.import_relion_ctf(self.relion_ctf_file)
         np.testing.assert_approx_equal(src.pixel_size, self.pixel_size)
 
