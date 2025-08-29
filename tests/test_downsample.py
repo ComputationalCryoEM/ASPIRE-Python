@@ -233,7 +233,7 @@ def test_simulation_relion_downsample():
     defocus_ct = 7
 
     ctf_filters = [
-        RadialCTFFilter(pixel_size=1, defocus=d)
+        RadialCTFFilter(defocus=d)
         for d in np.linspace(defocus_min, defocus_max, defocus_ct)
     ]
 
@@ -244,6 +244,7 @@ def test_simulation_relion_downsample():
         C=1,
         unique_filters=ctf_filters,
         noise_adder=WhiteNoiseAdder.from_snr(snr=1),
+        pixel_size=1,
     )
     src_ds = src.downsample(src.L // 2)
 
@@ -253,7 +254,7 @@ def test_simulation_relion_downsample():
         src.save(starfile)
 
         # Load Simulation source as a RelionSource
-        rln_src = RelionSource(starfile)
+        rln_src = RelionSource(starfile, pixel_size=1)
 
         # Downsample and test that images and attributes correspond to src_ds
         rln_src_ds = rln_src.downsample(src.L // 2)
