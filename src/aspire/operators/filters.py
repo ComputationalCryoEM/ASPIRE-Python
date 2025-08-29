@@ -154,8 +154,8 @@ class DualFilter(Filter):
         self._filter = filter_in
         super().__init__()
 
-    def evaluate(self, omega):
-        return self._filter.evaluate(-omega)
+    def evaluate(self, omega, **kwargs):
+        return self._filter.evaluate(-omega, **kwargs)
 
 
 class FunctionFilter(Filter):
@@ -178,7 +178,7 @@ class FunctionFilter(Filter):
         super().__init__(dim=dim, radial=dim > n_args)
 
     def _evaluate(self, omega, **kwargs):
-        return self.f(*omega)
+        return self.f(*omega, **kwargs)
 
 
 class PowerFilter(Filter):
@@ -246,7 +246,7 @@ class LambdaFilter(Filter):
         super().__init__(dim=filter.dim, radial=filter.radial)
 
     def _evaluate(self, omega, **kwargs):
-        return self._f(self._filter.evaluate(omega))
+        return self._f(self._filter.evaluate(omega, **kwargs))
 
 
 class MultiplicativeFilter(Filter):
@@ -261,7 +261,7 @@ class MultiplicativeFilter(Filter):
     def _evaluate(self, omega, **kwargs):
         res = 1
         for c in self._components:
-            res *= c.evaluate(omega)
+            res *= c.evaluate(omega, **kwargs)
         return res
 
 
@@ -276,7 +276,7 @@ class ScaledFilter(Filter):
         super().__init__(dim=filt.dim, radial=filt.radial)
 
     def _evaluate(self, omega, **kwargs):
-        return self._filter.evaluate(omega / self._scale)
+        return self._filter.evaluate(omega / self._scale, **kwargs)
 
     def __str__(self):
         """

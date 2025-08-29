@@ -91,22 +91,26 @@ class SimTestCase(TestCase):
 
     def testCTFFilter(self):
         filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
-        result = filter.evaluate(self.omega)
+        result = filter.evaluate(self.omega, pixel_size=1)
         self.assertEqual(result.shape, (256,))
 
     def testScaledFilter(self):
         scale_value = 2.5
-        result1 = self.test_filter.evaluate(self.omega)
-        # ScaledFilter scales the pixel size which cancels out
-        # a corresponding scaling in omega
-        filt2 = ScaledFilter(self.test_filter, scale_value)
-        result2 = filt2.evaluate(self.omega * scale_value)
+        result1 = filt1.evaluate(self.omega, pixel_size=1)
+
+        filt2 = ScaledFilter(filt1, scale_value)
+        result2 = filt2.evaluate(self.omega * scale_value, pixel_size=1)
         self.assertTrue(np.allclose(result1, result2, atol=utest_tolerance(self.dtype)))
 
-    def testRadialCTFFilter(self):
-        filter = RadialCTFFilter(defocus=2.5e4)
-        result = filter.evaluate(self.omega)
-        self.assertEqual(result.shape, (256,))
+    def testCTFScale(self):
+        filt = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
+        result1 = filt.evaluate(self.omega, pixel_size=1)
+        scale_value = 2.5
+        filt = filt.scale(scale_value)
+        # scaling a CTFFilter scales the pixel size which cancels out
+        # a corresponding scaling in omega
+        result2 = filt.evaluate(self.omega * scale_value, pixel_size=1)
+        self.assertTrue(np.allclose(result1, result2, atol=utest_tolerance(self.dtype)))
 
     def testDualFilter(self):
         result = self.test_filter.evaluate(-self.omega)
@@ -198,7 +202,6 @@ def test_ctf_reference():
     Test CTFFilter against a MATLAB reference.
     """
     fltr = CTFFilter(
-        pixel_size=4.56,
         voltage=200,
         defocus_u=10000,
         defocus_v=15000,
@@ -206,7 +209,7 @@ def test_ctf_reference():
         Cs=2.0,
         alpha=0.1,
     )
-    h = fltr.evaluate_grid(5)
+    h = fltr.evaluate_grid(5, pixel_size=4.56)
 
     # Compare with MATLAB.  Note DF converted to nm
     # >> n=5; V=200; DF1=1000; DF2=1500; theta=1.23; Cs=2.0; A=0.1; pxA=4.56;
