@@ -45,7 +45,7 @@ class DiracBasis(Basis):
 
     def _build(self):
         """Private method building basis internals."""
-        self.count = xp.count_nonzero(self.mask)
+        self.count = int(xp.count_nonzero(self.mask))
 
     def _evaluate(self, v):
         """
@@ -78,6 +78,7 @@ class DiracBasis(Basis):
         """
 
         # Initialize zeros array of dirac basis (mask) count.
+        breakpoint()
         v = xp.zeros((x.shape[0], self.count), dtype=self.dtype)
 
         # Assign basis coefficient values
