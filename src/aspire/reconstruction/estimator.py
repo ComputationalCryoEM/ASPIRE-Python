@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 
-from aspire.basis import Coef, FFBBasis3D
+from aspire.basis import Coef, DiracBasis3D
 from aspire.reconstruction.kernel import FourierKernel
 
 logger = logging.getLogger(__name__)
@@ -54,8 +54,10 @@ class Estimator:
 
         self.src = src
         if basis is None:
-            logger.info(f"{self.__class__.__name__} instantiating default basis.")
-            basis = FFBBasis3D(src.L, dtype=src.dtype)
+            basis = DiracBasis3D(src.L, dtype=src.dtype)
+            logger.info(
+                f"{self.__class__.__name__} instantiating default {basis.__class__.__name__}."
+            )
         self.basis = basis
         self.dtype = self.src.dtype
         self.batch_size = batch_size
