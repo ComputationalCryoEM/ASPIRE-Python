@@ -14,7 +14,7 @@ from aspire.volume import (
 )
 
 SEED = 23
-MAXITER = 300
+MAXITER = 350
 
 RESOLUTION = [
     32,
