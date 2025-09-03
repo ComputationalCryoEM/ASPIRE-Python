@@ -302,7 +302,7 @@ def _optimize_contiguous_slice(inds):
     Given an iterable of indices `inds`,
     determine if `inds` is a contiguous slice,
     and in that case return an equivalent `slice` object,
-    otherwise return inds and an array.
+    otherwise return `inds` as an array.
 
     :param inds: iterable of indices
     :return: slice or array
