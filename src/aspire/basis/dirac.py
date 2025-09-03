@@ -3,6 +3,7 @@ import logging
 import numpy as np
 
 from aspire.basis import Basis
+from aspire.numeric import xp
 
 logger = logging.getLogger(__name__)
 
@@ -34,17 +35,17 @@ class DiracBasis(Basis):
 
         # Masking
         if mask is None:
-            mask = np.full(size, True)
+            mask = xp.full(size, True)
         if mask.shape != size:
             raise ValueError(f"Invalid mask size. Should match {size} or `None`.")
         # Ensure boolean mask
-        self.mask = np.array(mask, dtype=bool)
+        self.mask = xp.array(mask, dtype=bool, copy=False)
 
         super().__init__(size, dtype=dtype)
 
     def _build(self):
         """Private method building basis internals."""
-        self.count = np.count_nonzero(self.mask)
+        self.count = xp.count_nonzero(self.mask)
 
     def _evaluate(self, v):
         """
@@ -55,7 +56,7 @@ class DiracBasis(Basis):
         """
 
         # Initialize zeros array of standard basis size.
-        x = np.zeros((v.shape[0], *self.sz), dtype=self.dtype)
+        x = xp.zeros((v.shape[0], *self.sz), dtype=self.dtype)
 
         # Assign basis coefficient values
         x[..., self.mask] = v
@@ -77,7 +78,7 @@ class DiracBasis(Basis):
         """
 
         # Initialize zeros array of dirac basis (mask) count.
-        v = np.zeros((x.shape[0], self.count), dtype=self.dtype)
+        v = xp.zeros((x.shape[0], self.count), dtype=self.dtype)
 
         # Assign basis coefficient values
         v = x[..., self.mask]
