@@ -820,9 +820,6 @@ class ImageSource(ABC):
         """
         Crop or pad images to size L.
 
-        Used for reproducing legacy MATLAB workflows.
-        For most applications, `downsample` is preferred.
-
         Cropping and padding makes no adjustments for centering conventions,
         but does maintain `pixel_size`.
 

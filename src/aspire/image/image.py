@@ -49,7 +49,7 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, shifted=False, ddof=0):
     input_dtype = imgs.dtype
 
     # Generate background mask
-    grid_dtype = np.float64
+    grid_dtype = np.float64  # Use doubles for accuracy and MATLAB repro
     grid = grid_2d(L, shifted=shifted, indexing="yx", dtype=grid_dtype)
     mask = grid["r"] > bg_radius
 
