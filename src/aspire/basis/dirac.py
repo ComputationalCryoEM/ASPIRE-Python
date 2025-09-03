@@ -39,7 +39,7 @@ class DiracBasis(Basis):
         if mask.shape != size:
             raise ValueError(f"Invalid mask size. Should match {size} or `None`.")
         # Ensure boolean mask
-        self.mask = xp.array(mask, dtype=bool, copy=False)
+        self.mask = xp.asarray(mask, dtype=bool)
 
         super().__init__(size, dtype=dtype)
 
@@ -59,9 +59,9 @@ class DiracBasis(Basis):
         x = xp.zeros((v.shape[0], *self.sz), dtype=self.dtype)
 
         # Assign basis coefficient values
-        x[..., self.mask] = v
+        x[..., self.mask] = xp.asarray(v)
 
-        return x
+        return xp.asnumpy(x)
 
     def expand(self, x):
         """
@@ -78,13 +78,13 @@ class DiracBasis(Basis):
         """
 
         # Initialize zeros array of dirac basis (mask) count.
-        breakpoint()
         v = xp.zeros((x.shape[0], self.count), dtype=self.dtype)
 
         # Assign basis coefficient values
-        v = x[..., self.mask]
+        x = xp.asarray(x)
+        v[..., :] = x[..., self.mask]
 
-        return v
+        return xp.asnumpy(v)
 
 
 class DiracBasis2D(DiracBasis):
