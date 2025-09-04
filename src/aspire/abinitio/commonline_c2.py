@@ -5,6 +5,7 @@ from scipy.linalg import eigh
 
 from aspire.abinitio import (
     CLSymmetryC3C4,
+    JSync,
     complete_third_row_to_rot,
     estimate_third_rows,
 )
@@ -85,6 +86,8 @@ class CLSymmetryC2(CLSymmetryC3C4):
         self.degree_res = degree_res
         self.seed = seed
         self.order = 2
+
+        self.J_sync = JSync(src.n, self.epsilon, self.max_iters, self.seed)
 
     def _check_symmetry(self, symmetry):
         symmetry = symmetry.upper()
@@ -280,7 +283,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         vijs = (Rijs + Rijgs) / 2
 
         # Determine relative handedness of vijs.
-        sign_ij_J = self._J_sync_power_method(vijs)
+        sign_ij_J = self.J_sync.power_method(vijs)
 
         # Synchronize relative rotations
         for i, sign in enumerate(sign_ij_J):
