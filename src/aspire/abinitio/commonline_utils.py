@@ -318,6 +318,59 @@ class JSync:
 
         return J_sync
 
+    def sync_viis(self, vijs, viis):
+        """
+        Given a set of synchronized pairwise outer products vijs, J-synchronize the set of
+        outer products viis.
+
+        :param vijs: An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding
+        outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
+        might have a spurious J independently of other estimates.
+
+        :param viis: An n_imgx3x3 array where the i'th slice holds an estimate for the outer product vi*vi^T
+        between the third row of matrix Ri and itself. Each estimate might have a spurious J independently
+        of other estimates.
+
+        :return: J-synchronized viis.
+        """
+
+        # Synchronize viis
+        # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
+        # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all
+        # previously synchronized v_ij to get a consensus on the handedness of v_ii.
+        _, pairs_to_linear = all_pairs(self.n_img, return_map=True)
+        for i in range(self.n_img):
+            vii = viis[i]
+            vii_J = J_conjugate(vii)
+            J_consensus = 0
+            for j in range(self.n_img):
+                if j < i:
+                    idx = pairs_to_linear[j, i]
+                    vji = vijs[idx]
+
+                    err1 = norm(vji @ vii - vji)
+                    err2 = norm(vji @ vii_J - vji)
+
+                elif j > i:
+                    idx = pairs_to_linear[i, j]
+                    vij = vijs[idx]
+
+                    err1 = norm(vii @ vij - vij)
+                    err2 = norm(vii_J @ vij - vij)
+
+                else:
+                    continue
+
+                # Accumulate J consensus
+                if err1 < err2:
+                    J_consensus -= 1
+                else:
+                    J_consensus += 1
+
+            if J_consensus > 0:
+                viis[i] = vii_J
+        return viis
+
     def _signs_times_v(self, vijs, vec):
         """
         Multiplication of the J-synchronization matrix by a candidate eigenvector.
