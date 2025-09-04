@@ -10,6 +10,7 @@ from aspire.abinitio import (
     cl_angles_to_ind,
     complete_third_row_to_rot,
     estimate_third_rows,
+    g_sync,
 )
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
 from aspire.source import Simulation
@@ -127,7 +128,7 @@ def test_estimate_rotations(n_img, L, order, dtype):
     rots_gt = src.rotations
 
     # g-synchronize ground truth rotations.
-    rots_gt_sync = cl_symm.g_sync(rots_est, order, rots_gt)
+    rots_gt_sync = g_sync(rots_est, order, rots_gt)
 
     # Register estimates to ground truth rotations and check that the
     # mean angular distance between them is less than 3 degrees.

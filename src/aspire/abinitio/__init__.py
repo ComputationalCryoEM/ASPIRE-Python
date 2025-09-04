@@ -7,6 +7,7 @@ from .commonline_utils import (
     estimate_third_rows,
     complete_third_row_to_rot,
     estimate_inplane_rotations,
+    g_sync,
 )
 from .commonline_sdp import CommonlineSDP
 from .commonline_lud import CommonlineLUD

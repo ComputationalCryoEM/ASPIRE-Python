@@ -3,7 +3,14 @@ import logging
 import numpy as np
 from numpy.linalg import norm
 
-from aspire.abinitio import CLSymmetryC3C4, cl_angles_to_ind, complete_third_row_to_rot
+from aspire.abinitio import (
+    CLOrient3D,
+    JSync,
+    cl_angles_to_ind,
+    complete_third_row_to_rot,
+    estimate_inplane_rotations,
+    estimate_third_rows,
+)
 from aspire.operators import PolarFT
 from aspire.utils import (
     J_conjugate,
@@ -20,7 +27,7 @@ from aspire.utils.random import Random, randn
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryCn(CLSymmetryC3C4):
+class CLSymmetryCn(CLOrient3D):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with
     Cn cyclic symmetry, with n>4.
@@ -64,20 +71,22 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         super().__init__(
             src,
-            symmetry=symmetry,
             n_rad=n_rad,
             n_theta=n_theta,
             max_shift=max_shift,
             shift_step=shift_step,
-            epsilon=epsilon,
-            max_iters=max_iters,
-            degree_res=degree_res,
-            seed=seed,
             mask=mask,
         )
 
+        self._check_symmetry(symmetry)
+        self.epsilon = epsilon
+        self.max_iters = max_iters
+        self.degree_res = degree_res
+        self.seed = seed
         self.n_points_sphere = n_points_sphere
         self.equator_threshold = equator_threshold
+        self.booger = 25
+        self.J_sync = JSync(src.n, self.epsilon, self.max_iters, self.seed)
 
     def _check_symmetry(self, symmetry):
         if symmetry is None:
@@ -100,7 +109,20 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
-        super().estimate_rotations()
+        vijs, viis = self._estimate_relative_viewing_directions()
+
+        logger.info("Performing global handedness synchronization.")
+        vijs, viis = self._global_J_sync(vijs, viis)
+
+        logger.info("Estimating third rows of rotation matrices.")
+        vis = estimate_third_rows(vijs, viis)
+
+        logger.info("Estimating in-plane rotations and rotations matrices.")
+        Ris = estimate_inplane_rotations(self, vis)
+
+        self.rotations = Ris
+
+        return self.rotations
 
     def _estimate_relative_viewing_directions(self):
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
@@ -283,6 +305,35 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 cij_inds[i, j, :, 0] = c1s
                 cij_inds[i, j, :, 1] = c2s
         return cij_inds
+
+    def _global_J_sync(self, vijs, viis):
+        """
+        Global J-synchronization of all third row outer products. Given 3x3 matrices vijs and viis, each
+        of which might contain a spurious J (ie. vij = J*vi*vj^T*J instead of vij = vi*vj^T),
+        we return vijs and viis that all have either a spurious J or not.
+
+        :param vijs: An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding
+        outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
+        might have a spurious J independently of other estimates.
+
+        :param viis: An n_imgx3x3 array where the i'th slice holds an estimate for the outer product vi*vi^T
+        between the third row of matrix Ri and itself. Each estimate might have a spurious J independently
+        of other estimates.
+
+        :return: vijs, viis all of which have a spurious J or not.
+        """
+
+        # Determine relative handedness of vijs.
+        sign_ij_J = self.J_sync.power_method(vijs)
+
+        # Synchronize vijs
+        for i, sign in enumerate(sign_ij_J):
+            if sign == -1:
+                vijs[i] = J_conjugate(vijs[i])
+
+        viis = self.J_sync.sync_viis(vijs, viis)
+
+        return vijs, viis
 
     @staticmethod
     def relative_rots_to_cl_indices(relative_rots, n_theta):
