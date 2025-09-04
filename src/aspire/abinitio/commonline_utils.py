@@ -4,7 +4,15 @@ import numpy as np
 from numpy.linalg import eigh, norm
 
 from aspire.operators import PolarFT
-from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, anorm, tqdm
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    all_pairs,
+    all_triplets,
+    anorm,
+    cyclic_rotations,
+    tqdm,
+)
 from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
@@ -252,6 +260,69 @@ def cl_angles_to_ind(cl_angles, n_theta):
         ind = ind.flat[0]
 
     return ind
+
+
+def g_sync(rots, order, rots_gt):
+    """
+    Every estimated rotation might be a version of the ground truth rotation
+    rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes the
+    ground truth rotations so that only a single global rotation need be applied
+    to all estimates for error analysis.
+
+    :param rots: Estimated rotation matrices
+    :param order: The cyclic order asssociated with the symmetry of the underlying molecule.
+    :param rots_gt: Ground truth rotation matrices.
+
+    :return: g-synchronized ground truth rotations.
+    """
+    assert len(rots) == len(
+        rots_gt
+    ), "Number of estimates not equal to number of references."
+    n_img = len(rots)
+    dtype = rots.dtype
+
+    rots_symm = cyclic_rotations(order, dtype).matrices
+
+    A_g = np.zeros((n_img, n_img), dtype=complex)
+
+    pairs = all_pairs(n_img)
+
+    for i, j in pairs:
+        Ri = rots[i]
+        Rj = rots[j]
+        Rij = Ri.T @ Rj
+
+        Ri_gt = rots_gt[i]
+        Rj_gt = rots_gt[j]
+
+        diffs = np.zeros(order)
+        for s, g_s in enumerate(rots_symm):
+            Rij_gt = Ri_gt.T @ g_s @ Rj_gt
+            diffs[s] = min([norm(Rij - Rij_gt), norm(Rij - J_conjugate(Rij_gt))])
+
+        idx = np.argmin(diffs)
+
+        A_g[i, j] = np.exp(-1j * 2 * np.pi / order * idx)
+
+    # A_g(k,l) is exp(-j(-theta_k+theta_l))
+    # Diagonal elements correspond to exp(-i*0) so put 1.
+    # This is important only for verification purposes that spectrum is (K,0,0,0...,0).
+    A_g += np.conj(A_g).T + np.eye(n_img)
+
+    _, eig_vecs = eigh(A_g)
+    leading_eig_vec = eig_vecs[:, -1]
+
+    angles = np.exp(1j * 2 * np.pi / order * np.arange(order))
+    rots_gt_sync = np.zeros((n_img, 3, 3), dtype=dtype)
+
+    for i, rot_gt in enumerate(rots_gt):
+        # Since the closest ccw or cw rotation are just as good,
+        # we take the absolute value of the angle differences.
+        angle_dists = np.abs(np.angle(leading_eig_vec[i] / angles))
+        power_g_Ri = np.argmin(angle_dists)
+        rots_gt_sync[i] = rots_symm[power_g_Ri] @ rot_gt
+
+    return rots_gt_sync
 
 
 class JSync:
