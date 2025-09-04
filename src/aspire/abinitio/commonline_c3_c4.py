@@ -5,6 +5,7 @@ from numpy.linalg import eigh, norm, svd
 
 from aspire.abinitio import (
     CLOrient3D,
+    JSync,
     SyncVotingMixin,
     estimate_inplane_rotations,
     estimate_third_rows,
@@ -89,6 +90,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         self.degree_res = degree_res
         self.seed = seed
 
+        self.J_sync = JSync(src.n, self.epsilon, self.max_iters, self.seed)
+
     def _check_symmetry(self, symmetry):
         if symmetry is None:
             raise NotImplementedError(
@@ -169,7 +172,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         n_img = self.n_img
 
         # Determine relative handedness of vijs.
-        sign_ij_J = self._J_sync_power_method(vijs)
+        sign_ij_J = self.J_sync.power_method(vijs)
 
         # Synchronize vijs
         for i, sign in enumerate(sign_ij_J):
