@@ -167,7 +167,6 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         :return: vijs, viis all of which have a spurious J or not.
         """
-        n_img = self.n_img
 
         # Determine relative handedness of vijs.
         sign_ij_J = self.J_sync.power_method(vijs)
@@ -177,41 +176,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             if sign == -1:
                 vijs[i] = J_conjugate(vijs[i])
 
-        # Synchronize viis
-        # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
-        # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all
-        # previously synchronized v_ij to get a consensus on the handedness of v_ii.
-        _, pairs_to_linear = all_pairs(n_img, return_map=True)
-        for i in range(n_img):
-            vii = viis[i]
-            vii_J = J_conjugate(vii)
-            J_consensus = 0
-            for j in range(n_img):
-                if j < i:
-                    idx = pairs_to_linear[j, i]
-                    vji = vijs[idx]
+        viis = self.J_sync.sync_viis(vijs, viis)
 
-                    err1 = norm(vji @ vii - vji)
-                    err2 = norm(vji @ vii_J - vji)
-
-                elif j > i:
-                    idx = pairs_to_linear[i, j]
-                    vij = vijs[idx]
-
-                    err1 = norm(vii @ vij - vij)
-                    err2 = norm(vii_J @ vij - vij)
-
-                else:
-                    continue
-
-                # Accumulate J consensus
-                if err1 < err2:
-                    J_consensus -= 1
-                else:
-                    J_consensus += 1
-
-            if J_consensus > 0:
-                viis[i] = vii_J
         return vijs, viis
 
     #################################################
