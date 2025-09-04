@@ -4,8 +4,9 @@ import numpy as np
 from scipy.linalg import eigh
 
 from aspire.abinitio import (
-    CLSymmetryC3C4,
+    CLOrient3D,
     JSync,
+    SyncVotingMixin,
     complete_third_row_to_rot,
     estimate_third_rows,
 )
@@ -14,7 +15,7 @@ from aspire.utils import J_conjugate, Rotation, all_pairs
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryC2(CLSymmetryC3C4):
+class CLSymmetryC2(CLOrient3D, SyncVotingMixin):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with C2 cyclic symmetry.
 
@@ -45,7 +46,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
         shift_step=1,
         epsilon=1e-3,
         max_iters=1000,
-        degree_res=1,
         min_dist_cls=25,
         seed=None,
         mask=True,
@@ -60,30 +60,24 @@ class CLSymmetryC2(CLSymmetryC3C4):
         :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
-        :param degree_res: Degree resolution for estimating in-plane rotations.
         :param min_dist_cls: Minimum distance between mutual common-lines. Default = 25 degrees.
         :param seed: Optional seed for RNG.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         """
+
         super().__init__(
             src,
-            symmetry="C2",
             n_rad=n_rad,
             n_theta=n_theta,
             max_shift=max_shift,
             shift_step=shift_step,
-            epsilon=epsilon,
-            max_iters=max_iters,
-            degree_res=degree_res,
-            seed=seed,
             mask=mask,
         )
 
         self.min_dist_cls = min_dist_cls
         self.epsilon = epsilon
         self.max_iters = max_iters
-        self.degree_res = degree_res
         self.seed = seed
         self.order = 2
 
