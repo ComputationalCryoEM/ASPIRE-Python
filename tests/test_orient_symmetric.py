@@ -1,15 +1,12 @@
 import numpy as np
 import pytest
-from numpy import pi, random
-from numpy.linalg import det, norm
 
 from aspire.abinitio import (
     CLSymmetryC2,
     CLSymmetryC3C4,
     CLSymmetryCn,
     _cl_angles_to_ind,
-    _complete_third_row_to_rot,
-    _estimate_third_rows,
+    build_outer_products,
     g_sync,
 )
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
@@ -20,8 +17,6 @@ from aspire.utils import (
     all_pairs,
     cyclic_rotations,
     mean_aligned_angular_distance,
-    randn,
-    utest_tolerance,
 )
 from aspire.volume import CnSymmetricVolume
 
@@ -327,8 +322,8 @@ def test_self_commonlines(n_img, L, order, dtype):
     # Get angle difference between scl_gt and scl.
     scl_diff1 = scl_gt - scl
     scl_diff2 = scl_gt - np.flip(scl, 1)  # Order of indices might be switched.
-    scl_diff1_angle = scl_diff1 * 2 * pi / n_theta
-    scl_diff2_angle = scl_diff2 * 2 * pi / n_theta
+    scl_diff1_angle = scl_diff1 * 2 * np.pi / n_theta
+    scl_diff2_angle = scl_diff2 * 2 * np.pi / n_theta
 
     # cosine is invariant to 2pi, and abs is invariant to +-pi due to J-conjugation.
     # We take the mean deviation wrt to the two lines in each image.
@@ -340,7 +335,7 @@ def test_self_commonlines(n_img, L, order, dtype):
     min_mean_angle_diff = scl_idx.choose(scl_diff_angle_mean)
 
     # Assert scl detection rate is 100% for 5 degree angle tolerance
-    angle_tol_err = 5 * pi / 180
+    angle_tol_err = 5 * np.pi / 180
     detection_rate = np.count_nonzero(min_mean_angle_diff < angle_tol_err) / len(scl)
     assert np.allclose(detection_rate, 1.0)
 
@@ -486,45 +481,6 @@ def test_global_J_sync(n_img, dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_estimate_third_rows(dtype):
-    n_img = 20
-
-    # Build outer products vijs, viis, and get ground truth third rows.
-    vijs, viis, gt_vis = build_outer_products(n_img, dtype)
-
-    # Estimate third rows from outer products.
-    # Due to factorization of V, these might be negated third rows.
-    vis = _estimate_third_rows(vijs, viis)
-
-    # Check if all-close up to difference of sign
-    ground_truth = np.sign(gt_vis[0, 0]) * gt_vis
-    estimate = np.sign(vis[0, 0]) * vis
-    assert np.allclose(ground_truth, estimate)
-
-
-@pytest.mark.parametrize("dtype", [np.float32, np.float64])
-def test_complete_third_row(dtype):
-    # Build random third rows.
-    r3 = randn(10, 3, seed=123).astype(dtype)
-    r3 /= norm(r3, axis=1)[..., np.newaxis]
-
-    # Set first row to be identical with z-axis.
-    r3[0] = np.array([0, 0, 1], dtype=dtype)
-
-    # Generate rotations.
-    R = _complete_third_row_to_rot(r3)
-
-    # Assert that first rotation is the identity matrix.
-    assert np.allclose(R[0], np.eye(3, dtype=dtype))
-
-    # Assert that each rotation is orthogonal with determinant 1.
-    assert np.allclose(
-        R @ R.transpose((0, 2, 1)), np.eye(3, dtype=dtype), atol=utest_tolerance(dtype)
-    )
-    assert np.allclose(det(R), 1)
-
-
-@pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_dtype_pass_through(dtype):
     L = 16
     n_img = 20
@@ -557,31 +513,6 @@ def build_self_commonlines_matrix(n_theta, rots, order):
         scl_gt[i, 1] = np.round(theta_gn * n_theta / (2 * np.pi)) % n_theta
 
     return scl_gt
-
-
-def build_outer_products(n_img, dtype):
-    # Build random third rows, ground truth vis (unit vectors)
-    gt_vis = np.zeros((n_img, 3), dtype=dtype)
-    for i in range(n_img):
-        random.seed(i)
-        v = random.randn(3)
-        gt_vis[i] = v / norm(v)
-
-    # Find outer products viis and vijs for i<j
-    nchoose2 = int(n_img * (n_img - 1) / 2)
-    vijs = np.zeros((nchoose2, 3, 3), dtype=dtype)
-    viis = np.zeros((n_img, 3, 3), dtype=dtype)
-
-    # All pairs (i,j) where i<j
-    pairs = all_pairs(n_img)
-
-    for k, (i, j) in enumerate(pairs):
-        vijs[k] = np.outer(gt_vis[i], gt_vis[j])
-
-    for i in range(n_img):
-        viis[i] = np.outer(gt_vis[i], gt_vis[i])
-
-    return vijs, viis, gt_vis
 
 
 def test_mean_outer_product_estimator():

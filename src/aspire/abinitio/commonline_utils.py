@@ -328,6 +328,41 @@ def g_sync(rots, order, rots_gt):
     return rots_gt_sync
 
 
+def build_outer_products(n, dtype):
+    """
+    Builds sets of outer products of 3rd rows of rotation matrices.
+    This is a helper function used in commonline testing.
+
+    :param n: Number of 3rd rows to construct outer product from.
+    :param dtype: dtype of outputs
+
+    :return: tuple of (vijs, viis, gt_vis), where vijs are the pairwise
+        outer products of gt_vis and viis are self outer products of gt_vis.
+    """
+    # Build random third rows, ground truth vis (unit vectors)
+    gt_vis = np.zeros((n, 3), dtype=dtype)
+    for i in range(n):
+        np.random.seed(i)
+        v = np.random.randn(3)
+        gt_vis[i] = v / norm(v)
+
+    # Find outer products viis and vijs for i<j
+    nchoose2 = int(n * (n - 1) / 2)
+    vijs = np.zeros((nchoose2, 3, 3), dtype=dtype)
+    viis = np.zeros((n, 3, 3), dtype=dtype)
+
+    # All pairs (i,j) where i<j
+    pairs = all_pairs(n)
+
+    for k, (i, j) in enumerate(pairs):
+        vijs[k] = np.outer(gt_vis[i], gt_vis[j])
+
+    for i in range(n):
+        viis[i] = np.outer(gt_vis[i], gt_vis[i])
+
+    return vijs, viis, gt_vis
+
+
 class JSync:
     """
     Class for handling J-synchronization methods.
