@@ -59,7 +59,7 @@ class CLSymmetryC2(CLOrient3D, SyncVotingMixin):
         :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
         :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param epsilon: Tolerance for the power method.
-        :param max_iter: Maximum iterations for the power method.
+        :param max_iters: Maximum iterations for the power method.
         :param min_dist_cls: Minimum distance between mutual common-lines. Default = 25 degrees.
         :param seed: Optional seed for RNG.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).

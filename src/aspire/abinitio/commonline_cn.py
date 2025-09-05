@@ -85,7 +85,7 @@ class CLSymmetryCn(CLOrient3D):
         self.seed = seed
         self.n_points_sphere = n_points_sphere
         self.equator_threshold = equator_threshold
-        self.booger = 25
+
         self.J_sync = JSync(src.n, self.epsilon, self.max_iters, self.seed)
 
     def _check_symmetry(self, symmetry):
