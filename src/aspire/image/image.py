@@ -591,9 +591,10 @@ class Image:
         # `xp.asarray` because all of the subsequent calls until
         # `asnumpy` are GPU when xp and fft in `cupy` mode.
         #
-        # Second note, filter dtype may not match image dtype.
+        # Second note, filter and grid dtype may not match image dtype,
+        # upcast both here for most accurate convolution.
         filter_values = xp.asarray(
-            filter.evaluate_grid(self.resolution), dtype=np.float64
+            filter.evaluate_grid(self.resolution, dtype=np.float64), dtype=np.float64
         )
 
         # Convolve
