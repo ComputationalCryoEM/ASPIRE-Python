@@ -599,9 +599,9 @@ class Image:
 
         # Convolve
         _im = xp.asarray(im._data, dtype=np.float64)
-        im_f = fft.fftshift(fft.fft2(_im), axes=(-1, -2))
+        im_f = fft.centered_fft2(_im)
         im_f = filter_values * im_f
-        im = fft.ifft2(fft.ifftshift(im_f, axes=(-1, -2)))
+        im = fft.centered_ifft2(im_f)
 
         im = xp.asnumpy(im.real).astype(
             self.dtype, copy=False
