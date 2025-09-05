@@ -264,6 +264,9 @@ def cl_angles_to_ind(cl_angles, n_theta):
 
 def g_sync(rots, order, rots_gt):
     """
+    Given ground truth rotations, synchronize estimated rotations over
+    symmetry group elements.
+
     Every estimated rotation might be a version of the ground truth rotation
     rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes the
     ground truth rotations so that only a single global rotation need be applied
@@ -355,7 +358,7 @@ class JSync:
         :param vijs: (n-choose-2)x3x3 array of estimates of relative orientation matrices.
 
         :return: An array of length n-choose-2 consisting of 1 or -1, where the sign of the
-        i'th entry indicates whether the i'th relative orientation matrix will be J-conjugated.
+            i'th entry indicates whether the i'th relative orientation matrix will be J-conjugated.
         """
 
         # Set power method tolerance and maximum iterations.
