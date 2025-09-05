@@ -6,10 +6,10 @@ from numpy.linalg import norm
 from aspire.abinitio import (
     CLOrient3D,
     JSync,
-    cl_angles_to_ind,
-    complete_third_row_to_rot,
-    estimate_inplane_rotations,
-    estimate_third_rows,
+    _cl_angles_to_ind,
+    _complete_third_row_to_rot,
+    _estimate_inplane_rotations,
+    _estimate_third_rows,
 )
 from aspire.operators import PolarFT
 from aspire.utils import (
@@ -115,10 +115,10 @@ class CLSymmetryCn(CLOrient3D):
         vijs, viis = self._global_J_sync(vijs, viis)
 
         logger.info("Estimating third rows of rotation matrices.")
-        vis = estimate_third_rows(vijs, viis)
+        vis = _estimate_third_rows(vijs, viis)
 
         logger.info("Estimating in-plane rotations and rotations matrices.")
-        Ris = estimate_inplane_rotations(self, vis)
+        Ris = _estimate_inplane_rotations(self, vis)
 
         self.rotations = Ris
 
@@ -349,8 +349,8 @@ class CLSymmetryCn(CLOrient3D):
         c1s = np.array((-relative_rots[:, 1, 2], relative_rots[:, 0, 2])).T
         c2s = np.array((relative_rots[:, 2, 1], -relative_rots[:, 2, 0])).T
 
-        c1s = cl_angles_to_ind(c1s, n_theta)
-        c2s = cl_angles_to_ind(c2s, n_theta)
+        c1s = _cl_angles_to_ind(c1s, n_theta)
+        c2s = _cl_angles_to_ind(c2s, n_theta)
 
         inds = np.where(c1s >= n_theta // 2)
         c1s[inds] -= n_theta // 2
@@ -382,7 +382,7 @@ class CLSymmetryCn(CLOrient3D):
             while counter < n:
                 third_row = randn(3)
                 third_row /= anorm(third_row, axes=(-1,))
-                Ri_tilde = complete_third_row_to_rot(third_row)
+                Ri_tilde = _complete_third_row_to_rot(third_row)
 
                 # Exclude candidates that represent equator images. Equator candidates
                 # induce collinear self-common-lines, which always have perfect correlation.

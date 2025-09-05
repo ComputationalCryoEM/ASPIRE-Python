@@ -7,8 +7,8 @@ from aspire.abinitio import (
     CLOrient3D,
     JSync,
     SyncVotingMixin,
-    estimate_inplane_rotations,
-    estimate_third_rows,
+    _estimate_inplane_rotations,
+    _estimate_third_rows,
 )
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, trange
@@ -108,10 +108,10 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         vijs, viis = self._global_J_sync(vijs, viis)
 
         logger.info("Estimating third rows of rotation matrices.")
-        vis = estimate_third_rows(vijs, viis)
+        vis = _estimate_third_rows(vijs, viis)
 
         logger.info("Estimating in-plane rotations and rotations matrices.")
-        Ris = estimate_inplane_rotations(self, vis)
+        Ris = _estimate_inplane_rotations(self, vis)
 
         self.rotations = Ris
 

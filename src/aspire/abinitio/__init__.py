@@ -3,10 +3,10 @@ from .commonline_base import CLOrient3D
 # isort: off
 from .commonline_utils import (
     JSync,
-    cl_angles_to_ind,
-    estimate_third_rows,
-    complete_third_row_to_rot,
-    estimate_inplane_rotations,
+    _cl_angles_to_ind,
+    _estimate_third_rows,
+    _complete_third_row_to_rot,
+    _estimate_inplane_rotations,
     g_sync,
 )
 from .commonline_sdp import CommonlineSDP

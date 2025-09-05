@@ -7,8 +7,8 @@ from aspire.abinitio import (
     CLOrient3D,
     JSync,
     SyncVotingMixin,
-    complete_third_row_to_rot,
-    estimate_third_rows,
+    _complete_third_row_to_rot,
+    _estimate_third_rows,
 )
 from aspire.utils import J_conjugate, Rotation, all_pairs
 
@@ -225,7 +225,7 @@ class CLSymmetryC2(CLOrient3D, SyncVotingMixin):
         viis = np.vstack((np.eye(3, dtype=self.dtype),) * self.n_img).reshape(
             self.n_img, 3, 3
         )
-        vis = estimate_third_rows(vijs, viis)
+        vis = _estimate_third_rows(vijs, viis)
 
         logger.info("Estimating in-plane rotations and rotations matrices.")
         Ris = self._estimate_inplane_rotations(vis, Rijs, Rijgs)
@@ -302,7 +302,7 @@ class CLSymmetryC2(CLOrient3D, SyncVotingMixin):
         H = np.zeros((self.n_img, self.n_img), dtype=complex)
         # Step 1: Construct all rotation matrices Ris_tilde whose third rows are equal to
         # the corresponding third rows vis.
-        Ris_tilde = complete_third_row_to_rot(vis)
+        Ris_tilde = _complete_third_row_to_rot(vis)
 
         pairs = all_pairs(self.n_img)
         for idx, (i, j) in enumerate(pairs):
