@@ -18,7 +18,7 @@ from aspire.utils.random import randn
 logger = logging.getLogger(__name__)
 
 
-def estimate_third_rows(vijs, viis):
+def _estimate_third_rows(vijs, viis):
     """
     Find the third row of each rotation matrix given a collection of matrices
     representing the outer products of the third rows from each rotation matrix.
@@ -68,7 +68,7 @@ def estimate_third_rows(vijs, viis):
     return vis
 
 
-def estimate_inplane_rotations(cl_class, vis):
+def _estimate_inplane_rotations(cl_class, vis):
     """
     Estimate the rotation matrices for each image by constructing arbitrary rotation matrices
     populated with the given third rows, vis, and then rotating by an appropriate in-plane rotation.
@@ -89,7 +89,7 @@ def estimate_inplane_rotations(cl_class, vis):
 
     # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
     # the corresponding third rows vis.
-    Ri_tildes = complete_third_row_to_rot(vis)
+    Ri_tildes = _complete_third_row_to_rot(vis)
 
     # Step 2: Construct all in-plane rotation matrices, R_theta_ijs.
     max_angle = (360 // order) * order
@@ -146,8 +146,8 @@ def estimate_inplane_rotations(cl_class, vis):
                 c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
 
                 # Convert from angles to indices.
-                c1s = cl_angles_to_ind(c1s, n_theta)
-                c2s = cl_angles_to_ind(c2s, n_theta)
+                c1s = _cl_angles_to_ind(c1s, n_theta)
+                c2s = _cl_angles_to_ind(c2s, n_theta)
 
                 # Perform correlation, corrs is shape n_shifts x len(theta_ijs).
                 corrs = np.array(
@@ -197,7 +197,7 @@ def estimate_inplane_rotations(cl_class, vis):
         return Ris
 
 
-def complete_third_row_to_rot(r3):
+def _complete_third_row_to_rot(r3):
     """
     Construct rotation matrices whose third rows are equal to the given row vectors.
     For vector r3 = [a, b, c], where [a, b, c] != [0, 0, 1], we return the matrix
@@ -246,7 +246,7 @@ def complete_third_row_to_rot(r3):
     return rots
 
 
-def cl_angles_to_ind(cl_angles, n_theta):
+def _cl_angles_to_ind(cl_angles, n_theta):
     thetas = np.arctan2(cl_angles[:, 1], cl_angles[:, 0])
 
     # Shift from [-pi,pi] to [0,2*pi).
