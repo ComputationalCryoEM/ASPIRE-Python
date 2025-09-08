@@ -83,13 +83,6 @@ class CLSymmetryC2(CLOrient3D, SyncVotingMixin):
 
         self.J_sync = JSync(src.n, self.epsilon, self.max_iters, self.seed)
 
-    def _check_symmetry(self, symmetry):
-        symmetry = symmetry.upper()
-        if symmetry != "C2":
-            raise NotImplementedError(
-                f"Only C2 symmetry supported. {symmetry} was supplied."
-            )
-
     def build_clmatrix(self):
         """
         Build common-lines matrix for molecules with C2 symmetry from Fourier stack of 2D images.
