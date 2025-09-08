@@ -371,9 +371,9 @@ class JSync:
     def __init__(
         self,
         n,
-        epsilon,
-        max_iters,
-        seed,
+        epsilon=1e-2,
+        max_iters=1000,
+        seed=None,
     ):
 
         self.n_img = n
@@ -423,7 +423,7 @@ class JSync:
             )
 
         # We need only the signs of the eigenvector
-        J_sync = np.sign(vec)
+        J_sync = np.sign(vec, dtype=vijs.dtype)
 
         return J_sync
 

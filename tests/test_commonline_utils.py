@@ -2,11 +2,12 @@ import numpy as np
 import pytest
 
 from aspire.abinitio import (
+    JSync,
     _complete_third_row_to_rot,
     _estimate_third_rows,
     build_outer_products,
 )
-from aspire.utils import randn, utest_tolerance
+from aspire.utils import J_conjugate, Rotation, randn, utest_tolerance
 
 DTYPES = [np.float32, np.float64]
 
@@ -57,3 +58,34 @@ def test_complete_third_row(dtype):
         R @ R.transpose((0, 2, 1)), np.eye(3, dtype=dtype), atol=utest_tolerance(dtype)
     )
     assert np.allclose(np.linalg.det(R), 1)
+
+
+def test_J_sync_power_method(dtype):
+    n = 25
+    rots = Rotation.generate_random_rotations(n, dtype=dtype).matrices
+
+    # Generate random signs [-1, 1].
+    n_choose_2 = (n * (n - 1)) // 2
+    signs = np.random.randint(0, 2, n_choose_2) * 2 - 1
+    Rijs = np.zeros((n_choose_2, 3, 3), dtype=dtype)
+    ij = 0
+    for i in range(n - 1):
+        Ri = rots[i]
+        for j in range(i + 1, n):
+            Rj = rots[j]
+            Rij = Ri @ Rj.T
+            if signs[ij] == -1:
+                Rij = J_conjugate(Rij)
+            Rijs[ij] = Rij
+            ij += 1
+
+    # Initialize JSync instance and perform power method.
+    J_sync = JSync(n)
+    signs_est = J_sync.power_method(Rijs)
+
+    # signs_est should be correct up to multiplication by -1.
+    # So we force signs/signs_est to start with +1.
+    np.testing.assert_allclose(signs[0] * signs, signs_est[0] * signs_est)
+
+    # Test dtype passthrough.
+    assert signs_est.dtype == dtype
