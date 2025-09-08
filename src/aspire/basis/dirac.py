@@ -51,17 +51,24 @@ class DiracBasis(Basis):
         """
         Evaluate stack of standard coordinate coefficients from Dirac basis.
 
+        Given numpy/cupy array, returns numpy/cupy respectively.
+
         :param v: Dirac basis coefficents. [..., self.count]
         :return:  Standard basis coefficients. [..., *self.sz]
         """
+        _zeros = np.zeros  # Default to numpy array
+        if isinstance(v, xp.ndarray):
+            # Use cupy when `v` _and_ xp are cupy ndarray
+            # Avoids having to handle when cupy is not installed
+            _zeros = xp.zeros
 
         # Initialize zeros array of standard basis size.
-        x = xp.zeros((v.shape[0], *self.sz), dtype=self.dtype)
+        x = _zeros((v.shape[0], *self.sz), dtype=self.dtype)
 
         # Assign basis coefficient values
         x[..., self.mask] = xp.asarray(v)
 
-        return xp.asnumpy(x)
+        return x
 
     def expand(self, x):
         """
@@ -73,18 +80,13 @@ class DiracBasis(Basis):
         """
         Evaluate stack of Dirac basis coefficients from standard basis.
 
+        Given numpy/cupy array, returns numpy/cupy respectively.
+
         :param x:  Standard basis coefficients. [..., *self.sz]
         :return: Dirac basis coefficents. [..., self.count]
         """
-
-        # Initialize zeros array of dirac basis (mask) count.
-        v = xp.zeros((x.shape[0], self.count), dtype=self.dtype)
-
-        # Assign basis coefficient values
-        x = xp.asarray(x)
-        v[..., :] = x[..., self.mask]
-
-        return xp.asnumpy(v)
+        # Applying the mask should flatten mask.ndim axes
+        return x[..., self.mask]
 
 
 class DiracBasis2D(DiracBasis):
