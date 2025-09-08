@@ -545,6 +545,7 @@ class JSync:
         # condition. Finally, we the multiply the 'edge_signs' by the cooresponding entries of 'vec'.
         v = vijs
         new_vec = np.zeros_like(vec)
+        pbar = tqdm(desc="Computing signs_times_v", total=len(triplets))
         for i, j, k in triplets:
             ij = pairs_to_linear[i, j]
             jk = pairs_to_linear[j, k]
@@ -570,5 +571,7 @@ class JSync:
             new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
             new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
             new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
+            pbar.update()
+        pbar.close()
 
         return new_vec
