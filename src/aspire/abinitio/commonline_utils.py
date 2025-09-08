@@ -375,7 +375,15 @@ class JSync:
         max_iters=1000,
         seed=None,
     ):
+        """
+        Initialize JSync object for estimating global handedness synchronization for a
+        set of relative rotations, Rij = Ri @ Rj.T, where i <= j = 0, 1, ..., n.
 
+        :param n: Number of images/rotations.
+        :param epsilon: Tolerance for the power method.
+        :param max_iters: Maximum iterations for the power method.
+        :param seed: Optional seed for power method initial random vector.
+        """
         self.n_img = n
         self.epsilon = epsilon
         self.max_iters = max_iters
