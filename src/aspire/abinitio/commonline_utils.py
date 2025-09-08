@@ -117,84 +117,80 @@ def _estimate_inplane_rotations(cl_class, vis):
     pf /= norm(pf, axis=-1)[..., np.newaxis]
 
     n_pairs = n_img * (n_img - 1) // 2
-    with tqdm(total=n_pairs) as pbar:
-        idx = 0
-        # Note: the ordering of i and j in these loops should not be changed as
-        # they correspond to the ordered tuples (i, j), for i<j.
-        for i in range(n_img):
-            pf_i = pf[i]
+    pbar = tqdm(total=n_pairs)
+    # Note: the ordering of i and j in these loops should not be changed as
+    # they correspond to the ordered tuples (i, j), for i<j.
+    for i in range(n_img):
+        pf_i = pf[i]
 
-            # Generate shifted versions of images.
-            pf_i_shifted = np.array(
-                [pf_i * shift_phase for shift_phase in shift_phases]
+        # Generate shifted versions of images.
+        pf_i_shifted = np.array([pf_i * shift_phase for shift_phase in shift_phases])
+
+        Ri_tilde = Ri_tildes[i]
+
+        for j in range(i + 1, n_img):
+            pf_j = pf[j]
+
+            Rj_tilde = Ri_tildes[j]
+
+            # Compute all possible rotations between the i'th and j'th images.
+            Us = np.array(
+                [Ri_tilde.T @ R_theta_ij @ Rj_tilde for R_theta_ij in R_theta_ijs]
             )
 
-            Ri_tilde = Ri_tildes[i]
+            # Find the angle between common lines induced by the rotations.
+            c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
+            c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
 
-            for j in range(i + 1, n_img):
-                pf_j = pf[j]
+            # Convert from angles to indices.
+            c1s = _cl_angles_to_ind(c1s, n_theta)
+            c2s = _cl_angles_to_ind(c2s, n_theta)
 
-                Rj_tilde = Ri_tildes[j]
+            # Perform correlation, corrs is shape n_shifts x len(theta_ijs).
+            corrs = np.array(
+                [
+                    np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
+                    for pf_i_shift in pf_i_shifted
+                    for c1, c2 in zip(c1s, c2s)
+                ]
+            )
 
-                # Compute all possible rotations between the i'th and j'th images.
-                Us = np.array(
-                    [Ri_tilde.T @ R_theta_ij @ Rj_tilde for R_theta_ij in R_theta_ijs]
-                )
+            # Reshape to group by shift and symmetric order.
+            corrs = corrs.reshape((n_shifts, order, len(theta_ijs) // order))
 
-                # Find the angle between common lines induced by the rotations.
-                c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
-                c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
+            # For each pair of lines we take the maximum correlation over all shifts.
+            corrs = np.max(np.real(corrs), axis=0)
 
-                # Convert from angles to indices.
-                c1s = _cl_angles_to_ind(c1s, n_theta)
-                c2s = _cl_angles_to_ind(c2s, n_theta)
+            # corrs[i] is the set of correlations for theta_ij in [2pi * i / order, 2pi * (i + 1) / order).
+            # Due to symmetry, each corrs[i] represents correlations over identical pairs of lines.
+            # With that in mind, we average over corrs[i] and find the max correlation.
+            # This produces an index corresponding to theta_ij in the range [0, 2pi/order).
+            corrs = np.mean(np.real(corrs), axis=0)
+            max_idx_corr = np.argmax(corrs)
 
-                # Perform correlation, corrs is shape n_shifts x len(theta_ijs).
-                corrs = np.array(
-                    [
-                        np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
-                        for pf_i_shift in pf_i_shifted
-                        for c1, c2 in zip(c1s, c2s)
-                    ]
-                )
+            theta_ij = degree_res * max_idx_corr * np.pi / 180
 
-                # Reshape to group by shift and symmetric order.
-                corrs = corrs.reshape((n_shifts, order, len(theta_ijs) // order))
+            Q[i, j] = np.exp(-1j * order * theta_ij)
 
-                # For each pair of lines we take the maximum correlation over all shifts.
-                corrs = np.max(np.real(corrs), axis=0)
+            pbar.update()
+    pbar.close()
 
-                # corrs[i] is the set of correlations for theta_ij in [2pi * i / order, 2pi * (i + 1) / order).
-                # Due to symmetry, each corrs[i] represents correlations over identical pairs of lines.
-                # With that in mind, we average over corrs[i] and find the max correlation.
-                # This produces an index corresponding to theta_ij in the range [0, 2pi/order).
-                corrs = np.mean(np.real(corrs), axis=0)
-                max_idx_corr = np.argmax(corrs)
+    # Populate the lower triangle and diagonal of Q.
+    # Diagonals are 1 since e^{i*0}=1.
+    Q += np.conj(Q).T + np.eye(n_img)
 
-                theta_ij = degree_res * max_idx_corr * np.pi / 180
+    # Q is a rank-1 Hermitian matrix.
+    eig_vals, eig_vecs = eigh(Q)
+    leading_eig_vec = eig_vecs[:, -1]
+    logger.info(f"Top 3 eigenvalues of Q (rank-1) are {str(eig_vals[-3:][::-1])}.")
 
-                Q[i, j] = np.exp(-1j * order * theta_ij)
+    # Calculate R_thetas.
+    R_thetas = Rotation.about_axis("z", np.angle(leading_eig_vec ** (1 / order)))
 
-                pbar.update()
+    # Form rotation matrices Ris.
+    Ris = R_thetas @ Ri_tildes
 
-                idx += 1
-
-        # Populate the lower triangle and diagonal of Q.
-        # Diagonals are 1 since e^{i*0}=1.
-        Q += np.conj(Q).T + np.eye(n_img)
-
-        # Q is a rank-1 Hermitian matrix.
-        eig_vals, eig_vecs = eigh(Q)
-        leading_eig_vec = eig_vecs[:, -1]
-        logger.info(f"Top 3 eigenvalues of Q (rank-1) are {str(eig_vals[-3:][::-1])}.")
-
-        # Calculate R_thetas.
-        R_thetas = Rotation.about_axis("z", np.angle(leading_eig_vec ** (1 / order)))
-
-        # Form rotation matrices Ris.
-        Ris = R_thetas @ Ri_tildes
-
-        return Ris
+    return Ris
 
 
 def _complete_third_row_to_rot(r3):
