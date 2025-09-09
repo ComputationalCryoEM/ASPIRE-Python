@@ -4,7 +4,7 @@ import numpy as np
 import scipy.sparse.linalg as la
 from numpy.linalg import norm
 
-from aspire.abinitio import CLOrient3D
+from aspire.abinitio import CLOrient3D, _generate_shift_phase_and_filter
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, tqdm, trange
 from aspire.utils.random import randn
@@ -129,8 +129,8 @@ class CLSymmetryD2(CLOrient3D):
         # Generate shift phases.
         r_max = pf.shape[-1]
         max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
-        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
-            r_max, max_shift_1d, self.shift_step
+        shifts, shift_phases, _ = _generate_shift_phase_and_filter(
+            r_max, max_shift_1d, self.shift_step, self.dtype
         )
         self.n_shifts = len(shifts)
 

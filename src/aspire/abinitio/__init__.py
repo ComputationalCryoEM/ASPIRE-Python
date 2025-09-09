@@ -1,5 +1,3 @@
-from .commonline_base import CLOrient3D
-
 # isort: off
 from .commonline_utils import (
     JSync,
@@ -7,9 +5,11 @@ from .commonline_utils import (
     _estimate_third_rows,
     _complete_third_row_to_rot,
     _estimate_inplane_rotations,
+    _generate_shift_phase_and_filter,
     build_outer_products,
     g_sync,
 )
+from .commonline_base import CLOrient3D
 from .commonline_sdp import CommonlineSDP
 from .commonline_lud import CommonlineLUD
 from .commonline_irls import CommonlineIRLS

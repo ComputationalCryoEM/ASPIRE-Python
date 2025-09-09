@@ -10,6 +10,7 @@ from aspire.abinitio import (
     _complete_third_row_to_rot,
     _estimate_inplane_rotations,
     _estimate_third_rows,
+    _generate_shift_phase_and_filter,
 )
 from aspire.operators import PolarFT
 from aspire.utils import (
@@ -118,7 +119,14 @@ class CLSymmetryCn(CLOrient3D):
         vis = _estimate_third_rows(vijs, viis)
 
         logger.info("Estimating in-plane rotations and rotations matrices.")
-        Ris = _estimate_inplane_rotations(self, vis)
+        Ris = _estimate_inplane_rotations(
+            vis,
+            self.pf,
+            self.max_shift,
+            self.shift_step,
+            self.order,
+            self.degree_res,
+        )
 
         self.rotations = Ris
 
@@ -143,8 +151,8 @@ class CLSymmetryCn(CLOrient3D):
 
         # Generate shift phases.
         r_max = pf.shape[-1]
-        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
-            r_max, self.max_shift, self.shift_step
+        shifts, shift_phases, _ = _generate_shift_phase_and_filter(
+            r_max, self.max_shift, self.shift_step, self.dtype
         )
         n_shifts = len(shifts)
 

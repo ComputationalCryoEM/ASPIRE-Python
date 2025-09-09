@@ -68,24 +68,54 @@ def _estimate_third_rows(vijs, viis):
     return vis
 
 
-def _estimate_inplane_rotations(cl_class, vis):
+def _generate_shift_phase_and_filter(r_max, max_shift, shift_step, dtype):
     """
-    Estimate the rotation matrices for each image by constructing arbitrary rotation matrices
-    populated with the given third rows, vis, and then rotating by an appropriate in-plane rotation.
+    Prepare the shift phases and generate filter for common-line detection
 
-    :cl_class: A commonlines class instance.
+    The shift phases are pre-defined in a range of max_shift that can be
+    applied to maximize the common line calculation. The common-line filter
+    is also applied to the radial direction for easier detection.
+
+    :param r_max: Maximum index for common line detection.
+    :param max_shift: Maximum value of 1D shift (in pixels) to search.
+    :param shift_step: Resolution of shift estimation in pixels.
+    :param dtype: dtype for shift phases and filter.
+    :return: shift phases matrix and common lines filter.
+    """
+
+    # Number of shifts to try
+    n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
+
+    # only half of ray, excluding the DC component.
+    rk = np.arange(1, r_max + 1, dtype=dtype)
+
+    # Generate all shift phases
+    shifts = -max_shift + shift_step * np.arange(n_shifts, dtype=dtype)
+    shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
+    # Set filter for common-line detection
+    h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
+
+    return shifts, shift_phases, h
+
+
+def _estimate_inplane_rotations(vis, pf, max_shift, shift_step, order, degree_res):
+    """
+    Estimate the rotation matrices for each image of a cyclically symmetric molecule by
+    constructing arbitrary rotation matrices populated with the given third rows, vis, and
+    then rotating by an appropriate in-plane rotation.
+
     :param vis: An n_imgx3 array where the i'th row holds the estimate for the third row of
-    the i'th rotation matrix.
-
+        the i'th rotation matrix.
+    :param pf: The polar Fourier transform of the source images, shape (n_img, n_theta/2, n_rad).
+    :param max_shift: Maximum range for shifts (in pixels) for estimating in-plane rotations.
+    :param shift_step: Shift step (in pixels) for estimating in-plane rotations.
+    :param order: Cyclic order.
+    :param degree_res: Resolution (in degrees) of in-plane rotation to search over.
     :return: Rotation matrices Ris and in-plane rotation matrices R_thetas, both size n_imgx3x3.
     """
-    pf = cl_class.pf
-    n_img = cl_class.n_img
-    n_theta = cl_class.n_theta
-    max_shift_1d = cl_class.max_shift
-    shift_step = cl_class.shift_step
-    order = cl_class.order
-    degree_res = cl_class.degree_res
+    n_img = vis.shape[0]
+    dtype = vis.dtype
+    n_theta = pf.shape[1] * 2
 
     # Step 1: Construct all rotation matrices Ri_tildes whose third rows are equal to
     # the corresponding third rows vis.
@@ -94,13 +124,13 @@ def _estimate_inplane_rotations(cl_class, vis):
     # Step 2: Construct all in-plane rotation matrices, R_theta_ijs.
     max_angle = (360 // order) * order
     theta_ijs = np.arange(0, max_angle, degree_res) * np.pi / 180
-    R_theta_ijs = Rotation.about_axis("z", theta_ijs, dtype=cl_class.dtype).matrices
+    R_theta_ijs = Rotation.about_axis("z", theta_ijs, dtype=dtype).matrices
 
     # Step 3: Compute the correlation over all shifts.
     # Generate shifts.
     r_max = pf.shape[-1]
-    shifts, shift_phases, _ = cl_class._generate_shift_phase_and_filter(
-        r_max, max_shift_1d, shift_step
+    shifts, shift_phases, _ = _generate_shift_phase_and_filter(
+        r_max, max_shift, shift_step, dtype
     )
     n_shifts = len(shifts)
 
@@ -109,7 +139,7 @@ def _estimate_inplane_rotations(cl_class, vis):
     # and theta_i in [0, 2pi/order) is the in-plane rotation angle for the i'th image.
     Q = np.zeros((n_img, n_img), dtype=complex)
 
-    # Reconstruct the full polar Fourier for use in correlation. cl_class.pf only consists of
+    # Reconstruct the full polar Fourier for use in correlation. pf only consists of
     # rays in the range [180, 360), with shape (n_img, n_theta//2, n_rad-1).
     pf = PolarFT.half_to_full(pf)
 

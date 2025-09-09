@@ -9,6 +9,7 @@ from aspire.abinitio import (
     SyncVotingMixin,
     _complete_third_row_to_rot,
     _estimate_third_rows,
+    _generate_shift_phase_and_filter,
 )
 from aspire.utils import J_conjugate, Rotation, all_pairs
 
@@ -108,8 +109,8 @@ class CLSymmetryC2(CLOrient3D, SyncVotingMixin):
 
         # Prepare the shift phases and generate filter for common-line detection.
         r_max = pf.shape[2]
-        shifts, shift_phases, h = self._generate_shift_phase_and_filter(
-            r_max, self.max_shift, self.shift_step
+        shifts, shift_phases, h = _generate_shift_phase_and_filter(
+            r_max, self.max_shift, self.shift_step, self.dtype
         )
         n_shifts = len(shifts)
 

@@ -9,6 +9,7 @@ from aspire.abinitio import (
     SyncVotingMixin,
     _estimate_inplane_rotations,
     _estimate_third_rows,
+    _generate_shift_phase_and_filter,
 )
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, trange
@@ -111,7 +112,14 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         vis = _estimate_third_rows(vijs, viis)
 
         logger.info("Estimating in-plane rotations and rotations matrices.")
-        Ris = _estimate_inplane_rotations(self, vis)
+        Ris = _estimate_inplane_rotations(
+            vis,
+            self.pf,
+            self.max_shift,
+            self.shift_step,
+            self.order,
+            self.degree_res,
+        )
 
         self.rotations = Ris
 
@@ -224,8 +232,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # Compute the correlation over all shifts.
         # Generate Shifts.
         r_max = pf.shape[-1]
-        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
-            r_max, max_shift_1d, shift_step
+        shifts, shift_phases, _ = _generate_shift_phase_and_filter(
+            r_max, max_shift_1d, shift_step, self.dtype
         )
         n_shifts = len(shifts)
 
