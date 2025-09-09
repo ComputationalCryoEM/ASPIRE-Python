@@ -3,15 +3,7 @@ import logging
 import numpy as np
 from numpy.linalg import norm
 
-from aspire.abinitio import (
-    CLOrient3D,
-    JSync,
-    _cl_angles_to_ind,
-    _complete_third_row_to_rot,
-    _estimate_inplane_rotations,
-    _estimate_third_rows,
-    _generate_shift_phase_and_filter,
-)
+from aspire.abinitio import CLOrient3D, JSync
 from aspire.operators import PolarFT
 from aspire.utils import (
     J_conjugate,
@@ -24,6 +16,14 @@ from aspire.utils import (
     trange,
 )
 from aspire.utils.random import Random, randn
+
+from .commonline_utils import (
+    _cl_angles_to_ind,
+    _complete_third_row_to_rot,
+    _estimate_inplane_rotations,
+    _estimate_third_rows,
+    _generate_shift_phase_and_filter,
+)
 
 logger = logging.getLogger(__name__)
 

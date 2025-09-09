@@ -5,11 +5,11 @@ from aspire.abinitio import (
     CLSymmetryC2,
     CLSymmetryC3C4,
     CLSymmetryCn,
-    _cl_angles_to_ind,
     build_outer_products,
     g_sync,
 )
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
+from aspire.abinitio.commonline_utils import _cl_angles_to_ind
 from aspire.source import Simulation
 from aspire.utils import (
     J_conjugate,
