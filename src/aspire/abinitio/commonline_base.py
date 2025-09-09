@@ -5,11 +5,12 @@ import os
 import numpy as np
 import scipy.sparse as sparse
 
-from aspire.abinitio import _generate_shift_phase_and_filter
 from aspire.image import Image
 from aspire.operators import PolarFT
 from aspire.utils import Rotation, complex_type, fuzzy_mask, tqdm
 from aspire.utils.random import choice
+
+from .commonline_utils import _generate_shift_phase_and_filter
 
 logger = logging.getLogger(__name__)
 

@@ -3,15 +3,14 @@ import logging
 import numpy as np
 from scipy.linalg import eigh
 
-from aspire.abinitio import (
-    CLOrient3D,
-    JSync,
-    SyncVotingMixin,
+from aspire.abinitio import CLOrient3D, JSync, SyncVotingMixin
+from aspire.utils import J_conjugate, Rotation, all_pairs
+
+from .commonline_utils import (
     _complete_third_row_to_rot,
     _estimate_third_rows,
     _generate_shift_phase_and_filter,
 )
-from aspire.utils import J_conjugate, Rotation, all_pairs
 
 logger = logging.getLogger(__name__)
 
