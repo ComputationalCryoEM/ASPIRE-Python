@@ -18,9 +18,15 @@ def dtype(request):
 
 
 def test_estimate_third_rows(dtype):
+    """
+    Test we accurately estimate a set of 3rd rows of rotation matrices
+    given the 3rd row outer products vijs =  vi @ vj.T and viis = vi @ vi.T.
+    """
     n_img = 20
 
-    # Build outer products vijs, viis, and get ground truth third rows.
+    # `build_outer_products` generates a set of ground truth 3rd rows
+    # of rotation matrices, then forms the outer products vijs =  vi @ vj.T
+    # and viis = vi @ vi.T.
     vijs, viis, gt_vis = build_outer_products(n_img, dtype)
 
     # Estimate third rows from outer products.
@@ -37,6 +43,10 @@ def test_estimate_third_rows(dtype):
 
 
 def test_complete_third_row(dtype):
+    """
+    Test that `complete_third_row_to_rot` produces a proper rotations
+    given a set of 3rd rows.
+    """
     # Build random third rows.
     r3 = randn(10, 3, seed=123).astype(dtype)
     r3 /= np.linalg.norm(r3, axis=1)[..., np.newaxis]
@@ -61,6 +71,11 @@ def test_complete_third_row(dtype):
 
 
 def test_J_sync_power_method(dtype):
+    """
+    Test that the J_sync `power_method` returns a set of signs indicating
+    the set of relative rotations that need to be J-conjugated to attain
+    global handedness consistency.
+    """
     n = 25
     rots = Rotation.generate_random_rotations(n, dtype=dtype).matrices
 
@@ -73,7 +88,7 @@ def test_J_sync_power_method(dtype):
         Ri = rots[i]
         for j in range(i + 1, n):
             Rj = rots[j]
-            Rij = Ri @ Rj.T
+            Rij = Ri.T @ Rj
             if signs[ij] == -1:
                 Rij = J_conjugate(Rij)
             Rijs[ij] = Rij
