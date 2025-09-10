@@ -361,7 +361,9 @@ class LegacyNoiseEstimator(NoiseEstimator):
     Isotropic noise estimator ported from MATLAB `cryo_noise_estimation`.
     """
 
-    def __init__(self, src, bg_radius=None, max_d=None, batch_size=512, normalize_psd=False):
+    def __init__(
+        self, src, bg_radius=None, max_d=None, batch_size=512, normalize_psd=False
+    ):
         """
         Given an `ImageSource`, prepares for estimation of noise spectrum.
 
@@ -622,12 +624,9 @@ class LegacyNoiseEstimator(NoiseEstimator):
                 end = min(n_img, start + batch_size)
                 cnt = end - start
 
-                samples[:cnt] = xp.asarray(images[start:end].asnumpy()[:,samples_idx])
+                samples[:cnt] = xp.asarray(images[start:end].asnumpy()[:, samples_idx])
                 E += xp.sum(
-                    (
-                        samples[:cnt]
-                        - xp.mean(samples[:cnt],axis=-1).reshape(cnt, 1)
-                    )
+                    (samples[:cnt] - xp.mean(samples[:cnt], axis=-1).reshape(cnt, 1))
                     ** 2
                 )
 
