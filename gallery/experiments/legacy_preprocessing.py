@@ -1,6 +1,7 @@
 """
 Legacy Preprocessing Pipeline
 =============================
+
 This notebook demonstrates reproducing preprocessing results from the
 legacy ASPIRE MATLAB workflow system for the EMPIAR 10028 ribosome
 dataset.
