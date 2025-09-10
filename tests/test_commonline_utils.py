@@ -70,37 +70,49 @@ def test_complete_third_row(dtype):
     assert np.allclose(np.linalg.det(R), 1)
 
 
-def test_J_sync_power_method(dtype):
+def test_J_sync(dtype):
     """
     Test that the J_sync `power_method` returns a set of signs indicating
     the set of relative rotations that need to be J-conjugated to attain
-    global handedness consistency.
+    global handedness consistency, and that `global_J_sync` returns the
+    ground truth rotations up to a spurious J-conjugation.
     """
     n = 25
     rots = Rotation.generate_random_rotations(n, dtype=dtype).matrices
 
-    # Generate random signs [-1, 1].
+    # Generate ground truth and randomly J-conjugate relative rotations,
+    # keeping track of the signs associated with J-conjugated rotations.
     n_choose_2 = (n * (n - 1)) // 2
     signs = np.random.randint(0, 2, n_choose_2) * 2 - 1
-    Rijs = np.zeros((n_choose_2, 3, 3), dtype=dtype)
+    Rijs_gt = np.zeros((n_choose_2, 3, 3), dtype=dtype)
+    Rijs_conjugated = np.zeros((n_choose_2, 3, 3), dtype=dtype)
     ij = 0
     for i in range(n - 1):
         Ri = rots[i]
         for j in range(i + 1, n):
             Rj = rots[j]
-            Rij = Ri.T @ Rj
+            Rijs_gt[ij] = Rij = Ri.T @ Rj
             if signs[ij] == -1:
                 Rij = J_conjugate(Rij)
-            Rijs[ij] = Rij
+            Rijs_conjugated[ij] = Rij
             ij += 1
 
-    # Initialize JSync instance and perform power method.
+    # Initialize JSync instance with default params.
     J_sync = JSync(n)
-    signs_est = J_sync.power_method(Rijs)
 
-    # signs_est should be correct up to multiplication by -1.
-    # So we force signs/signs_est to start with +1.
+    # Perform power method and check that signs are correct up to
+    # multilication by -1. Also check dtype pass-through.
+    signs_est = J_sync.power_method(Rijs_conjugated)
     np.testing.assert_allclose(signs[0] * signs, signs_est[0] * signs_est)
-
-    # Test dtype passthrough.
     assert signs_est.dtype == dtype
+
+    # Perform global J sync and check that rotations are correct up to
+    # a spurious J conjugation. Also check dtype pass-through.
+    Rijs_sync = J_sync.global_J_sync(Rijs_conjugated)
+
+    # If the first is off by a J, J-conjugate the whole set.
+    if np.allclose(Rijs_gt[0], J_conjugate(Rijs_sync[0])):
+        Rijs_sync = J_conjugate(Rijs_sync)
+
+    np.testing.assert_allclose(Rijs_sync, Rijs_gt)
+    assert Rijs_sync.dtype == dtype

@@ -332,13 +332,9 @@ class CLSymmetryCn(CLOrient3D):
         """
 
         # Determine relative handedness of vijs.
-        sign_ij_J = self.J_sync.power_method(vijs)
+        vijs = self.J_sync.global_J_sync(vijs)
 
-        # Synchronize vijs
-        for i, sign in enumerate(sign_ij_J):
-            if sign == -1:
-                vijs[i] = J_conjugate(vijs[i])
-
+        # Determine relative handedness of viis, given synchronized vijs.
         viis = self.J_sync.sync_viis(vijs, viis)
 
         return vijs, viis
