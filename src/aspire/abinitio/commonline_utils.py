@@ -415,6 +415,30 @@ class JSync:
         self.max_iters = max_iters
         self.seed = seed
 
+    def global_J_sync(self, vijs):
+        """
+        Global J-synchronization of all third row outer products. Given 3x3 matrices vijs, each
+        of which might contain a spurious J (ie. vij = J*vi*vj^T*J instead of vij = vi*vj^T),
+        we return vijs that all have either a spurious J or not.
+
+        :param vijs: An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding
+        outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
+        might have a spurious J independently of other estimates.
+
+        :return: vijs, all of which have a spurious J or not.
+        """
+
+        # Determine relative handedness of vijs.
+        sign_ij_J = self.power_method(vijs)
+
+        # Synchronize vijs
+        vijs_sync = vijs.copy()
+        for i, sign in enumerate(sign_ij_J):
+            if sign == -1:
+                vijs_sync[i] = J_conjugate(vijs[i])
+
+        return vijs_sync
+
     def power_method(self, vijs):
         """
         Calculate the leading eigenvector of the J-synchronization matrix
