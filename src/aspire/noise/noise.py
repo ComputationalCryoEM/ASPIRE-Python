@@ -361,7 +361,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
     Isotropic noise estimator ported from MATLAB `cryo_noise_estimation`.
     """
 
-    def __init__(self, src, bg_radius=None, max_d=None, batch_size=512):
+    def __init__(self, src, bg_radius=None, max_d=None, batch_size=512, normalize_psd=False):
         """
         Given an `ImageSource`, prepares for estimation of noise spectrum.
 
@@ -375,6 +375,8 @@ class LegacyNoiseEstimator(NoiseEstimator):
         :param max_d: Max computed correlation distance as a proportion of `src.L`.
             Default of `None` uses `np.floor(src.L/3) / L`.
         :param batch_size:  The size of the batches in which to compute the variance estimate.
+        :param normalize_psd: Optionally normalize PSD in way that reproduces MATLAB intermediates.
+            Only useful if utilizing the `PSD` for applications outside of built-in legacy whitening.
         """
 
         if bg_radius is None:
@@ -385,6 +387,8 @@ class LegacyNoiseEstimator(NoiseEstimator):
         self.max_d = max_d
         if self.max_d is None:
             self.max_d = np.floor(src.L / 3) / src.L
+
+        self.normalize_psd = bool(normalize_psd)
 
     def estimate(self):
         """
@@ -414,6 +418,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
             samples_idx,
             max_d_pixels,
             batch_size=self.batch_size,
+            normalize_psd=self.normalize_psd,
         )[0]
 
         return psd
@@ -552,7 +557,7 @@ class LegacyNoiseEstimator(NoiseEstimator):
            Default of `None` yields `np.floor(L / 3)`.
         :param batch_size:  The size of the batches in which to compute the variance estimate.
         :normalize_psd:  Optionally normalize returned PSD.
-            Disabled by default because it will typiccally be
+            Disabled by default because it will typically be
             renormalized later in preperation for the convolution
             application in `Image.legacy_whiten`.
             Enable to reproduce legacy PSD.
@@ -566,9 +571,6 @@ class LegacyNoiseEstimator(NoiseEstimator):
         n_img = images.n_images
         L = samples_idx.shape[-1]
         batch_size = min(batch_size, n_img)
-
-        # Migrate mask to GPU as needed
-        _samples_idx = xp.asarray(samples_idx)
 
         # Correlations more than `max_d` pixels apart are not computed.
         if max_d is None:
@@ -612,25 +614,24 @@ class LegacyNoiseEstimator(NoiseEstimator):
             # to estimate it.
 
             E = 0.0  # Total energy of the noise samples used to estimate the power spectrum.
-            samples = xp.zeros((batch_size, L, L), dtype=np.float64)
+            n_samples_per_img = int(np.count_nonzero(samples_idx))
+            samples = xp.zeros((batch_size, n_samples_per_img), dtype=np.float64)
             for start in trange(
                 0, n_img, batch_size, desc="Estimating image noise energy"
             ):
                 end = min(n_img, start + batch_size)
                 cnt = end - start
 
-                samples[:cnt, _samples_idx] = images[start:end].asnumpy()[0][
-                    samples_idx
-                ]
+                samples[:cnt] = xp.asarray(images[start:end].asnumpy()[:,samples_idx])
                 E += xp.sum(
                     (
                         samples[:cnt]
-                        - xp.mean(samples[:cnt], axis=(1, 2)).reshape(cnt, 1, 1)
+                        - xp.mean(samples[:cnt],axis=-1).reshape(cnt, 1)
                     )
                     ** 2
                 )
+
             # Mean energy of the noise samples
-            n_samples_per_img = xp.count_nonzero(_samples_idx)
             meanE = E / (n_samples_per_img * n_img)
 
             # Normalize P2 such that its mean energy is preserved and is equal to
