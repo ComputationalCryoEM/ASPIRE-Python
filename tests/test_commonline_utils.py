@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from aspire.abinitio import (
+from aspire.abinitio.commonline_utils import (
     JSync,
     _complete_third_row_to_rot,
     _estimate_third_rows,
