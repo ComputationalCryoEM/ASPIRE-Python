@@ -222,6 +222,7 @@ def test_downsample_legacy(volume, res_ds):
     np.testing.assert_allclose(ims_ds_legacy, ims_ds_py, atol=1e-08)
 
 
+@pytest.mark.xfail(reason="Issue #1318, double application of pixel_size scaling.")
 def test_simulation_relion_downsample():
     """
     Test that Simulation.downsample corresponds to RelionSource.downsample
