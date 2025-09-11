@@ -506,7 +506,9 @@ class SteerableBasis2D(Basis, abc.ABC):
 
         coef = Coef(self, np.eye(self.count, dtype=self.dtype))
         img = coef.evaluate()
-        img.pixel_size = 1  # In future maybe can get pixel_Size from `Coef`
+        # Note this may raise at run time for filters requiring `pixel_size` (eg CTFFilter)
+        # Alternative is to make `pixel_size` required for all calls to `filter_to_basis_mat`.
+        img.pixel_size = kwargs.get("pixel_size", None)
 
         # Expansion can fail for some filters on specific basis vectors.
         # Loop over the expanding the filtered basis vectors one by one,
