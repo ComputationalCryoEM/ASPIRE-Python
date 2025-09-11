@@ -67,7 +67,7 @@ defocus_max = 25000
 defocus_ct = 7
 
 ctf_filters = [
-    RadialCTFFilter(pixel_size=original_vol.pixel_size, defocus=d)
+    RadialCTFFilter(defocus=d)
     for d in np.linspace(defocus_min, defocus_max, defocus_ct)
 ]
 

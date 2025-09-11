@@ -68,7 +68,7 @@ alpha = 0.1  # Amplitude contrast
 print("Initialize simulation object and CTF filters.")
 # Create filters
 ctf_filters = [
-    RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
+    RadialCTFFilter(voltage, defocus=d, Cs=2.0, alpha=0.1)
     for d in np.linspace(defocus_min, defocus_max, defocus_ct)
 ]
 
@@ -94,6 +94,7 @@ sim = Simulation(
     amplitudes=1.0,
     dtype=dtype,
     noise_adder=noise_adder,
+    pixel_size=pixel_size,
 )
 
 
@@ -108,7 +109,9 @@ ffbbasis = FFBBasis2D((img_size, img_size), dtype=dtype)
 h_idx = sim.filter_indices
 
 # Evaluate CTF in the 8X8 FB basis
-h_ctf_fb = [ffbbasis.filter_to_basis_mat(filt) for filt in ctf_filters]
+h_ctf_fb = [
+    ffbbasis.filter_to_basis_mat(filt, pixel_size=pixel_size) for filt in ctf_filters
+]
 
 # Get clean images from projections of 3D map.
 print("Apply CTF filters to clean images.")

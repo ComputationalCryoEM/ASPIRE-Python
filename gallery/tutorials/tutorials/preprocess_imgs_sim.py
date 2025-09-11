@@ -54,7 +54,7 @@ alpha = 0.1  # Amplitude contrast
 print("Initialize simulation object and CTF filters.")
 # Create CTF filters
 ctf_filters = [
-    RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
+    RadialCTFFilter(voltage, defocus=d, Cs=2.0, alpha=0.1)
     for d in np.linspace(defocus_min, defocus_max, defocus_ct)
 ]
 
@@ -75,6 +75,7 @@ source = Simulation(
     vols=vols,
     unique_filters=ctf_filters,
     noise_adder=noise_adder,
+    pixel_size=pixel_size,
 )
 
 # %%

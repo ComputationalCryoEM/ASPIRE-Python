@@ -22,7 +22,9 @@ print(img_data.shape, img_data.dtype)
 
 # Create an ASPIRE Image instance from the data
 #   We'll tell it to convert to floating point data as well.
-im = Image(img_data, dtype=np.float64)
+#   Adding a `pixel_size` will pass through to subsequent codes like
+#   filtering which may require it.
+im = Image(img_data, pixel_size=1, dtype=np.float64)
 
 # %%
 # Plot the Image Stack
@@ -57,6 +59,6 @@ im.downsample(80).show()
 # CTF Filter
 # ----------
 
-# pixel_size/defous_u/defocus_v in angstrom, voltage in kV
-filter = CTFFilter(pixel_size=1, voltage=100, defocus_u=1500, defocus_v=2000)
+# defous_u/defocus_v in angstrom, voltage in kV
+filter = CTFFilter(voltage=100, defocus_u=1500, defocus_v=2000)
 im.filter(filter).show()
