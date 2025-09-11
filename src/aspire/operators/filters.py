@@ -460,7 +460,7 @@ class CTFFilter(Filter):
             )
         # and that it is a floating point value.
         pixel_size = float(pixel_size)
-        
+
         # Reference MATLAB code, includes reference to paper
         #    Mindell, J. A.; Grigorieff, N. (2003).
         # https://github.com/PrincetonUniversity/aspire/blob/760a43b35453e55ff2d9354339e9ffa109a25371/projections/cryo_CTF_Relion.m#L34
@@ -503,6 +503,7 @@ class CTFFilter(Filter):
             h *= np.exp(-self.B * s**2)
 
         return h
+
 
 class RadialCTFFilter(CTFFilter):
     def __init__(self, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0):
