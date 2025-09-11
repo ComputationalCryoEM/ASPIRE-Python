@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from numpy.linalg import norm, svd
 
-from aspire.abinitio import CLOrient3D, JSync
+from aspire.abinitio import CLMatrix, JSync
 from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, trange
@@ -17,7 +17,7 @@ from .commonline_utils import (
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryC3C4(CLOrient3D):
+class CLSymmetryC3C4(CLMatrix):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with
     C3 and C4 cyclic symmetry.
