@@ -2,14 +2,14 @@ import logging
 
 import numpy as np
 
-from aspire.abinitio import CLOrient3D, SyncVotingMixin
+from aspire.abinitio import CLMatrix, SyncVotingMixin
 from aspire.utils import nearest_rotations
 from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
 
 
-class CLSyncVoting(CLOrient3D, SyncVotingMixin):
+class CLSyncVoting(CLMatrix, SyncVotingMixin):
     """
     Define a class to estimate 3D orientations using synchronization matrix and voting method.
 
