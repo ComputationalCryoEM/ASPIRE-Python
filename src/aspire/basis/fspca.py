@@ -617,7 +617,7 @@ class FSPCABasis(SteerableBasis2D):
             self.evaluate_to_image_basis(coef).shift(shifts)
         )
 
-    def filter_to_basis_mat(self, f):
+    def filter_to_basis_mat(self, f, **kwargs):
         """
         Convert a filter into a basis representation.
 

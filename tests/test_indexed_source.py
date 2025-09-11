@@ -84,7 +84,6 @@ def test_filter_mapping():
     defoci = np.linspace(1000, 25000, N // 2)
     ctf_filters = [
         CTFFilter(
-            v.pixel_size,
             200,
             defocus_u=defoci[d],
             defocus_v=defoci[-d],

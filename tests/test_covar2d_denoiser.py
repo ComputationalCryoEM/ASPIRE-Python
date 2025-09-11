@@ -187,12 +187,13 @@ def test_filter_to_basis_mat_ctf(coef, basis):
     # Apply the basis filter operator.
     # Note transpose because `apply` expects and returns column vectors.
     coef_ftbm = (
-        basis.filter_to_basis_mat(filt, truncate=False, pixel_size=1) @ coef.asnumpy().T
+        basis.filter_to_basis_mat(filt, truncate=False, pixel_size=pixel_size)
+        @ coef.asnumpy().T
     ).T
 
     # Apply evaluate->filter->expand manually
     imgs = coef.evaluate()
-    imgs.pixel_size = 1  # Possible in future get from `Coef`
+    imgs.pixel_size = pixel_size  # Possible in future get from `Coef`
     imgs_manual = imgs.filter(filt)
     coef_manual = basis.expand(imgs_manual)
 
