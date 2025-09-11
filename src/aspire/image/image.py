@@ -594,7 +594,10 @@ class Image:
         # Second note, filter and grid dtype may not match image dtype,
         # upcast both here for most accurate convolution.
         filter_values = xp.asarray(
-            filter.evaluate_grid(self.resolution, dtype=np.float64, pixel_size=self.pixel_size), dtype=np.float64
+            filter.evaluate_grid(
+                self.resolution, dtype=np.float64, pixel_size=self.pixel_size
+            ),
+            dtype=np.float64,
         )
 
         # Convolve
