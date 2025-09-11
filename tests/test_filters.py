@@ -23,6 +23,7 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
 class SimTestCase(TestCase):
     test_filter = ArrayFilter(np.random.randn(8, 8))
+    filter_eval_kwargs = dict()
 
     def setUp(self):
         self.dtype = np.float32
@@ -34,7 +35,7 @@ class SimTestCase(TestCase):
 
     def testFunctionFilter(self):
         filt = FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2))
-        result = filt.evaluate(self.omega)
+        result = filt.evaluate(self.omega, **self.filter_eval_kwargs)
         self.assertEqual(result.shape, (256,))
         self.assertTrue(
             np.allclose(
@@ -56,13 +57,13 @@ class SimTestCase(TestCase):
         self.assertTrue(np.allclose(result, np.zeros(256)))
 
     def testIdentityFilter(self):
-        result = IdentityFilter().evaluate(self.omega)
+        result = IdentityFilter().evaluate(self.omega, **self.filter_eval_kwargs)
         # For all filters, we should get a 1d ndarray back on evaluate
         self.assertEqual(result.shape, (256,))
         self.assertTrue(np.allclose(result, np.ones(256)))
 
     def testScalarFilter(self):
-        result = ScalarFilter(value=1.5).evaluate(self.omega)
+        result = ScalarFilter(value=1.5).evaluate(self.omega, **self.filter_eval_kwargs)
         self.assertEqual(result.shape, (256,))
         self.assertTrue(np.allclose(result, np.repeat(1.5, 256)))
 
@@ -71,7 +72,7 @@ class SimTestCase(TestCase):
             filter=FunctionFilter(lambda x, y: np.exp(-(x**2 + y**2) / 2)),
             power=0.5,
         )
-        result = filt.evaluate(self.omega)
+        result = filt.evaluate(self.omega, **self.filter_eval_kwargs)
         self.assertEqual(result.shape, (256,))
         self.assertTrue(
             np.allclose(
@@ -89,39 +90,30 @@ class SimTestCase(TestCase):
             )
         )
 
-    def testCTFFilter(self):
-        filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
-        result = filter.evaluate(self.omega, pixel_size=1)
-        self.assertEqual(result.shape, (256,))
-
     def testScaledFilter(self):
         scale_value = 2.5
-        result1 = filt1.evaluate(self.omega, pixel_size=1)
+        result1 = self.test_filter.evaluate(self.omega, **self.filter_eval_kwargs)
 
-        filt2 = ScaledFilter(filt1, scale_value)
-        result2 = filt2.evaluate(self.omega * scale_value, pixel_size=1)
-        self.assertTrue(np.allclose(result1, result2, atol=utest_tolerance(self.dtype)))
-
-    def testCTFScale(self):
-        filt = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
-        result1 = filt.evaluate(self.omega, pixel_size=1)
-        scale_value = 2.5
-        filt = filt.scale(scale_value)
-        # scaling a CTFFilter scales the pixel size which cancels out
-        # a corresponding scaling in omega
-        result2 = filt.evaluate(self.omega * scale_value, pixel_size=1)
+        filt2 = ScaledFilter(self.test_filter, scale_value)
+        result2 = filt2.evaluate(self.omega * scale_value, **self.filter_eval_kwargs)
         self.assertTrue(np.allclose(result1, result2, atol=utest_tolerance(self.dtype)))
 
     def testDualFilter(self):
-        result = self.test_filter.evaluate(-self.omega)
+        result = self.test_filter.evaluate(-self.omega, **self.filter_eval_kwargs)
         dual_filter = self.test_filter.dual()
-        dual_result = dual_filter.evaluate(self.omega)
+        dual_result = dual_filter.evaluate(self.omega, **self.filter_eval_kwargs)
         self.assertTrue(np.allclose(result, dual_result))
 
     def testFilterSigns(self):
-        signs = np.sign(self.test_filter.evaluate(self.omega))
+        signs = np.sign(
+            self.test_filter.evaluate(self.omega, **self.filter_eval_kwargs)
+        )
         sign_filter = self.test_filter.sign
-        self.assertTrue(np.allclose(sign_filter.evaluate(self.omega), signs))
+        self.assertTrue(
+            np.allclose(
+                sign_filter.evaluate(self.omega, **self.filter_eval_kwargs), signs
+            )
+        )
 
 
 class SimTestCaseCTFFilter(SimTestCase):
@@ -130,6 +122,27 @@ class SimTestCaseCTFFilter(SimTestCase):
     """
 
     test_filter = CTFFilter()
+    filter_eval_kwargs = dict(pixel_size=1)
+
+    def testCTFFilter(self):
+        filter = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
+        result = filter.evaluate(self.omega, **self.filter_eval_kwargs)
+        self.assertEqual(result.shape, (256,))
+
+    def testRadialCTFFilter(self):
+        filter = RadialCTFFilter(defocus=2.5e4)
+        result = filter.evaluate(self.omega, **self.filter_eval_kwargs)
+        self.assertEqual(result.shape, (256,))
+
+    def testCTFScale(self):
+        filt = CTFFilter(defocus_u=1.5e4, defocus_v=1.5e4)
+        result1 = filt.evaluate(self.omega, **self.filter_eval_kwargs)
+        scale_value = 2.5
+        filt = filt.scale(scale_value)
+        # scaling a CTFFilter scales the pixel size which cancels out
+        # a corresponding scaling in omega
+        result2 = filt.evaluate(self.omega * scale_value, **self.filter_eval_kwargs)
+        self.assertTrue(np.allclose(result1, result2, atol=utest_tolerance(self.dtype)))
 
 
 DTYPES = [np.float32, np.float64]
