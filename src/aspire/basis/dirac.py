@@ -56,17 +56,21 @@ class DiracBasis(Basis):
         :param v: Dirac basis coefficents. [..., self.count]
         :return:  Standard basis coefficients. [..., *self.sz]
         """
-        _zeros = np.zeros  # Default to numpy array
-        if isinstance(v, xp.ndarray):
-            # Use cupy when `v` _and_ xp are cupy ndarray
+        _zeros = xp.zeros  # Default to xp array
+        mask = self.mask
+        if not isinstance(v, xp.ndarray):
+            # Do not use cupy when `v` _and_ xp are not both cupy ndarray
             # Avoids having to handle when cupy is not installed
-            _zeros = xp.zeros
+            #
+            # v is host, x and mask should be on host as well.
+            _zeros = np.zeros
+            mask = xp.asnumpy(self.mask)
 
         # Initialize zeros array of standard basis size.
         x = _zeros((v.shape[0], *self.sz), dtype=self.dtype)
 
         # Assign basis coefficient values
-        x[..., self.mask] = xp.asarray(v)
+        x[..., mask] = v
 
         return x
 
@@ -85,8 +89,14 @@ class DiracBasis(Basis):
         :param x:  Standard basis coefficients. [..., *self.sz]
         :return: Dirac basis coefficents. [..., self.count]
         """
+        mask = self.mask
+        if not isinstance(x, xp.ndarray):
+            # Do not use cupy when `x` _and_ xp are not both cupy ndarray
+            # Avoids having to handle when cupy is not installed
+            mask = xp.asnumpy(self.mask)
+
         # Applying the mask should flatten mask.ndim axes
-        return x[..., self.mask]
+        return x[..., mask]
 
 
 class DiracBasis2D(DiracBasis):
