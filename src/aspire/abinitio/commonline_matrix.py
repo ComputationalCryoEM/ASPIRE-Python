@@ -303,7 +303,7 @@ class CLMatrix(CLOrient3D):
         import cupy as cp
 
         # Read in contents of file
-        fp = os.path.join(os.path.dirname(__file__), "commonline_base.cu")
+        fp = os.path.join(os.path.dirname(__file__), "commonline_matrix.cu")
         with open(fp, "r") as fh:
             module_code = fh.read()
 
