@@ -14,11 +14,15 @@ logger = logging.getLogger(__name__)
 
 class CLMatrix(CLOrient3D):
     """
-    Define a class for estimating 3D orientations using common lines methods that
-    use a constructed commonlines matrix.
+    An intermediate base class to serve commonline algorithms that use
+    a commonline matrix.
     """
 
     def __init__(self, src, disable_gpu=False, **kwargs):
+        """
+        Initialize an object for estimating 3D orientations with a
+        commonline algorithm that uses a constructed commonlines matrix.
+        """
         super().__init__(src, **kwargs)
 
         # Sanity limit to match potential clmatrix dtype of int16.
