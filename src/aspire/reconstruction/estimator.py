@@ -13,7 +13,7 @@ class Estimator:
         self,
         src,
         basis=None,
-        batch_size=512,
+        batch_size=256,
         preconditioner="circulant",
         checkpoint_iterations=10,
         checkpoint_prefix="volume_checkpoint",
@@ -32,6 +32,7 @@ class Estimator:
         :param basis: 3D Basis to be used during estimation.
         :param batch_size: Optional batch size of images drawn from
             `src` during back projection and kernel estimation steps.
+            Reducing batch size should reduce memory footprint.
         :param preconditioner: Optional kernel preconditioner (`string`).
             Currently supported options are "circulant" or None.
         :param checkpoint_iterations: Optionally save `cg` estimated
