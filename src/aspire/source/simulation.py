@@ -230,7 +230,6 @@ class Simulation(ImageSource):
             "defocus_ang",
             "Cs",
             "alpha",
-            "pixel_size",
         )
 
         # get the CTF parameters, if they exist, for each filter
@@ -250,7 +249,6 @@ class Simulation(ImageSource):
                 "_rlnDefocusAngle",
                 "_rlnSphericalAberration",
                 "_rlnAmplitudeContrast",
-                "_rlnImagePixelSize",
             ],
             filter_values,
         )

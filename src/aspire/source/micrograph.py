@@ -348,7 +348,6 @@ class MicrographSimulation(MicrographSource):
         super().__init__(
             micrograph_count=micrograph_count,
             micrograph_size=micrograph_size,
-            pixel_size=self.volume.pixel_size,
             dtype=self.volume.dtype,
             pixel_size=pixel_size,
         )
