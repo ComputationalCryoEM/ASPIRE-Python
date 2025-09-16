@@ -95,7 +95,6 @@ sim = Simulation(
     pixel_size=pixel_size,
     dtype=dtype,
     noise_adder=noise_adder,
-    pixel_size=pixel_size,
 )
 
 

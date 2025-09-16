@@ -22,7 +22,7 @@ from aspire.volume import Volume
 # We load the Relion projections as a ``RelionSource`` and view the images.
 
 starfile = os.path.join(os.path.dirname(os.getcwd()), "data", "rln_proj_65.star")
-rln_src = RelionSource(starfile)
+rln_src = RelionSource(starfile, pixel_size=1)
 rln_src.images[:].show(colorbar=False)
 
 # %%
