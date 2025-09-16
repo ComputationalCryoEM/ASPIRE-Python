@@ -92,9 +92,9 @@ sim = Simulation(
     unique_filters=ctf_filters,
     offsets=0.0,
     amplitudes=1.0,
-    pixel_size=pixel_size,
     dtype=dtype,
     noise_adder=noise_adder,
+    pixel_size=pixel_size,
 )
 
 
