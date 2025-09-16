@@ -81,11 +81,11 @@ def source(volume):
 
 
 @pytest.fixture(scope="module")
-def basis(source):
+def basis(resolution, dtype):
     # We mask off to pass the existing test levels achieved
     # previously with FFB3D (which masks similarly implicitly).
-    mask = grid_3d(source.L, dtype=source.dtype)["r"] <= 1
-    return DiracBasis3D(source.L, mask=mask, dtype=source.dtype)
+    mask = grid_3d(resolution, dtype=dtype)["r"] <= 1
+    return DiracBasis3D(resolution, mask=mask, dtype=dtype)
 
 
 @pytest.fixture(scope="module")
