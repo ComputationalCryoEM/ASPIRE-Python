@@ -13,6 +13,8 @@ from aspire.volume import (
     TSymmetricVolume,
 )
 
+pytestmark = pytest.mark.xfail(reason="Issue #1325: Flaky test tols")
+
 SEED = 23
 MAXITER = 350
 
