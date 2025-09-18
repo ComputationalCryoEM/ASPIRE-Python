@@ -131,6 +131,9 @@ def test_dirac_basis_ndarray_private_roundtrip(basis, mask):
         # Negated mask joined with outer values should all be zero
         assert np.all((ref * ~mask) == 0)
 
+    assert y.shape == x.shape, "Incorrect shape"
+    assert isinstance(y, np.ndarray), "Incorrect return object type"
+
     np.testing.assert_equal(
         y, ref, err_msg="Arrays should be identical up to any `mask`."
     )
@@ -161,6 +164,9 @@ def test_dirac_basis_xparray_passthrough(basis, mask):
         ref = ref * _mask
         # Negated mask joined with outer values should all be zero
         assert xp.all((ref * ~_mask) == 0)
+
+    assert y.shape == x.shape, "Incorrect shape"
+    assert isinstance(y, xp.ndarray), "Incorrect return object type"
 
     np.testing.assert_equal(
         xp.asnumpy(y),
