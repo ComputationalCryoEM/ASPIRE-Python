@@ -27,7 +27,6 @@ from aspire.volume import LegacyVolume, Volume
 # Specify parameters
 img_size = 8  # image size in square
 num_imgs = 1024  # number of images
-px_sz = 10.0  # pixel size in angstrom
 num_eigs = 16  # number of eigen-vectors to keep
 dtype = np.float32
 
