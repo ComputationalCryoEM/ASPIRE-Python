@@ -117,12 +117,12 @@ class Simulation(ImageSource):
                 pixel_size = 1.0
             else:
                 pixel_size = self.vols.pixel_size
-        elif (self.vols.pixel_size is not None) and not np.isclose(
+        elif (self.vols.pixel_size is not None) and not np.allclose(
             pixel_size, self.vols.pixel_size
         ):
-            raise RuntimeError(
+            logger.warning(
                 f"`pixel_size`: {pixel_size} does not match volume pixel_size: {self.vols.pixel_size}."
-                " Set `pixel_size=None` to use volume pixel_size."
+                " Setting `pixel_size` to user provided value: {pixel_size}."
             )
 
         # Infer the details from volume when possible.

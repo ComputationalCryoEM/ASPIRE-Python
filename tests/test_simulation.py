@@ -630,7 +630,7 @@ def test_default_symmetry_group():
     assert str(sim.symmetry_group) == "C1"
 
 
-def test_pixel_size():
+def test_pixel_size(caplog):
     data = np.arange(8**3, dtype=np.float32).reshape(8, 8, 8)
 
     # Default to 1 angstrom when not provided.
@@ -646,9 +646,15 @@ def test_pixel_size():
     sim = Simulation(pixel_size=2.34)
     np.testing.assert_array_equal(sim.pixel_size, sim.vols.pixel_size)
 
-    # Check error is raised for mismatched pixel_size
-    with raises(RuntimeError, match=r".*does not match volume pixel_size.*"):
-        _ = Simulation(vols=vol, pixel_size=vol.pixel_size / 2)
+    # Check mismatched pixel_size warns and uses provided pixel_size.
+    user_px_sz = vol.pixel_size / 2
+    caplog.clear()
+    msg = "does not match volume pixel_size"
+    caplog.set_level(logging.WARN)
+    assert msg not in caplog.text
+    sim = Simulation(vols=vol, pixel_size=user_px_sz)
+    assert msg in caplog.text
+    np.testing.assert_allclose(sim.pixel_size, user_px_sz)
 
 
 def test_symmetry_group_inheritence():
