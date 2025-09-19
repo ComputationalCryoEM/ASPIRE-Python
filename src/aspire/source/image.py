@@ -213,7 +213,22 @@ class ImageSource(ABC):
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
 
+    @property
+    def pixel_size(self):
+        return self._pixel_size
+
+    @pixel_size.setter
+    def pixel_size(self, value):
+        """
+        Set the pixel_size attribute and update value in metadata.
+        """
+        self.set_metadata("_rlnImagePixelSize", value)
+        self._pixel_size = value
+
     def _populate_pixel_size(self, pixel_size):
+        """
+        Logic for populating pixel_size from user provided value or metadata info.
+        """
         # Populate pixel_size from metadata if possible.
         _pixel_size = None
         if self.has_metadata(["_rlnImagePixelSize"]):
@@ -243,8 +258,7 @@ class ImageSource(ABC):
         else:
             chosen = float(_pixel_size)
 
-        # Set pixel_size attribute and metadata.
-        self.set_metadata("_rlnImagePixelSize", chosen)
+        # Set pixel_size attribute.
         self.pixel_size = chosen
 
     @property
