@@ -67,6 +67,7 @@ def test_pixel_size(caplog):
         - "_rlnDetectorPixelSize" and "_rlnMagnification"
         - User provided pixel size
         - No pixel size provided
+        - Both user provided and metadata pixel size
     and check src.pixel_size is correct.
     """
     starfile_im_pix_size = os.path.join(DATA_DIR, "sample_particles_relion31.star")
@@ -92,5 +93,11 @@ def test_pixel_size(caplog):
     np.testing.assert_equal(src.pixel_size, pix_size)
 
     # Check we raise if pixel_size not provided and not found in metadata.
-    with pytest.raises(ValueError, match=r".*No pixel size found in metadata.*"):
+    with pytest.raises(ValueError, match="`pixel_size` not found in metadata"):
         src = RelionSource(starfile_no_pix_size)
+
+    # Check we warn if both provided and mismatched.
+    with pytest.warns(UserWarning, match="does not match pixel_size"):
+        src = RelionSource(starfile_im_pix_size, pixel_size=1.234)  # 1.4 in metadata
+        # Ensure we prefer user provided
+        np.testing.assert_allclose(src.pixel_size, 1.234)

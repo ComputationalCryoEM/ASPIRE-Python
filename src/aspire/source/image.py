@@ -2,6 +2,7 @@ import copy
 import functools
 import logging
 import os.path
+import warnings
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Iterable
@@ -204,29 +205,47 @@ class ImageSource(ABC):
                     )
                 )
 
-        # Populate pixel_size with metadata if possible.
-        if pixel_size is None:
-            if self.has_metadata(["_rlnImagePixelSize"]):
-                pixel_size = self.get_metadata(["_rlnImagePixelSize"])[0]
-            elif self.has_metadata(["_rlnDetectorPixelSize", "_rlnMagnification"]):
-                detector_pixel_size = self.get_metadata(["_rlnDetectorPixelSize"])[0]
-                magnification = self.get_metadata(["_rlnMagnification"])[0]
-                pixel_size = 10000 * detector_pixel_size / magnification
-            else:
-                raise ValueError(
-                    "No pixel size found in metadata. Pixel size must be provided."
-                )
-        else:
-            self.set_metadata("_rlnImagePixelSize", pixel_size)
-
-        self.pixel_size = float(pixel_size)
-
+        self._populate_pixel_size(pixel_size)
         self._populate_symmetry_group(symmetry_group)
 
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
+
+    def _populate_pixel_size(self, pixel_size):
+        # Populate pixel_size from metadata if possible.
+        _pixel_size = None
+        if self.has_metadata(["_rlnImagePixelSize"]):
+            _pixel_size = self.get_metadata(["_rlnImagePixelSize"])[0]
+        elif self.has_metadata(["_rlnDetectorPixelSize", "_rlnMagnification"]):
+            detector_pixel_size = self.get_metadata(["_rlnDetectorPixelSize"])[0]
+            magnification = self.get_metadata(["_rlnMagnification"])[0]
+            _pixel_size = 10000 * detector_pixel_size / magnification
+
+        # Resolve any pixel_size conflicts.
+        if _pixel_size is None and pixel_size is None:
+            raise ValueError(
+                "No pixel size found in metadata. Please provide `pixel_size` argument."
+            )
+
+        if pixel_size is not None:
+            # If both provided prefer user, warn on mismatch.
+            if _pixel_size is not None and not np.allclose(_pixel_size, pixel_size):
+                warnings.warn(
+                    f"User provided pixel_size: {pixel_size} angstrom, does not match"
+                    f" pixel_size found in metadata: {_pixel_size} angstrom. Setting"
+                    f" pixel_size to {pixel_size} angstrom.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            chosen = float(pixel_size)
+        else:
+            chosen = float(_pixel_size)
+
+        # Set pixel_size attribute and metadata.
+        self.set_metadata("_rlnImagePixelSize", chosen)
+        self.pixel_size = chosen
 
     @property
     def symmetry_group(self):
