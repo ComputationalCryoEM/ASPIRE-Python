@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
     help="Path to output STAR file relative to data folder",
 )
 @click.option(
-    "--pixel_size", default=1, type=float, help="Pixel size of images in STAR file"
+    "--pixel_size", default=None, type=float, help="Pixel size of images in STAR file"
 )
 @click.option(
     "--max_rows",

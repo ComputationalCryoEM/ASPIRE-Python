@@ -89,11 +89,11 @@ def test_pixel_size(caplog):
 
     # Check user provided pixel size.
     pix_size = 1.234
-    src = RelionSource(starfile_im_pix_size, pixel_size=pix_size)
+    src = RelionSource(starfile_no_pix_size, pixel_size=pix_size)
     np.testing.assert_equal(src.pixel_size, pix_size)
 
     # Check we raise if pixel_size not provided and not found in metadata.
-    with pytest.raises(ValueError, match="`pixel_size` not found in metadata"):
+    with pytest.raises(ValueError, match="No pixel size found in metadata"):
         src = RelionSource(starfile_no_pix_size)
 
     # Check we warn if both provided and mismatched.
