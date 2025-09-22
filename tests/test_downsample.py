@@ -317,21 +317,27 @@ def test_downsample_offsets(dtype, res):
 
 def test_pixel_size():
     """
-    Test downsampling is rescaling the `pixel_size` attribute.
+    Test downsampling is rescaling the `pixel_size` attribute for both Images
+    and ImageSource objects.
     """
     # Image sizes in pixels
     L = 8  # original
     dsL = 5  # downsampled
+    n = 10  # num images
 
-    # Construct a small test Image
-    img = Image(np.random.random((1, L, L)).astype(DTYPE, copy=False), pixel_size=1.23)
+    # Construct small test ImageSource and Image instances
+    src = Simulation(L=L, n=n)
+    img = src.images[:]
 
-    # Downsample the image
-    result = img.downsample(dsL)
-
-    # Confirm the pixel size is scaled
+    # Confirm the pixel size is scaled properly in both cases
     np.testing.assert_approx_equal(
-        result.pixel_size,
+        src.downsample(dsL).pixel_size,
+        src.pixel_size * L / dsL,
+        err_msg="Incorrect pixel size.",
+    )
+
+    np.testing.assert_approx_equal(
+        img.downsample(dsL).pixel_size,
         img.pixel_size * L / dsL,
         err_msg="Incorrect pixel size.",
     )
