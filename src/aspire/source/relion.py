@@ -43,7 +43,7 @@ class RelionSource(ImageSource):
         :param data_folder: Path to folder w.r.t which all relative paths to .mrcs files are resolved.
             If None, the folder corresponding to filepath is used.
         :param pixel_size: The pixel size of the images in angstroms. By default, pixel size is
-            populated from the STAR file if relevant metadata fields exist, otherwise set to 1.
+            populated from the STAR file if relevant metadata fields exist.
         :param B: the envelope decay of the CTF in inverse square angstrom (Default 0)
         :param n_workers: Number of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
         :param max_rows: Maximum number of rows in STAR file to read. If None, all rows are read.
