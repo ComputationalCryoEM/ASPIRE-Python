@@ -79,7 +79,6 @@ class CufinufftPlan(Plan):
         `(ntransforms, num_pts)` as CuPy array.
         """
 
-        # This avoids false positive complaint for the workaround.
         if not (signal.dtype == self.dtype or signal.dtype == self.complex_dtype):
             logger.warning(
                 "Incorrect dtypes passed to (a)nufft."
