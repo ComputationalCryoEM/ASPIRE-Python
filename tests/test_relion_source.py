@@ -169,3 +169,40 @@ def test_offsets_save(tmp_path):
 
     # Check saved offsets match original up to pixel_size scaling.
     np.testing.assert_allclose(angst_offsets / src.pixel_size, pixel_offsets)
+
+
+def test_save_downsample(tmp_path):
+    """
+    Test that saving a downsampled RelionSource saves the correctly
+    adjusted pixel_size and offsets.
+    """
+    # Starfile with pixel offsets. This starfile has _rlnDetectorPixelSize
+    # and _rlnMagnification metadata fields that will be used to determine
+    # the image pixel_size.
+    starfile = os.path.join(DATA_DIR, "sample_particles_relion30.star")
+
+    # Create RelionSource.
+    src = RelionSource(starfile)
+
+    # Check that detector metadata exists prior to downsample.
+    assert src.has_metadata("_rlnDetectorPixelSize")
+    assert src.has_metadata("_rlnMagnification")
+
+    # Downsample and check that detector metadata is removed.
+    L_ds = src.L // 2
+    src_ds = src.downsample(L_ds)
+    assert not src_ds.has_metadata("_rlnDetectorPixelSize")
+    assert not src_ds.has_metadata("_rlnMagnification")
+
+    # Save downsampled source and check that correct values are saved.
+    save_path = tmp_path / "downsampled_data.star"
+    src_ds.save(save_path)
+
+    metadata = RelionStarFile(save_path).get_merged_data_block()
+    saved_px_sz = metadata["_rlnImagePixelSize"][0]
+    saved_offsets_angst = np.column_stack(
+        (metadata["_rlnOriginXAngst"], metadata["_rlnOriginYAngst"])
+    )
+
+    np.testing.assert_allclose(saved_px_sz, src_ds.pixel_size)
+    np.testing.assert_allclose(saved_offsets_angst / saved_px_sz, src_ds.offsets)

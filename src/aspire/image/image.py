@@ -532,7 +532,7 @@ class Image:
         :param centered_fft: Default of True uses `centered_fft` to
             maintain ASPIRE-Python centering conventions.
 
-        :return: The downsampled Image object.
+        :return: NumPy array of downsampled Image data.
         """
 
         # Note image data is intentionally migrated via `xp.asarray`
