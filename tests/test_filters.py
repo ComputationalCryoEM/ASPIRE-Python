@@ -247,6 +247,7 @@ def test_ctf_reference():
     # Test match all significant digits above
     np.testing.assert_allclose(h, ref_h, atol=5e-5)
 
+
 def test_rectangular_ctf():
     """
     Compare a truncated rectangular CTF application with the
@@ -282,4 +283,3 @@ def test_rectangular_ctf():
     np.testing.assert_allclose(
         truncated_img_with_ctf * mask, full_img_with_ctf_truncated * mask, atol=1e-6
     )
-

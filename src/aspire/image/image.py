@@ -630,7 +630,8 @@ class Image:
         # Second note, filter and grid dtype may not match image dtype,
         # upcast both here for most accurate convolution.
         filter_values = xp.asarray(
-            filter.evaluate_grid(self.shape[-2:]), dtype=self.dtype, pixel_size=self.pixel_size
+            filter.evaluate_grid(self.shape[-2:], pixel_size=self.pixel_size),
+            dtype=np.float64,
         )
 
         # sanity check
