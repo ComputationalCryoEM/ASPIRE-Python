@@ -865,6 +865,12 @@ class ImageSource(ABC):
 
         self.L = L
 
+        # Remove detector metadata if it exists.
+        detector_keys = ["_rlnDetectorPixelSize", "_rlnMagnification"]
+        for key in detector_keys:
+            if self.has_metadata(key):
+                del self._metadata[key]
+
     @_as_copy
     def crop_pad(self, L, fill_value=0):
         """
