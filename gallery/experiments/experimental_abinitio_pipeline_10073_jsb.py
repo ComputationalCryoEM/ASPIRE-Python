@@ -29,8 +29,6 @@ https://www.ebi.ac.uk/empiar/EMPIAR-10073
 import logging
 from pathlib import Path
 
-import numpy as np
-
 from aspire.abinitio import CLSync3N
 from aspire.denoising import LegacyClassAvgSource
 from aspire.reconstruction import MeanEstimator
@@ -118,8 +116,8 @@ avgs.save(class_avg_fn, save_mode="single", overwrite=True)
 
 # We'll continue our pipeline by selecting ``n_classes`` from ``avgs``.
 # To capture a broader range of viewing angles, uniformly select every ``k`` image.
-k = (avgs.n - 1) // n_classes
-avgs = avgs[::k].cache()
+k = 3
+avgs = avgs[: n_classes * k : k].cache()
 
 
 # %%
@@ -136,8 +134,7 @@ avgs = avgs[::k].cache()
 logger.info("Apply custom mask")
 # 10073 benefits from a masking procedure that is more aggressive than the default.
 # Note, since we've manually masked, the default masking is disabled below in `CLSync3N`.
-# This also upcasts to double precision, which is helpful for this reconstruction.
-mask = fuzzy_mask((img_size, img_size), np.float64, r0=0.4 * img_size, risetime=2)
+mask = fuzzy_mask((img_size, img_size), avgs.dtype, r0=0.4 * img_size, risetime=2)
 avgs = ArrayImageSource(avgs.images[:] * mask)
 
 logger.info("Begin Orientation Estimation")
