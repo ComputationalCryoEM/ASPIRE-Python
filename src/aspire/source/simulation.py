@@ -124,6 +124,7 @@ class Simulation(ImageSource):
                 f"`pixel_size`: {pixel_size} does not match volume pixel_size: {self.vols.pixel_size}."
                 " Setting `pixel_size` to user provided value: {pixel_size}."
             )
+        self._original_pixel_size = pixel_size
 
         # Infer the details from volume when possible.
         super().__init__(
@@ -328,11 +329,19 @@ class Simulation(ImageSource):
         return self.generation_pipeline.forward(im, indices)
 
     def _apply_sim_filters(self, im, indices):
-        return self._apply_filters(
+        # Use original pixel_size when applying filters.
+        im.pixel_size = self._original_pixel_size
+
+        im = self._apply_filters(
             im,
             self.sim_filters,
             self.filter_indices[indices],
         )
+
+        # Recover correct pixel_size
+        im.pixel_size = self.pixel_size
+
+        return im
 
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """
