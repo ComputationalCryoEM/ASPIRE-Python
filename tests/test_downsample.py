@@ -32,6 +32,7 @@ def createImages(L, L_ds):
     # get images after downsample
     sim = sim.downsample(L_ds)
     imgs_ds = sim.images[:N]
+
     return imgs_org, imgs_ds
 
 
@@ -90,6 +91,7 @@ def checkSignalEnergy(data_org, data_ds):
 def test_downsample_2d_case(L, L_ds):
     # downsampling from size L to L_ds
     imgs_org, imgs_ds = createImages(L, L_ds)
+
     # check resolution is correct
     assert (N, L_ds, L_ds) == imgs_ds.shape
     # check center points for all images
@@ -222,7 +224,6 @@ def test_downsample_legacy(volume, res_ds):
     np.testing.assert_allclose(ims_ds_legacy, ims_ds_py, atol=1e-08)
 
 
-@pytest.mark.xfail(reason="Issue #1318, double application of pixel_size scaling.")
 def test_simulation_relion_downsample():
     """
     Test that Simulation.downsample corresponds to RelionSource.downsample
@@ -255,7 +256,7 @@ def test_simulation_relion_downsample():
         src.save(starfile)
 
         # Load Simulation source as a RelionSource
-        rln_src = RelionSource(starfile, pixel_size=1)
+        rln_src = RelionSource(starfile)
 
         # Downsample and test that images and attributes correspond to src_ds
         rln_src_ds = rln_src.downsample(src.L // 2)
