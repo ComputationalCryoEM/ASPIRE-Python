@@ -65,7 +65,7 @@ class ImageTestCase(TestCase):
         """
 
         # Create an ArrayImageSource directly from Numpy array
-        src = ArrayImageSource(self.ims_np)
+        src = ArrayImageSource(self.ims_np, pixel_size=1.0)
 
         # Ask the Source for all images in the stack as a Numpy array
         ims_np = src.images[:].asnumpy()
@@ -245,6 +245,46 @@ class ImageTestCase(TestCase):
             np.testing.assert_allclose(src.images[:], src2.images[:])
 
 
+def test_pixel_size(caplog):
+    """
+    Test pixel_size behavior for the following cases of (im.pixel_size, user pixel_size):
+    (None, None): ValueError
+    (im_px_sz, None): im_px_sz
+    (None, user_px_sz): user_px_sz
+    (im_px_sz, user_px_sz): user_px_sz, with override warning
+    """
+    ims_np = np.random.random((10, 8, 8))
+    im_px_sz = 1.23
+    user_px_sz = im_px_sz + 0.5
+    im = Image(ims_np, pixel_size=im_px_sz)
+
+    # (None, None):
+    with pytest.raises(ValueError, match=r"No pixel size found in metadata.*"):
+        _ = ArrayImageSource(ims_np)
+
+    # (im_px_sz, None):
+    src = ArrayImageSource(im)
+    np.testing.assert_allclose(src.pixel_size, im_px_sz)
+
+    # (None, user_px_sz):
+    # Should get same behavior for np.array or Image w/ pixel_size=None
+    src_np = ArrayImageSource(ims_np, pixel_size=user_px_sz)
+    np.testing.assert_allclose(src_np.pixel_size, user_px_sz)
+
+    src = ArrayImageSource(Image(ims_np), pixel_size=user_px_sz)
+    np.testing.assert_allclose(src.pixel_size, user_px_sz)
+
+    # (im_px_sz, user_px_sz):
+    caplog.clear()
+    caplog.set_level(logging.WARN)
+
+    src = ArrayImageSource(im, pixel_size=user_px_sz)
+    np.testing.assert_allclose(src.pixel_size, user_px_sz)
+
+    msg = f"Overriding im.pixel_size, {im_px_sz}, with user provided pixel_size: {user_px_sz}."
+    assert msg in caplog.text
+
+
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_dtype_passthrough(dtype):
     """
@@ -254,7 +294,7 @@ def test_dtype_passthrough(dtype):
     res = 32
     ims = np.ones((n_ims, res, res), dtype=dtype)
 
-    src = ArrayImageSource(ims)
+    src = ArrayImageSource(ims, pixel_size=1.0)
 
     # Check dtypes
     np.testing.assert_equal(src.dtype, dtype)

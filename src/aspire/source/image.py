@@ -1866,7 +1866,7 @@ class ArrayImageSource(ImageSource):
     """
 
     def __init__(
-        self, im, metadata=None, angles=None, symmetry_group=None, pixel_size=1.0
+        self, im, metadata=None, angles=None, symmetry_group=None, pixel_size=None
     ):
         """
         Initialize from an `Image` object.
@@ -1876,8 +1876,8 @@ class ArrayImageSource(ImageSource):
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
         :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms. Infered from `Image`, otherwise
-            defaults to 1.0 angstroms.
+        :param pixel_size: Pixel size of the images in angstroms. Default is None. When set, this overrides any pixel
+            size stored in `im` or its metadata. When None, the pixel size is taken from `im` if available.
         """
 
         if not isinstance(im, Image):
@@ -1888,6 +1888,19 @@ class ArrayImageSource(ImageSource):
                 raise RuntimeError(
                     "Creating Image object from Numpy array failed."
                     f" Original error: {str(e)}"
+                )
+
+        # Check for pixel_size conflict.
+        chosen_px_sz = im.pixel_size  # Use from Image if possible
+        if pixel_size is not None:
+            # Override with user provided
+            chosen_px_sz = pixel_size
+
+            # Warn if conflicting
+            if im.pixel_size is not None and not np.allclose(im.pixel_size, pixel_size):
+                logger.warning(
+                    f"Overriding im.pixel_size, {im.pixel_size},"
+                    f" with user provided pixel_size: {pixel_size}."
                 )
 
         # Now that we are an `Image`, check stack is 1D
@@ -1903,7 +1916,7 @@ class ArrayImageSource(ImageSource):
             metadata=metadata,
             memory=None,
             symmetry_group=symmetry_group,
-            pixel_size=im.pixel_size or pixel_size,
+            pixel_size=chosen_px_sz,
         )
 
         self._cached_im = im

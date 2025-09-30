@@ -150,7 +150,7 @@ class SimTestCase(TestCase):
         """
 
         wht_noise = np.random.randn(1024, 128, 128).astype(self.dtype)
-        src = ArrayImageSource(wht_noise)
+        src = ArrayImageSource(wht_noise, pixel_size=1.0)
 
         wht_noise_estimator = WhiteNoiseEstimator(src, batch_size=512)
         wht_noise_variance = wht_noise_estimator.estimate()
