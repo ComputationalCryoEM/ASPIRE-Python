@@ -56,9 +56,7 @@ class CoordinateSource(ImageSource, ABC):
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms.
-            Default `None` will attempt to infer `pixel_size` from
-            `CTFFilter` objects when available.
+        :param pixel_size: Pixel size of the images in angstroms (Required). Default is None.
         """
         mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
@@ -405,30 +403,14 @@ class CoordinateSource(ImageSource, ABC):
         # convert defocus_ang from degrees to radians
         filter_params[:, 3] *= np.pi / 180.0
 
-        # Check pixel_size
-        # Get pixel_sizes from CTFFilters
+        # Warn if CTF pixel_sizes do match self.pixel_size
         ctf_pixel_sizes = np.unique(filter_params[:, 6])
-        # Compare with source.pixel_size
         if not np.allclose(ctf_pixel_sizes, self.pixel_size):
             warnings.warn(
                 "Pixel size mismatch."
                 f"\n\tSource: {self.pixel_size}"
                 f"\n\tCTFs: {ctf_pixel_sizes}.",
                 stacklevel=2,
-            )
-
-        # Assign pixel_size from CTF,
-        # but only do this if all the CTFFilter pixel_sizes are consistent
-        if len(ctf_pixel_sizes) == 1:
-            self.pixel_size = ctf_pixel_sizes[0]  # take the unique single element
-            logger.info(
-                f"Assigning source pixel_size={self.pixel_size} from CTFFilters."
-            )
-        # otherwise let the user know
-        elif len(ctf_pixel_sizes) > 1:
-            logger.warning(
-                f"Unable to assign source pixel_size from CTFFilters, multiple pixel_sizes found. "
-                f"Using user provided pixel_size: {self.pixel_size} angstrom."
             )
 
         # construct filters
@@ -569,9 +551,7 @@ class BoxesCoordinateSource(CoordinateSource):
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms.
-            Default `None` will attempt to infer `pixel_size` from
-            `CTFFilter` objects when available.
+        :param pixel_size: Pixel size of the images in angstroms (Required). Default is None.
         """
         # instantiate super
         CoordinateSource.__init__(
@@ -701,9 +681,7 @@ class CentersCoordinateSource(CoordinateSource):
         attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms.
-            Default `None` will attempt to infer `pixel_size` from
-            `CTFFilter` objects when available.
+        :param pixel_size: Pixel size of the images in angstroms (Required). Default is None.
         """
         # instantiate super
         CoordinateSource.__init__(
