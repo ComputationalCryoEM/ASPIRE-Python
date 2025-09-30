@@ -305,8 +305,8 @@ def simulated_channelspin():
         data = dict(data)
 
     # Instantiate ASPIRE objects where appropriate
-    data["vols"] = Volume(data["vols"])
-    data["images"] = Image(data["images"])
+    data["vols"] = Volume(data["vols"], pixel_size=1.0)
+    data["images"] = Image(data["images"], pixel_size=1.0)
     data["rots"] = Rotation(_LegacySimulation.rots_zyx_to_legacy_aspire(data["rots"]))
 
     return data
