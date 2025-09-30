@@ -323,7 +323,8 @@ class MicrographSimulation(MicrographSource):
         :param projection_angles: Optional, projection rotation angles to pass to `Simulation`.
              Default `None` uses `Simulation` defaults.
              When provided must have shape `(particles_per_micrograph * micrograph_count, 3)`.
-
+        :param pixel_size: Pixel size of the images in angstroms. Default `None` infers pixel_size
+            from `volume` if possible. If set, overrides `volume` pixel_size.
         :param seed: Random seed.
         :param noise_adder: Append instance of NoiseAdder to generation pipeline.
         :param ctf_filters: Optional list of `Filter` objects to apply to particles.
