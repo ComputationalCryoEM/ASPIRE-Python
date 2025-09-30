@@ -91,7 +91,7 @@ np.random.shuffle(example_array)
 
 # So now that we have cooked up an example dataset, lets create an
 # ASPIRE source
-src = ArrayImageSource(example_array)
+src = ArrayImageSource(example_array, pixel_size=1.0)
 
 # Let's peek at the images to make sure they're shuffled up nicely
 src.images[:10].show()
