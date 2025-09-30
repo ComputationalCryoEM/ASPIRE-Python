@@ -48,7 +48,7 @@ class StarFileTestCase(TestCase):
         # Independent Image object for testing Image source methods
         L = 768
         self.im = Image(face(gray=True).astype("float64")[:L, :L])
-        self.img_src = ArrayImageSource(self.im)
+        self.img_src = ArrayImageSource(self.im, pixel_size=1.0)
 
         # We also want to flex the stack logic.
         self.n = 21
@@ -56,7 +56,7 @@ class StarFileTestCase(TestCase):
         # make each image methodically different
         im_stack = np.multiply(im_stack, np.arange(self.n)[:, None, None])
         self.im_stack = Image(im_stack)
-        self.img_src_stack = ArrayImageSource(self.im_stack)
+        self.img_src_stack = ArrayImageSource(self.im_stack, pixel_size=1.0)
 
         # Create a tmpdir object for this test instance
         self._tmpdir = tempfile.TemporaryDirectory()
