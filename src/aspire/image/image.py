@@ -582,7 +582,7 @@ class Image:
         :return: The downsampled Image object.
         """
         original_stack_shape = self.stack_shape
-        data = self.stack_reshape(-1)._data
+        data = self.stack_reshape(-1).asnumpy()
 
         ims_ds = self._downsample(
             data, ds_res, zero_nyquist=zero_nyquist, centered_fft=centered_fft
