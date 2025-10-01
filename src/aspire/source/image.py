@@ -254,12 +254,11 @@ class ImageSource(ABC):
                     UserWarning,
                     stacklevel=2,
                 )
-            chosen = float(pixel_size)
-        else:
-            chosen = float(_pixel_size)
+            self.pixel_size = float(pixel_size)
+            return
 
-        # Set pixel_size attribute.
-        self.pixel_size = chosen
+        # Otherwise use metadata value.
+        self.pixel_size = float(_pixel_size)
 
     @property
     def symmetry_group(self):
