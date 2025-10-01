@@ -76,7 +76,13 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.epsilon = epsilon
         self.match_fb = match_fb
         self.dtype = dtype
-        super().__init__(size, ell_max=None, dtype=self.dtype)
+        self.L = size[0] + (
+            size[0] % 2
+        )  # nres = size[0] in init, but init needs these, sigh
+        self.L1 = size[0]  # can str replace later, to make easier on eyes rn
+        if self.match_fb:
+            self.L = self.L1
+        super().__init__((self.L1, self.L1), ell_max=None, dtype=self.dtype)
 
     def _build(self):
         """
@@ -85,7 +91,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         # bandlimit set to basis size by default
         if not self.bandlimit:
-            self.bandlimit = self.nres
+            self.bandlimit = self.L
 
         # compute number of k's for each ell
         self._calc_k_max()
@@ -97,7 +103,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             # Regular Fourier-Bessel bandlimit (equivalent to pi*R**2)
             # Final self.count will be < self.max_basis_functions
             # See self._threshold_basis_functions()
-            self.max_basis_functions = int(self.nres**2 * np.pi / 4)
+            self.max_basis_functions = int(self.L1**2 * np.pi / 4)
 
         self._compute_maxitr_and_numsparse()
 
@@ -170,7 +176,9 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         self.smallest_lambda = np.min(self.bessel_zeros)
         self.greatest_lambda = np.max(self.bessel_zeros)
         self.max_ell = np.max(np.abs(self._ells))
-        self.h = 1 / (self.nres / 2)
+        self.h = 1 / (self.L // 2)
+        if self.match_fb:
+            self.h = 1 / (self.nres / 2)
 
         # give each ell a positive index increasing first in |ell|
         # then in sign, e.g. 0->1, -1->2, 1->3, -2->4, 2->5, etc.
@@ -216,17 +224,17 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         if self.epsilon >= 1e-4:
             numsparse = 8
-            maxitr = 1 + int(np.log2(self.nres)) // 2
+            maxitr = 1 + int(np.log2(self.L)) // 2
         elif self.epsilon >= 1e-7:
             numsparse = 16
-            maxitr = 1 + int(np.log2(self.nres))
+            maxitr = 1 + int(np.log2(self.L))
         elif self.epsilon >= 1e-10:
             numsparse = 22
-            maxitr = 1 + int(2 * np.log2(self.nres))
+            maxitr = 1 + int(2 * np.log2(self.L))
         else:
             # epsilon < 1e-10
             numsparse = 32
-            maxitr = 1 + int(3 * np.log2(self.nres))
+            maxitr = 1 + int(3 * np.log2(self.L))
 
         self.maxitr = maxitr
         self.numsparse = numsparse
@@ -244,11 +252,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             self.rs = grid["r"]
         else:
             # original implementation
-            R = self.nres // 2
-            x = np.arange(-R, R + self.nres % 2)
+            R = self.L // 2
+            x = np.arange(-R, R)
             xs, ys = np.meshgrid(x, x)
-            # Note, the original original grids were xs/R, R=nres//2.
-            self.xs, self.ys = xs / (self.nres / 2), ys / (self.nres / 2)
+            self.xs, self.ys = xs / R, ys / R
             self.rs = np.sqrt(self.xs**2 + self.ys**2)
         self.radial_mask = self.rs > 1 + 1e-13
 
@@ -260,11 +267,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Number of radial nodes
         # (Lemma 4.1)
         # compute max {2.4 * self.nres , Log2 ( 1 / epsilon) }
-        Q = int(np.ceil(2.4 * self.nres))
+        Q = int(np.ceil(2.4 * self.L))
         num_radial_nodes = Q
         tmp = 1 / (np.sqrt(np.pi))
         for q in range(1, Q + 1):
-            tmp = tmp / q * (np.sqrt(np.pi) * self.nres / 4)
+            tmp = tmp / q * (np.sqrt(np.pi) * self.L / 4)
             if tmp <= self.epsilon:
                 num_radial_nodes = int(max(q, np.log2(1 / self.epsilon)))
                 break
@@ -276,10 +283,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # (Lemma 4.2)
         # compute max {7.08 * self.nres, Log2(1/epsilon) + Log2(self.nres**2) }
 
-        S = int(max(7.08 * self.nres, -np.log2(self.epsilon) + 2 * np.log2(self.nres)))
+        S = int(max(7.08 * self.L, -np.log2(self.epsilon) + 2 * np.log2(self.L)))
         num_angular_nodes = S
         for s in range(int(self.greatest_lambda + self.ell_p_max) + 1, S + 1):
-            tmp = self.nres**2 * ((self.greatest_lambda + self.ell_p_max) / s) ** s
+            tmp = self.L**2 * ((self.greatest_lambda + self.ell_p_max) / s) ** s
             if tmp <= self.epsilon:
                 num_angular_nodes = int(max(int(s), np.log2(1 / self.epsilon)))
                 break
@@ -300,7 +307,10 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         ) * nodes + self.smallest_lambda
         nodes = nodes.reshape(self.num_radial_nodes, 1)
 
-        radius = self.nres / 2
+        radius = self.L // 2
+        if self.match_fb:
+            radius = self.nres / 2
+        # can we get the same from precomp?
         h = 1 / radius
 
         phi = (
@@ -501,6 +511,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         betas = self._step3(coefs)
         z = self._step2(betas)
         im = self._step1(z)
+
+        # remove padding
+        if self.L > self.L1:
+            im = im[:, 1:, 1:]
+
         return im.astype(self.dtype)
 
     def _evaluate_t(self, imgs):
@@ -513,7 +528,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         # See Section 3.5
         imgs = xp.array(imgs)  # Intentionally copying here, mutating.
+
+        # if dim is odd, pad to next even
+        if self.L > self.L1:
+            imgs = xp.pad(imgs, ((0, 0), (1, 0), (1, 0)))
         imgs[:, self.radial_mask] = 0
+
         z = self._step1_t(imgs)
         del imgs  # inform python we're done with imgs
         _cleanup()
@@ -535,7 +555,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         Step 1 of the adjoint transformation (images to coefficients).
         Calculates the NUFFT of the image on gridpoints `grid_xy`.
         """
-        im = im.reshape(-1, self.nres, self.nres).astype(complex_type(self.dtype))
+        im = im.reshape(-1, self.L, self.L).astype(complex_type(self.dtype))
         num_img = im.shape[0]
         z = xp.zeros(
             (num_img, self.num_radial_nodes, self.num_angular_nodes),
@@ -645,12 +665,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         im = anufft(
             z.astype(complex_type(self.dtype), copy=False),
             self.grid_xy,
-            (self.nres, self.nres),
+            (self.L, self.L),
             epsilon=self.epsilon,
         )
         im = im + im.conj()
         im = im.real
-        im = im.reshape(num_img, self.nres, self.nres)
+        im = im.reshape(num_img, self.L, self.L)
         im[:, self.radial_mask] = 0
 
         return xp.asnumpy(im)
@@ -666,12 +686,17 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # See Eqns. 3 and 4, Section 1.2
         ts = np.arctan2(self.ys, self.xs)
 
-        B = np.zeros((self.nres, self.nres, self.count), dtype=np.complex128)
+        B = np.zeros((self.L, self.L, self.count), dtype=np.complex128)
         for i in range(self.count):
             B[:, :, i] = self.basis_functions[i](self.rs, ts) * self.h
-        B = B.reshape(self.nres**2, self.count)
+
+        # Remove padding
+        if self.L > self.L1:
+            B = B[1:, 1:, :]
+
+        B = B.reshape(self.L1**2, self.count)
         B = transform_complex_to_real(B, self._ells)
-        B = B.reshape(self.nres**2, self.count)
+        B = B.reshape(self.L1**2, self.count)
         B = B[..., self._fle_to_fb_indices]
 
         return B
