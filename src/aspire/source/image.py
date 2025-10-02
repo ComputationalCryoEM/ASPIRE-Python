@@ -688,6 +688,14 @@ class ImageSource(ABC):
                 )
             self._metadata[metadata_field][indices] = values[:, i]
 
+    def pop_metadata(self, metadata_field):
+        """
+        Remove metadata field from self._metadata dictionary.
+
+        :param metadta_field: Field to remove.
+        """
+        return self._metadata.pop(metadata_field, None)
+
     def has_metadata(self, metadata_fields):
         """
         Find out if one or more metadata fields are available for this `ImageSource`.
@@ -867,8 +875,7 @@ class ImageSource(ABC):
         # Remove detector metadata if it exists.
         detector_keys = ["_rlnDetectorPixelSize", "_rlnMagnification"]
         for key in detector_keys:
-            if self.has_metadata(key):
-                del self._metadata[key]
+            self.pop_metadata(key)
 
     @_as_copy
     def crop_pad(self, L, fill_value=0):
@@ -1798,9 +1805,9 @@ class OrientedSource(IndexedSource):
             "_rlnOriginY",
         ]
         for key in rot_keys:
-            if self.has_metadata(key):
-                del self._metadata[key]
+            if self.pop_metadata(key) is not None:
                 _info_removed = True
+
         if _info_removed:
             logger.info(f"Removing orientation information passed by {self.src}.")
 
