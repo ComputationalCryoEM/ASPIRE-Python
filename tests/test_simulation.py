@@ -702,6 +702,38 @@ def test_cached_image_accessors():
     )
 
 
+def test_projections_and_clean_images_downsample():
+    """
+    Test `projections` and `clean_images` post downsample.
+    `projections` should remain unaltered and `clean_images` should
+    be resized with adjusted pixel_size.
+    """
+    n = 10
+    L = 32
+    L_ds = 21
+    px_sz = 1.23
+    ctf = [RadialCTFFilter(1.5e4)]
+
+    src = Simulation(
+        L=L,
+        n=n,
+        C=1,
+        noise_adder=WhiteNoiseAdder(var=0.123),
+        unique_filters=ctf,
+        pixel_size=px_sz,
+    )
+
+    src_ds = src.downsample(L_ds)
+
+    # Check pixel_size
+    np.testing.assert_allclose(src_ds.projections[:].pixel_size, px_sz)
+    np.testing.assert_allclose(src_ds.clean_images[:].pixel_size, px_sz * L / L_ds)
+
+    # Check image size
+    np.testing.assert_allclose(src_ds.projections[:].shape[-1], L)
+    np.testing.assert_allclose(src_ds.clean_images[:].shape[-1], L_ds)
+
+
 def test_save_overwrite(caplog):
     """
     Test that the overwrite flag behaves as expected.
