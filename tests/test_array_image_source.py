@@ -275,14 +275,9 @@ def test_pixel_size(caplog):
     np.testing.assert_allclose(src.pixel_size, user_px_sz)
 
     # (im_px_sz, user_px_sz):
-    caplog.clear()
-    caplog.set_level(logging.WARN)
-
-    src = ArrayImageSource(im, pixel_size=user_px_sz)
-    np.testing.assert_allclose(src.pixel_size, user_px_sz)
-
-    msg = f"Overriding im.pixel_size, {im_px_sz}, with user provided pixel_size: {user_px_sz}."
-    assert msg in caplog.text
+    with pytest.warns(UserWarning, match="does not match pixel_size"):
+        src = ArrayImageSource(im, pixel_size=user_px_sz)
+        np.testing.assert_allclose(src.pixel_size, user_px_sz)
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])

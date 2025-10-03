@@ -109,6 +109,58 @@ def test_micrograph_raises_error_simulation():
     assert str(e_info.value) == "`volume` should be of type `Volume`."
 
 
+def test_micrograph_simulation_pixel_size():
+    """
+    Test for various cases of (vol_px_sz, user_px_sz)
+    """
+    vol_px_sz = 1.23
+    user_px_sz = 2.34
+
+    L = 10
+    # Case (None, None): None
+    vol = AsymmetricVolume(L=L, C=1).generate()
+    micrograph_sim = MicrographSimulation(
+        vol,
+        micrograph_size=50,
+        micrograph_count=1,
+        particles_per_micrograph=2,
+    )
+    assert micrograph_sim.pixel_size is None
+
+    # Case (vol_px_sz, None): vol_px_sz
+    vol = AsymmetricVolume(L=L, C=1, pixel_size=vol_px_sz).generate()
+    micrograph_sim = MicrographSimulation(
+        vol,
+        micrograph_size=50,
+        micrograph_count=1,
+        particles_per_micrograph=2,
+    )
+    np.testing.assert_allclose(micrograph_sim.pixel_size, vol_px_sz)
+
+    # Case (None, user_px_sz): user_px_sz
+    vol = AsymmetricVolume(L=L, C=1).generate()
+    micrograph_sim = MicrographSimulation(
+        vol,
+        micrograph_size=50,
+        micrograph_count=1,
+        particles_per_micrograph=2,
+        pixel_size=user_px_sz,
+    )
+    np.testing.assert_allclose(micrograph_sim.pixel_size, user_px_sz)
+
+    # Case (vol_px_sz, user_px_sz): user_px_sz w/ warning
+    vol = AsymmetricVolume(L=L, C=1, pixel_size=vol_px_sz).generate()
+    with pytest.warns(UserWarning, match="does not match pixel_size"):
+        micrograph_sim = MicrographSimulation(
+            vol,
+            micrograph_size=50,
+            micrograph_count=1,
+            particles_per_micrograph=2,
+            pixel_size=user_px_sz,
+        )
+        np.testing.assert_allclose(micrograph_sim.pixel_size, user_px_sz)
+
+
 def test_micrograph_raises_error_image_size(vol_fixture):
     """
     Test the MicrographSimulation class raises errors when the image size is larger than micrograph size.

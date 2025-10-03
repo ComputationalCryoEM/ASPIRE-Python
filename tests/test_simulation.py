@@ -4,7 +4,7 @@ import tempfile
 from unittest import TestCase
 
 import numpy as np
-from pytest import raises
+import pytest
 
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
@@ -61,19 +61,23 @@ class SimVolTestCase(TestCase):
 
     def testResolutionMismatch(self):
         # Test we raise with expected error message with Volume/Simulation mismatch.
-        with raises(RuntimeError, match=r"Simulation must have the same resolution*"):
+        with pytest.raises(
+            RuntimeError, match=r"Simulation must have the same resolution*"
+        ):
             _ = Simulation(L=8, vols=self.vol)
 
     def testNonVolumeError(self):
         # Test we raise with expected error if vols is not a Volume instance.
-        with raises(RuntimeError, match=r"`vols` should be a Volume instance*"):
+        with pytest.raises(RuntimeError, match=r"`vols` should be a Volume instance*"):
             _ = Simulation(L=self.vol_res, vols=self.vol_arr)
 
     def testDtypeMismatch(self):
         """
         Test we raise when the volume dtype does not match explicit Simulation dtype.
         """
-        with raises(RuntimeError, match=r".*does not match provided vols.dtype.*"):
+        with pytest.raises(
+            RuntimeError, match=r".*does not match provided vols.dtype.*"
+        ):
             _ = Simulation(vols=self.vol.astype(np.float16), dtype=self.dtype)
 
     def testPassthroughFromVol(self):
@@ -648,13 +652,9 @@ def test_pixel_size(caplog):
 
     # Check mismatched pixel_size warns and uses provided pixel_size.
     user_px_sz = vol.pixel_size / 2
-    caplog.clear()
-    msg = "does not match volume pixel_size"
-    caplog.set_level(logging.WARN)
-    assert msg not in caplog.text
-    sim = Simulation(vols=vol, pixel_size=user_px_sz)
-    assert msg in caplog.text
-    np.testing.assert_allclose(sim.pixel_size, user_px_sz)
+    with pytest.warns(UserWarning, match="does not match pixel_size"):
+        sim = Simulation(vols=vol, pixel_size=user_px_sz)
+        np.testing.assert_allclose(sim.pixel_size, user_px_sz)
 
 
 def test_symmetry_group_inheritence():
@@ -768,7 +768,7 @@ def test_save_overwrite(caplog):
         check_metadata(sim2, sim2_loaded)
 
         # Case 2: overwrite=False (should raise an overwrite error)
-        with raises(
+        with pytest.raises(
             ValueError,
             match="File '.*' already exists; set overwrite=True to overwrite it",
         ):
