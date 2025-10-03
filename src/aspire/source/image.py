@@ -31,7 +31,14 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation, grid_2d, rename_with_timestamp, support_mask, trange
+from aspire.utils import (
+    Rotation,
+    check_pixel_size_mismatch,
+    grid_2d,
+    rename_with_timestamp,
+    support_mask,
+    trange,
+)
 from aspire.volume import IdentitySymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
@@ -246,14 +253,8 @@ class ImageSource(ABC):
 
         if pixel_size is not None:
             # If both provided prefer user, warn on mismatch.
-            if _pixel_size is not None and not np.allclose(_pixel_size, pixel_size):
-                warnings.warn(
-                    f"User provided pixel_size: {pixel_size} angstrom, does not match"
-                    f" pixel_size found in metadata: {_pixel_size} angstrom. Setting"
-                    f" pixel_size to {pixel_size} angstrom.",
-                    UserWarning,
-                    stacklevel=2,
-                )
+            if _pixel_size is not None:
+                check_pixel_size_mismatch(_pixel_size, pixel_size)
             self.pixel_size = float(pixel_size)
             return
 
@@ -1903,11 +1904,8 @@ class ArrayImageSource(ImageSource):
             chosen_px_sz = pixel_size
 
             # Warn if conflicting
-            if im.pixel_size is not None and not np.allclose(im.pixel_size, pixel_size):
-                logger.warning(
-                    f"Overriding im.pixel_size, {im.pixel_size},"
-                    f" with user provided pixel_size: {pixel_size}."
-                )
+            if im.pixel_size is not None:
+                check_pixel_size_mismatch(im.pixel_size, pixel_size)
 
         # Now that we are an `Image`, check stack is 1D
         if im.stack_ndim != 1:

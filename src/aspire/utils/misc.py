@@ -7,6 +7,7 @@ import importlib.resources
 import logging
 import os
 import sys
+import warnings
 from datetime import datetime
 from itertools import chain, combinations
 
@@ -437,6 +438,24 @@ def cyclic_rotations(order, dtype=np.float64):
     rots_symm = Rotation.from_euler(angles)
 
     return rots_symm
+
+
+def check_pixel_size_mismatch(metadata_pixel_size, user_pixel_size):
+    """
+    Check that `metadata_pixel_size` and `user_pixel_size` are close
+    and warn if not.
+
+    :param metadata_pixel_size: Pixel size from metadata.
+    :param user_pixel_size: User provided pixel size.
+    """
+    if not np.allclose(metadata_pixel_size, user_pixel_size):
+        warnings.warn(
+            f"User provided pixel_size: {user_pixel_size} angstrom, does not match"
+            f" pixel_size found in metadata: {metadata_pixel_size} angstrom. Setting"
+            f" pixel_size to {user_pixel_size} angstrom.",
+            UserWarning,
+            stacklevel=2,
+        )
 
 
 # Potentially cache this in the future.

@@ -10,7 +10,12 @@ from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
 from aspire.storage import StarFile
-from aspire.utils import Random, grid_2d, rename_with_timestamp
+from aspire.utils import (
+    Random,
+    check_pixel_size_mismatch,
+    grid_2d,
+    rename_with_timestamp,
+)
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -340,8 +345,12 @@ class MicrographSimulation(MicrographSource):
         self.volume = volume
 
         # Infer pixel size from Volume if not explicitly provided.
-        if pixel_size is None:
-            pixel_size = self.volume.pixel_size
+        if self.volume.pixel_size is not None:
+            # If both provided prefer user, warn on mismatch.
+            if pixel_size is not None:
+                check_pixel_size_mismatch(self.volume.pixel_size, pixel_size)
+            else:
+                pixel_size = self.volume.pixel_size
 
         self.seed = seed
 
@@ -405,7 +414,6 @@ class MicrographSimulation(MicrographSource):
 
         self.ctf_filters = ctf_filters
 
-        # Note pixel_size is taken from `volume`.
         self.simulation = Simulation(
             n=self.total_particle_count,
             vols=self.volume,
@@ -415,6 +423,7 @@ class MicrographSimulation(MicrographSource):
             angles=self.projection_angles,
             unique_filters=ctf_filters,
             filter_indices=self.filter_indices,
+            pixel_size=self.pixel_size,
             dtype=self.dtype,
             seed=self.seed,
         )
