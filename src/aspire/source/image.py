@@ -2,7 +2,6 @@ import copy
 import functools
 import logging
 import os.path
-import warnings
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Iterable
