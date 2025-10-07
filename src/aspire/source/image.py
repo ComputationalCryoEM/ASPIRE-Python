@@ -229,7 +229,7 @@ class ImageSource(ABC):
         Set the pixel_size attribute and update value in metadata.
         """
         self.set_metadata("_rlnImagePixelSize", value)
-        self._pixel_size = value
+        self._pixel_size = float(value)
 
     def _populate_pixel_size(self, pixel_size):
         """
@@ -254,11 +254,11 @@ class ImageSource(ABC):
             # If both provided prefer user, warn on mismatch.
             if _pixel_size is not None:
                 check_pixel_size_mismatch(_pixel_size, pixel_size)
-            self.pixel_size = float(pixel_size)
+            self.pixel_size = pixel_size
             return
 
         # Otherwise use metadata value.
-        self.pixel_size = float(_pixel_size)
+        self.pixel_size = _pixel_size
 
     @property
     def symmetry_group(self):
@@ -468,7 +468,7 @@ class ImageSource(ABC):
         offsets_angst = np.atleast_2d(
             self.get_metadata(
                 ["_rlnOriginXAngst", "_rlnOriginYAngst"],
-                default_value=np.array(0.0, dtype=self.dtype),
+                default_value=np.array(0.0, dtype=np.float64),
             )
         )
         return offsets_angst / self.pixel_size
@@ -478,7 +478,7 @@ class ImageSource(ABC):
         # offsets are pixel units in code and angstroms in metadata.
         return self.set_metadata(
             ["_rlnOriginXAngst", "_rlnOriginYAngst"],
-            np.array(values * self.pixel_size, dtype=self.dtype),
+            np.array(values, dtype=np.float64) * self.pixel_size,
         )
 
     @property

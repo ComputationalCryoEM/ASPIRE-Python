@@ -1,10 +1,11 @@
+import itertools
 import logging
 import os
 
 import numpy as np
 import pytest
 
-from aspire.source import RelionSource
+from aspire.source import RelionSource, Simulation
 from aspire.utils import RelionStarFile
 from aspire.volume import SymmetryGroup
 
@@ -169,6 +170,54 @@ def test_offsets_save(tmp_path):
 
     # Check saved offsets match original up to pixel_size scaling.
     np.testing.assert_allclose(angst_offsets / src.pixel_size, pixel_offsets)
+
+
+dtypes = {np.float32, np.float64}
+dtype_triplets = list(itertools.product(dtypes, repeat=3))
+
+
+@pytest.mark.parametrize("sim_dtype, offset_dtype, px_sz_dtype", dtype_triplets)
+def test_offsets_roundtrip(sim_dtype, offset_dtype, px_sz_dtype, tmp_path):
+    """
+    Test that offsets remain unchanged after saving and loading.
+    """
+    L = 32
+    n = 10
+    offsets = (np.pi * np.ones((n, 2))).astype(offset_dtype)
+
+    sim = Simulation(
+        n=n,
+        L=L,
+        offsets=offsets,
+        dtype=sim_dtype,
+        pixel_size=np.array(np.e, dtype=px_sz_dtype),
+    )
+
+    # Check Simulation offsets
+    assert sim.offsets.dtype == np.float64
+    np.testing.assert_allclose(sim.offsets, offsets)
+
+    # Save file and reload as RelionSource
+    filepath = tmp_path / "sim_src.star"
+    sim.save(filepath)
+
+    rln_src_64 = RelionSource(filepath, dtype=np.float64)
+    rln_src_32 = RelionSource(filepath, dtype=np.float32)
+
+    # offsets should be doubles
+    assert rln_src_64.offsets.dtype == np.float64
+    assert rln_src_32.offsets.dtype == np.float64
+
+    # Check roundtrip offsets are allclose up to expected resolution.
+    atol = 0
+    if px_sz_dtype == np.float32:
+        atol = np.finfo(np.float32).resolution
+    np.testing.assert_allclose(
+        rln_src_64.offsets, sim.offsets, rtol=0, atol=atol, strict=True
+    )
+    np.testing.assert_allclose(
+        rln_src_32.offsets, sim.offsets, rtol=0, atol=atol, strict=True
+    )
 
 
 def test_save_downsample(tmp_path):
