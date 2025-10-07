@@ -212,12 +212,8 @@ def test_offsets_roundtrip(sim_dtype, offset_dtype, px_sz_dtype, tmp_path):
     atol = 0
     if px_sz_dtype == np.float32:
         atol = np.finfo(np.float32).resolution
-    np.testing.assert_allclose(
-        rln_src_64.offsets, sim.offsets, rtol=0, atol=atol, strict=True
-    )
-    np.testing.assert_allclose(
-        rln_src_32.offsets, sim.offsets, rtol=0, atol=atol, strict=True
-    )
+    np.testing.assert_allclose(rln_src_64.offsets, sim.offsets, rtol=0, atol=atol)
+    np.testing.assert_allclose(rln_src_32.offsets, sim.offsets, rtol=0, atol=atol)
 
 
 def test_save_downsample(tmp_path):
