@@ -295,7 +295,9 @@ def test_dtype_passthrough(dtype):
     np.testing.assert_equal(src.dtype, dtype)
     np.testing.assert_equal(src.images[:].dtype, dtype)
     np.testing.assert_equal(src.amplitudes.dtype, dtype)
-    np.testing.assert_equal(src.offsets.dtype, dtype)
+
+    # offsets are always stored as doubles
+    np.testing.assert_equal(src.offsets.dtype, np.float64)
 
 
 def test_stack_1d_only():

@@ -299,8 +299,8 @@ def test_downsample_offsets(dtype, res):
 
     # Check `offsets` and `sim_offsets` attributes are as expected, ie.
     # `sim_offsets` are same as original while `offsets` are scaled by downsample.
-    np.testing.assert_array_equal(src_ds.sim_offsets, offsets)
-    np.testing.assert_array_equal(src_ds.offsets, offsets / offset_scale)
+    np.testing.assert_allclose(src_ds.sim_offsets, offsets)
+    np.testing.assert_allclose(src_ds.offsets, offsets / offset_scale)
 
     # Check that centering works for original and downsampled images.
     np.testing.assert_allclose(
