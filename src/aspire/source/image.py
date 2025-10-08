@@ -254,10 +254,9 @@ class ImageSource(ABC):
             # If both provided prefer user, warn on mismatch.
             if _pixel_size is not None:
                 check_pixel_size_mismatch(_pixel_size, pixel_size)
-            self.pixel_size = pixel_size
-            return
+            # Override metadata.
+            _pixel_size = pixel_size
 
-        # Otherwise use metadata value.
         self.pixel_size = _pixel_size
 
     @property
@@ -693,6 +692,7 @@ class ImageSource(ABC):
         Remove metadata field from self._metadata dictionary.
 
         :param metadta_field: Field to remove.
+        :return: metadata field, if it exists. Otherwise, None.
         """
         return self._metadata.pop(metadata_field, None)
 
