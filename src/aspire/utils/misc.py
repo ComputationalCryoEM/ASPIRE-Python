@@ -440,22 +440,25 @@ def cyclic_rotations(order, dtype=np.float64):
     return rots_symm
 
 
-def check_pixel_size_mismatch(metadata_pixel_size, user_pixel_size):
+def check_pixel_size(reference, provided):
     """
-    Check that `metadata_pixel_size` and `user_pixel_size` are close
+    Check that `reference` and `provided` pixel sizes are close
     and warn if not.
 
-    :param metadata_pixel_size: Pixel size from metadata.
-    :param user_pixel_size: User provided pixel size.
+    :param reference: Reference value(s) to compare against (scalar or ndarray).
+    :param provided: User provided value (scalar).
+    :return: True if close, False otherwise.
     """
-    if not np.allclose(metadata_pixel_size, user_pixel_size):
+    close = np.allclose(reference, provided)
+    if not close:
         warnings.warn(
-            f"User provided pixel_size: {user_pixel_size} angstrom, does not match"
-            f" pixel_size found in metadata: {metadata_pixel_size} angstrom. Setting"
-            f" pixel_size to {user_pixel_size} angstrom.",
+            f"User provided pixel_size: {provided} angstrom, does not match"
+            f" pixel_size found in metadata: {reference} angstrom. Setting"
+            f" pixel_size to {provided} angstrom.",
             UserWarning,
             stacklevel=2,
         )
+    return bool(close)
 
 
 # Potentially cache this in the future.

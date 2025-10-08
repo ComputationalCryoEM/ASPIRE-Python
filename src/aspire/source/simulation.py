@@ -9,14 +9,7 @@ from aspire.image import Image
 from aspire.noise import NoiseAdder
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
-from aspire.utils import (
-    Rotation,
-    acorr,
-    ainner,
-    anorm,
-    check_pixel_size_mismatch,
-    make_symmat,
-)
+from aspire.utils import Rotation, acorr, ainner, anorm, check_pixel_size, make_symmat
 from aspire.utils.random import randi, randn, random
 from aspire.volume import AsymmetricVolume, Volume
 
@@ -125,7 +118,7 @@ class Simulation(ImageSource):
             else:
                 pixel_size = self.vols.pixel_size
         elif self.vols.pixel_size is not None:
-            check_pixel_size_mismatch(self.vols.pixel_size, pixel_size)
+            check_pixel_size(self.vols.pixel_size, pixel_size)
 
         self._projection_pixel_size = pixel_size
 
