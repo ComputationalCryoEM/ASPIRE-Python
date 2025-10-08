@@ -32,7 +32,7 @@ from aspire.operators import (
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import (
     Rotation,
-    check_pixel_size_mismatch,
+    check_pixel_size,
     grid_2d,
     rename_with_timestamp,
     support_mask,
@@ -253,7 +253,7 @@ class ImageSource(ABC):
         if pixel_size is not None:
             # If both provided prefer user, warn on mismatch.
             if _pixel_size is not None:
-                check_pixel_size_mismatch(_pixel_size, pixel_size)
+                check_pixel_size(_pixel_size, pixel_size)
             # Override metadata.
             _pixel_size = pixel_size
 
@@ -1904,7 +1904,7 @@ class ArrayImageSource(ImageSource):
 
             # Warn if conflicting
             if im.pixel_size is not None:
-                check_pixel_size_mismatch(im.pixel_size, pixel_size)
+                check_pixel_size(im.pixel_size, pixel_size)
 
         # Now that we are an `Image`, check stack is 1D
         if im.stack_ndim != 1:

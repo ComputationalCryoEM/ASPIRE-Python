@@ -15,7 +15,7 @@ from .misc import (  # isort:skip
     all_triplets,
     abs2,
     bump_3d,
-    check_pixel_size_mismatch,
+    check_pixel_size,
     circ,
     cyclic_rotations,
     gaussian_1d,

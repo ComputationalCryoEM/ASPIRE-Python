@@ -12,7 +12,7 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source.image import ImageSource
 from aspire.storage import StarFile
-from aspire.utils import RelionStarFile, check_pixel_size_mismatch
+from aspire.utils import RelionStarFile, check_pixel_size
 
 logger = logging.getLogger(__name__)
 
@@ -404,7 +404,7 @@ class CoordinateSource(ImageSource, ABC):
 
         # Warn if CTF pixel_sizes do match self.pixel_size
         ctf_pixel_sizes = np.unique(filter_params[:, 6])
-        check_pixel_size_mismatch(ctf_pixel_sizes, self.pixel_size)
+        check_pixel_size(ctf_pixel_sizes, self.pixel_size)
 
         # construct filters
         self.unique_filters = [
