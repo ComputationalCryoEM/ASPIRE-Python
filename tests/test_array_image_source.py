@@ -280,6 +280,35 @@ def test_pixel_size(caplog):
         np.testing.assert_allclose(src.pixel_size, user_px_sz)
 
 
+def test_pixel_size_type(tmp_path):
+    """
+    Test that pixel_size dtype is stored in doubles as an attribute
+    and in metadata.
+    """
+    # Test for diffetent types of sources.
+    sim = Simulation(n=2, pixel_size=1)
+    arr_src = ArrayImageSource(sim.images[:].asnumpy(), pixel_size=1)
+
+    starfile = tmp_path / "source.star"
+    sim.save(starfile)
+    rln_src = RelionSource(starfile, pixel_size=1)
+
+    # Check attribute type
+    assert isinstance(sim.pixel_size, float)
+    assert isinstance(arr_src.pixel_size, float)
+    assert isinstance(rln_src.pixel_size, float)
+
+    # Check type in _metadata dict
+    assert isinstance(sim._metadata["_rlnImagePixelSize"][0], float)
+    assert isinstance(arr_src._metadata["_rlnImagePixelSize"][0], float)
+    assert isinstance(rln_src._metadata["_rlnImagePixelSize"][0], float)
+
+    # Check get_metadata type
+    assert isinstance(sim.get_metadata("_rlnImagePixelSize")[0], float)
+    assert isinstance(arr_src.get_metadata("_rlnImagePixelSize")[0], float)
+    assert isinstance(rln_src.get_metadata("_rlnImagePixelSize")[0], float)
+
+
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_dtype_passthrough(dtype):
     """

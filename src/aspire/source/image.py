@@ -228,8 +228,9 @@ class ImageSource(ABC):
         """
         Set the pixel_size attribute and update value in metadata.
         """
+        value = float(value)
+        self._pixel_size = value
         self.set_metadata("_rlnImagePixelSize", value)
-        self._pixel_size = float(value)
 
     def _populate_pixel_size(self, pixel_size):
         """
