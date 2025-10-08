@@ -449,6 +449,9 @@ def check_pixel_size(reference, provided):
     :param provided: User provided value (scalar).
     :return: True if close, False otherwise.
     """
+    if not np.asarray(provided).size == 1:
+        raise ValueError("`provided` pixel_size must be a scalar.")
+
     close = np.allclose(reference, provided)
     if not close:
         warnings.warn(
