@@ -440,24 +440,24 @@ def cyclic_rotations(order, dtype=np.float64):
     return rots_symm
 
 
-def check_pixel_size(reference, provided):
+def check_pixel_size(pixel_sizes, reference_pixel_size):
     """
-    Check that `reference` and `provided` pixel sizes are close
-    and warn if not.
+    Ensure that `reference_pixe_size` is a scalar and check that `pixel_sizes`
+    are close to `reference_pixel_size`, warn if not.
 
-    :param reference: Reference value(s) to compare against (scalar or ndarray).
-    :param provided: User provided value (scalar).
+    :param pixel_sizes: Pixel size value(s) to check (scalar or ndarray).
+    :param reference_pixel_size: Reference value (scalar).
     :return: True if close, False otherwise.
     """
-    if not np.asarray(provided).size == 1:
-        raise ValueError("`provided` pixel_size must be a scalar.")
+    if not np.asarray(reference_pixel_size).size == 1:
+        raise ValueError("`reference_pixel_size` must be a scalar.")
 
-    close = np.allclose(reference, provided)
+    close = np.allclose(pixel_sizes, reference_pixel_size)
     if not close:
         warnings.warn(
-            f"User provided pixel_size: {provided} angstrom, does not match"
-            f" pixel_size found in metadata: {reference} angstrom. Setting"
-            f" pixel_size to {provided} angstrom.",
+            f"User provided pixel_size: {reference_pixel_size} angstrom, does not match"
+            f" pixel_size found in metadata: {pixel_sizes} angstrom. Setting"
+            f" pixel_size to {reference_pixel_size} angstrom.",
             UserWarning,
             stacklevel=2,
         )

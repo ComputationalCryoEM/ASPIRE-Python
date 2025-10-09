@@ -294,7 +294,7 @@ def test_check_pixel_size():
     assert check_pixel_size(px_sz, px_sz)
 
     # Check non-scalar provided pixel_size
-    with pytest.raises(ValueError, match="pixel_size must be a scalar"):
+    with pytest.raises(ValueError, match="must be a scalar"):
         check_pixel_size(px_sizes_diff, px_sizes_same)
 
 
