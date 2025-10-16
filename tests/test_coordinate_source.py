@@ -535,7 +535,7 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(imgs.asnumpy()[i], saved_mrcs_stack[i]))
         # assert that the star file has the correct metadata
         self.assertEqual(
-            list(saved_star[""].keys()),
+            list(saved_star["particles"].keys()),
             [
                 "_rlnImagePixelSize",
                 "_rlnSymmetryGroup",

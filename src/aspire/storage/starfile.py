@@ -135,6 +135,7 @@ class StarFile:
         # create an empty Document
         _doc = cif.Document()
         filepath = str(filepath)
+
         for name, block in self.blocks.items():
             # construct new empty block
             _block = _doc.add_new_block(name)
