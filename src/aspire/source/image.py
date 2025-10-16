@@ -1289,6 +1289,79 @@ class ImageSource(ABC):
         """
         return []
 
+    @staticmethod
+    def _prepare_relion_optics_blocks(metadata):
+        """
+        Split metadata into RELION>=3.1 style `data_optics` and `data_particles` blocks.
+
+        The optics block has one row per optics group with:
+        `_rlnOpticsGroup`, `_rlnOpticsGroupName`, and optics metadata columns.
+        The particle block keeps the remaining columns and includes a per-particle
+        `_rlnOpticsGroup` that references the optics block.
+        """
+        # All possible optics group fields
+        # TODO: Check we have all of them
+        all_optics_fields = [
+            "_rlnImagePixelSize",
+            "_rlnMicrographPixelSize",
+            "_rlnSphericalAberration",
+            "_rlnVoltage",
+            "_rlnImageSize",
+            "_rlnAmplitudeContrast",
+        ]
+
+        # TODO: Need to add _rlnImageSize here and above
+        required_fields = ["_rlnSphericalAberration", "_rlnVoltage"]
+        pixel_fields = ["_rlnImagePixelSize", "_rlnMicrographPixelSize"]
+
+        has_required = all(field in metadata for field in required_fields)
+        has_pixel_field = any(field in metadata for field in pixel_fields)
+
+        # TODO: Add warning?
+        if not (has_required and has_pixel_field):
+            # Optics metadata incomplete, fall back to legacy single block.
+            return None, metadata
+
+        # Collect all optics group fields present in metadata and determine unique optics groups.
+        optics_value_fields = [
+            field for field in all_optics_fields if field in metadata
+        ]
+        n_rows = len(metadata["_rlnImagePixelSize"])
+
+        group_lookup = OrderedDict()  # Stores distinct optics groups
+        optics_groups = np.empty(n_rows, dtype=int)
+
+        for idx in range(n_rows):
+            signature = tuple(metadata[field][idx] for field in optics_value_fields)
+            if signature not in group_lookup:
+                group_lookup[signature] = len(group_lookup) + 1
+            optics_groups[idx] = group_lookup[signature]
+
+        metadata["_rlnOpticsGroup"] = optics_groups
+
+        optics_block = OrderedDict()
+        optics_block["_rlnOpticsGroup"] = []
+        optics_block["_rlnOpticsGroupName"] = []
+        for field in optics_value_fields:
+            optics_block[field] = []
+
+        for signature, group_id in group_lookup.items():
+            optics_block["_rlnOpticsGroup"].append(group_id)
+            optics_block["_rlnOpticsGroupName"].append(f"opticsGroup{group_id}")
+            for field, value in zip(optics_value_fields, signature):
+                optics_block[field].append(value)
+
+        # Collect particle_block metadata
+        particle_block = OrderedDict()
+        if "_rlnOpticsGroup" in metadata:
+            particle_block["_rlnOpticsGroup"] = metadata["_rlnOpticsGroup"]
+        for key, value in metadata.items():
+            if key in optics_value_fields or key == "_rlnOpticsGroup":
+                continue
+            particle_block[key] = value
+
+        return optics_block, particle_block
+
     def save_metadata(self, starfile_filepath, batch_size=512, save_mode=None):
         """
         Save updated metadata to a STAR file
@@ -1324,12 +1397,20 @@ class ImageSource(ABC):
             for x in np.char.split(metadata["_rlnImageName"].astype(np.str_), sep="@")
         ]
 
+        # Separate metadata into optics and particle blocks
+        optics_block, particle_block = self._prepare_relion_optics_blocks(metadata)
+
         # initialize the star file object and save it
         odict = OrderedDict()
-        # since our StarFile only has one block, the convention is to save it with the header "data_", i.e. its name is blank
-        # if we had a block called "XYZ" it would be saved as "XYZ"
-        # thus we index the metadata block with ""
-        odict[""] = metadata
+
+        # StarFile uses the `odict` keys to label the starfile block headers "data_(key)". Following RELION>=3.1
+        # convention we label the blocks "data_optics" and "data_particles".
+        if optics_block is None:
+            odict["particles"] = particle_block
+        else:
+            odict["optics"] = optics_block
+            odict["particles"] = particle_block
+
         out_star = StarFile(blocks=odict)
         out_star.write(starfile_filepath)
         return filename_indices
