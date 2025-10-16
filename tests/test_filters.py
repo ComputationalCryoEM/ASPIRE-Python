@@ -262,11 +262,11 @@ def test_rectangular_ctf():
     # A = gaussian_2d(size=L, mu=(0,-L//10), sigma=L//8, dtype=np.float64)
     A = gaussian_2d(size=L, mu=(0, -L // 10), sigma=L // 32, dtype=np.float64)
 
-    full_img = Image(A)
-    truncated_img = Image(A[:rows, :cols])
+    full_img = Image(A, pixel_size=2)
+    truncated_img = Image(A[:rows, :cols], pixel_size=2)
 
     # Create a CTFFilter
-    ctf_filter = CTFFilter(pixel_size=2)
+    ctf_filter = CTFFilter()
 
     # Apply to both Image instances
     full_img_with_ctf = full_img.filter(ctf_filter)
