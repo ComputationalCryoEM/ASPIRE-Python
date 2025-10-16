@@ -121,7 +121,8 @@ class Filter:
 
         Passes arbritrary args and kwargs down to self.evaluate method.
 
-        :param L: Number of grid points (L by L).
+        :param L: Number of grid points.
+            L-by-L given a single `L`, or (L0, L1) if L is length 2.
         :param dtype: dtype of grid, defaults np.float32.
         :return: Filter values at omega's points.
         """
