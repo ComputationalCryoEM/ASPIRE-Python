@@ -143,7 +143,7 @@ class MicrographSource(ABC):
             phase_flipped_micrographs = np.empty(
                 (self.micrograph_count, *self.micrograph_size), dtype=self.dtype
             )
-            for i in trange(self.micrograph_count, desc=f"Phaseflipping micrograph"):
+            for i in trange(self.micrograph_count, desc="Phaseflipping micrograph"):
                 # micrograph = self.images[i]
                 # f = filters[i].sign
                 # ... = micrograph.filter(f)
