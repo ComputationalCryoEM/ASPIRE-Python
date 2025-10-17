@@ -388,7 +388,9 @@ with open(results[0][1], "r") as f:
 # %%
 
 img_src = CentersCoordinateSource(
-    results, src.particle_box_size, pixel_size=src.pixel_size
+    results,
+    src.pixel_size,
+    src.particle_box_size,
 )
 # Show the first five images from the image source.
 img_src.images[:3].show()
