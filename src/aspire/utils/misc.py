@@ -442,7 +442,7 @@ def cyclic_rotations(order, dtype=np.float64):
 
 def check_pixel_size(pixel_sizes, reference_pixel_size):
     """
-    Ensure that `reference_pixe_size` is a scalar and check that `pixel_sizes`
+    Ensure that `reference_pixel_size` is a scalar and check that `pixel_sizes`
     are close to `reference_pixel_size`, warn if not.
 
     :param pixel_sizes: Pixel size value(s) to check (scalar or ndarray).

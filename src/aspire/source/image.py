@@ -692,7 +692,7 @@ class ImageSource(ABC):
         """
         Remove metadata field from self._metadata dictionary.
 
-        :param metadta_field: Field to remove.
+        :param metadata_field: Field to remove.
         :return: metadata field, if it exists. Otherwise, None.
         """
         return self._metadata.pop(metadata_field, None)
