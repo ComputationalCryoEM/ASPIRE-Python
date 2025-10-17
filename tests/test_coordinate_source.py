@@ -801,13 +801,6 @@ class CoordinateSourceTestCase(TestCase):
         src.import_relion_ctf(self.relion_ctf_file)
         np.testing.assert_approx_equal(src.pixel_size, self.pixel_size)
 
-    def testPixelSizeNone(self):
-        """
-        Test not providing pixel_size.
-        """
-        with pytest.raises(ValueError, match=r".*No pixel size found in metadata.*"):
-            _ = BoxesCoordinateSource(self.files_box)
-
 
 def create_test_rectangular_micrograph_and_star(tmp_path, voxel_size=(2.0, 2.0, 1.0)):
     # Create a rectangular micrograph (e.g., 128x256)
