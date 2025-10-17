@@ -456,8 +456,7 @@ def check_pixel_size(pixel_sizes, reference_pixel_size):
     if not close:
         warnings.warn(
             f"User provided pixel_size: {reference_pixel_size} angstrom, does not match"
-            f" pixel_size found in metadata: {pixel_sizes} angstrom. Setting"
-            f" pixel_size to {reference_pixel_size} angstrom.",
+            f" pixel_size found in metadata: {pixel_sizes} angstrom.",
             UserWarning,
             stacklevel=2,
         )
