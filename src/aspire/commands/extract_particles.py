@@ -140,14 +140,14 @@ def extract_particles(
             )
         src = CentersCoordinateSource(
             files,
+            pixel_size,
             particle_size=particle_size,
-            pixel_size=pixel_size,
         )
     else:
         src = BoxesCoordinateSource(
             files,
+            pixel_size,
             particle_size=particle_size,
-            pixel_size=pixel_size,
         )
 
     # optional preprocessing steps
