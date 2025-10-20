@@ -57,6 +57,7 @@ def sim(L, dtype):
         unique_filters=[
             RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
         ],
+        pixel_size=1,
         dtype=dtype,
         seed=SEED,
     )

@@ -247,6 +247,8 @@ class FFBBasis2D(FBBasis2D):
                 "  Use `method=None`."
             )
 
+        pixel_size = kwargs.get("pixel_size", None)
+
         # These form a circular dependence, import locally until time to clean up.
         from aspire.basis.basis_utils import lgwt
 
@@ -269,7 +271,9 @@ class FFBBasis2D(FBBasis2D):
         omegay = k * np.sin(theta)
         omega = 2 * np.pi * np.vstack((omegax.flatten("C"), omegay.flatten("C")))
 
-        h_vals2d = h_fun(omega).reshape(n_k, n_theta).astype(self.dtype)
+        h_vals2d = (
+            h_fun(omega, pixel_size=pixel_size).reshape(n_k, n_theta).astype(self.dtype)
+        )
         h_vals = np.sum(h_vals2d, axis=1) / n_theta
 
         # Represent 1D function values in basis

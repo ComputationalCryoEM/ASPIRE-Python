@@ -12,6 +12,7 @@ import numpy as np
 from aspire.abinitio import CLOrient3D, CLSync3N
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
+    CropPad,
     Downsample,
     FilterXform,
     IndexedXform,
@@ -29,7 +30,14 @@ from aspire.operators import (
     PowerFilter,
 )
 from aspire.storage import MrcStats, StarFile
-from aspire.utils import Rotation, grid_2d, rename_with_timestamp, support_mask, trange
+from aspire.utils import (
+    Rotation,
+    check_pixel_size,
+    grid_2d,
+    rename_with_timestamp,
+    support_mask,
+    trange,
+)
 from aspire.volume import IdentitySymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
@@ -180,9 +188,6 @@ class ImageSource(ABC):
         self._n = None
         self.n = n
         self.dtype = np.dtype(dtype)
-        if pixel_size is not None:
-            pixel_size = float(pixel_size)
-        self.pixel_size = pixel_size
 
         # The private attribute '_cached_im' can be populated by calling this object's cache() method explicitly
         self._cached_im = None
@@ -206,12 +211,54 @@ class ImageSource(ABC):
                     )
                 )
 
+        self._populate_pixel_size(pixel_size)
         self._populate_symmetry_group(symmetry_group)
 
         self.unique_filters = []
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
+
+    @property
+    def pixel_size(self):
+        return self._pixel_size
+
+    @pixel_size.setter
+    def pixel_size(self, value):
+        """
+        Set the pixel_size attribute and update value in metadata.
+        """
+        value = float(value)
+        self._pixel_size = value
+        self.set_metadata("_rlnImagePixelSize", value)
+
+    def _populate_pixel_size(self, pixel_size):
+        """
+        Logic for populating pixel_size from user provided value or metadata info.
+        """
+        # Populate pixel_size from metadata if possible.
+        _pixel_size = None
+        if self.has_metadata(["_rlnImagePixelSize"]):
+            _pixel_size = self.get_metadata(["_rlnImagePixelSize"])[0]
+        elif self.has_metadata(["_rlnDetectorPixelSize", "_rlnMagnification"]):
+            detector_pixel_size = self.get_metadata(["_rlnDetectorPixelSize"])[0]
+            magnification = self.get_metadata(["_rlnMagnification"])[0]
+            _pixel_size = 10000 * detector_pixel_size / magnification
+
+        # Resolve any pixel_size conflicts.
+        if _pixel_size is None and pixel_size is None:
+            raise ValueError(
+                "No pixel size found in metadata. Please provide `pixel_size` argument."
+            )
+
+        if pixel_size is not None:
+            # If both provided prefer user, warn on mismatch.
+            if _pixel_size is not None:
+                check_pixel_size(_pixel_size, pixel_size)
+            # Override metadata.
+            _pixel_size = pixel_size
+
+        self.pixel_size = _pixel_size
 
     @property
     def symmetry_group(self):
@@ -417,17 +464,21 @@ class ImageSource(ABC):
 
     @property
     def offsets(self):
-        return np.atleast_2d(
+        # offsets are pixel units in code and angstroms in metadata.
+        offsets_angst = np.atleast_2d(
             self.get_metadata(
-                ["_rlnOriginX", "_rlnOriginY"],
-                default_value=np.array(0.0, dtype=self.dtype),
+                ["_rlnOriginXAngst", "_rlnOriginYAngst"],
+                default_value=np.array(0.0, dtype=np.float64),
             )
         )
+        return offsets_angst / self.pixel_size
 
     @offsets.setter
     def offsets(self, values):
+        # offsets are pixel units in code and angstroms in metadata.
         return self.set_metadata(
-            ["_rlnOriginX", "_rlnOriginY"], np.array(values, dtype=self.dtype)
+            ["_rlnOriginXAngst", "_rlnOriginYAngst"],
+            np.array(values, dtype=np.float64) * self.pixel_size,
         )
 
     @property
@@ -637,6 +688,15 @@ class ImageSource(ABC):
                 )
             self._metadata[metadata_field][indices] = values[:, i]
 
+    def pop_metadata(self, metadata_field):
+        """
+        Remove metadata field from self._metadata dictionary.
+
+        :param metadata_field: Field to remove.
+        :return: metadata field, if it exists. Otherwise, None.
+        """
+        return self._metadata.pop(metadata_field, None)
+
     def has_metadata(self, metadata_fields):
         """
         Find out if one or more metadata fields are available for this `ImageSource`.
@@ -750,7 +810,7 @@ class ImageSource(ABC):
         for start in trange(0, len(self), batch_size):
             end = min(start + batch_size, len(self))
             im[start:end] = self.images[start:end]
-        self._cached_im = Image(im)
+        self._cached_im = Image(im, pixel_size=self.pixel_size)
         self.generation_pipeline.reset()
 
     @property
@@ -768,8 +828,32 @@ class ImageSource(ABC):
         Subclasses handle cached image check as well as applying transforms in the generation pipeline.
         """
 
+    def legacy_downsample(self, L):
+        """
+        Reproduce MATLAB's workflow downsampling.
+
+        For uses other than MALTAB reproduction, prefer `downsample`.
+
+        :param L: int - new resolution, should be <= the current resolution
+            of this Image
+        :return: The downsampled `ImageSource` object.
+        """
+        return self.downsample(L=L, zero_nyquist=False, centered_fft=False)
+
     @_as_copy
-    def downsample(self, L, zero_nyquist=True, legacy=False):
+    def downsample(self, L, zero_nyquist=True, centered_fft=True):
+        """
+        Downsample Image to `L-by-L` pixels.
+
+        :param L: int - new resolution, should be <= the current resolution
+            of this Image
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even
+            resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param centered_fft: Default of True uses `centered_fft` to
+            maintain ASPIRE-Python centering conventions.
+        :return: The downsampled `ImageSource` object.
+        """
+
         if L > self.L:
             raise ValueError(
                 "Max desired resolution {L} should be less than the current resolution {self.L}."
@@ -777,14 +861,55 @@ class ImageSource(ABC):
         logger.info(f"Setting max. resolution of source = {L}")
 
         self.generation_pipeline.add_xform(
-            Downsample(resolution=L, zero_nyquist=zero_nyquist, legacy=legacy)
+            Downsample(
+                resolution=L, zero_nyquist=zero_nyquist, centered_fft=centered_fft
+            )
         )
 
         ds_factor = self.L / L
         self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
-        self.offsets /= ds_factor
         if self.pixel_size is not None:
             self.pixel_size *= ds_factor
+
+        self.L = L
+
+        # Remove detector metadata if it exists.
+        detector_keys = ["_rlnDetectorPixelSize", "_rlnMagnification"]
+        for key in detector_keys:
+            self.pop_metadata(key)
+
+    @_as_copy
+    def crop_pad(self, L, fill_value=0):
+        """
+        Crop or pad images to size L.
+
+        Cropping and padding makes no adjustments for centering conventions,
+        but does maintain `pixel_size`.
+
+        Take care regarding the cropping convention.
+        Cropping a single pixel from even down to odd left crops.
+        Cropping a single pixel from odd down to even right crops.
+        Calling this crop method for multiple pixels will crop equally from both
+        sides with any single remainder pixel applied as above.
+
+        :param L: int - new image size in pixels.
+        :param fill_value: Value used in padding, defaults to 0.
+        :return: Cropped or padded `ImageSource`.
+        """
+
+        if L < self.L:
+            logger.info(f"Cropping shape of source images = {L, L}")
+        elif L > self.L:
+            logger.info(
+                f"Padding shape of source images = {L, L} with fill_value={fill_value}"
+            )
+        else:
+            logger.warning(
+                f"Shape of source images already {L, L}, skipping `CropPad`."
+            )
+            return
+
+        self.generation_pipeline.add_xform(CropPad(L=L, fill_value=fill_value))
 
         self.L = L
 
@@ -944,25 +1069,41 @@ class ImageSource(ABC):
         logger.info("Adding Scaling Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(Multiply(scale_factor))
 
-    @_as_copy
-    def normalize_background(self, bg_radius=1.0, do_ramp=True, legacy=False):
+    def legacy_normalize_background(self):
         """
-        Normalize the images by the noise background
+        Reproduce MATLAB's Normalize Background workflow method.
+
+        Ramping is disabled.
+        A shifted 2d grid and alternative `bg_radius` is used to generate the background mask.
+        Standard deviation is computed using N - 1 degrees of freedom.
+
+        :return: `ImageSource` with normalized background.
+        """
+
+        # Radius definition is here:
+        # https://github.com/PrincetonUniversity/aspire/blob/760a43b35453e55ff2d9354339e9ffa109a25371/workflow/cryo_workflow_preprocess_execute.m#L166
+        bg_radius = 2 * np.floor(self.L * 0.45) / self.L
+
+        return self.normalize_background(
+            bg_radius=bg_radius, do_ramp=False, shifted=True, ddof=1
+        )
+
+    @_as_copy
+    def normalize_background(self, bg_radius=1.0, do_ramp=True, shifted=False, ddof=0):
+        """
+        Normalize the images by the noise background.
 
         This is done by shifting the image density by the mean value of background
         and scaling the image density by the standard deviation of background.
-        From the implementation level, we modify the `ImageSource` in-place by
-        appending the `Add` and `Multiple` filters to the generation pipeline.
 
         :param bg_radius: Radius cutoff to be considered as background (in image size)
         :param do_ramp: When it is `True`, fit a ramping background to the data
             and subtract. Namely perform normalization based on values from each image.
             Otherwise, a constant background level from all images is used.
-        :param legacy: Option to match Matlab legacy normalize_background. Default, False,
-            uses ASPIRE-Python implementation. When True, ramping is disable, a shifted
-            2d grid and alternative `bg_radius` is used to generate the background mask,
-            and standard deviation is computed using N - 1 degrees of freedom.
-        :return: On return, the `ImageSource` object has been modified in place.
+        :param shifted: Optionally shifts 2d grid by 1/2 pixel for even
+            resolution to replicate MATLAB.
+        :param ddof: Degrees of freedom for standard deviation.
+        :return: `ImageSource` object with normalized background.
         """
 
         logger.info(
@@ -971,7 +1112,11 @@ class ImageSource(ABC):
         )
         self.generation_pipeline.add_xform(
             LambdaXform(
-                normalize_bg, bg_radius=bg_radius, do_ramp=do_ramp, legacy=legacy
+                normalize_bg,
+                bg_radius=bg_radius,
+                do_ramp=do_ramp,
+                shifted=shifted,
+                ddof=ddof,
             )
         )
 
@@ -1661,9 +1806,9 @@ class OrientedSource(IndexedSource):
             "_rlnOriginY",
         ]
         for key in rot_keys:
-            if self.has_metadata(key):
-                del self._metadata[key]
+            if self.pop_metadata(key) is not None:
                 _info_removed = True
+
         if _info_removed:
             logger.info(f"Removing orientation information passed by {self.src}.")
 
@@ -1738,7 +1883,8 @@ class ArrayImageSource(ImageSource):
         :param metadata: A Dataframe of metadata information corresponding to this ImageSource's images
         :param angles: Optional n-by-3 array of rotation angles corresponding to `im`.
         :param symmetry_group: A SymmetryGroup instance or string indicating the underlying symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms, default `None`.
+        :param pixel_size: Pixel size of the images in angstroms. Default is None. When set, this overrides any pixel
+            size stored in `im` or its metadata. When None, the pixel size is taken from `im` if available.
         """
 
         if not isinstance(im, Image):
@@ -1751,6 +1897,22 @@ class ArrayImageSource(ImageSource):
                     f" Original error: {str(e)}"
                 )
 
+        # Check for pixel_size conflict.
+        chosen_px_sz = im.pixel_size  # Use from Image if possible
+        if pixel_size is not None:
+            # Override with user provided
+            chosen_px_sz = pixel_size
+
+            # Warn if conflicting
+            if im.pixel_size is not None:
+                check_pixel_size(im.pixel_size, pixel_size)
+
+        # Now that we are an `Image`, check stack is 1D
+        if im.stack_ndim != 1:
+            raise RuntimeError(
+                "`ArrayImageSource` expects a single stack axis, received shape {im.shape}."
+            )
+
         super().__init__(
             L=im.resolution,
             n=im.n_images,
@@ -1758,7 +1920,7 @@ class ArrayImageSource(ImageSource):
             metadata=metadata,
             memory=None,
             symmetry_group=symmetry_group,
-            pixel_size=im.pixel_size,
+            pixel_size=chosen_px_sz,
         )
 
         self._cached_im = im

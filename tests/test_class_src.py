@@ -142,6 +142,7 @@ def class_sim_fixture(dtype, img_size):
         C=1,
         angles=true_rots.angles,
         symmetry_group="C4",  # For testing symmetry_group pass-through.
+        pixel_size=1.234,  # For testing pixel_size pass-through
     )
     # Prefetch all the images
     src = src.cache()
@@ -206,6 +207,9 @@ def test_basic_averaging(class_sim_fixture, test_src_cls, basis, classifier):
 
     # Check symmetry_group pass-through.
     assert test_src.symmetry_group == class_sim_fixture.symmetry_group
+
+    # Check pixel_size pass-through.
+    np.testing.assert_array_equal(test_src.pixel_size, class_sim_fixture.pixel_size)
 
 
 # Test the _HeapItem helper class

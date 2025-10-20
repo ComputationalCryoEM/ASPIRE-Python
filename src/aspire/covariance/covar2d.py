@@ -535,7 +535,10 @@ class BatchedRotCov2D(RotCov2D):
             logger.info("Represent CTF filters in basis")
             unique_filters = src.unique_filters
             self.ctf_idx = src.filter_indices
-            self.ctf_basis = [self.basis.filter_to_basis_mat(f) for f in unique_filters]
+            self.ctf_basis = [
+                self.basis.filter_to_basis_mat(f, pixel_size=self.src.pixel_size)
+                for f in unique_filters
+            ]
 
     def _calc_rhs(self):
         src = self.src

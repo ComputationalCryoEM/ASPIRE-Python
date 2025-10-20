@@ -199,11 +199,16 @@ class UniversalBasisMixin:
         _class = self.getClass(basis)
         # expand should take an Image/Volume and return a NumPy array of type
         # basis.coefficient_dtype
+        px_sz = 1.234
         result = basis.expand(
-            _class(np.zeros((basis.nres,) * basis.ndim, dtype=basis.dtype))
+            _class(
+                np.zeros((basis.nres,) * basis.ndim, dtype=basis.dtype),
+                pixel_size=px_sz,
+            )
         )
         assert isinstance(result, Coef)
         assert result.dtype == basis.coefficient_dtype
+        np.testing.assert_array_equal(result.pixel_size, px_sz)
 
     def testInitWithIntSize(self, basis):
         # make sure we can instantiate with just an int as a shortcut

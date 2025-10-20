@@ -35,7 +35,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         self,
         src,
         n_rad=None,
-        n_theta=None,
+        n_theta=360,
         max_shift=0.15,
         shift_step=1,
         epsilon=1e-3,
@@ -50,7 +50,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
         :param src: The source object of 2D denoised or class-averaged images with metadata
         :param n_rad: The number of points in the radial direction
-        :param n_theta: The number of points in the theta direction
+        :param n_theta: The number of points in the theta direction. Default = 360.
         :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
         :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param epsilon: Tolerance for the power method.

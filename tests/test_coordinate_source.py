@@ -338,43 +338,57 @@ class CoordinateSourceTestCase(TestCase):
 
     def testLoadFromBox(self):
         # ensure successful loading from box files
-        BoxesCoordinateSource(self.files_box)
+        BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
 
     def testLoadFromCenters(self):
         # ensure successful loading from particle center files (.coord)
-        CentersCoordinateSource(self.files_coord, particle_size=256)
+        CentersCoordinateSource(
+            self.files_coord, particle_size=256, pixel_size=self.pixel_size
+        )
 
     def testLoadFromStar(self):
         # ensure successful loading from particle center files (.star)
-        CentersCoordinateSource(self.files_star, particle_size=256)
+        CentersCoordinateSource(
+            self.files_star, particle_size=256, pixel_size=self.pixel_size
+        )
 
     def testLoadFromBox_Floats(self):
         # ensure successful loading from box files with float coordinates
-        BoxesCoordinateSource([(self.all_mrc_paths[0], self.float_box)])
+        BoxesCoordinateSource(
+            [(self.all_mrc_paths[0], self.float_box)], pixel_size=self.pixel_size
+        )
 
     def testLoadFromCenters_Floats(self):
         # ensure successful loading from particle center files (.coord)
         # with float coordinates
         CentersCoordinateSource(
-            [(self.all_mrc_paths[0], self.float_coord)], particle_size=256
+            [(self.all_mrc_paths[0], self.float_coord)],
+            particle_size=256,
+            pixel_size=self.pixel_size,
         )
 
     def testLoadFromStar_Floats(self):
         # ensure successful loading from particle center files (.star)
         # with float coordinates
         CentersCoordinateSource(
-            [(self.all_mrc_paths[0], self.float_star)], particle_size=256
+            [(self.all_mrc_paths[0], self.float_star)],
+            particle_size=256,
+            pixel_size=self.pixel_size,
         )
 
     def testNonSquareParticles(self):
         # nonsquare box sizes must fail
         with self.assertRaises(ValueError):
-            BoxesCoordinateSource(self.files_box_nonsquare)
+            BoxesCoordinateSource(self.files_box_nonsquare, pixel_size=self.pixel_size)
 
     def testOverrideParticleSize(self):
         # it is possible to override the particle size in the box file
-        src_new_size = BoxesCoordinateSource(self.files_box, particle_size=100)
-        src_from_centers = CentersCoordinateSource(self.files_coord, particle_size=100)
+        src_new_size = BoxesCoordinateSource(
+            self.files_box, particle_size=100, pixel_size=self.pixel_size
+        )
+        src_from_centers = CentersCoordinateSource(
+            self.files_coord, particle_size=100, pixel_size=self.pixel_size
+        )
         imgs_new_size = src_new_size.images[:10]
         imgs_from_centers = src_from_centers.images[:10]
         for i in range(10):
@@ -383,9 +397,13 @@ class CoordinateSourceTestCase(TestCase):
     def testImages(self):
         # load from both the box format and the coord format
         # ensure the images obtained are the same
-        src_from_box = BoxesCoordinateSource(self.files_box)
-        src_from_coord = CentersCoordinateSource(self.files_coord, particle_size=256)
-        src_from_star = CentersCoordinateSource(self.files_star, particle_size=256)
+        src_from_box = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
+        src_from_coord = CentersCoordinateSource(
+            self.files_coord, particle_size=256, pixel_size=self.pixel_size
+        )
+        src_from_star = CentersCoordinateSource(
+            self.files_star, particle_size=256, pixel_size=self.pixel_size
+        )
         imgs_box = src_from_box.images[:10]
         imgs_coord = src_from_coord.images[:10]
         imgs_star = src_from_star.images[:10]
@@ -394,8 +412,8 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(imgs_coord[i], imgs_star[i]))
 
     def testCached(self):
-        src = BoxesCoordinateSource(self.files_box)
-        src_uncached = BoxesCoordinateSource(self.files_box)
+        src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
+        src_uncached = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
         src_cached = src.cache()
         self.assertTrue(
             np.array_equal(
@@ -406,7 +424,7 @@ class CoordinateSourceTestCase(TestCase):
     def testImagesRandomIndices(self):
         # ensure that we can load a specific, possibly out of order, list of
         # indices, and that the result is in the order we asked for
-        src_from_box = BoxesCoordinateSource(self.files_box)
+        src_from_box = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
         images_in_order = src_from_box.images[:400]
         # test loading every other image and compare
         odd = np.array([i for i in range(1, 400, 2)])
@@ -430,26 +448,30 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(images_in_order[idx], random_images_neg[i]))
 
     def testMaxRows(self):
-        src_from_box = BoxesCoordinateSource(self.files_box)
+        src_from_box = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
         imgs = src_from_box.images[:400]
         # make sure max_rows loads the correct particles
-        src_100 = BoxesCoordinateSource(self.files_box, max_rows=100)
+        src_100 = BoxesCoordinateSource(
+            self.files_box, max_rows=100, pixel_size=self.pixel_size
+        )
         imgs_100 = src_100.images[:]
         for i in range(100):
             self.assertTrue(np.array_equal(imgs[i], imgs_100[i]))
         # make sure max_rows > self.n loads max_rows images
-        src_500 = BoxesCoordinateSource(self.files_box, max_rows=500)
+        src_500 = BoxesCoordinateSource(
+            self.files_box, max_rows=500, pixel_size=self.pixel_size
+        )
         self.assertEqual(src_500.n, 400)
         imgs_500 = src_500.images[:400]
         for i in range(400):
             self.assertTrue(np.array_equal(imgs[i], imgs_500[i]))
         # make sure max_rows loads correct particles
         # when some have been excluded
-        imgs_newsize = BoxesCoordinateSource(self.files_box, particle_size=336).images[
-            :50
-        ]
+        imgs_newsize = BoxesCoordinateSource(
+            self.files_box, particle_size=336, pixel_size=self.pixel_size
+        ).images[:50]
         src_maxrows = BoxesCoordinateSource(
-            self.files_box, particle_size=336, max_rows=50
+            self.files_box, particle_size=336, max_rows=50, pixel_size=self.pixel_size
         )
         # max_rows still loads 50 images even if some particles were excluded
         self.assertEqual(src_maxrows.n, 50)
@@ -459,10 +481,14 @@ class CoordinateSourceTestCase(TestCase):
 
     def testBoundaryParticlesRemoved(self):
         src_centers_larger_particles = CentersCoordinateSource(
-            self.files_coord, particle_size=300
+            self.files_coord,
+            particle_size=300,
+            pixel_size=self.pixel_size,
         )
         src_box_larger_particles = BoxesCoordinateSource(
-            self.files_box, particle_size=300
+            self.files_box,
+            particle_size=300,
+            pixel_size=self.pixel_size,
         )
         # 100 particles do not fit at this particle size
         self.assertEqual(src_centers_larger_particles.n, 300)
@@ -476,8 +502,12 @@ class CoordinateSourceTestCase(TestCase):
     def testEvenOddResize(self):
         # test a range of even and odd resizes
         for _size in range(252, 260):
-            src_centers = CentersCoordinateSource(self.files_coord, particle_size=_size)
-            src_resized = BoxesCoordinateSource(self.files_box, particle_size=_size)
+            src_centers = CentersCoordinateSource(
+                self.files_coord, particle_size=_size, pixel_size=self.pixel_size
+            )
+            src_resized = BoxesCoordinateSource(
+                self.files_box, particle_size=_size, pixel_size=self.pixel_size
+            )
             # some particles might be chopped off for sizes greater than
             # 256, so we just load the first 300 images for comparison
             imgs_centers = src_centers.images[:300]
@@ -487,7 +517,9 @@ class CoordinateSourceTestCase(TestCase):
 
     def testSave(self):
         # we can save the source into an .mrcs stack with *no* metadata
-        src = BoxesCoordinateSource(self.files_box, max_rows=10)
+        src = BoxesCoordinateSource(
+            self.files_box, max_rows=10, pixel_size=self.pixel_size
+        )
         imgs = src.images[:10]
         star_path = os.path.join(self.data_folder, "stack.star")
         src.save(star_path)
@@ -505,6 +537,7 @@ class CoordinateSourceTestCase(TestCase):
         self.assertEqual(
             list(saved_star[""].keys()),
             [
+                "_rlnImagePixelSize",
                 "_rlnSymmetryGroup",
                 "_rlnImageName",
                 "_rlnCoordinateX",
@@ -523,7 +556,9 @@ class CoordinateSourceTestCase(TestCase):
 
     def testPreprocessing(self):
         # ensure that the preprocessing methods that do not require CTF do not error
-        src = BoxesCoordinateSource(self.files_box, max_rows=5)
+        src = BoxesCoordinateSource(
+            self.files_box, max_rows=5, pixel_size=self.pixel_size
+        )
         src = src.downsample(60)
         src = src.normalize_background()
         noise_estimator = WhiteNoiseEstimator(src)
@@ -536,17 +571,18 @@ class CoordinateSourceTestCase(TestCase):
     def testWrongNumberCtfFiles(self):
         # trying to give 3 CTF files to a source with 2 micrographs should error
         with self.assertRaises(ValueError):
-            src = BoxesCoordinateSource(self.files_box)
+            src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
             src.import_aspire_ctf(["badfile", "badfile", "badfile"])
 
     def testImportCtfFromList(self):
-        src = BoxesCoordinateSource(self.files_box)
-        src.import_aspire_ctf(self.ctf_files)
-        self._testCtfFilters(src, uniform_pixel_sizes=False)
-        self._testCtfMetadata(src, uniform_pixel_sizes=False)
+        with pytest.warns(UserWarning, match="does not match pixel_size"):
+            src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
+            src.import_aspire_ctf(self.ctf_files)
+            self._testCtfFilters(src, uniform_pixel_sizes=False)
+            self._testCtfMetadata(src, uniform_pixel_sizes=False)
 
     def testImportCtfFromRelion(self):
-        src = BoxesCoordinateSource(self.files_box)
+        src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
         src.import_relion_ctf(self.relion_ctf_file)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
@@ -555,13 +591,13 @@ class CoordinateSourceTestCase(TestCase):
         self.relion_ctf_file = self.createTestRelionCtfFile(
             reverse_optics_block_rows=True
         )
-        src = BoxesCoordinateSource(self.files_box)
+        src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
         src.import_relion_ctf(self.relion_ctf_file)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
 
     def testImportCtfFromRelionLegacy(self):
-        src = BoxesCoordinateSource(self.files_box)
+        src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
         src.import_relion_ctf(self.relion_legacy_ctf_file)
         self._testCtfFilters(src)
         self._testCtfMetadata(src)
@@ -584,7 +620,6 @@ class CoordinateSourceTestCase(TestCase):
                         700.0,
                         600.0,
                         500.0,
-                        self.pixel_size,
                     ],
                     dtype=src.dtype,
                 ),
@@ -596,7 +631,6 @@ class CoordinateSourceTestCase(TestCase):
                         filter0.Cs,
                         filter0.alpha,
                         filter0.voltage,
-                        filter0.pixel_size,
                     ]
                 ),
             )
@@ -615,7 +649,6 @@ class CoordinateSourceTestCase(TestCase):
                         701.0,
                         601.0,
                         501.0,
-                        pixel_size1,
                     ],
                     dtype=src.dtype,
                 ),
@@ -627,7 +660,6 @@ class CoordinateSourceTestCase(TestCase):
                         filter1.Cs,
                         filter1.alpha,
                         filter1.voltage,
-                        filter1.pixel_size,
                     ]
                 ),
             )
@@ -694,6 +726,7 @@ class CoordinateSourceTestCase(TestCase):
                 f"--mrc_paths={self.data_folder}/*.mrc",
                 f"--coord_paths={self.data_folder}/sample*.box",
                 f"--starfile_out={self.data_folder}/saved_box.star",
+                f"--pixel_size={self.pixel_size}",
             ],
         )
         result_coord = runner.invoke(
@@ -704,6 +737,7 @@ class CoordinateSourceTestCase(TestCase):
                 f"--starfile_out={self.data_folder}/saved_coord.star",
                 "--centers",
                 "--particle_size=256",
+                f"--pixel_size={self.pixel_size}",
             ],
         )
         result_star = runner.invoke(
@@ -713,6 +747,7 @@ class CoordinateSourceTestCase(TestCase):
                 f"--coord_paths={self.data_folder}/sample*.star",
                 f"--starfile_out={self.data_folder}/saved_star.star",
                 "--centers",
+                f"--pixel_size={self.pixel_size}",
                 "--particle_size=256",
             ],
         )
@@ -722,6 +757,7 @@ class CoordinateSourceTestCase(TestCase):
                 f"--mrc_paths={self.data_folder}/*.mrc",
                 f"--coord_paths={self.data_folder}/sample*.box",
                 f"--starfile_out={self.data_folder}/saved_star_ds.star",
+                f"--pixel_size={self.pixel_size}",
                 "--downsample=33",
                 "--normalize_bg",
                 "--whiten",
@@ -741,34 +777,27 @@ class CoordinateSourceTestCase(TestCase):
         manual_pixel_size = 0.789
         src = BoxesCoordinateSource(self.files_box, pixel_size=manual_pixel_size)
         # Capture and compare warning message
-        with pytest.warns(UserWarning, match=r".*Pixel size mismatch.*"):
+        with pytest.warns(UserWarning, match=r"does not match pixel_size"):
             src.import_relion_ctf(self.relion_ctf_file)
+            # pixel_size should still be user provided value.
             np.testing.assert_approx_equal(src.pixel_size, manual_pixel_size)
 
     def testMultiplePixelSizeWarning(self):
         """
         Test source having multiple pixel sizes in CTFFilter instances.
         """
-        src = BoxesCoordinateSource(self.files_box)  # pixel_size=None
-        # Capture and compare warning message
-        with self._caplog.at_level(logging.WARNING):
+        src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
+        with pytest.warns(UserWarning, match=r"does not match pixel_size"):
             src.import_aspire_ctf(self.ctf_files)  # not uniform_pixel_sizes
-            assert src.pixel_size is None
-            assert "multiple pixel_sizes found" in self._caplog.text
+
+            # pixel_size should still be user provided value.
+            np.testing.assert_approx_equal(src.pixel_size, self.pixel_size)
 
     def testPixelSize(self):
         """
         Test explicitly providing correct pixel_size.
         """
         src = BoxesCoordinateSource(self.files_box, pixel_size=self.pixel_size)
-        src.import_relion_ctf(self.relion_ctf_file)
-        np.testing.assert_approx_equal(src.pixel_size, self.pixel_size)
-
-    def testPixelSizeNone(self):
-        """
-        Test not providing pixel_size.
-        """
-        src = BoxesCoordinateSource(self.files_box)
         src.import_relion_ctf(self.relion_ctf_file)
         np.testing.assert_approx_equal(src.pixel_size, self.pixel_size)
 
@@ -805,7 +834,7 @@ def test_rectangular_coordinate_source(tmp_path):
     file_list = create_test_rectangular_micrograph_and_star(tmp_path)
 
     # Check we can instantiate a CoordinateSource with a rectangular micrograph.
-    coord_src = CentersCoordinateSource(file_list, particle_size=32)
+    coord_src = CentersCoordinateSource(file_list, particle_size=32, pixel_size=1.0)
 
     # Check we can access images.
     _ = coord_src.images[:]
@@ -816,5 +845,5 @@ def test_coordinate_source_pixel_warning(tmp_path, caplog):
     vx = (2.3, 2.1, 1.0)
     file_list = create_test_rectangular_micrograph_and_star(tmp_path, voxel_size=vx)
     with caplog.at_level(logging.WARNING):
-        _ = CentersCoordinateSource(file_list, particle_size=32)
+        _ = CentersCoordinateSource(file_list, particle_size=32, pixel_size=1.0)
         assert "Voxel sizes are not uniform" in caplog.text

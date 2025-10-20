@@ -1,7 +1,7 @@
 import logging
 import os.path
-from concurrent import futures
-from multiprocessing import cpu_count
+from itertools import groupby, islice
+from operator import itemgetter
 
 import mrcfile
 import numpy as np
@@ -43,7 +43,8 @@ class RelionSource(ImageSource):
         :param data_folder: Path to folder w.r.t which all relative paths to .mrcs files are resolved.
             If None, the folder corresponding to filepath is used.
         :param pixel_size: The pixel size of the images in angstroms. By default, pixel size is
-            populated from the STAR file if relevant metadata fields exist, otherwise set to 1.
+            populated from the STAR file if relevant metadata fields exist. If not found in metadata,
+            pixel_size must be provided.
         :param B: the envelope decay of the CTF in inverse square angstrom (Default 0)
         :param n_workers: Number of threads to spawn to read referenced .mrcs files (Default -1 to auto detect)
         :param max_rows: Maximum number of rows in STAR file to read. If None, all rows are read.
@@ -115,20 +116,14 @@ class RelionSource(ImageSource):
             pixel_size=pixel_size,
         )
 
-        # Populate pixel_size with metadata if possible.
-        if pixel_size is None:
-            if self.has_metadata(["_rlnImagePixelSize"]):
-                pixel_size = self.get_metadata(["_rlnImagePixelSize"])[0]
-            elif self.has_metadata(["_rlnDetectorPixelSize", "_rlnMagnification"]):
-                detector_pixel_size = self.get_metadata(["_rlnDetectorPixelSize"])[0]
-                magnification = self.get_metadata(["_rlnMagnification"])[0]
-                pixel_size = 10000 * detector_pixel_size / magnification
-            else:
-                logger.warning(
-                    "No pixel size found in STAR file. Defaulting to 1.0 Angstrom"
-                )
-                pixel_size = 1.0
-        self.pixel_size = float(pixel_size)
+        # Ensure Relion >= 3.1 convention for offsets
+        offset_keys = ["_rlnOriginX", "_rlnOriginY"]
+        if self.has_metadata(offset_keys):
+            # The setter will store offsets as _rlnOriginX(Y)Angst in metadata
+            self.offsets = np.atleast_2d(self.get_metadata(offset_keys))
+            # Remove old convention from metadata
+            for key in offset_keys:
+                del self._metadata[key]
 
         # CTF estimation parameters coming from Relion
         CTF_params = [
@@ -153,7 +148,6 @@ class RelionSource(ImageSource):
             for row in filter_params:
                 filters.append(
                     CTFFilter(
-                        pixel_size=self.pixel_size,
                         voltage=row[0],
                         defocus_u=row[1],
                         defocus_v=row[2],
@@ -246,44 +240,31 @@ class RelionSource(ImageSource):
         # Log the indices in case needed to debug a crash
         logger.debug(f"Indices: {indices}")
 
-        def load_single_mrcs(filepath, indices):
-            arr = mrcfile.open(filepath, mode="r", permissive=True).data
-            # if the stack only contains one image, arr will have shape (resolution, resolution)
-            # the code below reshapes it to (1, resolution, resolution)
-            if len(arr.shape) == 2:
-                arr = arr.reshape((1,) + arr.shape)
-            # __mrc_index is the 1-based index of the particle in the stack
-            data = arr[self._metadata["__mrc_index"][indices] - 1, :, :]
-
-            return indices, data
-
-        n_workers = self.n_workers
-        if n_workers < 0:
-            n_workers = cpu_count() - 1
-
+        # Array to hold requested data
         im = np.empty(
             (len(indices), self._original_resolution, self._original_resolution),
             dtype=self.dtype,
         )
 
-        filepaths, filepath_indices = np.unique(
-            self._metadata["__mrc_filepath"], return_inverse=True
-        )
-        n_workers = min(n_workers, len(filepaths))
+        # Map the requested source indices to individual filename and
+        # the indices inside that file.  Returns an iterable of tuples
+        # (f_name, f_idx, req_idx), ...
+        file_requests = self._decompose_source_request(indices)
 
-        with futures.ThreadPoolExecutor(n_workers) as executor:
-            to_do = []
-            for i, filepath in enumerate(filepaths):
-                this_filepath_indices = np.where(filepath_indices == i)[0]
-                future = executor.submit(
-                    load_single_mrcs, filepath, this_filepath_indices
-                )
-                to_do.append(future)
+        # sort `file_requests` by (fname, f_idx) for the upcoming groupby
+        file_requests = sorted(file_requests, key=itemgetter(0, 1))
 
-            for future in futures.as_completed(to_do):
-                data_indices, data = future.result()
-                for idx, d in enumerate(data_indices):
-                    im[np.where(indices == d)] = data[idx, :, :]
+        # Group requested images by filename,
+        # and for each file, load the requested `images`.
+        for fpath, grp in groupby(file_requests, key=itemgetter(0)):
+            # unpack from iter of rows to columns,
+            #   also dropping fname column via slice.
+            f_indices, req_indices = islice(zip(*grp), 1, None)
+
+            # Load the relevant `f_indices` images from `fpath`
+            # and assign to batch array `im`.
+            #   Converts tuple of tuples `req_indices` to list.
+            im[list(req_indices)] = _load_single_mrcs(fpath, f_indices)
 
         logger.debug(f"Loading {len(indices)} images complete")
 
@@ -291,3 +272,63 @@ class RelionSource(ImageSource):
         return self.generation_pipeline.forward(
             Image(im, pixel_size=self.pixel_size), indices
         )
+
+    def _decompose_source_request(self, indices):
+        """
+        Given requested `indices`, lookup the corresponding image
+        files and indexing within that file from metadata.
+        Return as an iterable of tuples.
+
+        :param indices: Iterable containing source indices.
+        :return: [(filepath, file_index, req_index),...]
+        """
+
+        return zip(
+            self._metadata["__mrc_filepath"][indices],
+            self._metadata["__mrc_index"][indices]
+            - 1,  # convert from STAR one based to zero based
+            range(len(indices)),
+        )
+
+
+def _optimize_contiguous_slice(inds):
+    """
+    Given an iterable of indices `inds`,
+    determine if `inds` is a contiguous slice,
+    and in that case return an equivalent `slice` object,
+    otherwise return `inds` as an array.
+
+    :param inds: iterable of indices
+    :return: slice or array
+    """
+    inds = np.array(inds, dtype=int)
+
+    head, tail = inds[0], inds[-1]
+    # Short circuit incorrect size, then test if a contiguous range
+    if (len(inds) == (tail + 1) - head) and (inds == np.arange(head, tail + 1)).all():
+        # coniguous range, replace with a slice
+        inds = slice(head, tail + 1)
+    return inds
+
+
+def _load_single_mrcs(filepath, mrc_indices):
+    """
+    Local utility to wrap up loading a slice of MRC data.
+
+    :param filepath: String filepath to MRC file.
+    :param indices: Requested indices from MRC file.
+    :return: Slice of array data (as mmap).
+    """
+
+    # Attempt to optimize `f_indices` as a slice.
+    mrc_indices = _optimize_contiguous_slice(mrc_indices)
+
+    with mrcfile.mmap(filepath, mode="r", permissive=True) as fh:
+        arr = fh.data
+        # if the stack only contains one image, arr will have shape (resolution, resolution)
+        # the code below reshapes it to (1, resolution, resolution)
+        if len(arr.shape) == 2:
+            arr = arr.reshape((1,) + arr.shape)
+        data = arr[mrc_indices, :, :]
+
+    return data

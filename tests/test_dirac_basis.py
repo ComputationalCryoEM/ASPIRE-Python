@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from aspire.basis import DiracBasis2D, DiracBasis3D
+from aspire.numeric import xp
 from aspire.reconstruction import MeanEstimator
 from aspire.source import Simulation
 from aspire.utils import grid_2d, grid_3d
@@ -107,3 +108,68 @@ def test_dirac_mean_vol_est(size, dtype):
     est_vol = MeanEstimator(src, basis=basis).estimate()
 
     np.testing.assert_array_less(np.mean(src.vols - est_vol), 1e-5)
+
+
+def test_dirac_basis_ndarray_private_roundtrip(basis, mask):
+    """
+    Tests private `evaluate_t` and `evaluate` methods are returning intended types, shapes, and values.
+    """
+    stack_len = 7
+    # Form a numpy test array stack of `stack_len` items
+    x = ref = np.random.random((stack_len, *basis.sz)).astype(basis.dtype)
+
+    # convert to an array of coeficients
+    c = basis._evaluate_t(x)
+    assert c.shape == (stack_len, basis.count), "Incorrect shape"
+    assert isinstance(c, np.ndarray), "Incorrect return object type"
+
+    # convert back to array in original domain
+    y = basis._evaluate(c)
+    if mask is not None:
+        # Mask case
+        ref = ref * mask
+        # Negated mask joined with outer values should all be zero
+        assert np.all((ref * ~mask) == 0)
+
+    assert y.shape == x.shape, "Incorrect shape"
+    assert isinstance(y, np.ndarray), "Incorrect return object type"
+
+    np.testing.assert_equal(
+        y, ref, err_msg="Arrays should be identical up to any `mask`."
+    )
+
+
+def test_dirac_basis_xparray_passthrough(basis, mask):
+    """
+    Tests private `evaluate_t` and `evaluate` methods are returning intended types, shapes, and values.
+    """
+    # If we can import cupy then `xp` could be cupy array depending on config.
+    pytest.importorskip("cupy")
+
+    stack_len = 7
+    # Form a numpy test array stack of `stack_len` items
+    x = ref = xp.random.random((stack_len, *basis.sz)).astype(basis.dtype)
+
+    # convert to an array of coeficients
+    c = basis._evaluate_t(x)
+    assert c.shape == (stack_len, basis.count), "Incorrect shape"
+    assert isinstance(c, xp.ndarray), "Incorrect return object type"
+
+    # convert back to array in original domain
+    y = basis._evaluate(c)
+    if mask is not None:
+        # Mask case
+        # Note `DiracBasis` classes internally handle their own mask conversion as needed.
+        _mask = xp.asarray(mask)
+        ref = ref * _mask
+        # Negated mask joined with outer values should all be zero
+        assert xp.all((ref * ~_mask) == 0)
+
+    assert y.shape == x.shape, "Incorrect shape"
+    assert isinstance(y, xp.ndarray), "Incorrect return object type"
+
+    np.testing.assert_equal(
+        xp.asnumpy(y),
+        xp.asnumpy(ref),
+        err_msg="Arrays should be identical up to any `mask`.",
+    )

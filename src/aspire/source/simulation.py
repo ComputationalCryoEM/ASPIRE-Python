@@ -9,7 +9,7 @@ from aspire.image import Image
 from aspire.noise import NoiseAdder
 from aspire.source import ImageSource
 from aspire.source.image import _ImageAccessor
-from aspire.utils import Rotation, acorr, ainner, anorm, make_symmat
+from aspire.utils import Rotation, acorr, ainner, anorm, check_pixel_size, make_symmat
 from aspire.utils.random import randi, randn, random
 from aspire.volume import AsymmetricVolume, Volume
 
@@ -72,7 +72,8 @@ class Simulation(ImageSource):
         :param noise_adder: Optionally append instance of `NoiseAdder`
             to generation pipeline.
         :param symmetry_group: A SymmetryGroup instance or string indicating symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms, default `None`.
+        :param pixel_size: Pixel size of the images in angstroms. By default, pixel_size is inferred
+            from `vols` if possible, otherwise set to 1.0 angstrom.
 
         :return: A Simulation object.
         """
@@ -110,6 +111,17 @@ class Simulation(ImageSource):
             )
         symmetry_group = symmetry_group or self.vols.symmetry_group
 
+        # Infer pixel_size from volume. Otherwise default to 1.0 angstrom.
+        if pixel_size is None:
+            if self.vols.pixel_size is None:
+                pixel_size = 1.0
+            else:
+                pixel_size = self.vols.pixel_size
+        elif self.vols.pixel_size is not None:
+            check_pixel_size(self.vols.pixel_size, pixel_size)
+
+        self._projection_pixel_size = pixel_size
+
         # Infer the details from volume when possible.
         super().__init__(
             L=self.vols.resolution,
@@ -117,7 +129,7 @@ class Simulation(ImageSource):
             dtype=self.vols.dtype,
             memory=memory,
             symmetry_group=symmetry_group,
-            pixel_size=self.vols.pixel_size,
+            pixel_size=pixel_size,
         )
 
         # If a user provides both `L` and `vols`, resolution should match.
@@ -149,7 +161,6 @@ class Simulation(ImageSource):
         if unique_filters is None:
             unique_filters = []
         self.unique_filters = unique_filters
-        self._check_filter_pixel_size(unique_filters)
         # sim_filters must be a deep copy so that it is not changed
         # when unique_filters is changed
         self.sim_filters = copy.deepcopy(unique_filters)
@@ -217,6 +228,7 @@ class Simulation(ImageSource):
             "Cs",
             "alpha",
         )
+
         # get the CTF parameters, if they exist, for each filter
         # and for each image (indexed by filter_indices)
         filter_values = np.zeros((len(filter_indices), len(CTFFilter_attributes)))
@@ -237,29 +249,6 @@ class Simulation(ImageSource):
             ],
             filter_values,
         )
-
-    def _check_filter_pixel_size(self, unique_filters):
-        """
-        Private method to ensure user provided filters match `Simulation` pixel size.
-
-        When `Simulation.pixel_size` is not `None`, any
-        `unique_filters` having a non-matching `pixel_size` attribute
-        will raise.
-        """
-
-        # Skip when Simulation pixel_size is not explicitly provided.
-        if self.pixel_size is None:
-            return
-
-        for f in unique_filters:
-            f_pixel_size = getattr(f, "pixel_size", None)
-            if f_pixel_size is not None and not np.isclose(
-                f_pixel_size, self.pixel_size
-            ):
-                raise ValueError(
-                    f"`Simulation.pixel_size` {self.pixel_size} does not match filter {f} pixel size {f_pixel_size}."
-                    "Ensure provided `pixel_size` attributes match."
-                )
 
     @property
     def projections(self):
@@ -290,7 +279,7 @@ class Simulation(ImageSource):
             im_k = self.vols[k - 1].project(rot_matrices=rot)
             im[idx_k, :, :] = im_k.asnumpy()
 
-        return Image(im, pixel_size=self.pixel_size)
+        return Image(im, pixel_size=self._projection_pixel_size)
 
     @property
     def clean_images(self):
@@ -331,15 +320,21 @@ class Simulation(ImageSource):
         if not clean_images and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
 
+        # scaling pixel_size in source, scaling filter, and scaling in IMage.downsample in conflict...
         # Finally, apply transforms to resulting Image
         return self.generation_pipeline.forward(im, indices)
 
     def _apply_sim_filters(self, im, indices):
-        return self._apply_filters(
+        im = self._apply_filters(
             im,
             self.sim_filters,
             self.filter_indices[indices],
         )
+
+        # Assign correct pixel_size
+        im.pixel_size = self.pixel_size
+
+        return im
 
     def vol_coords(self, mean_vol=None, eig_vols=None):
         """

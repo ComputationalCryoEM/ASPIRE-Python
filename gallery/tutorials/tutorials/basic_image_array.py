@@ -127,7 +127,7 @@ plt.show()
 # The implementation of batching for memory management
 # would be managed behind the scenes for you.
 
-imgs_src = ArrayImageSource(imgs_with_noise)
+imgs_src = ArrayImageSource(imgs_with_noise, pixel_size=1.0)
 
 # We'll copy the orginals for comparison later, before we process them further.
 noisy_imgs_copy = imgs_src.images[:n_imgs].asnumpy()

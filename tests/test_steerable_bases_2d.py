@@ -67,7 +67,7 @@ def test_basis_rotation_2d(basis):
     # Create an Image containing a smooth blob.
     L = basis.nres
     img = gaussian_2d(L, mu=(L // 4, 0), dtype=basis.dtype)
-    img = Image(img / np.linalg.norm(img))  # Normalize
+    img = Image(img / np.linalg.norm(img), pixel_size=1.234)  # Normalize
 
     # Rotate with an ASPIRE steerable basis, returning to real space.
     rot_img = basis.expand(img).rotate(rot_radians).evaluate()
@@ -81,6 +81,9 @@ def test_basis_rotation_2d(basis):
 
     # Rough compare arrays.
     np.testing.assert_allclose(rot_img.asnumpy()[0], pil_rot_img, atol=0.15)
+
+    # Test pixel_size passthrough
+    np.testing.assert_array_equal(img.pixel_size, rot_img.pixel_size)
 
 
 def test_basis_reflection_2d(basis):

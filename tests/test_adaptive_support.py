@@ -35,7 +35,7 @@ class AdaptiveSupportTest(TestCase):
         """
 
         discs = np.empty((self.size, self.size))  # Intentional Dummy Data
-        img_src = ArrayImageSource(discs)
+        img_src = ArrayImageSource(discs, pixel_size=1.0)
 
         with pytest.raises(ValueError, match=r"Given energy_threshold.*"):
             _ = adaptive_support(img_src, -0.5)
@@ -67,7 +67,7 @@ class AdaptiveSupportTest(TestCase):
         )
 
         # Setup ImageSource like objects
-        img_src = ArrayImageSource(imgs)
+        img_src = ArrayImageSource(imgs, pixel_size=1.0)
 
         for ref, threshold in self.references.items():
             c, R = adaptive_support(img_src, threshold)

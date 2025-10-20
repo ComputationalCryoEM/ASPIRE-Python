@@ -7,6 +7,7 @@ import importlib.resources
 import logging
 import os
 import sys
+import warnings
 from datetime import datetime
 from itertools import chain, combinations
 
@@ -437,6 +438,29 @@ def cyclic_rotations(order, dtype=np.float64):
     rots_symm = Rotation.from_euler(angles)
 
     return rots_symm
+
+
+def check_pixel_size(pixel_sizes, reference_pixel_size):
+    """
+    Ensure that `reference_pixel_size` is a scalar and check that `pixel_sizes`
+    are close to `reference_pixel_size`, warn if not.
+
+    :param pixel_sizes: Pixel size value(s) to check (scalar or ndarray).
+    :param reference_pixel_size: Reference value (scalar).
+    :return: True if close, False otherwise.
+    """
+    if not np.asarray(reference_pixel_size).size == 1:
+        raise ValueError("`reference_pixel_size` must be a scalar.")
+
+    close = np.allclose(pixel_sizes, reference_pixel_size)
+    if not close:
+        warnings.warn(
+            f"User provided pixel_size: {reference_pixel_size} angstrom, does not match"
+            f" pixel_size found in metadata: {pixel_sizes} angstrom.",
+            UserWarning,
+            stacklevel=2,
+        )
+    return bool(close)
 
 
 # Potentially cache this in the future.

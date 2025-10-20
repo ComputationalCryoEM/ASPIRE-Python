@@ -91,8 +91,9 @@ def coef_fixture(basis, stack, dtype):
     size = stack + (basis.count,)
 
     coef_np = np.random.random(size=size).astype(dtype, copy=False)
+    pixel_size = 1.234
 
-    return Coef(basis, coef_np, dtype=dtype)
+    return Coef(basis, coef_np, dtype=dtype, pixel_size=pixel_size)
 
 
 @pytest.fixture(scope="module")
@@ -225,6 +226,9 @@ def test_add(basis, coef_fixture):
     # Compare result with reference
     np.testing.assert_allclose(res, ref)
 
+    # Check pixel_size passthrough
+    np.testing.assert_array_equal(coef_fixture.pixel_size, res.pixel_size)
+
 
 def test_sub(basis, coef_fixture):
     """
@@ -244,6 +248,9 @@ def test_sub(basis, coef_fixture):
     # Compare result with reference
     np.testing.assert_allclose(res, ref)
 
+    # Check pixel_size passthrough
+    np.testing.assert_array_equal(coef_fixture.pixel_size, res.pixel_size)
+
 
 def test_neg(basis, coef_fixture):
     """
@@ -257,6 +264,9 @@ def test_neg(basis, coef_fixture):
 
     # Compare result with reference
     np.testing.assert_allclose(res, ref)
+
+    # Check pixel_size passthrough
+    np.testing.assert_array_equal(coef_fixture.pixel_size, res.pixel_size)
 
 
 def test_mul(basis, coef_fixture):
@@ -276,6 +286,9 @@ def test_mul(basis, coef_fixture):
 
     # Compare result with reference
     np.testing.assert_allclose(res, ref)
+
+    # Check pixel_size passthrough
+    np.testing.assert_array_equal(coef_fixture.pixel_size, res.pixel_size)
 
 
 # Test Passthrough Functions
@@ -449,3 +462,46 @@ def test_complex_shift(coef_fixture, rots):
         rtol=1e-05,
         atol=utest_tolerance(coef_fixture.basis.dtype),
     )
+
+
+def test_check_pixel_size(coef_fixture, basis):
+    """
+    Test all combinations of pixel sizes for the _check_pixel_size helper function.
+    """
+    # Make array
+    x = np.random.random(size=coef_fixture.shape).astype(coef_fixture.dtype, copy=False)
+
+    # Case: (None, None)
+    A = Coef(basis, x)
+    B = Coef(basis, x)
+    assert Coef._check_pixel_size(A, B) is None
+
+    # Case: (a, None)
+    a = 1.2
+    A = Coef(basis, x, pixel_size=a)
+    B = Coef(basis, x)
+    np.testing.assert_array_equal(Coef._check_pixel_size(A, B), a)
+
+    # Case: (None, b)
+    b = 2.3
+    A = Coef(basis, x)
+    B = Coef(basis, x, pixel_size=b)
+    np.testing.assert_array_equal(Coef._check_pixel_size(A, B), b)
+
+    # Case: (a, a)
+    A = Coef(basis, x, pixel_size=a)
+    B = Coef(basis, x, pixel_size=a)
+    np.testing.assert_array_equal(Coef._check_pixel_size(A, B), a)
+
+    # Case: (a, b)
+    with pytest.warns(
+        UserWarning, match=f"Pixel sizes do not match. Using pixel size {a}."
+    ):
+        A = Coef(basis, x, pixel_size=a)
+        B = Coef(basis, x, pixel_size=b)
+        np.testing.assert_array_equal(Coef._check_pixel_size(A, B), a)
+
+    # Case: (a, np.array)
+    A = Coef(basis, x, pixel_size=a)
+    B = Coef(basis, x).asnumpy()
+    np.testing.assert_array_equal(Coef._check_pixel_size(A, B), a)

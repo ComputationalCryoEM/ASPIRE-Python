@@ -5,6 +5,7 @@ import numpy as np
 from joblib import Memory
 
 from aspire.image import Image
+from aspire.utils import crop_pad_2d
 
 logger = logging.getLogger(__name__)
 
@@ -199,7 +200,7 @@ class Downsample(LinearXform):
     A Xform that downsamples an Image object to a resolution specified by this Xform's resolution.
     """
 
-    def __init__(self, resolution, zero_nyquist=True, legacy=False):
+    def __init__(self, resolution, zero_nyquist=True, centered_fft=True):
         """
         Initialize Xform to downsample Image to a specific resolution.
 
@@ -207,17 +208,28 @@ class Downsample(LinearXform):
             of this Image
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even
             resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
-        :param legacy: Option to match legacy Matlab downsample method (boolean).
-            Default of False uses `centered_fft` to maintain ASPIRE-Python centering conventions.
+        :param centered_fft: Default of True uses `centered_fft` to
+            maintain ASPIRE-Python centering conventions.
         """
         self.resolution = resolution
         self.zero_nyquist = zero_nyquist
-        self.legacy = legacy
+        self.centered_fft = centered_fft
         super().__init__()
 
     def _forward(self, im, indices):
-        return im.downsample(
-            self.resolution, zero_nyquist=self.zero_nyquist, legacy=self.legacy
+        original_stack_shape = im.stack_shape
+        data = im.stack_reshape(-1)._data
+        im_ds = Image._downsample(
+            data,
+            self.resolution,
+            zero_nyquist=self.zero_nyquist,
+            centered_fft=self.centered_fft,
+        )
+
+        # pixel_size has already been adjusted in the ImageSource and passed
+        # to `im`, so we instantiate the new Image with im.pixel_size.
+        return Image(im_ds, pixel_size=im.pixel_size).stack_reshape(
+            original_stack_shape
         )
 
     def _adjoint(self, im, indices):
@@ -225,7 +237,30 @@ class Downsample(LinearXform):
         raise NotImplementedError("Adjoint of downsampling not implemented yet.")
 
     def __str__(self):
-        return f"Downsample (Resolution {self.resolution})"
+        return f"Downsample (resolution={self.resolution}, zero_nyquist={self.zero_nyquist}, centered_fft={self.centered_fft}) Xform"
+
+
+class CropPad(Xform):
+    """
+    A Xform that crops or pads an Image object to a specified size.
+    """
+
+    def __init__(self, L, fill_value=0):
+        """
+        Initialize Xform to crop Image to a specific size.
+
+        :param L: int - new size
+        :param fill_value: Optional value for padding, default 0.
+        """
+        self.L = L
+        self.fill_value = fill_value
+        super().__init__()
+
+    def _forward(self, im, indices):
+        return crop_pad_2d(im, self.L, self.fill_value)
+
+    def __str__(self):
+        return f"CropPad({self.L}, {self.fill_value}) Xform"
 
 
 class LegacyWhiten(Xform):
@@ -256,7 +291,7 @@ class LegacyWhiten(Xform):
         return im.legacy_whiten(self.psd, self.delta)
 
     def __str__(self):
-        return "Legacy Whitening Xform."
+        return "LegacyWhiten() Xform"
 
 
 class FilterXform(SymmetricXform):
@@ -397,7 +432,7 @@ class IndexedXform(Xform):
                 fn_handle = getattr(xform, which)
                 im_data[im_data_indices] = fn_handle(im[im_data_indices]).asnumpy()
 
-        return Image(im_data)
+        return Image(im_data, pixel_size=im.pixel_size)
 
     def _forward(self, im, indices):
         return self._indexed_operation(im, indices, "forward")

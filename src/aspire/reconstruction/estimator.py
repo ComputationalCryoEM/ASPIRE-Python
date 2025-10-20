@@ -2,7 +2,7 @@ import logging
 import os
 from pathlib import Path
 
-from aspire.basis import Coef, FFBBasis3D
+from aspire.basis import Coef, DiracBasis3D
 from aspire.reconstruction.kernel import FourierKernel
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ class Estimator:
         self,
         src,
         basis=None,
-        batch_size=512,
+        batch_size=256,
         preconditioner="circulant",
         checkpoint_iterations=10,
         checkpoint_prefix="volume_checkpoint",
@@ -32,6 +32,7 @@ class Estimator:
         :param basis: 3D Basis to be used during estimation.
         :param batch_size: Optional batch size of images drawn from
             `src` during back projection and kernel estimation steps.
+            Reducing batch size should reduce memory footprint.
         :param preconditioner: Optional kernel preconditioner (`string`).
             Currently supported options are "circulant" or None.
         :param checkpoint_iterations: Optionally save `cg` estimated
@@ -54,8 +55,10 @@ class Estimator:
 
         self.src = src
         if basis is None:
-            logger.info(f"{self.__class__.__name__} instantiating default basis.")
-            basis = FFBBasis3D(src.L, dtype=src.dtype)
+            basis = DiracBasis3D(src.L, dtype=src.dtype)
+            logger.info(
+                f"{self.__class__.__name__} instantiating default {basis.__class__.__name__}."
+            )
         self.basis = basis
         self.dtype = self.src.dtype
         self.batch_size = batch_size
@@ -143,7 +146,7 @@ class Estimator:
         if b_coef is None:
             b_coef = self.src_backward()
         est_coef = self.conj_grad(b_coef, x0=x0, tol=tol, regularizer=regularizer)
-        est = Coef(self.basis, est_coef).evaluate()
+        est = Coef(self.basis, est_coef, pixel_size=self.src.pixel_size).evaluate()
 
         return est
 

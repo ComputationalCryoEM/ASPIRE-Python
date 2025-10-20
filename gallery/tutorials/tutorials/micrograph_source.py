@@ -143,6 +143,7 @@ from aspire.volume import AsymmetricVolume
 vol = AsymmetricVolume(
     L=100,
     C=1,
+    pixel_size=4,
     seed=1234,
     dtype=np.float32,
 ).generate()
@@ -181,7 +182,7 @@ from aspire.operators import RadialCTFFilter
 # Create our CTF Filter and add it to a list.
 # This configuration will apply the same CTF to all particles.
 ctfs = [
-    RadialCTFFilter(pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0),
+    RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0),
 ]
 
 src = MicrographSimulation(
@@ -386,7 +387,11 @@ with open(results[0][1], "r") as f:
 
 # %%
 
-img_src = CentersCoordinateSource(results, src.particle_box_size)
+img_src = CentersCoordinateSource(
+    results,
+    src.pixel_size,
+    src.particle_box_size,
+)
 # Show the first five images from the image source.
 img_src.images[:3].show()
 

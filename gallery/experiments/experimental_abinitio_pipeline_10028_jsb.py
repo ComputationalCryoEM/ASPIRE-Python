@@ -88,12 +88,15 @@ src = RelionSource(
 logger.info("Perform phase flip to input images.")
 src = src.phase_flip().cache()
 
+# Legacy MATLAB cropped the images to an odd resolution.
+src = src.crop_pad(src.L - 1).cache()
+
 # Downsample the images.
 logger.info(f"Set the resolution to {img_size} X {img_size}")
-src = src.downsample(img_size).cache()
+src = src.legacy_downsample(img_size).cache()
 
 # Normalize the background of the images.
-src = src.normalize_background().cache()
+src = src.legacy_normalize_background().cache()
 
 # Estimate the noise and whiten based on the estimated noise.
 src = src.legacy_whiten().cache()

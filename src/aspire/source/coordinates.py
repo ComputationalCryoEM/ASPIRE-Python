@@ -1,6 +1,5 @@
 import logging
 import os
-import warnings
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable
@@ -13,7 +12,7 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, IdentityFilter
 from aspire.source.image import ImageSource
 from aspire.storage import StarFile
-from aspire.utils import RelionStarFile
+from aspire.utils import RelionStarFile, check_pixel_size
 
 logger = logging.getLogger(__name__)
 
@@ -48,17 +47,21 @@ class CoordinateSource(ImageSource, ABC):
     """
 
     def __init__(
-        self, files, particle_size, max_rows, B, symmetry_group, pixel_size=None
+        self,
+        files,
+        pixel_size,
+        particle_size,
+        max_rows,
+        B,
+        symmetry_group,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
+        :param pixel_size: Pixel size of the images in angstroms (Required)
         :param particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms.
-            Default `None` will attempt to infer `pixel_size` from
-            `CTFFilter` objects when available.
         """
         mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
@@ -405,37 +408,13 @@ class CoordinateSource(ImageSource, ABC):
         # convert defocus_ang from degrees to radians
         filter_params[:, 3] *= np.pi / 180.0
 
-        # Check pixel_size
-        # Get pixel_sizes from CTFFilters
+        # Warn if CTF pixel_sizes do match self.pixel_size
         ctf_pixel_sizes = np.unique(filter_params[:, 6])
-        # Compare with source.pixel_size if assigned
-        if (self.pixel_size is not None) and (
-            not np.allclose(ctf_pixel_sizes, self.pixel_size)
-        ):
-            warnings.warn(
-                "Pixel size mismatch."
-                f"\n\tSource: {self.pixel_size}"
-                f"\n\tCTFs: {ctf_pixel_sizes}.",
-                stacklevel=2,
-            )
-        # When source is not assigned we can try to assign it from CTF,
-        elif self.pixel_size is None:
-            # but only do this if all the CTFFilter pixel_sizes are consistent
-            if len(ctf_pixel_sizes) == 1:
-                self.pixel_size = ctf_pixel_sizes[0]  # take the unique single element
-                logger.info(
-                    f"Assigning source pixel_size={self.pixel_size} from CTFFilters."
-                )
-            # otherwise let the user know
-            elif len(ctf_pixel_sizes) > 1:
-                logger.warning(
-                    "Unable to assign source pixel_size from CTFFilters, multiple pixel_sizes found."
-                )
+        check_pixel_size(ctf_pixel_sizes, self.pixel_size)
 
         # construct filters
         self.unique_filters = [
             CTFFilter(
-                pixel_size=filter_params[i, 6],
                 voltage=filter_params[i, 0],
                 defocus_u=filter_params[i, 1],
                 defocus_v=filter_params[i, 2],
@@ -559,31 +538,29 @@ class BoxesCoordinateSource(CoordinateSource):
     def __init__(
         self,
         files,
+        pixel_size,
         particle_size=None,
         max_rows=None,
         B=0,
         symmetry_group=None,
-        pixel_size=None,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
+        :param pixel_size: Pixel size of the images in angstroms (Required)
         :param particle_size: Desired size of cropped particles (will override the size specified in coordinate file)
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms.
-            Default `None` will attempt to infer `pixel_size` from
-            `CTFFilter` objects when available.
         """
         # instantiate super
         CoordinateSource.__init__(
             self,
             files,
+            pixel_size,
             particle_size,
             max_rows,
             B,
             symmetry_group,
-            pixel_size=pixel_size,
         )
 
     def _extract_box_size(self, box_file):
@@ -690,32 +667,30 @@ class CentersCoordinateSource(CoordinateSource):
     def __init__(
         self,
         files,
+        pixel_size,
         particle_size,
         max_rows=None,
         B=0,
         symmetry_group=None,
-        pixel_size=None,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
+        :param pixel_size: Pixel size of the images in angstroms (Required).
         :param particle_size: Desired size of cropped particles (mandatory)
         :param max_rows: Maximum number of particles to read. (If `None`, will
         attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
-        :param pixel_size: Pixel size of the images in angstroms.
-            Default `None` will attempt to infer `pixel_size` from
-            `CTFFilter` objects when available.
         """
         # instantiate super
         CoordinateSource.__init__(
             self,
             files,
+            pixel_size,
             particle_size,
             max_rows,
             B,
             symmetry_group,
-            pixel_size=pixel_size,
         )
 
     def _validate_centers_file(self, coord_file):

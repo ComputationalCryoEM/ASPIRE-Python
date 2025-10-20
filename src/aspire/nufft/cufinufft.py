@@ -5,7 +5,6 @@ import numpy as np
 from cufinufft import Plan as cufPlan
 
 from aspire.nufft import Plan
-from aspire.utils import complex_type
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +24,6 @@ class CufinufftPlan(Plan):
 
         # Passing "ntransforms" > 1 expects one large higher dimensional array later.
         self.ntransforms = ntransforms
-
-        # Workaround cufinufft A100 singles issue
-        # ASPIRE-Python/703
-        # Cast to doubles.
-        self._original_dtype = fourier_pts.dtype
-        fourier_pts = fourier_pts.astype(np.float64, copy=False)
 
         # Basic dtype passthough.
         dtype = fourier_pts.dtype
@@ -86,12 +79,7 @@ class CufinufftPlan(Plan):
         `(ntransforms, num_pts)` as CuPy array.
         """
 
-        # Check we're not forcing a dtype workaround for ASPIRE-Python/703,
-        #   then check if we have a dtype mismatch.
-        # This avoids false positive complaint for the workaround.
-        if (self._original_dtype == self.dtype) and not (
-            signal.dtype == self.dtype or signal.dtype == self.complex_dtype
-        ):
+        if not (signal.dtype == self.dtype or signal.dtype == self.complex_dtype):
             logger.warning(
                 "Incorrect dtypes passed to (a)nufft."
                 " In the future this will be an error."
@@ -128,10 +116,6 @@ class CufinufftPlan(Plan):
 
         self._transform_plan.execute(signal, out=result)
 
-        # ASPIRE-Python/703
-        if result.dtype != complex_type(self._original_dtype):
-            result = result.astype(complex_type(self._original_dtype))
-
         return result
 
     def adjoint(self, signal):
@@ -145,12 +129,7 @@ class CufinufftPlan(Plan):
         :returns: Transformed signal `(sz)` or `(sz, ntransforms)` as CuPy array.
         """
 
-        # Check we're not forcing a dtype workaround for ASPIRE-Python/703,
-        #   then check if we have a dtype mismatch.
-        # This avoids false positive complaint for the workaround.
-        if (self._original_dtype == self.dtype) and not (
-            signal.dtype == self.complex_dtype or signal.dtype == self.dtype
-        ):
+        if not (signal.dtype == self.complex_dtype or signal.dtype == self.dtype):
             logger.warning(
                 "Incorrect dtypes passed to (a)nufft."
                 " In the future this will be an error."
@@ -176,9 +155,5 @@ class CufinufftPlan(Plan):
             signal = signal.astype(self.complex_dtype)
 
         self._adjoint_plan.execute(signal, out=result)
-
-        # ASPIRE-Python/703
-        if result.dtype != complex_type(self._original_dtype):
-            result = result.astype(complex_type(self._original_dtype))
 
         return result

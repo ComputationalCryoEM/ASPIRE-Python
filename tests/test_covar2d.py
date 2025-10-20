@@ -56,7 +56,8 @@ def img_size(request):
 def volume(dtype, img_size):
     # Get a volume
     v = Volume(
-        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")).astype(dtype)
+        np.load(os.path.join(DATA_DIR, "clean70SRibosome_vol_down8.npy")).astype(dtype),
+        pixel_size=5.0 * 65 / 8,
     )
     # 1e3 is hardcoded to match legacy test files.
     return v * 1.0e3
@@ -84,16 +85,17 @@ def cov2d_fixture(volume, basis, ctf_enabled):
     # Popluate CTF
     if ctf_enabled:
         unique_filters = [
-            RadialCTFFilter(
-                5.0 * 65 / volume.resolution, 200, defocus=d, Cs=2.0, alpha=0.1
-            )
+            RadialCTFFilter(200, defocus=d, Cs=2.0, alpha=0.1)
             for d in np.linspace(1.5e4, 2.5e4, 7)
         ]
 
         # Copied from simulation defaults to match legacy test files.
         h_idx = randi(len(unique_filters), n, seed=0) - 1
 
-        h_ctf_fb = [basis.filter_to_basis_mat(f) for f in unique_filters]
+        h_ctf_fb = [
+            basis.filter_to_basis_mat(f, pixel_size=volume.pixel_size)
+            for f in unique_filters
+        ]
 
     noise_adder = WhiteNoiseAdder(var=NOISE_VAR)
 
@@ -107,7 +109,7 @@ def cov2d_fixture(volume, basis, ctf_enabled):
         dtype=volume.dtype,
         noise_adder=noise_adder,
     )
-    sim.cache()
+    sim = sim.cache()
 
     cov2d = RotCov2D(basis)
     coef_clean = basis.evaluate_t(sim.projections[:])
@@ -292,7 +294,8 @@ def test_get_covar_ctf(cov2d_fixture, ctf_enabled):
 
     covar_coef_ctf = cov2d.get_covar(coef, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
     for im, mat in enumerate(results.tolist()):
-        np.testing.assert_allclose(mat, covar_coef_ctf[im], rtol=1e-05, atol=1e-08)
+        # These tolerances were adjusted slightly (1e-8 to 3e-8) to accomodate MATLAB CTF repro changes
+        np.testing.assert_allclose(mat, covar_coef_ctf[im], rtol=3e-05, atol=3e-08)
 
 
 def test_get_covar_ctf_shrink(cov2d_fixture, ctf_enabled):

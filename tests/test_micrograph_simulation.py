@@ -109,6 +109,58 @@ def test_micrograph_raises_error_simulation():
     assert str(e_info.value) == "`volume` should be of type `Volume`."
 
 
+def test_micrograph_simulation_pixel_size():
+    """
+    Test for various cases of (vol_px_sz, user_px_sz)
+    """
+    vol_px_sz = 1.23
+    user_px_sz = 2.34
+
+    L = 10
+    # Case (None, None): None
+    vol = AsymmetricVolume(L=L, C=1).generate()
+    micrograph_sim = MicrographSimulation(
+        vol,
+        micrograph_size=50,
+        micrograph_count=1,
+        particles_per_micrograph=2,
+    )
+    assert micrograph_sim.pixel_size is None
+
+    # Case (vol_px_sz, None): vol_px_sz
+    vol = AsymmetricVolume(L=L, C=1, pixel_size=vol_px_sz).generate()
+    micrograph_sim = MicrographSimulation(
+        vol,
+        micrograph_size=50,
+        micrograph_count=1,
+        particles_per_micrograph=2,
+    )
+    np.testing.assert_allclose(micrograph_sim.pixel_size, vol_px_sz)
+
+    # Case (None, user_px_sz): user_px_sz
+    vol = AsymmetricVolume(L=L, C=1).generate()
+    micrograph_sim = MicrographSimulation(
+        vol,
+        micrograph_size=50,
+        micrograph_count=1,
+        particles_per_micrograph=2,
+        pixel_size=user_px_sz,
+    )
+    np.testing.assert_allclose(micrograph_sim.pixel_size, user_px_sz)
+
+    # Case (vol_px_sz, user_px_sz): user_px_sz w/ warning
+    vol = AsymmetricVolume(L=L, C=1, pixel_size=vol_px_sz).generate()
+    with pytest.warns(UserWarning, match="does not match pixel_size"):
+        micrograph_sim = MicrographSimulation(
+            vol,
+            micrograph_size=50,
+            micrograph_count=1,
+            particles_per_micrograph=2,
+            pixel_size=user_px_sz,
+        )
+        np.testing.assert_allclose(micrograph_sim.pixel_size, user_px_sz)
+
+
 def test_micrograph_raises_error_image_size(vol_fixture):
     """
     Test the MicrographSimulation class raises errors when the image size is larger than micrograph size.
@@ -251,12 +303,8 @@ def test_sim_save():
     Specifically tests interoperability with CentersCoordinateSource
     """
 
-    v = AsymmetricVolume(L=16, C=1, dtype=np.float64).generate()
-    ctfs = [
-        RadialCTFFilter(
-            pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
-        )
-    ]
+    v = AsymmetricVolume(L=16, C=1, pixel_size=4, dtype=np.float64).generate()
+    ctfs = [RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0)]
 
     mg_sim = MicrographSimulation(
         volume=v,
@@ -278,7 +326,11 @@ def test_sim_save():
         np.testing.assert_allclose(mg_src.asnumpy(), mg_sim.asnumpy())
 
         # Test we can load via CentersCoordinateSource (STAR files)
-        img_src = CentersCoordinateSource(results, mg_sim.particle_box_size)
+        img_src = CentersCoordinateSource(
+            results,
+            v.pixel_size,
+            mg_sim.particle_box_size,
+        )
         np.testing.assert_allclose(
             img_src.images[:].asnumpy(),  # loaded image stack
             mg_sim.simulation.images[:].asnumpy(),  # simulated image stack
@@ -312,12 +364,8 @@ def test_save_overwrite(caplog):
     Specifically tests interoperability with CentersCoordinateSource
     """
 
-    v = AsymmetricVolume(L=16, C=1, dtype=np.float64).generate()
-    ctfs = [
-        RadialCTFFilter(
-            pixel_size=4, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0
-        )
-    ]
+    v = AsymmetricVolume(L=16, C=1, pixel_size=4, dtype=np.float64).generate()
+    ctfs = [RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0)]
 
     mg_sim = MicrographSimulation(
         volume=v,

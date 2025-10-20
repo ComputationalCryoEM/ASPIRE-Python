@@ -17,6 +17,7 @@ from aspire.utils import (
     LogFilterByCount,
     all_pairs,
     all_triplets,
+    check_pixel_size,
     get_full_version,
     mem_based_cpu_suggestion,
     num_procs_suggestion,
@@ -271,6 +272,30 @@ def test_all_triplets():
     nchoose3 = n * (n - 1) * (n - 2) // 6
     assert len(triplets) == nchoose3
     assert len(triplets[0]) == 3
+
+
+def test_check_pixel_size():
+    px_sizes_diff = np.array([1, 1.2, 1])
+    px_sizes_same = np.array([1, 1, 1])
+    px_sz = 1.0
+
+    # Check not matching many to one
+    with pytest.warns(UserWarning, match="does not match pixel_size"):
+        assert not check_pixel_size(px_sizes_diff, px_sz)
+
+    # Check matching many to one
+    assert check_pixel_size(px_sizes_same, px_sz)
+
+    # Check not matching one to one
+    with pytest.warns(UserWarning, match="does not match pixel_size"):
+        assert not check_pixel_size(px_sz + 1.2, px_sz)
+
+    # Check matching one to one
+    assert check_pixel_size(px_sz, px_sz)
+
+    # Check non-scalar provided pixel_size
+    with pytest.raises(ValueError, match="must be a scalar"):
+        check_pixel_size(px_sizes_diff, px_sizes_same)
 
 
 def test_gaussian_scalar_param():

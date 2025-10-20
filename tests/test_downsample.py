@@ -32,6 +32,7 @@ def createImages(L, L_ds):
     # get images after downsample
     sim = sim.downsample(L_ds)
     imgs_ds = sim.images[:N]
+
     return imgs_org, imgs_ds
 
 
@@ -90,13 +91,14 @@ def checkSignalEnergy(data_org, data_ds):
 def test_downsample_2d_case(L, L_ds):
     # downsampling from size L to L_ds
     imgs_org, imgs_ds = createImages(L, L_ds)
+
     # check resolution is correct
     assert (N, L_ds, L_ds) == imgs_ds.shape
     # check center points for all images
     assert checkCenterPoint(imgs_org, imgs_ds)
     # Confirm default `pixel_size`
-    assert imgs_org.pixel_size is None
-    assert imgs_ds.pixel_size is None
+    assert np.allclose(imgs_org.pixel_size, 1.0)
+    assert np.allclose(imgs_ds.pixel_size, imgs_org.pixel_size * (L / L_ds))
 
 
 @pytest.mark.parametrize("L", [65, 66])
@@ -125,6 +127,12 @@ DTYPES = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
 RES = [65, 66]
 RES_DS = [32, 33]
 LEGACY = [True, False]
+
+# These parameters are defined in the top level `ImageSource.legacy_downsample` wrapper.
+im_ds_legacy_flags = {
+    "zero_nyquist": False,
+    "centered_fft": False,
+}
 
 
 @pytest.fixture(params=DTYPES, ids=lambda x: f"dtype={x}", scope="module")
@@ -165,7 +173,10 @@ def test_downsample_project(volume, res_ds, legacy):
     """
     rot = np.eye(3, dtype=volume.dtype)  # project along z-axis
     im_ds_proj = volume.downsample(res_ds, legacy=legacy).project(rot)
-    im_proj_ds = volume.project(rot).downsample(res_ds, legacy=legacy)
+    if legacy:
+        im_proj_ds = volume.project(rot).downsample(res_ds, **im_ds_legacy_flags)
+    else:
+        im_proj_ds = volume.project(rot).downsample(res_ds)
 
     tol = 1e-09
     if volume.dtype == np.float32:
@@ -199,7 +210,8 @@ def test_downsample_legacy(volume, res_ds):
     ims = src.images[:]
 
     # Legacy downsampled images.
-    ims_ds_legacy = ims.downsample(res_ds, legacy=True)
+    #   Params are defined in `ImageSource.legacy_downsample`
+    ims_ds_legacy = ims.downsample(res_ds, **im_ds_legacy_flags)
 
     # ASPIRE-Python downsample with centering adjustments for odd resolution images.
     shifts = 0.5 * np.ones((n_img, 2), dtype=dtype)
@@ -223,7 +235,7 @@ def test_simulation_relion_downsample():
     defocus_ct = 7
 
     ctf_filters = [
-        RadialCTFFilter(pixel_size=1, defocus=d)
+        RadialCTFFilter(defocus=d)
         for d in np.linspace(defocus_min, defocus_max, defocus_ct)
     ]
 
@@ -234,6 +246,7 @@ def test_simulation_relion_downsample():
         C=1,
         unique_filters=ctf_filters,
         noise_adder=WhiteNoiseAdder.from_snr(snr=1),
+        pixel_size=1,
     )
     src_ds = src.downsample(src.L // 2)
 
@@ -247,6 +260,7 @@ def test_simulation_relion_downsample():
 
         # Downsample and test that images and attributes correspond to src_ds
         rln_src_ds = rln_src.downsample(src.L // 2)
+
         np.testing.assert_allclose(
             src_ds.images[:], rln_src_ds.images[:], atol=utest_tolerance(src.dtype)
         )
@@ -285,8 +299,8 @@ def test_downsample_offsets(dtype, res):
 
     # Check `offsets` and `sim_offsets` attributes are as expected, ie.
     # `sim_offsets` are same as original while `offsets` are scaled by downsample.
-    np.testing.assert_array_equal(src_ds.sim_offsets, offsets)
-    np.testing.assert_array_equal(src_ds.offsets, offsets / offset_scale)
+    np.testing.assert_allclose(src_ds.sim_offsets, offsets)
+    np.testing.assert_allclose(src_ds.offsets, offsets / offset_scale)
 
     # Check that centering works for original and downsampled images.
     np.testing.assert_allclose(
@@ -304,21 +318,27 @@ def test_downsample_offsets(dtype, res):
 
 def test_pixel_size():
     """
-    Test downsampling is rescaling the `pixel_size` attribute.
+    Test downsampling is rescaling the `pixel_size` attribute for both Images
+    and ImageSource objects.
     """
     # Image sizes in pixels
     L = 8  # original
     dsL = 5  # downsampled
+    n = 10  # num images
 
-    # Construct a small test Image
-    img = Image(np.random.random((1, L, L)).astype(DTYPE, copy=False), pixel_size=1.23)
+    # Construct small test ImageSource and Image instances
+    src = Simulation(L=L, n=n)
+    img = src.images[:]
 
-    # Downsample the image
-    result = img.downsample(dsL)
-
-    # Confirm the pixel size is scaled
+    # Confirm the pixel size is scaled properly in both cases
     np.testing.assert_approx_equal(
-        result.pixel_size,
+        src.downsample(dsL).pixel_size,
+        src.pixel_size * L / dsL,
+        err_msg="Incorrect pixel size.",
+    )
+
+    np.testing.assert_approx_equal(
+        img.downsample(dsL).pixel_size,
         img.pixel_size * L / dsL,
         err_msg="Incorrect pixel size.",
     )

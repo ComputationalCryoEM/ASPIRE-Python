@@ -10,7 +10,7 @@ from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
 from aspire.storage import StarFile
-from aspire.utils import Random, grid_2d, rename_with_timestamp
+from aspire.utils import Random, check_pixel_size, grid_2d, rename_with_timestamp
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -300,6 +300,7 @@ class MicrographSimulation(MicrographSource):
         particles_per_micrograph=100,
         particle_amplitudes=None,
         projection_angles=None,
+        pixel_size=None,
         seed=None,
         ctf_filters=None,
         noise_adder=None,
@@ -309,7 +310,7 @@ class MicrographSimulation(MicrographSource):
         """
         A cryo-EM MicrographSimulation object that supplies micrographs.
 
-        `dtype` and `particle_box_size` are inferred from `volume`, where `dtype` is the data type of the micrographs and `particle_box_size` is the size of the particle images.
+        `pixel_size`, `dtype` and `particle_box_size` are inferred from `volume`, where `dtype` is the data type of the micrographs and `particle_box_size` is the size of the particle images.
 
         :param volume: `Volume` instance to be used in `Simulation`.
              An `(L,L,L)` `Volume` will generate `(L,L)` particle images.
@@ -322,7 +323,8 @@ class MicrographSimulation(MicrographSource):
         :param projection_angles: Optional, projection rotation angles to pass to `Simulation`.
              Default `None` uses `Simulation` defaults.
              When provided must have shape `(particles_per_micrograph * micrograph_count, 3)`.
-
+        :param pixel_size: Pixel size of the images in angstroms. Default `None` infers pixel_size
+            from `volume` if possible. If set, overrides `volume` pixel_size.
         :param seed: Random seed.
         :param noise_adder: Append instance of NoiseAdder to generation pipeline.
         :param ctf_filters: Optional list of `Filter` objects to apply to particles.
@@ -337,12 +339,22 @@ class MicrographSimulation(MicrographSource):
             raise TypeError("`volume` should be of type `Volume`.")
         self.volume = volume
 
+        # Infer pixel size from Volume if not explicitly provided.
+        if self.volume.pixel_size is not None:
+            # If both provided prefer user, warn on mismatch.
+            if pixel_size is not None:
+                check_pixel_size(self.volume.pixel_size, pixel_size)
+            else:
+                pixel_size = self.volume.pixel_size
+
         self.seed = seed
 
+        # Note pixel_size is taken from `volume`.
         super().__init__(
             micrograph_count=micrograph_count,
             micrograph_size=micrograph_size,
             dtype=self.volume.dtype,
+            pixel_size=pixel_size,
         )
 
         self.particle_box_size = volume.resolution  # L
@@ -406,6 +418,7 @@ class MicrographSimulation(MicrographSource):
             angles=self.projection_angles,
             unique_filters=ctf_filters,
             filter_indices=self.filter_indices,
+            pixel_size=self.pixel_size,
             dtype=self.dtype,
             seed=self.seed,
         )

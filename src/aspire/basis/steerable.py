@@ -173,6 +173,7 @@ class SteerableBasis2D(Basis, abc.ABC):
         if not isinstance(coef, Coef):
             raise TypeError(f"`coef` must be `Coef` instance, received {type(coef)}.")
 
+        px_sz = coef.pixel_size
         coef = coef.asnumpy()
 
         # Covert radians to a broadcastable shape
@@ -226,7 +227,7 @@ class SteerableBasis2D(Basis, abc.ABC):
             ks_neg
         ) - coef_pos * np.sin(ks_pos)
 
-        return Coef(self, coef)
+        return Coef(self, coef, pixel_size=px_sz)
 
     def complex_rotate(self, complex_coef, radians, refl=None):
         """
@@ -480,7 +481,7 @@ class SteerableBasis2D(Basis, abc.ABC):
     # implemented.  This is intended to encourage future basis authors
     # to consider this method for their application.
     @abc.abstractmethod
-    def filter_to_basis_mat(self, f, method="evaluate_t", truncate=True):
+    def filter_to_basis_mat(self, f, method="evaluate_t", truncate=True, **kwargs):
         """
         Convert a filter into a basis operator representation.
 
@@ -503,7 +504,13 @@ class SteerableBasis2D(Basis, abc.ABC):
                 "  Try `evaluate_t` or `expand`."
             )
 
-        coef = Coef(self, np.eye(self.count, dtype=self.dtype))
+        # Note this may raise at filter run time for filters requiring `pixel_size` (eg CTFFilter)
+        # Alternative is to make `pixel_size` required for all calls to `filter_to_basis_mat`.
+        coef = Coef(
+            self,
+            np.eye(self.count, dtype=self.dtype),
+            pixel_size=kwargs.get("pixel_size", None),
+        )
         img = coef.evaluate()
 
         # Expansion can fail for some filters on specific basis vectors.

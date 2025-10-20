@@ -138,7 +138,12 @@ def test_cyclically_symmetric_image(symmetric_image):
     # For C4 symmetry any two sets of rays seperated by 90 degrees should be equal.
     ntheta = pf.shape[0]  # ntheta is the number of rays in 180 degrees.
 
-    assert np.allclose(abs(pf[: ntheta // 2]), abs(pf[ntheta // 2 :]), atol=1e-7)
+    # Tolerance chosen to cover {singles,doubles}x{finufft,cufinufft}
+    np.testing.assert_allclose(
+        abs(pf[: ntheta // 2]),
+        abs(pf[ntheta // 2 :]),
+        atol=1e-6,
+    )
 
 
 def test_radial_modes(radial_mode_image):

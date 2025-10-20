@@ -41,7 +41,7 @@ class ImageTestCase(TestCase):
 
         # Expose images as numpy array.
         self.ims_np = sim.images[:].asnumpy()
-        self.im = Image(self.ims_np)
+        self.im = Image(self.ims_np, pixel_size=sim.pixel_size)
 
         # Vol estimation requires a 3D basis
         self.basis = FBBasis3D((self.resolution,) * 3, dtype=self.dtype)
@@ -65,7 +65,7 @@ class ImageTestCase(TestCase):
         """
 
         # Create an ArrayImageSource directly from Numpy array
-        src = ArrayImageSource(self.ims_np)
+        src = ArrayImageSource(self.ims_np, pixel_size=1.0)
 
         # Ask the Source for all images in the stack as a Numpy array
         ims_np = src.images[:].asnumpy()
@@ -245,6 +245,70 @@ class ImageTestCase(TestCase):
             np.testing.assert_allclose(src.images[:], src2.images[:])
 
 
+def test_pixel_size(caplog):
+    """
+    Test pixel_size behavior for the following cases of (im.pixel_size, user pixel_size):
+    (None, None): ValueError
+    (im_px_sz, None): im_px_sz
+    (None, user_px_sz): user_px_sz
+    (im_px_sz, user_px_sz): user_px_sz, with override warning
+    """
+    ims_np = np.random.random((10, 8, 8))
+    im_px_sz = 1.23
+    user_px_sz = im_px_sz + 0.5
+    im = Image(ims_np, pixel_size=im_px_sz)
+
+    # (None, None):
+    with pytest.raises(ValueError, match=r"No pixel size found in metadata.*"):
+        _ = ArrayImageSource(ims_np)
+
+    # (im_px_sz, None):
+    src = ArrayImageSource(im)
+    np.testing.assert_allclose(src.pixel_size, im_px_sz)
+
+    # (None, user_px_sz):
+    # Should get same behavior for np.array or Image w/ pixel_size=None
+    src_np = ArrayImageSource(ims_np, pixel_size=user_px_sz)
+    np.testing.assert_allclose(src_np.pixel_size, user_px_sz)
+
+    src = ArrayImageSource(Image(ims_np), pixel_size=user_px_sz)
+    np.testing.assert_allclose(src.pixel_size, user_px_sz)
+
+    # (im_px_sz, user_px_sz):
+    with pytest.warns(UserWarning, match="does not match pixel_size"):
+        src = ArrayImageSource(im, pixel_size=user_px_sz)
+        np.testing.assert_allclose(src.pixel_size, user_px_sz)
+
+
+def test_pixel_size_type(tmp_path):
+    """
+    Test that pixel_size dtype is stored in doubles as an attribute
+    and in metadata.
+    """
+    # Test for diffetent types of sources.
+    sim = Simulation(n=2, pixel_size=1)
+    arr_src = ArrayImageSource(sim.images[:].asnumpy(), pixel_size=1)
+
+    starfile = tmp_path / "source.star"
+    sim.save(starfile)
+    rln_src = RelionSource(starfile, pixel_size=1)
+
+    # Check attribute type
+    assert isinstance(sim.pixel_size, float)
+    assert isinstance(arr_src.pixel_size, float)
+    assert isinstance(rln_src.pixel_size, float)
+
+    # Check type in _metadata dict
+    assert isinstance(sim._metadata["_rlnImagePixelSize"][0], float)
+    assert isinstance(arr_src._metadata["_rlnImagePixelSize"][0], float)
+    assert isinstance(rln_src._metadata["_rlnImagePixelSize"][0], float)
+
+    # Check get_metadata type
+    assert isinstance(sim.get_metadata("_rlnImagePixelSize")[0], float)
+    assert isinstance(arr_src.get_metadata("_rlnImagePixelSize")[0], float)
+    assert isinstance(rln_src.get_metadata("_rlnImagePixelSize")[0], float)
+
+
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_dtype_passthrough(dtype):
     """
@@ -254,10 +318,23 @@ def test_dtype_passthrough(dtype):
     res = 32
     ims = np.ones((n_ims, res, res), dtype=dtype)
 
-    src = ArrayImageSource(ims)
+    src = ArrayImageSource(ims, pixel_size=1.0)
 
     # Check dtypes
     np.testing.assert_equal(src.dtype, dtype)
     np.testing.assert_equal(src.images[:].dtype, dtype)
     np.testing.assert_equal(src.amplitudes.dtype, dtype)
-    np.testing.assert_equal(src.offsets.dtype, dtype)
+
+    # offsets are always stored as doubles
+    np.testing.assert_equal(src.offsets.dtype, np.float64)
+
+
+def test_stack_1d_only():
+    d = np.empty((2, 3, 4, 4))
+    img = Image(d)
+
+    with raises(RuntimeError, match=r"expects a single stack axis"):
+        _ = ArrayImageSource(d)
+
+    with raises(RuntimeError, match=r"expects a single stack axis"):
+        _ = ArrayImageSource(img)

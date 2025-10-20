@@ -24,19 +24,21 @@ from aspire.volume import SymmetryGroup
 logger = logging.getLogger(__name__)
 
 
-def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, legacy=False):
+def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, shifted=False, ddof=0):
     """
-    Normalize backgrounds and apply to a stack of images
+    Normalize backgrounds and apply to a stack of images.
+
+    To recreate legacy MATLAB workflow results, review parameters used in
+    `ImageSource.legacy_normalize_background`.
 
     :param imgs: A stack of images in N-by-L-by-L array
     :param bg_radius: Radius cutoff to be considered as background (in image size)
     :param do_ramp: When it is `True`, fit a ramping background to the data
-            and subtract. Namely perform normalization based on values from each image.
-            Otherwise, a constant background level from all images is used.
-    :param legacy: Option to match Matlab legacy normalize_background. Default, False,
-        uses ASPIRE-Python implementation. When True, ramping is disabled, a shifted
-        2d grid and alternative `bg_radius` is used to generate the background mask,
-        and standard deviation is computed using N - 1 degrees of freedom.
+        and subtract. Namely perform normalization based on values from each image.
+        Otherwise, a constant background level from all images is used.
+    :param shifted: Optionally shifts 2d grid by 1/2 pixel for even
+        resolution to replicate MATLAB.
+    :param ddof: Degrees of freedom for standard deviation.
     :return: The modified images
     """
     if imgs.ndim > 3:
@@ -44,19 +46,11 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, legacy=False):
             "`normalize_bg` is currently limited to 1D image stacks."
         )
     L = imgs.shape[-1]
-
-    # Make adjustments for legacy mode
-    shifted = False
-    ddof = 0  # Degrees of freedom for standard deviation
-    if legacy:
-        do_ramp = False
-        shifted = True  # Shifts 2d grid by 1/2 pixel for even resolution
-        bg_radius = 2 * (L // 2) / L
-        ddof = 1
+    input_dtype = imgs.dtype
 
     # Generate background mask
-    input_dtype = imgs.dtype
-    grid = grid_2d(L, shifted=shifted, indexing="yx", dtype=input_dtype)
+    grid_dtype = np.float64  # Use doubles for accuracy and MATLAB repro
+    grid = grid_2d(L, shifted=shifted, indexing="yx", dtype=grid_dtype)
     mask = grid["r"] > bg_radius
 
     if do_ramp:
@@ -66,14 +60,14 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, legacy=False):
             (
                 grid["x"][mask].flatten(),
                 grid["y"][mask].flatten(),
-                np.ones(grid["y"][mask].flatten().size, dtype=input_dtype),
+                np.ones(grid["y"][mask].flatten().size, dtype=grid_dtype),
             )
         ).T
         ramp_all = np.vstack(
             (
                 grid["x"].flatten(),
                 grid["y"].flatten(),
-                np.ones(L * L, dtype=input_dtype),
+                np.ones(L * L, dtype=grid_dtype),
             )
         ).T
         mask_reshape = mask.reshape((L * L))
@@ -85,10 +79,14 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, legacy=False):
         imgs = imgs.reshape((-1, L, L))
 
     # Apply mask images and calculate mean and std values of background
-    mean = np.mean(imgs[:, mask], axis=1)
-    std = np.std(imgs[:, mask], ddof=ddof, axis=1)
+    # These should be computed and normalized as doubles
+    bg_pixels = imgs[:, mask].astype(np.float64, copy=False)
+    mean = np.mean(bg_pixels, axis=1)
+    std = np.std(bg_pixels, ddof=ddof, axis=1)
+    imgs = (imgs - mean[:, None, None]) / std[:, None, None]
 
-    return (imgs - mean[:, None, None]) / std[:, None, None]
+    # Restore input dtype
+    return imgs.astype(input_dtype, copy=False)
 
 
 def load_mrc(filepath):
@@ -490,10 +488,11 @@ class Image:
         else:
             slc = slice(k - L_half - 1, k + L_half - 1)
 
+        # Note these computations should be in double precision
         for i, proj in enumerate(self.asnumpy()):
 
             # Zero pad the image to twice the size
-            padded_proj[slc, slc] = xp.asarray(proj)
+            padded_proj[slc, slc] = xp.asarray(proj, dtype=np.float64)
 
             # Take the Fourier Transform of the padded image.
             fpadded_proj = fft.centered_fft2(padded_proj)
@@ -515,12 +514,62 @@ class Image:
 
             filtered_proj = filtered_proj[slc, slc].real
 
-            # Assign the resulting image.
-            res[i] = xp.asnumpy(filtered_proj)
+            # Assign the resulting image, cast if required.
+            res[i] = xp.asnumpy(filtered_proj).astype(res.dtype, copy=False)
 
         return Image(res)
 
-    def downsample(self, ds_res, zero_nyquist=True, legacy=False):
+    @staticmethod
+    def _downsample(data, ds_res, zero_nyquist=True, centered_fft=True):
+        """
+        Downsample Image data to a specific resolution.
+
+        :param data: Numpy array of Image data, shape (n_imgs, resolution, resolution).
+        :param ds_res: int - new resolution, should be <= the current resolution
+            of this Image
+        :param zero_nyquist: Option to keep or remove Nyquist frequency for even
+            resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
+        :param centered_fft: Default of True uses `centered_fft` to
+            maintain ASPIRE-Python centering conventions.
+
+        :return: NumPy array of downsampled Image data.
+        """
+
+        # Note image data is intentionally migrated via `xp.asarray`
+        # because all of the subsequent calls until `asnumpy` are GPU
+        # when xp and fft in `cupy` mode.
+        resolution = data.shape[-1]
+
+        if centered_fft:
+            # compute FT with centered 0-frequency
+            fx = fft.centered_fft2(xp.asarray(data))
+        else:
+            fx = fft.fftshift(fft.fft2(xp.asarray(data)))
+
+        # crop 2D Fourier transform for each image
+        crop_fx = crop_pad_2d(fx, ds_res)
+
+        # If downsampled resolution is even, optionally zero out the nyquist frequency.
+        if ds_res % 2 == 0 and zero_nyquist:
+            crop_fx[:, 0, :] = 0
+            crop_fx[:, :, 0] = 0
+
+        # take back to real space, discard complex part, and scale
+        if centered_fft:
+            out = fft.centered_ifft2(crop_fx)
+        else:
+            out = fft.ifft2(fft.ifftshift(crop_fx))
+
+        # The parenths are required because dtype casting semantics
+        # differs between Numpy 1, 2, and CuPy.
+        # At time of writing CuPy is consistent with Numpy1.
+        # The additional parenths yield consistent out.dtype.
+        # See #1298 for relevant debugger output.
+        out = xp.asnumpy(out.real * (ds_res**2 / resolution**2))
+
+        return out
+
+    def downsample(self, ds_res, zero_nyquist=True, centered_fft=True):
         """
         Downsample Image to a specific resolution. This method returns a new Image.
 
@@ -528,51 +577,23 @@ class Image:
             of this Image
         :param zero_nyquist: Option to keep or remove Nyquist frequency for even
             resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.
-        :param legacy: Option to match legacy Matlab downsample method (boolean).
-            Default of False uses `centered_fft` to maintain ASPIRE-Python centering conventions.
+        :param centered_fft: Default of True uses `centered_fft` to
+            maintain ASPIRE-Python centering conventions.
         :return: The downsampled Image object.
         """
-
         original_stack_shape = self.stack_shape
-        im = self.stack_reshape(-1)
+        data = self.stack_reshape(-1).asnumpy()
 
-        # Note image data is intentionally migrated via `xp.asarray`
-        # because all of the subsequent calls until `asnumpy` are GPU
-        # when xp and fft in `cupy` mode.
-
-        if legacy:
-            fx = fft.fftshift(fft.fft2(xp.asarray(im._data)))
-        else:
-            # compute FT with centered 0-frequency
-            fx = fft.centered_fft2(xp.asarray(im._data))
-
-        # crop 2D Fourier transform for each image
-        crop_fx = crop_pad_2d(fx, ds_res)
-
-        # If downsampled resolution is even, optionally zero out the nyquist frequency.
-        if ds_res % 2 == 0 and zero_nyquist and not legacy:
-            crop_fx[:, 0, :] = 0
-            crop_fx[:, :, 0] = 0
-
-        # take back to real space, discard complex part, and scale
-        if legacy:
-            out = fft.ifft2(fft.ifftshift(crop_fx))
-        else:
-            out = fft.centered_ifft2(crop_fx)
-
-        # The parenths are required because dtype casting semantics
-        # differs between Numpy 1, 2, and CuPy.
-        # At time of writing CuPy is consistent with Numpy1.
-        # The additional parenths yield consistent out.dtype.
-        # See #1298 for relevant debugger output.
-        out = xp.asnumpy(out.real * (ds_res**2 / self.resolution**2))
+        ims_ds = self._downsample(
+            data, ds_res, zero_nyquist=zero_nyquist, centered_fft=centered_fft
+        )
 
         # Optionally scale pixel size
         ds_pixel_size = self.pixel_size
         if ds_pixel_size is not None:
             ds_pixel_size *= self.resolution / ds_res
 
-        return self.__class__(out, pixel_size=ds_pixel_size).stack_reshape(
+        return self.__class__(ims_ds, pixel_size=ds_pixel_size).stack_reshape(
             original_stack_shape
         )
 
@@ -591,17 +612,24 @@ class Image:
         # `xp.asarray` because all of the subsequent calls until
         # `asnumpy` are GPU when xp and fft in `cupy` mode.
         #
-        # Second note, filter dtype may not match image dtype.
+        # Second note, filter and grid dtype may not match image dtype,
+        # upcast both here for most accurate convolution.
         filter_values = xp.asarray(
-            filter.evaluate_grid(self.resolution), dtype=self.dtype
+            filter.evaluate_grid(
+                self.resolution, dtype=np.float64, pixel_size=self.pixel_size
+            ),
+            dtype=np.float64,
         )
 
         # Convolve
-        im_f = fft.centered_fft2(xp.asarray(im._data))
+        _im = xp.asarray(im._data, dtype=np.float64)
+        im_f = fft.centered_fft2(_im)
         im_f = filter_values * im_f
         im = fft.centered_ifft2(im_f)
 
-        im = xp.asnumpy(im.real)
+        im = xp.asnumpy(im.real).astype(
+            self.dtype, copy=False
+        )  # restore to original dtype
 
         return self.__class__(im, pixel_size=self.pixel_size).stack_reshape(
             original_stack_shape

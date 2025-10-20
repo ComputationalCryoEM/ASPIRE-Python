@@ -4,7 +4,7 @@ import tempfile
 from unittest import TestCase
 
 import numpy as np
-from pytest import raises
+import pytest
 
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
@@ -61,19 +61,23 @@ class SimVolTestCase(TestCase):
 
     def testResolutionMismatch(self):
         # Test we raise with expected error message with Volume/Simulation mismatch.
-        with raises(RuntimeError, match=r"Simulation must have the same resolution*"):
+        with pytest.raises(
+            RuntimeError, match=r"Simulation must have the same resolution*"
+        ):
             _ = Simulation(L=8, vols=self.vol)
 
     def testNonVolumeError(self):
         # Test we raise with expected error if vols is not a Volume instance.
-        with raises(RuntimeError, match=r"`vols` should be a Volume instance*"):
+        with pytest.raises(RuntimeError, match=r"`vols` should be a Volume instance*"):
             _ = Simulation(L=self.vol_res, vols=self.vol_arr)
 
     def testDtypeMismatch(self):
         """
         Test we raise when the volume dtype does not match explicit Simulation dtype.
         """
-        with raises(RuntimeError, match=r".*does not match provided vols.dtype.*"):
+        with pytest.raises(
+            RuntimeError, match=r".*does not match provided vols.dtype.*"
+        ):
             _ = Simulation(vols=self.vol.astype(np.float16), dtype=self.dtype)
 
     def testPassthroughFromVol(self):
@@ -124,8 +128,7 @@ class SimTestCase(TestCase):
             L=self.L,
             vols=self.vols,
             unique_filters=[
-                RadialCTFFilter(pixel_size=self._pixel_size, defocus=d)
-                for d in np.linspace(1.5e4, 2.5e4, 7)
+                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
@@ -173,9 +176,7 @@ class SimTestCase(TestCase):
             vols=self.vols,
             offsets=self.sim.offsets,
             unique_filters=[
-                # Set legacy pixel size
-                RadialCTFFilter(pixel_size=self._pixel_size, defocus=d)
-                for d in np.linspace(1.5e4, 2.5e4, 7)
+                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
             ],
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
@@ -633,6 +634,29 @@ def test_default_symmetry_group():
     assert str(sim.symmetry_group) == "C1"
 
 
+def test_pixel_size(caplog):
+    data = np.arange(8**3, dtype=np.float32).reshape(8, 8, 8)
+
+    # Default to 1 angstrom when not provided.
+    sim = Simulation()
+    np.testing.assert_array_equal(sim.pixel_size, 1.0)
+
+    # Check pixel_size inhereted from volume.
+    vol = Volume(data, pixel_size=1.23)
+    sim = Simulation(vols=vol)
+    np.testing.assert_array_equal(sim.pixel_size, vol.pixel_size)
+
+    # Check pixel_size passes from sim to default volume.
+    sim = Simulation(pixel_size=2.34)
+    np.testing.assert_array_equal(sim.pixel_size, sim.vols.pixel_size)
+
+    # Check mismatched pixel_size warns and uses provided pixel_size.
+    user_px_sz = vol.pixel_size / 2
+    with pytest.warns(UserWarning, match="does not match pixel_size"):
+        sim = Simulation(vols=vol, pixel_size=user_px_sz)
+        np.testing.assert_allclose(sim.pixel_size, user_px_sz)
+
+
 def test_symmetry_group_inheritence():
     # Check SymmetryGroup inheritence from Volume.
     data = np.arange(8**3, dtype=np.float32).reshape(8, 8, 8)
@@ -657,10 +681,15 @@ def test_cached_image_accessors():
     Test the behavior of image caching.
     """
     # Create a CTF
-    ctf = [RadialCTFFilter(pixel_size=5)]
+    ctf = [RadialCTFFilter()]
     # Create a Simulation with noise and `ctf`
     src = Simulation(
-        L=32, n=3, C=1, noise_adder=WhiteNoiseAdder(var=0.123), unique_filters=ctf
+        L=32,
+        n=3,
+        C=1,
+        noise_adder=WhiteNoiseAdder(var=0.123),
+        unique_filters=ctf,
+        pixel_size=5,
     )
     # Cache the simulation
     cached_src = src.cache()
@@ -671,6 +700,38 @@ def test_cached_image_accessors():
     np.testing.assert_allclose(
         cached_src.clean_images[:], src.clean_images[:], atol=1e-6
     )
+
+
+def test_projections_and_clean_images_downsample():
+    """
+    Test `projections` and `clean_images` post downsample.
+    `projections` should remain unaltered and `clean_images` should
+    be resized with adjusted pixel_size.
+    """
+    n = 10
+    L = 32
+    L_ds = 21
+    px_sz = 1.23
+    ctf = [RadialCTFFilter(1.5e4)]
+
+    src = Simulation(
+        L=L,
+        n=n,
+        C=1,
+        noise_adder=WhiteNoiseAdder(var=0.123),
+        unique_filters=ctf,
+        pixel_size=px_sz,
+    )
+
+    src_ds = src.downsample(L_ds)
+
+    # Check pixel_size
+    np.testing.assert_allclose(src_ds.projections[:].pixel_size, px_sz)
+    np.testing.assert_allclose(src_ds.clean_images[:].pixel_size, px_sz * L / L_ds)
+
+    # Check image size
+    np.testing.assert_allclose(src_ds.projections[:].shape[-1], L)
+    np.testing.assert_allclose(src_ds.clean_images[:].shape[-1], L_ds)
 
 
 def test_save_overwrite(caplog):
@@ -707,7 +768,7 @@ def test_save_overwrite(caplog):
         check_metadata(sim2, sim2_loaded)
 
         # Case 2: overwrite=False (should raise an overwrite error)
-        with raises(
+        with pytest.raises(
             ValueError,
             match="File '.*' already exists; set overwrite=True to overwrite it",
         ):
@@ -761,15 +822,3 @@ def check_metadata(sim_src, relion_src):
             np.testing.assert_allclose(
                 v, np.array(relion_src._metadata[k]).astype(type(v[0]))
             )
-
-
-def test_mismatched_pixel_size():
-    """
-    Confirm raises error when explicit Simulation and CTFFilter pixel sizes mismatch.
-    """
-    # Create a CTF with a pixel_size
-    filts = [RadialCTFFilter(pixel_size=5)]
-
-    # Try to create a Simulation with a different pixel_size
-    with raises(ValueError, match=r"pixel_size.*does not match filter.*"):
-        _ = Simulation(L=8, n=1, C=1, pixel_size=10, unique_filters=filts)

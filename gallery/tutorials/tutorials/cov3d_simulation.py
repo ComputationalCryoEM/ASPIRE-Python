@@ -36,6 +36,7 @@ vols = LegacyVolume(
     L=img_size,
     C=3,
     dtype=dtype,
+    pixel_size=10,
 ).generate()
 
 # Create a simulation object with specified filters
@@ -43,9 +44,7 @@ sim = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    unique_filters=[
-        RadialCTFFilter(pixel_size=10, defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
-    ],
+    unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
     dtype=dtype,
 )
 
@@ -89,7 +88,7 @@ covar_est = covar_estimator.estimate(mean_est, noise_variance)
 eigs_est, lambdas_est = eigs(covar_est, num_eigs)
 
 # Eigs returns column-major, so we transpose and construct a volume.
-eigs_est = Volume(np.transpose(eigs_est, (3, 0, 1, 2)))
+eigs_est = Volume(np.transpose(eigs_est, (3, 0, 1, 2)), pixel_size=vols.pixel_size)
 
 # Truncate the eigendecomposition. Since we know the true rank of the
 # covariance matrix, we enforce it here.

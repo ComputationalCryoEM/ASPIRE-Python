@@ -84,9 +84,9 @@ def source_orientation_objs(n_img, L, order, dtype):
         seed=seed,
     )
 
+    # Use default n_theta = 360.
     cl_kwargs = dict(
         src=src,
-        n_theta=360,
         max_shift=1 / L,
         seed=seed,
         mask=False,

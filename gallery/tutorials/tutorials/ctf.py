@@ -24,6 +24,7 @@ import aspire
 # Image size to use throughout the demo.
 IMG_SIZE = 512
 
+
 # %%
 # Visualizing the CTF
 # -------------------
@@ -40,7 +41,6 @@ from aspire.image import Image
 from aspire.operators import CTFFilter, RadialCTFFilter
 
 radial_ctf_filter = RadialCTFFilter(
-    pixel_size=1,  # angstrom
     voltage=200,  # kV
     defocus=10000,  # angstrom, 10000 A = 1 um
     Cs=2.26,  # Spherical aberration constant
@@ -51,7 +51,7 @@ radial_ctf_filter = RadialCTFFilter(
 # The CTF filter can be visualized as an image once it is evaluated at a specific resolution.
 # More specifically the following code will return a transfer function as an array,
 # which is then plotted.
-rctf_fn = radial_ctf_filter.evaluate_grid(IMG_SIZE)
+rctf_fn = radial_ctf_filter.evaluate_grid(IMG_SIZE, pixel_size=1)
 plt.imshow(rctf_fn)
 plt.colorbar()
 plt.show()
@@ -66,7 +66,6 @@ plt.show()
 # and the values more typically differ by a few percent.
 
 ctf_filter = CTFFilter(
-    pixel_size=1,  # angstrom
     voltage=200,  # kV
     defocus_u=15000,  # angstrom, 10000 A = 1 um
     defocus_v=10000,
@@ -77,7 +76,7 @@ ctf_filter = CTFFilter(
 )
 
 # Again, we plot it, and note the difference from the RadialCTFFilter.
-plt.imshow(ctf_filter.evaluate_grid(IMG_SIZE))
+plt.imshow(ctf_filter.evaluate_grid(IMG_SIZE, pixel_size=1))
 plt.colorbar()
 plt.show()
 
@@ -90,7 +89,7 @@ plt.show()
 # array returned by ASPIRE's ``CTFFilter.evaluate_grid``.
 
 
-ctf_sign = np.sign(radial_ctf_filter.evaluate_grid(IMG_SIZE))
+ctf_sign = np.sign(radial_ctf_filter.evaluate_grid(IMG_SIZE, pixel_size=1))
 plt.imshow(ctf_sign)
 plt.colorbar()
 plt.show()
@@ -140,10 +139,9 @@ def generate_example_image(L, noise_variance=0.1):
     return img
 
 
-img = generate_example_image(IMG_SIZE)
-plt.imshow(img)
-plt.colorbar()
-plt.show()
+img = Image(generate_example_image(IMG_SIZE), pixel_size=1)
+img.show()
+
 
 # %%
 # Apply CTF and Phase Flipping
@@ -157,15 +155,8 @@ plt.show()
 # Construct a range of CTF filters.
 defoci = [2500, 5000, 10000, 20000]
 ctf_filters = [
-    RadialCTFFilter(pixel_size=1 / 2, voltage=200, defocus=d, Cs=2.26, alpha=0.07, B=0)
-    for d in defoci
+    RadialCTFFilter(voltage=200, defocus=d, Cs=2.26, alpha=0.07, B=0) for d in defoci
 ]
-
-# %%
-# .. note::
-#     Pixel size was chosen to demonstrate effects similar to lecture notes,
-#     but at a higher resolution.
-
 
 # %%
 # Generate CTF corrupted Images
@@ -173,10 +164,10 @@ ctf_filters = [
 # Generate images corrupted by progressively increasing defocus.
 
 # For each defocus, apply filter to the base image.
-imgs = np.empty((len(defoci), IMG_SIZE, IMG_SIZE))
+imgs = Image(np.empty((len(defoci), IMG_SIZE, IMG_SIZE)), pixel_size=1)
 for i, ctf in enumerate(ctf_filters):
-    imgs[i] = Image(img).filter(ctf)[0]
-Image(imgs).show()
+    imgs[i] = img.filter(ctf)[0]
+imgs.show()
 
 # %%
 # Generate Phase Flipped Images
@@ -191,13 +182,13 @@ for i, ctf in enumerate(ctf_filters):
     # Compute the signs of this CTF
     # In practice, this would be an estimated CTF,
     # but in the demo we have the luxury of using the model CTF that was applied.
-    signs = np.sign(ctf.evaluate_grid(IMG_SIZE))
+    signs = np.sign(ctf.evaluate_grid(IMG_SIZE, pixel_size=1))
     # Apply to the image in Fourier space.
     phase_flipped_imgs_f[i] = signs * imgs_f[i]
 
 # Construct the centered 2D FFT of the images.
 phase_flipped_imgs = aspire.numeric.fft.centered_ifft2(phase_flipped_imgs_f).real
-Image(phase_flipped_imgs).show()
+Image(phase_flipped_imgs, pixel_size=1).show()
 
 # %%
 # .. warning::
@@ -218,7 +209,6 @@ Image(phase_flipped_imgs).show()
 # along with an erroneous CTF filter.
 
 bad_est_ctf_filter = RadialCTFFilter(
-    pixel_size=1,
     voltage=200,
     defocus=14000,  # Modeled CTF was 10000
     Cs=2.26,
@@ -226,7 +216,7 @@ bad_est_ctf_filter = RadialCTFFilter(
     B=0,
 )
 # Evaluate Filter, returning a Numpy array.
-bad_ctf_fn = bad_est_ctf_filter.evaluate_grid(IMG_SIZE)
+bad_ctf_fn = bad_est_ctf_filter.evaluate_grid(IMG_SIZE, pixel_size=1)
 
 c = IMG_SIZE // 2 + 1
 plt.plot(rctf_fn[c, c:], label="Model CTF")  # radial_ctf_filter
@@ -257,10 +247,8 @@ plt.show()
 from aspire.ctf import estimate_ctf
 
 # Using our radial_ctf_filter from earlier, corrupt an image.
-test_img = Image(img).filter(radial_ctf_filter)
-plt.imshow(test_img.asnumpy()[0])
-plt.colorbar()
-plt.show()
+test_img = img.filter(radial_ctf_filter)
+test_img.show()
 
 # Create the image file in a tmp dir
 with TemporaryDirectory() as d:
@@ -268,7 +256,7 @@ with TemporaryDirectory() as d:
 
     radial_ctf_est = estimate_ctf(
         data_folder=d,
-        pixel_size=radial_ctf_filter.pixel_size,
+        pixel_size=1,
         cs=radial_ctf_filter.Cs,
         amplitude_contrast=radial_ctf_filter.alpha,
         voltage=radial_ctf_filter.voltage,
@@ -296,14 +284,13 @@ print(f"defocus = {defocus}")
 
 # Create a filter and evaluate.
 est_ctf = RadialCTFFilter(
-    pixel_size=est["pixel_size"],
     voltage=est["voltage"],
     defocus=defocus,  # Modeled CTF was 10000
     Cs=est["cs"],
     alpha=est["amplitude_contrast"],
     B=0,
 )
-est_ctf_fn = est_ctf.evaluate_grid(IMG_SIZE)
+est_ctf_fn = est_ctf.evaluate_grid(IMG_SIZE, pixel_size=1)
 
 # Compare the model CTF with the estimated CTF.
 c = IMG_SIZE // 2 + 1
@@ -347,7 +334,7 @@ plt.show()
 from aspire.source import Simulation
 
 # Create the Source.  ``ctf_filters`` are re-used from earlier section.
-src = Simulation(L=64, n=4, unique_filters=ctf_filters)
+src = Simulation(L=64, n=4, unique_filters=ctf_filters, pixel_size=1)
 src.images[:4].show()
 
 # %%

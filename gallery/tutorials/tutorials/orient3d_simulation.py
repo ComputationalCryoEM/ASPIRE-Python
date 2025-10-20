@@ -40,7 +40,6 @@ num_imgs = 128
 
 # Specify the CTF parameters not used for this example
 # but necessary for initializing the simulation object
-pixel_size = 5  # Pixel size of the images (in angstroms)
 voltage = 200  # Voltage (in KV)
 defocus_min = 1.5e4  # Minimum defocus value (in angstroms)
 defocus_max = 2.5e4  # Maximum defocus value (in angstroms)
@@ -51,7 +50,7 @@ alpha = 0.1  # Amplitude contrast
 print("Initialize simulation object and CTF filters.")
 # Create CTF filters
 filters = [
-    RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
+    RadialCTFFilter(voltage, defocus=d, Cs=2.0, alpha=0.1)
     for d in np.linspace(defocus_min, defocus_max, defocus_ct)
 ]
 
@@ -74,7 +73,9 @@ vols = vols.downsample(img_size)
 
 # Create a simulation object with specified filters and the downsampled 3D map
 print("Use downsampled map to creat simulation object.")
-sim = Simulation(L=img_size, n=num_imgs, vols=vols, unique_filters=filters, dtype=dtype)
+sim = Simulation(
+    L=img_size, n=num_imgs, vols=vols, unique_filters=filters, pixel_size=5, dtype=dtype
+)
 
 print("Get true rotation angles generated randomly by the simulation object.")
 rots_true = sim.rotations

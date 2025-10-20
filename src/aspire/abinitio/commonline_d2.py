@@ -28,7 +28,7 @@ class CLSymmetryD2(CLOrient3D):
         self,
         src,
         n_rad=None,
-        n_theta=None,
+        n_theta=360,
         max_shift=0.15,
         shift_step=1,
         grid_res=1200,
@@ -43,7 +43,7 @@ class CLSymmetryD2(CLOrient3D):
 
         :param src: The source object of 2D denoised or class-averaged images with metadata
         :param n_rad: The number of points in the radial direction of Fourier image.
-        :param n_theta: The number of points in the theta direction of Fourier image.
+        :param n_theta: The number of points in the theta direction of Fourier image. Default = 360.
         :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
         :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param grid_res: Number of sampling points on sphere for projetion directions.

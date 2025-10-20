@@ -33,6 +33,7 @@ def get_sim_object(L, dtype):
             RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
         ],
         noise_adder=noise_adder,
+        pixel_size=1,
         dtype=dtype,
     )
     return sim
@@ -64,6 +65,7 @@ def testEmptyPhaseFlip(caplog):
     sim = Simulation(
         L=8,
         n=num_images,
+        pixel_size=1,
         dtype=np.float32,
     )
     # assert we log a warning to the user
@@ -93,21 +95,61 @@ def testNormBackground(L, dtype):
 
 
 @pytest.mark.parametrize("L, dtype", params)
-def test_norm_background_legacy(L, dtype):
-    # Legacy normalize_background uses a shifted grid, a different
+def test_norm_background_legacy_outofcore(L, dtype):
+    """
+    This executes normalize_background with the parameters found to reproduce MATLAB's "outofcore" method.
+    """
+    # Legacy "outofcore" normalize_background defaults to a shifted grid, a different
     # mask radius, disabled ramping, and N - 1 degrees of freedom
     # when computing standard deviation.
+    norm_bg_outofcore_flags = {
+        "bg_radius": 2 * (L // 2) / L,
+        "do_ramp": False,
+        "shifted": True,
+        "ddof": 1,
+    }
+
     sim = get_sim_object(L, dtype)
-    bg_radius = 2 * (L // 2) / L
     grid = grid_2d(sim.L, shifted=True, indexing="yx", dtype=dtype)
-    mask = grid["r"] > bg_radius
-    sim = sim.normalize_background(legacy=True)
+    mask = grid["r"] > norm_bg_outofcore_flags["bg_radius"]
+    sim = sim.normalize_background(**norm_bg_outofcore_flags)
     imgs_nb = sim.images[:].asnumpy()
     new_mean = np.mean(imgs_nb[:, mask])
     new_variance = np.var(imgs_nb[:, mask], ddof=1)
 
     # new mean of noise should be close to zero and variance should be close to 1
     np.testing.assert_array_less(new_mean, utest_tolerance(dtype))
+    np.testing.assert_array_less(abs(new_variance - 1), 2e-3)
+
+    # dtype of returned images should be the same
+    np.testing.assert_equal(dtype, imgs_nb.dtype)
+
+
+@pytest.mark.parametrize("L, dtype", params)
+def test_legacy_normalize_background(L, dtype):
+    """
+    This executes legacy_normalize_background.
+    """
+    # Legacy normalize_background defaults to a shifted grid, a different
+    # 0.45 mask radius, disabled ramping, and N - 1 degrees of freedom
+    # when computing standard deviation.
+    norm_bg_legacy_flags = {
+        "bg_radius": 2 * np.floor(L * 0.45) / L,
+        "do_ramp": False,
+        "shifted": True,
+        "ddof": 1,
+    }
+
+    sim = get_sim_object(L, dtype)
+    grid = grid_2d(sim.L, shifted=True, indexing="yx", dtype=dtype)
+    mask = grid["r"] > norm_bg_legacy_flags["bg_radius"]
+    sim = sim.legacy_normalize_background()
+    imgs_nb = sim.images[:].asnumpy()
+    new_mean = np.mean(imgs_nb[:, mask])
+    new_variance = np.var(imgs_nb[:, mask], ddof=1)
+
+    # new mean of noise should be close to zero and variance should be close to 1
+    np.testing.assert_array_less(new_mean, 3e-4)
     np.testing.assert_array_less(abs(new_variance - 1), 2e-3)
 
     # dtype of returned images should be the same
@@ -269,3 +311,142 @@ def testInvertContrast(L, dtype):
     # dtype of returned images should be the same
     assert dtype == imgs1_rc.dtype
     assert dtype == imgs2_rc.dtype
+
+
+@pytest.mark.parametrize("L, dtype", params)
+def test_crop(L, dtype):
+    """
+    Test cropping and document convention via code.
+    """
+
+    sim1 = get_sim_object(L, dtype)
+    ref_images = sim1.images[:].asnumpy()
+
+    if L % 2:  # L odd
+        # Cropping odd by one should remove last row and last col.
+        crop_odd_to_even_one = sim1.crop_pad(L - 1)
+        np.testing.assert_allclose(
+            crop_odd_to_even_one.images[:], ref_images[..., :-1, :-1]
+        )
+
+        # Cropping by two should remove first+last row and first+last col.
+        crop_odd_to_odd_two = sim1.crop_pad(L - 2)
+        np.testing.assert_allclose(
+            crop_odd_to_odd_two.images[:], ref_images[..., 1:-1, 1:-1]
+        )
+
+        # Cropping by many even should remove equal first+last rows and first+last cols.
+        many_even = 32
+        k = many_even // 2
+        crop_odd_to_odd_many_even = sim1.crop_pad(L - many_even)
+        np.testing.assert_allclose(
+            crop_odd_to_odd_many_even.images[:], ref_images[..., k:-k, k:-k]
+        )
+
+        # Cropping by many odd should remove remove equal first+(last+1) rows and first+(last+1) cols.
+        many_odd = 33
+        k = many_odd // 2
+        crop_odd_to_even_many_odd = sim1.crop_pad(L - many_odd)
+        np.testing.assert_allclose(
+            crop_odd_to_even_many_odd.images[:], ref_images[..., k : -k - 1, k : -k - 1]
+        )
+    else:  # L even
+        # Cropping even by one should remove first row and first col.
+        crop_even_to_odd_one = sim1.crop_pad(L - 1)
+        np.testing.assert_allclose(
+            crop_even_to_odd_one.images[:], ref_images[..., 1:, 1:]
+        )
+
+        # Cropping by two should remove first+last row and first+last col.
+        crop_even_to_even_two = sim1.crop_pad(L - 2)
+        np.testing.assert_allclose(
+            crop_even_to_even_two.images[:], ref_images[..., 1:-1, 1:-1]
+        )
+
+        # Cropping by many even should remove equal first+last rows and first+last cols.
+        many_even = 32
+        k = many_even // 2
+        crop_even_to_even_many_even = sim1.crop_pad(L - many_even)
+        np.testing.assert_allclose(
+            crop_even_to_even_many_even.images[:], ref_images[..., k:-k, k:-k]
+        )
+
+        # Cropping by many odd should remove remove equal (first+1)+last) rows and (first+1)+last cols.
+        many_odd = 33
+        k = many_odd // 2
+        crop_even_to_even_many_odd = sim1.crop_pad(L - many_odd)
+        np.testing.assert_allclose(
+            crop_even_to_even_many_odd.images[:],
+            ref_images[..., k + 1 : -k, k + 1 : -k],
+        )
+
+
+@pytest.mark.parametrize("L, dtype", params)
+def test_pad(L, dtype):
+    """
+    Test pad and document convention via code.
+    """
+
+    sim1 = get_sim_object(L, dtype)
+    ref_images = sim1.images[:].asnumpy()
+
+    if L % 2:  # L odd
+        # Padding odd by one should zero pad first row and first col.
+        pad_odd_to_even_one = sim1.crop_pad(L + 1)
+        # Test image content
+        ref = np.pad(ref_images, ((0, 0), (1, 0), (1, 0)))
+        np.testing.assert_allclose(pad_odd_to_even_one.images[:], ref)
+
+        # Padding odd by two should zero pad first row and first col.
+        pad_odd_to_odd_two = sim1.crop_pad(L + 2)
+        # Test image content
+        ref = np.pad(ref_images, ((0, 0), (1, 1), (1, 1)))
+        np.testing.assert_allclose(pad_odd_to_odd_two.images[:], ref)
+
+        # Padding odd to even by many should zero pad the first+1 and last cols equally.
+        many_odd = 33
+        pad_odd_to_even_many = sim1.crop_pad(L + many_odd)
+        k = many_odd // 2
+        # Test image content
+        ref = np.pad(ref_images, ((0, 0), (k + 1, k), (k + 1, k)))
+        np.testing.assert_allclose(pad_odd_to_even_many.images[:], ref)
+
+        # Padding odd to odd by many should pad the first and last cols equally.
+        # This test will also excercise `fill_value`
+        many_even = 32
+        fill = -1
+        pad_odd_to_odd_many = sim1.crop_pad(L + many_even, fill_value=fill)
+        k = many_even // 2
+        # Test image content
+        ref = np.pad(ref_images, ((0, 0), (k, k), (k, k)), constant_values=fill)
+        np.testing.assert_allclose(pad_odd_to_odd_many.images[:], ref)
+    else:  # L even
+        # Padding even by one should zero pad last row and last col.
+        pad_even_to_odd_one = sim1.crop_pad(L + 1)
+        # Test image content
+        ref = np.pad(ref_images, ((0, 0), (0, 1), (0, 1)))
+        np.testing.assert_allclose(pad_even_to_odd_one.images[:], ref)
+
+        # Padding even by two should zero pad first row and first col.
+        pad_even_to_even_two = sim1.crop_pad(L + 2)
+        # Test image content
+        ref = np.pad(ref_images, ((0, 0), (1, 1), (1, 1)))
+        np.testing.assert_allclose(pad_even_to_even_two.images[:], ref)
+
+        # Padding even to even by many should zero pad the first and last cols equally.
+        many_even = 32
+        pad_even_to_even_many = sim1.crop_pad(L + many_even)
+        k = many_even // 2
+        # Test image content
+        ref = np.pad(ref_images, ((0, 0), (k, k), (k, k)))
+        np.testing.assert_allclose(pad_even_to_even_many.images[:], ref)
+
+        # Padding even to odd by many should pad the first and last+1 cols equally.
+        # This test will also excercise `fill_value`
+        many_odd = 33
+        fill = -1
+        pad_even_to_odd_many = sim1.crop_pad(L + many_odd, fill_value=fill)
+        k = many_odd // 2
+        # Test image content
+        ref = np.pad(ref_images, ((0, 0), (k, k + 1), (k, k + 1)), constant_values=fill)
+        np.testing.assert_allclose(pad_even_to_odd_many.images[:], ref)
