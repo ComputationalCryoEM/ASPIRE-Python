@@ -21,10 +21,6 @@ def show_fle_params(basis):
     return f"{basis.nres}-{basis.epsilon}"
 
 
-def gpu_ci_skip():
-    pytest.skip("1e-7 precision for FLEBasis2D")
-
-
 fle_params = [
     (32, 1e-4),
     (32, 1e-7),
@@ -80,8 +76,6 @@ class TestFLEBasis2D(UniversalBasisMixin):
 
     # check closeness guarantees for fast vs dense matrix method
     def testFastVDense_T(self, basis):
-        if backend_available("cufinufft") and basis.epsilon == 1e-7:
-            gpu_ci_skip()
 
         dense_b = basis._create_dense_matrix()
 
@@ -97,8 +91,6 @@ class TestFLEBasis2D(UniversalBasisMixin):
         assert relerr(result_dense.T, result_fast) < (self.test_eps * basis.epsilon)
 
     def testFastVDense(self, basis):
-        if backend_available("cufinufft") and basis.epsilon == 1e-7:
-            gpu_ci_skip()
 
         dense_b = basis._create_dense_matrix()
 
@@ -120,8 +112,6 @@ class TestFLEBasis2D(UniversalBasisMixin):
         raises=RuntimeError,
     )
     def testEvaluateExpand(self, basis):
-        if backend_available("cufinufft") and basis.epsilon == 1e-7:
-            gpu_ci_skip()
 
         # compare result of evaluate() vs more accurate expand()
         # get sample coefficients
@@ -135,8 +125,6 @@ class TestFLEBasis2D(UniversalBasisMixin):
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
 def testMatchFBEvaluate(basis):
-    if backend_available("cufinufft") and basis.epsilon == 1e-7:
-        gpu_ci_skip()
 
     # ensure that the basis functions are identical when in match_fb mode
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
@@ -170,8 +158,6 @@ def testMatchFBDenseEvaluate(basis):
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)
 def testMatchFBEvaluate_t(basis):
-    if backend_available("cufinufft") and basis.epsilon == 1e-7:
-        gpu_ci_skip()
 
     # ensure that coefficients are the same when evaluating images
     fb_basis = FBBasis2D(basis.nres, dtype=np.float64)
