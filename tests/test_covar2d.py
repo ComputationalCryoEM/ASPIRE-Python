@@ -128,15 +128,14 @@ def test_get_mean(cov2d_fixture):
 
 def test_get_covar(cov2d_fixture):
     results = np.load(
-        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covar.npy"),
-        allow_pickle=True,
+        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covar.npz"),
     )
 
     cov2d, coef_clean = cov2d_fixture[1], cov2d_fixture[2]
 
     covar_coef = cov2d._get_covar(coef_clean.asnumpy())
 
-    for im, mat in enumerate(results.tolist()):
+    for im, mat in enumerate(results.values()):
         np.testing.assert_allclose(mat, covar_coef[im], rtol=1e-05)
 
 
@@ -210,13 +209,12 @@ def test_shrinkage(cov2d_fixture, shrinker):
     cov2d, coef_clean = cov2d_fixture[1], cov2d_fixture[2]
 
     results = np.load(
-        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covar.npy"),
-        allow_pickle=True,
+        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covar.npz"),
     )
 
     covar_coef = cov2d.get_covar(coef_clean, covar_est_opt={"shrinker": shrinker})
 
-    for im, mat in enumerate(results.tolist()):
+    for im, mat in enumerate(results.values()):
         np.testing.assert_allclose(
             mat, covar_coef[im], atol=utest_tolerance(cov2d.dtype)
         )
@@ -288,12 +286,11 @@ def test_get_covar_ctf(cov2d_fixture, ctf_enabled):
     sim, cov2d, _, coef, h_ctf_fb, h_idx = cov2d_fixture
 
     results = np.load(
-        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covarctf.npy"),
-        allow_pickle=True,
+        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covarctf.npz"),
     )
 
     covar_coef_ctf = cov2d.get_covar(coef, h_ctf_fb, h_idx, noise_var=NOISE_VAR)
-    for im, mat in enumerate(results.tolist()):
+    for im, mat in enumerate(results.values()):
         # These tolerances were adjusted slightly (1e-8 to 3e-8) to accomodate MATLAB CTF repro changes
         np.testing.assert_allclose(mat, covar_coef_ctf[im], rtol=3e-05, atol=3e-08)
 
@@ -306,8 +303,7 @@ def test_get_covar_ctf_shrink(cov2d_fixture, ctf_enabled):
         pytest.skip(reason="Reference file n/a.")
 
     results = np.load(
-        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covarctf_shrink.npy"),
-        allow_pickle=True,
+        os.path.join(DATA_DIR, "clean70SRibosome_cov2d_covarctf_shrink.npz"),
     )
 
     covar_opt = {
@@ -328,5 +324,5 @@ def test_get_covar_ctf_shrink(cov2d_fixture, ctf_enabled):
         covar_est_opt=covar_opt,
     )
 
-    for im, mat in enumerate(results.tolist()):
+    for im, mat in enumerate(results.values()):
         np.testing.assert_allclose(mat, covar_coef_ctf_shrink[im])
