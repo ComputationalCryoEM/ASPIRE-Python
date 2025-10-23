@@ -1310,8 +1310,7 @@ class ImageSource(ABC):
             "_rlnAmplitudeContrast",
         ]
 
-        # TODO: Need to add _rlnImageSize here and above
-        required_fields = ["_rlnSphericalAberration", "_rlnVoltage"]
+        required_fields = ["_rlnSphericalAberration", "_rlnVoltage", "_rlnImageSize"]
         pixel_fields = ["_rlnImagePixelSize", "_rlnMicrographPixelSize"]
 
         has_required = all(field in metadata for field in required_fields)
@@ -1396,6 +1395,10 @@ class ImageSource(ABC):
             x[1]
             for x in np.char.split(metadata["_rlnImageName"].astype(np.str_), sep="@")
         ]
+
+        # Populate _rlnImageSize column, required for optics_block below
+        if "_rlnImageSize" not in metadata:
+            metadata["_rlnImageSize"] = np.full(self.n, self.L, dtype=int)
 
         # Separate metadata into optics and particle blocks
         optics_block, particle_block = self._prepare_relion_optics_blocks(metadata)
