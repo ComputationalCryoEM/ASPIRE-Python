@@ -109,7 +109,7 @@ def test_estimate(sim, estimator, mask):
     np.testing.assert_array_equal(sim.pixel_size, estimate.pixel_size)
 
 
-def test_adjoint(sim, basis, estimator):
+def test_adjoint(sim):
     """
     Test <Projection(v,rots), u> = <v, BackProjection(u,rots)>
     for random volume `v` and random images `u`.
@@ -128,7 +128,10 @@ def test_adjoint(sim, basis, estimator):
     lhs = np.dot(proj.asnumpy().flatten(), u.flatten())
     rhs = np.dot(backproj.asnumpy().flatten(), v.flatten())
 
-    np.testing.assert_allclose(lhs, rhs, rtol=1e-6)
+    rtol = 1e-07  # default rtol for assert_allclose
+    if sim.dtype == np.float32:
+        rtol = 1e-05
+    np.testing.assert_allclose(lhs, rhs, rtol=rtol)
 
 
 def test_src_adjoint(sim, basis, estimator):
