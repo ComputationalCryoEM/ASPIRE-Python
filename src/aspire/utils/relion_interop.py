@@ -21,6 +21,7 @@ relion_metadata_fields = {
     "_rlnCtfFigureOfMerit": float,
     "_rlnMagnification": float,
     "_rlnImagePixelSize": float,
+    "_rlnImageSize": int,
     "_rlnAmplitudeContrast": float,
     "_rlnImageName": str,
     "_rlnOriginalName": str,
