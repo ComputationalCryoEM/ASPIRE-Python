@@ -9,7 +9,7 @@ import pytest
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source import RelionSource, Simulation, _LegacySimulation
-from aspire.utils import utest_tolerance
+from aspire.utils import RelionStarFile, utest_tolerance
 from aspire.volume import LegacyVolume, SymmetryGroup, Volume
 
 from .test_utils import matplotlib_dry_run
@@ -625,6 +625,59 @@ class SimTestCase(TestCase):
             np.testing.assert_allclose(
                 imgs_org.asnumpy(), imgs_sav.asnumpy(), atol=1e-6
             )
+
+
+def test_simulation_save_optics_block(tmp_path):
+    res = 32
+
+    # Radial CTF Filters. Should make 3 distinct optics blocks
+    kv_min, kv_max, kv_ct = 200, 300, 3
+    voltages = np.linspace(kv_min, kv_max, kv_ct)
+    ctf_filters = [RadialCTFFilter(voltage=kv) for kv in voltages]
+
+    # Generate and save Simulation
+    sim = Simulation(
+        n=9, L=res, C=1, unique_filters=ctf_filters, pixel_size=1.34
+    ).cache()
+    starpath = tmp_path / "sim.star"
+    sim.save(starpath, overwrite=True)
+
+    star = RelionStarFile(str(starpath))
+    assert star.relion_version == "3.1"
+    assert set(star.blocks.keys()) == {"optics", "particles"}
+
+    optics = star["optics"]
+    expected_optics_fields = [
+        "_rlnOpticsGroup",
+        "_rlnOpticsGroupName",
+        "_rlnImagePixelSize",
+        "_rlnSphericalAberration",
+        "_rlnVoltage",
+        "_rlnImageSize",
+        "_rlnAmplitudeContrast",
+    ]
+    for field in expected_optics_fields:
+        assert field in optics
+
+    np.testing.assert_array_equal(
+        optics["_rlnOpticsGroup"], np.arange(1, kv_ct + 1, dtype=int)
+    )
+    np.testing.assert_array_equal(
+        optics["_rlnOpticsGroupName"],
+        np.array([f"opticsGroup{i}" for i in range(1, kv_ct + 1)], dtype=object),
+    )
+    np.testing.assert_array_equal(optics["_rlnImageSize"], np.full(kv_ct, res))
+
+    # Depending on Simulation random indexing, voltages will be unordered
+    np.testing.assert_allclose(np.sort(optics["_rlnVoltage"]), voltages)
+
+    particles = star["particles"]
+    assert "_rlnOpticsGroup" in particles
+    assert len(particles["_rlnOpticsGroup"]) == sim.n
+    np.testing.assert_array_equal(
+        np.sort(np.unique(particles["_rlnOpticsGroup"])),
+        np.arange(1, kv_ct + 1, dtype=int),
+    )
 
 
 def test_default_symmetry_group():
