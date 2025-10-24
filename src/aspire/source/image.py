@@ -1325,7 +1325,7 @@ class ImageSource(ABC):
         optics_value_fields = [
             field for field in all_optics_fields if field in metadata
         ]
-        n_rows = len(metadata["_rlnImagePixelSize"])
+        n_rows = len(metadata["_rlnImageName"])
 
         group_lookup = OrderedDict()  # Stores distinct optics groups
         optics_groups = np.empty(n_rows, dtype=int)
