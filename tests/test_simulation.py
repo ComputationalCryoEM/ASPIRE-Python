@@ -653,12 +653,16 @@ def test_simulation_save_optics_block(tmp_path):
         "_rlnImagePixelSize",
         "_rlnSphericalAberration",
         "_rlnVoltage",
-        "_rlnImageSize",
         "_rlnAmplitudeContrast",
+        "_rlnImageSize",
+        "_rlnImageDimensionality",
     ]
+
+    # Check all required fields are present
     for field in expected_optics_fields:
         assert field in optics
 
+    # Optics group and group name should 1-indexed
     np.testing.assert_array_equal(
         optics["_rlnOpticsGroup"], np.arange(1, kv_ct + 1, dtype=int)
     )
@@ -666,11 +670,17 @@ def test_simulation_save_optics_block(tmp_path):
         optics["_rlnOpticsGroupName"],
         np.array([f"opticsGroup{i}" for i in range(1, kv_ct + 1)], dtype=object),
     )
+
+    # Check image size and image dimensionality
     np.testing.assert_array_equal(optics["_rlnImageSize"], np.full(kv_ct, res))
+
+    optics_dim = np.array(optics["_rlnImageDimensionality"], dtype=int)
+    np.testing.assert_array_equal(optics_dim, np.full(len(optics_dim), 2))
 
     # Depending on Simulation random indexing, voltages will be unordered
     np.testing.assert_allclose(np.sort(optics["_rlnVoltage"]), voltages)
 
+    # Check that each row of the data_particles block has an associated optics group
     particles = star["particles"]
     assert "_rlnOpticsGroup" in particles
     assert len(particles["_rlnOpticsGroup"]) == sim.n

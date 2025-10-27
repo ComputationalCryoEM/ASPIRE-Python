@@ -1306,11 +1306,18 @@ class ImageSource(ABC):
             "_rlnMicrographPixelSize",
             "_rlnSphericalAberration",
             "_rlnVoltage",
-            "_rlnImageSize",
             "_rlnAmplitudeContrast",
+            "_rlnImageSize",
+            "_rlnImageDimensionality",
         ]
 
-        required_fields = ["_rlnSphericalAberration", "_rlnVoltage", "_rlnImageSize"]
+        required_fields = [
+            "_rlnSphericalAberration",
+            "_rlnVoltage",
+            "_rlnAmplitudeContrast",
+            "_rlnImageSize",
+            "_rlnImageDimensionality",
+        ]
         pixel_fields = ["_rlnImagePixelSize", "_rlnMicrographPixelSize"]
 
         has_required = all(field in metadata for field in required_fields)
@@ -1396,9 +1403,12 @@ class ImageSource(ABC):
             for x in np.char.split(metadata["_rlnImageName"].astype(np.str_), sep="@")
         ]
 
-        # Populate _rlnImageSize column, required for optics_block below
+        # Populate _rlnImageSize, _rlnImageDimensionality columns, required for optics_block below
         if "_rlnImageSize" not in metadata:
             metadata["_rlnImageSize"] = np.full(self.n, self.L, dtype=int)
+
+        if "_rlnImageDimensionality" not in metadata:
+            metadata["_rlnImageDimensionality"] = np.full(self.n, 2, dtype=int)
 
         # Separate metadata into optics and particle blocks
         optics_block, particle_block = self._prepare_relion_optics_blocks(metadata)
