@@ -543,6 +543,7 @@ class CoordinateSourceTestCase(TestCase):
                 "_rlnCoordinateX",
                 "_rlnCoordinateY",
                 "_rlnImageSize",
+                "_rlnImageDimensionality",
             ],
         )
         # assert that all the correct coordinates were saved
