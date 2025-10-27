@@ -644,7 +644,7 @@ def test_simulation_save_optics_block(tmp_path):
 
     star = RelionStarFile(str(starpath))
     assert star.relion_version == "3.1"
-    assert set(star.blocks.keys()) == {"optics", "particles"}
+    assert star.blocks.keys() == {"optics", "particles"}
 
     optics = star["optics"]
     expected_optics_fields = [
@@ -668,16 +668,16 @@ def test_simulation_save_optics_block(tmp_path):
     )
     np.testing.assert_array_equal(
         optics["_rlnOpticsGroupName"],
-        np.array([f"opticsGroup{i}" for i in range(1, kv_ct + 1)], dtype=object),
+        np.array([f"opticsGroup{i}" for i in range(1, kv_ct + 1)]),
     )
 
-    # Check image size and image dimensionality
+    # Check image size (res) and image dimensionality (2)
     np.testing.assert_array_equal(optics["_rlnImageSize"], np.full(kv_ct, res))
+    np.testing.assert_array_equal(
+        optics["_rlnImageDimensionality"], np.full(len(optics_dim), 2)
+    )
 
-    optics_dim = np.array(optics["_rlnImageDimensionality"], dtype=int)
-    np.testing.assert_array_equal(optics_dim, np.full(len(optics_dim), 2))
-
-    # Depending on Simulation random indexing, voltages will be unordered
+    # Due to Simulation random indexing, voltages will be unordered
     np.testing.assert_allclose(np.sort(optics["_rlnVoltage"]), voltages)
 
     # Check that each row of the data_particles block has an associated optics group
