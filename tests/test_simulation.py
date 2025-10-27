@@ -689,6 +689,12 @@ def test_simulation_save_optics_block(tmp_path):
         np.arange(1, kv_ct + 1, dtype=int),
     )
 
+    # Test phase_flip after save/load round trip to ensure correct optics group mapping
+    rln_src = RelionSource(starpath)
+    np.testing.assert_allclose(
+        sim.phase_flip().images[:], rln_src.phase_flip().images[:]
+    )
+
 
 def test_default_symmetry_group():
     # Check that default is "C1".
