@@ -5,7 +5,7 @@ import os
 import numpy as np
 import pytest
 
-from aspire.source import RelionSource, Simulation
+from aspire.source import ImageSource, RelionSource, Simulation
 from aspire.utils import RelionStarFile
 from aspire.volume import SymmetryGroup
 
@@ -59,6 +59,28 @@ def test_symmetry_group(caplog):
 
     assert isinstance(src_override_sym.symmetry_group, SymmetryGroup)
     assert str(src_override_sym.symmetry_group) == "C6"
+
+
+def test_prepare_relion_optics_blocks_warns(caplog):
+    """
+    Test we warn when optics group metadata is missing.
+    """
+    # metadata dict with no CTF values
+    metadata = {
+        "_rlnImagePixelSize": np.array([1.234]),
+        "_rlnImageSize": np.array([32]),
+        "_rlnImageDimensionality": np.array([2]),
+    }
+
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        optics_block, particle_block = ImageSource._prepare_relion_optics_blocks(
+            metadata.copy()
+        )
+
+    assert optics_block is None
+    assert particle_block == metadata
+    assert "Optics metadata incomplete" in caplog.text
 
 
 def test_pixel_size(caplog):

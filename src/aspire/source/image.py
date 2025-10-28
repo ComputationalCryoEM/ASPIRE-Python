@@ -1299,8 +1299,7 @@ class ImageSource(ABC):
         The particle block keeps the remaining columns and includes a per-particle
         `_rlnOpticsGroup` that references the optics block.
         """
-        # All possible optics group fields
-        # TODO: Check we have all of them
+        # Columns that belong in RELION's optics table.
         all_optics_fields = [
             "_rlnImagePixelSize",
             "_rlnMicrographPixelSize",
@@ -1311,6 +1310,7 @@ class ImageSource(ABC):
             "_rlnImageDimensionality",
         ]
 
+        # We only write a data_optics block when every required field is present.
         required_fields = [
             "_rlnSphericalAberration",
             "_rlnVoltage",
@@ -1323,18 +1323,21 @@ class ImageSource(ABC):
         has_required = all(field in metadata for field in required_fields)
         has_pixel_field = any(field in metadata for field in pixel_fields)
 
-        # TODO: Add warning?
         if not (has_required and has_pixel_field):
             # Optics metadata incomplete, fall back to legacy single block.
+            logger.warning(
+                "Optics metadata incomplete, writing only data_particles block."
+            )
             return None, metadata
 
-        # Collect all optics group fields present in metadata and determine unique optics groups.
+        # Restrict to the optics columns that are actually present on this source.
         optics_value_fields = [
             field for field in all_optics_fields if field in metadata
         ]
         n_rows = len(metadata["_rlnImageName"])
 
-        group_lookup = OrderedDict()  # Stores distinct optics groups
+        # Map each unique optics tuple to a 1-based group ID in order encountered.
+        group_lookup = OrderedDict()
         optics_groups = np.empty(n_rows, dtype=int)
 
         for idx in range(n_rows):
@@ -1345,6 +1348,7 @@ class ImageSource(ABC):
 
         metadata["_rlnOpticsGroup"] = optics_groups
 
+        # Build the optics block rows and assign group names.
         optics_block = OrderedDict()
         optics_block["_rlnOpticsGroup"] = []
         optics_block["_rlnOpticsGroupName"] = []
@@ -1357,7 +1361,7 @@ class ImageSource(ABC):
             for field, value in zip(optics_value_fields, signature):
                 optics_block[field].append(value)
 
-        # Collect particle_block metadata
+        # Everything not lifted into the optics block stays with the particle metadata.
         particle_block = OrderedDict()
         if "_rlnOpticsGroup" in metadata:
             particle_block["_rlnOpticsGroup"] = metadata["_rlnOpticsGroup"]
