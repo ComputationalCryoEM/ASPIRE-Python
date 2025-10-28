@@ -8,7 +8,7 @@ import pytest
 
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
-from aspire.source import ImageSource, RelionSource, Simulation, _LegacySimulation
+from aspire.source import RelionSource, Simulation, _LegacySimulation
 from aspire.utils import RelionStarFile, utest_tolerance
 from aspire.volume import LegacyVolume, SymmetryGroup, Volume
 
