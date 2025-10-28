@@ -673,9 +673,7 @@ def test_simulation_save_optics_block(tmp_path):
 
     # Check image size (res) and image dimensionality (2)
     np.testing.assert_array_equal(optics["_rlnImageSize"], np.full(kv_ct, res))
-    np.testing.assert_array_equal(
-        optics["_rlnImageDimensionality"], np.full(len(optics_dim), 2)
-    )
+    np.testing.assert_array_equal(optics["_rlnImageDimensionality"], np.full(kv_ct, 2))
 
     # Due to Simulation random indexing, voltages will be unordered
     np.testing.assert_allclose(np.sort(optics["_rlnVoltage"]), voltages)
