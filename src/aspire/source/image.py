@@ -483,15 +483,21 @@ class ImageSource(ABC):
 
     @property
     def amplitudes(self):
-        return np.atleast_1d(
-            self.get_metadata(
-                "_rlnAmplitude", default_value=np.array(1.0, dtype=self.dtype)
+        if self.has_metadata("__amplitude"):
+            values = self.get_metadata("__amplitude")
+        else:
+            values = self.get_metadata(
+                "_rlnAmplitude",
+                default_value=np.array(1.0, dtype=np.float64),
             )
-        )
+        return np.atleast_1d(np.asarray(values, dtype=np.float64))
 
     @amplitudes.setter
     def amplitudes(self, values):
-        return self.set_metadata("_rlnAmplitude", np.array(values, dtype=self.dtype))
+        values = np.asarray(values, dtype=np.float64)
+        self.set_metadata("__amplitude", values)
+        # Drop the legacy field if we encountered it while loading a STAR file.
+        self._metadata.pop("_rlnAmplitude", None)
 
     @property
     def angles(self):
