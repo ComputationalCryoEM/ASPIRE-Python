@@ -12,7 +12,8 @@ logger = logging.getLogger(__name__)
 # of certain key fields used in the codebase,
 # which are originally read from Relion STAR files.
 relion_metadata_fields = {
-    "__amplitude": float,
+    "_aspireAmplitude": float,
+    "_rlnAmplitude": float,
     "_rlnVoltage": float,
     "_rlnDefocusU": float,
     "_rlnDefocusV": float,

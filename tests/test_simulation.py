@@ -882,8 +882,6 @@ def check_metadata(sim_src, relion_src):
     those in a RelionSource.
     """
     for k, v in sim_src._metadata.items():
-        if k.startswith("__"):
-            continue
         try:
             np.testing.assert_array_equal(v, relion_src._metadata[k])
         except AssertionError:
