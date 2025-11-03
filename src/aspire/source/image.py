@@ -1499,6 +1499,8 @@ class ImageSource(ABC):
                 #   for large arrays.
                 stats.update_header(mrc)
 
+                # Add pixel size to header
+                mrc.voxel_size = self.pixel_size
         else:
             # save all images into multiple mrc files in batch size
             for i_start in np.arange(0, self.n, batch_size):
@@ -1512,6 +1514,7 @@ class ImageSource(ABC):
                     f"Saving ImageSource[{i_start}-{i_end-1}] to {mrcs_filepath}"
                 )
                 im = self.images[i_start:i_end]
+                im.pixel_size = self.pixel_size
                 im.save(mrcs_filepath, overwrite=overwrite)
 
     def estimate_signal_mean_energy(
