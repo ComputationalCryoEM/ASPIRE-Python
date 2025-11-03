@@ -3,6 +3,7 @@ import os.path
 import tempfile
 from unittest import TestCase
 
+import mrcfile
 import numpy as np
 import pytest
 
@@ -874,6 +875,25 @@ def test_save_overwrite(caplog):
             atol=utest_tolerance(sim2.dtype),
         )
         check_metadata(sim2, sim2_loaded_renamed)
+
+
+@pytest.mark.parametrize("batch_size", [1, 6])
+def test_simulation_save_sets_voxel_size(tmp_path, batch_size):
+    """
+    Test we save with pixel_size appended to the mrcfile header.
+    """
+    # Note, n=6 and batch_size=6 exercises save_mode=='single' branch.
+    sim = Simulation(n=6, L=24, pixel_size=1.37)
+    info = sim.save(tmp_path / "pixel_size.star", batch_size=batch_size, overwrite=True)
+
+    for stack_name in info["mrcs"]:
+        stack_path = tmp_path / stack_name
+        with mrcfile.open(stack_path, permissive=True) as f:
+            vs = f.voxel_size
+            header_vals = np.array(
+                [float(vs.x), float(vs.y), float(vs.z)], dtype=np.float64
+            )
+            np.testing.assert_allclose(header_vals, sim.pixel_size)
 
 
 def check_metadata(sim_src, relion_src):
