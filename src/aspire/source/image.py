@@ -3,7 +3,7 @@ import functools
 import logging
 import os.path
 from abc import ABC, abstractmethod
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
 
 import mrcfile
@@ -1350,11 +1350,7 @@ class ImageSource(ABC):
         metadata["_rlnOpticsGroup"] = optics_groups
 
         # Build the optics block rows and assign group names.
-        optics_block = OrderedDict()
-        optics_block["_rlnOpticsGroup"] = []
-        optics_block["_rlnOpticsGroupName"] = []
-        for field in optics_value_fields:
-            optics_block[field] = []
+        optics_block = defaultdict(list)
 
         for signature, group_id in group_lookup.items():
             optics_block["_rlnOpticsGroup"].append(group_id)
