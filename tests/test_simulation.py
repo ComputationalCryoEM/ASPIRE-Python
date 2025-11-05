@@ -663,7 +663,7 @@ def test_simulation_save_optics_block(tmp_path):
     for field in expected_optics_fields:
         assert field in optics
 
-    # Optics group and group name should 1-indexed
+    # Optics group and group name should be 1-indexed
     np.testing.assert_array_equal(
         optics["_rlnOpticsGroup"], np.arange(1, kv_ct + 1, dtype=int)
     )
