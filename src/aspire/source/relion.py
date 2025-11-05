@@ -195,10 +195,6 @@ class RelionSource(ImageSource):
 
         metadata = RelionStarFile(self.filepath).get_merged_data_block()
 
-        # Promote legacy _rlnAmplitude column to the ASPIRE-specific name.
-        if "_rlnAmplitude" in metadata and "_aspireAmplitude" not in metadata:
-            metadata["_aspireAmplitude"] = metadata.pop("_rlnAmplitude")
-
         # particle locations are stored as e.g. '000001@first_micrograph.mrcs'
         # in the _rlnImageName column. here, we're splitting this information
         # so we can get the particle's index in the .mrcs stack as an int
