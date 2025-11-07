@@ -695,6 +695,44 @@ def test_simulation_save_optics_block(tmp_path):
     )
 
 
+def test_simulation_slice_save_roundtrip(tmp_path):
+    # Radial CTF Filters
+    kv_min, kv_max, kv_ct = 200, 300, 3
+    voltages = np.linspace(kv_min, kv_max, kv_ct)
+    ctf_filters = [RadialCTFFilter(voltage=kv) for kv in voltages]
+
+    # Generate and save slice of Simulation
+    sim = Simulation(n=9, L=16, C=1, unique_filters=ctf_filters, pixel_size=1.34)
+    sliced_sim = sim[::2]
+    save_path = tmp_path / "sliced_sim.star"
+    sliced_sim.save(save_path, overwrite=True)
+
+    # Load saved slice and compare to original
+    reloaded = RelionSource(save_path)
+
+    # Check images
+    np.testing.assert_allclose(
+        reloaded.images[:].asnumpy(),
+        sliced_sim.images[:].asnumpy(),
+    )
+
+    # Check metadata related to optics block
+    metadata_fields = [
+        "_rlnVoltage",
+        "_rlnDefocusU",
+        "_rlnDefocusV",
+        "_rlnDefocusAngle",
+        "_rlnSphericalAberration",
+        "_rlnAmplitudeContrast",
+        "_rlnImagePixelSize",
+    ]
+    for field in metadata_fields:
+        np.testing.assert_allclose(
+            reloaded.get_metadata(field),
+            sliced_sim.get_metadata(field),
+        )
+
+
 def test_default_symmetry_group():
     # Check that default is "C1".
     sim = Simulation()
