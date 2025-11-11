@@ -136,7 +136,7 @@ class PolarFT:
         resolution = x.shape[-1]
 
         # nufft call should return `pf` as array type (np or cp) of `x`
-        pf = nufft(x, self.freqs) / resolution**2
+        pf = nufft(x, -self.freqs) / resolution**2
 
         return pf.reshape(*stack_shape, self.ntheta // 2, self.nrad)
 
