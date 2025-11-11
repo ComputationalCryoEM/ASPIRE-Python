@@ -73,14 +73,15 @@ class CLOrient3D:
         if str(full_width).lower() == "adaptive":
             full_width = -1
         self.full_width = int(full_width)
-        self.max_shift = math.ceil(max_shift * self.n_res)
+        self.max_shift = 15  # match MATLAB workflow for now math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
         self.offsets_max_shift = self.max_shift
         if offsets_max_shift is not None:
-            self.offsets_max_shift = math.ceil(offsets_max_shift * self.n_res)
+            self.offsets_max_shift = 15  # match MATLAB workflow math.ceil(offsets_max_shift * self.n_res)
         self.offsets_shift_step = offsets_shift_step or self.shift_step
         self.mask = mask
         self._pf = None
+        self._m_pf = None
 
         # Sanity limit to match potential clmatrix dtype of int16.
         if self.n_img > (2**15 - 1):
@@ -135,6 +136,12 @@ class CLOrient3D:
             self._prepare_pf()
         return self._pf
 
+    @property
+    def m_pf(self):
+        if self._m_pf is None:
+            self._prepare_pf()
+        return self._m_pf
+
     def _prepare_pf(self):
         """
         Prepare the polar Fourier transform used for correlations.
@@ -156,6 +163,7 @@ class CLOrient3D:
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
         pf = pft.transform(imgs)
+        self._m_pf = pft.half_to_full(pf)
 
         # We remove the DC the component. pf has size (n_img) x (n_theta/2) x (n_rad-1),
         # with pf[:, :, 0] containing low frequency content and pf[:, :, -1] containing
@@ -234,6 +242,13 @@ class CLOrient3D:
         Wrapper for cpu/gpu dispatch.
         """
 
+        force_fn = "force_cl.npz"
+        if os.path.exists(force_fn):
+            logger.warning(f"FORCING Common Lines Matrix from {force_fn}")
+            res = np.load(force_fn)
+            self.clmatrix = res["clmatrix"]
+            return self.clmatrix
+
         logger.info("Begin building Common Lines Matrix")
 
         # host/gpu dispatch
@@ -244,6 +259,10 @@ class CLOrient3D:
 
         # Unpack result
         self._shifts_1d, self.clmatrix = res
+
+        # save result
+        logger.warning(f"Saving Common Lines to {force_fn}")
+        np.savez(force_fn, clmatrix=self.clmatrix)
 
         return self.clmatrix
 
@@ -449,7 +468,7 @@ class CLOrient3D:
         # Note diagnostic 1d shifts are not computed in the CUDA implementation.
         return None, clmatrix
 
-    def estimate_shifts(self, equations_factor=1, max_memory=4000):
+    def estimate_shifts(self, equations_factor=1, max_memory=10000):
         """
         Estimate 2D shifts in images
 
@@ -538,7 +557,19 @@ class CLOrient3D:
         # `estimate_shifts()` requires that rotations have already been estimated.
         rotations = Rotation(self.rotations)
 
-        pf = self.pf.copy()
+        _pf = self.pf.copy()
+        pf = self.m_pf
+        # # compare
+        # from scipy.io import loadmat
+        # matlab_pf = loadmat('matlab_pf_shift_dbg.mat')['pf'].T
+        # pf = matlab_pf
+        # breakpoint()
+        # %pf=[flipdim(pf(2:end,n_theta/2+1:end,:),1) ; pf(:,1:n_theta/2,:) ];
+        # breakpoint()
+        pf = np.concatenate(
+            (np.flip(pf[:, n_theta_half:, 1:], axis=-1), pf[:, :n_theta_half, :]),
+            axis=-1,
+        )
 
         # Estimate number of equations that will be used to calculate the shifts
         n_equations = self._estimate_num_shift_equations(
@@ -560,10 +591,11 @@ class CLOrient3D:
         # The shift phases are pre-defined in a range of max_shift that can be
         # applied to maximize the common line calculation. The common-line filter
         # is also applied to the radial direction for easier detection.
-        r_max = pf.shape[2]
-        _, shift_phases, h = self._generate_shift_phase_and_filter(
+        r_max = (pf.shape[2] - 1) // 2  # pf is a different Matlab size
+        _, shift_phases, h = self._m_generate_shift_phase_and_filter(
             r_max, self.offsets_max_shift, self.offsets_shift_step
         )
+        # breakpoint()
 
         d_theta = np.pi / n_theta_half
 
@@ -578,6 +610,7 @@ class CLOrient3D:
             j = idx_j[shift_eq_idx]
             # get the common line indices based on the rotations from i and j images
             c_ij, c_ji = self._get_cl_indices(rotations, i, j, n_theta_half)
+            # breakpoint()
 
             # Extract the Fourier rays that correspond to the common line
             pf_i = pf[i, c_ij]
@@ -593,16 +626,23 @@ class CLOrient3D:
                 pf_j = pf[j, c_ji - n_theta_half]
 
             # perform bandpass filter, normalize each ray of each image,
-            pf_i = self._apply_filter_and_norm("i, i -> i", pf_i, r_max, h)
-            pf_j = self._apply_filter_and_norm("i, i -> i", pf_j, r_max, h)
+            pf_i = pf_i * h
+            pf_i[r_max - 1 : r_max + 1] = 0
+            pf_i = pf_i / np.linalg.norm(pf_i)
+            pf_i = pf_i[:r_max]
+
+            pf_j = pf_j * h
+            pf_j[r_max - 1 : r_max + 1] = 0
+            pf_j = pf_j / np.linalg.norm(pf_j)
+            pf_j = pf_j[:r_max]
 
             # apply the shifts to images
             pf_i_flipped = np.conj(pf_i)
-            pf_i_stack = np.einsum("i, ji -> ij", pf_i, shift_phases)
-            pf_i_flipped_stack = np.einsum("i, ji -> ij", pf_i_flipped, shift_phases)
+            pf_i_stack = pf_i[:, None] * shift_phases
+            pf_i_flipped_stack = pf_i_flipped[:, None] * shift_phases
 
-            c1 = 2 * np.real(np.dot(np.conj(pf_i_stack.T), pf_j))
-            c2 = 2 * np.real(np.dot(np.conj(pf_i_flipped_stack.T), pf_j))
+            c1 = 2 * np.real(np.dot(pf_i_stack.T.conj(), pf_j))
+            c2 = 2 * np.real(np.dot(pf_i_flipped_stack.T.conj(), pf_j))
 
             # find the indices for the maximum values
             # and apply corresponding shifts
@@ -623,17 +663,25 @@ class CLOrient3D:
             shift_b[shift_eq_idx] = dx
 
             # Compute the coefficients of the current equation
-            coefs = np.array(
-                [
-                    np.cos(shift_alpha),
-                    np.sin(shift_alpha),
-                    -np.cos(shift_beta),
-                    -np.sin(shift_beta),
-                ]
-            )
-            shift_eq[shift_eq_idx] = (
-                [-1, -1, 0, 0] * coefs if is_pf_j_flipped else coefs
-            )
+            if not is_pf_j_flipped:
+                shift_eq[shift_eq_idx] = np.array(
+                    [
+                        np.sin(shift_alpha),
+                        np.cos(shift_alpha),
+                        -np.sin(shift_beta),
+                        -np.cos(shift_beta),
+                    ]
+                )
+            else:
+                shift_beta = shift_beta - np.pi
+                shift_eq[shift_eq_idx] = np.array(
+                    [
+                        -np.sin(shift_alpha),
+                        -np.cos(shift_alpha),
+                        -np.sin(shift_beta),
+                        -np.cos(shift_beta),
+                    ]
+                )
 
         # create sparse matrix object only containing non-zero elements
         shift_equations = sparse.csr_matrix(
@@ -665,6 +713,7 @@ class CLOrient3D:
         """
         # Number of equations that will be used to estimation the shifts
         n_equations_total = int(np.ceil(n_img * (self.n_check - 1) / 2))
+
         # Estimated memory requirements for the full system of equation.
         # This ignores the sparsity of the system, since backslash seems to
         # ignore it.
@@ -690,6 +739,31 @@ class CLOrient3D:
             )
 
         return n_equations
+
+    def _m_generate_shift_phase_and_filter(self, r_max, max_shift, shift_step):
+        """
+        Port the code from MATLAB first, grumble grumble, inside thoughts bro.
+        """
+
+        # Number of shifts to try
+        n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
+
+        # only half of ray, excluding the DC component.
+        rk = np.arange(-r_max, r_max + 1, dtype=self.dtype)
+        rk2 = rk[:r_max]
+
+        shift_phases = np.zeros((r_max, n_shifts), dtype=np.complex128)
+        for shiftidx in range(n_shifts):
+            # zero based shiftidx
+            shift = -max_shift + shiftidx * shift_step
+            shift_phases[:, shiftidx] = np.exp(
+                -2 * np.pi * 1j * rk2 * shift / (2 * r_max + 1)
+            )
+
+        h = np.sqrt(np.abs(rk)) * np.exp(-(rk**2) / (2 * (r_max / 4) ** 2))
+
+        # breakpoint() # matchy matchy
+        return None, shift_phases, h
 
     def _generate_shift_phase_and_filter(self, r_max, max_shift, shift_step):
         """
@@ -733,7 +807,8 @@ class CLOrient3D:
         idx_j = np.array(idx_j, dtype="int")
 
         # Select random pairs based on the size of n_equations
-        rp = choice(np.arange(len(idx_j)), size=n_equations, replace=False)
+        # rp = choice(np.arange(len(idx_j)), size=n_equations, replace=False)
+        rp = np.arange(n_equations, dtype=int)
 
         return idx_i[rp], idx_j[rp]
 
