@@ -554,8 +554,8 @@ class CLOrient3D:
         # `estimate_shifts()` requires that rotations have already been estimated.
         rotations = Rotation(self.rotations)
 
-        _pf = self.pf.copy()
-        pf = self.m_pf
+        # _pf = self.pf.copy()
+        pf = self.m_pf.copy()
 
         pf = np.concatenate(
             (np.flip(pf[:, n_theta_half:, 1:], axis=-1), pf[:, :n_theta_half, :]),
