@@ -504,7 +504,9 @@ class CLOrient3D:
         est_shifts = sparse.linalg.lsqr(
             shift_equations, shift_b, atol=1e-8, btol=1e-8, iter_lim=100, show=show
         )[0]
-        self.shifts = est_shifts.reshape((self.n_img, 2))
+        est_shifts = est_shifts.reshape((self.n_img, 2))
+        # Convert (XY) axes and negate estimated shift orientations
+        self.shifts = -est_shifts[:, ::-1]
 
         return self.shifts
 
