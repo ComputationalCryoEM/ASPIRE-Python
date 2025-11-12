@@ -73,11 +73,15 @@ class CLOrient3D:
         if str(full_width).lower() == "adaptive":
             full_width = -1
         self.full_width = int(full_width)
-        self.max_shift = 15  # match MATLAB workflow for now math.ceil(max_shift * self.n_res)
+        self.max_shift = (
+            15  # match MATLAB workflow for now math.ceil(max_shift * self.n_res)
+        )
         self.shift_step = shift_step
         self.offsets_max_shift = self.max_shift
         if offsets_max_shift is not None:
-            self.offsets_max_shift = 15  # match MATLAB workflow math.ceil(offsets_max_shift * self.n_res)
+            self.offsets_max_shift = (
+                15  # match MATLAB workflow math.ceil(offsets_max_shift * self.n_res)
+            )
         self.offsets_shift_step = offsets_shift_step or self.shift_step
         self.mask = mask
         self._pf = None
@@ -241,21 +245,6 @@ class CLOrient3D:
 
         Wrapper for cpu/gpu dispatch.
         """
-        # # load matlab clstack for comparison
-        # from scipy.io import loadmat
-        # m_cl_fn = 'shift_dbg_clstack.mat'
-        # clstack = loadmat(m_cl_fn)['clstack'].astype(int,order='C') - 1  # convert to 0 based
-        # logger.warning(f"FORCING MATLAB Common Lines Matrix from {m_cl_fn}")
-        # # breakpoint()
-        # self.clmatrix = clstack
-        # return self.clmatrix
-        
-        # force_fn = "force_cl.npz"
-        # if os.path.exists(force_fn):
-        #     logger.warning(f"FORCING Common Lines Matrix from {force_fn}")
-        #     res = np.load(force_fn)
-        #     self.clmatrix = res["clmatrix"]
-        #     return self.clmatrix
 
         logger.info("Begin building Common Lines Matrix")
 
@@ -267,10 +256,6 @@ class CLOrient3D:
 
         # Unpack result
         self._shifts_1d, self.clmatrix = res
-
-        # # save result
-        # logger.warning(f"Saving Common Lines to {force_fn}")
-        # np.savez(force_fn, clmatrix=self.clmatrix)
 
         return self.clmatrix
 
@@ -516,7 +501,9 @@ class CLOrient3D:
             show = True
 
         # Estimate shifts.
-        est_shifts = sparse.linalg.lsqr(shift_equations, shift_b, atol=1e-8, btol=1e-8, iter_lim=100, show=show)[0]
+        est_shifts = sparse.linalg.lsqr(
+            shift_equations, shift_b, atol=1e-8, btol=1e-8, iter_lim=100, show=show
+        )[0]
         self.shifts = est_shifts.reshape((self.n_img, 2))
 
         return self.shifts
@@ -567,14 +554,6 @@ class CLOrient3D:
 
         _pf = self.pf.copy()
         pf = self.m_pf
-        # # # compare
-        # from scipy.io import loadmat
-        # pf_fn = 'matlab_pf_shift_dbg.mat'
-        # logger.warning(f"FORCING MATLAB PF from {pf_fn}")
-        # matlab_pf = loadmat(pf_fn)['pf'].T
-        # pf = matlab_pf
-        # # %pf=[flipdim(pf(2:end,n_theta/2+1:end,:),1) ; pf(:,1:n_theta/2,:) ];
-        # # breakpoint()
 
         pf = np.concatenate(
             (np.flip(pf[:, n_theta_half:, 1:], axis=-1), pf[:, :n_theta_half, :]),
@@ -605,7 +584,6 @@ class CLOrient3D:
         _, shift_phases, h = self._m_generate_shift_phase_and_filter(
             r_max, self.offsets_max_shift, self.offsets_shift_step
         )
-        # breakpoint()
 
         d_theta = np.pi / n_theta_half
 
@@ -729,7 +707,7 @@ class CLOrient3D:
         memory_total = equations_factor * (
             n_equations_total * 2 * n_img * self.dtype.itemsize
         )
-        #breakpoint()
+
         if memory_total < (max_memory * 10**6):
             n_equations = int(np.ceil(equations_factor * n_equations_total))
         else:
@@ -772,7 +750,6 @@ class CLOrient3D:
 
         h = np.sqrt(np.abs(rk)) * np.exp(-(rk**2) / (2 * (r_max / 4) ** 2))
 
-        # breakpoint() # matchy matchy
         return None, shift_phases, h
 
     def _generate_shift_phase_and_filter(self, r_max, max_shift, shift_step):
@@ -817,8 +794,7 @@ class CLOrient3D:
         idx_j = np.array(idx_j, dtype="int")
 
         # Select random pairs based on the size of n_equations
-        # rp = choice(np.arange(len(idx_j)), size=n_equations, replace=False)
-        rp = np.arange(n_equations, dtype=int)
+        rp = choice(np.arange(len(idx_j)), size=n_equations, replace=False)
 
         return idx_i[rp], idx_j[rp]
 
