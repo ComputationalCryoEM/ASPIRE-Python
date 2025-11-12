@@ -241,13 +241,21 @@ class CLOrient3D:
 
         Wrapper for cpu/gpu dispatch.
         """
-
-        force_fn = "force_cl.npz"
-        if os.path.exists(force_fn):
-            logger.warning(f"FORCING Common Lines Matrix from {force_fn}")
-            res = np.load(force_fn)
-            self.clmatrix = res["clmatrix"]
-            return self.clmatrix
+        # # load matlab clstack for comparison
+        # from scipy.io import loadmat
+        # m_cl_fn = 'shift_dbg_clstack.mat'
+        # clstack = loadmat(m_cl_fn)['clstack'].astype(int,order='C') - 1  # convert to 0 based
+        # logger.warning(f"FORCING MATLAB Common Lines Matrix from {m_cl_fn}")
+        # # breakpoint()
+        # self.clmatrix = clstack
+        # return self.clmatrix
+        
+        # force_fn = "force_cl.npz"
+        # if os.path.exists(force_fn):
+        #     logger.warning(f"FORCING Common Lines Matrix from {force_fn}")
+        #     res = np.load(force_fn)
+        #     self.clmatrix = res["clmatrix"]
+        #     return self.clmatrix
 
         logger.info("Begin building Common Lines Matrix")
 
@@ -260,9 +268,9 @@ class CLOrient3D:
         # Unpack result
         self._shifts_1d, self.clmatrix = res
 
-        # save result
-        logger.warning(f"Saving Common Lines to {force_fn}")
-        np.savez(force_fn, clmatrix=self.clmatrix)
+        # # save result
+        # logger.warning(f"Saving Common Lines to {force_fn}")
+        # np.savez(force_fn, clmatrix=self.clmatrix)
 
         return self.clmatrix
 
@@ -508,7 +516,7 @@ class CLOrient3D:
             show = True
 
         # Estimate shifts.
-        est_shifts = sparse.linalg.lsqr(shift_equations, shift_b, show=show)[0]
+        est_shifts = sparse.linalg.lsqr(shift_equations, shift_b, atol=1e-8, btol=1e-8, iter_lim=100, show=show)[0]
         self.shifts = est_shifts.reshape((self.n_img, 2))
 
         return self.shifts
@@ -559,13 +567,15 @@ class CLOrient3D:
 
         _pf = self.pf.copy()
         pf = self.m_pf
-        # # compare
+        # # # compare
         # from scipy.io import loadmat
-        # matlab_pf = loadmat('matlab_pf_shift_dbg.mat')['pf'].T
+        # pf_fn = 'matlab_pf_shift_dbg.mat'
+        # logger.warning(f"FORCING MATLAB PF from {pf_fn}")
+        # matlab_pf = loadmat(pf_fn)['pf'].T
         # pf = matlab_pf
-        # breakpoint()
-        # %pf=[flipdim(pf(2:end,n_theta/2+1:end,:),1) ; pf(:,1:n_theta/2,:) ];
-        # breakpoint()
+        # # %pf=[flipdim(pf(2:end,n_theta/2+1:end,:),1) ; pf(:,1:n_theta/2,:) ];
+        # # breakpoint()
+
         pf = np.concatenate(
             (np.flip(pf[:, n_theta_half:, 1:], axis=-1), pf[:, :n_theta_half, :]),
             axis=-1,
@@ -610,7 +620,6 @@ class CLOrient3D:
             j = idx_j[shift_eq_idx]
             # get the common line indices based on the rotations from i and j images
             c_ij, c_ji = self._get_cl_indices(rotations, i, j, n_theta_half)
-            # breakpoint()
 
             # Extract the Fourier rays that correspond to the common line
             pf_i = pf[i, c_ij]
@@ -627,12 +636,12 @@ class CLOrient3D:
 
             # perform bandpass filter, normalize each ray of each image,
             pf_i = pf_i * h
-            pf_i[r_max - 1 : r_max + 1] = 0
+            pf_i[r_max - 1 : r_max + 2] = 0
             pf_i = pf_i / np.linalg.norm(pf_i)
             pf_i = pf_i[:r_max]
 
             pf_j = pf_j * h
-            pf_j[r_max - 1 : r_max + 1] = 0
+            pf_j[r_max - 1 : r_max + 2] = 0
             pf_j = pf_j / np.linalg.norm(pf_j)
             pf_j = pf_j[:r_max]
 
@@ -720,6 +729,7 @@ class CLOrient3D:
         memory_total = equations_factor * (
             n_equations_total * 2 * n_img * self.dtype.itemsize
         )
+        #breakpoint()
         if memory_total < (max_memory * 10**6):
             n_equations = int(np.ceil(equations_factor * n_equations_total))
         else:
