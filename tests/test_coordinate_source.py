@@ -526,7 +526,7 @@ class CoordinateSourceTestCase(TestCase):
         # load saved particle stack
         saved_star = StarFile(star_path)
         # we want to read the saved mrcs file from the STAR file
-        image_name_column = saved_star.get_block_by_index(0)["_rlnImageName"]
+        image_name_column = saved_star.get_block_by_index(1)["_rlnImageName"]
         # we're reading a string of the form 0000X@mrcs_path.mrcs
         _particle, mrcs_path = image_name_column[0].split("@")
         saved_mrcs_stack = mrcfile.open(os.path.join(self.data_folder, mrcs_path)).data
@@ -537,15 +537,28 @@ class CoordinateSourceTestCase(TestCase):
         self.assertEqual(
             list(saved_star["particles"].keys()),
             [
-                "_rlnImagePixelSize",
+                "_rlnOpticsGroup",
                 "_rlnSymmetryGroup",
                 "_rlnImageName",
                 "_rlnCoordinateX",
                 "_rlnCoordinateY",
+            ],
+        )
+
+        self.assertEqual(
+            list(saved_star["optics"].keys()),
+            [
+                "_rlnOpticsGroup",
+                "_rlnOpticsGroupName",
+                "_rlnImagePixelSize",
+                "_rlnSphericalAberration",
+                "_rlnVoltage",
+                "_rlnAmplitudeContrast",
                 "_rlnImageSize",
                 "_rlnImageDimensionality",
             ],
         )
+
         # assert that all the correct coordinates were saved
         for i in range(10):
             self.assertEqual(
