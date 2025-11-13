@@ -70,6 +70,7 @@ def test_prepare_relion_optics_blocks_warns(caplog):
         "_rlnImagePixelSize": np.array([1.234]),
         "_rlnImageSize": np.array([32]),
         "_rlnImageDimensionality": np.array([2]),
+        "_rlnImageName": np.array(["000001@stack.mrcs"]),
     }
 
     caplog.clear()
@@ -78,9 +79,21 @@ def test_prepare_relion_optics_blocks_warns(caplog):
             metadata.copy()
         )
 
-    assert optics_block is None
-    assert particle_block == metadata
-    assert "Optics metadata incomplete" in caplog.text
+    # We should get and optics block
+    assert optics_block is not None
+
+    # Verify defaults were injected.
+    np.testing.assert_allclose(optics_block["_rlnImagePixelSize"], [1.234])
+    np.testing.assert_array_equal(optics_block["_rlnImageSize"], [32])
+    np.testing.assert_array_equal(optics_block["_rlnImageDimensionality"], [2])
+    np.testing.assert_allclose(optics_block["_rlnVoltage"], [300.0])
+    np.testing.assert_allclose(optics_block["_rlnSphericalAberration"], [2.0])
+    np.testing.assert_allclose(optics_block["_rlnAmplitudeContrast"], [0.1])
+
+    # Caplog should contain the warnings about the three missing fields.
+    assert "Optics field _rlnSphericalAberration not found" in caplog.text
+    assert "Optics field _rlnVoltage not found" in caplog.text
+    assert "Optics field _rlnAmplitudeContrast not found" in caplog.text
 
 
 def test_pixel_size(caplog):
