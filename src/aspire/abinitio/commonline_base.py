@@ -30,6 +30,8 @@ class CLOrient3D:
         shift_step=1,
         offsets_max_shift=None,
         offsets_shift_step=None,
+        offsets_max_memory=10000,
+        offsets_equations_factor=1,
         mask=True,
     ):
         """
@@ -54,6 +56,19 @@ class CLOrient3D:
         :param offsets_shift_step: Resolution of shift estimation for
             2D offset estimation in pixels.  Default `None` inherits
             from `shift_step`.
+        :param offsets_equations_factor: The factor to rescale the
+            number of shift equations (=1 in default)
+        :param offsets_max_memory: If there are N images and N_check
+            selected to check for common lines, then the exact system
+            of equations solved for the shifts is of size 2N x
+            N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
+            This may be too big if N is large. The algorithm will use
+            `equations_factor` times the total number of equations if
+            the resulting total number of memory requirements is less
+            than `offsets_max_memory` (in megabytes); otherwise it will reduce
+            the number of equations by approximation to fit in
+            `offsets_max_memory`.  For more information see the
+            references in `estimate_shifts`.  Defaults to 10GB.
         :param hist_bin_width: Bin width in smoothing histogram (degrees).
         :param full_width: Selection width around smoothed histogram peak (degrees).
             `adaptive` will attempt to automatically find the smallest number of
@@ -83,6 +98,8 @@ class CLOrient3D:
                 15  # match MATLAB workflow math.ceil(offsets_max_shift * self.n_res)
             )
         self.offsets_shift_step = offsets_shift_step or self.shift_step
+        self.offsets_equations_factor = offsets_equations_factor
+        self.offsets_max_memory = int(offsets_max_memory)
         self.mask = mask
         self._pf = None
         self._m_pf = None
@@ -461,7 +478,7 @@ class CLOrient3D:
         # Note diagnostic 1d shifts are not computed in the CUDA implementation.
         return None, clmatrix
 
-    def estimate_shifts(self, equations_factor=1, max_memory=10000):
+    def estimate_shifts(self):
         """
         Estimate 2D shifts in images
 
@@ -478,22 +495,10 @@ class CLOrient3D:
         T. Vogt, W. Dahmen, and P. Binev (Eds.)
         Nanostructure Science and Technology Series,
         Springer, 2012, pp. 147–177
-
-        :param equations_factor: The factor to rescale the number of shift equations
-            (=1 in default)
-        :param max_memory: If there are N images and N_check selected to check
-            for common lines, then the exact system of equations solved for the shifts
-            is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
-            This may be too big if N is large. The algorithm will use `equations_factor`
-            times the total number of equations if the resulting total number of memory
-            requirements is less than `max_memory` (in megabytes); otherwise it will
-            reduce the number of equations by approximation to fit in `max_memory`.
         """
 
         # Generate approximated shift equations from estimated rotations
-        shift_equations, shift_b = self._get_shift_equations_approx(
-            equations_factor, max_memory
-        )
+        shift_equations, shift_b = self._get_shift_equations_approx()
 
         # Solve the linear equation, optionally printing numerical debug details.
         show = False
@@ -522,7 +527,7 @@ class CLOrient3D:
 
         return self.rotations, self.shifts
 
-    def _get_shift_equations_approx(self, equations_factor=1, max_memory=4000):
+    def _get_shift_equations_approx(self):
         """
         Generate approximated shift equations from estimated rotations
 
@@ -534,16 +539,6 @@ class CLOrient3D:
 
         This function processes the (Fourier transformed) images exactly as the
         `build_clmatrix` function.
-
-        :param equations_factor: The factor to rescale the number of shift equations
-            (=1 in default)
-        :param max_memory: If there are N images and N_check selected to check
-            for common lines, then the exact system of equations solved for the shifts
-            is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
-            This may be too big if N is large. The algorithm will use `equations_factor`
-            times the total number of equations if the resulting total number of
-            memory requirements is less than `max_memory` (in megabytes); otherwise it
-            will reduce the number of equations to fit in `max_memory`.
 
         :return; The left and right-hand side of shift equations
         """
@@ -563,9 +558,7 @@ class CLOrient3D:
         )
 
         # Estimate number of equations that will be used to calculate the shifts
-        n_equations = self._estimate_num_shift_equations(
-            n_img, equations_factor, max_memory
-        )
+        n_equations = self._estimate_num_shift_equations(n_img)
 
         # Allocate local variables for estimating 2D shifts based on the estimated number
         # of equations. The shift equations are represented using a sparse matrix,
@@ -681,7 +674,7 @@ class CLOrient3D:
 
         return shift_equations, shift_b
 
-    def _estimate_num_shift_equations(self, n_img, equations_factor=1, max_memory=4000):
+    def _estimate_num_shift_equations(self, n_img):
         """
         Estimate total number of shift equations in images
 
@@ -689,15 +682,6 @@ class CLOrient3D:
         number of images and preselected memory factor.
 
         :param n_img:  The total number of input images
-        :param equations_factor: The factor to rescale the number of shift equations
-            (=1 in default)
-        :param max_memory: If there are N images and N_check selected to check
-            for common lines, then the exact system of equations solved for the shifts
-            is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
-            This may be too big if N is large. The algorithm will use `equations_factor`
-            times the total number of equations if the resulting total number of
-            memory requirements is less than `max_memory` (in megabytes); otherwise it
-            will reduce the number of equations to fit in `max_memory`.
         :return: Estimated number of shift equations
         """
         # Number of equations that will be used to estimation the shifts
@@ -706,14 +690,16 @@ class CLOrient3D:
         # Estimated memory requirements for the full system of equation.
         # This ignores the sparsity of the system, since backslash seems to
         # ignore it.
-        memory_total = equations_factor * (
+        memory_total = self.offsets_equations_factor * (
             n_equations_total * 2 * n_img * self.dtype.itemsize
         )
 
-        if memory_total < (max_memory * 10**6):
-            n_equations = int(np.ceil(equations_factor * n_equations_total))
+        if memory_total < (self.offets_max_memory * 10**6):
+            n_equations = int(
+                np.ceil(self.offsets_equations_factor * n_equations_total)
+            )
         else:
-            subsampling_factor = (max_memory * 10**6) / memory_total
+            subsampling_factor = (self.offsets_max_memory * 10**6) / memory_total
             subsampling_factor = min(1.0, subsampling_factor)
             n_equations = int(np.ceil(n_equations_total * subsampling_factor))
 
