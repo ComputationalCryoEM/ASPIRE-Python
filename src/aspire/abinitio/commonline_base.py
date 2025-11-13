@@ -694,7 +694,7 @@ class CLOrient3D:
             n_equations_total * 2 * n_img * self.dtype.itemsize
         )
 
-        if memory_total < (self.offets_max_memory * 10**6):
+        if memory_total < (self.offsets_max_memory * 10**6):
             n_equations = int(
                 np.ceil(self.offsets_equations_factor * n_equations_total)
             )
@@ -774,7 +774,7 @@ class CLOrient3D:
         """
 
         # Generate the i,j tuples of indices representing the upper triangle above the diagonal.
-        idx_i, idx_j = np.triu_indices(N, k=1)
+        idx_i, idx_j = np.triu_indices(self.n_img, k=1)
 
         # Select random pairs based on the size of n_equations
         rp = choice(np.arange(len(idx_j)), size=n_equations, replace=False)
