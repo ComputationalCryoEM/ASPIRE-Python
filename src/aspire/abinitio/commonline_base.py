@@ -695,30 +695,6 @@ class CLOrient3D:
 
         return n_equations
 
-    def _m_generate_shift_phase_and_filter(self, r_max, max_shift, shift_step):
-        """
-        Port the code from MATLAB first, grumble grumble, inside thoughts bro.
-        """
-
-        # Number of shifts to try
-        n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
-
-        # only half of ray, excluding the DC component.
-        rk = np.arange(-r_max, r_max + 1, dtype=self.dtype)
-        rk2 = rk[:r_max]
-
-        shift_phases = np.zeros((r_max, n_shifts), dtype=np.complex128)
-        for shiftidx in range(n_shifts):
-            # zero based shiftidx
-            shift = -max_shift + shiftidx * shift_step
-            shift_phases[:, shiftidx] = np.exp(
-                -2 * np.pi * 1j * rk2 * shift / (2 * r_max + 1)
-            )
-
-        h = np.sqrt(np.abs(rk)) * np.exp(-(rk**2) / (2 * (r_max / 4) ** 2))
-
-        return None, shift_phases, h
-
     def _generate_shift_phase_and_filter(self, r_max, max_shift, shift_step):
         """
         Prepare the shift phases and generate filter for common-line detection
