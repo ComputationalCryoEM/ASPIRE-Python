@@ -102,7 +102,6 @@ class CLOrient3D:
         self.offsets_max_memory = int(offsets_max_memory)
         self.mask = mask
         self._pf = None
-        self._m_pf = None
 
         # Sanity limit to match potential clmatrix dtype of int16.
         if self.n_img > (2**15 - 1):
@@ -157,12 +156,6 @@ class CLOrient3D:
             self._prepare_pf()
         return self._pf
 
-    @property
-    def m_pf(self):
-        if self._m_pf is None:
-            self._prepare_pf()
-        return self._m_pf
-
     def _prepare_pf(self):
         """
         Prepare the polar Fourier transform used for correlations.
@@ -184,7 +177,6 @@ class CLOrient3D:
             (self.n_res, self.n_res), self.n_rad, self.n_theta, dtype=self.dtype
         )
         pf = pft.transform(imgs)
-        self._m_pf = pft.half_to_full(pf)
 
         # We remove the DC the component. pf has size (n_img) x (n_theta/2) x (n_rad-1),
         # with pf[:, :, 0] containing low frequency content and pf[:, :, -1] containing
@@ -549,13 +541,7 @@ class CLOrient3D:
         # `estimate_shifts()` requires that rotations have already been estimated.
         rotations = Rotation(self.rotations)
 
-        # _pf = self.pf.copy()
-        pf = self.m_pf.copy()
-
-        pf = np.concatenate(
-            (np.flip(pf[:, n_theta_half:, 1:], axis=-1), pf[:, :n_theta_half, :]),
-            axis=-1,
-        )
+        pf = self.pf.copy()
 
         # Estimate number of equations that will be used to calculate the shifts
         n_equations = self._estimate_num_shift_equations(n_img)
@@ -575,8 +561,8 @@ class CLOrient3D:
         # The shift phases are pre-defined in a range of max_shift that can be
         # applied to maximize the common line calculation. The common-line filter
         # is also applied to the radial direction for easier detection.
-        r_max = (pf.shape[2] - 1) // 2  # pf is a different Matlab size
-        _, shift_phases, h = self._m_generate_shift_phase_and_filter(
+        r_max = pf.shape[2]
+        _, shift_phases, h = self._generate_shift_phase_and_filter(
             r_max, self.offsets_max_shift, self.offsets_shift_step
         )
 
@@ -608,20 +594,13 @@ class CLOrient3D:
                 pf_j = pf[j, c_ji - n_theta_half]
 
             # perform bandpass filter, normalize each ray of each image,
-            pf_i = pf_i * h
-            pf_i[r_max - 1 : r_max + 2] = 0
-            pf_i = pf_i / np.linalg.norm(pf_i)
-            pf_i = pf_i[:r_max]
-
-            pf_j = pf_j * h
-            pf_j[r_max - 1 : r_max + 2] = 0
-            pf_j = pf_j / np.linalg.norm(pf_j)
-            pf_j = pf_j[:r_max]
+            pf_i = self._apply_filter_and_norm("i, i -> i", pf_i, r_max, h)
+            pf_j = self._apply_filter_and_norm("i, i -> i", pf_j, r_max, h)
 
             # apply the shifts to images
             pf_i_flipped = np.conj(pf_i)
-            pf_i_stack = pf_i[:, None] * shift_phases
-            pf_i_flipped_stack = pf_i_flipped[:, None] * shift_phases
+            pf_i_stack = pf_i[:, None] * shift_phases.T
+            pf_i_flipped_stack = pf_i_flipped[:, None] * shift_phases.T
 
             c1 = 2 * np.dot(pf_i_stack.T.conj(), pf_j).real
             c2 = 2 * np.dot(pf_i_flipped_stack.T.conj(), pf_j).real
