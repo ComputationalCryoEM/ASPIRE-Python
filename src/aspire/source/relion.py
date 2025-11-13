@@ -168,7 +168,8 @@ class RelionSource(ImageSource):
                 f"Found partially populated CTF Params."
                 f"  To automatically populate CTFFilters provide {CTF_params}"
             )
-
+            self.unique_filters = [IdentityFilter()]
+            self.filter_indices = np.zeros(self.n, dtype=int)
         # If no CTF info in STAR, we initialize the filter values of metadata with default values
         else:
             self.unique_filters = [IdentityFilter()]

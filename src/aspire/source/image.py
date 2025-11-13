@@ -1311,31 +1311,26 @@ class ImageSource(ABC):
             "_rlnImageDimensionality",
         ]
 
-        # We only write a data_optics block when every required field is present.
-        required_fields = [
-            "_rlnSphericalAberration",
-            "_rlnVoltage",
-            "_rlnAmplitudeContrast",
-            "_rlnImageSize",
-            "_rlnImageDimensionality",
-        ]
-        pixel_fields = ["_rlnImagePixelSize", "_rlnMicrographPixelSize"]
+        # Some optics group fields might not always be present, but are necessary
+        # for reading the file in Relion. We ensure these fields exist and populate
+        # with a dummy value if not.
+        n_rows = len(metadata["_rlnImageName"])
 
-        has_required = all(field in metadata for field in required_fields)
-        has_pixel_field = any(field in metadata for field in pixel_fields)
+        def _ensure_column(field, value):
+            if field not in metadata:
+                logger.warning(
+                    f"Optics field {field} not found, populating with default value {value}"
+                )
+                metadata[field] = np.full(n_rows, value)
 
-        if not (has_required and has_pixel_field):
-            # Optics metadata incomplete, fall back to legacy single block.
-            logger.warning(
-                "Optics metadata incomplete, writing only data_particles block."
-            )
-            return None, metadata
+        _ensure_column("_rlnSphericalAberration", 2.0)
+        _ensure_column("_rlnVoltage", 300)
+        _ensure_column("_rlnAmplitudeContrast", 0.1)
 
         # Restrict to the optics columns that are actually present on this source.
         optics_value_fields = [
             field for field in all_optics_fields if field in metadata
         ]
-        n_rows = len(metadata["_rlnImageName"])
 
         # Map each unique optics tuple to a 1-based group ID in order encountered.
         group_lookup = OrderedDict()
