@@ -630,8 +630,8 @@ class CLOrient3D:
             pf_i_stack = pf_i[:, None] * shift_phases
             pf_i_flipped_stack = pf_i_flipped[:, None] * shift_phases
 
-            c1 = 2 * np.real(np.dot(pf_i_stack.T.conj(), pf_j))
-            c2 = 2 * np.real(np.dot(pf_i_flipped_stack.T.conj(), pf_j))
+            c1 = 2 * np.dot(pf_i_stack.T.conj(), pf_j).real
+            c2 = 2 * np.dot(pf_i_flipped_stack.T.conj(), pf_j).real
 
             # find the indices for the maximum values
             # and apply corresponding shifts
@@ -786,14 +786,9 @@ class CLOrient3D:
         """
         Generate two index lists for [i, j] pairs of images
         """
-        idx_i = []
-        idx_j = []
-        for i in range(self.n_img - 1):
-            tmp_j = range(i + 1, self.n_img)
-            idx_i.extend([i] * len(tmp_j))
-            idx_j.extend(tmp_j)
-        idx_i = np.array(idx_i, dtype="int")
-        idx_j = np.array(idx_j, dtype="int")
+
+        # Generate the i,j tuples of indices representing the upper triangle above the diagonal.
+        idx_i, idx_j = np.triu_indices(N, k=1)
 
         # Select random pairs based on the size of n_equations
         rp = choice(np.arange(len(idx_j)), size=n_equations, replace=False)
