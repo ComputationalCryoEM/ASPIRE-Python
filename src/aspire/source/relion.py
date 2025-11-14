@@ -125,6 +125,12 @@ class RelionSource(ImageSource):
             for key in offset_keys:
                 del self._metadata[key]
 
+        # Detect ASPIRE-generated dummy variables
+        aspire_metadata = metadata.get("_aspireMetadata")
+        dummy_ctf = isinstance(aspire_metadata, (list, np.ndarray)) and np.all(
+            np.asarray(aspire_metadata) == "no_ctf"
+        )
+
         # CTF estimation parameters coming from Relion
         CTF_params = [
             "_rlnVoltage",
@@ -162,14 +168,21 @@ class RelionSource(ImageSource):
             # self.unique_filters of the filter that should be applied
             self.filter_indices = filter_indices
 
+        # If we detect ASPIRE added dummy variables, log and initialize identity filter
+        elif dummy_ctf:
+            logger.info(
+                "Detected ASPIRE-generated dummy optics; initializing identity filters."
+            )
+            self.unique_filters = [IdentityFilter()]
+            self.filter_indices = np.zeros(self.n, dtype=int)
+
         # We have provided some, but not all the required params
         elif any(param in metadata for param in CTF_params):
             logger.warning(
                 f"Found partially populated CTF Params."
                 f"  To automatically populate CTFFilters provide {CTF_params}"
             )
-            self.unique_filters = [IdentityFilter()]
-            self.filter_indices = np.zeros(self.n, dtype=int)
+
         # If no CTF info in STAR, we initialize the filter values of metadata with default values
         else:
             self.unique_filters = [IdentityFilter()]
