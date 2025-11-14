@@ -61,6 +61,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         J_weighting=False,
         hist_intervals=100,
         disable_gpu=False,
+        **kwargs,
     ):
         """
         Initialize object for estimating 3D orientations.
@@ -100,6 +101,7 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
             hist_bin_width=hist_bin_width,
             full_width=full_width,
             mask=mask,
+            **kwargs,
         )
 
         # Generate pair mappings
