@@ -88,15 +88,11 @@ class CLOrient3D:
         if str(full_width).lower() == "adaptive":
             full_width = -1
         self.full_width = int(full_width)
-        self.max_shift = (
-            15  # match MATLAB workflow for now math.ceil(max_shift * self.n_res)
-        )
+        self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
         self.offsets_max_shift = self.max_shift
         if offsets_max_shift is not None:
-            self.offsets_max_shift = (
-                15  # match MATLAB workflow math.ceil(offsets_max_shift * self.n_res)
-            )
+            self.offsets_max_shift = math.ceil(offsets_max_shift * self.n_res)
         self.offsets_shift_step = offsets_shift_step or self.shift_step
         self.offsets_equations_factor = offsets_equations_factor
         self.offsets_max_memory = int(offsets_max_memory)
