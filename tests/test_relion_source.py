@@ -86,9 +86,9 @@ def test_prepare_relion_optics_blocks_warns(caplog):
     np.testing.assert_allclose(optics_block["_rlnImagePixelSize"], [1.234])
     np.testing.assert_array_equal(optics_block["_rlnImageSize"], [32])
     np.testing.assert_array_equal(optics_block["_rlnImageDimensionality"], [2])
-    np.testing.assert_allclose(optics_block["_rlnVoltage"], [300.0])
-    np.testing.assert_allclose(optics_block["_rlnSphericalAberration"], [2.0])
-    np.testing.assert_allclose(optics_block["_rlnAmplitudeContrast"], [0.1])
+    np.testing.assert_allclose(optics_block["_rlnVoltage"], [0])
+    np.testing.assert_allclose(optics_block["_rlnSphericalAberration"], [0])
+    np.testing.assert_allclose(optics_block["_rlnAmplitudeContrast"], [0])
 
     # Caplog should contain the warnings about the three missing fields.
     assert "Optics field _rlnSphericalAberration not found" in caplog.text
