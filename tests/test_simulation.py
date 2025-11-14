@@ -915,6 +915,34 @@ def test_save_overwrite(caplog):
         check_metadata(sim2, sim2_loaded_renamed)
 
 
+def test_save_load_dummy_ctf_values(tmp_path, caplog):
+    """
+    Test we populate optics group field with dummy values when none
+    are present. These values should be detected upon reloading the source.
+    """
+    star_path = tmp_path / "no_ctf.star"
+    sim = Simulation(n=8, L=16)  # no unique_filters, ie. no CTF info
+    sim.save(star_path, overwrite=True)
+
+    # STAR file should contain our fallback tag
+    star = RelionStarFile(star_path)
+    particles_block = star.get_block_by_index(1)
+    np.testing.assert_array_equal(
+        particles_block["_aspireMetadata"], np.full(sim.n, "no_ctf", dtype=object)
+    )
+
+    # Tag should survive round-trip
+    caplog.clear()
+    reloaded = RelionSource(star_path)
+    np.testing.assert_array_equal(
+        reloaded._metadata["_aspireMetadata"],
+        np.full(reloaded.n, "no_ctf", dtype=object),
+    )
+
+    # Check message is logged about detecting dummy variables
+    assert "Detected ASPIRE-generated dummy optics" in caplog.text
+
+
 @pytest.mark.parametrize("batch_size", [1, 6])
 def test_simulation_save_sets_voxel_size(tmp_path, batch_size):
     """

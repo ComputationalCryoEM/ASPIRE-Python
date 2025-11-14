@@ -1316,16 +1316,22 @@ class ImageSource(ABC):
         # with a dummy value if not.
         n_rows = len(metadata["_rlnImageName"])
 
+        missing_fields = []
+
         def _ensure_column(field, value):
             if field not in metadata:
+                missing_fields.append(field)
                 logger.warning(
                     f"Optics field {field} not found, populating with default value {value}"
                 )
                 metadata[field] = np.full(n_rows, value)
 
-        _ensure_column("_rlnSphericalAberration", 2.0)
-        _ensure_column("_rlnVoltage", 300)
-        _ensure_column("_rlnAmplitudeContrast", 0.1)
+        _ensure_column("_rlnSphericalAberration", 0)
+        _ensure_column("_rlnVoltage", 0)
+        _ensure_column("_rlnAmplitudeContrast", 0)
+
+        if missing_fields:
+            metadata["_aspireMetadata"] = np.full(n_rows, "no_ctf", dtype=object)
 
         # Restrict to the optics columns that are actually present on this source.
         optics_value_fields = [
