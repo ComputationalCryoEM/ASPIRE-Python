@@ -21,7 +21,7 @@ import numpy as np
 from aspire.downloader import emdb_2660
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
-from aspire.source import RelionSource, Simulation
+from aspire.source import Simulation
 
 logger = logging.getLogger(__name__)
 
@@ -83,5 +83,4 @@ relion_cmd = [
     "--ctf",
 ]
 
-print(" ".join(relion_cmd))
-
+logger.info(" ".join(relion_cmd))
