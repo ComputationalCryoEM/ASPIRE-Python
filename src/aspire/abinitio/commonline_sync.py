@@ -33,6 +33,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
         hist_bin_width=3,
         full_width=6,
         mask=True,
+        **kwargs,
     ):
         """
         Initialize an object for estimating 3D orientations using synchronization matrix
@@ -60,6 +61,7 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
             hist_bin_width=hist_bin_width,
             full_width=full_width,
             mask=mask,
+            **kwargs,
         )
         self.syncmatrix = None
 
