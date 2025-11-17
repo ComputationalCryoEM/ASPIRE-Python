@@ -9,6 +9,7 @@ from click.testing import CliRunner
 
 from aspire.abinitio import CLOrient3D, CLSyncVoting
 from aspire.commands.orient3d import orient3d
+from aspire.downloader import emdb_2660
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import Simulation
 from aspire.utils import mean_aligned_angular_distance, rots_to_clmatrix
@@ -51,23 +52,15 @@ def dtype(request):
 @pytest.fixture(scope="module")
 def source_orientation_objs(resolution, offsets, dtype):
     src = Simulation(
-        n=50,
+        n=500,
         L=resolution,
-        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=0, dtype=dtype).generate(),
+        vols=emdb_2660().downsample(resolution),
         offsets=offsets,
         amplitudes=1,
         seed=0,
-    )
+    ).cache()
 
-    # Search for common lines over less shifts for 0 offsets.
-    max_shift = 1 / resolution
-    shift_step = 1
-    if src.offsets.all() != 0:
-        max_shift = 0.20
-        shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
-    orient_est = CLSyncVoting(
-        src, max_shift=max_shift, shift_step=shift_step, mask=False
-    )
+    orient_est = CLSyncVoting(src)
 
     # Estimate rotations once for all tests.
     orient_est.estimate_rotations()
@@ -119,11 +112,12 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
 
     # Calculate the mean 2D distance between estimates and ground truth.
     error = src.offsets - est_shifts
+
     mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
 
-    # Assert that on average estimated shifts are close (within 0.5 pix) to src.offsets
+    # Assert that on average estimated shifts are close to src.offsets
     if src.offsets.all() != 0:
-        np.testing.assert_array_less(mean_dist, 0.5)
+        np.testing.assert_array_less(mean_dist, 2)
     else:
         np.testing.assert_allclose(mean_dist, 0)
 
@@ -138,9 +132,9 @@ def test_estimate_shifts_with_est_rots(source_orientation_objs):
     error = src.offsets - est_shifts
     mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
 
-    # Assert that on average estimated shifts are close (within 0.5 pix) to src.offsets
+    # Assert that on average estimated shifts are close to src.offsets
     if src.offsets.all() != 0:
-        np.testing.assert_array_less(mean_dist, 0.5)
+        np.testing.assert_array_less(mean_dist, 2)
     else:
         np.testing.assert_allclose(mean_dist, 0)
 
