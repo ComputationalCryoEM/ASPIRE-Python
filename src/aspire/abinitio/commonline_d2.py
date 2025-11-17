@@ -37,6 +37,7 @@ class CLSymmetryD2(CLOrient3D):
         epsilon=0.01,
         seed=None,
         mask=True,
+        **kwargs,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with D2 symmetry.
@@ -65,6 +66,7 @@ class CLSymmetryD2(CLOrient3D):
             max_shift=max_shift,
             shift_step=shift_step,
             mask=mask,
+            **kwargs,
         )
 
         self.grid_res = grid_res

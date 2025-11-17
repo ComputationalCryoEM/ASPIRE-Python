@@ -48,6 +48,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         min_dist_cls=25,
         seed=None,
         mask=True,
+        **kwargs,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with C2 symmetry.
@@ -77,6 +78,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
             degree_res=degree_res,
             seed=seed,
             mask=mask,
+            **kwargs,
         )
 
         self.min_dist_cls = min_dist_cls
