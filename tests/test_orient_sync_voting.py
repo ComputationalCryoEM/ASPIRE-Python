@@ -7,11 +7,22 @@ import numpy as np
 import pytest
 from click.testing import CliRunner
 
-from aspire.abinitio import CLOrient3D, CLSyncVoting
+from aspire.abinitio import (
+    CLOrient3D,
+    CLSymmetryC2,
+    CLSymmetryC3C4,
+    CLSymmetryCn,
+    CLSymmetryD2,
+    CLSync3N,
+    CLSyncVoting,
+    CommonlineIRLS,
+    CommonlineLUD,
+    CommonlineSDP,
+)
 from aspire.commands.orient3d import orient3d
 from aspire.downloader import emdb_2660
 from aspire.noise import WhiteNoiseAdder
-from aspire.source import Simulation
+from aspire.source import ArrayImageSource, Simulation
 from aspire.utils import mean_aligned_angular_distance, rots_to_clmatrix
 from aspire.volume import AsymmetricVolume
 
@@ -31,6 +42,18 @@ OFFSETS = [
 DTYPES = [
     np.float32,
     pytest.param(np.float64, marks=pytest.mark.expensive),
+]
+
+CL_ALGOS = [
+    CLSymmetryC2,
+    CLSymmetryC3C4,
+    CLSymmetryCn,
+    CLSymmetryD2,
+    CLSync3N,
+    CLSyncVoting,
+    CommonlineIRLS,
+    CommonlineLUD,
+    CommonlineSDP,
 ]
 
 
@@ -60,7 +83,15 @@ def source_orientation_objs(resolution, offsets, dtype):
         seed=0,
     ).cache()
 
-    orient_est = CLSyncVoting(src)
+    # Search for common lines over less shifts for 0 offsets.
+    max_shift = 1 / resolution
+    shift_step = 1
+    if src.offsets.all() != 0:
+        max_shift = 0.20
+        shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
+    orient_est = CLSyncVoting(
+        src, max_shift=max_shift, shift_step=shift_step, mask=False
+    )
 
     # Estimate rotations once for all tests.
     orient_est.estimate_rotations()
@@ -225,3 +256,41 @@ def test_command_line():
         )
         # check that the command completed successfully
         assert result.exit_code == 0
+
+
+@pytest.mark.parametrize("cl_algo", CL_ALGOS)
+def test_offset_param_passthrough(cl_algo):
+    """
+    Systematically test that offset search configuration passes through all CL classes.
+    """
+
+    src = ArrayImageSource(np.random.randn(4, 4), pixel_size=1.23)
+
+    test_args = {
+        "offsets_max_shift": 0.5,
+        "offsets_shift_step": 0.1,
+        "offsets_equations_factor": 1,
+        "offsets_max_memory": 200,
+    }
+
+    # Handle special case classes
+    if cl_algo == CLSymmetryC3C4:
+        test_args["symmetry"] = "C3"
+    elif cl_algo == CLSymmetryCn:
+        test_args["symmetry"] = "C17"
+
+    # Instantiate the CL class under test
+    orient_est = cl_algo(src, **test_args)
+
+    # Loop over the args and assert they are correctly assigned
+    for arg, val in test_args.items():
+
+        # Handle special case arguments
+        if arg == "offsets_max_shift":
+            # convert from ratio to pixels
+            val = np.ceil(val * src.L)
+        elif arg == "symmetry":
+            # convert from string `symmetry` to int `order`
+            arg, val = "order", int(val[1:])
+
+        assert getattr(orient_est, arg) == val
