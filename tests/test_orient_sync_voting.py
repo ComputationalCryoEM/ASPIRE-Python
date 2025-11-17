@@ -68,6 +68,7 @@ def source_orientation_objs(resolution, offsets, dtype):
     return src, orient_est
 
 
+@pytest.mark.expensive
 def test_build_clmatrix(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -90,6 +91,7 @@ def test_build_clmatrix(source_orientation_objs):
     assert within_5 / angle_diffs.size > tol
 
 
+@pytest.mark.expensive
 def test_estimate_rotations(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -99,6 +101,7 @@ def test_estimate_rotations(source_orientation_objs):
     mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=1)
 
 
+@pytest.mark.expensive
 def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -122,6 +125,7 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
         np.testing.assert_allclose(mean_dist, 0)
 
 
+@pytest.mark.expensive
 def test_estimate_shifts_with_est_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -139,6 +143,7 @@ def test_estimate_shifts_with_est_rots(source_orientation_objs):
         np.testing.assert_allclose(mean_dist, 0)
 
 
+@pytest.mark.expensive
 def test_estimate_rotations_fuzzy_mask():
     noisy_src = Simulation(
         n=35,
