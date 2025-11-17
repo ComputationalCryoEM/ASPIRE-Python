@@ -56,6 +56,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         degree_res=1,
         seed=None,
         mask=True,
+        **kwargs,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with C3 and C4 symmetry.
@@ -81,6 +82,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             max_shift=max_shift,
             shift_step=shift_step,
             mask=mask,
+            **kwargs,
         )
 
         self._check_symmetry(symmetry)

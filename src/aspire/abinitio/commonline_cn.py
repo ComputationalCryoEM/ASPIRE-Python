@@ -41,6 +41,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
         equator_threshold=10,
         seed=None,
         mask=True,
+        **kwargs,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with Cn symmetry, n>4.
@@ -74,6 +75,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
             degree_res=degree_res,
             seed=seed,
             mask=mask,
+            **kwargs,
         )
 
         self.n_points_sphere = n_points_sphere
