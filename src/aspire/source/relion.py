@@ -126,10 +126,7 @@ class RelionSource(ImageSource):
                 del self._metadata[key]
 
         # Detect ASPIRE-generated dummy variables
-        aspire_metadata = metadata.get("_aspireMetadata")
-        dummy_ctf = isinstance(aspire_metadata, (list, np.ndarray)) and np.all(
-            np.asarray(aspire_metadata) == "no_ctf"
-        )
+        no_ctf_flag = "_aspireNoCTF" in metadata
 
         # CTF estimation parameters coming from Relion
         CTF_params = [
@@ -169,7 +166,7 @@ class RelionSource(ImageSource):
             self.filter_indices = filter_indices
 
         # If we detect ASPIRE added dummy variables, log and initialize identity filter
-        elif dummy_ctf:
+        elif no_ctf_flag:
             logger.info(
                 "Detected ASPIRE-generated dummy optics; initializing identity filters."
             )

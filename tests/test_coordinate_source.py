@@ -542,7 +542,6 @@ class CoordinateSourceTestCase(TestCase):
                 "_rlnImageName",
                 "_rlnCoordinateX",
                 "_rlnCoordinateY",
-                "_aspireMetadata",
             ],
         )
 
@@ -557,6 +556,7 @@ class CoordinateSourceTestCase(TestCase):
                 "_rlnAmplitudeContrast",
                 "_rlnImageSize",
                 "_rlnImageDimensionality",
+                "_aspireNoCTF",
             ],
         )
 
