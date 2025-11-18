@@ -926,18 +926,13 @@ def test_save_load_dummy_ctf_values(tmp_path, caplog):
 
     # STAR file should contain our fallback tag
     star = RelionStarFile(star_path)
-    particles_block = star.get_block_by_index(1)
-    np.testing.assert_array_equal(
-        particles_block["_aspireMetadata"], np.full(sim.n, "no_ctf", dtype=object)
-    )
+    optics_block = star.get_block_by_index(0)
+    assert "_aspireNoCTF" in optics_block
 
     # Tag should survive round-trip
     caplog.clear()
     reloaded = RelionSource(star_path)
-    np.testing.assert_array_equal(
-        reloaded._metadata["_aspireMetadata"],
-        np.full(reloaded.n, "no_ctf", dtype=object),
-    )
+    assert "_aspireNoCTF" in reloaded._metadata
 
     # Check message is logged about detecting dummy variables
     assert "Detected ASPIRE-generated dummy optics" in caplog.text
