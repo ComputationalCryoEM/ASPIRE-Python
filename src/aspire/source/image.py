@@ -1330,9 +1330,6 @@ class ImageSource(ABC):
         _ensure_column("_rlnVoltage", 0)
         _ensure_column("_rlnAmplitudeContrast", 0)
 
-        if missing_fields:
-            metadata["_aspireMetadata"] = np.full(n_rows, "no_ctf", dtype=object)
-
         # Restrict to the optics columns that are actually present on this source.
         optics_value_fields = [
             field for field in all_optics_fields if field in metadata
@@ -1358,6 +1355,10 @@ class ImageSource(ABC):
             optics_block["_rlnOpticsGroupName"].append(f"opticsGroup{group_id}")
             for field, value in zip(optics_value_fields, signature):
                 optics_block[field].append(value)
+
+        # Tag dummy optics if we had to synthesize any fields
+        if missing_fields:
+            optics_block["_aspireNoCTF"] = ["." for _ in range(len(group_lookup))]
 
         # Everything not lifted into the optics block stays with the particle metadata.
         particle_block = OrderedDict()
