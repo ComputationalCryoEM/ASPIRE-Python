@@ -135,8 +135,9 @@ class PolarFT:
 
         resolution = x.shape[-1]
 
+        # Note, `freqs` is negated from legacy MATLAB.
         # nufft call should return `pf` as array type (np or cp) of `x`
-        pf = nufft(x, -self.freqs) / resolution**2
+        pf = nufft(x, self.freqs) / resolution**2
 
         return pf.reshape(*stack_shape, self.ntheta // 2, self.nrad)
 
@@ -193,7 +194,7 @@ class PolarFT:
 
         # Broadcast and accumulate phase shifts
         freqs = xp.tile(xp.asarray(self.freqs), (n, 1, 1))
-        phase_shifts = xp.exp(-1j * xp.sum(freqs * shifts[:, :, None], axis=1))
+        phase_shifts = xp.exp(-1j * xp.sum(-freqs * shifts[:, :, None], axis=1))
 
         # Reshape flat frequency grid back to (..., ntheta//2, self.nrad)
         phase_shifts = phase_shifts.reshape(n, self.ntheta // 2, self.nrad)
