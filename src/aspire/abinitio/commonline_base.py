@@ -589,6 +589,11 @@ class CLOrient3D:
             else:
                 pf_j = pf[j, c_ji - n_theta_half]
 
+            # Use ray from opposite side of origin.
+            # Correpsonds to `freqs` convention in PFT,
+            #   where the legacy code used a negated frequency grid.
+            pf_i, pf_j = np.conj(pf_i), np.conj(pf_j)
+
             # perform bandpass filter, normalize each ray of each image,
             pf_i = self._apply_filter_and_norm("i, i -> i", pf_i, r_max, h)
             pf_j = self._apply_filter_and_norm("i, i -> i", pf_j, r_max, h)
