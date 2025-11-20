@@ -74,7 +74,7 @@ sim.save(star_path, overwrite=True)
 # Running ``relion_reconstruct``
 # ------------------------------
 # ``relion_reconstruct`` is an external RELION command, so we just show the call.
-# Run this, for the output directory, in a RELION-enabled shell after generating
+# Run this, from the output directory, in a RELION-enabled shell after generating
 # the STAR file above.
 
 logger.info(f"relion_reconstruct --i {star_file} " f"--o 'relion_recon.mrc' --ctf")
