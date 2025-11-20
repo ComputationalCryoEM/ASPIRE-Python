@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 # -------------
 # We set a few parameters to initialize the Simulation.
-# You can safely alter ``n_particles`` (or change the voltages, etc.) when
+# You can safely alter ``n_particles`` (or change the defocus values, etc.) when
 # trying this interactively; the defaults here are chosen for demonstrative purposes.
 
 output_dir = Path("relion_save_demo")
