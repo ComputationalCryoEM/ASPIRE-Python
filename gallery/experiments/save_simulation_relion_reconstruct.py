@@ -38,7 +38,9 @@ output_dir.mkdir(exist_ok=True)
 
 n_particles = 512
 snr = 0.5
-defocus = np.linspace(15000, 25000, 7)  # defocus values for the radial CTF filters (angstroms)
+defocus = np.linspace(
+    15000, 25000, 7
+)  # defocus values for the radial CTF filters (angstroms)
 star_file = f"sim_n{n_particles}.star"
 star_path = output_dir / star_file
 
@@ -75,7 +77,4 @@ sim.save(star_path, overwrite=True)
 # Run this, for the output directory, in a RELION-enabled shell after generating
 # the STAR file above.
 
-logger.info(
-    f"relion_reconstruct --i {star_file} "
-    f"--o 'relion_recon.mrc' --ctf"
-)
+logger.info(f"relion_reconstruct --i {star_file} " f"--o 'relion_recon.mrc' --ctf")
