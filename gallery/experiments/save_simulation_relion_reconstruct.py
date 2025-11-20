@@ -1,6 +1,6 @@
 """
-Simulated Stack → RELION Reconstruction
-=======================================
+Simulated Stack to RELION Reconstruction
+========================================
 
 This experiment shows how to:
 
@@ -37,10 +37,10 @@ output_dir = Path("relion_save_demo")
 output_dir.mkdir(exist_ok=True)
 
 n_particles = 512
-snr = 0.25
-voltages = np.linspace(200, 300, 3)  # kV settings for the radial CTF filters
-star_path = output_dir / f"sim_n{n_particles}.star"
-
+snr = 0.5
+defocus = np.linspace(15000, 25000, 7)  # defocus values for the radial CTF filters (angstroms)
+star_file = f"sim_n{n_particles}.star"
+star_path = output_dir / star_file
 
 # %%
 # Volume and Filters
@@ -49,7 +49,7 @@ star_path = output_dir / f"sim_n{n_particles}.star"
 # that RELION will recover as optics groups.
 
 vol = emdb_2660()
-ctf_filters = [RadialCTFFilter(voltage=kv) for kv in voltages]
+ctf_filters = [RadialCTFFilter(defocus=d) for d in defocus]
 
 
 # %%
@@ -72,15 +72,10 @@ sim.save(star_path, overwrite=True)
 # Running ``relion_reconstruct``
 # ------------------------------
 # ``relion_reconstruct`` is an external RELION command, so we just show the call.
-# Run this in a RELION-enabled shell after generating the STAR file above.
+# Run this, for the output directory, in a RELION-enabled shell after generating
+# the STAR file above.
 
-relion_cmd = [
-    "relion_reconstruct",
-    "--i",
-    str(star_path),
-    "--o",
-    str(output_dir / "relion_recon.mrc"),
-    "--ctf",
-]
-
-logger.info(" ".join(relion_cmd))
+logger.info(
+    f"relion_reconstruct --i {star_file} "
+    f"--o 'relion_recon.mrc' --ctf"
+)
