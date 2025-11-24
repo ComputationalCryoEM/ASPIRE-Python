@@ -1,5 +1,4 @@
 from .types import complex_type, real_type, utest_tolerance  # isort:skip
-
 from .coor_trans import (  # isort:skip
     mean_aligned_angular_distance,
     cart2pol,

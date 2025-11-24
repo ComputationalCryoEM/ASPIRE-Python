@@ -1,30 +1,23 @@
 import logging
 
 import numpy as np
-from numpy.linalg import eigh, norm, svd
+from numpy.linalg import norm, svd
 
-from aspire.abinitio import (
-    CLOrient3D,
-    SyncVotingMixin,
-    estimate_inplane_rotations,
-    estimate_third_rows,
-)
+from aspire.abinitio import CLOrient3D, JSync
+from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.operators import PolarFT
-from aspire.utils import (
-    J_conjugate,
-    Rotation,
-    all_pairs,
-    all_triplets,
-    anorm,
-    cyclic_rotations,
-    trange,
+from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, trange
+
+from .commonline_utils import (
+    _estimate_inplane_rotations,
+    _estimate_third_rows,
+    _generate_shift_phase_and_filter,
 )
-from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
+class CLSymmetryC3C4(CLOrient3D):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with
     C3 and C4 cyclic symmetry.
@@ -56,6 +49,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         degree_res=1,
         seed=None,
         mask=True,
+        **kwargs,
     ):
         """
         Initialize object for estimating 3D orientations for molecules with C3 and C4 symmetry.
@@ -81,6 +75,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             max_shift=max_shift,
             shift_step=shift_step,
             mask=mask,
+            **kwargs,
         )
 
         self._check_symmetry(symmetry)
@@ -88,6 +83,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         self.max_iters = max_iters
         self.degree_res = degree_res
         self.seed = seed
+
+        self.J_sync = JSync(src.n, self.epsilon, self.max_iters, self.seed)
 
     def _check_symmetry(self, symmetry):
         if symmetry is None:
@@ -114,10 +111,17 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         vijs, viis = self._global_J_sync(vijs, viis)
 
         logger.info("Estimating third rows of rotation matrices.")
-        vis = estimate_third_rows(vijs, viis)
+        vis = _estimate_third_rows(vijs, viis)
 
         logger.info("Estimating in-plane rotations and rotations matrices.")
-        Ris = estimate_inplane_rotations(self, vis)
+        Ris = _estimate_inplane_rotations(
+            vis,
+            self.pf,
+            self.max_shift,
+            self.shift_step,
+            self.order,
+            self.degree_res,
+        )
 
         self.rotations = Ris
 
@@ -143,7 +147,7 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         Riis = self._estimate_all_Riis_c3_c4(sclmatrix)
 
         # Step 4: Calculate relative rotations
-        Rijs = self._estimate_all_Rijs_c3_c4(self.clmatrix)
+        Rijs = self._estimate_all_Rijs_c3_c4()
 
         # Step 5: Inner J-synchronization
         vijs, viis = self._local_J_sync_c3_c4(Rijs, Riis)
@@ -166,51 +170,13 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         :return: vijs, viis all of which have a spurious J or not.
         """
-        n_img = self.n_img
 
         # Determine relative handedness of vijs.
-        sign_ij_J = self._J_sync_power_method(vijs)
+        vijs = self.J_sync.global_J_sync(vijs)
 
-        # Synchronize vijs
-        for i, sign in enumerate(sign_ij_J):
-            if sign == -1:
-                vijs[i] = J_conjugate(vijs[i])
+        # Determine relative handedness of viis, given synchronized vijs.
+        viis = self.J_sync.sync_viis(vijs, viis)
 
-        # Synchronize viis
-        # We use the fact that if v_ii and v_ij are of the same handedness, then v_ii @ v_ij = v_ij.
-        # If they are opposite handed then Jv_iiJ @ v_ij = v_ij. We compare each v_ii against all
-        # previously synchronized v_ij to get a consensus on the handedness of v_ii.
-        _, pairs_to_linear = all_pairs(n_img, return_map=True)
-        for i in range(n_img):
-            vii = viis[i]
-            vii_J = J_conjugate(vii)
-            J_consensus = 0
-            for j in range(n_img):
-                if j < i:
-                    idx = pairs_to_linear[j, i]
-                    vji = vijs[idx]
-
-                    err1 = norm(vji @ vii - vji)
-                    err2 = norm(vji @ vii_J - vji)
-
-                elif j > i:
-                    idx = pairs_to_linear[i, j]
-                    vij = vijs[idx]
-
-                    err1 = norm(vii @ vij - vij)
-                    err2 = norm(vii_J @ vij - vij)
-
-                else:
-                    continue
-
-                # Accumulate J consensus
-                if err1 < err2:
-                    J_consensus -= 1
-                else:
-                    J_consensus += 1
-
-            if J_consensus > 0:
-                viis[i] = vii_J
         return vijs, viis
 
     #################################################
@@ -264,8 +230,8 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
         # Compute the correlation over all shifts.
         # Generate Shifts.
         r_max = pf.shape[-1]
-        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
-            r_max, max_shift_1d, shift_step
+        shifts, shift_phases, _ = _generate_shift_phase_and_filter(
+            r_max, max_shift_1d, shift_step, self.dtype
         )
         n_shifts = len(shifts)
 
@@ -354,17 +320,21 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
 
         return Riis
 
-    def _estimate_all_Rijs_c3_c4(self, clmatrix):
+    def _estimate_all_Rijs_c3_c4(self):
         """
         Estimate Rijs using the voting method.
         """
-        n_img = self.n_img
-        n_theta = self.n_theta
-        pairs = all_pairs(n_img)
+        pairs = all_pairs(self.n_img)
         Rijs = np.zeros((len(pairs), 3, 3))
         for idx, (i, j) in enumerate(pairs):
-            Rijs[idx] = self._syncmatrix_ij_vote_3n(
-                clmatrix, i, j, np.arange(n_img), n_theta
+            Rijs[idx] = _syncmatrix_ij_vote_3n(
+                self.clmatrix,
+                i,
+                j,
+                np.arange(self.n_img),
+                self.n_theta,
+                self.hist_bin_width,
+                self.full_width,
             )
 
         return Rijs
@@ -447,201 +417,3 @@ class CLSymmetryC3C4(CLOrient3D, SyncVotingMixin):
             vijs[idx] = opts[min_idx]
 
         return vijs, viis
-
-    #######################################
-    # Secondary Methods for Global J Sync #
-    #######################################
-
-    def _J_sync_power_method(self, vijs):
-        """
-        Calculate the leading eigenvector of the J-synchronization matrix
-        using the power method.
-
-        As the J-synchronization matrix is of size (n-choose-2)x(n-choose-2), we
-        use the power method to compute the eigenvalues and eigenvectors,
-        while constructing the matrix on-the-fly.
-
-        :param vijs: (n-choose-2)x3x3 array of estimates of relative orientation matrices.
-
-        :return: An array of length n-choose-2 consisting of 1 or -1, where the sign of the
-        i'th entry indicates whether the i'th relative orientation matrix will be J-conjugated.
-        """
-
-        # Set power method tolerance and maximum iterations.
-        epsilon = self.epsilon
-        max_iters = self.max_iters
-
-        # Initialize candidate eigenvectors
-        n_vijs = vijs.shape[0]
-        vec = randn(n_vijs, seed=self.seed)
-        vec = vec / norm(vec)
-        residual = 1
-        itr = 0
-
-        # Power method iterations
-        logger.info(
-            "Initiating power method to estimate J-synchronization matrix eigenvector."
-        )
-        while itr < max_iters and residual > epsilon:
-            itr += 1
-            # Note, this appears to need double precision for accuracy in the following division.
-            vec_new = self._signs_times_v(vijs, vec).astype(np.float64, copy=False)
-            vec_new = vec_new / norm(vec_new)
-            residual = norm(vec_new - vec)
-            vec = vec_new
-            logger.info(
-                f"Iteration {itr}, residual {round(residual, 5)} (target {epsilon})"
-            )
-
-        # We need only the signs of the eigenvector
-        J_sync = np.sign(vec)
-
-        return J_sync
-
-    def _signs_times_v(self, vijs, vec):
-        """
-        Multiplication of the J-synchronization matrix by a candidate eigenvector.
-
-        The J-synchronization matrix is a matrix representation of the handedness graph, Gamma, whose set of
-        nodes consists of the estimates vijs and whose set of edges consists of the undirected edges between
-        all triplets of estimates vij, vjk, and vik, where i<j<k. The weight of an edge is set to +1 if its
-        incident nodes agree in handednes and -1 if not.
-
-        The J-synchronization matrix is of size (n-choose-2)x(n-choose-2), where each entry corresponds to
-        the relative handedness of vij and vjk. The entry (ij, jk), where ij and jk are retrieved from the
-        all_pairs indexing, is 1 if vij and vjk are of the same handedness and -1 if not. All other entries
-        (ij, kl) hold a zero.
-
-        Due to the large size of the J-synchronization matrix we construct it on the fly as follows.
-        For each triplet of outer products vij, vjk, and vik, the associated elements of the J-synchronization
-        matrix are populated with +1 or -1 and multiplied by the corresponding elements of
-        the current candidate eigenvector supplied by the power method. The new candidate eigenvector
-        is updated for each triplet.
-
-        :param vijs: (n-choose-2)x3x3 array, where each 3x3 slice holds the outer product of vi and vj.
-
-        :param vec: The current candidate eigenvector of length n-choose-2 from the power method.
-
-        :return: New candidate eigenvector of length n-choose-2. The product of the J-sync matrix and vec.
-        """
-
-        # All pairs (i,j) and triplets (i,j,k) where i<j<k
-        n_img = self.n_img
-        triplets = all_triplets(n_img)
-        pairs, pairs_to_linear = all_pairs(n_img, return_map=True)
-
-        # There are 4 possible configurations of relative handedness for each triplet (vij, vjk, vik).
-        # 'conjugate' expresses which node of the triplet must be conjugated (True) to achieve synchronization.
-        conjugate = np.empty((4, 3), bool)
-        conjugate[0] = [False, False, False]
-        conjugate[1] = [True, False, False]
-        conjugate[2] = [False, True, False]
-        conjugate[3] = [False, False, True]
-
-        # 'edges' corresponds to whether conjugation agrees between the pairs (vij, vjk), (vjk, vik),
-        # and (vik, vij). True if the pairs are in agreement, False otherwise.
-        edges = np.empty((4, 3), bool)
-        edges[:, 0] = conjugate[:, 0] == conjugate[:, 1]
-        edges[:, 1] = conjugate[:, 1] == conjugate[:, 2]
-        edges[:, 2] = conjugate[:, 2] == conjugate[:, 0]
-
-        # The corresponding entries in the J-synchronization matrix are +1 if the pair of nodes agree, -1 if not.
-        edge_signs = np.where(edges, 1, -1)
-
-        # For each triplet of nodes we apply the 4 configurations of conjugation and determine the
-        # relative handedness based on the condition that vij @ vjk - vik = 0 for synchronized nodes.
-        # We then construct the corresponding entries of the J-synchronization matrix with 'edge_signs'
-        # corresponding to the conjugation configuration producing the smallest residual for the above
-        # condition. Finally, we the multiply the 'edge_signs' by the cooresponding entries of 'vec'.
-        v = vijs
-        new_vec = np.zeros_like(vec)
-        for i, j, k in triplets:
-            ij = pairs_to_linear[i, j]
-            jk = pairs_to_linear[j, k]
-            ik = pairs_to_linear[i, k]
-            vij, vjk, vik = v[ij], v[jk], v[ik]
-            vij_J = J_conjugate(vij)
-            vjk_J = J_conjugate(vjk)
-            vik_J = J_conjugate(vik)
-
-            conjugated_pairs = np.where(
-                conjugate[..., np.newaxis, np.newaxis],
-                [vij_J, vjk_J, vik_J],
-                [vij, vjk, vik],
-            )
-            residual = np.stack([norm(x @ y - z) for x, y, z in conjugated_pairs])
-
-            min_residual = np.argmin(residual)
-
-            # Assign edge weights
-            s_ij_jk, s_ik_jk, s_ij_ik = edge_signs[min_residual]
-
-            # Update multiplication of signs times vec
-            new_vec[ij] += s_ij_jk * vec[jk] + s_ij_ik * vec[ik]
-            new_vec[jk] += s_ij_jk * vec[ij] + s_ik_jk * vec[ik]
-            new_vec[ik] += s_ij_ik * vec[ij] + s_ik_jk * vec[jk]
-
-        return new_vec
-
-    @staticmethod
-    def g_sync(rots, order, rots_gt):
-        """
-        Every estimated rotation might be a version of the ground truth rotation
-        rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes the
-        ground truth rotations so that only a single global rotation need be applied
-        to all estimates for error analysis.
-
-        :param rots: Estimated rotation matrices
-        :param order: The cyclic order asssociated with the symmetry of the underlying molecule.
-        :param rots_gt: Ground truth rotation matrices.
-
-        :return: g-synchronized ground truth rotations.
-        """
-        assert len(rots) == len(
-            rots_gt
-        ), "Number of estimates not equal to number of references."
-        n_img = len(rots)
-        dtype = rots.dtype
-
-        rots_symm = cyclic_rotations(order, dtype).matrices
-
-        A_g = np.zeros((n_img, n_img), dtype=complex)
-
-        pairs = all_pairs(n_img)
-
-        for i, j in pairs:
-            Ri = rots[i]
-            Rj = rots[j]
-            Rij = Ri.T @ Rj
-
-            Ri_gt = rots_gt[i]
-            Rj_gt = rots_gt[j]
-
-            diffs = np.zeros(order)
-            for s, g_s in enumerate(rots_symm):
-                Rij_gt = Ri_gt.T @ g_s @ Rj_gt
-                diffs[s] = min([norm(Rij - Rij_gt), norm(Rij - J_conjugate(Rij_gt))])
-
-            idx = np.argmin(diffs)
-
-            A_g[i, j] = np.exp(-1j * 2 * np.pi / order * idx)
-
-        # A_g(k,l) is exp(-j(-theta_k+theta_l))
-        # Diagonal elements correspond to exp(-i*0) so put 1.
-        # This is important only for verification purposes that spectrum is (K,0,0,0...,0).
-        A_g += np.conj(A_g).T + np.eye(n_img)
-
-        _, eig_vecs = eigh(A_g)
-        leading_eig_vec = eig_vecs[:, -1]
-
-        angles = np.exp(1j * 2 * np.pi / order * np.arange(order))
-        rots_gt_sync = np.zeros((n_img, 3, 3), dtype=dtype)
-
-        for i, rot_gt in enumerate(rots_gt):
-            # Since the closest ccw or cw rotation are just as good,
-            # we take the absolute value of the angle differences.
-            angle_dists = np.abs(np.angle(leading_eig_vec[i] / angles))
-            power_g_Ri = np.argmin(angle_dists)
-            rots_gt_sync[i] = rots_symm[power_g_Ri] @ rot_gt
-
-        return rots_gt_sync

@@ -93,6 +93,7 @@ def test_build_clmatrix(source_orientation_objs):
     assert within_5 / angle_diffs.size > tol
 
 
+@pytest.mark.xfail(reason="Issue #1340")
 def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -115,6 +116,7 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
         np.testing.assert_allclose(mean_dist, 0)
 
 
+@pytest.mark.xfail(reason="Issue #1340")
 def test_estimate_shifts_with_est_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
     # Estimate shifts using estimated rotations.

@@ -10,6 +10,8 @@ from aspire.operators import PolarFT
 from aspire.utils import Rotation, complex_type, fuzzy_mask, tqdm
 from aspire.utils.random import choice
 
+from .commonline_utils import _generate_shift_phase_and_filter
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,6 +32,8 @@ class CLOrient3D:
         shift_step=1,
         offsets_max_shift=None,
         offsets_shift_step=None,
+        offsets_max_memory=10000,
+        offsets_equations_factor=1,
         mask=True,
     ):
         """
@@ -54,6 +58,19 @@ class CLOrient3D:
         :param offsets_shift_step: Resolution of shift estimation for
             2D offset estimation in pixels.  Default `None` inherits
             from `shift_step`.
+        :param offsets_equations_factor: The factor to rescale the
+            number of shift equations (=1 in default)
+        :param offsets_max_memory: If there are N images and N_check
+            selected to check for common lines, then the exact system
+            of equations solved for the shifts is of size 2N x
+            N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
+            This may be too big if N is large. The algorithm will use
+            `equations_factor` times the total number of equations if
+            the resulting total number of memory requirements is less
+            than `offsets_max_memory` (in megabytes); otherwise it will reduce
+            the number of equations by approximation to fit in
+            `offsets_max_memory`.  For more information see the
+            references in `estimate_shifts`.  Defaults to 10GB.
         :param hist_bin_width: Bin width in smoothing histogram (degrees).
         :param full_width: Selection width around smoothed histogram peak (degrees).
             `adaptive` will attempt to automatically find the smallest number of
@@ -79,6 +96,8 @@ class CLOrient3D:
         if offsets_max_shift is not None:
             self.offsets_max_shift = math.ceil(offsets_max_shift * self.n_res)
         self.offsets_shift_step = offsets_shift_step or self.shift_step
+        self.offsets_equations_factor = offsets_equations_factor
+        self.offsets_max_memory = int(offsets_max_memory)
         self.mask = mask
         self._pf = None
 
@@ -293,8 +312,8 @@ class CLOrient3D:
 
         # Prepare the shift phases to try and generate filter for common-line detection
         r_max = pf.shape[2]
-        shifts, shift_phases, h = self._generate_shift_phase_and_filter(
-            r_max, max_shift, shift_step
+        shifts, shift_phases, h = _generate_shift_phase_and_filter(
+            r_max, max_shift, shift_step, self.dtype
         )
 
         # Apply bandpass filter, normalize each ray of each image
@@ -392,8 +411,8 @@ class CLOrient3D:
         #
         # Note the CUDA implementation has been optimized to not
         # compute or return diagnostic 1d shifts.
-        _, shift_phases, h = self._generate_shift_phase_and_filter(
-            r, self.max_shift, self.shift_step
+        _, shift_phases, h = _generate_shift_phase_and_filter(
+            r, self.max_shift, self.shift_step, self.dtype
         )
         # Transfer to device, dtypes must match kernel header.
         shift_phases = cp.asarray(shift_phases, dtype=complex_type(self.dtype))
@@ -449,7 +468,7 @@ class CLOrient3D:
         # Note diagnostic 1d shifts are not computed in the CUDA implementation.
         return None, clmatrix
 
-    def estimate_shifts(self, equations_factor=1, max_memory=4000):
+    def estimate_shifts(self):
         """
         Estimate 2D shifts in images
 
@@ -466,22 +485,10 @@ class CLOrient3D:
         T. Vogt, W. Dahmen, and P. Binev (Eds.)
         Nanostructure Science and Technology Series,
         Springer, 2012, pp. 147–177
-
-        :param equations_factor: The factor to rescale the number of shift equations
-            (=1 in default)
-        :param max_memory: If there are N images and N_check selected to check
-            for common lines, then the exact system of equations solved for the shifts
-            is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
-            This may be too big if N is large. The algorithm will use `equations_factor`
-            times the total number of equations if the resulting total number of memory
-            requirements is less than `max_memory` (in megabytes); otherwise it will
-            reduce the number of equations by approximation to fit in `max_memory`.
         """
 
         # Generate approximated shift equations from estimated rotations
-        shift_equations, shift_b = self._get_shift_equations_approx(
-            equations_factor, max_memory
-        )
+        shift_equations, shift_b = self._get_shift_equations_approx()
 
         # Solve the linear equation, optionally printing numerical debug details.
         show = False
@@ -489,8 +496,12 @@ class CLOrient3D:
             show = True
 
         # Estimate shifts.
-        est_shifts = sparse.linalg.lsqr(shift_equations, shift_b, show=show)[0]
-        self.shifts = est_shifts.reshape((self.n_img, 2))
+        est_shifts = sparse.linalg.lsqr(
+            shift_equations, shift_b, atol=1e-8, btol=1e-8, iter_lim=100, show=show
+        )[0]
+        est_shifts = est_shifts.reshape((self.n_img, 2))
+        # Convert (XY) axes and negate estimated shift orientations
+        self.shifts = -est_shifts[:, ::-1]
 
         return self.shifts
 
@@ -506,7 +517,7 @@ class CLOrient3D:
 
         return self.rotations, self.shifts
 
-    def _get_shift_equations_approx(self, equations_factor=1, max_memory=4000):
+    def _get_shift_equations_approx(self):
         """
         Generate approximated shift equations from estimated rotations
 
@@ -518,16 +529,6 @@ class CLOrient3D:
 
         This function processes the (Fourier transformed) images exactly as the
         `build_clmatrix` function.
-
-        :param equations_factor: The factor to rescale the number of shift equations
-            (=1 in default)
-        :param max_memory: If there are N images and N_check selected to check
-            for common lines, then the exact system of equations solved for the shifts
-            is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
-            This may be too big if N is large. The algorithm will use `equations_factor`
-            times the total number of equations if the resulting total number of
-            memory requirements is less than `max_memory` (in megabytes); otherwise it
-            will reduce the number of equations to fit in `max_memory`.
 
         :return; The left and right-hand side of shift equations
         """
@@ -541,9 +542,7 @@ class CLOrient3D:
         pf = self.pf.copy()
 
         # Estimate number of equations that will be used to calculate the shifts
-        n_equations = self._estimate_num_shift_equations(
-            n_img, equations_factor, max_memory
-        )
+        n_equations = self._estimate_num_shift_equations(n_img)
 
         # Allocate local variables for estimating 2D shifts based on the estimated number
         # of equations. The shift equations are represented using a sparse matrix,
@@ -561,8 +560,8 @@ class CLOrient3D:
         # applied to maximize the common line calculation. The common-line filter
         # is also applied to the radial direction for easier detection.
         r_max = pf.shape[2]
-        _, shift_phases, h = self._generate_shift_phase_and_filter(
-            r_max, self.offsets_max_shift, self.offsets_shift_step
+        _, shift_phases, h = _generate_shift_phase_and_filter(
+            r_max, self.offsets_max_shift, self.offsets_shift_step, self.dtype
         )
 
         d_theta = np.pi / n_theta_half
@@ -592,17 +591,22 @@ class CLOrient3D:
             else:
                 pf_j = pf[j, c_ji - n_theta_half]
 
+            # Use ray from opposite side of origin.
+            # Correpsonds to `freqs` convention in PFT,
+            #   where the legacy code used a negated frequency grid.
+            pf_i, pf_j = np.conj(pf_i), np.conj(pf_j)
+
             # perform bandpass filter, normalize each ray of each image,
             pf_i = self._apply_filter_and_norm("i, i -> i", pf_i, r_max, h)
             pf_j = self._apply_filter_and_norm("i, i -> i", pf_j, r_max, h)
 
             # apply the shifts to images
             pf_i_flipped = np.conj(pf_i)
-            pf_i_stack = np.einsum("i, ji -> ij", pf_i, shift_phases)
-            pf_i_flipped_stack = np.einsum("i, ji -> ij", pf_i_flipped, shift_phases)
+            pf_i_stack = pf_i[:, None] * shift_phases.T
+            pf_i_flipped_stack = pf_i_flipped[:, None] * shift_phases.T
 
-            c1 = 2 * np.real(np.dot(np.conj(pf_i_stack.T), pf_j))
-            c2 = 2 * np.real(np.dot(np.conj(pf_i_flipped_stack.T), pf_j))
+            c1 = 2 * np.dot(pf_i_stack.T.conj(), pf_j).real
+            c2 = 2 * np.dot(pf_i_flipped_stack.T.conj(), pf_j).real
 
             # find the indices for the maximum values
             # and apply corresponding shifts
@@ -623,17 +627,25 @@ class CLOrient3D:
             shift_b[shift_eq_idx] = dx
 
             # Compute the coefficients of the current equation
-            coefs = np.array(
-                [
-                    np.cos(shift_alpha),
-                    np.sin(shift_alpha),
-                    -np.cos(shift_beta),
-                    -np.sin(shift_beta),
-                ]
-            )
-            shift_eq[shift_eq_idx] = (
-                [-1, -1, 0, 0] * coefs if is_pf_j_flipped else coefs
-            )
+            if not is_pf_j_flipped:
+                shift_eq[shift_eq_idx] = np.array(
+                    [
+                        np.sin(shift_alpha),
+                        np.cos(shift_alpha),
+                        -np.sin(shift_beta),
+                        -np.cos(shift_beta),
+                    ]
+                )
+            else:
+                shift_beta = shift_beta - np.pi
+                shift_eq[shift_eq_idx] = np.array(
+                    [
+                        -np.sin(shift_alpha),
+                        -np.cos(shift_alpha),
+                        -np.sin(shift_beta),
+                        -np.cos(shift_beta),
+                    ]
+                )
 
         # create sparse matrix object only containing non-zero elements
         shift_equations = sparse.csr_matrix(
@@ -644,7 +656,7 @@ class CLOrient3D:
 
         return shift_equations, shift_b
 
-    def _estimate_num_shift_equations(self, n_img, equations_factor=1, max_memory=4000):
+    def _estimate_num_shift_equations(self, n_img):
         """
         Estimate total number of shift equations in images
 
@@ -652,29 +664,24 @@ class CLOrient3D:
         number of images and preselected memory factor.
 
         :param n_img:  The total number of input images
-        :param equations_factor: The factor to rescale the number of shift equations
-            (=1 in default)
-        :param max_memory: If there are N images and N_check selected to check
-            for common lines, then the exact system of equations solved for the shifts
-            is of size 2N x N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
-            This may be too big if N is large. The algorithm will use `equations_factor`
-            times the total number of equations if the resulting total number of
-            memory requirements is less than `max_memory` (in megabytes); otherwise it
-            will reduce the number of equations to fit in `max_memory`.
         :return: Estimated number of shift equations
         """
         # Number of equations that will be used to estimation the shifts
         n_equations_total = int(np.ceil(n_img * (self.n_check - 1) / 2))
+
         # Estimated memory requirements for the full system of equation.
         # This ignores the sparsity of the system, since backslash seems to
         # ignore it.
-        memory_total = equations_factor * (
+        memory_total = self.offsets_equations_factor * (
             n_equations_total * 2 * n_img * self.dtype.itemsize
         )
-        if memory_total < (max_memory * 10**6):
-            n_equations = int(np.ceil(equations_factor * n_equations_total))
+
+        if memory_total < (self.offsets_max_memory * 10**6):
+            n_equations = int(
+                np.ceil(self.offsets_equations_factor * n_equations_total)
+            )
         else:
-            subsampling_factor = (max_memory * 10**6) / memory_total
+            subsampling_factor = (self.offsets_max_memory * 10**6) / memory_total
             subsampling_factor = min(1.0, subsampling_factor)
             n_equations = int(np.ceil(n_equations_total * subsampling_factor))
 
@@ -691,46 +698,13 @@ class CLOrient3D:
 
         return n_equations
 
-    def _generate_shift_phase_and_filter(self, r_max, max_shift, shift_step):
-        """
-        Prepare the shift phases and generate filter for common-line detection
-
-        The shift phases are pre-defined in a range of max_shift that can be
-        applied to maximize the common line calculation. The common-line filter
-        is also applied to the radial direction for easier detection.
-
-        :param r_max: Maximum index for common line detection
-        :param max_shift: Maximum value of 1D shift (in pixels) to search
-        :param shift_step: Resolution of shift estimation in pixels
-        :return: shift phases matrix and common lines filter
-        """
-
-        # Number of shifts to try
-        n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
-
-        # only half of ray, excluding the DC component.
-        rk = np.arange(1, r_max + 1, dtype=self.dtype)
-
-        # Generate all shift phases
-        shifts = -max_shift + shift_step * np.arange(n_shifts, dtype=self.dtype)
-        shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
-        # Set filter for common-line detection
-        h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
-
-        return shifts, shift_phases, h
-
     def _generate_index_pairs(self, n_equations):
         """
         Generate two index lists for [i, j] pairs of images
         """
-        idx_i = []
-        idx_j = []
-        for i in range(self.n_img - 1):
-            tmp_j = range(i + 1, self.n_img)
-            idx_i.extend([i] * len(tmp_j))
-            idx_j.extend(tmp_j)
-        idx_i = np.array(idx_i, dtype="int")
-        idx_j = np.array(idx_j, dtype="int")
+
+        # Generate the i,j tuples of indices representing the upper triangle above the diagonal.
+        idx_i, idx_j = np.triu_indices(self.n_img, k=1)
 
         # Select random pairs based on the size of n_equations
         rp = choice(np.arange(len(idx_j)), size=n_equations, replace=False)

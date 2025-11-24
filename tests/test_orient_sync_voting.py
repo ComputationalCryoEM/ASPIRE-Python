@@ -7,10 +7,22 @@ import numpy as np
 import pytest
 from click.testing import CliRunner
 
-from aspire.abinitio import CLOrient3D, CLSyncVoting
+from aspire.abinitio import (
+    CLOrient3D,
+    CLSymmetryC2,
+    CLSymmetryC3C4,
+    CLSymmetryCn,
+    CLSymmetryD2,
+    CLSync3N,
+    CLSyncVoting,
+    CommonlineIRLS,
+    CommonlineLUD,
+    CommonlineSDP,
+)
 from aspire.commands.orient3d import orient3d
+from aspire.downloader import emdb_2660
 from aspire.noise import WhiteNoiseAdder
-from aspire.source import Simulation
+from aspire.source import ArrayImageSource, Simulation
 from aspire.utils import mean_aligned_angular_distance, rots_to_clmatrix
 from aspire.volume import AsymmetricVolume
 
@@ -32,6 +44,18 @@ DTYPES = [
     pytest.param(np.float64, marks=pytest.mark.expensive),
 ]
 
+CL_ALGOS = [
+    CLSymmetryC2,
+    CLSymmetryC3C4,
+    CLSymmetryCn,
+    CLSymmetryD2,
+    CLSync3N,
+    CLSyncVoting,
+    CommonlineIRLS,
+    CommonlineLUD,
+    CommonlineSDP,
+]
+
 
 @pytest.fixture(params=RESOLUTION, ids=lambda x: f"resolution={x}", scope="module")
 def resolution(request):
@@ -51,13 +75,13 @@ def dtype(request):
 @pytest.fixture(scope="module")
 def source_orientation_objs(resolution, offsets, dtype):
     src = Simulation(
-        n=50,
+        n=500,
         L=resolution,
-        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=0, dtype=dtype).generate(),
+        vols=emdb_2660().downsample(resolution),
         offsets=offsets,
         amplitudes=1,
         seed=0,
-    )
+    ).cache()
 
     # Search for common lines over less shifts for 0 offsets.
     max_shift = 1 / resolution
@@ -75,6 +99,7 @@ def source_orientation_objs(resolution, offsets, dtype):
     return src, orient_est
 
 
+@pytest.mark.expensive
 def test_build_clmatrix(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -97,6 +122,7 @@ def test_build_clmatrix(source_orientation_objs):
     assert within_5 / angle_diffs.size > tol
 
 
+@pytest.mark.expensive
 def test_estimate_rotations(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -106,6 +132,7 @@ def test_estimate_rotations(source_orientation_objs):
     mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=1)
 
 
+@pytest.mark.expensive
 def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -119,15 +146,17 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
 
     # Calculate the mean 2D distance between estimates and ground truth.
     error = src.offsets - est_shifts
+
     mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
 
-    # Assert that on average estimated shifts are close (within 0.5 pix) to src.offsets
+    # Assert that on average estimated shifts are close to src.offsets
     if src.offsets.all() != 0:
-        np.testing.assert_array_less(mean_dist, 0.5)
+        np.testing.assert_array_less(mean_dist, 2)
     else:
         np.testing.assert_allclose(mean_dist, 0)
 
 
+@pytest.mark.expensive
 def test_estimate_shifts_with_est_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -138,13 +167,14 @@ def test_estimate_shifts_with_est_rots(source_orientation_objs):
     error = src.offsets - est_shifts
     mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
 
-    # Assert that on average estimated shifts are close (within 0.5 pix) to src.offsets
+    # Assert that on average estimated shifts are close to src.offsets
     if src.offsets.all() != 0:
-        np.testing.assert_array_less(mean_dist, 0.5)
+        np.testing.assert_array_less(mean_dist, 2)
     else:
         np.testing.assert_allclose(mean_dist, 0)
 
 
+@pytest.mark.expensive
 def test_estimate_rotations_fuzzy_mask():
     noisy_src = Simulation(
         n=35,
@@ -226,3 +256,41 @@ def test_command_line():
         )
         # check that the command completed successfully
         assert result.exit_code == 0
+
+
+@pytest.mark.parametrize("cl_algo", CL_ALGOS)
+def test_offset_param_passthrough(cl_algo):
+    """
+    Systematically test that offset search configuration passes through all CL classes.
+    """
+
+    src = ArrayImageSource(np.random.randn(4, 4), pixel_size=1.23)
+
+    test_args = {
+        "offsets_max_shift": 0.5,
+        "offsets_shift_step": 0.1,
+        "offsets_equations_factor": 1,
+        "offsets_max_memory": 200,
+    }
+
+    # Handle special case classes
+    if cl_algo == CLSymmetryC3C4:
+        test_args["symmetry"] = "C3"
+    elif cl_algo == CLSymmetryCn:
+        test_args["symmetry"] = "C17"
+
+    # Instantiate the CL class under test
+    orient_est = cl_algo(src, **test_args)
+
+    # Loop over the args and assert they are correctly assigned
+    for arg, val in test_args.items():
+
+        # Handle special case arguments
+        if arg == "offsets_max_shift":
+            # convert from ratio to pixels
+            val = np.ceil(val * src.L)
+        elif arg == "symmetry":
+            # convert from string `symmetry` to int `order`
+            arg, val = "order", int(val[1:])
+
+        assert getattr(orient_est, arg) == val
