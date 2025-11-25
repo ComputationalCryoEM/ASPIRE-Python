@@ -1,3 +1,4 @@
+from .faasrot.py import faasrot
 from .image import (
     BasisImage,
     BispecImage,
@@ -16,4 +17,3 @@ from .image_stacker import (
     SigmaRejectionImageStacker,
     WinsorizedImageStacker,
 )
-from .faasrot.py import faasrot
