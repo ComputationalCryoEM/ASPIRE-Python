@@ -65,19 +65,13 @@ def _pre_compute(theta, nx, ny):
     My = np.zeros((nx, ny), dtype=np.complex128)
     r = np.arange(cy + 1, dtype=int)
     u = (1 - np.cos(theta)) / np.sin(theta + eps)
-    # print("u", u)
     alpha1 = 2 * np.pi * 1j * r / ny
 
-    # print("alpha1", alpha1)
-
     linds = np.arange(ny - 1, cy, -1, dtype=int)
-    # print('aaa', ny-1, cy, -1)
     rinds = np.arange(1, cy - 2 * sy + 1, dtype=int)
-    # print(linds,rinds)
     # This can be broadcast, but leaving loop since would be close to CUDA...
     for x in range(nx):
         Ux = u * (x - cx + sx + 2)
-        # print("Ux",Ux)
         My[x, r] = np.exp(alpha1 * Ux)
         My[x, linds] = np.conj(My[x, rinds])
 
@@ -113,7 +107,17 @@ def _rot270(img):
     return np.fliplr(img.T)
 
 
-def faastrotate(images, theta, M=None):
+def faasrotate(images, theta, M=None):
+    """
+    Rotate `images` array by `theta` radians ccw.
+
+    :param images: (n , px, px) array of image data
+    :param theta: rotation angle in radians
+    :param M: optional precomputed shearing table
+    :return: (n, px, px) array fo rotated image data
+    """
+    # Convert to degrees
+    theta = np.rad2deg(theta)
 
     # Make a stack of 1
     if images.ndim == 2:
@@ -142,32 +146,16 @@ def faastrotate(images, theta, M=None):
 
         # Shear 1
         img_k = np.fft.fft(img, axis=-1)
-        # okay print("\nfft1(img_k):\n", img_k,"\n")
-        print("\nMy:\n", My, "\n")
         img_k = img_k * My
-        print("\nmult (img_k):\n", img_k, "\n")  # okay
-
-        # for _i in range(16):
-        #     #print(f'A[{_i}].x = {img_k.flatten()[_i].real};')
-        #     #print(f'A[{_i}].y = {img_k.flatten()[_i].imag};')
-        #     print(f'FA[{_i}] = {img_k.flatten()[_i]};')
-
-        # breakpoint()
         result[i] = np.real(np.fft.ifft(img_k, axis=-1))
-        print("\nstage1\n", result[i] * 4, "\n")
 
         # Shear 2
         img_k = np.fft.fft(result[i], axis=0)
         img_k = img_k * Mx
         result[i] = np.real(np.fft.ifft(img_k, axis=0))
 
-        print("\nstage2\n", result * 4 * 4)
-
         # Shear 3
         img_k = np.fft.fft(result[i], axis=-1)
         img_k = img_k * My
-        result[i] = np.real(np.fft.ifft(img_k, axis=-1))
-
-        print("\nstage3\n", result * 4 * 4 * 4, "\n")
 
     return result
