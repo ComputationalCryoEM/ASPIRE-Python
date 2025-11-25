@@ -10,9 +10,10 @@ import pytest
 from PIL import Image as PILImage
 from pytest import raises
 from scipy.datasets import face
+from scipy.ndimage import rotate
 
 from aspire.image import Image
-from aspire.utils import Rotation, powerset, utest_tolerance
+from aspire.utils import Rotation, grid_2d, powerset, utest_tolerance
 from aspire.volume import CnSymmetryGroup
 
 from .test_utils import matplotlib_dry_run
@@ -564,3 +565,24 @@ def test_save_load_pixel_size(get_images, dtype):
     np.testing.assert_almost_equal(
         im2.pixel_size, im.pixel_size, err_msg="Image pixel_size incorrect save-load"
     )
+
+
+def test_faasrotate(get_images, dtype):
+    im_np, im = get_images
+
+    mask = grid_2d(im_np.shape[-1])["r"] < 1
+
+    for theta in np.linspace(0, 2 * np.pi, 100):
+        im_rot = im.rotate(theta)
+
+        # reference to scipy
+        ref = rotate(
+            im_np,
+            np.rad2deg(theta),
+            reshape=False,
+        )
+
+        # mask off ears
+        masked_diff = (im_rot - ref) * mask
+
+        np.testing.assert_allclose(masked_diff, 0, atol=1e-7)
