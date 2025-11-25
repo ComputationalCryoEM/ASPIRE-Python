@@ -66,31 +66,31 @@ def _pre_compute(theta, nx, ny):
     eps = np.finfo(np.float64).eps
 
     # Precompute Y interpolation tables
-    My = xp.zeros((nx, ny), dtype=xp.complex128)
-    r = xp.arange(cy + 1, dtype=int)
-    u = (1 - xp.cos(theta)) / xp.sin(theta + eps)
-    alpha1 = 2 * xp.pi * 1j * r / ny
+    My = np.zeros((nx, ny), dtype=np.complex128)
+    r = np.arange(cy + 1, dtype=int)
+    u = (1 - np.cos(theta)) / np.sin(theta + eps)
+    alpha1 = 2 * np.pi * 1j * r / ny
 
-    linds = xp.arange(ny - 1, cy, -1, dtype=int)
-    rinds = xp.arange(1, cy - 2 * sy + 1, dtype=int)
+    linds = np.arange(ny - 1, cy, -1, dtype=int)
+    rinds = np.arange(1, cy - 2 * sy + 1, dtype=int)
     # This can be broadcast, but leaving loop since would be close to CUDA...
     for x in range(nx):
         Ux = u * (x - cx + sx + 2)
-        My[x, r] = xp.exp(alpha1 * Ux)
+        My[x, r] = np.exp(alpha1 * Ux)
         My[x, linds] = My[x, rinds].conj()
 
     # Precompute X interpolation tables
-    Mx = xp.zeros((ny, nx), dtype=xp.complex128)
-    r = xp.arange(cx + 1, dtype=int)
-    u = -xp.sin(theta)
-    alpha2 = 2 * xp.pi * 1j * r / nx
+    Mx = np.zeros((ny, nx), dtype=np.complex128)
+    r = np.arange(cx + 1, dtype=int)
+    u = -np.sin(theta)
+    alpha2 = 2 * np.pi * 1j * r / nx
 
-    linds = xp.arange(nx - 1, cx, -1, dtype=int)
-    rinds = xp.arange(1, cx - 2 * sx + 1, dtype=int)
+    linds = np.arange(nx - 1, cx, -1, dtype=int)
+    rinds = np.arange(1, cx - 2 * sx + 1, dtype=int)
     # This can be broadcast, but leaving loop since would be close to CUDA...
     for y in range(ny):
         Uy = u * (y - cy + sy + 2)
-        Mx[y, r] = xp.exp(alpha2 * Uy)
+        Mx[y, r] = np.exp(alpha2 * Uy)
         Mx[y, linds] = Mx[y, rinds].conj()
 
     # After building, transpose to (nx, ny).
@@ -132,8 +132,9 @@ def faasrotate(images, theta, M=None):
         M = _pre_compute(theta, px0, px1)
     Mx, My, Mrot90 = M
 
-    result = np.empty((n, px0, px1), dtype=np.float64)
+    Mx, My = xp.asarray(Mx), xp.asarray(My)
 
+    result = xp.empty((n, px0, px1), dtype=np.float64)
     for i in range(n):
 
         img = xp.asarray(images[i])
@@ -161,4 +162,4 @@ def faasrotate(images, theta, M=None):
         img_k = img_k * My
         result[i] = fft.ifft(img_k, axis=-1).real
 
-    return result
+    return xp.asnumpy(result)
