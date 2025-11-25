@@ -150,12 +150,13 @@ def faasrotate(images, theta, M=None):
         result[i] = np.real(np.fft.ifft(img_k, axis=-1))
 
         # Shear 2
-        img_k = np.fft.fft(result[i], axis=0)
+        img_k = np.fft.fft(result[i], axis=-2)
         img_k = img_k * Mx
-        result[i] = np.real(np.fft.ifft(img_k, axis=0))
+        result[i] = np.real(np.fft.ifft(img_k, axis=-2))
 
         # Shear 3
         img_k = np.fft.fft(result[i], axis=-1)
         img_k = img_k * My
+        result[i] = np.real(np.fft.ifft(img_k, axis=-1))
 
     return result
