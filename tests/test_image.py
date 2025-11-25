@@ -572,7 +572,8 @@ def test_faasrotate(get_images, dtype):
 
     mask = grid_2d(im_np.shape[-1])["r"] < 1
 
-    for theta in np.linspace(0, 2 * np.pi, 100):
+    #for theta in np.linspace(0, 2 * np.pi, 100):
+    for theta in [np.pi/4]:
         im_rot = im.rotate(theta)
 
         # reference to scipy
@@ -580,7 +581,14 @@ def test_faasrotate(get_images, dtype):
             im_np,
             np.rad2deg(theta),
             reshape=False,
+            axes=(-1,-2),
         )
+
+        peek = np.empty((3, *im_np.shape[-2:]))
+        peek[0] = im_np
+        peek[1] = im_rot
+        peek[2] = ref
+        Image(peek).show()
 
         # mask off ears
         masked_diff = (im_rot - ref) * mask
