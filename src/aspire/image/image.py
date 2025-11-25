@@ -10,6 +10,7 @@ from scipy.linalg import lstsq
 
 import aspire.sinogram
 import aspire.volume
+from aspire.image import faasrotate
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
 from aspire.utils import (
@@ -635,8 +636,18 @@ class Image:
             original_stack_shape
         )
 
-    def rotate(self):
-        raise NotImplementedError
+    def rotate(self, theta):
+        """
+        Rotate by `theta` radians.
+        """
+        original_stack_shape = self.stack_shape
+        im = self.stack_reshape(-1)
+
+        im = faasrotate(im._data, theta)
+
+        return self.__class__(im, pixel_size=self.pixel_size).stack_reshape(
+            original_stack_shape
+        )
 
     def save(self, mrcs_filepath, overwrite=None):
         """

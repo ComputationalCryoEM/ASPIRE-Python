@@ -1,4 +1,4 @@
-from .faasrot.py import faasrot
+from .faasrot import faasrotate
 from .image import (
     BasisImage,
     BispecImage,
