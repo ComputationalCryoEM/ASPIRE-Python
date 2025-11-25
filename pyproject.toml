@@ -37,7 +37,7 @@ dependencies = [
     "joblib",
     "matplotlib >= 3.2.0",
     "mrcfile",
-    "numpy>=1.21.5",
+    "numpy>=1.25.0",
     "packaging",
     "pooch>=1.7.0",
     "pillow",
