@@ -16,3 +16,4 @@ from .image_stacker import (
     SigmaRejectionImageStacker,
     WinsorizedImageStacker,
 )
+from .faasrot.py import faasrot
