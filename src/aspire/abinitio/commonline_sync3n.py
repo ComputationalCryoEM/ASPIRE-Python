@@ -6,14 +6,15 @@ import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
-from aspire.abinitio import CLOrient3D, SyncVotingMixin
+from aspire.abinitio import CLOrient3D
+from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.utils import J_conjugate, all_pairs, nearest_rotations, random, tqdm, trange
 from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
 
 
-class CLSync3N(CLOrient3D, SyncVotingMixin):
+class CLSync3N(CLOrient3D):
     """
     Define a class to estimate 3D orientations using common lines Sync3N methods (2017).
 
@@ -957,8 +958,14 @@ class CLSync3N(CLOrient3D, SyncVotingMixin):
         Rijs = np.zeros((len(self._pairs), 3, 3))
 
         for idx, (i, j) in enumerate(tqdm(self._pairs, desc="Estimate Rijs")):
-            Rijs[idx] = self._syncmatrix_ij_vote_3n(
-                clmatrix, i, j, np.arange(n_img), n_theta
+            Rijs[idx] = _syncmatrix_ij_vote_3n(
+                clmatrix,
+                i,
+                j,
+                np.arange(n_img),
+                n_theta,
+                self.hist_bin_width,
+                self.full_width,
             )
 
         return Rijs

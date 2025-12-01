@@ -10,6 +10,8 @@ from aspire.operators import PolarFT
 from aspire.utils import Rotation, complex_type, fuzzy_mask, tqdm
 from aspire.utils.random import choice
 
+from .commonline_utils import _generate_shift_phase_and_filter
+
 logger = logging.getLogger(__name__)
 
 
@@ -310,8 +312,8 @@ class CLOrient3D:
 
         # Prepare the shift phases to try and generate filter for common-line detection
         r_max = pf.shape[2]
-        shifts, shift_phases, h = self._generate_shift_phase_and_filter(
-            r_max, max_shift, shift_step
+        shifts, shift_phases, h = _generate_shift_phase_and_filter(
+            r_max, max_shift, shift_step, self.dtype
         )
 
         # Apply bandpass filter, normalize each ray of each image
@@ -409,8 +411,8 @@ class CLOrient3D:
         #
         # Note the CUDA implementation has been optimized to not
         # compute or return diagnostic 1d shifts.
-        _, shift_phases, h = self._generate_shift_phase_and_filter(
-            r, self.max_shift, self.shift_step
+        _, shift_phases, h = _generate_shift_phase_and_filter(
+            r, self.max_shift, self.shift_step, self.dtype
         )
         # Transfer to device, dtypes must match kernel header.
         shift_phases = cp.asarray(shift_phases, dtype=complex_type(self.dtype))
@@ -558,8 +560,8 @@ class CLOrient3D:
         # applied to maximize the common line calculation. The common-line filter
         # is also applied to the radial direction for easier detection.
         r_max = pf.shape[2]
-        _, shift_phases, h = self._generate_shift_phase_and_filter(
-            r_max, self.offsets_max_shift, self.offsets_shift_step
+        _, shift_phases, h = _generate_shift_phase_and_filter(
+            r_max, self.offsets_max_shift, self.offsets_shift_step, self.dtype
         )
 
         d_theta = np.pi / n_theta_half
@@ -695,34 +697,6 @@ class CLOrient3D:
             )
 
         return n_equations
-
-    def _generate_shift_phase_and_filter(self, r_max, max_shift, shift_step):
-        """
-        Prepare the shift phases and generate filter for common-line detection
-
-        The shift phases are pre-defined in a range of max_shift that can be
-        applied to maximize the common line calculation. The common-line filter
-        is also applied to the radial direction for easier detection.
-
-        :param r_max: Maximum index for common line detection
-        :param max_shift: Maximum value of 1D shift (in pixels) to search
-        :param shift_step: Resolution of shift estimation in pixels
-        :return: shift phases matrix and common lines filter
-        """
-
-        # Number of shifts to try
-        n_shifts = int(np.ceil(2 * max_shift / shift_step + 1))
-
-        # only half of ray, excluding the DC component.
-        rk = np.arange(1, r_max + 1, dtype=self.dtype)
-
-        # Generate all shift phases
-        shifts = -max_shift + shift_step * np.arange(n_shifts, dtype=self.dtype)
-        shift_phases = np.exp(np.outer(shifts, -2 * np.pi * 1j * rk / (2 * r_max + 1)))
-        # Set filter for common-line detection
-        h = np.sqrt(np.abs(rk)) * np.exp(-np.square(rk) / (2 * (r_max / 4) ** 2))
-
-        return shifts, shift_phases, h
 
     def _generate_index_pairs(self, n_equations):
         """

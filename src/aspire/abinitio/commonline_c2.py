@@ -3,17 +3,20 @@ import logging
 import numpy as np
 from scipy.linalg import eigh
 
-from aspire.abinitio import (
-    CLSymmetryC3C4,
-    complete_third_row_to_rot,
-    estimate_third_rows,
-)
+from aspire.abinitio import CLOrient3D, JSync
+from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.utils import J_conjugate, Rotation, all_pairs
+
+from .commonline_utils import (
+    _complete_third_row_to_rot,
+    _estimate_third_rows,
+    _generate_shift_phase_and_filter,
+)
 
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryC2(CLSymmetryC3C4):
+class CLSymmetryC2(CLOrient3D):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with C2 cyclic symmetry.
 
@@ -44,7 +47,6 @@ class CLSymmetryC2(CLSymmetryC3C4):
         shift_step=1,
         epsilon=1e-3,
         max_iters=1000,
-        degree_res=1,
         min_dist_cls=25,
         seed=None,
         mask=True,
@@ -59,24 +61,19 @@ class CLSymmetryC2(CLSymmetryC3C4):
         :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
         :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
         :param epsilon: Tolerance for the power method.
-        :param max_iter: Maximum iterations for the power method.
-        :param degree_res: Degree resolution for estimating in-plane rotations.
+        :param max_iters: Maximum iterations for the power method.
         :param min_dist_cls: Minimum distance between mutual common-lines. Default = 25 degrees.
         :param seed: Optional seed for RNG.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         """
+
         super().__init__(
             src,
-            symmetry="C2",
             n_rad=n_rad,
             n_theta=n_theta,
             max_shift=max_shift,
             shift_step=shift_step,
-            epsilon=epsilon,
-            max_iters=max_iters,
-            degree_res=degree_res,
-            seed=seed,
             mask=mask,
             **kwargs,
         )
@@ -84,16 +81,10 @@ class CLSymmetryC2(CLSymmetryC3C4):
         self.min_dist_cls = min_dist_cls
         self.epsilon = epsilon
         self.max_iters = max_iters
-        self.degree_res = degree_res
         self.seed = seed
         self.order = 2
 
-    def _check_symmetry(self, symmetry):
-        symmetry = symmetry.upper()
-        if symmetry != "C2":
-            raise NotImplementedError(
-                f"Only C2 symmetry supported. {symmetry} was supplied."
-            )
+        self.J_sync = JSync(src.n, self.epsilon, self.max_iters, self.seed)
 
     def build_clmatrix(self):
         """
@@ -120,8 +111,8 @@ class CLSymmetryC2(CLSymmetryC3C4):
 
         # Prepare the shift phases and generate filter for common-line detection.
         r_max = pf.shape[2]
-        shifts, shift_phases, h = self._generate_shift_phase_and_filter(
-            r_max, self.max_shift, self.shift_step
+        shifts, shift_phases, h = _generate_shift_phase_and_filter(
+            r_max, self.max_shift, self.shift_step, self.dtype
         )
         n_shifts = len(shifts)
 
@@ -230,7 +221,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         viis = np.vstack((np.eye(3, dtype=self.dtype),) * self.n_img).reshape(
             self.n_img, 3, 3
         )
-        vis = estimate_third_rows(vijs, viis)
+        vis = _estimate_third_rows(vijs, viis)
 
         logger.info("Estimating in-plane rotations and rotations matrices.")
         Ris = self._estimate_inplane_rotations(vis, Rijs, Rijgs)
@@ -253,7 +244,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         self.build_clmatrix()
 
         # Step 2: Calculate relative rotations associated with both mutual common lines.
-        Rijs, Rijgs = self._estimate_all_Rijs_c2(self.clmatrix)
+        Rijs, Rijgs = self._estimate_all_Rijs_c2()
 
         # Step 3: Inner J-synchronization
         Rijs, Rijgs = self._local_J_sync_c2(Rijs, Rijgs)
@@ -282,7 +273,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         vijs = (Rijs + Rijgs) / 2
 
         # Determine relative handedness of vijs.
-        sign_ij_J = self._J_sync_power_method(vijs)
+        sign_ij_J = self.J_sync.power_method(vijs)
 
         # Synchronize relative rotations
         for i, sign in enumerate(sign_ij_J):
@@ -307,7 +298,7 @@ class CLSymmetryC2(CLSymmetryC3C4):
         H = np.zeros((self.n_img, self.n_img), dtype=complex)
         # Step 1: Construct all rotation matrices Ris_tilde whose third rows are equal to
         # the corresponding third rows vis.
-        Ris_tilde = complete_third_row_to_rot(vis)
+        Ris_tilde = _complete_third_row_to_rot(vis)
 
         pairs = all_pairs(self.n_img)
         for idx, (i, j) in enumerate(pairs):
@@ -350,23 +341,36 @@ class CLSymmetryC2(CLSymmetryC3C4):
     # Secondary Methods for computing outer product #
     #################################################
 
-    def _estimate_all_Rijs_c2(self, clmatrix):
+    def _estimate_all_Rijs_c2(self):
         """
         Estimate the two sets of relative rotations, Rijs and Rijgs, between pairs
         of images using the voting method.
 
-        :param clmatrix: 2 x n_img x n_img array holding two sets of mutual common-lines
-            between pairs of images.
         :return: Relative rotations, Rijs and Rijgs.
         """
         k_list = np.arange(self.n_img)
-        n_theta = self.n_theta
         pairs = all_pairs(self.n_img)
         Rijs = np.zeros((len(pairs), 3, 3), dtype=self.dtype)
         Rijgs = np.zeros((len(pairs), 3, 3), dtype=self.dtype)
         for idx, (i, j) in enumerate(pairs):
-            Rijs[idx] = self._syncmatrix_ij_vote_3n(clmatrix[0], i, j, k_list, n_theta)
-            Rijgs[idx] = self._syncmatrix_ij_vote_3n(clmatrix[1], i, j, k_list, n_theta)
+            Rijs[idx] = _syncmatrix_ij_vote_3n(
+                self.clmatrix[0],
+                i,
+                j,
+                k_list,
+                self.n_theta,
+                self.hist_bin_width,
+                self.full_width,
+            )
+            Rijgs[idx] = _syncmatrix_ij_vote_3n(
+                self.clmatrix[1],
+                i,
+                j,
+                k_list,
+                self.n_theta,
+                self.hist_bin_width,
+                self.full_width,
+            )
 
         return Rijs, Rijgs
 

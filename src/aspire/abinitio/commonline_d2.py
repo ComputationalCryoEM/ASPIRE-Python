@@ -10,6 +10,8 @@ from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, tqdm, t
 from aspire.utils.random import randn
 from aspire.volume import DnSymmetryGroup
 
+from .commonline_utils import _generate_shift_phase_and_filter
+
 logger = logging.getLogger(__name__)
 
 
@@ -131,8 +133,8 @@ class CLSymmetryD2(CLOrient3D):
         # Generate shift phases.
         r_max = pf.shape[-1]
         max_shift_1d = np.ceil(2 * np.sqrt(2) * self.max_shift)
-        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
-            r_max, max_shift_1d, self.shift_step
+        shifts, shift_phases, _ = _generate_shift_phase_and_filter(
+            r_max, max_shift_1d, self.shift_step, self.dtype
         )
         self.n_shifts = len(shifts)
 

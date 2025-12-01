@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from numpy.linalg import norm
 
-from aspire.abinitio import CLSymmetryC3C4, cl_angles_to_ind, complete_third_row_to_rot
+from aspire.abinitio import CLOrient3D, JSync
 from aspire.operators import PolarFT
 from aspire.utils import (
     J_conjugate,
@@ -17,10 +17,18 @@ from aspire.utils import (
 )
 from aspire.utils.random import Random, randn
 
+from .commonline_utils import (
+    _cl_angles_to_ind,
+    _complete_third_row_to_rot,
+    _estimate_inplane_rotations,
+    _estimate_third_rows,
+    _generate_shift_phase_and_filter,
+)
+
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryCn(CLSymmetryC3C4):
+class CLSymmetryCn(CLOrient3D):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with
     Cn cyclic symmetry, with n>4.
@@ -65,21 +73,23 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         super().__init__(
             src,
-            symmetry=symmetry,
             n_rad=n_rad,
             n_theta=n_theta,
             max_shift=max_shift,
             shift_step=shift_step,
-            epsilon=epsilon,
-            max_iters=max_iters,
-            degree_res=degree_res,
-            seed=seed,
             mask=mask,
             **kwargs,
         )
 
+        self._check_symmetry(symmetry)
+        self.epsilon = epsilon
+        self.max_iters = max_iters
+        self.degree_res = degree_res
+        self.seed = seed
         self.n_points_sphere = n_points_sphere
         self.equator_threshold = equator_threshold
+
+        self.J_sync = JSync(src.n, self.epsilon, self.max_iters, self.seed)
 
     def _check_symmetry(self, symmetry):
         if symmetry is None:
@@ -102,7 +112,27 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         :return: Array of rotation matrices, size n_imgx3x3.
         """
-        super().estimate_rotations()
+        vijs, viis = self._estimate_relative_viewing_directions()
+
+        logger.info("Performing global handedness synchronization.")
+        vijs, viis = self._global_J_sync(vijs, viis)
+
+        logger.info("Estimating third rows of rotation matrices.")
+        vis = _estimate_third_rows(vijs, viis)
+
+        logger.info("Estimating in-plane rotations and rotations matrices.")
+        Ris = _estimate_inplane_rotations(
+            vis,
+            self.pf,
+            self.max_shift,
+            self.shift_step,
+            self.order,
+            self.degree_res,
+        )
+
+        self.rotations = Ris
+
+        return self.rotations
 
     def _estimate_relative_viewing_directions(self):
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
@@ -123,8 +153,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
 
         # Generate shift phases.
         r_max = pf.shape[-1]
-        shifts, shift_phases, _ = self._generate_shift_phase_and_filter(
-            r_max, self.max_shift, self.shift_step
+        shifts, shift_phases, _ = _generate_shift_phase_and_filter(
+            r_max, self.max_shift, self.shift_step, self.dtype
         )
         n_shifts = len(shifts)
 
@@ -286,6 +316,31 @@ class CLSymmetryCn(CLSymmetryC3C4):
                 cij_inds[i, j, :, 1] = c2s
         return cij_inds
 
+    def _global_J_sync(self, vijs, viis):
+        """
+        Global J-synchronization of all third row outer products. Given 3x3 matrices vijs and viis, each
+        of which might contain a spurious J (ie. vij = J*vi*vj^T*J instead of vij = vi*vj^T),
+        we return vijs and viis that all have either a spurious J or not.
+
+        :param vijs: An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding
+        outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
+        might have a spurious J independently of other estimates.
+
+        :param viis: An n_imgx3x3 array where the i'th slice holds an estimate for the outer product vi*vi^T
+        between the third row of matrix Ri and itself. Each estimate might have a spurious J independently
+        of other estimates.
+
+        :return: vijs, viis all of which have a spurious J or not.
+        """
+
+        # Determine relative handedness of vijs.
+        vijs = self.J_sync.global_J_sync(vijs)
+
+        # Determine relative handedness of viis, given synchronized vijs.
+        viis = self.J_sync.sync_viis(vijs, viis)
+
+        return vijs, viis
+
     @staticmethod
     def relative_rots_to_cl_indices(relative_rots, n_theta):
         """
@@ -300,8 +355,8 @@ class CLSymmetryCn(CLSymmetryC3C4):
         c1s = np.array((-relative_rots[:, 1, 2], relative_rots[:, 0, 2])).T
         c2s = np.array((relative_rots[:, 2, 1], -relative_rots[:, 2, 0])).T
 
-        c1s = cl_angles_to_ind(c1s, n_theta)
-        c2s = cl_angles_to_ind(c2s, n_theta)
+        c1s = _cl_angles_to_ind(c1s, n_theta)
+        c2s = _cl_angles_to_ind(c2s, n_theta)
 
         inds = np.where(c1s >= n_theta // 2)
         c1s[inds] -= n_theta // 2
@@ -333,7 +388,7 @@ class CLSymmetryCn(CLSymmetryC3C4):
             while counter < n:
                 third_row = randn(3)
                 third_row /= anorm(third_row, axes=(-1,))
-                Ri_tilde = complete_third_row_to_rot(third_row)
+                Ri_tilde = _complete_third_row_to_rot(third_row)
 
                 # Exclude candidates that represent equator images. Equator candidates
                 # induce collinear self-common-lines, which always have perfect correlation.
