@@ -1,16 +1,13 @@
-from .commonline_base import CLOrient3D
-
 # isort: off
+from .J_sync import JSync
 from .commonline_utils import (
-    cl_angles_to_ind,
-    estimate_third_rows,
-    complete_third_row_to_rot,
-    estimate_inplane_rotations,
+    build_outer_products,
+    g_sync,
 )
+from .commonline_base import CLOrient3D
 from .commonline_sdp import CommonlineSDP
 from .commonline_lud import CommonlineLUD
 from .commonline_irls import CommonlineIRLS
-from .sync_voting import SyncVotingMixin
 from .commonline_sync import CLSyncVoting
 from .commonline_sync3n import CLSync3N
 from .commonline_c3_c4 import CLSymmetryC3C4
