@@ -2,14 +2,15 @@ import logging
 
 import numpy as np
 
-from aspire.abinitio import CLOrient3D, SyncVotingMixin
+from aspire.abinitio import CLOrient3D
+from aspire.abinitio.sync_voting import _rotratio_eulerangle_vec, _vote_ij
 from aspire.utils import nearest_rotations
 from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
 
 
-class CLSyncVoting(CLOrient3D, SyncVotingMixin):
+class CLSyncVoting(CLOrient3D):
     """
     Define a class to estimate 3D orientations using synchronization matrix and voting method.
 
@@ -201,9 +202,11 @@ class CLSyncVoting(CLOrient3D, SyncVotingMixin):
         :return: The (i,j) rotation block of the synchronization matrix
         """
 
-        _, good_k = self._vote_ij(clmatrix, n_theta, i, j, k_list)
+        _, good_k = _vote_ij(
+            clmatrix, n_theta, i, j, k_list, self.hist_bin_width, self.full_width
+        )
 
-        rots = self._rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
+        rots = _rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta)
 
         if rots is not None:
             rot_mean = np.mean(rots, 0)
