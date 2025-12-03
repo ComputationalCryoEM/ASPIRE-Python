@@ -102,7 +102,7 @@ class CLSync3N(CLMatrix):
             hist_bin_width=hist_bin_width,
             full_width=full_width,
             mask=mask,
-            disable_gpu=disable_gpu,            
+            disable_gpu=disable_gpu,
             **kwargs,
         )
 
