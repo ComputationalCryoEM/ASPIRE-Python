@@ -223,6 +223,7 @@ class ClassAvgSource(ImageSource):
             self._classify()
 
         # Perform class selection
+        logger.info("Performing class selection")
         _selection_indices = self.class_selector.select(
             self.class_indices,
             self.class_refl,
