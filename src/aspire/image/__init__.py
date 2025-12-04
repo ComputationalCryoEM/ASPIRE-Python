@@ -1,4 +1,4 @@
-from .faasrot import faasrotate
+from .fastrotate import compute_fastrotate_interp_tables, fastrotate
 from .image import (
     BasisImage,
     BispecImage,

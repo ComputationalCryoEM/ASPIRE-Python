@@ -10,7 +10,7 @@ from scipy.linalg import lstsq
 
 import aspire.sinogram
 import aspire.volume
-from aspire.image import faasrotate
+from aspire.image import fastrotate
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
 from aspire.utils import (
@@ -159,6 +159,8 @@ class Image:
         ".tif": load_tiff,
         ".tiff": load_tiff,
     }
+    # Available image rotation functions
+    rotation_methods = {"fastrotate": fastrotate}
 
     def __init__(self, data, pixel_size=None, dtype=None):
         """
@@ -636,15 +638,68 @@ class Image:
             original_stack_shape
         )
 
-    def rotate(self, theta):
+    def rotate(self, theta, method="fastrotate", mask=1):
         """
         Rotate by `theta` radians.
+
+        :param theta: Scalar or array of length `n_images`
+        :param mask: Optional scalar or array mask matching `Image` shape.
+          Scalar will create a circular mask of prescribed radius `(0,1]`.
+          Array mask will be applied via elementwise multiplication.
+          `None` disables masking.
+        :returns: `Image` containing Rotated image data.
         """
         original_stack_shape = self.stack_shape
         im = self.stack_reshape(-1)
 
-        im = faasrotate(im._data, theta)
+        # Resolve rotation method
+        if method not in self.rotation_methods:
+            raise NotImplementedError(
+                f"Requested `Image.rotation` method={method} not found."
+                f"  Select from {self.rotation_methods.keys()}"
+            )
+        # otherwise, assign the function
+        rotation_function = self.rotation_methods[method]
 
+        # Handle both scalar and arrays of rotation angles.
+        # `theta` arrays are checked to match length of images when stacks axis are flattened.
+        theta = np.array(theta).flatten()
+        if len(theta) == 1:
+            im = rotation_function(im._data, theta)
+        elif len(theta) == im.n_images:
+            rot_im = np.empty_like(im._data)
+            for i in range(im.n_images):
+                rot_im[i] = rotation_function(im._data[i], theta[i])
+            im = rot_im
+        else:
+            raise RuntimeError(
+                f"Length of `theta` {len(theta)}  and `Image` data {im.n_images} inconsistent."
+            )
+
+        # Masking, scalar case
+        if mask is not None:
+            if np.size(mask) == 1:
+                # Confirm `mask` value is a sane radius
+                if not (0 < mask <= 1):
+                    raise ValueError(
+                        f"Mask radius must be scalar between (0,1]. Received {mask}"
+                    )
+                # Construct a boolean `mask` to apply in next code block as a 2D `mask`
+                mask = (
+                    grid_2d(im.shape[-1], normalized=True, dtype=np.float64)["r"] < mask
+                )
+                mask = mask.astype(im.dtype)
+
+            # Masking, 2D case
+            # Confirm `mask` size is consistent
+            if mask.shape == im.shape[-2:]:
+                im = im * mask[None, :, :]
+            else:
+                raise RuntimeError(
+                    f"Shape of `mask` {mask.shape} inconsistent with `Image` data shape {im.shape[-2:]}"
+                )
+
+        # Restore original stack shape and metadata.
         return self.__class__(im, pixel_size=self.pixel_size).stack_reshape(
             original_stack_shape
         )

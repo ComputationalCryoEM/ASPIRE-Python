@@ -49,11 +49,13 @@ def _shift_center(n):
     return c, s
 
 
-def _pre_compute(theta, nx, ny):
+def compute_fastrotate_interp_tables(theta, nx, ny):
     """
     Retuns M = (Mx, My, rot90)
 
     :param theta: angle in radians
+    :param nx: Number pixels first axis
+    :param ny: Number pixels second axis
     """
     theta, mult90 = _pre_rotate(theta)
 
@@ -111,14 +113,22 @@ def _rot270(img):
     return xp.fliplr(img.T)
 
 
-def faasrotate(images, theta, M=None):
+def fastrotate(images, theta, M=None):
     """
-    Rotate `images` array by `theta` radians ccw.
+    Rotate `images` array by `theta` radians ccw using shearing algorithm.
+
+    Note that this algorithm may have artifacts near the rotation boundary
+    and will have artifacts outside the rotation boundary.
+    Users can avoid these by zero padding the input image then
+    cropping the rotated image and/or masking.
+
+    For reference and notes:
+        `https://github.com/PrincetonUniversity/aspire/blob/760a43b35453e55ff2d9354339e9ffa109a25371/common/fastrotate/fastrotate.m`
 
     :param images: (n , px, px) array of image data
     :param theta: rotation angle in radians
     :param M: optional precomputed shearing table
-    :return: (n, px, px) array fo rotated image data
+    :return: (n, px, px) array of rotated image data
     """
 
     # Make a stack of 1
@@ -129,7 +139,7 @@ def faasrotate(images, theta, M=None):
     assert px0 == px1, "Currently only implemented for square images."
 
     if M is None:
-        M = _pre_compute(theta, px0, px1)
+        M = compute_fastrotate_interp_tables(theta, px0, px1)
     Mx, My, Mrot90 = M
 
     Mx, My = xp.asarray(Mx), xp.asarray(My)
