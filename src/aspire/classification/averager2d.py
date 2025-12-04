@@ -84,7 +84,7 @@ class Averager2D(ABC):
 
         :param classes: class indices, refering to src. (src.n, n_nbor).
         :param reflections: Bool representing whether to reflect image in `classes`.
-            (n_clases, n_nbor)
+            (n_classes, n_nbor)
         :param coefs: Optional basis coefs (could avoid recomputing).
             (src.n, coef_count)
         :return: Stack of synthetic class average images as Image instance.
@@ -152,6 +152,16 @@ class AligningAverager2D(Averager2D):
                 f"{self.__class__.__name__}'s composite_basis {self.composite_basis} must provide a `shift` method."
             )
 
+        # Instantiate dicts to hold alignment results.
+        # Note dicts are used in place of arrays because:
+        #   The entire set of `src.n` classes may not always need to be computed,
+        #   and the order/batching where results are computed is potentially arbitrary.
+        #   We may not know apriori how many nbors are in each class,
+        #   and this may be variable with future methods.
+        self.rotations = dict()
+        self.shifts = dict()
+        self.dot_products = dict()
+
     @abstractmethod
     def align(self, classes, reflections, basis_coefficients=None):
         """
@@ -192,9 +202,15 @@ class AligningAverager2D(Averager2D):
         classes = np.atleast_2d(classes)
         reflections = np.atleast_2d(reflections)
 
-        self.rotations, self.shifts, self.dot_products = self.align(
-            classes, reflections, coefs
-        )
+        rotations, shifts, dot_products = self.align(classes, reflections, coefs)
+
+        # Assign batch results
+        src_indices = classes[:, 0]  # First column of class table
+        for i, k in enumerate(src_indices):
+            self.rotations[k] = rotations[i]
+            if shifts is not None:
+                self.shifts[k] = shifts[i]
+            self.dot_products[k] = dot_products[i]
 
         n_classes, n_nbor = classes.shape
 
@@ -212,22 +228,22 @@ class AligningAverager2D(Averager2D):
                 neighbors_imgs = Image(self._cls_images(classes[i]))
 
                 # Do shifts
-                if self.shifts is not None:
-                    neighbors_imgs = neighbors_imgs.shift(self.shifts[i])
+                if shifts is not None:
+                    neighbors_imgs = neighbors_imgs.shift(shifts[i])
 
                 neighbors_coefs = self.composite_basis.evaluate_t(neighbors_imgs)
             else:
                 # Get the neighbors
                 neighbors_ids = classes[i]
                 neighbors_coefs = coefs[neighbors_ids]
-                if self.shifts is not None:
+                if shifts is not None:
                     neighbors_coefs = self.composite_basis.shift(
-                        neighbors_coefs, self.shifts[i]
+                        neighbors_coefs, shifts[i]
                     )
 
             # Rotate in composite_basis
             neighbors_coefs = self.composite_basis.rotate(
-                neighbors_coefs, self.rotations[i], reflections[i]
+                neighbors_coefs, rotations[i], reflections[i]
             )
 
             # Averaging in composite_basis
@@ -580,9 +596,15 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
         Otherwise is similar to `AligningAverager2D.average`.
         """
 
-        self.rotations, self.shifts, self.dot_products = self.align(
-            classes, reflections, coefs
-        )
+        rotations, shifts, dot_products = self.align(classes, reflections, coefs)
+
+        # Assign batch results
+        src_indices = classes[:, 0]  # First column of class table
+        for i, k in enumerate(src_indices):
+            self.rotations[k] = rotations[i]
+            if shifts is not None:
+                self.shifts[k] = shifts[i]
+            self.dot_products[k] = dot_products[i]
 
         n_classes, n_nbor = classes.shape
 
@@ -601,14 +623,12 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
 
             # Rotate in composite_basis
             neighbors_coefs = self.composite_basis.rotate(
-                neighbors_coefs, self.rotations[i], reflections[i]
+                neighbors_coefs, rotations[i], reflections[i]
             )
 
             # Note shifts are after rotation for this approach!
-            if self.shifts is not None:
-                neighbors_coefs = self.composite_basis.shift(
-                    neighbors_coefs, self.shifts[i]
-                )
+            if shifts is not None:
+                neighbors_coefs = self.composite_basis.shift(neighbors_coefs, shifts[i])
 
             # Averaging in composite_basis
             return self.image_stacker(neighbors_coefs.asnumpy())
