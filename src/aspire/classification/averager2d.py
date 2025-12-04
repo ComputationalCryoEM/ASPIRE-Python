@@ -249,8 +249,8 @@ class AligningAverager2D(Averager2D):
             # Averaging in composite_basis
             return self.image_stacker(neighbors_coefs.asnumpy())
 
-        desc = f"Stacking and evaluating class averages from {self.composite_basis.__class__.__name__} to Cartesian"
-        for start in trange(0, n_classes, self.batch_size, desc=desc):
+        desc = f"Stacking and evaluating batch of class averages from {self.composite_basis.__class__.__name__} to Cartesian"
+        for start in trange(0, n_classes, self.batch_size, desc=desc, leave=False):
             end = min(start + self.batch_size, n_classes)
             for i, cls in enumerate(
                 trange(start, end, desc="Stacking batch", leave=False)
@@ -378,7 +378,7 @@ class BFSRAverager2D(AligningAverager2D):
         # This is done primarily in case of a tie later, we would take unshifted.
         test_shifts = self._shift_search_grid(self.src.L, self.radius, roll_zero=True)
 
-        for k in trange(n_classes, desc="Rotationally aligning classes"):
+        for k in trange(n_classes, desc="Rotationally aligning classes", leave=False):
             # We want to locally cache the original images,
             #  because we will mutate them with shifts in the next loop.
             #  This avoids recomputing them before each shift
@@ -580,7 +580,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
                 dtype=self.dtype,
             )
 
-        for k in trange(n_classes, desc="Rotationally aligning classes"):
+        for k in trange(n_classes, desc="Rotationally aligning classes", leave=False):
             rotations[k], shifts[k], dot_products[k] = _innerloop(k)
 
         return rotations, shifts, dot_products
@@ -633,7 +633,7 @@ class ReddyChatterjiAverager2D(AligningAverager2D):
             # Averaging in composite_basis
             return self.image_stacker(neighbors_coefs.asnumpy())
 
-        for i in trange(n_classes, desc="Stacking class averages"):
+        for i in trange(n_classes, desc="Stacking class averages", leave=False):
             b_avgs[i] = _innerloop(i)
 
         # Now we convert the averaged images from Basis to Cartesian.
@@ -752,7 +752,7 @@ class BFSReddyChatterjiAverager2D(ReddyChatterjiAverager2D):
 
             return _rotations, _shifts, _dot_products
 
-        for k in trange(n_classes, desc="Rotationally aligning classes"):
+        for k in trange(n_classes, desc="Rotationally aligning classes", leave=False):
             rotations[k], shifts[k], dot_products[k] = _innerloop(k)
 
         return rotations, shifts, dot_products
@@ -900,7 +900,7 @@ class BFTAverager2D(AligningAverager2D):
         )
         _images = xp.empty((n_nbor - 1, self.src.L, self.src.L), dtype=self.dtype)
 
-        for k in trange(n_classes, desc="Rotationally aligning classes"):
+        for k in trange(n_classes, desc="Rotationally aligning classes", leave=False):
             # We want to locally cache the original images,
             #  because we will mutate them with shifts in the next loop.
             #  This avoids recomputing them before each shift
