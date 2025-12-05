@@ -5,39 +5,46 @@ from aspire.numeric import fft, xp
 
 def _pre_rotate(theta):
     """
-    Given angle `theta` (radians) return nearest rotation of 90
-    degrees required to place angle within [-45,45) degrees and residual
-    rotation (radians).
+    Given `theta` radians return nearest rotation of pi/2
+    required to place angle within [-pi/4,pi/4) and the residual
+    rotation in radians.
+
+    :param theta: Rotation in radians
+    :returns:
+        - Residual angle in radians
+        - Number of pi/2 rotations
     """
 
-    # todo
-    theta = np.rad2deg(theta)
+    theta = np.mod(theta, 2 * np.pi)
 
-    theta = np.mod(theta, 360)
-
-    # 0 < 45
-    rot90 = 0
+    # 0 < pi/4
+    rots = 0
     residual = theta
 
-    if theta >= 45 and theta < 135:
-        rot90 = 1
-        residual = theta - 90
-    elif theta >= 135 and theta < 225:
-        rot90 = 2
-        residual = theta - 180
-    elif theta >= 215 and theta < 315:
-        rot90 = 3
-        residual = theta - 270
-    elif theta >= 315 and theta < 360:
-        rot90 = 0
-        residual = theta - 360
+    if theta >= np.pi / 4 and theta < 3 * np.pi / 4:
+        rots = 1
+        residual = theta - np.pi / 2
+    elif theta >= 3 * np.pi / 4 and theta < 5 * np.pi / 4:
+        rots = 2
+        residual = theta - np.pi
+    elif theta >= 5 * np.pi / 4 and theta < 7 * np.pi / 4:
+        rots = 3
+        residual = theta - 3 * np.pi / 2
+    elif theta >= 7 * np.pi / 4 and theta < 2 * np.pi:
+        rots = 0
+        residual = theta - 2 * np.pi
 
-    return np.deg2rad(residual), rot90
+    return residual, rots
 
 
 def _shift_center(n):
     """
     Given `n` pixels return center pixel and shift amount, 0 or 1/2.
+
+    :param n: Number of pixels
+    :returns:
+        - center pixel
+        - shift amount
     """
     if n % 2 == 0:
         c = n // 2  # center
@@ -51,7 +58,7 @@ def _shift_center(n):
 
 def compute_fastrotate_interp_tables(theta, nx, ny):
     """
-    Retuns M = (Mx, My, rot90)
+    Retuns iterpolation tables as tuple M = (Mx, My, rots).
 
     :param theta: angle in radians
     :param nx: Number pixels first axis
@@ -59,7 +66,8 @@ def compute_fastrotate_interp_tables(theta, nx, ny):
     """
     theta, mult90 = _pre_rotate(theta)
 
-    theta = -theta  # Yaroslavsky rotated CW
+    # Reverse rotation, Yaroslavsky rotated CW
+    theta = -theta
 
     cy, sy = _shift_center(ny)
     cx, sx = _shift_center(nx)
@@ -75,11 +83,10 @@ def compute_fastrotate_interp_tables(theta, nx, ny):
 
     linds = np.arange(ny - 1, cy, -1, dtype=int)
     rinds = np.arange(1, cy - 2 * sy + 1, dtype=int)
-    # This can be broadcast, but leaving loop since would be close to CUDA...
-    for x in range(nx):
-        Ux = u * (x - cx + sx + 2)
-        My[x, r] = np.exp(alpha1 * Ux)
-        My[x, linds] = My[x, rinds].conj()
+
+    Ux = u * (np.arange(nx) - cx + sx + 2)
+    My[:, r] = np.exp(alpha1[None, :] * Ux[:, None])
+    My[:, linds] = My[:, rinds].conj()
 
     # Precompute X interpolation tables
     Mx = np.zeros((ny, nx), dtype=np.complex128)
@@ -89,11 +96,10 @@ def compute_fastrotate_interp_tables(theta, nx, ny):
 
     linds = np.arange(nx - 1, cx, -1, dtype=int)
     rinds = np.arange(1, cx - 2 * sx + 1, dtype=int)
-    # This can be broadcast, but leaving loop since would be close to CUDA...
-    for y in range(ny):
-        Uy = u * (y - cy + sy + 2)
-        Mx[y, r] = np.exp(alpha2 * Uy)
-        Mx[y, linds] = Mx[y, rinds].conj()
+
+    Uy = u * (np.arange(ny) - cy + sy + 2)
+    Mx[:, r] = np.exp(alpha2[None, :] * Uy[:, None])
+    Mx[:, linds] = Mx[:, rinds].conj()
 
     # After building, transpose to (nx, ny).
     Mx = Mx.T
@@ -101,16 +107,25 @@ def compute_fastrotate_interp_tables(theta, nx, ny):
     return Mx, My, mult90
 
 
+# The following helper utilities are written to work with
+# `img` data of dimension 2 or more where the data is expected to be
+# in the (-2,-1) dimensions with any other dims as stack axes.
 def _rot90(img):
-    return xp.flipud(img.T)
+    """Rotate image array by 90 degrees."""
+    # stack broadcast of flipud(img.T)
+    return xp.flip(xp.swapaxes(img, -1, -2), axis=-2)
 
 
 def _rot180(img):
-    return xp.flipud(xp.fliplr(img))
+    """Rotate image array by 180 degrees."""
+    # stack broadcast of flipud(fliplr)
+    return xp.flip(img, axis=(-1, -2))
 
 
 def _rot270(img):
-    return xp.fliplr(img.T)
+    """Rotate image array by 90 degrees."""
+    # stack broadcast of fliplr(img.T)
+    return xp.flip(xp.swapaxes(img, -1, -2), axis=-1)
 
 
 def fastrotate(images, theta, M=None):
@@ -140,36 +155,41 @@ def fastrotate(images, theta, M=None):
 
     if M is None:
         M = compute_fastrotate_interp_tables(theta, px0, px1)
-    Mx, My, Mrot90 = M
+    Mx, My, Mrots = M
 
-    Mx, My = xp.asarray(Mx), xp.asarray(My)
+    Mx, My = xp.asarray(Mx, dtype=images.dtype), xp.asarray(My, dtype=images.dtype)
 
-    result = xp.empty((n, px0, px1), dtype=np.float64)
-    for i in range(n):
+    # Store if `images` data was provide on host (np.darray)
+    _host = isinstance(images, np.ndarray)
 
-        img = xp.asarray(images[i])
+    # If needed copy image array to device
+    images = xp.asarray(images)
 
-        # Pre rotate by multiples of 90
-        if Mrot90 == 1:
-            img = _rot90(img)
-        elif Mrot90 == 2:
-            img = _rot180(img)
-        elif Mrot90 == 3:
-            img = _rot270(img)
+    # Pre rotate by multiples of 90 (pi/2)
+    if Mrots == 1:
+        images = _rot90(images)
+    elif Mrots == 2:
+        images = _rot180(images)
+    elif Mrots == 3:
+        images = _rot270(images)
 
-        # Shear 1
-        img_k = fft.fft(img, axis=-1)
-        img_k = img_k * My
-        result[i] = fft.ifft(img_k, axis=-1).real
+    # Shear 1
+    img_k = fft.fft(images, axis=-1)
+    img_k = img_k * My
+    images = fft.ifft(img_k, axis=-1).real
 
-        # Shear 2
-        img_k = fft.fft(result[i], axis=-2)
-        img_k = img_k * Mx
-        result[i] = fft.ifft(img_k, axis=-2).real
+    # Shear 2
+    img_k = fft.fft(images, axis=-2)
+    img_k = img_k * Mx
+    images = fft.ifft(img_k, axis=-2).real
 
-        # Shear 3
-        img_k = fft.fft(result[i], axis=-1)
-        img_k = img_k * My
-        result[i] = fft.ifft(img_k, axis=-1).real
+    # Shear 3
+    img_k = fft.fft(images, axis=-1)
+    img_k = img_k * My
+    images = fft.ifft(img_k, axis=-1).real
 
-    return xp.asnumpy(result)
+    # Return to host if needed
+    if _host:
+        images = xp.asnumpy(images)
+
+    return images
