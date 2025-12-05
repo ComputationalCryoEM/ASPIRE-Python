@@ -226,6 +226,7 @@ est_rotations = avgs.averager.rotations
 est_shifts = avgs.averager.shifts
 est_dot_products = avgs.averager.dot_products
 
+# These are dictionaries mapping each class to arrays of attributes.
 print(f"Estimated Rotations: {est_rotations}")
 print(f"Estimated Shifts: {est_shifts}")
 print(f"Estimated Dot Products: {est_dot_products}")
@@ -241,7 +242,12 @@ original_img_0 = noisy_src.images[original_img_0_idx].asnumpy()[0]
 original_img_nbr = noisy_src.images[original_img_nbr_idx].asnumpy()[0]
 
 # Rotate using estimated rotations.
-angle = est_rotations[0, nbr] * 180 / np.pi
+# First retrieve all angles for the `review_class` (original_img_0_idx),
+#   then lookup the specific neighbor `nbr`
+assert (
+    original_img_0_idx == review_class
+), "DebugClassAvgSource should retain original source image ordering"
+angle = est_rotations[original_img_0_idx][nbr] * 180 / np.pi
 if reflections[nbr]:
     print("Reflection reported.")
     original_img_nbr = np.flipud(original_img_nbr)
