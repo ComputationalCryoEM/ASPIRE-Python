@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.linalg import eigh
 
-from aspire.abinitio import CLOrient3D, JSync
+from aspire.abinitio import CLMatrix, JSync
 from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.utils import J_conjugate, Rotation, all_pairs
 
@@ -16,7 +16,7 @@ from .commonline_utils import (
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryC2(CLOrient3D):
+class CLSymmetryC2(CLMatrix):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with C2 cyclic symmetry.
 
@@ -240,16 +240,13 @@ class CLSymmetryC2(CLOrient3D):
         vi is the third row of the i'th rotation matrix Ri.
         """
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-        # Step 1: Detect the two pairs of mutual common-lines between each pair of images
-        self.build_clmatrix()
-
-        # Step 2: Calculate relative rotations associated with both mutual common lines.
+        # Step 1: Calculate relative rotations associated with both mutual common lines.
         Rijs, Rijgs = self._estimate_all_Rijs_c2()
 
-        # Step 3: Inner J-synchronization
+        # Step 2: Inner J-synchronization
         Rijs, Rijgs = self._local_J_sync_c2(Rijs, Rijgs)
 
-        # Step 4: Global J-synchronization.
+        # Step 3: Global J-synchronization.
         logger.info("Performing global handedness synchronization.")
         vijs, Rijs, Rijgs = self._global_J_sync(Rijs, Rijgs)
 
