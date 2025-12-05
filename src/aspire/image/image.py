@@ -10,7 +10,7 @@ from scipy.linalg import lstsq
 
 import aspire.sinogram
 import aspire.volume
-from aspire.image import fastrotate
+from aspire.image import fastrotate, sp_rotate
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, xp
 from aspire.utils import (
@@ -160,7 +160,7 @@ class Image:
         ".tiff": load_tiff,
     }
     # Available image rotation functions
-    rotation_methods = {"fastrotate": fastrotate}
+    rotation_methods = {"fastrotate": fastrotate, "scipy": sp_rotate}
 
     def __init__(self, data, pixel_size=None, dtype=None):
         """
