@@ -196,17 +196,44 @@ def fastrotate(images, theta, M=None):
     return images
 
 
-def sp_rotate(im, theta, **kwargs):
+def sp_rotate(img, theta, **kwargs):
     """Utility wrapper to form a ASPIRE compatible call to Scipy's image rotation.
 
     Converts `theta` from radian to degrees.
-    Defines image axes and reshape behavior.
+    Defines stack/image axes and reshape behavior.
+    Image data is expected to be in last two axes in all cases.
 
     Additional kwargs will be passed through.
     See scipy.ndimage.rotate
 
-    :param im: Array of image data shape (L,L) or (n,L, L)
+    :param img: Array of image data shape (L,L) or (...,L, L)
     :param theta: Rotation in ccw radians.
-    :return: Array representing rotated `im`.
+    :return: Array representing rotated `img`.
     """
-    return ndimage.rotate(im, np.rad2deg(theta), reshape=False, axes=(-1, -2), **kwargs)
+
+    # Store original shape
+    original_shape = img.shape
+    # Image data is expected to be in last two axis in all cases
+    # Flatten, converts all inputs to consistent 3D shape (single stack axis).
+    img = img.reshape(-1, *img.shape[-2:])
+
+    # Scipy accepts a single scalar theta in degrees.
+    #   Handle array of thetas and scalar case by expanding to flat array of img.shape
+    # Flatten all inputs
+    theta = np.rad2deg(np.array(theta)).reshape(-1, 1)
+    # Expand scalar input
+    if theta.shape[0] == 1:
+        theta = np.full(img.shape[0], theta, img.dtype)
+    # Check we have an array matching `img`
+    if theta.shape != img.shape[:1]:
+        raise RuntimeError("Inconsistent `theta` and `img` shapes.")
+
+    # Create result array and rotate images via loop
+    result = np.empty_like(img)
+    for i in range(img.shape[0]):
+        result[i] = ndimage.rotate(
+            img[i], theta[i], reshape=False, axes=(-2, -1), **kwargs
+        )
+
+    # Restore original shape
+    return result.reshape(*original_shape)

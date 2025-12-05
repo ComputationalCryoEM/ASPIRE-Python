@@ -567,40 +567,28 @@ def test_save_load_pixel_size(get_images, dtype):
     )
 
 
-def test_faasrotate(get_images, dtype):
+@pytest.fixture(
+    params=Image.rotation_methods, ids=lambda x: f"method={x}", scope="module"
+)
+def rotation_method(request):
+    return request.param
+
+
+# TODO, lets replace this with an analytic test
+def test_image_rotate(get_images, dtype, rotation_method):
     im_np, im = get_images
 
-    mask = grid_2d(im_np.shape[-1])["r"] < 0.9
+    # mask = grid_2d(im_np.shape[-1])["r"] < 0.9
 
     for theta in np.linspace(0, 2 * np.pi, 100):
         # for theta in [np.pi/4]:
-        im_rot = im.rotate(theta)
+        im_rot = im.rotate(theta, method=rotation_method)
 
-        # reference to scipy
-        ref = rotate(
-            im_np,
-            np.rad2deg(theta),
-            reshape=False,
-            axes=(-1, -2),
-        )
+        # Use manual call to PIL as reference
+        ref = np.asarray(PILImage.fromarray(im_np[0]).rotate(np.rad2deg(theta)))
 
-        # peek = np.empty((5, *im_np.shape[-2:]))
-        # peek[0] = im_np
-        # peek[1] = im_rot
-        # peek[2] = ref
-        # peek[3] = im_rot - ref
-
-        # # print('origin', np.sum(np.abs(im_np*mask)))
-        # # print('im_rot', np.sum(np.abs(im_rot*mask)))
-        # # print('ref', np.sum(np.abs(ref*mask)))
-
-        # mask off ears
-        masked_diff = (im_rot - ref) * mask
-
-        # #masked_diff[:,mask] = masked_diff.asnumpy()[:,mask] / ref[:,mask]
-        # #peek[4] = np.nan_to_num(masked_diff)
-        # peek[4] = masked_diff
-        # Image(peek*mask).show()
+        # masked_diff = (im_rot - ref) * mask
+        diff = im_rot - ref
 
         # mean masked pixel value is ~0.5, so this is ~2%
-        np.testing.assert_allclose(masked_diff, 0, atol=1)
+        np.testing.assert_allclose(diff, 0, atol=1)
