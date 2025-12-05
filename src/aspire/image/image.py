@@ -638,17 +638,25 @@ class Image:
             original_stack_shape
         )
 
-    def rotate(self, theta, method="fastrotate", mask=1):
+    def rotate(self, theta, method="fastrotate", mask=1, **kwargs):
         """
-        Rotate by `theta` radians.
+        Return `Image` rotated by `theta` radians using `method`.
+
+        Optionally applies `mask`.  Note that some methods may
+        introduce edge artifacts, in which case users may consider
+        using a tighter mask (eg 0.9) or a combination of pad-crop.
+
+        Any additional kwargs will be passed to `method`.
 
         :param theta: Scalar or array of length `n_images`
         :param mask: Optional scalar or array mask matching `Image` shape.
           Scalar will create a circular mask of prescribed radius `(0,1]`.
           Array mask will be applied via elementwise multiplication.
           `None` disables masking.
-        :returns: `Image` containing Rotated image data.
+        :param method: Optionally specify a rotation method.
+        :return: `Image` containing rotated image data.
         """
+
         original_stack_shape = self.stack_shape
         im = self.stack_reshape(-1)
 
@@ -658,18 +666,19 @@ class Image:
                 f"Requested `Image.rotation` method={method} not found."
                 f"  Select from {self.rotation_methods.keys()}"
             )
-        # otherwise, assign the function
+        # Assign the rotation method's function
+        # Any rotation method is expected to handle image data as a 2D array or 3D array (single stack axis).
         rotation_function = self.rotation_methods[method]
 
         # Handle both scalar and arrays of rotation angles.
         # `theta` arrays are checked to match length of images when stacks axis are flattened.
         theta = np.array(theta).flatten()
         if len(theta) == 1:
-            im = rotation_function(im._data, theta)
+            im = rotation_function(im._data, theta, **kwargs)
         elif len(theta) == im.n_images:
             rot_im = np.empty_like(im._data)
             for i in range(im.n_images):
-                rot_im[i] = rotation_function(im._data[i], theta[i])
+                rot_im[i] = rotation_function(im._data[i], theta[i], **kwargs)
             im = rot_im
         else:
             raise RuntimeError(
