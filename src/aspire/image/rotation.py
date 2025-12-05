@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import ndimage
 
 from aspire.numeric import fft, xp
 
@@ -193,3 +194,19 @@ def fastrotate(images, theta, M=None):
         images = xp.asnumpy(images)
 
     return images
+
+
+def sp_rotate(im, theta, **kwargs):
+    """Utility wrapper to form a ASPIRE compatible call to Scipy's image rotation.
+
+    Converts `theta` from radian to degrees.
+    Defines image axes and reshape behavior.
+
+    Additional kwargs will be passed through.
+    See scipy.ndimage.rotate
+
+    :param im: Array of image data shape (L,L) or (n,L, L)
+    :param theta: Rotation in ccw radians.
+    :return: Array representing rotated `im`.
+    """
+    return ndimage.rotate(im, np.rad2deg(theta), reshape=False, axes=(-1, -2), **kwargs)
