@@ -1,4 +1,11 @@
-from .fastrotate import compute_fastrotate_interp_tables, fastrotate
+# isort: off
+from .rotation import (
+    compute_fastrotate_interp_tables,
+    fastrotate,
+    sp_rotate,
+)
+
+# isort: on
 from .image import (
     BasisImage,
     BispecImage,
