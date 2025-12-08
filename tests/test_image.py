@@ -10,7 +10,6 @@ import pytest
 from PIL import Image as PILImage
 from pytest import raises
 from scipy.datasets import face
-from scipy.ndimage import rotate
 
 from aspire.image import Image
 from aspire.utils import Rotation, grid_2d, powerset, utest_tolerance
