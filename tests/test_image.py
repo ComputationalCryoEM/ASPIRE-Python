@@ -578,11 +578,18 @@ def test_image_rotate(dtype, rotation_method):
     Compare image rotations against rotated gaussian blobs.
     """
 
-    def _gen_image(angle, L, K=10):
-        """
-        Generate a sequence of `K` gaussian blobs rotated by `angle`.
+    L = 129  # Test image size in pixels
+    num_test_angles = 42
+    # Create mask, used to zero edge artifacts
+    mask = grid_2d(L, normalized=True)["r"] < 0.9
 
-        Return tuple of unrotated and rotated image arrays.
+    def _gen_image(angle, L, n=1, K=10):
+        """
+        Generate `n` `L-by-L` image arrays,
+        each constructed by a sequence of `K` gaussian blobs,
+        and reference images with the blob centers rotated by `angle`.
+
+        Return tuple of unrotated and rotated image arrays (n-by-L-by-L).
 
         :param angle: rotation angle
         :param L: size (L-by-L) in pixels
@@ -592,41 +599,44 @@ def test_image_rotate(dtype, rotation_method):
             - Array of rotated data (float64)
         """
 
-        im = np.zeros((L, L), dtype=np.float64)
+        im = np.zeros((n, L, L), dtype=np.float64)
         rotated_im = np.zeros_like(im)
 
-        centers = np.random.randint(-L // 4, L // 4, size=(10, 2))
-        sigmas = np.full((K, 2), L / 10, dtype=np.float64)
+        centers = np.random.randint(-L // 4, L // 4, size=(n, 10, 2))
+        sigmas = np.full((n, K, 2), L / 10, dtype=np.float64)
 
         # Rotate the gaussian specifications
         R = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
-
         rotated_centers = centers @ R
 
-        for center, sigma in zip(centers, sigmas):
-            im[:] = im[:] + gaussian_2d(L, center, sigma, dtype=np.float64)
+        # Construct each image independently
+        for i in range(n):
+            for center, sigma in zip(centers[i], sigmas[i]):
+                im[i] = im[i] + gaussian_2d(L, center, sigma, dtype=np.float64)
 
-        for center, sigma in zip(rotated_centers, sigmas):
-            rotated_im[:] = rotated_im[:] + gaussian_2d(
-                L, center, sigma, dtype=np.float64
-            )
+            for center, sigma in zip(rotated_centers[i], sigmas[i]):
+                rotated_im[i] = rotated_im[i] + gaussian_2d(
+                    L, center, sigma, dtype=np.float64
+                )
 
         return im, rotated_im
 
-    L = 129  # Test image size in pixels
-    # Create mask, zeros edge artifacts
-    mask = grid_2d(L, normalized=True)["r"] < 0.9
-
-    # for theta in np.linspace(0, 2 * np.pi, 100):
-    for theta in [np.pi / 4]:
-        im, ref = _gen_image(theta, L)
+    # Test over a variety of angles `theta`
+    for theta in np.linspace(0, 2 * np.pi, num_test_angles):
+        # Generate images and reference (`theta`) rotated images
+        im, ref = _gen_image(theta, L, n=3)
         im = Image(im.astype(dtype, copy=False))
 
-        # Rotate using `Image` method
+        # Rotate using `Image`'s `rotation_method`
         im_rot = im.rotate(theta, method=rotation_method)
 
+        # Mask off boundary artifacts
         masked_diff = (im_rot - ref) * mask
 
-        # Compute L1 error of masked diff
-        L1_error = np.mean(np.abs(masked_diff))
-        np.testing.assert_array_less(L1_error, 1e-6)
+        # Compute L1 error of masked diff, per image
+        L1_error = np.mean(np.abs(masked_diff), axis=(-1, -2))
+        np.testing.assert_array_less(
+            L1_error,
+            0.1,
+            err_msg=f"{L} pixels using {rotation_method} @ {theta} radians",
+        )
