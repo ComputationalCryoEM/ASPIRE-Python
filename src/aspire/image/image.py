@@ -638,7 +638,7 @@ class Image:
             original_stack_shape
         )
 
-    def rotate(self, theta, method="fastrotate", mask=1, **kwargs):
+    def rotate(self, theta, method="scipy", mask=1, **kwargs):
         """
         Return `Image` rotated by `theta` radians using `method`.
 
@@ -654,6 +654,7 @@ class Image:
           Array mask will be applied via elementwise multiplication.
           `None` disables masking.
         :param method: Optionally specify a rotation method.
+            Defaults to `scipy`.
         :return: `Image` containing rotated image data.
         """
 
