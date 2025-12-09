@@ -125,7 +125,7 @@ def _rot180(img):
 
 
 def _rot270(img):
-    """Rotate image array by 90 degrees."""
+    """Rotate image array by 270 degrees."""
     # stack broadcast of fliplr(img.T)
     return xp.flip(xp.swapaxes(img, -1, -2), axis=-1)
 
@@ -200,7 +200,8 @@ def fastrotate(images, theta, M=None):
 
 
 def sp_rotate(img, theta, **kwargs):
-    """Utility wrapper to form a ASPIRE compatible call to Scipy's image rotation.
+    """
+    Utility wrapper to form a ASPIRE compatible call to Scipy's image rotation.
 
     Converts `theta` from radian to degrees.
     Defines stack/image axes and reshape behavior.
