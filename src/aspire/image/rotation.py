@@ -2,6 +2,7 @@ import numpy as np
 from scipy import ndimage
 
 from aspire.numeric import fft, xp
+from aspire.utils import complex_type
 
 
 def _pre_rotate(theta):
@@ -158,12 +159,14 @@ def fastrotate(images, theta, M=None):
         M = compute_fastrotate_interp_tables(theta, px0, px1)
     Mx, My, Mrots = M
 
-    Mx, My = xp.asarray(Mx, dtype=images.dtype), xp.asarray(My, dtype=images.dtype)
+    # Cast interp tables to match precision of `images`
+    Mx = xp.asarray(Mx, complex_type(images.dtype))
+    My = xp.asarray(My, complex_type(images.dtype))
 
-    # Store if `images` data was provide on host (np.darray)
+    # Determine if `images` data was provided on host (np.darray)
     _host = isinstance(images, np.ndarray)
 
-    # If needed copy image array to device
+    # Copy image array to device if needed
     images = xp.asarray(images)
 
     # Pre rotate by multiples of 90 (pi/2)
@@ -189,7 +192,7 @@ def fastrotate(images, theta, M=None):
     img_k = img_k * My
     images = fft.ifft(img_k, axis=-1).real
 
-    # Return to host if needed
+    # Return to host if input was provided on host
     if _host:
         images = xp.asnumpy(images)
 
