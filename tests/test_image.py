@@ -12,7 +12,7 @@ from pytest import raises
 from scipy.datasets import face
 
 from aspire.image import Image
-from aspire.utils import Rotation, grid_2d, powerset, utest_tolerance
+from aspire.utils import Rotation, gaussian_2d, grid_2d, powerset, utest_tolerance
 from aspire.volume import CnSymmetryGroup
 
 from .test_utils import matplotlib_dry_run
@@ -573,21 +573,60 @@ def rotation_method(request):
     return request.param
 
 
-# TODO, lets replace this with an analytic test
-def test_image_rotate(get_images, dtype, rotation_method):
-    im_np, im = get_images
+def test_image_rotate(dtype, rotation_method):
+    """
+    Compare image rotations against rotated gaussian blobs.
+    """
 
-    # mask = grid_2d(im_np.shape[-1])["r"] < 0.9
+    def _gen_image(angle, L, K=10):
+        """
+        Generate a sequence of `K` gaussian blobs rotated by `angle`.
 
-    for theta in np.linspace(0, 2 * np.pi, 100):
-        # for theta in [np.pi/4]:
+        Return tuple of unrotated and rotated image arrays.
+
+        :param angle: rotation angle
+        :param L: size (L-by-L) in pixels
+        :param K: Number of blobs
+        :return:
+            - Array of unrotated data (float64)
+            - Array of rotated data (float64)
+        """
+
+        im = np.zeros((L, L), dtype=np.float64)
+        rotated_im = np.zeros_like(im)
+
+        centers = np.random.randint(-L // 4, L // 4, size=(10, 2))
+        sigmas = np.full((K, 2), L / 10, dtype=np.float64)
+
+        # Rotate the gaussian specifications
+        R = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+
+        rotated_centers = centers @ R
+
+        for center, sigma in zip(centers, sigmas):
+            im[:] = im[:] + gaussian_2d(L, center, sigma, dtype=np.float64)
+
+        for center, sigma in zip(rotated_centers, sigmas):
+            rotated_im[:] = rotated_im[:] + gaussian_2d(
+                L, center, sigma, dtype=np.float64
+            )
+
+        return im, rotated_im
+
+    L = 129  # Test image size in pixels
+    # Create mask, zeros edge artifacts
+    mask = grid_2d(L, normalized=True)["r"] < 0.9
+
+    # for theta in np.linspace(0, 2 * np.pi, 100):
+    for theta in [np.pi / 4]:
+        im, ref = _gen_image(theta, L)
+        im = Image(im.astype(dtype, copy=False))
+
+        # Rotate using `Image` method
         im_rot = im.rotate(theta, method=rotation_method)
 
-        # Use manual call to PIL as reference
-        ref = np.asarray(PILImage.fromarray(im_np[0]).rotate(np.rad2deg(theta)))
+        masked_diff = (im_rot - ref) * mask
 
-        # masked_diff = (im_rot - ref) * mask
-        diff = im_rot - ref
-
-        # mean masked pixel value is ~0.5, so this is ~2%
-        np.testing.assert_allclose(diff, 0, atol=1)
+        # Compute L1 error of masked diff
+        L1_error = np.mean(np.abs(masked_diff))
+        np.testing.assert_array_less(L1_error, 1e-6)
