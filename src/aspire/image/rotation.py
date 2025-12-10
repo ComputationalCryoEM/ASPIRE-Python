@@ -223,13 +223,13 @@ def sp_rotate(img, theta, **kwargs):
 
     # Scipy accepts a single scalar theta in degrees.
     #   Handle array of thetas and scalar case by expanding to flat array of img.shape
-    # Flatten all inputs
+    # Flatten all inputs, becomes 2d stack
     theta = np.rad2deg(np.array(theta)).reshape(-1, 1)
-    # Expand scalar input
-    if theta.shape[0] == 1:
+    # Expand single scalar input
+    if np.size(theta) == 1:
         theta = np.full(img.shape[0], theta, img.dtype)
-    # Check we have an array matching `img`
-    if theta.shape != img.shape[:1]:
+    # Check we have an array matching `img`, both should be (n,1)
+    if theta.shape[0] != img.shape[0]:
         raise RuntimeError("Inconsistent `theta` and `img` shapes.")
 
     # Create result array and rotate images via loop
