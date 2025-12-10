@@ -15,6 +15,7 @@ import numpy as np
 import scipy.sparse as sp
 from sklearn.decomposition import PCA
 from sklearn.utils._array_api import get_namespace
+from sklearn.utils.validation import check_is_fitted
 
 from .validation import check_array
 
@@ -78,3 +79,26 @@ class ComplexPCA(PCA):
             raise ValueError(
                 "Unrecognized svd_solver='{0}'" "".format(self._fit_svd_solver)
             )
+
+    def inverse_transform(self, X):
+        """Transform data back to its original space."""
+
+        xp, _ = get_namespace(X, self.components_, self.explained_variance_)
+
+        check_is_fitted(self)
+
+        X = check_array(
+            X,
+            dtype=[np.complex128, np.complex64, np.float64, np.float32],
+            ensure_2d=True,
+            copy=self.copy,
+            allow_complex=True,
+        )
+
+        if self.whiten:
+            scaled_components = (
+                xp.sqrt(self.explained_variance_[:, np.newaxis]) * self.components_
+            )
+            return X @ scaled_components + self.mean_
+        else:
+            return X @ self.components_ + self.mean_
