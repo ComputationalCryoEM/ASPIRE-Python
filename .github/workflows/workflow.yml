@@ -156,7 +156,7 @@ jobs:
         shell: bash -el {0}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-22.04, macOS-latest, macOS-15]
+        os: [ubuntu-latest, ubuntu-22.04, macOS-latest, macOS-14]
         backend: [default, openblas]
         python-version: ['3.9']
         include:
