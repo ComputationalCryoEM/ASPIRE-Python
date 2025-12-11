@@ -651,16 +651,16 @@ def test_sp_rotate_inputs(dtype):
     thetas = np.arange(6, dtype=dtype)
     theta = thetas[0]  # scalar
 
-    ## These are the only supported calls admitted by the function doc.
+    # #  These are the only supported calls admitted by the function doc.
     # singleton, scalar
     _ = sp_rotate(imgs[0], theta)
     # stack, scalar
     _ = sp_rotate(imgs, theta)
 
-    ## These happen to also work with the code, so were put under test.
-    ##   We're not advertising them, as there really isn't a good use
-    ##   case for this wrapper code outside of the internal wrapping
-    ##   application.
+    # #  These happen to also work with the code, so were put under test.
+    # #    We're not advertising them, as there really isn't a good use
+    # #    case for this wrapper code outside of the internal wrapping
+    # #    application.
     # singleton, single element array
     _ = sp_rotate(imgs[0], thetas[0:1])
     # stack, single element array
@@ -680,13 +680,13 @@ def test_fastrotate_inputs(dtype):
     imgs = np.zeros((6, 8, 8), dtype=dtype)
     theta = 42
 
-    ## These are the supported calls
+    # #  These are the supported calls
     # singleton, scalar
     _ = fastrotate(imgs[0], theta)
     # stack, scalar
     _ = fastrotate(imgs, theta)
 
-    ## These can also remain under test, but are not advertised.
+    # #  These can also remain under test, but are not advertised.
     # stack, single element array
     _ = fastrotate(imgs, np.array(theta))
     # singleton, single element array
