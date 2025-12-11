@@ -11,7 +11,7 @@ from PIL import Image as PILImage
 from pytest import raises
 from scipy.datasets import face
 
-from aspire.image import Image
+from aspire.image import Image, fastrotate, sp_rotate
 from aspire.utils import Rotation, gaussian_2d, grid_2d, powerset, utest_tolerance
 from aspire.volume import CnSymmetryGroup
 
@@ -640,3 +640,54 @@ def test_image_rotate(dtype, rotation_method):
             0.1,
             err_msg=f"{L} pixels using {rotation_method} @ {theta} radians",
         )
+
+
+def test_sp_rotate_inputs(dtype):
+    """
+    Smoke test various input combinations to the scipy rotation wrapper.
+    """
+
+    imgs = np.zeros((6, 8, 8), dtype=dtype)
+    thetas = np.arange(6, dtype=dtype)
+    theta = thetas[0]  # scalar
+
+    ## These are the only supported calls admitted by the function doc.
+    # singleton, scalar
+    _ = sp_rotate(imgs[0], theta)
+    # stack, scalar
+    _ = sp_rotate(imgs, theta)
+
+    ## These happen to also work with the code, so were put under test.
+    ##   We're not advertising them, as there really isn't a good use
+    ##   case for this wrapper code outside of the internal wrapping
+    ##   application.
+    # singleton, single element array
+    _ = sp_rotate(imgs[0], thetas[0:1])
+    # stack, single element array
+    _ = sp_rotate(imgs, thetas[0:1])
+    # stack, stack
+    _ = sp_rotate(imgs, thetas)
+    # md-stack, md-stack
+    _ = sp_rotate(imgs.reshape(2, 3, 8, 8), thetas.reshape(2, 3, 1))
+    _ = sp_rotate(imgs.reshape(2, 3, 8, 8), thetas.reshape(2, 3))
+
+
+def test_fastrotate_inputs(dtype):
+    """
+    Smoke test various input combinations to `fastrotate`.
+    """
+
+    imgs = np.zeros((6, 8, 8), dtype=dtype)
+    theta = 42
+
+    ## These are the supported calls
+    # singleton, scalar
+    _ = fastrotate(imgs[0], theta)
+    # stack, scalar
+    _ = fastrotate(imgs, theta)
+
+    ## These can also remain under test, but are not advertised.
+    # stack, single element array
+    _ = fastrotate(imgs, np.array(theta))
+    # singleton, single element array
+    _ = fastrotate(imgs[0], np.array(theta))
