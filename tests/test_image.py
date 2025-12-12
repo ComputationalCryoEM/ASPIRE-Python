@@ -11,7 +11,7 @@ from PIL import Image as PILImage
 from pytest import raises
 from scipy.datasets import face
 
-from aspire.image import Image, fastrotate, sp_rotate
+from aspire.image import Image, compute_fastrotate_interp_tables, fastrotate, sp_rotate
 from aspire.utils import Rotation, gaussian_2d, grid_2d, powerset, utest_tolerance
 from aspire.volume import CnSymmetryGroup
 
@@ -691,3 +691,25 @@ def test_fastrotate_inputs(dtype):
     _ = fastrotate(imgs, np.array(theta))
     # singleton, single element array
     _ = fastrotate(imgs[0], np.array(theta))
+
+
+def test_fastrotate_M_arg(dtype):
+    """
+    Smoke test precomputed `M` input  to `fastrotate`.
+    """
+
+    imgs = np.random.randn(6, 8, 8).astype(dtype)
+    theta = np.random.uniform(0, 2 * np.pi)
+
+    # Precompute M
+    M = compute_fastrotate_interp_tables(theta, *imgs.shape[-2:])
+
+    # Call with theta None
+    im_rot_M = fastrotate(imgs, None, M=M)
+    # Compare to calling withou `M`
+    im_rot = fastrotate(imgs, theta)
+    np.testing.assert_allclose(im_rot_M, im_rot)
+
+    # Call with theta, should raise
+    with raises(RuntimeError, match=r".*`theta` must be `None`.*"):
+        _ = fastrotate(imgs, theta, M=M)
