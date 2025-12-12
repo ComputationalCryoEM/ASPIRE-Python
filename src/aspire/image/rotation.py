@@ -143,8 +143,11 @@ def fastrotate(images, theta, M=None):
         `https://github.com/PrincetonUniversity/aspire/blob/760a43b35453e55ff2d9354339e9ffa109a25371/common/fastrotate/fastrotate.m`
 
     :param images: (n , px, px) array of image data
-    :param theta: rotation angle in radians
-    :param M: optional precomputed shearing table
+    :param theta: Rotation angle in radians.
+        Note when `M` is supplied, `theta` must be `None`.
+    :param M: Optional precomputed shearing table.
+        Provided by `M=compute_fastrotate_interp_tables(theta, px, px)`.
+        Note when `M` is supplied, `theta` must be `None`.
     :return: (n, px, px) array of rotated image data
     """
 
@@ -157,6 +160,11 @@ def fastrotate(images, theta, M=None):
 
     if M is None:
         M = compute_fastrotate_interp_tables(theta, px0, px1)
+    elif theta is not None:
+        raise RuntimeError(
+            "`theta` must be `None` when supplying `M`."
+            "  M is precomputed for a specific `theta`."
+        )
     Mx, My, Mrots = M
 
     # Cast interp tables to match precision of `images`
