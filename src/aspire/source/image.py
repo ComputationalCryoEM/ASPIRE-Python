@@ -491,6 +491,7 @@ class ImageSource(ABC):
 
     @amplitudes.setter
     def amplitudes(self, values):
+        # Keep amplitudes float64 so downstream filters/metadata retain precision.
         values = np.asarray(values, dtype=np.float64)
         self.set_metadata("_aspireAmplitude", values)
 
