@@ -1,0 +1,49 @@
+aspire package
+==============
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   aspire.abinitio
+   aspire.apple
+   aspire.basis
+   aspire.classification
+   aspire.commands
+   aspire.covariance
+   aspire.ctf
+   aspire.denoising
+   aspire.downloader
+   aspire.image
+   aspire.noise
+   aspire.nufft
+   aspire.numeric
+   aspire.operators
+   aspire.optimization
+   aspire.reconstruction
+   aspire.sinogram
+   aspire.source
+   aspire.storage
+   aspire.utils
+   aspire.volume
+
+Submodules
+----------
+
+aspire.exceptions module
+------------------------
+
+.. automodule:: aspire.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire
+   :members:
+   :undoc-members:
+   :show-inheritance:

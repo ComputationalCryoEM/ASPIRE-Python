@@ -1,0 +1,991 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Micrograph Sources &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+const defaultStyle = document.createElement('style');
+defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+`;
+document.head.appendChild(defaultStyle);
+
+const fullscreenStyle = document.createElement('style');
+fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+document.head.appendChild(fullscreenStyle);
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness < 128;
+    }
+    return false;
+};
+
+const load = async () => {
+    await mermaid.run();
+
+    const all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(load, 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(load, 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(load, 200);
+        return;
+    }
+
+    const darkTheme = isDarkTheme();
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    const modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    let previousScrollOffset = [window.scrollX, window.scrollY];
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    const allButtons = [];
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        container.appendChild(fullscreenBtn);
+        allButtons.push(fullscreenBtn);
+    });
+
+    // Update theme classes when theme changes
+    const updateTheme = () => {
+        const dark = isDarkTheme();
+        allButtons.forEach(btn => {
+            if (dark) {
+                btn.classList.add('dark-theme');
+            } else {
+                btn.classList.remove('dark-theme');
+            }
+        });
+        if (dark) {
+            modal.classList.add('dark-theme');
+            modalContent.classList.add('dark-theme');
+            closeBtn.classList.add('dark-theme');
+        } else {
+            modal.classList.remove('dark-theme');
+            modalContent.classList.remove('dark-theme');
+            closeBtn.classList.remove('dark-theme');
+        }
+    };
+
+    // Watch for theme changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
+};
+
+window.addEventListener("load", load);
+</script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Relion Projection Interoperability" href="relion_projection_interop.html" />
+    <link rel="prev" title="Image Preprocessing" href="preprocess_imgs_sim.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#api-introduction">API Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#component-examples">Component Examples</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">Component Examples</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="cov2d_simulation.html">2D Covariance Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orient3d_simulation.html">3D Image Orientation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_class.html">ASPIRE Image Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apple_picker.html">Apple Picker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="basic_image_array.html">Basic Image Array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ctf.html">CTF: Contrast Transfer Function</a></li>
+<li class="toctree-l4"><a class="reference internal" href="class_averaging.html">Class Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cov3d_simulation.html">Covariance 3D Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data_downloader.html">Data Downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generating_volume_projections.html">Generating 3D Volume Projections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_expansion.html">Image Expansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="preprocess_imgs_sim.html">Image Preprocessing</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Micrograph Sources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="relion_projection_interop.html">Relion Projection Interoperability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="starfile.html">Starfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="weighted_volume_estimation.html">Weighted Volume Reconstruction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Component Examples</a></li>
+      <li class="breadcrumb-item active">Micrograph Sources</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/auto_tutorials/tutorials/micrograph_source.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-tutorials-micrograph-source-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="micrograph-sources">
+<span id="sphx-glr-auto-tutorials-tutorials-micrograph-source-py"></span><h1>Micrograph Sources<a class="headerlink" href="#micrograph-sources" title="Link to this heading">¶</a></h1>
+<p>This tutorial will demonstrate how to set up and use ASPIRE’s
+<code class="docutils literal notranslate"><span class="pre">MicrographSource</span></code> classes.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayMicrographSource</span>
+</pre></div>
+</div>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">MicrographSource</span></code> is an abstract class which provides access to
+three distinct subclasses.  The first two are
+<code class="docutils literal notranslate"><span class="pre">ArrayMicrographSource</span></code> and <code class="docutils literal notranslate"><span class="pre">DiskMicrographSource</span></code> which provide
+access to array and disk backed micrograph data respectively.
+<code class="docutils literal notranslate"><span class="pre">MicrographSimulation</span></code> takes a volume and generates projection
+images which are aggregated into synthetic microgaphs.  The following
+illustrates an overview of the interfaces, and the tutorial will go
+on to demonstrate common operations for each class.</p>
+<pre  class="mermaid">
+        classDiagram
+    class MicrographSource{
+        micrograph_count: int
+        micrograph_size: int
+        dtype: np.dtype
+        +asnumpy()
+        +dtype
+        +len()
+        +repr()
+        +images[]
+        +micrograph_count
+        +micrograph_size
+        +save()
+        +show()
+     }
+
+    class ArrayMicrographSource{
+        micrographs: np.ndarray
+     }
+
+    class DiskMicrographSource{
+        micrographs_path: str, Path, or list
+     }
+
+    class MicrographSimulation{
+        volume: Volume
+        micrograph_size: Optional, int
+        micrograph_count: Optional, int
+        particles_per_micrograph: Optional, int
+        particle_amplitudes: Optional, np.ndarray
+        projection_angles: Optional, np.ndarray
+        seed: Optional, int
+        ctf_filters: Optional, list
+        noise_adder: Optional, NoiseAdder
+        boundary: Optional, int
+        interparticle_distance: Optional, int
+        +boundary
+        +centers
+        +ctf_filters
+        +clean_images[]
+        +filter_indices
+        +get_micrograph_index()
+        +get_particle_index()
+        +interparticle_distance
+        +noise_adder
+        +simulation
+        +particle_amplitudes
+        +particle_box_size
+        +particle_per_micrograph
+        +projection_angles
+        +total_particle_count
+        +volume
+     }
+
+     MicrographSource &lt;|-- ArrayMicrographSource
+     MicrographSource &lt;|-- DiskMicrographSource
+     MicrographSource &lt;|-- MicrographSimulation
+     MicrographSimulation o-- Volume
+     MicrographSimulation *-- CTFFilter
+     MicrographSimulation *-- NoiseAdder
+    </pre></section>
+<section id="creating-an-arraymicrographsource">
+<h2>Creating an ArrayMicrographSource<a class="headerlink" href="#creating-an-arraymicrographsource" title="Link to this heading">¶</a></h2>
+<p>An <code class="docutils literal notranslate"><span class="pre">ArrayMicrographSource</span></code> is populated with an array.  For this
+demonstration, random data will initialize the object,
+then this data will be saved off for use in the next example
+(which loads data from files).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create an (2,512,512) array of data.</span>
+<span class="c1"># This represents two (512,512) micrographs.</span>
+<span class="n">mgs_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">512</span><span class="p">)</span>
+
+<span class="c1"># Construct the source</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">ArrayMicrographSource</span><span class="p">(</span><span class="n">mgs_np</span><span class="p">)</span>
+
+<span class="c1"># Create a tmp dir for saving the data to.</span>
+<span class="c1"># This just for ensuring the tutorial script is portable,</span>
+<span class="n">tmp_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">TemporaryDirectory</span><span class="p">()</span>
+
+<span class="c1"># Save the data as multiple MRC files</span>
+<span class="c1"># This method returns a file_list,</span>
+<span class="c1"># which might be useful for loading or other operations.</span>
+<span class="n">file_list</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">tmp_dir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="creating-a-diskmicrographsource">
+<h2>Creating a DiskMicrographSource<a class="headerlink" href="#creating-a-diskmicrographsource" title="Link to this heading">¶</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">DiskMicrographSource</span></code> is populated with str or list
+representing the location of MRC files.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiskMicrographSource</span>
+
+<span class="c1"># Load files in directory</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">DiskMicrographSource</span><span class="p">(</span><span class="n">tmp_dir</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+<span class="c1"># Load files from a list</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">DiskMicrographSource</span><span class="p">(</span><span class="n">file_list</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="creating-a-micrograph-simulation">
+<h2>Creating a Micrograph Simulation<a class="headerlink" href="#creating-a-micrograph-simulation" title="Link to this heading">¶</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">MicrographSimulation</span></code> is populated with particle projections
+from a <code class="docutils literal notranslate"><span class="pre">Volume</span></code>, so we’ll begin by generating a <code class="docutils literal notranslate"><span class="pre">Volume</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">MicrographSimulation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.volume</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsymmetricVolume</span>
+
+<span class="c1"># Generate one (100,100,100) ``Volume``.</span>
+<span class="n">vol</span> <span class="o">=</span> <span class="n">AsymmetricVolume</span><span class="p">(</span>
+    <span class="n">L</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">C</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">pixel_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">1234</span><span class="p">,</span>
+    <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span>
+<span class="p">)</span><span class="o">.</span><span class="n">generate</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>We’ll pass our <code class="docutils literal notranslate"><span class="pre">Volume</span></code> as an argument and configure our
+<code class="docutils literal notranslate"><span class="pre">MicrographSimulation</span></code>.  In this example, the
+<code class="docutils literal notranslate"><span class="pre">MicrographSimulation</span></code> has 4 micrographs of size 1024, each with 10
+particles.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">n_particles_per_micrograph</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">n_micrographs</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="n">src</span> <span class="o">=</span> <span class="n">MicrographSimulation</span><span class="p">(</span>
+    <span class="n">vol</span><span class="p">,</span>
+    <span class="n">particles_per_micrograph</span><span class="o">=</span><span class="n">n_particles_per_micrograph</span><span class="p">,</span>
+    <span class="n">particle_amplitudes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">micrograph_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
+    <span class="n">micrograph_count</span><span class="o">=</span><span class="n">n_micrographs</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">1234</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Plot the micrographs</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_micrograph_source_001.png" srcset="../../_images/sphx_glr_micrograph_source_001.png" alt="micrograph source" class = "sphx-glr-single-img"/></section>
+<section id="ctf-filters">
+<h2>CTF Filters<a class="headerlink" href="#ctf-filters" title="Link to this heading">¶</a></h2>
+<p>By default, no CTF corruption is configured. To apply CTF filters,
+we have to pass them as arguments to the <code class="docutils literal notranslate"><span class="pre">MicrographSimulation</span></code>.
+It is possible to apply a single CTF, different CTF per-micrograph
+or different CTF per-particle by configuring a list of matching size.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.operators</span><span class="w"> </span><span class="kn">import</span> <span class="n">RadialCTFFilter</span>
+
+<span class="c1"># Create our CTF Filter and add it to a list.</span>
+<span class="c1"># This configuration will apply the same CTF to all particles.</span>
+<span class="n">ctfs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">RadialCTFFilter</span><span class="p">(</span><span class="n">voltage</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">defocus</span><span class="o">=</span><span class="mi">15000</span><span class="p">,</span> <span class="n">Cs</span><span class="o">=</span><span class="mf">2.26</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.07</span><span class="p">,</span> <span class="n">B</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="n">src</span> <span class="o">=</span> <span class="n">MicrographSimulation</span><span class="p">(</span>
+    <span class="n">vol</span><span class="p">,</span>
+    <span class="n">particles_per_micrograph</span><span class="o">=</span><span class="n">n_particles_per_micrograph</span><span class="p">,</span>
+    <span class="n">micrograph_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
+    <span class="n">micrograph_count</span><span class="o">=</span><span class="n">n_micrographs</span><span class="p">,</span>
+    <span class="n">ctf_filters</span><span class="o">=</span><span class="n">ctfs</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">1234</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Plot the micrographs</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_micrograph_source_002.png" srcset="../../_images/sphx_glr_micrograph_source_002.png" alt="micrograph source" class = "sphx-glr-single-img"/></section>
+<section id="noise">
+<h2>Noise<a class="headerlink" href="#noise" title="Link to this heading">¶</a></h2>
+<p>By default, no noise corruption is configured.
+To apply noise, pass a <code class="docutils literal notranslate"><span class="pre">NoiseAdder</span></code> to <code class="docutils literal notranslate"><span class="pre">MicrographSimulation</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.noise</span><span class="w"> </span><span class="kn">import</span> <span class="n">WhiteNoiseAdder</span>
+
+<span class="c1"># Create our noise using WhiteNoiseAdder</span>
+<span class="n">noise</span> <span class="o">=</span> <span class="n">WhiteNoiseAdder</span><span class="p">(</span><span class="mf">4e-3</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">1234</span><span class="p">)</span>
+
+<span class="c1"># Add noise to our MicrographSimulation using the noise_adder argument</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">MicrographSimulation</span><span class="p">(</span>
+    <span class="n">vol</span><span class="p">,</span>
+    <span class="n">noise_adder</span><span class="o">=</span><span class="n">noise</span><span class="p">,</span>
+    <span class="n">particles_per_micrograph</span><span class="o">=</span><span class="n">n_particles_per_micrograph</span><span class="p">,</span>
+    <span class="n">micrograph_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
+    <span class="n">micrograph_count</span><span class="o">=</span><span class="n">n_micrographs</span><span class="p">,</span>
+    <span class="n">ctf_filters</span><span class="o">=</span><span class="n">ctfs</span><span class="p">,</span>
+    <span class="n">seed</span><span class="o">=</span><span class="mi">1234</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Plot the micrographs</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_micrograph_source_003.png" srcset="../../_images/sphx_glr_micrograph_source_003.png" alt="micrograph source" class = "sphx-glr-single-img"/><p>Plot the clean micrographs using the <code class="docutils literal notranslate"><span class="pre">clean_images</span></code> accessor.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span><span class="o">.</span><span class="n">clean_images</span><span class="p">[:]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_micrograph_source_004.png" srcset="../../_images/sphx_glr_micrograph_source_004.png" alt="micrograph source" class = "sphx-glr-single-img"/></section>
+<section id="interparticle-distance">
+<h2>Interparticle Distance<a class="headerlink" href="#interparticle-distance" title="Link to this heading">¶</a></h2>
+<p>By default, particle distance is set to avoid collisions.
+We can use the <code class="docutils literal notranslate"><span class="pre">interparticle_distance</span></code> argument to control the
+minimum distance between particle centers.
+However, setting this argument too large may generate insufficient centers.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Let&#39;s increase the number of particles to show overlap.</span>
+<span class="n">n_particles_per_micrograph</span> <span class="o">=</span> <span class="mi">50</span>
+
+<span class="c1"># Set the interparticle distance to 1, which adds at least one pixel</span>
+<span class="c1"># of separation between center and allows particles to collide.</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">MicrographSimulation</span><span class="p">(</span>
+    <span class="n">vol</span><span class="p">,</span>
+    <span class="n">interparticle_distance</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">noise_adder</span><span class="o">=</span><span class="n">noise</span><span class="p">,</span>
+    <span class="n">particles_per_micrograph</span><span class="o">=</span><span class="n">n_particles_per_micrograph</span><span class="p">,</span>
+    <span class="n">micrograph_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
+    <span class="n">micrograph_count</span><span class="o">=</span><span class="n">n_micrographs</span><span class="p">,</span>
+    <span class="n">ctf_filters</span><span class="o">=</span><span class="n">ctfs</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Plot the micrographs</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_micrograph_source_005.png" srcset="../../_images/sphx_glr_micrograph_source_005.png" alt="micrograph source" class = "sphx-glr-single-img"/></section>
+<section id="boundary">
+<h2>Boundary<a class="headerlink" href="#boundary" title="Link to this heading">¶</a></h2>
+<p>By default, the boundary is set to half of the particle width,
+which will completely contain every particle inside the micrograph.
+Setting <code class="docutils literal notranslate"><span class="pre">boundary=0</span></code> will allow particles to be placed along the edges.
+Positive values (measured in pixels) move the boundaries inward,
+while negative values move the boundaries outward.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a micrograph with a negative boundary, allowing particles to</span>
+<span class="c1"># generate outward.</span>
+<span class="n">out_src</span> <span class="o">=</span> <span class="n">MicrographSimulation</span><span class="p">(</span>
+    <span class="n">vol</span><span class="p">,</span>
+    <span class="n">boundary</span><span class="o">=-</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">interparticle_distance</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">noise_adder</span><span class="o">=</span><span class="n">noise</span><span class="p">,</span>
+    <span class="n">particles_per_micrograph</span><span class="o">=</span><span class="n">n_particles_per_micrograph</span><span class="p">,</span>
+    <span class="n">micrograph_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
+    <span class="n">micrograph_count</span><span class="o">=</span><span class="n">n_micrographs</span><span class="p">,</span>
+    <span class="n">ctf_filters</span><span class="o">=</span><span class="n">ctfs</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Plot the micrographs</span>
+<span class="n">out_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_micrograph_source_006.png" srcset="../../_images/sphx_glr_micrograph_source_006.png" alt="micrograph source" class = "sphx-glr-single-img"/></section>
+<section id="particle-indices">
+<h2>Particle Indices<a class="headerlink" href="#particle-indices" title="Link to this heading">¶</a></h2>
+<p>Each particle comes from a <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> internal to
+<code class="docutils literal notranslate"><span class="pre">MicrographSimulation</span></code>.  This simulation can be accessed directly
+by the attribute <code class="docutils literal notranslate"><span class="pre">MicrographSimulation.simulation</span></code>.  A map is
+provided between each particle’s indexing relative to that
+<code class="docutils literal notranslate"><span class="pre">Simulation</span></code> and micrograph based indexing.  This relationship is
+demonstrated below.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Let&#39;s choose four random numbers as our global (``Simulation``)</span>
+<span class="c1"># particle indices from ``test_micrograph=1``.</span>
+<span class="n">test_micrograph</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">n_particles</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">local_particle_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">n_particles_per_micrograph</span><span class="p">,</span> <span class="n">n_particles</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Local particle indices: </span><span class="si">{</span><span class="n">local_particle_indices</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Local particle indices: [24 20 36]
+</pre></div>
+</div>
+<p>We can obtain the individual particle images from our
+<code class="docutils literal notranslate"><span class="pre">MicrographSimulation</span></code> by retrieving their centers and plotting
+the boundary boxes.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">centers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_particles</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_particles</span><span class="p">):</span>
+    <span class="n">centers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">centers</span><span class="p">[</span><span class="n">test_micrograph</span><span class="p">][</span><span class="n">local_particle_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+
+<span class="c1"># Let&#39;s use the particles&#39; centers and sizes to perform &quot;perfect</span>
+<span class="c1"># particle picking&quot; on this test micrograph.</span>
+<span class="n">p_size</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">particle_box_size</span>
+<span class="n">micrograph_picked_particles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+    <span class="p">(</span>
+        <span class="n">n_particles</span><span class="p">,</span>
+        <span class="n">src</span><span class="o">.</span><span class="n">particle_box_size</span><span class="p">,</span>
+        <span class="n">src</span><span class="o">.</span><span class="n">particle_box_size</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">center</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">centers</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">center</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">center</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># Calculate the square of the particle</span>
+    <span class="n">particle</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">clean_images</span><span class="p">[</span><span class="n">test_micrograph</span><span class="p">]</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span>
+        <span class="n">x</span> <span class="o">-</span> <span class="n">p_size</span> <span class="o">//</span> <span class="mi">2</span> <span class="p">:</span> <span class="n">x</span> <span class="o">+</span> <span class="n">p_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="n">p_size</span> <span class="o">//</span> <span class="mi">2</span> <span class="p">:</span> <span class="n">y</span> <span class="o">+</span> <span class="n">p_size</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="p">]</span>
+    <span class="n">micrograph_picked_particles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">particle</span>
+
+<span class="c1"># Let&#39;s plot and look at the particles!</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<span class="n">Image</span><span class="p">(</span><span class="n">micrograph_picked_particles</span><span class="p">)[:]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_micrograph_source_007.png" srcset="../../_images/sphx_glr_micrograph_source_007.png" alt="micrograph source" class = "sphx-glr-single-img"/><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There may be overlap with nearby particles in the above images.
+To reduce overlap, increase <code class="docutils literal notranslate"><span class="pre">interparticle_distance</span></code>.</p>
+</div>
+<p>Let’s find the images from the <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> using the
+<code class="docutils literal notranslate"><span class="pre">get_particle_indices</span></code> method to retrieve their global indices.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">global_particle_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_particles</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_particles</span><span class="p">):</span>
+    <span class="n">global_particle_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">get_particle_indices</span><span class="p">(</span>
+        <span class="n">test_micrograph</span><span class="p">,</span> <span class="n">local_particle_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="p">)</span>
+
+<span class="c1"># Plot the simulation&#39;s images</span>
+<span class="n">src</span><span class="o">.</span><span class="n">simulation</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">global_particle_indices</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_micrograph_source_008.png" srcset="../../_images/sphx_glr_micrograph_source_008.png" alt="micrograph source" class = "sphx-glr-single-img"/><p>We can check if these global indices match our local particle
+indices with the <code class="docutils literal notranslate"><span class="pre">get_micrograph_index</span></code> method.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">check_local_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_particles</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_particles</span><span class="p">):</span>
+    <span class="c1"># Get each particle&#39;s corresponding micrograph index and local particle index</span>
+    <span class="n">micrograph_index</span><span class="p">,</span> <span class="n">check_local_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">get_micrograph_index</span><span class="p">(</span>
+        <span class="n">global_particle_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="n">micrograph_index</span> <span class="o">==</span> <span class="mi">1</span>
+<span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_array_equal</span><span class="p">(</span><span class="n">local_particle_indices</span><span class="p">,</span> <span class="n">check_local_indices</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Local particle indices: </span><span class="si">{</span><span class="n">check_local_indices</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Local particle indices: [24 20 36]
+</pre></div>
+</div>
+</section>
+<section id="saving-a-micrographsimulation">
+<h2>Saving a MicrographSimulation<a class="headerlink" href="#saving-a-micrographsimulation" title="Link to this heading">¶</a></h2>
+<p>In addition to saving the raw MRC files, <code class="docutils literal notranslate"><span class="pre">MicrographSimulation</span></code>
+populates STAR files with the particle centers, particle box size
+(<code class="docutils literal notranslate"><span class="pre">rlnImageSize</span></code>), and projection rotations.  Additionally, CTF
+parameters are saved when CTF is used in the simulation.  Each
+micrograph will have a corresponidng STAR file.  The collection of
+these files are returned from <code class="docutils literal notranslate"><span class="pre">MicrographSimulation.save</span></code> as a
+list of tuples which is designed to work directly with
+<code class="docutils literal notranslate"><span class="pre">CentersCoordinateSource</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">CentersCoordinateSource</span>
+
+<span class="c1"># Save the simulation</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp_dir</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;mg_sim&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Review the resulting files</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[(&#39;/tmp/tmpu21t6i2l/mg_sim/micrograph_0.mrc&#39;, &#39;/tmp/tmpu21t6i2l/mg_sim/micrograph_0.star&#39;), (&#39;/tmp/tmpu21t6i2l/mg_sim/micrograph_1.mrc&#39;, &#39;/tmp/tmpu21t6i2l/mg_sim/micrograph_1.star&#39;), (&#39;/tmp/tmpu21t6i2l/mg_sim/micrograph_2.mrc&#39;, &#39;/tmp/tmpu21t6i2l/mg_sim/micrograph_2.star&#39;)]
+</pre></div>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Review the example STAR file contents</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>data_
+loop_
+_rlnImageName
+_rlnImageSize
+_rlnCoordinateX
+_rlnCoordinateY
+_rlnAngleRot
+_rlnAngleTilt
+_rlnAnglePsi
+_rlnVoltage
+_rlnDefocusU
+_rlnDefocusV
+_rlnDefocusAngle
+_rlnSphericalAberration
+_rlnAmplitudeContrast
+000001@micrograph_0 100 357 514 -134.82674 70.42997 85.89395 200.0 15000.0 15000.0 0.0 2.26 0.07
+000002@micrograph_0 100 118 467 67.95413 99.76551 37.444767 200.0 15000.0 15000.0 0.0 2.26 0.07
+000003@micrograph_0 100 590 277 7.2576485 140.38687 -59.773598 200.0 15000.0 15000.0 0.0 2.26 0.07
+000004@micrograph_0 100 522 248 63.480827 84.10157 7.4896197 200.0 15000.0 15000.0 0.0 2.26 0.07
+000005@micrograph_0 100 223 745 -130.84204 21.15329 -162.84654 200.0 15000.0 15000.0 0.0 2.26 0.07
+000006@micrograph_0 100 174 445 -99.030975 149.42964 175.6943 200.0 15000.0 15000.0 0.0 2.26 0.07
+000007@micrograph_0 100 299 59 47.95209 136.74622 -166.17136 200.0 15000.0 15000.0 0.0 2.26 0.07
+000008@micrograph_0 100 659 434 91.8869 100.16265 -157.42801 200.0 15000.0 15000.0 0.0 2.26 0.07
+000009@micrograph_0 100 117 647 -30.354961 75.08341 13.788602 200.0 15000.0 15000.0 0.0 2.26 0.07
+000010@micrograph_0 100 735 339 46.58517 129.15901 -172.69316 200.0 15000.0 15000.0 0.0 2.26 0.07
+000011@micrograph_0 100 491 789 110.339386 99.2707 85.04628 200.0 15000.0 15000.0 0.0 2.26 0.07
+000012@micrograph_0 100 809 818 -23.406391 52.53211 -139.94836 200.0 15000.0 15000.0 0.0 2.26 0.07
+000013@micrograph_0 100 436 431 134.82375 125.791466 127.273315 200.0 15000.0 15000.0 0.0 2.26 0.07
+000014@micrograph_0 100 212 212 88.836 131.61661 170.09749 200.0 15000.0 15000.0 0.0 2.26 0.07
+000015@micrograph_0 100 374 937 71.1484 50.87036 117.835976 200.0 15000.0 15000.0 0.0 2.26 0.07
+000016@micrograph_0 100 159 101 63.209724 61.319878 -144.78423 200.0 15000.0 15000.0 0.0 2.26 0.07
+000017@micrograph_0 100 727 717 171.41907 103.669914 162.73087 200.0 15000.0 15000.0 0.0 2.26 0.07
+000018@micrograph_0 100 434 566 148.2073 23.667522 -167.71777 200.0 15000.0 15000.0 0.0 2.26 0.07
+000019@micrograph_0 100 514 940 124.225586 101.704155 -7.356131 200.0 15000.0 15000.0 0.0 2.26 0.07
+000020@micrograph_0 100 644 172 -117.36976 54.44209 61.728706 200.0 15000.0 15000.0 0.0 2.26 0.07
+000021@micrograph_0 100 758 943 -162.91643 43.91972 100.298325 200.0 15000.0 15000.0 0.0 2.26 0.07
+000022@micrograph_0 100 394 628 -0.5854195 75.2847 -139.51906 200.0 15000.0 15000.0 0.0 2.26 0.07
+000023@micrograph_0 100 87 144 171.61751 15.32889 111.023254 200.0 15000.0 15000.0 0.0 2.26 0.07
+000024@micrograph_0 100 204 235 -33.304127 57.931633 -88.27734 200.0 15000.0 15000.0 0.0 2.26 0.07
+000025@micrograph_0 100 775 436 24.332895 108.68852 9.214272 200.0 15000.0 15000.0 0.0 2.26 0.07
+000026@micrograph_0 100 702 85 166.2759 55.460697 -116.08049 200.0 15000.0 15000.0 0.0 2.26 0.07
+000027@micrograph_0 100 816 257 -17.669033 164.46213 154.5533 200.0 15000.0 15000.0 0.0 2.26 0.07
+000028@micrograph_0 100 245 494 -154.18813 160.12997 93.87625 200.0 15000.0 15000.0 0.0 2.26 0.07
+000029@micrograph_0 100 222 116 39.215176 119.0958 -38.1352 200.0 15000.0 15000.0 0.0 2.26 0.07
+000030@micrograph_0 100 499 733 108.81932 61.365723 -178.08334 200.0 15000.0 15000.0 0.0 2.26 0.07
+000031@micrograph_0 100 947 736 109.85279 42.58259 -149.33972 200.0 15000.0 15000.0 0.0 2.26 0.07
+000032@micrograph_0 100 134 621 36.03223 105.68081 -35.86676 200.0 15000.0 15000.0 0.0 2.26 0.07
+000033@micrograph_0 100 106 707 -47.898327 33.21698 55.839603 200.0 15000.0 15000.0 0.0 2.26 0.07
+000034@micrograph_0 100 233 487 -23.364729 81.33271 -88.90829 200.0 15000.0 15000.0 0.0 2.26 0.07
+000035@micrograph_0 100 576 110 79.40814 74.74897 -22.989313 200.0 15000.0 15000.0 0.0 2.26 0.07
+000036@micrograph_0 100 439 755 -92.107895 65.83309 -104.68323 200.0 15000.0 15000.0 0.0 2.26 0.07
+000037@micrograph_0 100 395 504 -155.39862 136.76486 -178.96898 200.0 15000.0 15000.0 0.0 2.26 0.07
+000038@micrograph_0 100 738 721 47.220955 58.597233 144.94357 200.0 15000.0 15000.0 0.0 2.26 0.07
+000039@micrograph_0 100 952 243 78.088165 78.69344 2.2200243 200.0 15000.0 15000.0 0.0 2.26 0.07
+000040@micrograph_0 100 631 543 -139.73576 161.4182 -51.54953 200.0 15000.0 15000.0 0.0 2.26 0.07
+000041@micrograph_0 100 903 635 -42.63034 141.55984 150.86116 200.0 15000.0 15000.0 0.0 2.26 0.07
+000042@micrograph_0 100 599 527 -83.30669 48.701714 132.33043 200.0 15000.0 15000.0 0.0 2.26 0.07
+000043@micrograph_0 100 215 962 -171.20354 59.49243 -103.206924 200.0 15000.0 15000.0 0.0 2.26 0.07
+000044@micrograph_0 100 120 455 -85.77694 16.362684 58.064697 200.0 15000.0 15000.0 0.0 2.26 0.07
+000045@micrograph_0 100 135 738 -176.21182 115.328545 -104.11368 200.0 15000.0 15000.0 0.0 2.26 0.07
+000046@micrograph_0 100 937 717 -3.172558 117.60184 176.06554 200.0 15000.0 15000.0 0.0 2.26 0.07
+000047@micrograph_0 100 71 684 -102.14765 63.155346 49.60995 200.0 15000.0 15000.0 0.0 2.26 0.07
+000048@micrograph_0 100 644 568 130.81349 123.28017 78.281044 200.0 15000.0 15000.0 0.0 2.26 0.07
+000049@micrograph_0 100 672 915 146.05128 137.0732 -30.214369 200.0 15000.0 15000.0 0.0 2.26 0.07
+000050@micrograph_0 100 130 103 86.410545 123.06443 121.30503 200.0 15000.0 15000.0 0.0 2.26 0.07
+</pre></div>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">img_src</span> <span class="o">=</span> <span class="n">CentersCoordinateSource</span><span class="p">(</span>
+    <span class="n">results</span><span class="p">,</span>
+    <span class="n">src</span><span class="o">.</span><span class="n">pixel_size</span><span class="p">,</span>
+    <span class="n">src</span><span class="o">.</span><span class="n">particle_box_size</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1"># Show the first five images from the image source.</span>
+<span class="n">img_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># Cleanup the tmp_dir</span>
+<span class="n">tmp_dir</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_micrograph_source_009.png" srcset="../../_images/sphx_glr_micrograph_source_009.png" alt="micrograph source" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 14.773 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-tutorials-micrograph-source-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/603cdeecf345b0ea045676cc56cd7c50/micrograph_source.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">micrograph_source.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/3d60aa71a6cc0e9f5dfce6abf553cf2c/micrograph_source.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">micrograph_source.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/a91bf1a86b06af241a1dabb5418734e0/micrograph_source.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">micrograph_source.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="preprocess_imgs_sim.html" class="btn btn-neutral float-left" title="Image Preprocessing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="relion_projection_interop.html" class="btn btn-neutral float-right" title="Relion Projection Interoperability" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,984 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.classification package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.commands package" href="aspire.commands.html" />
+    <link rel="prev" title="aspire.basis package" href="aspire.basis.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.classification package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.classification.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-classification-package">
+<h1>aspire.classification package<a class="headerlink" href="#aspire-classification-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.classification.averager2d">
+<span id="aspire-classification-averager2d-module"></span><h2>aspire.classification.averager2d module<a class="headerlink" href="#module-aspire.classification.averager2d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.AligningAverager2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.averager2d.</span></span><span class="sig-name descname"><span class="pre">AligningAverager2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composite_basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment_basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">image_stacker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.AligningAverager2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.averager2d.Averager2D" title="aspire.classification.averager2d.Averager2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Averager2D</span></code></a></p>
+<p>Subclass supporting averagers which perfom an aligning stage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>composite_basis</strong> – Basis to be used during class average composition (eg hi res Cartesian/FFB2D).</p></li>
+<li><p><strong>src</strong> – Source of original images.</p></li>
+<li><p><strong>alignment_basis</strong> – Optional, basis to be used only during alignment (eg FSPCA).</p></li>
+<li><p><strong>image_stacker</strong> – Optional, provide a user defined <cite>ImageStacker</cite> instance,
+used during image stacking (averaging).  Defaults to MeanImageStacker.</p></li>
+<li><p><strong>batch_size</strong> – Integer size of batches used for basis conversion.</p></li>
+<li><p><strong>dtype</strong> – Numpy dtype to be used during alignment.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.AligningAverager2D.align">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">align</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis_coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.AligningAverager2D.align" title="Link to this definition">¶</a></dt>
+<dd><p>During this process <cite>rotations</cite>, <cite>reflections</cite>, <cite>shifts</cite> and
+<cite>dot_products</cite> properties will be computed for aligners.</p>
+<p><cite>rotations</cite> is an (src.n, n_nbor) array of angles,
+which should represent the rotations needed to align images within
+that class. <cite>rotations</cite> is measured in CCW radians.</p>
+<p><cite>shifts</cite> is None or an (src.n, n_nbor) array of 2D shifts
+which should represent the translation needed to best align the images
+within that class.</p>
+<p><cite>dot_products</cite> is an (src.n, n_nbor) array representing
+the dot between classified images and their base
+image (image index 0).</p>
+<p>Subclasses of should implement and extend this method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>classes</strong> – (src.n, n_nbor) integer array of img indices.</p></li>
+<li><p><strong>reflections</strong> – (src.n, n_nbor) bool array of corresponding reflections,</p></li>
+<li><p><strong>basis_coefficients</strong> – (n_img, self.alignment_basis.count) basis coefficients,</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(rotations, shifts, dot_products)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.AligningAverager2D.average">
+<span class="sig-name descname"><span class="pre">average</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coefs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.AligningAverager2D.average" title="Link to this definition">¶</a></dt>
+<dd><p>This subclass assumes we get alignment details from <cite>align</cite> method. Otherwise. see Averager2D.average</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.Averager2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.averager2d.</span></span><span class="sig-name descname"><span class="pre">Averager2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composite_basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.Averager2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Base class for 2D Image Averaging methods.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>composite_basis</strong> – Basis to be used during class average composition (eg FFB2D)</p></li>
+<li><p><strong>src</strong> – Source of original images.</p></li>
+<li><p><strong>batch_size</strong> – Integer size of batches used for basis conversion.</p></li>
+<li><p><strong>dtype</strong> – Numpy dtype to be used during alignment.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.Averager2D.average">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">average</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coefs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.Averager2D.average" title="Link to this definition">¶</a></dt>
+<dd><p>Combines images using stacking in <cite>self.composite_basis</cite>.</p>
+<p>Subclasses should implement this.
+(Example EM algos use radically different averaging).</p>
+<p>Should return an Image source of synthetic class averages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>classes</strong> – class indices, refering to src. (src.n, n_nbor).</p></li>
+<li><p><strong>reflections</strong> – Bool representing whether to reflect image in <cite>classes</cite>.
+(n_classes, n_nbor)</p></li>
+<li><p><strong>coefs</strong> – Optional basis coefs (could avoid recomputing).
+(src.n, coef_count)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Stack of synthetic class average images as Image instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.BFRAverager2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.averager2d.</span></span><span class="sig-name descname"><span class="pre">BFRAverager2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.BFRAverager2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.averager2d.BFSRAverager2D" title="aspire.classification.averager2d.BFSRAverager2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">BFSRAverager2D</span></code></a></p>
+<p>Brute Force Rotation only reference implementation.</p>
+<p>See BFT with <cite>radius=0</cite> for a more performant implementation using a fast rotational alignment.</p>
+<p>See AligningAverager2D adds <cite>n_angles</cite> and <cite>radius</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Params n_angles<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Number of brute force rotations to attempt, defaults 360.</p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>radius</strong> – Brute force translation search radius.
+Defaults to src.L//32.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.BFRAverager2D.align">
+<span class="sig-name descname"><span class="pre">align</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.BFRAverager2D.align" title="Link to this definition">¶</a></dt>
+<dd><p>See <cite>BFSRAverager2D.align</cite></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.BFSRAverager2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.averager2d.</span></span><span class="sig-name descname"><span class="pre">BFSRAverager2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composite_basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment_basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_angles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">360</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.BFSRAverager2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.averager2d.AligningAverager2D" title="aspire.classification.averager2d.AligningAverager2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">AligningAverager2D</span></code></a></p>
+<p>This perfoms a Brute Force Shift and Rotational alignment.
+It is potentially expensive to brute force this search space.</p>
+<dl class="simple">
+<dt>For each pair of x_shifts and y_shifts,</dt><dd><p>Perform BFR</p>
+</dd>
+</dl>
+<p>Return the rotation and shift yielding the best results.</p>
+<p>See AligningAverager2D adds <cite>n_angles</cite> and <cite>radius</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Params n_angles<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Number of brute force rotations to attempt, defaults 360.</p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>radius</strong> – Brute force translation search radius.
+Defaults to src.L//32.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.BFSRAverager2D.align">
+<span class="sig-name descname"><span class="pre">align</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis_coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.BFSRAverager2D.align" title="Link to this definition">¶</a></dt>
+<dd><p>See <cite>AligningAverager2D.align</cite></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.BFSReddyChatterjiAverager2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.averager2d.</span></span><span class="sig-name descname"><span class="pre">BFSReddyChatterjiAverager2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composite_basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment_src</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.BFSReddyChatterjiAverager2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.averager2d.ReddyChatterjiAverager2D" title="aspire.classification.averager2d.ReddyChatterjiAverager2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReddyChatterjiAverager2D</span></code></a></p>
+<p>Brute Force Shifts (Translations) - ReddyChatterji (Log-Polar) Rotations</p>
+<p>For each shift within <cite>radius</cite>, attempts rotational match using ReddyChatterji.
+When averaging, performs shift before rotations,</p>
+<p>Adopted from Reddy Chatterji  (1996)
+An FFT-Based Technique for Translation,
+Rotation, and Scale-Invariant Image Registration
+IEEE TRANSACTIONS ON IMAGE PROCESSING, VOL. 5, NO. 8, AUGUST 1996</p>
+<p>This method intentionally does not use any of ASPIRE’s basis
+so that it may be used as a reference for more ASPIRE approaches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alignment_basis</strong> – Basis to be used during alignment.
+For current implementation of ReddyChatterjiAverager2D this should be <cite>None</cite>.
+Instead see <cite>alignment_src</cite>.</p></li>
+<li><p><strong>src</strong> – Source of original images.</p></li>
+<li><p><strong>composite_basis</strong> – Basis to be used during class average composition.</p></li>
+<li><p><strong>alignment_src</strong> – Optional, source to be used during class average alignment.
+Must be the same resolution as <cite>src</cite>.</p></li>
+<li><p><strong>radius</strong> – Brute force translation search radius.
+Defaults to src.L//8.</p></li>
+<li><p><strong>batch_size</strong> – Integer size of batches used for basis conversion.</p></li>
+<li><p><strong>dtype</strong> – Numpy dtype to be used during alignment.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.BFSReddyChatterjiAverager2D.align">
+<span class="sig-name descname"><span class="pre">align</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis_coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.BFSReddyChatterjiAverager2D.align" title="Link to this definition">¶</a></dt>
+<dd><p>Performs the actual rotational alignment estimation,
+returning parameters needed for averaging.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.BFSReddyChatterjiAverager2D.average">
+<span class="sig-name descname"><span class="pre">average</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coefs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.BFSReddyChatterjiAverager2D.average" title="Link to this definition">¶</a></dt>
+<dd><p>See Averager2D.average.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.BFTAverager2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.averager2d.</span></span><span class="sig-name descname"><span class="pre">BFTAverager2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composite_basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment_basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_angles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">360</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_radial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub_pixel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.BFTAverager2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.averager2d.AligningAverager2D" title="aspire.classification.averager2d.AligningAverager2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">AligningAverager2D</span></code></a></p>
+<p>This perfoms a Brute Force Translations and fast rotational alignment.</p>
+<dl class="simple">
+<dt>For each shift,</dt><dd><p>Perform polar Fourier cross correlation based rotational alignment.</p>
+</dd>
+</dl>
+<p>Return the rotation and shift yielding the best results.</p>
+<p>See AligningAverager2D. Adds <cite>n_angles</cite>, <cite>n_radial</cite>, <cite>radius</cite>, <cite>sub_pixel</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Params n_angles<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Number of PFT angular components, defaults 360.</p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>n_radial</strong> – Number of PFT radial components, defaults <cite>self.src.L//2</cite>.</p></li>
+<li><p><strong>radius</strong> – Brute force translation search radius.
+<cite>0</cite> disables translation search, rotations only.
+Defaults to <cite>src.L//32</cite>.</p></li>
+<li><p><strong>sub_pixel</strong> – Sub-pixel decimation used in brute force shift search.
+Defaults to 10 sub-pixel to pixel, ie 0.1 spaced sub-pixel.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.BFTAverager2D.align">
+<span class="sig-name descname"><span class="pre">align</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis_coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.BFTAverager2D.align" title="Link to this definition">¶</a></dt>
+<dd><p>See <cite>AligningAverager2D.align</cite></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.EMAverager2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.averager2d.</span></span><span class="sig-name descname"><span class="pre">EMAverager2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composite_basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.EMAverager2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.averager2d.Averager2D" title="aspire.classification.averager2d.Averager2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Averager2D</span></code></a></p>
+<p>Citation needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>composite_basis</strong> – Basis to be used during class average composition (eg FFB2D)</p></li>
+<li><p><strong>src</strong> – Source of original images.</p></li>
+<li><p><strong>batch_size</strong> – Integer size of batches used for basis conversion.</p></li>
+<li><p><strong>dtype</strong> – Numpy dtype to be used during alignment.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.FTKAverager2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.averager2d.</span></span><span class="sig-name descname"><span class="pre">FTKAverager2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composite_basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.FTKAverager2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.averager2d.Averager2D" title="aspire.classification.averager2d.Averager2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Averager2D</span></code></a></p>
+<p>Factorization of the translation kernel for fast rigid image alignment.
+Rangan, A.V., Spivak, M., Anden, J., &amp; Barnett, A.H. (2019).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>composite_basis</strong> – Basis to be used during class average composition (eg FFB2D)</p></li>
+<li><p><strong>src</strong> – Source of original images.</p></li>
+<li><p><strong>batch_size</strong> – Integer size of batches used for basis conversion.</p></li>
+<li><p><strong>dtype</strong> – Numpy dtype to be used during alignment.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.ReddyChatterjiAverager2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.averager2d.</span></span><span class="sig-name descname"><span class="pre">ReddyChatterjiAverager2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">composite_basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment_src</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.ReddyChatterjiAverager2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.averager2d.AligningAverager2D" title="aspire.classification.averager2d.AligningAverager2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">AligningAverager2D</span></code></a></p>
+<p>Attempts rotational estimation using Reddy Chatterji log polar Fourier cross correlation.
+Then attempts shift (translational) estimation using cross correlation.</p>
+<p>When averaging, performs rotations then shifts.</p>
+<p>Note, it may be possible to iterate this algorithm…</p>
+<p>Adopted from Reddy Chatterji  (1996)
+An FFT-Based Technique for Translation,
+Rotation, and Scale-Invariant Image Registration
+IEEE TRANSACTIONS ON IMAGE PROCESSING, VOL. 5, NO. 8, AUGUST 1996</p>
+<p>This method intentionally does not use any of ASPIRE’s basis
+so that it may be used as a reference for more ASPIRE approaches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>composite_basis</strong> – Basis to be used during class average composition.</p></li>
+<li><p><strong>src</strong> – Source of original images.</p></li>
+<li><p><strong>alignment_src</strong> – Optional, source to be used during class average alignment.
+Must be the same resolution as <cite>src</cite>.</p></li>
+<li><p><strong>batch_size</strong> – Integer size of batches used for basis conversion.</p></li>
+<li><p><strong>dtype</strong> – Numpy dtype to be used during alignment.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.ReddyChatterjiAverager2D.align">
+<span class="sig-name descname"><span class="pre">align</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis_coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.ReddyChatterjiAverager2D.align" title="Link to this definition">¶</a></dt>
+<dd><p>Performs the actual rotational alignment estimation,
+returning parameters needed for averaging.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.ReddyChatterjiAverager2D.average">
+<span class="sig-name descname"><span class="pre">average</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coefs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.ReddyChatterjiAverager2D.average" title="Link to this definition">¶</a></dt>
+<dd><p>This averages classes performing rotations then shifts.
+Otherwise is similar to <cite>AligningAverager2D.average</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.classification.averager2d.commute_shift_rot">
+<span class="sig-prename descclassname"><span class="pre">aspire.classification.averager2d.</span></span><span class="sig-name descname"><span class="pre">commute_shift_rot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shifts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rots</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.averager2d.commute_shift_rot" title="Link to this definition">¶</a></dt>
+<dd><p>Rotate <cite>shifts</cite> points by <cite>rots</cite> ccw radians.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>shifts</strong> – Array of shift points shaped (…, 2)</p></li>
+<li><p><strong>rots</strong> – Array of rotations (radians)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array of rotated shift points shaped (…, 2)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.classification.class2d">
+<span id="aspire-classification-class2d-module"></span><h2>aspire.classification.class2d module<a class="headerlink" href="#module-aspire.classification.class2d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class2d.Class2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class2d.</span></span><span class="sig-name descname"><span class="pre">Class2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_nbor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.class2d.Class2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Base class for 2D Image Classification methods.</p>
+<p>Base constructor of an object for classifying 2D images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – ImageSource or subclass, provides images.</p></li>
+<li><p><strong>n_nbor</strong> – Number of nearest neighbors to compute.</p></li>
+<li><p><strong>seed</strong> – Optional RNG seed to be passed to random methods, (example Random NN).</p></li>
+<li><p><strong>dtype</strong> – Numpy dtype, defaults to <cite>src.dtype</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.class2d.Class2D.classify">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">classify</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.class2d.Class2D.classify" title="Link to this definition">¶</a></dt>
+<dd><p>Classify the images from Source into classes with similar viewing angles.</p>
+<p>Returns classes and associated metadata (classes, reflections, distances)</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.classification.class_selection">
+<span id="aspire-classification-class-selection-module"></span><h2>aspire.classification.class_selection module<a class="headerlink" href="#module-aspire.classification.class_selection" title="Link to this heading">¶</a></h2>
+<p>Selecting the “best” classes is an area of active research.</p>
+<p>Here we provide an abstract base class with two naive approaches as
+concrete implementations.</p>
+<p><cite>RandomClassSelector</cite> will select random indices from across the
+entire dataset, with RNG controlled by <cite>seed</cite>.</p>
+<p><cite>TopClassSelector’ will select the first `n_classes</cite> in order.  This
+may be useful for debugging and development.</p>
+<p>Additionally we provide a few methods that have been used
+historically, along with a few classes which should aid in
+constructing new methods.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.BandedSNRImageQualityFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">BandedSNRImageQualityFunction</span></span><a class="headerlink" href="#aspire.classification.class_selection.BandedSNRImageQualityFunction" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.ImageQualityFunction" title="aspire.classification.class_selection.ImageQualityFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageQualityFunction</span></code></a></p>
+<p>Computes the ratio of variance of central pixels of image to
+pixels in a configurable outer band.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.BandpassImageQualityFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">BandpassImageQualityFunction</span></span><a class="headerlink" href="#aspire.classification.class_selection.BandpassImageQualityFunction" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.ImageQualityFunction" title="aspire.classification.class_selection.ImageQualityFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageQualityFunction</span></code></a></p>
+<p>Replicate behavior of MATLAB <cite>cryo_sort_stack_bandpass</cite> method.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.BumpWeightedImageQualityMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">BumpWeightedImageQualityMixin</span></span><a class="headerlink" href="#aspire.classification.class_selection.BumpWeightedImageQualityMixin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.WeightedImageQualityMixin" title="aspire.classification.class_selection.WeightedImageQualityMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">WeightedImageQualityMixin</span></code></a></p>
+<p>ImageQualityMixin to apply a [0,1] bump function.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.BumpWeightedVarianceImageQualityFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">BumpWeightedVarianceImageQualityFunction</span></span><a class="headerlink" href="#aspire.classification.class_selection.BumpWeightedVarianceImageQualityFunction" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.BumpWeightedImageQualityMixin" title="aspire.classification.class_selection.BumpWeightedImageQualityMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">BumpWeightedImageQualityMixin</span></code></a>, <a class="reference internal" href="#aspire.classification.class_selection.VarianceImageQualityFunction" title="aspire.classification.class_selection.VarianceImageQualityFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">VarianceImageQualityFunction</span></code></a></p>
+<p>Computes the variance of pixels after weighting with Bump function.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.ClassSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">ClassSelector</span></span><a class="headerlink" href="#aspire.classification.class_selection.ClassSelector" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Abstract interface for class selection.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.ClassSelector.quality_scores">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">quality_scores</span></span><a class="headerlink" href="#aspire.classification.class_selection.ClassSelector.quality_scores" title="Link to this definition">¶</a></dt>
+<dd><p>All <cite>ClassSelector</cite> should assign a quality score array the
+same length as the selection output.</p>
+<p>Function range is currently not limited, but [0,1] is
+favorable.  Currently there is not an expectation that one
+quality scoring system relates to another, or that the score
+is a proper metric. Quality scores are only required to be a
+self consistent ordering.</p>
+<p>For subclasses like TopClassSelector and RandomClassSelector
+where no quality information is derived, the associated
+<cite>_quality_scores</cite> should be set to zeros by <cite>_select</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.ClassSelector.select">
+<span class="sig-name descname"><span class="pre">select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">classes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflections</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distances</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.class_selection.ClassSelector.select" title="Link to this definition">¶</a></dt>
+<dd><p>Using the provided arguments, calls internal <cite>_select</cite>
+method, checks selection is sane, and returns an array representing
+an ordered index into <cite>classes</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>classes</strong> – (n_img, n_nbor) array of image indices</p></li>
+<li><p><strong>reflections</strong> – (n_img, n_nbor) boolean array of reflections between <cite>classes[i][0]</cite> and classes[i][j]`</p></li>
+<li><p><strong>distances</strong> – (n_img, n_nbor) array of distances between <cite>classes[i][0]</cite> and classes[i][j]`</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>array of indices into <cite>classes</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.DistanceClassSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">DistanceClassSelector</span></span><a class="headerlink" href="#aspire.classification.class_selection.DistanceClassSelector" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.ClassSelector" title="aspire.classification.class_selection.ClassSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassSelector</span></code></a></p>
+<p>Selects top classes based on lowest mean distance
+as estimated by <cite>distances</cite>.</p>
+<p>Note that <cite>distances</cite> is the Nearest Neighbors distances,
+and in the case of RIR this is a small rotationally invariant feature
+vector.  For methods based on class average images, see subclasses of <cite>GlobalClassSelector</cite>.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.GlobalClassSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">GlobalClassSelector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">averager</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quality_function</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heap_size_limit_bytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000000000.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.class_selection.GlobalClassSelector" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.ClassSelector" title="aspire.classification.class_selection.ClassSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassSelector</span></code></a></p>
+<p>Extends ClassSelector for methods that require
+passing over all class average images.</p>
+<p>Initializes a GlobalClassSelector.</p>
+<p>Because GlobalClassSelectors must compute all class averages,
+a heap cache maintains the top class averages as scored by
+<cite>quality_function</cite>.  If you have the memory, recommend setting
+the cache to be &gt; n_classes*img_size*img_size*img.dtype.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>averager</strong> – An Averager2D subclass.</p></li>
+<li><p><strong>quality_function</strong> – Function that takes an image and
+returns numeric quality score.  This score will be used to
+sort the classes.  User’s may provide a callable function,
+but extending <cite>ImageQualityFunction</cite> is recommended.  For
+example, this module provides methods for variance and SNR
+based quality.</p></li>
+<li><p><strong>heap_size_limit_bytes</strong> – Max heap size in Bytes.
+Defaults 2GB, 0 will disable.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.GlobalClassSelector.heap_ids">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">heap_ids</span></span><a class="headerlink" href="#aspire.classification.class_selection.GlobalClassSelector.heap_ids" title="Link to this definition">¶</a></dt>
+<dd><p>Return the image ids currently in the heap.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.GlobalClassSelector.heap_idx_map">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">heap_idx_map</span></span><a class="headerlink" href="#aspire.classification.class_selection.GlobalClassSelector.heap_idx_map" title="Link to this definition">¶</a></dt>
+<dd><p>Return map of image ids to heap position currently in the heap.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.GlobalVarianceClassSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">GlobalVarianceClassSelector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">averager</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">heap_size_limit_bytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2000000000.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.class_selection.GlobalVarianceClassSelector" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.GlobalClassSelector" title="aspire.classification.class_selection.GlobalClassSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">GlobalClassSelector</span></code></a></p>
+<p>GlobalClassSelector with VarianceImageQualityFunction.</p>
+<p>Computes per image variance for all images provided by
+<cite>averager</cite>, and selects for highest variance.</p>
+<p>Requires aligning the entire set of class averages.</p>
+<p>See <cite>GlobalClassSelector</cite> and <cite>VarianceImageQualityFunction</cite>
+for additional documentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>averager</strong> – An Averager2D subclass.</p></li>
+<li><p><strong>heap_size_limit_bytes</strong> – Max heap size in Bytes.
+Defaults 2GB, 0 will disable.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.GlobalWithRepulsionClassSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">GlobalWithRepulsionClassSelector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.class_selection.GlobalWithRepulsionClassSelector" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.GreedyClassRepulsionMixin" title="aspire.classification.class_selection.GreedyClassRepulsionMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">GreedyClassRepulsionMixin</span></code></a>, <a class="reference internal" href="#aspire.classification.class_selection.GlobalClassSelector" title="aspire.classification.class_selection.GlobalClassSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">GlobalClassSelector</span></code></a></p>
+<p>Extends ClassSelector for methods that require
+passing over all class average images and also GreedyClassRepulsionMixin.</p>
+<p>Sets optional <cite>exclude_k</cite>. All other args and <a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs are
+passed to super().</p>
+<p>GreedyClassRepulsionMixin is similar to <cite>cryo_select_subset</cite> from
+MATLAB, but MATLAB found <cite>exclude_k</cite> iteratively based on a
+desired result set size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>exclude_k</strong> – Number of neighbors from each class to
+exclude.  Defaults to all neighbors.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.GreedyClassRepulsionMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">GreedyClassRepulsionMixin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.class_selection.GreedyClassRepulsionMixin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Mixin to overload class selection based on excluding
+classes we’ve already seen as neighbors of another class.</p>
+<p>If the classes are well sorted (by some measure of quality),
+we assume the best representation is the first seen.</p>
+<p>Sets optional <cite>exclude_k</cite>. All other args and <a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs are
+passed to super().</p>
+<p>GreedyClassRepulsionMixin is similar to <cite>cryo_select_subset</cite> from
+MATLAB, but MATLAB found <cite>exclude_k</cite> iteratively based on a
+desired result set size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>exclude_k</strong> – Number of neighbors from each class to
+exclude.  Defaults to all neighbors.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.ImageQualityFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">ImageQualityFunction</span></span><a class="headerlink" href="#aspire.classification.class_selection.ImageQualityFunction" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>A callable image quality scoring function.</p>
+<p>The main advantage to using this class is to gain access to a grid
+caching and Image/Numpy conversion.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.NeighborVarianceClassSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">NeighborVarianceClassSelector</span></span><a class="headerlink" href="#aspire.classification.class_selection.NeighborVarianceClassSelector" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.ClassSelector" title="aspire.classification.class_selection.ClassSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassSelector</span></code></a></p>
+<p>Selects classes based on variances of <cite>distances</cite>.</p>
+<p>Note that <cite>distances</cite> is the Nearest Neighbors distances,
+and in the case of RIR this is a small rotationally invariant feature
+vector.  For methods based on class average images, see subclasses of <cite>GlobalClassSelector</cite>.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.NeighborVarianceWithRepulsionClassSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">NeighborVarianceWithRepulsionClassSelector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.class_selection.NeighborVarianceWithRepulsionClassSelector" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.GreedyClassRepulsionMixin" title="aspire.classification.class_selection.GreedyClassRepulsionMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">GreedyClassRepulsionMixin</span></code></a>, <a class="reference internal" href="#aspire.classification.class_selection.NeighborVarianceClassSelector" title="aspire.classification.class_selection.NeighborVarianceClassSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeighborVarianceClassSelector</span></code></a></p>
+<p>Selects top classes based on highest contrast with GreedyClassRepulsionMixin.</p>
+<p>Sets optional <cite>exclude_k</cite>. All other args and <a href="#id5"><span class="problematic" id="id6">**</span></a>kwargs are
+passed to super().</p>
+<p>GreedyClassRepulsionMixin is similar to <cite>cryo_select_subset</cite> from
+MATLAB, but MATLAB found <cite>exclude_k</cite> iteratively based on a
+desired result set size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>exclude_k</strong> – Number of neighbors from each class to
+exclude.  Defaults to all neighbors.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.RampWeightedImageQualityMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">RampWeightedImageQualityMixin</span></span><a class="headerlink" href="#aspire.classification.class_selection.RampWeightedImageQualityMixin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.WeightedImageQualityMixin" title="aspire.classification.class_selection.WeightedImageQualityMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">WeightedImageQualityMixin</span></code></a></p>
+<p>ImageQualityMixin to apply a linear ramp.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.RampWeightedVarianceImageQualityFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">RampWeightedVarianceImageQualityFunction</span></span><a class="headerlink" href="#aspire.classification.class_selection.RampWeightedVarianceImageQualityFunction" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.RampWeightedImageQualityMixin" title="aspire.classification.class_selection.RampWeightedImageQualityMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">RampWeightedImageQualityMixin</span></code></a>, <a class="reference internal" href="#aspire.classification.class_selection.VarianceImageQualityFunction" title="aspire.classification.class_selection.VarianceImageQualityFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">VarianceImageQualityFunction</span></code></a></p>
+<p>Computes the variance of pixels after weighting with Ramp function.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.RandomClassSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">RandomClassSelector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.class_selection.RandomClassSelector" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.ClassSelector" title="aspire.classification.class_selection.ClassSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassSelector</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>seed</strong> – RNG seed, de</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.TopClassSelector">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">TopClassSelector</span></span><a class="headerlink" href="#aspire.classification.class_selection.TopClassSelector" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.ClassSelector" title="aspire.classification.class_selection.ClassSelector"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassSelector</span></code></a></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.VarianceImageQualityFunction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">VarianceImageQualityFunction</span></span><a class="headerlink" href="#aspire.classification.class_selection.VarianceImageQualityFunction" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class_selection.ImageQualityFunction" title="aspire.classification.class_selection.ImageQualityFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageQualityFunction</span></code></a></p>
+<p>Computes the variance of pixels.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.WeightedImageQualityMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.class_selection.</span></span><span class="sig-name descname"><span class="pre">WeightedImageQualityMixin</span></span><a class="headerlink" href="#aspire.classification.class_selection.WeightedImageQualityMixin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Extends ImageQualityFunction with a radial grid weighted function
+for use in user defined <cite>_function</cite> calls.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.class_selection.WeightedImageQualityMixin.weights">
+<span class="sig-name descname"><span class="pre">weights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.class_selection.WeightedImageQualityMixin.weights" title="Link to this definition">¶</a></dt>
+<dd><p>Returns  2D array of weights for a given resolution L.
+Computes and caches on first request.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>L</strong> – resolution pixels</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>2d weight array for LxL grid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.classification.legacy_implementations">
+<span id="aspire-classification-legacy-implementations-module"></span><h2>aspire.classification.legacy_implementations module<a class="headerlink" href="#module-aspire.classification.legacy_implementations" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.classification.legacy_implementations.bispec_2drot_large">
+<span class="sig-prename descclassname"><span class="pre">aspire.classification.legacy_implementations.</span></span><span class="sig-name descname"><span class="pre">bispec_2drot_large</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freqs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eigval</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.legacy_implementations.bispec_2drot_large" title="Link to this definition">¶</a></dt>
+<dd><p>alpha 1/3
+sample_n 4000</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.classification.legacy_implementations.bispec_operator_1">
+<span class="sig-prename descclassname"><span class="pre">aspire.classification.legacy_implementations.</span></span><span class="sig-name descname"><span class="pre">bispec_operator_1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freqs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.legacy_implementations.bispec_operator_1" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.classification.legacy_implementations.pca_y">
+<span class="sig-prename descclassname"><span class="pre">aspire.classification.legacy_implementations.</span></span><span class="sig-name descname"><span class="pre">pca_y</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.legacy_implementations.pca_y" title="Link to this definition">¶</a></dt>
+<dd><p>PCA using QR factorization.</p>
+<p>See:</p>
+<p>An algorithm for the principal component analysis of large data sets.
+Halko, Martinsson, Shkolnisky, Tygert , SIAM 2011.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Data matrix</p></li>
+<li><p><strong>k</strong> – Number of estimated Principal Components.</p></li>
+<li><p><strong>num_iters</strong> – Number of dot product applications.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(left Singular Vectors, Singular Values, right Singular Vectors)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.classification.reddy_chatterji">
+<span id="aspire-classification-reddy-chatterji-module"></span><h2>aspire.classification.reddy_chatterji module<a class="headerlink" href="#module-aspire.classification.reddy_chatterji" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.classification.reddy_chatterji.reddy_chatterji_register">
+<span class="sig-prename descclassname"><span class="pre">aspire.classification.reddy_chatterji.</span></span><span class="sig-name descname"><span class="pre">reddy_chatterji_register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">images</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reflection</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_cross_corr_translations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.reddy_chatterji.reddy_chatterji_register" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the Reddy Chatterji method registering images[1:] to images[0].</p>
+<p>This differs from papers and published scikit implimentations by
+computing the fixed base image[0] pipeline once then reusing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>images</strong> – Image data (m_img, L, L)</p></li>
+<li><p><strong>reflection</strong> – Image reflections (m_img,)</p></li>
+<li><p><strong>mask</strong> – Support of image. Defaults to disk with radius images.shape[-1]//2.</p></li>
+<li><p><strong>do_cross_corr_translations</strong> – Solve trnaslations by using cross correlation (log polar) method.</p></li>
+<li><p><strong>dtype</strong> – Specify dtype.  Defaults to infer from images.dtype</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(rotations, shifts, correlations) corresponding to <cite>images</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.classification.rir_class2d">
+<span id="aspire-classification-rir-class2d-module"></span><h2>aspire.classification.rir_class2d module<a class="headerlink" href="#module-aspire.classification.rir_class2d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.classification.rir_class2d.RIRClass2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.classification.rir_class2d.</span></span><span class="sig-name descname"><span class="pre">RIRClass2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pca_basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fspca_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.3333333333333333</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bispectrum_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_nbor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bispectrum_freq_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">large_pca_implementation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'legacy'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_implementation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'legacy'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bispectrum_implementation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'legacy'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.rir_class2d.RIRClass2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.classification.class2d.Class2D" title="aspire.classification.class2d.Class2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Class2D</span></code></a></p>
+<p>Constructor of an object for classifying 2D images using
+Rotationally Invariant Representation (RIR) algorithm.</p>
+<p>At a high level this consumes a Source instance <cite>src</cite>,
+and a FSPCA Basis <cite>pca_basis</cite>.</p>
+<p>Yield class averages by first performing <cite>classify</cite>,
+then performing <cite>output</cite>.</p>
+<p>Z. Zhao, Y. Shkolnisky, A. Singer, Rotationally Invariant Image Representation
+for Viewing Direction Classification in Cryo-EM. (2014)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Source instance, for classification.</p></li>
+<li><p><strong>pca_basis</strong> – Optional FSPCA Basis instance</p></li>
+<li><p><strong>fspca_components</strong> – Optinally set number of components (top eigvals) to keep from full FSCPA.
+Default value of None will infer from <cite>pca_basis</cite> when provided, otherwise defaults to 400.</p></li>
+<li><p><strong>alpha</strong> – Amplitude Power Scale, default 1/3 (eq 20 from  RIIR paper).</p></li>
+<li><p><strong>sample_n</strong> – Threshold for random sampling of bispectrum coefs. Default 4000,
+high values such as 50000 reduce random sampling.</p></li>
+<li><p><strong>n_nbor</strong> – Number of nearest neighbors to compute.</p></li>
+<li><p><strong>bispectrum_freq_cutoff</strong> – Truncate (zero) high k frequecies above (int) value, defaults off (None).</p></li>
+<li><p><strong>large_pca_implementation</strong> – See <cite>pca</cite>.</p></li>
+<li><p><strong>nn_implementation</strong> – See <cite>nn_classification</cite>.</p></li>
+<li><p><strong>bispectrum_implementation</strong> – See <cite>bispectrum</cite>.</p></li>
+<li><p><strong>batch_size</strong> – Chunk size (typically number of images) for batched methods.</p></li>
+<li><p><strong>dtype</strong> – Optional dtype, otherwise taken from src.</p></li>
+<li><p><strong>seed</strong> – Optional RNG seed to be passed to random methods, (example Random NN).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.rir_class2d.RIRClass2D.bispectrum">
+<span class="sig-name descname"><span class="pre">bispectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.rir_class2d.RIRClass2D.bispectrum" title="Link to this definition">¶</a></dt>
+<dd><p>All bispectrum implementations should consume a stack of fspca coef
+and return bispectrum coefficients.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>coef</strong> – complex steerable coefficients (eg. from FSPCABasis).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple of arrays (coef_b, coef_b_r)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.rir_class2d.RIRClass2D.classify">
+<span class="sig-name descname"><span class="pre">classify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">diagnostics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.rir_class2d.RIRClass2D.classify" title="Link to this definition">¶</a></dt>
+<dd><p>This is the high level method to perform the 2D images classification.</p>
+<p>The stages of this method are intentionally modular so they may be
+swapped for other implementations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>diagnostics</strong> – Optionally plots distribution of distances</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.rir_class2d.RIRClass2D.nn_classification">
+<span class="sig-name descname"><span class="pre">nn_classification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coef_b_r</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.rir_class2d.RIRClass2D.nn_classification" title="Link to this definition">¶</a></dt>
+<dd><p>Takes in features as pair of arrays (coef_b coef_b_r),
+each having shape (n_img, features)
+where features = min(self.bispectrum_components, n_img).</p>
+<p>Result is array (n_img, n_nbor) with entry <cite>i</cite> representing
+index <cite>i</cite> into class input img array (src).</p>
+<p>To extend with an additonal Nearest Neighbor algo,
+add as a private method and list in nn_implementations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coef_b</strong></p></li>
+<li><p><strong>coef_b_r</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of classes, refl, dists where
+classes is an integer array of indices representing image ids,
+refl is a bool array representing reflections (True is refl),
+and distances is an array of distances as returned by NN implementation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.classification.rir_class2d.RIRClass2D.pca">
+<span class="sig-name descname"><span class="pre">pca</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">M</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.classification.rir_class2d.RIRClass2D.pca" title="Link to this definition">¶</a></dt>
+<dd><p>Any PCA implementation here should return both
+coef_b and coef_b_r that are (n_img, n_components).</p>
+<p><cite>n_components</cite> is typically self.bispectrum_components.
+However, for small problems it may return <cite>n_components`=`n_img</cite>,
+since that would be the smallest dimension.</p>
+<p>To extend class with an additional PCA like method,
+add as private method and list in <cite>large_pca_implementations</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>M</strong> – Array (n_img, m_features), typically complex.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of arrays coef_b coef_b_r.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.classification">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.classification" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.basis.html" class="btn btn-neutral float-left" title="aspire.basis package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.commands.html" class="btn btn-neutral float-right" title="aspire.commands package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,357 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Image Orientation &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="ASPIRE Image Class" href="image_class.html" />
+    <link rel="prev" title="2D Covariance Estimation" href="cov2d_simulation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#api-introduction">API Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#component-examples">Component Examples</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">Component Examples</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="cov2d_simulation.html">2D Covariance Estimation</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">3D Image Orientation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_class.html">ASPIRE Image Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apple_picker.html">Apple Picker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="basic_image_array.html">Basic Image Array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ctf.html">CTF: Contrast Transfer Function</a></li>
+<li class="toctree-l4"><a class="reference internal" href="class_averaging.html">Class Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cov3d_simulation.html">Covariance 3D Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data_downloader.html">Data Downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generating_volume_projections.html">Generating 3D Volume Projections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_expansion.html">Image Expansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="preprocess_imgs_sim.html">Image Preprocessing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="micrograph_source.html">Micrograph Sources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="relion_projection_interop.html">Relion Projection Interoperability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="starfile.html">Starfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="weighted_volume_estimation.html">Weighted Volume Reconstruction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Component Examples</a></li>
+      <li class="breadcrumb-item active">3D Image Orientation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/auto_tutorials/tutorials/orient3d_simulation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-tutorials-orient3d-simulation-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="d-image-orientation">
+<span id="sphx-glr-auto-tutorials-tutorials-orient3d-simulation-py"></span><h1>3D Image Orientation<a class="headerlink" href="#d-image-orientation" title="Link to this heading">¶</a></h1>
+<p>This script illustrates the estimation of orientation angles using a synchronization
+matrix and the voting method, based on simulated data projected from a 3D cryo-EM map.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.abinitio</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLSyncVoting</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.operators</span><span class="w"> </span><span class="kn">import</span> <span class="n">RadialCTFFilter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrientedSource</span><span class="p">,</span> <span class="n">Simulation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">mean_aligned_angular_distance</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.volume</span><span class="w"> </span><span class="kn">import</span> <span class="n">Volume</span>
+
+<span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()),</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;clean70SRibosome_vol_65p.mrc&quot;</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;This script illustrates orientation estimation using &quot;</span>
+    <span class="s2">&quot;synchronization matrix and voting method&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>This script illustrates orientation estimation using synchronization matrix and voting method
+</pre></div>
+</div>
+<section id="initialize-simulation-object-and-ctf-filters">
+<h2>Initialize Simulation Object and CTF Filters<a class="headerlink" href="#initialize-simulation-object-and-ctf-filters" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Define a precision for this experiment</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+
+<span class="c1"># Set the sizes of images</span>
+<span class="n">img_size</span> <span class="o">=</span> <span class="mi">33</span>
+
+<span class="c1"># Set the total number of images generated from the 3D map</span>
+<span class="n">num_imgs</span> <span class="o">=</span> <span class="mi">128</span>
+
+<span class="c1"># Specify the CTF parameters not used for this example</span>
+<span class="c1"># but necessary for initializing the simulation object</span>
+<span class="n">voltage</span> <span class="o">=</span> <span class="mi">200</span>  <span class="c1"># Voltage (in KV)</span>
+<span class="n">defocus_min</span> <span class="o">=</span> <span class="mf">1.5e4</span>  <span class="c1"># Minimum defocus value (in angstroms)</span>
+<span class="n">defocus_max</span> <span class="o">=</span> <span class="mf">2.5e4</span>  <span class="c1"># Maximum defocus value (in angstroms)</span>
+<span class="n">defocus_ct</span> <span class="o">=</span> <span class="mi">7</span>  <span class="c1"># Number of defocus groups.</span>
+<span class="n">Cs</span> <span class="o">=</span> <span class="mf">2.0</span>  <span class="c1"># Spherical aberration</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c1"># Amplitude contrast</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initialize simulation object and CTF filters.&quot;</span><span class="p">)</span>
+<span class="c1"># Create CTF filters</span>
+<span class="n">filters</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">RadialCTFFilter</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">defocus</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">Cs</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">defocus_min</span><span class="p">,</span> <span class="n">defocus_max</span><span class="p">,</span> <span class="n">defocus_ct</span><span class="p">)</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Initialize simulation object and CTF filters.
+</pre></div>
+</div>
+</section>
+<section id="downsampling">
+<h2>Downsampling<a class="headerlink" href="#downsampling" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the map file of a 70S Ribosome and downsample the 3D map to desired resolution.</span>
+<span class="c1"># The downsampling can be done by the internal function of Volume object.</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Load 3D map and downsample 3D map to desired grids &quot;</span>
+    <span class="sa">f</span><span class="s2">&quot;of </span><span class="si">{</span><span class="n">img_size</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">img_size</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">img_size</span><span class="si">}</span><span class="s2">.&quot;</span>
+<span class="p">)</span>
+<span class="n">vols</span> <span class="o">=</span> <span class="n">Volume</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+<span class="n">vols</span> <span class="o">=</span> <span class="n">vols</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">img_size</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Load 3D map and downsample 3D map to desired grids of 33 x 33 x 33.
+</pre></div>
+</div>
+</section>
+<section id="create-simulation-object-and-obtain-true-rotation-angles">
+<h2>Create Simulation Object and Obtain True Rotation Angles<a class="headerlink" href="#create-simulation-object-and-obtain-true-rotation-angles" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a simulation object with specified filters and the downsampled 3D map</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Use downsampled map to creat simulation object.&quot;</span><span class="p">)</span>
+<span class="n">sim</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span>
+    <span class="n">L</span><span class="o">=</span><span class="n">img_size</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">num_imgs</span><span class="p">,</span> <span class="n">vols</span><span class="o">=</span><span class="n">vols</span><span class="p">,</span> <span class="n">unique_filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Get true rotation angles generated randomly by the simulation object.&quot;</span><span class="p">)</span>
+<span class="n">rots_true</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">rotations</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Use downsampled map to creat simulation object.
+Get true rotation angles generated randomly by the simulation object.
+</pre></div>
+</div>
+</section>
+<section id="estimate-orientation">
+<h2>Estimate Orientation<a class="headerlink" href="#estimate-orientation" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Initialize an orientation estimation object and create an</span>
+<span class="c1"># ``OrientedSource`` object to perform viewing angle and image offset</span>
+<span class="c1"># estimation. Here, because of the small image size of the</span>
+<span class="c1"># ``Simulation``, we customize the ``CLSyncVoting`` method to use</span>
+<span class="c1"># fewer theta values when searching for common-lines between pairs of</span>
+<span class="c1"># images. Additionally, since we are processing images with no noise,</span>
+<span class="c1"># we opt not to use a ``fuzzy_mask``, an option that improves</span>
+<span class="c1"># common-line detection in higher noise regimes.</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;Estimate rotation angles and offsets using synchronization matrix and voting method.&quot;</span>
+<span class="p">)</span>
+<span class="n">orient_est</span> <span class="o">=</span> <span class="n">CLSyncVoting</span><span class="p">(</span><span class="n">sim</span><span class="p">,</span> <span class="n">n_theta</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">oriented_src</span> <span class="o">=</span> <span class="n">OrientedSource</span><span class="p">(</span><span class="n">sim</span><span class="p">,</span> <span class="n">orient_est</span><span class="p">)</span>
+<span class="n">rots_est</span> <span class="o">=</span> <span class="n">oriented_src</span><span class="o">.</span><span class="n">rotations</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Estimate rotation angles and offsets using synchronization matrix and voting method.
+
+Searching over common line pairs:   0%|          | 0/8128 [00:00&lt;?, ?it/s]
+Searching over common line pairs:   7%|▋         | 549/8128 [00:00&lt;00:01, 5488.28it/s]
+Searching over common line pairs:  14%|█▎        | 1098/8128 [00:00&lt;00:01, 5480.30it/s]
+Searching over common line pairs:  20%|██        | 1647/8128 [00:00&lt;00:01, 5462.68it/s]
+Searching over common line pairs:  27%|██▋       | 2197/8128 [00:00&lt;00:01, 5473.67it/s]
+Searching over common line pairs:  34%|███▍      | 2745/8128 [00:00&lt;00:00, 5465.27it/s]
+Searching over common line pairs:  41%|████      | 3295/8128 [00:00&lt;00:00, 5474.98it/s]
+Searching over common line pairs:  47%|████▋     | 3843/8128 [00:00&lt;00:00, 5474.54it/s]
+Searching over common line pairs:  54%|█████▍    | 4391/8128 [00:00&lt;00:00, 5468.43it/s]
+Searching over common line pairs:  61%|██████    | 4938/8128 [00:00&lt;00:00, 5467.67it/s]
+Searching over common line pairs:  67%|██████▋   | 5486/8128 [00:01&lt;00:00, 5468.79it/s]
+Searching over common line pairs:  74%|███████▍  | 6034/8128 [00:01&lt;00:00, 5470.35it/s]
+Searching over common line pairs:  81%|████████  | 6582/8128 [00:01&lt;00:00, 5457.08it/s]
+Searching over common line pairs:  88%|████████▊ | 7131/8128 [00:01&lt;00:00, 5466.55it/s]
+Searching over common line pairs:  94%|█████████▍| 7678/8128 [00:01&lt;00:00, 5462.41it/s]
+Searching over common line pairs: 100%|██████████| 8128/8128 [00:01&lt;00:00, 5465.46it/s]
+
+LSQR            Least-squares solution of  Ax = b
+The matrix A has 8128 rows and 256 columns
+damp = 0.00000000000000e+00   calc_var =        0
+atol = 1.00e-08                 conlim = 1.00e+08
+btol = 1.00e-08               iter_lim =      100
+
+   Itn      x[0]       r1norm     r2norm   Compatible    LS      Norm A   Cond A
+     0  0.00000e+00   2.324e+02  2.324e+02    1.0e+00  2.8e-02
+     1 -2.05251e+00   1.351e+02  1.351e+02    5.8e-01  1.9e-01   8.1e+00  1.0e+00
+     2 -2.09437e+00   1.328e+02  1.328e+02    5.7e-01  2.4e-02   1.2e+01  2.0e+00
+     3 -2.08312e+00   1.327e+02  1.327e+02    5.7e-01  3.2e-03   1.4e+01  3.1e+00
+     4 -2.07537e+00   1.327e+02  1.327e+02    5.7e-01  8.4e-04   1.7e+01  4.1e+00
+     5 -2.07787e+00   1.327e+02  1.327e+02    5.7e-01  1.3e-03   1.7e+01  6.0e+00
+     6 -2.02640e+00   1.327e+02  1.327e+02    5.7e-01  4.3e-03   1.9e+01  1.9e+01
+     7 -1.75157e+00   1.327e+02  1.327e+02    5.7e-01  4.0e-03   2.0e+01  4.7e+01
+     8 -1.68318e+00   1.327e+02  1.327e+02    5.7e-01  7.8e-04   2.2e+01  5.5e+01
+     9 -1.68332e+00   1.327e+02  1.327e+02    5.7e-01  1.5e-04   2.4e+01  6.0e+01
+    10 -1.68338e+00   1.327e+02  1.327e+02    5.7e-01  3.9e-05   2.5e+01  6.3e+01
+    21 -1.67857e+00   1.327e+02  1.327e+02    5.7e-01  5.1e-08   3.5e+01  1.5e+02
+    22 -1.67856e+00   1.327e+02  1.327e+02    5.7e-01  6.7e-09   3.6e+01  1.6e+02
+
+LSQR finished
+The least-squares solution is good enough, given atol
+
+istop =       2   r1norm = 1.3e+02   anorm = 3.6e+01   arnorm = 3.2e-05
+itn   =      22   r2norm = 1.3e+02   acond = 1.6e+02   xnorm  = 2.6e+01
+</pre></div>
+</div>
+</section>
+<section id="mean-angular-distance">
+<h2>Mean Angular Distance<a class="headerlink" href="#mean-angular-distance" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># ``mean_aligned_angular_distance`` will perform global alignment of the estimated rotations</span>
+<span class="c1"># to the ground truth and find the mean angular distance between them (in degrees).</span>
+<span class="n">mean_ang_dist</span> <span class="o">=</span> <span class="n">mean_aligned_angular_distance</span><span class="p">(</span><span class="n">rots_est</span><span class="p">,</span> <span class="n">rots_true</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Mean angular distance between estimates and ground truth: </span><span class="si">{</span><span class="n">mean_ang_dist</span><span class="si">}</span><span class="s2"> degrees&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Basic Check</span>
+<span class="k">assert</span> <span class="n">mean_ang_dist</span> <span class="o">&lt;</span> <span class="mi">10</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Mean angular distance between estimates and ground truth: 8.62316608428955 degrees
+</pre></div>
+</div>
+</section>
+<section id="offsets-estimation">
+<h2>Offsets Estimation<a class="headerlink" href="#offsets-estimation" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># The ground truth offsets from the simulation can be compared to</span>
+<span class="c1"># those estimated by the commonlines method above.</span>
+
+<span class="c1"># Calculate Estimation error in pixels for each image.</span>
+<span class="n">offs_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">oriented_src</span><span class="o">.</span><span class="n">offsets</span> <span class="o">-</span> <span class="n">sim</span><span class="o">.</span><span class="n">offsets</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="c1"># Calculate the mean error in pixels across all images.</span>
+<span class="n">offs_err</span> <span class="o">=</span> <span class="n">offs_diff</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean offset error in pixels </span><span class="si">{</span><span class="n">offs_err</span><span class="si">}</span><span class="s2">, approx </span><span class="si">{</span><span class="n">offs_err</span><span class="o">/</span><span class="n">img_size</span><span class="o">*</span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Mean offset error in pixels 1.0037692055750078, approx 3.0%
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 4.036 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-tutorials-orient3d-simulation-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/9b572d23732e8373d86861fc8142e04d/orient3d_simulation.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">orient3d_simulation.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/783d53cee66208991e50fa5dbc6d2fc7/orient3d_simulation.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">orient3d_simulation.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/38fdfad0b046a41336f4fd574c6b3d02/orient3d_simulation.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">orient3d_simulation.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cov2d_simulation.html" class="btn btn-neutral float-left" title="2D Covariance Estimation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="image_class.html" class="btn btn-neutral float-right" title="ASPIRE Image Class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,315 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting Started - CLI" href="quickstart.html" />
+    <link rel="prev" title="Aspire v0.14.2" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#install-conda">Install Conda</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started-installation">Getting Started - Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test-the-package">Test the package</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optimized-numerical-backends">Optimized Numerical Backends</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-gpu-extensions">Installing GPU Extensions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#generating-documentation">Generating Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading">¶</a></h1>
+<p>This package is tested on Linux/Windows/Mac OS X. Pre-built binaries
+should be available for platform-specific dependencies. No manual
+compilation should be needed.</p>
+<p>For end users who simply want to use or run scripts depending on
+ASPIRE, installing the <code class="docutils literal notranslate"><span class="pre">aspire</span></code> package from PyPI is sufficient.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Installing the package installs ASPIRE to the
+<code class="docutils literal notranslate"><span class="pre">site-packages</span></code> folder of your active environment.  This is only
+desirable if you are not going to be doing any development on
+ASPIRE, and only intend to run scripts that depend on the ASPIRE
+package.</p>
+</div>
+<p>For those who wish to develop, we recommend starting with the
+instructions on our README (copied below). Additionally some more
+advanced instructions are provided here for installing with software
+and hardware optimizations.  Although not explicitly required, For
+developers and users not confident in software management the use of
+<code class="docutils literal notranslate"><span class="pre">conda</span></code> is strongly encouraged.</p>
+<section id="install-conda">
+<h2>Install Conda<a class="headerlink" href="#install-conda" title="Link to this heading">¶</a></h2>
+<p>To follow the suggested installation, you will need to install Conda
+for <strong>Python3</strong>, either <a class="reference external" href="https://www.anaconda.com/download/#linux">Anaconda</a> or <a class="reference external" href="https://conda.io/miniconda.html">Miniconda</a>, click on the right distribution
+to view Conda’s installation instructions.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you’re not sure which distribution is right for you, go
+with <a class="reference external" href="https://conda.io/miniconda.html">Miniconda</a></p>
+</div>
+</section>
+<section id="getting-started-installation">
+<h2>Getting Started - Installation<a class="headerlink" href="#getting-started-installation" title="Link to this heading">¶</a></h2>
+<p>Python 3.9 is used as an example, but the same procedure should work
+for any of our supported Python versions 3.9-3.12. Below we pip install
+the <code class="docutils literal notranslate"><span class="pre">aspire</span></code> package using the <code class="docutils literal notranslate"><span class="pre">-e</span></code> flag to install the project in
+editable mode. The <code class="docutils literal notranslate"><span class="pre">&quot;.[dev]&quot;</span></code> command installs <code class="docutils literal notranslate"><span class="pre">aspire</span></code> from the local
+path with additional development tools such as pytest and Jupyter Notebook.
+See the <a class="reference external" href="https://pip.pypa.io/en/stable/cli/pip_install/#options">pip documentation</a>
+for more details on using pip install.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clone the code</span>
+<span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">ComputationalCryoEM</span><span class="o">/</span><span class="n">ASPIRE</span><span class="o">-</span><span class="n">Python</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">ASPIRE</span><span class="o">-</span><span class="n">Python</span>
+
+<span class="c1"># Create a fresh environment</span>
+<span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="n">aspire</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span> <span class="n">pip</span>
+
+<span class="c1"># Enable the environment</span>
+<span class="n">conda</span> <span class="n">activate</span> <span class="n">aspire</span>
+
+<span class="c1"># Install the ``aspire`` package from the checked out code</span>
+<span class="c1"># with the additional ``dev`` extension.</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;.[dev]&quot;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Required dependent packages supporting the latest Python may only be supported on Linux.</p>
+</div>
+</section>
+<section id="test-the-package">
+<h2>Test the package<a class="headerlink" href="#test-the-package" title="Link to this heading">¶</a></h2>
+<p>Make sure all unit tests run correctly by doing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span>
+</pre></div>
+</div>
+<p>Tests currently take around 15 minutes to run, but this depends on
+your specific machine’s resources and configuration.</p>
+</section>
+<section id="optimized-numerical-backends">
+<h2>Optimized Numerical Backends<a class="headerlink" href="#optimized-numerical-backends" title="Link to this heading">¶</a></h2>
+<p>For advanced users, <code class="docutils literal notranslate"><span class="pre">conda</span></code> provides optimized numerical backends
+that offer significant performance improvements on appropriate
+machines.  The backends accelerate the performance of <code class="docutils literal notranslate"><span class="pre">numpy</span></code>,
+<code class="docutils literal notranslate"><span class="pre">scipy</span></code>, and <code class="docutils literal notranslate"><span class="pre">scikit</span></code> packages.  ASPIRE ships several
+<code class="docutils literal notranslate"><span class="pre">environment*.yml</span></code> files which define tested package versions along
+with these optimized numerical installations.</p>
+<p>The default <code class="docutils literal notranslate"><span class="pre">environment-default.yml</span></code> does not force a specific
+backend, instead relying on <code class="docutils literal notranslate"><span class="pre">conda</span></code> to select something reasonable.
+In the case of an Intel machine, the default <code class="docutils literal notranslate"><span class="pre">conda</span></code> install will
+automatically install some optimizations for you.  However, these
+files can be used to specify a specific setup or as the basis for your
+own customized <code class="docutils literal notranslate"><span class="pre">conda</span></code> environment.</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Suggested Conda Environments</span><a class="headerlink" href="#id1" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Architecture</p></th>
+<th class="head"><p>Recommended Environment File</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Default</p></td>
+<td><p>environment-default.yml</p></td>
+</tr>
+<tr class="row-odd"><td><p>Intel x86_64</p></td>
+<td><p>environment-intel.yml</p></td>
+</tr>
+<tr class="row-even"><td><p>AMD x86_64</p></td>
+<td><p>environment-openblas.yml</p></td>
+</tr>
+<tr class="row-odd"><td><p>Apple M1</p></td>
+<td><p>environment-accelerate.yml</p></td>
+</tr>
+</tbody>
+</table>
+<p>Using any of these environments follows the same pattern outlined
+below.  As an example to specify using the <code class="docutils literal notranslate"><span class="pre">accelerate</span></code> backend on
+an M1 laptop:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">ASPIRE</span><span class="o">-</span><span class="n">Python</span>
+<span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">f</span> <span class="n">environment</span><span class="o">-</span><span class="n">accelerate</span><span class="o">.</span><span class="n">yml</span> <span class="o">--</span><span class="n">name</span> <span class="n">aspire_acc</span>
+<span class="n">conda</span> <span class="n">activate</span> <span class="n">aspire_acc</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;.[dev]&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="installing-gpu-extensions">
+<h2>Installing GPU Extensions<a class="headerlink" href="#installing-gpu-extensions" title="Link to this heading">¶</a></h2>
+<p>ASPIRE does support using a GPU, depending on several external
+packages.  The collection of GPU extensions can be installed using
+<code class="docutils literal notranslate"><span class="pre">pip</span></code>.  Extensions are grouped based on CUDA versions.  To find the
+CUDA driver version, run <code class="docutils literal notranslate"><span class="pre">nvidia-smi</span></code> on the intended system.</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">CUDA GPU Extension Versions</span><a class="headerlink" href="#id2" title="Link to this table">¶</a></caption>
+<colgroup>
+<col style="width: 50.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>CUDA Version</p></th>
+<th class="head"><p>ASPIRE Extension</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>&gt;=12</p></td>
+<td><p>gpu-12x</p></td>
+</tr>
+</tbody>
+</table>
+<p>For example, if you have CUDA 12.3 installed on your system,
+the command below would install GPU packages required for ASPIRE.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># From a local git repo</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;.[gpu-12x]&quot;</span>
+
+<span class="c1"># From PyPI</span>
+<span class="n">pip</span> <span class="n">install</span> <span class="s2">&quot;aspire[gpu-12x]&quot;</span>
+</pre></div>
+</div>
+<p>By default if the required GPU extensions are correctly installed,
+ASPIRE should automatically begin using the GPU calls to our <code class="docutils literal notranslate"><span class="pre">nufft</span></code> module.</p>
+<p>Using GPU in other areas of the code is still an experimental feature
+and requires a minor configuration setting to enable <code class="docutils literal notranslate"><span class="pre">cupy</span></code>. See the
+<a class="reference internal" href="auto_tutorials/configuration.html#sphx-glr-auto-tutorials-configuration-py"><span class="std std-ref">ASPIRE Configuration</span></a> for details. Because
+GPU extensions depend on several third party softwares and machines
+vary wildly, we can only offer limited support if one of the packages
+has a problem on your system.  We are currently expanding GPU code
+coverage.</p>
+</section>
+<section id="generating-documentation">
+<h2>Generating Documentation<a class="headerlink" href="#generating-documentation" title="Link to this heading">¶</a></h2>
+<p>Sphinx Documentation of the source (a local copy of what you’re
+looking at right now) can be generated by using the following commands
+from the root of the code repository.</p>
+<p>ASPIRE has both traditional documentation and a gallery of tutorial
+scripts.  To make only the documentation run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">html-noplot</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">html</span></code> command makes the traditonal documentation then runs
+and renders the <code class="docutils literal notranslate"><span class="pre">gallery/tutorials</span></code> examples, which takes several
+minutes.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">docs</span>
+
+<span class="c1"># Parse the code in ``src``</span>
+<span class="n">sphinx</span><span class="o">-</span><span class="n">apidoc</span> <span class="o">-</span><span class="n">f</span> <span class="o">-</span><span class="n">o</span> <span class="o">./</span><span class="n">source</span> <span class="o">../</span><span class="n">src</span> <span class="o">-</span><span class="n">H</span> <span class="n">Modules</span>
+
+<span class="n">make</span> <span class="n">html</span><span class="o">-</span><span class="n">noplot</span>  <span class="c1"># Generate only documentation</span>
+<span class="c1"># or</span>
+<span class="n">make</span> <span class="n">html</span>         <span class="c1"># Generate documentation and gallery examples</span>
+
+<span class="c1"># To remove any documentation build artifacts</span>
+<span class="n">make</span> <span class="n">distclean</span>
+</pre></div>
+</div>
+<p>The resulting html files can be found at <code class="docutils literal notranslate"><span class="pre">docs/build/html</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Aspire v0.14.2" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quickstart.html" class="btn btn-neutral float-right" title="Getting Started - CLI" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

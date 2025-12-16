@@ -1,0 +1,580 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.denoising package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.downloader package" href="aspire.downloader.html" />
+    <link rel="prev" title="aspire.ctf package" href="aspire.ctf.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.denoising package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.denoising.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-denoising-package">
+<h1>aspire.denoising package<a class="headerlink" href="#aspire-denoising-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.denoising.adaptive_support">
+<span id="aspire-denoising-adaptive-support-module"></span><h2>aspire.denoising.adaptive_support module<a class="headerlink" href="#module-aspire.denoising.adaptive_support" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.denoising.adaptive_support.adaptive_support">
+<span class="sig-prename descclassname"><span class="pre">aspire.denoising.adaptive_support.</span></span><span class="sig-name descname"><span class="pre">adaptive_support</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img_src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">energy_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.99</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.adaptive_support.adaptive_support" title="Link to this definition">¶</a></dt>
+<dd><p>Determine size of the compact support in both real and Fourier Space.</p>
+<p>Returns c_limit (support radius in Fourier space),
+and R_limit (support radius in real space).</p>
+<p>Fourier c_limit is scaled in range [0, 0.5].
+R_limit is in pixels [0, Image.resolution/2].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>img_src</strong> – Input <cite>Source</cite> of images.</p></li>
+<li><p><strong>energy_threshold</strong> – [0, 1] threshold limit</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(c_limit, R_limit)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.denoising.class_avg">
+<span id="aspire-denoising-class-avg-module"></span><h2>aspire.denoising.class_avg module<a class="headerlink" href="#module-aspire.denoising.class_avg" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.ClassAvgSource">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.denoising.class_avg.</span></span><span class="sig-name descname"><span class="pre">ClassAvgSource</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classifier</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_selector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averager</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvgSource" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="aspire.source.html#aspire.source.image.ImageSource" title="aspire.source.image.ImageSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSource</span></code></a></p>
+<p>Source for denoised 2D images using class average methods.</p>
+<p>Constructor of an object for denoising 2D images using class averaging methods.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Source used for image classification.</p></li>
+<li><p><strong>classifier</strong> – Class2D subclass used for image classification.
+Example, RIRClass2D.</p></li>
+<li><p><strong>class_selector</strong> – A ClassSelector subclass.</p></li>
+<li><p><strong>averager</strong> – An Averager2D subclass.</p></li>
+<li><p><strong>batch_size</strong> – Integer size for batched operations.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.ClassAvgSource.class_distances">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">class_distances</span></span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvgSource.class_distances" title="Link to this definition">¶</a></dt>
+<dd><p>Returns table of class image distances as <cite>(src.n, n_nbors)</cite>
+Numpy array.</p>
+<p>Follows same layout as <cite>class_indices</cite> but holds floats
+representing the distance (returned by classifier) to the
+zeroth image in each class.</p>
+<p>Note <cite>n_nbors</cite> is managed by <cite>self.classifier</cite> and used here
+for documentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Numpy array, self.dtype.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.ClassAvgSource.class_indices">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">class_indices</span></span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvgSource.class_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Returns table of class image indices as <cite>(src.n, n_nbors)</cite>
+Numpy array.</p>
+<p>Each row reprsents a class, with the columns ordered by
+smallest <cite>class_distances</cite> from the reference image (zeroth
+columm).</p>
+<p>Note <cite>n_nbors</cite> is managed by <cite>self.classifier</cite> and used here
+for documentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Numpy array, integers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.ClassAvgSource.class_refl">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">class_refl</span></span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvgSource.class_refl" title="Link to this definition">¶</a></dt>
+<dd><p>Returns table of class image reflections as <cite>(src.n, n_nbors)</cite>
+Numpy array.</p>
+<p>Follows same layout as <cite>class_indices</cite> but holds booleans that
+are True when the image should be reflected before averaging.</p>
+<p>Note <cite>n_nbors</cite> is managed by <cite>self.classifier</cite> and used here
+for documentation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Numpy array, boolean.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.ClassAvgSource.n">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n</span></span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvgSource.n" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.ClassAvgSource.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvgSource.save" title="Link to this definition">¶</a></dt>
+<dd><p>Save metadata to STAR file.</p>
+<p>See <cite>ImageSource.save</cite> for documentation.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.ClassAvgSource.selection_indices">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">selection_indices</span></span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvgSource.selection_indices" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.ClassAvgSourcev132">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.denoising.class_avg.</span></span><span class="sig-name descname"><span class="pre">ClassAvgSourcev132</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_nbor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classifier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_selector</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averager_src</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvgSourcev132" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.denoising.class_avg.ClassAvgSource" title="aspire.denoising.class_avg.ClassAvgSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassAvgSource</span></code></a></p>
+<p>Source for denoised 2D images using class average methods.</p>
+<p>Defaults to using SNR based class selection,
+avoiding neighbors of previous classes,
+and a brute force image alignment (rotational only).</p>
+<p>Instantiates ClassAvgSourcev132 with the following parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Source used for image classification.</p></li>
+<li><p><strong>n_nbor</strong> – Number of nearest neighbors. Default 50.</p></li>
+<li><p><strong>classifier</strong> – <cite>Class2D</cite> classifier instance.
+Default <cite>None</cite> creates <cite>RIRClass2D</cite>.
+See code for parameter details.</p></li>
+<li><p><strong>class_selector</strong> – <cite>ClassSelector</cite> instance.
+Default <cite>None</cite> creates <cite>GlobalWithRepulsionClassSelector</cite> with
+<cite>BandedSNRImageQualityFunction</cite>. This will select the
+images with the highest banded SNR.</p></li>
+<li><p><strong>averager</strong> – <cite>Averager2D</cite> instance.
+Default <cite>None</cite> creates <cite>BFRAverager2D</cite> instance.
+See code for parameter details.</p></li>
+<li><p><strong>averager_src</strong> – <p>Optionally explicitly assign source to
+<cite>averager</cite> during initialization.  Allows users to</p>
+<blockquote>
+<div><p>provide distinct sources for classification and
+averaging.  Raises error when combined with an explicit
+<cite>averager</cite> argument.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>batch_size</strong> – Integer size for batched operations.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>ClassAvgSource instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.ClassAvgSourcev140">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.denoising.class_avg.</span></span><span class="sig-name descname"><span class="pre">ClassAvgSourcev140</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_nbor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classifier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_selector</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averager_src</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.class_avg.ClassAvgSourcev140" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.denoising.class_avg.ClassAvgSource" title="aspire.denoising.class_avg.ClassAvgSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassAvgSource</span></code></a></p>
+<p>Source for denoised 2D images using class average methods.</p>
+<p>Defaults to using global variance based class selection,
+and a brute force image alignment (rotational only).</p>
+<p>This is most similar to what was reported for papers using the
+MATLAB code, but takes significant time to compute.</p>
+<p>Instantiates ClassAvgSourcev140 with the following parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Source used for image classification.</p></li>
+<li><p><strong>n_nbor</strong> – Number of nearest neighbors. Default 50.</p></li>
+<li><p><strong>classifier</strong> – <cite>Class2D</cite> classifier instance.
+Default <cite>None</cite> creates <cite>RIRClass2D</cite>.
+See code for parameter details.</p></li>
+<li><p><strong>class_selector</strong> – <cite>ClassSelector</cite> instance.
+Default <cite>None</cite> creates <cite>GlobalVarianceClassSelector</cite>.</p></li>
+<li><p><strong>averager</strong> – <cite>Averager2D</cite> instance.
+Default <cite>None</cite> creates <cite>BFTAverager2D</cite> instance.
+See code for parameter details.</p></li>
+<li><p><strong>averager_src</strong> – <p>Optionally explicitly assign source to
+<cite>averager</cite> during initialization.  Allows users to</p>
+<blockquote>
+<div><p>provide distinct sources for classification and
+averaging.  Raises error when combined with an explicit
+<cite>averager</cite> argument.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>batch_size</strong> – Integer size for batched operations.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>ClassAvgSource instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.DebugClassAvgSource">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.denoising.class_avg.</span></span><span class="sig-name descname"><span class="pre">DebugClassAvgSource</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_nbor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classifier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_selector</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.class_avg.DebugClassAvgSource" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.denoising.class_avg.ClassAvgSource" title="aspire.denoising.class_avg.ClassAvgSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassAvgSource</span></code></a></p>
+<p>Source for denoised 2D images using class average methods.</p>
+<dl class="simple">
+<dt>In this context Debug means defaulting to:</dt><dd><ul class="simple">
+<li><p>Using the defaults for <cite>RIRClass2D</cite>.</p></li>
+<li><p>Using <cite>TopClassSelector</cite> to select all classes maintaining the same order as the input source.</p></li>
+<li><p>Using <cite>BFRAverager2D</cite> with defaults on a single core.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Instantiates with default debug paramaters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Source used for image classification.</p></li>
+<li><p><strong>n_nbor</strong> – Number of nearest neighbors. Default 10.</p></li>
+<li><p><strong>classifier</strong> – <cite>Class2D</cite> classifier instance.
+Default <cite>None</cite> creates <cite>RIRClass2D</cite>.
+See code for parameter details.</p></li>
+<li><p><strong>class_selector</strong> – <cite>ClassSelector</cite> instance.
+Default <cite>None</cite> creates <cite>TopClassSelector</cite>.</p></li>
+<li><p><strong>averager</strong> – <cite>Averager2D</cite> instance.
+Default <cite>None</cite> creates <cite>BFRAverager2D</cite> instance.
+See code for parameter details.</p></li>
+<li><p><strong>batch_size</strong> – Integer size for batched operations.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>ClassAvgSource instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.DefaultClassAvgSource">
+<span class="sig-prename descclassname"><span class="pre">aspire.denoising.class_avg.</span></span><span class="sig-name descname"><span class="pre">DefaultClassAvgSource</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_nbor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classifier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_selector</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averager_src</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.class_avg.DefaultClassAvgSource" title="Link to this definition">¶</a></dt>
+<dd><p>Source for denoised 2D images using class average methods.</p>
+<p>Accepts <cite>version</cite>, to dispatch ClassAvgSource with parameters
+below.  Default <cite>version</cite> is latest available.  Different versions
+may have different defaults.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Source used for image classification.</p></li>
+<li><p><strong>n_nbor</strong> – Number of nearest neighbors. Default 50.</p></li>
+<li><p><strong>classifier</strong> – <cite>Class2D</cite> classifier instance.
+Default <cite>None</cite> creates <cite>RIRClass2D</cite>.
+See code for parameter details.</p></li>
+<li><p><strong>class_selector</strong> – <cite>ClassSelector</cite> instance.</p></li>
+<li><p><strong>averager</strong> – <cite>Averager2D</cite> instance.</p></li>
+<li><p><strong>averager_src</strong> – <p>Optionally explicitly assign source to
+<cite>averager</cite> during initialization.  Allows users to</p>
+<blockquote>
+<div><p>provide distinct sources for classification and
+averaging.  Raises error when combined with an explicit
+<cite>averager</cite> argument.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>batch_size</strong> – Integer size for batched operations.</p></li>
+<li><p><strong>version</strong> – Optionally selects a versioned <cite>DefaultClassAvgSource</cite>.
+Defaults to latest available.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>ClassAvgSource instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.denoising.class_avg.LegacyClassAvgSource">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.denoising.class_avg.</span></span><span class="sig-name descname"><span class="pre">LegacyClassAvgSource</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_nbor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">classifier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">class_selector</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averager</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">averager_src</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.class_avg.LegacyClassAvgSource" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.denoising.class_avg.ClassAvgSource" title="aspire.denoising.class_avg.ClassAvgSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassAvgSource</span></code></a></p>
+<p>Source for denoised 2D images using class average methods.</p>
+<p>Defaults to using global variance based class selection, and a
+rotational image alignment.  Translational alignment is skipped by
+default (images are assumed reasonably centered), but can be
+configured by supplying a custom <cite>averager=BFTAverager2D(…)</cite>
+argument.</p>
+<p>This is similar to what was reported for papers using the
+MATLAB code.</p>
+<p>Instantiates <cite>ClassAvgSource</cite> with the following parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Source used for image classification.</p></li>
+<li><p><strong>n_nbor</strong> – Number of nearest neighbors. Default 50.</p></li>
+<li><p><strong>classifier</strong> – <cite>Class2D</cite> classifier instance.
+Default <cite>None</cite> creates <cite>RIRClass2D</cite>.
+See code for parameter details.</p></li>
+<li><p><strong>class_selector</strong> – <cite>ClassSelector</cite> instance.
+Default <cite>None</cite> creates <cite>GlobalVarianceClassSelector</cite>.</p></li>
+<li><p><strong>averager</strong> – <cite>Averager2D</cite> instance.
+Default <cite>None</cite> creates <cite>BFTAverager2D</cite> instance.
+See code for parameter details.</p></li>
+<li><p><strong>averager_src</strong> – <p>Optionally explicitly assign source to
+<cite>averager</cite> during initialization.  Allows users to</p>
+<blockquote>
+<div><p>provide distinct sources for classification and
+averaging.  Raises error when combined with an explicit
+<cite>averager</cite> argument.</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>batch_size</strong> – Integer size for batched operations.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>ClassAvgSource instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.denoising.denoised_src">
+<span id="aspire-denoising-denoised-src-module"></span><h2>aspire.denoising.denoised_src module<a class="headerlink" href="#module-aspire.denoising.denoised_src" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.denoising.denoised_src.DenoisedSource">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.denoising.denoised_src.</span></span><span class="sig-name descname"><span class="pre">DenoisedSource</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">denoiser</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoised_src.DenoisedSource" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="aspire.source.html#aspire.source.image.ImageSource" title="aspire.source.image.ImageSource"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageSource</span></code></a></p>
+<p><cite>ImageSource</cite> class serving denoised 2D images.</p>
+<p>Initialize a denoised <cite>ImageSource</cite> object from an <cite>ImageSource</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Original <cite>ImageSource</cite> object storing noisy images</p></li>
+<li><p><strong>denoiser</strong> – A <cite>Denoiser</cite> object for specifying a method for denoising</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.denoising.denoiser">
+<span id="aspire-denoising-denoiser-module"></span><h2>aspire.denoising.denoiser module<a class="headerlink" href="#module-aspire.denoising.denoiser" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.denoising.denoiser.Denoiser">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.denoising.denoiser.</span></span><span class="sig-name descname"><span class="pre">Denoiser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser.Denoiser" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Base class for 2D image denoisers.</p>
+<p>Initialize an object for denoising 2D images from <cite>src</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>src</strong> – <cite>ImageSource</cite> providing noisy images.</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.denoising.denoiser.Denoiser.denoise">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">denoise</span></span><a class="headerlink" href="#aspire.denoising.denoiser.Denoiser.denoise" title="Link to this definition">¶</a></dt>
+<dd><p>Subscriptable property returning 2D images after denoising.</p>
+<p>See <cite>_ImageAccessor</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.denoising.denoiser_cov2d">
+<span id="aspire-denoising-denoiser-cov2d-module"></span><h2>aspire.denoising.denoiser_cov2d module<a class="headerlink" href="#module-aspire.denoising.denoiser_cov2d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.denoising.denoiser_cov2d.DenoiserCov2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.denoising.denoiser_cov2d.</span></span><span class="sig-name descname"><span class="pre">DenoiserCov2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_noise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covar_opt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser_cov2d.DenoiserCov2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.denoising.denoiser.Denoiser" title="aspire.denoising.denoiser.Denoiser"><code class="xref py py-class docutils literal notranslate"><span class="pre">Denoiser</span></code></a></p>
+<p>Define a derived class for denoising 2D images using Cov2D method</p>
+<p>Initialize an object for denoising 2D images using Cov2D method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D images with metadata</p></li>
+<li><p><strong>basis</strong> – The basis method to expand 2D images</p></li>
+<li><p><strong>var_noise</strong> – The estimated variance of noise</p></li>
+<li><p><strong>batch_size</strong> – Integer batch size for processing images.
+Defaults to 512.</p></li>
+<li><p><strong>covar_opt</strong> – Optional dictionary of option overides for Cov2D.
+Provided options will supersede defaults in <cite>DenoiserCov2D.default_opt</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.denoising.denoiser_cov2d.DenoiserCov2D.build_denoiser">
+<span class="sig-name descname"><span class="pre">build_denoiser</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser_cov2d.DenoiserCov2D.build_denoiser" title="Link to this definition">¶</a></dt>
+<dd><p>Build estimated mean and covariance matrix of 2D images.</p>
+<p>This method should be computed once, on first <cite>images</cite> access.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.denoising.denoiser_cov2d.DenoiserCov2D.default_opt">
+<span class="sig-name descname"><span class="pre">default_opt</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'iter_callback':</span> <span class="pre">[],</span> <span class="pre">'max_iter':</span> <span class="pre">250,</span> <span class="pre">'rel_tolerance':</span> <span class="pre">1e-12,</span> <span class="pre">'shrinker':</span> <span class="pre">'frobenius_norm',</span> <span class="pre">'store_iterates':</span> <span class="pre">False,</span> <span class="pre">'verbose':</span> <span class="pre">0}</span></em><a class="headerlink" href="#aspire.denoising.denoiser_cov2d.DenoiserCov2D.default_opt" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.denoising.denoiser_cov2d.src_wiener_coords">
+<span class="sig-prename descclassname"><span class="pre">aspire.denoising.denoiser_cov2d.</span></span><span class="sig-name descname"><span class="pre">src_wiener_coords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_vol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eig_vols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambdas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.denoising.denoiser_cov2d.src_wiener_coords" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate coordinates using Wiener filter</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sim</strong> – A simulation object containing the images whose coordinates we want.</p></li>
+<li><p><strong>mean_vol</strong> – The mean volume of the source as Volume instance.</p></li>
+<li><p><strong>eig_vols</strong> – The eigenvolumes of the source as Volume instance.</p></li>
+<li><p><strong>lambdas</strong> – The eigenvalues in a K-by-K diagonal matrix (default <cite>eye(K)</cite>).</p></li>
+<li><p><strong>noise_var</strong> – The variance of the noise in the images (default 0).</p></li>
+<li><p><strong>batch_size</strong> – The size of the batches in which to compute the coordinates (default 512).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A K-by-<cite>src.n</cite> array of coordinates corresponding to the Wiener filter coordinates of each image in sim.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>The coordinates are obtained by the formula</dt><dd><p>alpha_s = eig_vols^T H_s ( y_s - P_s mean_vol ) ,</p>
+</dd>
+<dt>where P_s is the forward image mapping and y_s is the sth image,</dt><dd><p>H_s = Sigma * P_s^T ( P_s Sigma P_s^T + noise_var I )^(-1) ,</p>
+</dd>
+</dl>
+<p>and Sigma is the covariance matrix eig_vols * lambdas * eig_vols^T.
+Note that when noise_var is zero, this reduces to the projecting y_s onto the span of P_s eig_vols.</p>
+<p># TODO: Find a better place for this functionality other than in utils</p>
+</dd></dl>
+
+</section>
+<section id="module-aspire.denoising">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.denoising" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.ctf.html" class="btn btn-neutral float-left" title="aspire.ctf package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.downloader.html" class="btn btn-neutral float-right" title="aspire.downloader package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

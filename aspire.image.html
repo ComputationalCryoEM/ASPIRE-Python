@@ -1,0 +1,1277 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.image package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.noise package" href="aspire.noise.html" />
+    <link rel="prev" title="aspire.downloader package" href="aspire.downloader.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.image package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.image.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-image-package">
+<h1>aspire.image package<a class="headerlink" href="#aspire-image-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.image.image">
+<span id="aspire-image-image-module"></span><h2>aspire.image.image module<a class="headerlink" href="#module-aspire.image.image" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image.BasisImage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image.</span></span><span class="sig-name descname"><span class="pre">BasisImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.BasisImage" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image.Image" title="aspire.image.image.Image"><code class="xref py py-class docutils literal notranslate"><span class="pre">Image</span></code></a></p>
+<p>A stack of one or more images.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_images</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last two axes represent the image size,
+and are checked to be square.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing image data with shape
+<cite>(…, resolution, resolution)</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional pixel size in angstroms.
+When provided will be saved with <cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Image instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.BasisImage.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.BasisImage.evaluate" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image.BispecImage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image.</span></span><span class="sig-name descname"><span class="pre">BispecImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.BispecImage" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image.Image" title="aspire.image.image.Image"><code class="xref py py-class docutils literal notranslate"><span class="pre">Image</span></code></a></p>
+<p>A stack of one or more images.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_images</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last two axes represent the image size,
+and are checked to be square.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing image data with shape
+<cite>(…, resolution, resolution)</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional pixel size in angstroms.
+When provided will be saved with <cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Image instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.BispecImage.expand">
+<span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.BispecImage.expand" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image.CartesianImage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image.</span></span><span class="sig-name descname"><span class="pre">CartesianImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.CartesianImage" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image.Image" title="aspire.image.image.Image"><code class="xref py py-class docutils literal notranslate"><span class="pre">Image</span></code></a></p>
+<p>A stack of one or more images.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_images</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last two axes represent the image size,
+and are checked to be square.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing image data with shape
+<cite>(…, resolution, resolution)</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional pixel size in angstroms.
+When provided will be saved with <cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Image instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.CartesianImage.expand">
+<span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.CartesianImage.expand" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image.FBBasisImage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image.</span></span><span class="sig-name descname"><span class="pre">FBBasisImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.FBBasisImage" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image.BasisImage" title="aspire.image.image.BasisImage"><code class="xref py py-class docutils literal notranslate"><span class="pre">BasisImage</span></code></a></p>
+<p>A stack of one or more images.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_images</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last two axes represent the image size,
+and are checked to be square.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing image data with shape
+<cite>(…, resolution, resolution)</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional pixel size in angstroms.
+When provided will be saved with <cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Image instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image.Image">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image.</span></span><span class="sig-name descname"><span class="pre">Image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A stack of one or more images.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_images</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last two axes represent the image size,
+and are checked to be square.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing image data with shape
+<cite>(…, resolution, resolution)</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional pixel size in angstroms.
+When provided will be saved with <cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Image instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.image.image.Image.T">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">T</span></span><a class="headerlink" href="#aspire.image.image.Image.T" title="Link to this definition">¶</a></dt>
+<dd><p>Abbreviation for transpose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Image instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.asnumpy">
+<span class="sig-name descname"><span class="pre">asnumpy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.asnumpy" title="Link to this definition">¶</a></dt>
+<dd><p>Return image data as a (&lt;stack&gt;, resolution, resolution)
+read-only array view.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>read-only ndarray view</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.backproject">
+<span class="sig-name descname"><span class="pre">backproject</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rot_matrices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symmetry_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_nyquist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.backproject" title="Link to this definition">¶</a></dt>
+<dd><p>Backproject images along rotations. If a symmetry group is provided, images
+used in back-projection are duplicated (boosted) for symmetric viewing directions.
+Note, it is assumed that a main axis of symmetry aligns with the z-axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rot_matrices</strong> – An n-by-3-by-3 array of rotation matrices
+corresponding to viewing directions.</p></li>
+<li><p><strong>symmetry_group</strong> – A SymmetryGroup instance or string indicating symmetry, ie. “C3”.
+If supplied, uses symmetry to increase number of images used in back-projection.</p></li>
+<li><p><strong>zero_nyquist</strong> – Option to keep or remove Nyquist frequency for even resolution.
+Defaults to zero_nyquist=True, removing the Nyquist frequency.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Volume instance corresonding to the backprojected images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.copy" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.downsample">
+<span class="sig-name descname"><span class="pre">downsample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_res</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_nyquist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centered_fft</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.downsample" title="Link to this definition">¶</a></dt>
+<dd><p>Downsample Image to a specific resolution. This method returns a new Image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds_res</strong> – int - new resolution, should be &lt;= the current resolution
+of this Image</p></li>
+<li><p><strong>zero_nyquist</strong> – Option to keep or remove Nyquist frequency for even
+resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.</p></li>
+<li><p><strong>centered_fft</strong> – Default of True uses <cite>centered_fft</cite> to
+maintain ASPIRE-Python centering conventions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The downsampled Image object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.image.image.Image.extensions">
+<span class="sig-name descname"><span class="pre">extensions</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'.mrc':</span> <span class="pre">&lt;function</span> <span class="pre">load_mrc&gt;,</span> <span class="pre">'.mrcs':</span> <span class="pre">&lt;function</span> <span class="pre">load_mrc&gt;,</span> <span class="pre">'.tif':</span> <span class="pre">&lt;function</span> <span class="pre">load_tiff&gt;,</span> <span class="pre">'.tiff':</span> <span class="pre">&lt;function</span> <span class="pre">load_tiff&gt;}</span></em><a class="headerlink" href="#aspire.image.image.Image.extensions" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.filter">
+<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.filter" title="Link to this definition">¶</a></dt>
+<dd><p>Apply a <cite>Filter</cite> object to the Image and returns a new Image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filter</strong> – An object of type <cite>Filter</cite>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new filtered <cite>Image</cite> object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.flip">
+<span class="sig-name descname"><span class="pre">flip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.flip" title="Link to this definition">¶</a></dt>
+<dd><p>Flip image stack data along axis using numpy.flip().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>axis</strong> – Optionally specify axis as integer or tuple.
+Defaults to axis=-2.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Image instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.frc">
+<span class="sig-name descname"><span class="pre">frc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fft'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.frc" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the Fourier ring correlation between two images.</p>
+<p>Images are assumed to be well aligned.</p>
+<p>The FRC is defined as:</p>
+<div class="math notranslate nohighlight">
+\[c(i) = \frac{ \operatorname{Re}( \sum_i{ \mathcal{F}_1(i) * {\mathcal{F}^{*}_2(i) } } ) }{\
+  \sqrt{ \sum_i { | \mathcal{F}_1(i) |^2 } * \sum_i{| \mathcal{F}^{*}_2}(i) |^2 } }\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>other</strong> – <cite>Image</cite> instance to compare.</p></li>
+<li><p><strong>cutoff</strong> – Cutoff value, traditionally <cite>.143</cite>.
+Default <cite>None</cite> implies <cite>cutoff=1</cite> and excludes
+plotting cutoff line.</p></li>
+<li><p><strong>method</strong> – Selects either ‘fft’ (on cartesian grid),
+or ‘nufft’ (on polar grid). Defaults to ‘fft’.</p></li>
+<li><p><strong>plot</strong> – Optionally plot to screen or file.
+Defaults to <cite>False</cite>.  <cite>True</cite> plots to screen.
+Passing a filepath as a string will attempt to save to file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple(estimated_resolution,  FRC),
+where <cite>estimated_resolution</cite> is in angstrom
+and FRC is a Numpy array of correlations.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.legacy_whiten">
+<span class="sig-name descname"><span class="pre">legacy_whiten</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.legacy_whiten" title="Link to this definition">¶</a></dt>
+<dd><p>Apply the legacy MATLAB whitening transformation.</p>
+<p>Note that this legacy method will compute the convolution in
+(complex)double precision regardless of this instances
+<cite>dtype</cite>.  However, the resulting image stack will be cast to
+the instance <cite>dtype</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psd</strong> – PSD as computed by <cite>LegacyNoiseEstimator</cite>.
+<cite>psd</cite> in this case is shape (2 * self.src.L - 1, 2 * self.src.L - 1).</p></li>
+<li><p><strong>delta</strong> – Threshold used to determine which frequencies to whiten
+and which to set to zero. By default all <cite>sqrt(psd)</cite> values
+less than <cite>delta</cite> are zeroed out in the whitening filter.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.load" title="Link to this definition">¶</a></dt>
+<dd><p>Load raw data from supported files.</p>
+<p>Currently MRC and TIFF are supported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filepath</strong> – File path (string).</p></li>
+<li><p><strong>dtype</strong> – Optionally force cast to <cite>dtype</cite>.
+Default dtype is inferred from the file contents.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Image instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.norm">
+<span class="sig-name descname"><span class="pre">norm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.norm" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.project">
+<span class="sig-name descname"><span class="pre">project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">angles</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.project" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the Radon Transform on an Image Stack using
+Non-Uniform Fast Fourier Transforms. This method projects the
+Image stack along different angles and returns the Radon
+Transform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>angles</strong> – A 1-D Numpy Array of angles in Radians.
+This is used to compute the Radon Transform at different angles.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Radon transform of the Image Stack.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Ndarray (stack size, number of angles, image resolution)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.image.image.Image.res">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">res</span></span><a class="headerlink" href="#aspire.image.image.Image.res" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.rotate">
+<span class="sig-name descname"><span class="pre">rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'scipy'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.rotate" title="Link to this definition">¶</a></dt>
+<dd><p>Return <cite>Image</cite> rotated by <cite>theta</cite> radians using <cite>method</cite>.</p>
+<p>Optionally applies <cite>mask</cite>.  Note that some methods may
+introduce edge artifacts, in which case users may consider
+using a tighter mask (eg 0.9) or a combination of pad-crop.</p>
+<p>Any additional kwargs will be passed to <cite>method</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>theta</strong> – Scalar or array of length <cite>n_images</cite></p></li>
+<li><p><strong>mask</strong> – Optional scalar or array mask matching <cite>Image</cite> shape.
+Scalar will create a circular mask of prescribed radius <cite>(0,1]</cite>.
+Array mask will be applied via elementwise multiplication.
+<cite>None</cite> disables masking.</p></li>
+<li><p><strong>method</strong> – Optionally specify a rotation method.
+Defaults to <cite>scipy</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>Image</cite> containing rotated image data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.image.image.Image.rotation_methods">
+<span class="sig-name descname"><span class="pre">rotation_methods</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'fastrotate':</span> <span class="pre">&lt;function</span> <span class="pre">fastrotate&gt;,</span> <span class="pre">'scipy':</span> <span class="pre">&lt;function</span> <span class="pre">sp_rotate&gt;}</span></em><a class="headerlink" href="#aspire.image.image.Image.rotation_methods" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mrcs_filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.save" title="Link to this definition">¶</a></dt>
+<dd><p>Save Image to disk as mrcs file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – Filepath where Image will be saved.</p></li>
+<li><p><strong>overwrite</strong> – Options to control overwrite behavior (default is None):
+- True: Overwrites the existing file if it exists.
+- False: Raises an error if the file exists.
+- None: Renames the old file by appending a time/date stamp.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.shift">
+<span class="sig-name descname"><span class="pre">shift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shifts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.shift" title="Link to this definition">¶</a></dt>
+<dd><p>Translate image by shifts. This method returns a new Image.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>shifts</strong> – An array of size n-by-2 specifying the shifts in pixels.
+Alternatively, it can be a column vector of length 2, in which case
+the same shift is applied to each image.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Image translated by the shifts, with periodic boundaries.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.show">
+<span class="sig-name descname"><span class="pre">show</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(20,</span> <span class="pre">10)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colorbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.show" title="Link to this definition">¶</a></dt>
+<dd><p>Plotting Utility Function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>columns</strong> – Number of columns in a row of plots.</p></li>
+<li><p><strong>figsize</strong> – Figure size in inches, consult <cite>matplotlib.figure</cite>.</p></li>
+<li><p><strong>colorbar</strong> – Optionally plot colorbar to show scale.
+Defaults to True. Accepts <cite>bool</cite> or <cite>dictionary</cite>,
+where the dictionary is passed to <cite>matplotlib.pyplot.colorbar</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.image.image.Image.size">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">size</span></span><a class="headerlink" href="#aspire.image.image.Image.size" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.sqrt">
+<span class="sig-name descname"><span class="pre">sqrt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.sqrt" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.stack_reshape">
+<span class="sig-name descname"><span class="pre">stack_reshape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.stack_reshape" title="Link to this definition">¶</a></dt>
+<dd><p>Reshape the stack axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">*argsargs<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer(s) or tuple describing the intended shape.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Image instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.Image.transpose">
+<span class="sig-name descname"><span class="pre">transpose</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.Image.transpose" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a new Image instance with image data axes transposed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Image instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image.PolarImage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image.</span></span><span class="sig-name descname"><span class="pre">PolarImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.PolarImage" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image.Image" title="aspire.image.image.Image"><code class="xref py py-class docutils literal notranslate"><span class="pre">Image</span></code></a></p>
+<p>A stack of one or more images.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_images</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last two axes represent the image size,
+and are checked to be square.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing image data with shape
+<cite>(…, resolution, resolution)</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional pixel size in angstroms.
+When provided will be saved with <cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Image instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.image.PolarImage.expand">
+<span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.PolarImage.expand" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.image.image.load_mrc">
+<span class="sig-prename descclassname"><span class="pre">aspire.image.image.</span></span><span class="sig-name descname"><span class="pre">load_mrc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.load_mrc" title="Link to this definition">¶</a></dt>
+<dd><p>Load raw data from <cite>.mrc</cite> into an array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filepath</strong> – File path (string).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(numpy array of image data, pixel_size)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.image.image.load_tiff">
+<span class="sig-prename descclassname"><span class="pre">aspire.image.image.</span></span><span class="sig-name descname"><span class="pre">load_tiff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.load_tiff" title="Link to this definition">¶</a></dt>
+<dd><p>Load raw data from <cite>.tiff</cite> into an array.</p>
+<p>Note, TIFF does not natively provide equivalent to pixel/voxel_size,
+so users of TIFF files may need to manually assign <cite>pixel_size</cite> to
+<cite>Image</cite> instances when required. Defaults to <cite>pixel_size=None</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filepath</strong> – File path (string).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(numpy array of image data, pixel_size=None)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.image.image.normalize_bg">
+<span class="sig-prename descclassname"><span class="pre">aspire.image.image.</span></span><span class="sig-name descname"><span class="pre">normalize_bg</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imgs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bg_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_ramp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shifted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ddof</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image.normalize_bg" title="Link to this definition">¶</a></dt>
+<dd><p>Normalize backgrounds and apply to a stack of images.</p>
+<p>To recreate legacy MATLAB workflow results, review parameters used in
+<cite>ImageSource.legacy_normalize_background</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>imgs</strong> – A stack of images in N-by-L-by-L array</p></li>
+<li><p><strong>bg_radius</strong> – Radius cutoff to be considered as background (in image size)</p></li>
+<li><p><strong>do_ramp</strong> – When it is <cite>True</cite>, fit a ramping background to the data
+and subtract. Namely perform normalization based on values from each image.
+Otherwise, a constant background level from all images is used.</p></li>
+<li><p><strong>shifted</strong> – Optionally shifts 2d grid by 1/2 pixel for even
+resolution to replicate MATLAB.</p></li>
+<li><p><strong>ddof</strong> – Degrees of freedom for standard deviation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The modified images</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.image.image_stacker">
+<span id="aspire-image-image-stacker-module"></span><h2>aspire.image.image_stacker module<a class="headerlink" href="#module-aspire.image.image_stacker" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image_stacker.ImageStacker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image_stacker.</span></span><span class="sig-name descname"><span class="pre">ImageStacker</span></span><a class="headerlink" href="#aspire.image.image_stacker.ImageStacker" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Interface for image and coefficient stacking classes.</p>
+<p>It is assumed that provided images are already aligned.
+Instances of <cite>Stacker</cite> act like functions.</p>
+<p>stacker = ImageStacker(…)
+stacker(images_to_stack).</p>
+<p>Initialize ImageStacker instance.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image_stacker.MeanImageStacker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image_stacker.</span></span><span class="sig-name descname"><span class="pre">MeanImageStacker</span></span><a class="headerlink" href="#aspire.image.image_stacker.MeanImageStacker" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image_stacker.ImageStacker" title="aspire.image.image_stacker.ImageStacker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageStacker</span></code></a></p>
+<p>Stack using <cite>mean</cite>.</p>
+<p>Initialize ImageStacker instance.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image_stacker.MedianImageStacker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image_stacker.</span></span><span class="sig-name descname"><span class="pre">MedianImageStacker</span></span><a class="headerlink" href="#aspire.image.image_stacker.MedianImageStacker" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image_stacker.ImageStacker" title="aspire.image.image_stacker.ImageStacker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageStacker</span></code></a></p>
+<p>Stack using <cite>median</cite>.</p>
+<p>Initialize ImageStacker instance.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image_stacker.PoissonRejectionImageStacker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image_stacker.</span></span><span class="sig-name descname"><span class="pre">PoissonRejectionImageStacker</span></span><a class="headerlink" href="#aspire.image.image_stacker.PoissonRejectionImageStacker" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image_stacker.ImageStacker" title="aspire.image.image_stacker.ImageStacker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageStacker</span></code></a></p>
+<p>Stack using Poisson Rejection.</p>
+<p>Initialize ImageStacker instance.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image_stacker.RobustChauvenetRejectionImageStacker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image_stacker.</span></span><span class="sig-name descname"><span class="pre">RobustChauvenetRejectionImageStacker</span></span><a class="headerlink" href="#aspire.image.image_stacker.RobustChauvenetRejectionImageStacker" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image_stacker.ImageStacker" title="aspire.image.image_stacker.ImageStacker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageStacker</span></code></a></p>
+<p>Stack using Robust Chauvenet Outlier Rejection.</p>
+<p>Initialize ImageStacker instance.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image_stacker.SigmaRejectionImageStacker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image_stacker.</span></span><span class="sig-name descname"><span class="pre">SigmaRejectionImageStacker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rejection_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image_stacker.SigmaRejectionImageStacker" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image_stacker.ImageStacker" title="aspire.image.image_stacker.ImageStacker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageStacker</span></code></a></p>
+<p>Stack using Sigma Rejection.</p>
+<p>When no outliers exist, sigma rejection is equivalent to <cite>mean</cite>.
+In the presence of outliers, pixels outside of <cite>rejection_sigma</cite>
+from the per-pixel-mean are discarded before the mean is
+performed.</p>
+<p>For potentially less Gaussian distributions, ‘FWHM’ and ‘FWTM’
+methods are also provided.  These will take the mean of all values
+laying above half the maximum and tenth maximum
+respectively. Essentially this is the same wing clipping
+procedure, but the location of the clip is determined by the peak
+intensity instead of standard deviation.</p>
+<p>Note, in both cases, users are responsible for ensuring methods
+are called on reasonable data (in FW* cases we should be probably
+be using intensities). No corrections or pedestals are
+incorporated at this time, but could easily be added in the
+future.</p>
+<p>Instantiates with presribed <cite>rejection_sigma</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rejection_sigma</strong> – Values falling outside
+<cite>rejection_sigma</cite> standard deviations are
+rejected. Defaults to 3.  Also accepts ‘FWHM’ and ‘FWTM’
+corresponding to per-pixel full width at half maximum and
+tenth maximum respectively.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.image_stacker.WinsorizedImageStacker">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.image_stacker.</span></span><span class="sig-name descname"><span class="pre">WinsorizedImageStacker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">percentile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.image_stacker.WinsorizedImageStacker" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.image_stacker.ImageStacker" title="aspire.image.image_stacker.ImageStacker"><code class="xref py py-class docutils literal notranslate"><span class="pre">ImageStacker</span></code></a></p>
+<p>Stack using Winsorization.</p>
+<p>Winsorizing is similar to SigmaRejectionImageStacker, except it
+admits a <cite>percentile</cite> and replaces rejected values with values at
++/- <cite>percentile</cite>.</p>
+<p>Instantiates WinsorizedImageStacker instance with prescribed
+<cite>percentile</cite>.</p>
+<p>See scipy docs for more details:
+<a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.winsorize.html">https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.winsorize.html</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>percentile</strong> – Float or tuple of floats.  Values must be
+[0,1] and represent the percentile used for trimming.  A
+tuple allows different lower and upper percentiles
+respectively. Example (0.1, 0.2) would Winsorize the lower
+10% and upper 20% of values.  In the case of a single
+value, the same value will be used for both upper and
+lower percentiles.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.image.rotation">
+<span id="aspire-image-rotation-module"></span><h2>aspire.image.rotation module<a class="headerlink" href="#module-aspire.image.rotation" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.image.rotation.compute_fastrotate_interp_tables">
+<span class="sig-prename descclassname"><span class="pre">aspire.image.rotation.</span></span><span class="sig-name descname"><span class="pre">compute_fastrotate_interp_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ny</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.rotation.compute_fastrotate_interp_tables" title="Link to this definition">¶</a></dt>
+<dd><p>Retuns iterpolation tables as tuple M = (Mx, My, rots).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>theta</strong> – angle in radians</p></li>
+<li><p><strong>nx</strong> – Number pixels first axis</p></li>
+<li><p><strong>ny</strong> – Number pixels second axis</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.image.rotation.fastrotate">
+<span class="sig-prename descclassname"><span class="pre">aspire.image.rotation.</span></span><span class="sig-name descname"><span class="pre">fastrotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">images</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.rotation.fastrotate" title="Link to this definition">¶</a></dt>
+<dd><p>Rotate <cite>images</cite> array by <cite>theta</cite> radians ccw using shearing algorithm.</p>
+<p>Note that this algorithm may have artifacts near the rotation boundary
+and will have artifacts outside the rotation boundary.
+Users can avoid these by zero padding the input image then
+cropping the rotated image and/or masking.</p>
+<dl class="simple">
+<dt>For reference and notes:</dt><dd><p><cite>https://github.com/PrincetonUniversity/aspire/blob/760a43b35453e55ff2d9354339e9ffa109a25371/common/fastrotate/fastrotate.m</cite></p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>images</strong> – (n , px, px) array of image data</p></li>
+<li><p><strong>theta</strong> – Rotation angle in radians.
+Note when <cite>M</cite> is supplied, <cite>theta</cite> must be <cite>None</cite>.</p></li>
+<li><p><strong>M</strong> – Optional precomputed shearing table.
+Provided by <cite>M=compute_fastrotate_interp_tables(theta, px, px)</cite>.
+Note when <cite>M</cite> is supplied, <cite>theta</cite> must be <cite>None</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(n, px, px) array of rotated image data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.image.rotation.sp_rotate">
+<span class="sig-prename descclassname"><span class="pre">aspire.image.rotation.</span></span><span class="sig-name descname"><span class="pre">sp_rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.rotation.sp_rotate" title="Link to this definition">¶</a></dt>
+<dd><p>Utility wrapper to form a ASPIRE compatible call to Scipy’s image rotation.</p>
+<p>Converts <cite>theta</cite> from radian to degrees.
+Defines stack/image axes and reshape behavior.
+Image data is expected to be in last two axes in all cases.</p>
+<p>Additional kwargs will be passed through.
+See scipy.ndimage.rotate</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>img</strong> – Array of image data shape (L,L) or (…,L, L)</p></li>
+<li><p><strong>theta</strong> – Rotation in ccw radians.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array representing rotated <cite>img</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.image.xform">
+<span id="aspire-image-xform-module"></span><h2>aspire.image.xform module<a class="headerlink" href="#module-aspire.image.xform" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.Add">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">Add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">addend</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Add" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.Xform" title="aspire.image.xform.Xform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Xform</span></code></a></p>
+<p>A Xform that add the density of a stack of 2D images (in the form of an Image object)
+by an offset value.</p>
+<p>Initialize an Add Xform using a Numpy array of predefined values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>addend</strong> – An float/int or an ndarray of shape (n,)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.CropPad">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">CropPad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.CropPad" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.Xform" title="aspire.image.xform.Xform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Xform</span></code></a></p>
+<p>A Xform that crops or pads an Image object to a specified size.</p>
+<p>Initialize Xform to crop Image to a specific size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – int - new size</p></li>
+<li><p><strong>fill_value</strong> – Optional value for padding, default 0.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.Downsample">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">Downsample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resolution</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_nyquist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">centered_fft</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Downsample" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.LinearXform" title="aspire.image.xform.LinearXform"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearXform</span></code></a></p>
+<p>A Xform that downsamples an Image object to a resolution specified by this Xform’s resolution.</p>
+<p>Initialize Xform to downsample Image to a specific resolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resolution</strong> – int - new resolution, should be &lt;= the current resolution
+of this Image</p></li>
+<li><p><strong>zero_nyquist</strong> – Option to keep or remove Nyquist frequency for even
+resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.</p></li>
+<li><p><strong>centered_fft</strong> – Default of True uses <cite>centered_fft</cite> to
+maintain ASPIRE-Python centering conventions.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.FilterXform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">FilterXform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filter</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.FilterXform" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.SymmetricXform" title="aspire.image.xform.SymmetricXform"><code class="xref py py-class docutils literal notranslate"><span class="pre">SymmetricXform</span></code></a></p>
+<p>A <cite>Xform</cite> that applies a single <cite>Filter</cite> object to a stack of 2D images (as an Image object).</p>
+<p>Initialize the Filter <cite>Xform</cite> using a <cite>Filter</cite> object</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filter</strong> – An object of type <cite>aspire.operators.Filter</cite></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.IndexedXform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">IndexedXform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unique_xforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.IndexedXform" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.Xform" title="aspire.image.xform.Xform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Xform</span></code></a></p>
+<p>An IndexedXform is a Xform where individual Xform objects are used at specific indices of the incoming Image object.</p>
+<p>This extra layer of abstraction is used because individual Xform objects are typically capable of dealing with
+a stack of images (an Image object) in an efficient manner. The IndexedXform class groups the invocation of each
+of its unique Xform objects, so that calls to individual Xform objects within it is minimized, and equals the
+number of unique Xforms found.</p>
+<p>Create a Xform object that works at a specific resolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>active</strong> – A boolean indicating whether the Xform is active. True by default.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.LambdaXform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">LambdaXform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lambda_fun</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.LambdaXform" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.Xform" title="aspire.image.xform.Xform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Xform</span></code></a></p>
+<p>A <cite>Xform</cite> that applies a predefined function to a stack of 2D images (as an Image object).</p>
+<p>Initialize the <cite>LambdaXform</cite> using a lambda function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lambda_fun</strong> – Predefine lambda function</p></li>
+<li><p><strong>*args</strong> – <p>Positional arguments</p>
+</p></li>
+<li><p><strong>**kwargs</strong> – <p>Keyword arguments</p>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.LegacyWhiten">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">LegacyWhiten</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">psd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.LegacyWhiten" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.Xform" title="aspire.image.xform.Xform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Xform</span></code></a></p>
+<p>A Xform that implements MATLAB legacy whitening.</p>
+<p>Initialize LegacyWhiten Xform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>psd</strong> – PSD (as computed by LegacyNoiseEstimator).</p></li>
+<li><p><strong>delta</strong> – Threshold used to determine which frequencies to whiten
+and which to set to zero. By default all <cite>sqrt(psd)</cite> values
+less than <cite>delta</cite> are zeroed out in the whitening filter.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.LinearIndexedXform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">LinearIndexedXform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unique_xforms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.LinearIndexedXform" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.IndexedXform" title="aspire.image.xform.IndexedXform"><code class="xref py py-class docutils literal notranslate"><span class="pre">IndexedXform</span></code></a>, <a class="reference internal" href="#aspire.image.xform.LinearXform" title="aspire.image.xform.LinearXform"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearXform</span></code></a></p>
+<p>Create a Xform object that works at a specific resolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>active</strong> – A boolean indicating whether the Xform is active. True by default.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.LinearPipeline">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">LinearPipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xforms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.LinearPipeline" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.Pipeline" title="aspire.image.xform.Pipeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pipeline</span></code></a>, <a class="reference internal" href="#aspire.image.xform.LinearXform" title="aspire.image.xform.LinearXform"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearXform</span></code></a></p>
+<p>Initialize a <cite>Pipeline</cite> with <cite>Xform</cite> objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xforms</strong> – An iterable of Xform objects to use in the Pipeline.</p></li>
+<li><p><strong>memory</strong> – None for no caching (default), or the location of a directory to use to cache steps of the
+pipeline.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.LinearXform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">LinearXform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.LinearXform" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.Xform" title="aspire.image.xform.Xform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Xform</span></code></a></p>
+<p>A LinearXform is a Xform that additionally provides an <cite>adjoint</cite> method, similar to the <cite>forward</cite> method.</p>
+<p>Create a Xform object that works at a specific resolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>active</strong> – A boolean indicating whether the Xform is active. True by default.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.xform.LinearXform.adjoint">
+<span class="sig-name descname"><span class="pre">adjoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.LinearXform.adjoint" title="Link to this definition">¶</a></dt>
+<dd><p>Apply adjoint transformation for this Xform object to an Image object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>im</strong> – The incoming Image object of depth <cite>n</cite>, on which to apply the adjoint transformation.</p></li>
+<li><p><strong>indices</strong> – The indices to use within this Xform. If unspecified, [0..n) is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An Image object after applying the adjoint transformation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.Multiply">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">Multiply</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">factor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Multiply" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.SymmetricXform" title="aspire.image.xform.SymmetricXform"><code class="xref py py-class docutils literal notranslate"><span class="pre">SymmetricXform</span></code></a></p>
+<p>A Xform that changes the amplitudes of a stack of 2D images (in the form of an Image object) by multiplying all
+pixels of a single 2D  image by a constant factor.</p>
+<p>Initialize a Multiply Xform using specified factors</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>factor</strong> – A float/int or an ndarray of scalar factors to use for amplitude multiplication.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.Pipeline">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">Pipeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xforms</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Pipeline" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.Xform" title="aspire.image.xform.Xform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Xform</span></code></a></p>
+<p>A <cite>Pipeline</cite> is a <cite>Xform</cite> made up of individual transformation steps (i.e. multiple <cite>Xform</cite> objects).
+The <cite>Pipeline</cite>, just like any other <cite>Xform</cite>, can be run in the <cite>forward</cite> (or <cite>adjoint</cite> mode, in the case of a
+<cite>LinearPipeline</cite>.</p>
+<p>In addition to keeping client-side code clean, a major advantage of <cite>Pipeline</cite> is that individual steps of the
+pipeline can be cached transparently by the <cite>Pipeline</cite>, providing significant performance advantages for steps that
+are performed repeatedly (especially during development while setting up these pipelines) on any Image/Xform pair.
+This caching uses <cite>joblib.Memory</cite> object behind the scenes, but is disabled by default.</p>
+<p>Initialize a <cite>Pipeline</cite> with <cite>Xform</cite> objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xforms</strong> – An iterable of Xform objects to use in the Pipeline.</p></li>
+<li><p><strong>memory</strong> – None for no caching (default), or the location of a directory to use to cache steps of the
+pipeline.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.xform.Pipeline.add_xform">
+<span class="sig-name descname"><span class="pre">add_xform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xform</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Pipeline.add_xform" title="Link to this definition">¶</a></dt>
+<dd><p>Add a single <cite>Xform</cite> object at the end of the pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>xform</strong> – A <cite>Xform</cite> object.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.xform.Pipeline.add_xforms">
+<span class="sig-name descname"><span class="pre">add_xforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xforms</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Pipeline.add_xforms" title="Link to this definition">¶</a></dt>
+<dd><p>Add multiple <cite>Xform</cite> objects at the end of the pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>xform</strong> – An iterable of <cite>Xform</cite> objects.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.xform.Pipeline.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Pipeline.reset" title="Link to this definition">¶</a></dt>
+<dd><p>Reset the pipeline by removing all <a href="#id7"><span class="problematic" id="id8">`</span></a>Xform`s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.Shift">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">Shift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shifts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Shift" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.LinearXform" title="aspire.image.xform.LinearXform"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearXform</span></code></a></p>
+<p>A Xform that shifts pixels of a stack of 2D images (in the form of an Image object)by offsetting all pixels of a
+single 2D image by constant x/y offsets.</p>
+<p>Initialize a Shift Xform using a Numpy array of shift values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>shifts</strong> – An ndarray of shape (2) or (n, 2)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.SymmetricXform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">SymmetricXform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.SymmetricXform" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.image.xform.LinearXform" title="aspire.image.xform.LinearXform"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearXform</span></code></a></p>
+<p>A Symmetric Xform is a LinearXform where the forward/adjoint operations are identical.</p>
+<p>Create a Xform object that works at a specific resolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>active</strong> – A boolean indicating whether the Xform is active. True by default.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.Xform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.image.xform.</span></span><span class="sig-name descname"><span class="pre">Xform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Xform" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>An Xform is anything that implements a <cite>forward</cite> method (and an <cite>adjoint</cite> method, in the case of a LinearXform),
+that takes in a square Image object and spits out a square Image object corresponding to forward/adjoint operations.</p>
+<p>It does this by setting up whatever internal data structures it needs to set up in its constructor.
+Xform objects usually set up data structures that are typically <em>larger</em> than the depth of the Image
+object that they expect to encounter during any invocation of <cite>forward</cite> or <cite>adjoint</cite>.</p>
+<p>At runtime, it gets an Image object (a thin wrapper on a n x L x L ndarray),
+as well as numeric <cite>indices</cite> (a numpy array of index values) that correspond to index values (the ‘window’) of
+the incoming Image object within the context of all images (i.e. an Image object of N x L x L, where N represents
+the number of total images that can ever pass through this Xform.</p>
+<p>At runtime, The Xform object may choose to ignore <cite>indices</cite> altogether (e.g. a Xform that downsamples all incoming
+images to a constant resolution won’t care what <cite>indices</cite> they correspond to), or may do something with it (e.g. a
+Xform that shifts images by varying offsets depending on their indices).</p>
+<p>Create a Xform object that works at a specific resolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>active</strong> – A boolean indicating whether the Xform is active. True by default.</p>
+</dd>
+</dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.image.xform.Xform.XformActiveContextManager">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">XformActiveContextManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xform</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Xform.XformActiveContextManager" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This inner class allows us to temporarily enable/disable a Xform object, by tweaking its <cite>active</cite>
+attribute on enter/exit.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.xform.Xform.disabled">
+<span class="sig-name descname"><span class="pre">disabled</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Xform.disabled" title="Link to this definition">¶</a></dt>
+<dd><p>Disable this Xform in a context manager, regardless of its <cite>active</cite> attribute value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A context manager in which this Xform is disabled.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.xform.Xform.enabled">
+<span class="sig-name descname"><span class="pre">enabled</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Xform.enabled" title="Link to this definition">¶</a></dt>
+<dd><p>Enable this Xform in a context manager, regardless of its <cite>active</cite> attribute value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A context manager in which this Xform is enabled.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.image.xform.Xform.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.image.xform.Xform.forward" title="Link to this definition">¶</a></dt>
+<dd><p>Apply forward transformation for this Xform object to an Image object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>im</strong> – The incoming Image object of depth <cite>n</cite>, on which to apply the forward transformation.</p></li>
+<li><p><strong>indices</strong> – The indices to use within this Xform. If unspecified, [0..n) is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An Image object after applying the forward transformation.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.image">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.image" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.downloader.html" class="btn btn-neutral float-left" title="aspire.downloader package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.noise.html" class="btn btn-neutral float-right" title="aspire.noise package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

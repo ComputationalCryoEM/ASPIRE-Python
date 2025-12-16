@@ -1,0 +1,456 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASPIRE Configuration &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="ASPIRE-Python Introduction" href="aspire_introduction.html" />
+    <link rel="prev" title="Tutorials" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#api-introduction">API Introduction</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ASPIRE Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#default-configuration">Default Configuration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#system-overrides">System Overrides</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#override-configuration-directory">Override Configuration Directory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#in-code-overrides">In-Code Overrides</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#enabling-gpu-acceleration">Enabling GPU Acceleration</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#resolution">Resolution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#logging-preferences">Logging preferences</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#advanced-logging-options">Advanced logging options</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire_introduction.html">ASPIRE-Python Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipeline_demo.html">Ab-initio Pipeline Demonstration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#component-examples">Component Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">ASPIRE Configuration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/auto_tutorials/configuration.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-configuration-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="aspire-configuration">
+<span id="sphx-glr-auto-tutorials-configuration-py"></span><h1>ASPIRE Configuration<a class="headerlink" href="#aspire-configuration" title="Link to this heading">¶</a></h1>
+<p>This tutorial reviews the default ASPIRE configuration
+and common patterns for overriding.</p>
+<section id="default-configuration">
+<h2>Default Configuration<a class="headerlink" href="#default-configuration" title="Link to this heading">¶</a></h2>
+<p>ASPIRE uses the <a class="reference external" href="https://confuse.readthedocs.io/en/latest/index.html">confuse library</a> for managing configuration.
+While this document should cover common uses,
+advanced users and developers should consider reviewing their documentation.</p>
+<p>The ASPIRE package ships with <code class="docutils literal notranslate"><span class="pre">config_default.yaml</span></code>.
+This represents a base configuration.
+The shipped configuration for this version of ASPIRE is:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">version</span><span class="p">:</span> <span class="mf">0.14.2</span>
+<span class="n">common</span><span class="p">:</span>
+    <span class="c1"># numeric module to use - one of numpy/cupy</span>
+    <span class="n">numeric</span><span class="p">:</span> <span class="n">numpy</span>
+    <span class="c1"># fft backend to use - one of pyfftw/scipy/cupy/mkl</span>
+    <span class="n">fft</span><span class="p">:</span> <span class="n">scipy</span>
+
+<span class="n">cache</span><span class="p">:</span>
+    <span class="c1"># Set cache directory for ASPIRE example data.</span>
+    <span class="c1"># By default the cache location will be set by pooch.os_cache(),</span>
+    <span class="c1"># which sets cache based on operating system as follows:</span>
+    <span class="c1"># Mac: ~/Library/Caches/&lt;AppName&gt;</span>
+    <span class="c1"># Unix: ~/.cache/&lt;AppName&gt; or the value of the XDG_CACHE_HOME environment variable, if defined.</span>
+    <span class="c1"># Windows: C:\Users\&lt;user&gt;\AppData\Local\&lt;AppAuthor&gt;\&lt;AppName&gt;\Cache</span>
+    <span class="n">cache_dir</span><span class="p">:</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="c1"># The following control runtime cache sizes for various components,</span>
+    <span class="c1"># where `size` is the number of cached function calls.</span>
+    <span class="c1"># In YAML `null` translates to a limit of `None` in Python,</span>
+    <span class="c1"># which corresponds to unlimited calls.</span>
+    <span class="n">grid_cache_size</span><span class="p">:</span> <span class="n">null</span>
+    <span class="c1"># Using unlimited `filter_cache_size` may cause excessive memory use.</span>
+    <span class="n">filter_cache_size</span><span class="p">:</span> <span class="mi">2</span>
+
+<span class="n">logging</span><span class="p">:</span>
+    <span class="c1"># Set log_dir to a relative or absolute directory</span>
+    <span class="c1"># Default is a subfolder `logs` in your current working directory.</span>
+    <span class="n">log_dir</span><span class="p">:</span> <span class="n">logs</span>
+    <span class="n">log_exceptions</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="c1"># tqdm_disable=True disables progress bars.</span>
+    <span class="n">tqdm_disable</span><span class="p">:</span> <span class="kc">False</span>
+
+    <span class="c1"># set Python logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL</span>
+    <span class="c1"># logging level for console output:</span>
+    <span class="n">console_level</span><span class="p">:</span> <span class="n">INFO</span>
+    <span class="c1"># logging level for log file output:</span>
+    <span class="n">log_file_level</span><span class="p">:</span> <span class="n">DEBUG</span>
+
+    <span class="c1"># custom log file name prefix can be set using &#39;log_prefix&#39;</span>
+    <span class="c1"># will appear as &#39;[log_dir]/[log_prefix]-{timestamp}.log&#39;</span>
+    <span class="n">log_prefix</span><span class="p">:</span> <span class="n">aspire</span>
+
+<span class="n">nufft</span><span class="p">:</span>
+    <span class="c1"># NUFFT backends should be one of finufft, cufinufft, pynfft.</span>
+    <span class="c1"># They will be attempted in order from left to right.</span>
+    <span class="n">backends</span><span class="p">:</span> <span class="p">[</span><span class="n">cufinufft</span><span class="p">,</span> <span class="n">finufft</span><span class="p">,</span> <span class="n">pynfft</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="system-overrides">
+<h2>System Overrides<a class="headerlink" href="#system-overrides" title="Link to this heading">¶</a></h2>
+<p>From here we can override with a persistent custom config file in
+your home dir, specifically <code class="docutils literal notranslate"><span class="pre">$HOME/.config/ASPIRE/config.yaml</span></code> on
+most Linux platforms.
+Items in this file will take precedence over the default configuration.
+For other platforms, refer to the <cite>confuse</cite> documentation.</p>
+<p>As an example, suppose you want to change the <code class="docutils literal notranslate"><span class="pre">common</span></code> section’s
+<code class="docutils literal notranslate"><span class="pre">numeric</span></code> and <code class="docutils literal notranslate"><span class="pre">fft</span></code> variables to enable GPU acceleration when
+working on a specific machine.
+By creating <code class="docutils literal notranslate"><span class="pre">$HOME/.config/ASPIRE/config.yaml</span></code> with the following contents
+on that machine, ASPIRE’s configuration utility will overload
+the <code class="docutils literal notranslate"><span class="pre">numeric</span></code> and <code class="docutils literal notranslate"><span class="pre">fft</span></code> settings.</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">common</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">numeric</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cupy</span>
+<span class="w">  </span><span class="nt">fft</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cupy</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="override-configuration-directory">
+<h2>Override Configuration Directory<a class="headerlink" href="#override-configuration-directory" title="Link to this heading">¶</a></h2>
+<p>Users may specify a directory containing the configuration file.
+This is done by using the enviornment variable <code class="docutils literal notranslate"><span class="pre">ASPIREDIR</span></code>
+If you wanted a file in your working directory to take
+precedence over system-overrides, we can create a local <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code>.</p>
+<p>Suppose you want to store ASPIRE logs at <code class="docutils literal notranslate"><span class="pre">/tmp/my_proj/aspire_logs</span></code>
+when working on a specific project. Create the following <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code>.</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">logging</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">log_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/my_proj/aspire_logs</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>This directory must then be set before invoking any code.</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">ASPIREDIR</span><span class="o">=</span><span class="nv">$PWD</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Similarly, you could specify any directory you like that might contain a configuration.
+This allows you to store configurations for reuse.</p>
+</section>
+<section id="in-code-overrides">
+<h2>In-Code Overrides<a class="headerlink" href="#in-code-overrides" title="Link to this heading">¶</a></h2>
+<p>You can also specify your own file from an arbitrary location from within Python code.
+For precise behavior refer to the confuse documentation.</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">aspire</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">set_file</span><span class="p">(</span><span class="s1">&#39;/path/to/some_experimental_config.yaml&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Or simply set specific variables as needed.
+Here we will disable progress bars displayed by
+<code class="docutils literal notranslate"><span class="pre">aspire.utils.trange</span></code> and <code class="docutils literal notranslate"><span class="pre">aspire.utils.tqdm</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">trange</span>
+
+<span class="c1"># Progress bars are displayed by default.</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Disabling progress bars&quot;</span><span class="p">)</span>
+<span class="n">config</span><span class="p">[</span><span class="s2">&quot;logging&quot;</span><span class="p">][</span><span class="s2">&quot;tqdm_disable&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">trange</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done Loop 1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Re-enabling progress bars&quot;</span><span class="p">)</span>
+<span class="n">config</span><span class="p">[</span><span class="s2">&quot;logging&quot;</span><span class="p">][</span><span class="s2">&quot;tqdm_disable&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">trange</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Done Loop 2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Disabling progress bars
+Done Loop 1
+
+Re-enabling progress bars
+
+  0%|          | 0/3 [00:00&lt;?, ?it/s]
+ 33%|███▎      | 1/3 [00:01&lt;00:02,  1.00s/it]
+ 67%|██████▋   | 2/3 [00:02&lt;00:01,  1.00s/it]
+100%|██████████| 3/3 [00:03&lt;00:00,  1.00s/it]
+100%|██████████| 3/3 [00:03&lt;00:00,  1.00s/it]
+Done Loop 2
+</pre></div>
+</div>
+</section>
+<section id="enabling-gpu-acceleration">
+<h2>Enabling GPU Acceleration<a class="headerlink" href="#enabling-gpu-acceleration" title="Link to this heading">¶</a></h2>
+<p>Enabling GPU acceleration requires installing supporting software
+packages and small config changes. Installing the supporting
+software is most easily accomplished by installing ASPIRE with one
+of the published GPU extensions, for example <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span>
+<span class="pre">&quot;aspire[dev,gpu_12x]&quot;</span></code>.  Once the packages are installed users
+should find that the NUFFT calls are automatically running on the
+GPU.  Additional acceleration is achieved by enabling <cite>cupy</cite> for
+<cite>numeric</cite> and <cite>fft</cite> components.</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">common</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># numeric module to use - one of numpy/cupy</span>
+<span class="w">    </span><span class="nt">numeric</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cupy</span>
+<span class="w">    </span><span class="c1"># fft backend to use - one of pyfftw/scipy/cupy/mkl</span>
+<span class="w">    </span><span class="nt">fft</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cupy</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Alternatively, like other config options, this can be changed
+dynamically with code.</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="n">config</span><span class="p">[</span><span class="s2">&quot;common&quot;</span><span class="p">][</span><span class="s2">&quot;numeric&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cupy&quot;</span>
+<span class="n">config</span><span class="p">[</span><span class="s2">&quot;common&quot;</span><span class="p">][</span><span class="s2">&quot;fft&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cupy&quot;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="resolution">
+<h2>Resolution<a class="headerlink" href="#resolution" title="Link to this heading">¶</a></h2>
+<p>ASPIRE logs the <code class="docutils literal notranslate"><span class="pre">config_dir()</span></code> for your system at startup,
+along with the configuration sources and resolved configuration at import time.
+This should give an accurate snapshot of the configuration before any in-code overrides.
+To view these as saved in your log, you will need to locate your <cite>log_dir</cite>.
+If you are not sure where it is, we can ask the config:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">aspire</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">aspire</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;logging&quot;</span><span class="p">][</span><span class="s2">&quot;log_dir&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">as_filename</span><span class="p">())</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/ASPIRE-Python/ASPIRE-Python/gallery/tutorials/logs
+</pre></div>
+</div>
+<p>You can also resolve the config in code</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">aspire</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dump</span><span class="p">())</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>logging:
+    tqdm_disable: no
+    log_dir: /home/runner/work/ASPIRE-Python/ASPIRE-Python/gallery/tutorials/logs
+    log_exceptions: 1
+    console_level: INFO
+    log_file_level: DEBUG
+    log_prefix: aspire
+
+cache:
+    cache_dir: /home/runner/.cache/ASPIRE-data
+    grid_cache_size:
+    filter_cache_size: 2
+version: 0.14.2
+common:
+    numeric: numpy
+    fft: scipy
+
+nufft:
+    backends: [cufinufft, finufft, pynfft]
+</pre></div>
+</div>
+</section>
+<section id="logging-preferences">
+<h2>Logging preferences<a class="headerlink" href="#logging-preferences" title="Link to this heading">¶</a></h2>
+<p>The “Logging” section contains options for controlling the verbosity and destination of log messages generated by ASPIRE.</p>
+<p>By default, the <code class="docutils literal notranslate"><span class="pre">log_dir</span></code> is a directory called <code class="docutils literal notranslate"><span class="pre">logs</span></code> within the current working directory from which ASPIRE was invoked, but
+it can be changed to an absolute path (for instance, to go to the same folder as a custom configuration file stored elsewhere, such
+as in the example above):</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">logging</span><span class="p">:</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">log_dir=/tmp/my_proj/aspire_logs</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>ASPIRE directs output streams to both the console and to a log file during each session. The logging verbosity for both of these
+can be specified individually via <code class="docutils literal notranslate"><span class="pre">console_level</span></code> and <code class="docutils literal notranslate"><span class="pre">log_file_level</span></code>. These levels are passed through to Python’s logging
+system, so the labels are the same: <code class="docutils literal notranslate"><span class="pre">&quot;DEBUG&quot;,</span> <span class="pre">&quot;INFO&quot;,</span> <span class="pre">&quot;WARNING&quot;,</span> <span class="pre">&quot;ERROR&quot;,</span> <span class="pre">&quot;CRITICAL&quot;</span></code>. In general, it may make sense to have the log file
+store more verbose output than the console. By default, only <code class="docutils literal notranslate"><span class="pre">INFO</span></code> and above level messages are printed to the terminal, while
+detailed <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code> messages are saved to disk:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">logging</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">console_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">INFO</span>
+<span class="w">    </span><span class="nt">log_file_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DEBUG</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The following modification would save all <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code> messages to the log file, but only print <code class="docutils literal notranslate"><span class="pre">ERROR</span></code> and <code class="docutils literal notranslate"><span class="pre">CRITICAL</span></code> messages
+in the terminal:</p>
+<blockquote>
+<div><div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">logging</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">console_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ERROR</span>
+<span class="w">    </span><span class="nt">log_file_level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DEBUG</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>By default, the filename of the log file is <code class="docutils literal notranslate"><span class="pre">aspire-{%Y-%m-%dT%H-%M-%S.%f}.log</span></code>. The prefix before the timestamp can be customized
+via the <code class="docutils literal notranslate"><span class="pre">log_prefix</span></code> option.</p>
+<p>More details on logging behavior in Python can be found in the <a class="reference external" href="https://docs.python.org/3/howto/logging.html">Python logging HOWTO</a>.</p>
+</section>
+<section id="advanced-logging-options">
+<h2>Advanced logging options<a class="headerlink" href="#advanced-logging-options" title="Link to this heading">¶</a></h2>
+<p>Users with sophisticated knowledge of Python’s <code class="docutils literal notranslate"><span class="pre">logging</span></code> library are able to directly work with the <code class="docutils literal notranslate"><span class="pre">logging.conf</span></code> file stored in
+<code class="docutils literal notranslate"><span class="pre">src/aspire</span></code> in the source.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>[loggers]
+keys = root
+
+[handlers]
+keys = consoleHandler, fileHandler
+
+[formatters]
+keys = simpleFormatter
+
+[logger_root]
+level = DEBUG
+handlers = consoleHandler, fileHandler
+
+[handler_consoleHandler]
+class = StreamHandler
+level = %(console_level)s
+formatter = simpleFormatter
+args = (sys.stdout,)
+
+[handler_fileHandler]
+class = FileHandler
+level = %(log_file_level)s
+formatter = simpleFormatter
+# You may set a custom filename here:
+args =(os.path.join(&#39;%(log_dir)s&#39;, &#39;%(log_prefix)s-%(dt_stamp)s.log&#39;),)
+
+[formatter_simpleFormatter]
+format = %(asctime)s %(levelname)s [%(name)s] %(message)s
+</pre></div>
+</div>
+<p>This file exposes options that ASPIRE’s <code class="docutils literal notranslate"><span class="pre">config.yaml</span></code> does not, for example the precise formatting options for log messages. However,
+values from ASPIRE’s configuration are passed through this file, so caution is needed when modifying it.</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.860 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-configuration-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/dc5c004a1c5441fdc78a8e607820f2db/configuration.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">configuration.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/7ae0b9a41836bdfffb6e66391d0a0718/configuration.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">configuration.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/3f80a90ad42d108fa0b81b8350097f77/configuration.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">configuration.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Tutorials" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire_introduction.html" class="btn btn-neutral float-right" title="ASPIRE-Python Introduction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

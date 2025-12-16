@@ -1,0 +1,1205 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.volume package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Authors" href="authors.html" />
+    <link rel="prev" title="aspire.utils package" href="aspire.utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.volume package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.volume.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-volume-package">
+<h1>aspire.volume package<a class="headerlink" href="#aspire-volume-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.volume.symmetry_groups">
+<span id="aspire-volume-symmetry-groups-module"></span><h2>aspire.volume.symmetry_groups module<a class="headerlink" href="#module-aspire.volume.symmetry_groups" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.CnSymmetryGroup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.symmetry_groups.</span></span><span class="sig-name descname"><span class="pre">CnSymmetryGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.symmetry_groups.CnSymmetryGroup" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.symmetry_groups.SymmetryGroup" title="aspire.volume.symmetry_groups.SymmetryGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">SymmetryGroup</span></code></a></p>
+<p>Cyclic symmetry group.</p>
+<p><cite>CnSymmetryGroup</cite> instance that serves up a <cite>Rotation</cite> object
+containing rotation matrices of the symmetry group (including
+the identity) accessed via the <cite>matrices</cite> attribute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>order</strong> – The cyclic order for the symmetry group (int).</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.CnSymmetryGroup.generate_rotations">
+<span class="sig-name descname"><span class="pre">generate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.symmetry_groups.CnSymmetryGroup.generate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>The Cn symmetry group contains all rotations about the z-axis
+by multiples of 2pi/n.</p>
+<p>In the case of an AsymmetricVolume or LegacyVolume, <cite>symmetry_group</cite>
+contains only the identity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Rotation object containing the Cn symmetry group and the identity.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.CnSymmetryGroup.to_string">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_string</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.CnSymmetryGroup.to_string" title="Link to this definition">¶</a></dt>
+<dd><p>String denoting the symmetry type.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.DnSymmetryGroup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.symmetry_groups.</span></span><span class="sig-name descname"><span class="pre">DnSymmetryGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.symmetry_groups.DnSymmetryGroup" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.symmetry_groups.SymmetryGroup" title="aspire.volume.symmetry_groups.SymmetryGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">SymmetryGroup</span></code></a></p>
+<p>Dihedral symmetry group.</p>
+<p><cite>DnSymmetryGroup</cite> instance that serves up a <cite>Rotation</cite> object
+containing rotation matrices of the symmetry group (including
+the Identity) accessed via the <cite>matrices</cite> attribute. Note, this
+is the chiral dihedral symmetry group which does contain reflections.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>order</strong> – The cyclic order for the symmetry group (int).</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.DnSymmetryGroup.generate_rotations">
+<span class="sig-name descname"><span class="pre">generate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.symmetry_groups.DnSymmetryGroup.generate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>The Dn symmetry group contains all elements of the Cn symmetry group.
+In addition, for each element of the Cn symmetric group we rotate by
+pi about a perpendicular axis, in this case the y-axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Rotation object containing the Dn symmetry group and the identity.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.DnSymmetryGroup.to_string">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_string</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.DnSymmetryGroup.to_string" title="Link to this definition">¶</a></dt>
+<dd><p>String denoting the symmetry type.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.ISymmetryGroup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.symmetry_groups.</span></span><span class="sig-name descname"><span class="pre">ISymmetryGroup</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.ISymmetryGroup" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.symmetry_groups.SymmetryGroup" title="aspire.volume.symmetry_groups.SymmetryGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">SymmetryGroup</span></code></a></p>
+<p>Icosahedral symmetry group.</p>
+<p><cite>ISymmetryGroup</cite> instance that serves up a <cite>Rotation</cite> object
+containing rotation matrices of the symmetry group (including the
+Identity) accessed via the <cite>matrices</cite> attribute. Note, this is the
+chiral icosahedral symmetry group which does not contain reflections.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.ISymmetryGroup.generate_rotations">
+<span class="sig-name descname"><span class="pre">generate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.symmetry_groups.ISymmetryGroup.generate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Icosahedral rotation group I (60 elements):
+- 1 identity rotation (order 1)
+- 24 rotations of order 5: ±72°, ±144° around 6 face-center axes
+- 20 rotations of order 3: ±120° around 10 vertex axes
+- 15 rotations of order 2: 180° around 15 edge-midpoint axes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Rotation object containing the icosahedral symmetry group and the identity.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.ISymmetryGroup.to_string">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_string</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.ISymmetryGroup.to_string" title="Link to this definition">¶</a></dt>
+<dd><p>String denoting the symmetry type.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.IdentitySymmetryGroup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.symmetry_groups.</span></span><span class="sig-name descname"><span class="pre">IdentitySymmetryGroup</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.IdentitySymmetryGroup" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.symmetry_groups.CnSymmetryGroup" title="aspire.volume.symmetry_groups.CnSymmetryGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">CnSymmetryGroup</span></code></a></p>
+<p>The identity symmetry group.</p>
+<p><cite>IdentitySymmetryGroup</cite> instance that serves up a <cite>Rotation</cite> object
+containing the identity matrix.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.OSymmetryGroup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.symmetry_groups.</span></span><span class="sig-name descname"><span class="pre">OSymmetryGroup</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.OSymmetryGroup" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.symmetry_groups.SymmetryGroup" title="aspire.volume.symmetry_groups.SymmetryGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">SymmetryGroup</span></code></a></p>
+<p>Octahedral symmetry group.</p>
+<p><cite>OSymmetryGroup</cite> instance that serves up a <cite>Rotation</cite> object
+containing rotation matrices of the symmetry group (including the
+Identity) accessed via the <cite>matrices</cite> attribute. Note, this is the
+chiral octahedral symmetry group which does not contain reflections.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.OSymmetryGroup.generate_rotations">
+<span class="sig-name descname"><span class="pre">generate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.symmetry_groups.OSymmetryGroup.generate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>The symmetry group elements of the octahedral symmetry group O are the identity,
+the elements of 3 C4 rotation groups whose axes pass through two opposite vertices of the
+regular octahedron, 4 C3 rotation groups whose axes pass through the midpoints of two of
+its opposite faces, and 6 C2 rotation groups whose axes pass through the midpoints of two
+of its opposite edges.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Rotation object containing the octahedral symmetry group and the identity.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.OSymmetryGroup.to_string">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_string</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.OSymmetryGroup.to_string" title="Link to this definition">¶</a></dt>
+<dd><p>String denoting the symmetry type.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.SymmetryGroup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.symmetry_groups.</span></span><span class="sig-name descname"><span class="pre">SymmetryGroup</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.SymmetryGroup" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Base class for symmetry groups.</p>
+<p>Abstract class for symmetry groups.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.SymmetryGroup.generate_rotations">
+<span class="sig-name descname"><span class="pre">generate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.symmetry_groups.SymmetryGroup.generate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Method for generating a Rotation object for the symmetry group.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.SymmetryGroup.matrices">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">matrices</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.SymmetryGroup.matrices" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.SymmetryGroup.parse">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">symmetry</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.symmetry_groups.SymmetryGroup.parse" title="Link to this definition">¶</a></dt>
+<dd><p>Takes a SymmetryGroup instance or a string, ie. ‘C1’, ‘C7’, ‘D3’, ‘T’, ‘O’,
+and returns a concrete SymmetryGroup object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>symmetry</strong> – A string (or SymmetryGroup instance) indicating the symmetry of a molecule.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Concrete SymmetryGroup object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.SymmetryGroup.to_string">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_string</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.SymmetryGroup.to_string" title="Link to this definition">¶</a></dt>
+<dd><p>String denoting the symmetry type.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.TSymmetryGroup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.symmetry_groups.</span></span><span class="sig-name descname"><span class="pre">TSymmetryGroup</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.TSymmetryGroup" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.symmetry_groups.SymmetryGroup" title="aspire.volume.symmetry_groups.SymmetryGroup"><code class="xref py py-class docutils literal notranslate"><span class="pre">SymmetryGroup</span></code></a></p>
+<p>Tetrahedral symmetry group.</p>
+<p><cite>TSymmetryGroup</cite> instance that serves up a <cite>Rotation</cite> object
+containing rotation matrices of the symmetry group (including the
+Identity) accessed via the <cite>matrices</cite> attribute. Note, this is the
+chiral tetrahedral symmetry group which does not contain reflections.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.TSymmetryGroup.generate_rotations">
+<span class="sig-name descname"><span class="pre">generate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.symmetry_groups.TSymmetryGroup.generate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>A tetrahedron has C3 symmetry along the 4 axes through each vertex and
+perpendicular to the opposite face, and C2 symmetry along the axes through
+the midpoints of opposite edges.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Rotation object containing the tetrahedral symmetry group and the identity.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.symmetry_groups.TSymmetryGroup.to_string">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_string</span></span><a class="headerlink" href="#aspire.volume.symmetry_groups.TSymmetryGroup.to_string" title="Link to this definition">¶</a></dt>
+<dd><p>String denoting the symmetry type.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.volume.volume">
+<span id="aspire-volume-volume-module"></span><h2>aspire.volume.volume module<a class="headerlink" href="#module-aspire.volume.volume" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume.BasisVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume.</span></span><span class="sig-name descname"><span class="pre">BasisVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.BasisVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume.Volume" title="aspire.volume.volume.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a></p>
+<p>A stack of one or more volumes.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_vols</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last three axes represent the volume size,
+and are checked to be cubic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing volume data with shape
+<cite>(…, resolution, resolution, resolution)</cite>.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>symmetry_group</strong> – A SymmetryGroup instance or string indicating symmetry of the Volume.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A Volume instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.BasisVolume.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.BasisVolume.evaluate" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume.BispecVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume.</span></span><span class="sig-name descname"><span class="pre">BispecVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symmetry_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.BispecVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume.Volume" title="aspire.volume.volume.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a></p>
+<p>A stack of one or more volumes.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_vols</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last three axes represent the volume size,
+and are checked to be cubic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing volume data with shape
+<cite>(…, resolution, resolution, resolution)</cite>.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>symmetry_group</strong> – A SymmetryGroup instance or string indicating symmetry of the Volume.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A Volume instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.BispecVolume.expand">
+<span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.BispecVolume.expand" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume.CartesianVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume.</span></span><span class="sig-name descname"><span class="pre">CartesianVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symmetry_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.CartesianVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume.Volume" title="aspire.volume.volume.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a></p>
+<p>A stack of one or more volumes.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_vols</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last three axes represent the volume size,
+and are checked to be cubic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing volume data with shape
+<cite>(…, resolution, resolution, resolution)</cite>.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>symmetry_group</strong> – A SymmetryGroup instance or string indicating symmetry of the Volume.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A Volume instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.CartesianVolume.expand">
+<span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.CartesianVolume.expand" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume.FBBasisVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume.</span></span><span class="sig-name descname"><span class="pre">FBBasisVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.FBBasisVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume.BasisVolume" title="aspire.volume.volume.BasisVolume"><code class="xref py py-class docutils literal notranslate"><span class="pre">BasisVolume</span></code></a></p>
+<p>A stack of one or more volumes.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_vols</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last three axes represent the volume size,
+and are checked to be cubic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing volume data with shape
+<cite>(…, resolution, resolution, resolution)</cite>.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>symmetry_group</strong> – A SymmetryGroup instance or string indicating symmetry of the Volume.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A Volume instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume.PolarVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume.</span></span><span class="sig-name descname"><span class="pre">PolarVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symmetry_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.PolarVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume.Volume" title="aspire.volume.volume.Volume"><code class="xref py py-class docutils literal notranslate"><span class="pre">Volume</span></code></a></p>
+<p>A stack of one or more volumes.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_vols</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last three axes represent the volume size,
+and are checked to be cubic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing volume data with shape
+<cite>(…, resolution, resolution, resolution)</cite>.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>symmetry_group</strong> – A SymmetryGroup instance or string indicating symmetry of the Volume.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A Volume instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.PolarVolume.expand">
+<span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.PolarVolume.expand" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume.</span></span><span class="sig-name descname"><span class="pre">Volume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symmetry_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Volume is an (N1 x …) x L x L x L array, along with associated utility methods.</p>
+<p>A stack of one or more volumes.</p>
+<p>This is a wrapper of numpy.ndarray which provides methods
+for common processing tasks.</p>
+<p>The stack can be multidimensional with <cite>n_vols</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a stack with one entry.</p>
+<p>The last three axes represent the volume size,
+and are checked to be cubic.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – Numpy array containing volume data with shape
+<cite>(…, resolution, resolution, resolution)</cite>.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>symmetry_group</strong> – A SymmetryGroup instance or string indicating symmetry of the Volume.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A Volume instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.T">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">T</span></span><a class="headerlink" href="#aspire.volume.volume.Volume.T" title="Link to this definition">¶</a></dt>
+<dd><p>Abbreviation for transpose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Volume instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.asnumpy">
+<span class="sig-name descname"><span class="pre">asnumpy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.asnumpy" title="Link to this definition">¶</a></dt>
+<dd><p>Return volume data as a (&lt;stack&gt;, resolution, resolution,
+resolution) read-only array view.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>read-only ndarray view</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.astype">
+<span class="sig-name descname"><span class="pre">astype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.astype" title="Link to this definition">¶</a></dt>
+<dd><p>Return <cite>Volume</cite> instance with the prescribed dtype.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dtype</strong> – Numpy dtype</p></li>
+<li><p><strong>copy</strong> – Boolean, optionally avoid copying if Volume.dtype already matches.
+Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Volume instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.denoise">
+<span class="sig-name descname"><span class="pre">denoise</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.denoise" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.downsample">
+<span class="sig-name descname"><span class="pre">downsample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ds_res</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_nyquist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legacy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.downsample" title="Link to this definition">¶</a></dt>
+<dd><p>Downsample each volume to a desired resolution (only cubic supported).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ds_res</strong> – Desired resolution.</p></li>
+<li><p><strong>zero_nyquist</strong> – Option to keep or remove Nyquist frequency for even
+resolution (boolean). Defaults to zero_nyquist=True, removing the Nyquist frequency.</p></li>
+<li><p><strong>mask</strong> – Optional NumPy array mask to multiply in Fourier space.</p></li>
+<li><p><strong>legacy</strong> – Option to match legacy Matlab downsample method (boolean).
+Default of False uses <cite>centered_fft</cite> to maintain ASPIRE-Python centering conventions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The downsampled Volume object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.empty_like">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">empty_like</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.empty_like" title="Link to this definition">¶</a></dt>
+<dd><p>Return a new empty volume instance with the shape and dtype of <cite>v</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>v</strong> – Volume instance</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Volume instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.flatten">
+<span class="sig-name descname"><span class="pre">flatten</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.flatten" title="Link to this definition">¶</a></dt>
+<dd><p>Util function for flatten operation on volume data array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.flip">
+<span class="sig-name descname"><span class="pre">flip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.flip" title="Link to this definition">¶</a></dt>
+<dd><p>Flip volume stack data along axis using numpy.flip</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>axis</strong> – Optionally specify axis as integer or tuple.
+Defaults to axis=-3.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Volume instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.from_vec">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_vec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.from_vec" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a Volume instance from a (N, resolution**3) array or
+(resolution**3) array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Volume instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.fsc">
+<span class="sig-name descname"><span class="pre">fsc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fft'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.fsc" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the Fourier shell correlation between two volumes.</p>
+<p>Volumes are assumed to be well aligned.</p>
+<p>The FSC is defined as:</p>
+<div class="math notranslate nohighlight">
+\[c(i) = \frac{ \operatorname{Re}( \sum_i{ \mathcal{F}_1(i) * {\mathcal{F}^{*}_2(i) } } ) }{\
+  \sqrt{ \sum_i { | \mathcal{F}_1(i) |^2 } * \sum_i{| \mathcal{F}^{*}_2}(i) |^2 } }\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>other</strong> – <cite>Volume</cite> instance to compare.</p></li>
+<li><p><strong>cutoff</strong> – Cutoff value, traditionally <cite>.143</cite>.
+Default <cite>None</cite> implies <cite>cutoff=1</cite> and excludes
+plotting cutoff line.</p></li>
+<li><p><strong>method</strong> – Selects either ‘fft’ (on cartesian grid),
+or ‘nufft’ (on polar grid). Defaults to ‘fft’.</p></li>
+<li><p><strong>plot</strong> – Optionally plot to screen or file.
+Defaults to <cite>False</cite>.  <cite>True</cite> plots to screen.
+Passing a filepath as a string will attempt to save to file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple(estimated_resolution,  FSC),
+where <cite>estimated_resolution</cite> is in angstrom
+and FSC is a Numpy array of correlations.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">permissive</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symmetry_group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.load" title="Link to this definition">¶</a></dt>
+<dd><p>Load an mrc file as a Volume instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – Data filepath to load.</p></li>
+<li><p><strong>permissive</strong> – Allows problematic files to load with warning when True.
+Defaults to permissive=True.</p></li>
+<li><p><strong>dtype</strong> – Optionally specifiy data type. Defaults to dtype of the data.</p></li>
+<li><p><strong>symmetry_group</strong> – A SymmetryGroup instance or string indicating symmetry of the Volume.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Volume instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.project">
+<span class="sig-name descname"><span class="pre">project</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rot_matrices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_nyquist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.project" title="Link to this definition">¶</a></dt>
+<dd><p>Using the stack of rot_matrices, project images of Volume. When projecting
+over a stack of volumes, a singleton Rotation or a Rotation with stack size
+self.n_vols must be used. In the case of a singleton Rotation, each Volume in
+the stack will be projected using the single Rotation. In the case of a Volume stack
+and a Rotation stack, the i’th Volume will be projected using the i’th Rotation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rot_matrices</strong> – Stack of rotations. Rotation or ndarray instance.</p></li>
+<li><p><strong>zero_nyquist</strong> – Option to keep or remove Nyquist frequency for even resolution.
+Defaults to zero_nyquist=True, removing the Nyquist frequency.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>Image</cite> instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.rotate">
+<span class="sig-name descname"><span class="pre">rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rot_matrices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_nyquist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.rotate" title="Link to this definition">¶</a></dt>
+<dd><p>Rotate volumes, within a fixed grid, by <cite>rot_matrices</cite>. If <cite>rot_matrices</cite> is a single
+rotation, each volume will be rotated by that rotation. If <cite>rot_matrices</cite> is a stack of
+rotations of length n_vols, the ith volume will be rotated by the ith rotation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rot_matrices</strong> – <cite>Rotation</cite> object of length 1 or n_vols.</p></li>
+<li><p><strong>zero_nyquist</strong> – Option to keep or remove Nyquist frequency for even resolution.
+Defaults to zero_nyquist=True, removing the Nyquist frequency.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>Volume</cite> instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.save" title="Link to this definition">¶</a></dt>
+<dd><p>Save volume to disk as mrc file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – Filepath where volume will be saved.</p></li>
+<li><p><strong>overwrite</strong> – Options to control overwrite behavior (default is None):
+- True: Overwrites the existing file if it exists.
+- False: Raises an error if the file exists.
+- None: Renames the old file by appending a time/date stamp.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.shift">
+<span class="sig-name descname"><span class="pre">shift</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.shift" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.stack_reshape">
+<span class="sig-name descname"><span class="pre">stack_reshape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.stack_reshape" title="Link to this definition">¶</a></dt>
+<dd><p>Reshape the stack axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">*argsargs<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer(s) or tuple describing the intended shape.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Volume instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.symmetry_group">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">symmetry_group</span></span><a class="headerlink" href="#aspire.volume.volume.Volume.symmetry_group" title="Link to this definition">¶</a></dt>
+<dd><p>A SymmetryGroup instance associated with the symmetry of the volume.
+Access rotation matrices of the symmetry_group via <cite>symmetry_group.rotations</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.to_vec">
+<span class="sig-name descname"><span class="pre">to_vec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.to_vec" title="Link to this definition">¶</a></dt>
+<dd><p>Returns an N x resolution ** 3 array.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.transpose">
+<span class="sig-name descname"><span class="pre">transpose</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.transpose" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a new Volume instance with volume data axes transposed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Volume instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume.Volume.zeros_like">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">zeros_like</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.Volume.zeros_like" title="Link to this definition">¶</a></dt>
+<dd><p>Return a new zeros volume instance with the shape and dtype of <cite>v</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>v</strong> – Volume instance</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Volume instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.volume.volume.qr_vols_forward">
+<span class="sig-prename descclassname"><span class="pre">aspire.volume.volume.</span></span><span class="sig-name descname"><span class="pre">qr_vols_forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.qr_vols_forward" title="Link to this definition">¶</a></dt>
+<dd><p>TODO: Write docstring
+TODO: Find a better place for this!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sim</strong></p></li>
+<li><p><strong>s</strong></p></li>
+<li><p><strong>n</strong></p></li>
+<li><p><strong>vols</strong></p></li>
+<li><p><strong>k</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.volume.volume.rotated_grids">
+<span class="sig-prename descclassname"><span class="pre">aspire.volume.volume.</span></span><span class="sig-name descname"><span class="pre">rotated_grids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rot_matrices</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.rotated_grids" title="Link to this definition">¶</a></dt>
+<dd><p>Generate rotated Fourier grids in 3D from rotation matrices</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – The resolution of the desired grids.</p></li>
+<li><p><strong>rot_matrices</strong> – An array of size k-by-3-by-3 containing K rotation matrices</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A set of rotated Fourier grids in three dimensions as specified by the rotation matrices.
+Frequencies are in the range [-pi, pi].</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.volume.volume.rotated_grids_3d">
+<span class="sig-prename descclassname"><span class="pre">aspire.volume.volume.</span></span><span class="sig-name descname"><span class="pre">rotated_grids_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rot_matrices</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume.rotated_grids_3d" title="Link to this definition">¶</a></dt>
+<dd><p>Generate rotated Fourier grids in 3D from rotation matrices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – The resolution of the desired grids.</p></li>
+<li><p><strong>rot_matrices</strong> – An array of size k-by-3-by-3 containing K rotation matrices</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A set of rotated Fourier grids in three dimensions as specified by the rotation matrices.
+Frequencies are in the range [-pi, pi].</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.volume.volume_synthesis">
+<span id="aspire-volume-volume-synthesis-module"></span><h2>aspire.volume.volume_synthesis module<a class="headerlink" href="#module-aspire.volume.volume_synthesis" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.AsymmetricVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume_synthesis.</span></span><span class="sig-name descname"><span class="pre">AsymmetricVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K=64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.AsymmetricVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume_synthesis.CnSymmetricVolume" title="aspire.volume.volume_synthesis.CnSymmetricVolume"><code class="xref py py-class docutils literal notranslate"><span class="pre">CnSymmetricVolume</span></code></a></p>
+<p>An asymmetric Volume constructed of random 3D Gaussian blobs with compact support in the unit sphere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – Resolution of the Volume(s) in pixels.</p></li>
+<li><p><strong>C</strong> – Number of Volumes to generate.</p></li>
+<li><p><strong>order</strong> – An integer representing the cyclic order of the Volume(s).</p></li>
+<li><p><strong>K</strong> – Number of Gaussian blobs used to construct the Volume(s).</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>seed</strong> – Random seed for generating random Gaussian blobs.</p></li>
+<li><p><strong>dtype</strong> – dtype for Volume(s)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.CnSymmetricVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume_synthesis.</span></span><span class="sig-name descname"><span class="pre">CnSymmetricVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K=16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.CnSymmetricVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume_synthesis.GaussianBlobsVolume" title="aspire.volume.volume_synthesis.GaussianBlobsVolume"><code class="xref py py-class docutils literal notranslate"><span class="pre">GaussianBlobsVolume</span></code></a></p>
+<p>A Volume object with cyclically symmetric volumes constructed of random 3D Gaussian blobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – Resolution of the Volume(s) in pixels.</p></li>
+<li><p><strong>C</strong> – Number of Volumes to generate.</p></li>
+<li><p><strong>order</strong> – An integer representing the cyclic order of the Volume(s).</p></li>
+<li><p><strong>K</strong> – Number of Gaussian blobs used to construct the Volume(s).</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>seed</strong> – Random seed for generating random Gaussian blobs.</p></li>
+<li><p><strong>dtype</strong> – dtype for Volume(s)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.CnSymmetricVolume.n_blobs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_blobs</span></span><a class="headerlink" href="#aspire.volume.volume_synthesis.CnSymmetricVolume.n_blobs" title="Link to this definition">¶</a></dt>
+<dd><p>The total number of Gaussian blobs used to generate a Volume.
+This value differs from <cite>self.K</cite> as it accounts for the blobs
+which have been duplicated during <cite>_symmetrize_gaussians</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.DnSymmetricVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume_synthesis.</span></span><span class="sig-name descname"><span class="pre">DnSymmetricVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K=16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.DnSymmetricVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume_synthesis.CnSymmetricVolume" title="aspire.volume.volume_synthesis.CnSymmetricVolume"><code class="xref py py-class docutils literal notranslate"><span class="pre">CnSymmetricVolume</span></code></a></p>
+<p>A Volume object with n-fold dihedral symmetry constructed of random 3D Gaussian blobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – Resolution of the Volume(s) in pixels.</p></li>
+<li><p><strong>C</strong> – Number of Volumes to generate.</p></li>
+<li><p><strong>order</strong> – An integer representing the cyclic order of the Volume(s).</p></li>
+<li><p><strong>K</strong> – Number of Gaussian blobs used to construct the Volume(s).</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>seed</strong> – Random seed for generating random Gaussian blobs.</p></li>
+<li><p><strong>dtype</strong> – dtype for Volume(s)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.DnSymmetricVolume.n_blobs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_blobs</span></span><a class="headerlink" href="#aspire.volume.volume_synthesis.DnSymmetricVolume.n_blobs" title="Link to this definition">¶</a></dt>
+<dd><p>The total number of Gaussian blobs used to generate a Volume.
+This value differs from <cite>self.K</cite> as it accounts for the blobs
+which have been duplicated during <cite>_symmetrize_gaussians</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.GaussianBlobsVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume_synthesis.</span></span><span class="sig-name descname"><span class="pre">GaussianBlobsVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K=16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.GaussianBlobsVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume_synthesis.SyntheticVolumeBase" title="aspire.volume.volume_synthesis.SyntheticVolumeBase"><code class="xref py py-class docutils literal notranslate"><span class="pre">SyntheticVolumeBase</span></code></a></p>
+<p>A base class for all volumes which are generated with randomized 3D Gaussians.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – Resolution of the Volume(s) in pixels.</p></li>
+<li><p><strong>C</strong> – Number of Volumes to generate.</p></li>
+<li><p><strong>K</strong> – Number of Gaussian blobs used to construct the Volume(s).</p></li>
+<li><p><strong>alpha</strong> – Scaling factor for variance of Gaussian blobs. Default=1.</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>seed</strong> – Random seed for generating random Gaussian blobs.</p></li>
+<li><p><strong>dtype</strong> – dtype for Volume(s)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.GaussianBlobsVolume.generate">
+<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.GaussianBlobsVolume.generate" title="Link to this definition">¶</a></dt>
+<dd><p>Generates a Volume object with specified symmetry that is multiplied by a bump function
+to give compact support within the unit sphere.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.GaussianBlobsVolume.n_blobs">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_blobs</span></span><a class="headerlink" href="#aspire.volume.volume_synthesis.GaussianBlobsVolume.n_blobs" title="Link to this definition">¶</a></dt>
+<dd><p>The total number of Gaussian blobs used to generate a Volume.
+This value differs from <cite>self.K</cite> as it accounts for the blobs
+which have been duplicated during <cite>_symmetrize_gaussians</cite>.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.GaussianBlobsVolume.symmetry_group">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">symmetry_group</span></span><a class="headerlink" href="#aspire.volume.volume_synthesis.GaussianBlobsVolume.symmetry_group" title="Link to this definition">¶</a></dt>
+<dd><p>SymmetryGroup object corresponding to the symmetry of the Volume.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.ISymmetricVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume_synthesis.</span></span><span class="sig-name descname"><span class="pre">ISymmetricVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K=16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.ISymmetricVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume_synthesis.GaussianBlobsVolume" title="aspire.volume.volume_synthesis.GaussianBlobsVolume"><code class="xref py py-class docutils literal notranslate"><span class="pre">GaussianBlobsVolume</span></code></a></p>
+<p>A Volume object with Icosahedral symmetry constructed of random 3D Gaussian blobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – Resolution of the Volume(s) in pixels.</p></li>
+<li><p><strong>C</strong> – Number of Volumes to generate.</p></li>
+<li><p><strong>K</strong> – Number of Gaussian blobs used to construct the Volume(s).</p></li>
+<li><p><strong>alpha</strong> – Scaling factor for variance of Gaussian blobs. Default=1.</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>seed</strong> – Random seed for generating random Gaussian blobs.</p></li>
+<li><p><strong>dtype</strong> – dtype for Volume(s)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.ISymmetricVolume.n_blobs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_blobs</span></span><a class="headerlink" href="#aspire.volume.volume_synthesis.ISymmetricVolume.n_blobs" title="Link to this definition">¶</a></dt>
+<dd><p>The total number of Gaussian blobs used to generate a Volume.
+This value differs from <cite>self.K</cite> as it accounts for the blobs
+which have been duplicated during <cite>_symmetrize_gaussians</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.LegacyVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume_synthesis.</span></span><span class="sig-name descname"><span class="pre">LegacyVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C=2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K=16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.LegacyVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume_synthesis.AsymmetricVolume" title="aspire.volume.volume_synthesis.AsymmetricVolume"><code class="xref py py-class docutils literal notranslate"><span class="pre">AsymmetricVolume</span></code></a></p>
+<p>An asymmetric Volume object used for testing of legacy code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – Resolution of the Volume(s) in pixels.</p></li>
+<li><p><strong>C</strong> – Number of Volumes to generate.</p></li>
+<li><p><strong>order</strong> – An integer representing the cyclic order of the Volume(s).</p></li>
+<li><p><strong>K</strong> – Number of Gaussian blobs used to construct the Volume(s).</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>seed</strong> – Random seed for generating random Gaussian blobs.</p></li>
+<li><p><strong>dtype</strong> – dtype for Volume(s)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.LegacyVolume.generate">
+<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.LegacyVolume.generate" title="Link to this definition">¶</a></dt>
+<dd><p>Generates an asymmetric volume composed of random 3D Gaussian blobs.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.OSymmetricVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume_synthesis.</span></span><span class="sig-name descname"><span class="pre">OSymmetricVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K=16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.OSymmetricVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume_synthesis.GaussianBlobsVolume" title="aspire.volume.volume_synthesis.GaussianBlobsVolume"><code class="xref py py-class docutils literal notranslate"><span class="pre">GaussianBlobsVolume</span></code></a></p>
+<p>A Volume object with octahedral symmetry constructed of random 3D Gaussian blobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – Resolution of the Volume(s) in pixels.</p></li>
+<li><p><strong>C</strong> – Number of Volumes to generate.</p></li>
+<li><p><strong>K</strong> – Number of Gaussian blobs used to construct the Volume(s).</p></li>
+<li><p><strong>alpha</strong> – Scaling factor for variance of Gaussian blobs. Default=1.</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>seed</strong> – Random seed for generating random Gaussian blobs.</p></li>
+<li><p><strong>dtype</strong> – dtype for Volume(s)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.OSymmetricVolume.n_blobs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_blobs</span></span><a class="headerlink" href="#aspire.volume.volume_synthesis.OSymmetricVolume.n_blobs" title="Link to this definition">¶</a></dt>
+<dd><p>The total number of Gaussian blobs used to generate a Volume.
+This value differs from <cite>self.K</cite> as it accounts for the blobs
+which have been duplicated during <cite>_symmetrize_gaussians</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.SyntheticVolumeBase">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume_synthesis.</span></span><span class="sig-name descname"><span class="pre">SyntheticVolumeBase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.SyntheticVolumeBase" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.SyntheticVolumeBase.generate">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.SyntheticVolumeBase.generate" title="Link to this definition">¶</a></dt>
+<dd><p>Called to generate and return synthetic volumes.</p>
+<p>Each concrete subclass should implement this.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.TSymmetricVolume">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.volume.volume_synthesis.</span></span><span class="sig-name descname"><span class="pre">TSymmetricVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">C</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">K=16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.volume.volume_synthesis.TSymmetricVolume" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.volume.volume_synthesis.GaussianBlobsVolume" title="aspire.volume.volume_synthesis.GaussianBlobsVolume"><code class="xref py py-class docutils literal notranslate"><span class="pre">GaussianBlobsVolume</span></code></a></p>
+<p>A Volume object with tetrahedral symmetry constructed of random 3D Gaussian blobs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – Resolution of the Volume(s) in pixels.</p></li>
+<li><p><strong>C</strong> – Number of Volumes to generate.</p></li>
+<li><p><strong>K</strong> – Number of Gaussian blobs used to construct the Volume(s).</p></li>
+<li><p><strong>alpha</strong> – Scaling factor for variance of Gaussian blobs. Default=1.</p></li>
+<li><p><strong>pixel_size</strong> – Optional voxel_size in angstroms.
+When provided will be saved with <cite>map</cite>/<cite>mrc</cite> metadata.
+Default of <cite>None</cite> will not write to file,
+but will be considered unit pixels (1) for FSC.</p></li>
+<li><p><strong>seed</strong> – Random seed for generating random Gaussian blobs.</p></li>
+<li><p><strong>dtype</strong> – dtype for Volume(s)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.volume.volume_synthesis.TSymmetricVolume.n_blobs">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">n_blobs</span></span><a class="headerlink" href="#aspire.volume.volume_synthesis.TSymmetricVolume.n_blobs" title="Link to this definition">¶</a></dt>
+<dd><p>The total number of Gaussian blobs used to generate a Volume.
+This value differs from <cite>self.K</cite> as it accounts for the blobs
+which have been duplicated during <cite>_symmetrize_gaussians</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.volume">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.volume" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.utils.html" class="btn btn-neutral float-left" title="aspire.utils package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="authors.html" class="btn btn-neutral float-right" title="Authors" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

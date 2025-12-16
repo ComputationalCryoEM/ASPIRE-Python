@@ -1,0 +1,470 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.ctf package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.denoising package" href="aspire.denoising.html" />
+    <link rel="prev" title="aspire.covariance package" href="aspire.covariance.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.ctf package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.ctf.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-ctf-package">
+<h1>aspire.ctf package<a class="headerlink" href="#aspire-ctf-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.ctf.ctf_estimator">
+<span id="aspire-ctf-ctf-estimator-module"></span><h2>aspire.ctf.ctf_estimator module<a class="headerlink" href="#module-aspire.ctf.ctf_estimator" title="Link to this heading">¶</a></h2>
+<p>Contains code supporting CTF parameter estimation.
+Generally, this is a port of ASPIRE-CTF from MATLAB.</p>
+<p>See paper:</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">“Reducing bias and variance for CTF estimation in single particle cryo-EM”</div>
+<div class="line">Ayelet Heimowitz, Joakim Andén, Amit Singer</div>
+<div class="line">Ultramicroscopy, Volume 212, 2020</div>
+<div class="line"><a class="reference external" href="https://doi.org/10.1016/j.ultramic.2020.112950">https://doi.org/10.1016/j.ultramic.2020.112950</a>.</div>
+</div>
+</div></blockquote>
+<p>Note:
+<code class="docutils literal notranslate"><span class="pre">CtfEstimator</span></code> computes the background as a monotonically decreasing
+function of spatial frequency. This practice may lead to an inaccurate
+background estimation for experimental images produced using a K2
+camera in counting mode, as the background in this case is not
+monotonically decreasing. Despite this, CTF parameters are captured
+successfully in such situations.</p>
+<p>Created on Sep 10, 2019
+&#64;author: Ayelet Heimowitz, Amit Moscovich</p>
+<p>Integrated into ASPIRE-Python by Garrett Wright Feb 2021.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.ctf.ctf_estimator.</span></span><span class="sig-name descname"><span class="pre">CtfEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_contrast</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tapers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>CtfEstimator Class …</p>
+<p>Instantiate a CtfEstimator instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pixel_size</strong> – Size of the pixel in Å (angstrom).</p></li>
+<li><p><strong>cs</strong> – Spherical aberration in mm.</p></li>
+<li><p><strong>amplitude_contrast</strong> – Amplitude contrast.</p></li>
+<li><p><strong>voltage</strong> – Voltage of electron microscope.</p></li>
+<li><p><strong>psd_size</strong> – Block size (in pixels) for PSD estimation.</p></li>
+<li><p><strong>num_tapers</strong> – Number of tapers to apply in PSD estimation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>CtfEstimator instance.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.background_subtract_1d">
+<span class="sig-name descname"><span class="pre">background_subtract_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">amplitude_spectrum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linprog_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'highs'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_low_freq_cutoffs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">14</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.background_subtract_1d" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate and subtract the background from the power spectrum</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>amplitude_spectrum</strong> – Estimated power spectrum</p></li>
+<li><p><strong>linprog_method</strong> – Method passed to linear program solver (scipy.optimize.linprog).</p></li>
+<li><p><strong>n_low_freq_cutoffs</strong> – Low frequency cutoffs (loop iterations).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>2-tuple of NumPy arrays (PSD after noise subtraction and estimated noise)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.background_subtract_2d">
+<span class="sig-name descname"><span class="pre">background_subtract_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_p1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_col</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.background_subtract_2d" title="Link to this definition">¶</a></dt>
+<dd><p>Subtract background from estimated power spectrum</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signal</strong> – Estimated power spectrum</p></li>
+<li><p><strong>background_p1</strong> – 1-D background estimation</p></li>
+<li><p><strong>max_col</strong> – Internal variable, returned as the second parameter from opt1d.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>2-tuple of NumPy arrays (Estimated PSD without noise and estimated noise).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.elliptical_average">
+<span class="sig-name descname"><span class="pre">elliptical_average</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ffbbasis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_spectrum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">circular</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.elliptical_average" title="Link to this definition">¶</a></dt>
+<dd><p>Computes radial/elliptical average of the power spectrum</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ffbbasis</strong> – FFBBasis instance.</p></li>
+<li><p><strong>amplitude_spectrum</strong> – Power spectrum.</p></li>
+<li><p><strong>circular</strong> – True for radial averaging and False for elliptical averaging.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>PSD and noise as 2-tuple of NumPy arrays.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.estimate_psd">
+<span class="sig-name descname"><span class="pre">estimate_psd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">blocks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tapers_1d</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.estimate_psd" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate the power spectrum of the micrograph using the multi-taper method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>blocks</strong> – 3-D NumPy array containing windows extracted from the micrograph in the preprocess function.</p></li>
+<li><p><strong>tapers_1d</strong> – NumPy array of data tapers.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NumPy array of estimated power spectrum.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.gd">
+<span class="sig-name descname"><span class="pre">gd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angle_ast</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_contrast</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmbd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.gd" title="Link to this definition">¶</a></dt>
+<dd><p>Runs gradient ascent to optimize defocus parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signal</strong> – Estimated power spectrum</p></li>
+<li><p><strong>df1</strong> – Defocus value in the direction perpendicular to df2.</p></li>
+<li><p><strong>df2</strong> – Defocus value in the direction perpendicular to df1.</p></li>
+<li><p><strong>angle_ast</strong> – Angle between df1 and the x-axis, Radians.</p></li>
+<li><p><strong>r</strong> – Magnitude of spatial frequencies.</p></li>
+<li><p><strong>theta</strong> – Phase of spatial frequencies.</p></li>
+<li><p><strong>pixel_size</strong> – Pixel size in Å (angstrom).</p></li>
+<li><p><strong>g_min</strong> – Inverse of minimun resolution for PSD.</p></li>
+<li><p><strong>g_max</strong> – Inverse of maximum resolution for PSD.</p></li>
+<li><p><strong>amplitude_contrast</strong> – Amplitude contrast.</p></li>
+<li><p><strong>lmbd</strong> – Electron wavelength Å (angstrom).</p></li>
+<li><p><strong>cs</strong> – Spherical aberration in mm.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Optimal defocus parameters</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.generate_ctf">
+<span class="sig-name descname"><span class="pre">generate_ctf</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.generate_ctf" title="Link to this definition">¶</a></dt>
+<dd><p>Generates internal representation of the Contrast Transfer Function using parameters from this instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.micrograph_to_blocks">
+<span class="sig-name descname"><span class="pre">micrograph_to_blocks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">micrograph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.micrograph_to_blocks" title="Link to this definition">¶</a></dt>
+<dd><p>Preprocess micrograph into blocks using block_size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>micrograph</strong> – Micrograph as NumPy array. #NOTE looks like F order</p></li>
+<li><p><strong>blocksize</strong> – Size of the square blocks to partition micrograph.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NumPy array of blocks extracted from the micrograph.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.normalize_blocks">
+<span class="sig-name descname"><span class="pre">normalize_blocks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">blocks</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.normalize_blocks" title="Link to this definition">¶</a></dt>
+<dd><p>Preprocess CTF of micrograph using block_size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>blocks</strong> – NumPy array of blocks extracted from the micrograph.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NumPy array of normalized blocks.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.opt1d">
+<span class="sig-name descname"><span class="pre">opt1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">amplitude_spectrum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmbd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_defocus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_defocus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.opt1d" title="Link to this definition">¶</a></dt>
+<dd><p>Find optimal defocus for the radially symmetric case (where no astigmatism is present)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>amplitude_spectrum</strong> – Estimated power specrtum.</p></li>
+<li><p><strong>pixel_size</strong> – Pixel size in Å (angstrom).</p></li>
+<li><p><strong>cs</strong> – Spherical aberration in mm.</p></li>
+<li><p><strong>lmbd</strong> – Electron wavelength Å (angstrom).</p></li>
+<li><p><strong>w</strong> – Amplitude contrast.</p></li>
+<li><p><strong>N</strong> – Number of rows (or columns) in the estimate power spectrum.</p></li>
+<li><p><strong>min_defocus</strong> – Start of defocus loop scan.</p></li>
+<li><p><strong>max_defocus</strong> – End of defocus loop scan.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>2-tuple of NumPy arrays (Estimated average of defocus and low_freq_cutoff)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.pca">
+<span class="sig-name descname"><span class="pre">pca</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g_min</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g_max</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.pca" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signal</strong> – Estimated power spectrum.</p></li>
+<li><p><strong>pixel_size</strong> – Pixel size in Å (angstrom).</p></li>
+<li><p><strong>g_min</strong> – Inverse of minimun resolution for PSD.</p></li>
+<li><p><strong>g_max</strong> – Inverse of maximum resolution for PSD.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>ratio.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.preprocess_micrograph">
+<span class="sig-name descname"><span class="pre">preprocess_micrograph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">micrograph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.preprocess_micrograph" title="Link to this definition">¶</a></dt>
+<dd><p>Preprocess micrograph into normalized blocks using block_size.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>micrograph</strong> – Micrograph as NumPy array. #NOTE looks like F order</p></li>
+<li><p><strong>blocksize</strong> – Size of the square blocks to partition micrograph.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NumPy array of normalized blocks extracted from the micrograph.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.set_angle">
+<span class="sig-name descname"><span class="pre">set_angle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">angle</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.set_angle" title="Link to this definition">¶</a></dt>
+<dd><p>Sets angle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>angle</strong> – Angle (in Radians) between df1 and the x-axis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.set_df1">
+<span class="sig-name descname"><span class="pre">set_df1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.set_df1" title="Link to this definition">¶</a></dt>
+<dd><p>Sets defocus.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> – Defocus value in the direction perpendicular to df2.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.set_df2">
+<span class="sig-name descname"><span class="pre">set_df2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.set_df2" title="Link to this definition">¶</a></dt>
+<dd><p>Sets defocus.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> – Defocus value in the direction perpendicular to df1.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.tapers">
+<span class="sig-name descname"><span class="pre">tapers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">NW</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.tapers" title="Link to this definition">¶</a></dt>
+<dd><p>Compute data tapers (which are discrete prolate spheroidal sequences (dpss))</p>
+<dl class="simple">
+<dt>Uses scipy implementation, see:</dt><dd><p><a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.dpss.html">https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.dpss.html</a></p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – Size of each taper</p></li>
+<li><p><strong>NW</strong> – Half Bandwidth</p></li>
+<li><p><strong>L</strong> – Number of tapers</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>NumPy array of data tapers</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.CtfEstimator.write_star">
+<span class="sig-name descname"><span class="pre">write_star</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.CtfEstimator.write_star" title="Link to this definition">¶</a></dt>
+<dd><p>Writes CTF parameters to starfile for a single micrograph.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.ctf.ctf_estimator.estimate_ctf">
+<span class="sig-prename descclassname"><span class="pre">aspire.ctf.ctf_estimator.</span></span><span class="sig-name descname"><span class="pre">estimate_ctf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cs=2.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amplitude_contrast=0.07</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voltage=300</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_tapers=2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">psd_size=512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g_min=30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g_max=5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir='results'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_ctf_images=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_noise_images=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.ctf.ctf_estimator.estimate_ctf" title="Link to this definition">¶</a></dt>
+<dd><p>Given paramaters estimates CTF from experimental data
+and returns CTF as a mrc file.</p>
+</dd></dl>
+
+</section>
+<section id="module-aspire.ctf">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.ctf" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.covariance.html" class="btn btn-neutral float-left" title="aspire.covariance package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.denoising.html" class="btn btn-neutral float-right" title="aspire.denoising package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

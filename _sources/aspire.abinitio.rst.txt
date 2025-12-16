@@ -1,0 +1,133 @@
+aspire.abinitio package
+=======================
+
+Submodules
+----------
+
+aspire.abinitio.J\_sync module
+------------------------------
+
+.. automodule:: aspire.abinitio.J_sync
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_base module
+---------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_c2 module
+-------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_c2
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_c3\_c4 module
+-----------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_c3_c4
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_cn module
+-------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_cn
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_d2 module
+-------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_d2
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_ev module
+-------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_ev
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_gcar module
+---------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_gcar
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_irls module
+---------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_irls
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_lud module
+--------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_lud
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_sdp module
+--------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_sdp
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_sync module
+---------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_sync
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_sync3n module
+-----------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_sync3n
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.commonline\_utils module
+----------------------------------------
+
+.. automodule:: aspire.abinitio.commonline_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.abinitio.sync\_voting module
+-----------------------------------
+
+.. automodule:: aspire.abinitio.sync_voting
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.abinitio
+   :members:
+   :undoc-members:
+   :show-inheritance:

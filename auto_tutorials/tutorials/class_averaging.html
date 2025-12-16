@@ -1,0 +1,558 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Class Averaging &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Covariance 3D Estimation" href="cov3d_simulation.html" />
+    <link rel="prev" title="CTF: Contrast Transfer Function" href="ctf.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#api-introduction">API Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#component-examples">Component Examples</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">Component Examples</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="cov2d_simulation.html">2D Covariance Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orient3d_simulation.html">3D Image Orientation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_class.html">ASPIRE Image Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apple_picker.html">Apple Picker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="basic_image_array.html">Basic Image Array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ctf.html">CTF: Contrast Transfer Function</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Class Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cov3d_simulation.html">Covariance 3D Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data_downloader.html">Data Downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generating_volume_projections.html">Generating 3D Volume Projections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_expansion.html">Image Expansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="preprocess_imgs_sim.html">Image Preprocessing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="micrograph_source.html">Micrograph Sources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="relion_projection_interop.html">Relion Projection Interoperability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="starfile.html">Starfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="weighted_volume_estimation.html">Weighted Volume Reconstruction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Component Examples</a></li>
+      <li class="breadcrumb-item active">Class Averaging</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/auto_tutorials/tutorials/class_averaging.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-tutorials-class-averaging-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="class-averaging">
+<span id="sphx-glr-auto-tutorials-tutorials-class-averaging-py"></span><h1>Class Averaging<a class="headerlink" href="#class-averaging" title="Link to this heading">¶</a></h1>
+<p>We demonstrate class averaging using the rotationally invariant
+representation algorithm.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span> <span class="k">as</span> <span class="n">PILImage</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.denoising</span><span class="w"> </span><span class="kn">import</span> <span class="n">DebugClassAvgSource</span><span class="p">,</span> <span class="n">DefaultClassAvgSource</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.noise</span><span class="w"> </span><span class="kn">import</span> <span class="n">WhiteNoiseAdder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArrayImageSource</span>  <span class="c1"># Helpful hint if you want to BYO array.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">gaussian_2d</span>
+</pre></div>
+</div>
+<section id="build-simulated-data">
+<h2>Build Simulated Data<a class="headerlink" href="#build-simulated-data" title="Link to this heading">¶</a></h2>
+<section id="circular-2d-gaussian-image">
+<h3>Circular 2D Gaussian Image<a class="headerlink" href="#circular-2d-gaussian-image" title="Link to this heading">¶</a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">L</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">round_disc</span> <span class="o">=</span> <span class="n">gaussian_2d</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">L</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">round_disc</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_001.png" srcset="../../_images/sphx_glr_class_averaging_001.png" alt="class averaging" class = "sphx-glr-single-img"/></section>
+<section id="oval-2d-gaussian-image">
+<h3>Oval 2D Gaussian Image<a class="headerlink" href="#oval-2d-gaussian-image" title="Link to this heading">¶</a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">oval_disc</span> <span class="o">=</span> <span class="n">gaussian_2d</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="p">(</span><span class="n">L</span> <span class="o">/</span> <span class="mi">20</span><span class="p">,</span> <span class="n">L</span> <span class="o">/</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">oval_disc</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_002.png" srcset="../../_images/sphx_glr_class_averaging_002.png" alt="class averaging" class = "sphx-glr-single-img"/></section>
+<section id="handed-image">
+<h3>Handed Image<a class="headerlink" href="#handed-image" title="Link to this heading">¶</a></h3>
+<p>Create richer test set by including an asymmetric image.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a second oval.</span>
+<span class="n">oval_disc2</span> <span class="o">=</span> <span class="n">gaussian_2d</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="p">(</span><span class="n">L</span> <span class="o">/</span> <span class="mi">5</span><span class="p">,</span> <span class="n">L</span> <span class="o">/</span> <span class="mi">6</span><span class="p">),</span> <span class="n">sigma</span><span class="o">=</span><span class="p">(</span><span class="n">L</span> <span class="o">/</span> <span class="mi">15</span><span class="p">,</span> <span class="n">L</span> <span class="o">/</span> <span class="mi">20</span><span class="p">))</span>
+
+<span class="c1"># Strategically add it to `oval_disc`.</span>
+<span class="n">yoval_discL</span> <span class="o">=</span> <span class="n">oval_disc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">yoval_discL</span> <span class="o">+=</span> <span class="n">oval_disc2</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">yoval_discL</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_003.png" srcset="../../_images/sphx_glr_class_averaging_003.png" alt="class averaging" class = "sphx-glr-single-img"/></section>
+<section id="reflected-image">
+<h3>Reflected Image<a class="headerlink" href="#reflected-image" title="Link to this heading">¶</a></h3>
+<p>Also include the reflection of  the asymmetric image.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">yoval_discR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">yoval_discL</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">yoval_discR</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_004.png" srcset="../../_images/sphx_glr_class_averaging_004.png" alt="class averaging" class = "sphx-glr-single-img"/></section>
+<section id="example-data-set-source">
+<h3>Example Data Set Source<a class="headerlink" href="#example-data-set-source" title="Link to this heading">¶</a></h3>
+<p>We concatenate and shuffle 512 rotations of the Gaussian images
+above to create our data set.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># How many entries (angles) in our stack</span>
+<span class="n">N</span> <span class="o">=</span> <span class="mi">512</span>
+<span class="n">thetas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mi">360</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">N</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">classRound</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
+<span class="n">classOval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
+<span class="n">classYOvalL</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
+<span class="n">classYOvalR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">theta</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">thetas</span><span class="p">):</span>
+    <span class="n">classRound</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">round_disc</span><span class="p">)</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span>
+    <span class="n">classOval</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">oval_disc</span><span class="p">)</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span>
+    <span class="n">classYOvalL</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">yoval_discL</span><span class="p">)</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span>
+    <span class="n">classYOvalR</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">yoval_discR</span><span class="p">)</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">theta</span><span class="p">))</span>
+
+<span class="c1"># We&#39;ll make an example data set by concatentating then shuffling</span>
+<span class="c1"># these.</span>
+<span class="n">example_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">classRound</span><span class="p">,</span> <span class="n">classOval</span><span class="p">,</span> <span class="n">classYOvalL</span><span class="p">,</span> <span class="n">classYOvalR</span><span class="p">))</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1234567</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">example_array</span><span class="p">)</span>
+
+<span class="c1"># So now that we have cooked up an example dataset, lets create an</span>
+<span class="c1"># ASPIRE source</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">ArrayImageSource</span><span class="p">(</span><span class="n">example_array</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+
+<span class="c1"># Let&#39;s peek at the images to make sure they&#39;re shuffled up nicely</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_005.png" srcset="../../_images/sphx_glr_class_averaging_005.png" alt="class averaging" class = "sphx-glr-single-img"/></section>
+</section>
+<section id="basic-class-average">
+<h2>Basic Class Average<a class="headerlink" href="#basic-class-average" title="Link to this heading">¶</a></h2>
+<p>This first example uses the <code class="docutils literal notranslate"><span class="pre">DebugClassAvgSource</span></code> to classify
+images via the rotationally invariant representation
+(<code class="docutils literal notranslate"><span class="pre">RIRClass2D</span></code>) algorithm.  <code class="docutils literal notranslate"><span class="pre">DebugClassAvgSource</span></code> internally uses
+<code class="docutils literal notranslate"><span class="pre">TopClassSelector</span></code> by default.  <code class="docutils literal notranslate"><span class="pre">TopClassSelector</span></code>
+deterministically selects the first <code class="docutils literal notranslate"><span class="pre">n_classes</span></code>.
+<code class="docutils literal notranslate"><span class="pre">DebugClassAvgSource</span></code> also uses brute force rotational alignment
+without shifts.  These simplifications are useful for development
+and debugging.  Later we will discuss the more general
+<code class="docutils literal notranslate"><span class="pre">ClassAvgSource</span></code> and the modular components that are more suitable
+to simulations and experimental datasets.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">avgs</span> <span class="o">=</span> <span class="n">DebugClassAvgSource</span><span class="p">(</span>
+    <span class="n">src</span><span class="o">=</span><span class="n">src</span><span class="p">,</span>
+    <span class="n">n_nbor</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="display-classes">
+<h3>Display Classes<a class="headerlink" href="#display-classes" title="Link to this heading">¶</a></h3>
+<p>Now we will request the first 10 images and display them.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">avgs</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_006.png" srcset="../../_images/sphx_glr_class_averaging_006.png" alt="class averaging" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/4 [00:00&lt;?, ?it/s]
+ 75%|███████▌  | 3/4 [00:00&lt;00:00, 23.45it/s]
+100%|██████████| 4/4 [00:00&lt;00:00, 23.26it/s]
+
+  0%|          | 0/4 [00:00&lt;?, ?it/s]
+ 25%|██▌       | 1/4 [00:00&lt;00:00,  9.56it/s]
+ 50%|█████     | 2/4 [00:00&lt;00:00,  9.67it/s]
+100%|██████████| 4/4 [00:00&lt;00:00,  9.86it/s]
+100%|██████████| 4/4 [00:00&lt;00:00,  9.81it/s]
+
+Rotationally aligning classes:   0%|          | 0/10 [00:00&lt;?, ?it/s]
+Rotationally aligning classes:  20%|██        | 2/10 [00:00&lt;00:00,  9.32it/s]
+Rotationally aligning classes:  30%|███       | 3/10 [00:00&lt;00:00,  9.15it/s]
+Rotationally aligning classes:  40%|████      | 4/10 [00:00&lt;00:00,  8.43it/s]
+Rotationally aligning classes:  50%|█████     | 5/10 [00:00&lt;00:00,  7.75it/s]
+Rotationally aligning classes:  60%|██████    | 6/10 [00:00&lt;00:00,  7.52it/s]
+Rotationally aligning classes:  70%|███████   | 7/10 [00:00&lt;00:00,  8.06it/s]
+Rotationally aligning classes:  80%|████████  | 8/10 [00:00&lt;00:00,  8.20it/s]
+Rotationally aligning classes:  90%|█████████ | 9/10 [00:01&lt;00:00,  7.91it/s]
+
+
+Stacking and evaluating batch of class averages from FFBBasis2D to Cartesian:   0%|          | 0/1 [00:00&lt;?, ?it/s]
+
+Stacking batch:   0%|          | 0/10 [00:00&lt;?, ?it/s]
+
+Stacking batch:  20%|██        | 2/10 [00:00&lt;00:00, 16.08it/s]
+
+Stacking batch:  60%|██████    | 6/10 [00:00&lt;00:00, 28.05it/s]
+
+Stacking batch: 100%|██████████| 10/10 [00:00&lt;00:00, 32.90it/s]
+
+
+Stacking and evaluating batch of class averages from FFBBasis2D to Cartesian: 100%|██████████| 1/1 [00:00&lt;00:00,  2.83it/s]
+</pre></div>
+</div>
+</section>
+</section>
+<section id="class-averaging-with-noise">
+<h2>Class Averaging with Noise<a class="headerlink" href="#class-averaging-with-noise" title="Link to this heading">¶</a></h2>
+<section id="add-noise-to-data-set">
+<h3>Add Noise to Data Set<a class="headerlink" href="#add-noise-to-data-set" title="Link to this heading">¶</a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using the sample variance, we&#39;ll compute a target noise variance</span>
+<span class="c1"># Noise</span>
+<span class="n">var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">var</span><span class="p">(</span><span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">())</span>
+<span class="n">noise_var</span> <span class="o">=</span> <span class="n">var</span> <span class="o">*</span> <span class="mi">2</span><span class="o">**</span><span class="mi">4</span>
+
+<span class="c1"># Then create noise with the ``WhiteNoiseAdder`` class.</span>
+<span class="n">noise</span> <span class="o">=</span> <span class="n">WhiteNoiseAdder</span><span class="p">(</span><span class="n">var</span><span class="o">=</span><span class="n">noise_var</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">123</span><span class="p">)</span>
+
+<span class="c1"># Add noise to the images by performing ``forward``</span>
+<span class="n">noisy_im</span> <span class="o">=</span> <span class="n">noise</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:])</span>
+
+<span class="c1"># Recast as an ASPIRE source</span>
+<span class="n">noisy_src</span> <span class="o">=</span> <span class="n">ArrayImageSource</span><span class="p">(</span><span class="n">noisy_im</span><span class="p">)</span>
+
+<span class="c1"># Let&#39;s peek at the noisey images</span>
+<span class="n">noisy_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_007.png" srcset="../../_images/sphx_glr_class_averaging_007.png" alt="class averaging" class = "sphx-glr-single-img"/></section>
+<section id="rir-with-noise">
+<h3>RIR with Noise<a class="headerlink" href="#rir-with-noise" title="Link to this heading">¶</a></h3>
+<p>Here we will use the noise_src.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">avgs</span> <span class="o">=</span> <span class="n">DebugClassAvgSource</span><span class="p">(</span>
+    <span class="n">src</span><span class="o">=</span><span class="n">noisy_src</span><span class="p">,</span>
+    <span class="n">n_nbor</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h3>Display Classes<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h3>
+<p>Here, on request for images, the class average source will classify,
+select, and average images.  All this occurs inside the
+<code class="docutils literal notranslate"><span class="pre">ClassAvgSource</span></code> components.  When using more advanced class
+average sources, the images are remapped by the <cite>selector</cite>.  In this
+case, using <code class="docutils literal notranslate"><span class="pre">DebugClassAvgSource</span></code> the first 10 images will simply
+correspond to the first ten from <code class="docutils literal notranslate"><span class="pre">noise_src</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">avgs</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_008.png" srcset="../../_images/sphx_glr_class_averaging_008.png" alt="class averaging" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/4 [00:00&lt;?, ?it/s]
+ 75%|███████▌  | 3/4 [00:00&lt;00:00, 21.18it/s]
+100%|██████████| 4/4 [00:00&lt;00:00, 21.37it/s]
+
+  0%|          | 0/4 [00:00&lt;?, ?it/s]
+ 50%|█████     | 2/4 [00:00&lt;00:00, 13.03it/s]
+100%|██████████| 4/4 [00:00&lt;00:00, 13.66it/s]
+100%|██████████| 4/4 [00:00&lt;00:00, 13.55it/s]
+
+Rotationally aligning classes:   0%|          | 0/10 [00:00&lt;?, ?it/s]
+Rotationally aligning classes:  10%|█         | 1/10 [00:00&lt;00:01,  8.92it/s]
+Rotationally aligning classes:  20%|██        | 2/10 [00:00&lt;00:01,  6.23it/s]
+Rotationally aligning classes:  30%|███       | 3/10 [00:00&lt;00:01,  6.53it/s]
+Rotationally aligning classes:  40%|████      | 4/10 [00:00&lt;00:00,  7.11it/s]
+Rotationally aligning classes:  50%|█████     | 5/10 [00:00&lt;00:00,  7.36it/s]
+Rotationally aligning classes:  60%|██████    | 6/10 [00:00&lt;00:00,  6.81it/s]
+Rotationally aligning classes:  70%|███████   | 7/10 [00:01&lt;00:00,  6.96it/s]
+Rotationally aligning classes:  80%|████████  | 8/10 [00:01&lt;00:00,  7.30it/s]
+Rotationally aligning classes:  90%|█████████ | 9/10 [00:01&lt;00:00,  7.59it/s]
+Rotationally aligning classes: 100%|██████████| 10/10 [00:01&lt;00:00,  7.71it/s]
+
+
+Stacking and evaluating batch of class averages from FFBBasis2D to Cartesian:   0%|          | 0/1 [00:00&lt;?, ?it/s]
+
+Stacking batch:   0%|          | 0/10 [00:00&lt;?, ?it/s]
+
+Stacking batch:  20%|██        | 2/10 [00:00&lt;00:00, 16.82it/s]
+
+Stacking batch:  60%|██████    | 6/10 [00:00&lt;00:00, 29.21it/s]
+
+Stacking batch: 100%|██████████| 10/10 [00:00&lt;00:00, 33.70it/s]
+
+
+Stacking and evaluating batch of class averages from FFBBasis2D to Cartesian: 100%|██████████| 1/1 [00:00&lt;00:00,  2.83it/s]
+</pre></div>
+</div>
+</section>
+</section>
+<section id="review-a-class">
+<h2>Review a class<a class="headerlink" href="#review-a-class" title="Link to this heading">¶</a></h2>
+<p>Select a class to review in the output.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">review_class</span> <span class="o">=</span> <span class="mi">5</span>
+
+<span class="c1"># Map this image from the sorted selection back to the input</span>
+<span class="c1"># ``noisy_src``.</span>
+
+<span class="c1"># Report the identified neighbor indices with respect to the input</span>
+<span class="c1"># ``noise_src``.</span>
+<span class="n">classes</span> <span class="o">=</span> <span class="n">avgs</span><span class="o">.</span><span class="n">class_indices</span><span class="p">[</span><span class="n">review_class</span><span class="p">]</span>
+<span class="n">reflections</span> <span class="o">=</span> <span class="n">avgs</span><span class="o">.</span><span class="n">class_refl</span><span class="p">[</span><span class="n">review_class</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Class </span><span class="si">{</span><span class="n">review_class</span><span class="si">}</span><span class="s2">&#39;s neighbors: </span><span class="si">{</span><span class="n">classes</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Class </span><span class="si">{</span><span class="n">review_class</span><span class="si">}</span><span class="s2">&#39;s reflections: </span><span class="si">{</span><span class="n">reflections</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># The original image is the initial image in the class array.</span>
+<span class="n">original_image_idx</span> <span class="o">=</span> <span class="n">classes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Class 5&#39;s neighbors: [   5 1746 1894 1218 1170 1307 1829  313  441 1621]
+Class 5&#39;s reflections: [False  True  True  True  True False False False False False]
+</pre></div>
+</div>
+<p>Report the identified neighbors, original is the first image.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">noisy_src</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">classes</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_009.png" srcset="../../_images/sphx_glr_class_averaging_009.png" alt="class averaging" class = "sphx-glr-single-img"/><p>Display original image.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">noisy_src</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">original_image_idx</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_010.png" srcset="../../_images/sphx_glr_class_averaging_010.png" alt="class averaging" class = "sphx-glr-single-img"/><p>Display the averaged result</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">avgs</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">review_class</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_011.png" srcset="../../_images/sphx_glr_class_averaging_011.png" alt="class averaging" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Rotationally aligning classes:   0%|          | 0/1 [00:00&lt;?, ?it/s]
+Rotationally aligning classes: 100%|██████████| 1/1 [00:00&lt;00:00,  9.27it/s]
+
+
+Stacking and evaluating batch of class averages from FFBBasis2D to Cartesian:   0%|          | 0/1 [00:00&lt;?, ?it/s]
+
+Stacking batch:   0%|          | 0/1 [00:00&lt;?, ?it/s]
+
+
+Stacking and evaluating batch of class averages from FFBBasis2D to Cartesian: 100%|██████████| 1/1 [00:00&lt;00:00,  9.07it/s]
+</pre></div>
+</div>
+<section id="alignment-details">
+<h3>Alignment Details<a class="headerlink" href="#alignment-details" title="Link to this heading">¶</a></h3>
+<p>Alignment details are exposed when available from an underlying
+<code class="docutils literal notranslate"><span class="pre">averager</span></code>.  In this case, we’ll get the estimated alignments for
+the <code class="docutils literal notranslate"><span class="pre">review_class</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">est_rotations</span> <span class="o">=</span> <span class="n">avgs</span><span class="o">.</span><span class="n">averager</span><span class="o">.</span><span class="n">rotations</span>
+<span class="n">est_shifts</span> <span class="o">=</span> <span class="n">avgs</span><span class="o">.</span><span class="n">averager</span><span class="o">.</span><span class="n">shifts</span>
+<span class="n">est_dot_products</span> <span class="o">=</span> <span class="n">avgs</span><span class="o">.</span><span class="n">averager</span><span class="o">.</span><span class="n">dot_products</span>
+
+<span class="c1"># These are dictionaries mapping each class to arrays of attributes.</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Estimated Rotations: </span><span class="si">{</span><span class="n">est_rotations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Estimated Shifts: </span><span class="si">{</span><span class="n">est_shifts</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Estimated Dot Products: </span><span class="si">{</span><span class="n">est_dot_products</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Compare the original unaligned images with the estimated alignment.</span>
+<span class="c1"># Get the indices from the classification results.</span>
+<span class="n">nbr</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">original_img_0_idx</span> <span class="o">=</span> <span class="n">classes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">original_img_nbr_idx</span> <span class="o">=</span> <span class="n">classes</span><span class="p">[</span><span class="n">nbr</span><span class="p">]</span>
+
+<span class="c1"># Lookup the images.</span>
+<span class="n">original_img_0</span> <span class="o">=</span> <span class="n">noisy_src</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">original_img_0_idx</span><span class="p">]</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">original_img_nbr</span> <span class="o">=</span> <span class="n">noisy_src</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="n">original_img_nbr_idx</span><span class="p">]</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+
+<span class="c1"># Rotate using estimated rotations.</span>
+<span class="c1"># First retrieve all angles for the `review_class` (original_img_0_idx),</span>
+<span class="c1">#   then lookup the specific neighbor `nbr`</span>
+<span class="k">assert</span> <span class="p">(</span>
+    <span class="n">original_img_0_idx</span> <span class="o">==</span> <span class="n">review_class</span>
+<span class="p">),</span> <span class="s2">&quot;DebugClassAvgSource should retain original source image ordering&quot;</span>
+<span class="n">angle</span> <span class="o">=</span> <span class="n">est_rotations</span><span class="p">[</span><span class="n">original_img_0_idx</span><span class="p">][</span><span class="n">nbr</span><span class="p">]</span> <span class="o">*</span> <span class="mi">180</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+<span class="k">if</span> <span class="n">reflections</span><span class="p">[</span><span class="n">nbr</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reflection reported.&quot;</span><span class="p">)</span>
+    <span class="n">original_img_nbr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">original_img_nbr</span><span class="p">)</span>
+<span class="n">rotated_img_nbr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">PILImage</span><span class="o">.</span><span class="n">fromarray</span><span class="p">(</span><span class="n">original_img_nbr</span><span class="p">)</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">angle</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Original Images&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">original_img_0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Img 0&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">original_img_nbr</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Img </span><span class="si">{</span><span class="n">nbr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Est Rotation Applied&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">original_img_0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Img 0&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rotated_img_nbr</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Img </span><span class="si">{</span><span class="n">nbr</span><span class="si">}</span><span class="s2"> rotated </span><span class="si">{</span><span class="n">angle</span><span class="si">:</span><span class="s2">.4</span><span class="si">}</span><span class="s2">*&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_class_averaging_012.png" srcset="../../_images/sphx_glr_class_averaging_012.png" alt="Original Images, Est Rotation Applied" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Estimated Rotations: {np.int64(0): array([-0.        , -5.34070751, -5.20108117, -2.68780705, -2.04203522,
+       -0.54105207, -2.39110108, -0.85521133, -5.84685299, -0.43633231]), np.int64(1): array([-0.        , -5.06145483, -2.75762022, -3.70009801, -1.01229097,
+       -2.12930169, -2.19911486, -1.1693706 , -1.65806279, -2.72271363]), np.int64(2): array([-0.        , -5.3756141 , -4.81710874, -0.31415927, -5.3581608 ,
+       -3.97935069, -1.46607657, -6.14355897, -0.4712389 , -5.88175958]), np.int64(3): array([-0.        , -4.95673508, -4.38077642, -1.67551608, -3.21140582,
+       -3.70009801, -4.59021593, -1.29154365, -4.99164166, -5.56760031]), np.int64(4): array([-0.        , -5.30580093, -3.90953752, -1.09955743, -3.59537826,
+       -3.12413936, -2.28638132, -4.53785606, -1.43116999, -1.72787596]), np.int64(5): array([-0.        , -1.09955743, -4.9043752 , -1.11701072, -0.06981317,
+       -0.34906585, -5.21853446, -5.41052068, -3.47320521, -1.97222205]), np.int64(6): array([-0.        , -2.11184839, -1.22173048, -5.06145483, -6.0562925 ,
+       -0.20943951, -2.42600766, -5.79449312, -1.1693706 , -3.17649924]), np.int64(7): array([-0.        , -2.84488668, -3.97935069, -0.61086524, -3.47320521,
+       -0.        , -0.        , -3.17649924, -2.89724656, -0.08726646]), np.int64(8): array([-0.        , -4.11897703, -5.39306739, -2.93215314, -4.34586984,
+       -5.18362788, -2.98451302, -3.4906585 , -5.51524044, -2.51327412]), np.int64(9): array([-0.        , -4.59021593, -0.15707963, -4.03171057, -5.8293997 ,
+       -1.58824962, -3.71755131, -2.77507351, -5.61996019, -1.76278254])}
+Estimated Shifts: {}
+Estimated Dot Products: {np.int64(0): array([5865.9046832 ,  546.4922547 ,  579.91263458,  475.63008507,
+        583.52409409,  517.87511085,  533.39155275,  534.5179154 ,
+        538.2218787 ,  477.5037366 ]), np.int64(1): array([6005.39865871,  627.39764773,  569.494419  ,  511.74579838,
+        483.61749048,  594.87288006,  551.52043353,  510.73442242,
+        598.46310764,  568.29438291]), np.int64(2): array([6102.66048713,  593.79585344,  561.12652611,  572.6665563 ,
+        540.75995694,  554.01073063,  516.10634697,  680.94191362,
+        573.92624548,  616.28385805]), np.int64(3): array([5888.48157466,  428.42103216,  449.02148132,  501.23035634,
+        433.04205626,  481.85646342,  455.13585619,  482.37726453,
+        468.03261539,  534.79808318]), np.int64(4): array([7438.81431202,  781.33129204, 2136.64841687,  717.50443875,
+        803.43082695, 2104.71966681,  904.94324935, 2160.4078535 ,
+       2192.78258646,  579.20590903]), np.int64(5): array([5852.89921803,  573.28999826,  479.46088919,  519.78865321,
+        524.99186463,  516.02695266,  580.33586184,  587.87430859,
+        480.90882755,  594.50869367]), np.int64(6): array([5858.86172826,  421.78750959,  709.72448386,  482.90301631,
+        499.36951812,  545.52542075,  509.85799491,  449.9642986 ,
+        494.21010371,  482.64031888]), np.int64(7): array([6000.98327771,  657.1408667 ,  596.71582105,  572.9711919 ,
+        529.66754836,  567.80980089,  611.4786066 ,  658.55832548,
+        549.18855371,  600.55895998]), np.int64(8): array([5744.94222533,  364.94150708,  470.59459865,  502.98205496,
+        471.32452521,  612.4526049 ,  488.95120997,  520.34677813,
+        457.16267711,  634.34296156]), np.int64(9): array([5722.08330654,  436.15759193,  427.1263987 ,  529.97986103,
+        425.99846111,  437.25139008,  467.61165075,  482.57152768,
+        414.83335204,  425.81817743])}
+Reflection reported.
+</pre></div>
+</div>
+</section>
+</section>
+<section id="classavgsource-components">
+<h2>ClassAvgSource Components<a class="headerlink" href="#classavgsource-components" title="Link to this heading">¶</a></h2>
+<p>For more realistic simulations and experimental data,
+ASPIRE provides a wholly customizable base <code class="docutils literal notranslate"><span class="pre">ClassAvgSource</span></code>
+class. This class expects a user to instantiate and provide
+all components required for class averaging.</p>
+<p>To make things easier a practical starting point
+<code class="docutils literal notranslate"><span class="pre">DefaultClassAvgSource</span></code> is provided which fills in reasonable
+defaults based on what is available in the current ASPIRE-Python.
+The defaults can be overridden simply by instantiating your own
+instances of components and passing during initialization.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using the defaults requires only passing a source.</span>
+<span class="c1"># After understanding the various components that can be</span>
+<span class="c1"># combined in a ``ClassAvgSource``, they can be customized</span>
+<span class="c1"># or easily extended.</span>
+<span class="n">avg_src</span> <span class="o">=</span> <span class="n">DefaultClassAvgSource</span><span class="p">(</span><span class="n">noisy_src</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 44.968 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-tutorials-class-averaging-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/6f7608559e2df3c224a617c82c860407/class_averaging.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">class_averaging.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/68de876454dcb1d7d84c58a872e88a74/class_averaging.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">class_averaging.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/cbd39f3cf8a3e021e58652fbe1430748/class_averaging.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">class_averaging.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ctf.html" class="btn btn-neutral float-left" title="CTF: Contrast Transfer Function" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cov3d_simulation.html" class="btn btn-neutral float-right" title="Covariance 3D Estimation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

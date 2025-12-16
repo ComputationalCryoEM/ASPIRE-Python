@@ -1,0 +1,1844 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.basis package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.classification package" href="aspire.classification.html" />
+    <link rel="prev" title="aspire.apple package" href="aspire.apple.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.basis package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.basis.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-basis-package">
+<h1>aspire.basis package<a class="headerlink" href="#aspire-basis-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.basis.basis">
+<span id="aspire-basis-basis-module"></span><h2>aspire.basis.basis module<a class="headerlink" href="#module-aspire.basis.basis" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.basis.Basis">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.basis.</span></span><span class="sig-name descname"><span class="pre">Basis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ell_max=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Basis" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Define a base class for expanding 2D particle images and 3D structure volumes</p>
+<p>Initialize an object for the base of basis class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The size of the vectors for which to define the basis.
+Currently only square images and cubic volumes are supported.</p></li>
+<li><p><strong>ell_max</strong> – The maximum order ell of the basis elements. If no input
+(= None), it will be set to np.inf and the basis includes all
+ell such that the resulting basis vectors are concentrated
+below the Nyquist frequency (default inf).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Basis.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Basis.evaluate" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate coefficient vector in basis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>v</strong> – <cite>Coef</cite> instance containing the coefficients to be
+evaluated. The first dimension must correspond to the
+number of coefficient vectors, while the second must
+correspond to <cite>self.count</cite>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The evaluation of the coefficient vector(s) <cite>v</cite> for this basis.
+This is an Image or a Volume object containing one image/volume for each
+coefficient vector, and of size <cite>self.sz</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Basis.evaluate_t">
+<span class="sig-name descname"><span class="pre">evaluate_t</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Basis.evaluate_t" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate coefficient in dual basis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>v</strong> – An Image or Volume object whose size matches <cite>self.sz</cite>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The evaluation of the Image or Volume object <cite>v</cite> in the dual
+basis of <cite>basis</cite>.
+This is an array of vectors whose first dimension equals the number of
+images/volumes in <cite>v</cite>. and whose second dimension is <cite>self.count</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Basis.expand">
+<span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Basis.expand" title="Link to this definition">¶</a></dt>
+<dd><p>Obtain coefficients in the basis from those in standard coordinate basis</p>
+<p>This is a similar function to evaluate_t but with more accuracy by using
+the cg optimizing of linear equation, Ax=b.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – An array whose last two or three dimensions are to be expanded
+the desired basis. These dimensions must equal <cite>self.sz</cite>.</p></li>
+<li><p><strong>tol</strong> – Relative tolerance for convergence, <cite>norm(residual) &lt;= max(tol*norm(b), atol)</cite>.
+Deafult <cite>None</cite> sets to dtype’s <a href="#id1"><span class="problematic" id="id2">`</span></a>eps`*10.</p></li>
+<li><p><strong>atol</strong> – Absolute tolerance for convergence, <cite>norm(residual) &lt;= max(tol*norm(b), atol)</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The coefficients of <cite>v</cite> expanded in the desired basis.
+The last dimension of <cite>v</cite> is with size of <cite>count</cite> and the
+first dimensions of the return value correspond to
+those first dimensions of <cite>x</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Basis.mat_evaluate">
+<span class="sig-name descname"><span class="pre">mat_evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">V</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Basis.mat_evaluate" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate coefficient matrix in basis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>V</strong> – A coefficient matrix of size <cite>self.count</cite>-by-
+<cite>self.count</cite> to be evaluated.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A multidimensional matrix of size <cite>self.sz</cite>-by
+-<cite>self.sz</cite> corresponding to the evaluation of <cite>V</cite> in
+this basis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Basis.mat_evaluate_t">
+<span class="sig-name descname"><span class="pre">mat_evaluate_t</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Basis.mat_evaluate_t" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate coefficient matrix in dual basis</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>X</strong> – The coefficient array of size <cite>self.sz</cite>-by-<cite>self.sz</cite>
+to be evaluated.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The evaluation of <cite>X</cite> in the dual basis. This is
+<cite>self.count</cite>-by-<cite>self.count</cite>. matrix.
+If <cite>V</cite> is a matrix of size <cite>self.count</cite>-by-<cite>self.count</cite>,
+<cite>B</cite> is the change-of-basis matrix of <cite>basis</cite>, and <cite>x</cite> is a
+multidimensional matrix of size <cite>basis.sz</cite>-by-<cite>basis.sz</cite>, the
+function calculates V = B’ * X * B, where the rows of <cite>B</cite>, rows
+of ‘X’, and columns of <cite>X</cite> are read as vectorized arrays.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Basis.norms">
+<span class="sig-name descname"><span class="pre">norms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Basis.norms" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the normalized factors of basis functions</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.basis.</span></span><span class="sig-name descname"><span class="pre">Coef</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Coef" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Numpy interoperable container for stacks of real coefficient vectors.
+Each <cite>Coef</cite> instance has an associated <cite>Basis</cite>.</p>
+<p>A stack of one or more coefficient arrays.</p>
+<p>The stack can be multidimensional with <cite>stack_size</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a 1D stack of length one.</p>
+<p>The last axes always represents the coefficient <cite>count</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>basis</strong> – <cite>Basis</cite> associated with <cite>data</cite> coefficients.</p></li>
+<li><p><strong>data</strong> – Numpy array containing image data with shape
+<cite>(…, count)</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Pixel size of underlying image data in
+angstroms, default <cite>None</cite>.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>Coef</cite> instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef.asnumpy">
+<span class="sig-name descname"><span class="pre">asnumpy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Coef.asnumpy" title="Link to this definition">¶</a></dt>
+<dd><p>Return image data as a (&lt;stack&gt;, count)
+read-only array view.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>read-only ndarray view</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef.by_indices">
+<span class="sig-name descname"><span class="pre">by_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Coef.by_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Select coefficients by indices (<cite>radial</cite>, <cite>angular</cite>).</p>
+<p>See <cite>SteerableBasis.indices_mask</cite> for argument details.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Numpy array.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Coef.copy" title="Link to this definition">¶</a></dt>
+<dd><p>Return a new <cite>Coef</cite> instance with a deep copy of the data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Coef.evaluate" title="Link to this definition">¶</a></dt>
+<dd><p>Return the evaluation of coefficients in the associated <cite>basis</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef.rotate">
+<span class="sig-name descname"><span class="pre">rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">radians</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Coef.rotate" title="Link to this definition">¶</a></dt>
+<dd><p>Returns coefs rotated counter-clockwise by <cite>radians</cite>.</p>
+<p>Raises error if underlying coef basis does not support rotations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>radians</strong> – Rotation in radians.</p></li>
+<li><p><strong>refl</strong> – Optional reflect image (about y=0) (bool)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>rotated coefs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef.shift">
+<span class="sig-name descname"><span class="pre">shift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shifts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Coef.shift" title="Link to this definition">¶</a></dt>
+<dd><p>Returns coefs shifted by <cite>shifts</cite>.</p>
+<p>This will transform to real cartesian space, shift,
+and transform back to basis space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coef</strong> – Basis coefs.</p></li>
+<li><p><strong>shifts</strong> – Shifts in pixels (x,y). Shape (1,2) or (len(coef), 2).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>coefs of shifted images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef.size">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">size</span></span><a class="headerlink" href="#aspire.basis.basis.Coef.size" title="Link to this definition">¶</a></dt>
+<dd><p>Return np.size of underlying data.</p>
+<p>This should be <cite>stack_size * count</cite>,
+or <cite>len(self) * count</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef.stack_reshape">
+<span class="sig-name descname"><span class="pre">stack_reshape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Coef.stack_reshape" title="Link to this definition">¶</a></dt>
+<dd><p>Reshape the stack axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">*argsargs<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer(s) or tuple describing the intended shape.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Coef instance</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef.to_complex">
+<span class="sig-name descname"><span class="pre">to_complex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Coef.to_complex" title="Link to this definition">¶</a></dt>
+<dd><p>Convert and return real coefficients as <cite>ComplexCoef</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.Coef.to_real">
+<span class="sig-name descname"><span class="pre">to_real</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.Coef.to_real" title="Link to this definition">¶</a></dt>
+<dd><p>Not implemented for real Coef.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.basis.ComplexCoef">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.basis.</span></span><span class="sig-name descname"><span class="pre">ComplexCoef</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.ComplexCoef" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.basis.Coef" title="aspire.basis.basis.Coef"><code class="xref py py-class docutils literal notranslate"><span class="pre">Coef</span></code></a></p>
+<p>Numpy interoperable container for stacks of complex coefficient vectors.
+Each <cite>ComplexCoef</cite> instance has an associated <cite>Basis</cite>.</p>
+<p>A stack of one or more coefficient arrays.</p>
+<p>The stack can be multidimensional with <cite>stack_size</cite> equal
+to the product of the stack dimensions.  Singletons will be
+expanded into a 1D stack of length one.</p>
+<p>The last axes always represents the coefficient <cite>count</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>basis</strong> – <cite>Basis</cite> associated with <cite>data</cite> coefficients.</p></li>
+<li><p><strong>data</strong> – Numpy array containing image data with shape
+<cite>(…, count)</cite>.</p></li>
+<li><p><strong>pixel_size</strong> – Pixel size of underlying image data in
+angstroms, default <cite>None</cite>.</p></li>
+<li><p><strong>dtype</strong> – Optionally cast <cite>data</cite> to this dtype.
+Defaults to <cite>data.dtype</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>Coef</cite> instance holding <cite>data</cite>.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.ComplexCoef.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.ComplexCoef.evaluate" title="Link to this definition">¶</a></dt>
+<dd><p>Return the evaluation of coefficients in the associated <cite>basis</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.ComplexCoef.rotate">
+<span class="sig-name descname"><span class="pre">rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">radians</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.ComplexCoef.rotate" title="Link to this definition">¶</a></dt>
+<dd><p>Returns coefs rotated counter-clockwise by <cite>radians</cite>.</p>
+<p>Raises error if underlying coef basis does not support rotations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>radians</strong> – Rotation in radians.</p></li>
+<li><p><strong>refl</strong> – Optional reflect image (about y=0) (bool)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Rotated ComplexCoefs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.ComplexCoef.shift">
+<span class="sig-name descname"><span class="pre">shift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shifts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.ComplexCoef.shift" title="Link to this definition">¶</a></dt>
+<dd><p>Returns complex coefs shifted by <cite>shifts</cite>.</p>
+<p>This will transform to real cartesian space, shift,
+and transform back to basis space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coef</strong> – Basis coefs.</p></li>
+<li><p><strong>shifts</strong> – Shifts in pixels (x,y). Shape (1,2) or (len(coef), 2).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Complex coefs of shifted images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.ComplexCoef.to_complex">
+<span class="sig-name descname"><span class="pre">to_complex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.ComplexCoef.to_complex" title="Link to this definition">¶</a></dt>
+<dd><p>Not implemented for ComplexCoef.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.basis.ComplexCoef.to_real">
+<span class="sig-name descname"><span class="pre">to_real</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis.ComplexCoef.to_real" title="Link to this definition">¶</a></dt>
+<dd><p>Convert and return complex coefficients as <cite>Coef</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.basis_utils">
+<span id="aspire-basis-basis-utils-module"></span><h2>aspire.basis.basis_utils module<a class="headerlink" href="#module-aspire.basis.basis_utils" title="Link to this heading">¶</a></h2>
+<p>Define related utility functions for Fourier–Bessel (2D), Spherical Fourier–Bessel (3D) and
+prolate spheroidal wave function (PSWF) objects.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.all_besselj_zeros">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">all_besselj_zeros</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.all_besselj_zeros" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the zeros of the order <cite>ell</cite> Bessel function which are less than <cite>r</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ell</strong> – The real number order of the Bessel function.</p></li>
+<li><p><strong>r</strong> – The upper bound for zeros returned.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return n, r0<span class="colon">:</span></dt>
+<dd class="field-even"><p>The number of zeros and the zeros themselves
+as a NumPy array.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.besselj_newton">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">besselj_newton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.besselj_newton" title="Link to this definition">¶</a></dt>
+<dd><p>Uses the Newton-Raphson method to compute the zero(s) of the
+Bessel function with order <cite>nu</cite> with initial guess(es) <cite>z0</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nu</strong> – The real number order of the Bessel function.</p></li>
+<li><p><strong>z0</strong> – (Array-like) The initial guess(es) for the root-finding algorithm.</p></li>
+<li><p><strong>max_iter</strong> – Maximum number of iterations for Newton-Raphson
+(default: 10).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return z<span class="colon">:</span></dt>
+<dd class="field-even"><p>(Array-like) The estimated root(s).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.besselj_zeros">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">besselj_zeros</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.besselj_zeros" title="Link to this definition">¶</a></dt>
+<dd><p>Finds the first <cite>k</cite> zeros of the Bessel function of order <cite>nu</cite>, i.e. J_nu.
+Adapted from “zerobess.m” by Jonas Lundgren &lt;<a class="reference external" href="mailto:splinefit&#37;&#52;&#48;gmail&#46;com">splinefit<span>&#64;</span>gmail<span>&#46;</span>com</a>&gt;</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nu</strong> – The real number order of the Bessel function (must be positive and &lt;1e7).</p></li>
+<li><p><strong>k</strong> – The number of zeros to return (must be &gt;= 3).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return z<span class="colon">:</span></dt>
+<dd class="field-even"><p>A 1D NumPy array of the first <cite>k</cite> zeros.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.check_besselj_zeros">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">check_besselj_zeros</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.check_besselj_zeros" title="Link to this definition">¶</a></dt>
+<dd><p>Sanity-check a sequence of estimated zeros of the Bessel function with order <cite>nu</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nu</strong> – The real number order of the Bessel function.</p></li>
+<li><p><strong>z</strong> – (Array-like) A sequence of postulated zeros.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return result<span class="colon">:</span></dt>
+<dd class="field-even"><p>True or False.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.d_decay_approx_fun">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">d_decay_approx_fun</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.d_decay_approx_fun" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.k_operator">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">k_operator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.k_operator" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.lgwt">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">lgwt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ndeg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.lgwt" title="Link to this definition">¶</a></dt>
+<dd><p>Compute Legendre-Gauss quadrature</p>
+<p>Generates the Legendre-Gauss nodes and weights on an interval
+[a, b] with truncation order of ndeg for computing definite integrals
+using Legendre-Gauss quadrature.
+Suppose you have a continuous function f(x) which is defined on [a, b]
+which you can evaluate at any x in [a, b]. Simply evaluate it at all of
+the values contained in the x vector to obtain a vector f, then compute
+the definite integral using sum(f.*w);</p>
+<p>This is a 2rapper for numpy.polynomial leggauss which outputs only in the
+range of (-1, 1).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ndeg</strong> – truncation order, that is, the number of nodes.</p></li>
+<li><p><strong>b</strong> (<em>a</em><em>,</em>) – The endpoints of the interval over which the quadrature is defined.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return x, w<span class="colon">:</span></dt>
+<dd class="field-even"><p>The quadrature nodes and weights.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.norm_assoc_legendre">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">norm_assoc_legendre</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.norm_assoc_legendre" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate the normalized associated Legendre polynomial</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>j</strong> – The order of the associated Legendre polynomial, must satisfy <a href="#id5"><span class="problematic" id="id6">|m|</span></a> &lt; j.</p></li>
+<li><p><strong>m</strong> – The degree of the associated Legendre polynomial, must satisfy <a href="#id7"><span class="problematic" id="id8">|m|</span></a> &lt; j.</p></li>
+<li><p><strong>x</strong> – An array of values between -1 and +1 on which to evaluate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The normalized associated Legendre polynomial evaluated at corresponding x.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.p_n">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">p_n</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.p_n" title="Link to this definition">¶</a></dt>
+<dd><p>The first n jacobi polynomial of x as defined in Yoel’s PSWF paper, eq (2), page 6</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – int, &gt; 0
+Number of polynomials to compute</p></li>
+<li><p><strong>alpha</strong> – float, &gt; -1</p></li>
+<li><p><strong>beta</strong> – float, &gt; -1</p></li>
+<li><p><strong>x</strong> – (m,) ndarray</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>v: (m, n + 1) ndarray
+v[:, i] = P^{(alpha, beta)}_n(x) as defined in the paper</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.real_sph_harmonic">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">real_sph_harmonic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.real_sph_harmonic" title="Link to this definition">¶</a></dt>
+<dd><p>Evaluate a real spherical harmonic</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>j</strong> – The order of the spherical harmonic. These must satisfy <a href="#id9"><span class="problematic" id="id10">|m|</span></a> &lt; j.</p></li>
+<li><p><strong>m</strong> – The degree of the spherical harmonic. These must satisfy <a href="#id11"><span class="problematic" id="id12">|m|</span></a> &lt; j.</p></li>
+<li><p><strong>theta</strong> – The spherical coordinates of the points at which we want to evaluate the real spherical harmonic.
+<cite>theta</cite> is the latitude between 0 and pi</p></li>
+<li><p><strong>phi</strong> – The spherical coordinates of the points at which we want to evaluate the real spherical harmonic.
+<cite>phi</cite> is the longitude, between 0 and 2*pi</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The real spherical harmonics evaluated at the points (theta, phi).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.sph_bessel">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">sph_bessel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.sph_bessel" title="Link to this definition">¶</a></dt>
+<dd><p>Compute spherical Bessel function values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ell</strong> – The order of the spherical Bessel function.</p></li>
+<li><p><strong>r</strong> – The coordinates where the function is to be evaluated.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The value of j_ell at r.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.sph_harm">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">sph_harm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.sph_harm" title="Link to this definition">¶</a></dt>
+<dd><p>Compute spherical harmonics.</p>
+<p>Note call signature convention may be different from other packages.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m</strong> – Order <a href="#id13"><span class="problematic" id="id14">|m|</span></a> &lt;= j</p></li>
+<li><p><strong>j</strong> – Harmonic degree, j&gt;=0</p></li>
+<li><p><strong>theta</strong> – latitude coordinate [0, pi]</p></li>
+<li><p><strong>phi</strong> – longitude coordinate [0, 2*pi]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Complex array of evaluated spherical harmonics.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.t_radial_part_mat">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">t_radial_part_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.t_radial_part_mat" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.t_x_derivative_mat">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">t_x_derivative_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">big_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">range_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approx_length</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.t_x_derivative_mat" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.t_x_mat">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">t_x_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approx_length</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.t_x_mat" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.t_x_mat_dot">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">t_x_mat_dot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approx_length</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.t_x_mat_dot" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.basis_utils.unique_coords_nd">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.basis_utils.</span></span><span class="sig-name descname"><span class="pre">unique_coords_nd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ndim</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shifted=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.basis_utils.unique_coords_nd" title="Link to this definition">¶</a></dt>
+<dd><p>Generate unique polar coordinates from 2D or 3D rectangular coordinates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – length size of a square or cube.</p></li>
+<li><p><strong>ndim</strong> – number of dimension, 2 or 3.</p></li>
+<li><p><strong>shifted</strong> – shifted half pixel or not for odd N.</p></li>
+<li><p><strong>normalized</strong> – normalize the grid or not.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The unique polar coordinates in 2D or 3D</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.dirac">
+<span id="aspire-basis-dirac-module"></span><h2>aspire.basis.dirac module<a class="headerlink" href="#module-aspire.basis.dirac" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.dirac.DiracBasis">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.dirac.</span></span><span class="sig-name descname"><span class="pre">DiracBasis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.dirac.DiracBasis" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.basis.Basis" title="aspire.basis.basis.Basis"><code class="xref py py-class docutils literal notranslate"><span class="pre">Basis</span></code></a></p>
+<p>Dirac basis in 1D.</p>
+<p>Supports subclassing higher dimensions.</p>
+<p>Initialize Dirac basis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The shape defining the basis.  May be a tuple
+or an integer, in which case, a uniformly sized basis is assumed.</p></li>
+<li><p><strong>mask</strong> – A boolean mask matching <cite>size</cite> indicating which
+coordinates to include in the basis. Default <cite>None</cite>
+implies all via <cite>np.full((size,)*dimension, True)</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>DiracBasis2D instance.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.basis.dirac.DiracBasis.dim">
+<span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#aspire.basis.dirac.DiracBasis.dim" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.dirac.DiracBasis.expand">
+<span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.dirac.DiracBasis.expand" title="Link to this definition">¶</a></dt>
+<dd><p>See _evaluate.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.dirac.DiracBasis2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.dirac.</span></span><span class="sig-name descname"><span class="pre">DiracBasis2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.dirac.DiracBasis2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.dirac.DiracBasis" title="aspire.basis.dirac.DiracBasis"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiracBasis</span></code></a></p>
+<p>Dirac basis in 2D.</p>
+<p>See <cite>DiracBasis</cite> documentation.</p>
+<p>Initialize Dirac basis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The shape defining the basis.  May be a tuple
+or an integer, in which case, a uniformly sized basis is assumed.</p></li>
+<li><p><strong>mask</strong> – A boolean mask matching <cite>size</cite> indicating which
+coordinates to include in the basis. Default <cite>None</cite>
+implies all via <cite>np.full((size,)*dimension, True)</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>DiracBasis2D instance.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.basis.dirac.DiracBasis2D.dim">
+<span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#aspire.basis.dirac.DiracBasis2D.dim" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.dirac.DiracBasis3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.dirac.</span></span><span class="sig-name descname"><span class="pre">DiracBasis3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.dirac.DiracBasis3D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.dirac.DiracBasis" title="aspire.basis.dirac.DiracBasis"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiracBasis</span></code></a></p>
+<p>Dirac basis in 3D.</p>
+<p>See <cite>DiracBasis</cite> documentation.</p>
+<p>Initialize Dirac basis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The shape defining the basis.  May be a tuple
+or an integer, in which case, a uniformly sized basis is assumed.</p></li>
+<li><p><strong>mask</strong> – A boolean mask matching <cite>size</cite> indicating which
+coordinates to include in the basis. Default <cite>None</cite>
+implies all via <cite>np.full((size,)*dimension, True)</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>DiracBasis2D instance.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.basis.dirac.DiracBasis3D.dim">
+<span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#aspire.basis.dirac.DiracBasis3D.dim" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.fb">
+<span id="aspire-basis-fb-module"></span><h2>aspire.basis.fb module<a class="headerlink" href="#module-aspire.basis.fb" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.fb.FBBasisMixin">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.fb.</span></span><span class="sig-name descname"><span class="pre">FBBasisMixin</span></span><a class="headerlink" href="#aspire.basis.fb.FBBasisMixin" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>FBBasisMixin is a mixin implementing methods specific to Fourier-Bessel expansions,
+to be inherited by Fourier-Bessel subclasses of Basis.</p>
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.fb_2d">
+<span id="aspire-basis-fb-2d-module"></span><h2>aspire.basis.fb_2d module<a class="headerlink" href="#module-aspire.basis.fb_2d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.fb_2d.FBBasis2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.fb_2d.</span></span><span class="sig-name descname"><span class="pre">FBBasis2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ell_max=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fb_2d.FBBasis2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.steerable.SteerableBasis2D" title="aspire.basis.steerable.SteerableBasis2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">SteerableBasis2D</span></code></a>, <a class="reference internal" href="#aspire.basis.fb.FBBasisMixin" title="aspire.basis.fb.FBBasisMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">FBBasisMixin</span></code></a></p>
+<p>Define a derived class using the Fourier-Bessel basis for mapping 2D images</p>
+<p>The expansion coefficients of 2D images on this basis are obtained by
+the least squares method. The algorithm is described in the publication:
+Z. Zhao, A. Singer, Fourier-Bessel Rotational Invariant Eigenimages,
+The Journal of the Optical Society of America A, 30 (5), pp. 871-877 (2013).</p>
+<p>Initialize an object for the 2D Fourier-Bessel basis class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>size</strong> – The size of the vectors for which to define the basis.
+May be a 2-tuple or an integer, in which case a square basis is assumed.
+Currently only square images are supported.</p>
+</dd>
+<dt class="field-even">Ell_max<span class="colon">:</span></dt>
+<dd class="field-even"><p>The maximum order ell of the basis elements. If no input
+(= None), it will be set to np.inf and the basis includes all
+ell such that the resulting basis vectors are concentrated
+below the Nyquist frequency (default inf).</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fb_2d.FBBasis2D.basis_norm_2d">
+<span class="sig-name descname"><span class="pre">basis_norm_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fb_2d.FBBasis2D.basis_norm_2d" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the normalized factors from radial and angular parts of a specified basis function</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fb_2d.FBBasis2D.calculate_bispectrum">
+<span class="sig-name descname"><span class="pre">calculate_bispectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_nonzero_freqs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fb_2d.FBBasis2D.calculate_bispectrum" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate bispectrum for a set of coefs in this basis.</p>
+<dl class="simple">
+<dt>The Bispectum matrix is of shape:</dt><dd><p>(count, count, unique_radial_indices)</p>
+</dd>
+</dl>
+<p>where count is the number of complex coefficients.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coef</strong> – Coefficients representing a (single) image expanded in this basis.</p></li>
+<li><p><strong>flatten</strong> – Optionally extract symmetric values (tril) and then flatten.</p></li>
+<li><p><strong>freq_cutoff</strong> – Truncate (zero) high k frequecies above (int) value, defaults off (None).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bispectum matrix (complex valued).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fb_2d.FBBasis2D.filter_to_basis_mat">
+<span class="sig-name descname"><span class="pre">filter_to_basis_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fb_2d.FBBasis2D.filter_to_basis_mat" title="Link to this definition">¶</a></dt>
+<dd><p>See <cite>SteerableBasis2D.filter_to_basis_mat</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fb_2d.FBBasis2D.norms">
+<span class="sig-name descname"><span class="pre">norms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fb_2d.FBBasis2D.norms" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the normalized factors of basis functions</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.fb_3d">
+<span id="aspire-basis-fb-3d-module"></span><h2>aspire.basis.fb_3d module<a class="headerlink" href="#module-aspire.basis.fb_3d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.fb_3d.FBBasis3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.fb_3d.</span></span><span class="sig-name descname"><span class="pre">FBBasis3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ell_max=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fb_3d.FBBasis3D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.basis.Basis" title="aspire.basis.basis.Basis"><code class="xref py py-class docutils literal notranslate"><span class="pre">Basis</span></code></a>, <a class="reference internal" href="#aspire.basis.fb.FBBasisMixin" title="aspire.basis.fb.FBBasisMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">FBBasisMixin</span></code></a></p>
+<p>Define a derived class for direct spherical Harmonics Bessel basis expanding 3D volumes</p>
+<p># TODO: Methods that return dictionaries should return useful objects instead</p>
+<p>Initialize an object for the 3D Fourier-Bessel basis class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The size of the vectors for which to define the basis.
+May be a 3-tuple or an integer, in which case a cubic basis is assumed.
+Currently only cubic images are supported.</p></li>
+<li><p><strong>ell_max</strong> – The maximum order ell of the basis elements. If no input
+(= None), it will be set to np.inf and the basis includes all
+ell such that the resulting basis vectors are concentrated
+below the Nyquist frequency (default inf).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fb_3d.FBBasis3D.basis_norm_3d">
+<span class="sig-name descname"><span class="pre">basis_norm_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ell</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fb_3d.FBBasis3D.basis_norm_3d" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the normalized factor of a specified basis function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fb_3d.FBBasis3D.indices">
+<span class="sig-name descname"><span class="pre">indices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fb_3d.FBBasis3D.indices" title="Link to this definition">¶</a></dt>
+<dd><p>Create the indices for each basis function</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fb_3d.FBBasis3D.norms">
+<span class="sig-name descname"><span class="pre">norms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fb_3d.FBBasis3D.norms" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the normalized factors of basis functions</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.ffb_2d">
+<span id="aspire-basis-ffb-2d-module"></span><h2>aspire.basis.ffb_2d module<a class="headerlink" href="#module-aspire.basis.ffb_2d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.ffb_2d.FFBBasis2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.ffb_2d.</span></span><span class="sig-name descname"><span class="pre">FFBBasis2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ell_max=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.ffb_2d.FFBBasis2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.fb_2d.FBBasis2D" title="aspire.basis.fb_2d.FBBasis2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">FBBasis2D</span></code></a></p>
+<p>Define a derived class for Fast Fourier Bessel expansion for 2D images</p>
+<p>The expansion coefficients of 2D images on this basis are obtained by
+a fast method instead of the least squares method.
+The algorithm is described in the publication:
+Z. Zhao, Y. Shkolnisky, A. Singer, Fast Steerable Principal Component Analysis,
+IEEE Transactions on Computational Imaging, 2 (1), pp. 1-12 (2016).​</p>
+<p>Initialize an object for the 2D Fourier-Bessel basis class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>size</strong> – The size of the vectors for which to define the basis.
+May be a 2-tuple or an integer, in which case a square basis is assumed.
+Currently only square images are supported.</p>
+</dd>
+<dt class="field-even">Ell_max<span class="colon">:</span></dt>
+<dd class="field-even"><p>The maximum order ell of the basis elements. If no input
+(= None), it will be set to np.inf and the basis includes all
+ell such that the resulting basis vectors are concentrated
+below the Nyquist frequency (default inf).</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.ffb_2d.FFBBasis2D.filter_to_basis_mat">
+<span class="sig-name descname"><span class="pre">filter_to_basis_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.ffb_2d.FFBBasis2D.filter_to_basis_mat" title="Link to this definition">¶</a></dt>
+<dd><p>See <cite>SteerableBasis2D.filter_to_basis_mat</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.ffb_3d">
+<span id="aspire-basis-ffb-3d-module"></span><h2>aspire.basis.ffb_3d module<a class="headerlink" href="#module-aspire.basis.ffb_3d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.ffb_3d.FFBBasis3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.ffb_3d.</span></span><span class="sig-name descname"><span class="pre">FFBBasis3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ell_max=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.ffb_3d.FFBBasis3D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.fb_3d.FBBasis3D" title="aspire.basis.fb_3d.FBBasis3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">FBBasis3D</span></code></a></p>
+<p>Define a derived class for fast spherical Harmonics Bessel basis expanding 3D volumes</p>
+<p># TODO: Methods that return dictionaries should return useful objects instead</p>
+<p>Initialize an object for the 3D Fourier-Bessel basis class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The size of the vectors for which to define the basis.
+May be a 3-tuple or an integer, in which case a cubic basis is assumed.
+Currently only cubic images are supported.</p></li>
+<li><p><strong>ell_max</strong> – The maximum order ell of the basis elements. If no input
+(= None), it will be set to np.inf and the basis includes all
+ell such that the resulting basis vectors are concentrated
+below the Nyquist frequency (default inf).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.fle_2d">
+<span id="aspire-basis-fle-2d-module"></span><h2>aspire.basis.fle_2d module<a class="headerlink" href="#module-aspire.basis.fle_2d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.fle_2d.FLEBasis2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.fle_2d.</span></span><span class="sig-name descname"><span class="pre">FLEBasis2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bandlimit=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon=1e-10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">match_fb=True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fle_2d.FLEBasis2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.steerable.SteerableBasis2D" title="aspire.basis.steerable.SteerableBasis2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">SteerableBasis2D</span></code></a>, <a class="reference internal" href="#aspire.basis.fb.FBBasisMixin" title="aspire.basis.fb.FBBasisMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">FBBasisMixin</span></code></a></p>
+<dl class="simple">
+<dt>Define a derived class for Fast Fourier Bessel 2D expansion using interpolation</dt><dd><p>from Chebyshev nodes.</p>
+</dd>
+</dl>
+<p>The algorithms used are described in the following publication:
+N. F. Marshall, O. Mickelin, A. Singer, Fast Expansion into Harmonics on the Disk:</p>
+<blockquote>
+<div><p>A Steerable Basis with Fast Radial Convolution. (submitted)</p>
+</div></blockquote>
+<p><a class="reference external" href="https://arxiv.org/pdf/2207.13674.pdf">https://arxiv.org/pdf/2207.13674.pdf</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The size of the vectors for which to define the FLE basis.
+Currently only square images are supported.</p></li>
+<li><p><strong>bandlimit</strong> – Maximum frequency band for computing basis functions. Defaults to the
+resolution of the basis.</p></li>
+<li><p><strong>epsilon</strong> – Relative precision between FLE fast method and dense matrix multiplication.</p></li>
+<li><p><strong>dtype</strong> – Datatype of images and coefficients represented.</p></li>
+<li><p><strong>match_fb</strong> – This flag constructs basis functions
+identical to <cite>FBBasis2D</cite>. The initial heuristic for the
+number of basis functions, based on the image size, will
+be set to that of <cite>FBBasis2D</cite>, and the FLE frequency
+thresholding procedure to reduce the number of functions
+will not be carried out. This means the number of basis
+functions for a given image size will be identical across
+the two bases.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fle_2d.FLEBasis2D.filter_to_basis_mat">
+<span class="sig-name descname"><span class="pre">filter_to_basis_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fle_2d.FLEBasis2D.filter_to_basis_mat" title="Link to this definition">¶</a></dt>
+<dd><p>See <cite>SteerableBasis2D.filter_to_basis_mat</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fle_2d.FLEBasis2D.lowpass">
+<span class="sig-name descname"><span class="pre">lowpass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coefs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bandlimit</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fle_2d.FLEBasis2D.lowpass" title="Link to this definition">¶</a></dt>
+<dd><p>Apply a low-pass filter to FLE coefficients <cite>coefs</cite> with threshold <cite>bandlimit</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coefs</strong> – A <cite>Coef</cite> instance containing FLE coefficients.</p></li>
+<li><p><strong>bandlimit</strong> – Integer bandlimit (max frequency).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Band-limited coefficient array.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.basis.fle_2d.FLEBasis2D.matrix_type">
+<span class="sig-name descname"><span class="pre">matrix_type</span></span><a class="headerlink" href="#aspire.basis.fle_2d.FLEBasis2D.matrix_type" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix" title="aspire.operators.diag_matrix.DiagMatrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">DiagMatrix</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fle_2d.FLEBasis2D.radial_convolve">
+<span class="sig-name descname"><span class="pre">radial_convolve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coefs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radial_img</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fle_2d.FLEBasis2D.radial_convolve" title="Link to this definition">¶</a></dt>
+<dd><p>Convolve a stack of FLE coefficients with a 2D radial function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coefs</strong> – A <cite>Coef</cite> instance containing FLE coefficients.</p></li>
+<li><p><strong>radial_img</strong> – A 2D NumPy array of size (self.nres, self.nres).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Convolved FLE coefficients.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.fle_2d_utils">
+<span id="aspire-basis-fle-2d-utils-module"></span><h2>aspire.basis.fle_2d_utils module<a class="headerlink" href="#module-aspire.basis.fle_2d_utils" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.fle_2d_utils.barycentric_interp_sparse">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.fle_2d_utils.</span></span><span class="sig-name descname"><span class="pre">barycentric_interp_sparse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">known_points</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">numsparse</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fle_2d_utils.barycentric_interp_sparse" title="Link to this definition">¶</a></dt>
+<dd><dl>
+<dt>Returns the sparse matrices that perform barycentric interpolation to compute values</dt><dd><p>of Betas at the points <cite>target_points</cite> at known points <cite>known_points</cite>, and the transpose
+of this operation. For each target point in <cite>target_points</cite>, only <cite>numsparse</cite> centered
+source points from <cite>known_points</cite> around the target point are used.</p>
+<p>Performed via the method described in</p>
+<p>“Barycentric Lagrange Interpolation”, Jean-Paul Berrut and Lloyd Trefethen.
+SIAM Review 2004 46:3, 501-517
+<a class="reference external" href="https://people.maths.ox.ac.uk/trefethen/barycentric.pdf">https://people.maths.ox.ac.uk/trefethen/barycentric.pdf</a></p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_points</strong> – The target set of points at which to evaluate the functions.</p></li>
+<li><p><strong>known_points</strong> – The points at which the values of the functions are known.</p></li>
+<li><p><strong>numsparse</strong> – Number of points used for interpolation around each target point.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The interpolation matrix and its transpose as a 2-tuple.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.fle_2d_utils.precomp_transform_complex_to_real">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.fle_2d_utils.</span></span><span class="sig-name descname"><span class="pre">precomp_transform_complex_to_real</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ells</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fle_2d_utils.precomp_transform_complex_to_real" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Returns a sparse matrix that transforms coefficients into the complex</dt><dd><p>representation of the basis to coefficients in the real
+representation of the basis. See Remark 1.1 of Marshall, Mickelin,
+and Singer.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ells</strong> – The list of integer Bessel function orders.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sparse complex to real transformation matrix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.basis.fle_2d_utils.transform_complex_to_real">
+<span class="sig-prename descclassname"><span class="pre">aspire.basis.fle_2d_utils.</span></span><span class="sig-name descname"><span class="pre">transform_complex_to_real</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">B</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ells</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fle_2d_utils.transform_complex_to_real" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Transforms coefficients of the matrix B (see Eq. 3) from complex</dt><dd><p>to real. B is the linear transformation that takes FLE coefficients
+to images.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>B</strong> – Complex matrix B.</p></li>
+<li><p><strong>ells</strong> – List of ells (Bessel function orders) in this basis.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Transformed matrix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.fpswf_2d">
+<span id="aspire-basis-fpswf-2d-module"></span><h2>aspire.basis.fpswf_2d module<a class="headerlink" href="#module-aspire.basis.fpswf_2d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.fpswf_2d.FPSWFBasis2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.fpswf_2d.</span></span><span class="sig-name descname"><span class="pre">FPSWFBasis2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_truncation=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fpswf_2d.FPSWFBasis2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.pswf_2d.PSWFBasis2D" title="aspire.basis.pswf_2d.PSWFBasis2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">PSWFBasis2D</span></code></a></p>
+<p>Define a derived class for fast Prolate Spheroidal Wave Function (PSWF) expanding 2D images</p>
+<p>The numerical evaluation for 2D PSWFs at arbitrary points in the unit disk is based on the fast method
+described in the papers as below:</p>
+<blockquote>
+<div><p>1) Boris Landa and Yoel Shkolnisky, “Steerable principal components for space-frequency localized images”,
+SIAM J. Imag. Sci. 10, 508-534 (2017).
+2) Boris Landa and Yoel Shkolnisky, “Approximation scheme for essentially bandlimited and space-concentrated
+functions on a disk”, Appl. Comput. Harmon. Anal. 43, 381-403 (2017).
+3) Yoel Shkolnisky, “Prolate spheroidal wave functions on a disc-Integration and approximation of
+two-dimensional bandlimited functions”, Appl. Comput. Harmon. Anal. 22, 235-256 (2007).</p>
+</div></blockquote>
+<p>Initialize an object for 2D prolate spheroidal wave function (PSWF) basis expansion using fast method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The size of the vectors for which to define the basis
+and the image resolution. May be a 2-tuple or an integer, in which case
+a square basis is assumed. Currently only square images are supported.</p></li>
+<li><p><strong>gamma_trunc</strong> – Truncation parameter of PSWFs, between 0 and 1e6,
+which controls the length of the expansion and the approximation error.
+Smaller values (close to zero) guarantee smaller errors, yet longer
+expansions, and vice-versa. Note: Due to numerical considerations,
+do not exceed 1e6.</p></li>
+<li><p><strong>beta</strong> – Bandlimit ratio relative to the Nyquist rate, between 0 and 1.
+In general, the bandlimit is c = beta*pi*(size[0]//2), therefore for
+the default value beta = 1 there is no oversampling assumed. This
+parameter controls the bandlimit of the PSWFs.</p></li>
+<li><p><strong>dtype</strong> – Internal ndarray datatype.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fpswf_2d.FPSWFBasis2D.filter_to_basis_mat">
+<span class="sig-name descname"><span class="pre">filter_to_basis_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fpswf_2d.FPSWFBasis2D.filter_to_basis_mat" title="Link to this definition">¶</a></dt>
+<dd><p>See <cite>SteerableBasis2D.filter_to_basis_mat</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.fpswf_3d">
+<span id="aspire-basis-fpswf-3d-module"></span><h2>aspire.basis.fpswf_3d module<a class="headerlink" href="#module-aspire.basis.fpswf_3d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.fpswf_3d.FPSWFBasis3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.fpswf_3d.</span></span><span class="sig-name descname"><span class="pre">FPSWFBasis3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ell_max=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fpswf_3d.FPSWFBasis3D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.pswf_3d.PSWFBasis3D" title="aspire.basis.pswf_3d.PSWFBasis3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">PSWFBasis3D</span></code></a></p>
+<p>Initialize an object for the base of basis class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The size of the vectors for which to define the basis.
+Currently only square images and cubic volumes are supported.</p></li>
+<li><p><strong>ell_max</strong> – The maximum order ell of the basis elements. If no input
+(= None), it will be set to np.inf and the basis includes all
+ell such that the resulting basis vectors are concentrated
+below the Nyquist frequency (default inf).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.fspca">
+<span id="aspire-basis-fspca-module"></span><h2>aspire.basis.fspca module<a class="headerlink" href="#module-aspire.basis.fspca" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.fspca.</span></span><span class="sig-name descname"><span class="pre">FSPCABasis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.steerable.SteerableBasis2D" title="aspire.basis.steerable.SteerableBasis2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">SteerableBasis2D</span></code></a></p>
+<p>A class for Fast Steerable Principal Component Analaysis basis.</p>
+<p>FSPCA is an extension to Fourier Bessel representations
+(provided asF BBasis2D/FFBBasis2D), which computes combinations of basis
+coefficients coresponding to the princicpal components of image(s)
+represented in the provided basis.</p>
+<p>The principal components are computed from eigen decomposition of the
+covariance matrix, and when evaluated into the real domain and reshaped form
+the set of <cite>eigenimages</cite>.</p>
+<p>The algorithm is described in the publication:
+Z. Zhao, Y. Shkolnisky, A. Singer, Fast Steerable Principal Component Analysis,
+IEEE Transactions on Computational Imaging, 2 (1), pp. 1-12 (2016).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – Source instance</p></li>
+<li><p><strong>basis</strong> – Optional Fourier Bessel Basis (usually FFBBasis2D)</p></li>
+<li><p><strong>components</strong> – Optionally assign number of principal components
+to use for the FSPCA basis.
+Default value of <cite>None</cite> will use <cite>self.basis.count</cite>.</p></li>
+<li><p><strong>noise_var</strong> – Optionally assign noise variance.
+Default value of <cite>None</cite> will estimate noise with WhiteNoiseEstimator.
+Use 0 when using clean images so cov2d skips applying noisy covar coefs..</p></li>
+<li><p><strong>batch_size</strong> – Batch size for computing basis coefficients.
+<cite>batch_size</cite> is also passed to BatchedRotCov2D.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.build">
+<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.build" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the FSPCA basis.</p>
+<p>This may take some time for large image stacks.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.calculate_bispectrum">
+<span class="sig-name descname"><span class="pre">calculate_bispectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_nonzero_freqs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.calculate_bispectrum" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate bispectrum for a set of coefs in this basis.</p>
+<dl class="simple">
+<dt>The Bispectum matrix is of shape:</dt><dd><p>(count, count, unique_radial_indices)</p>
+</dd>
+</dl>
+<p>where count is the number of complex coefficients.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coef</strong> – Coefficients representing a (single) image expanded in this basis.</p></li>
+<li><p><strong>flatten</strong> – Optionally extract symmetric values (tril) and then flatten.</p></li>
+<li><p><strong>filter_nonzero_freqs</strong> – Remove indices corresponding to zero frequency (defaults False).</p></li>
+<li><p><strong>freq_cutoff</strong> – Truncate (zero) high k frequecies above (int) value, defaults off (None).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bispectum matrix (complex valued).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.eigen_images">
+<span class="sig-name descname"><span class="pre">eigen_images</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.eigen_images" title="Link to this definition">¶</a></dt>
+<dd><p>Return the eigen images of the FSPCA basis, evaluated to image space.</p>
+<p>This may be used to implot visualizations of the eigenvectors.</p>
+<p>Ordering corresponds to FSPCA eigvals.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.eigvals">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">eigvals</span></span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.eigvals" title="Link to this definition">¶</a></dt>
+<dd><p>Return the eigenvals of FSPCABasis as Numpy array.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.evaluate" title="Link to this definition">¶</a></dt>
+<dd><p>Take FSPCA coefs and evaluate to Fourier Bessel (self.basis) ceofs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>c</strong> – Stack of coefs in the FSPCABasis to be evaluated.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The (real) coefs representing a stack of images in self.basis</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.evaluate_to_image_basis">
+<span class="sig-name descname"><span class="pre">evaluate_to_image_basis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.evaluate_to_image_basis" title="Link to this definition">¶</a></dt>
+<dd><p>Take FSPCA coefs and evaluate as image in the standard coordinate basis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>c</strong> – Stack of coefs in the FSPCABasis to be evaluated.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Image instance representing a stack of images in the
+standard 2D coordinate basis..</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.expand">
+<span class="sig-name descname"><span class="pre">expand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.expand" title="Link to this definition">¶</a></dt>
+<dd><p>Take a Fourier-Bessel coefs and express as FSPCA coefs.</p>
+<p>Note each FSPCA coef corresponds to a linear combination Fourier Bessel
+basis vectors, described by an eigenvector in FSPCA.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – Coefs representing a stack in the
+Fourier Bessel basis.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Stack of coefs in the FSPCABasis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.expand_from_image_basis">
+<span class="sig-name descname"><span class="pre">expand_from_image_basis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.expand_from_image_basis" title="Link to this definition">¶</a></dt>
+<dd><p>Take an image in the standard coordinate basis and express as FSPCA coefs.</p>
+<p>Note each FSPCA coef corresponds to a linear combination Fourier Bessel
+basis vectors, described by an eigenvector in FSPCA.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – The Image instance representing a stack of images in the
+standard 2D coordinate basis to be evaluated.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Stack of coefs in the FSPCABasis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.filter_to_basis_mat">
+<span class="sig-name descname"><span class="pre">filter_to_basis_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.filter_to_basis_mat" title="Link to this definition">¶</a></dt>
+<dd><p>Convert a filter into a basis representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>f</strong> – <cite>Filter</cite> object, usually a <cite>CTFFilter</cite>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Representation of filter in <cite>basis</cite>.
+Return type will be based on the class’s <cite>matrix_type</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.shift">
+<span class="sig-name descname"><span class="pre">shift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shifts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.shift" title="Link to this definition">¶</a></dt>
+<dd><p>Returns coefs shifted by <cite>shifts</cite>.</p>
+<p>This will transform to real cartesian space, shift,
+and transform back to Polar Fourier-Bessel space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coef</strong> – Basis coefs.</p></li>
+<li><p><strong>shifts</strong> – Shifts in pixels (x,y). Shape (1,2) or (len(coef), 2).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>coefs of shifted images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.to_complex">
+<span class="sig-name descname"><span class="pre">to_complex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.to_complex" title="Link to this definition">¶</a></dt>
+<dd><p>Return complex valued representation of coefficients.
+This can be useful when comparing or implementing methods
+from literature.</p>
+<p>There is a corresponding method, to_real.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>coef</strong> – Coefficients from this basis.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Complex coeficent representation from this basis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.fspca.FSPCABasis.to_real">
+<span class="sig-name descname"><span class="pre">to_real</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">complex_coef</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.fspca.FSPCABasis.to_real" title="Link to this definition">¶</a></dt>
+<dd><p>Return real valued representation of complex coefficients.
+This can be useful when comparing or implementing methods
+from literature.</p>
+<p>There is a corresponding method, to_complex.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>complex_coef</strong> – Complex coefficients from this basis.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Real coefficient representation from this basis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.pswf_2d">
+<span id="aspire-basis-pswf-2d-module"></span><h2>aspire.basis.pswf_2d module<a class="headerlink" href="#module-aspire.basis.pswf_2d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.pswf_2d.PSWFBasis2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.pswf_2d.</span></span><span class="sig-name descname"><span class="pre">PSWFBasis2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma_trunc=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.pswf_2d.PSWFBasis2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.steerable.SteerableBasis2D" title="aspire.basis.steerable.SteerableBasis2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">SteerableBasis2D</span></code></a></p>
+<p>Define a derived class for direct Prolate Spheroidal Wave Function (PSWF) expanding 2D images</p>
+<p>The numerical evaluation for 2D PSWFs at arbitrary points in the unit disk is based on the
+direct method described in the papers as below:</p>
+<blockquote>
+<div><p>1) Boris Landa and Yoel Shkolnisky, “Steerable principal components
+for space-frequency localized images”, SIAM J. Imag. Sci. 10, 508-534 (2017).
+2) Boris Landa and Yoel Shkolnisky, “Approximation scheme for essentially
+bandlimited and space-concentrated functions on a disk”, Appl. Comput.
+Harmon. Anal. 43, 381-403 (2017).
+3) Yoel Shkolnisky, “Prolate spheroidal wave functions on a disc-Integration
+and approximation of two-dimensional bandlimited functions”, Appl.
+Comput. Harmon. Anal. 22, 235-256 (2007).</p>
+</div></blockquote>
+<p>Initialize an object for 2D PSWF basis expansion using direct method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The size of the vectors for which to define the basis
+and the image resolution. May be a 2-tuple or an integer, in which case
+a square basis is assumed. Currently only square images are supported.</p></li>
+<li><p><strong>gamma_trunc</strong> – Truncation parameter of PSWFs, between 0 and 1e6,
+which controls the length of the expansion and the approximation error.
+Smaller values (close to zero) guarantee smaller errors, yet longer
+expansions, and vice-versa. Note: Due to numerical considerations,
+do not exceed 1e6.</p></li>
+<li><p><strong>beta</strong> – Bandlimit ratio relative to the Nyquist rate, between 0 and 1.
+In general, the bandlimit is c = beta*pi*(size[0]//2), therefore for
+the default value beta = 1 there is no oversampling assumed. This
+parameter controls the bandlimit of the PSWFs.</p></li>
+<li><p><strong>dtype</strong> – Internal ndarray datatype.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.pswf_2d.PSWFBasis2D.filter_to_basis_mat">
+<span class="sig-name descname"><span class="pre">filter_to_basis_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.pswf_2d.PSWFBasis2D.filter_to_basis_mat" title="Link to this definition">¶</a></dt>
+<dd><p>See <cite>SteerableBasis2D.filter_to_basis_mat</cite>.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.basis.pswf_2d.PSWFBasis2D.matrix_type">
+<span class="sig-name descname"><span class="pre">matrix_type</span></span><a class="headerlink" href="#aspire.basis.pswf_2d.PSWFBasis2D.matrix_type" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix" title="aspire.operators.blk_diag_matrix.BlkDiagMatrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlkDiagMatrix</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.pswf_2d.PSWFBasis2D.pswf_func2d">
+<span class="sig-name descname"><span class="pre">pswf_func2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">big_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bandlimit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi_approximate_error</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.pswf_2d.PSWFBasis2D.pswf_func2d" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the eigenvalues and eigenvectors of PSWF basis functions for all N’s and n’s</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>big_n</strong> – The integer N in PSWF basis.</p></li>
+<li><p><strong>n</strong> – The integer n in PSWF basis.</p></li>
+<li><p><strong>bandlimit</strong> – The band limit estimated by beta * pi * rcut.</p></li>
+<li><p><strong>phi_approximate_error</strong> – The input approximate error for phi.</p></li>
+<li><p><strong>r</strong> – The Legendre–Gauss quadrature nodes.</p></li>
+<li><p><strong>w</strong> – The Legendre–Gauss quadrature weights.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>alpha_n (ndarray): the eigen-values for N.
+d_vec (ndarray): the corresponding eigen-vectors for alpha_n.
+approx_length (int): the number of eigenvalues,len(alpha_n).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.pswf_3d">
+<span id="aspire-basis-pswf-3d-module"></span><h2>aspire.basis.pswf_3d module<a class="headerlink" href="#module-aspire.basis.pswf_3d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.pswf_3d.PSWFBasis3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.pswf_3d.</span></span><span class="sig-name descname"><span class="pre">PSWFBasis3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ell_max=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.pswf_3d.PSWFBasis3D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.basis.Basis" title="aspire.basis.basis.Basis"><code class="xref py py-class docutils literal notranslate"><span class="pre">Basis</span></code></a></p>
+<p>Initialize an object for the base of basis class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The size of the vectors for which to define the basis.
+Currently only square images and cubic volumes are supported.</p></li>
+<li><p><strong>ell_max</strong> – The maximum order ell of the basis elements. If no input
+(= None), it will be set to np.inf and the basis includes all
+ell such that the resulting basis vectors are concentrated
+below the Nyquist frequency (default inf).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.pswf_utils">
+<span id="aspire-basis-pswf-utils-module"></span><h2>aspire.basis.pswf_utils module<a class="headerlink" href="#module-aspire.basis.pswf_utils" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.pswf_utils.BNMatrix">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.pswf_utils.</span></span><span class="sig-name descname"><span class="pre">BNMatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">big_n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">band_limit</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approx_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.pswf_utils.BNMatrix" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Define a class to compute the B_N matrix ( with elements of b^N_mn) denoting the matrix of the operator L_c
+with respect to the basis T_Nn(x) by elements of b^N_mn. The matrix element b^N_mn is calculated as
+&lt; T_Nm, L_c T_Nn &gt; as shown in the paper below:</p>
+<blockquote>
+<div><p>Yoel Shkolnisky, “Prolate spheroidal wave functions on a disc-Integration and approximation of
+two-dimensional bandlimited functions”, Appl. Comput. Harmon. Anal. 22, 235-256 (2007).</p>
+</div></blockquote>
+<p>Initial an object to compute the B_N matrix ( with elements of b^N_mn).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>big_n</strong> – A positive integer represented by N.</p></li>
+<li><p><strong>band_limit</strong> – The band limit.</p></li>
+<li><p><strong>approx_length</strong> – The approximated length represented by n.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.pswf_utils.BNMatrix.dense_mat">
+<span class="sig-name descname"><span class="pre">dense_mat</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.pswf_utils.BNMatrix.dense_mat" title="Link to this definition">¶</a></dt>
+<dd><p>Represent the full B_N matrix by a 2D array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>mat: (M,M), ndarray
+The full BN matrix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.pswf_utils.BNMatrix.get_eig_vectors">
+<span class="sig-name descname"><span class="pre">get_eig_vectors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.pswf_utils.BNMatrix.get_eig_vectors" title="Link to this definition">¶</a></dt>
+<dd><p>Calculated the eigenvalues and eigenvectors of B_N matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>v: (M,M) ndarray</dt><dd><p>The normalized eigenvectors corresponding to the eigenvalues, v[:, i] is corresponding to the w[i].
+In each eigenvector v[:, i], v[argmax(abs(v[:, i])), i] &gt;= 0.</p>
+</dd>
+<dt>w: (M,) ndarray</dt><dd><p>The eigenvalues in descending order.</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.pswf_utils.BNMatrix.shape">
+<span class="sig-name descname"><span class="pre">shape</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.pswf_utils.BNMatrix.shape" title="Link to this definition">¶</a></dt>
+<dd><p>Ruturn the shape of B_N matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple: (n, n)
+The dense matrix shape</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis.steerable">
+<span id="aspire-basis-steerable-module"></span><h2>aspire.basis.steerable module<a class="headerlink" href="#module-aspire.basis.steerable" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.basis.steerable.</span></span><span class="sig-name descname"><span class="pre">SteerableBasis2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.basis.basis.Basis" title="aspire.basis.basis.Basis"><code class="xref py py-class docutils literal notranslate"><span class="pre">Basis</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p><cite>SteerableBasis2D</cite> is an extension of Basis that is expected to have
+<cite>rotation</cite> (steerable) and <cite>calculate_bispectrum</cite> methods.</p>
+<p>Initialize an object for the base of basis class</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The size of the vectors for which to define the basis.
+Currently only square images and cubic volumes are supported.</p></li>
+<li><p><strong>ell_max</strong> – The maximum order ell of the basis elements. If no input
+(= None), it will be set to np.inf and the basis includes all
+ell such that the resulting basis vectors are concentrated
+below the Nyquist frequency (default inf).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D.blk_diag_cov_shape">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">blk_diag_cov_shape</span></span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D.blk_diag_cov_shape" title="Link to this definition">¶</a></dt>
+<dd><p>Return the <cite>BlkDiagMatrix</cite> partition shapes.</p>
+<p>If the shape has already been cached,
+returns cached value.  Otherwise, will
+compute the shape and cache in this instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D.calculate_bispectrum">
+<span class="sig-name descname"><span class="pre">calculate_bispectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">complex_coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filter_nonzero_freqs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D.calculate_bispectrum" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate bispectrum for a set of coefs in this basis.</p>
+<dl class="simple">
+<dt>The Bispectum matrix is of shape:</dt><dd><p>(count, count, unique_radial_indices)</p>
+</dd>
+</dl>
+<p>where count is the number of complex coefficients.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coef</strong> – Coefficients representing a (single) image expanded in this basis.</p></li>
+<li><p><strong>flatten</strong> – Optionally extract symmetric values (tril) and then flatten.</p></li>
+<li><p><strong>filter_nonzero_freqs</strong> – Remove indices corresponding to zero frequency (defaults False).</p></li>
+<li><p><strong>freq_cutoff</strong> – Truncate (zero) high k frequecies above (int) value, defaults off (None).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bispectum matrix (complex valued).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D.complex_rotate">
+<span class="sig-name descname"><span class="pre">complex_rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">complex_coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radians</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D.complex_rotate" title="Link to this definition">¶</a></dt>
+<dd><p>Returns complex coefs rotated counter-clockwise by <cite>radians</cite>.</p>
+<p>This implementation uses the complex exponential.
+It is kept in the code for documentation and
+reference purposes.</p>
+<p>To invoke in code:</p>
+<dl>
+<dt>self.to_real(</dt><dd><dl class="simple">
+<dt>self.complex_rotate(</dt><dd><p>self.to_complex(coef), radians, refl)</p>
+</dd>
+</dl>
+<p>)</p>
+</dd>
+</dl>
+<p>)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>complex_coef</strong> – Basis coefs (in complex representation).</p></li>
+<li><p><strong>radians</strong> – Rotation in radians.</p></li>
+<li><p><strong>refl</strong> – Optional reflect image (about y=0) (bool)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>rotated (complex) coefs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D.filter_to_basis_mat">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">filter_to_basis_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'evaluate_t'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">truncate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D.filter_to_basis_mat" title="Link to this definition">¶</a></dt>
+<dd><p>Convert a filter into a basis operator representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>f</strong> – <cite>Filter</cite> object, usually a <cite>CTFFilter</cite>.</p></li>
+<li><p><strong>method</strong> – <cite>evaluate_t</cite> or <cite>expand</cite>.</p></li>
+<li><p><strong>truncate</strong> – Optionally, truncate dense matrix to BlkDiagMatrix.
+Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Representation of filter as <cite>basis</cite> operator.
+Return type will be based on the class’s <cite>matrix_type</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D.indices_mask">
+<span class="sig-name descname"><span class="pre">indices_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D.indices_mask" title="Link to this definition">¶</a></dt>
+<dd><p>Given <cite>radial=</cite> or <cite>angular=</cite> expressions, return (<cite>count</cite>,)
+shaped mask where values satisfying the expression are <cite>True</cite>.</p>
+<p class="rubric">Examples</p>
+<p>No args yield all indices.
+<cite>angular=0 creates a mask for selecting coefficients with zero angular indices.
+`angular=1, radial=2</cite> selects coefficients satisfying angular index of 1 _and_ radial index of 2.
+More advanced operations can combine indices attributes.</p>
+<blockquote>
+<div><p><cite>angular=self.angular_indices&gt;=0, radial=r</cite> selects coefficients with non negative angular indices and some radial index <cite>r</cite>.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Boolen mask of shape (<cite>count</cite>,).
+Intended to be broadcast with <cite>Coef</cite> containers.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D.matrix_type">
+<span class="sig-name descname"><span class="pre">matrix_type</span></span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D.matrix_type" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix" title="aspire.operators.blk_diag_matrix.BlkDiagMatrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlkDiagMatrix</span></code></a></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D.rotate">
+<span class="sig-name descname"><span class="pre">rotate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radians</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D.rotate" title="Link to this definition">¶</a></dt>
+<dd><p>Returns coefs rotated counter-clockwise by <cite>radians</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coef</strong> – Basis coefs.</p></li>
+<li><p><strong>radians</strong> – Rotation in radians.</p></li>
+<li><p><strong>refl</strong> – Optional reflect image (about y=0) (bool)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>rotated coefs.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D.shift">
+<span class="sig-name descname"><span class="pre">shift</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shifts</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D.shift" title="Link to this definition">¶</a></dt>
+<dd><p>Returns coefs shifted by <cite>shifts</cite>.</p>
+<p>This will transform to real cartesian space, shift,
+and transform back to Polar Fourier-Bessel space.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coef</strong> – Basis coefs.</p></li>
+<li><p><strong>shifts</strong> – Shifts in pixels (x,y). Shape (1,2) or (len(coef), 2).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>coefs of shifted images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D.to_complex">
+<span class="sig-name descname"><span class="pre">to_complex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D.to_complex" title="Link to this definition">¶</a></dt>
+<dd><p>Return complex valued representation of complex coefficients.
+This can be useful when comparing, prototyping, or
+implementing methods from literature.</p>
+<p>There is a corresponding method, <cite>to_real</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>coef</strong> – Real <cite>Coef</cite> from this basis.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>ComplexCoef</cite> representation from this basis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.basis.steerable.SteerableBasis2D.to_real">
+<span class="sig-name descname"><span class="pre">to_real</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">complex_coef</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.basis.steerable.SteerableBasis2D.to_real" title="Link to this definition">¶</a></dt>
+<dd><p>Return real valued representation of complex coefficients.
+This can be useful when comparing, prototyping, or
+implementing methods from literature.</p>
+<p>There is a corresponding method, <cite>to_complex</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>complex_coef</strong> – Complex <cite>Coef</cite> from this basis.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Real <cite>Ceof</cite> representation from this basis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.basis">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.basis" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.apple.html" class="btn btn-neutral float-left" title="aspire.apple package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.classification.html" class="btn btn-neutral float-right" title="aspire.classification package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

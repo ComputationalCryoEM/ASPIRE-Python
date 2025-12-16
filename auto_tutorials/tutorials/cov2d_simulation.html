@@ -1,0 +1,437 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2D Covariance Estimation &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="3D Image Orientation" href="orient3d_simulation.html" />
+    <link rel="prev" title="Component Examples" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#api-introduction">API Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#component-examples">Component Examples</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">Component Examples</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">2D Covariance Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orient3d_simulation.html">3D Image Orientation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_class.html">ASPIRE Image Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apple_picker.html">Apple Picker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="basic_image_array.html">Basic Image Array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ctf.html">CTF: Contrast Transfer Function</a></li>
+<li class="toctree-l4"><a class="reference internal" href="class_averaging.html">Class Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cov3d_simulation.html">Covariance 3D Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data_downloader.html">Data Downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generating_volume_projections.html">Generating 3D Volume Projections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_expansion.html">Image Expansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="preprocess_imgs_sim.html">Image Preprocessing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="micrograph_source.html">Micrograph Sources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="relion_projection_interop.html">Relion Projection Interoperability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="starfile.html">Starfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="weighted_volume_estimation.html">Weighted Volume Reconstruction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Component Examples</a></li>
+      <li class="breadcrumb-item active">2D Covariance Estimation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/auto_tutorials/tutorials/cov2d_simulation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-tutorials-cov2d-simulation-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="d-covariance-estimation">
+<span id="sphx-glr-auto-tutorials-tutorials-cov2d-simulation-py"></span><h1>2D Covariance Estimation<a class="headerlink" href="#d-covariance-estimation" title="Link to this heading">¶</a></h1>
+<p>This script illustrates 2D covariance Wiener filtering functionality in the
+ASPIRE package, implemented by estimating the covariance of the unfiltered
+images in a Fourier-Bessel basis and applying the Wiener filter induced by
+that covariance matrix.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.basis</span><span class="w"> </span><span class="kn">import</span> <span class="n">FFBBasis2D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.covariance</span><span class="w"> </span><span class="kn">import</span> <span class="n">RotCov2D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.noise</span><span class="w"> </span><span class="kn">import</span> <span class="n">WhiteNoiseAdder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.operators</span><span class="w"> </span><span class="kn">import</span> <span class="n">RadialCTFFilter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source.simulation</span><span class="w"> </span><span class="kn">import</span> <span class="n">Simulation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">anorm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.volume</span><span class="w"> </span><span class="kn">import</span> <span class="n">Volume</span>
+
+<span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()),</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;clean70SRibosome_vol_65p.mrc&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<section id="image-formatting">
+<h2>Image Formatting<a class="headerlink" href="#image-formatting" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set the sizes of images 64 x 64</span>
+<span class="n">img_size</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="c1"># Set the total number of images generated from the 3D map</span>
+<span class="n">num_imgs</span> <span class="o">=</span> <span class="mi">1024</span>
+<span class="c1"># Set dtype for this experiment</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Simulation running in </span><span class="si">{</span><span class="n">dtype</span><span class="si">}</span><span class="s2"> precision.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Simulation running in &lt;class &#39;numpy.float32&#39;&gt; precision.
+</pre></div>
+</div>
+</section>
+<section id="build-noise-filter">
+<h2>Build Noise Filter<a class="headerlink" href="#build-noise-filter" title="Link to this heading">¶</a></h2>
+<p>Set the noise variance and build the noise filter
+It might be better to select a signal noise ratio
+and initial noise inside the Simulation class.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">noise_var</span> <span class="o">=</span> <span class="mf">1.3957e-4</span>
+<span class="n">noise_adder</span> <span class="o">=</span> <span class="n">WhiteNoiseAdder</span><span class="p">(</span><span class="n">var</span><span class="o">=</span><span class="n">noise_var</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="specify-the-ctf-parameters">
+<h2>Specify the CTF Parameters<a class="headerlink" href="#specify-the-ctf-parameters" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">pixel_size</span> <span class="o">=</span> <span class="mi">5</span> <span class="o">*</span> <span class="mi">65</span> <span class="o">/</span> <span class="n">img_size</span>  <span class="c1"># Pixel size of the images (in angstroms)</span>
+<span class="n">voltage</span> <span class="o">=</span> <span class="mi">200</span>  <span class="c1"># Voltage (in KV)</span>
+<span class="n">defocus_min</span> <span class="o">=</span> <span class="mf">1.5e4</span>  <span class="c1"># Minimum defocus value (in angstroms)</span>
+<span class="n">defocus_max</span> <span class="o">=</span> <span class="mf">2.5e4</span>  <span class="c1"># Maximum defocus value (in angstroms)</span>
+<span class="n">defocus_ct</span> <span class="o">=</span> <span class="mi">7</span>  <span class="c1"># Number of defocus groups.</span>
+<span class="n">Cs</span> <span class="o">=</span> <span class="mf">2.0</span>  <span class="c1"># Spherical aberration</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c1"># Amplitude contrast</span>
+</pre></div>
+</div>
+</section>
+<section id="initialize-simulation-object-and-ctf-filters">
+<h2>Initialize Simulation Object and CTF Filters<a class="headerlink" href="#initialize-simulation-object-and-ctf-filters" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initialize simulation object and CTF filters.&quot;</span><span class="p">)</span>
+<span class="c1"># Create filters</span>
+<span class="n">ctf_filters</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">RadialCTFFilter</span><span class="p">(</span><span class="n">voltage</span><span class="p">,</span> <span class="n">defocus</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">Cs</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">defocus_min</span><span class="p">,</span> <span class="n">defocus_max</span><span class="p">,</span> <span class="n">defocus_ct</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="c1"># Load the map file of a 70S Ribosome</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Load 3D map and downsample 3D map to desired grids &quot;</span>
+    <span class="sa">f</span><span class="s2">&quot;of </span><span class="si">{</span><span class="n">img_size</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">img_size</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="n">img_size</span><span class="si">}</span><span class="s2">.&quot;</span>
+<span class="p">)</span>
+<span class="n">vols</span> <span class="o">=</span> <span class="n">Volume</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Scale and downsample</span>
+<span class="n">vols</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">vols</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">vols</span> <span class="o">=</span> <span class="n">vols</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">img_size</span><span class="p">)</span>
+
+<span class="c1"># Create a simulation object with specified filters and the downsampled 3D map</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Use downsampled map to create simulation object.&quot;</span><span class="p">)</span>
+<span class="n">sim</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span>
+    <span class="n">L</span><span class="o">=</span><span class="n">img_size</span><span class="p">,</span>
+    <span class="n">n</span><span class="o">=</span><span class="n">num_imgs</span><span class="p">,</span>
+    <span class="n">vols</span><span class="o">=</span><span class="n">vols</span><span class="p">,</span>
+    <span class="n">unique_filters</span><span class="o">=</span><span class="n">ctf_filters</span><span class="p">,</span>
+    <span class="n">offsets</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">amplitudes</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+    <span class="n">noise_adder</span><span class="o">=</span><span class="n">noise_adder</span><span class="p">,</span>
+    <span class="n">pixel_size</span><span class="o">=</span><span class="n">pixel_size</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Initialize simulation object and CTF filters.
+Load 3D map and downsample 3D map to desired grids of 64 x 64 x 64.
+Use downsampled map to create simulation object.
+</pre></div>
+</div>
+</section>
+<section id="build-clean-and-noisy-projection-images">
+<h2>Build Clean and Noisy Projection Images<a class="headerlink" href="#build-clean-and-noisy-projection-images" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specify the fast FB basis method for expanding the 2D images</span>
+<span class="n">ffbbasis</span> <span class="o">=</span> <span class="n">FFBBasis2D</span><span class="p">((</span><span class="n">img_size</span><span class="p">,</span> <span class="n">img_size</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Assign the CTF information and index for each image</span>
+<span class="n">h_idx</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">filter_indices</span>
+
+<span class="c1"># Evaluate CTF in the 8X8 FB basis</span>
+<span class="n">h_ctf_fb</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">ffbbasis</span><span class="o">.</span><span class="n">filter_to_basis_mat</span><span class="p">(</span><span class="n">filt</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="n">pixel_size</span><span class="p">)</span> <span class="k">for</span> <span class="n">filt</span> <span class="ow">in</span> <span class="n">ctf_filters</span>
+<span class="p">]</span>
+
+<span class="c1"># Get clean images from projections of 3D map.</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Apply CTF filters to clean images.&quot;</span><span class="p">)</span>
+<span class="n">imgs_clean</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">projections</span><span class="p">[:]</span>
+<span class="n">imgs_ctf_clean</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">clean_images</span><span class="p">[:]</span>
+<span class="n">power_clean</span> <span class="o">=</span> <span class="n">imgs_ctf_clean</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">imgs_ctf_clean</span><span class="o">.</span><span class="n">size</span>
+<span class="n">sn_ratio</span> <span class="o">=</span> <span class="n">power_clean</span> <span class="o">/</span> <span class="n">noise_var</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Signal to noise ratio is </span><span class="si">{</span><span class="n">sn_ratio</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+
+<span class="c1"># get noisy images after applying CTF and noise filters</span>
+<span class="n">imgs_noise</span> <span class="o">=</span> <span class="n">sim</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="n">num_imgs</span><span class="p">]</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Apply CTF filters to clean images.
+Signal to noise ratio is 1.8286569118499756.
+</pre></div>
+</div>
+</section>
+<section id="expand-images-in-the-fourier-bessel-basis">
+<h2>Expand Images in the Fourier-Bessel Basis<a class="headerlink" href="#expand-images-in-the-fourier-bessel-basis" title="Link to this heading">¶</a></h2>
+<p>Expand the images, both clean and noisy, in the Fourier-Bessel basis. This
+can be done exactly (that is, up to numerical precision) using the
+<code class="docutils literal notranslate"><span class="pre">basis.expand</span></code> function, but for our purposes, an approximation will do.
+Since the basis is close to orthonormal, we may approximate the exact
+expansion by applying the adjoint of the evaluation mapping using
+<code class="docutils literal notranslate"><span class="pre">basis.evaluate_t</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Get coefficients of clean and noisy images in FFB basis.&quot;</span><span class="p">)</span>
+<span class="n">coef_clean</span> <span class="o">=</span> <span class="n">ffbbasis</span><span class="o">.</span><span class="n">evaluate_t</span><span class="p">(</span><span class="n">imgs_clean</span><span class="p">)</span>
+<span class="n">coef_noise</span> <span class="o">=</span> <span class="n">ffbbasis</span><span class="o">.</span><span class="n">evaluate_t</span><span class="p">(</span><span class="n">imgs_noise</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Get coefficients of clean and noisy images in FFB basis.
+</pre></div>
+</div>
+</section>
+<section id="create-cov2d-object-and-calculate-mean-and-variance-for-clean-images">
+<h2>Create Cov2D Object and Calculate Mean and Variance for Clean Images<a class="headerlink" href="#create-cov2d-object-and-calculate-mean-and-variance-for-clean-images" title="Link to this heading">¶</a></h2>
+<p>Create the Cov2D object and calculate mean and covariance for clean images without CTF.
+Given the clean Fourier-Bessel coefficients, we can estimate the symmetric
+mean and covariance. Note that these are not the same as the sample mean and
+covariance, since these functions use the rotational and reflectional
+symmetries of the distribution to constrain to further constrain the
+estimate. Note that the covariance matrix estimate is not a full matrix,
+but is block diagonal. This form is a consequence of the symmetry
+constraints, so to reduce space, only the diagonal blocks are stored. The
+mean and covariance estimates will allow us to evaluate the mean and
+covariance estimates from the filtered, noisy data, later.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Get 2D covariance matrices of clean and noisy images using FB coefficients.&quot;</span><span class="p">)</span>
+<span class="n">cov2d</span> <span class="o">=</span> <span class="n">RotCov2D</span><span class="p">(</span><span class="n">ffbbasis</span><span class="p">)</span>
+<span class="n">mean_coef</span> <span class="o">=</span> <span class="n">cov2d</span><span class="o">.</span><span class="n">get_mean</span><span class="p">(</span><span class="n">coef_clean</span><span class="p">)</span>
+<span class="n">covar_coef</span> <span class="o">=</span> <span class="n">cov2d</span><span class="o">.</span><span class="n">get_covar</span><span class="p">(</span><span class="n">coef_clean</span><span class="p">,</span> <span class="n">mean_coef</span><span class="p">,</span> <span class="n">noise_var</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Get 2D covariance matrices of clean and noisy images using FB coefficients.
+</pre></div>
+</div>
+</section>
+<section id="estimate-mean-and-covariance-for-noisy-images-with-ctf-and-shrink-method">
+<h2>Estimate mean and covariance for noisy images with CTF and shrink method<a class="headerlink" href="#estimate-mean-and-covariance-for-noisy-images-with-ctf-and-shrink-method" title="Link to this heading">¶</a></h2>
+<p>We now estimate the mean and covariance from the Fourier-Bessel
+coefficients of the noisy, filtered images. These functions take into
+account the filters applied to each image to undo their effect on the
+estimates. For the covariance estimation, the additional information of
+the estimated mean and the variance of the noise are needed. Again, the
+covariance matrix estimate is provided in block diagonal form.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">covar_opt</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;shrinker&quot;</span><span class="p">:</span> <span class="s2">&quot;frobenius_norm&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;verbose&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;max_iter&quot;</span><span class="p">:</span> <span class="mi">250</span><span class="p">,</span>
+    <span class="s2">&quot;iter_callback&quot;</span><span class="p">:</span> <span class="p">[],</span>
+    <span class="s2">&quot;store_iterates&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s2">&quot;rel_tolerance&quot;</span><span class="p">:</span> <span class="mf">1e-12</span><span class="p">,</span>
+    <span class="s2">&quot;precision&quot;</span><span class="p">:</span> <span class="s2">&quot;float64&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;preconditioner&quot;</span><span class="p">:</span> <span class="s2">&quot;identity&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">mean_coef_est</span> <span class="o">=</span> <span class="n">cov2d</span><span class="o">.</span><span class="n">get_mean</span><span class="p">(</span><span class="n">coef_noise</span><span class="p">,</span> <span class="n">h_ctf_fb</span><span class="p">,</span> <span class="n">h_idx</span><span class="p">)</span>
+<span class="n">covar_coef_est</span> <span class="o">=</span> <span class="n">cov2d</span><span class="o">.</span><span class="n">get_covar</span><span class="p">(</span>
+    <span class="n">coef_noise</span><span class="p">,</span>
+    <span class="n">h_ctf_fb</span><span class="p">,</span>
+    <span class="n">h_idx</span><span class="p">,</span>
+    <span class="n">mean_coef_est</span><span class="p">,</span>
+    <span class="n">noise_var</span><span class="o">=</span><span class="n">noise_var</span><span class="p">,</span>
+    <span class="n">covar_est_opt</span><span class="o">=</span><span class="n">covar_opt</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="estimate-fourier-bessel-coefficients-with-wiener-filter">
+<h2>Estimate Fourier-Bessel Coefficients with Wiener Filter<a class="headerlink" href="#estimate-fourier-bessel-coefficients-with-wiener-filter" title="Link to this heading">¶</a></h2>
+<p>Estimate the Fourier-Bessel coefficients of the underlying images using a
+Wiener filter. This Wiener filter is calculated from the estimated mean,
+covariance, and the variance of the noise. The resulting estimator has
+the lowest expected mean square error out of all linear estimators.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Get the CWF coefficients of noising images.&quot;</span><span class="p">)</span>
+<span class="n">coef_est</span> <span class="o">=</span> <span class="n">cov2d</span><span class="o">.</span><span class="n">get_cwf_coefs</span><span class="p">(</span>
+    <span class="n">coef_noise</span><span class="p">,</span>
+    <span class="n">h_ctf_fb</span><span class="p">,</span>
+    <span class="n">h_idx</span><span class="p">,</span>
+    <span class="n">mean_coef</span><span class="o">=</span><span class="n">mean_coef_est</span><span class="p">,</span>
+    <span class="n">covar_coef</span><span class="o">=</span><span class="n">covar_coef_est</span><span class="p">,</span>
+    <span class="n">noise_var</span><span class="o">=</span><span class="n">noise_var</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Convert Fourier-Bessel coefficients back into 2D images</span>
+<span class="n">imgs_est</span> <span class="o">=</span> <span class="n">ffbbasis</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">coef_est</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Get the CWF coefficients of noising images.
+</pre></div>
+</div>
+</section>
+<section id="evaluate-the-results">
+<h2>Evaluate the Results<a class="headerlink" href="#evaluate-the-results" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Calculate the difference between the estimated covariance and the &quot;true&quot;</span>
+<span class="c1"># covariance estimated from the clean Fourier-Bessel coefficients.</span>
+<span class="n">covar_coef_diff</span> <span class="o">=</span> <span class="n">covar_coef</span> <span class="o">-</span> <span class="n">covar_coef_est</span>
+
+<span class="c1"># Calculate the deviation between the clean estimates and those obtained from</span>
+<span class="c1"># the noisy, filtered images.</span>
+<span class="n">diff_mean</span> <span class="o">=</span> <span class="n">anorm</span><span class="p">(</span><span class="n">mean_coef_est</span> <span class="o">-</span> <span class="n">mean_coef</span><span class="p">)</span> <span class="o">/</span> <span class="n">anorm</span><span class="p">(</span><span class="n">mean_coef</span><span class="p">)</span>
+<span class="n">diff_covar</span> <span class="o">=</span> <span class="n">covar_coef_diff</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span> <span class="o">/</span> <span class="n">covar_coef</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span>
+
+<span class="c1"># Calculate the normalized RMSE of the estimated images.</span>
+<span class="n">nrmse_ims</span> <span class="o">=</span> <span class="p">(</span><span class="n">imgs_est</span> <span class="o">-</span> <span class="n">imgs_clean</span><span class="p">)</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span> <span class="o">/</span> <span class="n">imgs_clean</span><span class="o">.</span><span class="n">norm</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deviation of the noisy mean estimate: </span><span class="si">{</span><span class="n">diff_mean</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Deviation of the noisy covariance estimate: </span><span class="si">{</span><span class="n">diff_covar</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Estimated images normalized RMSE: </span><span class="si">{</span><span class="n">nrmse_ims</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># plot the first images at different stages</span>
+<span class="n">idm</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="o">-</span><span class="n">imgs_noise</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()[</span><span class="n">idm</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Noise&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imgs_clean</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()[</span><span class="n">idm</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Clean&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imgs_est</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()[</span><span class="n">idm</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Estimated&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">imgs_est</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()[</span><span class="n">idm</span><span class="p">]</span> <span class="o">-</span> <span class="n">imgs_clean</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()[</span><span class="n">idm</span><span class="p">],</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Clean-Estimated&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+
+<span class="c1"># Basic Check</span>
+<span class="k">assert</span> <span class="n">nrmse_ims</span> <span class="o">&lt;</span> <span class="mf">0.25</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_cov2d_simulation_001.png" srcset="../../_images/sphx_glr_cov2d_simulation_001.png" alt="Noise, Clean, Estimated, Clean-Estimated" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Deviation of the noisy mean estimate: 0.009525877423584461
+Deviation of the noisy covariance estimate: 0.06137855723500252
+Estimated images normalized RMSE: 0.1800781935453415
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 8.061 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-tutorials-cov2d-simulation-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/420408478175cecef3ba3f6904a082d8/cov2d_simulation.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">cov2d_simulation.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/d537c452a25870353b1f11d8b44eb44d/cov2d_simulation.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">cov2d_simulation.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/defbc7f7def8cdcc2a4ccfc026a68e9e/cov2d_simulation.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">cov2d_simulation.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Component Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="orient3d_simulation.html" class="btn btn-neutral float-right" title="3D Image Orientation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

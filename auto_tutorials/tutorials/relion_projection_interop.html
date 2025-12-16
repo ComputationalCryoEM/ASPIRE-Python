@@ -1,0 +1,309 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relion Projection Interoperability &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Starfile" href="starfile.html" />
+    <link rel="prev" title="Micrograph Sources" href="micrograph_source.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#api-introduction">API Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#component-examples">Component Examples</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">Component Examples</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="cov2d_simulation.html">2D Covariance Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orient3d_simulation.html">3D Image Orientation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_class.html">ASPIRE Image Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apple_picker.html">Apple Picker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="basic_image_array.html">Basic Image Array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ctf.html">CTF: Contrast Transfer Function</a></li>
+<li class="toctree-l4"><a class="reference internal" href="class_averaging.html">Class Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cov3d_simulation.html">Covariance 3D Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data_downloader.html">Data Downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generating_volume_projections.html">Generating 3D Volume Projections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_expansion.html">Image Expansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="preprocess_imgs_sim.html">Image Preprocessing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="micrograph_source.html">Micrograph Sources</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Relion Projection Interoperability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="starfile.html">Starfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="weighted_volume_estimation.html">Weighted Volume Reconstruction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Component Examples</a></li>
+      <li class="breadcrumb-item active">Relion Projection Interoperability</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/auto_tutorials/tutorials/relion_projection_interop.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-tutorials-relion-projection-interop-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="relion-projection-interoperability">
+<span id="sphx-glr-auto-tutorials-tutorials-relion-projection-interop-py"></span><h1>Relion Projection Interoperability<a class="headerlink" href="#relion-projection-interoperability" title="Link to this heading">¶</a></h1>
+<p>In this tutorial we compare projections generated by Relion
+with projections generated by ASPIRE’s <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> class.
+Both sets of projections are generated using a downsampled
+volume map of a 70S Ribosome, absent of noise and CTF corruption.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">RelionSource</span><span class="p">,</span> <span class="n">Simulation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.volume</span><span class="w"> </span><span class="kn">import</span> <span class="n">Volume</span>
+</pre></div>
+</div>
+<section id="load-relion-projections">
+<h2>Load Relion Projections<a class="headerlink" href="#load-relion-projections" title="Link to this heading">¶</a></h2>
+<p>We load the Relion projections as a <code class="docutils literal notranslate"><span class="pre">RelionSource</span></code> and view the images.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">starfile</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()),</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;rln_proj_65.star&quot;</span><span class="p">)</span>
+<span class="n">rln_src</span> <span class="o">=</span> <span class="n">RelionSource</span><span class="p">(</span><span class="n">starfile</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">rln_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_relion_projection_interop_001.png" srcset="../../_images/sphx_glr_relion_projection_interop_001.png" alt="relion projection interop" class = "sphx-glr-single-img"/><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The projections above were generated in Relion using the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">relion_project</span> <span class="o">--</span><span class="n">i</span> <span class="n">clean70SRibosome_vol_65p</span><span class="o">.</span><span class="n">mrc</span> <span class="o">--</span><span class="n">nr_uniform</span> <span class="mi">3000</span> <span class="o">--</span><span class="n">angpix</span> <span class="mi">5</span>
+</pre></div>
+</div>
+<p>For this tutorial we take a subset of these projections consisting of the first 5 images.</p>
+</div>
+</section>
+<section id="generate-projections-using-simulation">
+<h2>Generate Projections using <code class="docutils literal notranslate"><span class="pre">Simulation</span></code><a class="headerlink" href="#generate-projections-using-simulation" title="Link to this heading">¶</a></h2>
+<p>Using the metadata associated with the <code class="docutils literal notranslate"><span class="pre">RelionSource</span></code> and the same volume
+we generate an analogous set of projections with ASPIRE’s <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> class.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Load the volume from file as a ``Volume`` object.</span>
+<span class="n">filepath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()),</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;clean70SRibosome_vol_65p.mrc&quot;</span>
+<span class="p">)</span>
+<span class="n">vol</span> <span class="o">=</span> <span class="n">Volume</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">rln_src</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
+<span class="c1"># Create a ``Simulation`` source using metadata from the RelionSource projections.</span>
+<span class="c1"># Note, for odd resolution Relion projections are shifted from ASPIRE projections</span>
+<span class="c1"># by 1 pixel in x and y.</span>
+<span class="n">sim_src</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span>
+    <span class="n">n</span><span class="o">=</span><span class="n">rln_src</span><span class="o">.</span><span class="n">n</span><span class="p">,</span>
+    <span class="n">vols</span><span class="o">=</span><span class="n">vol</span><span class="p">,</span>
+    <span class="n">offsets</span><span class="o">=-</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">rln_src</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">rln_src</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span>
+    <span class="n">amplitudes</span><span class="o">=</span><span class="n">rln_src</span><span class="o">.</span><span class="n">amplitudes</span><span class="p">,</span>
+    <span class="n">angles</span><span class="o">=</span><span class="n">rln_src</span><span class="o">.</span><span class="n">angles</span><span class="p">,</span>
+    <span class="n">dtype</span><span class="o">=</span><span class="n">rln_src</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">sim_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_relion_projection_interop_002.png" srcset="../../_images/sphx_glr_relion_projection_interop_002.png" alt="relion projection interop" class = "sphx-glr-single-img"/></section>
+<section id="comparing-the-projections">
+<h2>Comparing the Projections<a class="headerlink" href="#comparing-the-projections" title="Link to this heading">¶</a></h2>
+<p>We will take a few different approaches to comparing the two sets of projection images.</p>
+<section id="visual-comparison">
+<h3>Visual Comparison<a class="headerlink" href="#visual-comparison" title="Link to this heading">¶</a></h3>
+<p>We’ll first look at a side-by-side of the two sets of images to confirm visually that
+the projections are taken from the same viewing angles.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">rln_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">sim_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="sphx-glr-horizontal">
+<li><img src="../../_images/sphx_glr_relion_projection_interop_003.png" srcset="../../_images/sphx_glr_relion_projection_interop_003.png" alt="relion projection interop" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../_images/sphx_glr_relion_projection_interop_004.png" srcset="../../_images/sphx_glr_relion_projection_interop_004.png" alt="relion projection interop" class = "sphx-glr-multi-img"/></li>
+</ul>
+</section>
+<section id="fourier-ring-correlation">
+<h3>Fourier Ring Correlation<a class="headerlink" href="#fourier-ring-correlation" title="Link to this heading">¶</a></h3>
+<p>Additionally, we can compare the two sets of images using the FRC. Note that the images
+are tightly correlated up to a high resolution of 2 pixels.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">rln_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">frc</span><span class="p">(</span><span class="n">sim_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:],</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.143</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_relion_projection_interop_005.png" srcset="../../_images/sphx_glr_relion_projection_interop_005.png" alt="Fourier Ring Correlation" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(array([2.03125, 2.03125, 2.03125, 2.03125, 2.03125]), array([[0.99995106, 0.99975914, 0.9997224 , 0.9997412 , 0.9998079 ,
+        0.99968433, 0.99985576, 0.9998626 , 0.9996016 , 0.9998017 ,
+        0.99976003, 0.99937594, 0.99953115, 0.99958944, 0.99938124,
+        0.99957883, 0.999611  , 0.99948025, 0.9995136 , 0.99945575,
+        0.9994088 , 0.9995097 , 0.9994239 , 0.9993721 , 0.99928445,
+        0.9991798 , 0.9993925 , 0.9992381 , 0.9991501 , 0.998856  ,
+        0.9991438 , 0.68903995],
+       [0.99996096, 0.9996518 , 0.99941385, 0.9996295 , 0.99953634,
+        0.99973553, 0.99981254, 0.99972916, 0.99975425, 0.9997602 ,
+        0.9997864 , 0.9996997 , 0.9996596 , 0.99939144, 0.9995733 ,
+        0.9993533 , 0.99950606, 0.99955046, 0.9992311 , 0.99947745,
+        0.999399  , 0.9992753 , 0.9993047 , 0.9992677 , 0.99936014,
+        0.9992539 , 0.9991879 , 0.99928504, 0.9992361 , 0.99918747,
+        0.9990526 , 0.6563472 ],
+       [0.99980867, 0.9999284 , 0.9996264 , 0.999767  , 0.99972284,
+        0.99960023, 0.9996824 , 0.9997461 , 0.9998087 , 0.9996951 ,
+        0.9998497 , 0.99968654, 0.99962735, 0.99971575, 0.9995882 ,
+        0.9995541 , 0.99949145, 0.99931914, 0.9991363 , 0.99951273,
+        0.99946547, 0.9995991 , 0.999417  , 0.99944955, 0.99925214,
+        0.9989504 , 0.99913013, 0.99941015, 0.99942446, 0.9992472 ,
+        0.9988977 , 0.61978275],
+       [0.99984056, 0.9997645 , 0.9996911 , 0.9998639 , 0.9996304 ,
+        0.9997984 , 0.99977505, 0.99962395, 0.99978775, 0.999842  ,
+        0.99985904, 0.9996771 , 0.99947655, 0.99927443, 0.9995293 ,
+        0.999453  , 0.9995277 , 0.9995889 , 0.9993793 , 0.999444  ,
+        0.9995143 , 0.99963874, 0.9994448 , 0.99924564, 0.99928606,
+        0.9992858 , 0.9989985 , 0.9992831 , 0.99888486, 0.9988116 ,
+        0.99889356, 0.7134848 ],
+       [0.99992067, 0.99977815, 0.9996207 , 0.9996264 , 0.9994458 ,
+        0.9997416 , 0.9997853 , 0.99961793, 0.9997694 , 0.9998145 ,
+        0.99977046, 0.99975216, 0.9997678 , 0.9995889 , 0.99926215,
+        0.9995358 , 0.9994929 , 0.9995174 , 0.9996956 , 0.99941885,
+        0.9994483 , 0.9993258 , 0.9993586 , 0.99936575, 0.99932224,
+        0.99923396, 0.9994343 , 0.99917585, 0.9990704 , 0.99915725,
+        0.9991648 , 0.6540186 ]], dtype=float32))
+</pre></div>
+</div>
+</section>
+<section id="relative-error">
+<h3>Relative Error<a class="headerlink" href="#relative-error" title="Link to this heading">¶</a></h3>
+<p>As Relion and ASPIRE differ in methods of generating projections, the pixel intensity of
+the images may not correspond perfectly. So we begin by first normalizing the two sets of projections.
+We then check that the relative error with respect to the frobenius norm is less than 3%.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Work with numpy arrays.</span>
+<span class="n">rln_np</span> <span class="o">=</span> <span class="n">rln_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()</span>
+<span class="n">sim_np</span> <span class="o">=</span> <span class="n">sim_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:]</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()</span>
+
+<span class="c1"># Normalize images.</span>
+<span class="n">rln_np</span> <span class="o">=</span> <span class="p">(</span><span class="n">rln_np</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">rln_np</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">rln_np</span><span class="p">)</span>
+<span class="n">sim_np</span> <span class="o">=</span> <span class="p">(</span><span class="n">sim_np</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">sim_np</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">sim_np</span><span class="p">)</span>
+
+<span class="c1"># Assert that error is less than 3%.</span>
+<span class="n">error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">rln_np</span> <span class="o">-</span> <span class="n">sim_np</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span>
+    <span class="n">rln_np</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">error</span> <span class="o">&lt;</span> <span class="mf">0.03</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Relative per-image error: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Relative per-image error: [0.02434892 0.02776868 0.02810057 0.02241779 0.02729597]
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 1.047 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-tutorials-relion-projection-interop-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/bdf2b5f5927469f58e28ab288887fa87/relion_projection_interop.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">relion_projection_interop.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/36e1ecf722927f2794ab6537d7247d9f/relion_projection_interop.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">relion_projection_interop.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/66523fd0e02609c8e9c4cfe7e22e9277/relion_projection_interop.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">relion_projection_interop.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="micrograph_source.html" class="btn btn-neutral float-left" title="Micrograph Sources" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="starfile.html" class="btn btn-neutral float-right" title="Starfile" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

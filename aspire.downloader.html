@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.downloader package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.image package" href="aspire.image.html" />
+    <link rel="prev" title="aspire.denoising package" href="aspire.denoising.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.downloader package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.downloader.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-downloader-package">
+<h1>aspire.downloader package<a class="headerlink" href="#aspire-downloader-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.downloader.data_fetcher">
+<span id="aspire-downloader-data-fetcher-module"></span><h2>aspire.downloader.data_fetcher module<a class="headerlink" href="#module-aspire.downloader.data_fetcher" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.available_downloads">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">available_downloads</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.available_downloads" title="Link to this definition">¶</a></dt>
+<dd><p>List all available downloads.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of method names for downloadable files.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.download_all">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">download_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.download_all" title="Link to this definition">¶</a></dt>
+<dd><p>Download all ASPIRE example data and return a dictionary of filepaths.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary of method names and associated file paths.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_10835">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_10835</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_10835" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-10835 volume map and returns the file path.</p>
+<p>High resolution cryo-EM structure of urease from the pathogen Yersinia enterocolitica.
+This molecule exhibits tetrahedral symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_14621">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_14621</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_14621" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-14621 volume map and returns the file path.</p>
+<p>Map of SARSCoV2 spike protein.
+This molecule exhibits C3 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_2484">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_2484</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_2484" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-2484 volume map and returns the file path.</p>
+<p>Pre-fusion structure of trimeric HIV-1 envelope glycoprotein determined by cryo-electron microscopy.
+This molecule exhibits C3 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_2660">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_2660</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_2660" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-2660 volume map and returns a <cite>Volume</cite> instance.</p>
+<p>Cryo-EM structure of the Plasmodium falciparum 80S ribosome
+bound to the anti-protozoan drug emetine.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <cite>Volume</cite> instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_2824">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_2824</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_2824" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-2824 volume map and returns the file path.</p>
+<p>Beta-galactosidase reconstruction.
+This molecule exhibits C2 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_2984">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_2984</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_2984" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-2984 volume map and returns the file path.</p>
+<p>2.2 A resolution cryo-EM structure of beta-galactosidase in complex with a cell-permeant inhibitor.
+This molecule exhibits D2 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_3645">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_3645</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_3645" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-3645 volume map and returns the file path.</p>
+<p>CryoEM density of TcdA1 in prepore state (SPHIRE tutorial).
+This molecule exhibits C5 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_4905">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_4905</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_4905" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-4905 volume map and returns the file path.</p>
+<p>3D structure of horse spleen apoferritin determined using multifunctional
+graphene supports for electron cryomicroscopy. This molecule exhibits octahedral symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_5778">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_5778</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_5778" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-5778 volume map and returns the file path.</p>
+<p>Structure of the capsaicin receptor, TRPV1, determined by single particle electron cryo-microscopy.
+This molecule exhibits C4 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_6287">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_6287</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_6287" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-6287 volume map and returns the file path.</p>
+<p>2.8 Angstrom resolution reconstruction of the T20S proteasome.
+This molecule exhibits D7 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_6458">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_6458</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_6458" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-6458 volume map and returns the file path.</p>
+<p>Cryo-EM Structure of the Activated NAIP2/NLRC4 Inflammasome Reveals Nucleated Polymerization.
+This molecule exhibits C11 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_8012">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_8012</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_8012" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-8012 volume map and returns the file path.</p>
+<p>The overall structure of the yeast spliceosomal U4/U6.U5 tri-snRNP at 3.7 Angstrom.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.emdb_8511">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">emdb_8511</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.emdb_8511" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the EMDB-8511 volume map and returns the file path.</p>
+<p>Structure of the human HCN1 hyperpolarization-activated cyclic nucleotide-gated ion channel.
+This molecule exhibits C4 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A ‘Volume’ instance.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.fetch_data">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">fetch_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.fetch_data" title="Link to this definition">¶</a></dt>
+<dd><p>The <cite>fetch_data</cite> method returns the full path to the downloaded data file.</p>
+<p>If it is not in the local storage, it will be downloaded. If the hash of the
+file in local storage doesn’t match the one in the registry, will download a
+new copy of the file. This is considered a sign that the file was updated in
+the remote storage. If the hash of the downloaded file still doesn’t match the
+one in the registry, will warn user of possible file corruption.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dataset_name</strong> – The file name (as appears in the registry) to
+fetch from local storage.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The absolute path (including the file name) of the file in
+local storage.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.remove_downloads">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">remove_downloads</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.remove_downloads" title="Link to this definition">¶</a></dt>
+<dd><p>Remove the downloads directory.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.downloader.data_fetcher.simulated_channelspin">
+<span class="sig-prename descclassname"><span class="pre">aspire.downloader.data_fetcher.</span></span><span class="sig-name descname"><span class="pre">simulated_channelspin</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.downloader.data_fetcher.simulated_channelspin" title="Link to this definition">¶</a></dt>
+<dd><p>Downloads the Simulated ChannelSpin dataset and returns the file path.</p>
+<p>This dataset includes a stack of 54 volumes sized (54,54,54)
+and a corresponding stack of 10000 projection images (54,54).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing  Volume and Image instances,
+along with associated metadata fields in Numpy arrays.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.downloader.registry">
+<span id="aspire-downloader-registry-module"></span><h2>aspire.downloader.registry module<a class="headerlink" href="#module-aspire.downloader.registry" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.downloader">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.downloader" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.denoising.html" class="btn btn-neutral float-left" title="aspire.denoising package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.image.html" class="btn btn-neutral float-right" title="aspire.image package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

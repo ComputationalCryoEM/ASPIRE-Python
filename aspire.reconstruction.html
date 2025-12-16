@@ -1,0 +1,493 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.reconstruction package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.sinogram package" href="aspire.sinogram.html" />
+    <link rel="prev" title="aspire.optimization package" href="aspire.optimization.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.reconstruction package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.reconstruction.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-reconstruction-package">
+<h1>aspire.reconstruction package<a class="headerlink" href="#aspire-reconstruction-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.reconstruction.estimator">
+<span id="aspire-reconstruction-estimator-module"></span><h2>aspire.reconstruction.estimator module<a class="headerlink" href="#module-aspire.reconstruction.estimator" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.reconstruction.estimator.Estimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.reconstruction.estimator.</span></span><span class="sig-name descname"><span class="pre">Estimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">256</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preconditioner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'circulant'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'volume_checkpoint'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boost</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.estimator.Estimator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>An object representing a 2*L-by-2*L-by-2*L array containing the non-centered Fourier transform of the mean
+least-squares estimator kernel.
+Convolving a volume with this kernel is equal to projecting and backproject-ing that volume in each of the
+projection directions (with the appropriate amplitude multipliers and CTFs) and averaging over the whole
+dataset.
+Note that this is a non-centered Fourier transform, so the zero frequency is found at index 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – <cite>ImageSource</cite> to be used for estimation.</p></li>
+<li><p><strong>basis</strong> – 3D Basis to be used during estimation.</p></li>
+<li><p><strong>batch_size</strong> – Optional batch size of images drawn from
+<cite>src</cite> during back projection and kernel estimation steps.
+Reducing batch size should reduce memory footprint.</p></li>
+<li><p><strong>preconditioner</strong> – Optional kernel preconditioner (<cite>string</cite>).
+Currently supported options are “circulant” or None.</p></li>
+<li><p><strong>checkpoint_iterations</strong> – Optionally save <cite>cg</cite> estimated
+<cite>basis</cite> coefficients periodically each
+<cite>checkpoint_iterations</cite>.  Setting to <cite>None</cite> disables,
+otherwise checks for positive integer.  Note, when
+<cite>maxiter</cite> is not <cite>None</cite> and <cite>cg</cite> fails to converge a final
+checkpoint will still be written.</p></li>
+<li><p><strong>checkpoint_prefix</strong> – Optional path prefix for <cite>cg</cite>
+checkpoint files.  If the parent directory does not exist,
+creation is attempted.  <cite>_iter{N}</cite> will be appended to the
+prefix.</p></li>
+<li><p><strong>maxiter</strong> – Optional max number of <cite>cg</cite> iterations
+before returning.  This should be used in conjunction with
+<cite>checkpoint_iterations</cite> to prevent excessive disk usage.
+<cite>None</cite> disables.</p></li>
+<li><p><strong>boost</strong> – Option to use <cite>src</cite> symmetry to boost number of images used for mean estimation (Boolean).
+Default of <cite>True</cite> employs symmetry boosting.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.estimator.Estimator.apply_kernel">
+<span class="sig-name descname"><span class="pre">apply_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vol_coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.estimator.Estimator.apply_kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Applies the kernel represented by convolution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vol_coef</strong> – The volume to be convolved, stored in the basis coefficients.</p></li>
+<li><p><strong>kernel</strong> – a Kernel object. If None, the kernel for this Estimator is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The result of evaluating <cite>vol_coef</cite> in the given basis, convolving with the kernel given by
+kernel, and backprojecting into the basis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.estimator.Estimator.compute_kernel">
+<span class="sig-name descname"><span class="pre">compute_kernel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.estimator.Estimator.compute_kernel" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.estimator.Estimator.estimate">
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b_coef</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.estimator.Estimator.estimate" title="Link to this definition">¶</a></dt>
+<dd><p>Return an estimate as a Volume instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.reconstruction.kernel">
+<span id="aspire-reconstruction-kernel-module"></span><h2>aspire.reconstruction.kernel module<a class="headerlink" href="#module-aspire.reconstruction.kernel" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.reconstruction.kernel.</span></span><span class="sig-name descname"><span class="pre">FourierKernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.reconstruction.kernel.Kernel" title="aspire.reconstruction.kernel.Kernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kernel</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernel.circularize">
+<span class="sig-name descname"><span class="pre">circularize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.circularize" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernel.circularize_1d">
+<span class="sig-name descname"><span class="pre">circularize_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.circularize_1d" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernel.convolve_volume">
+<span class="sig-name descname"><span class="pre">convolve_volume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_place</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.convolve_volume" title="Link to this definition">¶</a></dt>
+<dd><p>Convolve volume with kernel</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – A Volume instance</p></li>
+<li><p><strong>in_plane</strong> – Operate on Volume <cite>x</cite> in place.  Optional bool, defaults False.
+This saves memory in exchange for mutating the input data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Volume instance convolved by the kernel with the same dimensions as before.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernel.convolve_volume_matrix">
+<span class="sig-name descname"><span class="pre">convolve_volume_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.convolve_volume_matrix" title="Link to this definition">¶</a></dt>
+<dd><p>Convolve volume matrix with kernel</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – An N-by-…-by-N (6 dimensions) volume matrix to be convolved.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The original volume matrix convolved by the kernel with the same dimensions as before.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernel.toeplitz">
+<span class="sig-name descname"><span class="pre">toeplitz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernel.toeplitz" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the 3D Toeplitz matrix corresponding to this Fourier Kernel</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>L</strong> – The size of the volumes to be convolved (default M/2, where the dimensions of this Fourier Kernel
+are MxMxM</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An six-dimensional Toeplitz matrix of size L describing the convolution of a volume with this kernel</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernelMatrix">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.reconstruction.kernel.</span></span><span class="sig-name descname"><span class="pre">FourierKernelMatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kermat</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernelMatrix" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.reconstruction.kernel.FourierKernel" title="aspire.reconstruction.kernel.FourierKernel"><code class="xref py py-class docutils literal notranslate"><span class="pre">FourierKernel</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernelMatrix.circularize">
+<span class="sig-name descname"><span class="pre">circularize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernelMatrix.circularize" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernelMatrix.convolve_volume">
+<span class="sig-name descname"><span class="pre">convolve_volume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_place</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernelMatrix.convolve_volume" title="Link to this definition">¶</a></dt>
+<dd><p>Convolve volume with kernel</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – A Volume instance</p></li>
+<li><p><strong>k</strong> – Kernel matrix index</p></li>
+<li><p><strong>j</strong> – Kernel matrix index</p></li>
+<li><p><strong>in_plane</strong> – Operate on Volume <cite>x</cite> in place.  Optional bool, defaults False.
+This saves memory in exchange for mutating the input data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Volume instance convolved by the kernel with the same dimensions as before.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernelMatrix.convolve_volume_matrix">
+<span class="sig-name descname"><span class="pre">convolve_volume_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernelMatrix.convolve_volume_matrix" title="Link to this definition">¶</a></dt>
+<dd><p>Convolve volume matrix with kernel</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – An N-by-…-by-N (6 dimensions) volume matrix to be convolved.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The original volume matrix convolved by the kernel with the same dimensions as before.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.FourierKernelMatrix.toeplitz">
+<span class="sig-name descname"><span class="pre">toeplitz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.kernel.FourierKernelMatrix.toeplitz" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the 3D Toeplitz matrix corresponding to this Fourier Kernel</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>L</strong> – The size of the volumes to be convolved (default M/2, where the dimensions of this Fourier Kernel
+are MxMxM</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An six-dimensional Toeplitz matrix of size L describing the convolution of a volume with this kernel</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.reconstruction.kernel.Kernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.reconstruction.kernel.</span></span><span class="sig-name descname"><span class="pre">Kernel</span></span><a class="headerlink" href="#aspire.reconstruction.kernel.Kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+</section>
+<section id="module-aspire.reconstruction.mean">
+<span id="aspire-reconstruction-mean-module"></span><h2>aspire.reconstruction.mean module<a class="headerlink" href="#module-aspire.reconstruction.mean" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.reconstruction.mean.MeanEstimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.reconstruction.mean.</span></span><span class="sig-name descname"><span class="pre">MeanEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.mean.MeanEstimator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.reconstruction.mean.WeightedVolumesEstimator" title="aspire.reconstruction.mean.WeightedVolumesEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">WeightedVolumesEstimator</span></code></a></p>
+<p>Special case of weighted mean volume estimate,
+for a single volume.</p>
+<p>Weighted mean volume estimation.</p>
+<p>This class holds the <cite>FourierKernelMatrix</cite>, stored as a r x r
+matrix of volumes.  The problem being solved here is the
+minimization given by eq. (14) in the paper, rewritten as the
+normal equations in eq. (20) and more compactly in eq. (23).</p>
+<p>Convolution with each of these kernels is equivalent to
+performing a projection/backprojection on a volume, with the
+appropriate amplitude modifiers and CTF, and also a weighting
+term; the r^2 volumes are each of pairwise products between
+the weighting vectors given by the columns of wts.</p>
+<p>Note that this is a non-centered Fourier transform, so the
+zero frequency is found at index 0.</p>
+<p>Formulas and conventions used for Volume estimation are
+described in:</p>
+<p>“Structural Variability from Noisy Tomographic Projections.”
+Andén, Joakim, and Amit Singer.
+SIAM journal on imaging sciences vol. 11,2 (2018): 1441-1492.
+doi:10.1137/17M1153509</p>
+<p>“Cryo-EM reconstruction of continuous heterogeneity by Laplacian spectral volumes”
+Amit Moscovich, Amit Halevi, Joakim Andén and Amit Singer
+Inverse Problems, Volume 36, Number 2, 2020 IOP Publishing Ltd
+Special Issue on Cryo-Electron Microscopy and Inverse Problems
+<a class="reference external" href="https://doi.org/10.1088/1361-6420/ab4f55">https://doi.org/10.1088/1361-6420/ab4f55</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>weights</strong> – Matrix of weights, n x r.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.mean.MeanEstimator.apply_kernel">
+<span class="sig-name descname"><span class="pre">apply_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.mean.MeanEstimator.apply_kernel" title="Link to this definition">¶</a></dt>
+<dd><p>See <cite>Estimator.apply_kernel</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.mean.MeanEstimator.compute_kernel">
+<span class="sig-name descname"><span class="pre">compute_kernel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.mean.MeanEstimator.compute_kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Compute and return <cite>FourierKernel</cite> instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.reconstruction.mean.WeightedVolumesEstimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.reconstruction.mean.</span></span><span class="sig-name descname"><span class="pre">WeightedVolumesEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.mean.WeightedVolumesEstimator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.reconstruction.estimator.Estimator" title="aspire.reconstruction.estimator.Estimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Estimator</span></code></a></p>
+<p>Weighted mean volume estimation.</p>
+<p>This class holds the <cite>FourierKernelMatrix</cite>, stored as a r x r
+matrix of volumes.  The problem being solved here is the
+minimization given by eq. (14) in the paper, rewritten as the
+normal equations in eq. (20) and more compactly in eq. (23).</p>
+<p>Convolution with each of these kernels is equivalent to
+performing a projection/backprojection on a volume, with the
+appropriate amplitude modifiers and CTF, and also a weighting
+term; the r^2 volumes are each of pairwise products between
+the weighting vectors given by the columns of wts.</p>
+<p>Note that this is a non-centered Fourier transform, so the
+zero frequency is found at index 0.</p>
+<p>Formulas and conventions used for Volume estimation are
+described in:</p>
+<p>“Structural Variability from Noisy Tomographic Projections.”
+Andén, Joakim, and Amit Singer.
+SIAM journal on imaging sciences vol. 11,2 (2018): 1441-1492.
+doi:10.1137/17M1153509</p>
+<p>“Cryo-EM reconstruction of continuous heterogeneity by Laplacian spectral volumes”
+Amit Moscovich, Amit Halevi, Joakim Andén and Amit Singer
+Inverse Problems, Volume 36, Number 2, 2020 IOP Publishing Ltd
+Special Issue on Cryo-Electron Microscopy and Inverse Problems
+<a class="reference external" href="https://doi.org/10.1088/1361-6420/ab4f55">https://doi.org/10.1088/1361-6420/ab4f55</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>weights</strong> – Matrix of weights, n x r.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.mean.WeightedVolumesEstimator.apply_kernel">
+<span class="sig-name descname"><span class="pre">apply_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vol_coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.mean.WeightedVolumesEstimator.apply_kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Applies the kernel represented by convolution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vol_coef</strong> – The volume to be convolved, stored in the basis coefficients.</p></li>
+<li><p><strong>kernel</strong> – a Kernel object. If None, the kernel for this Estimator is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The result of evaluating <cite>vol_coef</cite> in the given basis, convolving with the kernel given by
+kernel, and backprojecting into the basis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.mean.WeightedVolumesEstimator.compute_kernel">
+<span class="sig-name descname"><span class="pre">compute_kernel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.mean.WeightedVolumesEstimator.compute_kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Compute and return FourierKernelMatrix instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.mean.WeightedVolumesEstimator.conj_grad">
+<span class="sig-name descname"><span class="pre">conj_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b_coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.mean.WeightedVolumesEstimator.conj_grad" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.reconstruction.mean.WeightedVolumesEstimator.src_backward">
+<span class="sig-name descname"><span class="pre">src_backward</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.reconstruction.mean.WeightedVolumesEstimator.src_backward" title="Link to this definition">¶</a></dt>
+<dd><p>Apply adjoint mapping to source</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The adjoint mapping applied to the images, averaged over the whole dataset and expressed
+as coefficients of <cite>basis</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.reconstruction">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.reconstruction" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.optimization.html" class="btn btn-neutral float-left" title="aspire.optimization package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.sinogram.html" class="btn btn-neutral float-right" title="aspire.sinogram package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,265 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.numeric.complex_pca package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.operators package" href="aspire.operators.html" />
+    <link rel="prev" title="aspire.numeric package" href="aspire.numeric.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+          <li class="breadcrumb-item"><a href="aspire.numeric.html">aspire.numeric package</a></li>
+      <li class="breadcrumb-item active">aspire.numeric.complex_pca package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.numeric.complex_pca.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-numeric-complex-pca-package">
+<h1>aspire.numeric.complex_pca package<a class="headerlink" href="#aspire-numeric-complex-pca-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.numeric.complex_pca.complex_pca">
+<span id="aspire-numeric-complex-pca-complex-pca-module"></span><h2>aspire.numeric.complex_pca.complex_pca module<a class="headerlink" href="#module-aspire.numeric.complex_pca.complex_pca" title="Link to this heading">¶</a></h2>
+<p>ComplexPCA</p>
+<p>We’re just going to copy scikits PCA and extend to complex.
+They refuse to support complex, not because of this code,
+but because of how complicated other portions of their
+package would become when extended to complex.
+They don’t want to mix support by admitting complex in only
+a few places and not supporting it/crashing in other areas of code.</p>
+<p>Unfortunately we need a complex valued PCA, so we wrap theirs for now.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.numeric.complex_pca.complex_pca.ComplexPCA">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.numeric.complex_pca.complex_pca.</span></span><span class="sig-name descname"><span class="pre">ComplexPCA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">whiten</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">svd_solver</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterated_power</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_oversamples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power_iteration_normalizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.numeric.complex_pca.complex_pca.ComplexPCA" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">PCA</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.numeric.complex_pca.complex_pca.ComplexPCA.inverse_transform">
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.numeric.complex_pca.complex_pca.ComplexPCA.inverse_transform" title="Link to this definition">¶</a></dt>
+<dd><p>Transform data back to its original space.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.numeric.complex_pca.validation">
+<span id="aspire-numeric-complex-pca-validation-module"></span><h2>aspire.numeric.complex_pca.validation module<a class="headerlink" href="#module-aspire.numeric.complex_pca.validation" title="Link to this heading">¶</a></h2>
+<p>Utilities for input validation</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.numeric.complex_pca.validation.check_array">
+<span class="sig-prename descclassname"><span class="pre">aspire.numeric.complex_pca.validation.</span></span><span class="sig-name descname"><span class="pre">check_array</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accept_sparse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">accept_large_sparse</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'numeric'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_all_finite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensure_2d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_nd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensure_min_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ensure_min_features</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warn_on_dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">estimator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_complex</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.numeric.complex_pca.validation.check_array" title="Link to this definition">¶</a></dt>
+<dd><p>Input validation on an array, list, sparse matrix or similar.</p>
+<p>By default, the input is checked to be a non-empty 2D array containing
+only finite values. If the dtype of the array is object, attempt
+converting to float, raising on failure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>array</strong> (<em>object</em>) – Input object to check / convert.</p></li>
+<li><p><strong>accept_sparse</strong> (<em>string</em><em>, </em><em>boolean</em><em> or </em><em>list/tuple</em><em> of </em><em>strings</em><em> (</em><em>default=False</em><em>)</em>) – String[s] representing allowed sparse matrix formats, such as ‘csc’,
+‘csr’, etc. If the input is sparse but not in the allowed format,
+it will be converted to the first listed format. True allows the input
+to be any format. False means that a sparse matrix input will
+raise an error.</p></li>
+<li><p><strong>accept_large_sparse</strong> (<em>bool</em><em> (</em><em>default=True</em><em>)</em>) – <p>If a CSR, CSC, COO or BSR sparse matrix is supplied and accepted by
+accept_sparse, accept_large_sparse=False will cause it to be accepted
+only if its indices are stored with a 32-bit dtype.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.20.</span></p>
+</div>
+</p></li>
+<li><p><strong>dtype</strong> (<em>string</em><em>, </em><em>type</em><em>, </em><em>list</em><em> of </em><em>types</em><em> or </em><em>None</em><em> (</em><em>default=&quot;numeric&quot;</em><em>)</em>) – Data type of result. If None, the dtype of the input is preserved.
+If “numeric”, dtype is preserved unless array.dtype is object.
+If dtype is a list of types, conversion on the first type is only
+performed if the dtype of the input is not in the list.</p></li>
+<li><p><strong>order</strong> (<em>'F'</em><em>, </em><em>'C'</em><em> or </em><em>None</em><em> (</em><em>default=None</em><em>)</em>) – Whether an array will be forced to be fortran or c-style.
+When order is None (default), then if copy=False, nothing is ensured
+about the memory layout of the output array; otherwise (copy=True)
+the memory layout of the returned array is kept as close as possible
+to the original array.</p></li>
+<li><p><strong>copy</strong> (<em>boolean</em><em> (</em><em>default=False</em><em>)</em>) – Whether a forced copy will be triggered. If copy=False, a copy might
+be triggered by a conversion.</p></li>
+<li><p><strong>force_all_finite</strong> (<em>boolean</em><em> or </em><em>'allow-nan'</em><em>, </em><em>(</em><em>default=True</em><em>)</em>) – <p>Whether to raise an error on np.inf and np.nan in array. The
+possibilities are:</p>
+<ul>
+<li><p>True: Force all values of array to be finite.</p></li>
+<li><p>False: accept both np.inf and np.nan in array.</p></li>
+<li><p>’allow-nan’: accept only np.nan values in array. Values cannot
+be infinite.</p></li>
+</ul>
+<p>For object dtyped data, only np.nan is checked and not np.inf.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">Added in version 0.20: </span><code class="docutils literal notranslate"><span class="pre">force_all_finite</span></code> accepts the string <code class="docutils literal notranslate"><span class="pre">'allow-nan'</span></code>.</p>
+</div>
+</p></li>
+<li><p><strong>ensure_2d</strong> (<em>boolean</em><em> (</em><em>default=True</em><em>)</em>) – Whether to raise a value error if array is not 2D.</p></li>
+<li><p><strong>allow_nd</strong> (<em>boolean</em><em> (</em><em>default=False</em><em>)</em>) – Whether to allow array.ndim &gt; 2.</p></li>
+<li><p><strong>ensure_min_samples</strong> (<em>int</em><em> (</em><em>default=1</em><em>)</em>) – Make sure that the array has a minimum number of samples in its first
+axis (rows for a 2D array). Setting to 0 disables this check.</p></li>
+<li><p><strong>ensure_min_features</strong> (<em>int</em><em> (</em><em>default=1</em><em>)</em>) – Make sure that the 2D array has some minimum number of features
+(columns). The default value of 1 rejects empty datasets.
+This check is only enforced when the input data has effectively 2
+dimensions or is originally 1D and <code class="docutils literal notranslate"><span class="pre">ensure_2d</span></code> is True. Setting to 0
+disables this check.</p></li>
+<li><p><strong>warn_on_dtype</strong> (<em>boolean</em><em> or </em><em>None</em><em>, </em><em>optional</em><em> (</em><em>default=None</em><em>)</em>) – <p>Raise DataConversionWarning if the dtype of the input data structure
+does not match the requested dtype, causing a memory copy.</p>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 0.21: </span><code class="docutils literal notranslate"><span class="pre">warn_on_dtype</span></code> is deprecated in version 0.21 and will be
+removed in 0.23.</p>
+</div>
+</p></li>
+<li><p><strong>estimator</strong> (<em>str</em><em> or </em><em>estimator instance</em><em> (</em><em>default=None</em><em>)</em>) – If passed, include the name of the estimator in warning messages.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>array_converted</strong> – The converted and validated array.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.numeric.complex_pca">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.numeric.complex_pca" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.numeric.html" class="btn btn-neutral float-left" title="aspire.numeric package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.operators.html" class="btn btn-neutral float-right" title="aspire.operators package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

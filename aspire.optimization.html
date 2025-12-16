@@ -1,0 +1,257 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.optimization package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.reconstruction package" href="aspire.reconstruction.html" />
+    <link rel="prev" title="aspire.operators package" href="aspire.operators.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.optimization package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.optimization.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-optimization-package">
+<h1>aspire.optimization package<a class="headerlink" href="#aspire-optimization-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.optimization.conj_grad">
+<span id="aspire-optimization-conj-grad-module"></span><h2>aspire.optimization.conj_grad module<a class="headerlink" href="#module-aspire.optimization.conj_grad" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.optimization.conj_grad.conj_grad">
+<span class="sig-prename descclassname"><span class="pre">aspire.optimization.conj_grad.</span></span><span class="sig-name descname"><span class="pre">conj_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a_fun</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cg_opt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.optimization.conj_grad.conj_grad" title="Link to this definition">¶</a></dt>
+<dd><p>Conjugate Gradient method to solve the linear system.</p>
+<p>This is corresponding to the implemented version in the ASPIRE Matlab package.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a_fun</strong> – A function handle specifying the linear operation x -&gt; Ax.
+When multiple right-hand sides are supplied, this function takes as
+input an array of shape (n, p), where n is the number of right-hand
+sides and p is the dimension of the space.</p></li>
+<li><p><strong>b</strong> – The vector consisting of the right hand side of Ax = b. Again,
+n different right-hand sides are given by supplying an array of shape
+(n, p).</p></li>
+<li><p><strong>cg_opt</strong> – <p>The parameters for the conjugate gradient method, including:
+max_iter: Maximum number of iterations (default 50).
+verbose: The extent to which information on progress should be</p>
+<blockquote>
+<div><p>output to the terminal (default 1).</p>
+</div></blockquote>
+<dl class="simple">
+<dt>iter_callback: If non-empty, specifies a function to be called at</dt><dd><p>the end of every iteration. In this case, iter_callback must be a
+function handle taking as single argument the info structure at
+the current iteration. For information on the info structure,
+see below (default []).</p>
+</dd>
+<dt>preconditioner: If non-empty, specifies a preconditioner to be</dt><dd><p>used in every iteration as a function handle defining the linear
+operator x -&gt; Px (default []).</p>
+</dd>
+<dt>rel_tolerance: The relative error at which to stop the algorithm,</dt><dd><p>even if it has not yet reached the maximum number of iterations
+(default 1e-15).</p>
+</dd>
+<dt>store_iterates: Defines whether to store each intermediate results</dt><dd><p>in the info structure under the x, p and r fields. Since this
+may require a large amount of memory, this is not recommended
+(default false).</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>init</strong> – A structure specifying the starting point of the algorithm.
+This can contain values of x or p that will be used for initialization
+(default empty).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><p>The output result includes:
+x: The result of the conjugate gradient method after max_iter iterations</p>
+<blockquote>
+<div><p>or once the residual norm has decreased below rel_tolerance, relative.</p>
+</div></blockquote>
+<p>obj: The value of the objective function at the last iteration.
+info: A structure array containing intermediate information obtained
+during each iteration. These fields include:
+- iter: The iteration number.
+- x (for store_iterates true): The value of x.
+- r (for store_iterates true): The residual vector.
+- p (for store_iterates true): The p vector.
+- res: The square norm of the residual.
+- obj: The objective function.</p>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.optimization.conj_grad.fill_struct">
+<span class="sig-prename descclassname"><span class="pre">aspire.optimization.conj_grad.</span></span><span class="sig-name descname"><span class="pre">fill_struct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">att_vals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.optimization.conj_grad.fill_struct" title="Link to this definition">¶</a></dt>
+<dd><p>Fill object with attributes in a dictionary.</p>
+<p>If a struct is not given a new object will be created and filled.
+If the given struct has a field in att_vals, the original field will stay,
+unless specified otherwise in overwrite.
+att_vals is a dictionary with string keys, and for each key:
+if hasattr(s, key) and key in overwrite:</p>
+<blockquote>
+<div><p>pass</p>
+</div></blockquote>
+<dl class="simple">
+<dt>else:</dt><dd><p>setattr(s, key, att_vals[key])</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong></p></li>
+<li><p><strong>att_vals</strong></p></li>
+</ul>
+</dd>
+</dl>
+<p>:param overwrite
+:return:</p>
+</dd></dl>
+
+</section>
+<section id="module-aspire.optimization">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.optimization" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.operators.html" class="btn btn-neutral float-left" title="aspire.operators package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.reconstruction.html" class="btn btn-neutral float-right" title="aspire.reconstruction package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,21 @@
+aspire.noise package
+====================
+
+Submodules
+----------
+
+aspire.noise.noise module
+-------------------------
+
+.. automodule:: aspire.noise.noise
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.noise
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,0 +1,228 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulated Stack to RELION Reconstruction &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Legacy Preprocessing Pipeline" href="legacy_preprocessing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Experiments</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="example_halfset_pipeline_10028.html">Abinitio Halfset Pipeline - Experimental Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental_abinitio_pipeline_10028_jsb.html">Abinitio Pipeline - Experimental Data EMPIAR 10028</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental_abinitio_pipeline_10073_jsb.html">Abinitio Pipeline - Experimental Data EMPIAR 10073</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental_abinitio_pipeline_10081.html">Abinitio Pipeline - Experimental Data Empiar 10081</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulated_abinitio_pipeline.html">Abinitio Pipeline - Simulated Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="commonline_lud_simulated_data.html">Commonlines Method using LUD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="legacy_preprocessing.html">Legacy Preprocessing Pipeline</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Simulated Stack to RELION Reconstruction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#imports">Imports</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#volume-and-filters">Volume and Filters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#simulate-add-noise-save">Simulate, Add Noise, Save</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-relion-reconstruct">Running <code class="docutils literal notranslate"><span class="pre">relion_reconstruct</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Experiments</a></li>
+      <li class="breadcrumb-item active">Simulated Stack to RELION Reconstruction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/auto_experiments/save_simulation_relion_reconstruct.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-experiments-save-simulation-relion-reconstruct-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="simulated-stack-to-relion-reconstruction">
+<span id="sphx-glr-auto-experiments-save-simulation-relion-reconstruct-py"></span><h1>Simulated Stack to RELION Reconstruction<a class="headerlink" href="#simulated-stack-to-relion-reconstruction" title="Link to this heading">¶</a></h1>
+<p>This experiment shows how to:</p>
+<ol class="arabic simple">
+<li><p>build a synthetic dataset with ASPIRE,</p></li>
+<li><p>write the stack via <code class="docutils literal notranslate"><span class="pre">ImageSource.save</span></code> so RELION can consume it, and</p></li>
+<li><p>call <code class="code docutils literal notranslate"><span class="pre">relion_reconstruct</span></code> on the saved STAR file.</p></li>
+</ol>
+<section id="imports">
+<h2>Imports<a class="headerlink" href="#imports" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.downloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">emdb_2660</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.noise</span><span class="w"> </span><span class="kn">import</span> <span class="n">WhiteNoiseAdder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.operators</span><span class="w"> </span><span class="kn">import</span> <span class="n">RadialCTFFilter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">Simulation</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">¶</a></h2>
+<p>We set a few parameters to initialize the Simulation.
+You can safely alter <code class="docutils literal notranslate"><span class="pre">n_particles</span></code> (or change the defocus values, etc.) when
+trying this interactively; the defaults here are chosen for demonstrative purposes.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;relion_save_demo&quot;</span><span class="p">)</span>
+<span class="n">output_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">n_particles</span> <span class="o">=</span> <span class="mi">512</span>
+<span class="n">snr</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">defocus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+    <span class="mi">15000</span><span class="p">,</span> <span class="mi">25000</span><span class="p">,</span> <span class="mi">7</span>
+<span class="p">)</span>  <span class="c1"># defocus values for the radial CTF filters (angstroms)</span>
+<span class="n">star_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;sim_n</span><span class="si">{</span><span class="n">n_particles</span><span class="si">}</span><span class="s2">.star&quot;</span>
+<span class="n">star_path</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="n">star_file</span>
+</pre></div>
+</div>
+</section>
+<section id="volume-and-filters">
+<h2>Volume and Filters<a class="headerlink" href="#volume-and-filters" title="Link to this heading">¶</a></h2>
+<p>Start from the EMDB-2660 ribosome map and build a small set of radial CTF filters
+that RELION will recover as optics groups.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">vol</span> <span class="o">=</span> <span class="n">emdb_2660</span><span class="p">()</span>
+<span class="n">ctf_filters</span> <span class="o">=</span> <span class="p">[</span><span class="n">RadialCTFFilter</span><span class="p">(</span><span class="n">defocus</span><span class="o">=</span><span class="n">d</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">defocus</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="simulate-add-noise-save">
+<h2>Simulate, Add Noise, Save<a class="headerlink" href="#simulate-add-noise-save" title="Link to this heading">¶</a></h2>
+<p>Initialize the Simulation:
+mix the CTFs across the stack, add white noise at a target SNR,
+and write the particles and metadata to a RELION-compatible STAR/MRC stack.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">sim</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span>
+    <span class="n">n</span><span class="o">=</span><span class="n">n_particles</span><span class="p">,</span>
+    <span class="n">vols</span><span class="o">=</span><span class="n">vol</span><span class="p">,</span>
+    <span class="n">unique_filters</span><span class="o">=</span><span class="n">ctf_filters</span><span class="p">,</span>
+    <span class="n">noise_adder</span><span class="o">=</span><span class="n">WhiteNoiseAdder</span><span class="o">.</span><span class="n">from_snr</span><span class="p">(</span><span class="n">snr</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">star_path</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="running-relion-reconstruct">
+<h2>Running <code class="docutils literal notranslate"><span class="pre">relion_reconstruct</span></code><a class="headerlink" href="#running-relion-reconstruct" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">relion_reconstruct</span></code> is an external RELION command, so we just show the call.
+Run this, from the output directory, in a RELION-enabled shell after generating
+the STAR file above.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;relion_reconstruct --i </span><span class="si">{</span><span class="n">star_file</span><span class="si">}</span><span class="s2"> &quot;</span> <span class="sa">f</span><span class="s2">&quot;--o &#39;relion_recon.mrc&#39; --ctf&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-experiments-save-simulation-relion-reconstruct-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/ba50a44a26a0530c6d2b6805af00932c/save_simulation_relion_reconstruct.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">save_simulation_relion_reconstruct.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/528c9be6aff9236fbf72a97af5efeee5/save_simulation_relion_reconstruct.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">save_simulation_relion_reconstruct.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/56e85a2fd2be30462fea38ae11dbe166/save_simulation_relion_reconstruct.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">save_simulation_relion_reconstruct.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="legacy_preprocessing.html" class="btn btn-neutral float-left" title="Legacy Preprocessing Pipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

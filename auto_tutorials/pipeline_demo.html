@@ -1,0 +1,1962 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ab-initio Pipeline Demonstration &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Component Examples" href="tutorials/index.html" />
+    <link rel="prev" title="ASPIRE-Python Introduction" href="aspire_introduction.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#api-introduction">API Introduction</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="configuration.html">ASPIRE Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire_introduction.html">ASPIRE-Python Introduction</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Ab-initio Pipeline Demonstration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#download-an-example-volume">Download an Example Volume</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-a-simulation-source">Create a Simulation Source</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#several-views-of-the-projection-images">Several Views of the Projection Images</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#image-preprocessing">Image Preprocessing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#downsampling">Downsampling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ctf-correction">CTF Correction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#normalize-background">Normalize Background</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#noise-whitening">Noise Whitening</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#contrast-inversion">Contrast Inversion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#caching">Caching</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#class-averaging">Class Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#view-the-class-averages">View the Class Averages</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#orientation-estimation">Orientation Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mean-error-of-estimated-rotations">Mean Error of Estimated Rotations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#volume-reconstruction">Volume Reconstruction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#comparison-of-estimated-volume-with-source-volume">Comparison of Estimated Volume with Source Volume</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fourier-shell-correlation">Fourier Shell Correlation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#component-examples">Component Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Ab-initio Pipeline Demonstration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/auto_tutorials/pipeline_demo.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-pipeline-demo-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="ab-initio-pipeline-demonstration">
+<span id="sphx-glr-auto-tutorials-pipeline-demo-py"></span><h1>Ab-initio Pipeline Demonstration<a class="headerlink" href="#ab-initio-pipeline-demonstration" title="Link to this heading">¶</a></h1>
+<p>This tutorial demonstrates some key components of an ab-initio
+reconstruction pipeline using synthetic data generated with ASPIRE’s
+<code class="docutils literal notranslate"><span class="pre">Simulation</span></code> class of objects.</p>
+<section id="download-an-example-volume">
+<h2>Download an Example Volume<a class="headerlink" href="#download-an-example-volume" title="Link to this heading">¶</a></h2>
+<p>We begin by downloading a high resolution volume map of the 80S
+Ribosome, sourced from EMDB: <a class="reference external" href="https://www.ebi.ac.uk/emdb/EMD-2660">https://www.ebi.ac.uk/emdb/EMD-2660</a>.
+This is one of several volume maps that can be downloaded with
+ASPIRE’s data downloading utility by using the following import.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.downloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">emdb_2660</span>
+
+<span class="c1"># Load 80s Ribosome as a ``Volume`` object.</span>
+<span class="n">original_vol</span> <span class="o">=</span> <span class="n">emdb_2660</span><span class="p">()</span>
+
+<span class="c1"># During the preprocessing stages of the pipeline we will downsample</span>
+<span class="c1"># the images to an image size of 64 pixels. Here, we also downsample the</span>
+<span class="c1"># volume so we can compare to our reconstruction later.</span>
+<span class="n">res</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">vol_ds</span> <span class="o">=</span> <span class="n">original_vol</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">Volume</span></code> can be saved using the <code class="docutils literal notranslate"><span class="pre">Volume.save()</span></code> method as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">fn</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;downsampled_80s_ribosome_size</span><span class="si">{</span><span class="n">res</span><span class="si">}</span><span class="s2">.mrc&quot;</span>
+<span class="n">vol_ds</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="create-a-simulation-source">
+<h2>Create a Simulation Source<a class="headerlink" href="#create-a-simulation-source" title="Link to this heading">¶</a></h2>
+<p>ASPIRE’s <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> class can be used to generate a synthetic
+dataset of projection images.  A <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> object produces
+random projections of a supplied Volume and applies noise and CTF
+filters. The resulting stack of 2D images is stored in an <code class="docutils literal notranslate"><span class="pre">Image</span></code>
+object.</p>
+<section id="ctf-filters">
+<h3>CTF Filters<a class="headerlink" href="#ctf-filters" title="Link to this heading">¶</a></h3>
+<p>Let’s start by creating CTF filters. The <code class="docutils literal notranslate"><span class="pre">operators</span></code> package
+contains a collection of filter classes that can be supplied to a
+<code class="docutils literal notranslate"><span class="pre">Simulation</span></code>.  We use <code class="docutils literal notranslate"><span class="pre">RadialCTFFilter</span></code> to generate a set of CTF
+filters with various defocus values.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create CTF filters</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.operators</span><span class="w"> </span><span class="kn">import</span> <span class="n">RadialCTFFilter</span>
+
+<span class="c1"># Radial CTF Filter</span>
+<span class="n">defocus_min</span> <span class="o">=</span> <span class="mi">15000</span>  <span class="c1"># unit is angstroms</span>
+<span class="n">defocus_max</span> <span class="o">=</span> <span class="mi">25000</span>
+<span class="n">defocus_ct</span> <span class="o">=</span> <span class="mi">7</span>
+
+<span class="n">ctf_filters</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">RadialCTFFilter</span><span class="p">(</span><span class="n">defocus</span><span class="o">=</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">defocus_min</span><span class="p">,</span> <span class="n">defocus_max</span><span class="p">,</span> <span class="n">defocus_ct</span><span class="p">)</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="initialize-simulation-object">
+<h3>Initialize Simulation Object<a class="headerlink" href="#initialize-simulation-object" title="Link to this heading">¶</a></h3>
+<p>We feed our <code class="docutils literal notranslate"><span class="pre">Volume</span></code> and filters into <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> to generate
+the dataset of images.  When controlled white Gaussian noise is
+desired, <code class="docutils literal notranslate"><span class="pre">WhiteNoiseAdder(var=VAR)</span></code> can be used to generate a
+simulation data set around a specific noise variance.</p>
+<p>Alternatively, users can bring their own images using an
+<code class="docutils literal notranslate"><span class="pre">ArrayImageSource</span></code>, or define their own custom noise functions via
+<code class="docutils literal notranslate"><span class="pre">Simulation(...,</span> <span class="pre">noise_adder=CustomNoiseAdder(...))</span></code>.  Examples
+can be found in <code class="docutils literal notranslate"><span class="pre">tutorials/class_averaging.py</span></code> and
+<code class="docutils literal notranslate"><span class="pre">experiments/simulated_abinitio_pipeline.py</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.noise</span><span class="w"> </span><span class="kn">import</span> <span class="n">WhiteNoiseAdder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">Simulation</span>
+
+<span class="c1"># For this ``Simulation`` we set all 2D offset vectors to zero,</span>
+<span class="c1"># but by default offset vectors will be randomly distributed.</span>
+<span class="c1"># We cache the Simulation to prevent regenerating the projections</span>
+<span class="c1"># for each preprocessing stage.</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span>
+    <span class="n">n</span><span class="o">=</span><span class="mi">2500</span><span class="p">,</span>  <span class="c1"># number of projections</span>
+    <span class="n">vols</span><span class="o">=</span><span class="n">original_vol</span><span class="p">,</span>  <span class="c1"># volume source</span>
+    <span class="n">offsets</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Default: images are randomly shifted</span>
+    <span class="n">unique_filters</span><span class="o">=</span><span class="n">ctf_filters</span><span class="p">,</span>
+    <span class="n">noise_adder</span><span class="o">=</span><span class="n">WhiteNoiseAdder</span><span class="p">(</span><span class="n">var</span><span class="o">=</span><span class="mf">0.0002</span><span class="p">),</span>  <span class="c1"># desired noise variance</span>
+<span class="p">)</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/5 [00:00&lt;?, ?it/s]
+ 20%|██        | 1/5 [00:38&lt;02:35, 38.86s/it]
+ 40%|████      | 2/5 [01:17&lt;01:56, 38.95s/it]
+ 60%|██████    | 3/5 [01:57&lt;01:18, 39.17s/it]
+ 80%|████████  | 4/5 [02:36&lt;00:39, 39.08s/it]
+100%|██████████| 5/5 [03:11&lt;00:00, 37.53s/it]
+100%|██████████| 5/5 [03:11&lt;00:00, 38.20s/it]
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The noise variance value above was chosen based on other parameters for this
+quick tutorial, and can be changed to adjust the power of the additive noise.
+Alternatively, an SNR value can be prescribed as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Simulation</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">noise_adder</span><span class="o">=</span><span class="n">WhiteNoiseAdder</span><span class="o">.</span><span class="n">from_snr</span><span class="p">(</span><span class="n">SNR</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+<section id="several-views-of-the-projection-images">
+<h2>Several Views of the Projection Images<a class="headerlink" href="#several-views-of-the-projection-images" title="Link to this heading">¶</a></h2>
+<p>We can access several views of the projection images.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># with no corruption applied</span>
+<span class="n">src</span><span class="o">.</span><span class="n">projections</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_001.png" srcset="../_images/sphx_glr_pipeline_demo_001.png" alt="pipeline demo" class = "sphx-glr-single-img"/><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># with no noise corruption</span>
+<span class="n">src</span><span class="o">.</span><span class="n">clean_images</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_002.png" srcset="../_images/sphx_glr_pipeline_demo_002.png" alt="pipeline demo" class = "sphx-glr-single-img"/><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># with noise and CTF corruption</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_003.png" srcset="../_images/sphx_glr_pipeline_demo_003.png" alt="pipeline demo" class = "sphx-glr-single-img"/></section>
+<section id="image-preprocessing">
+<h2>Image Preprocessing<a class="headerlink" href="#image-preprocessing" title="Link to this heading">¶</a></h2>
+<p>We apply some image preprocessing techniques to prepare the
+the images for denoising via Class Averaging.</p>
+</section>
+<section id="downsampling">
+<h2>Downsampling<a class="headerlink" href="#downsampling" title="Link to this heading">¶</a></h2>
+<p>We downsample the images. Reducing the image size will improve the
+efficiency of subsequent pipeline stages. Metadata such as pixel size is
+scaled accordingly to correspond correctly with the image resolution.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_004.png" srcset="../_images/sphx_glr_pipeline_demo_004.png" alt="pipeline demo" class = "sphx-glr-single-img"/></section>
+<section id="ctf-correction">
+<h2>CTF Correction<a class="headerlink" href="#ctf-correction" title="Link to this heading">¶</a></h2>
+<p>We apply <code class="docutils literal notranslate"><span class="pre">phase_flip()</span></code> to correct for CTF effects.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">phase_flip</span><span class="p">()</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_005.png" srcset="../_images/sphx_glr_pipeline_demo_005.png" alt="pipeline demo" class = "sphx-glr-single-img"/></section>
+<section id="normalize-background">
+<h2>Normalize Background<a class="headerlink" href="#normalize-background" title="Link to this heading">¶</a></h2>
+<p>We apply <code class="docutils literal notranslate"><span class="pre">normalize_background()</span></code> to prepare the image class averaging.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">normalize_background</span><span class="p">()</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_006.png" srcset="../_images/sphx_glr_pipeline_demo_006.png" alt="pipeline demo" class = "sphx-glr-single-img"/></section>
+<section id="noise-whitening">
+<h2>Noise Whitening<a class="headerlink" href="#noise-whitening" title="Link to this heading">¶</a></h2>
+<p>We apply <code class="docutils literal notranslate"><span class="pre">whiten()</span></code> to estimate and whiten the noise.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">whiten</span><span class="p">()</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_007.png" srcset="../_images/sphx_glr_pipeline_demo_007.png" alt="pipeline demo" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/5 [00:00&lt;?, ?it/s]
+ 20%|██        | 1/5 [00:00&lt;00:03,  1.17it/s]
+ 40%|████      | 2/5 [00:01&lt;00:02,  1.21it/s]
+ 60%|██████    | 3/5 [00:02&lt;00:01,  1.19it/s]
+ 80%|████████  | 4/5 [00:03&lt;00:00,  1.20it/s]
+100%|██████████| 5/5 [00:04&lt;00:00,  1.25it/s]
+100%|██████████| 5/5 [00:04&lt;00:00,  1.22it/s]
+</pre></div>
+</div>
+</section>
+<section id="contrast-inversion">
+<h2>Contrast Inversion<a class="headerlink" href="#contrast-inversion" title="Link to this heading">¶</a></h2>
+<p>We apply <code class="docutils literal notranslate"><span class="pre">invert_contrast()</span></code> to ensure a positive valued signal.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">invert_contrast</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/5 [00:00&lt;?, ?it/s]
+ 20%|██        | 1/5 [00:00&lt;00:03,  1.04it/s]
+ 40%|████      | 2/5 [00:01&lt;00:02,  1.04it/s]
+ 60%|██████    | 3/5 [00:02&lt;00:01,  1.04it/s]
+ 80%|████████  | 4/5 [00:03&lt;00:00,  1.04it/s]
+100%|██████████| 5/5 [00:04&lt;00:00,  1.10it/s]
+100%|██████████| 5/5 [00:04&lt;00:00,  1.07it/s]
+</pre></div>
+</div>
+</section>
+<section id="caching">
+<h2>Caching<a class="headerlink" href="#caching" title="Link to this heading">¶</a></h2>
+<p>We apply <code class="docutils literal notranslate"><span class="pre">cache</span></code> to store the results of the <code class="docutils literal notranslate"><span class="pre">ImageSource</span></code>
+pipeline up to this point.  This is optional, but can provide
+benefit when used intently on machines with adequate memory.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/5 [00:00&lt;?, ?it/s]
+ 20%|██        | 1/5 [00:00&lt;00:03,  1.05it/s]
+ 40%|████      | 2/5 [00:01&lt;00:02,  1.06it/s]
+ 60%|██████    | 3/5 [00:02&lt;00:01,  1.07it/s]
+ 80%|████████  | 4/5 [00:03&lt;00:00,  1.06it/s]
+100%|██████████| 5/5 [00:04&lt;00:00,  1.11it/s]
+100%|██████████| 5/5 [00:04&lt;00:00,  1.09it/s]
+</pre></div>
+</div>
+</section>
+<section id="class-averaging">
+<h2>Class Averaging<a class="headerlink" href="#class-averaging" title="Link to this heading">¶</a></h2>
+<p>For this tutorial we use the <code class="docutils literal notranslate"><span class="pre">DebugClassAvgSource</span></code> to generate an <code class="docutils literal notranslate"><span class="pre">ImageSource</span></code>
+of class averages. Internally, <code class="docutils literal notranslate"><span class="pre">DebugClassAvgSource</span></code> uses the <code class="docutils literal notranslate"><span class="pre">RIRClass2D</span></code>
+object to classify the source images via the rotationally invariant representation
+(RIR) algorithm and the <code class="docutils literal notranslate"><span class="pre">TopClassSelector</span></code> object to select the first <code class="docutils literal notranslate"><span class="pre">n_classes</span></code>
+images in the original order from the source. In practice, class selection is commonly
+done by sorting class averages based on some configurable notion of quality
+(contrast, neighbor distance etc) which can be accomplished by providing a custom
+class selector to <code class="docutils literal notranslate"><span class="pre">ClassAverageSource</span></code>, which changes the ordering of the classes
+returned by <code class="docutils literal notranslate"><span class="pre">ClassAverageSource</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.denoising</span><span class="w"> </span><span class="kn">import</span> <span class="n">DebugClassAvgSource</span>
+
+<span class="n">avgs</span> <span class="o">=</span> <span class="n">DebugClassAvgSource</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="n">src</span><span class="p">)</span>
+
+<span class="c1"># We&#39;ll continue our pipeline using only the first ``n_classes`` from</span>
+<span class="c1"># ``avgs``.  The ``cache()`` call is used here to precompute results</span>
+<span class="c1"># for the ``:n_classes`` slice.  This avoids recomputing the same</span>
+<span class="c1"># images twice when peeking in the next cell then requesting them in</span>
+<span class="c1"># the following ``CLSyncVoting`` algorithm.  Outside of demonstration</span>
+<span class="c1"># purposes, where we are repeatedly peeking at various stage results,</span>
+<span class="c1"># such caching can be dropped allowing for more lazy evaluation.</span>
+<span class="n">n_classes</span> <span class="o">=</span> <span class="mi">250</span>
+<span class="n">avgs</span> <span class="o">=</span> <span class="n">avgs</span><span class="p">[:</span><span class="n">n_classes</span><span class="p">]</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/1 [00:00&lt;?, ?it/s]
+
+  0%|          | 0/5 [00:00&lt;?, ?it/s]
+100%|██████████| 5/5 [00:00&lt;00:00, 189.32it/s]
+
+
+  0%|          | 0/5 [00:00&lt;?, ?it/s]
+
+ 20%|██        | 1/5 [00:00&lt;00:00,  7.53it/s]
+
+ 40%|████      | 2/5 [00:00&lt;00:00,  7.67it/s]
+
+ 60%|██████    | 3/5 [00:00&lt;00:00,  7.80it/s]
+
+ 80%|████████  | 4/5 [00:00&lt;00:00,  7.77it/s]
+
+100%|██████████| 5/5 [00:00&lt;00:00,  8.12it/s]
+100%|██████████| 5/5 [00:00&lt;00:00,  7.94it/s]
+
+
+Rotationally aligning classes:   0%|          | 0/250 [00:00&lt;?, ?it/s]
+
+Rotationally aligning classes:   1%|          | 2/250 [00:00&lt;00:16, 15.15it/s]
+
+Rotationally aligning classes:   2%|▏         | 4/250 [00:00&lt;00:21, 11.58it/s]
+
+Rotationally aligning classes:   2%|▏         | 6/250 [00:00&lt;00:23, 10.34it/s]
+
+Rotationally aligning classes:   3%|▎         | 8/250 [00:00&lt;00:24,  9.86it/s]
+
+Rotationally aligning classes:   4%|▍         | 10/250 [00:00&lt;00:24,  9.69it/s]
+
+Rotationally aligning classes:   4%|▍         | 11/250 [00:01&lt;00:24,  9.73it/s]
+
+Rotationally aligning classes:   5%|▍         | 12/250 [00:01&lt;00:24,  9.76it/s]
+
+Rotationally aligning classes:   5%|▌         | 13/250 [00:01&lt;00:24,  9.80it/s]
+
+Rotationally aligning classes:   6%|▌         | 15/250 [00:01&lt;00:22, 10.30it/s]
+
+Rotationally aligning classes:   7%|▋         | 17/250 [00:01&lt;00:22, 10.40it/s]
+
+Rotationally aligning classes:   8%|▊         | 19/250 [00:01&lt;00:21, 10.63it/s]
+
+Rotationally aligning classes:   8%|▊         | 21/250 [00:02&lt;00:21, 10.86it/s]
+
+Rotationally aligning classes:   9%|▉         | 23/250 [00:02&lt;00:19, 11.48it/s]
+
+Rotationally aligning classes:  10%|█         | 25/250 [00:02&lt;00:20, 10.76it/s]
+
+Rotationally aligning classes:  11%|█         | 27/250 [00:02&lt;00:21, 10.57it/s]
+
+Rotationally aligning classes:  12%|█▏        | 29/250 [00:02&lt;00:21, 10.25it/s]
+
+Rotationally aligning classes:  12%|█▏        | 31/250 [00:02&lt;00:22,  9.91it/s]
+
+Rotationally aligning classes:  13%|█▎        | 33/250 [00:03&lt;00:22,  9.70it/s]
+
+Rotationally aligning classes:  14%|█▎        | 34/250 [00:03&lt;00:22,  9.63it/s]
+
+Rotationally aligning classes:  14%|█▍        | 35/250 [00:03&lt;00:22,  9.38it/s]
+
+Rotationally aligning classes:  15%|█▍        | 37/250 [00:03&lt;00:21,  9.88it/s]
+
+Rotationally aligning classes:  16%|█▌        | 39/250 [00:03&lt;00:20, 10.06it/s]
+
+Rotationally aligning classes:  16%|█▋        | 41/250 [00:03&lt;00:20, 10.28it/s]
+
+Rotationally aligning classes:  17%|█▋        | 43/250 [00:04&lt;00:18, 11.03it/s]
+
+Rotationally aligning classes:  18%|█▊        | 45/250 [00:04&lt;00:18, 10.82it/s]
+
+Rotationally aligning classes:  19%|█▉        | 47/250 [00:04&lt;00:18, 10.77it/s]
+
+Rotationally aligning classes:  20%|█▉        | 49/250 [00:04&lt;00:18, 11.13it/s]
+
+Rotationally aligning classes:  20%|██        | 51/250 [00:04&lt;00:18, 10.79it/s]
+
+Rotationally aligning classes:  21%|██        | 53/250 [00:05&lt;00:17, 11.14it/s]
+
+Rotationally aligning classes:  22%|██▏       | 55/250 [00:05&lt;00:17, 10.91it/s]
+
+Rotationally aligning classes:  23%|██▎       | 57/250 [00:05&lt;00:18, 10.64it/s]
+
+Rotationally aligning classes:  24%|██▎       | 59/250 [00:05&lt;00:17, 10.94it/s]
+
+Rotationally aligning classes:  24%|██▍       | 61/250 [00:05&lt;00:17, 10.52it/s]
+
+Rotationally aligning classes:  25%|██▌       | 63/250 [00:06&lt;00:17, 10.90it/s]
+
+Rotationally aligning classes:  26%|██▌       | 65/250 [00:06&lt;00:16, 11.25it/s]
+
+Rotationally aligning classes:  27%|██▋       | 67/250 [00:06&lt;00:15, 11.63it/s]
+
+Rotationally aligning classes:  28%|██▊       | 69/250 [00:06&lt;00:15, 11.49it/s]
+
+Rotationally aligning classes:  28%|██▊       | 71/250 [00:06&lt;00:15, 11.58it/s]
+
+Rotationally aligning classes:  29%|██▉       | 73/250 [00:06&lt;00:15, 11.12it/s]
+
+Rotationally aligning classes:  30%|███       | 75/250 [00:07&lt;00:15, 11.00it/s]
+
+Rotationally aligning classes:  31%|███       | 77/250 [00:07&lt;00:16, 10.69it/s]
+
+Rotationally aligning classes:  32%|███▏      | 79/250 [00:07&lt;00:15, 10.81it/s]
+
+Rotationally aligning classes:  32%|███▏      | 81/250 [00:07&lt;00:15, 11.14it/s]
+
+Rotationally aligning classes:  33%|███▎      | 83/250 [00:07&lt;00:14, 11.38it/s]
+
+Rotationally aligning classes:  34%|███▍      | 85/250 [00:07&lt;00:14, 11.20it/s]
+
+Rotationally aligning classes:  35%|███▍      | 87/250 [00:08&lt;00:14, 11.04it/s]
+
+Rotationally aligning classes:  36%|███▌      | 89/250 [00:08&lt;00:15, 10.67it/s]
+
+Rotationally aligning classes:  36%|███▋      | 91/250 [00:08&lt;00:15, 10.44it/s]
+
+Rotationally aligning classes:  37%|███▋      | 93/250 [00:08&lt;00:14, 10.62it/s]
+
+Rotationally aligning classes:  38%|███▊      | 95/250 [00:08&lt;00:14, 10.68it/s]
+
+Rotationally aligning classes:  39%|███▉      | 97/250 [00:09&lt;00:14, 10.74it/s]
+
+Rotationally aligning classes:  40%|███▉      | 99/250 [00:09&lt;00:14, 10.70it/s]
+
+Rotationally aligning classes:  40%|████      | 101/250 [00:09&lt;00:14, 10.63it/s]
+
+Rotationally aligning classes:  41%|████      | 103/250 [00:09&lt;00:13, 10.88it/s]
+
+Rotationally aligning classes:  42%|████▏     | 105/250 [00:09&lt;00:13, 10.55it/s]
+
+Rotationally aligning classes:  43%|████▎     | 107/250 [00:10&lt;00:13, 10.27it/s]
+
+Rotationally aligning classes:  44%|████▎     | 109/250 [00:10&lt;00:13, 10.22it/s]
+
+Rotationally aligning classes:  44%|████▍     | 111/250 [00:10&lt;00:13, 10.10it/s]
+
+Rotationally aligning classes:  45%|████▌     | 113/250 [00:10&lt;00:13, 10.00it/s]
+
+Rotationally aligning classes:  46%|████▌     | 115/250 [00:10&lt;00:13, 10.14it/s]
+
+Rotationally aligning classes:  47%|████▋     | 117/250 [00:11&lt;00:12, 10.45it/s]
+
+Rotationally aligning classes:  48%|████▊     | 119/250 [00:11&lt;00:12, 10.29it/s]
+
+Rotationally aligning classes:  48%|████▊     | 121/250 [00:11&lt;00:12, 10.28it/s]
+
+Rotationally aligning classes:  49%|████▉     | 123/250 [00:11&lt;00:11, 10.59it/s]
+
+Rotationally aligning classes:  50%|█████     | 125/250 [00:11&lt;00:11, 10.96it/s]
+
+Rotationally aligning classes:  51%|█████     | 127/250 [00:11&lt;00:11, 10.77it/s]
+
+Rotationally aligning classes:  52%|█████▏    | 129/250 [00:12&lt;00:11, 10.36it/s]
+
+Rotationally aligning classes:  52%|█████▏    | 131/250 [00:12&lt;00:11, 10.51it/s]
+
+Rotationally aligning classes:  53%|█████▎    | 133/250 [00:12&lt;00:10, 10.72it/s]
+
+Rotationally aligning classes:  54%|█████▍    | 135/250 [00:12&lt;00:11, 10.39it/s]
+
+Rotationally aligning classes:  55%|█████▍    | 137/250 [00:12&lt;00:10, 10.30it/s]
+
+Rotationally aligning classes:  56%|█████▌    | 139/250 [00:13&lt;00:10, 10.97it/s]
+
+Rotationally aligning classes:  56%|█████▋    | 141/250 [00:13&lt;00:10, 10.52it/s]
+
+Rotationally aligning classes:  57%|█████▋    | 143/250 [00:13&lt;00:09, 10.80it/s]
+
+Rotationally aligning classes:  58%|█████▊    | 145/250 [00:13&lt;00:09, 10.67it/s]
+
+Rotationally aligning classes:  59%|█████▉    | 147/250 [00:13&lt;00:09, 10.41it/s]
+
+Rotationally aligning classes:  60%|█████▉    | 149/250 [00:14&lt;00:09, 11.01it/s]
+
+Rotationally aligning classes:  60%|██████    | 151/250 [00:14&lt;00:09, 10.79it/s]
+
+Rotationally aligning classes:  61%|██████    | 153/250 [00:14&lt;00:08, 10.79it/s]
+
+Rotationally aligning classes:  62%|██████▏   | 155/250 [00:14&lt;00:08, 11.36it/s]
+
+Rotationally aligning classes:  63%|██████▎   | 157/250 [00:14&lt;00:08, 11.21it/s]
+
+Rotationally aligning classes:  64%|██████▎   | 159/250 [00:14&lt;00:08, 11.22it/s]
+
+Rotationally aligning classes:  64%|██████▍   | 161/250 [00:15&lt;00:07, 11.14it/s]
+
+Rotationally aligning classes:  65%|██████▌   | 163/250 [00:15&lt;00:08, 10.35it/s]
+
+Rotationally aligning classes:  66%|██████▌   | 165/250 [00:15&lt;00:07, 10.87it/s]
+
+Rotationally aligning classes:  67%|██████▋   | 167/250 [00:15&lt;00:07, 10.64it/s]
+
+Rotationally aligning classes:  68%|██████▊   | 169/250 [00:15&lt;00:07, 10.39it/s]
+
+Rotationally aligning classes:  68%|██████▊   | 171/250 [00:16&lt;00:07, 10.13it/s]
+
+Rotationally aligning classes:  69%|██████▉   | 173/250 [00:16&lt;00:07, 10.61it/s]
+
+Rotationally aligning classes:  70%|███████   | 175/250 [00:16&lt;00:07, 10.55it/s]
+
+Rotationally aligning classes:  71%|███████   | 177/250 [00:16&lt;00:06, 10.73it/s]
+
+Rotationally aligning classes:  72%|███████▏  | 179/250 [00:16&lt;00:06, 10.44it/s]
+
+Rotationally aligning classes:  72%|███████▏  | 181/250 [00:17&lt;00:06, 10.87it/s]
+
+Rotationally aligning classes:  73%|███████▎  | 183/250 [00:17&lt;00:06, 10.74it/s]
+
+Rotationally aligning classes:  74%|███████▍  | 185/250 [00:17&lt;00:05, 11.02it/s]
+
+Rotationally aligning classes:  75%|███████▍  | 187/250 [00:17&lt;00:06, 10.47it/s]
+
+Rotationally aligning classes:  76%|███████▌  | 189/250 [00:17&lt;00:05, 10.63it/s]
+
+Rotationally aligning classes:  76%|███████▋  | 191/250 [00:17&lt;00:05, 10.45it/s]
+
+Rotationally aligning classes:  77%|███████▋  | 193/250 [00:18&lt;00:05, 11.00it/s]
+
+Rotationally aligning classes:  78%|███████▊  | 195/250 [00:18&lt;00:05, 10.85it/s]
+
+Rotationally aligning classes:  79%|███████▉  | 197/250 [00:18&lt;00:04, 11.16it/s]
+
+Rotationally aligning classes:  80%|███████▉  | 199/250 [00:18&lt;00:04, 10.92it/s]
+
+Rotationally aligning classes:  80%|████████  | 201/250 [00:18&lt;00:04, 10.61it/s]
+
+Rotationally aligning classes:  81%|████████  | 203/250 [00:19&lt;00:04, 10.48it/s]
+
+Rotationally aligning classes:  82%|████████▏ | 205/250 [00:19&lt;00:04, 10.68it/s]
+
+Rotationally aligning classes:  83%|████████▎ | 207/250 [00:19&lt;00:03, 11.03it/s]
+
+Rotationally aligning classes:  84%|████████▎ | 209/250 [00:19&lt;00:03, 11.04it/s]
+
+Rotationally aligning classes:  84%|████████▍ | 211/250 [00:19&lt;00:03, 10.88it/s]
+
+Rotationally aligning classes:  85%|████████▌ | 213/250 [00:19&lt;00:03, 10.60it/s]
+
+Rotationally aligning classes:  86%|████████▌ | 215/250 [00:20&lt;00:03, 10.56it/s]
+
+Rotationally aligning classes:  87%|████████▋ | 217/250 [00:20&lt;00:03, 10.85it/s]
+
+Rotationally aligning classes:  88%|████████▊ | 219/250 [00:20&lt;00:02, 10.59it/s]
+
+Rotationally aligning classes:  88%|████████▊ | 221/250 [00:20&lt;00:02, 10.50it/s]
+
+Rotationally aligning classes:  89%|████████▉ | 223/250 [00:20&lt;00:02, 10.72it/s]
+
+Rotationally aligning classes:  90%|█████████ | 225/250 [00:21&lt;00:02, 10.30it/s]
+
+Rotationally aligning classes:  91%|█████████ | 227/250 [00:21&lt;00:02, 10.63it/s]
+
+Rotationally aligning classes:  92%|█████████▏| 229/250 [00:21&lt;00:01, 11.13it/s]
+
+Rotationally aligning classes:  92%|█████████▏| 231/250 [00:21&lt;00:01, 11.12it/s]
+
+Rotationally aligning classes:  93%|█████████▎| 233/250 [00:21&lt;00:01, 11.66it/s]
+
+Rotationally aligning classes:  94%|█████████▍| 235/250 [00:21&lt;00:01, 11.32it/s]
+
+Rotationally aligning classes:  95%|█████████▍| 237/250 [00:22&lt;00:01, 10.79it/s]
+
+Rotationally aligning classes:  96%|█████████▌| 239/250 [00:22&lt;00:01, 10.29it/s]
+
+Rotationally aligning classes:  96%|█████████▋| 241/250 [00:22&lt;00:00, 10.43it/s]
+
+Rotationally aligning classes:  97%|█████████▋| 243/250 [00:22&lt;00:00, 10.10it/s]
+
+Rotationally aligning classes:  98%|█████████▊| 245/250 [00:23&lt;00:00, 10.17it/s]
+
+Rotationally aligning classes:  99%|█████████▉| 247/250 [00:23&lt;00:00, 10.21it/s]
+
+Rotationally aligning classes: 100%|█████████▉| 249/250 [00:23&lt;00:00, 10.87it/s]
+
+
+
+Stacking and evaluating batch of class averages from FFBBasis2D to Cartesian:   0%|          | 0/1 [00:00&lt;?, ?it/s]
+
+
+Stacking batch:   0%|          | 0/250 [00:00&lt;?, ?it/s]
+
+
+Stacking batch:   1%|          | 2/250 [00:00&lt;00:13, 18.96it/s]
+
+
+Stacking batch:   4%|▍         | 11/250 [00:00&lt;00:04, 59.09it/s]
+
+
+Stacking batch:   8%|▊         | 21/250 [00:00&lt;00:03, 74.47it/s]
+
+
+Stacking batch:  12%|█▏        | 31/250 [00:00&lt;00:02, 81.36it/s]
+
+
+Stacking batch:  16%|█▋        | 41/250 [00:00&lt;00:02, 85.41it/s]
+
+
+Stacking batch:  20%|██        | 51/250 [00:00&lt;00:02, 88.34it/s]
+
+
+Stacking batch:  24%|██▍       | 61/250 [00:00&lt;00:02, 89.16it/s]
+
+
+Stacking batch:  28%|██▊       | 71/250 [00:00&lt;00:01, 90.89it/s]
+
+
+Stacking batch:  32%|███▏      | 81/250 [00:00&lt;00:01, 92.11it/s]
+
+
+Stacking batch:  36%|███▋      | 91/250 [00:01&lt;00:01, 92.51it/s]
+
+
+Stacking batch:  40%|████      | 101/250 [00:01&lt;00:01, 93.02it/s]
+
+
+Stacking batch:  44%|████▍     | 111/250 [00:01&lt;00:01, 93.44it/s]
+
+
+Stacking batch:  48%|████▊     | 121/250 [00:01&lt;00:01, 93.87it/s]
+
+
+Stacking batch:  52%|█████▏    | 131/250 [00:01&lt;00:01, 93.53it/s]
+
+
+Stacking batch:  56%|█████▋    | 141/250 [00:01&lt;00:01, 94.19it/s]
+
+
+Stacking batch:  60%|██████    | 151/250 [00:01&lt;00:01, 93.83it/s]
+
+
+Stacking batch:  64%|██████▍   | 161/250 [00:01&lt;00:00, 93.07it/s]
+
+
+Stacking batch:  68%|██████▊   | 171/250 [00:01&lt;00:00, 93.28it/s]
+
+
+Stacking batch:  72%|███████▏  | 181/250 [00:02&lt;00:00, 93.37it/s]
+
+
+Stacking batch:  76%|███████▋  | 191/250 [00:02&lt;00:00, 94.09it/s]
+
+
+Stacking batch:  80%|████████  | 201/250 [00:02&lt;00:00, 94.23it/s]
+
+
+Stacking batch:  84%|████████▍ | 211/250 [00:02&lt;00:00, 93.76it/s]
+
+
+Stacking batch:  88%|████████▊ | 221/250 [00:02&lt;00:00, 92.89it/s]
+
+
+Stacking batch:  92%|█████████▏| 231/250 [00:02&lt;00:00, 92.03it/s]
+
+
+Stacking batch:  96%|█████████▋| 241/250 [00:02&lt;00:00, 91.66it/s]
+
+
+
+
+Stacking and evaluating batch of class averages from FFBBasis2D to Cartesian: 100%|██████████| 1/1 [00:02&lt;00:00,  2.96s/it]
+
+
+100%|██████████| 1/1 [00:37&lt;00:00, 37.68s/it]
+100%|██████████| 1/1 [00:37&lt;00:00, 37.68s/it]
+</pre></div>
+</div>
+</section>
+<section id="view-the-class-averages">
+<h2>View the Class Averages<a class="headerlink" href="#view-the-class-averages" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Show class averages</span>
+<span class="n">avgs</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_008.png" srcset="../_images/sphx_glr_pipeline_demo_008.png" alt="pipeline demo" class = "sphx-glr-single-img"/><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Show original images corresponding to those classes. This 1:1</span>
+<span class="c1"># comparison is only expected to work because we used</span>
+<span class="c1"># ``TopClassSelector`` to classify our images.</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_009.png" srcset="../_images/sphx_glr_pipeline_demo_009.png" alt="pipeline demo" class = "sphx-glr-single-img"/></section>
+<section id="orientation-estimation">
+<h2>Orientation Estimation<a class="headerlink" href="#orientation-estimation" title="Link to this heading">¶</a></h2>
+<p>We create an <code class="docutils literal notranslate"><span class="pre">OrientedSource</span></code>, which consumes an <code class="docutils literal notranslate"><span class="pre">ImageSource</span></code> object, an
+orientation estimator, and returns a new source which lazily estimates orientations.
+In this case we supply <code class="docutils literal notranslate"><span class="pre">avgs</span></code> for our source and a <code class="docutils literal notranslate"><span class="pre">CLSyncVoting</span></code>
+class instance for our orientation estimator. The <code class="docutils literal notranslate"><span class="pre">CLSyncVoting</span></code> algorithm employs
+a common-lines method with synchronization and voting.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.abinitio</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLSyncVoting</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrientedSource</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Rotation</span>
+
+<span class="c1"># Stash true rotations for later comparison</span>
+<span class="n">true_rotations</span> <span class="o">=</span> <span class="n">Rotation</span><span class="p">(</span><span class="n">src</span><span class="o">.</span><span class="n">rotations</span><span class="p">[:</span><span class="n">n_classes</span><span class="p">])</span>
+
+<span class="c1"># Instantiate a ``CLSyncVoting`` object for estimating orientations.</span>
+<span class="n">orient_est</span> <span class="o">=</span> <span class="n">CLSyncVoting</span><span class="p">(</span><span class="n">avgs</span><span class="p">)</span>
+
+<span class="c1"># Instantiate an ``OrientedSource``.</span>
+<span class="n">oriented_src</span> <span class="o">=</span> <span class="n">OrientedSource</span><span class="p">(</span><span class="n">avgs</span><span class="p">,</span> <span class="n">orient_est</span><span class="p">)</span>
+
+<span class="c1"># Estimate Rotations.</span>
+<span class="n">est_rotations</span> <span class="o">=</span> <span class="n">oriented_src</span><span class="o">.</span><span class="n">rotations</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Searching over common line pairs:   0%|          | 0/31125 [00:00&lt;?, ?it/s]
+Searching over common line pairs:   0%|          | 30/31125 [00:00&lt;01:46, 292.06it/s]
+Searching over common line pairs:   0%|          | 60/31125 [00:00&lt;01:45, 294.62it/s]
+Searching over common line pairs:   0%|          | 91/31125 [00:00&lt;01:44, 297.00it/s]
+Searching over common line pairs:   0%|          | 122/31125 [00:00&lt;01:43, 298.63it/s]
+Searching over common line pairs:   0%|          | 152/31125 [00:00&lt;01:44, 297.64it/s]
+Searching over common line pairs:   1%|          | 183/31125 [00:00&lt;01:43, 298.40it/s]
+Searching over common line pairs:   1%|          | 213/31125 [00:00&lt;01:43, 297.59it/s]
+Searching over common line pairs:   1%|          | 244/31125 [00:00&lt;01:43, 298.79it/s]
+Searching over common line pairs:   1%|          | 274/31125 [00:00&lt;01:43, 297.83it/s]
+Searching over common line pairs:   1%|          | 304/31125 [00:01&lt;01:43, 297.54it/s]
+Searching over common line pairs:   1%|          | 334/31125 [00:01&lt;01:43, 296.41it/s]
+Searching over common line pairs:   1%|          | 364/31125 [00:01&lt;01:43, 296.35it/s]
+Searching over common line pairs:   1%|▏         | 394/31125 [00:01&lt;01:43, 296.37it/s]
+Searching over common line pairs:   1%|▏         | 424/31125 [00:01&lt;01:43, 296.97it/s]
+Searching over common line pairs:   1%|▏         | 454/31125 [00:01&lt;01:43, 297.47it/s]
+Searching over common line pairs:   2%|▏         | 484/31125 [00:01&lt;01:42, 298.01it/s]
+Searching over common line pairs:   2%|▏         | 514/31125 [00:01&lt;01:42, 298.04it/s]
+Searching over common line pairs:   2%|▏         | 545/31125 [00:01&lt;01:42, 299.19it/s]
+Searching over common line pairs:   2%|▏         | 576/31125 [00:01&lt;01:41, 300.75it/s]
+Searching over common line pairs:   2%|▏         | 607/31125 [00:02&lt;01:41, 300.44it/s]
+Searching over common line pairs:   2%|▏         | 638/31125 [00:02&lt;01:42, 298.22it/s]
+Searching over common line pairs:   2%|▏         | 669/31125 [00:02&lt;01:41, 298.87it/s]
+Searching over common line pairs:   2%|▏         | 700/31125 [00:02&lt;01:41, 299.89it/s]
+Searching over common line pairs:   2%|▏         | 730/31125 [00:02&lt;01:41, 299.82it/s]
+Searching over common line pairs:   2%|▏         | 760/31125 [00:02&lt;01:41, 299.85it/s]
+Searching over common line pairs:   3%|▎         | 791/31125 [00:02&lt;01:40, 300.46it/s]
+Searching over common line pairs:   3%|▎         | 822/31125 [00:02&lt;01:41, 299.71it/s]
+Searching over common line pairs:   3%|▎         | 852/31125 [00:02&lt;01:41, 299.46it/s]
+Searching over common line pairs:   3%|▎         | 882/31125 [00:02&lt;01:41, 299.22it/s]
+Searching over common line pairs:   3%|▎         | 912/31125 [00:03&lt;01:41, 297.23it/s]
+Searching over common line pairs:   3%|▎         | 942/31125 [00:03&lt;01:41, 296.00it/s]
+Searching over common line pairs:   3%|▎         | 972/31125 [00:03&lt;01:42, 294.93it/s]
+Searching over common line pairs:   3%|▎         | 1002/31125 [00:03&lt;01:41, 295.49it/s]
+Searching over common line pairs:   3%|▎         | 1032/31125 [00:03&lt;01:41, 296.45it/s]
+Searching over common line pairs:   3%|▎         | 1062/31125 [00:03&lt;01:41, 296.79it/s]
+Searching over common line pairs:   4%|▎         | 1092/31125 [00:03&lt;01:41, 296.84it/s]
+Searching over common line pairs:   4%|▎         | 1122/31125 [00:03&lt;01:40, 297.44it/s]
+Searching over common line pairs:   4%|▎         | 1153/31125 [00:03&lt;01:40, 298.82it/s]
+Searching over common line pairs:   4%|▍         | 1184/31125 [00:03&lt;01:39, 300.01it/s]
+Searching over common line pairs:   4%|▍         | 1214/31125 [00:04&lt;01:39, 299.37it/s]
+Searching over common line pairs:   4%|▍         | 1245/31125 [00:04&lt;01:39, 300.60it/s]
+Searching over common line pairs:   4%|▍         | 1276/31125 [00:04&lt;01:39, 301.12it/s]
+Searching over common line pairs:   4%|▍         | 1307/31125 [00:04&lt;01:39, 300.28it/s]
+Searching over common line pairs:   4%|▍         | 1338/31125 [00:04&lt;01:39, 298.48it/s]
+Searching over common line pairs:   4%|▍         | 1368/31125 [00:04&lt;01:39, 298.14it/s]
+Searching over common line pairs:   4%|▍         | 1398/31125 [00:04&lt;01:40, 297.13it/s]
+Searching over common line pairs:   5%|▍         | 1428/31125 [00:04&lt;01:39, 297.22it/s]
+Searching over common line pairs:   5%|▍         | 1458/31125 [00:04&lt;01:40, 296.67it/s]
+Searching over common line pairs:   5%|▍         | 1488/31125 [00:04&lt;01:39, 297.17it/s]
+Searching over common line pairs:   5%|▍         | 1518/31125 [00:05&lt;01:39, 296.43it/s]
+Searching over common line pairs:   5%|▍         | 1548/31125 [00:05&lt;01:39, 296.71it/s]
+Searching over common line pairs:   5%|▌         | 1579/31125 [00:05&lt;01:39, 297.80it/s]
+Searching over common line pairs:   5%|▌         | 1609/31125 [00:05&lt;01:39, 296.74it/s]
+Searching over common line pairs:   5%|▌         | 1639/31125 [00:05&lt;01:39, 296.18it/s]
+Searching over common line pairs:   5%|▌         | 1669/31125 [00:05&lt;01:39, 294.62it/s]
+Searching over common line pairs:   5%|▌         | 1699/31125 [00:05&lt;01:40, 294.18it/s]
+Searching over common line pairs:   6%|▌         | 1729/31125 [00:05&lt;01:39, 294.18it/s]
+Searching over common line pairs:   6%|▌         | 1759/31125 [00:05&lt;01:39, 293.99it/s]
+Searching over common line pairs:   6%|▌         | 1789/31125 [00:06&lt;01:39, 294.98it/s]
+Searching over common line pairs:   6%|▌         | 1819/31125 [00:06&lt;01:39, 295.62it/s]
+Searching over common line pairs:   6%|▌         | 1849/31125 [00:06&lt;01:39, 295.25it/s]
+Searching over common line pairs:   6%|▌         | 1879/31125 [00:06&lt;01:39, 294.44it/s]
+Searching over common line pairs:   6%|▌         | 1909/31125 [00:06&lt;01:39, 294.12it/s]
+Searching over common line pairs:   6%|▌         | 1939/31125 [00:06&lt;01:38, 295.09it/s]
+Searching over common line pairs:   6%|▋         | 1969/31125 [00:06&lt;01:39, 294.49it/s]
+Searching over common line pairs:   6%|▋         | 1999/31125 [00:06&lt;01:39, 293.38it/s]
+Searching over common line pairs:   7%|▋         | 2029/31125 [00:06&lt;01:39, 291.99it/s]
+Searching over common line pairs:   7%|▋         | 2059/31125 [00:06&lt;01:39, 291.28it/s]
+Searching over common line pairs:   7%|▋         | 2089/31125 [00:07&lt;01:39, 291.30it/s]
+Searching over common line pairs:   7%|▋         | 2119/31125 [00:07&lt;01:39, 290.99it/s]
+Searching over common line pairs:   7%|▋         | 2149/31125 [00:07&lt;01:39, 291.35it/s]
+Searching over common line pairs:   7%|▋         | 2179/31125 [00:07&lt;01:39, 291.07it/s]
+Searching over common line pairs:   7%|▋         | 2209/31125 [00:07&lt;01:39, 290.06it/s]
+Searching over common line pairs:   7%|▋         | 2239/31125 [00:07&lt;01:39, 289.90it/s]
+Searching over common line pairs:   7%|▋         | 2269/31125 [00:07&lt;01:39, 290.30it/s]
+Searching over common line pairs:   7%|▋         | 2299/31125 [00:07&lt;01:39, 290.66it/s]
+Searching over common line pairs:   7%|▋         | 2329/31125 [00:07&lt;01:39, 290.63it/s]
+Searching over common line pairs:   8%|▊         | 2359/31125 [00:07&lt;01:39, 290.35it/s]
+Searching over common line pairs:   8%|▊         | 2389/31125 [00:08&lt;01:38, 290.55it/s]
+Searching over common line pairs:   8%|▊         | 2419/31125 [00:08&lt;01:39, 289.16it/s]
+Searching over common line pairs:   8%|▊         | 2448/31125 [00:08&lt;01:39, 289.32it/s]
+Searching over common line pairs:   8%|▊         | 2478/31125 [00:08&lt;01:38, 289.68it/s]
+Searching over common line pairs:   8%|▊         | 2508/31125 [00:08&lt;01:38, 290.55it/s]
+Searching over common line pairs:   8%|▊         | 2538/31125 [00:08&lt;01:38, 289.33it/s]
+Searching over common line pairs:   8%|▊         | 2568/31125 [00:08&lt;01:38, 289.59it/s]
+Searching over common line pairs:   8%|▊         | 2598/31125 [00:08&lt;01:38, 289.89it/s]
+Searching over common line pairs:   8%|▊         | 2627/31125 [00:08&lt;01:38, 289.69it/s]
+Searching over common line pairs:   9%|▊         | 2656/31125 [00:08&lt;01:38, 289.59it/s]
+Searching over common line pairs:   9%|▊         | 2685/31125 [00:09&lt;01:38, 289.32it/s]
+Searching over common line pairs:   9%|▊         | 2715/31125 [00:09&lt;01:38, 289.88it/s]
+Searching over common line pairs:   9%|▉         | 2745/31125 [00:09&lt;01:37, 290.21it/s]
+Searching over common line pairs:   9%|▉         | 2775/31125 [00:09&lt;01:37, 290.41it/s]
+Searching over common line pairs:   9%|▉         | 2805/31125 [00:09&lt;01:37, 290.15it/s]
+Searching over common line pairs:   9%|▉         | 2835/31125 [00:09&lt;01:37, 289.32it/s]
+Searching over common line pairs:   9%|▉         | 2864/31125 [00:09&lt;01:37, 289.43it/s]
+Searching over common line pairs:   9%|▉         | 2893/31125 [00:09&lt;01:37, 288.83it/s]
+Searching over common line pairs:   9%|▉         | 2922/31125 [00:09&lt;01:37, 288.93it/s]
+Searching over common line pairs:   9%|▉         | 2951/31125 [00:10&lt;01:37, 288.02it/s]
+Searching over common line pairs:  10%|▉         | 2981/31125 [00:10&lt;01:37, 288.76it/s]
+Searching over common line pairs:  10%|▉         | 3011/31125 [00:10&lt;01:37, 289.36it/s]
+Searching over common line pairs:  10%|▉         | 3041/31125 [00:10&lt;01:36, 289.77it/s]
+Searching over common line pairs:  10%|▉         | 3070/31125 [00:10&lt;01:37, 288.94it/s]
+Searching over common line pairs:  10%|▉         | 3099/31125 [00:10&lt;01:37, 288.55it/s]
+Searching over common line pairs:  10%|█         | 3129/31125 [00:10&lt;01:36, 289.20it/s]
+Searching over common line pairs:  10%|█         | 3158/31125 [00:10&lt;01:36, 288.60it/s]
+Searching over common line pairs:  10%|█         | 3187/31125 [00:10&lt;01:36, 288.04it/s]
+Searching over common line pairs:  10%|█         | 3216/31125 [00:10&lt;01:36, 288.62it/s]
+Searching over common line pairs:  10%|█         | 3245/31125 [00:11&lt;01:36, 288.83it/s]
+Searching over common line pairs:  11%|█         | 3274/31125 [00:11&lt;01:36, 288.35it/s]
+Searching over common line pairs:  11%|█         | 3303/31125 [00:11&lt;01:36, 288.56it/s]
+Searching over common line pairs:  11%|█         | 3332/31125 [00:11&lt;01:36, 288.51it/s]
+Searching over common line pairs:  11%|█         | 3361/31125 [00:11&lt;01:36, 288.79it/s]
+Searching over common line pairs:  11%|█         | 3390/31125 [00:11&lt;01:35, 288.99it/s]
+Searching over common line pairs:  11%|█         | 3419/31125 [00:11&lt;01:36, 287.94it/s]
+Searching over common line pairs:  11%|█         | 3448/31125 [00:11&lt;01:36, 288.01it/s]
+Searching over common line pairs:  11%|█         | 3477/31125 [00:11&lt;01:36, 287.82it/s]
+Searching over common line pairs:  11%|█▏        | 3506/31125 [00:11&lt;01:36, 287.46it/s]
+Searching over common line pairs:  11%|█▏        | 3535/31125 [00:12&lt;01:35, 287.96it/s]
+Searching over common line pairs:  11%|█▏        | 3564/31125 [00:12&lt;01:35, 288.36it/s]
+Searching over common line pairs:  12%|█▏        | 3593/31125 [00:12&lt;01:35, 288.54it/s]
+Searching over common line pairs:  12%|█▏        | 3622/31125 [00:12&lt;01:35, 288.32it/s]
+Searching over common line pairs:  12%|█▏        | 3652/31125 [00:12&lt;01:35, 289.02it/s]
+Searching over common line pairs:  12%|█▏        | 3681/31125 [00:12&lt;01:35, 288.77it/s]
+Searching over common line pairs:  12%|█▏        | 3710/31125 [00:12&lt;01:34, 289.05it/s]
+Searching over common line pairs:  12%|█▏        | 3739/31125 [00:12&lt;01:34, 289.24it/s]
+Searching over common line pairs:  12%|█▏        | 3769/31125 [00:12&lt;01:34, 289.51it/s]
+Searching over common line pairs:  12%|█▏        | 3799/31125 [00:12&lt;01:34, 289.80it/s]
+Searching over common line pairs:  12%|█▏        | 3829/31125 [00:13&lt;01:34, 290.29it/s]
+Searching over common line pairs:  12%|█▏        | 3859/31125 [00:13&lt;01:33, 290.68it/s]
+Searching over common line pairs:  12%|█▏        | 3889/31125 [00:13&lt;01:33, 291.14it/s]
+Searching over common line pairs:  13%|█▎        | 3919/31125 [00:13&lt;01:33, 291.33it/s]
+Searching over common line pairs:  13%|█▎        | 3949/31125 [00:13&lt;01:33, 290.28it/s]
+Searching over common line pairs:  13%|█▎        | 3979/31125 [00:13&lt;01:33, 289.31it/s]
+Searching over common line pairs:  13%|█▎        | 4008/31125 [00:13&lt;01:33, 288.90it/s]
+Searching over common line pairs:  13%|█▎        | 4037/31125 [00:13&lt;01:33, 288.87it/s]
+Searching over common line pairs:  13%|█▎        | 4066/31125 [00:13&lt;01:33, 288.37it/s]
+Searching over common line pairs:  13%|█▎        | 4095/31125 [00:13&lt;01:33, 288.34it/s]
+Searching over common line pairs:  13%|█▎        | 4124/31125 [00:14&lt;01:33, 288.50it/s]
+Searching over common line pairs:  13%|█▎        | 4153/31125 [00:14&lt;01:33, 288.16it/s]
+Searching over common line pairs:  13%|█▎        | 4183/31125 [00:14&lt;01:33, 288.94it/s]
+Searching over common line pairs:  14%|█▎        | 4213/31125 [00:14&lt;01:33, 289.30it/s]
+Searching over common line pairs:  14%|█▎        | 4242/31125 [00:14&lt;01:32, 289.50it/s]
+Searching over common line pairs:  14%|█▎        | 4272/31125 [00:14&lt;01:32, 289.66it/s]
+Searching over common line pairs:  14%|█▍        | 4301/31125 [00:14&lt;01:32, 289.76it/s]
+Searching over common line pairs:  14%|█▍        | 4330/31125 [00:14&lt;01:32, 289.65it/s]
+Searching over common line pairs:  14%|█▍        | 4360/31125 [00:14&lt;01:32, 289.79it/s]
+Searching over common line pairs:  14%|█▍        | 4390/31125 [00:14&lt;01:32, 289.88it/s]
+Searching over common line pairs:  14%|█▍        | 4419/31125 [00:15&lt;01:32, 289.65it/s]
+Searching over common line pairs:  14%|█▍        | 4449/31125 [00:15&lt;01:32, 289.84it/s]
+Searching over common line pairs:  14%|█▍        | 4479/31125 [00:15&lt;01:31, 290.21it/s]
+Searching over common line pairs:  14%|█▍        | 4509/31125 [00:15&lt;01:31, 290.72it/s]
+Searching over common line pairs:  15%|█▍        | 4539/31125 [00:15&lt;01:31, 290.84it/s]
+Searching over common line pairs:  15%|█▍        | 4569/31125 [00:15&lt;01:31, 290.54it/s]
+Searching over common line pairs:  15%|█▍        | 4599/31125 [00:15&lt;01:31, 290.23it/s]
+Searching over common line pairs:  15%|█▍        | 4629/31125 [00:15&lt;01:31, 289.86it/s]
+Searching over common line pairs:  15%|█▍        | 4658/31125 [00:15&lt;01:31, 289.43it/s]
+Searching over common line pairs:  15%|█▌        | 4687/31125 [00:16&lt;01:31, 289.54it/s]
+Searching over common line pairs:  15%|█▌        | 4716/31125 [00:16&lt;01:31, 289.18it/s]
+Searching over common line pairs:  15%|█▌        | 4745/31125 [00:16&lt;01:31, 289.16it/s]
+Searching over common line pairs:  15%|█▌        | 4774/31125 [00:16&lt;01:31, 289.02it/s]
+Searching over common line pairs:  15%|█▌        | 4803/31125 [00:16&lt;01:31, 288.54it/s]
+Searching over common line pairs:  16%|█▌        | 4832/31125 [00:16&lt;01:31, 288.54it/s]
+Searching over common line pairs:  16%|█▌        | 4861/31125 [00:16&lt;01:30, 288.66it/s]
+Searching over common line pairs:  16%|█▌        | 4890/31125 [00:16&lt;01:30, 288.57it/s]
+Searching over common line pairs:  16%|█▌        | 4919/31125 [00:16&lt;01:30, 288.28it/s]
+Searching over common line pairs:  16%|█▌        | 4948/31125 [00:16&lt;01:30, 288.50it/s]
+Searching over common line pairs:  16%|█▌        | 4977/31125 [00:17&lt;01:30, 288.91it/s]
+Searching over common line pairs:  16%|█▌        | 5007/31125 [00:17&lt;01:30, 289.35it/s]
+Searching over common line pairs:  16%|█▌        | 5036/31125 [00:17&lt;01:30, 289.07it/s]
+Searching over common line pairs:  16%|█▋        | 5065/31125 [00:17&lt;01:30, 288.94it/s]
+Searching over common line pairs:  16%|█▋        | 5094/31125 [00:17&lt;01:30, 288.66it/s]
+Searching over common line pairs:  16%|█▋        | 5124/31125 [00:17&lt;01:29, 289.40it/s]
+Searching over common line pairs:  17%|█▋        | 5154/31125 [00:17&lt;01:29, 289.97it/s]
+Searching over common line pairs:  17%|█▋        | 5184/31125 [00:17&lt;01:29, 290.18it/s]
+Searching over common line pairs:  17%|█▋        | 5214/31125 [00:17&lt;01:29, 290.46it/s]
+Searching over common line pairs:  17%|█▋        | 5244/31125 [00:17&lt;01:29, 290.50it/s]
+Searching over common line pairs:  17%|█▋        | 5274/31125 [00:18&lt;01:29, 289.62it/s]
+Searching over common line pairs:  17%|█▋        | 5303/31125 [00:18&lt;01:29, 289.53it/s]
+Searching over common line pairs:  17%|█▋        | 5332/31125 [00:18&lt;01:29, 288.82it/s]
+Searching over common line pairs:  17%|█▋        | 5361/31125 [00:18&lt;01:29, 288.92it/s]
+Searching over common line pairs:  17%|█▋        | 5390/31125 [00:18&lt;01:29, 288.66it/s]
+Searching over common line pairs:  17%|█▋        | 5419/31125 [00:18&lt;01:29, 288.81it/s]
+Searching over common line pairs:  18%|█▊        | 5448/31125 [00:18&lt;01:29, 287.79it/s]
+Searching over common line pairs:  18%|█▊        | 5477/31125 [00:18&lt;01:29, 287.35it/s]
+Searching over common line pairs:  18%|█▊        | 5506/31125 [00:18&lt;01:29, 287.74it/s]
+Searching over common line pairs:  18%|█▊        | 5535/31125 [00:18&lt;01:28, 287.98it/s]
+Searching over common line pairs:  18%|█▊        | 5564/31125 [00:19&lt;01:28, 287.62it/s]
+Searching over common line pairs:  18%|█▊        | 5593/31125 [00:19&lt;01:28, 287.86it/s]
+Searching over common line pairs:  18%|█▊        | 5622/31125 [00:19&lt;01:28, 287.74it/s]
+Searching over common line pairs:  18%|█▊        | 5651/31125 [00:19&lt;01:28, 287.29it/s]
+Searching over common line pairs:  18%|█▊        | 5680/31125 [00:19&lt;01:28, 288.06it/s]
+Searching over common line pairs:  18%|█▊        | 5709/31125 [00:19&lt;01:28, 288.10it/s]
+Searching over common line pairs:  18%|█▊        | 5739/31125 [00:19&lt;01:27, 289.03it/s]
+Searching over common line pairs:  19%|█▊        | 5769/31125 [00:19&lt;01:27, 289.49it/s]
+Searching over common line pairs:  19%|█▊        | 5799/31125 [00:19&lt;01:27, 289.77it/s]
+Searching over common line pairs:  19%|█▊        | 5828/31125 [00:19&lt;01:27, 289.79it/s]
+Searching over common line pairs:  19%|█▉        | 5858/31125 [00:20&lt;01:27, 290.01it/s]
+Searching over common line pairs:  19%|█▉        | 5888/31125 [00:20&lt;01:27, 289.90it/s]
+Searching over common line pairs:  19%|█▉        | 5917/31125 [00:20&lt;01:26, 289.81it/s]
+Searching over common line pairs:  19%|█▉        | 5946/31125 [00:20&lt;01:27, 288.89it/s]
+Searching over common line pairs:  19%|█▉        | 5975/31125 [00:20&lt;01:27, 288.31it/s]
+Searching over common line pairs:  19%|█▉        | 6004/31125 [00:20&lt;01:27, 288.22it/s]
+Searching over common line pairs:  19%|█▉        | 6033/31125 [00:20&lt;01:27, 288.29it/s]
+Searching over common line pairs:  19%|█▉        | 6062/31125 [00:20&lt;01:26, 288.46it/s]
+Searching over common line pairs:  20%|█▉        | 6091/31125 [00:20&lt;01:26, 288.42it/s]
+Searching over common line pairs:  20%|█▉        | 6120/31125 [00:20&lt;01:26, 288.07it/s]
+Searching over common line pairs:  20%|█▉        | 6149/31125 [00:21&lt;01:26, 288.46it/s]
+Searching over common line pairs:  20%|█▉        | 6178/31125 [00:21&lt;01:26, 288.25it/s]
+Searching over common line pairs:  20%|█▉        | 6207/31125 [00:21&lt;01:26, 287.32it/s]
+Searching over common line pairs:  20%|██        | 6236/31125 [00:21&lt;01:26, 286.72it/s]
+Searching over common line pairs:  20%|██        | 6265/31125 [00:21&lt;01:26, 286.44it/s]
+Searching over common line pairs:  20%|██        | 6294/31125 [00:21&lt;01:26, 287.01it/s]
+Searching over common line pairs:  20%|██        | 6323/31125 [00:21&lt;01:26, 287.20it/s]
+Searching over common line pairs:  20%|██        | 6352/31125 [00:21&lt;01:26, 287.28it/s]
+Searching over common line pairs:  21%|██        | 6381/31125 [00:21&lt;01:26, 287.53it/s]
+Searching over common line pairs:  21%|██        | 6410/31125 [00:21&lt;01:25, 287.83it/s]
+Searching over common line pairs:  21%|██        | 6440/31125 [00:22&lt;01:25, 288.61it/s]
+Searching over common line pairs:  21%|██        | 6469/31125 [00:22&lt;01:25, 288.60it/s]
+Searching over common line pairs:  21%|██        | 6498/31125 [00:22&lt;01:25, 288.39it/s]
+Searching over common line pairs:  21%|██        | 6527/31125 [00:22&lt;01:25, 288.37it/s]
+Searching over common line pairs:  21%|██        | 6556/31125 [00:22&lt;01:25, 288.78it/s]
+Searching over common line pairs:  21%|██        | 6585/31125 [00:22&lt;01:24, 288.99it/s]
+Searching over common line pairs:  21%|██        | 6614/31125 [00:22&lt;01:24, 288.84it/s]
+Searching over common line pairs:  21%|██▏       | 6643/31125 [00:22&lt;01:25, 287.89it/s]
+Searching over common line pairs:  21%|██▏       | 6672/31125 [00:22&lt;01:24, 287.84it/s]
+Searching over common line pairs:  22%|██▏       | 6701/31125 [00:22&lt;01:24, 288.37it/s]
+Searching over common line pairs:  22%|██▏       | 6730/31125 [00:23&lt;01:24, 288.47it/s]
+Searching over common line pairs:  22%|██▏       | 6759/31125 [00:23&lt;01:24, 288.56it/s]
+Searching over common line pairs:  22%|██▏       | 6788/31125 [00:23&lt;01:24, 288.34it/s]
+Searching over common line pairs:  22%|██▏       | 6817/31125 [00:23&lt;01:24, 287.94it/s]
+Searching over common line pairs:  22%|██▏       | 6846/31125 [00:23&lt;01:24, 287.92it/s]
+Searching over common line pairs:  22%|██▏       | 6875/31125 [00:23&lt;01:24, 287.72it/s]
+Searching over common line pairs:  22%|██▏       | 6904/31125 [00:23&lt;01:24, 287.51it/s]
+Searching over common line pairs:  22%|██▏       | 6933/31125 [00:23&lt;01:24, 287.53it/s]
+Searching over common line pairs:  22%|██▏       | 6962/31125 [00:23&lt;01:24, 287.18it/s]
+Searching over common line pairs:  22%|██▏       | 6991/31125 [00:24&lt;01:24, 287.00it/s]
+Searching over common line pairs:  23%|██▎       | 7020/31125 [00:24&lt;01:23, 287.08it/s]
+Searching over common line pairs:  23%|██▎       | 7049/31125 [00:24&lt;01:23, 286.89it/s]
+Searching over common line pairs:  23%|██▎       | 7078/31125 [00:24&lt;01:23, 287.19it/s]
+Searching over common line pairs:  23%|██▎       | 7107/31125 [00:24&lt;01:23, 287.25it/s]
+Searching over common line pairs:  23%|██▎       | 7136/31125 [00:24&lt;01:23, 287.63it/s]
+Searching over common line pairs:  23%|██▎       | 7165/31125 [00:24&lt;01:23, 287.65it/s]
+Searching over common line pairs:  23%|██▎       | 7194/31125 [00:24&lt;01:23, 287.96it/s]
+Searching over common line pairs:  23%|██▎       | 7223/31125 [00:24&lt;01:22, 288.21it/s]
+Searching over common line pairs:  23%|██▎       | 7252/31125 [00:24&lt;01:22, 288.74it/s]
+Searching over common line pairs:  23%|██▎       | 7281/31125 [00:25&lt;01:22, 288.43it/s]
+Searching over common line pairs:  23%|██▎       | 7310/31125 [00:25&lt;01:22, 288.52it/s]
+Searching over common line pairs:  24%|██▎       | 7339/31125 [00:25&lt;01:22, 288.67it/s]
+Searching over common line pairs:  24%|██▎       | 7368/31125 [00:25&lt;01:22, 288.97it/s]
+Searching over common line pairs:  24%|██▍       | 7397/31125 [00:25&lt;01:22, 288.14it/s]
+Searching over common line pairs:  24%|██▍       | 7426/31125 [00:25&lt;01:22, 288.37it/s]
+Searching over common line pairs:  24%|██▍       | 7455/31125 [00:25&lt;01:22, 288.55it/s]
+Searching over common line pairs:  24%|██▍       | 7484/31125 [00:25&lt;01:21, 288.31it/s]
+Searching over common line pairs:  24%|██▍       | 7513/31125 [00:25&lt;01:22, 287.91it/s]
+Searching over common line pairs:  24%|██▍       | 7542/31125 [00:25&lt;01:22, 287.37it/s]
+Searching over common line pairs:  24%|██▍       | 7571/31125 [00:26&lt;01:22, 286.74it/s]
+Searching over common line pairs:  24%|██▍       | 7600/31125 [00:26&lt;01:22, 286.87it/s]
+Searching over common line pairs:  25%|██▍       | 7629/31125 [00:26&lt;01:21, 287.29it/s]
+Searching over common line pairs:  25%|██▍       | 7659/31125 [00:26&lt;01:21, 288.21it/s]
+Searching over common line pairs:  25%|██▍       | 7688/31125 [00:26&lt;01:21, 287.93it/s]
+Searching over common line pairs:  25%|██▍       | 7717/31125 [00:26&lt;01:21, 287.67it/s]
+Searching over common line pairs:  25%|██▍       | 7746/31125 [00:26&lt;01:21, 288.36it/s]
+Searching over common line pairs:  25%|██▍       | 7775/31125 [00:26&lt;01:20, 288.73it/s]
+Searching over common line pairs:  25%|██▌       | 7804/31125 [00:26&lt;01:20, 288.77it/s]
+Searching over common line pairs:  25%|██▌       | 7833/31125 [00:26&lt;01:20, 288.84it/s]
+Searching over common line pairs:  25%|██▌       | 7862/31125 [00:27&lt;01:20, 288.87it/s]
+Searching over common line pairs:  25%|██▌       | 7891/31125 [00:27&lt;01:20, 288.53it/s]
+Searching over common line pairs:  25%|██▌       | 7921/31125 [00:27&lt;01:20, 289.35it/s]
+Searching over common line pairs:  26%|██▌       | 7951/31125 [00:27&lt;01:19, 290.04it/s]
+Searching over common line pairs:  26%|██▌       | 7981/31125 [00:27&lt;01:20, 289.10it/s]
+Searching over common line pairs:  26%|██▌       | 8011/31125 [00:27&lt;01:19, 289.52it/s]
+Searching over common line pairs:  26%|██▌       | 8041/31125 [00:27&lt;01:19, 290.28it/s]
+Searching over common line pairs:  26%|██▌       | 8071/31125 [00:27&lt;01:19, 290.33it/s]
+Searching over common line pairs:  26%|██▌       | 8101/31125 [00:27&lt;01:19, 290.41it/s]
+Searching over common line pairs:  26%|██▌       | 8131/31125 [00:27&lt;01:19, 288.97it/s]
+Searching over common line pairs:  26%|██▌       | 8160/31125 [00:28&lt;01:19, 288.66it/s]
+Searching over common line pairs:  26%|██▋       | 8189/31125 [00:28&lt;01:19, 288.79it/s]
+Searching over common line pairs:  26%|██▋       | 8218/31125 [00:28&lt;01:19, 288.17it/s]
+Searching over common line pairs:  26%|██▋       | 8247/31125 [00:28&lt;01:19, 288.43it/s]
+Searching over common line pairs:  27%|██▋       | 8276/31125 [00:28&lt;01:19, 287.83it/s]
+Searching over common line pairs:  27%|██▋       | 8305/31125 [00:28&lt;01:19, 288.30it/s]
+Searching over common line pairs:  27%|██▋       | 8334/31125 [00:28&lt;01:19, 288.40it/s]
+Searching over common line pairs:  27%|██▋       | 8363/31125 [00:28&lt;01:18, 288.25it/s]
+Searching over common line pairs:  27%|██▋       | 8393/31125 [00:28&lt;01:18, 288.88it/s]
+Searching over common line pairs:  27%|██▋       | 8423/31125 [00:28&lt;01:18, 289.54it/s]
+Searching over common line pairs:  27%|██▋       | 8453/31125 [00:29&lt;01:18, 289.87it/s]
+Searching over common line pairs:  27%|██▋       | 8483/31125 [00:29&lt;01:18, 290.17it/s]
+Searching over common line pairs:  27%|██▋       | 8513/31125 [00:29&lt;01:17, 290.21it/s]
+Searching over common line pairs:  27%|██▋       | 8543/31125 [00:29&lt;01:17, 290.00it/s]
+Searching over common line pairs:  28%|██▊       | 8572/31125 [00:29&lt;01:18, 289.11it/s]
+Searching over common line pairs:  28%|██▊       | 8601/31125 [00:29&lt;01:17, 289.15it/s]
+Searching over common line pairs:  28%|██▊       | 8630/31125 [00:29&lt;01:18, 288.28it/s]
+Searching over common line pairs:  28%|██▊       | 8659/31125 [00:29&lt;01:18, 287.98it/s]
+Searching over common line pairs:  28%|██▊       | 8689/31125 [00:29&lt;01:17, 289.03it/s]
+Searching over common line pairs:  28%|██▊       | 8719/31125 [00:29&lt;01:17, 289.64it/s]
+Searching over common line pairs:  28%|██▊       | 8749/31125 [00:30&lt;01:17, 290.02it/s]
+Searching over common line pairs:  28%|██▊       | 8779/31125 [00:30&lt;01:16, 290.33it/s]
+Searching over common line pairs:  28%|██▊       | 8809/31125 [00:30&lt;01:16, 290.50it/s]
+Searching over common line pairs:  28%|██▊       | 8839/31125 [00:30&lt;01:16, 290.67it/s]
+Searching over common line pairs:  28%|██▊       | 8869/31125 [00:30&lt;01:16, 290.34it/s]
+Searching over common line pairs:  29%|██▊       | 8899/31125 [00:30&lt;01:16, 290.16it/s]
+Searching over common line pairs:  29%|██▊       | 8929/31125 [00:30&lt;01:16, 290.21it/s]
+Searching over common line pairs:  29%|██▉       | 8959/31125 [00:30&lt;01:16, 290.12it/s]
+Searching over common line pairs:  29%|██▉       | 8989/31125 [00:30&lt;01:16, 290.37it/s]
+Searching over common line pairs:  29%|██▉       | 9019/31125 [00:31&lt;01:15, 290.96it/s]
+Searching over common line pairs:  29%|██▉       | 9049/31125 [00:31&lt;01:15, 291.15it/s]
+Searching over common line pairs:  29%|██▉       | 9079/31125 [00:31&lt;01:15, 291.10it/s]
+Searching over common line pairs:  29%|██▉       | 9109/31125 [00:31&lt;01:15, 291.24it/s]
+Searching over common line pairs:  29%|██▉       | 9139/31125 [00:31&lt;01:15, 291.23it/s]
+Searching over common line pairs:  29%|██▉       | 9169/31125 [00:31&lt;01:15, 290.89it/s]
+Searching over common line pairs:  30%|██▉       | 9199/31125 [00:31&lt;01:15, 290.45it/s]
+Searching over common line pairs:  30%|██▉       | 9229/31125 [00:31&lt;01:15, 290.71it/s]
+Searching over common line pairs:  30%|██▉       | 9259/31125 [00:31&lt;01:15, 290.86it/s]
+Searching over common line pairs:  30%|██▉       | 9289/31125 [00:31&lt;01:15, 290.68it/s]
+Searching over common line pairs:  30%|██▉       | 9319/31125 [00:32&lt;01:15, 290.54it/s]
+Searching over common line pairs:  30%|███       | 9349/31125 [00:32&lt;01:14, 290.79it/s]
+Searching over common line pairs:  30%|███       | 9379/31125 [00:32&lt;01:14, 291.00it/s]
+Searching over common line pairs:  30%|███       | 9409/31125 [00:32&lt;01:14, 290.84it/s]
+Searching over common line pairs:  30%|███       | 9439/31125 [00:32&lt;01:14, 291.29it/s]
+Searching over common line pairs:  30%|███       | 9469/31125 [00:32&lt;01:14, 290.82it/s]
+Searching over common line pairs:  31%|███       | 9499/31125 [00:32&lt;01:14, 290.71it/s]
+Searching over common line pairs:  31%|███       | 9529/31125 [00:32&lt;01:14, 290.63it/s]
+Searching over common line pairs:  31%|███       | 9559/31125 [00:32&lt;01:14, 290.76it/s]
+Searching over common line pairs:  31%|███       | 9589/31125 [00:32&lt;01:14, 290.70it/s]
+Searching over common line pairs:  31%|███       | 9619/31125 [00:33&lt;01:14, 290.41it/s]
+Searching over common line pairs:  31%|███       | 9649/31125 [00:33&lt;01:13, 290.29it/s]
+Searching over common line pairs:  31%|███       | 9679/31125 [00:33&lt;01:13, 290.72it/s]
+Searching over common line pairs:  31%|███       | 9709/31125 [00:33&lt;01:13, 290.09it/s]
+Searching over common line pairs:  31%|███▏      | 9739/31125 [00:33&lt;01:13, 289.83it/s]
+Searching over common line pairs:  31%|███▏      | 9768/31125 [00:33&lt;01:13, 289.49it/s]
+Searching over common line pairs:  31%|███▏      | 9797/31125 [00:33&lt;01:13, 289.00it/s]
+Searching over common line pairs:  32%|███▏      | 9826/31125 [00:33&lt;01:13, 289.03it/s]
+Searching over common line pairs:  32%|███▏      | 9856/31125 [00:33&lt;01:13, 289.71it/s]
+Searching over common line pairs:  32%|███▏      | 9886/31125 [00:34&lt;01:13, 289.90it/s]
+Searching over common line pairs:  32%|███▏      | 9915/31125 [00:34&lt;01:13, 289.81it/s]
+Searching over common line pairs:  32%|███▏      | 9945/31125 [00:34&lt;01:12, 290.32it/s]
+Searching over common line pairs:  32%|███▏      | 9975/31125 [00:34&lt;01:12, 290.10it/s]
+Searching over common line pairs:  32%|███▏      | 10005/31125 [00:34&lt;01:12, 289.90it/s]
+Searching over common line pairs:  32%|███▏      | 10034/31125 [00:34&lt;01:13, 288.53it/s]
+Searching over common line pairs:  32%|███▏      | 10063/31125 [00:34&lt;01:13, 288.50it/s]
+Searching over common line pairs:  32%|███▏      | 10093/31125 [00:34&lt;01:12, 289.34it/s]
+Searching over common line pairs:  33%|███▎      | 10123/31125 [00:34&lt;01:12, 289.68it/s]
+Searching over common line pairs:  33%|███▎      | 10152/31125 [00:34&lt;01:12, 289.47it/s]
+Searching over common line pairs:  33%|███▎      | 10181/31125 [00:35&lt;01:12, 289.36it/s]
+Searching over common line pairs:  33%|███▎      | 10210/31125 [00:35&lt;01:12, 289.05it/s]
+Searching over common line pairs:  33%|███▎      | 10239/31125 [00:35&lt;01:12, 288.76it/s]
+Searching over common line pairs:  33%|███▎      | 10268/31125 [00:35&lt;01:12, 288.65it/s]
+Searching over common line pairs:  33%|███▎      | 10297/31125 [00:35&lt;01:12, 288.13it/s]
+Searching over common line pairs:  33%|███▎      | 10326/31125 [00:35&lt;01:12, 288.20it/s]
+Searching over common line pairs:  33%|███▎      | 10355/31125 [00:35&lt;01:12, 287.91it/s]
+Searching over common line pairs:  33%|███▎      | 10384/31125 [00:35&lt;01:11, 288.30it/s]
+Searching over common line pairs:  33%|███▎      | 10413/31125 [00:35&lt;01:11, 288.28it/s]
+Searching over common line pairs:  34%|███▎      | 10442/31125 [00:35&lt;01:11, 288.18it/s]
+Searching over common line pairs:  34%|███▎      | 10471/31125 [00:36&lt;01:11, 288.39it/s]
+Searching over common line pairs:  34%|███▎      | 10500/31125 [00:36&lt;01:11, 288.55it/s]
+Searching over common line pairs:  34%|███▍      | 10530/31125 [00:36&lt;01:11, 288.99it/s]
+Searching over common line pairs:  34%|███▍      | 10559/31125 [00:36&lt;01:11, 289.09it/s]
+Searching over common line pairs:  34%|███▍      | 10589/31125 [00:36&lt;01:10, 289.40it/s]
+Searching over common line pairs:  34%|███▍      | 10619/31125 [00:36&lt;01:10, 289.69it/s]
+Searching over common line pairs:  34%|███▍      | 10649/31125 [00:36&lt;01:10, 290.21it/s]
+Searching over common line pairs:  34%|███▍      | 10679/31125 [00:36&lt;01:10, 289.78it/s]
+Searching over common line pairs:  34%|███▍      | 10708/31125 [00:36&lt;01:10, 289.69it/s]
+Searching over common line pairs:  34%|███▍      | 10738/31125 [00:36&lt;01:10, 289.79it/s]
+Searching over common line pairs:  35%|███▍      | 10767/31125 [00:37&lt;01:10, 289.25it/s]
+Searching over common line pairs:  35%|███▍      | 10796/31125 [00:37&lt;01:10, 287.99it/s]
+Searching over common line pairs:  35%|███▍      | 10825/31125 [00:37&lt;01:10, 287.92it/s]
+Searching over common line pairs:  35%|███▍      | 10854/31125 [00:37&lt;01:10, 288.06it/s]
+Searching over common line pairs:  35%|███▍      | 10883/31125 [00:37&lt;01:10, 288.39it/s]
+Searching over common line pairs:  35%|███▌      | 10912/31125 [00:37&lt;01:10, 288.15it/s]
+Searching over common line pairs:  35%|███▌      | 10941/31125 [00:37&lt;01:10, 287.97it/s]
+Searching over common line pairs:  35%|███▌      | 10970/31125 [00:37&lt;01:10, 287.65it/s]
+Searching over common line pairs:  35%|███▌      | 10999/31125 [00:37&lt;01:09, 287.73it/s]
+Searching over common line pairs:  35%|███▌      | 11028/31125 [00:37&lt;01:09, 288.15it/s]
+Searching over common line pairs:  36%|███▌      | 11057/31125 [00:38&lt;01:09, 288.63it/s]
+Searching over common line pairs:  36%|███▌      | 11087/31125 [00:38&lt;01:09, 289.25it/s]
+Searching over common line pairs:  36%|███▌      | 11116/31125 [00:38&lt;01:09, 289.26it/s]
+Searching over common line pairs:  36%|███▌      | 11146/31125 [00:38&lt;01:08, 289.75it/s]
+Searching over common line pairs:  36%|███▌      | 11176/31125 [00:38&lt;01:08, 289.95it/s]
+Searching over common line pairs:  36%|███▌      | 11205/31125 [00:38&lt;01:08, 289.58it/s]
+Searching over common line pairs:  36%|███▌      | 11234/31125 [00:38&lt;01:08, 289.62it/s]
+Searching over common line pairs:  36%|███▌      | 11263/31125 [00:38&lt;01:08, 289.00it/s]
+Searching over common line pairs:  36%|███▋      | 11292/31125 [00:38&lt;01:08, 289.07it/s]
+Searching over common line pairs:  36%|███▋      | 11322/31125 [00:38&lt;01:08, 289.57it/s]
+Searching over common line pairs:  36%|███▋      | 11352/31125 [00:39&lt;01:08, 289.83it/s]
+Searching over common line pairs:  37%|███▋      | 11382/31125 [00:39&lt;01:08, 289.88it/s]
+Searching over common line pairs:  37%|███▋      | 11412/31125 [00:39&lt;01:07, 290.35it/s]
+Searching over common line pairs:  37%|███▋      | 11442/31125 [00:39&lt;01:07, 289.66it/s]
+Searching over common line pairs:  37%|███▋      | 11471/31125 [00:39&lt;01:07, 289.75it/s]
+Searching over common line pairs:  37%|███▋      | 11501/31125 [00:39&lt;01:07, 290.55it/s]
+Searching over common line pairs:  37%|███▋      | 11531/31125 [00:39&lt;01:07, 290.85it/s]
+Searching over common line pairs:  37%|███▋      | 11561/31125 [00:39&lt;01:07, 289.73it/s]
+Searching over common line pairs:  37%|███▋      | 11590/31125 [00:39&lt;01:07, 289.44it/s]
+Searching over common line pairs:  37%|███▋      | 11620/31125 [00:40&lt;01:07, 289.81it/s]
+Searching over common line pairs:  37%|███▋      | 11649/31125 [00:40&lt;01:07, 289.46it/s]
+Searching over common line pairs:  38%|███▊      | 11678/31125 [00:40&lt;01:07, 289.30it/s]
+Searching over common line pairs:  38%|███▊      | 11708/31125 [00:40&lt;01:06, 289.87it/s]
+Searching over common line pairs:  38%|███▊      | 11738/31125 [00:40&lt;01:06, 290.00it/s]
+Searching over common line pairs:  38%|███▊      | 11768/31125 [00:40&lt;01:06, 290.21it/s]
+Searching over common line pairs:  38%|███▊      | 11798/31125 [00:40&lt;01:06, 289.63it/s]
+Searching over common line pairs:  38%|███▊      | 11828/31125 [00:40&lt;01:06, 289.90it/s]
+Searching over common line pairs:  38%|███▊      | 11857/31125 [00:40&lt;01:06, 289.90it/s]
+Searching over common line pairs:  38%|███▊      | 11887/31125 [00:40&lt;01:06, 290.23it/s]
+Searching over common line pairs:  38%|███▊      | 11917/31125 [00:41&lt;01:06, 290.56it/s]
+Searching over common line pairs:  38%|███▊      | 11947/31125 [00:41&lt;01:05, 291.32it/s]
+Searching over common line pairs:  38%|███▊      | 11977/31125 [00:41&lt;01:05, 292.07it/s]
+Searching over common line pairs:  39%|███▊      | 12007/31125 [00:41&lt;01:05, 292.56it/s]
+Searching over common line pairs:  39%|███▊      | 12037/31125 [00:41&lt;01:05, 291.34it/s]
+Searching over common line pairs:  39%|███▉      | 12067/31125 [00:41&lt;01:05, 290.82it/s]
+Searching over common line pairs:  39%|███▉      | 12097/31125 [00:41&lt;01:05, 290.42it/s]
+Searching over common line pairs:  39%|███▉      | 12127/31125 [00:41&lt;01:05, 289.87it/s]
+Searching over common line pairs:  39%|███▉      | 12156/31125 [00:41&lt;01:05, 289.38it/s]
+Searching over common line pairs:  39%|███▉      | 12185/31125 [00:41&lt;01:05, 289.37it/s]
+Searching over common line pairs:  39%|███▉      | 12214/31125 [00:42&lt;01:05, 289.53it/s]
+Searching over common line pairs:  39%|███▉      | 12244/31125 [00:42&lt;01:05, 290.25it/s]
+Searching over common line pairs:  39%|███▉      | 12274/31125 [00:42&lt;01:04, 290.75it/s]
+Searching over common line pairs:  40%|███▉      | 12304/31125 [00:42&lt;01:04, 291.28it/s]
+Searching over common line pairs:  40%|███▉      | 12334/31125 [00:42&lt;01:04, 291.31it/s]
+Searching over common line pairs:  40%|███▉      | 12364/31125 [00:42&lt;01:04, 290.35it/s]
+Searching over common line pairs:  40%|███▉      | 12394/31125 [00:42&lt;01:04, 289.41it/s]
+Searching over common line pairs:  40%|███▉      | 12423/31125 [00:42&lt;01:04, 288.90it/s]
+Searching over common line pairs:  40%|████      | 12453/31125 [00:42&lt;01:04, 289.54it/s]
+Searching over common line pairs:  40%|████      | 12483/31125 [00:42&lt;01:04, 290.40it/s]
+Searching over common line pairs:  40%|████      | 12513/31125 [00:43&lt;01:04, 290.58it/s]
+Searching over common line pairs:  40%|████      | 12543/31125 [00:43&lt;01:04, 290.25it/s]
+Searching over common line pairs:  40%|████      | 12573/31125 [00:43&lt;01:03, 291.39it/s]
+Searching over common line pairs:  40%|████      | 12603/31125 [00:43&lt;01:03, 291.96it/s]
+Searching over common line pairs:  41%|████      | 12633/31125 [00:43&lt;01:03, 292.99it/s]
+Searching over common line pairs:  41%|████      | 12663/31125 [00:43&lt;01:03, 292.82it/s]
+Searching over common line pairs:  41%|████      | 12693/31125 [00:43&lt;01:03, 290.99it/s]
+Searching over common line pairs:  41%|████      | 12723/31125 [00:43&lt;01:04, 285.78it/s]
+Searching over common line pairs:  41%|████      | 12752/31125 [00:43&lt;01:04, 283.62it/s]
+Searching over common line pairs:  41%|████      | 12782/31125 [00:44&lt;01:03, 286.64it/s]
+Searching over common line pairs:  41%|████      | 12812/31125 [00:44&lt;01:03, 288.87it/s]
+Searching over common line pairs:  41%|████▏     | 12842/31125 [00:44&lt;01:02, 291.47it/s]
+Searching over common line pairs:  41%|████▏     | 12872/31125 [00:44&lt;01:02, 292.30it/s]
+Searching over common line pairs:  41%|████▏     | 12902/31125 [00:44&lt;01:02, 292.75it/s]
+Searching over common line pairs:  42%|████▏     | 12932/31125 [00:44&lt;01:02, 293.27it/s]
+Searching over common line pairs:  42%|████▏     | 12962/31125 [00:44&lt;01:01, 294.25it/s]
+Searching over common line pairs:  42%|████▏     | 12992/31125 [00:44&lt;01:01, 293.93it/s]
+Searching over common line pairs:  42%|████▏     | 13022/31125 [00:44&lt;01:01, 294.03it/s]
+Searching over common line pairs:  42%|████▏     | 13052/31125 [00:44&lt;01:01, 293.39it/s]
+Searching over common line pairs:  42%|████▏     | 13082/31125 [00:45&lt;01:01, 293.32it/s]
+Searching over common line pairs:  42%|████▏     | 13112/31125 [00:45&lt;01:01, 293.03it/s]
+Searching over common line pairs:  42%|████▏     | 13142/31125 [00:45&lt;01:01, 292.93it/s]
+Searching over common line pairs:  42%|████▏     | 13172/31125 [00:45&lt;01:01, 293.23it/s]
+Searching over common line pairs:  42%|████▏     | 13202/31125 [00:45&lt;01:01, 293.05it/s]
+Searching over common line pairs:  43%|████▎     | 13232/31125 [00:45&lt;01:01, 293.11it/s]
+Searching over common line pairs:  43%|████▎     | 13262/31125 [00:45&lt;01:00, 293.09it/s]
+Searching over common line pairs:  43%|████▎     | 13292/31125 [00:45&lt;01:00, 292.87it/s]
+Searching over common line pairs:  43%|████▎     | 13322/31125 [00:45&lt;01:00, 292.72it/s]
+Searching over common line pairs:  43%|████▎     | 13352/31125 [00:45&lt;01:00, 293.12it/s]
+Searching over common line pairs:  43%|████▎     | 13382/31125 [00:46&lt;01:00, 291.98it/s]
+Searching over common line pairs:  43%|████▎     | 13412/31125 [00:46&lt;01:00, 292.18it/s]
+Searching over common line pairs:  43%|████▎     | 13442/31125 [00:46&lt;01:00, 292.01it/s]
+Searching over common line pairs:  43%|████▎     | 13472/31125 [00:46&lt;01:00, 292.53it/s]
+Searching over common line pairs:  43%|████▎     | 13502/31125 [00:46&lt;01:00, 293.24it/s]
+Searching over common line pairs:  43%|████▎     | 13532/31125 [00:46&lt;01:00, 292.98it/s]
+Searching over common line pairs:  44%|████▎     | 13562/31125 [00:46&lt;00:59, 293.03it/s]
+Searching over common line pairs:  44%|████▎     | 13592/31125 [00:46&lt;00:59, 292.97it/s]
+Searching over common line pairs:  44%|████▍     | 13622/31125 [00:46&lt;00:59, 293.30it/s]
+Searching over common line pairs:  44%|████▍     | 13652/31125 [00:46&lt;00:59, 292.74it/s]
+Searching over common line pairs:  44%|████▍     | 13682/31125 [00:47&lt;00:59, 292.70it/s]
+Searching over common line pairs:  44%|████▍     | 13712/31125 [00:47&lt;00:59, 293.45it/s]
+Searching over common line pairs:  44%|████▍     | 13742/31125 [00:47&lt;00:59, 293.13it/s]
+Searching over common line pairs:  44%|████▍     | 13772/31125 [00:47&lt;00:59, 293.10it/s]
+Searching over common line pairs:  44%|████▍     | 13802/31125 [00:47&lt;00:59, 292.97it/s]
+Searching over common line pairs:  44%|████▍     | 13832/31125 [00:47&lt;00:59, 293.06it/s]
+Searching over common line pairs:  45%|████▍     | 13862/31125 [00:47&lt;00:58, 292.83it/s]
+Searching over common line pairs:  45%|████▍     | 13892/31125 [00:47&lt;00:58, 292.58it/s]
+Searching over common line pairs:  45%|████▍     | 13922/31125 [00:47&lt;00:58, 292.29it/s]
+Searching over common line pairs:  45%|████▍     | 13952/31125 [00:48&lt;00:58, 291.72it/s]
+Searching over common line pairs:  45%|████▍     | 13982/31125 [00:48&lt;00:58, 291.40it/s]
+Searching over common line pairs:  45%|████▌     | 14012/31125 [00:48&lt;00:58, 291.75it/s]
+Searching over common line pairs:  45%|████▌     | 14042/31125 [00:48&lt;00:58, 292.35it/s]
+Searching over common line pairs:  45%|████▌     | 14072/31125 [00:48&lt;00:58, 292.26it/s]
+Searching over common line pairs:  45%|████▌     | 14102/31125 [00:48&lt;00:58, 291.82it/s]
+Searching over common line pairs:  45%|████▌     | 14132/31125 [00:48&lt;00:58, 291.94it/s]
+Searching over common line pairs:  46%|████▌     | 14162/31125 [00:48&lt;00:58, 291.71it/s]
+Searching over common line pairs:  46%|████▌     | 14192/31125 [00:48&lt;00:57, 292.63it/s]
+Searching over common line pairs:  46%|████▌     | 14222/31125 [00:48&lt;00:57, 292.41it/s]
+Searching over common line pairs:  46%|████▌     | 14252/31125 [00:49&lt;00:57, 292.85it/s]
+Searching over common line pairs:  46%|████▌     | 14282/31125 [00:49&lt;00:57, 292.15it/s]
+Searching over common line pairs:  46%|████▌     | 14312/31125 [00:49&lt;00:57, 293.47it/s]
+Searching over common line pairs:  46%|████▌     | 14342/31125 [00:49&lt;00:57, 294.04it/s]
+Searching over common line pairs:  46%|████▌     | 14372/31125 [00:49&lt;00:57, 293.46it/s]
+Searching over common line pairs:  46%|████▋     | 14402/31125 [00:49&lt;00:57, 293.13it/s]
+Searching over common line pairs:  46%|████▋     | 14432/31125 [00:49&lt;00:57, 292.30it/s]
+Searching over common line pairs:  46%|████▋     | 14462/31125 [00:49&lt;00:56, 292.34it/s]
+Searching over common line pairs:  47%|████▋     | 14492/31125 [00:49&lt;00:56, 292.51it/s]
+Searching over common line pairs:  47%|████▋     | 14522/31125 [00:49&lt;00:56, 292.52it/s]
+Searching over common line pairs:  47%|████▋     | 14552/31125 [00:50&lt;00:56, 292.07it/s]
+Searching over common line pairs:  47%|████▋     | 14582/31125 [00:50&lt;00:56, 291.47it/s]
+Searching over common line pairs:  47%|████▋     | 14612/31125 [00:50&lt;00:56, 290.85it/s]
+Searching over common line pairs:  47%|████▋     | 14642/31125 [00:50&lt;00:56, 291.01it/s]
+Searching over common line pairs:  47%|████▋     | 14672/31125 [00:50&lt;00:56, 291.18it/s]
+Searching over common line pairs:  47%|████▋     | 14702/31125 [00:50&lt;00:56, 290.08it/s]
+Searching over common line pairs:  47%|████▋     | 14732/31125 [00:50&lt;00:56, 290.26it/s]
+Searching over common line pairs:  47%|████▋     | 14762/31125 [00:50&lt;00:56, 289.70it/s]
+Searching over common line pairs:  48%|████▊     | 14792/31125 [00:50&lt;00:56, 290.25it/s]
+Searching over common line pairs:  48%|████▊     | 14822/31125 [00:50&lt;00:56, 290.19it/s]
+Searching over common line pairs:  48%|████▊     | 14852/31125 [00:51&lt;00:56, 290.48it/s]
+Searching over common line pairs:  48%|████▊     | 14882/31125 [00:51&lt;00:56, 289.65it/s]
+Searching over common line pairs:  48%|████▊     | 14912/31125 [00:51&lt;00:55, 290.09it/s]
+Searching over common line pairs:  48%|████▊     | 14942/31125 [00:51&lt;00:55, 289.83it/s]
+Searching over common line pairs:  48%|████▊     | 14971/31125 [00:51&lt;00:55, 289.72it/s]
+Searching over common line pairs:  48%|████▊     | 15000/31125 [00:51&lt;00:55, 289.65it/s]
+Searching over common line pairs:  48%|████▊     | 15029/31125 [00:51&lt;00:55, 289.21it/s]
+Searching over common line pairs:  48%|████▊     | 15058/31125 [00:51&lt;00:55, 289.39it/s]
+Searching over common line pairs:  48%|████▊     | 15087/31125 [00:51&lt;00:55, 288.75it/s]
+Searching over common line pairs:  49%|████▊     | 15116/31125 [00:52&lt;00:55, 288.86it/s]
+Searching over common line pairs:  49%|████▊     | 15145/31125 [00:52&lt;00:55, 288.99it/s]
+Searching over common line pairs:  49%|████▉     | 15175/31125 [00:52&lt;00:55, 289.63it/s]
+Searching over common line pairs:  49%|████▉     | 15205/31125 [00:52&lt;00:54, 290.00it/s]
+Searching over common line pairs:  49%|████▉     | 15235/31125 [00:52&lt;00:54, 289.99it/s]
+Searching over common line pairs:  49%|████▉     | 15265/31125 [00:52&lt;00:54, 290.13it/s]
+Searching over common line pairs:  49%|████▉     | 15295/31125 [00:52&lt;00:54, 289.22it/s]
+Searching over common line pairs:  49%|████▉     | 15324/31125 [00:52&lt;00:54, 289.44it/s]
+Searching over common line pairs:  49%|████▉     | 15353/31125 [00:52&lt;00:54, 288.63it/s]
+Searching over common line pairs:  49%|████▉     | 15383/31125 [00:52&lt;00:54, 289.11it/s]
+Searching over common line pairs:  50%|████▉     | 15413/31125 [00:53&lt;00:54, 289.46it/s]
+Searching over common line pairs:  50%|████▉     | 15443/31125 [00:53&lt;00:54, 289.85it/s]
+Searching over common line pairs:  50%|████▉     | 15472/31125 [00:53&lt;00:54, 289.82it/s]
+Searching over common line pairs:  50%|████▉     | 15501/31125 [00:53&lt;00:53, 289.75it/s]
+Searching over common line pairs:  50%|████▉     | 15530/31125 [00:53&lt;00:53, 289.71it/s]
+Searching over common line pairs:  50%|████▉     | 15560/31125 [00:53&lt;00:53, 289.84it/s]
+Searching over common line pairs:  50%|█████     | 15590/31125 [00:53&lt;00:53, 289.91it/s]
+Searching over common line pairs:  50%|█████     | 15620/31125 [00:53&lt;00:53, 290.25it/s]
+Searching over common line pairs:  50%|█████     | 15650/31125 [00:53&lt;00:53, 290.02it/s]
+Searching over common line pairs:  50%|█████     | 15680/31125 [00:53&lt;00:53, 290.04it/s]
+Searching over common line pairs:  50%|█████     | 15710/31125 [00:54&lt;00:53, 290.32it/s]
+Searching over common line pairs:  51%|█████     | 15740/31125 [00:54&lt;00:52, 290.66it/s]
+Searching over common line pairs:  51%|█████     | 15770/31125 [00:54&lt;00:52, 291.05it/s]
+Searching over common line pairs:  51%|█████     | 15800/31125 [00:54&lt;00:52, 291.34it/s]
+Searching over common line pairs:  51%|█████     | 15830/31125 [00:54&lt;00:52, 291.79it/s]
+Searching over common line pairs:  51%|█████     | 15860/31125 [00:54&lt;00:52, 291.88it/s]
+Searching over common line pairs:  51%|█████     | 15890/31125 [00:54&lt;00:52, 291.66it/s]
+Searching over common line pairs:  51%|█████     | 15920/31125 [00:54&lt;00:52, 290.96it/s]
+Searching over common line pairs:  51%|█████     | 15950/31125 [00:54&lt;00:52, 290.95it/s]
+Searching over common line pairs:  51%|█████▏    | 15980/31125 [00:54&lt;00:52, 290.86it/s]
+Searching over common line pairs:  51%|█████▏    | 16010/31125 [00:55&lt;00:52, 290.60it/s]
+Searching over common line pairs:  52%|█████▏    | 16040/31125 [00:55&lt;00:51, 290.85it/s]
+Searching over common line pairs:  52%|█████▏    | 16070/31125 [00:55&lt;00:51, 290.85it/s]
+Searching over common line pairs:  52%|█████▏    | 16100/31125 [00:55&lt;00:51, 290.85it/s]
+Searching over common line pairs:  52%|█████▏    | 16130/31125 [00:55&lt;00:51, 290.57it/s]
+Searching over common line pairs:  52%|█████▏    | 16160/31125 [00:55&lt;00:51, 290.85it/s]
+Searching over common line pairs:  52%|█████▏    | 16190/31125 [00:55&lt;00:51, 291.48it/s]
+Searching over common line pairs:  52%|█████▏    | 16220/31125 [00:55&lt;00:51, 291.99it/s]
+Searching over common line pairs:  52%|█████▏    | 16250/31125 [00:55&lt;00:50, 291.90it/s]
+Searching over common line pairs:  52%|█████▏    | 16280/31125 [00:56&lt;00:50, 292.00it/s]
+Searching over common line pairs:  52%|█████▏    | 16310/31125 [00:56&lt;00:50, 291.88it/s]
+Searching over common line pairs:  52%|█████▏    | 16340/31125 [00:56&lt;00:50, 291.51it/s]
+Searching over common line pairs:  53%|█████▎    | 16370/31125 [00:56&lt;00:50, 291.61it/s]
+Searching over common line pairs:  53%|█████▎    | 16400/31125 [00:56&lt;00:50, 291.43it/s]
+Searching over common line pairs:  53%|█████▎    | 16430/31125 [00:56&lt;00:50, 291.24it/s]
+Searching over common line pairs:  53%|█████▎    | 16460/31125 [00:56&lt;00:50, 291.63it/s]
+Searching over common line pairs:  53%|█████▎    | 16490/31125 [00:56&lt;00:50, 291.65it/s]
+Searching over common line pairs:  53%|█████▎    | 16520/31125 [00:56&lt;00:50, 291.25it/s]
+Searching over common line pairs:  53%|█████▎    | 16550/31125 [00:56&lt;00:50, 291.35it/s]
+Searching over common line pairs:  53%|█████▎    | 16580/31125 [00:57&lt;00:49, 291.48it/s]
+Searching over common line pairs:  53%|█████▎    | 16610/31125 [00:57&lt;00:49, 291.28it/s]
+Searching over common line pairs:  53%|█████▎    | 16640/31125 [00:57&lt;00:49, 291.09it/s]
+Searching over common line pairs:  54%|█████▎    | 16670/31125 [00:57&lt;00:49, 291.23it/s]
+Searching over common line pairs:  54%|█████▎    | 16700/31125 [00:57&lt;00:49, 291.45it/s]
+Searching over common line pairs:  54%|█████▍    | 16730/31125 [00:57&lt;00:49, 291.09it/s]
+Searching over common line pairs:  54%|█████▍    | 16760/31125 [00:57&lt;00:49, 290.55it/s]
+Searching over common line pairs:  54%|█████▍    | 16790/31125 [00:57&lt;00:49, 290.76it/s]
+Searching over common line pairs:  54%|█████▍    | 16820/31125 [00:57&lt;00:49, 290.99it/s]
+Searching over common line pairs:  54%|█████▍    | 16850/31125 [00:57&lt;00:48, 291.75it/s]
+Searching over common line pairs:  54%|█████▍    | 16880/31125 [00:58&lt;00:48, 290.76it/s]
+Searching over common line pairs:  54%|█████▍    | 16910/31125 [00:58&lt;00:48, 290.42it/s]
+Searching over common line pairs:  54%|█████▍    | 16940/31125 [00:58&lt;00:48, 290.74it/s]
+Searching over common line pairs:  55%|█████▍    | 16970/31125 [00:58&lt;00:48, 290.79it/s]
+Searching over common line pairs:  55%|█████▍    | 17000/31125 [00:58&lt;00:48, 290.72it/s]
+Searching over common line pairs:  55%|█████▍    | 17030/31125 [00:58&lt;00:48, 291.26it/s]
+Searching over common line pairs:  55%|█████▍    | 17060/31125 [00:58&lt;00:48, 291.54it/s]
+Searching over common line pairs:  55%|█████▍    | 17090/31125 [00:58&lt;00:48, 292.17it/s]
+Searching over common line pairs:  55%|█████▌    | 17120/31125 [00:58&lt;00:47, 292.74it/s]
+Searching over common line pairs:  55%|█████▌    | 17150/31125 [00:58&lt;00:47, 292.62it/s]
+Searching over common line pairs:  55%|█████▌    | 17180/31125 [00:59&lt;00:47, 293.15it/s]
+Searching over common line pairs:  55%|█████▌    | 17210/31125 [00:59&lt;00:47, 293.63it/s]
+Searching over common line pairs:  55%|█████▌    | 17240/31125 [00:59&lt;00:47, 294.06it/s]
+Searching over common line pairs:  55%|█████▌    | 17270/31125 [00:59&lt;00:47, 293.08it/s]
+Searching over common line pairs:  56%|█████▌    | 17300/31125 [00:59&lt;00:47, 292.57it/s]
+Searching over common line pairs:  56%|█████▌    | 17330/31125 [00:59&lt;00:47, 291.97it/s]
+Searching over common line pairs:  56%|█████▌    | 17360/31125 [00:59&lt;00:47, 292.42it/s]
+Searching over common line pairs:  56%|█████▌    | 17390/31125 [00:59&lt;00:47, 291.72it/s]
+Searching over common line pairs:  56%|█████▌    | 17420/31125 [00:59&lt;00:47, 291.08it/s]
+Searching over common line pairs:  56%|█████▌    | 17450/31125 [01:00&lt;00:47, 290.65it/s]
+Searching over common line pairs:  56%|█████▌    | 17480/31125 [01:00&lt;00:47, 290.07it/s]
+Searching over common line pairs:  56%|█████▋    | 17510/31125 [01:00&lt;00:46, 290.12it/s]
+Searching over common line pairs:  56%|█████▋    | 17540/31125 [01:00&lt;00:46, 289.60it/s]
+Searching over common line pairs:  56%|█████▋    | 17570/31125 [01:00&lt;00:46, 290.09it/s]
+Searching over common line pairs:  57%|█████▋    | 17600/31125 [01:00&lt;00:46, 290.73it/s]
+Searching over common line pairs:  57%|█████▋    | 17630/31125 [01:00&lt;00:46, 290.61it/s]
+Searching over common line pairs:  57%|█████▋    | 17660/31125 [01:00&lt;00:46, 289.90it/s]
+Searching over common line pairs:  57%|█████▋    | 17690/31125 [01:00&lt;00:46, 290.70it/s]
+Searching over common line pairs:  57%|█████▋    | 17720/31125 [01:00&lt;00:46, 291.01it/s]
+Searching over common line pairs:  57%|█████▋    | 17750/31125 [01:01&lt;00:45, 291.67it/s]
+Searching over common line pairs:  57%|█████▋    | 17780/31125 [01:01&lt;00:45, 291.33it/s]
+Searching over common line pairs:  57%|█████▋    | 17810/31125 [01:01&lt;00:45, 291.30it/s]
+Searching over common line pairs:  57%|█████▋    | 17840/31125 [01:01&lt;00:45, 291.01it/s]
+Searching over common line pairs:  57%|█████▋    | 17870/31125 [01:01&lt;00:45, 291.19it/s]
+Searching over common line pairs:  58%|█████▊    | 17900/31125 [01:01&lt;00:45, 290.81it/s]
+Searching over common line pairs:  58%|█████▊    | 17930/31125 [01:01&lt;00:45, 290.25it/s]
+Searching over common line pairs:  58%|█████▊    | 17960/31125 [01:01&lt;00:45, 290.67it/s]
+Searching over common line pairs:  58%|█████▊    | 17990/31125 [01:01&lt;00:45, 290.61it/s]
+Searching over common line pairs:  58%|█████▊    | 18020/31125 [01:01&lt;00:45, 291.00it/s]
+Searching over common line pairs:  58%|█████▊    | 18050/31125 [01:02&lt;00:44, 291.69it/s]
+Searching over common line pairs:  58%|█████▊    | 18080/31125 [01:02&lt;00:44, 292.60it/s]
+Searching over common line pairs:  58%|█████▊    | 18110/31125 [01:02&lt;00:44, 292.48it/s]
+Searching over common line pairs:  58%|█████▊    | 18140/31125 [01:02&lt;00:44, 291.57it/s]
+Searching over common line pairs:  58%|█████▊    | 18170/31125 [01:02&lt;00:44, 291.69it/s]
+Searching over common line pairs:  58%|█████▊    | 18200/31125 [01:02&lt;00:44, 291.30it/s]
+Searching over common line pairs:  59%|█████▊    | 18230/31125 [01:02&lt;00:44, 291.11it/s]
+Searching over common line pairs:  59%|█████▊    | 18260/31125 [01:02&lt;00:44, 290.31it/s]
+Searching over common line pairs:  59%|█████▉    | 18290/31125 [01:02&lt;00:44, 289.78it/s]
+Searching over common line pairs:  59%|█████▉    | 18319/31125 [01:03&lt;00:44, 289.03it/s]
+Searching over common line pairs:  59%|█████▉    | 18348/31125 [01:03&lt;00:44, 288.85it/s]
+Searching over common line pairs:  59%|█████▉    | 18377/31125 [01:03&lt;00:44, 288.98it/s]
+Searching over common line pairs:  59%|█████▉    | 18406/31125 [01:03&lt;00:44, 289.03it/s]
+Searching over common line pairs:  59%|█████▉    | 18436/31125 [01:03&lt;00:43, 290.13it/s]
+Searching over common line pairs:  59%|█████▉    | 18466/31125 [01:03&lt;00:43, 290.34it/s]
+Searching over common line pairs:  59%|█████▉    | 18496/31125 [01:03&lt;00:43, 289.76it/s]
+Searching over common line pairs:  60%|█████▉    | 18526/31125 [01:03&lt;00:43, 290.16it/s]
+Searching over common line pairs:  60%|█████▉    | 18556/31125 [01:03&lt;00:43, 290.59it/s]
+Searching over common line pairs:  60%|█████▉    | 18586/31125 [01:03&lt;00:43, 289.95it/s]
+Searching over common line pairs:  60%|█████▉    | 18615/31125 [01:04&lt;00:43, 289.44it/s]
+Searching over common line pairs:  60%|█████▉    | 18645/31125 [01:04&lt;00:43, 289.83it/s]
+Searching over common line pairs:  60%|██████    | 18675/31125 [01:04&lt;00:42, 290.29it/s]
+Searching over common line pairs:  60%|██████    | 18705/31125 [01:04&lt;00:42, 290.43it/s]
+Searching over common line pairs:  60%|██████    | 18735/31125 [01:04&lt;00:42, 290.27it/s]
+Searching over common line pairs:  60%|██████    | 18765/31125 [01:04&lt;00:42, 290.82it/s]
+Searching over common line pairs:  60%|██████    | 18795/31125 [01:04&lt;00:42, 290.98it/s]
+Searching over common line pairs:  60%|██████    | 18825/31125 [01:04&lt;00:42, 290.69it/s]
+Searching over common line pairs:  61%|██████    | 18855/31125 [01:04&lt;00:42, 290.86it/s]
+Searching over common line pairs:  61%|██████    | 18885/31125 [01:04&lt;00:42, 290.78it/s]
+Searching over common line pairs:  61%|██████    | 18915/31125 [01:05&lt;00:41, 291.35it/s]
+Searching over common line pairs:  61%|██████    | 18945/31125 [01:05&lt;00:41, 291.63it/s]
+Searching over common line pairs:  61%|██████    | 18975/31125 [01:05&lt;00:41, 291.82it/s]
+Searching over common line pairs:  61%|██████    | 19005/31125 [01:05&lt;00:41, 292.40it/s]
+Searching over common line pairs:  61%|██████    | 19035/31125 [01:05&lt;00:41, 292.85it/s]
+Searching over common line pairs:  61%|██████▏   | 19065/31125 [01:05&lt;00:41, 292.72it/s]
+Searching over common line pairs:  61%|██████▏   | 19095/31125 [01:05&lt;00:41, 290.59it/s]
+Searching over common line pairs:  61%|██████▏   | 19125/31125 [01:05&lt;00:41, 290.89it/s]
+Searching over common line pairs:  62%|██████▏   | 19155/31125 [01:05&lt;00:41, 290.08it/s]
+Searching over common line pairs:  62%|██████▏   | 19185/31125 [01:05&lt;00:41, 290.37it/s]
+Searching over common line pairs:  62%|██████▏   | 19215/31125 [01:06&lt;00:41, 290.42it/s]
+Searching over common line pairs:  62%|██████▏   | 19245/31125 [01:06&lt;00:40, 290.12it/s]
+Searching over common line pairs:  62%|██████▏   | 19275/31125 [01:06&lt;00:40, 290.69it/s]
+Searching over common line pairs:  62%|██████▏   | 19305/31125 [01:06&lt;00:40, 291.16it/s]
+Searching over common line pairs:  62%|██████▏   | 19335/31125 [01:06&lt;00:40, 289.29it/s]
+Searching over common line pairs:  62%|██████▏   | 19365/31125 [01:06&lt;00:40, 290.13it/s]
+Searching over common line pairs:  62%|██████▏   | 19395/31125 [01:06&lt;00:40, 290.63it/s]
+Searching over common line pairs:  62%|██████▏   | 19425/31125 [01:06&lt;00:40, 290.94it/s]
+Searching over common line pairs:  63%|██████▎   | 19455/31125 [01:06&lt;00:40, 291.53it/s]
+Searching over common line pairs:  63%|██████▎   | 19485/31125 [01:07&lt;00:39, 291.40it/s]
+Searching over common line pairs:  63%|██████▎   | 19515/31125 [01:07&lt;00:39, 291.19it/s]
+Searching over common line pairs:  63%|██████▎   | 19545/31125 [01:07&lt;00:39, 291.33it/s]
+Searching over common line pairs:  63%|██████▎   | 19575/31125 [01:07&lt;00:39, 291.18it/s]
+Searching over common line pairs:  63%|██████▎   | 19605/31125 [01:07&lt;00:39, 291.31it/s]
+Searching over common line pairs:  63%|██████▎   | 19635/31125 [01:07&lt;00:39, 291.32it/s]
+Searching over common line pairs:  63%|██████▎   | 19665/31125 [01:07&lt;00:39, 291.21it/s]
+Searching over common line pairs:  63%|██████▎   | 19695/31125 [01:07&lt;00:39, 291.06it/s]
+Searching over common line pairs:  63%|██████▎   | 19725/31125 [01:07&lt;00:39, 291.20it/s]
+Searching over common line pairs:  63%|██████▎   | 19755/31125 [01:07&lt;00:39, 291.31it/s]
+Searching over common line pairs:  64%|██████▎   | 19785/31125 [01:08&lt;00:38, 291.13it/s]
+Searching over common line pairs:  64%|██████▎   | 19815/31125 [01:08&lt;00:38, 290.62it/s]
+Searching over common line pairs:  64%|██████▍   | 19845/31125 [01:08&lt;00:38, 290.26it/s]
+Searching over common line pairs:  64%|██████▍   | 19875/31125 [01:08&lt;00:38, 290.00it/s]
+Searching over common line pairs:  64%|██████▍   | 19905/31125 [01:08&lt;00:38, 289.82it/s]
+Searching over common line pairs:  64%|██████▍   | 19935/31125 [01:08&lt;00:38, 290.32it/s]
+Searching over common line pairs:  64%|██████▍   | 19965/31125 [01:08&lt;00:38, 290.58it/s]
+Searching over common line pairs:  64%|██████▍   | 19995/31125 [01:08&lt;00:38, 291.13it/s]
+Searching over common line pairs:  64%|██████▍   | 20025/31125 [01:08&lt;00:38, 291.29it/s]
+Searching over common line pairs:  64%|██████▍   | 20055/31125 [01:08&lt;00:37, 291.67it/s]
+Searching over common line pairs:  65%|██████▍   | 20085/31125 [01:09&lt;00:37, 292.29it/s]
+Searching over common line pairs:  65%|██████▍   | 20115/31125 [01:09&lt;00:37, 292.22it/s]
+Searching over common line pairs:  65%|██████▍   | 20145/31125 [01:09&lt;00:37, 292.35it/s]
+Searching over common line pairs:  65%|██████▍   | 20175/31125 [01:09&lt;00:37, 292.58it/s]
+Searching over common line pairs:  65%|██████▍   | 20205/31125 [01:09&lt;00:37, 292.92it/s]
+Searching over common line pairs:  65%|██████▌   | 20235/31125 [01:09&lt;00:37, 292.17it/s]
+Searching over common line pairs:  65%|██████▌   | 20265/31125 [01:09&lt;00:37, 292.12it/s]
+Searching over common line pairs:  65%|██████▌   | 20295/31125 [01:09&lt;00:37, 291.76it/s]
+Searching over common line pairs:  65%|██████▌   | 20325/31125 [01:09&lt;00:37, 291.72it/s]
+Searching over common line pairs:  65%|██████▌   | 20355/31125 [01:10&lt;00:37, 291.06it/s]
+Searching over common line pairs:  65%|██████▌   | 20385/31125 [01:10&lt;00:36, 290.70it/s]
+Searching over common line pairs:  66%|██████▌   | 20415/31125 [01:10&lt;00:36, 290.47it/s]
+Searching over common line pairs:  66%|██████▌   | 20445/31125 [01:10&lt;00:36, 290.84it/s]
+Searching over common line pairs:  66%|██████▌   | 20475/31125 [01:10&lt;00:36, 290.86it/s]
+Searching over common line pairs:  66%|██████▌   | 20505/31125 [01:10&lt;00:36, 290.79it/s]
+Searching over common line pairs:  66%|██████▌   | 20535/31125 [01:10&lt;00:36, 290.46it/s]
+Searching over common line pairs:  66%|██████▌   | 20565/31125 [01:10&lt;00:36, 290.05it/s]
+Searching over common line pairs:  66%|██████▌   | 20595/31125 [01:10&lt;00:36, 289.15it/s]
+Searching over common line pairs:  66%|██████▋   | 20624/31125 [01:10&lt;00:36, 289.36it/s]
+Searching over common line pairs:  66%|██████▋   | 20653/31125 [01:11&lt;00:36, 289.46it/s]
+Searching over common line pairs:  66%|██████▋   | 20683/31125 [01:11&lt;00:36, 289.87it/s]
+Searching over common line pairs:  67%|██████▋   | 20712/31125 [01:11&lt;00:35, 289.58it/s]
+Searching over common line pairs:  67%|██████▋   | 20742/31125 [01:11&lt;00:35, 289.71it/s]
+Searching over common line pairs:  67%|██████▋   | 20771/31125 [01:11&lt;00:35, 289.46it/s]
+Searching over common line pairs:  67%|██████▋   | 20800/31125 [01:11&lt;00:35, 289.15it/s]
+Searching over common line pairs:  67%|██████▋   | 20829/31125 [01:11&lt;00:35, 288.76it/s]
+Searching over common line pairs:  67%|██████▋   | 20858/31125 [01:11&lt;00:35, 288.68it/s]
+Searching over common line pairs:  67%|██████▋   | 20888/31125 [01:11&lt;00:35, 289.13it/s]
+Searching over common line pairs:  67%|██████▋   | 20918/31125 [01:11&lt;00:35, 290.04it/s]
+Searching over common line pairs:  67%|██████▋   | 20948/31125 [01:12&lt;00:35, 290.31it/s]
+Searching over common line pairs:  67%|██████▋   | 20978/31125 [01:12&lt;00:34, 290.72it/s]
+Searching over common line pairs:  67%|██████▋   | 21008/31125 [01:12&lt;00:34, 290.67it/s]
+Searching over common line pairs:  68%|██████▊   | 21038/31125 [01:12&lt;00:34, 290.60it/s]
+Searching over common line pairs:  68%|██████▊   | 21068/31125 [01:12&lt;00:34, 290.57it/s]
+Searching over common line pairs:  68%|██████▊   | 21098/31125 [01:12&lt;00:34, 289.94it/s]
+Searching over common line pairs:  68%|██████▊   | 21128/31125 [01:12&lt;00:34, 289.95it/s]
+Searching over common line pairs:  68%|██████▊   | 21158/31125 [01:12&lt;00:34, 290.09it/s]
+Searching over common line pairs:  68%|██████▊   | 21188/31125 [01:12&lt;00:34, 289.99it/s]
+Searching over common line pairs:  68%|██████▊   | 21217/31125 [01:12&lt;00:34, 289.73it/s]
+Searching over common line pairs:  68%|██████▊   | 21247/31125 [01:13&lt;00:34, 290.42it/s]
+Searching over common line pairs:  68%|██████▊   | 21277/31125 [01:13&lt;00:33, 290.92it/s]
+Searching over common line pairs:  68%|██████▊   | 21307/31125 [01:13&lt;00:33, 290.83it/s]
+Searching over common line pairs:  69%|██████▊   | 21337/31125 [01:13&lt;00:33, 291.06it/s]
+Searching over common line pairs:  69%|██████▊   | 21367/31125 [01:13&lt;00:33, 290.18it/s]
+Searching over common line pairs:  69%|██████▊   | 21397/31125 [01:13&lt;00:33, 289.54it/s]
+Searching over common line pairs:  69%|██████▉   | 21426/31125 [01:13&lt;00:33, 289.63it/s]
+Searching over common line pairs:  69%|██████▉   | 21456/31125 [01:13&lt;00:33, 289.82it/s]
+Searching over common line pairs:  69%|██████▉   | 21486/31125 [01:13&lt;00:33, 290.37it/s]
+Searching over common line pairs:  69%|██████▉   | 21516/31125 [01:14&lt;00:33, 289.79it/s]
+Searching over common line pairs:  69%|██████▉   | 21546/31125 [01:14&lt;00:33, 290.13it/s]
+Searching over common line pairs:  69%|██████▉   | 21576/31125 [01:14&lt;00:32, 290.24it/s]
+Searching over common line pairs:  69%|██████▉   | 21606/31125 [01:14&lt;00:32, 289.63it/s]
+Searching over common line pairs:  70%|██████▉   | 21636/31125 [01:14&lt;00:32, 289.94it/s]
+Searching over common line pairs:  70%|██████▉   | 21666/31125 [01:14&lt;00:32, 290.45it/s]
+Searching over common line pairs:  70%|██████▉   | 21696/31125 [01:14&lt;00:32, 290.45it/s]
+Searching over common line pairs:  70%|██████▉   | 21726/31125 [01:14&lt;00:32, 291.38it/s]
+Searching over common line pairs:  70%|██████▉   | 21756/31125 [01:14&lt;00:32, 291.19it/s]
+Searching over common line pairs:  70%|██████▉   | 21786/31125 [01:14&lt;00:32, 291.17it/s]
+Searching over common line pairs:  70%|███████   | 21816/31125 [01:15&lt;00:31, 291.12it/s]
+Searching over common line pairs:  70%|███████   | 21846/31125 [01:15&lt;00:31, 291.00it/s]
+Searching over common line pairs:  70%|███████   | 21876/31125 [01:15&lt;00:31, 290.59it/s]
+Searching over common line pairs:  70%|███████   | 21906/31125 [01:15&lt;00:31, 290.31it/s]
+Searching over common line pairs:  70%|███████   | 21936/31125 [01:15&lt;00:31, 290.16it/s]
+Searching over common line pairs:  71%|███████   | 21966/31125 [01:15&lt;00:31, 290.28it/s]
+Searching over common line pairs:  71%|███████   | 21996/31125 [01:15&lt;00:31, 290.56it/s]
+Searching over common line pairs:  71%|███████   | 22026/31125 [01:15&lt;00:31, 290.79it/s]
+Searching over common line pairs:  71%|███████   | 22056/31125 [01:15&lt;00:31, 290.90it/s]
+Searching over common line pairs:  71%|███████   | 22086/31125 [01:15&lt;00:31, 290.73it/s]
+Searching over common line pairs:  71%|███████   | 22116/31125 [01:16&lt;00:30, 290.89it/s]
+Searching over common line pairs:  71%|███████   | 22146/31125 [01:16&lt;00:30, 291.39it/s]
+Searching over common line pairs:  71%|███████   | 22176/31125 [01:16&lt;00:30, 291.51it/s]
+Searching over common line pairs:  71%|███████▏  | 22206/31125 [01:16&lt;00:30, 291.87it/s]
+Searching over common line pairs:  71%|███████▏  | 22236/31125 [01:16&lt;00:30, 291.23it/s]
+Searching over common line pairs:  72%|███████▏  | 22266/31125 [01:16&lt;00:30, 291.38it/s]
+Searching over common line pairs:  72%|███████▏  | 22296/31125 [01:16&lt;00:30, 291.17it/s]
+Searching over common line pairs:  72%|███████▏  | 22326/31125 [01:16&lt;00:30, 291.11it/s]
+Searching over common line pairs:  72%|███████▏  | 22356/31125 [01:16&lt;00:30, 291.13it/s]
+Searching over common line pairs:  72%|███████▏  | 22386/31125 [01:17&lt;00:29, 291.71it/s]
+Searching over common line pairs:  72%|███████▏  | 22416/31125 [01:17&lt;00:29, 291.64it/s]
+Searching over common line pairs:  72%|███████▏  | 22446/31125 [01:17&lt;00:29, 292.59it/s]
+Searching over common line pairs:  72%|███████▏  | 22476/31125 [01:17&lt;00:29, 292.17it/s]
+Searching over common line pairs:  72%|███████▏  | 22506/31125 [01:17&lt;00:29, 291.79it/s]
+Searching over common line pairs:  72%|███████▏  | 22536/31125 [01:17&lt;00:29, 291.70it/s]
+Searching over common line pairs:  73%|███████▎  | 22566/31125 [01:17&lt;00:29, 291.64it/s]
+Searching over common line pairs:  73%|███████▎  | 22596/31125 [01:17&lt;00:29, 291.44it/s]
+Searching over common line pairs:  73%|███████▎  | 22626/31125 [01:17&lt;00:29, 291.33it/s]
+Searching over common line pairs:  73%|███████▎  | 22656/31125 [01:17&lt;00:29, 291.02it/s]
+Searching over common line pairs:  73%|███████▎  | 22686/31125 [01:18&lt;00:28, 291.12it/s]
+Searching over common line pairs:  73%|███████▎  | 22716/31125 [01:18&lt;00:28, 291.62it/s]
+Searching over common line pairs:  73%|███████▎  | 22746/31125 [01:18&lt;00:28, 292.26it/s]
+Searching over common line pairs:  73%|███████▎  | 22776/31125 [01:18&lt;00:28, 292.25it/s]
+Searching over common line pairs:  73%|███████▎  | 22806/31125 [01:18&lt;00:28, 290.73it/s]
+Searching over common line pairs:  73%|███████▎  | 22836/31125 [01:18&lt;00:28, 289.88it/s]
+Searching over common line pairs:  73%|███████▎  | 22866/31125 [01:18&lt;00:28, 290.29it/s]
+Searching over common line pairs:  74%|███████▎  | 22896/31125 [01:18&lt;00:28, 290.18it/s]
+Searching over common line pairs:  74%|███████▎  | 22926/31125 [01:18&lt;00:28, 290.63it/s]
+Searching over common line pairs:  74%|███████▍  | 22956/31125 [01:18&lt;00:28, 291.18it/s]
+Searching over common line pairs:  74%|███████▍  | 22986/31125 [01:19&lt;00:28, 290.64it/s]
+Searching over common line pairs:  74%|███████▍  | 23016/31125 [01:19&lt;00:27, 290.40it/s]
+Searching over common line pairs:  74%|███████▍  | 23046/31125 [01:19&lt;00:27, 290.43it/s]
+Searching over common line pairs:  74%|███████▍  | 23076/31125 [01:19&lt;00:27, 290.25it/s]
+Searching over common line pairs:  74%|███████▍  | 23106/31125 [01:19&lt;00:27, 290.63it/s]
+Searching over common line pairs:  74%|███████▍  | 23136/31125 [01:19&lt;00:27, 290.12it/s]
+Searching over common line pairs:  74%|███████▍  | 23166/31125 [01:19&lt;00:27, 290.50it/s]
+Searching over common line pairs:  75%|███████▍  | 23196/31125 [01:19&lt;00:27, 291.31it/s]
+Searching over common line pairs:  75%|███████▍  | 23226/31125 [01:19&lt;00:27, 291.46it/s]
+Searching over common line pairs:  75%|███████▍  | 23256/31125 [01:19&lt;00:27, 290.99it/s]
+Searching over common line pairs:  75%|███████▍  | 23286/31125 [01:20&lt;00:26, 290.78it/s]
+Searching over common line pairs:  75%|███████▍  | 23316/31125 [01:20&lt;00:26, 290.80it/s]
+Searching over common line pairs:  75%|███████▌  | 23346/31125 [01:20&lt;00:26, 290.71it/s]
+Searching over common line pairs:  75%|███████▌  | 23376/31125 [01:20&lt;00:26, 290.37it/s]
+Searching over common line pairs:  75%|███████▌  | 23406/31125 [01:20&lt;00:26, 290.24it/s]
+Searching over common line pairs:  75%|███████▌  | 23436/31125 [01:20&lt;00:26, 290.77it/s]
+Searching over common line pairs:  75%|███████▌  | 23466/31125 [01:20&lt;00:26, 290.47it/s]
+Searching over common line pairs:  75%|███████▌  | 23496/31125 [01:20&lt;00:26, 290.87it/s]
+Searching over common line pairs:  76%|███████▌  | 23526/31125 [01:20&lt;00:26, 290.32it/s]
+Searching over common line pairs:  76%|███████▌  | 23556/31125 [01:21&lt;00:26, 290.69it/s]
+Searching over common line pairs:  76%|███████▌  | 23586/31125 [01:21&lt;00:25, 290.54it/s]
+Searching over common line pairs:  76%|███████▌  | 23616/31125 [01:21&lt;00:25, 290.60it/s]
+Searching over common line pairs:  76%|███████▌  | 23646/31125 [01:21&lt;00:25, 289.88it/s]
+Searching over common line pairs:  76%|███████▌  | 23676/31125 [01:21&lt;00:25, 290.14it/s]
+Searching over common line pairs:  76%|███████▌  | 23706/31125 [01:21&lt;00:25, 289.99it/s]
+Searching over common line pairs:  76%|███████▋  | 23735/31125 [01:21&lt;00:25, 289.99it/s]
+Searching over common line pairs:  76%|███████▋  | 23765/31125 [01:21&lt;00:25, 290.43it/s]
+Searching over common line pairs:  76%|███████▋  | 23795/31125 [01:21&lt;00:25, 290.66it/s]
+Searching over common line pairs:  77%|███████▋  | 23825/31125 [01:21&lt;00:25, 290.81it/s]
+Searching over common line pairs:  77%|███████▋  | 23855/31125 [01:22&lt;00:24, 290.85it/s]
+Searching over common line pairs:  77%|███████▋  | 23885/31125 [01:22&lt;00:24, 291.11it/s]
+Searching over common line pairs:  77%|███████▋  | 23915/31125 [01:22&lt;00:24, 291.52it/s]
+Searching over common line pairs:  77%|███████▋  | 23945/31125 [01:22&lt;00:24, 291.82it/s]
+Searching over common line pairs:  77%|███████▋  | 23975/31125 [01:22&lt;00:24, 291.95it/s]
+Searching over common line pairs:  77%|███████▋  | 24005/31125 [01:22&lt;00:24, 291.81it/s]
+Searching over common line pairs:  77%|███████▋  | 24035/31125 [01:22&lt;00:24, 291.69it/s]
+Searching over common line pairs:  77%|███████▋  | 24065/31125 [01:22&lt;00:24, 291.03it/s]
+Searching over common line pairs:  77%|███████▋  | 24095/31125 [01:22&lt;00:24, 290.94it/s]
+Searching over common line pairs:  78%|███████▊  | 24125/31125 [01:22&lt;00:24, 290.55it/s]
+Searching over common line pairs:  78%|███████▊  | 24155/31125 [01:23&lt;00:23, 290.97it/s]
+Searching over common line pairs:  78%|███████▊  | 24185/31125 [01:23&lt;00:23, 291.23it/s]
+Searching over common line pairs:  78%|███████▊  | 24215/31125 [01:23&lt;00:23, 290.22it/s]
+Searching over common line pairs:  78%|███████▊  | 24245/31125 [01:23&lt;00:23, 290.65it/s]
+Searching over common line pairs:  78%|███████▊  | 24275/31125 [01:23&lt;00:23, 290.91it/s]
+Searching over common line pairs:  78%|███████▊  | 24305/31125 [01:23&lt;00:23, 290.87it/s]
+Searching over common line pairs:  78%|███████▊  | 24335/31125 [01:23&lt;00:23, 290.88it/s]
+Searching over common line pairs:  78%|███████▊  | 24365/31125 [01:23&lt;00:23, 291.23it/s]
+Searching over common line pairs:  78%|███████▊  | 24395/31125 [01:23&lt;00:23, 291.67it/s]
+Searching over common line pairs:  78%|███████▊  | 24425/31125 [01:24&lt;00:23, 290.74it/s]
+Searching over common line pairs:  79%|███████▊  | 24455/31125 [01:24&lt;00:22, 290.56it/s]
+Searching over common line pairs:  79%|███████▊  | 24485/31125 [01:24&lt;00:22, 291.14it/s]
+Searching over common line pairs:  79%|███████▉  | 24515/31125 [01:24&lt;00:22, 291.89it/s]
+Searching over common line pairs:  79%|███████▉  | 24545/31125 [01:24&lt;00:22, 292.87it/s]
+Searching over common line pairs:  79%|███████▉  | 24575/31125 [01:24&lt;00:22, 292.57it/s]
+Searching over common line pairs:  79%|███████▉  | 24605/31125 [01:24&lt;00:22, 292.81it/s]
+Searching over common line pairs:  79%|███████▉  | 24635/31125 [01:24&lt;00:22, 292.57it/s]
+Searching over common line pairs:  79%|███████▉  | 24665/31125 [01:24&lt;00:22, 292.02it/s]
+Searching over common line pairs:  79%|███████▉  | 24695/31125 [01:24&lt;00:21, 292.52it/s]
+Searching over common line pairs:  79%|███████▉  | 24725/31125 [01:25&lt;00:21, 292.12it/s]
+Searching over common line pairs:  80%|███████▉  | 24755/31125 [01:25&lt;00:21, 291.48it/s]
+Searching over common line pairs:  80%|███████▉  | 24785/31125 [01:25&lt;00:21, 291.50it/s]
+Searching over common line pairs:  80%|███████▉  | 24815/31125 [01:25&lt;00:21, 292.00it/s]
+Searching over common line pairs:  80%|███████▉  | 24845/31125 [01:25&lt;00:21, 292.50it/s]
+Searching over common line pairs:  80%|███████▉  | 24875/31125 [01:25&lt;00:21, 293.41it/s]
+Searching over common line pairs:  80%|████████  | 24905/31125 [01:25&lt;00:21, 294.13it/s]
+Searching over common line pairs:  80%|████████  | 24935/31125 [01:25&lt;00:21, 293.92it/s]
+Searching over common line pairs:  80%|████████  | 24965/31125 [01:25&lt;00:20, 293.78it/s]
+Searching over common line pairs:  80%|████████  | 24995/31125 [01:25&lt;00:20, 293.13it/s]
+Searching over common line pairs:  80%|████████  | 25025/31125 [01:26&lt;00:20, 291.94it/s]
+Searching over common line pairs:  80%|████████  | 25055/31125 [01:26&lt;00:20, 291.82it/s]
+Searching over common line pairs:  81%|████████  | 25085/31125 [01:26&lt;00:20, 291.12it/s]
+Searching over common line pairs:  81%|████████  | 25115/31125 [01:26&lt;00:20, 290.85it/s]
+Searching over common line pairs:  81%|████████  | 25145/31125 [01:26&lt;00:20, 289.57it/s]
+Searching over common line pairs:  81%|████████  | 25175/31125 [01:26&lt;00:20, 289.88it/s]
+Searching over common line pairs:  81%|████████  | 25204/31125 [01:26&lt;00:20, 288.95it/s]
+Searching over common line pairs:  81%|████████  | 25233/31125 [01:26&lt;00:20, 289.14it/s]
+Searching over common line pairs:  81%|████████  | 25262/31125 [01:26&lt;00:20, 289.09it/s]
+Searching over common line pairs:  81%|████████▏ | 25292/31125 [01:26&lt;00:20, 289.61it/s]
+Searching over common line pairs:  81%|████████▏ | 25321/31125 [01:27&lt;00:20, 289.59it/s]
+Searching over common line pairs:  81%|████████▏ | 25351/31125 [01:27&lt;00:19, 290.05it/s]
+Searching over common line pairs:  82%|████████▏ | 25381/31125 [01:27&lt;00:19, 290.23it/s]
+Searching over common line pairs:  82%|████████▏ | 25411/31125 [01:27&lt;00:19, 290.28it/s]
+Searching over common line pairs:  82%|████████▏ | 25441/31125 [01:27&lt;00:19, 290.09it/s]
+Searching over common line pairs:  82%|████████▏ | 25471/31125 [01:27&lt;00:19, 290.01it/s]
+Searching over common line pairs:  82%|████████▏ | 25501/31125 [01:27&lt;00:19, 289.90it/s]
+Searching over common line pairs:  82%|████████▏ | 25530/31125 [01:27&lt;00:19, 289.69it/s]
+Searching over common line pairs:  82%|████████▏ | 25559/31125 [01:27&lt;00:19, 289.52it/s]
+Searching over common line pairs:  82%|████████▏ | 25588/31125 [01:28&lt;00:19, 289.00it/s]
+Searching over common line pairs:  82%|████████▏ | 25617/31125 [01:28&lt;00:19, 288.68it/s]
+Searching over common line pairs:  82%|████████▏ | 25646/31125 [01:28&lt;00:18, 288.86it/s]
+Searching over common line pairs:  82%|████████▏ | 25675/31125 [01:28&lt;00:18, 288.82it/s]
+Searching over common line pairs:  83%|████████▎ | 25705/31125 [01:28&lt;00:18, 289.18it/s]
+Searching over common line pairs:  83%|████████▎ | 25734/31125 [01:28&lt;00:18, 289.12it/s]
+Searching over common line pairs:  83%|████████▎ | 25764/31125 [01:28&lt;00:18, 289.43it/s]
+Searching over common line pairs:  83%|████████▎ | 25794/31125 [01:28&lt;00:18, 289.84it/s]
+Searching over common line pairs:  83%|████████▎ | 25824/31125 [01:28&lt;00:18, 290.04it/s]
+Searching over common line pairs:  83%|████████▎ | 25854/31125 [01:28&lt;00:18, 290.25it/s]
+Searching over common line pairs:  83%|████████▎ | 25884/31125 [01:29&lt;00:18, 290.13it/s]
+Searching over common line pairs:  83%|████████▎ | 25914/31125 [01:29&lt;00:17, 290.28it/s]
+Searching over common line pairs:  83%|████████▎ | 25944/31125 [01:29&lt;00:17, 290.60it/s]
+Searching over common line pairs:  83%|████████▎ | 25974/31125 [01:29&lt;00:17, 290.62it/s]
+Searching over common line pairs:  84%|████████▎ | 26004/31125 [01:29&lt;00:17, 289.75it/s]
+Searching over common line pairs:  84%|████████▎ | 26033/31125 [01:29&lt;00:17, 289.40it/s]
+Searching over common line pairs:  84%|████████▎ | 26063/31125 [01:29&lt;00:17, 289.86it/s]
+Searching over common line pairs:  84%|████████▍ | 26093/31125 [01:29&lt;00:17, 290.04it/s]
+Searching over common line pairs:  84%|████████▍ | 26123/31125 [01:29&lt;00:17, 290.59it/s]
+Searching over common line pairs:  84%|████████▍ | 26153/31125 [01:29&lt;00:17, 291.46it/s]
+Searching over common line pairs:  84%|████████▍ | 26183/31125 [01:30&lt;00:16, 291.25it/s]
+Searching over common line pairs:  84%|████████▍ | 26213/31125 [01:30&lt;00:16, 291.57it/s]
+Searching over common line pairs:  84%|████████▍ | 26243/31125 [01:30&lt;00:16, 291.43it/s]
+Searching over common line pairs:  84%|████████▍ | 26273/31125 [01:30&lt;00:16, 291.75it/s]
+Searching over common line pairs:  85%|████████▍ | 26303/31125 [01:30&lt;00:16, 291.69it/s]
+Searching over common line pairs:  85%|████████▍ | 26333/31125 [01:30&lt;00:16, 292.24it/s]
+Searching over common line pairs:  85%|████████▍ | 26363/31125 [01:30&lt;00:16, 291.85it/s]
+Searching over common line pairs:  85%|████████▍ | 26393/31125 [01:30&lt;00:16, 291.58it/s]
+Searching over common line pairs:  85%|████████▍ | 26423/31125 [01:30&lt;00:16, 292.18it/s]
+Searching over common line pairs:  85%|████████▍ | 26453/31125 [01:30&lt;00:15, 292.35it/s]
+Searching over common line pairs:  85%|████████▌ | 26483/31125 [01:31&lt;00:15, 292.45it/s]
+Searching over common line pairs:  85%|████████▌ | 26513/31125 [01:31&lt;00:15, 293.86it/s]
+Searching over common line pairs:  85%|████████▌ | 26543/31125 [01:31&lt;00:15, 293.93it/s]
+Searching over common line pairs:  85%|████████▌ | 26573/31125 [01:31&lt;00:15, 294.41it/s]
+Searching over common line pairs:  85%|████████▌ | 26603/31125 [01:31&lt;00:15, 295.15it/s]
+Searching over common line pairs:  86%|████████▌ | 26633/31125 [01:31&lt;00:15, 293.94it/s]
+Searching over common line pairs:  86%|████████▌ | 26663/31125 [01:31&lt;00:15, 293.85it/s]
+Searching over common line pairs:  86%|████████▌ | 26693/31125 [01:31&lt;00:15, 294.93it/s]
+Searching over common line pairs:  86%|████████▌ | 26723/31125 [01:31&lt;00:14, 294.55it/s]
+Searching over common line pairs:  86%|████████▌ | 26753/31125 [01:31&lt;00:14, 294.26it/s]
+Searching over common line pairs:  86%|████████▌ | 26783/31125 [01:32&lt;00:14, 294.51it/s]
+Searching over common line pairs:  86%|████████▌ | 26813/31125 [01:32&lt;00:14, 294.67it/s]
+Searching over common line pairs:  86%|████████▌ | 26843/31125 [01:32&lt;00:14, 293.85it/s]
+Searching over common line pairs:  86%|████████▋ | 26873/31125 [01:32&lt;00:14, 293.20it/s]
+Searching over common line pairs:  86%|████████▋ | 26903/31125 [01:32&lt;00:14, 292.94it/s]
+Searching over common line pairs:  87%|████████▋ | 26933/31125 [01:32&lt;00:14, 293.20it/s]
+Searching over common line pairs:  87%|████████▋ | 26963/31125 [01:32&lt;00:14, 293.17it/s]
+Searching over common line pairs:  87%|████████▋ | 26993/31125 [01:32&lt;00:14, 292.87it/s]
+Searching over common line pairs:  87%|████████▋ | 27023/31125 [01:32&lt;00:13, 293.28it/s]
+Searching over common line pairs:  87%|████████▋ | 27053/31125 [01:33&lt;00:13, 292.83it/s]
+Searching over common line pairs:  87%|████████▋ | 27083/31125 [01:33&lt;00:13, 293.40it/s]
+Searching over common line pairs:  87%|████████▋ | 27113/31125 [01:33&lt;00:13, 294.80it/s]
+Searching over common line pairs:  87%|████████▋ | 27143/31125 [01:33&lt;00:13, 295.19it/s]
+Searching over common line pairs:  87%|████████▋ | 27173/31125 [01:33&lt;00:13, 295.24it/s]
+Searching over common line pairs:  87%|████████▋ | 27203/31125 [01:33&lt;00:13, 293.99it/s]
+Searching over common line pairs:  87%|████████▋ | 27233/31125 [01:33&lt;00:13, 294.00it/s]
+Searching over common line pairs:  88%|████████▊ | 27263/31125 [01:33&lt;00:13, 294.28it/s]
+Searching over common line pairs:  88%|████████▊ | 27293/31125 [01:33&lt;00:13, 293.90it/s]
+Searching over common line pairs:  88%|████████▊ | 27323/31125 [01:33&lt;00:12, 294.45it/s]
+Searching over common line pairs:  88%|████████▊ | 27353/31125 [01:34&lt;00:12, 294.28it/s]
+Searching over common line pairs:  88%|████████▊ | 27383/31125 [01:34&lt;00:12, 295.51it/s]
+Searching over common line pairs:  88%|████████▊ | 27413/31125 [01:34&lt;00:12, 295.15it/s]
+Searching over common line pairs:  88%|████████▊ | 27443/31125 [01:34&lt;00:12, 294.97it/s]
+Searching over common line pairs:  88%|████████▊ | 27473/31125 [01:34&lt;00:12, 295.01it/s]
+Searching over common line pairs:  88%|████████▊ | 27503/31125 [01:34&lt;00:12, 294.60it/s]
+Searching over common line pairs:  88%|████████▊ | 27533/31125 [01:34&lt;00:12, 295.06it/s]
+Searching over common line pairs:  89%|████████▊ | 27563/31125 [01:34&lt;00:12, 294.19it/s]
+Searching over common line pairs:  89%|████████▊ | 27593/31125 [01:34&lt;00:12, 293.21it/s]
+Searching over common line pairs:  89%|████████▊ | 27623/31125 [01:34&lt;00:11, 293.01it/s]
+Searching over common line pairs:  89%|████████▉ | 27653/31125 [01:35&lt;00:11, 292.46it/s]
+Searching over common line pairs:  89%|████████▉ | 27683/31125 [01:35&lt;00:11, 292.83it/s]
+Searching over common line pairs:  89%|████████▉ | 27713/31125 [01:35&lt;00:11, 293.92it/s]
+Searching over common line pairs:  89%|████████▉ | 27743/31125 [01:35&lt;00:11, 293.72it/s]
+Searching over common line pairs:  89%|████████▉ | 27773/31125 [01:35&lt;00:11, 293.88it/s]
+Searching over common line pairs:  89%|████████▉ | 27803/31125 [01:35&lt;00:11, 293.85it/s]
+Searching over common line pairs:  89%|████████▉ | 27833/31125 [01:35&lt;00:11, 294.14it/s]
+Searching over common line pairs:  90%|████████▉ | 27863/31125 [01:35&lt;00:11, 294.18it/s]
+Searching over common line pairs:  90%|████████▉ | 27893/31125 [01:35&lt;00:10, 294.03it/s]
+Searching over common line pairs:  90%|████████▉ | 27923/31125 [01:35&lt;00:10, 294.62it/s]
+Searching over common line pairs:  90%|████████▉ | 27953/31125 [01:36&lt;00:10, 294.32it/s]
+Searching over common line pairs:  90%|████████▉ | 27983/31125 [01:36&lt;00:10, 293.71it/s]
+Searching over common line pairs:  90%|█████████ | 28013/31125 [01:36&lt;00:10, 293.78it/s]
+Searching over common line pairs:  90%|█████████ | 28043/31125 [01:36&lt;00:10, 293.62it/s]
+Searching over common line pairs:  90%|█████████ | 28073/31125 [01:36&lt;00:10, 293.64it/s]
+Searching over common line pairs:  90%|█████████ | 28103/31125 [01:36&lt;00:10, 294.41it/s]
+Searching over common line pairs:  90%|█████████ | 28133/31125 [01:36&lt;00:10, 294.08it/s]
+Searching over common line pairs:  90%|█████████ | 28163/31125 [01:36&lt;00:10, 293.79it/s]
+Searching over common line pairs:  91%|█████████ | 28193/31125 [01:36&lt;00:09, 293.70it/s]
+Searching over common line pairs:  91%|█████████ | 28223/31125 [01:37&lt;00:09, 293.04it/s]
+Searching over common line pairs:  91%|█████████ | 28253/31125 [01:37&lt;00:09, 291.88it/s]
+Searching over common line pairs:  91%|█████████ | 28283/31125 [01:37&lt;00:09, 291.39it/s]
+Searching over common line pairs:  91%|█████████ | 28313/31125 [01:37&lt;00:09, 290.84it/s]
+Searching over common line pairs:  91%|█████████ | 28343/31125 [01:37&lt;00:09, 291.02it/s]
+Searching over common line pairs:  91%|█████████ | 28373/31125 [01:37&lt;00:09, 291.23it/s]
+Searching over common line pairs:  91%|█████████▏| 28403/31125 [01:37&lt;00:09, 291.81it/s]
+Searching over common line pairs:  91%|█████████▏| 28433/31125 [01:37&lt;00:09, 292.29it/s]
+Searching over common line pairs:  91%|█████████▏| 28463/31125 [01:37&lt;00:09, 293.31it/s]
+Searching over common line pairs:  92%|█████████▏| 28493/31125 [01:37&lt;00:08, 293.56it/s]
+Searching over common line pairs:  92%|█████████▏| 28523/31125 [01:38&lt;00:08, 293.09it/s]
+Searching over common line pairs:  92%|█████████▏| 28553/31125 [01:38&lt;00:08, 292.82it/s]
+Searching over common line pairs:  92%|█████████▏| 28583/31125 [01:38&lt;00:08, 292.03it/s]
+Searching over common line pairs:  92%|█████████▏| 28613/31125 [01:38&lt;00:08, 293.17it/s]
+Searching over common line pairs:  92%|█████████▏| 28643/31125 [01:38&lt;00:08, 293.37it/s]
+Searching over common line pairs:  92%|█████████▏| 28673/31125 [01:38&lt;00:08, 292.23it/s]
+Searching over common line pairs:  92%|█████████▏| 28703/31125 [01:38&lt;00:08, 291.95it/s]
+Searching over common line pairs:  92%|█████████▏| 28733/31125 [01:38&lt;00:08, 291.40it/s]
+Searching over common line pairs:  92%|█████████▏| 28763/31125 [01:38&lt;00:08, 291.47it/s]
+Searching over common line pairs:  93%|█████████▎| 28793/31125 [01:38&lt;00:07, 291.62it/s]
+Searching over common line pairs:  93%|█████████▎| 28823/31125 [01:39&lt;00:07, 292.34it/s]
+Searching over common line pairs:  93%|█████████▎| 28853/31125 [01:39&lt;00:07, 291.43it/s]
+Searching over common line pairs:  93%|█████████▎| 28883/31125 [01:39&lt;00:07, 291.40it/s]
+Searching over common line pairs:  93%|█████████▎| 28913/31125 [01:39&lt;00:07, 291.51it/s]
+Searching over common line pairs:  93%|█████████▎| 28943/31125 [01:39&lt;00:07, 291.23it/s]
+Searching over common line pairs:  93%|█████████▎| 28973/31125 [01:39&lt;00:07, 291.04it/s]
+Searching over common line pairs:  93%|█████████▎| 29003/31125 [01:39&lt;00:07, 290.82it/s]
+Searching over common line pairs:  93%|█████████▎| 29033/31125 [01:39&lt;00:07, 290.51it/s]
+Searching over common line pairs:  93%|█████████▎| 29063/31125 [01:39&lt;00:07, 290.87it/s]
+Searching over common line pairs:  93%|█████████▎| 29093/31125 [01:39&lt;00:06, 291.65it/s]
+Searching over common line pairs:  94%|█████████▎| 29123/31125 [01:40&lt;00:06, 292.09it/s]
+Searching over common line pairs:  94%|█████████▎| 29153/31125 [01:40&lt;00:06, 292.97it/s]
+Searching over common line pairs:  94%|█████████▍| 29183/31125 [01:40&lt;00:06, 292.62it/s]
+Searching over common line pairs:  94%|█████████▍| 29213/31125 [01:40&lt;00:06, 292.74it/s]
+Searching over common line pairs:  94%|█████████▍| 29243/31125 [01:40&lt;00:06, 293.32it/s]
+Searching over common line pairs:  94%|█████████▍| 29273/31125 [01:40&lt;00:06, 293.08it/s]
+Searching over common line pairs:  94%|█████████▍| 29303/31125 [01:40&lt;00:06, 292.74it/s]
+Searching over common line pairs:  94%|█████████▍| 29333/31125 [01:40&lt;00:06, 292.10it/s]
+Searching over common line pairs:  94%|█████████▍| 29363/31125 [01:40&lt;00:06, 291.42it/s]
+Searching over common line pairs:  94%|█████████▍| 29393/31125 [01:41&lt;00:05, 291.98it/s]
+Searching over common line pairs:  95%|█████████▍| 29423/31125 [01:41&lt;00:05, 291.79it/s]
+Searching over common line pairs:  95%|█████████▍| 29453/31125 [01:41&lt;00:05, 291.79it/s]
+Searching over common line pairs:  95%|█████████▍| 29483/31125 [01:41&lt;00:05, 293.32it/s]
+Searching over common line pairs:  95%|█████████▍| 29513/31125 [01:41&lt;00:05, 293.49it/s]
+Searching over common line pairs:  95%|█████████▍| 29543/31125 [01:41&lt;00:05, 292.99it/s]
+Searching over common line pairs:  95%|█████████▌| 29573/31125 [01:41&lt;00:05, 292.74it/s]
+Searching over common line pairs:  95%|█████████▌| 29603/31125 [01:41&lt;00:05, 293.58it/s]
+Searching over common line pairs:  95%|█████████▌| 29633/31125 [01:41&lt;00:05, 293.31it/s]
+Searching over common line pairs:  95%|█████████▌| 29663/31125 [01:41&lt;00:05, 292.02it/s]
+Searching over common line pairs:  95%|█████████▌| 29693/31125 [01:42&lt;00:04, 292.45it/s]
+Searching over common line pairs:  95%|█████████▌| 29723/31125 [01:42&lt;00:04, 292.91it/s]
+Searching over common line pairs:  96%|█████████▌| 29753/31125 [01:42&lt;00:04, 293.11it/s]
+Searching over common line pairs:  96%|█████████▌| 29783/31125 [01:42&lt;00:04, 293.80it/s]
+Searching over common line pairs:  96%|█████████▌| 29813/31125 [01:42&lt;00:04, 294.35it/s]
+Searching over common line pairs:  96%|█████████▌| 29843/31125 [01:42&lt;00:04, 294.60it/s]
+Searching over common line pairs:  96%|█████████▌| 29873/31125 [01:42&lt;00:04, 294.47it/s]
+Searching over common line pairs:  96%|█████████▌| 29903/31125 [01:42&lt;00:04, 294.77it/s]
+Searching over common line pairs:  96%|█████████▌| 29933/31125 [01:42&lt;00:04, 294.98it/s]
+Searching over common line pairs:  96%|█████████▋| 29963/31125 [01:42&lt;00:03, 294.16it/s]
+Searching over common line pairs:  96%|█████████▋| 29993/31125 [01:43&lt;00:03, 293.65it/s]
+Searching over common line pairs:  96%|█████████▋| 30023/31125 [01:43&lt;00:03, 293.39it/s]
+Searching over common line pairs:  97%|█████████▋| 30053/31125 [01:43&lt;00:03, 293.96it/s]
+Searching over common line pairs:  97%|█████████▋| 30083/31125 [01:43&lt;00:03, 294.91it/s]
+Searching over common line pairs:  97%|█████████▋| 30113/31125 [01:43&lt;00:03, 295.10it/s]
+Searching over common line pairs:  97%|█████████▋| 30143/31125 [01:43&lt;00:03, 294.60it/s]
+Searching over common line pairs:  97%|█████████▋| 30173/31125 [01:43&lt;00:03, 295.05it/s]
+Searching over common line pairs:  97%|█████████▋| 30203/31125 [01:43&lt;00:03, 294.73it/s]
+Searching over common line pairs:  97%|█████████▋| 30233/31125 [01:43&lt;00:03, 294.91it/s]
+Searching over common line pairs:  97%|█████████▋| 30263/31125 [01:43&lt;00:02, 293.95it/s]
+Searching over common line pairs:  97%|█████████▋| 30293/31125 [01:44&lt;00:02, 294.25it/s]
+Searching over common line pairs:  97%|█████████▋| 30323/31125 [01:44&lt;00:02, 293.47it/s]
+Searching over common line pairs:  98%|█████████▊| 30353/31125 [01:44&lt;00:02, 293.05it/s]
+Searching over common line pairs:  98%|█████████▊| 30383/31125 [01:44&lt;00:02, 294.17it/s]
+Searching over common line pairs:  98%|█████████▊| 30413/31125 [01:44&lt;00:02, 294.57it/s]
+Searching over common line pairs:  98%|█████████▊| 30443/31125 [01:44&lt;00:02, 293.54it/s]
+Searching over common line pairs:  98%|█████████▊| 30473/31125 [01:44&lt;00:02, 293.70it/s]
+Searching over common line pairs:  98%|█████████▊| 30503/31125 [01:44&lt;00:02, 293.85it/s]
+Searching over common line pairs:  98%|█████████▊| 30533/31125 [01:44&lt;00:02, 292.63it/s]
+Searching over common line pairs:  98%|█████████▊| 30563/31125 [01:44&lt;00:01, 292.79it/s]
+Searching over common line pairs:  98%|█████████▊| 30593/31125 [01:45&lt;00:01, 292.50it/s]
+Searching over common line pairs:  98%|█████████▊| 30623/31125 [01:45&lt;00:01, 293.34it/s]
+Searching over common line pairs:  98%|█████████▊| 30653/31125 [01:45&lt;00:01, 293.92it/s]
+Searching over common line pairs:  99%|█████████▊| 30683/31125 [01:45&lt;00:01, 294.55it/s]
+Searching over common line pairs:  99%|█████████▊| 30713/31125 [01:45&lt;00:01, 294.27it/s]
+Searching over common line pairs:  99%|█████████▉| 30743/31125 [01:45&lt;00:01, 294.81it/s]
+Searching over common line pairs:  99%|█████████▉| 30773/31125 [01:45&lt;00:01, 295.48it/s]
+Searching over common line pairs:  99%|█████████▉| 30803/31125 [01:45&lt;00:01, 294.57it/s]
+Searching over common line pairs:  99%|█████████▉| 30833/31125 [01:45&lt;00:00, 294.98it/s]
+Searching over common line pairs:  99%|█████████▉| 30863/31125 [01:46&lt;00:00, 294.83it/s]
+Searching over common line pairs:  99%|█████████▉| 30893/31125 [01:46&lt;00:00, 295.39it/s]
+Searching over common line pairs:  99%|█████████▉| 30923/31125 [01:46&lt;00:00, 295.70it/s]
+Searching over common line pairs:  99%|█████████▉| 30953/31125 [01:46&lt;00:00, 296.07it/s]
+Searching over common line pairs: 100%|█████████▉| 30983/31125 [01:46&lt;00:00, 293.28it/s]
+Searching over common line pairs: 100%|█████████▉| 31013/31125 [01:46&lt;00:00, 293.13it/s]
+Searching over common line pairs: 100%|█████████▉| 31043/31125 [01:46&lt;00:00, 293.06it/s]
+Searching over common line pairs: 100%|█████████▉| 31073/31125 [01:46&lt;00:00, 292.85it/s]
+Searching over common line pairs: 100%|█████████▉| 31103/31125 [01:46&lt;00:00, 293.21it/s]
+Searching over common line pairs: 100%|██████████| 31125/31125 [01:46&lt;00:00, 291.15it/s]
+
+LSQR            Least-squares solution of  Ax = b
+The matrix A has 31125 rows and 500 columns
+damp = 0.00000000000000e+00   calc_var =        0
+atol = 1.00e-08                 conlim = 1.00e+08
+btol = 1.00e-08               iter_lim =      100
+
+   Itn      x[0]       r1norm     r2norm   Compatible    LS      Norm A   Cond A
+     0  0.00000e+00   1.015e+01  1.015e+01    1.0e+00  4.3e-01
+     1  0.00000e+00   9.364e+00  9.364e+00    9.2e-01  2.8e-02   1.1e+01  1.0e+00
+     2 -6.07828e-04   9.360e+00  9.360e+00    9.2e-01  3.5e-03   1.6e+01  2.0e+00
+     3 -6.76299e-04   9.360e+00  9.360e+00    9.2e-01  2.9e-04   2.0e+01  3.0e+00
+     4 -6.94205e-04   9.360e+00  9.360e+00    9.2e-01  5.5e-05   2.3e+01  4.1e+00
+     5 -7.03132e-04   9.360e+00  9.360e+00    9.2e-01  5.3e-05   2.5e+01  5.3e+00
+     6 -7.17884e-04   9.360e+00  9.360e+00    9.2e-01  2.5e-04   2.6e+01  1.8e+01
+     7 -1.97283e-04   9.360e+00  9.360e+00    9.2e-01  1.5e-03   2.9e+01  1.3e+02
+     8  8.55995e-03   9.359e+00  9.359e+00    9.2e-01  2.3e-03   3.1e+01  5.1e+02
+     9  1.06288e-02   9.359e+00  9.359e+00    9.2e-01  3.3e-04   3.3e+01  5.9e+02
+    10  1.06300e-02   9.359e+00  9.359e+00    9.2e-01  3.6e-05   3.5e+01  6.3e+02
+    19  1.14824e-02   9.359e+00  9.359e+00    9.2e-01  2.5e-08   4.8e+01  1.2e+03
+    20  1.14823e-02   9.359e+00  9.359e+00    9.2e-01  5.1e-09   4.9e+01  1.2e+03
+
+LSQR finished
+The least-squares solution is good enough, given atol
+
+istop =       2   r1norm = 9.4e+00   anorm = 4.9e+01   arnorm = 2.4e-06
+itn   =      20   r2norm = 9.4e+00   acond = 1.2e+03   xnorm  = 2.7e+00
+</pre></div>
+</div>
+</section>
+<section id="mean-error-of-estimated-rotations">
+<h2>Mean Error of Estimated Rotations<a class="headerlink" href="#mean-error-of-estimated-rotations" title="Link to this heading">¶</a></h2>
+<p>ASPIRE has the built-in utility function, <code class="docutils literal notranslate"><span class="pre">mean_aligned_angular_distance</span></code>, which globally
+aligns the estimated rotations to the true rotations and computes the mean
+angular distance (in degrees).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">mean_aligned_angular_distance</span>
+
+<span class="c1"># Compare with known true rotations</span>
+<span class="n">mean_ang_dist</span> <span class="o">=</span> <span class="n">mean_aligned_angular_distance</span><span class="p">(</span><span class="n">est_rotations</span><span class="p">,</span> <span class="n">true_rotations</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean aligned angular distance: </span><span class="si">{</span><span class="n">mean_ang_dist</span><span class="si">}</span><span class="s2"> degrees&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Mean aligned angular distance: 1.7348709106445312 degrees
+</pre></div>
+</div>
+</section>
+<section id="volume-reconstruction">
+<h2>Volume Reconstruction<a class="headerlink" href="#volume-reconstruction" title="Link to this heading">¶</a></h2>
+<p>Now that we have our class averages and rotation estimates, we can
+estimate the mean volume by supplying the class averages and basis
+for back projection.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.reconstruction</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeanEstimator</span>
+
+<span class="c1"># Setup an estimator to perform the back projection.</span>
+<span class="n">estimator</span> <span class="o">=</span> <span class="n">MeanEstimator</span><span class="p">(</span><span class="n">oriented_src</span><span class="p">)</span>
+
+<span class="c1"># Perform the estimation and save the volume.</span>
+<span class="n">estimated_volume</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">estimate</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="comparison-of-estimated-volume-with-source-volume">
+<h2>Comparison of Estimated Volume with Source Volume<a class="headerlink" href="#comparison-of-estimated-volume-with-source-volume" title="Link to this heading">¶</a></h2>
+<p>To get a visual confirmation that our results are sane, we rotate
+the estimated volume by the estimated rotations and project along
+the z-axis.  These estimated projections should align with the
+original projection images.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the first 10 projections from the estimated volume using the</span>
+<span class="c1"># estimated orientations.  Recall that ``project`` returns an</span>
+<span class="c1"># ``Image`` instance, which we can peek at with ``show``.</span>
+<span class="n">projections_est</span> <span class="o">=</span> <span class="n">estimated_volume</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="n">est_rotations</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">])</span>
+
+<span class="c1"># We view the first 10 projections of the estimated volume.</span>
+<span class="n">projections_est</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_010.png" srcset="../_images/sphx_glr_pipeline_demo_010.png" alt="pipeline demo" class = "sphx-glr-single-img"/><div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For comparison, we view the first 10 source projections.</span>
+<span class="n">src</span><span class="o">.</span><span class="n">projections</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_011.png" srcset="../_images/sphx_glr_pipeline_demo_011.png" alt="pipeline demo" class = "sphx-glr-single-img"/></section>
+<section id="fourier-shell-correlation">
+<h2>Fourier Shell Correlation<a class="headerlink" href="#fourier-shell-correlation" title="Link to this heading">¶</a></h2>
+<p>Additionally, we can compare our reconstruction to the known source volume
+by performing a Fourier shell correlation (FSC). We first find a rotation
+matrix which best aligns the estimated rotations to the ground truth rotations
+using the <code class="docutils literal notranslate"><span class="pre">find_registration</span></code> method. We then use that rotation to align
+the reconstructed volume to the ground truth volume.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># `find_registration` returns the best aligning rotation, `Q`, as well as</span>
+<span class="c1"># a `flag` which indicates if the volume needs to be reflected.</span>
+<span class="n">Q</span><span class="p">,</span> <span class="n">flag</span> <span class="o">=</span> <span class="n">Rotation</span><span class="p">(</span><span class="n">est_rotations</span><span class="p">)</span><span class="o">.</span><span class="n">find_registration</span><span class="p">(</span><span class="n">true_rotations</span><span class="p">)</span>
+<span class="n">aligned_vol</span> <span class="o">=</span> <span class="n">estimated_volume</span>
+<span class="k">if</span> <span class="n">flag</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="n">aligned_vol</span> <span class="o">=</span> <span class="n">aligned_vol</span><span class="o">.</span><span class="n">flip</span><span class="p">()</span>
+<span class="n">aligned_vol</span> <span class="o">=</span> <span class="n">aligned_vol</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">Rotation</span><span class="p">(</span><span class="n">Q</span><span class="o">.</span><span class="n">T</span><span class="p">))</span>
+
+<span class="c1"># Compute the FSC.</span>
+<span class="n">vol_ds</span><span class="o">.</span><span class="n">fsc</span><span class="p">(</span><span class="n">aligned_vol</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.143</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<img src="../_images/sphx_glr_pipeline_demo_012.png" srcset="../_images/sphx_glr_pipeline_demo_012.png" alt="Fourier Shell Correlation" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(array([18.55384662]), array([[ 0.98760647,  0.9884441 ,  0.96580434,  0.96151006,  0.9369641 ,
+         0.92369837,  0.90181226,  0.87926936,  0.85196555,  0.8143172 ,
+         0.7767716 ,  0.75424   ,  0.72200525,  0.6776762 ,  0.6357868 ,
+         0.60440785,  0.55988353,  0.51314795,  0.43611902,  0.34469196,
+         0.29919523,  0.29526266,  0.25803658,  0.2130774 ,  0.17808889,
+         0.14873686,  0.09234647,  0.0305275 ,  0.004867  ,  0.01239257,
+         0.02920827, -0.04546734]], dtype=float32))
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (6 minutes 44.904 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-pipeline-demo-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/9b821c495445535e6775308a42eb84d7/pipeline_demo.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">pipeline_demo.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/295b04456c31e136eefc8b736de1e0a4/pipeline_demo.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">pipeline_demo.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/d6bd96d70557169765dc2f33235d6a44/pipeline_demo.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">pipeline_demo.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire_introduction.html" class="btn btn-neutral float-left" title="ASPIRE-Python Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tutorials/index.html" class="btn btn-neutral float-right" title="Component Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

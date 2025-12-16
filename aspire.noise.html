@@ -1,0 +1,446 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.noise package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.nufft package" href="aspire.nufft.html" />
+    <link rel="prev" title="aspire.image package" href="aspire.image.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.noise package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.noise.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-noise-package">
+<h1>aspire.noise package<a class="headerlink" href="#aspire-noise-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.noise.noise">
+<span id="aspire-noise-noise-module"></span><h2>aspire.noise.noise module<a class="headerlink" href="#module-aspire.noise.noise" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.noise.noise.AnisotropicNoiseEstimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.noise.noise.</span></span><span class="sig-name descname"><span class="pre">AnisotropicNoiseEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bg_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.AnisotropicNoiseEstimator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.noise.noise.NoiseEstimator" title="aspire.noise.noise.NoiseEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseEstimator</span></code></a></p>
+<p>Anisotropic White Noise Estimator.</p>
+<p>Any additional args/kwargs are passed on to the Source’s ‘images’ method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – A Source object which can give us images on demand</p></li>
+<li><p><strong>bg_radius</strong> – The radius of the disk whose complement is used to estimate the noise.
+Radius is relative proportion, where <cite>1</cite> represents
+the radius of disc inscribing a <cite>(src.L, src.L)</cite> image.</p></li>
+<li><p><strong>batch_size</strong> – The size of the batches in which to compute the variance estimate.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.noise.noise.AnisotropicNoiseEstimator.estimate">
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.AnisotropicNoiseEstimator.estimate" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The estimated noise variance of the images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.noise.noise.BlueNoiseAdder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.noise.noise.</span></span><span class="sig-name descname"><span class="pre">BlueNoiseAdder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.BlueNoiseAdder" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.noise.noise.WhiteNoiseAdder" title="aspire.noise.noise.WhiteNoiseAdder"><code class="xref py py-class docutils literal notranslate"><span class="pre">WhiteNoiseAdder</span></code></a></p>
+<p>NoiseAdder where noise power increases with frequency.</p>
+<p>Return a <cite>WhiteNoiseAdder</cite> instance from <cite>var</cite> and using <cite>seed</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var</strong> – Target noise variance.</p></li>
+<li><p><strong>seed</strong> – Optinally provide a random seed used to generate white noise.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.noise.noise.CustomNoiseAdder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.noise.noise.</span></span><span class="sig-name descname"><span class="pre">CustomNoiseAdder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">noise_filter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.CustomNoiseAdder" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.noise.noise.NoiseAdder" title="aspire.noise.noise.NoiseAdder"><code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseAdder</span></code></a></p>
+<p>Instantiates a NoiseAdder using the provided <cite>noise_filter</cite>.</p>
+<p>Initialize the random state of this <cite>NoiseAdder</cite> using <cite>noise_filter</cite> and <cite>seed</cite>.</p>
+<p><cite>noise_filter</cite> will be provided by the user or instantiated automatically by the subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seed</strong> – The random seed used to generate white noise.</p></li>
+<li><p><strong>noise_filter</strong> – An <cite>aspire.operators.Filter</cite> object.
+<cite>NoiseAdders</cite> start by generating gaussian noise,
+then apply <cite>noise_filter</cite> to transform the noise.
+Note the <cite>noise_filter</cite> will be raised to the 1/2 power.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.noise.noise.CustomNoiseAdder.noise_var">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">noise_var</span></span><a class="headerlink" href="#aspire.noise.noise.CustomNoiseAdder.noise_var" title="Link to this definition">¶</a></dt>
+<dd><p>Return noise variance.</p>
+<p>CustomNoiseAdder will estimate noise_var using the <cite>noise_filter</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>res</strong> – Resolution to use when evaluating noise filter, default 512.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Noise variance estimated at <cite>res</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.noise.noise.LegacyNoiseEstimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.noise.noise.</span></span><span class="sig-name descname"><span class="pre">LegacyNoiseEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bg_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize_psd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.LegacyNoiseEstimator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.noise.noise.NoiseEstimator" title="aspire.noise.noise.NoiseEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseEstimator</span></code></a></p>
+<p>Isotropic noise estimator ported from MATLAB <cite>cryo_noise_estimation</cite>.</p>
+<p>Given an <cite>ImageSource</cite>, prepares for estimation of noise spectrum.</p>
+<p>Estimate is delayed and computed on first access of <cite>filter</cite> attribute.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – A <cite>ImageSource</cite> object.</p></li>
+<li><p><strong>bg_radius</strong> – The radius of the disk whose complement is used to estimate the noise.
+Radius is relative proportion, where <cite>1</cite> represents
+the radius of disc inscribing a <cite>(src.L, src.L)</cite> image.
+Default of <cite>None</cite> uses <cite>(np.floor(src.L / 2) - 1) / L</cite></p></li>
+<li><p><strong>max_d</strong> – Max computed correlation distance as a proportion of <cite>src.L</cite>.
+Default of <cite>None</cite> uses <cite>np.floor(src.L/3) / L</cite>.</p></li>
+<li><p><strong>batch_size</strong> – The size of the batches in which to compute the variance estimate.</p></li>
+<li><p><strong>normalize_psd</strong> – Optionally normalize PSD in way that reproduces MATLAB intermediates.
+Only useful if utilizing the <cite>PSD</cite> for applications outside of built-in legacy whitening.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.noise.noise.LegacyNoiseEstimator.estimate">
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.LegacyNoiseEstimator.estimate" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The estimated noise variance of the images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.noise.noise.NoiseAdder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.noise.noise.</span></span><span class="sig-name descname"><span class="pre">NoiseAdder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">noise_filter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.NoiseAdder" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="aspire.image.html#aspire.image.xform.Xform" title="aspire.image.xform.Xform"><code class="xref py py-class docutils literal notranslate"><span class="pre">Xform</span></code></a></p>
+<p>Defines interface for <a href="#id1"><span class="problematic" id="id2">`</span></a>CustomNoiseAdder`s.</p>
+<p>Initialize the random state of this <cite>NoiseAdder</cite> using <cite>noise_filter</cite> and <cite>seed</cite>.</p>
+<p><cite>noise_filter</cite> will be provided by the user or instantiated automatically by the subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seed</strong> – The random seed used to generate white noise.</p></li>
+<li><p><strong>noise_filter</strong> – An <cite>aspire.operators.Filter</cite> object.
+<cite>NoiseAdders</cite> start by generating gaussian noise,
+then apply <cite>noise_filter</cite> to transform the noise.
+Note the <cite>noise_filter</cite> will be raised to the 1/2 power.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.noise.noise.NoiseAdder.noise_var">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">noise_var</span></span><a class="headerlink" href="#aspire.noise.noise.NoiseAdder.noise_var" title="Link to this definition">¶</a></dt>
+<dd><p>Concrete implementations are expected to provide a method that
+returns the noise variance for the NoiseAdder.</p>
+<p>Authors of <a href="#id3"><span class="problematic" id="id4">`</span></a>NoiseAdder`s are encouraged to consider any relevant
+methods of calculating noise variance from theory.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.noise.noise.NoiseEstimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.noise.noise.</span></span><span class="sig-name descname"><span class="pre">NoiseEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bg_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.NoiseEstimator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Noise Estimator base class.</p>
+<p>Any additional args/kwargs are passed on to the Source’s ‘images’ method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – A Source object which can give us images on demand</p></li>
+<li><p><strong>bg_radius</strong> – The radius of the disk whose complement is used to estimate the noise.
+Radius is relative proportion, where <cite>1</cite> represents
+the radius of disc inscribing a <cite>(src.L, src.L)</cite> image.</p></li>
+<li><p><strong>batch_size</strong> – The size of the batches in which to compute the variance estimate.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.noise.noise.NoiseEstimator.estimate">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.NoiseEstimator.estimate" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The estimated noise variance of the images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.noise.noise.NoiseEstimator.filter">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">filter</span></span><a class="headerlink" href="#aspire.noise.noise.NoiseEstimator.filter" title="Link to this definition">¶</a></dt>
+<dd><p>Property returning <cite>Filter</cite> object for this noise estimator.
+This property will be computed and cached on first call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><cite>Filter</cite> object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.noise.noise.PinkNoiseAdder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.noise.noise.</span></span><span class="sig-name descname"><span class="pre">PinkNoiseAdder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.PinkNoiseAdder" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.noise.noise.WhiteNoiseAdder" title="aspire.noise.noise.WhiteNoiseAdder"><code class="xref py py-class docutils literal notranslate"><span class="pre">WhiteNoiseAdder</span></code></a></p>
+<p>NoiseAdder where noise power decreases with frequency.</p>
+<p>Return a <cite>WhiteNoiseAdder</cite> instance from <cite>var</cite> and using <cite>seed</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var</strong> – Target noise variance.</p></li>
+<li><p><strong>seed</strong> – Optinally provide a random seed used to generate white noise.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.noise.noise.WhiteNoiseAdder">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.noise.noise.</span></span><span class="sig-name descname"><span class="pre">WhiteNoiseAdder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.WhiteNoiseAdder" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.noise.noise.NoiseAdder" title="aspire.noise.noise.NoiseAdder"><code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseAdder</span></code></a></p>
+<p>A Xform that adds white noise, optionally passed through a Filter
+object, to all incoming images.</p>
+<p>Return a <cite>WhiteNoiseAdder</cite> instance from <cite>var</cite> and using <cite>seed</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>var</strong> – Target noise variance.</p></li>
+<li><p><strong>seed</strong> – Optinally provide a random seed used to generate white noise.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.noise.noise.WhiteNoiseAdder.from_snr">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_snr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">snr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signal_power</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.WhiteNoiseAdder.from_snr" title="Link to this definition">¶</a></dt>
+<dd><p>Generates a WhiteNoiseAdder configured to produce a target
+signal to noise ratio.</p>
+<p>When <cite>signal_power</cite> is not provided, <cite>requires_signal_power</cite>
+attribute will be set.  Consumers can check this attribute and
+set <cite>signal_power</cite> as required. Setting <cite>signal_power</cite> should
+then complete building the filter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>snr</strong> – Desired signal to noise ratio of
+the returned source.</p></li>
+<li><p><strong>signal_power</strong> – Optional, if the signal power is known.</p></li>
+<li><p><strong>seed</strong> – Optionally provide a random seed used to generate white noise.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.noise.noise.WhiteNoiseAdder.noise_var">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">noise_var</span></span><a class="headerlink" href="#aspire.noise.noise.WhiteNoiseAdder.noise_var" title="Link to this definition">¶</a></dt>
+<dd><p>Returns noise variance.</p>
+<p>Note in this white noise case, noise variance is known,
+because the <cite>WhiteNoiseAdder</cite> was instantied with an explicit variance.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.noise.noise.WhiteNoiseAdder.signal_power">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">signal_power</span></span><a class="headerlink" href="#aspire.noise.noise.WhiteNoiseAdder.signal_power" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.noise.noise.WhiteNoiseEstimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.noise.noise.</span></span><span class="sig-name descname"><span class="pre">WhiteNoiseEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bg_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">512</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.WhiteNoiseEstimator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.noise.noise.NoiseEstimator" title="aspire.noise.noise.NoiseEstimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">NoiseEstimator</span></code></a></p>
+<p>White Noise Estimator.</p>
+<p>Any additional args/kwargs are passed on to the Source’s ‘images’ method</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – A Source object which can give us images on demand</p></li>
+<li><p><strong>bg_radius</strong> – The radius of the disk whose complement is used to estimate the noise.
+Radius is relative proportion, where <cite>1</cite> represents
+the radius of disc inscribing a <cite>(src.L, src.L)</cite> image.</p></li>
+<li><p><strong>batch_size</strong> – The size of the batches in which to compute the variance estimate.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.noise.noise.WhiteNoiseEstimator.estimate">
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.noise.noise.WhiteNoiseEstimator.estimate" title="Link to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The estimated noise variance of the images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.noise">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.noise" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.image.html" class="btn btn-neutral float-left" title="aspire.image package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.nufft.html" class="btn btn-neutral float-right" title="aspire.nufft package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

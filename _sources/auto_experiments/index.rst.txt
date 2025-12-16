@@ -1,0 +1,180 @@
+:orphan:
+
+.. _exp:
+
+Experiments
+=============================
+
+This gallery contains examples demonstrating the functionality of ASPIRE tools for 3-D ab-initio reconstruction.
+Experimental cryo-EM data and synthetic data created by ASPIRE's ``Simulation`` class are used.
+
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbnails">
+
+.. thumbnail-parent-div-open
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This demonstrates creating two half sets of experimental data, performing independent reconstructions, and computing resulting FSC.">
+
+.. only:: html
+
+  .. image:: /auto_experiments/images/thumb/sphx_glr_example_halfset_pipeline_10028_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_experiments_example_halfset_pipeline_10028.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Abinitio Halfset Pipeline - Experimental Data</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This notebook introduces a selection of components corresponding to loading real Relion picked particle cryo-EM data and running key ASPIRE-Python ab initio model components as a pipeline.">
+
+.. only:: html
+
+  .. image:: /auto_experiments/images/thumb/sphx_glr_experimental_abinitio_pipeline_10028_jsb_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_experiments_experimental_abinitio_pipeline_10028_jsb.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Abinitio Pipeline - Experimental Data EMPIAR 10028</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This notebook introduces a selection of components corresponding to loading real Relion picked particle cryo-EM data and running key ASPIRE-Python ab initio model components as a pipeline.">
+
+.. only:: html
+
+  .. image:: /auto_experiments/images/thumb/sphx_glr_experimental_abinitio_pipeline_10073_jsb_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_experiments_experimental_abinitio_pipeline_10073_jsb.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Abinitio Pipeline - Experimental Data EMPIAR 10073</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This notebook introduces a selection of components corresponding to loading real Relion picked particle cryo-EM data and running key ASPIRE-Python Abinitio model components as a pipeline.">
+
+.. only:: html
+
+  .. image:: /auto_experiments/images/thumb/sphx_glr_experimental_abinitio_pipeline_10081_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_experiments_experimental_abinitio_pipeline_10081.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Abinitio Pipeline - Experimental Data Empiar 10081</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This notebook introduces a selection of components corresponding to generating realistic simulated cryo-EM data and running key ASPIRE-Python Abinitio model components as a pipeline.">
+
+.. only:: html
+
+  .. image:: /auto_experiments/images/thumb/sphx_glr_simulated_abinitio_pipeline_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_experiments_simulated_abinitio_pipeline.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Abinitio Pipeline - Simulated Data</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates using the Least Unsquared Deviations (LUD) commonlines method for estimating particle orientations. This tutorial reproduces the &quot;Experiments on simulated images&quot; found in the publication:">
+
+.. only:: html
+
+  .. image:: /auto_experiments/images/thumb/sphx_glr_commonline_lud_simulated_data_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_experiments_commonline_lud_simulated_data.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Commonlines Method using LUD</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This notebook demonstrates reproducing preprocessing results from the legacy ASPIRE MATLAB workflow system for the EMPIAR 10028 ribosome dataset.">
+
+.. only:: html
+
+  .. image:: /auto_experiments/images/thumb/sphx_glr_legacy_preprocessing_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_experiments_legacy_preprocessing.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Legacy Preprocessing Pipeline</div>
+    </div>
+
+
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="This experiment shows how to:">
+
+.. only:: html
+
+  .. image:: /auto_experiments/images/thumb/sphx_glr_save_simulation_relion_reconstruct_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_auto_experiments_save_simulation_relion_reconstruct.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">Simulated Stack to RELION Reconstruction</div>
+    </div>
+
+
+.. thumbnail-parent-div-close
+
+.. raw:: html
+
+    </div>
+
+
+.. toctree::
+   :hidden:
+
+   /auto_experiments/example_halfset_pipeline_10028
+   /auto_experiments/experimental_abinitio_pipeline_10028_jsb
+   /auto_experiments/experimental_abinitio_pipeline_10073_jsb
+   /auto_experiments/experimental_abinitio_pipeline_10081
+   /auto_experiments/simulated_abinitio_pipeline
+   /auto_experiments/commonline_lud_simulated_data
+   /auto_experiments/legacy_preprocessing
+   /auto_experiments/save_simulation_relion_reconstruct
+
+
+
+.. only:: html
+
+ .. rst-class:: sphx-glr-signature
+
+    `Gallery generated by Sphinx-Gallery <https://sphinx-gallery.github.io>`_

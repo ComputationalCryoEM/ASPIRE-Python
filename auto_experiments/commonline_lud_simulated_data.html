@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commonlines Method using LUD &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Legacy Preprocessing Pipeline" href="legacy_preprocessing.html" />
+    <link rel="prev" title="Abinitio Pipeline - Simulated Data" href="simulated_abinitio_pipeline.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Experiments</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="example_halfset_pipeline_10028.html">Abinitio Halfset Pipeline - Experimental Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental_abinitio_pipeline_10028_jsb.html">Abinitio Pipeline - Experimental Data EMPIAR 10028</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental_abinitio_pipeline_10073_jsb.html">Abinitio Pipeline - Experimental Data EMPIAR 10073</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental_abinitio_pipeline_10081.html">Abinitio Pipeline - Experimental Data Empiar 10081</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulated_abinitio_pipeline.html">Abinitio Pipeline - Simulated Data</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Commonlines Method using LUD</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#imports">Imports</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#load-volume-map">Load Volume Map</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#generate-noisy-images-and-estimate-rotations">Generate Noisy Images and Estimate Rotations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#display-results">Display Results</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="legacy_preprocessing.html">Legacy Preprocessing Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="save_simulation_relion_reconstruct.html">Simulated Stack to RELION Reconstruction</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Experiments</a></li>
+      <li class="breadcrumb-item active">Commonlines Method using LUD</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/auto_experiments/commonline_lud_simulated_data.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-experiments-commonline-lud-simulated-data-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="commonlines-method-using-lud">
+<span id="sphx-glr-auto-experiments-commonline-lud-simulated-data-py"></span><h1>Commonlines Method using LUD<a class="headerlink" href="#commonlines-method-using-lud" title="Link to this heading">¶</a></h1>
+<p>This tutorial demonstrates using the Least Unsquared Deviations (LUD)
+commonlines method for estimating particle orientations. This tutorial
+reproduces the “Experiments on simulated images” found in the publication:</p>
+<p>Orientation Determination of Cryo-EM Images Using Least Unsquared Deviations,
+L. Wang, A. Singer, and  Z. Wen, SIAM J. Imaging Sciences, 6, 2450-2483 (2013).</p>
+<section id="imports">
+<h2>Imports<a class="headerlink" href="#imports" title="Link to this heading">¶</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fractions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fraction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">product</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.abinitio</span><span class="w"> </span><span class="kn">import</span> <span class="n">CommonlineIRLS</span><span class="p">,</span> <span class="n">CommonlineLUD</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.noise</span><span class="w"> </span><span class="kn">import</span> <span class="n">WhiteNoiseAdder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">Simulation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">mean_aligned_angular_distance</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.volume</span><span class="w"> </span><span class="kn">import</span> <span class="n">Volume</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h2>
+<p>Set up some initializing parameters. We will run the LUD algorithm using ADMM
+and IRLS methods under various spectral norm constraints and levels of noise.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">SNR</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;1/8&quot;</span><span class="p">,</span> <span class="s2">&quot;1/16&quot;</span><span class="p">,</span> <span class="s2">&quot;1/32&quot;</span><span class="p">]</span>  <span class="c1"># Signal-to-noise ratio</span>
+<span class="n">METHOD</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ADMM&quot;</span><span class="p">,</span> <span class="s2">&quot;IRLS&quot;</span><span class="p">]</span>
+<span class="n">ALPHA</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.67</span><span class="p">]</span>  <span class="c1"># Spectral norm constraint</span>
+<span class="n">n_imgs</span> <span class="o">=</span> <span class="mi">500</span>  <span class="c1"># Number of images in our source</span>
+<span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+<span class="n">pad_size</span> <span class="o">=</span> <span class="mi">129</span>
+</pre></div>
+</div>
+</section>
+<section id="load-volume-map">
+<h2>Load Volume Map<a class="headerlink" href="#load-volume-map" title="Link to this heading">¶</a></h2>
+<p>We will generate simulated noisy images from a low res volume
+map available in our data folder. This volume map is a 65 x 65 x 65
+voxel volume which we intend to upsample to 129 x 129 x 129.
+To do this we use our <code class="docutils literal notranslate"><span class="pre">downsample</span></code> method which, when provided a voxel
+size larger than the input volume, internally zero-pads in Fourier
+space to increase the overall shape of the volume.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">vol</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">Volume</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;../tutorials/data/clean70SRibosome_vol_65p.mrc&quot;</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">pad_size</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Volume map data&quot;</span> <span class="sa">f</span><span class="s2">&quot; shape: </span><span class="si">{</span><span class="n">vol</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> dtype:</span><span class="si">{</span><span class="n">vol</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="generate-noisy-images-and-estimate-rotations">
+<h2>Generate Noisy Images and Estimate Rotations<a class="headerlink" href="#generate-noisy-images-and-estimate-rotations" title="Link to this heading">¶</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> object is used to generate simulated data at various
+noise levels. Then rotations are estimated using the <code class="docutils literal notranslate"><span class="pre">CommonlineLUD</span></code> and
+<code class="docutils literal notranslate"><span class="pre">CommonlineIRLS</span></code> algorithms. Results are measured by computing the mean
+aligned angular distance between the ground truth rotations and the globally
+aligned estimated rotations.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Build table to dislay results.</span>
+<span class="n">col_width</span> <span class="o">=</span> <span class="mi">21</span>
+<span class="n">table</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;METHOD&#39;</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">col_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;SNR&#39;</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">col_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;ALPHA&#39;</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">col_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="s1">&#39;Mean Angular Distance&#39;</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">col_width</span><span class="si">}}</span><span class="s2">&quot;</span>
+<span class="p">)</span>
+<span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="p">(</span><span class="n">col_width</span> <span class="o">*</span> <span class="mi">4</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">method</span><span class="p">,</span> <span class="n">snr</span><span class="p">,</span> <span class="n">alpha</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="n">METHOD</span><span class="p">,</span> <span class="n">SNR</span><span class="p">,</span> <span class="n">ALPHA</span><span class="p">):</span>
+    <span class="c1"># Generate a white noise adder with specified SNR.</span>
+    <span class="n">noise_adder</span> <span class="o">=</span> <span class="n">WhiteNoiseAdder</span><span class="o">.</span><span class="n">from_snr</span><span class="p">(</span><span class="n">snr</span><span class="o">=</span><span class="n">Fraction</span><span class="p">(</span><span class="n">snr</span><span class="p">))</span>
+
+    <span class="c1"># Initialize a Simulation source to generate noisy, centered images.</span>
+    <span class="n">src</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span>
+        <span class="n">n</span><span class="o">=</span><span class="n">n_imgs</span><span class="p">,</span>
+        <span class="n">vols</span><span class="o">=</span><span class="n">vol</span><span class="p">,</span>
+        <span class="n">offsets</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">amplitudes</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">noise_adder</span><span class="o">=</span><span class="n">noise_adder</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
+
+    <span class="c1"># Estimate rotations using the LUD algorithm.</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;ADMM&quot;</span><span class="p">:</span>
+        <span class="n">orient_est</span> <span class="o">=</span> <span class="n">CommonlineLUD</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">orient_est</span> <span class="o">=</span> <span class="n">CommonlineIRLS</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="n">est_rotations</span> <span class="o">=</span> <span class="n">orient_est</span><span class="o">.</span><span class="n">estimate_rotations</span><span class="p">()</span>
+
+    <span class="c1"># Find the mean aligned angular distance between estimates and ground truth rotations.</span>
+    <span class="n">mean_ang_dist</span> <span class="o">=</span> <span class="n">mean_aligned_angular_distance</span><span class="p">(</span><span class="n">est_rotations</span><span class="p">,</span> <span class="n">src</span><span class="o">.</span><span class="n">rotations</span><span class="p">)</span>
+
+    <span class="c1"># Append results to table.</span>
+    <span class="n">table</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">method</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">col_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="n">snr</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">col_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">col_width</span><span class="si">}}</span><span class="s2"> </span><span class="si">{</span><span class="n">mean_ang_dist</span><span class="si">:</span><span class="s2">&lt;</span><span class="si">{</span><span class="n">col_width</span><span class="si">}}</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="display-results">
+<h2>Display Results<a class="headerlink" href="#display-results" title="Link to this heading">¶</a></h2>
+<p>Display table of results for both methods using various spectral norm
+constraints and noise levels.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">table</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-experiments-commonline-lud-simulated-data-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/c2ada4307f3943155192253c4f1d58bd/commonline_lud_simulated_data.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">commonline_lud_simulated_data.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/00729823b03717f4dca5a640cc4751a1/commonline_lud_simulated_data.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">commonline_lud_simulated_data.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/a08d0619cdd79bc4e7dc751e5e9ea9b6/commonline_lud_simulated_data.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">commonline_lud_simulated_data.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="simulated_abinitio_pipeline.html" class="btn btn-neutral float-left" title="Abinitio Pipeline - Simulated Data" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="legacy_preprocessing.html" class="btn btn-neutral float-right" title="Legacy Preprocessing Pipeline" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

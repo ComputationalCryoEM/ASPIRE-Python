@@ -1,0 +1,61 @@
+aspire.classification package
+=============================
+
+Submodules
+----------
+
+aspire.classification.averager2d module
+---------------------------------------
+
+.. automodule:: aspire.classification.averager2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.classification.class2d module
+------------------------------------
+
+.. automodule:: aspire.classification.class2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.classification.class\_selection module
+---------------------------------------------
+
+.. automodule:: aspire.classification.class_selection
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.classification.legacy\_implementations module
+----------------------------------------------------
+
+.. automodule:: aspire.classification.legacy_implementations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.classification.reddy\_chatterji module
+---------------------------------------------
+
+.. automodule:: aspire.classification.reddy_chatterji
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.classification.rir\_class2d module
+-----------------------------------------
+
+.. automodule:: aspire.classification.rir_class2d
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.classification
+   :members:
+   :undoc-members:
+   :show-inheritance:

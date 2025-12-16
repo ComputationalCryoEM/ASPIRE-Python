@@ -1,0 +1,200 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Component Examples &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="2D Covariance Estimation" href="cov2d_simulation.html" />
+    <link rel="prev" title="Ab-initio Pipeline Demonstration" href="../pipeline_demo.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#api-introduction">API Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#component-examples">Component Examples</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Component Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="cov2d_simulation.html">2D Covariance Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orient3d_simulation.html">3D Image Orientation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_class.html">ASPIRE Image Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apple_picker.html">Apple Picker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="basic_image_array.html">Basic Image Array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ctf.html">CTF: Contrast Transfer Function</a></li>
+<li class="toctree-l4"><a class="reference internal" href="class_averaging.html">Class Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cov3d_simulation.html">Covariance 3D Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data_downloader.html">Data Downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generating_volume_projections.html">Generating 3D Volume Projections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_expansion.html">Image Expansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="preprocess_imgs_sim.html">Image Preprocessing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="micrograph_source.html">Micrograph Sources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="relion_projection_interop.html">Relion Projection Interoperability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="starfile.html">Starfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="weighted_volume_estimation.html">Weighted Volume Reconstruction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+      <li class="breadcrumb-item active">Component Examples</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/auto_tutorials/tutorials/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="component-examples">
+<span id="sphx-glr-auto-tutorials-tutorials"></span><h1>Component Examples<a class="headerlink" href="#component-examples" title="Link to this heading">¶</a></h1>
+<p>Selected components demonstrate some common tasks while discussing
+usage and configuration.</p>
+<div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This script illustrates 2D covariance Wiener filtering functionality in the ASPIRE package, implemented by estimating the covariance of the unfiltered images in a Fourier-Bessel basis and applying the Wiener filter induced by that covariance matrix."><img alt="" src="../../_images/sphx_glr_cov2d_simulation_thumb.png" />
+<p><a class="reference internal" href="cov2d_simulation.html#sphx-glr-auto-tutorials-tutorials-cov2d-simulation-py"><span class="std std-ref">2D Covariance Estimation</span></a></p>
+  <div class="sphx-glr-thumbnail-title">2D Covariance Estimation</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This script illustrates the estimation of orientation angles using a synchronization matrix and the voting method, based on simulated data projected from a 3D cryo-EM map."><img alt="" src="../../_images/sphx_glr_orient3d_simulation_thumb.png" />
+<p><a class="reference internal" href="orient3d_simulation.html#sphx-glr-auto-tutorials-tutorials-orient3d-simulation-py"><span class="std std-ref">3D Image Orientation</span></a></p>
+  <div class="sphx-glr-thumbnail-title">3D Image Orientation</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates some methods of the ASPIRE Image class"><img alt="" src="../../_images/sphx_glr_image_class_thumb.png" />
+<p><a class="reference internal" href="image_class.html#sphx-glr-auto-tutorials-tutorials-image-class-py"><span class="std std-ref">ASPIRE Image Class</span></a></p>
+  <div class="sphx-glr-thumbnail-title">ASPIRE Image Class</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="We demonstrate ASPIRE&#x27;s particle picking methods using the Apple class."><img alt="" src="../../_images/sphx_glr_apple_picker_thumb.png" />
+<p><a class="reference internal" href="apple_picker.html#sphx-glr-auto-tutorials-tutorials-apple-picker-py"><span class="std std-ref">Apple Picker</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Apple Picker</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="In this example we will demonstrate some of ASPIRE&#x27;s image processing functionality. We will add noise to a stack of copies of a stock image. We will then estimate and whiten that noise using some tools from the ASPIRE pipeline."><img alt="" src="../../_images/sphx_glr_basic_image_array_thumb.png" />
+<p><a class="reference internal" href="basic_image_array.html#sphx-glr-auto-tutorials-tutorials-basic-image-array-py"><span class="std std-ref">Basic Image Array</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Basic Image Array</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates the CTF and corresponds to lecture notes from MATH586 at Princeton."><img alt="" src="../../_images/sphx_glr_ctf_thumb.png" />
+<p><a class="reference internal" href="ctf.html#sphx-glr-auto-tutorials-tutorials-ctf-py"><span class="std std-ref">CTF: Contrast Transfer Function</span></a></p>
+  <div class="sphx-glr-thumbnail-title">CTF: Contrast Transfer Function</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="We demonstrate class averaging using the rotationally invariant representation algorithm."><img alt="" src="../../_images/sphx_glr_class_averaging_thumb.png" />
+<p><a class="reference internal" href="class_averaging.html#sphx-glr-auto-tutorials-tutorials-class-averaging-py"><span class="std std-ref">Class Averaging</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Class Averaging</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This script illustrates the example of Covariance 3D estimation using simulation images generated from Gaussian blob volumes."><img alt="" src="../../_images/sphx_glr_cov3d_simulation_thumb.png" />
+<p><a class="reference internal" href="cov3d_simulation.html#sphx-glr-auto-tutorials-tutorials-cov3d-simulation-py"><span class="std std-ref">Covariance 3D Estimation</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Covariance 3D Estimation</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial reviews ASPIRE&#x27;s data downloading utility."><img alt="" src="../../_images/sphx_glr_data_downloader_thumb.png" />
+<p><a class="reference internal" href="data_downloader.html#sphx-glr-auto-tutorials-tutorials-data-downloader-py"><span class="std std-ref">Data Downloader</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Data Downloader</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This script illustrates using ASPIRE&#x27;s Simulation source to generate projections of a Volume using prescribed rotations."><img alt="" src="../../_images/sphx_glr_generating_volume_projections_thumb.png" />
+<p><a class="reference internal" href="generating_volume_projections.html#sphx-glr-auto-tutorials-tutorials-generating-volume-projections-py"><span class="std std-ref">Generating 3D Volume Projections</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Generating 3D Volume Projections</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This script illustrates several expansion methods for 2D images developed in ASPIRE package based on the basis functions of  Fourier-Bessel (FB) and prolate spheroidal wave function (PSWF)."><img alt="" src="../../_images/sphx_glr_image_expansion_thumb.png" />
+<p><a class="reference internal" href="image_expansion.html#sphx-glr-auto-tutorials-tutorials-image-expansion-py"><span class="std std-ref">Image Expansion</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Image Expansion</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This script illustrates the preprocess steps implemented prior to starting the pipeline of reconstructing a 3D map using simulated 2D images."><img alt="" src="../../_images/sphx_glr_preprocess_imgs_sim_thumb.png" />
+<p><a class="reference internal" href="preprocess_imgs_sim.html#sphx-glr-auto-tutorials-tutorials-preprocess-imgs-sim-py"><span class="std std-ref">Image Preprocessing</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Image Preprocessing</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial will demonstrate how to set up and use ASPIRE&#x27;s MicrographSource classes."><img alt="" src="../../_images/sphx_glr_micrograph_source_thumb.png" />
+<p><a class="reference internal" href="micrograph_source.html#sphx-glr-auto-tutorials-tutorials-micrograph-source-py"><span class="std std-ref">Micrograph Sources</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Micrograph Sources</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="In this tutorial we compare projections generated by Relion with projections generated by ASPIRE&#x27;s Simulation class. Both sets of projections are generated using a downsampled volume map of a 70S Ribosome, absent of noise and CTF corruption."><img alt="" src="../../_images/sphx_glr_relion_projection_interop_thumb.png" />
+<p><a class="reference internal" href="relion_projection_interop.html#sphx-glr-auto-tutorials-tutorials-relion-projection-interop-py"><span class="std std-ref">Relion Projection Interoperability</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Relion Projection Interoperability</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="Starfile"><img alt="" src="../../_images/sphx_glr_starfile_thumb.png" />
+<p><a class="reference internal" href="starfile.html#sphx-glr-auto-tutorials-tutorials-starfile-py"><span class="std std-ref">Starfile</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Starfile</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates a weighted volume reconstruction, using a published reference dataset."><img alt="" src="../../_images/sphx_glr_weighted_volume_estimation_thumb.png" />
+<p><a class="reference internal" href="weighted_volume_estimation.html#sphx-glr-auto-tutorials-tutorials-weighted-volume-estimation-py"><span class="std std-ref">Weighted Volume Reconstruction</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Weighted Volume Reconstruction</div>
+</div></div><div class="toctree-wrapper compound">
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../pipeline_demo.html" class="btn btn-neutral float-left" title="Ab-initio Pipeline Demonstration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="cov2d_simulation.html" class="btn btn-neutral float-right" title="2D Covariance Estimation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,1037 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.abinitio package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.apple package" href="aspire.apple.html" />
+    <link rel="prev" title="aspire package" href="aspire.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.abinitio package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.abinitio.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-abinitio-package">
+<h1>aspire.abinitio package<a class="headerlink" href="#aspire-abinitio-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.abinitio.J_sync">
+<span id="aspire-abinitio-j-sync-module"></span><h2>aspire.abinitio.J_sync module<a class="headerlink" href="#module-aspire.abinitio.J_sync" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.J_sync.JSync">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.J_sync.</span></span><span class="sig-name descname"><span class="pre">JSync</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.J_sync.JSync" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class for handling J-synchronization methods.</p>
+<p>Initialize JSync object for estimating global handedness synchronization for a
+set of relative rotations, Rij = Ri &#64; Rj.T, where i &lt;= j = 0, 1, …, n.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – Number of images/rotations.</p></li>
+<li><p><strong>epsilon</strong> – Tolerance for the power method.</p></li>
+<li><p><strong>max_iters</strong> – Maximum iterations for the power method.</p></li>
+<li><p><strong>seed</strong> – Optional seed for power method initial random vector.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.J_sync.JSync.global_J_sync">
+<span class="sig-name descname"><span class="pre">global_J_sync</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vijs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.J_sync.JSync.global_J_sync" title="Link to this definition">¶</a></dt>
+<dd><p>Global J-synchronization of all third row outer products. Given 3x3 matrices vijs, each
+of which might contain a spurious J (ie. vij = J*vi*vj^T*J instead of vij = vi*vj^T),
+we return vijs that all have either a spurious J or not.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vijs</strong> – An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding</p>
+</dd>
+</dl>
+<p>outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
+might have a spurious J independently of other estimates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>vijs, all of which have a spurious J or not.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.J_sync.JSync.power_method">
+<span class="sig-name descname"><span class="pre">power_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vijs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.J_sync.JSync.power_method" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the leading eigenvector of the J-synchronization matrix
+using the power method.</p>
+<p>As the J-synchronization matrix is of size (n-choose-2)x(n-choose-2), we
+use the power method to compute the eigenvalues and eigenvectors,
+while constructing the matrix on-the-fly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vijs</strong> – (n-choose-2)x3x3 array of estimates of relative orientation matrices.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An array of length n-choose-2 consisting of 1 or -1, where the sign of the
+i’th entry indicates whether the i’th relative orientation matrix will be J-conjugated.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.J_sync.JSync.sync_viis">
+<span class="sig-name descname"><span class="pre">sync_viis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vijs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">viis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.J_sync.JSync.sync_viis" title="Link to this definition">¶</a></dt>
+<dd><p>Given a set of synchronized pairwise outer products vijs, J-synchronize the set of
+outer products viis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vijs</strong> – An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the corresponding</p>
+</dd>
+</dl>
+<p>outer-product vi*vj^T between the third rows of the rotation matrices Ri and Rj. Each estimate
+might have a spurious J independently of other estimates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>viis</strong> – An n_imgx3x3 array where the i’th slice holds an estimate for the outer product vi*vi^T</p>
+</dd>
+</dl>
+<p>between the third row of matrix Ri and itself. Each estimate might have a spurious J independently
+of other estimates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>J-synchronized viis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_base">
+<span id="aspire-abinitio-commonline-base-module"></span><h2>aspire.abinitio.commonline_base module<a class="headerlink" href="#module-aspire.abinitio.commonline_base" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_base.</span></span><span class="sig-name descname"><span class="pre">CLOrient3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">360</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hist_bin_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offsets_max_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offsets_shift_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offsets_max_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offsets_equations_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Define a base class for estimating 3D orientations using common lines methods</p>
+<p>Initialize an object for estimating 3D orientations using common lines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D denoised or class-averaged images.</p></li>
+<li><p><strong>n_rad</strong> – The number of points in the radial direction. If None,
+n_rad will default to the ceiling of half the resolution of the source.</p></li>
+<li><p><strong>n_theta</strong> – The number of points in the theta direction. This value must be even.
+Default is 360.</p></li>
+<li><p><strong>n_check</strong> – For each image/projection find its common-lines with
+n_check images. If n_check is less than the total number of images,
+a random subset of n_check images is used.</p></li>
+<li><p><strong>max_shift</strong> – Determines maximum range for shifts for
+common-line detection as a proportion of the
+resolution. Default is 0.15.</p></li>
+<li><p><strong>shift_step</strong> – Resolution of shift estimation for
+common-line detection in pixels.  Default is 1 pixel.</p></li>
+<li><p><strong>offsets_max_shift</strong> – Determines maximum range for shifts
+for 2D offset estimation as a proportion of the
+resolution. Default <cite>None</cite> inherits from <cite>max_shift</cite>.</p></li>
+<li><p><strong>offsets_shift_step</strong> – Resolution of shift estimation for
+2D offset estimation in pixels.  Default <cite>None</cite> inherits
+from <cite>shift_step</cite>.</p></li>
+<li><p><strong>offsets_equations_factor</strong> – The factor to rescale the
+number of shift equations (=1 in default)</p></li>
+<li><p><strong>offsets_max_memory</strong> – If there are N images and N_check
+selected to check for common lines, then the exact system
+of equations solved for the shifts is of size 2N x
+N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
+This may be too big if N is large. The algorithm will use
+<cite>equations_factor</cite> times the total number of equations if
+the resulting total number of memory requirements is less
+than <cite>offsets_max_memory</cite> (in megabytes); otherwise it will reduce
+the number of equations by approximation to fit in
+<cite>offsets_max_memory</cite>.  For more information see the
+references in <cite>estimate_shifts</cite>.  Defaults to 10GB.</p></li>
+<li><p><strong>hist_bin_width</strong> – Bin width in smoothing histogram (degrees).</p></li>
+<li><p><strong>full_width</strong> – Selection width around smoothed histogram peak (degrees).
+<cite>adaptive</cite> will attempt to automatically find the smallest number of
+<a href="#id1"><span class="problematic" id="id2">`</span></a>hist_bin_width`s required to find at least one valid image index.</p></li>
+<li><p><strong>mask</strong> – Option to mask <cite>src.images</cite> with a fuzzy mask (boolean).
+Default, <cite>True</cite>, applies a mask.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix">
+<span class="sig-name descname"><span class="pre">build_clmatrix</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix" title="Link to this definition">¶</a></dt>
+<dd><p>Build common-lines matrix from Fourier stack of 2D images</p>
+<p>Wrapper for cpu/gpu dispatch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix_cu">
+<span class="sig-name descname"><span class="pre">build_clmatrix_cu</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix_cu" title="Link to this definition">¶</a></dt>
+<dd><p>Build common-lines matrix from Fourier stack of 2D images</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix_host">
+<span class="sig-name descname"><span class="pre">build_clmatrix_host</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix_host" title="Link to this definition">¶</a></dt>
+<dd><p>Build common-lines matrix from Fourier stack of 2D images</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D.clmatrix">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">clmatrix</span></span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.clmatrix" title="Link to this definition">¶</a></dt>
+<dd><p>Returns Common Lines Matrix.</p>
+<p>Computes if <cite>clmatrix</cite> is None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Common Lines Matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D.estimate">
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.estimate" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate orientation and shifts for all 2D images.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(rotations, shifts)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D.estimate_rotations">
+<span class="sig-name descname"><span class="pre">estimate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.estimate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate orientation matrices for all 2D images</p>
+<p>Subclasses should implement this function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D.estimate_shifts">
+<span class="sig-name descname"><span class="pre">estimate_shifts</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.estimate_shifts" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate 2D shifts in images</p>
+<p>This function computes 2D shifts in x, y of images by solving the least-squares
+equations to <cite>Ax = b</cite>. <cite>A</cite> on the left-hand side is a sparse matrix representing
+precomputed coefficients of shift equations; and on the right-side, <cite>b</cite> is
+estimated 1D shifts along the theta direction between two Fourier rays (one in
+image i and the other in image j).  Each row of shift equations contains four
+unknowns, shifts in x, y for a pair of images. The detailed implementation
+can be found in the book chapter as below:
+Y. Shkolnisky and A. Singer,
+Center of Mass Operators for Cryo-EM - Theory and Implementation,
+Modeling Nanoscale Imaging in Electron Microscopy,
+T. Vogt, W. Dahmen, and P. Binev (Eds.)
+Nanostructure Science and Technology Series,
+Springer, 2012, pp. 147–177</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D.pf">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pf</span></span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.pf" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D.rotations">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">rotations</span></span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Returns estimated rotations.</p>
+<p>Computes if <cite>rotations</cite> is None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Estimated rotations</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_base.CLOrient3D.shifts">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">shifts</span></span><a class="headerlink" href="#aspire.abinitio.commonline_base.CLOrient3D.shifts" title="Link to this definition">¶</a></dt>
+<dd><p>Returns estimated shifts.</p>
+<p>Computes if <cite>shifts</cite> is None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Estimated shifts</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_c2">
+<span id="aspire-abinitio-commonline-c2-module"></span><h2>aspire.abinitio.commonline_c2 module<a class="headerlink" href="#module-aspire.abinitio.commonline_c2" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_c2.CLSymmetryC2">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_c2.</span></span><span class="sig-name descname"><span class="pre">CLSymmetryC2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">360</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_dist_cls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_c2.CLSymmetryC2" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">CLOrient3D</span></code></a></p>
+<p>Define a class to estimate 3D orientations using common lines methods for molecules with C2 cyclic symmetry.</p>
+<p>The related publications are listed below:
+X. Cheng,
+Random Matrices in High-dimensional Data Analysis,
+PhD thesis, Princeton University, (2013).</p>
+<p>G. Pragier and Y. Shkolnisky,
+A Common Lines Approach for Abinitio Modeling of Cyclically Symmetric Molecules,
+Inverse Problems, 35, 124005, (2019).</p>
+<p>Y. Shkolnisky, and A. Singer,
+Viewing Direction Estimation in Cryo-EM Using Synchronization,
+SIAM J. Imaging Sciences, 5, 1088-1110 (2012).</p>
+<p>A. Singer, R. R. Coifman, F. J. Sigworth, D. W. Chester, Y. Shkolnisky,
+Detecting Consistent Common Lines in Cryo-EM by Voting,
+Journal of Structural Biology, 169, 312-322 (2010).</p>
+<p>Initialize object for estimating 3D orientations for molecules with C2 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D denoised or class-averaged images with metadata</p></li>
+<li><p><strong>n_rad</strong> – The number of points in the radial direction</p></li>
+<li><p><strong>n_theta</strong> – The number of points in the theta direction. Default = 360.</p></li>
+<li><p><strong>max_shift</strong> – Maximum range for shifts as a proportion of resolution. Default = 0.15.</p></li>
+<li><p><strong>shift_step</strong> – Resolution of shift estimation in pixels. Default = 1 pixel.</p></li>
+<li><p><strong>epsilon</strong> – Tolerance for the power method.</p></li>
+<li><p><strong>max_iters</strong> – Maximum iterations for the power method.</p></li>
+<li><p><strong>min_dist_cls</strong> – Minimum distance between mutual common-lines. Default = 25 degrees.</p></li>
+<li><p><strong>seed</strong> – Optional seed for RNG.</p></li>
+<li><p><strong>mask</strong> – Option to mask <cite>src.images</cite> with a fuzzy mask (boolean).
+Default, <cite>True</cite>, applies a mask.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_c2.CLSymmetryC2.build_clmatrix">
+<span class="sig-name descname"><span class="pre">build_clmatrix</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_c2.CLSymmetryC2.build_clmatrix" title="Link to this definition">¶</a></dt>
+<dd><p>Build common-lines matrix for molecules with C2 symmetry from Fourier stack of 2D images.
+This consists of finding for each pair of images the two common-lines induced by the 2-fold symmetry.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_c2.CLSymmetryC2.estimate_rotations">
+<span class="sig-name descname"><span class="pre">estimate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_c2.CLSymmetryC2.estimate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate rotation matrices for molecules with C2 symmetry.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_c3_c4">
+<span id="aspire-abinitio-commonline-c3-c4-module"></span><h2>aspire.abinitio.commonline_c3_c4 module<a class="headerlink" href="#module-aspire.abinitio.commonline_c3_c4" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_c3_c4.CLSymmetryC3C4">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_c3_c4.</span></span><span class="sig-name descname"><span class="pre">CLSymmetryC3C4</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symmetry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">360</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">degree_res</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_c3_c4.CLSymmetryC3C4" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">CLOrient3D</span></code></a></p>
+<p>Define a class to estimate 3D orientations using common lines methods for molecules with
+C3 and C4 cyclic symmetry.</p>
+<p>The related publications are listed below:
+G. Pragier and Y. Shkolnisky,
+A Common Lines Approach for Abinitio Modeling of Cyclically Symmetric Molecules,
+Inverse Problems, 35, 124005, (2019).</p>
+<p>Y. Shkolnisky, and A. Singer,
+Viewing Direction Estimation in Cryo-EM Using Synchronization,
+SIAM J. Imaging Sciences, 5, 1088-1110 (2012).</p>
+<p>A. Singer, R. R. Coifman, F. J. Sigworth, D. W. Chester, Y. Shkolnisky,
+Detecting Consistent Common Lines in Cryo-EM by Voting,
+Journal of Structural Biology, 169, 312-322 (2010).</p>
+<p>Initialize object for estimating 3D orientations for molecules with C3 and C4 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D denoised or class-averaged images with metadata</p></li>
+<li><p><strong>symmetry</strong> – A string, ‘C3’ or ‘C4’, indicating the symmetry type.</p></li>
+<li><p><strong>n_rad</strong> – The number of points in the radial direction</p></li>
+<li><p><strong>n_theta</strong> – The number of points in the theta direction. Default = 360.</p></li>
+<li><p><strong>max_shift</strong> – Maximum range for shifts as a proportion of resolution. Default = 0.15.</p></li>
+<li><p><strong>shift_step</strong> – Resolution of shift estimation in pixels. Default = 1 pixel.</p></li>
+<li><p><strong>epsilon</strong> – Tolerance for the power method.</p></li>
+<li><p><strong>max_iter</strong> – Maximum iterations for the power method.</p></li>
+<li><p><strong>degree_res</strong> – Degree resolution for estimating in-plane rotations.</p></li>
+<li><p><strong>seed</strong> – Optional seed for RNG.</p></li>
+<li><p><strong>mask</strong> – Option to mask <cite>src.images</cite> with a fuzzy mask (boolean).
+Default, <cite>True</cite>, applies a mask.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_c3_c4.CLSymmetryC3C4.estimate_rotations">
+<span class="sig-name descname"><span class="pre">estimate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_c3_c4.CLSymmetryC3C4.estimate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate rotation matrices for molecules with C3 or C4 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array of rotation matrices, size n_imgx3x3.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_cn">
+<span id="aspire-abinitio-commonline-cn-module"></span><h2>aspire.abinitio.commonline_cn module<a class="headerlink" href="#module-aspire.abinitio.commonline_cn" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_cn.CLSymmetryCn">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_cn.</span></span><span class="sig-name descname"><span class="pre">CLSymmetryCn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">symmetry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">360</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">degree_res</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_points_sphere</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equator_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_cn.CLSymmetryCn" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">CLOrient3D</span></code></a></p>
+<p>Define a class to estimate 3D orientations using common lines methods for molecules with
+Cn cyclic symmetry, with n&gt;4.</p>
+<p>Initialize object for estimating 3D orientations for molecules with Cn symmetry, n&gt;4.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D denoised or class-averaged images with metadata</p></li>
+<li><p><strong>symmetry</strong> – A string, ‘Cn’, indicating the symmetry type.</p></li>
+<li><p><strong>n_rad</strong> – The number of points in the radial direction.</p></li>
+<li><p><strong>n_theta</strong> – The number of points in the theta direction. Default = 360.</p></li>
+<li><p><strong>max_shift</strong> – Maximum range for shifts as a proportion of resolution. Default = 0.15.</p></li>
+<li><p><strong>shift_step</strong> – Resolution of shift estimation in pixels. Default = 1 pixel.</p></li>
+<li><p><strong>epsilon</strong> – Tolerance for the power method.</p></li>
+<li><p><strong>max_iter</strong> – Maximum iterations for the power method.</p></li>
+<li><p><strong>degree_res</strong> – Degree resolution for estimating in-plane rotations.</p></li>
+<li><p><strong>n_points_sphere</strong> – The number of candidate rotations used to estimate viewing directions.</p></li>
+<li><p><strong>equator_threshold</strong> – Threshold for removing candidate rotations within <cite>equator_threshold</cite>
+degrees of being an equator image. Default is 10 degrees.</p></li>
+<li><p><strong>seed</strong> – Optional seed for RNG.</p></li>
+<li><p><strong>mask</strong> – Option to mask <cite>src.images</cite> with a fuzzy mask (boolean).
+Default, <cite>True</cite>, applies a mask.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_cn.CLSymmetryCn.estimate_rotations">
+<span class="sig-name descname"><span class="pre">estimate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_cn.CLSymmetryCn.estimate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate rotation matrices for molecules with Cn symmetry, n &gt; 4.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array of rotation matrices, size n_imgx3x3.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_cn.CLSymmetryCn.generate_candidate_rots">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_candidate_rots</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equator_threshold</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">degree_res</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_cn.CLSymmetryCn.generate_candidate_rots" title="Link to this definition">¶</a></dt>
+<dd><p>Generate random rotations that exclude rotations inducing equator images
+for use as candidates in the CLSymmetryCn algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – Number of rotations to generate.</p></li>
+<li><p><strong>equator_threshold</strong> – Angular distance from equator (in degrees).</p></li>
+<li><p><strong>order</strong> – Cyclic order of underlying molecule.</p></li>
+<li><p><strong>degree_res</strong> – Degree resolution for in-plane rotations.</p></li>
+<li><p><strong>seed</strong> – Random seed.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Candidate rotations, In-plane rotations</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_cn.CLSymmetryCn.relative_rots_to_cl_indices">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">relative_rots_to_cl_indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">relative_rots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_cn.CLSymmetryCn.relative_rots_to_cl_indices" title="Link to this definition">¶</a></dt>
+<dd><p>Given a set of relative rotations between pairs of images
+produce the common-line indices for each pair.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>relative_rots</strong> – The n x 3 x 3 relative rotations between pairs of images.</p></li>
+<li><p><strong>n_theta</strong> – The theta resolution for common-line indices.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Common-line indices c1s, c2s each length n.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_cn.MeanOuterProductEstimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_cn.</span></span><span class="sig-name descname"><span class="pre">MeanOuterProductEstimator</span></span><a class="headerlink" href="#aspire.abinitio.commonline_cn.MeanOuterProductEstimator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Incrementally accumulate outer product entries of unknown conjugation.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_cn.MeanOuterProductEstimator.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#aspire.abinitio.commonline_cn.MeanOuterProductEstimator.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">float64</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_cn.MeanOuterProductEstimator.push">
+<span class="sig-name descname"><span class="pre">push</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">V</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_cn.MeanOuterProductEstimator.push" title="Link to this definition">¶</a></dt>
+<dd><p>Given V, accumulate entries into a running sum of J-synchronized entries.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_cn.MeanOuterProductEstimator.synchronized_mean">
+<span class="sig-name descname"><span class="pre">synchronized_mean</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_cn.MeanOuterProductEstimator.synchronized_mean" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the mean of synchronized outer product estimates.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_d2">
+<span id="aspire-abinitio-commonline-d2-module"></span><h2>aspire.abinitio.commonline_d2 module<a class="headerlink" href="#module-aspire.abinitio.commonline_d2" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_d2.CLSymmetryD2">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_d2.</span></span><span class="sig-name descname"><span class="pre">CLSymmetryD2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">360</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_res</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inplane_res</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eq_min_dist</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_d2.CLSymmetryD2" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">CLOrient3D</span></code></a></p>
+<p>Define a class to estimate 3D orientations using common lines methods for
+molecules with D2 (dihedral) symmetry.</p>
+<p>Corresponding publication:
+E. Rosen and Y. Shkolnisky,
+Common lines ab-initio reconstruction of D2-symmetric molecules,
+SIAM Journal on Imaging Sciences, volume 13-4, p. 1898-1994, 2020</p>
+<p>Initialize object for estimating 3D orientations for molecules with D2 symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D denoised or class-averaged images with metadata</p></li>
+<li><p><strong>n_rad</strong> – The number of points in the radial direction of Fourier image.</p></li>
+<li><p><strong>n_theta</strong> – The number of points in the theta direction of Fourier image. Default = 360.</p></li>
+<li><p><strong>max_shift</strong> – Maximum range for shifts as a proportion of resolution. Default = 0.15.</p></li>
+<li><p><strong>shift_step</strong> – Resolution of shift estimation in pixels. Default = 1 pixel.</p></li>
+<li><p><strong>grid_res</strong> – Number of sampling points on sphere for projetion directions.
+These are generated using the Saaf-Kuijlaars algorithm. Default value is 1200.</p></li>
+<li><p><strong>inplane_res</strong> – The sampling resolution of in-plane rotations for each
+projection direction. Default value is 5 degrees.</p></li>
+<li><p><strong>eq_min_dist</strong> – Width of strip around equator projection directions from
+which we do not sample directions. Default value is 7 degrees.</p></li>
+<li><p><strong>epsilon</strong> – Tolerance for J-synchronization power method.</p></li>
+<li><p><strong>seed</strong> – Optional seed for RNG.</p></li>
+<li><p><strong>mask</strong> – Option to mask <cite>src.images</cite> with a fuzzy mask (boolean).
+Default, <cite>True</cite>, applies a mask.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_d2.CLSymmetryD2.estimate_rotations">
+<span class="sig-name descname"><span class="pre">estimate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_d2.CLSymmetryD2.estimate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate rotation matrices for molecules with D2 symmetry. Sets the attribute
+self.rotations with an array of estimated rotation matrices, size src.nx3x3.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_ev">
+<span id="aspire-abinitio-commonline-ev-module"></span><h2>aspire.abinitio.commonline_ev module<a class="headerlink" href="#module-aspire.abinitio.commonline_ev" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_ev.CommLineEV">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_ev.</span></span><span class="sig-name descname"><span class="pre">CommLineEV</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_ev.CommLineEV" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">CLOrient3D</span></code></a></p>
+<p>Class to estimate 3D orientations using Eigenvector method
+<span id="id3">[<a class="reference internal" href="quickstart.html#id6" title="Amit Singer and Yoel Shkolnisky. Three-dimensional structure determination from common lines in cryo-em by eigenvectors and semidefinite programming. SIAM J. Imaging Sciences, 4(2):543–572, 2011. URL: https://doi.org/10.1137/090767777, doi:10.1137/090767777.">SS11</a>]</span></p>
+<p>constructor of an object for estimating 3D orientations</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_ev.CommLineEV.estimate">
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_ev.CommLineEV.estimate" title="Link to this definition">¶</a></dt>
+<dd><p>perform estimation of orientations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_ev.CommLineEV.output">
+<span class="sig-name descname"><span class="pre">output</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_ev.CommLineEV.output" title="Link to this definition">¶</a></dt>
+<dd><p>Output the 3D orientations</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_gcar">
+<span id="aspire-abinitio-commonline-gcar-module"></span><h2>aspire.abinitio.commonline_gcar module<a class="headerlink" href="#module-aspire.abinitio.commonline_gcar" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_gcar.CommLineGCAR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_gcar.</span></span><span class="sig-name descname"><span class="pre">CommLineGCAR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_gcar.CommLineGCAR" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">CLOrient3D</span></code></a></p>
+<p>Define a derived class to estimate 3D orientations using Globally Consistent Angular Reconstitution described
+as below:
+R. Coifman, Y. Shkolnisky, F. J. Sigworth, and A. Singer, Reference Free Structure Determination through
+Eigenvestors of Center of Mass Operators, Applied and Computational Harmonic Analysis, 28, 296-312 (2010).</p>
+<p>constructor of an object for estimating 3D oreintations</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_gcar.CommLineGCAR.estimate">
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_gcar.CommLineGCAR.estimate" title="Link to this definition">¶</a></dt>
+<dd><p>perform estimation of orientations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_gcar.CommLineGCAR.output">
+<span class="sig-name descname"><span class="pre">output</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_gcar.CommLineGCAR.output" title="Link to this definition">¶</a></dt>
+<dd><p>Output the 3D orientations</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_irls">
+<span id="aspire-abinitio-commonline-irls-module"></span><h2>aspire.abinitio.commonline_irls module<a class="headerlink" href="#module-aspire.abinitio.commonline_irls" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_irls.CommonlineIRLS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_irls.</span></span><span class="sig-name descname"><span class="pre">CommonlineIRLS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_itrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps_weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rankZ</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rankW</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_irls.CommonlineIRLS" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_lud.CommonlineLUD" title="aspire.abinitio.commonline_lud.CommonlineLUD"><code class="xref py py-class docutils literal notranslate"><span class="pre">CommonlineLUD</span></code></a></p>
+<p>Estimate 3D orientations using Iteratively Reweighted Least Squares
+(IRLS) as described in the following publication:
+L. Wang, A. Singer, and  Z. Wen, Orientation Determination of Cryo-EM Images Using
+Least Unsquared Deviations, SIAM J. Imaging Sciences, 6, 2450-2483 (2013).</p>
+<p>Initialize a class for estimating 3D orientations using an IRLS-based optimization.
+See CommonlineLUD for additional arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_itrs</strong> – Number of iterations for iterative reweighting. Default is 10.</p></li>
+<li><p><strong>eps_weighting</strong> – Regularization value for reweighting factor. Default is 1e-3.</p></li>
+<li><p><strong>alpha</strong> – Spectral norm constraint for IRLS algorithm. Default is None, which
+does not apply a spectral norm constraint. To apply a spectral norm constraint provide
+a value in the range [2/3, 1), 2/3 is recommended.</p></li>
+<li><p><strong>max_rankZ</strong> – Maximum rank used for projecting the Z matrix (for adaptive projection).
+If None, defaults to max(6, n_img // 4).</p></li>
+<li><p><strong>max_rankW</strong> – Maximum rank used for projecting the W matrix (for adaptive projection).
+If None, defaults to max(6, n_img // 4).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_irls.CommonlineIRLS.estimate_rotations">
+<span class="sig-name descname"><span class="pre">estimate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_irls.CommonlineIRLS.estimate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate rotation matrices using the common lines method with IRLS optimization.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_lud">
+<span id="aspire-abinitio-commonline-lud-module"></span><h2>aspire.abinitio.commonline_lud module<a class="headerlink" href="#module-aspire.abinitio.commonline_lud" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_lud.CommonlineLUD">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_lud.</span></span><span class="sig-name descname"><span class="pre">CommonlineLUD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gam</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.618</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adp_proj</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rankZ</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_rankW</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adp_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dec_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inc_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_mu_itr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_mu_itr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_mu_l</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_mu_u</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_lud.CommonlineLUD" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_sdp.CommonlineSDP" title="aspire.abinitio.commonline_sdp.CommonlineSDP"><code class="xref py py-class docutils literal notranslate"><span class="pre">CommonlineSDP</span></code></a></p>
+<p>Define a derived class to estimate 3D orientations using Least Unsquared
+Deviations as described in the following publication:
+L. Wang, A. Singer, and  Z. Wen, Orientation Determination of Cryo-EM Images Using
+Least Unsquared Deviations, SIAM J. Imaging Sciences, 6, 2450-2483 (2013).</p>
+<p>Initialize a class for estimating 3D orientations using a Least Unsquared Deviations algorithm.</p>
+<p>This class extends the <cite>CLOrient3D</cite> class, inheriting its initialization parameters. Additional
+parameters detailed below.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>alpha</strong> – Spectral norm constraint for ADMM algorithm. Default is None, which
+does not apply a spectral norm constraint. To apply a spectral norm constraint provide
+a value in the range [2/3, 1), 2/3 is recommended.</p></li>
+<li><p><strong>tol</strong> – Tolerance for convergence. The algorithm stops when conditions reach this threshold.
+Default is 1e-3.</p></li>
+<li><p><strong>mu</strong> – The penalty parameter (or dual variable scaling factor) in the optimization problem.
+Default is 1.</p></li>
+<li><p><strong>gam</strong> – Relaxation factor for updating variables in the algorithm (typically between 1 and 2).
+Default is 1.618.</p></li>
+<li><p><strong>eps</strong> – Small positive value used to filter out negligible eigenvalues.
+Default is 1e-5 if src.dtype is singles, otherwise 1e-12.</p></li>
+<li><p><strong>maxit</strong> – Maximum number of iterations allowed for the algorithm.
+Default is 1000.</p></li>
+<li><p><strong>adp_proj</strong> – Flag for using adaptive projection during eigenvalue computation:
+- True: Adaptive rank selection (Default).
+- False: Full eigenvalue decomposition.</p></li>
+<li><p><strong>max_rankZ</strong> – Maximum rank used for projecting the Z matrix (for adaptive projection).
+If None, defaults to max(6, n_img // 2).</p></li>
+<li><p><strong>max_rankW</strong> – Maximum rank used for projecting the W matrix (for adaptive projection).
+If None, defaults to max(6, n_img // 2).</p></li>
+<li><p><strong>adp_mu</strong> – Adaptive adjustment of the penalty parameter <cite>mu</cite>:
+- True: Enabled (Default).
+- False: Disabled.</p></li>
+<li><p><strong>dec_mu</strong> – Scaling factor for decreasing <cite>mu</cite>.
+Default is 0.5.</p></li>
+<li><p><strong>inc_mu</strong> – Scaling factor for increasing <cite>mu</cite>.
+Default is 2.</p></li>
+<li><p><strong>mu_min</strong> – Minimum allowable value for <cite>mu</cite>.
+Default is 1e-4.</p></li>
+<li><p><strong>mu_max</strong> – Maximum allowable value for <cite>mu</cite>.
+Default is 1e4.</p></li>
+<li><p><strong>min_mu_itr</strong> – Minimum number of iterations before <cite>mu</cite> is adjusted.
+Default is 5.</p></li>
+<li><p><strong>max_mu_itr</strong> – Maximum number of iterations allowed for <cite>mu</cite> adjustment.
+Default is 20.</p></li>
+<li><p><strong>delta_mu_l</strong> – Lower bound for relative drop ratio to trigger a decrease in <cite>mu</cite>.
+Default is 0.1.</p></li>
+<li><p><strong>delta_mu_u</strong> – Upper bound for relative drop ratio to trigger an increase in <cite>mu</cite>.
+Default is 10.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_lud.CommonlineLUD.estimate_rotations">
+<span class="sig-name descname"><span class="pre">estimate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_lud.CommonlineLUD.estimate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate rotation matrices using the common lines method with LUD optimization.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_sdp">
+<span id="aspire-abinitio-commonline-sdp-module"></span><h2>aspire.abinitio.commonline_sdp module<a class="headerlink" href="#module-aspire.abinitio.commonline_sdp" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_sdp.CommonlineSDP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_sdp.</span></span><span class="sig-name descname"><span class="pre">CommonlineSDP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">360</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_check</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hist_bin_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offsets_max_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offsets_shift_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offsets_max_memory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offsets_equations_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sdp.CommonlineSDP" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">CLOrient3D</span></code></a></p>
+<p>Class to estimate 3D orientations using semi-definite programming.</p>
+<p>See the following publication for more details:</p>
+<p>A. Singer and Y. Shkolnisky,
+“Three-Dimensional Structure Determination from Common Lines in Cryo-EM</p>
+<blockquote>
+<div><p>by Eigenvectors and Semidefinite Programming”</p>
+</div></blockquote>
+<p>SIAM J. Imaging Sciences, Vol. 4, No. 2, (2011): 543-572. doi:10.1137/090767777</p>
+<p>Initialize an object for estimating 3D orientations using common lines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D denoised or class-averaged images.</p></li>
+<li><p><strong>n_rad</strong> – The number of points in the radial direction. If None,
+n_rad will default to the ceiling of half the resolution of the source.</p></li>
+<li><p><strong>n_theta</strong> – The number of points in the theta direction. This value must be even.
+Default is 360.</p></li>
+<li><p><strong>n_check</strong> – For each image/projection find its common-lines with
+n_check images. If n_check is less than the total number of images,
+a random subset of n_check images is used.</p></li>
+<li><p><strong>max_shift</strong> – Determines maximum range for shifts for
+common-line detection as a proportion of the
+resolution. Default is 0.15.</p></li>
+<li><p><strong>shift_step</strong> – Resolution of shift estimation for
+common-line detection in pixels.  Default is 1 pixel.</p></li>
+<li><p><strong>offsets_max_shift</strong> – Determines maximum range for shifts
+for 2D offset estimation as a proportion of the
+resolution. Default <cite>None</cite> inherits from <cite>max_shift</cite>.</p></li>
+<li><p><strong>offsets_shift_step</strong> – Resolution of shift estimation for
+2D offset estimation in pixels.  Default <cite>None</cite> inherits
+from <cite>shift_step</cite>.</p></li>
+<li><p><strong>offsets_equations_factor</strong> – The factor to rescale the
+number of shift equations (=1 in default)</p></li>
+<li><p><strong>offsets_max_memory</strong> – If there are N images and N_check
+selected to check for common lines, then the exact system
+of equations solved for the shifts is of size 2N x
+N(N_check-1)/2 (2N unknowns and N(N_check-1)/2 equations).
+This may be too big if N is large. The algorithm will use
+<cite>equations_factor</cite> times the total number of equations if
+the resulting total number of memory requirements is less
+than <cite>offsets_max_memory</cite> (in megabytes); otherwise it will reduce
+the number of equations by approximation to fit in
+<cite>offsets_max_memory</cite>.  For more information see the
+references in <cite>estimate_shifts</cite>.  Defaults to 10GB.</p></li>
+<li><p><strong>hist_bin_width</strong> – Bin width in smoothing histogram (degrees).</p></li>
+<li><p><strong>full_width</strong> – Selection width around smoothed histogram peak (degrees).
+<cite>adaptive</cite> will attempt to automatically find the smallest number of
+<a href="#id4"><span class="problematic" id="id5">`</span></a>hist_bin_width`s required to find at least one valid image index.</p></li>
+<li><p><strong>mask</strong> – Option to mask <cite>src.images</cite> with a fuzzy mask (boolean).
+Default, <cite>True</cite>, applies a mask.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_sdp.CommonlineSDP.estimate_rotations">
+<span class="sig-name descname"><span class="pre">estimate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sdp.CommonlineSDP.estimate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate rotation matrices using the common lines method with semi-definite programming.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_sync">
+<span id="aspire-abinitio-commonline-sync-module"></span><h2>aspire.abinitio.commonline_sync module<a class="headerlink" href="#module-aspire.abinitio.commonline_sync" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_sync.CLSyncVoting">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_sync.</span></span><span class="sig-name descname"><span class="pre">CLSyncVoting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">360</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hist_bin_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sync.CLSyncVoting" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">CLOrient3D</span></code></a></p>
+<p>Define a class to estimate 3D orientations using synchronization matrix and voting method.</p>
+<p>The related publications are listed as below:
+Y. Shkolnisky, and A. Singer,
+Viewing Direction Estimation in Cryo-EM Using Synchronization,
+SIAM J. Imaging Sciences, 5, 1088-1110 (2012).</p>
+<p>A. Singer, R. R. Coifman, F. J. Sigworth, D. W. Chester, Y. Shkolnisky,
+Detecting Consistent Common Lines in Cryo-EM by Voting,
+Journal of Structural Biology, 169, 312-322 (2010).</p>
+<p>Initialize an object for estimating 3D orientations using synchronization matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D denoised or class-averaged images with metadata</p></li>
+<li><p><strong>n_rad</strong> – The number of points in the radial direction</p></li>
+<li><p><strong>n_theta</strong> – The number of points in the theta direction.
+Default is 360.</p></li>
+<li><p><strong>max_shift</strong> – Determines maximum range for shifts as a proportion
+of the resolution. Default is 0.15.</p></li>
+<li><p><strong>shift_step</strong> – Resolution for shift estimation in pixels. Default is 1 pixel.</p></li>
+<li><p><strong>hist_bin_width</strong> – Bin width in smoothing histogram (degrees).</p></li>
+<li><p><strong>full_width</strong> – Selection width around smoothed histogram peak (degrees).
+<cite>adaptive</cite> will attempt to automatically find the smallest number of
+<a href="#id6"><span class="problematic" id="id7">`</span></a>hist_bin_width`s required to find at least one valid image index.</p></li>
+<li><p><strong>mask</strong> – Option to mask <cite>src.images</cite> with a fuzzy mask (boolean).
+Default, <cite>True</cite>, applies a mask.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_sync.CLSyncVoting.estimate_rotations">
+<span class="sig-name descname"><span class="pre">estimate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sync.CLSyncVoting.estimate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate orientation matrices for all 2D images using synchronization matrix</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_sync.CLSyncVoting.syncmatrix_vote">
+<span class="sig-name descname"><span class="pre">syncmatrix_vote</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sync.CLSyncVoting.syncmatrix_vote" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the synchronization matrix using voting method</p>
+<p>A pre-computed common line matrix is required as input.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_sync3n">
+<span id="aspire-abinitio-commonline-sync3n-module"></span><h2>aspire.abinitio.commonline_sync3n module<a class="headerlink" href="#module-aspire.abinitio.commonline_sync3n" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_sync3n.CLSync3N">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_sync3n.</span></span><span class="sig-name descname"><span class="pre">CLSync3N</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">360</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hist_bin_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'adaptive'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mask</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">S_weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">J_weighting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hist_intervals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disable_gpu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sync3n.CLSync3N" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.abinitio.commonline_base.CLOrient3D" title="aspire.abinitio.commonline_base.CLOrient3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">CLOrient3D</span></code></a></p>
+<p>Define a class to estimate 3D orientations using common lines Sync3N methods (2017).</p>
+<p>Ido Greenberg, Yoel Shkolnisky,
+Common lines modeling for reference free Ab-initio reconstruction in cryo-EM,
+Journal of Structural Biology,
+Volume 200, Issue 2,
+2017,
+Pages 106-117,
+ISSN 1047-8477,
+<a class="reference external" href="https://doi.org/10.1016/j.jsb.2017.09.007">https://doi.org/10.1016/j.jsb.2017.09.007</a>.</p>
+<p>Initialize object for estimating 3D orientations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The source object of 2D denoised or class-averaged images with metadata</p></li>
+<li><p><strong>n_rad</strong> – The number of points in the radial direction</p></li>
+<li><p><strong>n_theta</strong> – The number of points in the theta direction</p></li>
+<li><p><strong>max_shift</strong> – Maximum range for shifts as a proportion of box size. Default = 0.15.</p></li>
+<li><p><strong>shift_step</strong> – Step size of shift estimation in pixels. Default = 1 pixel.</p></li>
+<li><p><strong>hist_bin_width</strong> – Bin width in smoothing histogram (degrees).</p></li>
+<li><p><strong>full_width</strong> – Selection width around smoothed histogram peak (degrees).
+<cite>adaptive</cite> will attempt to automatically find the smallest number of
+<a href="#id8"><span class="problematic" id="id9">`</span></a>hist_bin_width`s required to find at least one valid image index.</p></li>
+<li><p><strong>epsilon</strong> – Tolerance for the power method.</p></li>
+<li><p><strong>max_iter</strong> – Maximum iterations for the power method.</p></li>
+<li><p><strong>sigma</strong> – Voting contribution smoothing factor.</p></li>
+<li><p><strong>seed</strong> – Optional seed for RNG.</p></li>
+<li><p><strong>mask</strong> – Option to mask <cite>src.images</cite> with a fuzzy mask (boolean).
+Default, <cite>True</cite>, applies a mask.</p></li>
+<li><p><strong>S_weighting</strong> – Optionally apply probabilistic weighting
+to the <cite>S</cite> matrix.</p></li>
+<li><p><strong>J_weighting</strong> – Optionally use <cite>J</cite> weights instead of
+signs when computing <cite>signs_times_v</cite>.</p></li>
+<li><p><strong>hist_intervals</strong> – Number of histogram bins used to
+compute triangle scores when <cite>S_weighting</cite> enabled.</p></li>
+<li><p><strong>disable_gpu</strong> – Disables GPU acceleration;
+forces CPU only code for this module.
+Defaults to automatically using GPU when available.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_sync3n.CLSync3N.estimate_rotations">
+<span class="sig-name descname"><span class="pre">estimate_rotations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_sync3n.CLSync3N.estimate_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate rotation matrices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array of rotation matrices, size n_imgx3x3.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.commonline_utils">
+<span id="aspire-abinitio-commonline-utils-module"></span><h2>aspire.abinitio.commonline_utils module<a class="headerlink" href="#module-aspire.abinitio.commonline_utils" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_utils.build_outer_products">
+<span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_utils.</span></span><span class="sig-name descname"><span class="pre">build_outer_products</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_utils.build_outer_products" title="Link to this definition">¶</a></dt>
+<dd><p>Builds sets of outer products of 3rd rows of rotation matrices.
+This is a helper function used in commonline testing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – Number of 3rd rows to construct outer product from.</p></li>
+<li><p><strong>dtype</strong> – dtype of outputs</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple of (vijs, viis, gt_vis), where vijs are the pairwise
+outer products of gt_vis and viis are self outer products of gt_vis.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.abinitio.commonline_utils.g_sync">
+<span class="sig-prename descclassname"><span class="pre">aspire.abinitio.commonline_utils.</span></span><span class="sig-name descname"><span class="pre">g_sync</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rots_gt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.abinitio.commonline_utils.g_sync" title="Link to this definition">¶</a></dt>
+<dd><p>Given ground truth rotations, synchronize estimated rotations over
+symmetry group elements.</p>
+<p>Every estimated rotation might be a version of the ground truth rotation
+rotated by g^{s_i}, where s_i = 0, 1, …, order. This method synchronizes the
+ground truth rotations so that only a single global rotation need be applied
+to all estimates for error analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rots</strong> – Estimated rotation matrices</p></li>
+<li><p><strong>order</strong> – The cyclic order asssociated with the symmetry of the underlying molecule.</p></li>
+<li><p><strong>rots_gt</strong> – Ground truth rotation matrices.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>g-synchronized ground truth rotations.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.abinitio.sync_voting">
+<span id="aspire-abinitio-sync-voting-module"></span><h2>aspire.abinitio.sync_voting module<a class="headerlink" href="#module-aspire.abinitio.sync_voting" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.abinitio">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.abinitio" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.html" class="btn btn-neutral float-left" title="aspire package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.apple.html" class="btn btn-neutral float-right" title="aspire.apple package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

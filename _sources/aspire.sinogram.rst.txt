@@ -1,0 +1,21 @@
+aspire.sinogram package
+=======================
+
+Submodules
+----------
+
+aspire.sinogram.sinogram module
+-------------------------------
+
+.. automodule:: aspire.sinogram.sinogram
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.sinogram
+   :members:
+   :undoc-members:
+   :show-inheritance:

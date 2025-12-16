@@ -1,0 +1,620 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CTF: Contrast Transfer Function &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Class Averaging" href="class_averaging.html" />
+    <link rel="prev" title="Basic Image Array" href="basic_image_array.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#api-introduction">API Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#component-examples">Component Examples</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">Component Examples</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="cov2d_simulation.html">2D Covariance Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orient3d_simulation.html">3D Image Orientation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_class.html">ASPIRE Image Class</a></li>
+<li class="toctree-l4"><a class="reference internal" href="apple_picker.html">Apple Picker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="basic_image_array.html">Basic Image Array</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">CTF: Contrast Transfer Function</a></li>
+<li class="toctree-l4"><a class="reference internal" href="class_averaging.html">Class Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cov3d_simulation.html">Covariance 3D Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data_downloader.html">Data Downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generating_volume_projections.html">Generating 3D Volume Projections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_expansion.html">Image Expansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="preprocess_imgs_sim.html">Image Preprocessing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="micrograph_source.html">Micrograph Sources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="relion_projection_interop.html">Relion Projection Interoperability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="starfile.html">Starfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="weighted_volume_estimation.html">Weighted Volume Reconstruction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Component Examples</a></li>
+      <li class="breadcrumb-item active">CTF: Contrast Transfer Function</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/auto_tutorials/tutorials/ctf.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-tutorials-ctf-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="ctf-contrast-transfer-function">
+<span id="sphx-glr-auto-tutorials-tutorials-ctf-py"></span><h1>CTF: Contrast Transfer Function<a class="headerlink" href="#ctf-contrast-transfer-function" title="Link to this heading">¶</a></h1>
+<p>This tutorial demonstrates the CTF and corresponds to
+lecture notes from MATH586 at Princeton.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get some common imports out of the way.</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tempfile</span><span class="w"> </span><span class="kn">import</span> <span class="n">TemporaryDirectory</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s2">&quot;image.cmap&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;gray&quot;</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.ndimage</span><span class="w"> </span><span class="kn">import</span> <span class="n">gaussian_filter</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">aspire</span>
+
+<span class="c1"># Image size to use throughout the demo.</span>
+<span class="n">IMG_SIZE</span> <span class="o">=</span> <span class="mi">512</span>
+</pre></div>
+</div>
+<section id="visualizing-the-ctf">
+<h2>Visualizing the CTF<a class="headerlink" href="#visualizing-the-ctf" title="Link to this heading">¶</a></h2>
+<p>ASPIRE can be used to create and visualize example CTFs.</p>
+<section id="radially-symmetric-ctf">
+<h3>Radially Symmetric CTF<a class="headerlink" href="#radially-symmetric-ctf" title="Link to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">RadialCTFFilter</span></code> is used to create a radially symmetric
+<code class="docutils literal notranslate"><span class="pre">Filter</span></code> object for use with ASPIRE.
+This object can also be used to calculate the transfer function as a numpy array.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.operators</span><span class="w"> </span><span class="kn">import</span> <span class="n">CTFFilter</span><span class="p">,</span> <span class="n">RadialCTFFilter</span>
+
+<span class="n">radial_ctf_filter</span> <span class="o">=</span> <span class="n">RadialCTFFilter</span><span class="p">(</span>
+    <span class="n">voltage</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>  <span class="c1"># kV</span>
+    <span class="n">defocus</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>  <span class="c1"># angstrom, 10000 A = 1 um</span>
+    <span class="n">Cs</span><span class="o">=</span><span class="mf">2.26</span><span class="p">,</span>  <span class="c1"># Spherical aberration constant</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.07</span><span class="p">,</span>  <span class="c1"># Amplitude contrast phase in radians</span>
+    <span class="n">B</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Envelope decay in inverse square angstrom (default 0)</span>
+<span class="p">)</span>
+
+<span class="c1"># The CTF filter can be visualized as an image once it is evaluated at a specific resolution.</span>
+<span class="c1"># More specifically the following code will return a transfer function as an array,</span>
+<span class="c1"># which is then plotted.</span>
+<span class="n">rctf_fn</span> <span class="o">=</span> <span class="n">radial_ctf_filter</span><span class="o">.</span><span class="n">evaluate_grid</span><span class="p">(</span><span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">rctf_fn</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_001.png" srcset="../../_images/sphx_glr_ctf_001.png" alt="ctf" class = "sphx-glr-single-img"/></section>
+<section id="elliptical-ctf">
+<h3>Elliptical CTF<a class="headerlink" href="#elliptical-ctf" title="Link to this heading">¶</a></h3>
+<p>For the general <code class="docutils literal notranslate"><span class="pre">CTFFilter</span></code>,
+we provide defocus along two perpendicular axes u and v separately,
+along with the angle the u-axis makes with the horizontal (x) axis.
+Note that we chose an extreme astigmatism for demonstration,
+and the values more typically differ by a few percent.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">ctf_filter</span> <span class="o">=</span> <span class="n">CTFFilter</span><span class="p">(</span>
+    <span class="n">voltage</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>  <span class="c1"># kV</span>
+    <span class="n">defocus_u</span><span class="o">=</span><span class="mi">15000</span><span class="p">,</span>  <span class="c1"># angstrom, 10000 A = 1 um</span>
+    <span class="n">defocus_v</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">defocus_ang</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">6</span><span class="p">,</span>  <span class="c1"># Radians</span>
+    <span class="n">Cs</span><span class="o">=</span><span class="mf">2.26</span><span class="p">,</span>  <span class="c1"># Spherical aberration constant</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.07</span><span class="p">,</span>  <span class="c1"># Amplitude contrast phase in radians</span>
+    <span class="n">B</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>  <span class="c1"># Envelope decay in inverse square angstrom (default 0)</span>
+<span class="p">)</span>
+
+<span class="c1"># Again, we plot it, and note the difference from the RadialCTFFilter.</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ctf_filter</span><span class="o">.</span><span class="n">evaluate_grid</span><span class="p">(</span><span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_002.png" srcset="../../_images/sphx_glr_ctf_002.png" alt="ctf" class = "sphx-glr-single-img"/></section>
+<section id="phase-flipping">
+<h3>Phase Flipping<a class="headerlink" href="#phase-flipping" title="Link to this heading">¶</a></h3>
+<p>A common technique used with CTF corrupted data is to apply a transformation
+based on the sign of the (estimated) CTF.
+We can easily visualize this in an idealized way by taking the sign of the
+array returned by ASPIRE’s <code class="docutils literal notranslate"><span class="pre">CTFFilter.evaluate_grid</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">ctf_sign</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">radial_ctf_filter</span><span class="o">.</span><span class="n">evaluate_grid</span><span class="p">(</span><span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">ctf_sign</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_003.png" srcset="../../_images/sphx_glr_ctf_003.png" alt="ctf" class = "sphx-glr-single-img"/></section>
+</section>
+<section id="applying-ctf-directly-to-images">
+<h2>Applying CTF Directly to Images<a class="headerlink" href="#applying-ctf-directly-to-images" title="Link to this heading">¶</a></h2>
+<p>Various defocus values and phase flipping correction will be
+applied directly to images using a mix of ASPIRE and Numpy.</p>
+<section id="generate-example-image">
+<h3>Generate Example Image<a class="headerlink" href="#generate-example-image" title="Link to this heading">¶</a></h3>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_example_image</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">noise_variance</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates data similar to the MATH586 lecture notes.</span>
+
+<span class="sd">    :param L: Resolution in pixels.</span>
+<span class="sd">    :param noise_variance: Variance passed to random normal noise generator.</span>
+<span class="sd">    :return: Image as np array.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Empty Array</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
+
+    <span class="c1"># Construct grid</span>
+    <span class="n">g2d</span> <span class="o">=</span> <span class="n">aspire</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">grid_2d</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Make central square</span>
+    <span class="n">img</span><span class="p">[(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">g2d</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">L</span> <span class="o">//</span> <span class="mi">6</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">g2d</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">L</span> <span class="o">//</span> <span class="mi">6</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="c1"># Remove the outer corners</span>
+    <span class="n">disc</span> <span class="o">=</span> <span class="n">g2d</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="p">(</span><span class="mf">1.2</span> <span class="o">*</span> <span class="n">L</span> <span class="o">//</span> <span class="mi">6</span><span class="p">)</span>
+    <span class="n">img</span><span class="p">[</span><span class="n">disc</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Remove center circle</span>
+    <span class="n">disc</span> <span class="o">=</span> <span class="n">g2d</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">L</span> <span class="o">//</span> <span class="mi">24</span>
+    <span class="n">img</span><span class="p">[</span><span class="n">disc</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Smooth hard edges with some Gaussian blur</span>
+    <span class="n">img</span> <span class="o">=</span> <span class="n">gaussian_filter</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+    <span class="c1"># Add noise</span>
+    <span class="n">img</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">noise_variance</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">L</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">img</span>
+
+
+<span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">generate_example_image</span><span class="p">(</span><span class="n">IMG_SIZE</span><span class="p">),</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">img</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_004.png" srcset="../../_images/sphx_glr_ctf_004.png" alt="ctf" class = "sphx-glr-single-img"/></section>
+<section id="apply-ctf-and-phase-flipping">
+<h3>Apply CTF and Phase Flipping<a class="headerlink" href="#apply-ctf-and-phase-flipping" title="Link to this heading">¶</a></h3>
+<p>First, CTF filters for a range of defocus values are created
+and used to corrupt the example image.
+Then phase flipping will use the actual CTF paramaters to attempt idealized corrections.
+ASPIRE has built in tools for performing these tasks which are discussed towards the end,
+but here the methods are demonstrated directly.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Construct a range of CTF filters.</span>
+<span class="n">defoci</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2500</span><span class="p">,</span> <span class="mi">5000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">20000</span><span class="p">]</span>
+<span class="n">ctf_filters</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">RadialCTFFilter</span><span class="p">(</span><span class="n">voltage</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">defocus</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">Cs</span><span class="o">=</span><span class="mf">2.26</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.07</span><span class="p">,</span> <span class="n">B</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">defoci</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+<section id="generate-ctf-corrupted-images">
+<h4>Generate CTF corrupted Images<a class="headerlink" href="#generate-ctf-corrupted-images" title="Link to this heading">¶</a></h4>
+<p>Generate images corrupted by progressively increasing defocus.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For each defocus, apply filter to the base image.</span>
+<span class="n">imgs</span> <span class="o">=</span> <span class="n">Image</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">defoci</span><span class="p">),</span> <span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">IMG_SIZE</span><span class="p">)),</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ctf</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ctf_filters</span><span class="p">):</span>
+    <span class="n">imgs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">ctf</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">imgs</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_005.png" srcset="../../_images/sphx_glr_ctf_005.png" alt="ctf" class = "sphx-glr-single-img"/></section>
+<section id="generate-phase-flipped-images">
+<h4>Generate Phase Flipped Images<a class="headerlink" href="#generate-phase-flipped-images" title="Link to this heading">¶</a></h4>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Construct the centered 2D FFT of the images.</span>
+<span class="n">imgs_f</span> <span class="o">=</span> <span class="n">aspire</span><span class="o">.</span><span class="n">numeric</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">centered_fft2</span><span class="p">(</span><span class="n">imgs</span><span class="p">)</span>
+
+<span class="c1"># Manually apply phase flipping transformation.</span>
+<span class="n">phase_flipped_imgs_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">imgs_f</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ctf</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ctf_filters</span><span class="p">):</span>
+    <span class="c1"># Compute the signs of this CTF</span>
+    <span class="c1"># In practice, this would be an estimated CTF,</span>
+    <span class="c1"># but in the demo we have the luxury of using the model CTF that was applied.</span>
+    <span class="n">signs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">ctf</span><span class="o">.</span><span class="n">evaluate_grid</span><span class="p">(</span><span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+    <span class="c1"># Apply to the image in Fourier space.</span>
+    <span class="n">phase_flipped_imgs_f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">signs</span> <span class="o">*</span> <span class="n">imgs_f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+<span class="c1"># Construct the centered 2D FFT of the images.</span>
+<span class="n">phase_flipped_imgs</span> <span class="o">=</span> <span class="n">aspire</span><span class="o">.</span><span class="n">numeric</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">centered_ifft2</span><span class="p">(</span><span class="n">phase_flipped_imgs_f</span><span class="p">)</span><span class="o">.</span><span class="n">real</span>
+<span class="n">Image</span><span class="p">(</span><span class="n">phase_flipped_imgs</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_006.png" srcset="../../_images/sphx_glr_ctf_006.png" alt="ctf" class = "sphx-glr-single-img"/><div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Centering the signal FFT is critical when the CTF is centered in Fourier space.</p>
+</div>
+</section>
+</section>
+</section>
+<section id="validating-ctffilter">
+<h2>Validating <code class="docutils literal notranslate"><span class="pre">CTFFilter</span></code><a class="headerlink" href="#validating-ctffilter" title="Link to this heading">¶</a></h2>
+<p>The forward modeling of CTF can be validated by passing a corrupted image
+through CTF estimators and comparing the resulting defocus value(s).</p>
+<section id="importance-of-correct-ctf-estimation">
+<h3>Importance of correct CTF Estimation<a class="headerlink" href="#importance-of-correct-ctf-estimation" title="Link to this heading">¶</a></h3>
+<p>Phase flipping with incorrect CTF estimates can further corrupt signal.
+Here we plot a ray of the <code class="docutils literal notranslate"><span class="pre">radial_ctf_filter</span></code> modeled earlier,
+along with an erroneous CTF filter.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">bad_est_ctf_filter</span> <span class="o">=</span> <span class="n">RadialCTFFilter</span><span class="p">(</span>
+    <span class="n">voltage</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">defocus</span><span class="o">=</span><span class="mi">14000</span><span class="p">,</span>  <span class="c1"># Modeled CTF was 10000</span>
+    <span class="n">Cs</span><span class="o">=</span><span class="mf">2.26</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.07</span><span class="p">,</span>
+    <span class="n">B</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1"># Evaluate Filter, returning a Numpy array.</span>
+<span class="n">bad_ctf_fn</span> <span class="o">=</span> <span class="n">bad_est_ctf_filter</span><span class="o">.</span><span class="n">evaluate_grid</span><span class="p">(</span><span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">IMG_SIZE</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rctf_fn</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">c</span><span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Model CTF&quot;</span><span class="p">)</span>  <span class="c1"># radial_ctf_filter</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">bad_ctf_fn</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">c</span><span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Incorrect CTF Estimate&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_007.png" srcset="../../_images/sphx_glr_ctf_007.png" alt="ctf" class = "sphx-glr-single-img"/><p>Compare the idealized CTF phase flipping correction
+with phase flipping an incorrect CTF.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">idealized_flipped_fn</span> <span class="o">=</span> <span class="n">rctf_fn</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">rctf_fn</span><span class="p">)</span>
+<span class="n">incorrect_flipped_fn</span> <span class="o">=</span> <span class="n">rctf_fn</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">bad_ctf_fn</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="s2">&quot;Application of Phase Flipping&quot;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">idealized_flipped_fn</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">c</span><span class="p">:])</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Idealized&quot;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">incorrect_flipped_fn</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">c</span><span class="p">:])</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Incorrect&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_008.png" srcset="../../_images/sphx_glr_ctf_008.png" alt="Application of Phase Flipping, Idealized, Incorrect" class = "sphx-glr-single-img"/></section>
+<section id="aspire-ctfestimator">
+<h3>ASPIRE CtfEstimator<a class="headerlink" href="#aspire-ctfestimator" title="Link to this heading">¶</a></h3>
+<p>Here we will use ASPIRE’s <code class="docutils literal notranslate"><span class="pre">CtfEstimator</span></code> on a CTF corrupted image
+so we can compare with the modeled corruption parameters.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.ctf</span><span class="w"> </span><span class="kn">import</span> <span class="n">estimate_ctf</span>
+
+<span class="c1"># Using our radial_ctf_filter from earlier, corrupt an image.</span>
+<span class="n">test_img</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">radial_ctf_filter</span><span class="p">)</span>
+<span class="n">test_img</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># Create the image file in a tmp dir</span>
+<span class="k">with</span> <span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">d</span><span class="p">:</span>
+    <span class="n">test_img</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="s2">&quot;test_img.mrc&quot;</span><span class="p">))</span>
+
+    <span class="n">radial_ctf_est</span> <span class="o">=</span> <span class="n">estimate_ctf</span><span class="p">(</span>
+        <span class="n">data_folder</span><span class="o">=</span><span class="n">d</span><span class="p">,</span>
+        <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">cs</span><span class="o">=</span><span class="n">radial_ctf_filter</span><span class="o">.</span><span class="n">Cs</span><span class="p">,</span>
+        <span class="n">amplitude_contrast</span><span class="o">=</span><span class="n">radial_ctf_filter</span><span class="o">.</span><span class="n">alpha</span><span class="p">,</span>
+        <span class="n">voltage</span><span class="o">=</span><span class="n">radial_ctf_filter</span><span class="o">.</span><span class="n">voltage</span><span class="p">,</span>
+        <span class="n">psd_size</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+        <span class="n">num_tapers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="c1"># We&#39;ll use these estimates next.</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">radial_ctf_est</span><span class="p">)</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_009.png" srcset="../../_images/sphx_glr_ctf_009.png" alt="ctf" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{&#39;test_img.mrc&#39;: {&#39;defocus_u&#39;: np.float64(10059.199674942412), &#39;defocus_v&#39;: np.float64(9949.835199766037), &#39;defocus_ang&#39;: np.float64(0.2510327833976409), &#39;cs&#39;: 2.26, &#39;voltage&#39;: 200, &#39;pixel_size&#39;: 1, &#39;amplitude_contrast&#39;: 0.07}}
+</pre></div>
+</div>
+</section>
+<section id="using-aspire-s-ctf-estimate">
+<h3>Using ASPIRE’s CTF Estimate<a class="headerlink" href="#using-aspire-s-ctf-estimate" title="Link to this heading">¶</a></h3>
+<p>Previously we computed some radial CTF estimates in <code class="docutils literal notranslate"><span class="pre">radial_ctf_est</span></code>.
+Here we will view the application of these estimates in phase flipping
+our example image.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get the relevant estimate.</span>
+<span class="n">est</span> <span class="o">=</span> <span class="n">radial_ctf_est</span><span class="p">[</span><span class="s2">&quot;test_img.mrc&quot;</span><span class="p">]</span>
+
+<span class="c1"># Take an average defocus for radial case.</span>
+<span class="n">defocus</span> <span class="o">=</span> <span class="p">(</span><span class="n">est</span><span class="p">[</span><span class="s2">&quot;defocus_u&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">est</span><span class="p">[</span><span class="s2">&quot;defocus_v&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mf">2.0</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;defocus = </span><span class="si">{</span><span class="n">defocus</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create a filter and evaluate.</span>
+<span class="n">est_ctf</span> <span class="o">=</span> <span class="n">RadialCTFFilter</span><span class="p">(</span>
+    <span class="n">voltage</span><span class="o">=</span><span class="n">est</span><span class="p">[</span><span class="s2">&quot;voltage&quot;</span><span class="p">],</span>
+    <span class="n">defocus</span><span class="o">=</span><span class="n">defocus</span><span class="p">,</span>  <span class="c1"># Modeled CTF was 10000</span>
+    <span class="n">Cs</span><span class="o">=</span><span class="n">est</span><span class="p">[</span><span class="s2">&quot;cs&quot;</span><span class="p">],</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="n">est</span><span class="p">[</span><span class="s2">&quot;amplitude_contrast&quot;</span><span class="p">],</span>
+    <span class="n">B</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">est_ctf_fn</span> <span class="o">=</span> <span class="n">est_ctf</span><span class="o">.</span><span class="n">evaluate_grid</span><span class="p">(</span><span class="n">IMG_SIZE</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Compare the model CTF with the estimated CTF.</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">IMG_SIZE</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rctf_fn</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">c</span><span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Model CTF&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">est_ctf_fn</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">c</span><span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Estimated CTF&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_010.png" srcset="../../_images/sphx_glr_ctf_010.png" alt="ctf" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>defocus = 10004.517437354225
+</pre></div>
+</div>
+<p>Compare the idealized CTF phase flipping correction
+with phase flipping the estimated CTF.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">estimated_flipped_fn</span> <span class="o">=</span> <span class="n">rctf_fn</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">est_ctf_fn</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Application of estimated CTF Phase Flipping&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">estimated_flipped_fn</span><span class="p">[</span><span class="n">c</span><span class="p">,</span> <span class="n">c</span><span class="p">:])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_011.png" srcset="../../_images/sphx_glr_ctf_011.png" alt="Application of estimated CTF Phase Flipping" class = "sphx-glr-single-img"/><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>At the time of writing, elliptical CTF estimation is under going development and validation.</p>
+</div>
+</section>
+</section>
+<section id="aspire-sources-ctf-and-phase-flipping">
+<h2>ASPIRE Sources: CTF and Phase Flipping<a class="headerlink" href="#aspire-sources-ctf-and-phase-flipping" title="Link to this heading">¶</a></h2>
+<p>The most common uses of CTF simulation and correction are
+implemented behind the scenes in ASPIRE’s Source classes.
+For simulations, users are expected to provide their own
+reasonable CTF parameters. When in doubt they should refer to
+EMDB or EMPIAR for related datasets that may have CTF estimates.
+ASPIRE also commonly uses some reasonable values for the 10028 dataset
+in examples.</p>
+<section id="simulation-source">
+<h3>Simulation Source<a class="headerlink" href="#simulation-source" title="Link to this heading">¶</a></h3>
+<p>The following code demonstrates adding the previous list of
+CTFs to a Simulation and performing phase flipping.
+No calculations beyond defining the CTF parameters are required.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">Simulation</span>
+
+<span class="c1"># Create the Source.  ``ctf_filters`` are re-used from earlier section.</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span><span class="n">L</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">unique_filters</span><span class="o">=</span><span class="n">ctf_filters</span><span class="p">,</span> <span class="n">pixel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_012.png" srcset="../../_images/sphx_glr_ctf_012.png" alt="ctf" class = "sphx-glr-single-img"/><p>Phase flip the images.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">phase_flip</span><span class="p">()</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_013.png" srcset="../../_images/sphx_glr_ctf_013.png" alt="ctf" class = "sphx-glr-single-img"/><p>Compare corrupted and phase flipped images to those without corruption.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">src</span><span class="o">.</span><span class="n">projections</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_ctf_014.png" srcset="../../_images/sphx_glr_ctf_014.png" alt="ctf" class = "sphx-glr-single-img"/></section>
+<section id="beyond-simulations-experimental-data-sources">
+<h3>Beyond Simulations: Experimental Data Sources<a class="headerlink" href="#beyond-simulations-experimental-data-sources" title="Link to this heading">¶</a></h3>
+<p>When loading experimental data,
+CTF parameters in the STAR file should be loaded automatically.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">RelionSource</span>
+
+<span class="c1"># Load an example Relion starfile</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">RelionSource</span><span class="p">(</span>
+    <span class="s2">&quot;../data/sample_relion_data.star&quot;</span><span class="p">,</span>
+    <span class="n">pixel_size</span><span class="o">=</span><span class="mf">1.338</span><span class="p">,</span>
+    <span class="n">max_rows</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">data_folder</span><span class="o">=</span><span class="s2">&quot;../data&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span>  <span class="c1"># easier to visualize</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># Phase flip</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">phase_flip</span><span class="p">()</span>
+<span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<ul class="sphx-glr-horizontal">
+<li><img src="../../_images/sphx_glr_ctf_015.png" srcset="../../_images/sphx_glr_ctf_015.png" alt="ctf" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../_images/sphx_glr_ctf_016.png" srcset="../../_images/sphx_glr_ctf_016.png" alt="ctf" class = "sphx-glr-multi-img"/></li>
+</ul>
+</section>
+</section>
+<section id="ctffind4-external-validation">
+<h2>CTFFIND4: External Validation<a class="headerlink" href="#ctffind4-external-validation" title="Link to this heading">¶</a></h2>
+<p>CTFFIND4 is often used by other cryo-EM distributions,
+and was used to confirm the forward CTF filter model of ASPIRE.
+For transparency, an example run using the <code class="docutils literal notranslate"><span class="pre">test_img.mrc</span></code>
+generated earlier is documented.</p>
+<p>CTFFIND4 estimated 9982.5, within 0.2% of the modeled defocus=10000
+for the radially symmetric case.</p>
+<p>Interactive session</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>(aspire_ctf_valid) ➜  bin ./ctffind                                             
+
+
+        **   Welcome to Ctffind   **
+
+            Version : 4.1.14
+           Compiled : Jan 31 2023
+               Mode : Interactive
+
+Input image file name [test_img.mrc]               : 
+Output diagnostic image file name
+[diagnostic_output.mrc]                            : 
+Pixel size [1]                                     : 
+Acceleration voltage [200]                         : 
+Spherical aberration [2.26]                        : 
+Amplitude contrast [0.07]                          : 
+Size of amplitude spectrum to compute [1024]       : 
+Minimum resolution [30.0]                          : 
+Maximum resolution [5.0]                           : 
+Minimum defocus [5000.0]                           : 
+Maximum defocus [50000.0]                          : 
+Defocus search step [100.0]                        : 
+Do you know what astigmatism is present? [yes]     : yes
+Slower, more exhaustive search? [no]               : yes
+Known astigmatism [0]                              : 0
+Known astigmatism angle [0]                        : 0
+Find additional phase shift? [no]                  : yes
+Minimum phase shift (rad) [0.0]                    : 
+Maximum phase shift (rad) [3.15]                   : 
+Phase shift search step [0.1]                      : 0.1
+Do you want to set expert options? [yes]           : yes
+Resample micrograph if pixel size too small? [no]  : yes
+Do you already know the defocus? [no]              : no
+Desired number of parallel threads [1]             : 
+File name: test_img.mrc
+File type: MRC
+Dimensions: X = 512 Y = 512 Z = 1
+Number of slices: 1
+Working on micrograph 1 of 1
+OpenMP is not available - will not use parallel threads.
+
+   100% [=================] done! (0h:00m45s)                    
+      DFMID1      DFMID2      ANGAST          CC
+    10000.00    10000.00        0.00     0.56503
+
+Timings
+ Initialization       : 00:00:00
+ Spectrum computation : 00:00:00
+ Parameter search     : 00:00:45
+ Diagnosis            : 00:00:03
+ Total                : 00:00:48
+
+
+Estimated defocus values        : 9982.50 , 9982.50 Angstroms
+Estimated azimuth of astigmatism: 0.00 degrees
+Additional phase shift          : 2.020 degrees (0.035 radians) (0.011 PIf)
+Score                           : 0.56568
+Pixel size for fitting          : 1.400 Angstroms
+Thon rings with good fit up to  : 2.0 Angstroms
+Did not detect CTF aliasing
+
+
+Summary of results                          : diagnostic_output.txt
+Diagnostic images                           : diagnostic_output.mrc
+Detailed results, including 1D fit profiles : diagnostic_output_avrot.txt
+Use this command to plot 1D fit profiles    : ctffind_plot_results.sh diagnostic_output_avrot.txt
+
+
+</pre></div>
+</div>
+<p>Diagnostic Output Text</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Output from CTFFind version 4.1.14, run on 2023-02-02 15:13:07</span>
+<span class="c1"># Input file: test_img.mrc ; Number of micrographs: 1</span>
+<span class="c1"># Pixel size: 1.000 Angstroms ; acceleration voltage: 200.0 keV ; spherical aberration: 2.26 mm ; amplitude contrast: 0.07</span>
+<span class="c1"># Box size: 1024 pixels ; min. res.: 30.0 Angstroms ; max. res.: 5.0 Angstroms ; min. def.: 5000.0 um; max. def. 50000.0 um</span>
+<span class="c1"># Columns: #1 - micrograph number; #2 - defocus 1 [Angstroms]; #3 - defocus 2; #4 - azimuth of astigmatism; #5 - additional phase shift [radians]; #6 - cross correlation; #7 - spacing (in Angstroms) up to which CTF rings were fit successfully</span>
+<span class="mf">1.000000</span> <span class="mf">9982.502930</span> <span class="mf">9982.502930</span> <span class="mf">0.000000</span> <span class="mf">0.035256</span> <span class="mf">0.565683</span> <span class="mf">1.980663</span>
+</pre></div>
+</div>
+<p>CTFFIND4 Diagnostic Output PDF (rendering of diagnostic_output_avrot.pdf).</p>
+<img alt="diagnostic_output_avrot.png" src="../../_images/diagnostic_output_avrot.png" />
+<p>CTFFIND4 Diagnostic Output MRC (rendering of diagnostic_output.mrc).</p>
+<img alt="diagnostic_output.png" src="../../_images/diagnostic_output.png" />
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 7.809 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-tutorials-ctf-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/bb59aeaeb9107f9f80c8c25780834128/ctf.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">ctf.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/9ca94f4a9d75af890c1d6aa003837953/ctf.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">ctf.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/44b10a3cb4ec756e2431dad7bde38d5b/ctf.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">ctf.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="basic_image_array.html" class="btn btn-neutral float-left" title="Basic Image Array" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="class_averaging.html" class="btn btn-neutral float-right" title="Class Averaging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,3768 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Index &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs"></script>
+      <script type="module" src="https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";import elkLayouts from "https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.0/dist/mermaid-layout-elk.esm.min.mjs";mermaid.registerLayoutLoaders(elkLayouts);mermaid.initialize({startOnLoad:false});</script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+const defaultStyle = document.createElement('style');
+defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+`;
+document.head.appendChild(defaultStyle);
+
+const fullscreenStyle = document.createElement('style');
+fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+document.head.appendChild(fullscreenStyle);
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        return brightness < 128;
+    }
+    return false;
+};
+
+const load = async () => {
+    await mermaid.run();
+
+    const all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(load, 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(load, 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(load, 200);
+        return;
+    }
+
+    const darkTheme = isDarkTheme();
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    const modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    const modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    let previousScrollOffset = [window.scrollX, window.scrollY];
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    const allButtons = [];
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+
+        container.appendChild(fullscreenBtn);
+        allButtons.push(fullscreenBtn);
+    });
+
+    // Update theme classes when theme changes
+    const updateTheme = () => {
+        const dark = isDarkTheme();
+        allButtons.forEach(btn => {
+            if (dark) {
+                btn.classList.add('dark-theme');
+            } else {
+                btn.classList.remove('dark-theme');
+            }
+        });
+        if (dark) {
+            modal.classList.add('dark-theme');
+            modalContent.classList.add('dark-theme');
+            closeBtn.classList.add('dark-theme');
+        } else {
+            modal.classList.remove('dark-theme');
+            modalContent.classList.remove('dark-theme');
+            closeBtn.classList.remove('dark-theme');
+        }
+    };
+
+    // Watch for theme changes
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+    });
+};
+
+window.addEventListener("load", load);
+</script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="#" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Index</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#A"><strong>A</strong></a>
+ | <a href="#B"><strong>B</strong></a>
+ | <a href="#C"><strong>C</strong></a>
+ | <a href="#D"><strong>D</strong></a>
+ | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
+ | <a href="#I"><strong>I</strong></a>
+ | <a href="#J"><strong>J</strong></a>
+ | <a href="#K"><strong>K</strong></a>
+ | <a href="#L"><strong>L</strong></a>
+ | <a href="#M"><strong>M</strong></a>
+ | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
+ | <a href="#P"><strong>P</strong></a>
+ | <a href="#Q"><strong>Q</strong></a>
+ | <a href="#R"><strong>R</strong></a>
+ | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
+ | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
+ | <a href="#W"><strong>W</strong></a>
+ | <a href="#X"><strong>X</strong></a>
+ | <a href="#Z"><strong>Z</strong></a>
+ 
+</div>
+<h2 id="A">A</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.about_axis">about_axis() (aspire.utils.rotation.Rotation static method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.abs">abs() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.abs">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.abs2">abs2() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.acorr">acorr() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.adaptive_support.adaptive_support">adaptive_support() (in module aspire.denoising.adaptive_support)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.Add">Add (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.add">add() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.add">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.image.html#aspire.image.xform.Pipeline.add_xform">add_xform() (aspire.image.xform.Pipeline method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.Pipeline.add_xforms">add_xforms() (aspire.image.xform.Pipeline method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.LinearXform.adjoint">adjoint() (aspire.image.xform.LinearXform method)</a>
+
+      <ul>
+        <li><a href="aspire.nufft.html#aspire.nufft.finufft.FinufftPlan.adjoint">(aspire.nufft.finufft.FinufftPlan method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.ainner">ainner() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.AligningAverager2D.align">align() (aspire.classification.averager2d.AligningAverager2D method)</a>
+
+      <ul>
+        <li><a href="aspire.classification.html#aspire.classification.averager2d.BFRAverager2D.align">(aspire.classification.averager2d.BFRAverager2D method)</a>
+</li>
+        <li><a href="aspire.classification.html#aspire.classification.averager2d.BFSRAverager2D.align">(aspire.classification.averager2d.BFSRAverager2D method)</a>
+</li>
+        <li><a href="aspire.classification.html#aspire.classification.averager2d.BFSReddyChatterjiAverager2D.align">(aspire.classification.averager2d.BFSReddyChatterjiAverager2D method)</a>
+</li>
+        <li><a href="aspire.classification.html#aspire.classification.averager2d.BFTAverager2D.align">(aspire.classification.averager2d.BFTAverager2D method)</a>
+</li>
+        <li><a href="aspire.classification.html#aspire.classification.averager2d.ReddyChatterjiAverager2D.align">(aspire.classification.averager2d.ReddyChatterjiAverager2D method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.bot_align.align_BO">align_BO() (in module aspire.utils.bot_align)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.AligningAverager2D">AligningAverager2D (class in aspire.classification.averager2d)</a>
+</li>
+      <li><a href="aspire.nufft.html#aspire.nufft.all_backends">all_backends() (in module aspire.nufft)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.all_besselj_zeros">all_besselj_zeros() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.all_pairs">all_pairs() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.all_triplets">all_triplets() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.storage.html#aspire.storage.mrc.MrcStats.amean">amean (aspire.storage.mrc.MrcStats property)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.amplitudes">amplitudes (aspire.source.image.ImageSource property)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.resolution_estimation.FourierCorrelation.analyze_correlations">analyze_correlations() (aspire.utils.resolution_estimation.FourierCorrelation method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.angle_dist">angle_dist() (aspire.utils.rotation.Rotation static method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.angles">angles (aspire.source.image.ImageSource property)</a>
+
+      <ul>
+        <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.angles">(aspire.utils.rotation.Rotation property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.AnisotropicNoiseEstimator">AnisotropicNoiseEstimator (class in aspire.noise.noise)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.anorm">anorm() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.nufft.html#aspire.nufft.anufft">anufft() (in module aspire.nufft)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.append">append() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.apple.Apple">Apple (class in aspire.apple.apple)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.apply">apply() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.apply">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar.CovarianceEstimator.apply_kernel">apply_kernel() (aspire.covariance.covar.CovarianceEstimator method)</a>
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.estimator.Estimator.apply_kernel">(aspire.reconstruction.estimator.Estimator method)</a>
+</li>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.mean.MeanEstimator.apply_kernel">(aspire.reconstruction.mean.MeanEstimator method)</a>
+</li>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.mean.WeightedVolumesEstimator.apply_kernel">(aspire.reconstruction.mean.WeightedVolumesEstimator method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.apply_registration">apply_registration() (aspire.utils.rotation.Rotation method)</a>
+</li>
+      <li><a href="aspire.storage.html#aspire.storage.mrc.MrcStats.arms">arms (aspire.storage.mrc.MrcStats property)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.ArrayFilter">ArrayFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ArrayImageSource">ArrayImageSource (class in aspire.source.image)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.micrograph.ArrayMicrographSource">ArrayMicrographSource (class in aspire.source.micrograph)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.as_blk_diag">as_blk_diag() (aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.as_rotvec">as_rotvec() (aspire.utils.rotation.Rotation method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Coef.asnumpy">asnumpy() (aspire.basis.basis.Coef method)</a>
+
+      <ul>
+        <li><a href="aspire.image.html#aspire.image.image.Image.asnumpy">(aspire.image.image.Image method)</a>
+</li>
+        <li><a href="aspire.numeric.html#aspire.numeric.numpy.Numpy.asnumpy">(aspire.numeric.numpy.Numpy static method)</a>
+</li>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.asnumpy">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+        <li><a href="aspire.sinogram.html#aspire.sinogram.sinogram.Sinogram.asnumpy">(aspire.sinogram.sinogram.Sinogram method)</a>
+</li>
+        <li><a href="aspire.source.html#aspire.source.micrograph.MicrographSource.asnumpy">(aspire.source.micrograph.MicrographSource method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.asnumpy">(aspire.volume.volume.Volume method)</a>
+</li>
+      </ul></li>
+      <li>
+    aspire
+
+      <ul>
+        <li><a href="aspire.html#module-aspire">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_base
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_base">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_c2
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_c2">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_c3_c4
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_c3_c4">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_cn
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_cn">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_d2
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_d2">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_ev
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_ev">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_gcar
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_gcar">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_irls
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_irls">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_lud
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_lud">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_sdp
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_sdp">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_sync
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_sync">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_sync3n
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_sync3n">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.commonline_utils
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.J_sync
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.J_sync">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.abinitio.sync_voting
+
+      <ul>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.sync_voting">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.apple
+
+      <ul>
+        <li><a href="aspire.apple.html#module-aspire.apple">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.apple.apple
+
+      <ul>
+        <li><a href="aspire.apple.html#module-aspire.apple.apple">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.apple.helper
+
+      <ul>
+        <li><a href="aspire.apple.html#module-aspire.apple.helper">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.apple.picking
+
+      <ul>
+        <li><a href="aspire.apple.html#module-aspire.apple.picking">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.basis
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.basis">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.basis_utils
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.basis_utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.dirac
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.dirac">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.fb
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.fb">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.fb_2d
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.fb_2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.fb_3d
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.fb_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.ffb_2d
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.ffb_2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.ffb_3d
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.ffb_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.fle_2d
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.fle_2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.fle_2d_utils
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.fle_2d_utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.fpswf_2d
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.fpswf_2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.fpswf_3d
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.fpswf_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.fspca
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.fspca">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.pswf_2d
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.pswf_2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.pswf_3d
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.pswf_3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.pswf_utils
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.pswf_utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.basis.steerable
+
+      <ul>
+        <li><a href="aspire.basis.html#module-aspire.basis.steerable">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.classification
+
+      <ul>
+        <li><a href="aspire.classification.html#module-aspire.classification">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.classification.averager2d
+
+      <ul>
+        <li><a href="aspire.classification.html#module-aspire.classification.averager2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.classification.class2d
+
+      <ul>
+        <li><a href="aspire.classification.html#module-aspire.classification.class2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.classification.class_selection
+
+      <ul>
+        <li><a href="aspire.classification.html#module-aspire.classification.class_selection">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.classification.legacy_implementations
+
+      <ul>
+        <li><a href="aspire.classification.html#module-aspire.classification.legacy_implementations">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.classification.reddy_chatterji
+
+      <ul>
+        <li><a href="aspire.classification.html#module-aspire.classification.reddy_chatterji">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.classification.rir_class2d
+
+      <ul>
+        <li><a href="aspire.classification.html#module-aspire.classification.rir_class2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.commands
+
+      <ul>
+        <li><a href="aspire.commands.html#module-aspire.commands">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.commands.apple
+
+      <ul>
+        <li><a href="aspire.commands.html#module-aspire.commands.apple">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.commands.cov3d
+
+      <ul>
+        <li><a href="aspire.commands.html#module-aspire.commands.cov3d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.commands.denoise
+
+      <ul>
+        <li><a href="aspire.commands.html#module-aspire.commands.denoise">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.commands.estimate_ctf
+
+      <ul>
+        <li><a href="aspire.commands.html#module-aspire.commands.estimate_ctf">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.commands.extract_particles
+
+      <ul>
+        <li><a href="aspire.commands.html#module-aspire.commands.extract_particles">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.commands.orient3d
+
+      <ul>
+        <li><a href="aspire.commands.html#module-aspire.commands.orient3d">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    aspire.commands.preprocess
+
+      <ul>
+        <li><a href="aspire.commands.html#module-aspire.commands.preprocess">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.covariance
+
+      <ul>
+        <li><a href="aspire.covariance.html#module-aspire.covariance">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.covariance.covar
+
+      <ul>
+        <li><a href="aspire.covariance.html#module-aspire.covariance.covar">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.covariance.covar2d
+
+      <ul>
+        <li><a href="aspire.covariance.html#module-aspire.covariance.covar2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.ctf
+
+      <ul>
+        <li><a href="aspire.ctf.html#module-aspire.ctf">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.ctf.ctf_estimator
+
+      <ul>
+        <li><a href="aspire.ctf.html#module-aspire.ctf.ctf_estimator">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.denoising
+
+      <ul>
+        <li><a href="aspire.denoising.html#module-aspire.denoising">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.denoising.adaptive_support
+
+      <ul>
+        <li><a href="aspire.denoising.html#module-aspire.denoising.adaptive_support">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.denoising.class_avg
+
+      <ul>
+        <li><a href="aspire.denoising.html#module-aspire.denoising.class_avg">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.denoising.denoised_src
+
+      <ul>
+        <li><a href="aspire.denoising.html#module-aspire.denoising.denoised_src">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.denoising.denoiser
+
+      <ul>
+        <li><a href="aspire.denoising.html#module-aspire.denoising.denoiser">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.denoising.denoiser_cov2d
+
+      <ul>
+        <li><a href="aspire.denoising.html#module-aspire.denoising.denoiser_cov2d">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.downloader
+
+      <ul>
+        <li><a href="aspire.downloader.html#module-aspire.downloader">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.downloader.data_fetcher
+
+      <ul>
+        <li><a href="aspire.downloader.html#module-aspire.downloader.data_fetcher">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.downloader.registry
+
+      <ul>
+        <li><a href="aspire.downloader.html#module-aspire.downloader.registry">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.exceptions
+
+      <ul>
+        <li><a href="aspire.html#module-aspire.exceptions">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.image
+
+      <ul>
+        <li><a href="aspire.image.html#module-aspire.image">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.image.image
+
+      <ul>
+        <li><a href="aspire.image.html#module-aspire.image.image">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.image.image_stacker
+
+      <ul>
+        <li><a href="aspire.image.html#module-aspire.image.image_stacker">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.image.rotation
+
+      <ul>
+        <li><a href="aspire.image.html#module-aspire.image.rotation">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.image.xform
+
+      <ul>
+        <li><a href="aspire.image.html#module-aspire.image.xform">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.noise
+
+      <ul>
+        <li><a href="aspire.noise.html#module-aspire.noise">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.noise.noise
+
+      <ul>
+        <li><a href="aspire.noise.html#module-aspire.noise.noise">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.nufft
+
+      <ul>
+        <li><a href="aspire.nufft.html#module-aspire.nufft">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.nufft.finufft
+
+      <ul>
+        <li><a href="aspire.nufft.html#module-aspire.nufft.finufft">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.nufft.utils
+
+      <ul>
+        <li><a href="aspire.nufft.html#module-aspire.nufft.utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.numeric
+
+      <ul>
+        <li><a href="aspire.numeric.html#module-aspire.numeric">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.numeric.base_fft
+
+      <ul>
+        <li><a href="aspire.numeric.html#module-aspire.numeric.base_fft">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.numeric.complex_pca
+
+      <ul>
+        <li><a href="aspire.numeric.complex_pca.html#module-aspire.numeric.complex_pca">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.numeric.complex_pca.complex_pca
+
+      <ul>
+        <li><a href="aspire.numeric.complex_pca.html#module-aspire.numeric.complex_pca.complex_pca">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.numeric.complex_pca.validation
+
+      <ul>
+        <li><a href="aspire.numeric.complex_pca.html#module-aspire.numeric.complex_pca.validation">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.numeric.numpy
+
+      <ul>
+        <li><a href="aspire.numeric.html#module-aspire.numeric.numpy">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.numeric.scipy
+
+      <ul>
+        <li><a href="aspire.numeric.html#module-aspire.numeric.scipy">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.numeric.scipy_fft
+
+      <ul>
+        <li><a href="aspire.numeric.html#module-aspire.numeric.scipy_fft">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.operators
+
+      <ul>
+        <li><a href="aspire.operators.html#module-aspire.operators">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.operators.blk_diag_matrix
+
+      <ul>
+        <li><a href="aspire.operators.html#module-aspire.operators.blk_diag_matrix">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.operators.diag_matrix
+
+      <ul>
+        <li><a href="aspire.operators.html#module-aspire.operators.diag_matrix">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.operators.filters
+
+      <ul>
+        <li><a href="aspire.operators.html#module-aspire.operators.filters">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.operators.polar_ft
+
+      <ul>
+        <li><a href="aspire.operators.html#module-aspire.operators.polar_ft">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.operators.wemd
+
+      <ul>
+        <li><a href="aspire.operators.html#module-aspire.operators.wemd">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.optimization
+
+      <ul>
+        <li><a href="aspire.optimization.html#module-aspire.optimization">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.optimization.conj_grad
+
+      <ul>
+        <li><a href="aspire.optimization.html#module-aspire.optimization.conj_grad">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.reconstruction
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#module-aspire.reconstruction">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.reconstruction.estimator
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#module-aspire.reconstruction.estimator">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.reconstruction.kernel
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#module-aspire.reconstruction.kernel">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.reconstruction.mean
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#module-aspire.reconstruction.mean">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.sinogram
+
+      <ul>
+        <li><a href="aspire.sinogram.html#module-aspire.sinogram">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.sinogram.sinogram
+
+      <ul>
+        <li><a href="aspire.sinogram.html#module-aspire.sinogram.sinogram">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.source
+
+      <ul>
+        <li><a href="aspire.source.html#module-aspire.source">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.source.coordinates
+
+      <ul>
+        <li><a href="aspire.source.html#module-aspire.source.coordinates">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.source.image
+
+      <ul>
+        <li><a href="aspire.source.html#module-aspire.source.image">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.source.micrograph
+
+      <ul>
+        <li><a href="aspire.source.html#module-aspire.source.micrograph">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.source.relion
+
+      <ul>
+        <li><a href="aspire.source.html#module-aspire.source.relion">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.source.simulation
+
+      <ul>
+        <li><a href="aspire.source.html#module-aspire.source.simulation">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.storage
+
+      <ul>
+        <li><a href="aspire.storage.html#module-aspire.storage">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.storage.mrc
+
+      <ul>
+        <li><a href="aspire.storage.html#module-aspire.storage.mrc">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.storage.starfile
+
+      <ul>
+        <li><a href="aspire.storage.html#module-aspire.storage.starfile">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.bot_align
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.bot_align">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.cell
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.cell">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.coor_trans
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.coor_trans">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.logging
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.logging">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.matlab_compat
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.matlab_compat">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.matrix
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.matrix">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.misc
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.misc">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.multiprocessing
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.multiprocessing">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.random
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.random">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.relion_interop
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.relion_interop">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.resolution_estimation
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.resolution_estimation">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.rotation
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.rotation">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.types
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.types">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.utils.units
+
+      <ul>
+        <li><a href="aspire.utils.html#module-aspire.utils.units">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.volume
+
+      <ul>
+        <li><a href="aspire.volume.html#module-aspire.volume">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.volume.symmetry_groups
+
+      <ul>
+        <li><a href="aspire.volume.html#module-aspire.volume.symmetry_groups">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.volume.volume
+
+      <ul>
+        <li><a href="aspire.volume.html#module-aspire.volume.volume">module</a>
+</li>
+      </ul></li>
+      <li>
+    aspire.volume.volume_synthesis
+
+      <ul>
+        <li><a href="aspire.volume.html#module-aspire.volume.volume_synthesis">module</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.html#aspire.exceptions.AspireException">AspireException</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.Volume.astype">astype() (aspire.volume.volume.Volume method)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.AsymmetricVolume">AsymmetricVolume (class in aspire.volume.volume_synthesis)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.available_downloads">available_downloads() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.AligningAverager2D.average">average() (aspire.classification.averager2d.AligningAverager2D method)</a>
+
+      <ul>
+        <li><a href="aspire.classification.html#aspire.classification.averager2d.Averager2D.average">(aspire.classification.averager2d.Averager2D method)</a>
+</li>
+        <li><a href="aspire.classification.html#aspire.classification.averager2d.BFSReddyChatterjiAverager2D.average">(aspire.classification.averager2d.BFSReddyChatterjiAverager2D method)</a>
+</li>
+        <li><a href="aspire.classification.html#aspire.classification.averager2d.ReddyChatterjiAverager2D.average">(aspire.classification.averager2d.ReddyChatterjiAverager2D method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.Averager2D">Averager2D (class in aspire.classification.averager2d)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="B">B</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.nufft.html#aspire.nufft.backend_available">backend_available() (in module aspire.nufft)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.background_subtract_1d">background_subtract_1d() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.background_subtract_2d">background_subtract_2d() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.backproject">backproject() (aspire.image.image.Image method)</a>
+
+      <ul>
+        <li><a href="aspire.sinogram.html#aspire.sinogram.sinogram.Sinogram.backproject">(aspire.sinogram.sinogram.Sinogram method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.BandedSNRImageQualityFunction">BandedSNRImageQualityFunction (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.BandpassImageQualityFunction">BandpassImageQualityFunction (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fle_2d_utils.barycentric_interp_sparse">barycentric_interp_sparse() (in module aspire.basis.fle_2d_utils)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Basis">Basis (class in aspire.basis.basis)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.Filter.basis_mat">basis_mat() (aspire.operators.filters.Filter method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fb_2d.FBBasis2D.basis_norm_2d">basis_norm_2d() (aspire.basis.fb_2d.FBBasis2D method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fb_3d.FBBasis3D.basis_norm_3d">basis_norm_3d() (aspire.basis.fb_3d.FBBasis3D method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.BasisImage">BasisImage (class in aspire.image.image)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.BasisVolume">BasisVolume (class in aspire.volume.volume)</a>
+</li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar2d.BatchedRotCov2D">BatchedRotCov2D (class in aspire.covariance.covar2d)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.besselj_newton">besselj_newton() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.besselj_zeros">besselj_zeros() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.best_rank1_approximation">best_rank1_approximation() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.BFRAverager2D">BFRAverager2D (class in aspire.classification.averager2d)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.BFSRAverager2D">BFSRAverager2D (class in aspire.classification.averager2d)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.BFSReddyChatterjiAverager2D">BFSReddyChatterjiAverager2D (class in aspire.classification.averager2d)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.BFTAverager2D">BFTAverager2D (class in aspire.classification.averager2d)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.classification.html#aspire.classification.legacy_implementations.bispec_2drot_large">bispec_2drot_large() (in module aspire.classification.legacy_implementations)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.legacy_implementations.bispec_operator_1">bispec_operator_1() (in module aspire.classification.legacy_implementations)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.BispecImage">BispecImage (class in aspire.image.image)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.rir_class2d.RIRClass2D.bispectrum">bispectrum() (aspire.classification.rir_class2d.RIRClass2D method)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.BispecVolume">BispecVolume (class in aspire.volume.volume)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D.blk_diag_cov_shape">blk_diag_cov_shape (aspire.basis.steerable.SteerableBasis2D property)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix">BlkDiagMatrix (class in aspire.operators.blk_diag_matrix)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.BlueFilter">BlueFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.BlueNoiseAdder">BlueNoiseAdder (class in aspire.noise.noise)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.pswf_utils.BNMatrix">BNMatrix (class in aspire.basis.pswf_utils)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.coordinates.BoxesCoordinateSource">BoxesCoordinateSource (class in aspire.source.coordinates)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.build">build() (aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix">build_clmatrix() (aspire.abinitio.commonline_base.CLOrient3D method)</a>
+
+      <ul>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_c2.CLSymmetryC2.build_clmatrix">(aspire.abinitio.commonline_c2.CLSymmetryC2 method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix_cu">build_clmatrix_cu() (aspire.abinitio.commonline_base.CLOrient3D method)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D.build_clmatrix_host">build_clmatrix_host() (aspire.abinitio.commonline_base.CLOrient3D method)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.denoiser_cov2d.DenoiserCov2D.build_denoiser">build_denoiser() (aspire.denoising.denoiser_cov2d.DenoiserCov2D method)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_utils.build_outer_products">build_outer_products() (in module aspire.abinitio.commonline_utils)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.bump_3d">bump_3d() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.BumpWeightedImageQualityMixin">BumpWeightedImageQualityMixin (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.BumpWeightedVarianceImageQualityFunction">BumpWeightedVarianceImageQualityFunction (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Coef.by_indices">by_indices() (aspire.basis.basis.Coef method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.cache">cache() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fb_2d.FBBasis2D.calculate_bispectrum">calculate_bispectrum() (aspire.basis.fb_2d.FBBasis2D method)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.calculate_bispectrum">(aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D.calculate_bispectrum">(aspire.basis.steerable.SteerableBasis2D method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.coor_trans.cart2pol">cart2pol() (in module aspire.utils.coor_trans)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.coor_trans.cart2sph">cart2sph() (in module aspire.utils.coor_trans)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.CartesianImage">CartesianImage (class in aspire.image.image)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.CartesianVolume">CartesianVolume (class in aspire.volume.volume)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.cell.Cell2D">Cell2D (class in aspire.utils.cell)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.centered_fft">centered_fft() (aspire.numeric.base_fft.FFT method)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.centered_fft2">centered_fft2() (aspire.numeric.base_fft.FFT method)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.centered_fftn">centered_fftn() (aspire.numeric.base_fft.FFT method)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.centered_ifft">centered_ifft() (aspire.numeric.base_fft.FFT method)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.centered_ifft2">centered_ifft2() (aspire.numeric.base_fft.FFT method)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.centered_ifftn">centered_ifftn() (aspire.numeric.base_fft.FFT method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.coordinates.CentersCoordinateSource">CentersCoordinateSource (class in aspire.source.coordinates)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.scipy.cg">cg() (in module aspire.numeric.scipy)</a>
+</li>
+      <li><a href="aspire.numeric.complex_pca.html#aspire.numeric.complex_pca.validation.check_array">check_array() (in module aspire.numeric.complex_pca.validation)</a>
+</li>
+      <li><a href="aspire.nufft.html#aspire.nufft.check_backends">check_backends() (in module aspire.nufft)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.check_besselj_zeros">check_besselj_zeros() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.check_pixel_size">check_pixel_size() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.check_psd">check_psd() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.random.choice">choice() (in module aspire.utils.random)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.circ">circ() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernel.circularize">circularize() (aspire.reconstruction.kernel.FourierKernel method)</a>
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernelMatrix.circularize">(aspire.reconstruction.kernel.FourierKernelMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernel.circularize_1d">circularize_1d() (aspire.reconstruction.kernel.FourierKernel method)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class2d.Class2D">Class2D (class in aspire.classification.class2d)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.ClassAvgSource.class_distances">class_distances (aspire.denoising.class_avg.ClassAvgSource property)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.ImageSource.class_distances">(aspire.source.image.ImageSource property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.ClassAvgSource.class_indices">class_indices (aspire.denoising.class_avg.ClassAvgSource property)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.ImageSource.class_indices">(aspire.source.image.ImageSource property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.ClassAvgSource.class_refl">class_refl (aspire.denoising.class_avg.ClassAvgSource property)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.ImageSource.class_refl">(aspire.source.image.ImageSource property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.ClassAvgSource">ClassAvgSource (class in aspire.denoising.class_avg)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.ClassAvgSourcev132">ClassAvgSourcev132 (class in aspire.denoising.class_avg)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.ClassAvgSourcev140">ClassAvgSourcev140 (class in aspire.denoising.class_avg)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class2d.Class2D.classify">classify() (aspire.classification.class2d.Class2D method)</a>
+
+      <ul>
+        <li><a href="aspire.classification.html#aspire.classification.rir_class2d.RIRClass2D.classify">(aspire.classification.rir_class2d.RIRClass2D method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.ClassSelector">ClassSelector (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.micrograph.MicrographSimulation.clean_images">clean_images (aspire.source.micrograph.MicrographSimulation property)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.simulation.Simulation.clean_images">(aspire.source.simulation.Simulation property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D.clmatrix">clmatrix (aspire.abinitio.commonline_base.CLOrient3D property)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D">CLOrient3D (class in aspire.abinitio.commonline_base)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_c2.CLSymmetryC2">CLSymmetryC2 (class in aspire.abinitio.commonline_c2)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_c3_c4.CLSymmetryC3C4">CLSymmetryC3C4 (class in aspire.abinitio.commonline_c3_c4)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_cn.CLSymmetryCn">CLSymmetryCn (class in aspire.abinitio.commonline_cn)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_d2.CLSymmetryD2">CLSymmetryD2 (class in aspire.abinitio.commonline_d2)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_sync3n.CLSync3N">CLSync3N (class in aspire.abinitio.commonline_sync3n)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_sync.CLSyncVoting">CLSyncVoting (class in aspire.abinitio.commonline_sync)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.CnSymmetricVolume">CnSymmetricVolume (class in aspire.volume.volume_synthesis)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.CnSymmetryGroup">CnSymmetryGroup (class in aspire.volume.symmetry_groups)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Coef">Coef (class in aspire.basis.basis)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_ev.CommLineEV">CommLineEV (class in aspire.abinitio.commonline_ev)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_gcar.CommLineGCAR">CommLineGCAR (class in aspire.abinitio.commonline_gcar)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.common_lines">common_lines() (aspire.utils.rotation.Rotation method)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_irls.CommonlineIRLS">CommonlineIRLS (class in aspire.abinitio.commonline_irls)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_lud.CommonlineLUD">CommonlineLUD (class in aspire.abinitio.commonline_lud)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_sdp.CommonlineSDP">CommonlineSDP (class in aspire.abinitio.commonline_sdp)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.commute_shift_rot">commute_shift_rot() (in module aspire.classification.averager2d)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D.complex_rotate">complex_rotate() (aspire.basis.steerable.SteerableBasis2D method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.types.complex_type">complex_type() (in module aspire.utils.types)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.ComplexCoef">ComplexCoef (class in aspire.basis.basis)</a>
+</li>
+      <li><a href="aspire.numeric.complex_pca.html#aspire.numeric.complex_pca.complex_pca.ComplexPCA">ComplexPCA (class in aspire.numeric.complex_pca.complex_pca)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.rotation.compute_fastrotate_interp_tables">compute_fastrotate_interp_tables() (in module aspire.image.rotation)</a>
+</li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar.CovarianceEstimator.compute_kernel">compute_kernel() (aspire.covariance.covar.CovarianceEstimator method)</a>
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.estimator.Estimator.compute_kernel">(aspire.reconstruction.estimator.Estimator method)</a>
+</li>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.mean.MeanEstimator.compute_kernel">(aspire.reconstruction.mean.MeanEstimator method)</a>
+</li>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.mean.WeightedVolumesEstimator.compute_kernel">(aspire.reconstruction.mean.WeightedVolumesEstimator method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar.CovarianceEstimator.conj_grad">conj_grad() (aspire.covariance.covar.CovarianceEstimator method)</a>
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.mean.WeightedVolumesEstimator.conj_grad">(aspire.reconstruction.mean.WeightedVolumesEstimator method)</a>
+</li>
+        <li><a href="aspire.optimization.html#aspire.optimization.conj_grad.conj_grad">(in module aspire.optimization.conj_grad)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernel.convolve_volume">convolve_volume() (aspire.reconstruction.kernel.FourierKernel method)</a>
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernelMatrix.convolve_volume">(aspire.reconstruction.kernel.FourierKernelMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernel.convolve_volume_matrix">convolve_volume_matrix() (aspire.reconstruction.kernel.FourierKernel method)</a>
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernelMatrix.convolve_volume_matrix">(aspire.reconstruction.kernel.FourierKernelMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.source.html#aspire.source.coordinates.CoordinateSource">CoordinateSource (class in aspire.source.coordinates)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Coef.copy">copy() (aspire.basis.basis.Coef method)</a>
+
+      <ul>
+        <li><a href="aspire.image.html#aspire.image.image.Image.copy">(aspire.image.image.Image method)</a>
+</li>
+        <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.copy">(aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+</li>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.copy">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+        <li><a href="aspire.sinogram.html#aspire.sinogram.sinogram.Sinogram.copy">(aspire.sinogram.sinogram.Sinogram method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.resolution_estimation.FourierCorrelation.correlations">correlations (aspire.utils.resolution_estimation.FourierCorrelation property)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.covar_true">covar_true() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar.CovarianceEstimator">CovarianceEstimator (class in aspire.covariance.covar)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.crop_pad">crop_pad() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.coor_trans.crop_pad_2d">crop_pad_2d() (in module aspire.utils.coor_trans)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.coor_trans.crop_pad_3d">crop_pad_3d() (in module aspire.utils.coor_trans)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.CropPad">CropPad (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator">CtfEstimator (class in aspire.ctf.ctf_estimator)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.CTFFilter">CTFFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.CustomNoiseAdder">CustomNoiseAdder (class in aspire.noise.noise)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.cyclic_rotations">cyclic_rotations() (in module aspire.utils.misc)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="D">D</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.d_decay_approx_fun">d_decay_approx_fun() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.dct">dct() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.dct">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.DebugClassAvgSource">DebugClassAvgSource (class in aspire.denoising.class_avg)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.denoiser_cov2d.DenoiserCov2D.default_opt">default_opt (aspire.denoising.denoiser_cov2d.DenoiserCov2D attribute)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.DefaultClassAvgSource">DefaultClassAvgSource() (in module aspire.denoising.class_avg)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.denoiser.Denoiser.denoise">denoise (aspire.denoising.denoiser.Denoiser property)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.Volume.denoise">denoise() (aspire.volume.volume.Volume method)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.denoised_src.DenoisedSource">DenoisedSource (class in aspire.denoising.denoised_src)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.denoiser.Denoiser">Denoiser (class in aspire.denoising.denoiser)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.denoiser_cov2d.DenoiserCov2D">DenoiserCov2D (class in aspire.denoising.denoiser_cov2d)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.dense">dense() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.dense">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.basis.html#aspire.basis.pswf_utils.BNMatrix.dense_mat">dense_mat() (aspire.basis.pswf_utils.BNMatrix method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.diag">diag() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix">DiagMatrix (class in aspire.operators.diag_matrix)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.relion_interop.dict_to_relion_types">dict_to_relion_types() (in module aspire.utils.relion_interop)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.dirac.DiracBasis.dim">dim (aspire.basis.dirac.DiracBasis attribute)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.dirac.DiracBasis2D.dim">(aspire.basis.dirac.DiracBasis2D attribute)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.dirac.DiracBasis3D.dim">(aspire.basis.dirac.DiracBasis3D attribute)</a>
+</li>
+        <li><a href="aspire.utils.html#aspire.utils.resolution_estimation.FourierRingCorrelation.dim">(aspire.utils.resolution_estimation.FourierRingCorrelation attribute)</a>
+</li>
+        <li><a href="aspire.utils.html#aspire.utils.resolution_estimation.FourierShellCorrelation.dim">(aspire.utils.resolution_estimation.FourierShellCorrelation attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.html#aspire.exceptions.DimensionsIncompatible">DimensionsIncompatible</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.dirac.DiracBasis">DiracBasis (class in aspire.basis.dirac)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.dirac.DiracBasis2D">DiracBasis2D (class in aspire.basis.dirac)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.dirac.DiracBasis3D">DiracBasis3D (class in aspire.basis.dirac)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.Xform.disabled">disabled() (aspire.image.xform.Xform method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.micrograph.DiskMicrographSource">DiskMicrographSource (class in aspire.source.micrograph)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.DistanceClassSelector">DistanceClassSelector (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.DnSymmetricVolume">DnSymmetricVolume (class in aspire.volume.volume_synthesis)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.DnSymmetryGroup">DnSymmetryGroup (class in aspire.volume.symmetry_groups)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.download_all">download_all() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.Downsample">Downsample (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.downsample">downsample() (aspire.image.image.Image method)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.ImageSource.downsample">(aspire.source.image.ImageSource method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.downsample">(aspire.volume.volume.Volume method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_cn.MeanOuterProductEstimator.dtype">dtype (aspire.abinitio.commonline_cn.MeanOuterProductEstimator attribute)</a>
+
+      <ul>
+        <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.dtype">(aspire.utils.rotation.Rotation property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.Filter.dual">dual() (aspire.operators.filters.Filter method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.DualFilter">DualFilter (class in aspire.operators.filters)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="E">E</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.eigen_images">eigen_images() (aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.eigs">eigs() (aspire.source.simulation.Simulation method)</a>
+
+      <ul>
+        <li><a href="aspire.utils.html#aspire.utils.matrix.eigs">(in module aspire.utils.matrix)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.eigvals">eigvals (aspire.basis.fspca.FSPCABasis property)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.eigvals">eigvals() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.eigvals">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.elliptical_average">elliptical_average() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.EMAverager2D">EMAverager2D (class in aspire.classification.averager2d)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_10835">emdb_10835() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_14621">emdb_14621() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_2484">emdb_2484() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_2660">emdb_2660() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_2824">emdb_2824() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_2984">emdb_2984() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_3645">emdb_3645() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_4905">emdb_4905() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_5778">emdb_5778() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_6287">emdb_6287() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_6458">emdb_6458() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_8012">emdb_8012() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.emdb_8511">emdb_8511() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.empty">empty() (aspire.operators.blk_diag_matrix.BlkDiagMatrix static method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.empty">(aspire.operators.diag_matrix.DiagMatrix static method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.Volume.empty_like">empty_like() (aspire.volume.volume.Volume static method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.Xform.enabled">enabled() (aspire.image.xform.Xform method)</a>
+</li>
+      <li><a href="aspire.html#aspire.exceptions.ErrorTooBig">ErrorTooBig</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D.estimate">estimate() (aspire.abinitio.commonline_base.CLOrient3D method)</a>
+
+      <ul>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_ev.CommLineEV.estimate">(aspire.abinitio.commonline_ev.CommLineEV method)</a>
+</li>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_gcar.CommLineGCAR.estimate">(aspire.abinitio.commonline_gcar.CommLineGCAR method)</a>
+</li>
+        <li><a href="aspire.covariance.html#aspire.covariance.covar.CovarianceEstimator.estimate">(aspire.covariance.covar.CovarianceEstimator method)</a>
+</li>
+        <li><a href="aspire.noise.html#aspire.noise.noise.AnisotropicNoiseEstimator.estimate">(aspire.noise.noise.AnisotropicNoiseEstimator method)</a>
+</li>
+        <li><a href="aspire.noise.html#aspire.noise.noise.LegacyNoiseEstimator.estimate">(aspire.noise.noise.LegacyNoiseEstimator method)</a>
+</li>
+        <li><a href="aspire.noise.html#aspire.noise.noise.NoiseEstimator.estimate">(aspire.noise.noise.NoiseEstimator method)</a>
+</li>
+        <li><a href="aspire.noise.html#aspire.noise.noise.WhiteNoiseEstimator.estimate">(aspire.noise.noise.WhiteNoiseEstimator method)</a>
+</li>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.estimator.Estimator.estimate">(aspire.reconstruction.estimator.Estimator method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.estimate_ctf">estimate_ctf() (in module aspire.ctf.ctf_estimator)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.estimate_noise_power">estimate_noise_power() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.estimate_psd">estimate_psd() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D.estimate_rotations">estimate_rotations() (aspire.abinitio.commonline_base.CLOrient3D method)</a>
+
+      <ul>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_c2.CLSymmetryC2.estimate_rotations">(aspire.abinitio.commonline_c2.CLSymmetryC2 method)</a>
+</li>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_c3_c4.CLSymmetryC3C4.estimate_rotations">(aspire.abinitio.commonline_c3_c4.CLSymmetryC3C4 method)</a>
+</li>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_cn.CLSymmetryCn.estimate_rotations">(aspire.abinitio.commonline_cn.CLSymmetryCn method)</a>
+</li>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_d2.CLSymmetryD2.estimate_rotations">(aspire.abinitio.commonline_d2.CLSymmetryD2 method)</a>
+</li>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_irls.CommonlineIRLS.estimate_rotations">(aspire.abinitio.commonline_irls.CommonlineIRLS method)</a>
+</li>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_lud.CommonlineLUD.estimate_rotations">(aspire.abinitio.commonline_lud.CommonlineLUD method)</a>
+</li>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_sdp.CommonlineSDP.estimate_rotations">(aspire.abinitio.commonline_sdp.CommonlineSDP method)</a>
+</li>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_sync.CLSyncVoting.estimate_rotations">(aspire.abinitio.commonline_sync.CLSyncVoting method)</a>
+</li>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_sync3n.CLSync3N.estimate_rotations">(aspire.abinitio.commonline_sync3n.CLSync3N method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D.estimate_shifts">estimate_shifts() (aspire.abinitio.commonline_base.CLOrient3D method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.estimate_signal_mean_energy">estimate_signal_mean_energy() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.estimate_signal_power">estimate_signal_power() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.estimate_signal_var">estimate_signal_var() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.estimate_snr">estimate_snr() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.estimator.Estimator">Estimator (class in aspire.reconstruction.estimator)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.eval_clustering">eval_clustering() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.eval_coords">eval_coords() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.eval_covar">eval_covar() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.eval_eigs">eval_eigs() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.eval_mean">eval_mean() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.eval_vol">eval_vol() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.eval_volmat">eval_volmat() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Basis.evaluate">evaluate() (aspire.basis.basis.Basis method)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.basis.Coef.evaluate">(aspire.basis.basis.Coef method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.basis.ComplexCoef.evaluate">(aspire.basis.basis.ComplexCoef method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.evaluate">(aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+        <li><a href="aspire.image.html#aspire.image.image.BasisImage.evaluate">(aspire.image.image.BasisImage method)</a>
+</li>
+        <li><a href="aspire.operators.html#aspire.operators.filters.DualFilter.evaluate">(aspire.operators.filters.DualFilter method)</a>
+</li>
+        <li><a href="aspire.operators.html#aspire.operators.filters.Filter.evaluate">(aspire.operators.filters.Filter method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.BasisVolume.evaluate">(aspire.volume.volume.BasisVolume method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.ArrayFilter.evaluate_grid">evaluate_grid() (aspire.operators.filters.ArrayFilter method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.filters.Filter.evaluate_grid">(aspire.operators.filters.Filter method)</a>
+</li>
+        <li><a href="aspire.operators.html#aspire.operators.filters.PowerFilter.evaluate_grid">(aspire.operators.filters.PowerFilter method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.evaluate_src_filters_on_grid">evaluate_src_filters_on_grid() (in module aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Basis.evaluate_t">evaluate_t() (aspire.basis.basis.Basis method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.evaluate_to_image_basis">evaluate_to_image_basis() (aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Basis.expand">expand() (aspire.basis.basis.Basis method)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.dirac.DiracBasis.expand">(aspire.basis.dirac.DiracBasis method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.expand">(aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+        <li><a href="aspire.image.html#aspire.image.image.BispecImage.expand">(aspire.image.image.BispecImage method)</a>
+</li>
+        <li><a href="aspire.image.html#aspire.image.image.CartesianImage.expand">(aspire.image.image.CartesianImage method)</a>
+</li>
+        <li><a href="aspire.image.html#aspire.image.image.PolarImage.expand">(aspire.image.image.PolarImage method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.BispecVolume.expand">(aspire.volume.volume.BispecVolume method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.CartesianVolume.expand">(aspire.volume.volume.CartesianVolume method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.PolarVolume.expand">(aspire.volume.volume.PolarVolume method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.expand_from_image_basis">expand_from_image_basis() (aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.extensions">extensions (aspire.image.image.Image attribute)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.picking.Picker.extract_particles">extract_particles() (aspire.apple.picking.Picker method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.helper.PickerHelper.extract_query">extract_query() (aspire.apple.helper.PickerHelper class method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.helper.PickerHelper.extract_references">extract_references() (aspire.apple.helper.PickerHelper class method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.helper.PickerHelper.extract_windows">extract_windows() (aspire.apple.helper.PickerHelper class method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.eye">eye() (aspire.operators.blk_diag_matrix.BlkDiagMatrix static method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.eye">(aspire.operators.diag_matrix.DiagMatrix static method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.eye_like">eye_like() (aspire.operators.blk_diag_matrix.BlkDiagMatrix static method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.image.html#aspire.image.rotation.fastrotate">fastrotate() (in module aspire.image.rotation)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fb_2d.FBBasis2D">FBBasis2D (class in aspire.basis.fb_2d)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fb_3d.FBBasis3D">FBBasis3D (class in aspire.basis.fb_3d)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.FBBasisImage">FBBasisImage (class in aspire.image.image)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fb.FBBasisMixin">FBBasisMixin (class in aspire.basis.fb)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.FBBasisVolume">FBBasisVolume (class in aspire.volume.volume)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.fetch_data">fetch_data() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.ffb_2d.FFBBasis2D">FFBBasis2D (class in aspire.basis.ffb_2d)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.ffb_3d.FFBBasis3D">FFBBasis3D (class in aspire.basis.ffb_3d)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT">FFT (class in aspire.numeric.base_fft)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.fft">fft() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.fft">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.fft2">fft2() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.fft2">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.numeric.html#aspire.numeric.fft_object">fft_object() (in module aspire.numeric)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.fftn">fftn() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.fftn">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.fftshift">fftshift() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.fftshift">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.optimization.html#aspire.optimization.conj_grad.fill_struct">fill_struct() (in module aspire.optimization.conj_grad)</a>
+</li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.NoiseEstimator.filter">filter (aspire.noise.noise.NoiseEstimator property)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.Filter">Filter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.filter">filter() (aspire.image.image.Image method)</a>
+
+      <ul>
+        <li><a href="aspire.utils.html#aspire.utils.logging.LogFilterByCount.filter">(aspire.utils.logging.LogFilterByCount method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.filter_indices">filter_indices (aspire.source.image.ImageSource property)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fb_2d.FBBasis2D.filter_to_basis_mat">filter_to_basis_mat() (aspire.basis.fb_2d.FBBasis2D method)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.ffb_2d.FFBBasis2D.filter_to_basis_mat">(aspire.basis.ffb_2d.FFBBasis2D method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.fle_2d.FLEBasis2D.filter_to_basis_mat">(aspire.basis.fle_2d.FLEBasis2D method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.fpswf_2d.FPSWFBasis2D.filter_to_basis_mat">(aspire.basis.fpswf_2d.FPSWFBasis2D method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.filter_to_basis_mat">(aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.pswf_2d.PSWFBasis2D.filter_to_basis_mat">(aspire.basis.pswf_2d.PSWFBasis2D method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D.filter_to_basis_mat">(aspire.basis.steerable.SteerableBasis2D method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.image.html#aspire.image.xform.FilterXform">FilterXform (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.find_registration">find_registration() (aspire.utils.rotation.Rotation method)</a>
+</li>
+      <li><a href="aspire.nufft.html#aspire.nufft.finufft.FinufftPlan">FinufftPlan (class in aspire.nufft.finufft)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.fix_signs">fix_signs() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.Volume.flatten">flatten() (aspire.volume.volume.Volume method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fle_2d.FLEBasis2D">FLEBasis2D (class in aspire.basis.fle_2d)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.flip">flip() (aspire.image.image.Image method)</a>
+
+      <ul>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.flip">(aspire.volume.volume.Volume method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.image.html#aspire.image.xform.Xform.forward">forward() (aspire.image.xform.Xform method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.resolution_estimation.FourierCorrelation">FourierCorrelation (class in aspire.utils.resolution_estimation)</a>
+</li>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernel">FourierKernel (class in aspire.reconstruction.kernel)</a>
+</li>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernelMatrix">FourierKernelMatrix (class in aspire.reconstruction.kernel)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.resolution_estimation.FourierRingCorrelation">FourierRingCorrelation (class in aspire.utils.resolution_estimation)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.resolution_estimation.FourierShellCorrelation">FourierShellCorrelation (class in aspire.utils.resolution_estimation)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fpswf_2d.FPSWFBasis2D">FPSWFBasis2D (class in aspire.basis.fpswf_2d)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fpswf_3d.FPSWFBasis3D">FPSWFBasis3D (class in aspire.basis.fpswf_3d)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.frc">frc() (aspire.image.image.Image method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.from_dense">from_dense() (aspire.operators.blk_diag_matrix.BlkDiagMatrix static method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.from_euler">from_euler() (aspire.utils.rotation.Rotation static method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.from_list">from_list() (aspire.operators.blk_diag_matrix.BlkDiagMatrix static method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.from_matrix">from_matrix() (aspire.utils.rotation.Rotation static method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.from_rotvec">from_rotvec() (aspire.utils.rotation.Rotation static method)</a>
+</li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.WhiteNoiseAdder.from_snr">from_snr() (aspire.noise.noise.WhiteNoiseAdder class method)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.Volume.from_vec">from_vec() (aspire.volume.volume.Volume class method)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.Volume.fsc">fsc() (aspire.volume.volume.Volume method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis">FSPCABasis (class in aspire.basis.fspca)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.FTKAverager2D">FTKAverager2D (class in aspire.classification.averager2d)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.FunctionFilter">FunctionFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.fuzzy_mask">fuzzy_mask() (in module aspire.utils.misc)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_utils.g_sync">g_sync() (in module aspire.abinitio.commonline_utils)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.gaussian_1d">gaussian_1d() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.gaussian_2d">gaussian_2d() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.gaussian_3d">gaussian_3d() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.helper.PickerHelper.gaussian_filter">gaussian_filter() (aspire.apple.helper.PickerHelper class method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.gaussian_window">gaussian_window() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.GaussianBlobsVolume">GaussianBlobsVolume (class in aspire.volume.volume_synthesis)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.gd">gd() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.GaussianBlobsVolume.generate">generate() (aspire.volume.volume_synthesis.GaussianBlobsVolume method)</a>
+
+      <ul>
+        <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.LegacyVolume.generate">(aspire.volume.volume_synthesis.LegacyVolume method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.SyntheticVolumeBase.generate">(aspire.volume.volume_synthesis.SyntheticVolumeBase method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_cn.CLSymmetryCn.generate_candidate_rots">generate_candidate_rots() (aspire.abinitio.commonline_cn.CLSymmetryCn static method)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.generate_ctf">generate_ctf() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.generate_random_rotations">generate_random_rotations() (aspire.utils.rotation.Rotation static method)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.CnSymmetryGroup.generate_rotations">generate_rotations() (aspire.volume.symmetry_groups.CnSymmetryGroup method)</a>
+
+      <ul>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.DnSymmetryGroup.generate_rotations">(aspire.volume.symmetry_groups.DnSymmetryGroup method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.ISymmetryGroup.generate_rotations">(aspire.volume.symmetry_groups.ISymmetryGroup method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.OSymmetryGroup.generate_rotations">(aspire.volume.symmetry_groups.OSymmetryGroup method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.SymmetryGroup.generate_rotations">(aspire.volume.symmetry_groups.SymmetryGroup method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.TSymmetryGroup.generate_rotations">(aspire.volume.symmetry_groups.TSymmetryGroup method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.storage.html#aspire.storage.starfile.StarFile.get_block_by_index">get_block_by_index() (aspire.storage.starfile.StarFile method)</a>
+</li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar2d.BatchedRotCov2D.get_covar">get_covar() (aspire.covariance.covar2d.BatchedRotCov2D method)</a>
+
+      <ul>
+        <li><a href="aspire.covariance.html#aspire.covariance.covar2d.RotCov2D.get_covar">(aspire.covariance.covar2d.RotCov2D method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar2d.BatchedRotCov2D.get_cwf_coefs">get_cwf_coefs() (aspire.covariance.covar2d.BatchedRotCov2D method)</a>
+
+      <ul>
+        <li><a href="aspire.covariance.html#aspire.covariance.covar2d.RotCov2D.get_cwf_coefs">(aspire.covariance.covar2d.RotCov2D method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.basis.html#aspire.basis.pswf_utils.BNMatrix.get_eig_vectors">get_eig_vectors() (aspire.basis.pswf_utils.BNMatrix method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.logging.get_full_version">get_full_version() (in module aspire.utils.logging)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.picking.Picker.get_maps">get_maps() (aspire.apple.picking.Picker method)</a>
+</li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar2d.BatchedRotCov2D.get_mean">get_mean() (aspire.covariance.covar2d.BatchedRotCov2D method)</a>
+
+      <ul>
+        <li><a href="aspire.covariance.html#aspire.covariance.covar2d.RotCov2D.get_mean">(aspire.covariance.covar2d.RotCov2D method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.relion_interop.RelionStarFile.get_merged_data_block">get_merged_data_block() (aspire.utils.relion_interop.RelionStarFile method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.get_metadata">get_metadata() (aspire.source.image.ImageSource method)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.OrientedSource.get_metadata">(aspire.source.image.OrientedSource method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.source.html#aspire.source.micrograph.MicrographSimulation.get_micrograph_index">get_micrograph_index() (aspire.source.micrograph.MicrographSimulation method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.micrograph.MicrographSimulation.get_particle_indices">get_particle_indices() (aspire.source.micrograph.MicrographSimulation method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.helper.PickerHelper.get_training_set">get_training_set() (aspire.apple.helper.PickerHelper class method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.logging.getConsoleLoggingLevel">getConsoleLoggingLevel() (in module aspire.utils.logging)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.logging.getFileLoggingLevel">getFileLoggingLevel() (in module aspire.utils.logging)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.J_sync.JSync.global_J_sync">global_J_sync() (aspire.abinitio.J_sync.JSync method)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.GlobalClassSelector">GlobalClassSelector (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.GlobalVarianceClassSelector">GlobalVarianceClassSelector (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.GlobalWithRepulsionClassSelector">GlobalWithRepulsionClassSelector (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.GreedyClassRepulsionMixin">GreedyClassRepulsionMixin (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.coor_trans.grid_1d">grid_1d() (in module aspire.utils.coor_trans)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.coor_trans.grid_2d">grid_2d() (in module aspire.utils.coor_trans)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.coor_trans.grid_3d">grid_3d() (in module aspire.utils.coor_trans)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.operators.html#aspire.operators.polar_ft.PolarFT.half_to_full">half_to_full() (aspire.operators.polar_ft.PolarFT static method)</a>
+</li>
+      <li><a href="aspire.html#aspire.exceptions.handle_exception">handle_exception() (in module aspire.exceptions)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.has_metadata">has_metadata() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.GlobalClassSelector.heap_ids">heap_ids (aspire.classification.class_selection.GlobalClassSelector property)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.GlobalClassSelector.heap_idx_map">heap_idx_map (aspire.classification.class_selection.GlobalClassSelector property)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="I">I</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.idct">idct() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.idct">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.IdentityFilter">IdentityFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.IdentitySymmetryGroup">IdentitySymmetryGroup (class in aspire.volume.symmetry_groups)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.ifft">ifft() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.ifft">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.ifft2">ifft2() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.ifft2">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.ifftn">ifftn() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.ifftn">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.ifftshift">ifftshift() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.ifftshift">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.im_backward">im_backward() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image">Image (class in aspire.image.image)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.ImageQualityFunction">ImageQualityFunction (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.images">images (aspire.source.image.ImageSource property)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.micrograph.MicrographSource.images">(aspire.source.micrograph.MicrographSource property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource">ImageSource (class in aspire.source.image)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image_stacker.ImageStacker">ImageStacker (class in aspire.image.image_stacker)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.source.html#aspire.source.coordinates.CoordinateSource.import_aspire_ctf">import_aspire_ctf() (aspire.source.coordinates.CoordinateSource method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.coordinates.CoordinateSource.import_relion_ctf">import_relion_ctf() (aspire.source.coordinates.CoordinateSource method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.importlib_path">importlib_path() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.IndexedSource">IndexedSource (class in aspire.source.image)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.IndexedXform">IndexedXform (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fb_3d.FBBasis3D.indices">indices() (aspire.basis.fb_3d.FBBasis3D method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D.indices_mask">indices_mask() (aspire.basis.steerable.SteerableBasis2D method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.inverse_r">inverse_r() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.numeric.complex_pca.html#aspire.numeric.complex_pca.complex_pca.ComplexPCA.inverse_transform">inverse_transform() (aspire.numeric.complex_pca.complex_pca.ComplexPCA method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.invert">invert() (aspire.utils.rotation.Rotation method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.invert_contrast">invert_contrast() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.irfft">irfft() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.irfft">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.irfft2">irfft2() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.irfft2">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.is_scalar_type">is_scalar_type() (in module aspire.operators.blk_diag_matrix)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.is_square">is_square (aspire.operators.blk_diag_matrix.BlkDiagMatrix property)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.isfinite">isfinite (aspire.operators.blk_diag_matrix.BlkDiagMatrix property)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.ISymmetricVolume">ISymmetricVolume (class in aspire.volume.volume_synthesis)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.ISymmetryGroup">ISymmetryGroup (class in aspire.volume.symmetry_groups)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="J">J</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.utils.html#aspire.utils.misc.J_conjugate">J_conjugate() (in module aspire.utils.misc)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.J_sync.JSync">JSync (class in aspire.abinitio.J_sync)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="K">K</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.k_operator">k_operator() (in module aspire.basis.basis_utils)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.Kernel">Kernel (class in aspire.reconstruction.kernel)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.operators.html#aspire.operators.filters.LambdaFilter">LambdaFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.LambdaXform">LambdaXform (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.legacy_downsample">legacy_downsample() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.legacy_normalize_background">legacy_normalize_background() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.legacy_whiten">legacy_whiten() (aspire.image.image.Image method)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.ImageSource.legacy_whiten">(aspire.source.image.ImageSource method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.LegacyClassAvgSource">LegacyClassAvgSource (class in aspire.denoising.class_avg)</a>
+</li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.LegacyNoiseEstimator">LegacyNoiseEstimator (class in aspire.noise.noise)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.LegacyVolume">LegacyVolume (class in aspire.volume.volume_synthesis)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.LegacyWhiten">LegacyWhiten (class in aspire.image.xform)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.lgwt">lgwt() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.LinearIndexedXform">LinearIndexedXform (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.LinearPipeline">LinearPipeline (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.LinearXform">LinearXform (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.load">load() (aspire.image.image.Image static method)</a>
+
+      <ul>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.load">(aspire.volume.volume.Volume class method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.image.html#aspire.image.image.load_mrc">load_mrc() (in module aspire.image.image)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.load_tiff">load_tiff() (in module aspire.image.image)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.logging.LogFilterByCount">LogFilterByCount (class in aspire.utils.logging)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fle_2d.FLEBasis2D.lowpass">lowpass() (aspire.basis.fle_2d.FLEBasis2D method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="M">M</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.make_psd">make_psd() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.utils.html#aspire.utils.matrix.make_psd">(in module aspire.utils.matrix)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.make_symmat">make_symmat() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.cell.Cell2D.mat2cell">mat2cell() (aspire.utils.cell.Cell2D method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Basis.mat_evaluate">mat_evaluate() (aspire.basis.basis.Basis method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Basis.mat_evaluate_t">mat_evaluate_t() (aspire.basis.basis.Basis method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.mat_to_vec">mat_to_vec() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.random.matlab_rand">matlab_rand() (in module aspire.utils.random)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.matmul">matmul() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.matmul">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.matrices">matrices (aspire.utils.rotation.Rotation property)</a>
+
+      <ul>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.SymmetryGroup.matrices">(aspire.volume.symmetry_groups.SymmetryGroup property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.basis.html#aspire.basis.fle_2d.FLEBasis2D.matrix_type">matrix_type (aspire.basis.fle_2d.FLEBasis2D attribute)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.pswf_2d.PSWFBasis2D.matrix_type">(aspire.basis.pswf_2d.PSWFBasis2D attribute)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D.matrix_type">(aspire.basis.steerable.SteerableBasis2D attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.mdim_fftshift">mdim_fftshift() (aspire.numeric.base_fft.FFT method)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.mdim_ifftshift">mdim_ifftshift() (aspire.numeric.base_fft.FFT method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.mdim_mat_fun_conj">mdim_mat_fun_conj() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.coor_trans.mean_aligned_angular_distance">mean_aligned_angular_distance() (in module aspire.utils.coor_trans)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.mean_angular_distance">mean_angular_distance() (aspire.utils.rotation.Rotation static method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.mean_true">mean_true() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.mean.MeanEstimator">MeanEstimator (class in aspire.reconstruction.mean)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image_stacker.MeanImageStacker">MeanImageStacker (class in aspire.image.image_stacker)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_cn.MeanOuterProductEstimator">MeanOuterProductEstimator (class in aspire.abinitio.commonline_cn)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image_stacker.MedianImageStacker">MedianImageStacker (class in aspire.image.image_stacker)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.multiprocessing.mem_based_cpu_suggestion">mem_based_cpu_suggestion() (in module aspire.utils.multiprocessing)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.micrograph_to_blocks">micrograph_to_blocks() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.micrograph.MicrographSimulation">MicrographSimulation (class in aspire.source.micrograph)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.micrograph.MicrographSource">MicrographSource (class in aspire.source.micrograph)</a>
+</li>
+      <li>
+    module
+
+      <ul>
+        <li><a href="aspire.html#module-aspire">aspire</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio">aspire.abinitio</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_base">aspire.abinitio.commonline_base</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_c2">aspire.abinitio.commonline_c2</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_c3_c4">aspire.abinitio.commonline_c3_c4</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_cn">aspire.abinitio.commonline_cn</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_d2">aspire.abinitio.commonline_d2</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_ev">aspire.abinitio.commonline_ev</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_gcar">aspire.abinitio.commonline_gcar</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_irls">aspire.abinitio.commonline_irls</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_lud">aspire.abinitio.commonline_lud</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_sdp">aspire.abinitio.commonline_sdp</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_sync">aspire.abinitio.commonline_sync</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_sync3n">aspire.abinitio.commonline_sync3n</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.commonline_utils">aspire.abinitio.commonline_utils</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.J_sync">aspire.abinitio.J_sync</a>
+</li>
+        <li><a href="aspire.abinitio.html#module-aspire.abinitio.sync_voting">aspire.abinitio.sync_voting</a>
+</li>
+        <li><a href="aspire.apple.html#module-aspire.apple">aspire.apple</a>
+</li>
+        <li><a href="aspire.apple.html#module-aspire.apple.apple">aspire.apple.apple</a>
+</li>
+        <li><a href="aspire.apple.html#module-aspire.apple.helper">aspire.apple.helper</a>
+</li>
+        <li><a href="aspire.apple.html#module-aspire.apple.picking">aspire.apple.picking</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis">aspire.basis</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.basis">aspire.basis.basis</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.basis_utils">aspire.basis.basis_utils</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.dirac">aspire.basis.dirac</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.fb">aspire.basis.fb</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.fb_2d">aspire.basis.fb_2d</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.fb_3d">aspire.basis.fb_3d</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.ffb_2d">aspire.basis.ffb_2d</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.ffb_3d">aspire.basis.ffb_3d</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.fle_2d">aspire.basis.fle_2d</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.fle_2d_utils">aspire.basis.fle_2d_utils</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.fpswf_2d">aspire.basis.fpswf_2d</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.fpswf_3d">aspire.basis.fpswf_3d</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.fspca">aspire.basis.fspca</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.pswf_2d">aspire.basis.pswf_2d</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.pswf_3d">aspire.basis.pswf_3d</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.pswf_utils">aspire.basis.pswf_utils</a>
+</li>
+        <li><a href="aspire.basis.html#module-aspire.basis.steerable">aspire.basis.steerable</a>
+</li>
+        <li><a href="aspire.classification.html#module-aspire.classification">aspire.classification</a>
+</li>
+        <li><a href="aspire.classification.html#module-aspire.classification.averager2d">aspire.classification.averager2d</a>
+</li>
+        <li><a href="aspire.classification.html#module-aspire.classification.class2d">aspire.classification.class2d</a>
+</li>
+        <li><a href="aspire.classification.html#module-aspire.classification.class_selection">aspire.classification.class_selection</a>
+</li>
+        <li><a href="aspire.classification.html#module-aspire.classification.legacy_implementations">aspire.classification.legacy_implementations</a>
+</li>
+        <li><a href="aspire.classification.html#module-aspire.classification.reddy_chatterji">aspire.classification.reddy_chatterji</a>
+</li>
+        <li><a href="aspire.classification.html#module-aspire.classification.rir_class2d">aspire.classification.rir_class2d</a>
+</li>
+        <li><a href="aspire.commands.html#module-aspire.commands">aspire.commands</a>
+</li>
+        <li><a href="aspire.commands.html#module-aspire.commands.apple">aspire.commands.apple</a>
+</li>
+        <li><a href="aspire.commands.html#module-aspire.commands.cov3d">aspire.commands.cov3d</a>
+</li>
+        <li><a href="aspire.commands.html#module-aspire.commands.denoise">aspire.commands.denoise</a>
+</li>
+        <li><a href="aspire.commands.html#module-aspire.commands.estimate_ctf">aspire.commands.estimate_ctf</a>
+</li>
+        <li><a href="aspire.commands.html#module-aspire.commands.extract_particles">aspire.commands.extract_particles</a>
+</li>
+        <li><a href="aspire.commands.html#module-aspire.commands.orient3d">aspire.commands.orient3d</a>
+</li>
+        <li><a href="aspire.commands.html#module-aspire.commands.preprocess">aspire.commands.preprocess</a>
+</li>
+        <li><a href="aspire.covariance.html#module-aspire.covariance">aspire.covariance</a>
+</li>
+        <li><a href="aspire.covariance.html#module-aspire.covariance.covar">aspire.covariance.covar</a>
+</li>
+        <li><a href="aspire.covariance.html#module-aspire.covariance.covar2d">aspire.covariance.covar2d</a>
+</li>
+        <li><a href="aspire.ctf.html#module-aspire.ctf">aspire.ctf</a>
+</li>
+        <li><a href="aspire.ctf.html#module-aspire.ctf.ctf_estimator">aspire.ctf.ctf_estimator</a>
+</li>
+        <li><a href="aspire.denoising.html#module-aspire.denoising">aspire.denoising</a>
+</li>
+        <li><a href="aspire.denoising.html#module-aspire.denoising.adaptive_support">aspire.denoising.adaptive_support</a>
+</li>
+        <li><a href="aspire.denoising.html#module-aspire.denoising.class_avg">aspire.denoising.class_avg</a>
+</li>
+        <li><a href="aspire.denoising.html#module-aspire.denoising.denoised_src">aspire.denoising.denoised_src</a>
+</li>
+        <li><a href="aspire.denoising.html#module-aspire.denoising.denoiser">aspire.denoising.denoiser</a>
+</li>
+        <li><a href="aspire.denoising.html#module-aspire.denoising.denoiser_cov2d">aspire.denoising.denoiser_cov2d</a>
+</li>
+        <li><a href="aspire.downloader.html#module-aspire.downloader">aspire.downloader</a>
+</li>
+        <li><a href="aspire.downloader.html#module-aspire.downloader.data_fetcher">aspire.downloader.data_fetcher</a>
+</li>
+        <li><a href="aspire.downloader.html#module-aspire.downloader.registry">aspire.downloader.registry</a>
+</li>
+        <li><a href="aspire.html#module-aspire.exceptions">aspire.exceptions</a>
+</li>
+        <li><a href="aspire.image.html#module-aspire.image">aspire.image</a>
+</li>
+        <li><a href="aspire.image.html#module-aspire.image.image">aspire.image.image</a>
+</li>
+        <li><a href="aspire.image.html#module-aspire.image.image_stacker">aspire.image.image_stacker</a>
+</li>
+        <li><a href="aspire.image.html#module-aspire.image.rotation">aspire.image.rotation</a>
+</li>
+        <li><a href="aspire.image.html#module-aspire.image.xform">aspire.image.xform</a>
+</li>
+        <li><a href="aspire.noise.html#module-aspire.noise">aspire.noise</a>
+</li>
+        <li><a href="aspire.noise.html#module-aspire.noise.noise">aspire.noise.noise</a>
+</li>
+        <li><a href="aspire.nufft.html#module-aspire.nufft">aspire.nufft</a>
+</li>
+        <li><a href="aspire.nufft.html#module-aspire.nufft.finufft">aspire.nufft.finufft</a>
+</li>
+        <li><a href="aspire.nufft.html#module-aspire.nufft.utils">aspire.nufft.utils</a>
+</li>
+        <li><a href="aspire.numeric.html#module-aspire.numeric">aspire.numeric</a>
+</li>
+        <li><a href="aspire.numeric.html#module-aspire.numeric.base_fft">aspire.numeric.base_fft</a>
+</li>
+        <li><a href="aspire.numeric.complex_pca.html#module-aspire.numeric.complex_pca">aspire.numeric.complex_pca</a>
+</li>
+        <li><a href="aspire.numeric.complex_pca.html#module-aspire.numeric.complex_pca.complex_pca">aspire.numeric.complex_pca.complex_pca</a>
+</li>
+        <li><a href="aspire.numeric.complex_pca.html#module-aspire.numeric.complex_pca.validation">aspire.numeric.complex_pca.validation</a>
+</li>
+        <li><a href="aspire.numeric.html#module-aspire.numeric.numpy">aspire.numeric.numpy</a>
+</li>
+        <li><a href="aspire.numeric.html#module-aspire.numeric.scipy">aspire.numeric.scipy</a>
+</li>
+        <li><a href="aspire.numeric.html#module-aspire.numeric.scipy_fft">aspire.numeric.scipy_fft</a>
+</li>
+        <li><a href="aspire.operators.html#module-aspire.operators">aspire.operators</a>
+</li>
+        <li><a href="aspire.operators.html#module-aspire.operators.blk_diag_matrix">aspire.operators.blk_diag_matrix</a>
+</li>
+        <li><a href="aspire.operators.html#module-aspire.operators.diag_matrix">aspire.operators.diag_matrix</a>
+</li>
+        <li><a href="aspire.operators.html#module-aspire.operators.filters">aspire.operators.filters</a>
+</li>
+        <li><a href="aspire.operators.html#module-aspire.operators.polar_ft">aspire.operators.polar_ft</a>
+</li>
+        <li><a href="aspire.operators.html#module-aspire.operators.wemd">aspire.operators.wemd</a>
+</li>
+        <li><a href="aspire.optimization.html#module-aspire.optimization">aspire.optimization</a>
+</li>
+        <li><a href="aspire.optimization.html#module-aspire.optimization.conj_grad">aspire.optimization.conj_grad</a>
+</li>
+        <li><a href="aspire.reconstruction.html#module-aspire.reconstruction">aspire.reconstruction</a>
+</li>
+        <li><a href="aspire.reconstruction.html#module-aspire.reconstruction.estimator">aspire.reconstruction.estimator</a>
+</li>
+        <li><a href="aspire.reconstruction.html#module-aspire.reconstruction.kernel">aspire.reconstruction.kernel</a>
+</li>
+        <li><a href="aspire.reconstruction.html#module-aspire.reconstruction.mean">aspire.reconstruction.mean</a>
+</li>
+        <li><a href="aspire.sinogram.html#module-aspire.sinogram">aspire.sinogram</a>
+</li>
+        <li><a href="aspire.sinogram.html#module-aspire.sinogram.sinogram">aspire.sinogram.sinogram</a>
+</li>
+        <li><a href="aspire.source.html#module-aspire.source">aspire.source</a>
+</li>
+        <li><a href="aspire.source.html#module-aspire.source.coordinates">aspire.source.coordinates</a>
+</li>
+        <li><a href="aspire.source.html#module-aspire.source.image">aspire.source.image</a>
+</li>
+        <li><a href="aspire.source.html#module-aspire.source.micrograph">aspire.source.micrograph</a>
+</li>
+        <li><a href="aspire.source.html#module-aspire.source.relion">aspire.source.relion</a>
+</li>
+        <li><a href="aspire.source.html#module-aspire.source.simulation">aspire.source.simulation</a>
+</li>
+        <li><a href="aspire.storage.html#module-aspire.storage">aspire.storage</a>
+</li>
+        <li><a href="aspire.storage.html#module-aspire.storage.mrc">aspire.storage.mrc</a>
+</li>
+        <li><a href="aspire.storage.html#module-aspire.storage.starfile">aspire.storage.starfile</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils">aspire.utils</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.bot_align">aspire.utils.bot_align</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.cell">aspire.utils.cell</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.coor_trans">aspire.utils.coor_trans</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.logging">aspire.utils.logging</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.matlab_compat">aspire.utils.matlab_compat</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.matrix">aspire.utils.matrix</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.misc">aspire.utils.misc</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.multiprocessing">aspire.utils.multiprocessing</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.random">aspire.utils.random</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.relion_interop">aspire.utils.relion_interop</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.resolution_estimation">aspire.utils.resolution_estimation</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.rotation">aspire.utils.rotation</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.types">aspire.utils.types</a>
+</li>
+        <li><a href="aspire.utils.html#module-aspire.utils.units">aspire.utils.units</a>
+</li>
+        <li><a href="aspire.volume.html#module-aspire.volume">aspire.volume</a>
+</li>
+        <li><a href="aspire.volume.html#module-aspire.volume.symmetry_groups">aspire.volume.symmetry_groups</a>
+</li>
+        <li><a href="aspire.volume.html#module-aspire.volume.volume">aspire.volume.volume</a>
+</li>
+        <li><a href="aspire.volume.html#module-aspire.volume.volume_synthesis">aspire.volume.volume_synthesis</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.apple.html#aspire.apple.helper.PickerHelper.moments">moments() (aspire.apple.helper.PickerHelper class method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.picking.Picker.morphology_ops">morphology_ops() (aspire.apple.picking.Picker method)</a>
+</li>
+      <li><a href="aspire.storage.html#aspire.storage.mrc.MrcStats">MrcStats (class in aspire.storage.mrc)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.mse">mse() (aspire.utils.rotation.Rotation method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.logging.LogFilterByCount.msg_cache">msg_cache (aspire.utils.logging.LogFilterByCount attribute)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.mul">mul() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.mul">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.MultiplicativeFilter">MultiplicativeFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.Multiply">Multiply (class in aspire.image.xform)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="N">N</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.ClassAvgSource.n">n (aspire.denoising.class_avg.ClassAvgSource property)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.ImageSource.n">(aspire.source.image.ImageSource property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.CnSymmetricVolume.n_blobs">n_blobs (aspire.volume.volume_synthesis.CnSymmetricVolume property)</a>
+
+      <ul>
+        <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.DnSymmetricVolume.n_blobs">(aspire.volume.volume_synthesis.DnSymmetricVolume property)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.GaussianBlobsVolume.n_blobs">(aspire.volume.volume_synthesis.GaussianBlobsVolume property)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.ISymmetricVolume.n_blobs">(aspire.volume.volume_synthesis.ISymmetricVolume property)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.OSymmetricVolume.n_blobs">(aspire.volume.volume_synthesis.OSymmetricVolume property)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.TSymmetricVolume.n_blobs">(aspire.volume.volume_synthesis.TSymmetricVolume property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.n_ctf_filters">n_ctf_filters (aspire.source.image.ImageSource property)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.nearest_rotations">nearest_rotations() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.neg">neg() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.neg">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.NeighborVarianceClassSelector">NeighborVarianceClassSelector (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.NeighborVarianceWithRepulsionClassSelector">NeighborVarianceWithRepulsionClassSelector (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.nufft.html#aspire.nufft.utils.nextpow2">nextpow2() (in module aspire.nufft.utils)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.rir_class2d.RIRClass2D.nn_classification">nn_classification() (aspire.classification.rir_class2d.RIRClass2D method)</a>
+</li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.CustomNoiseAdder.noise_var">noise_var (aspire.noise.noise.CustomNoiseAdder property)</a>
+
+      <ul>
+        <li><a href="aspire.noise.html#aspire.noise.noise.NoiseAdder.noise_var">(aspire.noise.noise.NoiseAdder property)</a>
+</li>
+        <li><a href="aspire.noise.html#aspire.noise.noise.WhiteNoiseAdder.noise_var">(aspire.noise.noise.WhiteNoiseAdder property)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.noise.html#aspire.noise.noise.NoiseAdder">NoiseAdder (class in aspire.noise.noise)</a>
+</li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.NoiseEstimator">NoiseEstimator (class in aspire.noise.noise)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.norm">norm (aspire.operators.diag_matrix.DiagMatrix property)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.norm">norm() (aspire.image.image.Image method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.norm">(aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.norm_assoc_legendre">norm_assoc_legendre() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.normalize_background">normalize_background() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.normalize_bg">normalize_bg() (in module aspire.image.image)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.normalize_blocks">normalize_blocks() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Basis.norms">norms() (aspire.basis.basis.Basis method)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.fb_2d.FBBasis2D.norms">(aspire.basis.fb_2d.FBBasis2D method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.fb_3d.FBBasis3D.norms">(aspire.basis.fb_3d.FBBasis3D method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.nufft.html#aspire.nufft.nufft">nufft() (in module aspire.nufft)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.multiprocessing.num_procs_suggestion">num_procs_suggestion() (in module aspire.utils.multiprocessing)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.numeric_object">numeric_object() (in module aspire.numeric)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.numpy.Numpy">Numpy (class in aspire.numeric.numpy)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.offsets">offsets (aspire.source.image.ImageSource property)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.OrientedSource.offsets">(aspire.source.image.OrientedSource property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.ones">ones() (aspire.operators.blk_diag_matrix.BlkDiagMatrix static method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.ones">(aspire.operators.diag_matrix.DiagMatrix static method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.opt1d">opt1d() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.source.html#aspire.source.image.OrientedSource">OrientedSource (class in aspire.source.image)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.OSymmetricVolume">OSymmetricVolume (class in aspire.volume.volume_synthesis)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.OSymmetryGroup">OSymmetryGroup (class in aspire.volume.symmetry_groups)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_ev.CommLineEV.output">output() (aspire.abinitio.commonline_ev.CommLineEV method)</a>
+
+      <ul>
+        <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_gcar.CommLineGCAR.output">(aspire.abinitio.commonline_gcar.CommLineGCAR method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="P">P</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.p_n">p_n() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.SymmetryGroup.parse">parse() (aspire.volume.symmetry_groups.SymmetryGroup static method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.apple.Apple.particle_image">particle_image() (aspire.apple.apple.Apple method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.partition">partition (aspire.operators.blk_diag_matrix.BlkDiagMatrix property)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.rir_class2d.RIRClass2D.pca">pca() (aspire.classification.rir_class2d.RIRClass2D method)</a>
+
+      <ul>
+        <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.pca">(aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.classification.html#aspire.classification.legacy_implementations.pca_y">pca_y() (in module aspire.classification.legacy_implementations)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D.pf">pf (aspire.abinitio.commonline_base.CLOrient3D property)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.phase_flip">phase_flip() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.multiprocessing.physical_core_cpu_suggestion">physical_core_cpu_suggestion() (in module aspire.utils.multiprocessing)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.picking.Picker">Picker (class in aspire.apple.picking)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.helper.PickerHelper">PickerHelper (class in aspire.apple.helper)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.PinkFilter">PinkFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.PinkNoiseAdder">PinkNoiseAdder (class in aspire.noise.noise)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.Pipeline">Pipeline (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.pixel_size">pixel_size (aspire.source.image.ImageSource property)</a>
+</li>
+      <li><a href="aspire.nufft.html#aspire.nufft.Plan">Plan (class in aspire.nufft)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.resolution_estimation.FourierCorrelation.plot">plot() (aspire.utils.resolution_estimation.FourierCorrelation method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image_stacker.PoissonRejectionImageStacker">PoissonRejectionImageStacker (class in aspire.image.image_stacker)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.polar_ft.PolarFT">PolarFT (class in aspire.operators.polar_ft)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.PolarImage">PolarImage (class in aspire.image.image)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.volume.html#aspire.volume.volume.PolarVolume">PolarVolume (class in aspire.volume.volume)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.pop_metadata">pop_metadata() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.relion.RelionSource.populate_metadata">populate_metadata() (aspire.source.relion.RelionSource method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.pow">pow() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.pow">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.J_sync.JSync.power_method">power_method() (aspire.abinitio.J_sync.JSync method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.PowerFilter">PowerFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.powerset">powerset() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.fle_2d_utils.precomp_transform_complex_to_real">precomp_transform_complex_to_real() (in module aspire.basis.fle_2d_utils)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.preprocess_micrograph">preprocess_micrograph() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.apple.Apple.process_folder">process_folder() (aspire.apple.apple.Apple method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.apple.Apple.process_micrograph">process_micrograph() (aspire.apple.apple.Apple method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.apple.Apple.process_micrograph_centers">process_micrograph_centers() (aspire.apple.apple.Apple method)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.apple.Apple.process_micrograph_plots">process_micrograph_plots() (aspire.apple.apple.Apple method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.project">project() (aspire.image.image.Image method)</a>
+
+      <ul>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.project">(aspire.volume.volume.Volume method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.projections">projections (aspire.source.simulation.Simulation property)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.pswf_2d.PSWFBasis2D.pswf_func2d">pswf_func2d() (aspire.basis.pswf_2d.PSWFBasis2D method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.pswf_2d.PSWFBasis2D">PSWFBasis2D (class in aspire.basis.pswf_2d)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.pswf_3d.PSWFBasis3D">PSWFBasis3D (class in aspire.basis.pswf_3d)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_cn.MeanOuterProductEstimator.push">push() (aspire.abinitio.commonline_cn.MeanOuterProductEstimator method)</a>
+
+      <ul>
+        <li><a href="aspire.storage.html#aspire.storage.mrc.MrcStats.push">(aspire.storage.mrc.MrcStats method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Q">Q</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.volume.html#aspire.volume.volume.qr_vols_forward">qr_vols_forward() (in module aspire.volume.volume)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.ClassSelector.quality_scores">quality_scores (aspire.classification.class_selection.ClassSelector property)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.picking.Picker.query_score">query_score() (aspire.apple.picking.Picker method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="R">R</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.basis.html#aspire.basis.fle_2d.FLEBasis2D.radial_convolve">radial_convolve() (aspire.basis.fle_2d.FLEBasis2D method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.RadialCTFFilter">RadialCTFFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.RampWeightedImageQualityMixin">RampWeightedImageQualityMixin (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.RampWeightedVarianceImageQualityFunction">RampWeightedVarianceImageQualityFunction (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.random.randi">randi() (in module aspire.utils.random)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.random.randn">randn() (in module aspire.utils.random)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.random.Random">Random (class in aspire.utils.random)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.random.random">random() (in module aspire.utils.random)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.RandomClassSelector">RandomClassSelector (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.rapply">rapply() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.rapply">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.units.ratio_to_decibel">ratio_to_decibel() (in module aspire.utils.units)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.picking.Picker.read_micrograph">read_micrograph() (aspire.apple.picking.Picker method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.real_sph_harmonic">real_sph_harmonic() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.types.real_type">real_type() (in module aspire.utils.types)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.reddy_chatterji.reddy_chatterji_register">reddy_chatterji_register() (in module aspire.classification.reddy_chatterji)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.averager2d.ReddyChatterjiAverager2D">ReddyChatterjiAverager2D (class in aspire.classification.averager2d)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.helper.PickerHelper.reference_size">reference_size() (aspire.apple.helper.PickerHelper class method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation.register">register() (aspire.utils.rotation.Rotation method)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_cn.CLSymmetryCn.relative_rots_to_cl_indices">relative_rots_to_cl_indices() (aspire.abinitio.commonline_cn.CLSymmetryCn static method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.relion.RelionSource">RelionSource (class in aspire.source.relion)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.relion_interop.RelionStarFile">RelionStarFile (class in aspire.utils.relion_interop)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.remove_downloads">remove_downloads() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.rename_with_timestamp">rename_with_timestamp() (in module aspire.utils.misc)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.image.html#aspire.image.image.Image.res">res (aspire.image.image.Image property)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.Pipeline.reset">reset() (aspire.image.xform.Pipeline method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.reset_cache">reset_cache() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.rfft">rfft() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.rfft">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.rfft2">rfft2() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.rfft2">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.numeric.html#aspire.numeric.base_fft.FFT.rfftfreq">rfftfreq() (aspire.numeric.base_fft.FFT method)</a>
+
+      <ul>
+        <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT.rfftfreq">(aspire.numeric.scipy_fft.ScipyFFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.classification.html#aspire.classification.rir_class2d.RIRClass2D">RIRClass2D (class in aspire.classification.rir_class2d)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image_stacker.RobustChauvenetRejectionImageStacker">RobustChauvenetRejectionImageStacker (class in aspire.image.image_stacker)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Coef.rotate">rotate() (aspire.basis.basis.Coef method)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.basis.ComplexCoef.rotate">(aspire.basis.basis.ComplexCoef method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D.rotate">(aspire.basis.steerable.SteerableBasis2D method)</a>
+</li>
+        <li><a href="aspire.image.html#aspire.image.image.Image.rotate">(aspire.image.image.Image method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.rotate">(aspire.volume.volume.Volume method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.rotated_grids">rotated_grids() (in module aspire.volume.volume)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.rotated_grids_3d">rotated_grids_3d() (in module aspire.volume.volume)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.rotation.Rotation">Rotation (class in aspire.utils.rotation)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.rotation_methods">rotation_methods (aspire.image.image.Image attribute)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D.rotations">rotations (aspire.abinitio.commonline_base.CLOrient3D property)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.ImageSource.rotations">(aspire.source.image.ImageSource property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar2d.RotCov2D">RotCov2D (class in aspire.covariance.covar2d)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.coor_trans.rots_to_clmatrix">rots_to_clmatrix() (in module aspire.utils.coor_trans)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.picking.Picker.run_svm">run_svm() (aspire.apple.picking.Picker method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="S">S</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.ClassAvgSource.save">save() (aspire.denoising.class_avg.ClassAvgSource method)</a>
+
+      <ul>
+        <li><a href="aspire.image.html#aspire.image.image.Image.save">(aspire.image.image.Image method)</a>
+</li>
+        <li><a href="aspire.source.html#aspire.source.image.ImageSource.save">(aspire.source.image.ImageSource method)</a>
+</li>
+        <li><a href="aspire.source.html#aspire.source.micrograph.MicrographSimulation.save">(aspire.source.micrograph.MicrographSimulation method)</a>
+</li>
+        <li><a href="aspire.source.html#aspire.source.micrograph.MicrographSource.save">(aspire.source.micrograph.MicrographSource method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.save">(aspire.volume.volume.Volume method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.save_images">save_images() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.save_metadata">save_metadata() (aspire.source.image.ImageSource method)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.OrientedSource.save_metadata">(aspire.source.image.OrientedSource method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.ScalarFilter">ScalarFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.Filter.scale">scale() (aspire.operators.filters.Filter method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.ScaledFilter">ScaledFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.scipy_fft.ScipyFFT">ScipyFFT (class in aspire.numeric.scipy_fft)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.ClassSelector.select">select() (aspire.classification.class_selection.ClassSelector method)</a>
+</li>
+      <li><a href="aspire.denoising.html#aspire.denoising.class_avg.ClassAvgSource.selection_indices">selection_indices (aspire.denoising.class_avg.ClassAvgSource property)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.image.ImageSource.selection_indices">(aspire.source.image.ImageSource property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.set_angle">set_angle() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.set_df1">set_df1() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.set_df2">set_df2() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.set_metadata">set_metadata() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.logging.setConsoleLoggingLevel">setConsoleLoggingLevel() (in module aspire.utils.logging)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.logging.setFileLoggingLevel">setFileLoggingLevel() (in module aspire.utils.logging)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.sha256sum">sha256sum() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.pswf_utils.BNMatrix.shape">shape() (aspire.basis.pswf_utils.BNMatrix method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.Shift">Shift (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Coef.shift">shift() (aspire.basis.basis.Coef method)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.basis.ComplexCoef.shift">(aspire.basis.basis.ComplexCoef method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.shift">(aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D.shift">(aspire.basis.steerable.SteerableBasis2D method)</a>
+</li>
+        <li><a href="aspire.image.html#aspire.image.image.Image.shift">(aspire.image.image.Image method)</a>
+</li>
+        <li><a href="aspire.operators.html#aspire.operators.polar_ft.PolarFT.shift">(aspire.operators.polar_ft.PolarFT method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.shift">(aspire.volume.volume.Volume method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_base.CLOrient3D.shifts">shifts (aspire.abinitio.commonline_base.CLOrient3D property)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.show">show() (aspire.image.image.Image method)</a>
+
+      <ul>
+        <li><a href="aspire.source.html#aspire.source.micrograph.MicrographSource.show">(aspire.source.micrograph.MicrographSource method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar2d.shrink_covar">shrink_covar() (in module aspire.covariance.covar2d)</a>
+</li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar2d.RotCov2D.shrink_covar_backward">shrink_covar_backward() (aspire.covariance.covar2d.RotCov2D method)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image_stacker.SigmaRejectionImageStacker">SigmaRejectionImageStacker (class in aspire.image.image_stacker)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.filters.Filter.sign">sign (aspire.operators.filters.Filter property)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.noise.html#aspire.noise.noise.WhiteNoiseAdder.signal_power">signal_power (aspire.noise.noise.WhiteNoiseAdder property)</a>
+</li>
+      <li><a href="aspire.downloader.html#aspire.downloader.data_fetcher.simulated_channelspin">simulated_channelspin() (in module aspire.downloader.data_fetcher)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation">Simulation (class in aspire.source.simulation)</a>
+</li>
+      <li><a href="aspire.sinogram.html#aspire.sinogram.sinogram.Sinogram">Sinogram (class in aspire.sinogram.sinogram)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Coef.size">size (aspire.basis.basis.Coef property)</a>
+
+      <ul>
+        <li><a href="aspire.image.html#aspire.image.image.Image.size">(aspire.image.image.Image property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.solve">solve() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.solve">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.image.html#aspire.image.rotation.sp_rotate">sp_rotate() (in module aspire.image.rotation)</a>
+</li>
+      <li><a href="aspire.numeric.html#aspire.numeric.sparse_object">sparse_object() (in module aspire.numeric)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.sph_bessel">sph_bessel() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.sph_harm">sph_harm() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.sqrt">sqrt() (aspire.image.image.Image method)</a>
+</li>
+      <li><a href="aspire.covariance.html#aspire.covariance.covar.CovarianceEstimator.src_backward">src_backward() (aspire.covariance.covar.CovarianceEstimator method)</a>
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.mean.WeightedVolumesEstimator.src_backward">(aspire.reconstruction.mean.WeightedVolumesEstimator method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.denoising.html#aspire.denoising.denoiser_cov2d.src_wiener_coords">src_wiener_coords() (in module aspire.denoising.denoiser_cov2d)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matlab_compat.stable_eigsh">stable_eigsh() (in module aspire.utils.matlab_compat)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Coef.stack_reshape">stack_reshape() (aspire.basis.basis.Coef method)</a>
+
+      <ul>
+        <li><a href="aspire.image.html#aspire.image.image.Image.stack_reshape">(aspire.image.image.Image method)</a>
+</li>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.stack_reshape">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+        <li><a href="aspire.sinogram.html#aspire.sinogram.sinogram.Sinogram.stack_reshape">(aspire.sinogram.sinogram.Sinogram method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.stack_reshape">(aspire.volume.volume.Volume method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.storage.html#aspire.storage.starfile.StarFile">StarFile (class in aspire.storage.starfile)</a>
+</li>
+      <li><a href="aspire.storage.html#aspire.storage.starfile.StarFileError">StarFileError</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.states">states (aspire.source.image.ImageSource property)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D">SteerableBasis2D (class in aspire.basis.steerable)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.sub">sub() (aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.sub">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.utils.html#aspire.utils.misc.support_mask">support_mask() (in module aspire.utils.misc)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.symmat_to_vec">symmat_to_vec() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.symmat_to_vec_iso">symmat_to_vec_iso() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.xform.SymmetricXform">SymmetricXform (class in aspire.image.xform)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.symmetry_group">symmetry_group (aspire.source.image.ImageSource property)</a>
+
+      <ul>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.symmetry_group">(aspire.volume.volume.Volume property)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.GaussianBlobsVolume.symmetry_group">(aspire.volume.volume_synthesis.GaussianBlobsVolume property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.SymmetryGroup">SymmetryGroup (class in aspire.volume.symmetry_groups)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.J_sync.JSync.sync_viis">sync_viis() (aspire.abinitio.J_sync.JSync method)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_cn.MeanOuterProductEstimator.synchronized_mean">synchronized_mean() (aspire.abinitio.commonline_cn.MeanOuterProductEstimator method)</a>
+</li>
+      <li><a href="aspire.abinitio.html#aspire.abinitio.commonline_sync.CLSyncVoting.syncmatrix_vote">syncmatrix_vote() (aspire.abinitio.commonline_sync.CLSyncVoting method)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.SyntheticVolumeBase">SyntheticVolumeBase (class in aspire.volume.volume_synthesis)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.image.html#aspire.image.image.Image.T">T (aspire.image.image.Image property)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.T">(aspire.operators.blk_diag_matrix.BlkDiagMatrix property)</a>
+</li>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.T">(aspire.operators.diag_matrix.DiagMatrix property)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.T">(aspire.volume.volume.Volume property)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.t_radial_part_mat">t_radial_part_mat() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.t_x_derivative_mat">t_x_derivative_mat() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.t_x_mat">t_x_mat() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.t_x_mat_dot">t_x_mat_dot() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.tapers">tapers() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Coef.to_complex">to_complex() (aspire.basis.basis.Coef method)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.basis.ComplexCoef.to_complex">(aspire.basis.basis.ComplexCoef method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.to_complex">(aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D.to_complex">(aspire.basis.steerable.SteerableBasis2D method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.basis.html#aspire.basis.basis.Coef.to_real">to_real() (aspire.basis.basis.Coef method)</a>
+
+      <ul>
+        <li><a href="aspire.basis.html#aspire.basis.basis.ComplexCoef.to_real">(aspire.basis.basis.ComplexCoef method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.fspca.FSPCABasis.to_real">(aspire.basis.fspca.FSPCABasis method)</a>
+</li>
+        <li><a href="aspire.basis.html#aspire.basis.steerable.SteerableBasis2D.to_real">(aspire.basis.steerable.SteerableBasis2D method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.CnSymmetryGroup.to_string">to_string (aspire.volume.symmetry_groups.CnSymmetryGroup property)</a>
+
+      <ul>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.DnSymmetryGroup.to_string">(aspire.volume.symmetry_groups.DnSymmetryGroup property)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.ISymmetryGroup.to_string">(aspire.volume.symmetry_groups.ISymmetryGroup property)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.OSymmetryGroup.to_string">(aspire.volume.symmetry_groups.OSymmetryGroup property)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.SymmetryGroup.to_string">(aspire.volume.symmetry_groups.SymmetryGroup property)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.TSymmetryGroup.to_string">(aspire.volume.symmetry_groups.TSymmetryGroup property)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.volume.html#aspire.volume.volume.Volume.to_vec">to_vec() (aspire.volume.volume.Volume method)</a>
+</li>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernel.toeplitz">toeplitz() (aspire.reconstruction.kernel.FourierKernel method)</a>
+
+      <ul>
+        <li><a href="aspire.reconstruction.html#aspire.reconstruction.kernel.FourierKernelMatrix.toeplitz">(aspire.reconstruction.kernel.FourierKernelMatrix method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.TopClassSelector">TopClassSelector (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.logging.tqdm">tqdm() (in module aspire.utils.logging)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.logging.trange">trange() (in module aspire.utils.logging)</a>
+</li>
+      <li><a href="aspire.nufft.html#aspire.nufft.finufft.FinufftPlan.transform">transform() (aspire.nufft.finufft.FinufftPlan method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.polar_ft.PolarFT.transform">(aspire.operators.polar_ft.PolarFT method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.basis.html#aspire.basis.fle_2d_utils.transform_complex_to_real">transform_complex_to_real() (in module aspire.basis.fle_2d_utils)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image.Image.transpose">transpose() (aspire.image.image.Image method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.transpose">(aspire.operators.blk_diag_matrix.BlkDiagMatrix method)</a>
+</li>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.transpose">(aspire.operators.diag_matrix.DiagMatrix method)</a>
+</li>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.transpose">(aspire.volume.volume.Volume method)</a>
+</li>
+      </ul></li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.true_signal_power">true_signal_power() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.true_snr">true_snr() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume_synthesis.TSymmetricVolume">TSymmetricVolume (class in aspire.volume.volume_synthesis)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.symmetry_groups.TSymmetryGroup">TSymmetryGroup (class in aspire.volume.symmetry_groups)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="U">U</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.basis.html#aspire.basis.basis_utils.unique_coords_nd">unique_coords_nd() (in module aspire.basis.basis_utils)</a>
+</li>
+      <li><a href="aspire.html#aspire.exceptions.UnknownFormat">UnknownFormat</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.update">update() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.storage.html#aspire.storage.mrc.MrcStats.update_header">update_header() (aspire.storage.mrc.MrcStats method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.types.utest_tolerance">utest_tolerance() (in module aspire.utils.types)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.VarianceImageQualityFunction">VarianceImageQualityFunction (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.vec_to_mat">vec_to_mat() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.vec_to_symmat">vec_to_symmat() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.matrix.vec_to_symmat_iso">vec_to_symmat_iso() (in module aspire.utils.matrix)</a>
+</li>
+      <li><a href="aspire.apple.html#aspire.apple.apple.Apple.verify_input_values">verify_input_values() (aspire.apple.apple.Apple method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.utils.html#aspire.utils.multiprocessing.virtual_core_cpu_suggestion">virtual_core_cpu_suggestion() (in module aspire.utils.multiprocessing)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.simulation.Simulation.vol_coords">vol_coords() (aspire.source.simulation.Simulation method)</a>
+</li>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.vol_forward">vol_forward() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.utils.html#aspire.utils.units.voltage_to_wavelength">voltage_to_wavelength() (in module aspire.utils.units)</a>
+</li>
+      <li><a href="aspire.volume.html#aspire.volume.volume.Volume">Volume (class in aspire.volume.volume)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="W">W</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.utils.html#aspire.utils.units.wavelength_to_voltage">wavelength_to_voltage() (in module aspire.utils.units)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.WeightedImageQualityMixin">WeightedImageQualityMixin (class in aspire.classification.class_selection)</a>
+</li>
+      <li><a href="aspire.reconstruction.html#aspire.reconstruction.mean.WeightedVolumesEstimator">WeightedVolumesEstimator (class in aspire.reconstruction.mean)</a>
+</li>
+      <li><a href="aspire.classification.html#aspire.classification.class_selection.WeightedImageQualityMixin.weights">weights() (aspire.classification.class_selection.WeightedImageQualityMixin method)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.wemd.wemd_embed">wemd_embed() (in module aspire.operators.wemd)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.wemd.wemd_norm">wemd_norm() (in module aspire.operators.wemd)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.source.html#aspire.source.image.ImageSource.whiten">whiten() (aspire.source.image.ImageSource method)</a>
+</li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.WhiteNoiseAdder">WhiteNoiseAdder (class in aspire.noise.noise)</a>
+</li>
+      <li><a href="aspire.noise.html#aspire.noise.noise.WhiteNoiseEstimator">WhiteNoiseEstimator (class in aspire.noise.noise)</a>
+</li>
+      <li><a href="aspire.image.html#aspire.image.image_stacker.WinsorizedImageStacker">WinsorizedImageStacker (class in aspire.image.image_stacker)</a>
+</li>
+      <li><a href="aspire.storage.html#aspire.storage.starfile.StarFile.write">write() (aspire.storage.starfile.StarFile method)</a>
+</li>
+      <li><a href="aspire.ctf.html#aspire.ctf.ctf_estimator.CtfEstimator.write_star">write_star() (aspire.ctf.ctf_estimator.CtfEstimator method)</a>
+</li>
+      <li><a href="aspire.html#aspire.exceptions.WrongInput">WrongInput</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="X">X</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.image.html#aspire.image.xform.Xform">Xform (class in aspire.image.xform)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.image.html#aspire.image.xform.Xform.XformActiveContextManager">Xform.XformActiveContextManager (class in aspire.image.xform)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="Z">Z</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.operators.html#aspire.operators.filters.ZeroFilter">ZeroFilter (class in aspire.operators.filters)</a>
+</li>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.zeros">zeros() (aspire.operators.blk_diag_matrix.BlkDiagMatrix static method)</a>
+
+      <ul>
+        <li><a href="aspire.operators.html#aspire.operators.diag_matrix.DiagMatrix.zeros">(aspire.operators.diag_matrix.DiagMatrix static method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="aspire.operators.html#aspire.operators.blk_diag_matrix.BlkDiagMatrix.zeros_like">zeros_like() (aspire.operators.blk_diag_matrix.BlkDiagMatrix static method)</a>
+
+      <ul>
+        <li><a href="aspire.volume.html#aspire.volume.volume.Volume.zeros_like">(aspire.volume.volume.Volume static method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

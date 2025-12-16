@@ -1,0 +1,325 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.nufft package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.numeric package" href="aspire.numeric.html" />
+    <link rel="prev" title="aspire.noise package" href="aspire.noise.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.nufft package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.nufft.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-nufft-package">
+<h1>aspire.nufft package<a class="headerlink" href="#aspire-nufft-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="aspire-nufft-cufinufft-module">
+<h2>aspire.nufft.cufinufft module<a class="headerlink" href="#aspire-nufft-cufinufft-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.nufft.finufft">
+<span id="aspire-nufft-finufft-module"></span><h2>aspire.nufft.finufft module<a class="headerlink" href="#module-aspire.nufft.finufft" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.nufft.finufft.FinufftPlan">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.nufft.finufft.</span></span><span class="sig-name descname"><span class="pre">FinufftPlan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.nufft.finufft.FinufftPlan" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.nufft.Plan" title="aspire.nufft.Plan"><code class="xref py py-class docutils literal notranslate"><span class="pre">Plan</span></code></a></p>
+<p>A plan for non-uniform FFT in 2D or 3D.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sz</strong> – A tuple indicating the geometry of the signal.</p></li>
+<li><p><strong>fourier_pts</strong> – The points in Fourier space where the Fourier
+transform is to be calculated, arranged as a dimension-by-K array.
+These need to be in the range [-pi, pi] in each dimension.</p></li>
+<li><p><strong>epsilon</strong> – The desired precision of the NUFFT.</p></li>
+<li><p><strong>ntransforms</strong> – Optional integer indicating if you would like
+to compute a batch of <cite>ntransforms</cite>.
+transforms.  Implies vol_f.shape is (<cite>ntransforms</cite>, …).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.nufft.finufft.FinufftPlan.adjoint">
+<span class="sig-name descname"><span class="pre">adjoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.nufft.finufft.FinufftPlan.adjoint" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the NUFFT adjoint using this plan instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>signal</strong> – Signal to be transformed. For a single transform,
+this should be a a 1D array of len <cite>num_pts</cite>.
+For a batch, signal should have shape <cite>(ntransforms, num_pts)</cite>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Transformed signal <cite>(sz)</cite> or <cite>(ntransforms, sz)</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.nufft.finufft.FinufftPlan.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.nufft.finufft.FinufftPlan.transform" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the NUFFT transform using this plan instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>signal</strong> – Signal to be transformed. For a single transform,
+this should be a a 1, 2, or 3D array matching the plan <cite>sz</cite>.
+For a batch, signal should have shape <cite>(ntransforms, *sz)</cite>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Transformed signal of shape <cite>num_pts</cite> or
+<cite>(ntransforms, num_pts)</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="aspire-nufft-pynfft-module">
+<h2>aspire.nufft.pynfft module<a class="headerlink" href="#aspire-nufft-pynfft-module" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.nufft.utils">
+<span id="aspire-nufft-utils-module"></span><h2>aspire.nufft.utils module<a class="headerlink" href="#module-aspire.nufft.utils" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.nufft.utils.nextpow2">
+<span class="sig-prename descclassname"><span class="pre">aspire.nufft.utils.</span></span><span class="sig-name descname"><span class="pre">nextpow2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.nufft.utils.nextpow2" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-aspire.nufft">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.nufft" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.nufft.Plan">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.nufft.</span></span><span class="sig-name descname"><span class="pre">Plan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.nufft.Plan" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.nufft.all_backends">
+<span class="sig-prename descclassname"><span class="pre">aspire.nufft.</span></span><span class="sig-name descname"><span class="pre">all_backends</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.nufft.all_backends" title="Link to this definition">¶</a></dt>
+<dd><p>Determine all available NFFT backends</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of strings representing available NFFT backends</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.nufft.anufft">
+<span class="sig-prename descclassname"><span class="pre">aspire.nufft.</span></span><span class="sig-name descname"><span class="pre">anufft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sig_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fourier_pts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">real</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.nufft.anufft" title="Link to this definition">¶</a></dt>
+<dd><p>Wrapper for 1, 2, and 3 dimensional Non Uniform FFT Adjoint.
+Dimension is based on the dimension of fourier_pts and checked against sig_f.</p>
+<p>Selects best available package from <cite>nfft</cite> <cite>backends</cite> configuration list.</p>
+<p>When sig_f is provided as a CuPy GPU array with a cufinufft
+backend, result is maintained on GPU.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sig_f</strong> – Array representing the signal(s) in Fourier space to be transformed.     sig_f either matches length of fourier_pts or sig_f.shape is stack of (<cite>ntransforms</cite>, …).</p></li>
+<li><p><strong>fourier_pts</strong> – The points in Fourier space where the Fourier transform is to be calculated,
+arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.</p></li>
+<li><p><strong>sz</strong> – A tuple indicating the geometry of the signal.</p></li>
+<li><p><strong>real</strong> – Optional Bool indicating if you would like only the real components, Defaults False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Non Uniform FFT adjoint transform.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.nufft.backend_available">
+<span class="sig-prename descclassname"><span class="pre">aspire.nufft.</span></span><span class="sig-name descname"><span class="pre">backend_available</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backend</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.nufft.backend_available" title="Link to this definition">¶</a></dt>
+<dd><p>Whether a particular NFFT backend is available</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>backend</strong> – String representing the NFFT backend, e.g. ‘finufft’ or ‘pynfft’</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Boolean on whether the backend is available</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.nufft.check_backends">
+<span class="sig-prename descclassname"><span class="pre">aspire.nufft.</span></span><span class="sig-name descname"><span class="pre">check_backends</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raise_errors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.nufft.check_backends" title="Link to this definition">¶</a></dt>
+<dd><p>Check all NFFT backends in package configuration</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>raise_errors</strong> – Whether to raise a RuntimeError if no backends detected.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>On return, the global names ‘backends’/’default_plan_class’ have been populated</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.nufft.nufft">
+<span class="sig-prename descclassname"><span class="pre">aspire.nufft.</span></span><span class="sig-name descname"><span class="pre">nufft</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sig_f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fourier_pts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">real</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.nufft.nufft" title="Link to this definition">¶</a></dt>
+<dd><p>Wrapper for 1, 2, and 3 dimensional Non Uniform FFT
+Dimension is based on the dimension of fourier_pts and checked against sig_f.</p>
+<p>Selects best available package from <cite>nfft</cite> <cite>backends</cite> configuration list.</p>
+<p>When sig_f is provided as a CuPy GPU array with a cufinufft
+backend, result is maintained on GPU.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sig_f</strong> – Array representing the signal(s) in real space to be transformed.     sig_f either matches <cite>sz</cite> or sig_f.shape is stack of (…, <cite>ntransforms</cite>).</p></li>
+<li><p><strong>fourier_pts</strong> – The points in Fourier space where the Fourier transform is to be calculated,
+arranged as a dimension-by-K array. These need to be in the range [-pi, pi] in each dimension.</p></li>
+<li><p><strong>real</strong> – Optional Bool indicating if you would like only the real components, Defaults False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Non Uniform FFT transform.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.noise.html" class="btn btn-neutral float-left" title="aspire.noise package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.numeric.html" class="btn btn-neutral float-right" title="aspire.numeric package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

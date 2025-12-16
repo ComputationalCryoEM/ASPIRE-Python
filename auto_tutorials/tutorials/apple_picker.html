@@ -1,0 +1,390 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apple Picker &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Basic Image Array" href="basic_image_array.html" />
+    <link rel="prev" title="ASPIRE Image Class" href="image_class.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Tutorials</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../index.html#api-introduction">API Introduction</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#component-examples">Component Examples</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="index.html">Component Examples</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="cov2d_simulation.html">2D Covariance Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="orient3d_simulation.html">3D Image Orientation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_class.html">ASPIRE Image Class</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Apple Picker</a></li>
+<li class="toctree-l4"><a class="reference internal" href="basic_image_array.html">Basic Image Array</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ctf.html">CTF: Contrast Transfer Function</a></li>
+<li class="toctree-l4"><a class="reference internal" href="class_averaging.html">Class Averaging</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cov3d_simulation.html">Covariance 3D Estimation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="data_downloader.html">Data Downloader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="generating_volume_projections.html">Generating 3D Volume Projections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_expansion.html">Image Expansion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="preprocess_imgs_sim.html">Image Preprocessing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="micrograph_source.html">Micrograph Sources</a></li>
+<li class="toctree-l4"><a class="reference internal" href="relion_projection_interop.html">Relion Projection Interoperability</a></li>
+<li class="toctree-l4"><a class="reference internal" href="starfile.html">Starfile</a></li>
+<li class="toctree-l4"><a class="reference internal" href="weighted_volume_estimation.html">Weighted Volume Reconstruction</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Tutorials</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Component Examples</a></li>
+      <li class="breadcrumb-item active">Apple Picker</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/auto_tutorials/tutorials/apple_picker.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-tutorials-tutorials-apple-picker-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="apple-picker">
+<span id="sphx-glr-auto-tutorials-tutorials-apple-picker-py"></span><h1>Apple Picker<a class="headerlink" href="#apple-picker" title="Link to this heading">¶</a></h1>
+<p>We demonstrate ASPIRE’s particle picking methods using the <code class="docutils literal notranslate"><span class="pre">Apple</span></code> class.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mrcfile</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.apple.apple</span><span class="w"> </span><span class="kn">import</span> <span class="n">Apple</span>
+</pre></div>
+</div>
+<section id="read-and-plot-micrograph">
+<h2>Read and Plot Micrograph<a class="headerlink" href="#read-and-plot-micrograph" title="Link to this heading">¶</a></h2>
+<p>Here we demonstrate reading in and plotting a raw micrograph.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()),</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;falcon_2012_06_12-14_33_35_0.mrc&quot;</span>
+<span class="p">)</span>
+
+<span class="k">with</span> <span class="n">mrcfile</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">mrc</span><span class="p">:</span>
+    <span class="n">micro_img</span> <span class="o">=</span> <span class="n">mrc</span><span class="o">.</span><span class="n">data</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Sample Micrograph&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">micro_img</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_apple_picker_001.png" srcset="../../_images/sphx_glr_apple_picker_001.png" alt="Sample Micrograph" class = "sphx-glr-single-img"/></section>
+<section id="initialize-apple">
+<h2>Initialize Apple<a class="headerlink" href="#initialize-apple" title="Link to this heading">¶</a></h2>
+<p>Initiate ASPIRE’s <code class="docutils literal notranslate"><span class="pre">Apple</span></code> class.
+<code class="docutils literal notranslate"><span class="pre">Apple</span></code> admits many options relating to particle sizing and mrc processing.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">apple_picker</span> <span class="o">=</span> <span class="n">Apple</span><span class="p">(</span>
+    <span class="n">particle_size</span><span class="o">=</span><span class="mi">78</span><span class="p">,</span> <span class="n">min_particle_size</span><span class="o">=</span><span class="mi">19</span><span class="p">,</span> <span class="n">max_particle_size</span><span class="o">=</span><span class="mi">156</span><span class="p">,</span> <span class="n">tau1</span><span class="o">=</span><span class="mi">710</span><span class="p">,</span> <span class="n">tau2</span><span class="o">=</span><span class="mi">7100</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="pick-particles-and-find-centers">
+<h2>Pick Particles and Find Centers<a class="headerlink" href="#pick-particles-and-find-centers" title="Link to this heading">¶</a></h2>
+<p>Here we use the <code class="docutils literal notranslate"><span class="pre">process_micrograph</span></code> method from the <code class="docutils literal notranslate"><span class="pre">Apple</span></code> class to find particles in the micrograph.
+It will also return an image suitable for display, and optionally save a jpg.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">centers</span><span class="p">,</span> <span class="n">particles_img</span> <span class="o">=</span> <span class="n">apple_picker</span><span class="o">.</span><span class="n">process_micrograph</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">create_jpg</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Note that if you only desire ``centers`` you may call ``process_micrograph_centers(file_path,...)``.</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>  0%|          | 0/256 [00:00&lt;?, ?it/s]
+  0%|          | 1/256 [00:00&lt;02:33,  1.66it/s]
+  1%|          | 3/256 [00:00&lt;00:49,  5.13it/s]
+  2%|▏         | 5/256 [00:01&lt;01:01,  4.08it/s]
+  3%|▎         | 8/256 [00:01&lt;00:35,  7.08it/s]
+  4%|▍         | 10/256 [00:02&lt;00:46,  5.24it/s]
+  5%|▌         | 13/256 [00:02&lt;00:47,  5.08it/s]
+  6%|▌         | 15/256 [00:02&lt;00:37,  6.42it/s]
+  7%|▋         | 17/256 [00:03&lt;00:43,  5.56it/s]
+  7%|▋         | 19/256 [00:03&lt;00:33,  6.98it/s]
+  8%|▊         | 21/256 [00:03&lt;00:41,  5.69it/s]
+  9%|▊         | 22/256 [00:03&lt;00:38,  6.12it/s]
+  9%|▉         | 24/256 [00:04&lt;00:38,  6.02it/s]
+ 10%|▉         | 25/256 [00:04&lt;00:36,  6.35it/s]
+ 10%|█         | 26/256 [00:04&lt;00:34,  6.58it/s]
+ 11%|█         | 28/256 [00:04&lt;00:37,  6.02it/s]
+ 11%|█▏        | 29/256 [00:05&lt;00:35,  6.41it/s]
+ 12%|█▏        | 30/256 [00:05&lt;00:33,  6.72it/s]
+ 12%|█▏        | 31/256 [00:05&lt;00:38,  5.82it/s]
+ 13%|█▎        | 33/256 [00:05&lt;00:36,  6.14it/s]
+ 14%|█▎        | 35/256 [00:06&lt;00:36,  6.04it/s]
+ 14%|█▍        | 37/256 [00:06&lt;00:35,  6.21it/s]
+ 15%|█▍        | 38/256 [00:06&lt;00:34,  6.34it/s]
+ 16%|█▌        | 40/256 [00:06&lt;00:34,  6.20it/s]
+ 16%|█▋        | 42/256 [00:07&lt;00:33,  6.48it/s]
+ 17%|█▋        | 44/256 [00:07&lt;00:33,  6.36it/s]
+ 18%|█▊        | 45/256 [00:07&lt;00:31,  6.68it/s]
+ 18%|█▊        | 46/256 [00:07&lt;00:35,  5.85it/s]
+ 19%|█▉        | 48/256 [00:08&lt;00:33,  6.14it/s]
+ 19%|█▉        | 49/256 [00:08&lt;00:32,  6.40it/s]
+ 20%|█▉        | 50/256 [00:08&lt;00:31,  6.62it/s]
+ 20%|█▉        | 51/256 [00:08&lt;00:29,  7.03it/s]
+ 20%|██        | 52/256 [00:08&lt;00:32,  6.37it/s]
+ 21%|██        | 54/256 [00:09&lt;00:36,  5.49it/s]
+ 22%|██▏       | 56/256 [00:09&lt;00:27,  7.21it/s]
+ 22%|██▏       | 57/256 [00:09&lt;00:33,  5.85it/s]
+ 23%|██▎       | 58/256 [00:09&lt;00:36,  5.41it/s]
+ 23%|██▎       | 60/256 [00:09&lt;00:27,  7.04it/s]
+ 24%|██▍       | 61/256 [00:10&lt;00:33,  5.82it/s]
+ 24%|██▍       | 62/256 [00:10&lt;00:32,  5.94it/s]
+ 25%|██▌       | 64/256 [00:10&lt;00:32,  5.96it/s]
+ 25%|██▌       | 65/256 [00:10&lt;00:31,  6.06it/s]
+ 26%|██▌       | 67/256 [00:11&lt;00:27,  6.85it/s]
+ 27%|██▋       | 68/256 [00:11&lt;00:34,  5.40it/s]
+ 28%|██▊       | 71/256 [00:11&lt;00:30,  6.11it/s]
+ 29%|██▊       | 73/256 [00:12&lt;00:27,  6.59it/s]
+ 29%|██▉       | 74/256 [00:12&lt;00:27,  6.66it/s]
+ 29%|██▉       | 75/256 [00:12&lt;00:30,  5.96it/s]
+ 30%|██▉       | 76/256 [00:12&lt;00:29,  6.08it/s]
+ 30%|███       | 77/256 [00:12&lt;00:28,  6.25it/s]
+ 30%|███       | 78/256 [00:12&lt;00:26,  6.65it/s]
+ 31%|███▏      | 80/256 [00:13&lt;00:32,  5.41it/s]
+ 32%|███▏      | 82/256 [00:13&lt;00:23,  7.42it/s]
+ 33%|███▎      | 84/256 [00:13&lt;00:31,  5.50it/s]
+ 34%|███▍      | 87/256 [00:14&lt;00:29,  5.66it/s]
+ 35%|███▍      | 89/256 [00:14&lt;00:24,  6.84it/s]
+ 35%|███▌      | 90/256 [00:14&lt;00:26,  6.25it/s]
+ 36%|███▌      | 91/256 [00:15&lt;00:30,  5.46it/s]
+ 37%|███▋      | 94/256 [00:15&lt;00:28,  5.69it/s]
+ 37%|███▋      | 95/256 [00:15&lt;00:27,  5.95it/s]
+ 38%|███▊      | 97/256 [00:15&lt;00:20,  7.64it/s]
+ 38%|███▊      | 98/256 [00:16&lt;00:30,  5.23it/s]
+ 39%|███▉      | 101/256 [00:16&lt;00:22,  6.79it/s]
+ 40%|███▉      | 102/256 [00:16&lt;00:27,  5.51it/s]
+ 41%|████      | 105/256 [00:17&lt;00:25,  6.02it/s]
+ 41%|████▏     | 106/256 [00:17&lt;00:25,  5.79it/s]
+ 42%|████▏     | 108/256 [00:17&lt;00:20,  7.34it/s]
+ 43%|████▎     | 109/256 [00:18&lt;00:27,  5.40it/s]
+ 43%|████▎     | 111/256 [00:18&lt;00:19,  7.26it/s]
+ 44%|████▍     | 113/256 [00:18&lt;00:25,  5.53it/s]
+ 45%|████▌     | 116/256 [00:19&lt;00:22,  6.11it/s]
+ 46%|████▌     | 117/256 [00:19&lt;00:23,  5.84it/s]
+ 46%|████▋     | 119/256 [00:19&lt;00:18,  7.51it/s]
+ 47%|████▋     | 121/256 [00:19&lt;00:22,  5.95it/s]
+ 48%|████▊     | 123/256 [00:20&lt;00:20,  6.36it/s]
+ 48%|████▊     | 124/256 [00:20&lt;00:22,  5.77it/s]
+ 49%|████▉     | 126/256 [00:20&lt;00:21,  6.03it/s]
+ 50%|████▉     | 127/256 [00:20&lt;00:21,  6.06it/s]
+ 50%|█████     | 129/256 [00:21&lt;00:19,  6.67it/s]
+ 51%|█████     | 130/256 [00:21&lt;00:20,  6.15it/s]
+ 52%|█████▏    | 132/256 [00:21&lt;00:20,  5.91it/s]
+ 52%|█████▏    | 133/256 [00:21&lt;00:19,  6.28it/s]
+ 52%|█████▏    | 134/256 [00:22&lt;00:18,  6.50it/s]
+ 53%|█████▎    | 136/256 [00:22&lt;00:18,  6.58it/s]
+ 54%|█████▍    | 138/256 [00:22&lt;00:19,  6.04it/s]
+ 54%|█████▍    | 139/256 [00:22&lt;00:18,  6.18it/s]
+ 55%|█████▌    | 141/256 [00:23&lt;00:20,  5.67it/s]
+ 56%|█████▌    | 143/256 [00:23&lt;00:15,  7.09it/s]
+ 56%|█████▋    | 144/256 [00:23&lt;00:18,  5.95it/s]
+ 57%|█████▋    | 145/256 [00:23&lt;00:18,  6.16it/s]
+ 57%|█████▋    | 146/256 [00:23&lt;00:16,  6.72it/s]
+ 57%|█████▋    | 147/256 [00:24&lt;00:18,  5.80it/s]
+ 58%|█████▊    | 149/256 [00:24&lt;00:18,  5.94it/s]
+ 59%|█████▊    | 150/256 [00:24&lt;00:19,  5.41it/s]
+ 59%|█████▉    | 152/256 [00:24&lt;00:13,  7.51it/s]
+ 60%|█████▉    | 153/256 [00:25&lt;00:18,  5.67it/s]
+ 60%|██████    | 154/256 [00:25&lt;00:18,  5.39it/s]
+ 61%|██████▏   | 157/256 [00:25&lt;00:19,  5.15it/s]
+ 62%|██████▎   | 160/256 [00:26&lt;00:12,  7.46it/s]
+ 63%|██████▎   | 162/256 [00:26&lt;00:15,  6.20it/s]
+ 64%|██████▍   | 164/256 [00:26&lt;00:14,  6.30it/s]
+ 64%|██████▍   | 165/256 [00:27&lt;00:16,  5.51it/s]
+ 65%|██████▌   | 167/256 [00:27&lt;00:12,  7.14it/s]
+ 66%|██████▌   | 168/256 [00:27&lt;00:17,  5.13it/s]
+ 66%|██████▋   | 170/256 [00:28&lt;00:16,  5.33it/s]
+ 67%|██████▋   | 172/256 [00:28&lt;00:14,  5.93it/s]
+ 68%|██████▊   | 174/256 [00:28&lt;00:15,  5.25it/s]
+ 69%|██████▉   | 177/256 [00:29&lt;00:12,  6.40it/s]
+ 70%|██████▉   | 178/256 [00:29&lt;00:14,  5.56it/s]
+ 71%|███████   | 181/256 [00:29&lt;00:12,  6.00it/s]
+ 71%|███████   | 182/256 [00:29&lt;00:11,  6.32it/s]
+ 71%|███████▏  | 183/256 [00:30&lt;00:11,  6.46it/s]
+ 72%|███████▏  | 185/256 [00:30&lt;00:11,  6.10it/s]
+ 73%|███████▎  | 187/256 [00:30&lt;00:11,  6.09it/s]
+ 73%|███████▎  | 188/256 [00:30&lt;00:11,  6.18it/s]
+ 74%|███████▍  | 190/256 [00:31&lt;00:09,  6.78it/s]
+ 75%|███████▍  | 191/256 [00:31&lt;00:11,  5.59it/s]
+ 75%|███████▌  | 193/256 [00:31&lt;00:08,  7.56it/s]
+ 76%|███████▌  | 194/256 [00:32&lt;00:12,  5.01it/s]
+ 77%|███████▋  | 197/256 [00:32&lt;00:09,  6.46it/s]
+ 77%|███████▋  | 198/256 [00:32&lt;00:10,  5.61it/s]
+ 78%|███████▊  | 200/256 [00:32&lt;00:07,  7.24it/s]
+ 79%|███████▊  | 201/256 [00:33&lt;00:09,  5.79it/s]
+ 79%|███████▉  | 202/256 [00:33&lt;00:09,  5.53it/s]
+ 80%|███████▉  | 204/256 [00:33&lt;00:07,  7.29it/s]
+ 80%|████████  | 205/256 [00:33&lt;00:09,  5.32it/s]
+ 80%|████████  | 206/256 [00:33&lt;00:08,  5.85it/s]
+ 81%|████████▏ | 208/256 [00:34&lt;00:07,  6.49it/s]
+ 82%|████████▏ | 210/256 [00:34&lt;00:07,  6.02it/s]
+ 82%|████████▏ | 211/256 [00:34&lt;00:06,  6.52it/s]
+ 83%|████████▎ | 212/256 [00:34&lt;00:06,  6.95it/s]
+ 83%|████████▎ | 213/256 [00:35&lt;00:08,  5.19it/s]
+ 84%|████████▎ | 214/256 [00:35&lt;00:07,  5.87it/s]
+ 84%|████████▍ | 216/256 [00:35&lt;00:06,  6.49it/s]
+ 85%|████████▍ | 217/256 [00:35&lt;00:07,  5.41it/s]
+ 86%|████████▌ | 219/256 [00:35&lt;00:05,  7.39it/s]
+ 86%|████████▌ | 220/256 [00:36&lt;00:06,  5.73it/s]
+ 86%|████████▋ | 221/256 [00:36&lt;00:06,  5.33it/s]
+ 87%|████████▋ | 223/256 [00:36&lt;00:04,  7.50it/s]
+ 88%|████████▊ | 225/256 [00:37&lt;00:05,  5.87it/s]
+ 88%|████████▊ | 226/256 [00:37&lt;00:04,  6.23it/s]
+ 89%|████████▉ | 228/256 [00:37&lt;00:05,  4.83it/s]
+ 90%|████████▉ | 230/256 [00:37&lt;00:03,  6.55it/s]
+ 91%|█████████ | 232/256 [00:38&lt;00:04,  5.39it/s]
+ 91%|█████████▏| 234/256 [00:38&lt;00:03,  7.04it/s]
+ 92%|█████████▏| 236/256 [00:38&lt;00:03,  5.54it/s]
+ 93%|█████████▎| 239/256 [00:39&lt;00:02,  5.97it/s]
+ 94%|█████████▍| 240/256 [00:39&lt;00:02,  6.07it/s]
+ 94%|█████████▍| 241/256 [00:39&lt;00:02,  6.25it/s]
+ 95%|█████████▍| 243/256 [00:40&lt;00:02,  6.02it/s]
+ 95%|█████████▌| 244/256 [00:40&lt;00:02,  5.64it/s]
+ 96%|█████████▋| 247/256 [00:40&lt;00:01,  6.15it/s]
+ 97%|█████████▋| 248/256 [00:40&lt;00:01,  5.85it/s]
+ 98%|█████████▊| 250/256 [00:41&lt;00:00,  7.30it/s]
+ 98%|█████████▊| 251/256 [00:41&lt;00:00,  5.47it/s]
+ 99%|█████████▉| 253/256 [00:41&lt;00:00,  7.09it/s]
+ 99%|█████████▉| 254/256 [00:41&lt;00:00,  6.07it/s]
+100%|█████████▉| 255/256 [00:41&lt;00:00,  6.57it/s]
+100%|██████████| 256/256 [00:41&lt;00:00,  6.10it/s]
+</pre></div>
+</div>
+</section>
+<section id="plot-the-picked-particles">
+<h2>Plot the Picked Particles<a class="headerlink" href="#plot-the-picked-particles" title="Link to this heading">¶</a></h2>
+<p>Observe the number of particles picked and plot the result from <code class="docutils literal notranslate"><span class="pre">Apple</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">img_dim</span> <span class="o">=</span> <span class="n">micro_img</span><span class="o">.</span><span class="n">shape</span>
+<span class="n">particles</span> <span class="o">=</span> <span class="n">centers</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dimensions of the micrograph are </span><span class="si">{</span><span class="n">img_dim</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">particles</span><span class="si">}</span><span class="s2"> particles were picked&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">particles_img</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_apple_picker_002.png" srcset="../../_images/sphx_glr_apple_picker_002.png" alt="apple picker" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Dimensions of the micrograph are (4096, 4096)
+461 particles were picked
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 54.562 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-tutorials-tutorials-apple-picker-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/cec1386866e1bc8868777fe2012bfb43/apple_picker.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">apple_picker.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/004f7a0d822d7ab7e2417aa5e870b8ce/apple_picker.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">apple_picker.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/8df3abedd3ecfbdcca2b0bcf3e1801f6/apple_picker.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">apple_picker.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="image_class.html" class="btn btn-neutral float-left" title="ASPIRE Image Class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="basic_image_array.html" class="btn btn-neutral float-right" title="Basic Image Array" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

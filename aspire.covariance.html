@@ -1,0 +1,492 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.covariance package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.ctf package" href="aspire.ctf.html" />
+    <link rel="prev" title="aspire.commands package" href="aspire.commands.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.utils.html">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.covariance package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.covariance.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-covariance-package">
+<h1>aspire.covariance package<a class="headerlink" href="#aspire-covariance-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.covariance.covar">
+<span id="aspire-covariance-covar-module"></span><h2>aspire.covariance.covar module<a class="headerlink" href="#module-aspire.covariance.covar" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.covariance.covar.CovarianceEstimator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.covariance.covar.</span></span><span class="sig-name descname"><span class="pre">CovarianceEstimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar.CovarianceEstimator" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="aspire.reconstruction.html#aspire.reconstruction.estimator.Estimator" title="aspire.reconstruction.estimator.Estimator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Estimator</span></code></a></p>
+<p>An object representing a 2*L-by-2*L-by-2*L array containing the non-centered Fourier transform of the mean
+least-squares estimator kernel.
+Convolving a volume with this kernel is equal to projecting and backproject-ing that volume in each of the
+projection directions (with the appropriate amplitude multipliers and CTFs) and averaging over the whole
+dataset.
+Note that this is a non-centered Fourier transform, so the zero frequency is found at index 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – <cite>ImageSource</cite> to be used for estimation.</p></li>
+<li><p><strong>basis</strong> – 3D Basis to be used during estimation.</p></li>
+<li><p><strong>batch_size</strong> – Optional batch size of images drawn from
+<cite>src</cite> during back projection and kernel estimation steps.
+Reducing batch size should reduce memory footprint.</p></li>
+<li><p><strong>preconditioner</strong> – Optional kernel preconditioner (<cite>string</cite>).
+Currently supported options are “circulant” or None.</p></li>
+<li><p><strong>checkpoint_iterations</strong> – Optionally save <cite>cg</cite> estimated
+<cite>basis</cite> coefficients periodically each
+<cite>checkpoint_iterations</cite>.  Setting to <cite>None</cite> disables,
+otherwise checks for positive integer.  Note, when
+<cite>maxiter</cite> is not <cite>None</cite> and <cite>cg</cite> fails to converge a final
+checkpoint will still be written.</p></li>
+<li><p><strong>checkpoint_prefix</strong> – Optional path prefix for <cite>cg</cite>
+checkpoint files.  If the parent directory does not exist,
+creation is attempted.  <cite>_iter{N}</cite> will be appended to the
+prefix.</p></li>
+<li><p><strong>maxiter</strong> – Optional max number of <cite>cg</cite> iterations
+before returning.  This should be used in conjunction with
+<cite>checkpoint_iterations</cite> to prevent excessive disk usage.
+<cite>None</cite> disables.</p></li>
+<li><p><strong>boost</strong> – Option to use <cite>src</cite> symmetry to boost number of images used for mean estimation (Boolean).
+Default of <cite>True</cite> employs symmetry boosting.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar.CovarianceEstimator.apply_kernel">
+<span class="sig-name descname"><span class="pre">apply_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">packed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar.CovarianceEstimator.apply_kernel" title="Link to this definition">¶</a></dt>
+<dd><p>Applies the kernel represented by convolution</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coef</strong> – The volume matrix (6 dimensions) to be convolved (but see the <cite>packed</cite> argument below).</p></li>
+<li><p><strong>kernel</strong> – a Kernel object. If None, the kernel for this Estimator is used.</p></li>
+<li><p><strong>packed</strong> – whether the <cite>coef</cite> matrix represents an isometrically mapped packed vector,
+through the <cite>symmat_to_vec_iso</cite> function. In this case, the function expands <cite>coef</cite> into a symmetric
+matrix internally, and returns a packed vector in return.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The result of evaluating <cite>coef</cite> in the given basis, convolving with the kernel given by
+kernel, and backprojecting into the basis. If <cite>packed</cite> is True, then the isometrically mapped packed
+vector is returned instead.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar.CovarianceEstimator.compute_kernel">
+<span class="sig-name descname"><span class="pre">compute_kernel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar.CovarianceEstimator.compute_kernel" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar.CovarianceEstimator.conj_grad">
+<span class="sig-name descname"><span class="pre">conj_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b_coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar.CovarianceEstimator.conj_grad" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar.CovarianceEstimator.estimate">
+<span class="sig-name descname"><span class="pre">estimate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean_vol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_variance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularizer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar.CovarianceEstimator.estimate" title="Link to this definition">¶</a></dt>
+<dd><p>Return an estimate as a Volume instance.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar.CovarianceEstimator.src_backward">
+<span class="sig-name descname"><span class="pre">src_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean_vol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_variance</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shrink_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar.CovarianceEstimator.src_backward" title="Link to this definition">¶</a></dt>
+<dd><p>Apply adjoint mapping to source</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The sum of the outer products of the mean-subtracted images in <cite>src</cite>, corrected by the expected noise
+contribution and expressed as coefficients of <cite>basis</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.covariance.covar2d">
+<span id="aspire-covariance-covar2d-module"></span><h2>aspire.covariance.covar2d module<a class="headerlink" href="#module-aspire.covariance.covar2d" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.covariance.covar2d.BatchedRotCov2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.covariance.covar2d.</span></span><span class="sig-name descname"><span class="pre">BatchedRotCov2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8192</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar2d.BatchedRotCov2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.covariance.covar2d.RotCov2D" title="aspire.covariance.covar2d.RotCov2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">RotCov2D</span></code></a></p>
+<p>Perform batchwise rotationally equivariant 2D covariance estimation from an
+<cite>ImageSource</cite> objects. This is done with a single pass through the data,
+processing moderately-sized batches one at a time. The rotational
+equivariance is achieved by decomposing images in a steerable Fourier–Bessel
+basis. For more information, see</p>
+<blockquote>
+<div><p>T. Bhamre, T. Zhang, and A. Singer, “Denoising and covariance estimation
+of single particle cryo-EM images”, J. Struct. Biol. 195, 27-81 (2016).
+DOI: 10.1016/j.jsb.2016.04.013</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>src</strong> – The <cite>ImageSource</cite> object from which the sample images are to
+be extracted.</p></li>
+<li><p><strong>basis</strong> – The <cite>FBBasis2D</cite> object used to decompose the images. By
+default, this is set to <cite>FFBBasis2D((src.L, src.L))</cite>.</p></li>
+<li><p><strong>batch_size</strong> – The number of images to process at a time (default 8192).</p></li>
+</ul>
+</dd>
+</dl>
+<p>constructor of an object for 2D covariance analysis</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar2d.BatchedRotCov2D.get_covar">
+<span class="sig-name descname"><span class="pre">get_covar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">noise_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_coef</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covar_est_opt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_psd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar2d.BatchedRotCov2D.get_covar" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the block diagonal covariance matrix in the basis
+coefficients.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>noise_var</strong> – The variance of the noise in the images (default 1)</p></li>
+<li><p><strong>mean_coef</strong> – If specified, overrides the mean coefficient vector
+used to calculate the covariance (default <cite>self.get_mean()</cite>).</p></li>
+<li><p><strong>:covar_est_opt</strong> – <p>The estimation parameters for obtaining the covariance
+matrix in the form of a dictionary. Keys include:
+- ‘shrinker’: The type of shrinkage we apply to the right-hand side</p>
+<blockquote>
+<div><p>in the normal equations. Can be <cite>‘None’</cite>, in which case no
+shrinkage is performed. For a list of shrinkers, see the
+documentation of <cite>shrink_covar</cite>.</p>
+</div></blockquote>
+<ul>
+<li><p>’verbose’: Verbosity (integer) of the conjugate gradient algorithm
+(see documentation for <cite>conj_grad</cite>, default zero).</p></li>
+<li><p>’max_iter’: Maximum number of conjugate gradient iterations (see
+documentation for <cite>conj_grad</cite>, default 250).</p></li>
+<li><p>’iter_callback’: Callback performed at the end of an iteration
+(see documentation for <cite>conj_grad</cite>, default <cite>[]</cite>).</p></li>
+<li><p>’store_iterates’: Determines whether to store intermediate
+iterates (see documentation for <cite>conj_grad</cite>, default <cite>False</cite>).</p></li>
+<li><p>’rel_tolerance’: Relative stopping tolerance of the conjugate
+gradient algorithm (see documentation for <cite>conj_grad</cite>, default
+<cite>1e-12</cite>).</p></li>
+<li><p>’precision’: Precision of conjugate gradient algorithm (see
+documentation for <cite>conj_grad</cite>, default <cite>‘float64’</cite>)</p></li>
+</ul>
+</p></li>
+<li><p><strong>make_psd</strong> – If True, make the covariance matrix positive semidefinite</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The block diagonal matrix containing the basis coefficients (in
+<cite>self.basis</cite>) for the estimated covariance matrix. These are
+implemented using <cite>BlkDiagMatrix</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar2d.BatchedRotCov2D.get_cwf_coefs">
+<span class="sig-name descname"><span class="pre">get_cwf_coefs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coefs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctf_basis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctf_idx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covar_coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar2d.BatchedRotCov2D.get_cwf_coefs" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coefs</strong> – A coefficient vector (or an array of coefficient vectors) to be calculated.</p></li>
+<li><p><strong>ctf_basis</strong> – The CTF functions in the Basis expansion.</p></li>
+<li><p><strong>ctf_idx</strong> – An array of the CTF function indices for all 2D images.
+If ctf_basis or ctf_idx is None, the identity filter will be applied.</p></li>
+<li><p><strong>mean_coef</strong> – The mean value vector from all images.</p></li>
+<li><p><strong>covar_coef</strong> – The block diagonal covariance matrix of the clean coefficients represented by a cell array.</p></li>
+<li><p><strong>noise_var</strong> – The estimated variance of noise. The value should be zero for <cite>coefs</cite>
+from clean images of simulation data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The estimated coefficients of the unfiltered images in certain math basis.
+These are obtained using a Wiener filter with the specified covariance for the clean images
+and white noise of variance <cite>noise_var</cite> for the noise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar2d.BatchedRotCov2D.get_mean">
+<span class="sig-name descname"><span class="pre">get_mean</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar2d.BatchedRotCov2D.get_mean" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the rotationally invariant mean image in the basis
+coefficients.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The mean coefficient vector in <cite>self.basis</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.covariance.covar2d.RotCov2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.covariance.covar2d.</span></span><span class="sig-name descname"><span class="pre">RotCov2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basis</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar2d.RotCov2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Define a class for performing Cov2D analysis with CTF information described in</p>
+<p>T. Bhamre, T. Zhang, and A. Singer, “Denoising and covariance estimation of single particle cryo-EM images”,
+J. Struct. Biol. 195, 27-81 (2016). DOI: 10.1016/j.jsb.2016.04.013</p>
+<p>constructor of an object for 2D covariance analysis</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar2d.RotCov2D.get_covar">
+<span class="sig-name descname"><span class="pre">get_covar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coefs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctf_basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctf_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_coef</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">do_refl</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covar_est_opt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_psd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar2d.RotCov2D.get_covar" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the covariance matrix from the expansion coefficients and CTF information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coefs</strong> – A coefficient vector (or an array of coefficient vectors) to be calculated.</p></li>
+<li><p><strong>ctf_basis</strong> – The CTF functions in the Basis expansion.</p></li>
+<li><p><strong>ctf_idx</strong> – An array of the CTF function indices for all 2D images.
+If ctf_basis or ctf_idx is None, the identity filter will be applied.</p></li>
+<li><p><strong>mean_coef</strong> – The mean value vector from all images.</p></li>
+<li><p><strong>noise_var</strong> – The estimated variance of noise. The value should be zero for <cite>coefs</cite>
+from clean images of simulation data.</p></li>
+<li><p><strong>covar_est_opt</strong> – The optimization parameter list for obtaining the Cov2D matrix.</p></li>
+<li><p><strong>make_psd</strong> – If True, make the covariance matrix positive semidefinite</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The basis coefficients of the covariance matrix in
+the form of cell array representing a block diagonal matrix. These
+block diagonal matrices are implemented as BlkDiagMatrix instances.
+The covariance is calculated from the images represented by the coefs array,
+along with all possible rotations and reflections. As a result, the computed covariance
+matrix is invariant to both reflection and rotation. The effect of the filters in ctf_basis
+are accounted for and inverted to yield a covariance estimate of the unfiltered images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar2d.RotCov2D.get_cwf_coefs">
+<span class="sig-name descname"><span class="pre">get_cwf_coefs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coefs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctf_basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctf_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mean_coef</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covar_coef</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_var</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar2d.RotCov2D.get_cwf_coefs" title="Link to this definition">¶</a></dt>
+<dd><p>Estimate the expansion coefficients using the Covariance Wiener Filtering (CWF) method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coefs</strong> – A coefficient vector (or an array of coefficient vectors) to be calculated.</p></li>
+<li><p><strong>ctf_basis</strong> – The CTF functions in the Basis expansion.</p></li>
+<li><p><strong>ctf_idx</strong> – An array of the CTF function indices for all 2D images.
+If ctf_basis or ctf_idx is None, the identity filter will be applied.</p></li>
+<li><p><strong>mean_coef</strong> – The mean value vector from all images.</p></li>
+<li><p><strong>covar_coef</strong> – The block diagonal covariance matrix of the clean coefficients represented by a cell array.</p></li>
+<li><p><strong>noise_var</strong> – The estimated variance of noise. The value should be zero for <cite>coefs</cite>
+from clean images of simulation data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The estimated coefficients of the unfiltered images in certain math basis.
+These are obtained using a Wiener filter with the specified covariance for the clean images
+and white noise of variance <cite>noise_var</cite> for the noise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar2d.RotCov2D.get_mean">
+<span class="sig-name descname"><span class="pre">get_mean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coefs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctf_basis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ctf_idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar2d.RotCov2D.get_mean" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the mean vector from the expansion coefficients with CTF information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>coefs</strong> – A coefficient vector (or an array of coefficient vectors) to be averaged.</p></li>
+<li><p><strong>ctf_basis</strong> – The CTF functions in the Basis expansion.</p></li>
+<li><p><strong>ctf_idx</strong> – An array of the CTF function indices for all 2D images.
+If ctf_basis or ctf_idx is None, the identity filter will be applied.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The mean value vector for all images.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.covariance.covar2d.RotCov2D.shrink_covar_backward">
+<span class="sig-name descname"><span class="pre">shrink_covar_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b_noise</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shrinker</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar2d.RotCov2D.shrink_covar_backward" title="Link to this definition">¶</a></dt>
+<dd><p>Apply the shrinking method to the 2D covariance of coefficients.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>b</strong> – An input coefficient covariance.</p></li>
+<li><p><strong>b_noise</strong> – The noise covariance.</p></li>
+<li><p><strong>noise_var</strong> – The estimated variance of noise.</p></li>
+<li><p><strong>shrinker</strong> – The shrinking method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The shrinked 2D covariance coefficients.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.covariance.covar2d.shrink_covar">
+<span class="sig-prename descclassname"><span class="pre">aspire.covariance.covar2d.</span></span><span class="sig-name descname"><span class="pre">shrink_covar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">covar</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_var</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gamma</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shrinker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'frobenius_norm'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.covariance.covar2d.shrink_covar" title="Link to this definition">¶</a></dt>
+<dd><p>Shrink the covariance matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>covar_in</strong> – An input covariance matrix</p></li>
+<li><p><strong>noise_var</strong> – The estimated variance of noise</p></li>
+<li><p><strong>gamma</strong> – An input parameter to specify the maximum values of eigen values to be neglected.</p></li>
+<li><p><strong>shrinker</strong> – An input parameter to select different shrinking methods.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The shrinked covariance matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.covariance">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.covariance" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.commands.html" class="btn btn-neutral float-left" title="aspire.commands package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.ctf.html" class="btn btn-neutral float-right" title="aspire.ctf package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

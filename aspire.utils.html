@@ -1,0 +1,1860 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aspire.utils package &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=0dc20415"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="aspire.volume package" href="aspire.volume.html" />
+    <link rel="prev" title="aspire.storage package" href="aspire.storage.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="aspire.html">aspire package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="aspire.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="aspire.abinitio.html">aspire.abinitio package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.apple.html">aspire.apple package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.basis.html">aspire.basis package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.classification.html">aspire.classification package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.commands.html">aspire.commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.covariance.html">aspire.covariance package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.ctf.html">aspire.ctf package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.denoising.html">aspire.denoising package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.downloader.html">aspire.downloader package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.image.html">aspire.image package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.noise.html">aspire.noise package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.nufft.html">aspire.nufft package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.numeric.html">aspire.numeric package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.operators.html">aspire.operators package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.optimization.html">aspire.optimization package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.reconstruction.html">aspire.reconstruction package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.sinogram.html">aspire.sinogram package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.source.html">aspire.source package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.storage.html">aspire.storage package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">aspire.utils package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="aspire.volume.html">aspire.volume package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#submodules">Submodules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire.exceptions">aspire.exceptions module</a></li>
+<li class="toctree-l3"><a class="reference internal" href="aspire.html#module-aspire">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Modules</a></li>
+          <li class="breadcrumb-item"><a href="aspire.html">aspire package</a></li>
+      <li class="breadcrumb-item active">aspire.utils package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aspire.utils.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="aspire-utils-package">
+<h1>aspire.utils package<a class="headerlink" href="#aspire-utils-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-aspire.utils.bot_align">
+<span id="aspire-utils-bot-align-module"></span><h2>aspire.utils.bot_align module<a class="headerlink" href="#module-aspire.utils.bot_align" title="Link to this heading">¶</a></h2>
+<p>This code is an ASPIRE port of Ruiyi Yang’s <cite>Bayesian Optimal Transport Alignment</cite>.</p>
+<p><cite>https://github.com/RuiyiYang/BOTalign</cite></p>
+<p><cite>https://arxiv.org/pdf/2305.12310.pdf</cite></p>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.bot_align.align_BO">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.bot_align.</span></span><span class="sig-name descname"><span class="pre">align_BO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vol_ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vol_given</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'wemd'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downsampled_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refinement_downsampled_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tau</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.001</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surrogate_max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">500</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surrogate_min_grad</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surrogate_min_step</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbosity</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.bot_align.align_BO" title="Link to this definition">¶</a></dt>
+<dd><p>This function returns a rotation matrix R that best aligns vol_ref with the rotated version of vol_given.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vol_ref</strong> – The reference <cite>Volume</cite></p></li>
+<li><p><strong>vol_given</strong> – The <cite>Volume</cite> to be aligned</p></li>
+<li><p><strong>loss_type</strong> – ‘wemd’ or ‘euclidean’. Default ‘wemd’.
+If the heterogeneity between vol_ref and vol_given is high, ‘euclidean’ is recommended.</p></li>
+<li><p><strong>loss_params</strong> – Optional dictionary for overriding parameters in <cite>aspire.utils.bot_align.loss_types</cite>.
+Defaults to empty dictionary.</p></li>
+<li><p><strong>downsampled_size</strong> – Downsampling (pixels). Integer, defaults to 32.
+If alignment fails try larger values.</p></li>
+<li><p><strong>refinement_downsampled_size</strong> – Downsampling (pixels) used with refinement. Integer, defaults to 32.</p></li>
+<li><p><strong>max_iters</strong> – Maximum iterations. Integer, defaults 200.
+If alignment fails try larger values.</p></li>
+<li><p><strong>refine</strong> – Whether to perform refinement. Boolean, defaults True.</p></li>
+<li><p><strong>tau</strong> – Regularization parameter for surrogate problems. Numeric, defaults 1e-3.</p></li>
+<li><p><strong>surrogate_max_iter</strong> – Stopping criterion for surrogate problems–maximum iterations. Interger, defaults 500.</p></li>
+<li><p><strong>surrogate_min_grad</strong> – Stopping criterion for surrogate problems–minimum gradient norm. Numeric, defaults 0.1.</p></li>
+<li><p><strong>surrogate_min_step</strong> – Stopping criterion for surrogate problems–minimum step size. Numeric, defaults 0.1.</p></li>
+<li><p><strong>verbosity</strong> – Surrogate problem optimization detail level. integer, defaults 0 (silent). 2 is most verbose.</p></li>
+<li><p><strong>dtype</strong> – Numeric dtype to perform computations with.
+Default <cite>None</cite> infers dtype from <cite>vol_ref</cite>.</p></li>
+<li><p><strong>seed</strong> – Random seed for reproducible results. Integer, defaults None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Rotation matrix R_init (without refinement) or (R_init, R_est) (with refinement).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.cell">
+<span id="aspire-utils-cell-module"></span><h2>aspire.utils.cell module<a class="headerlink" href="#module-aspire.utils.cell" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.utils.cell.Cell2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.utils.cell.</span></span><span class="sig-name descname"><span class="pre">Cell2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.cell.Cell2D" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Define a base class of Cell to perform similar cell functions in MATLAB.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.cell.Cell2D.mat2cell">
+<span class="sig-name descname"><span class="pre">mat2cell</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rows</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cols</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.cell.Cell2D.mat2cell" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.coor_trans">
+<span id="aspire-utils-coor-trans-module"></span><h2>aspire.utils.coor_trans module<a class="headerlink" href="#module-aspire.utils.coor_trans" title="Link to this heading">¶</a></h2>
+<p>General purpose math functions, mostly geometric in nature.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.coor_trans.cart2pol">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.coor_trans.</span></span><span class="sig-name descname"><span class="pre">cart2pol</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.coor_trans.cart2pol" title="Link to this definition">¶</a></dt>
+<dd><p>Convert Cartesian to Polar Coordinates. All input arguments must be the same shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – x-coordinate in Cartesian space</p></li>
+<li><p><strong>y</strong> – y-coordinate in Cartesian space</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A 2-tuple of values:
+theta: angular coordinate/azimuth
+r: radial distance from origin</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.coor_trans.cart2sph">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.coor_trans.</span></span><span class="sig-name descname"><span class="pre">cart2sph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.coor_trans.cart2sph" title="Link to this definition">¶</a></dt>
+<dd><p>Transform cartesian coordinates to spherical. All input arguments must be the same shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – X-values of input co-ordinates.</p></li>
+<li><p><strong>y</strong> – Y-values of input co-ordinates.</p></li>
+<li><p><strong>z</strong> – Z-values of input co-ordinates.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A 3-tuple of values, all of the same shape as the inputs.
+(&lt;azimuth&gt;, &lt;elevation&gt;, &lt;radius&gt;)
+azimuth and elevation are returned in radians.</p>
+</dd>
+</dl>
+<p>This function is equivalent to MATLAB’s cart2sph function.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.coor_trans.crop_pad_2d">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.coor_trans.</span></span><span class="sig-name descname"><span class="pre">crop_pad_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.coor_trans.crop_pad_2d" title="Link to this definition">¶</a></dt>
+<dd><p>Crop/pads <cite>im</cite> according to <cite>size</cite>.</p>
+<p>Padding will use <cite>fill_value</cite>.
+Return’s host/GPU array based on <cite>im</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>im</strong> – A &gt;=2-dimensional numpy array</p></li>
+<li><p><strong>size</strong> – Integer size of cropped/padded output</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array of shape (…, size, size)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.coor_trans.crop_pad_3d">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.coor_trans.</span></span><span class="sig-name descname"><span class="pre">crop_pad_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vol</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.coor_trans.crop_pad_3d" title="Link to this definition">¶</a></dt>
+<dd><p>Crop/pads <cite>vol</cite> according to <cite>size</cite>.</p>
+<p>Padding will use <cite>fill_value</cite>.
+Return’s host/GPU array based on <cite>vol</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vol</strong> – A &gt;=3-dimensional numpy array</p></li>
+<li><p><strong>size</strong> – Integer size of cropped/padded output</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array of shape (…, size, size, size)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.coor_trans.grid_1d">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.coor_trans.</span></span><span class="sig-name descname"><span class="pre">grid_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shifted=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.coor_trans.grid_1d" title="Link to this definition">¶</a></dt>
+<dd><p>Generate one dimensional grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – the number of grid points.</p></li>
+<li><p><strong>shifted</strong> – shifted by half of grid or not when n is even.</p></li>
+<li><p><strong>normalized</strong> – normalize the grid in the range of (-1, 1) or not.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the rectangular and polar coordinates of all grid points.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.coor_trans.grid_2d">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.coor_trans.</span></span><span class="sig-name descname"><span class="pre">grid_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shifted=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indexing='yx'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.coor_trans.grid_2d" title="Link to this definition">¶</a></dt>
+<dd><p>Generate two dimensional grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – the number of grid points in each dimension.</p></li>
+<li><p><strong>shifted</strong> – shifted by half of grid or not when n is even.</p></li>
+<li><p><strong>normalized</strong> – normalize the grid in the range of (-1, 1) or not.</p></li>
+<li><p><strong>indexing</strong> – ‘yx’ (C) or ‘xy’ (F), defaulting to ‘yx’.
+See <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html">https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html</a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the rectangular and polar coordinates of all grid points.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.coor_trans.grid_3d">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.coor_trans.</span></span><span class="sig-name descname"><span class="pre">grid_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shifted=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalized=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indexing='zyx'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.coor_trans.grid_3d" title="Link to this definition">¶</a></dt>
+<dd><p>Generate three dimensional grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – the number of grid points in each dimension.</p></li>
+<li><p><strong>shifted</strong> – shifted by half of grid or not when n is even.</p></li>
+<li><p><strong>normalized</strong> – normalize the grid in the range of (-1, 1) or not.</p></li>
+<li><p><strong>indexing</strong> – ‘zyx’ (C) or ‘xyz’ (F), defaulting to ‘zyx’.
+See <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html">https://numpy.org/doc/stable/reference/generated/numpy.meshgrid.html</a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the rectangular and spherical coordinates of all grid points.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.coor_trans.mean_aligned_angular_distance">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.coor_trans.</span></span><span class="sig-name descname"><span class="pre">mean_aligned_angular_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rots_est</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rots_gt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">degree_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.coor_trans.mean_aligned_angular_distance" title="Link to this definition">¶</a></dt>
+<dd><p>Register estimates to ground truth rotations and compute the
+mean angular distance between them (in degrees).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rots_est</strong> – A set of estimated rotations. A Rotation object or
+array of size nx3x3.</p></li>
+<li><p><strong>rots_gt</strong> – A set of ground truth rotations. A Rotation object or
+array of size nx3x3.</p></li>
+<li><p><strong>degree_tol</strong> – Option to assert if the mean angular distance is
+less than <cite>degree_tol</cite> degrees. If <cite>None</cite>, returns the mean
+aligned angular distance.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The mean angular distance between registered estimates
+and the ground truth (in degrees).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.coor_trans.rots_to_clmatrix">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.coor_trans.</span></span><span class="sig-name descname"><span class="pre">rots_to_clmatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rots</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_theta</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.coor_trans.rots_to_clmatrix" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the common lines matrix induced by all pairs of rotation
+matrices, <cite>rots</cite>, provided.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rots</strong> – n_rotsx3x3 array of rotation matrices.</p></li>
+<li><p><strong>n_theta</strong> – Number of theta values for common lines indices.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>n_rots x n_rots common lines matrix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.logging">
+<span id="aspire-utils-logging-module"></span><h2>aspire.utils.logging module<a class="headerlink" href="#module-aspire.utils.logging" title="Link to this heading">¶</a></h2>
+<p>Miscellaneous Utilities that relate to logging.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.utils.logging.LogFilterByCount">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.utils.logging.</span></span><span class="sig-name descname"><span class="pre">LogFilterByCount</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">logger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.logging.LogFilterByCount" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Provide a context manager for filtering repetitive log messages.</p>
+<p>Initialize context manager based on <cite>logger</cite> and <cite>max_count</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>logger</strong> – <cite>Logger</cite> instance.</p></li>
+<li><p><strong>max_count</strong> – Global limit for count of each message
+encountered inside context.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.logging.LogFilterByCount.filter">
+<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.logging.LogFilterByCount.filter" title="Link to this definition">¶</a></dt>
+<dd><p>Increment msg_cache for <cite>record</cite>.</p>
+<p><cite>filter</cite> returns True when <cite>seen</cite> &lt;= <cite>count</cite> for this context.
+True implies the logger will pass the message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>record</strong> – Log record.  Will be reduced by hash(str()),</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Boolean</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.utils.logging.LogFilterByCount.msg_cache">
+<span class="sig-name descname"><span class="pre">msg_cache</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{-8713993583177516547:</span> <span class="pre">1,</span> <span class="pre">-7608290335152573798:</span> <span class="pre">1,</span> <span class="pre">-5272505876521354839:</span> <span class="pre">1,</span> <span class="pre">-2227790048312309120:</span> <span class="pre">1,</span> <span class="pre">5234720925497538861:</span> <span class="pre">1,</span> <span class="pre">5345882658813249786:</span> <span class="pre">1,</span> <span class="pre">7429935204159554804:</span> <span class="pre">1}</span></em><a class="headerlink" href="#aspire.utils.logging.LogFilterByCount.msg_cache" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.logging.getConsoleLoggingLevel">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.logging.</span></span><span class="sig-name descname"><span class="pre">getConsoleLoggingLevel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.logging.getConsoleLoggingLevel" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the Python logging level of the root logger’s StreamHandler, i.e. console output.
+This is the same as the <cite>logging.console_level</cite> option in ASPIRE’s configuration file unless
+the console logging level has been changed dynamically during a session. (e.g. by a CLI option)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The current console logging level name as a string. One of “DEBUG”. “INFO”, “WARNING”,</p>
+</dd>
+</dl>
+<p>“ERROR”, “CRITICAL”.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.logging.getFileLoggingLevel">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.logging.</span></span><span class="sig-name descname"><span class="pre">getFileLoggingLevel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.logging.getFileLoggingLevel" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the Python logging level of the root logger’s FileHandler, i.e. log file output.
+This is the same as the <cite>logging.log_file_level</cite> option in ASPIRE’s configuration file
+unless the file logging level has been changed dynamically during a session. (e.g. by a CLI option)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The current file logging level name as a string. One of “DEBUG”, “INFO”, “WARNING”,</p>
+</dd>
+</dl>
+<p>“ERROR”, “CRITICAL”.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.logging.get_full_version">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.logging.</span></span><span class="sig-name descname"><span class="pre">get_full_version</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.logging.get_full_version" title="Link to this definition">¶</a></dt>
+<dd><p>Get as much version information as we can, including git info (if applicable)
+This method should never raise exceptions!</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><p>A version number in the form:
+&lt;maj&gt;.&lt;min&gt;.&lt;bld&gt;</p>
+<blockquote>
+<div><p>If we’re running as a package distributed through setuptools</p>
+</div></blockquote>
+<dl>
+<dt>&lt;maj&gt;.&lt;min&gt;.&lt;bld&gt;.&lt;rev&gt;</dt><dd><p>If we’re running as a ‘regular’ python source folder, possibly locally modified</p>
+<dl>
+<dt>&lt;rev&gt; is one of:</dt><dd><p>’src’: The package is running as a source folder
+&lt;git_tag&gt; or &lt;git_rev&gt; or &lt;git_rev&gt;-dirty: A git tag or commit revision, possibly followed by a suffix</p>
+<blockquote>
+<div><p>’-dirty’ if source is modified locally</p>
+</div></blockquote>
+<p>’x’:   The revision cannot be determined</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.logging.setConsoleLoggingLevel">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.logging.</span></span><span class="sig-name descname"><span class="pre">setConsoleLoggingLevel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.logging.setConsoleLoggingLevel" title="Link to this definition">¶</a></dt>
+<dd><p>Dynamically sets the console logging level by setting the level of the root logger’s StreamHandler to <cite>level_name</cite>.
+Note this will supersede the <cite>logging.console_level</cite> option stored in ASPIRE’s configuration file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>level_name</strong> – One of “DEBUG”, “INFO”, “WARNING”, “ERROR”, “CRITICAL”.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.logging.setFileLoggingLevel">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.logging.</span></span><span class="sig-name descname"><span class="pre">setFileLoggingLevel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.logging.setFileLoggingLevel" title="Link to this definition">¶</a></dt>
+<dd><p>Dynamically sets the log file logging level by setting the level of the root logger’s FileHandler to <cite>level_name</cite>.
+Note this will supersede the <cite>logging.log_file_level</cite> option stored in ASPIRE’s configuration file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>level_name</strong> – One of “DEBUG”, “INFO”, “WARNING”, “ERROR”, “CRITICAL”.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.logging.tqdm">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.logging.</span></span><span class="sig-name descname"><span class="pre">tqdm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.logging.tqdm" title="Link to this definition">¶</a></dt>
+<dd><p>Wraps <cite>tqdm.tqdm</cite>, applying ASPIRE configuration.</p>
+<p>Currently setting <cite>aspire.config[‘logging’][‘tqdm_disable’]</cite>
+true/false will disable/enable tqdm progress bars.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.logging.trange">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.logging.</span></span><span class="sig-name descname"><span class="pre">trange</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.logging.trange" title="Link to this definition">¶</a></dt>
+<dd><p>Wraps <cite>tqdm.trange</cite>, applying ASPIRE configuration.</p>
+<p>Currently setting <cite>aspire.config[‘logging’][‘tqdm_disable’]</cite>
+true/false will disable/enable tqdm progress bars.</p>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.matlab_compat">
+<span id="aspire-utils-matlab-compat-module"></span><h2>aspire.utils.matlab_compat module<a class="headerlink" href="#module-aspire.utils.matlab_compat" title="Link to this heading">¶</a></h2>
+<p>Functions for compatibility with MATLAB behavior.
+At some point when the package is full validated against MatLab, the ‘order’ arguments in the functions here
+can be changed to ‘C’, and subsequently, this package deprecated altogether (i.e. the reshape/flatten methods used
+directly by the caller).</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matlab_compat.stable_eigsh">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matlab_compat.</span></span><span class="sig-name descname"><span class="pre">stable_eigsh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matlab_compat.stable_eigsh" title="Link to this definition">¶</a></dt>
+<dd><p>A Wrapper function to fix sign problem of eigen-vectors</p>
+<p>There is an ambiguous sign problem for the eigenvectors from
+scipy.sparse.linalg.eigsh function. We need to rescale the
+eigenvectors and make them consistent for repeated runs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>*args</strong> – <p>Positional arguments</p>
+</p></li>
+<li><p><strong>**kwargs</strong> – <p>Keyword arguments</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Eigenvalues and eigenvectors</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.matrix">
+<span id="aspire-utils-matrix-module"></span><h2>aspire.utils.matrix module<a class="headerlink" href="#module-aspire.utils.matrix" title="Link to this heading">¶</a></h2>
+<p>Utilities for arrays/n-dimensional matrices.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.acorr">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">acorr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.acorr" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate array correlation along given axes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – An array of arbitrary shape</p></li>
+<li><p><strong>y</strong> – An array of same shape as x</p></li>
+<li><p><strong>axes</strong> – The axis along which to compute the correlation. If None, the correlation is calculated along all axes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The correlation of x along specified axes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.ainner">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">ainner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.ainner" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate array inner product along given axes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – An array of arbitrary shape</p></li>
+<li><p><strong>y</strong> – An array of same shape as x</p></li>
+<li><p><strong>axes</strong> – The axis along which to compute the inner product. If None, the product is calculated along all axes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.anorm">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">anorm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.anorm" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate array norm along given axes</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – An array of arbitrary size and shape.</p></li>
+<li><p><strong>axes</strong> – The axis along which to compute the norm. If None, the norm is calculated along all axes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Euclidean (l^2) norm of x along specified axes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.best_rank1_approximation">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">best_rank1_approximation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.best_rank1_approximation" title="Link to this definition">¶</a></dt>
+<dd><p>Computes the best rank-1 approximation of A.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>A</strong> – A 2D array or a 3D array where the first axis is the stack axis.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>rank-1 ndarray of same size.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.eigs">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">eigs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.eigs" title="Link to this definition">¶</a></dt>
+<dd><p>Multidimensional partial eigendecomposition</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>A</strong> – An array of size <cite>sig_sz</cite>-by-<cite>sig_sz</cite>, where <cite>sig_sz</cite> is a size containing d dimensions.
+The array represents a matrix with d indices for its rows and columns.</p></li>
+<li><p><strong>k</strong> – The number of eigenvalues and eigenvectors to calculate (default 6).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A 2-tuple of values
+V: An array of eigenvectors of size <cite>sig_sz</cite>-by-k.
+D: A matrix of size k-by-k containing the corresponding eigenvalues in the diagonals.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.fix_signs">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">fix_signs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.fix_signs" title="Link to this definition">¶</a></dt>
+<dd><p>Negates columns so the sign of the largest element in the column is positive.</p>
+<p>For complex values sign is taken as norm(x)/x, zero columns unchanged.</p>
+<p>Typically this is used for making eigenvectors deterministically signed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>u</strong> – matrix as numpy array</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>matrix as numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.make_psd">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">make_psd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.make_psd" title="Link to this definition">¶</a></dt>
+<dd><p>Make a matrix positive semi-definite</p>
+<p>This is the simplest way by setting negative eigenvalues to zero.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>A</strong> – A matrix.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The positive semi-definite matrix</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.make_symmat">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">make_symmat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.make_symmat" title="Link to this definition">¶</a></dt>
+<dd><p>Symmetrize a matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>A</strong> – A matrix.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Hermitian matrix (A+A’)/2.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.mat_to_vec">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">mat_to_vec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_symmat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.mat_to_vec" title="Link to this definition">¶</a></dt>
+<dd><p>Converts a matrix into vectorized form</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mat</strong> – An array of size …-by-N-by-N-by containing the matrices to be vectorized.</p></li>
+<li><p><strong>is_symmat</strong> – Specifies whether the matrices are symmetric/Hermitian, in which case they are stored in packed
+form using symmat_to_vec (default False).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The vectorized form of the matrices, with dimension …-by-N^2 or …-by-N*(N+1)/2 depending on the value
+of is_symmat.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.mdim_mat_fun_conj">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">mdim_mat_fun_conj</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.mdim_mat_fun_conj" title="Link to this definition">¶</a></dt>
+<dd><p>Conjugate a multidimensional matrix using a linear mapping</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> – An N_1-by-…-by-N_d1-by-N_1…-by-N_d1-by-… array, with the first 2*d1 dimensions corresponding to
+matrices with columns and rows of dimension d1.</p></li>
+<li><p><strong>d1</strong> – The dimension of the input matrix X</p></li>
+<li><p><strong>d2</strong> – The dimension of the output matrix Y</p></li>
+<li><p><strong>f</strong> – A function handle of a linear map that takes an array of size N_1-by-…-by-N_d1-by-… and returns an
+array of size M_1-by-…-by-M_d2-by-… .</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An array of size M_1-by-…-by-M_d2-by-M_1-by-…-by-M_d2-by-… resulting from applying fun to the rows
+and columns of the multidimensional matrix X.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.nearest_rotations">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">nearest_rotations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_reflection</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.nearest_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Uses the SVD method to compute the set of nearest rotations to the set A of noisy rotations.</p>
+<p>Note when <cite>allow_reflection</cite> is <cite>True</cite>, results may contain reflections.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>A</strong> – A 2D array or a 3D array where the first axis is the stack axis.</p></li>
+<li><p><strong>allow_reflection</strong> – Optionally allow reflections (disables correction).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>ndarray of rotations of equal size to A.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.symmat_to_vec">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">symmat_to_vec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mat</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.symmat_to_vec" title="Link to this definition">¶</a></dt>
+<dd><p>Packs a symmetric matrix into a upper triangular vector</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mat</strong> – An array of size …-by-N-by-N where the first two dimensions constitute symmetric or
+Hermitian matrices.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A vector of size …-by-N*(N+1)/2 consisting of the upper triangular part of each matrix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.symmat_to_vec_iso">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">symmat_to_vec_iso</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mat</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.symmat_to_vec_iso" title="Link to this definition">¶</a></dt>
+<dd><p>Isometrically maps a symmetric matrix to a packed vector</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mat</strong> – An array of size …-by-N-by-N where the last two dimensions constitute symmetric or Hermitian
+matrices.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A vector of size …-by-N*(N+1)/2 consisting of the lower triangular part of each matrix, reweighted so
+that the Frobenius inner product is mapped to the Euclidean inner product.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.vec_to_mat">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">vec_to_mat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_symmat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.vec_to_mat" title="Link to this definition">¶</a></dt>
+<dd><p>Converts a vectorized matrix into a matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vec</strong> – The vectorized representations. If the matrix is non-symmetric, this array has the dimensions
+…-by-N^2, but if the matrix is symmetric, the dimensions are …-by-N*(N+1)/2 .</p></li>
+<li><p><strong>is_symmat</strong> – True if the vectors represent symmetric matrices (default False)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The array of size …-by-N-by-N representing the matrices.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.vec_to_symmat">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">vec_to_symmat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.vec_to_symmat" title="Link to this definition">¶</a></dt>
+<dd><p>Convert packed upper triangular vector to symmetric matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vec</strong> – A vector of size …-by-N*(N+1)/2 describing a symmetric (or Hermitian) matrix.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An array of size …-by-N-by-N which indexes symmetric/Hermitian matrices that occupy the first two
+dimensions. The upper triangular parts of these matrices consists of the corresponding vectors in vec.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.matrix.vec_to_symmat_iso">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.matrix.</span></span><span class="sig-name descname"><span class="pre">vec_to_symmat_iso</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.matrix.vec_to_symmat_iso" title="Link to this definition">¶</a></dt>
+<dd><p>Isometrically map packed vector to symmetric matrix</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vec</strong> – A vector of size …-by-N*(N+1)/2 describing a symmetric (or Hermitian) matrix.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An array of size …-by-N-by-N which indexes symmetric/Hermitian matrices that occupy the first two
+dimensions. The lower triangular parts of these matrices consists of the corresponding vectors in vec,
+reweighted so that the Euclidean inner product maps to the Frobenius inner product.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.misc">
+<span id="aspire-utils-misc-module"></span><h2>aspire.utils.misc module<a class="headerlink" href="#module-aspire.utils.misc" title="Link to this heading">¶</a></h2>
+<p>Miscellaneous utilities that have no better place (yet).</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.J_conjugate">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">J_conjugate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.J_conjugate" title="Link to this definition">¶</a></dt>
+<dd><p>Conjugate the 3x3 matrix A by the diagonal matrix J=diag((-1, -1, 1)).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>A</strong> – A 3x3 matrix, or nx3x3 matrix.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>J&#64;A&#64;J</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.abs2">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">abs2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.abs2" title="Link to this definition">¶</a></dt>
+<dd><p>Compute complex modulus squared.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.all_pairs">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">all_pairs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.all_pairs" title="Link to this definition">¶</a></dt>
+<dd><p>All pairs indexing (i,j) for i&lt;j and a pairs-to-linear index mapping.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The number of items to be indexed.</p></li>
+<li><p><strong>return_map</strong> – Option to return pairs-to-linear index map.
+Default is False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>n x 2 array of pairs (i, j), i&lt;j.</p></li>
+<li><p>n x n array with pairs-to-linear index map.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.all_triplets">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">all_triplets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.all_triplets" title="Link to this definition">¶</a></dt>
+<dd><p>All 3-tuples (i,j,k) where i&lt;j&lt;k.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n</strong> – The number of items to be indexed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>All 3-tuples (i,j,k), i&lt;j&lt;k.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.bump_3d">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">bump_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spread=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.bump_3d" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a centered 3D bump function in a (size)x(size)x(size) numpy array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The length of the dimensions of the array (pixels.</p></li>
+<li><p><strong>spread</strong> – A factor controling the spread of the bump function.</p></li>
+<li><p><strong>dtype</strong> – dtype of returned array</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Numpy array (3D)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.check_pixel_size">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">check_pixel_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pixel_sizes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_pixel_size</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.check_pixel_size" title="Link to this definition">¶</a></dt>
+<dd><p>Ensure that <cite>reference_pixel_size</cite> is a scalar and check that <cite>pixel_sizes</cite>
+are close to <cite>reference_pixel_size</cite>, warn if not.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pixel_sizes</strong> – Pixel size value(s) to check (scalar or ndarray).</p></li>
+<li><p><strong>reference_pixel_size</strong> – Reference value (scalar).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if close, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.circ">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">circ</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.circ" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a 2d <cite>circ</cite> function in a square 2d numpy array.</p>
+<p>where for r = sqrt(x**2 + y**2)</p>
+<dl class="simple">
+<dt>circ(x,y) = peak<span class="classifier">0 &lt;= r &lt;= radius</span></dt><dd><p>0 : otherwise</p>
+</dd>
+</dl>
+<p>Default is a centered circle of spread=peak=1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The height and width of returned array (pixels)</p></li>
+<li><p><strong>x0</strong> – x cordinate of center (pixels)</p></li>
+<li><p><strong>y0</strong> – y cordinate of center (pixels)</p></li>
+<li><p><strong>radius</strong> – radius of circle</p></li>
+<li><p><strong>peak</strong> – peak height at center</p></li>
+<li><p><strong>dtype</strong> – dtype of returned array</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Numpy array (2D)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.cyclic_rotations">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">cyclic_rotations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.cyclic_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Build all rotation matrices that rotate by multiples of 2pi/order about the z-axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>order</strong> – The order of cyclic symmetry</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A Rotation object containing an (order)x3x3 array of rotation matrices.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.fuzzy_mask">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">fuzzy_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">risetime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.fuzzy_mask" title="Link to this definition">¶</a></dt>
+<dd><p>Create a centered 1D to 3D fuzzy mask of radius r0.</p>
+<p>Made with an error function with effective rise time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – The sizes of image in tuple structure. Must be 1D, 2D square,
+or 3D cube.</p></li>
+<li><p><strong>dtype</strong> – dtype for fuzzy mask.</p></li>
+<li><p><strong>r0</strong> – The specified radius. Defaults to floor(0.45 * L)</p></li>
+<li><p><strong>risetime</strong> – The rise time for <cite>erf</cite> function. Defaults to floor(0.05 * L)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The desired fuzzy mask</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.gaussian_1d">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">gaussian_1d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.gaussian_1d" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the 1D Gaussian</p>
+<div class="math notranslate nohighlight">
+\[g(x)=\exp\left(\frac{ -(x - \mu)^2}{2\sigma^2}\right)\]</div>
+<p>in a 1D numpy array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The length of the returned array (pixels)</p></li>
+<li><p><strong>mu</strong> – mean or center (pixels)</p></li>
+<li><p><strong>sigma</strong> – standard deviation of the Gaussian</p></li>
+<li><p><strong>dtype</strong> – dtype of returned array</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Numpy array (1D)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.gaussian_2d">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">gaussian_2d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu=(0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma=(1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indexing='yx'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.gaussian_2d" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the 2D Gaussian</p>
+<div class="math notranslate nohighlight">
+\[g(x,y)=\exp\left(\frac{-(x - \mu_x)^2}{2\sigma_x^2} +
+        \frac{-(y - \mu_y)^2}{2\sigma_y^2}\right)\]</div>
+<p>in a square 2D numpy array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The length of each dimension of the returned array (pixels)</p></li>
+<li><p><strong>mu</strong> – Iterable of len(2), <span class="math notranslate nohighlight">\((\mu_x, \mu_y)\)</span>, indicating the center of the Gaussian</p></li>
+<li><p><strong>sigma</strong> – Iterable of len(2) or constant, <span class="math notranslate nohighlight">\((\sigma_x, \sigma_y)\)</span>, of the standard
+deviation in the x and y directions. A single value, <span class="math notranslate nohighlight">\(\sigma\)</span>, can be
+used when <span class="math notranslate nohighlight">\(\sigma_x = \sigma_y\)</span>.</p></li>
+<li><p><strong>indexing</strong> – The order of axis indexing, passed to <cite>aspire.utils.grid_2d</cite></p></li>
+<li><p><strong>dtype</strong> – dtype of returned array</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Numpy array (2D)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.gaussian_3d">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">gaussian_3d</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu=(0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sigma=(1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indexing='zyx'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.gaussian_3d" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the 3D Gaussian</p>
+<div class="math notranslate nohighlight">
+\[g(x,y,z)=\exp\left(\frac{-(x - \mu_x)^2}{2\sigma_x^2} +
+        \frac{-(y - \mu_y)^2}{2\sigma_y^2} +
+        \frac{-(z - \mu_z)^2}{2\sigma_z^2}\right)\]</div>
+<p>in a 3D numpy array.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The length of each dimension of the returned array (pixels)</p></li>
+<li><p><strong>mu</strong> – Iterable of len(3), <span class="math notranslate nohighlight">\((\mu_x, \mu_y, \mu_z)\)</span>, indicating the center of the Gaussian</p></li>
+<li><p><strong>sigma</strong> – Iterable of len(3) or constant, <span class="math notranslate nohighlight">\((\sigma_x, \sigma_y, \sigma_z)\)</span>, of the standard deviation
+in the x, y, and z directions. A single value, <span class="math notranslate nohighlight">\(\sigma\)</span>, can be
+used when <span class="math notranslate nohighlight">\(\sigma_x = \sigma_y = \sigma_z\)</span></p></li>
+<li><p><strong>indexing</strong> – The order of axis indexing, passed to <cite>aspire.utils.grid_3d</cite></p></li>
+<li><p><strong>dtype</strong> – dtype of returned array</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Numpy array (3D)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.gaussian_window">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">gaussian_window</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha=3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.gaussian_window" title="Link to this definition">¶</a></dt>
+<dd><p>Create a 2D gaussian window used for 2D power spectrum estimation.</p>
+<p>Given <cite>L</cite> retuns a <cite>(2L-1, 2L-1)</cite> array where
+<cite>max_d</cite> is the width of the Gaussian and <cite>alpha</cite> is the
+reciprical of the standard deviation of the Gaussian window.
+See Harris 78.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – Number of radial pixels</p></li>
+<li><p><strong>max_d</strong> – Width of Gaussian (stddev)</p></li>
+<li><p><strong>alpha</strong> – Reciprical of stddev of window</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Numpy array with shape <a href="#id5"><span class="problematic" id="id6">`</span></a>(2L-1, 2L-1)`x</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.importlib_path">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">importlib_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">package</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resource</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.importlib_path" title="Link to this definition">¶</a></dt>
+<dd><p>Return the path to the resource as an actual file system path.
+Workaround importlib.resources deprecation of <cite>path</cite> in Python 3.11.
+This is expected to be safely removed after the minimal supported
+Python is 3.9.</p>
+<p>See ASPIRE-Python #546.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>package</strong> – Is either a name or a module object
+which conforms to the Package requirements.</p></li>
+<li><p><strong>resource</strong> – Is the name of the resource to open within package;
+It may not contain path separators and it may not have sub-resources.
+(i.e. it cannot be a directory)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>This function returns a context manager for use in a with statement.
+The context manager provides a pathlib.Path object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.inverse_r">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">inverse_r</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.inverse_r" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a 2d inverse radius function in a square 2d numpy array.</p>
+<p>Where inverse_r(x,y): 1/sqrt(1 + x**2 + y**2)</p>
+<p>Default is a centered circle of peak=1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>size</strong> – The height and width of returned array (pixels)</p></li>
+<li><p><strong>x0</strong> – x cordinate of center (pixels)</p></li>
+<li><p><strong>y0</strong> – y cordinate of center (pixels)</p></li>
+<li><p><strong>peak</strong> – peak height at center</p></li>
+<li><p><strong>dtype</strong> – dtype of returned array</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Numpy array (2D)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.powerset">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">powerset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.powerset" title="Link to this definition">¶</a></dt>
+<dd><p>Generate all subsets of an iterable. Example:</p>
+<p>powerset([1,2,3]) –&gt; () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Generator covering all subsets of iterable.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.rename_with_timestamp">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">rename_with_timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">move</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.rename_with_timestamp" title="Link to this definition">¶</a></dt>
+<dd><p>Rename a file by appending a timestamp to the end of the filename.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filepath</strong> – Filepath to rename.</p></li>
+<li><p><strong>move</strong> – Option to rename the file on disk.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>filepath with timestamp appended.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.sha256sum">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">sha256sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.sha256sum" title="Link to this definition">¶</a></dt>
+<dd><p>Return sha256 hash of filename.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> – path to file</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>sha256 hash as hex</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.misc.support_mask">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.misc.</span></span><span class="sig-name descname"><span class="pre">support_mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">support_radius=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.misc.support_mask" title="Link to this definition">¶</a></dt>
+<dd><p>Return a mask selecting values within <cite>support_radius</cite>.</p>
+<p>This mask is hard cutoff, boolean type.
+For a soft cutoff, see <cite>fuzzy_mask</cite></p>
+<p>Use for selecting signal.
+Alternatively the mask inverse (~) can be used to select background.
+Combinations can be used to create bands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>L</strong> – Resolution in pixels.</p></li>
+<li><p><strong>support_radius</strong> – Radius of mask in pixels.
+Defaults to L // 2.</p></li>
+<li><p><strong>dtype</strong> – Dtype used for mask construction and comparison.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Boolean mask as (L,L) array.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.multiprocessing">
+<span id="aspire-utils-multiprocessing-module"></span><h2>aspire.utils.multiprocessing module<a class="headerlink" href="#module-aspire.utils.multiprocessing" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.multiprocessing.mem_based_cpu_suggestion">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.multiprocessing.</span></span><span class="sig-name descname"><span class="pre">mem_based_cpu_suggestion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.multiprocessing.mem_based_cpu_suggestion" title="Link to this definition">¶</a></dt>
+<dd><p>Return an estimate of the number of clone processes
+that would fit in the currently available memory.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.multiprocessing.num_procs_suggestion">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.multiprocessing.</span></span><span class="sig-name descname"><span class="pre">num_procs_suggestion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.multiprocessing.num_procs_suggestion" title="Link to this definition">¶</a></dt>
+<dd><p>Resolve and return number of processors to use for multiprocessing.</p>
+<p>Query memory and cpu, then makes suggestion.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.multiprocessing.physical_core_cpu_suggestion">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.multiprocessing.</span></span><span class="sig-name descname"><span class="pre">physical_core_cpu_suggestion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.multiprocessing.physical_core_cpu_suggestion" title="Link to this definition">¶</a></dt>
+<dd><p>Return the physical cores.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.multiprocessing.virtual_core_cpu_suggestion">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.multiprocessing.</span></span><span class="sig-name descname"><span class="pre">virtual_core_cpu_suggestion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.multiprocessing.virtual_core_cpu_suggestion" title="Link to this definition">¶</a></dt>
+<dd><p>Return the virtual cores.</p>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.random">
+<span id="aspire-utils-random-module"></span><h2>aspire.utils.random module<a class="headerlink" href="#module-aspire.utils.random" title="Link to this heading">¶</a></h2>
+<p>Utilities for controlling and generating random numbers.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.utils.random.Random">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.utils.random.</span></span><span class="sig-name descname"><span class="pre">Random</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.random.Random" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A context manager that pushes a random seed to the stack for reproducible results,
+and pops it on exit.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.random.choice">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.random.</span></span><span class="sig-name descname"><span class="pre">choice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.random.choice" title="Link to this definition">¶</a></dt>
+<dd><p>Wraps numpy random.choice call in ASPIRE Random context.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.random.matlab_rand">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.random.</span></span><span class="sig-name descname"><span class="pre">matlab_rand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.random.matlab_rand" title="Link to this definition">¶</a></dt>
+<dd><p>Wraps numpy.random.random with ASPIRE Random context manager.
+Note this is re-packed from F order, only for MATLAB repro.</p>
+<p>For all other uses prefer <cite>random</cite>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.random.randi">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.random.</span></span><span class="sig-name descname"><span class="pre">randi</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i_max</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.random.randi" title="Link to this definition">¶</a></dt>
+<dd><p>A MATLAB compatible randi implementation that returns numbers from a discrete uniform distribution.
+While a direct use of np.random.choice would be convenient, this doesn’t seem to return results
+identical to MATLAB.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>iMax</strong> – TODO</p></li>
+<li><p><strong>size</strong> – size of the resulting np array</p></li>
+<li><p><strong>seed</strong> – Random seed to use (None to apply no seed)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A np array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.random.randn">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.random.</span></span><span class="sig-name descname"><span class="pre">randn</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.random.randn" title="Link to this definition">¶</a></dt>
+<dd><p>Calls rand and applies inverse transform sampling to the output.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.random.random">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.random.</span></span><span class="sig-name descname"><span class="pre">random</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.random.random" title="Link to this definition">¶</a></dt>
+<dd><p>Wraps numpy.random.random with ASPIRE Random context manager.</p>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.relion_interop">
+<span id="aspire-utils-relion-interop-module"></span><h2>aspire.utils.relion_interop module<a class="headerlink" href="#module-aspire.utils.relion_interop" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.utils.relion_interop.RelionStarFile">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.utils.relion_interop.</span></span><span class="sig-name descname"><span class="pre">RelionStarFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.relion_interop.RelionStarFile" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="aspire.storage.html#aspire.storage.starfile.StarFile" title="aspire.storage.starfile.StarFile"><code class="xref py py-class docutils literal notranslate"><span class="pre">StarFile</span></code></a></p>
+<p>A star file generated by RELION representing particles, micrographs, or movies.</p>
+<p>Initialize either from a path to a STAR file or from an OrderedDict of ndarrays</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.relion_interop.RelionStarFile.get_merged_data_block">
+<span class="sig-name descname"><span class="pre">get_merged_data_block</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.relion_interop.RelionStarFile.get_merged_data_block" title="Link to this definition">¶</a></dt>
+<dd><p>Return the dictionary containing particle/micrograph/movie information for this STAR file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary containing the data from this RELION STAR file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.relion_interop.dict_to_relion_types">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.relion_interop.</span></span><span class="sig-name descname"><span class="pre">dict_to_relion_types</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.relion_interop.dict_to_relion_types" title="Link to this definition">¶</a></dt>
+<dd><p>Convert STAR file strings to data type for each field in a dict loaded via
+<cite>aspire.storage.StarFile</cite>. Columns without a specified data type are read as
+<cite>dtype=str</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>d</strong> – A <cite>StarFile</cite> block represented as a dictionary.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dict with types converted where possible.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.resolution_estimation">
+<span id="aspire-utils-resolution-estimation-module"></span><h2>aspire.utils.resolution_estimation module<a class="headerlink" href="#module-aspire.utils.resolution_estimation" title="Link to this heading">¶</a></h2>
+<p>This module contains code for estimating resolution achieved by reconstructions.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.utils.resolution_estimation.FourierCorrelation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.utils.resolution_estimation.</span></span><span class="sig-name descname"><span class="pre">FourierCorrelation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fft'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.resolution_estimation.FourierCorrelation" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Compute the Fourier correlations between two arrays.</p>
+<p>Underlying data (images/volumes) are assumed to be well aligned.</p>
+<p>The Fourier correlation is defined as:</p>
+<div class="math notranslate nohighlight">
+\[c(i) = \frac{ \operatorname{Re}( \sum_i{ \mathcal{F}_1(i) * {\mathcal{F}^{*}_2(i) } } ) }{\
+  \sqrt{ \sum_i { | \mathcal{F}_1(i) |^2 } * \sum_i{| \mathcal{F}^{*}_2}(i) |^2 } }\]</div>
+<p>This implementation supports Numpy style broadcasting resulting in
+up to two stack dimensions.  For example, to compute all pairs
+supply signal with stack shapes (m,1) and (1,n) to yield an (m,n)
+table of results. Note that plotting is limited to a single
+reference signal.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> – Input array a, shape(…, <a href="#id7"><span class="problematic" id="id8">*</span></a>dim).</p></li>
+<li><p><strong>b</strong> – Input array b, shape(…, <a href="#id9"><span class="problematic" id="id10">*</span></a>dim).</p></li>
+<li><p><strong>pixel_size</strong> – Pixel size in angstrom.
+Default <cite>None</cite> implies “pixel” units.</p></li>
+<li><p><strong>method</strong> – Selects either ‘fft’ (on Cartesian grid),
+or ‘nufft’ (on polar grid). Defaults to ‘fft’.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.resolution_estimation.FourierCorrelation.analyze_correlations">
+<span class="sig-name descname"><span class="pre">analyze_correlations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cutoff</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.resolution_estimation.FourierCorrelation.analyze_correlations" title="Link to this definition">¶</a></dt>
+<dd><p>Convert from the Fourier correlations to frequencies and resolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cutoff</strong> – Cutoff value, traditionally <cite>.143</cite>.
+Note <cite>cutoff=None</cite> evaluates as <cite>cutoff=1</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.utils.resolution_estimation.FourierCorrelation.correlations">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">correlations</span></span><a class="headerlink" href="#aspire.utils.resolution_estimation.FourierCorrelation.correlations" title="Link to this definition">¶</a></dt>
+<dd><p>Compute and return the Fourier correlations of signal stacks a
+cross b.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Numpy array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.resolution_estimation.FourierCorrelation.plot">
+<span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_to_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.resolution_estimation.FourierCorrelation.plot" title="Link to this definition">¶</a></dt>
+<dd><p>Generates a Fourier correlation plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cutoff</strong> – Cutoff value, traditionally <cite>.143</cite>.
+Default <cite>None</cite> implies <cite>cutoff=1</cite> and excludes
+plotting cutoff line.</p></li>
+<li><p><strong>save_to_file</strong> – Optionally, save plot to file.
+Defaults False, enabled by providing a string filename.
+User is responsible for providing reasonable filename.
+See <cite>https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.savefig.html</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.utils.resolution_estimation.FourierRingCorrelation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.utils.resolution_estimation.</span></span><span class="sig-name descname"><span class="pre">FourierRingCorrelation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fft'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.resolution_estimation.FourierRingCorrelation" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.utils.resolution_estimation.FourierCorrelation" title="aspire.utils.resolution_estimation.FourierCorrelation"><code class="xref py py-class docutils literal notranslate"><span class="pre">FourierCorrelation</span></code></a></p>
+<p>See <cite>FourierCorrelation</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> – Input array a, shape(…, <a href="#id11"><span class="problematic" id="id12">*</span></a>dim).</p></li>
+<li><p><strong>b</strong> – Input array b, shape(…, <a href="#id13"><span class="problematic" id="id14">*</span></a>dim).</p></li>
+<li><p><strong>pixel_size</strong> – Pixel size in angstrom.
+Default <cite>None</cite> implies “pixel” units.</p></li>
+<li><p><strong>method</strong> – Selects either ‘fft’ (on Cartesian grid),
+or ‘nufft’ (on polar grid). Defaults to ‘fft’.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.utils.resolution_estimation.FourierRingCorrelation.dim">
+<span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#aspire.utils.resolution_estimation.FourierRingCorrelation.dim" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.utils.resolution_estimation.FourierShellCorrelation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.utils.resolution_estimation.</span></span><span class="sig-name descname"><span class="pre">FourierShellCorrelation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixel_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'fft'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.resolution_estimation.FourierShellCorrelation" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#aspire.utils.resolution_estimation.FourierCorrelation" title="aspire.utils.resolution_estimation.FourierCorrelation"><code class="xref py py-class docutils literal notranslate"><span class="pre">FourierCorrelation</span></code></a></p>
+<p>See <cite>FourierCorrelation</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> – Input array a, shape(…, <a href="#id15"><span class="problematic" id="id16">*</span></a>dim).</p></li>
+<li><p><strong>b</strong> – Input array b, shape(…, <a href="#id17"><span class="problematic" id="id18">*</span></a>dim).</p></li>
+<li><p><strong>pixel_size</strong> – Pixel size in angstrom.
+Default <cite>None</cite> implies “pixel” units.</p></li>
+<li><p><strong>method</strong> – Selects either ‘fft’ (on Cartesian grid),
+or ‘nufft’ (on polar grid). Defaults to ‘fft’.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="aspire.utils.resolution_estimation.FourierShellCorrelation.dim">
+<span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#aspire.utils.resolution_estimation.FourierShellCorrelation.dim" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.rotation">
+<span id="aspire-utils-rotation-module"></span><h2>aspire.utils.rotation module<a class="headerlink" href="#module-aspire.utils.rotation" title="Link to this heading">¶</a></h2>
+<p>Define a Rotation Class for customized rotation operations used by ASPIRE.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">aspire.utils.rotation.</span></span><span class="sig-name descname"><span class="pre">Rotation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">matrices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gimble_lock_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<blockquote>
+<div><p>Initialize a Rotation object</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>matrices</strong> – Rotation matrices to initialize Rotation object.</p></li>
+<li><p><strong>gimble_lock_warnings</strong> – Optionally show gimble lock warnings.
+Defaults to <cite>True</cite>, setting to <cite>False</cite> filters warnings.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.about_axis">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">about_axis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angles</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gimble_lock_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.about_axis" title="Link to this definition">¶</a></dt>
+<dd><p>Build rotation object from axis and angles of rotation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axis</strong> – A string denoting the axis of rotation. “x”, “y”, or “z”.</p></li>
+<li><p><strong>angles</strong> – Rotation angles in radians. <cite>angles</cite> can be a single value,
+or an array of shape (N,) or (N,1).</p></li>
+<li><p><strong>dtype</strong> – Optional output dtype.  Infers from <cite>angles</cite> by default when possible,
+otherwise defaults to <cite>float32</cite>.</p></li>
+<li><p><strong>gimble_lock_warnings</strong> – Optionally show gimble lock warnings.
+Defaults to <cite>True</cite>, setting to <cite>False</cite> filters warnings.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Rotation object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.angle_dist">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">angle_dist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.angle_dist" title="Link to this definition">¶</a></dt>
+<dd><p>Find the angular distance between two sets of rotation matrices. We first compute
+the rotation between the two sets of rotation matrices, r = r1 &#64; r2.T. Then using
+the axis-angle representation of r we find the angle between r1 and r2. Computations
+will broadcast in the case of a singleton rotation and a set of rotations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r1</strong> – An nx3x3 array of rotation matrices, a singleton rotation,
+or a <cite>Rotation</cite> object.</p></li>
+<li><p><strong>r2</strong> – An nx3x3 array of rotation matrices, a singleton rotation,
+or a <cite>Rotation</cite> object.</p></li>
+<li><p><strong>dtype</strong> – Computation datatype. Default <cite>None</cite> infers from <cite>r1</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The element-wise angular distance between r1 and r2 in radians.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.angles">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">angles</span></span><a class="headerlink" href="#aspire.utils.rotation.Rotation.angles" title="Link to this definition">¶</a></dt>
+<dd><p>Rotation matrices as a n x 3 array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.apply_registration">
+<span class="sig-name descname"><span class="pre">apply_registration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Q_mat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flag</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.apply_registration" title="Link to this definition">¶</a></dt>
+<dd><p>Get aligned Rotation object to reference ones.</p>
+<p>Calculated aligned rotation matrices from the orthogonal transformation
+that best aligns the estimated rotations to the reference rotations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Q_mat</strong> – optimal orthogonal 3x3 transformation matrix</p></li>
+<li><p><strong>flag</strong> – flag==1 then J conjugacy is required and 0 is not</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>regrot, aligned Rotation object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.as_rotvec">
+<span class="sig-name descname"><span class="pre">as_rotvec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.as_rotvec" title="Link to this definition">¶</a></dt>
+<dd><p>Return this <cite>Rotation</cite> object as a rotation vector.</p>
+<p>A rotation vector is a 3D vector which is co-directional to
+the axis of rotation and whose norm gives the angle of
+rotation in radians. The angle of rotation is
+counter-clockwise about the axis.</p>
+<p>See <cite>from_rotvec</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(…, 3) array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.common_lines">
+<span class="sig-name descname"><span class="pre">common_lines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">j</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ell</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.common_lines" title="Link to this definition">¶</a></dt>
+<dd><p>Compute the common line induced by rotation matrices i and j.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> – The index of first rotation matrix of 3-by-3 array.</p></li>
+<li><p><strong>j</strong> – The index of second rotation matrix of 3-by-3 array.</p></li>
+<li><p><strong>ell</strong> – The total number of common lines.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The common line indices for both first and second rotations.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.dtype">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#aspire.utils.rotation.Rotation.dtype" title="Link to this definition">¶</a></dt>
+<dd><p>dtype of Rotation matrices</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.find_registration">
+<span class="sig-name descname"><span class="pre">find_registration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rots_ref</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.find_registration" title="Link to this definition">¶</a></dt>
+<dd><p>Register estimated orientations to reference ones.</p>
+<p>Finds the orthogonal transformation that best aligns the estimated rotations
+to the reference rotations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rots_ref</strong> – The reference Rotation object to which we would like to align
+with data matrices in the form of a n-by-3-by-3 array.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>o_mat, optimal orthogonal 3x3 matrix to align the two sets;
+flag, flag==1 then J conjugacy is required and 0 is not.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.from_euler">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_euler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.from_euler" title="Link to this definition">¶</a></dt>
+<dd><p>build rotation object from Euler angles in radians</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>values</strong> – Rotation angles in radians, as a n x 3 array</p></li>
+<li><p><strong>dtype</strong> – Optional output dtype.  Infers from <cite>values</cite> by default when possible,
+otherwise defaults to <cite>float32</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>new Rotation object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.from_matrix">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.from_matrix" title="Link to this definition">¶</a></dt>
+<dd><p>build rotation object from rotational matrices</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dtype</strong> – Optional output dtype.  Infers from <cite>values</cite> by default.</p></li>
+<li><p><strong>values</strong> – Rotation matrices, as a n x 3 x 3 array</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>new Rotation object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.from_rotvec">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_rotvec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.from_rotvec" title="Link to this definition">¶</a></dt>
+<dd><p>Build a Rotation object from rotation vectors. A rotation vector is a
+3D vector which is co-directional to the axis of rotation and whose norm
+gives the angle of rotation in radians. The angle of rotation is counter-clockwise
+about the axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vec</strong> – array_like, shape (N, 3) or (3,)</p></li>
+<li><p><strong>dtype</strong> – Optional output dtype.  Infers from <cite>vec</cite> by default.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Rotation object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.generate_random_rotations">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">generate_random_rotations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.generate_random_rotations" title="Link to this definition">¶</a></dt>
+<dd><p>Generate Rotation object with random 3D rotation matrices</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The number of rotation matrices to generate</p></li>
+<li><p><strong>seed</strong> – Random integer seed to use. If None,
+the current random state is used.</p></li>
+<li><p><strong>dtype</strong> – data type for rotational angles and matrices</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A new Rotation object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.invert">
+<span class="sig-name descname"><span class="pre">invert</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.invert" title="Link to this definition">¶</a></dt>
+<dd><p>Apply transpose operation to all rotation matrices</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The set of transposed matrices</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.matrices">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">matrices</span></span><a class="headerlink" href="#aspire.utils.rotation.Rotation.matrices" title="Link to this definition">¶</a></dt>
+<dd><p>Rotation matrices as a n x 3 x 3 array</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>return</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.mean_angular_distance">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mean_angular_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rots_1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rots_2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.mean_angular_distance" title="Link to this definition">¶</a></dt>
+<dd><p>Find the mean angular distance between two sets of rotation matrices. Computations
+will broadcast in the case of a singleton rotations and a set of rotations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rots_1</strong> – An nx3x3 array of rotation matrices, a singleton rotation,
+or a <cite>Rotation</cite> object.</p></li>
+<li><p><strong>rots_2</strong> – An nx3x3 array of rotation matrices, a singleton rotation,
+or a <cite>Rotation</cite> object.</p></li>
+<li><p><strong>dtype</strong> – Data type for computation. Default infers dtype from <cite>rots_1</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The mean angular distance between rotations in radians.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.mse">
+<span class="sig-name descname"><span class="pre">mse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rots_ref</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.mse" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate MSE between the estimated orientations to reference ones.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rots_reg</strong> – The estimated Rotation object after alignment
+with data matrices in the form of a n-by-3-by-3 array.</p></li>
+<li><p><strong>rots_ref</strong> – The reference Rotation object.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The MSE value between two sets of rotations.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="aspire.utils.rotation.Rotation.register">
+<span class="sig-name descname"><span class="pre">register</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rots_ref</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.rotation.Rotation.register" title="Link to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Estimate global orientation and return an aligned Rotation object.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rots_ref</strong> – The reference Rotation object to which we would like
+to align with data matrices in the form of a n-by-3-by-3 array.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>an aligned Rotation object</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.types">
+<span id="aspire-utils-types-module"></span><h2>aspire.utils.types module<a class="headerlink" href="#module-aspire.utils.types" title="Link to this heading">¶</a></h2>
+<p>Miscellaneous utilities for common data type operations.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.types.complex_type">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.types.</span></span><span class="sig-name descname"><span class="pre">complex_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">realtype</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.types.complex_type" title="Link to this definition">¶</a></dt>
+<dd><p>Get Numpy complex type from corresponding real type</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>realtype</strong> – Numpy real type</p>
+</dd>
+<dt class="field-even">Return complextype<span class="colon">:</span></dt>
+<dd class="field-even"><p>Numpy complex type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.types.real_type">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.types.</span></span><span class="sig-name descname"><span class="pre">real_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">complextype</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.types.real_type" title="Link to this definition">¶</a></dt>
+<dd><p>Get Numpy real type from corresponding complex type</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>complextype</strong> – Numpy complex type</p>
+</dd>
+<dt class="field-even">Return realtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>Numpy real type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.types.utest_tolerance">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.types.</span></span><span class="sig-name descname"><span class="pre">utest_tolerance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.types.utest_tolerance" title="Link to this definition">¶</a></dt>
+<dd><p>Return ASPIRE tolerance for unit tests based on <cite>dtype</cite>.</p>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils.units">
+<span id="aspire-utils-units-module"></span><h2>aspire.utils.units module<a class="headerlink" href="#module-aspire.utils.units" title="Link to this heading">¶</a></h2>
+<p>Miscellaneous utilities for common unit conversions.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.units.ratio_to_decibel">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.units.</span></span><span class="sig-name descname"><span class="pre">ratio_to_decibel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.units.ratio_to_decibel" title="Link to this definition">¶</a></dt>
+<dd><p>Convert a ratio of powers to decibel (log) scale.</p>
+<p>Follows numpy broadcasting rules.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>p</strong> – Power ratio.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Power ratio in log scale</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.units.voltage_to_wavelength">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.units.</span></span><span class="sig-name descname"><span class="pre">voltage_to_wavelength</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.units.voltage_to_wavelength" title="Link to this definition">¶</a></dt>
+<dd><p>Convert from electron voltage to wavelength.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>voltage</strong> – float, The electron voltage in kV.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>float, The electron wavelength in angstroms.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="aspire.utils.units.wavelength_to_voltage">
+<span class="sig-prename descclassname"><span class="pre">aspire.utils.units.</span></span><span class="sig-name descname"><span class="pre">wavelength_to_voltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wavelength</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#aspire.utils.units.wavelength_to_voltage" title="Link to this definition">¶</a></dt>
+<dd><p>Convert from electron voltage to wavelength.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>wavelength</strong> – float, The electron wavelength in angstroms.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>float, The electron voltage in kV.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-aspire.utils">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-aspire.utils" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aspire.storage.html" class="btn btn-neutral float-left" title="aspire.storage package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="aspire.volume.html" class="btn btn-neutral float-right" title="aspire.volume package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

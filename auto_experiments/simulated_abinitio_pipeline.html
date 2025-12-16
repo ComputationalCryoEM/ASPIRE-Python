@@ -1,0 +1,372 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abinitio Pipeline - Simulated Data &mdash; ASPIRE 0.14.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=0dc20415"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Commonlines Method using LUD" href="commonline_lud_simulated_data.html" />
+    <link rel="prev" title="Abinitio Pipeline - Experimental Data Empiar 10081" href="experimental_abinitio_pipeline_10081.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Experiments</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="example_halfset_pipeline_10028.html">Abinitio Halfset Pipeline - Experimental Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental_abinitio_pipeline_10028_jsb.html">Abinitio Pipeline - Experimental Data EMPIAR 10028</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental_abinitio_pipeline_10073_jsb.html">Abinitio Pipeline - Experimental Data EMPIAR 10073</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental_abinitio_pipeline_10081.html">Abinitio Pipeline - Experimental Data Empiar 10081</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Abinitio Pipeline - Simulated Data</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#imports">Imports</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#simulation-data">Simulation Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#optional-cwf-denoising">Optional: CWF Denoising</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#class-averaging">Class Averaging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#common-line-estimation">Common Line Estimation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#volume-reconstruction">Volume Reconstruction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="commonline_lud_simulated_data.html">Commonlines Method using LUD</a></li>
+<li class="toctree-l2"><a class="reference internal" href="legacy_preprocessing.html">Legacy Preprocessing Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="save_simulation_relion_reconstruct.html">Simulated Stack to RELION Reconstruction</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Experiments</a></li>
+      <li class="breadcrumb-item active">Abinitio Pipeline - Simulated Data</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/auto_experiments/simulated_abinitio_pipeline.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-auto-experiments-simulated-abinitio-pipeline-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="abinitio-pipeline-simulated-data">
+<span id="sphx-glr-auto-experiments-simulated-abinitio-pipeline-py"></span><h1>Abinitio Pipeline - Simulated Data<a class="headerlink" href="#abinitio-pipeline-simulated-data" title="Link to this heading">¶</a></h1>
+<p>This notebook introduces a selection of
+components corresponding to generating realistic
+simulated cryo-EM data and running key ASPIRE-Python
+Abinitio model components as a pipeline.</p>
+<section id="imports">
+<h2>Imports<a class="headerlink" href="#imports" title="Link to this heading">¶</a></h2>
+<p>First import some of the usual suspects.
+In addition, import some classes from
+the ASPIRE package that will be used throughout this experiment.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.abinitio</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLSync3N</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.denoising</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultClassAvgSource</span><span class="p">,</span> <span class="n">DenoisedSource</span><span class="p">,</span> <span class="n">DenoiserCov2D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.downloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">emdb_2660</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.noise</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnisotropicNoiseEstimator</span><span class="p">,</span> <span class="n">CustomNoiseAdder</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.operators</span><span class="w"> </span><span class="kn">import</span> <span class="n">FunctionFilter</span><span class="p">,</span> <span class="n">RadialCTFFilter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.reconstruction</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeanEstimator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrientedSource</span><span class="p">,</span> <span class="n">Simulation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">mean_aligned_angular_distance</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h2>
+<p>Some example simulation configurations.
+Small sim: img_size 32, num_imgs 10000, n_classes 1000, n_nbor 10
+Medium sim: img_size 64, num_imgs 20000, n_classes 2000, n_nbor 10
+Large sim: img_size 129, num_imgs 30000, n_classes 2000, n_nbor 20</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">interactive</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># Draw blocking interactive plots?</span>
+<span class="n">do_cov2d</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Use CWF coefficients</span>
+<span class="n">img_size</span> <span class="o">=</span> <span class="mi">32</span>  <span class="c1"># Downsample the volume to a desired resolution</span>
+<span class="n">num_imgs</span> <span class="o">=</span> <span class="mi">10000</span>  <span class="c1"># How many images in our source.</span>
+<span class="n">n_classes</span> <span class="o">=</span> <span class="mi">1000</span>  <span class="c1"># How many class averages to compute.</span>
+<span class="n">n_nbor</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># How many neighbors to stack</span>
+<span class="n">noise_variance</span> <span class="o">=</span> <span class="mf">5e-7</span>  <span class="c1"># Set a target noise variance</span>
+</pre></div>
+</div>
+</section>
+<section id="simulation-data">
+<h2>Simulation Data<a class="headerlink" href="#simulation-data" title="Link to this heading">¶</a></h2>
+<p>Start with the hi-res volume map EMDB-2660 sourced from EMDB,
+<a class="reference external" href="https://www.ebi.ac.uk/emdb/EMD-2660">https://www.ebi.ac.uk/emdb/EMD-2660</a>, and dowloaded via ASPIRE’s downloader utility.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">og_v</span> <span class="o">=</span> <span class="n">emdb_2660</span><span class="p">()</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Original volume map data&quot;</span> <span class="sa">f</span><span class="s2">&quot; shape: </span><span class="si">{</span><span class="n">og_v</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> dtype:</span><span class="si">{</span><span class="n">og_v</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="c1"># Then create a filter based on that variance</span>
+<span class="c1"># This is an example of a custom noise profile</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">noise_function</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="c1"># White</span>
+    <span class="n">f1</span> <span class="o">=</span> <span class="n">noise_variance</span>
+    <span class="c1"># Violet-ish</span>
+    <span class="n">f2</span> <span class="o">=</span> <span class="n">noise_variance</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">img_size</span> <span class="o">*</span> <span class="n">img_size</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">f1</span> <span class="o">+</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">f2</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+
+
+<span class="n">custom_noise</span> <span class="o">=</span> <span class="n">CustomNoiseAdder</span><span class="p">(</span><span class="n">noise_filter</span><span class="o">=</span><span class="n">FunctionFilter</span><span class="p">(</span><span class="n">noise_function</span><span class="p">))</span>
+
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initialize CTF filters.&quot;</span><span class="p">)</span>
+<span class="c1"># Create some CTF effects</span>
+<span class="n">pixel_size</span> <span class="o">=</span> <span class="n">og_v</span><span class="o">.</span><span class="n">pixel_size</span>  <span class="c1"># Pixel size (in angstroms)</span>
+<span class="n">voltage</span> <span class="o">=</span> <span class="mi">200</span>  <span class="c1"># Voltage (in KV)</span>
+<span class="n">defocus_min</span> <span class="o">=</span> <span class="mf">1.5e4</span>  <span class="c1"># Minimum defocus value (in angstroms)</span>
+<span class="n">defocus_max</span> <span class="o">=</span> <span class="mf">2.5e4</span>  <span class="c1"># Maximum defocus value (in angstroms)</span>
+<span class="n">defocus_ct</span> <span class="o">=</span> <span class="mi">7</span>  <span class="c1"># Number of defocus groups.</span>
+<span class="n">Cs</span> <span class="o">=</span> <span class="mf">2.0</span>  <span class="c1"># Spherical aberration</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.1</span>  <span class="c1"># Amplitude contrast</span>
+
+<span class="c1"># Create filters</span>
+<span class="n">ctf_filters</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">RadialCTFFilter</span><span class="p">(</span><span class="n">pixel_size</span><span class="p">,</span> <span class="n">voltage</span><span class="p">,</span> <span class="n">defocus</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">Cs</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">defocus_min</span><span class="p">,</span> <span class="n">defocus_max</span><span class="p">,</span> <span class="n">defocus_ct</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="c1"># Finally create the Simulation</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span>
+    <span class="n">n</span><span class="o">=</span><span class="n">num_imgs</span><span class="p">,</span>
+    <span class="n">vols</span><span class="o">=</span><span class="n">og_v</span><span class="p">,</span>
+    <span class="n">noise_adder</span><span class="o">=</span><span class="n">custom_noise</span><span class="p">,</span>
+    <span class="n">unique_filters</span><span class="o">=</span><span class="n">ctf_filters</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Downsample</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">img_size</span><span class="p">)</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
+
+<span class="c1"># Peek</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># Use phase_flip to attempt correcting for CTF.</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Perform phase flip to input images.&quot;</span><span class="p">)</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">phase_flip</span><span class="p">()</span>
+
+<span class="c1"># Estimate the noise and `Whiten` based on the estimated noise</span>
+<span class="n">aiso_noise_estimator</span> <span class="o">=</span> <span class="n">AnisotropicNoiseEstimator</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">whiten</span><span class="p">(</span><span class="n">aiso_noise_estimator</span><span class="p">)</span>
+
+<span class="c1"># Cache to memory for some speedup</span>
+<span class="n">src</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
+
+<span class="c1"># Plot the noise profile for inspection</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">aiso_noise_estimator</span><span class="o">.</span><span class="n">filter</span><span class="o">.</span><span class="n">evaluate_grid</span><span class="p">(</span><span class="n">img_size</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># Peek, what do the whitened images look like...</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="optional-cwf-denoising">
+<h2>Optional: CWF Denoising<a class="headerlink" href="#optional-cwf-denoising" title="Link to this heading">¶</a></h2>
+<p>Optionally generate an alternative source that is denoised with <cite>cov2d</cite>,
+then configure a customized aligner. This allows the use of CWF denoised
+images for classification, but stacks the original images for averages
+used in the remainder of the reconstruction pipeline.</p>
+<p>In this example, this behavior is controlled by the <cite>do_cov2d</cite> boolean variable.
+When disabled, the original src and default aligner is used.
+If you will not be using cov2d,
+you may remove this code block and associated variables.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">classification_src</span> <span class="o">=</span> <span class="n">src</span>
+<span class="k">if</span> <span class="n">do_cov2d</span><span class="p">:</span>
+    <span class="c1"># Use CWF denoising</span>
+    <span class="n">cwf_denoiser</span> <span class="o">=</span> <span class="n">DenoiserCov2D</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+    <span class="c1"># Use denoised src for classification</span>
+    <span class="n">classification_src</span> <span class="o">=</span> <span class="n">DenoisedSource</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">cwf_denoiser</span><span class="p">)</span>
+    <span class="c1"># Peek, what do the denoised images look like...</span>
+    <span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+        <span class="n">classification_src</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="class-averaging">
+<h2>Class Averaging<a class="headerlink" href="#class-averaging" title="Link to this heading">¶</a></h2>
+<p>Now perform classification and averaging for each class.
+This also demonstrates the potential to use a different source for classification and averaging.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">avgs</span> <span class="o">=</span> <span class="n">DefaultClassAvgSource</span><span class="p">(</span>
+    <span class="n">classification_src</span><span class="p">,</span>
+    <span class="n">n_nbor</span><span class="o">=</span><span class="n">n_nbor</span><span class="p">,</span>
+    <span class="n">averager_src</span><span class="o">=</span><span class="n">src</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1"># We&#39;ll continue our pipeline with the first ``n_classes`` from ``avgs``.</span>
+<span class="n">avgs</span> <span class="o">=</span> <span class="n">avgs</span><span class="p">[:</span><span class="n">n_classes</span><span class="p">]</span><span class="o">.</span><span class="n">cache</span><span class="p">()</span>
+
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">avgs</span><span class="o">.</span><span class="n">images</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># Save off the set of class average images.</span>
+<span class="n">avgs</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;simulated_abinitio_pipeline_class_averages.star&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="common-line-estimation">
+<h2>Common Line Estimation<a class="headerlink" href="#common-line-estimation" title="Link to this heading">¶</a></h2>
+<p>Next create a CL instance for estimating orientation of projections
+using the Common Line with Synchronization Voting method.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Begin Orientation Estimation&quot;</span><span class="p">)</span>
+
+<span class="c1"># Stash true rotations for later comparison.</span>
+<span class="c1"># Note class selection re-ordered our images, so we remap the indices back to the original source.</span>
+<span class="n">indices</span> <span class="o">=</span> <span class="n">avgs</span><span class="o">.</span><span class="n">src</span><span class="o">.</span><span class="n">selection_indices</span><span class="p">[:</span><span class="n">n_classes</span><span class="p">]</span>
+<span class="n">true_rotations</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">rotations</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+
+<span class="c1"># Create a custom orientation estimation object for ``avgs``.</span>
+<span class="n">orient_est</span> <span class="o">=</span> <span class="n">CLSync3N</span><span class="p">(</span><span class="n">avgs</span><span class="p">,</span> <span class="n">n_theta</span><span class="o">=</span><span class="mi">180</span><span class="p">)</span>
+
+<span class="c1"># Initialize an ``OrientedSource`` class instance that performs orientation</span>
+<span class="c1"># estimation in a lazy fashion upon request of images or rotations.</span>
+<span class="n">oriented_src</span> <span class="o">=</span> <span class="n">OrientedSource</span><span class="p">(</span><span class="n">avgs</span><span class="p">,</span> <span class="n">orient_est</span><span class="p">)</span>
+
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Compare with known rotations&quot;</span><span class="p">)</span>
+<span class="c1"># Compare with known true rotations. ``mean_aligned_angular_distance`` globally aligns the estimated</span>
+<span class="c1"># rotations to the ground truth and finds the mean angular distance between them.</span>
+<span class="n">mean_ang_dist</span> <span class="o">=</span> <span class="n">mean_aligned_angular_distance</span><span class="p">(</span><span class="n">oriented_src</span><span class="o">.</span><span class="n">rotations</span><span class="p">,</span> <span class="n">true_rotations</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">&quot;Mean angular distance between globally aligned estimates and ground truth rotations: </span><span class="si">{</span><span class="n">mean_ang_dist</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="volume-reconstruction">
+<h2>Volume Reconstruction<a class="headerlink" href="#volume-reconstruction" title="Link to this heading">¶</a></h2>
+<p>Using the estimated rotations, attempt to reconstruct a volume.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Begin Volume reconstruction&quot;</span><span class="p">)</span>
+
+<span class="c1"># Setup an estimator to perform the back projection.</span>
+<span class="n">estimator</span> <span class="o">=</span> <span class="n">MeanEstimator</span><span class="p">(</span><span class="n">oriented_src</span><span class="p">)</span>
+
+<span class="c1"># Perform the estimation and save the volume.</span>
+<span class="n">estimated_volume</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">estimate</span><span class="p">()</span>
+<span class="n">fn</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;estimated_volume_n</span><span class="si">{</span><span class="n">num_imgs</span><span class="si">}</span><span class="s2">_c</span><span class="si">{</span><span class="n">n_classes</span><span class="si">}</span><span class="s2">_m</span><span class="si">{</span><span class="n">n_nbor</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">img_size</span><span class="si">}</span><span class="s2">.mrc&quot;</span>
+<span class="n">estimated_volume</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Peek at result</span>
+<span class="k">if</span> <span class="n">interactive</span><span class="p">:</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">estimated_volume</span><span class="o">.</span><span class="n">asnumpy</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># FSC with ground truth volume</span>
+<span class="n">ds_v</span> <span class="o">=</span> <span class="n">og_v</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">img_size</span><span class="p">)</span>
+<span class="n">fsc</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">estimated_volume</span><span class="o">.</span><span class="n">fsc</span><span class="p">(</span><span class="n">ds_v</span><span class="p">,</span> <span class="n">cutoff</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Estimated FSC </span><span class="si">{</span><span class="n">fsc</span><span class="si">}</span><span class="s2"> Angstroms at </span><span class="si">{</span><span class="n">ds_v</span><span class="o">.</span><span class="n">pixel_size</span><span class="si">}</span><span class="s2"> Angstrom per pixel.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-auto-experiments-simulated-abinitio-pipeline-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/319fe5fdbbd1161ce5511d71c756f62d/simulated_abinitio_pipeline.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">simulated_abinitio_pipeline.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/b6e098e8fede021181794706d0d16acf/simulated_abinitio_pipeline.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">simulated_abinitio_pipeline.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../_downloads/7007b08b90f9228a914c1eff63f5df3e/simulated_abinitio_pipeline.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">simulated_abinitio_pipeline.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="experimental_abinitio_pipeline_10081.html" class="btn btn-neutral float-left" title="Abinitio Pipeline - Experimental Data Empiar 10081" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="commonline_lud_simulated_data.html" class="btn btn-neutral float-right" title="Commonlines Method using LUD" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

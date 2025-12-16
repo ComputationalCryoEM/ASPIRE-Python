@@ -1,0 +1,21 @@
+aspire.optimization package
+===========================
+
+Submodules
+----------
+
+aspire.optimization.conj\_grad module
+-------------------------------------
+
+.. automodule:: aspire.optimization.conj_grad
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.optimization
+   :members:
+   :undoc-members:
+   :show-inheritance:
