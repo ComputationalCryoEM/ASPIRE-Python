@@ -137,19 +137,16 @@ class CLSymmetryC3C4(CLMatrix):
         vi is the third row of the i'th rotation matrix Ri.
         """
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-        # Step 1: Detect a single pair of common-lines between each pair of images
-        self.build_clmatrix()
-
-        # Step 2: Detect self-common-lines in each image
+        # Step 1: Detect self-common-lines in each image
         sclmatrix = self._self_clmatrix_c3_c4()
 
-        # Step 3: Calculate self-relative-rotations
+        # Step 2: Calculate self-relative-rotations
         Riis = self._estimate_all_Riis_c3_c4(sclmatrix)
 
-        # Step 4: Calculate relative rotations
+        # Step 3: Calculate relative rotations
         Rijs = self._estimate_all_Rijs_c3_c4()
 
-        # Step 5: Inner J-synchronization
+        # Step 4: Inner J-synchronization
         vijs, viis = self._local_J_sync_c3_c4(Rijs, Riis)
 
         return vijs, viis
