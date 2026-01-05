@@ -63,9 +63,6 @@ class CommonlineIRLS(CommonlineLUD):
         """
         Estimate rotation matrices using the common lines method with IRLS optimization.
         """
-        logger.info("Computing the common lines matrix.")
-        self.build_clmatrix()
-
         self.S = self._construct_S(self.clmatrix)
         weights = np.ones(2 * self.n_img, dtype=self.dtype)
         gram = np.eye(2 * self.n_img, dtype=self.dtype)

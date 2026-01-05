@@ -27,9 +27,6 @@ class CommonlineSDP(CLMatrix):
         """
         Estimate rotation matrices using the common lines method with semi-definite programming.
         """
-        logger.info("Computing the common lines matrix.")
-        self.build_clmatrix()
-
         S = self._construct_S(self.clmatrix)
         A, b = self._sdp_prep()
         gram = self._compute_gram_SDP(S, A, b)
