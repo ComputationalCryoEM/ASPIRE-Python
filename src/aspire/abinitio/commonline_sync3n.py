@@ -155,10 +155,6 @@ class CLSync3N(CLMatrix):
         """
 
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-
-        # Detect a single pair of common-lines between each pair of images
-        self.build_clmatrix()
-
         # Initial estimate of viewing directions
         # Calculate relative rotations
         Rijs0 = self._estimate_all_Rijs(self.clmatrix)
