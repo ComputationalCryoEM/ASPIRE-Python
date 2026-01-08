@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from numpy.linalg import norm, svd
 
-from aspire.abinitio import CLOrient3D, JSync
+from aspire.abinitio import CLMatrix, JSync
 from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, trange
@@ -17,7 +17,7 @@ from .commonline_utils import (
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryC3C4(CLOrient3D):
+class CLSymmetryC3C4(CLMatrix):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with
     C3 and C4 cyclic symmetry.
@@ -137,19 +137,16 @@ class CLSymmetryC3C4(CLOrient3D):
         vi is the third row of the i'th rotation matrix Ri.
         """
         logger.info(f"Estimating relative viewing directions for {self.n_img} images.")
-        # Step 1: Detect a single pair of common-lines between each pair of images
-        self.build_clmatrix()
-
-        # Step 2: Detect self-common-lines in each image
+        # Step 1: Detect self-common-lines in each image
         sclmatrix = self._self_clmatrix_c3_c4()
 
-        # Step 3: Calculate self-relative-rotations
+        # Step 2: Calculate self-relative-rotations
         Riis = self._estimate_all_Riis_c3_c4(sclmatrix)
 
-        # Step 4: Calculate relative rotations
+        # Step 3: Calculate relative rotations
         Rijs = self._estimate_all_Rijs_c3_c4()
 
-        # Step 5: Inner J-synchronization
+        # Step 4: Inner J-synchronization
         vijs, viis = self._local_J_sync_c3_c4(Rijs, Riis)
 
         return vijs, viis

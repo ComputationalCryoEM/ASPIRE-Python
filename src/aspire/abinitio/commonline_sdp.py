@@ -4,14 +4,14 @@ import cvxpy as cp
 import numpy as np
 from scipy.sparse import csr_array
 
-from aspire.abinitio import CLOrient3D
+from aspire.abinitio import CLMatrix
 from aspire.utils import nearest_rotations
 from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
 
 
-class CommonlineSDP(CLOrient3D):
+class CommonlineSDP(CLMatrix):
     """
     Class to estimate 3D orientations using semi-definite programming.
 
@@ -27,9 +27,6 @@ class CommonlineSDP(CLOrient3D):
         """
         Estimate rotation matrices using the common lines method with semi-definite programming.
         """
-        logger.info("Computing the common lines matrix.")
-        self.build_clmatrix()
-
         S = self._construct_S(self.clmatrix)
         A, b = self._sdp_prep()
         gram = self._compute_gram_SDP(S, A, b)

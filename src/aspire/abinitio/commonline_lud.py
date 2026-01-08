@@ -138,9 +138,6 @@ class CommonlineLUD(CommonlineSDP):
         """
         Estimate rotation matrices using the common lines method with LUD optimization.
         """
-        logger.info("Computing the common lines matrix.")
-        self.build_clmatrix()
-
         self._cl_to_C(self.clmatrix)
         gram = self._compute_Gram()
         gram = self._restructure_Gram(gram)
