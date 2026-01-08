@@ -89,7 +89,7 @@ class CLMatrix(CLOrient3D):
         # Unpack result
         self._shifts_1d, self.clmatrix = res
 
-        return self.clmatrix
+        return res
 
     def build_clmatrix_host(self):
         """
