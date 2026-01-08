@@ -3,7 +3,6 @@ import pytest
 
 from aspire.abinitio import (
     CLMatrix,
-    CLOrient3D,
     CLSymmetryC2,
     CLSymmetryC3C4,
     CLSync3N,
@@ -14,7 +13,6 @@ from aspire.abinitio import (
 )
 from aspire.downloader import emdb_2660
 from aspire.source import Simulation
-from aspire.utils import rots_to_clmatrix
 
 SUBCLASSES = [
     CLSymmetryC2,
