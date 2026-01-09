@@ -100,9 +100,9 @@ class RotCov2D:
         self.dtype = self.basis.dtype
         assert basis.ndim == 2, "Only two-dimensional basis functions are needed."
 
-    def _ctf_identity_mat(self):
+    def _identity_mat(self):
         """
-        Returns CTF identity corresponding to the `matrix_type` of `self.basis`.
+        Returns identity corresponding to the `matrix_type` of `self.basis`.
 
         :return: Identity BlkDiagMatrix or DiagMatrix
         """
@@ -110,6 +110,17 @@ class RotCov2D:
             return DiagMatrix.eye(self.basis.count, dtype=self.dtype)
         else:
             return BlkDiagMatrix.eye(self.basis.blk_diag_cov_shape, dtype=self.dtype)
+
+    def _zeros_mat(self):
+        """
+        Returns zero initialized matrix according to the `matrix_type` of `self.basis`.
+
+        :return: Zeros BlkDiagMatrix or DiagMatrix
+        """
+        if self.basis.matrix_type == DiagMatrix:
+            return DiagMatrix.zeros(self.basis.count, dtype=self.dtype)
+        else:
+            return BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape, dtype=self.dtype)
 
     def _get_mean(self, coefs):
         """
@@ -211,7 +222,7 @@ class RotCov2D:
         # should assert we require none or both...
         if (ctf_basis is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coefs.shape[0], dtype=int)
-            ctf_basis = [self._ctf_identity_mat()]
+            ctf_basis = [self._identity_mat()]
 
         b = np.zeros(self.basis.count, dtype=coefs.dtype)
 
@@ -272,7 +283,7 @@ class RotCov2D:
 
         if (ctf_basis is None) or (ctf_idx is None):
             ctf_idx = np.zeros(coefs.shape[0], dtype=int)
-            ctf_basis = [self._ctf_identity_mat()]
+            ctf_basis = [self._identity_mat()]
 
         def identity(x):
             return x
@@ -529,7 +540,7 @@ class BatchedRotCov2D(RotCov2D):
             logger.info("CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
-            self.ctf_basis = [self._ctf_identity_mat()]
+            self.ctf_basis = [self._identity_mat()]
 
         else:
             logger.info("Represent CTF filters in basis")
@@ -596,7 +607,7 @@ class BatchedRotCov2D(RotCov2D):
 
         A_mean = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape, self.dtype)
         A_covar = [None for _ in ctf_basis]
-        M_covar = BlkDiagMatrix.zeros_like(A_mean)
+        M_covar = self._zeros_mat()
 
         for k in np.unique(ctf_idx):
             weight = float(np.count_nonzero(ctf_idx == k) / src.n)
@@ -609,7 +620,6 @@ class BatchedRotCov2D(RotCov2D):
             A_mean += A_mean_k
             A_covar_k = np.sqrt(weight).astype(self.dtype) * ctf_basis_k_sq
             A_covar[k] = A_covar_k
-
             M_covar += A_covar_k
 
         self.A_mean = A_mean
@@ -671,13 +681,17 @@ class BatchedRotCov2D(RotCov2D):
     def _solve_covar_direct(self, A_covar, b_covar, M, covar_est_opt):
         # A_covar is a list of DiagMatrix, representing each ctf in self.basis.
         # b_covar is a BlkDiagMatrix
-        # M is sum of weighted A squared, only used for cg, ignore here.
-        A_covar = DiagMatrix(np.concatenate([x.asnumpy() for x in A_covar]))
-        A2i = A_covar * A_covar
+        # M is sum of weighted A squared.
+        # covar_est_opt ignored
 
-        res = BlkDiagMatrix.empty(b_covar.nblocks, self.dtype)
-        for b in range(b_covar.nblocks):
-            res.data[b] = b_covar[b] / A2i[b]
+        # Compute inverse
+        Minv = M.invert()
+
+        # The combined left right scaling here is equivalent to
+        # looping & building dense array blks of the diagonals cross
+        # multiplied to be used for elementwise division as was done
+        # in Yunpeng's code.
+        res = Minv @ b_covar @ Minv
 
         return res
 
@@ -788,7 +802,7 @@ class BatchedRotCov2D(RotCov2D):
         if not self.b_covar:
             self._calc_rhs()
 
-        if not self.A_covar or self.M_covar:
+        if not self.A_covar or (self.M_covar is not None):
             self._calc_op()
 
         if mean_coef is None:

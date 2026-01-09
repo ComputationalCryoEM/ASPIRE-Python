@@ -15,7 +15,7 @@ class FSPCABasis(SteerableBasis2D):
     A class for Fast Steerable Principal Component Analaysis basis.
 
     FSPCA is an extension to Fourier Bessel representations
-    (provided asF BBasis2D/FFBBasis2D), which computes combinations of basis
+    (provided as FFBasis2D/FLEBasis2D), which computes combinations of basis
     coefficients coresponding to the princicpal components of image(s)
     represented in the provided basis.
 

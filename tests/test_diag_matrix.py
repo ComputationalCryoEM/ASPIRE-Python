@@ -488,6 +488,16 @@ def test_pow(diag_matrix_fixture):
     np.testing.assert_allclose(d1.pow(2), ref)
 
 
+def test_invert(diag_matrix_fixture):
+    """
+    Test inversion
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    ref = 1 / d_np[0]
+    np.testing.assert_allclose(d1.invert(), ref)
+
+
 def test_norm(diag_matrix_fixture):
     """
     Test the `norm` compared to Numpy.
