@@ -414,6 +414,15 @@ class DiagMatrix:
 
         return self.pow(val)
 
+    def invert(self):
+        """
+        Return `DiagMatrix` instance containing reciprocal elements,
+        representing the mathematical inverse.
+
+        :return: `DiagMatrix` instance.
+        """
+        return DiagMatrix(1 / self._data)
+
     @property
     def norm(self):
         """
