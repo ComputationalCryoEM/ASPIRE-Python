@@ -293,6 +293,9 @@ class Rotation:
                 f"Expected `angles` to have shape (N,1), got {angles.shape}"
             )
 
+        # Scipy's `from_euler` >=1.17.0 no longer accepts 1D array, reshape (N,1)
+        angles = angles.reshape(-1, 1)
+
         rotation = sp_rot.from_euler(axis, angles, degrees=False)
         matrix = rotation.as_matrix().astype(dtype)
         rot = Rotation(matrix, gimble_lock_warnings=gimble_lock_warnings)
