@@ -6,7 +6,7 @@ import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
-from aspire.abinitio import CLMatrix
+from aspire.abinitio import CLMatrixOrient3D
 from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.utils import J_conjugate, all_pairs, nearest_rotations, random, tqdm, trange
 from aspire.utils.matlab_compat import stable_eigsh
@@ -14,7 +14,7 @@ from aspire.utils.matlab_compat import stable_eigsh
 logger = logging.getLogger(__name__)
 
 
-class CLSync3N(CLMatrix):
+class CLSync3N(CLMatrixOrient3D):
     """
     Define a class to estimate 3D orientations using common lines Sync3N methods (2017).
 
