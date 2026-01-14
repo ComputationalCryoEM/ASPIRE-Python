@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from aspire.abinitio import (
-    CLMatrix,
+    CLMatrixOrient3D,
     CLSymmetryC2,
     CLSymmetryC3C4,
     CLSync3N,
@@ -55,7 +55,7 @@ def src(dtype):
 
 
 def test_class_structure(subclass):
-    assert issubclass(subclass, CLMatrix)
+    assert issubclass(subclass, CLMatrixOrient3D)
 
 
 def test_clmatrix_lazy_eval(subclass, src, caplog):

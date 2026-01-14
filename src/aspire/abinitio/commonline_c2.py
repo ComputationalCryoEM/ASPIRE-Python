@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from scipy.linalg import eigh
 
-from aspire.abinitio import CLMatrix, JSync
+from aspire.abinitio import CLMatrixOrient3D, JSync
 from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.utils import J_conjugate, Rotation, all_pairs
 
@@ -16,7 +16,7 @@ from .commonline_utils import (
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryC2(CLMatrix):
+class CLSymmetryC2(CLMatrixOrient3D):
     """
     Define a class to estimate 3D orientations using common lines methods for molecules with C2 cyclic symmetry.
 
