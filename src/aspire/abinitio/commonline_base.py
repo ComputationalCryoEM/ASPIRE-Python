@@ -202,7 +202,7 @@ class CLOrient3D:
     def shifts(self, value):
         self._shifts = value
 
-    def estimate_shifts(self, equations_factor=1, max_memory=4000):
+    def estimate_shifts(self):
         """
         Estimate 2D shifts in images
 
