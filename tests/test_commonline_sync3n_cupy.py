@@ -89,10 +89,10 @@ def test_stv_host_vs_cupy(cl3n_fixture, rijs_fixture):
     assert cl3n_fixture.J_weighting is False
 
     # Execute CUPY
-    new_vec_cp = cl3n_fixture._signs_times_v_cupy(rijs_fixture, vec)
+    new_vec_cp = cl3n_fixture.J_sync._signs_times_v_cupy(rijs_fixture, vec)
 
     # Execute host
-    new_vec_h = cl3n_fixture._signs_times_v_host(rijs_fixture, vec)
+    new_vec_h = cl3n_fixture.J_sync._signs_times_v_host(rijs_fixture, vec)
 
     # Compare host to cupy calls
     np.testing.assert_allclose(new_vec_cp, new_vec_h)
@@ -111,10 +111,10 @@ def test_stvJwt_host_vs_cupy(cl3n_fixture, rijs_fixture):
     cl3n_fixture.J_weighting = True
 
     # Execute CUPY
-    new_vec_cp = cl3n_fixture._signs_times_v_cupy(rijs_fixture, vec)
+    new_vec_cp = cl3n_fixture.J_sync._signs_times_v_cupy(rijs_fixture, vec)
 
     # Execute host
-    new_vec_h = cl3n_fixture._signs_times_v_host(rijs_fixture, vec)
+    new_vec_h = cl3n_fixture.J_sync._signs_times_v_host(rijs_fixture, vec)
 
     # Compare host to cupy calls
     rtol = 1e-7  # np testing default
@@ -226,7 +226,7 @@ def test_signs_times_v_mex(matlab_ref_fixture):
     # Equivalent matlab
     # vec=ones([1,np]);
 
-    new_vec = cl3n._signs_times_v(Rijs, vec)
+    new_vec = cl3n.J_sync._signs_times_v(Rijs, vec)
 
     ref_vec = [0, -2, -2, 0, -6, -4, -2, -2, -2, 0]
 

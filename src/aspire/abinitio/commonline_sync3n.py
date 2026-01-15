@@ -6,7 +6,7 @@ import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
-from aspire.abinitio import CLMatrixOrient3D
+from aspire.abinitio import CLMatrixOrient3D, JSync
 from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.utils import J_conjugate, all_pairs, nearest_rotations, random, tqdm, trange
 from aspire.utils.matlab_compat import stable_eigsh
@@ -116,7 +116,6 @@ class CLSync3N(CLMatrixOrient3D):
 
         # Sync3N specific vars
         self.S_weighting = S_weighting
-        self.J_weighting = J_weighting
         self._D_null = 1e-13
         self.hist_intervals = int(hist_intervals)
         # Warn if histogram may be too sparse for curve fitting
@@ -125,6 +124,17 @@ class CLSync3N(CLMatrixOrient3D):
                 f"`hist_intervals` {hist_intervals} > src.n {src.n}."
                 "  Consider reducing if curve fitting is infeasable."
             )
+
+        # Setup J-synchronization
+        self.J_weighting = J_weighting
+        self.J_sync = JSync(
+            src.n,
+            epsilon=self.epsilon,
+            max_iters=self.max_iters,
+            seed=self.seed,
+            disable_gpu=disable_gpu,
+            J_weighting=self.J_weighting,
+        )
 
         # Auto configure GPU
         self.__gpu_module = None
@@ -160,7 +170,7 @@ class CLSync3N(CLMatrixOrient3D):
         Rijs0 = self._estimate_all_Rijs(self.clmatrix)
 
         # Compute and apply global handedness
-        Rijs = self._global_J_sync(Rijs0)
+        Rijs = self.J_sync.global_J_sync(Rijs0)
 
         # Build sync3n matrix
         S = self._construct_sync3n_matrix(Rijs)
@@ -1157,9 +1167,14 @@ class CLSync3N(CLMatrixOrient3D):
         import cupy as cp
 
         # Read in contents of file
-        fp = os.path.join(os.path.dirname(__file__), "commonline_sync3n.cu")
+        src_dir = os.path.dirname(__file__)
+        fp = os.path.join(src_dir, "commonline_sync3n.cu")
         with open(fp, "r") as fh:
             module_code = fh.read()
 
         # CUPY compile the CUDA code
-        return cp.RawModule(code=module_code, backend="nvcc")
+        return cp.RawModule(
+            code=module_code,
+            backend="nvcc",
+            options=("-I" + src_dir,),  # inject path for common_kernels
+        )
