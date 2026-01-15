@@ -6,7 +6,7 @@ import numpy as np
 from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
-from aspire.abinitio import CLMatrixOrient3D
+from aspire.abinitio import CLMatrixOrient3D, JSync
 from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.utils import J_conjugate, all_pairs, nearest_rotations, random, tqdm, trange
 from aspire.utils.matlab_compat import stable_eigsh
@@ -27,22 +27,6 @@ class CLSync3N(CLMatrixOrient3D):
     ISSN 1047-8477,
     https://doi.org/10.1016/j.jsb.2017.09.007.
     """
-
-    # Initialize alternatives
-    #
-    # When we find the best J-configuration, we also compare it to the alternative 2nd best one.
-    # this comparison is done for every pair in the triplet independently. to make sure that the
-    # alternative is indeed different in relation to the pair, we document the differences between
-    # the configurations in advance:
-    # ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from best_conf in relation to pair
-
-    _ALTS = np.array(
-        [
-            [[1, 2, 1], [0, 2, 0], [0, 0, 1], [1, 0, 0]],
-            [[2, 3, 3], [3, 3, 2], [3, 1, 3], [2, 1, 2]],
-        ],
-        dtype=int,
-    )
 
     def __init__(
         self,
@@ -116,7 +100,6 @@ class CLSync3N(CLMatrixOrient3D):
 
         # Sync3N specific vars
         self.S_weighting = S_weighting
-        self.J_weighting = J_weighting
         self._D_null = 1e-13
         self.hist_intervals = int(hist_intervals)
         # Warn if histogram may be too sparse for curve fitting
@@ -125,6 +108,16 @@ class CLSync3N(CLMatrixOrient3D):
                 f"`hist_intervals` {hist_intervals} > src.n {src.n}."
                 "  Consider reducing if curve fitting is infeasable."
             )
+
+        # Setup J-synchronization
+        self.J_sync = JSync(
+            src.n,
+            epsilon=self.epsilon,
+            max_iters=self.max_iters,
+            seed=self.seed,
+            disable_gpu=disable_gpu,
+            J_weighting=J_weighting,
+        )
 
         # Auto configure GPU
         self.__gpu_module = None
@@ -160,7 +153,7 @@ class CLSync3N(CLMatrixOrient3D):
         Rijs0 = self._estimate_all_Rijs(self.clmatrix)
 
         # Compute and apply global handedness
-        Rijs = self._global_J_sync(Rijs0)
+        Rijs = self.J_sync.global_J_sync(Rijs0)
 
         # Build sync3n matrix
         S = self._construct_sync3n_matrix(Rijs)
