@@ -190,7 +190,7 @@ class MatrixTestCase(TestCase):
         """
 
         # Create simple array
-        x = np.arange(25).reshape(5, 5)
+        x = np.arange(25, dtype=np.float32).reshape(5, 5)
         # Set diagonal elements = -1
         x[np.diag_indices_from(x)] *= -1
         # Negate largest elem (last row) of first col
