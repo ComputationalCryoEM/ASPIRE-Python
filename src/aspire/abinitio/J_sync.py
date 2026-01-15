@@ -338,9 +338,14 @@ class JSync:
         import cupy as cp
 
         # Read in contents of file
-        fp = os.path.join(os.path.dirname(__file__), "commonline_sync3n.cu")
+        src_dir = os.path.dirname(__file__)
+        fp = os.path.join(src_dir, "J_sync.cu")
         with open(fp, "r") as fh:
             module_code = fh.read()
 
         # CUPY compile the CUDA code
-        return cp.RawModule(code=module_code, backend="nvcc")
+        return cp.RawModule(
+            code=module_code,
+            backend="nvcc",
+            options=("-I" + src_dir,),  # inject path for common_kernels
+        )

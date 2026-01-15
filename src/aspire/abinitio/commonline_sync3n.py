@@ -28,6 +28,22 @@ class CLSync3N(CLMatrixOrient3D):
     https://doi.org/10.1016/j.jsb.2017.09.007.
     """
 
+    # Initialize alternatives
+    #
+    # When we find the best J-configuration, we also compare it to the alternative 2nd best one.
+    # this comparison is done for every pair in the triplet independently. to make sure that the
+    # alternative is indeed different in relation to the pair, we document the differences between
+    # the configurations in advance:
+    # ALTS(:,best_conf,pair) = the two configurations in which J-sync differs from best_conf in relation to pair
+
+    _ALTS = np.array(
+        [
+            [[1, 2, 1], [0, 2, 0], [0, 0, 1], [1, 0, 0]],
+            [[2, 3, 3], [3, 3, 2], [3, 1, 3], [2, 1, 2]],
+        ],
+        dtype=int,
+    )
+
     def __init__(
         self,
         src,
@@ -110,13 +126,14 @@ class CLSync3N(CLMatrixOrient3D):
             )
 
         # Setup J-synchronization
+        self.J_weighting = J_weighting
         self.J_sync = JSync(
             src.n,
             epsilon=self.epsilon,
             max_iters=self.max_iters,
             seed=self.seed,
             disable_gpu=disable_gpu,
-            J_weighting=J_weighting,
+            J_weighting=self.J_weighting,
         )
 
         # Auto configure GPU
@@ -1150,9 +1167,14 @@ class CLSync3N(CLMatrixOrient3D):
         import cupy as cp
 
         # Read in contents of file
-        fp = os.path.join(os.path.dirname(__file__), "commonline_sync3n.cu")
+        src_dir = os.path.dirname(__file__)
+        fp = os.path.join(src_dir, "commonline_sync3n.cu")
         with open(fp, "r") as fh:
             module_code = fh.read()
 
         # CUPY compile the CUDA code
-        return cp.RawModule(code=module_code, backend="nvcc")
+        return cp.RawModule(
+            code=module_code,
+            backend="nvcc",
+            options=("-I" + src_dir,),  # inject path for common_kernels
+        )
