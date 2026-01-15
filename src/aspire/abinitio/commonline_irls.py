@@ -26,6 +26,7 @@ class CommonlineIRLS(CommonlineLUD):
         alpha=None,
         max_rankZ=None,
         max_rankW=None,
+        disable_gpu=False,
         **kwargs,
     ):
         """
@@ -41,6 +42,9 @@ class CommonlineIRLS(CommonlineLUD):
             If None, defaults to max(6, n_img // 4).
         :param max_rankW: Maximum rank used for projecting the W matrix (for adaptive projection).
             If None, defaults to max(6, n_img // 4).
+        :param disable_gpu: Disables GPU acceleration;
+            forces CPU only code for this module.
+            Defaults to automatically using GPU when available.
         """
 
         self.num_itrs = num_itrs
@@ -56,6 +60,7 @@ class CommonlineIRLS(CommonlineLUD):
             max_rankZ=max_rankZ,
             max_rankW=max_rankW,
             alpha=alpha,
+            disable_gpu=disable_gpu,
             **kwargs,
         )
 

@@ -37,6 +37,7 @@ class CommonlineLUD(CommonlineSDP):
         max_mu_itr=20,
         delta_mu_l=0.1,
         delta_mu_u=10,
+        disable_gpu=False,
         **kwargs,
     ):
         """
@@ -84,6 +85,9 @@ class CommonlineLUD(CommonlineSDP):
             Default is 0.1.
         :param delta_mu_u: Upper bound for relative drop ratio to trigger an increase in `mu`.
             Default is 10.
+        :param disable_gpu: Disables GPU acceleration;
+            forces CPU only code for this module.
+            Defaults to automatically using GPU when available.
         """
 
         # Handle parameters specific to CommonlineLUD

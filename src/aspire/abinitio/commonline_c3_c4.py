@@ -49,6 +49,7 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
         degree_res=1,
         seed=None,
         mask=True,
+        disable_gpu=False,
         **kwargs,
     ):
         """
@@ -66,6 +67,9 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
         :param seed: Optional seed for RNG.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
+        :param disable_gpu: Disables GPU acceleration;
+            forces CPU only code for this module.
+            Defaults to automatically using GPU when available.
         """
 
         super().__init__(
@@ -75,6 +79,7 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
             max_shift=max_shift,
             shift_step=shift_step,
             mask=mask,
+            disable_gpu=disable_gpu,
             **kwargs,
         )
 
