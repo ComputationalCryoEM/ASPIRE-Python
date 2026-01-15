@@ -34,6 +34,7 @@ class CLSyncVoting(CLMatrixOrient3D):
         hist_bin_width=3,
         full_width=6,
         mask=True,
+        disable_gpu=False,
         **kwargs,
     ):
         """
@@ -52,6 +53,9 @@ class CLSyncVoting(CLMatrixOrient3D):
             `hist_bin_width`s required to find at least one valid image index.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
+        :param disable_gpu: Disables GPU acceleration;
+            forces CPU only code for this module.
+            Defaults to automatically using GPU when available.
         """
         super().__init__(
             src,
@@ -62,6 +66,7 @@ class CLSyncVoting(CLMatrixOrient3D):
             hist_bin_width=hist_bin_width,
             full_width=full_width,
             mask=mask,
+            disable_gpu=disable_gpu,
             **kwargs,
         )
         self.syncmatrix = None
