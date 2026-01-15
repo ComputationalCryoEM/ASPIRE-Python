@@ -364,7 +364,7 @@ def fix_signs(u):
     # Create array of sign corrections
     signs = np.take_along_axis(u, np.expand_dims(index_array, axis=0), axis=0).squeeze()
     _abs = np.absolute(signs)
-    signs = np.divide(_abs, signs, where=_abs != 0)
+    np.divide(_abs, signs, out=signs, where=_abs != 0)
 
     # Now we only care about the sign +1/-1.
     #  The following corrects for any numerical division noise,
