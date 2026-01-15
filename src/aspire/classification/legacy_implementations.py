@@ -145,7 +145,7 @@ def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, seed=None):
     #  This became a problem with very noisy images...
     p = np.power(eigval, alpha)
     mask = np.where(p, p, -1)  # taking the log in the next step will yield a 0
-    m = np.exp(o1 * np.log(p, where=(mask > 0)))
+    m = np.exp(o1 * np.log(p, where=(mask > 0), out=None))
     p_m = m / m.sum()
     x = random(size=len(m), seed=seed)
     m_id = np.where(x < sample_n * p_m)[0]
