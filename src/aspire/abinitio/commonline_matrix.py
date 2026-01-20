@@ -50,7 +50,8 @@ class CLMatrixOrient3D(CLOrient3D):
                 logger.info("cupy not found, defaulting to numpy.")
 
         # Outputs
-        self.clmatrix = None
+        self._clmatrix = None
+        self._clmatrix_logged = False
 
     @property
     def clmatrix(self):
@@ -63,13 +64,16 @@ class CLMatrixOrient3D(CLOrient3D):
         """
         if self._clmatrix is None:
             self.build_clmatrix()
-        else:
+            self._clmatrix_logged = False  # reset flag after building
+        elif not self._clmatrix_logged:
             logger.info("Using existing estimated `clmatrix`.")
+            self._clmatrix_logged = True
         return self._clmatrix
 
     @clmatrix.setter
     def clmatrix(self, value):
         self._clmatrix = value
+        self._clmatrix_logged = False
 
     def build_clmatrix(self):
         """
