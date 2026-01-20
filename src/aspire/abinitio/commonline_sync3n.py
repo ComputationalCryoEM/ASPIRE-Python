@@ -3,12 +3,11 @@ import os.path
 import warnings
 
 import numpy as np
-from numpy.linalg import norm
 from scipy.optimize import curve_fit
 
 from aspire.abinitio import CLMatrixOrient3D, JSync
 from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
-from aspire.utils import J_conjugate, all_pairs, nearest_rotations, random, tqdm, trange
+from aspire.utils import J_conjugate, all_pairs, nearest_rotations, tqdm, trange
 from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
