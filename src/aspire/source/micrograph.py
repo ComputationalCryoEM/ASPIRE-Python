@@ -1,5 +1,6 @@
 import logging
 import os
+import warnings
 from abc import ABC, abstractmethod
 from glob import glob
 from pathlib import Path
@@ -10,7 +11,13 @@ from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
 from aspire.storage import StarFile
-from aspire.utils import Random, check_pixel_size, grid_2d, rename_with_timestamp
+from aspire.utils import (
+    Random,
+    check_pixel_size,
+    grid_2d,
+    rename_with_timestamp,
+    trange,
+)
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -20,7 +27,12 @@ class MicrographSource(ABC):
     def __init__(self, micrograph_count, micrograph_size, dtype, pixel_size=None):
         """ """
         self.micrograph_count = int(micrograph_count)
-        self.micrograph_size = int(micrograph_size)
+        # Expand single integer to 2-tuple
+        if isinstance(micrograph_size, int):
+            micrograph_size = (micrograph_size,) * 2
+        if len(micrograph_size) != 2:
+            raise ValueError("`micrograph_size` should be a integer or 2-tuple")
+        self.micrograph_size = tuple(micrograph_size)
         self.dtype = np.dtype(dtype)
         if pixel_size is not None:
             pixel_size = float(pixel_size)
@@ -34,7 +46,7 @@ class MicrographSource(ABC):
 
         :return: Returns a string description of instance.
         """
-        return f"{self.__class__.__name__} with {self.micrograph_count} {self.dtype.name} micrographs of size {self.micrograph_size}x{self.micrograph_size}"
+        return f"{self.__class__.__name__} with {self.micrograph_count} {self.dtype.name} micrographs of size {self.micrograph_size}"
 
     def __len__(self):
         """
@@ -115,6 +127,42 @@ class MicrographSource(ABC):
         :return: An `Image` object representing the micrographs for `indices`.
         """
 
+    def phase_flip(self, filters):
+        """
+        Perform phase flip on micrographs in the source object using CTF information.
+        If no CTFFilters exist this will emit a warning and otherwise no-op.
+        """
+
+        logger.info("Perform phase flip on source object")
+        filters = list(filters)  # unpack any generators
+
+        if len(filters) >= 1:
+            assert len(filters) == self.micrograph_count
+
+            logger.info("Phaseflipping")
+            phase_flipped_micrographs = np.empty(
+                (self.micrograph_count, *self.micrograph_size), dtype=self.dtype
+            )
+            for i in trange(self.micrograph_count, desc="Phaseflipping micrograph"):
+                # micrograph = self.images[i]
+                # f = filters[i].sign
+                # ... = micrograph.filter(f)
+                phase_flipped_micrographs[i] = self.images[i].filter(filters[i].sign)
+
+            return ArrayMicrographSource(
+                micrographs=phase_flipped_micrographs, pixel_size=self.pixel_size
+            )
+
+        else:
+            # No CTF filters found
+            logger.warning(
+                "No Filters found."
+                "  `phase_flip` is a no-op without Filters."
+                "  Confirm you have correctly populated CTFFilters."
+            )
+
+            return self
+
 
 class ArrayMicrographSource(MicrographSource):
     def __init__(self, micrographs, dtype=None, pixel_size=None):
@@ -142,14 +190,14 @@ class ArrayMicrographSource(MicrographSource):
         if micrographs.ndim == 2:
             micrographs = micrographs[None, :, :]
 
-        if micrographs.ndim != 3 or (micrographs.shape[-2] != micrographs.shape[-1]):
+        if micrographs.ndim != 3:
             raise NotImplementedError(
-                f"Incompatible `micrographs` shape {micrographs.shape}, expects (count, L, L)"
+                f"Incompatible `micrographs` shape {micrographs.shape}, expects 2D or 3D array."
             )
 
         super().__init__(
             micrograph_count=micrographs.shape[0],
-            micrograph_size=micrographs.shape[-1],
+            micrograph_size=micrographs.shape[-2:],
             dtype=dtype or micrographs.dtype,
             pixel_size=pixel_size,
         )
@@ -201,15 +249,15 @@ class DiskMicrographSource(MicrographSource):
 
         # Load the first micrograph to infer shape/type
         # Size will be checked during on-the-fly loading of subsequent micrographs.
-        micrograph0 = Image.load(self.micrograph_files[0])
-        if micrograph0.pixel_size is not None and micrograph0.pixel_size != pixel_size:
-            raise ValueError(
-                f"Mismatched pixel size. {micrograph0.pixel_size} angstroms defined in {self.micrograph_files[0]}, but provided {pixel_size} angstroms."
-            )
+        micrograph0, _pixel_size = Image._load_raw(self.micrograph_files[0])
+        # Compare with user provided pixel size
+        if pixel_size is not None and _pixel_size != pixel_size:
+            msg = f"Mismatched pixel size. {_pixel_size} angstroms defined in {self.micrograph_files[0]}, but provided {pixel_size} angstroms."
+            warnings.warn(msg, UserWarning, stacklevel=2)
 
         super().__init__(
             micrograph_count=len(self.micrograph_files),
-            micrograph_size=micrograph0.resolution,
+            micrograph_size=micrograph0.shape[-2:],
             dtype=dtype or micrograph0.dtype,
             pixel_size=pixel_size,
         )
@@ -265,28 +313,27 @@ class DiskMicrographSource(MicrographSource):
         # Initialize empty result
         n_micrographs = len(indices)
         micrographs = np.empty(
-            (n_micrographs, self.micrograph_size, self.micrograph_size),
+            (n_micrographs, *self.micrograph_size),
             dtype=self.dtype,
         )
         for i, ind in enumerate(indices):
             # Load the micrograph image from file
-            micrograph = Image.load(self.micrograph_files[ind])
+            micrograph, _pixel_size = Image._load_raw(self.micrograph_files[ind])
+
             # Assert size
-            if micrograph.resolution != self.micrograph_size:
+            if micrograph.shape != self.micrograph_size:
                 raise NotImplementedError(
                     f"Micrograph {ind} has inconsistent shape {micrograph.shape},"
-                    f" expected {(self.micrograph_size, self.micrograph_size)}."
+                    f" expected {self.micrograph_size}."
                 )
+
+            # Continually compare with initial pixel_size
+            if _pixel_size is not None and _pixel_size != self.pixel_size:
+                msg = f"Mismatched pixel size. {_pixel_size} angstroms defined in {self.micrograph_files[ind]}, but provided {self.pixel_size} angstroms."
+                warnings.warn(msg, UserWarning, stacklevel=2)
+
             # Assign to array, implicitly performs casting to dtype
-            micrographs[i] = micrograph.asnumpy()
-            # Assert pixel_size
-            if (
-                micrograph.pixel_size is not None
-                and micrograph.pixel_size != self.pixel_size
-            ):
-                raise ValueError(
-                    f"Mismatched pixel size. {micrograph.pixel_size} angstroms defined in {self.micrograph_files[ind]}, but provided {self.pixel_size} angstroms."
-                )
+            micrographs[i] = micrograph
 
         return Image(micrographs, pixel_size=self.pixel_size)
 
@@ -314,7 +361,7 @@ class MicrographSimulation(MicrographSource):
 
         :param volume: `Volume` instance to be used in `Simulation`.
              An `(L,L,L)` `Volume` will generate `(L,L)` particle images.
-        :param micrograph_size: Size of micrograph in pixels, defaults to 4096.
+        :param micrograph_size: Size of micrograph in pixels as integer or 2-tuple.  Defaults to 4096.
         :param micrograph_count: Number of micrographs to generate (integer). Defaults to 1.
         :param particles_per_micrograph: The amount of particles generated for each micrograph. Defaults to 10.
         :param particle_amplitudes: Optional, amplitudes to pass to `Simulation`.
@@ -366,7 +413,7 @@ class MicrographSimulation(MicrographSource):
 
         self.noise_adder = noise_adder
 
-        if self.particle_box_size > micrograph_size:
+        if self.particle_box_size > max(self.micrograph_size):
             raise ValueError(
                 "The micrograph size must be larger or equal to the `particle_box_size`."
             )
@@ -428,7 +475,7 @@ class MicrographSimulation(MicrographSource):
         else:
             if (
                 boundary < (-self.particle_box_size // 2)
-                or boundary > self.micrograph_size // 2
+                or boundary > max(self.micrograph_size) // 2
             ):
                 raise ValueError("Illegal boundary value.")
             self.boundary = boundary
@@ -518,8 +565,8 @@ class MicrographSimulation(MicrographSource):
         """
         self._mask = np.full(
             (
-                int(self.micrograph_size + 2 * self.pad),
-                int(self.micrograph_size + 2 * self.pad),
+                int(self.micrograph_size[0] + 2 * self.pad),
+                int(self.micrograph_size[1] + 2 * self.pad),
             ),
             False,
             dtype=bool,
@@ -560,7 +607,7 @@ class MicrographSimulation(MicrographSource):
         # Initialize empty micrograph
         n_micrographs = len(indices)
         clean_micrograph = np.zeros(
-            (n_micrographs, self.micrograph_size, self.micrograph_size),
+            (n_micrographs, *self.micrograph_size),
             dtype=self.dtype,
         )
         # Pad the micrograph
@@ -592,8 +639,8 @@ class MicrographSimulation(MicrographSource):
                 )
         clean_micrograph = clean_micrograph[
             :,
-            self.pad : self.micrograph_size + self.pad,
-            self.pad : self.micrograph_size + self.pad,
+            self.pad : self.micrograph_size[0] + self.pad,
+            self.pad : self.micrograph_size[1] + self.pad,
         ]
         return Image(clean_micrograph, pixel_size=self.pixel_size)
 
