@@ -145,7 +145,7 @@ def _estimate_inplane_rotations(vis, pf, max_shift, shift_step, order, degree_re
         pf_i = pf[i]
 
         # Generate shifted versions of images.
-        pf_i_shifted = np.array([pf_i * shift_phase for shift_phase in shift_phases])
+        pf_i_shifted = pf_i[None] * shift_phases[:, None]
 
         Ri_tilde = Ri_tildes[i]
 
@@ -155,26 +155,20 @@ def _estimate_inplane_rotations(vis, pf, max_shift, shift_step, order, degree_re
             Rj_tilde = Ri_tildes[j]
 
             # Compute all possible rotations between the i'th and j'th images.
-            Us = np.array(
-                [Ri_tilde.T @ R_theta_ij @ Rj_tilde for R_theta_ij in R_theta_ijs]
-            )
+            Us = Ri_tilde.T[None] @ R_theta_ijs @ Rj_tilde[None]
 
             # Find the angle between common lines induced by the rotations.
-            c1s = np.array([[-U[1, 2], U[0, 2]] for U in Us])
-            c2s = np.array([[U[2, 1], -U[2, 0]] for U in Us])
+            c1s = np.array([-Us[:, 1, 2], Us[:, 0, 2]]).T
+            c2s = np.array([Us[:, 2, 1], -Us[:, 2, 0]]).T
 
             # Convert from angles to indices.
             c1s = _cl_angles_to_ind(c1s, n_theta)
             c2s = _cl_angles_to_ind(c2s, n_theta)
 
             # Perform correlation, corrs is shape n_shifts x len(theta_ijs).
-            corrs = np.array(
-                [
-                    np.dot(pf_i_shift[c1], np.conj(pf_j[c2]))
-                    for pf_i_shift in pf_i_shifted
-                    for c1, c2 in zip(c1s, c2s)
-                ]
-            )
+            pf_i_sel = pf_i_shifted[:, c1s, :]  # (n_shifts, n_angles, n_rad)
+            pf_j_sel = np.conj(pf_j[c2s, :])  # (n_angles, n_rad)
+            corrs = (pf_i_sel * pf_j_sel[np.newaxis, ...]).sum(axis=-1)
 
             # Reshape to group by shift and symmetric order.
             corrs = corrs.reshape((n_shifts, order, len(theta_ijs) // order))
