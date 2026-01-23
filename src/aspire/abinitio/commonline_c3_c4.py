@@ -6,7 +6,7 @@ from numpy.linalg import norm, svd
 from aspire.abinitio import CLMatrixOrient3D, JSync
 from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
 from aspire.operators import PolarFT
-from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, trange
+from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, tqdm, trange
 
 from .commonline_utils import (
     _estimate_inplane_rotations,
@@ -245,14 +245,12 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
         # the two self common-lines in the image.
         sclmatrix = np.zeros((n_img, 2))
 
-        for i in trange(n_img):
+        for i in trange(n_img, desc="Detecting self-commonlines."):
             pf_i = pf[i]
             pf_full_i = pf_full[i]
 
             # Generate shifted versions of images.
-            pf_i_shifted = np.array(
-                [pf_i * shift_phase for shift_phase in shift_phases]
-            )
+            pf_i_shifted = pf_i[None] * shift_phases[:, None]
             pf_i_shifted = np.reshape(pf_i_shifted, (n_shifts * n_theta // 2, r_max))
 
             # # Normalize each ray.
@@ -327,7 +325,9 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
         Estimate Rijs using the voting method.
         """
         pairs = all_pairs(self.n_img)
-        Rijs = np.zeros((len(pairs), 3, 3))
+        n_pairs = len(pairs)
+        Rijs = np.zeros((n_pairs, 3, 3))
+        pbar = tqdm(desc="Estimating relative rotations", total=n_pairs)
         for idx, (i, j) in enumerate(pairs):
             Rijs[idx] = _syncmatrix_ij_vote_3n(
                 self.clmatrix,
@@ -338,7 +338,8 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
                 self.hist_bin_width,
                 self.full_width,
             )
-
+            pbar.update()
+        pbar.close()
         return Rijs
 
     def _local_J_sync_c3_c4(self, Rijs, Riis):
@@ -356,6 +357,7 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
         order = self.order
         n_img = self.n_img
         pairs = all_pairs(n_img)
+        n_pairs = len(pairs)
 
         # Estimate viis from Riis. vii = 1/order * sum(Rii^s) for s = 0, 1, ..., order.
         viis = np.zeros((n_img, 3, 3))
@@ -365,8 +367,9 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
             )
 
         # Estimate vijs via local handedness synchronization.
-        vijs = np.zeros((len(pairs), 3, 3))
+        vijs = np.zeros((n_pairs, 3, 3))
 
+        pbar = tqdm(desc="Performing local J-sync", total=n_pairs)
         for idx, (i, j) in enumerate(pairs):
             opts = np.zeros((2, 2, 2, 3, 3))
             scores_rank1 = np.zeros(8)
@@ -417,5 +420,8 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
 
             # Populate vijs with
             vijs[idx] = opts[min_idx]
+
+            pbar.update()
+        pbar.close()
 
         return vijs, viis
