@@ -38,7 +38,6 @@ from pathlib import Path
 
 from aspire.abinitio import CLSymmetryC3C4
 from aspire.denoising import LegacyClassAvgSource
-from aspire.noise import AnisotropicNoiseEstimator
 from aspire.reconstruction import MeanEstimator
 from aspire.source import OrientedSource, RelionSource
 
