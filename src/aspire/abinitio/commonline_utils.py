@@ -149,13 +149,16 @@ def _estimate_inplane_rotations(vis, pf, max_shift, shift_step, order, degree_re
 
         Ri_tilde = Ri_tildes[i]
 
+        # Compute part of Ri_tilde.T[None] @ R_theta_ijs @ Rj_tilde[None]
+        partial_prod = Ri_tilde.T[None] @ R_theta_ijs
+
         for j in range(i + 1, n_img):
             pf_j = pf[j]
 
             Rj_tilde = Ri_tildes[j]
 
             # Compute all possible rotations between the i'th and j'th images.
-            Us = Ri_tilde.T[None] @ R_theta_ijs @ Rj_tilde[None]
+            Us = partial_prod @ Rj_tilde[None]
 
             # Find the angle between common lines induced by the rotations.
             c1s = np.array([-Us[:, 1, 2], Us[:, 0, 2]]).T
