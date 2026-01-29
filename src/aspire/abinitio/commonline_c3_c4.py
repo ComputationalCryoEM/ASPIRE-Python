@@ -49,6 +49,7 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
         degree_res=1,
         seed=None,
         mask=True,
+        J_weighting=False,
         disable_gpu=False,
         **kwargs,
     ):
@@ -67,6 +68,8 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
         :param seed: Optional seed for RNG.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
+        :param J_weighting: Optionally use `J` weights instead of
+            signs when computing `signs_times_v`.
         :param disable_gpu: Disables GPU acceleration;
             forces CPU only code for this module.
             Defaults to automatically using GPU when available.
@@ -89,7 +92,15 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
         self.degree_res = degree_res
         self.seed = seed
 
-        self.J_sync = JSync(src.n, self.epsilon, self.max_iters, self.seed)
+        # Setup J-synchronization
+        self.J_sync = JSync(
+            src.n,
+            epsilon=self.epsilon,
+            max_iters=self.max_iters,
+            seed=self.seed,
+            disable_gpu=disable_gpu,
+            J_weighting=J_weighting,
+        )
 
     def _check_symmetry(self, symmetry):
         if symmetry is None:
