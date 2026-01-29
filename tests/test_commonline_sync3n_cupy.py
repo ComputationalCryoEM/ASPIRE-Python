@@ -27,7 +27,13 @@ def src_fixture(dtype):
 
 @pytest.fixture(scope="module")
 def cl3n_fixture(src_fixture):
-    cl = CLSync3N(src_fixture)
+    cl = CLSync3N(src_fixture, J_weighting=False)
+    return cl
+
+
+@pytest.fixture(scope="module")
+def cl3n_J_weighting_fixture(src_fixture):
+    cl = CLSync3N(src_fixture, J_weighting=True)
     return cl
 
 
@@ -86,7 +92,7 @@ def test_stv_host_vs_cupy(cl3n_fixture, rijs_fixture):
     vec = np.ones(n_pairs, dtype=rijs_fixture.dtype)
 
     # J_weighting=False
-    assert cl3n_fixture.J_weighting is False
+    assert cl3n_fixture.J_sync.J_weighting is False
 
     # Execute CUPY
     new_vec_cp = cl3n_fixture.J_sync._signs_times_v_cupy(rijs_fixture, vec)
@@ -98,7 +104,7 @@ def test_stv_host_vs_cupy(cl3n_fixture, rijs_fixture):
     np.testing.assert_allclose(new_vec_cp, new_vec_h)
 
 
-def test_stvJwt_host_vs_cupy(cl3n_fixture, rijs_fixture):
+def test_stvJwt_host_vs_cupy(cl3n_J_weighting_fixture, rijs_fixture):
     """
     Compares signs_times_v between host and cupy implementations.
 
@@ -108,13 +114,13 @@ def test_stvJwt_host_vs_cupy(cl3n_fixture, rijs_fixture):
     vec = np.ones(n_pairs, dtype=rijs_fixture.dtype)
 
     # J_weighting=True
-    cl3n_fixture.J_weighting = True
+    assert cl3n_J_weighting_fixture.J_sync.J_weighting is True
 
     # Execute CUPY
-    new_vec_cp = cl3n_fixture.J_sync._signs_times_v_cupy(rijs_fixture, vec)
+    new_vec_cp = cl3n_J_weighting_fixture.J_sync._signs_times_v_cupy(rijs_fixture, vec)
 
     # Execute host
-    new_vec_h = cl3n_fixture.J_sync._signs_times_v_host(rijs_fixture, vec)
+    new_vec_h = cl3n_J_weighting_fixture.J_sync._signs_times_v_host(rijs_fixture, vec)
 
     # Compare host to cupy calls
     rtol = 1e-7  # np testing default
