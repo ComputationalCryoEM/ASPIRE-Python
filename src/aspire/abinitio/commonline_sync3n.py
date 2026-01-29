@@ -125,14 +125,13 @@ class CLSync3N(CLMatrixOrient3D):
             )
 
         # Setup J-synchronization
-        self.J_weighting = J_weighting
         self.J_sync = JSync(
             src.n,
             epsilon=self.epsilon,
             max_iters=self.max_iters,
             seed=self.seed,
             disable_gpu=disable_gpu,
-            J_weighting=self.J_weighting,
+            J_weighting=J_weighting,
         )
 
         # Auto configure GPU

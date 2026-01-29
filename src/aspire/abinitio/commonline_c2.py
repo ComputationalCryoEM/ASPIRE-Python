@@ -50,6 +50,8 @@ class CLSymmetryC2(CLMatrixOrient3D):
         min_dist_cls=25,
         seed=None,
         mask=True,
+        J_weighting=False,
+        disable_gpu=False,
         **kwargs,
     ):
         """
@@ -66,6 +68,11 @@ class CLSymmetryC2(CLMatrixOrient3D):
         :param seed: Optional seed for RNG.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
+        :param J_weighting: Optionally use `J` weights instead of
+            signs when computing `signs_times_v`.
+        :param disable_gpu: Disables GPU acceleration;
+            forces CPU only code for this module.
+            Defaults to automatically using GPU when available.
         """
 
         super().__init__(
@@ -75,6 +82,7 @@ class CLSymmetryC2(CLMatrixOrient3D):
             max_shift=max_shift,
             shift_step=shift_step,
             mask=mask,
+            disable_gpu=disable_gpu,
             **kwargs,
         )
 
@@ -84,7 +92,15 @@ class CLSymmetryC2(CLMatrixOrient3D):
         self.seed = seed
         self.order = 2
 
-        self.J_sync = JSync(src.n, self.epsilon, self.max_iters, self.seed)
+        # Setup J-synchronization
+        self.J_sync = JSync(
+            src.n,
+            epsilon=self.epsilon,
+            max_iters=self.max_iters,
+            seed=self.seed,
+            disable_gpu=disable_gpu,
+            J_weighting=J_weighting,
+        )
 
     def build_clmatrix(self):
         """
