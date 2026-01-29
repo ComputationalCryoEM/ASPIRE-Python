@@ -29,7 +29,7 @@ classifiers = [
 
 dependencies = [
     "click",
-    "confuse >= 2.0.0",
+    "confuse == 2.1.0",
     "cvxpy",
     "finufft==2.4.0 ; sys_platform!='darwin'",
     "finufft==2.3.0 ; sys_platform=='darwin'",
