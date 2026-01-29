@@ -99,6 +99,9 @@ src = src.crop_pad(src.L - 1).cache()
 logger.info(f"Set the resolution to {img_size} X {img_size}")
 src = src.legacy_downsample(img_size).cache()
 
+# Normalize the background of the images.
+src = src.legacy_normalize_background().cache()
+
 # Estimate the noise and whiten based on the estimated noise.
 src = src.legacy_whiten().cache()
 
