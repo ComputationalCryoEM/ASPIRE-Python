@@ -41,7 +41,7 @@ class CLSymmetryCn(CLOrient3D):
         n_rad=None,
         n_theta=360,
         max_shift=0.15,
-        shift_step=1,
+        shift_step=0.5,
         epsilon=1e-3,
         max_iters=1000,
         degree_res=1,
@@ -61,7 +61,7 @@ class CLSymmetryCn(CLOrient3D):
         :param n_rad: The number of points in the radial direction.
         :param n_theta: The number of points in the theta direction. Default = 360.
         :param max_shift: Maximum range for shifts as a proportion of resolution. Default = 0.15.
-        :param shift_step: Resolution of shift estimation in pixels. Default = 1 pixel.
+        :param shift_step: Resolution of shift estimation in pixels. Default = 0.5 pixel.
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param degree_res: Degree resolution for estimating in-plane rotations.
