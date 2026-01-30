@@ -498,6 +498,16 @@ def test_invert(diag_matrix_fixture):
     np.testing.assert_allclose(d1.invert(), ref)
 
 
+def test_condition(diag_matrix_fixture):
+    """
+    Test condition number method
+    """
+    d1, _, d_np = diag_matrix_fixture
+
+    ref = np.max(d_np[0]) / np.min(d_np[0])
+    np.testing.assert_allclose(d1.condition(), ref)
+
+
 def test_norm(diag_matrix_fixture):
     """
     Test the `norm` compared to Numpy.

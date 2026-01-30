@@ -517,6 +517,14 @@ class DiagMatrix:
         """
         return self.asnumpy()
 
+    def condition(self):
+        """
+        Return the condition number of this matrix.
+
+        :return: Condition number as a float
+        """
+        return np.max(self.asnumpy()) / np.min(self.asnumpy())
+
     @staticmethod
     def empty(shape, dtype=np.float32):
         """

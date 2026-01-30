@@ -684,6 +684,9 @@ class BatchedRotCov2D(RotCov2D):
         # M is sum of weighted A squared.
         # covar_est_opt ignored
 
+        # Because its cheap to compute for DiagMatrix, we'll log the conditioning here.
+        logger.debug(f"M condition: {M.condition()}")
+
         # Compute inverse
         Minv = M.invert()
 
