@@ -63,9 +63,7 @@ volume_output_filename = f"11618_abinitio_c{n_classes}_m{n_nbor}_{img_size}px.mr
 
 
 # Create a source object for the experimental images
-src = RelionSource(
-    starfile_in, max_rows=n_imgs, data_folder=data_folder
-)
+src = RelionSource(starfile_in, max_rows=n_imgs, data_folder=data_folder)
 
 # Use phase_flip to attempt correcting for CTF.
 # Caching is used throughout for speeding up large datasets on high memory machines.
