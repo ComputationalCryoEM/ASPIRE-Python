@@ -54,7 +54,7 @@ def _estimate_third_rows(vijs, viis):
 
     # We decompose the leading eigenvector and normalize to obtain the third rows, vis.
     vis = lead_vec.reshape((n_img, 3))
-    vis /= anorm(vis, axes=(-1,))[:, np.newaxis]
+    vis /= anorm(vis, axes=(-1,))[:, None]
 
     return vis
 
@@ -135,7 +135,7 @@ def _estimate_inplane_rotations(vis, pf, max_shift, shift_step, order, degree_re
     pf = PolarFT.half_to_full(pf)
 
     # Normalize rays.
-    pf /= norm(pf, axis=-1)[..., np.newaxis]
+    pf /= norm(pf, axis=-1)[..., None]
 
     n_pairs = n_img * (n_img - 1) // 2
     pbar = tqdm(total=n_pairs)
@@ -171,7 +171,7 @@ def _estimate_inplane_rotations(vis, pf, max_shift, shift_step, order, degree_re
             # Perform correlation, corrs is shape n_shifts x len(theta_ijs).
             pf_i_sel = pf_i_shifted[:, c1s, :]  # (n_shifts, n_angles, n_rad)
             pf_j_sel = np.conj(pf_j[c2s, :])  # (n_angles, n_rad)
-            corrs = (pf_i_sel * pf_j_sel[np.newaxis, ...]).sum(axis=-1)
+            corrs = (pf_i_sel * pf_j_sel[None, ...]).sum(axis=-1)
 
             # Reshape to group by shift and symmetric order.
             corrs = corrs.reshape((n_shifts, order, len(theta_ijs) // order))
