@@ -1,6 +1,6 @@
-#include "stdint.h"
-#include "math.h"
-#include "common_kernels.cu"
+#include <stdint.h>
+#include <math.h>
+#include "commonline_utils.h"
 
 extern "C" __global__
 void pairs_probabilities(int n, double* Rijs, double P2, double A, double a, double B, double b, double x0, double* ln_f_ind, double* ln_f_arb)
