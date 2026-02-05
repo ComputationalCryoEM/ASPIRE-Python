@@ -1,4 +1,6 @@
-#pragma once
+#ifndef commonline_utils_h
+#define commonline_utils_h
+
 #include <math.h>
 #include <stdint.h>
 
@@ -76,3 +78,5 @@ inline double diff_norm_3x3(const double *R1, const double *R2) {
   for (i=0; i<9; i++) {norm += (R1[i]-R2[i])*(R1[i]-R2[i]);}
   return norm;
 }
+
+#endif /* commonline_utils_h */
