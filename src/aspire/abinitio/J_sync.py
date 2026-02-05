@@ -136,7 +136,7 @@ class JSync:
         # Power method iterations
         while itr < max_iters and residual > epsilon:
             itr += 1
-            # Todo, this code code actually needs double precision for accuracy... forcing.
+            # Note, this appears to need double precision for accuracy in the following division.
             vec_new = self._signs_times_v(Rijs, vec).astype(np.float64, copy=False)
             vec_new = vec_new / norm(vec_new)
             residual = norm(vec_new - vec)
