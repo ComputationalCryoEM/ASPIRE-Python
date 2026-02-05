@@ -18,6 +18,7 @@ recursive-include docs Makefile
 recursive-include docs *.sh
 recursive-include src *.conf
 recursive-include src *.cu
+recursive-include src *.h
 recursive-include src *.yaml
 prune docs/build
 prune docs/source
