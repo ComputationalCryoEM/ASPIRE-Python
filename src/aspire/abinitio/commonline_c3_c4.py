@@ -338,10 +338,11 @@ class CLSymmetryC3C4(CLMatrixOrient3D):
         pairs = all_pairs(self.n_img)
         n_pairs = len(pairs)
         Rijs = np.zeros((n_pairs, 3, 3))
+        clmatrix = self.clmatrix
         pbar = tqdm(desc="Estimating relative rotations", total=n_pairs)
         for idx, (i, j) in enumerate(pairs):
             Rijs[idx] = _syncmatrix_ij_vote_3n(
-                self.clmatrix,
+                clmatrix,
                 i,
                 j,
                 np.arange(self.n_img),
