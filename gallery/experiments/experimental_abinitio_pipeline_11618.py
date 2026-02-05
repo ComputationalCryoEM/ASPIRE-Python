@@ -46,10 +46,10 @@ data_folder = f"{input_dir}"
 n_imgs = None  # Set to None for all images in starfile, can set smaller for tests
 img_size = 129  # Downsample the images/reconstruction to a desired resolution
 n_classes = 1000  # How many class averages to compute and use for reconstruction
-n_nbor = 100  # How many neighbors to stack for each class average
+n_nbor = 32  # How many neighbors to stack for each class average
 
 # Outputs
-preprocessed_fn = f"11618_preprocessed_pf_lds{img_size}px_lnbg_lwt_inv.star"
+preprocessed_fn = f"11618_preprocessed_pf_ds{img_size}px_nbg_wt_inv.star"
 class_avg_fn = f"11618_rand{n_classes}_cls_avgs_m{n_nbor}_{img_size}px.star"
 volume_output_filename = f"11618_abinitio_c{n_classes}_m{n_nbor}_{img_size}px.mrc"
 
@@ -76,10 +76,10 @@ logger.info(f"Set the resolution to {img_size} X {img_size}")
 src = src.downsample(img_size).cache()
 
 # Normalize the background of the images.
-src = src.legacy_normalize_background().cache()
+src = src.normalize_background().cache()
 
 # Estimate the noise and whiten based on the estimated noise.
-src = src.legacy_whiten().cache()
+src = src.whiten().cache()
 
 # Optionally invert image contrast.
 logger.info("Invert the global density contrast")
