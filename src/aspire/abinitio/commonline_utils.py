@@ -170,7 +170,7 @@ def _estimate_inplane_rotations(vis, pf, max_shift, shift_step, order, degree_re
 
             # Perform correlation, corrs is shape n_shifts x len(theta_ijs).
             pf_i_sel = pf_i_shifted[:, c1s, :]  # (n_shifts, n_angles, n_rad)
-            pf_j_sel = np.conj(pf_j[c2s, :])  # (n_angles, n_rad)
+            pf_j_sel = (pf_j[c2s, :]).conj()  # (n_angles, n_rad)
             corrs = (pf_i_sel * pf_j_sel[None, ...]).sum(axis=-1)
 
             # Reshape to group by shift and symmetric order.
@@ -195,7 +195,7 @@ def _estimate_inplane_rotations(vis, pf, max_shift, shift_step, order, degree_re
 
     # Populate the lower triangle and diagonal of Q.
     # Diagonals are 1 since e^{i*0}=1.
-    Q += np.conj(Q).T + np.eye(n_img)
+    Q += Q.conj().T + np.eye(n_img)
 
     # Q is a rank-1 Hermitian matrix.
     eig_vals, eig_vecs = eigh(Q)
@@ -336,7 +336,7 @@ def g_sync(rots, order, rots_gt):
     # A_g(k,l) is exp(-j(-theta_k+theta_l))
     # Diagonal elements correspond to exp(-i*0) so put 1.
     # This is important only for verification purposes that spectrum is (K,0,0,0...,0).
-    A_g += np.conj(A_g).T + np.eye(n_img)
+    A_g += A_g.conj().T + np.eye(n_img)
 
     _, eig_vecs = eigh(A_g)
     leading_eig_vec = eig_vecs[:, -1]
