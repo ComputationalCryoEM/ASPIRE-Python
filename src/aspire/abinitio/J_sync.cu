@@ -1,6 +1,6 @@
-#include "stdint.h"
-#include "math.h"
-#include "common_kernels.cu"
+#include <stdint.h>
+#include <math.h>
+#include "commonline_utils.h"
 
 extern "C" __global__
 void signs_times_v(int n, double* Rijs, const double* vec, double* new_vec, bool J_weighting)
