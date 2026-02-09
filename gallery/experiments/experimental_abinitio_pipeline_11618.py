@@ -43,9 +43,9 @@ starfile_in = f"{input_dir}/J43_particles.star"
 data_folder = f"{input_dir}"
 
 # Config
-n_imgs = None  # Set to None for all images in starfile, can set smaller for tests
+n_imgs = None  # Set to None for all images in starfile; set smaller for tests
 img_size = 129  # Downsample the images/reconstruction to a desired resolution
-n_classes = 1000  # How many class averages to compute and use for reconstruction
+n_classes = 1000  # Number of class averages to use for reconstruction
 n_nbor = 32  # How many neighbors to stack for each class average
 
 # Outputs
@@ -70,11 +70,11 @@ src = RelionSource(starfile_in, max_rows=n_imgs, data_folder=data_folder)
 logger.info("Perform phase flip to input images.")
 src = src.phase_flip().cache()
 
-
 # Downsample the images.
 logger.info(f"Set the resolution to {img_size} X {img_size}")
 src = src.downsample(img_size).cache()
 
+logger.info("Apply noise correction to images")
 # Normalize the background of the images.
 src = src.normalize_background().cache()
 
@@ -82,7 +82,7 @@ src = src.normalize_background().cache()
 src = src.whiten().cache()
 
 # Optionally invert image contrast.
-logger.info("Invert the global density contrast")
+logger.info("Invert the global density contrast if needed")
 src = src.invert_contrast().cache()
 
 # Save the preprocessed images.
@@ -95,8 +95,11 @@ src.save(preprocessed_fn, save_mode="single", overwrite=True)
 # ----------------------
 #
 # Now perform classification and averaging for each class.
-# `RandomClassSelector` will randomize the class averages chosen for reconstruction.
-# This avoids having to compute all class averages and sort them by some notion of quality, which is computationally intensive.
+# `RandomClassSelector` will randomize the class averages chosen for
+# reconstruction.  This avoids having to compute all class averages
+# and sort them by some notion of quality, which is computationally
+# intensive.  Instead this example computes a small random sample of
+# classes from the entire data set.
 
 logger.info("Begin Class Averaging")
 avgs = LegacyClassAvgSource(src, class_selector=RandomClassSelector(), n_nbor=n_nbor)
@@ -127,7 +130,6 @@ oriented_src = OrientedSource(avgs)
 # Using the oriented source, attempt to reconstruct a volume.
 
 logger.info("Begin Volume reconstruction")
-
 # Set up an estimator to perform the backprojection.
 estimator = MeanEstimator(oriented_src)
 
