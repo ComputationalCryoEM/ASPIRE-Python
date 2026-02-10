@@ -410,11 +410,10 @@ class MicrographSimulation(MicrographSource):
                     np.arange(self.micrograph_count, dtype=int),
                     self.particles_per_micrograph,
                 )
-            else:
-                # single CTF or per particle CTF
-                self.filter_indices = np.arange(
-                    self.total_particle_count, dtype=int
-                ) % len(ctf_filters)
+            elif len(ctf_filters) == self.total_particle_count:
+                self.filter_indices = np.arange(self.total_particle_count, dtype=int)
+            elif len(ctf_filters) == 1:
+                self.filter_indices = np.zeros(self.total_particle_count, dtype=int)
 
         self.ctf_filters = ctf_filters
 
