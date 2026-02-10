@@ -402,10 +402,19 @@ class MicrographSimulation(MicrographSource):
                     f" {acceptable_lens[1]}, or {acceptable_lens[2]}."
                 )
 
-            # Generate explicit filter indices (zero-indexed).
-            self.filter_indices = np.arange(self.total_particle_count) % len(
-                ctf_filters
-            )
+            # Generate explicit total_particle_count filter_indices
+            # Note these indices are zero-indexed.
+            if len(ctf_filters) == self.micrograph_count:
+                # creates mapping [0,0,0..., 1,1,1,... ,micrograph_count-1]
+                self.filter_indices = np.repeat(
+                    np.arange(self.micrograph_count, dtype=int),
+                    self.particles_per_micrograph,
+                )
+            else:
+                # single CTF or per particle CTF
+                self.filter_indices = np.arange(
+                    self.total_particle_count, dtype=int
+                ) % len(ctf_filters)
 
         self.ctf_filters = ctf_filters
 
