@@ -25,8 +25,6 @@ class CLOrient3D:
         n_rad=None,
         n_theta=360,
         n_check=None,
-        hist_bin_width=3,
-        full_width=6,
         max_shift=0.15,
         shift_step=1,
         offsets_max_shift=None,
@@ -70,10 +68,6 @@ class CLOrient3D:
             the number of equations by approximation to fit in
             `offsets_max_memory`.  For more information see the
             references in `estimate_shifts`.  Defaults to 10GB.
-        :param hist_bin_width: Bin width in smoothing histogram (degrees).
-        :param full_width: Selection width around smoothed histogram peak (degrees).
-            `adaptive` will attempt to automatically find the smallest number of
-            `hist_bin_width`s required to find at least one valid image index.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         """
@@ -85,10 +79,6 @@ class CLOrient3D:
         self.n_rad = n_rad
         self.n_theta = n_theta
         self.n_check = n_check
-        self.hist_bin_width = hist_bin_width
-        if str(full_width).lower() == "adaptive":
-            full_width = -1
-        self.full_width = int(full_width)
         self.max_shift = math.ceil(max_shift * self.n_res)
         self.shift_step = shift_step
         self.offsets_max_shift = self.max_shift
