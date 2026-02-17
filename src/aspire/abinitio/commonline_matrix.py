@@ -18,10 +18,20 @@ class CLMatrixOrient3D(CLOrient3D):
     a commonline matrix.
     """
 
-    def __init__(self, src, disable_gpu=False, **kwargs):
+    def __init__(
+        self, src, hist_bin_width=3, full_width=6, disable_gpu=False, **kwargs
+    ):
         """
         Initialize an object for estimating 3D orientations with a
         commonline algorithm that uses a constructed commonlines matrix.
+
+        :param src: The source object of 2D denoised or class-averaged images.
+        :param hist_bin_width: Bin width in smoothing histogram (degrees).
+        :param full_width: Selection width around smoothed histogram peak (degrees).
+            `adaptive` will attempt to automatically find the smallest number of
+            `hist_bin_width`s required to find at least one valid image index.
+        :param disable_gpu: Disables GPU acceleration; forces CPU only code for this
+            module. Defaults to automatically using GPU when available.
         """
         super().__init__(src, **kwargs)
 
@@ -30,6 +40,11 @@ class CLMatrixOrient3D(CLOrient3D):
             raise NotImplementedError(
                 "Commonlines implementation limited to <2**15 images."
             )
+
+        self.hist_bin_width = hist_bin_width
+        if str(full_width).lower() == "adaptive":
+            full_width = -1
+        self.full_width = int(full_width)
 
         # Auto configure GPU
         self.__gpu_module = None
