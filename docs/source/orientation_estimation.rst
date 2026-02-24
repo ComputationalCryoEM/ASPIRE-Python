@@ -103,8 +103,6 @@ scores such as ``cl_dist`` or ``shifts_1d``. Key behaviors include:
 
 - CPU/GPU dispatch within ``build_clmatrix``. When GPUs are available the class invokes
   CUDA kernels that drastically reduce wall time for large datasets.
-- Randomized neighbor selection when ``n_check < n`` so that expensive comparisons focus
-  on informative pairs.
 - Caching and lazy-evaluation of ``clmatrix`` and distance matrices to avoid recomputation when multiple
   synchronization strategies are explored.
 - Shared ``max_shift`` and ``shift_step`` parameters that influence accuracy/runtime
@@ -116,9 +114,9 @@ Handedness Synchronization
 Many of the commonlines algorithms involve solving for a set of relative rotations between
 pairs of estimates. Due to the inherent handedness ambiguity in the cryo-EM problem,
 each estimated relative rotation may contain a spurios reflection. These spurious reflections
-must be resolved such that all relative rotation estimates have a global reflection or not
-before downstream reconstruction. The :mod:`aspire.abinitio.J_sync` module implements a
-power-method based handedness synchronization to complete this task..
+must be resolved such that all relative rotation estimates either contain a global reflection
+or don't before downstream reconstruction. The :mod:`aspire.abinitio.J_sync` module implements a
+power-method based handedness synchronization to complete this task.
 
 - ``JSync`` builds a signed graph over triplets of relative rotations and iteratively
   estimates the optimal set of reflections that maximizes consistency of the recovered
@@ -156,7 +154,7 @@ These solvers assume particles have no global symmetry and estimate arbitrary ro
 - ``CLSync3N`` (:file:`src/aspire/abinitio/commonline_sync3n.py`): Triplet-based
   synchronization that scores triangles, weights pairwise blocks, performs an eigen
   decomposition of the synchronization matrix ``S``, and resolves handedness through
-  :class:`JSync`. Optional ``S_weighting``, ``J_weighting``, and GPU acceleration flags
+  ``JSync``. Optional ``S_weighting``, ``J_weighting``, and GPU acceleration flags
   tune robustness.
 - ``CLSyncVoting`` (:file:`src/aspire/abinitio/commonline_sync.py`): Histogram-based
   voting that converts common-line matrices into block rotation estimates; configurable
@@ -178,13 +176,12 @@ Symmetry-aware variants search for multiple common lines per image pair, enforce
 angular separation via ``min_dist_cls``, and embed symmetry group constraints while estimating
 rotations:
 
-- ``CLSymmetryC2`` and ``CLSymmetryC3C4`` (matrix-based subclasses): Extend the
-  ``clmatrix`` workflow with exhaustive symmetric common-line hypotheses, GPU builds, and
-  utilities such as ``_estimate_third_rows`` or ``_complete_third_row_to_rot`` to build
-  group-consistent rotations.
-- ``CLSymmetryCn`` and ``CLSymmetryD2``: Derive directly from ``CLOrient3D`` while
-  providing analytical constructions of symmetric third rows and invoking ``g_sync`` from
-  :file:`src/aspire/abinitio/commonline_utils.py:291` for evaluation.
+- ``CLSymmetryC2`` and ``CLSymmetryC3C4`` (matrix-based subclasses): These methods extend
+  the ``clmatrix`` workflow and leverage commonline properties of molecules with cyclic
+  symmetry to estimate and synchronize rotations.
+- ``CLSymmetryCn`` and ``CLSymmetryD2``: These methods derive directly from ``CLOrient3D``
+  and construct a set of candidate rotations discritized over SO(3) as a search space.
+  Symmetry properties are leveraged to reduce redundancy over the serach space.
 
 These classes ultimately reuse the same ``estimate_shifts`` implementation once
 symmetry-consistent rotations are available.
@@ -196,7 +193,8 @@ Adding a new orientation estimator typically involves:
 
 #. Subclassing ``CLOrient3D`` (or ``CLMatrixOrient3D`` if you need common-line matrices).
 #. Implementing ``estimate_rotations(self, **kwargs)``. This method must return an
-   ``(n, 3, 3)`` array of rotations to be consumed by ``estimate_shifts``.
+   ``(n, 3, 3)`` array of rotations to be consumed by ``estimate_shifts`` and downstream
+   reconstruction methods.
 #. (Optional) Overriding helpers like ``build_clmatrix`` when custom data structures or
    GPU kernels are required.
 
@@ -209,7 +207,7 @@ used inside :class:`aspire.source.OrientedSource`. A simplified template is show
 
    class CLFancySync(CLMatrixOrient3D):
        """
-       Example orientation estimator built on the matrix workflow.
+       Example orientation estimator built on the common-lines matrix workflow.
        """
 
        def estimate_rotations(self):
@@ -228,7 +226,7 @@ used inside :class:`aspire.source.OrientedSource`. A simplified template is show
            return sync_mat
 
        def _recover_rots(self, sync_mat):
-           # Placeholder for secondary algorithmic-specific logic
+           # Placeholder for additional algorithmic-specific logic
 	   ...
 	   return rots
 	   
