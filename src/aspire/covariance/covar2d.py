@@ -554,6 +554,7 @@ class BatchedRotCov2D(RotCov2D):
                 self.basis.filter_to_basis_mat(f, pixel_size=self.src.pixel_size)
                 for f in unique_filters
             ]
+            logger.info("Represent CTF filters in basis complete")
 
     def _calc_rhs(self):
         src = self.src
@@ -683,6 +684,7 @@ class BatchedRotCov2D(RotCov2D):
         return method(A_covar, b_covar, M, covar_est_opt)
 
     def _solve_covar_direct(self, A_covar, b_covar, M, covar_est_opt):
+        t0 = perf_counter()
         # A_covar is a list of DiagMatrix, representing each ctf in self.basis.
         # b_covar is a BlkDiagMatrix
         # M is sum of weighted A squared.
@@ -700,9 +702,13 @@ class BatchedRotCov2D(RotCov2D):
         # in Yunpeng's code.
         res = Minv @ b_covar @ Minv
 
+        t1 = perf_counter()
+        logger.info(f"_solve_covar_direct elapsed: {t1-t0}")
         return res
 
     def _solve_covar_cg(self, A_covar, b_covar, M, covar_est_opt):
+        t0 = perf_counter()
+
         def precond_fun(S, x):
             p = np.size(S, 0)
             assert np.size(x) == p * p, "The sizes of S and x are not consistent."
@@ -736,6 +742,8 @@ class BatchedRotCov2D(RotCov2D):
             )
             covar_coef[ell] = covar_coef_ell.reshape(p, p)
 
+        t1 = perf_counter()
+        logger.info(f"_solve_covar_cgelapsed: {t1-t0}")
         return covar_coef
 
     def get_mean(self):
