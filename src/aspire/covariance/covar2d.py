@@ -1,4 +1,5 @@
 import logging
+from time import perf_counter
 
 import numpy as np
 from numpy.linalg import eig, inv
@@ -565,11 +566,20 @@ class BatchedRotCov2D(RotCov2D):
 
         b_covar = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape, dtype=self.dtype)
 
+        cumulative_image_fetch_time = 0
+        cumulative_eval_t_time = 0
         for start in range(0, src.n, self.batch_size):
             batch = np.arange(start, min(start + self.batch_size, src.n))
 
+            t0 = perf_counter()
             im = src.images[batch[0] : batch[0] + len(batch)]
+            t1 = perf_counter()
+            cumulative_image_fetch_time += t1 - t0
+
+            t0 = perf_counter()
             coef = basis.evaluate_t(im).asnumpy()
+            t1 = perf_counter()
+            cumulative_eval_t_time += t1 - t0
 
             for k in np.unique(ctf_idx[batch]):
                 coef_k = coef[ctf_idx[batch] == k]
@@ -599,6 +609,8 @@ class BatchedRotCov2D(RotCov2D):
 
         self.b_mean = b_mean
         self.b_covar = b_covar
+        logger.info(f"cumulative_image_fetch_time {cumulative_image_fetch_time}")
+        logger.info(f"cumulative_eval_t_time {cumulative_eval_t_time}")
 
     def _calc_op(self):
         src = self.src
