@@ -108,12 +108,23 @@ scores such as ``cl_dist`` or ``shifts_1d``. Key behaviors include:
 - Shared ``max_shift`` and ``shift_step`` parameters that influence accuracy/runtime
   trade-offs during 1D shift searches.
 
+.. mermaid::
+
+   classDiagram
+       class CLMatrixOrient3D{
+           src: ImageSource
+	   +estimate_rotations()
+	   +estimate_shifts()
+	   +pf
+	   +clmatrix
+       }
+
 Handedness Synchronization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Many of the commonlines algorithms involve solving for a set of relative rotations between
-pairs of estimates. Due to the inherent handedness ambiguity in the cryo-EM problem,
-each estimated relative rotation may contain a spurios reflection. These spurious reflections
+Many of the common-line algorithms involve solving for a set of relative rotations between
+pairs of image orientations. Due to the inherent handedness ambiguity in the cryo-EM problem,
+each estimated relative rotation might contain a spurious reflection. These spurious reflections
 must be resolved such that all relative rotation estimates either contain a global reflection
 or don't before downstream reconstruction. The :mod:`aspire.abinitio.J_sync` module implements a
 power-method based handedness synchronization to complete this task.
@@ -126,6 +137,12 @@ power-method based handedness synchronization to complete this task.
   ambiguous handedness.
 - ``CLOrient3D`` subclasses simply import the ``JSync`` module to access handedness
   synchronization methods.
+
+Class Hierarchy Overview
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The relationships below show how the concrete solvers inherit shared behaviors (masking, CL matrix
+utilities, synchronization helpers) before layering on algorithm-specific logic.
 
 .. mermaid::
 
@@ -173,18 +190,27 @@ Algorithms for Symmetric Molecules
 ----------------------------------
 
 Symmetry-aware variants search for multiple common lines per image pair, enforce minimum
-angular separation via ``min_dist_cls``, and embed symmetry group constraints while estimating
-rotations:
+angular separation (``min_dist_cls`` or ``eq_min_dist``), and embed symmetry group constraints
+while estimating rotations:
 
-- ``CLSymmetryC2`` and ``CLSymmetryC3C4`` (matrix-based subclasses): These methods extend
-  the ``clmatrix`` workflow and leverage commonline properties of molecules with cyclic
-  symmetry to estimate and synchronize rotations.
-- ``CLSymmetryCn`` and ``CLSymmetryD2``: These methods derive directly from ``CLOrient3D``
-  and construct a set of candidate rotations discritized over SO(3) as a search space.
-  Symmetry properties are leveraged to reduce redundancy over the serach space.
+- ``CLSymmetryC2`` (:file:`src/aspire/abinitio/commonline_c2.py`): Extends ``CLMatrixOrient3D``
+  to tabulate two mutual common lines per pair, masks neighborhoods around the first detection
+  with ``min_dist_cls``, scores both blocks through ``_syncmatrix_ij_vote_3n``, and hands the
+  resulting triplets to ``JSync`` for reflection cleanup.
+- ``CLSymmetryC3C4`` (:file:`src/aspire/abinitio/commonline_c3_c4.py`): Targets order-3 and
+  order-4 cyclic molecules by detecting self-common-lines, forming relative third-row outer
+  products, running a local/global ``JSync`` pass, then calling ``_estimate_third_rows`` and
+  ``_estimate_inplane_rotations`` to recover full rotations.
+- ``CLSymmetryCn`` (:file:`src/aspire/abinitio/commonline_cn.py`): Handles higher-order cyclic
+  symmetry (n > 4) by generating a discretized set of candidate rotations on the sphere, evaluating
+  likelihoods of induced common/self-common lines, pruning equatorial degeneracies, and synchronizing
+  the surviving outer-product blocks before estimating in-plane angles.
+- ``CLSymmetryD2`` (:file:`src/aspire/abinitio/commonline_d2.py`): Deals with dihedral symmetry
+  via a Saff–Kuijlaars sphere grid, equator/top-view filtering, exhaustive lookup tables for
+  relative rotations, and a color/sign synchronization stage that enforces the ``DnSymmetryGroup``
+  constraints prior to assigning final rotations.
 
-These classes ultimately reuse the same ``estimate_shifts`` implementation once
-symmetry-consistent rotations are available.
+These classes reuse the ``estimate_shifts`` implementation once symmetry-consistent rotations are available.
 
 Extensibility
 -------------
