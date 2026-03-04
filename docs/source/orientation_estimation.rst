@@ -19,7 +19,8 @@ denoising and reconstruction utilities.
 
    .. code-block::
       
-       # Generate a set of class averages from initial 'src'
+       # Generate a set of class averages from initial 'src', which,
+       # in most cases, has already gone through some preprocessing steps.
        from aspire.denoising import LegacyClassAvgSource
        avgs = LegacyClassAvgSource(src)
      
@@ -42,7 +43,8 @@ denoising and reconstruction utilities.
       
 #. Or, in the context of a full reconstruction pipeline, the image source and orientation
    estimation objects can be used to instantiate an ``OrientedSource`` to be consumed
-   as input to a downstream volume reconstruction method.
+   as input to a downstream volume reconstruction method. In this case, rotations and
+   shifts will be estimated in a lazy fashion when requested by the reconstruction method.
 
    .. code-block::
       
@@ -64,7 +66,7 @@ Layout of the Class Hierarchy
 -----------------------------
 
 All common-line estimators live under :mod:`aspire.abinitio` and share the base class
-``CLOrient3D``. Algorithms that rely on a pairwise common-lines matrix inherit from the
+``CLOrient3D``. Algorithms that rely on a pairwise common-line matrix inherit from the
 intermediary base class ``CLMatrixOrient3D``. Together they codify the data preparation
 steps, caching strategy, and the minimal interface each subclass must expose.
 
@@ -103,8 +105,7 @@ scores such as ``cl_dist`` or ``shifts_1d``. Key behaviors include:
 
 - CPU/GPU dispatch within ``build_clmatrix``. When GPUs are available the class invokes
   CUDA kernels that drastically reduce wall time for large datasets.
-- Caching and lazy-evaluation of ``clmatrix`` and distance matrices to avoid recomputation when multiple
-  synchronization strategies are explored.
+- Caching and lazy-evaluation of ``clmatrix`` and distance matrices to avoid recomputation.
 - Shared ``max_shift`` and ``shift_step`` parameters that influence accuracy/runtime
   trade-offs during 1D shift searches.
 
@@ -133,8 +134,8 @@ power-method based handedness synchronization to complete this task.
   estimates the optimal set of reflections that maximizes consistency of the recovered
   estimates.
 - The solver supports CPU/GPU execution, configurable tolerances (``epsilon``) and
-  iteration limits (``max_iters``), and logs residuals so that callers can detect
-  ambiguous handedness.
+  iteration limits (``max_iters``), and logs residuals so that callers can monitor
+  convergence.
 - ``CLOrient3D`` subclasses simply import the ``JSync`` module to access handedness
   synchronization methods.
 
@@ -166,19 +167,24 @@ utilities, synchronization helpers) before layering on algorithm-specific logic.
 Algorithms for Asymmetric Molecules
 -----------------------------------
 
-These solvers assume particles have no global symmetry and estimate arbitrary rotations:
+ASPIRE offers several orientation estimation algorithms for handling molecules with asymmetric data:
 
-- ``CLSync3N`` (:file:`src/aspire/abinitio/commonline_sync3n.py`): Triplet-based
-  synchronization that scores triangles, weights pairwise blocks, performs an eigen
-  decomposition of the synchronization matrix ``S``, and resolves handedness through
-  ``JSync``. Optional ``S_weighting``, ``J_weighting``, and GPU acceleration flags
-  tune robustness.
-- ``CLSyncVoting`` (:file:`src/aspire/abinitio/commonline_sync.py`): Histogram-based
-  voting that converts common-line matrices into block rotation estimates; configurable
-  ``hist_bin_width`` and ``full_width`` control angular resolution in ``_vote_ij``.
-- ``CommonlineSDP`` (:file:`src/aspire/abinitio/commonline_sdp.py`): Forms a Gram matrix
-  semidefinite program using ``cvxpy`` and recovers rotations through deterministic
-  rounding and ``nearest_rotations`` projection.
+- ``CLSync3N`` (:file:`src/aspire/abinitio/commonline_sync3n.py`): ``CLSync3N`` detects
+  common-lines between pairs of images and reduces misidentifications using a vote which
+  incorporates information from all possible third images. This voting stage produces a
+  set of pairwise rotations which are subsequently synchronized for handedness via ``Jsync``.
+  These pairwise rotations are then used to form a 3Nx3N synchronization matrix
+  which is optionally weighted to favor more statistically indicative pairwise rotations.
+  An eigen-decomposition is then performed to simultaneously recover all image orientations.
+- ``CLSyncVoting`` (:file:`src/aspire/abinitio/commonline_sync.py`): In ``CLSyncVoting``,
+  the voting scheme directly populates a 2N×2N synchronization matrix of XY rotation blocks
+  which is insensitive to the cryo-EM handedness ambiguity. For that reason a separate handedness
+  synchronization step is not needed. An eigen-decomposition is then performed to recover the image
+  orientations.
+- ``CommonlineSDP`` (:file:`src/aspire/abinitio/commonline_sdp.py`): This method uses a
+  relaxation of the least squares formulation of the orientation problem and frames it
+  semidefinite program. ``cvxpy`` is used to solve the SDP and the rotations are recovered
+  through deterministic rounding and ``nearest_rotations`` projection.
 - ``CommonlineLUD`` (:file:`src/aspire/abinitio/commonline_lud.py`): Reuses the SDP
   scaffolding but substitutes an ADMM-based least unsquared deviations solver. Parameters
   like ``alpha``, ``mu`` scheduling, and adaptive rank selection govern convergence.
@@ -189,18 +195,18 @@ These solvers assume particles have no global symmetry and estimate arbitrary ro
 Algorithms for Symmetric Molecules
 ----------------------------------
 
-Symmetry-aware variants search for multiple common lines per image pair, enforce minimum
-angular separation (``min_dist_cls`` or ``eq_min_dist``), and embed symmetry group constraints
-while estimating rotations:
+Symmetry-aware variants search for multiple common lines per image pair and embed symmetry
+group constraints while estimating rotations:
 
-- ``CLSymmetryC2`` (:file:`src/aspire/abinitio/commonline_c2.py`): Extends ``CLMatrixOrient3D``
-  to tabulate two mutual common lines per pair, masks neighborhoods around the first detection
-  with ``min_dist_cls``, scores both blocks through ``_syncmatrix_ij_vote_3n``, and hands the
-  resulting triplets to ``JSync`` for reflection cleanup.
+- ``CLSymmetryC2`` (:file:`src/aspire/abinitio/commonline_c2.py`): Estimates orientations
+  for molecules with 2-fold cyclic symmetry by searching for two common-lines per image
+  pair, construction a set of pairwise rotations, performing local and global handedness
+  synchronization, and finally recovering the orientations from the synchronized relative
+  rotations.
 - ``CLSymmetryC3C4`` (:file:`src/aspire/abinitio/commonline_c3_c4.py`): Targets order-3 and
   order-4 cyclic molecules by detecting self-common-lines, forming relative third-row outer
-  products, running a local/global ``JSync`` pass, then calling ``_estimate_third_rows`` and
-  ``_estimate_inplane_rotations`` to recover full rotations.
+  products, running a local/global ``JSync`` pass, then extracts two rows of each rotation
+  matrix from the outer products and finally estimates in-plane rotations to recover full rotations.
 - ``CLSymmetryCn`` (:file:`src/aspire/abinitio/commonline_cn.py`): Handles higher-order cyclic
   symmetry (n > 4) by generating a discretized set of candidate rotations on the sphere, evaluating
   likelihoods of induced common/self-common lines, pruning equatorial degeneracies, and synchronizing
