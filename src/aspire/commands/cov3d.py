@@ -52,10 +52,10 @@ def cov3d(
 
     source = source.whiten()
     basis = FBBasis3D((max_resolution, max_resolution, max_resolution))
-    mean_estimator = MeanEstimator(source, basis, batch_size=8192)
+    mean_estimator = MeanEstimator(source, basis, batch_size=512)
     mean_est = mean_estimator.estimate()
 
-    noise_estimator = WhiteNoiseEstimator(source, batch_size=500)
+    noise_estimator = WhiteNoiseEstimator(source, batch_size=512)
     # Estimate the noise variance. This is needed for the covariance estimation step below.
     noise_variance = noise_estimator.estimate()
     logger.info(f"Noise Variance = {noise_variance}")
