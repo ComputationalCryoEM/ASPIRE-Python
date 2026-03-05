@@ -513,10 +513,14 @@ class BatchedRotCov2D(RotCov2D):
         be extracted.
     :param basis: The `FBBasis2D` object used to decompose the images. By
         default, this is set to `FFBBasis2D((src.L, src.L))`.
-    :param batch_size: The number of images to process at a time (default 8192).
+    :param batch_size: The number of images to process at a time (default 512).
+        512 is a good starting point for large images with a GPU where
+        memory is a concern.  If the GPU runs out of memory, try
+        scaling down `batch_size`.  For hi-memory CPU applications,
+        scaling up to a larger value such as 8192 may yield better performance.
     """
 
-    def __init__(self, src, basis=None, batch_size=8192):
+    def __init__(self, src, basis=None, batch_size=512):
         self.src = src
         self.basis = basis
         self.batch_size = batch_size
