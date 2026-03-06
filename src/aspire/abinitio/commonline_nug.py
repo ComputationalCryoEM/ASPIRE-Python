@@ -5,7 +5,7 @@ import cupy as cp
 import numpy as np
 from scipy.io import loadmat
 from scipy.spatial.transform import Rotation as spr
-from scipy.special import binom, factorial, jacobi, sph_harm
+from scipy.special import factorial
 
 from aspire.abinitio import CLOrient3D
 from aspire.nufft import nufft
@@ -73,6 +73,7 @@ class CommonlineNUG(CLOrient3D):
         self.sym = symmetry
 
     def estimate_rotations(self):
+        breakpoint()
         sym_euler, S = self.Symmetry_Euler(self.sym)
         imgs = self.src.images[:]
         C = self.compute_coeff(imgs, self.loss, self.Lmax, T=self.T)
@@ -142,18 +143,18 @@ class CommonlineNUG(CLOrient3D):
         gamma_grid = np.arange(2 * T) * np.pi / T
 
         bT = np.zeros(2 * T)
-        for l in range(2 * T):
+        for n in range(2 * T):
             ss = 0
             for m in range(T):
-                ss = ss + np.sin(beta_grid[l] * (2 * m + 1)) / (2 * m + 1)
-            bT[l] = 2 / T * np.sin(beta_grid[l]) * ss
+                ss = ss + np.sin(beta_grid[n] * (2 * m + 1)) / (2 * m + 1)
+            bT[n] = 2 / T * np.sin(beta_grid[n]) * ss
 
         BTK = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
             btk = np.zeros((dk, dk))
-            for l in range(2 * T):
-                btk = btk + bT[l] * self.Wd(k, beta_grid[l])
+            for n in range(2 * T):
+                btk = btk + bT[n] * self.Wd(k, beta_grid[n])
             BTK.append(btk.T)
 
         def fijhat_k(k, F):
@@ -227,7 +228,7 @@ class CommonlineNUG(CLOrient3D):
         )
         pts = pts.astype(array.dtype)
 
-        # array = array.astype(np.float32)
+        #array = array.astype(np.float32)
         lines_f = nufft(array, pts).reshape((img_size, -1))
 
         if img_size % 2 == 0:
@@ -242,35 +243,6 @@ class CommonlineNUG(CLOrient3D):
         )
 
         return projections, lines_f
-
-    @staticmethod
-    def Wd(J, beta):
-        # compute Wigner small d matrix
-        d = np.zeros((2 * J + 1, 2 * J + 1))
-
-        for m in range(-J, J + 1):
-            for n in range(-J, J + 1):
-                smin = max(0, m - n)
-                smax = min(J + m, J - n)
-                for s in range(smin, smax + 1):
-                    mul = (
-                        np.sqrt(factorial(J + m))
-                        / factorial(J + m - s)
-                        * np.sqrt(factorial(J + n))
-                        / factorial(s)
-                        * np.sqrt(factorial(J - m))
-                        / factorial(n - m + s)
-                        * np.sqrt(factorial(J - n))
-                        / factorial(J - n - s)
-                    )
-                    d[n + J, m + J] += (
-                        mul
-                        * (-1) ** (n - m + s)
-                        * (np.cos(beta / 2)) ** (2 * J + m - n - 2 * s)
-                        * (np.sin(beta / 2)) ** (n - m + 2 * s)
-                    )
-
-        return d
 
     @staticmethod
     def complex2real(ell):
@@ -317,14 +289,8 @@ class CommonlineNUG(CLOrient3D):
         mult=1,
         Nstep_yI=20,
         verbose=True,
-        GPU=True,
     ):
         # admm for symmetric case
-        if GPU:
-            import cupy as cp
-        else:
-            import numpy as cp
-
         (
             C0,
             C1,
@@ -350,11 +316,11 @@ class CommonlineNUG(CLOrient3D):
             S0,
             S1,
             Sq,
-        ) = self.ADMM_preprocessing(C, Lmax, N, Ngrid, GPU)
+        ) = self.ADMM_preprocessing(C, Lmax, N, Ngrid)
 
         # S=int(sym[1]); sym_euler=Symmetry_Euler(sym)
         rank_Ak, _ = self.compute_rank(sym, Lmax)
-        print(rank_Ak)
+        logger.info(f"Rank of Ak: {rank_Ak}")
 
         # rank_Ak=cp.zeros(Lmax)
         # for ell in range(Lmax): rank_Ak[ell]=np.linalg.matrix_rank(Ak(ell+1,sym_euler))
@@ -364,9 +330,9 @@ class CommonlineNUG(CLOrient3D):
         for k in range(1, Lmax + 1):
             s0 = k**2
             s1 = (k + 1) ** 2
-            AEk = cp.zeros((1 + s0 + s1, 2 * (s0 + s1)))
-            AEk[0, :s0] = cp.eye(k).T.reshape(-1)
-            AEk[0, s0 : s0 + s1] = cp.eye(k + 1).T.reshape(-1)
+            AEk = xp.zeros((1 + s0 + s1, 2 * (s0 + s1)))
+            AEk[0, :s0] = xp.eye(k).T.reshape(-1)
+            AEk[0, s0 : s0 + s1] = xp.eye(k + 1).T.reshape(-1)
             for count in range(1, 1 + s0):
                 AEk[count, count - 1] = 1
                 AEk[count, count - 1 + s0 + s1] = 1
@@ -375,20 +341,20 @@ class CommonlineNUG(CLOrient3D):
                 AEk[count, count - 1 + s1 + s0] = 1
             AE.append(AEk)
             AEAETinv.append(np.linalg.pinv(AEk @ AEk.T))
-        bE = cp.zeros((Lmax + D0 + D1))
+        bE = xp.zeros((Lmax + D0 + D1))
         for k in range(Lmax):
             bE[k + d0[k] + d1[k] :] = rank_Ak[k]
-            bE[k + 1 + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k]] = cp.eye(
+            bE[k + 1 + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k]] = xp.eye(
                 k + 1
             ).T.reshape(-1)
-            bE[k + 1 + d0[k + 1] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = cp.eye(
+            bE[k + 1 + d0[k + 1] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = xp.eye(
                 k + 2
             ).T.reshape(-1)
         bE = np.repeat(bE[:, np.newaxis], N, axis=1)
         P = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
-            Pk = cp.eye(dk)
+            Pk = xp.eye(dk)
             for m in range(k):
                 for l in range(k - m):
                     Pk[(m + 2 * l, m + 2 * l + 1), :] = Pk[
@@ -397,11 +363,11 @@ class CommonlineNUG(CLOrient3D):
             P.append(Pk)
 
         def fun_AE(X0, X1, Xd0, Xd1, Xq):
-            z = cp.zeros((Lmax + D0 + D1, N))
+            z = xp.zeros((Lmax + D0 + D1, N))
             for k in range(Lmax):
                 z[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = AE[
                     k
-                ] @ cp.concatenate(
+                ] @ xp.concatenate(
                     (
                         X0[d0[k] : d0[k + 1], idx_diag],
                         X1[d1[k] : d1[k + 1], idx_diag],
@@ -410,15 +376,15 @@ class CommonlineNUG(CLOrient3D):
                     ),
                     axis=0,
                 )
-            return z, AEq @ cp.concatenate(
+            return z, AEq @ xp.concatenate(
                 (Xq, X0[:1, idx_offdiag], X1[:4, idx_offdiag]), axis=0
             )
 
         def fun_AET(yE, yEq):
-            Z0 = cp.zeros((D0, N * (N + 1) // 2))
-            Z1 = cp.zeros((D1, N * (N + 1) // 2))
-            Zd0 = cp.zeros((D0, N))
-            Zd1 = cp.zeros((D1, N))
+            Z0 = xp.zeros((D0, N * (N + 1) // 2))
+            Z1 = xp.zeros((D1, N * (N + 1) // 2))
+            Zd0 = xp.zeros((D0, N))
+            Zd1 = xp.zeros((D1, N))
             for k in range(Lmax):
                 s0 = (k + 1) ** 2
                 s1 = (k + 2) ** 2
@@ -433,17 +399,17 @@ class CommonlineNUG(CLOrient3D):
             return Z0, Z1, Zd0, Zd1, Zq[:16]
 
         def fun_AI(X0, X1):
-            z = cp.zeros((Ngrid, N * (N + 1) // 2))
-            tmp = cp.concatenate((X0, X1), axis=0)
+            z = xp.zeros((Ngrid, N * (N + 1) // 2))
+            tmp = xp.concatenate((X0, X1), axis=0)
             z[:, idx_diag] = AI_mat_diag @ tmp[:, idx_diag]
             z[:, idx_offdiag] = AI_mat_offdiag @ tmp[:, idx_offdiag]
-            # return AI_mat@cp.concatenate((X0,X1),axis=0)
+            # return AI_mat@xp.concatenate((X0,X1),axis=0)
             return z
 
         def fun_AIT(yI):
             # Z=AI_mat.T@yI
             # return Z[:D0,:], Z[D0:,:]
-            Z = cp.zeros((D0 + D1, N * (N + 1) // 2))
+            Z = xp.zeros((D0 + D1, N * (N + 1) // 2))
             Z[:, idx_diag] = AI_mat_diag.T @ yI[:, idx_diag]
             Z[:, idx_offdiag] = AI_mat_offdiag.T @ yI[:, idx_offdiag]
             return Z[:D0, :], Z[D0:, :]
@@ -508,7 +474,7 @@ class CommonlineNUG(CLOrient3D):
                 -Xd1 / rho - Sd1,
                 -Xq / rho - Sq,
             )
-            yE = cp.zeros((Lmax + D0 + D1, N))
+            yE = xp.zeros((Lmax + D0 + D1, N))
             for k in range(Lmax):
                 yE[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = AEAETinv[k] @ (
                     bE[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] / rho
@@ -574,21 +540,21 @@ class CommonlineNUG(CLOrient3D):
 
         def print_updates(verbose=True):
             # X_admm=transform_coeff_back(X0,X1,Lmax,N); obj_p=0
-            # for k in range(Lmax): obj_p+=cp.trace(C[k]@X_admm[k])
+            # for k in range(Lmax): obj_p+=xp.trace(C[k]@X_admm[k])
             if verbose:
                 obj_p = (
-                    cp.vdot(C0[:, idx_diag], X0[:, idx_diag])
-                    + cp.vdot(C1[:, idx_diag], X1[:, idx_diag])
-                    + 2 * cp.vdot(C0[:, idx_offdiag], X0[:, idx_offdiag])
-                    + 2 * cp.vdot(C1[:, idx_offdiag], X1[:, idx_offdiag])
+                    xp.vdot(C0[:, idx_diag], X0[:, idx_diag])
+                    + xp.vdot(C1[:, idx_diag], X1[:, idx_diag])
+                    + 2 * xp.vdot(C0[:, idx_offdiag], X0[:, idx_offdiag])
+                    + 2 * xp.vdot(C1[:, idx_offdiag], X1[:, idx_offdiag])
                 )
                 obj_d = (
-                    cp.vdot(yE, bE)
-                    + 2 * cp.vdot(yEq, bEq)
-                    + cp.vdot(yI[:, idx_diag], bI * cp.ones((Ngrid, N)))
+                    xp.vdot(yE, bE)
+                    + 2 * xp.vdot(yEq, bEq)
+                    + xp.vdot(yI[:, idx_diag], bI * xp.ones((Ngrid, N)))
                     + 2
-                    * cp.vdot(
-                        yI[:, idx_offdiag], bI * cp.ones((Ngrid, N * (N - 1) // 2))
+                    * xp.vdot(
+                        yI[:, idx_offdiag], bI * xp.ones((Ngrid, N * (N - 1) // 2))
                     )
                 )
 
@@ -657,7 +623,7 @@ class CommonlineNUG(CLOrient3D):
                 )
                 p_res = res_eq + res_inq + res_psdX + res_psdD + res_psdQ
                 d_res = res_X / (1 + normC)
-                print(
+                logger.info(
                     "Iter %i" % t
                     + ": p_res=%1.5f" % p_res
                     + ", d_res=%1.5f" % d_res
@@ -671,13 +637,13 @@ class CommonlineNUG(CLOrient3D):
                     + ", |X|=%1.2f" % normX
                 )
 
-        Xd0 = cp.zeros((D0, N))
-        Xd1 = cp.zeros((D1, N))
-        Sd0 = cp.zeros(Xd0.shape)
-        Sd1 = cp.zeros(Xd1.shape)
-        yI = cp.zeros((Ngrid, N * (N + 1) // 2))
-        yE = cp.zeros(bE.shape)
-        yEq = cp.zeros(bEq.shape)
+        Xd0 = xp.zeros((D0, N))
+        Xd1 = xp.zeros((D1, N))
+        Sd0 = xp.zeros(Xd0.shape)
+        Sd1 = xp.zeros(Xd1.shape)
+        yI = xp.zeros((Ngrid, N * (N + 1) // 2))
+        yE = xp.zeros(bE.shape)
+        yEq = xp.zeros(bEq.shape)
 
         IDX = np.arange(3)
         Time = np.zeros(4)
@@ -693,7 +659,7 @@ class CommonlineNUG(CLOrient3D):
                         C0, C1, X0, X1, Xd0, Xd1, Xq, S0, S1, Sd0, Sd1, Sq, yI, rho
                     )
                 if idx == 2:
-                    for kk in range(Nstep_yI):
+                    for _ in range(Nstep_yI):
                         yI = update_yI(C0, C1, X0, X1, S0, S1, yE, yEq, yI, rho, Lambda)
             X0, X1, Xd0, Xd1, Xq, res_X = update_X(
                 C0, C1, X0, X1, Xd0, Xd1, Xq, yE, yEq, yI, S0, S1, Sd0, Sd1, Sq, rho
@@ -707,18 +673,16 @@ class CommonlineNUG(CLOrient3D):
         X_admm = self.transform_coeff_back(
             X0, X1, Lmax, N, IDX_upper, IDX_lower, idx_offdiag
         )
-        if GPU:
-            for k in range(Lmax):
-                X_admm[k] = X_admm[k].get()
+        # if self.GPU:
+        #     for k in range(Lmax):
+        #         X_admm[k] = X_admm[k].get()
+        for k in range(Lmax):
+            X_admm[k] = xp.asnumpy(X_admm[k])
         return X_admm
 
-    def ADMM_preprocessing(self, C, Lmax, N, Ngrid, GPU=True):
+    def ADMM_preprocessing(self, C, Lmax, N, Ngrid):
         # compute necessary quantities for ADMM
-        if GPU:
-            import cupy as cp
-        else:
-            import numpy as cp
-
+        
         # compute some useful index sets
         count = 0
         idx_diag = []
@@ -751,7 +715,7 @@ class CommonlineNUG(CLOrient3D):
         Cnorm = np.sqrt(Cnorm)
         Xnorm = np.sqrt(Xnorm)
         for k in range(Lmax):
-            C[k] = cp.asarray(Xnorm / Cnorm * C[k])
+            C[k] = xp.asarray(Xnorm / Cnorm * C[k])
         C0, C1 = self.transform_coeff(C, Lmax, N, IDX_upper)
         normC = np.sqrt(np.linalg.norm(C0) ** 2 + np.linalg.norm(C1) ** 2)
         del C
@@ -766,12 +730,12 @@ class CommonlineNUG(CLOrient3D):
         D1 = d1[-1]
 
         # AE and bE for quaternion constraints
-        AEq = cp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEq"])
-        AEqAEqtinv = cp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEqAEqtinv"])
-        bEq = cp.zeros(17)
-        bEq[:16] = cp.eye(4).reshape(-1) / 4
+        AEq = xp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEq"])
+        AEqAEqtinv = xp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEqAEqtinv"])
+        bEq = xp.zeros(17)
+        bEq[:16] = xp.eye(4).reshape(-1) / 4
         bEq[-1] = 1
-        bEq = cp.repeat(bEq[:, cp.newaxis], N * (N - 1) // 2, axis=1)
+        bEq = xp.repeat(bEq[:, xp.newaxis], N * (N - 1) // 2, axis=1)
 
         # AI and bI
         W0 = [
@@ -790,7 +754,7 @@ class CommonlineNUG(CLOrient3D):
         #         w1[d1[k-1]:d1[k]]=(Lmax-k+2)*(Lmax-k+1)*(k+0.5)*W1[k-1][p].T.reshape(-1)
         #         # this needs double checking
         #     AI_mat[p,:d0[-1]]=w0; AI_mat[p,d0[-1]:]=w1
-        # AI_mat=cp.asarray(AI_mat) / 10;
+        # AI_mat=xp.asarray(AI_mat) / 10;
         # bI=-(Lmax+2)*(Lmax+1)/2 / 10
 
         AI_mat_offdiag = np.zeros((Ngrid, D0 + D1))
@@ -833,10 +797,10 @@ class CommonlineNUG(CLOrient3D):
                 # this needs double checking
             AI_mat_diag[p, : d0[-1]] = w0
             AI_mat_diag[p, d0[-1] :] = w1
-        AI_mat_diag = cp.asarray(AI_mat_diag) / 1
-        AI_mat_offdiag = cp.asarray(AI_mat_offdiag) / 1
+        AI_mat_diag = xp.asarray(AI_mat_diag) / 1
+        AI_mat_offdiag = xp.asarray(AI_mat_offdiag) / 1
         bI = -(Lmax + 2) * (Lmax + 1) / 2 / 1
-
+        np.save("AI_mat_offdiag_aspire.npy", AI_mat_offdiag)
         # largest eigenvalue for AIAIT
         Lambda = self.largest_eigenvalue(AI_mat_offdiag, Ngrid, N)
 
@@ -844,16 +808,16 @@ class CommonlineNUG(CLOrient3D):
         II = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
-            II.append(cp.eye(N * dk))
+            II.append(xp.eye(N * dk))
         I0, I1 = self.transform_coeff(II, Lmax, N, IDX_upper)
-        X0 = cp.zeros((D0, N * (N + 1) // 2))
-        X1 = cp.zeros((D1, N * (N + 1) // 2))
-        Xq = cp.zeros((16, N * (N - 1) // 2))
-        # X0,X1=transform_coeff(II,Lmax,N); Xq=cp.zeros((16,N*(N-1))); Xq[0,:]=1;
-        S0 = cp.copy(I0)
-        S1 = cp.copy(I1)
-        Sq = cp.zeros(Xq.shape)
-        # S0=cp.zeros(X0.shape); S1=cp.zeros(X1.shape); Sq=cp.zeros(Xq.shape)
+        X0 = xp.zeros((D0, N * (N + 1) // 2))
+        X1 = xp.zeros((D1, N * (N + 1) // 2))
+        Xq = xp.zeros((16, N * (N - 1) // 2))
+        # X0,X1=transform_coeff(II,Lmax,N); Xq=xp.zeros((16,N*(N-1))); Xq[0,:]=1;
+        S0 = xp.copy(I0)
+        S1 = xp.copy(I1)
+        Sq = xp.zeros(Xq.shape)
+        # S0=xp.zeros(X0.shape); S1=xp.zeros(X1.shape); Sq=xp.zeros(Xq.shape)
 
         # return C0,C1,normC,AEq,bEq,AEqAEqtinv,AI_mat,bI,Lambda,d0,d1,D0,D1,idx_diag,idx_offdiag,IDX_upper,IDX_lower,X0,X1,Xq,S0,S1,Sq
         return (
@@ -1007,8 +971,8 @@ class CommonlineNUG(CLOrient3D):
         for k in range(1, Lmax + 1):
             d0.append(d0[-1] + k**2)
             d1.append(d1[-1] + (k + 1) ** 2)
-        A0 = cp.zeros((d0[-1], N * (N + 1) // 2))
-        A1 = cp.zeros((d1[-1], N * (N + 1) // 2))
+        A0 = xp.zeros((d0[-1], N * (N + 1) // 2))
+        A1 = xp.zeros((d1[-1], N * (N + 1) // 2))
         for k in range(1, Lmax + 1):
             a0, a1 = self.permutek(A[k - 1], k, N)
             A0[d0[k - 1] : d0[k], :] = self.vec_block(a0, N, k, IDX_upper)
@@ -1024,7 +988,7 @@ class CommonlineNUG(CLOrient3D):
         A = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
-            Ak = cp.zeros((N * dk, N * dk))
+            Ak = xp.zeros((N * dk, N * dk))
             Ak[: N * k, : N * k] = self.mat_block(
                 A0[d0[k - 1] : d0[k], :], N, k, IDX_upper, IDX_lower, idx_offdiag
             )
@@ -1037,20 +1001,20 @@ class CommonlineNUG(CLOrient3D):
 
     @staticmethod
     def permutek(Ak, k, N):
-        AkP = cp.copy(Ak)
+        AkP = xp.copy(Ak)
         dk = 2 * k + 1
-        Pk = cp.eye(dk)
+        Pk = xp.eye(dk)
         for m in range(k):
-            for l in range(k - m):
-                Pk[(m + 2 * l, m + 2 * l + 1), :] = Pk[(m + 2 * l + 1, m + 2 * l), :]
-        AkP = cp.kron(cp.eye(N), Pk) @ Ak @ cp.kron(cp.eye(N), Pk.T)
+            for n in range(k - m):
+                Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
+        AkP = xp.kron(xp.eye(N), Pk) @ Ak @ xp.kron(xp.eye(N), Pk.T)
 
-        Pk = cp.eye(N * dk)
-        idx = cp.concatenate((cp.arange(dk - k, dk), cp.arange(k + 1)))
+        Pk = xp.eye(N * dk)
+        idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
         for m in range(N - 1):
-            for l in range(N - 1 - m):
-                Pk[k * (m + 1) + l * dk : k * (m + 1) + (l + 1) * dk] = Pk[
-                    k * (m + 1) + l * dk : k * (m + 1) + (l + 1) * dk
+            for n in range(N - 1 - m):
+                Pk[k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk] = Pk[
+                    k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk
                 ][idx, :]
         AkP = Pk @ AkP @ Pk.T
         return AkP[: N * k, : N * k], AkP[N * k :, N * k :]
@@ -1058,20 +1022,20 @@ class CommonlineNUG(CLOrient3D):
     @staticmethod
     def permutek_back(Ak, k, N):
         dk = 2 * k + 1
-        Pk = cp.eye(N * dk)
-        idx = cp.concatenate((cp.arange(dk - k, dk), cp.arange(k + 1)))
+        Pk = xp.eye(N * dk)
+        idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
         for m in range(N - 1):
-            for l in range(N - 1 - m):
-                Pk[k * (m + 1) + l * dk : k * (m + 1) + (l + 1) * dk] = Pk[
-                    k * (m + 1) + l * dk : k * (m + 1) + (l + 1) * dk
+            for n in range(N - 1 - m):
+                Pk[k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk] = Pk[
+                    k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk
                 ][idx, :]
         AkB = Pk.T @ Ak @ Pk
         dk = 2 * k + 1
-        Pk = cp.eye(dk)
+        Pk = xp.eye(dk)
         for m in range(k):
-            for l in range(k - m):
-                Pk[(m + 2 * l, m + 2 * l + 1), :] = Pk[(m + 2 * l + 1, m + 2 * l), :]
-        AkB = cp.kron(cp.eye(N), Pk.T) @ AkB @ cp.kron(cp.eye(N), Pk)
+            for n in range(k - m):
+                Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
+        AkB = xp.kron(xp.eye(N), Pk.T) @ AkB @ xp.kron(xp.eye(N), Pk)
         return AkB
 
     @staticmethod
@@ -1082,21 +1046,22 @@ class CommonlineNUG(CLOrient3D):
     @staticmethod
     def largest_eigenvalue(AI, Ngrid, N):
         # find the largest eigenvalue of the operator AI
-        z = cp.random.normal(0, 1, (Ngrid, N**2))
+        np.random.seed(0)
+        z = xp.random.normal(0, 1, (Ngrid, N**2))
         Lambda = 0
 
-        while abs(Lambda - cp.linalg.norm(z)) > 500:
-            Lambda = cp.linalg.norm(z)
-            z = z / cp.linalg.norm(z)
+        while abs(Lambda - xp.linalg.norm(z)) > 500:
+            Lambda = xp.linalg.norm(z)
+            z = z / xp.linalg.norm(z)
             z = AI @ (AI.T @ z)
         Lambda += 2000
-        print("Largest eigenvalue of AIAIT is approximately %1.2f" % Lambda)
-        # Lambda=cp.linalg.eigvalsh(AI@AI.T)[-1]; print(Lambda)
+        logger.info("Largest eigenvalue of AIAIT is approximately %1.2f" % Lambda)
+        # Lambda=xp.linalg.eigvalsh(AI@AI.T)[-1]; print(Lambda)
         return Lambda
 
     def compute_rank(self, sym, Lmax):
         sym_euler, S = self.Symmetry_Euler(sym)
-        rk = cp.zeros(Lmax)
+        rk = xp.zeros(Lmax)
         A = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
@@ -1185,7 +1150,7 @@ class CommonlineNUG(CLOrient3D):
     @staticmethod
     def mat_block(vecA, N, sz, IDX_upper, IDX_lower, idx_offdiag):
         tmp = vecA.T.reshape(N * (N + 1) // 2, sz, sz).transpose(0, 2, 1)
-        AA = cp.zeros((N**2, sz, sz))
+        AA = xp.zeros((N**2, sz, sz))
         AA[IDX_upper] = tmp
         AA[IDX_lower] = tmp[idx_offdiag].transpose(0, 2, 1)
         return (AA.reshape(N, N, sz, sz).transpose(0, 2, 1, 3)).reshape(N * sz, N * sz)
@@ -1193,15 +1158,15 @@ class CommonlineNUG(CLOrient3D):
     @staticmethod
     def psd_projection(B):
         # compute the PSD part of a symmstric matrix
-        evals, evecs = cp.linalg.eigh((B + B.T) / 2)
-        evals = cp.maximum(evals, 0)
+        evals, evecs = xp.linalg.eigh((B + B.T) / 2)
+        evals = xp.maximum(evals, 0)
         return (evecs * evals) @ evecs.T
 
     @staticmethod
     def transform_block(A, k, Pk=None):
         if Pk is None:
             dk = 2 * k + 1
-            Pk = cp.eye(dk)
+            Pk = xp.eye(dk)
             for m in range(k):
                 for l in range(k - m):
                     Pk[(m + 2 * l, m + 2 * l + 1), :] = Pk[
@@ -1213,11 +1178,11 @@ class CommonlineNUG(CLOrient3D):
     @staticmethod
     def transform_back_block(A0, A1, k, Pk=None):
         dk = 2 * k + 1
-        A = cp.zeros((dk, dk))
+        A = xp.zeros((dk, dk))
         A[:k, :k] = A0.reshape(k, k).T
         A[k:, k:] = A1.reshape(k + 1, k + 1).T
         if Pk is None:
-            Pk = cp.eye(dk)
+            Pk = xp.eye(dk)
             for m in range(k):
                 for l in range(k - m):
                     Pk[(m + 2 * l, m + 2 * l + 1), :] = Pk[
