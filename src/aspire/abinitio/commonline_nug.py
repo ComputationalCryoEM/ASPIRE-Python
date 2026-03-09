@@ -1,7 +1,6 @@
 import logging
 import time
 
-import cupy as cp
 import numpy as np
 from scipy.io import loadmat
 from scipy.spatial.transform import Rotation as spr
@@ -73,7 +72,6 @@ class CommonlineNUG(CLOrient3D):
         self.sym = symmetry
 
     def estimate_rotations(self):
-        breakpoint()
         sym_euler, S = self.Symmetry_Euler(self.sym)
         imgs = self.src.images[:]
         C = self.compute_coeff(imgs, self.loss, self.Lmax, T=self.T)
@@ -228,7 +226,7 @@ class CommonlineNUG(CLOrient3D):
         )
         pts = pts.astype(array.dtype)
 
-        #array = array.astype(np.float32)
+        # array = array.astype(np.float32)
         lines_f = nufft(array, pts).reshape((img_size, -1))
 
         if img_size % 2 == 0:
@@ -356,9 +354,9 @@ class CommonlineNUG(CLOrient3D):
             dk = 2 * k + 1
             Pk = xp.eye(dk)
             for m in range(k):
-                for l in range(k - m):
-                    Pk[(m + 2 * l, m + 2 * l + 1), :] = Pk[
-                        (m + 2 * l + 1, m + 2 * l), :
+                for el in range(k - m):
+                    Pk[(m + 2 * el, m + 2 * el + 1), :] = Pk[
+                        (m + 2 * el + 1, m + 2 * el), :
                     ]
             P.append(Pk)
 
@@ -682,7 +680,6 @@ class CommonlineNUG(CLOrient3D):
 
     def ADMM_preprocessing(self, C, Lmax, N, Ngrid):
         # compute necessary quantities for ADMM
-        
         # compute some useful index sets
         count = 0
         idx_diag = []
@@ -1168,9 +1165,9 @@ class CommonlineNUG(CLOrient3D):
             dk = 2 * k + 1
             Pk = xp.eye(dk)
             for m in range(k):
-                for l in range(k - m):
-                    Pk[(m + 2 * l, m + 2 * l + 1), :] = Pk[
-                        (m + 2 * l + 1, m + 2 * l), :
+                for el in range(k - m):
+                    Pk[(m + 2 * el, m + 2 * el + 1), :] = Pk[
+                        (m + 2 * el + 1, m + 2 * el), :
                     ]
         AT = Pk @ A @ Pk.T
         return AT[:k, :k].T.reshape(-1), AT[k:, k:].T.reshape(-1)
@@ -1184,8 +1181,8 @@ class CommonlineNUG(CLOrient3D):
         if Pk is None:
             Pk = xp.eye(dk)
             for m in range(k):
-                for l in range(k - m):
-                    Pk[(m + 2 * l, m + 2 * l + 1), :] = Pk[
-                        (m + 2 * l + 1, m + 2 * l), :
+                for el in range(k - m):
+                    Pk[(m + 2 * el, m + 2 * el + 1), :] = Pk[
+                        (m + 2 * el + 1, m + 2 * el), :
                     ]
         return Pk.T @ A @ Pk
