@@ -9,7 +9,7 @@ from scipy.special import factorial
 from aspire.abinitio import CLOrient3D
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
-from aspire.operators import wemd_embed
+from aspire.operators import PolarFT, wemd_embed
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +71,12 @@ class CommonlineNUG(CLOrient3D):
         self.Nstep_yI = Nstep_yI
         self.sym = symmetry
 
+        self._build_full_pft()
+
+    def _build_full_pft(self):
+        pf = self.pf
+        self.pf_full = PolarFT.half_to_full(pf)
+
     def estimate_rotations(self):
         sym_euler, S = self.Symmetry_Euler(self.sym)
         imgs = self.src.images[:]
@@ -105,6 +111,8 @@ class CommonlineNUG(CLOrient3D):
         angular_sampling = np.arange(0, 360, 1)
         line_proj = np.zeros((L, n_theta, N))
         Img_pft = np.zeros((L, n_theta, N), dtype=complex)
+
+        # Replace with Image.project() later
         Img = Img.asnumpy()
         for n in range(N):
             line_proj[:, :, n], Img_pft[:, :, n] = self.fast_radon_transform(
@@ -126,6 +134,17 @@ class CommonlineNUG(CLOrient3D):
 
                 Si = Ii_hat[:, int(idxi)]
                 Sj = Ij_hat[:, int(idxj)]
+
+                # Using aspire PolarFT. Replace later
+                # Ii_hat = self.pf_full[i]
+                # Ij_hat = self.pf_full[j]
+                # idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
+                # idxj = np.round((-gamma - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
+
+                # Si = Ii_hat[int(idxi)]
+                # Sj = Ij_hat[int(idxj)]
+                # norm_new = np.linalg.norm(Si - Sj, 1)
+
                 return np.linalg.norm(Si - Sj, 1)
 
             if loss == "wemd":
@@ -729,6 +748,7 @@ class CommonlineNUG(CLOrient3D):
         # AE and bE for quaternion constraints
         AEq = xp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEq"])
         AEqAEqtinv = xp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEqAEqtinv"])
+
         bEq = xp.zeros(17)
         bEq[:16] = xp.eye(4).reshape(-1) / 4
         bEq[-1] = 1
