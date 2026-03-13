@@ -13,25 +13,17 @@ High-Level Workflow
 
 The reference-free workflow below illustrates how orientation solvers integrate with
 denoising and reconstruction utilities.
-
-#. Start from a denoised or class-averaged ``ImageSource`` (often the output of the
-   class averaging stack described in :doc:`class_source`).
-
-   .. code-block::
-      
-       # Generate a set of class averages from initial 'src', which,
-       # in most cases, has already gone through some preprocessing steps.
-       from aspire.denoising import LegacyClassAvgSource
-       avgs = LegacyClassAvgSource(src)
      
-#. Instantiate one of the ``CLOrient3D`` subclasses with the source plus any
-   tuning parameters (angular resolution, shift search ranges, histogram settings).
+#. Starting from an ``ImageSource`` (often the output of the class averaging stack
+   described in :doc:`class_source`), instantiate one of the ``CLOrient3D`` subclasses
+   with the source plus any tuning parameters (angular resolution, shift search ranges,
+   histogram settings).
 
    .. code-block::
       
        # Instantiate orientation estimation object
        from aspire.abinitio import CLSync3N
-       orient_est = CLSync3N(avgs, n_theta=180, shift_step=0.5)
+       orient_est = CLSync3N(src, n_theta=180, shift_step=0.5)
 
 #. Rotations and shifts can be estimated directly from the orientation solver by
    calling ``estimate_rotations()`` and ``estimate_shifts()``.
