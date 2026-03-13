@@ -26,12 +26,14 @@ denoising and reconstruction utilities.
        orient_est = CLSync3N(src, n_theta=180, shift_step=0.5)
 
 #. Rotations and shifts can be estimated directly from the orientation solver by
-   calling ``estimate_rotations()`` and ``estimate_shifts()``.
+   calling the methods ``estimate_rotations()`` and ``estimate_shifts()`` or by
+   requesting them as attributes of the class (see below), which will initiate
+   estimation if they do not already exist.
 
    .. code-block::
       
-       est_rots = orient_est.estimate_rotations()
-       est_shifts = orient_est.estimate_shifts()
+       est_rots = orient_est.rotations
+       est_shifts = orient_est.shifts
       
 #. Or, in the context of a full reconstruction pipeline, the image source and orientation
    estimation objects can be used to instantiate an ``OrientedSource`` to be consumed
@@ -44,7 +46,7 @@ denoising and reconstruction utilities.
        from aspire.reconstruction import MeanEstimator
        from aspire.source import OrientedSource
 
-       oriented_src = OrientedSource(avgs, orient_est)
+       oriented_src = OrientedSource(src, orient_est)
        estimator = MeanEstimator(oriented_src)
 
        # Estimate volume
