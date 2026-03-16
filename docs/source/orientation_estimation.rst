@@ -97,8 +97,10 @@ CLMatrixOrient3D
 ``clmatrix`` (indices of correlated polar rays between image pairs) and any auxiliary
 scores such as ``cl_dist`` or ``shifts_1d``. Key behaviors include:
 
-- CPU/GPU dispatch within ``build_clmatrix``. When GPUs are available the class invokes
-  CUDA kernels that drastically reduce wall time for large datasets.
+- CPU/GPU dispatch within ``build_clmatrix``. When GPUs are available and the GPU backend
+  enabled (see :ref:`config_enabling_gpu` in :doc:`auto_tutorials/configuration` and
+  :doc:`installation` for details on enabling GPU) the class invokes CUDA kernels that
+  drastically reduce wall time for large datasets.
 - Caching and lazy-evaluation of ``clmatrix`` and distance matrices to avoid recomputation.
 - Shared ``max_shift`` and ``shift_step`` parameters that influence accuracy/runtime
   trade-offs during 1D shift searches.
