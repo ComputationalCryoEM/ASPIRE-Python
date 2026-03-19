@@ -34,7 +34,7 @@ class ScipyFFT(FFT):
     def ifftshift(self, x, axes=None):
         return sp.fft.ifftshift(x, axes=axes)
 
-    def dct(self, x,workers=-1,**kwargs):
+    def dct(self, x, workers=-1, **kwargs):
         return sp.fft.dct(x, **kwargs)
 
     def idct(self, x, workers=-1, **kwargs):
