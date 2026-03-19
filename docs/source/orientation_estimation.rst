@@ -185,7 +185,7 @@ ASPIRE offers several orientation estimation algorithms for handling molecules w
   scaffolding but substitutes an ADMM-based least unsquared deviations solver. Parameters
   like ``alpha``, ``mu`` scheduling, and adaptive rank selection govern convergence.
 - ``CommonlineIRLS`` (:file:`src/aspire/abinitio/commonline_irls.py`): Wraps LUD inside
-  an outer reweighting loop, updating residual weights and ``self._mu`` to improve
+  an outer reweighting loop, updating residual weights and penalty variables to improve
   robustness to outliers.
 
 Algorithms for Symmetric Molecules
