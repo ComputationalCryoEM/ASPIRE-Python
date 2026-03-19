@@ -3,7 +3,7 @@ name = "aspire"
 version = "0.14.2"
 description = "Algorithms for Single Particle Reconstruction"
 readme = "README.md" # Optional
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 maintainers = [
