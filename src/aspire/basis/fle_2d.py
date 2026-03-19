@@ -298,7 +298,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         nodes = (
             self.greatest_lambda - self.smallest_lambda
         ) * nodes + self.smallest_lambda
-        nodes = nodes.reshape(self.num_radial_nodes, 1)
+        self.nodes = nodes.reshape(self.num_radial_nodes, 1)
 
         radius = self.nres / 2
         h = 1 / radius
@@ -314,7 +314,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         )
         grid_xy[0] = xp.cos(phi)  # x
         grid_xy[1] = xp.sin(phi)  # y
-        grid_xy[:] = grid_xy * nodes * h
+        grid_xy[:] = grid_xy * self.nodes * h
         self.grid_xy = grid_xy.reshape(2, -1)
 
     def _build_interpolation_matrix(self):
@@ -738,6 +738,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             _coefs = coefs[k, :]
             z = self._step1_t(radial_img)
             b = self._step2_t(z)
+            # squeeze previously in _radial_convolve_weights
+            b = b.squeeze()
             weights = self._radial_convolve_weights(b)
             b = weights / (self.h**2)
             b = b.reshape(self.count)
@@ -753,14 +755,15 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Helper function for step 3 of convolving with a radial function.
         """
-        b = xp.squeeze(b)
+        # Developer note, this is equivalent `fle2d.expand_radial_vec` up to shapes.
         b = xp.array(b)  # implies copy
         if self.num_interp > self.num_radial_nodes:
             b = fft.dct(b, axis=0, type=2) / (2 * self.num_radial_nodes)
-            bz = xp.zeros(b.shape)
+            bz = xp.zeros(b.shape, dtype=self.dtype)
             b = xp.concatenate((b, bz), axis=0)
             b = fft.idct(b, axis=0, type=2) * 2 * b.shape[0]
-        a = xp.zeros(self.count, dtype=np.float64)
+        a = xp.zeros(self.count, dtype=self.dtype)
+        ## xx note these can be collapsed into one loop later
         y = [None] * (self.ell_p_max + 1)
         for i in range(self.ell_p_max + 1):
             y[i] = (self.A3[i] @ b[:, 0]).flatten()
@@ -769,7 +772,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return a.flatten()
 
-    def filter_to_basis_mat(self, f, **kwargs):
+    def _filter_to_basis_mat(self, f, **kwargs):
         """
         See `SteerableBasis2D.filter_to_basis_mat`.
         """
@@ -818,3 +821,84 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         h_basis = h_basis[self._fle_to_fb_indices]
 
         return DiagMatrix(xp.asnumpy(h_basis))
+
+    # def _fle_expand_radial_vec(self, radial_vec):
+
+    #     radial_vec = radial_vec.T
+    #     #if self.n_interp > self.n_radial:
+    #     if self.num_interp > self.num_radial_nodes:
+    #         radial_vec = fft.dct(radial_vec, axis=0, type=2, workers=-1) / (2 * self.num_radial_nodes)
+    #         radial_vec_z = xp.zeros(radial_vec.shape)
+    #         radial_vec = xp.concatenate((radial_vec, radial_vec_z), axis=0)
+    #         radial_vec = (
+    #             fft.idct(radial_vec, axis=0, type=2, workers=-1) * 2 * radial_vec.shape[0]
+    #         )
+
+    #     radial_fb = xp.zeros((self.count, radial_vec.shape[1]), dtype=self.dtype)
+
+    #     for i in range(self.ell_p_max + 1):
+    #         radial_fb[self.idx_list[i], :] = self.A3[i] @ radial_vec
+
+    #     return radial_fb.T
+
+    def expand_radial_vec(self, radial_vec, **kwargs):
+        coefs = self._radial_convolve_weights(radial_vec)
+        # _coefs = self._fle_expand_radial_vec(radial_vec.T)
+        # assert coefs.dtype == _coefs.dtype
+        # assert np.allclose(coefs,_coefs)
+        # #breakpoint()
+
+        # check...
+        # Convert to internal FLE indices ordering
+        coefs = coefs[..., self._fb_to_fle_indices]
+        # squeeze should probably be addressed in consuming code,
+        #   for now match old `filter_to_basis_mat`
+        coefs = xp.asnumpy(coefs).squeeze()
+
+        return DiagMatrix(coefs)
+
+    # def expand_radial_vec(self, radial_vec, **kwargs):
+
+    #     radial_vec = xp.asarray(radial_vec)
+
+    #     ## XXX looks like we do in fact need the padding/size-correction here...
+    #     if self.num_interp > self.num_radial_nodes:
+    #         radial_vec = fff.dct(radial_vec, axis=1, type=2) / (2 * self.num_radial_nodes)
+    #         radial_vec_z = xp.zeros(radial_vec.shape)
+    #         radial_vec = xp.concatenate((radial_vec, radial_vec_z), axis=1)
+    #         radial_vec = fff.idct(radial_vec, axis=1, type=2) * 2 * radial_vec.shape[1]
+
+    #     # appears equiv to angular ordering code
+    #     h_basis = xp.zeros(self.count, dtype=self.dtype)
+    #     # For now we just need to handle 1D (stack of one ctf)
+    #     breakpoint()
+    #     for j in range(self.ell_p_max + 1):
+    #         h_basis[self.idx_list[j]] = self.A3[j] @ radial_vec
+
+    #     # Convert from internal FLE ordering to FB convention
+    #     h_basis = h_basis[self._fle_to_fb_indices]
+
+    #     return DiagMatrix(xp.asnumpy(h_basis))
+
+    def _radial_ctf_filter_to_filter_vals(self, f, **kwargs):
+        """
+        Unpack filter attributes and pass to Yunpeng code.
+        """
+
+        pts = xp.asnumpy(self.nodes)
+
+        # _filter_pts = np.pad(pts.reshape(1,-1), ((0,1),(0,0)))
+        # h_vals = f.evaluate(_filter_pts, **kwargs)
+
+        pixel_size = kwargs.get("pixel_size")
+        h_vals = self._radial_ctf(
+            f.voltage,
+            f.Cs,
+            f.alpha,
+            (f.defocus_u + f.defocus_v) / 2,
+            pixel_size,
+            self.h,
+            pts,
+        )
+        # breakpoint()
+        return h_vals

@@ -1,12 +1,14 @@
 import abc
 import logging
+import warnings
 from collections.abc import Iterable
 
 import numpy as np
 
 from aspire.basis import Basis, Coef, ComplexCoef
-from aspire.operators import BlkDiagMatrix
-from aspire.utils import LogFilterByCount, complex_type, real_type, trange
+from aspire.numeric import xp
+from aspire.operators import BlkDiagMatrix, CTFFilter, DiagMatrix
+from aspire.utils import LogFilterByCount, complex_type, grid_1d, real_type, trange
 
 logger = logging.getLogger(__name__)
 
@@ -476,12 +478,57 @@ class SteerableBasis2D(Basis, abc.ABC):
 
         return ComplexCoef(self, complex_coef)
 
+    # @abc.abstractmethod
+    # def expand_radial_vec(self, h_vals, **kwargs):
+    #     """
+    #     Expand a radial vector given by `h_vals` into a basis mat.
+
+    #     :param h_vals: Radial vector(s)
+    #     :return: Basis representation (may be `BlkDiagMatrix`, or `DiagMatrix`) depending on basis.
+    #     """
+    #     # By default code can point here for a slow implementation.
+    #     # A basis with a specialized solution should implementat that in the respective subclass.
+    #     return basis_mat
+
+    def filter_to_basis_mat(self, f, radial=None, **kwargs):
+        """
+        Convert a filter into a basis operator representation.
+
+        See `_filter_to_basis_mat` here and in subclasses for available **kwargs.
+
+        :param f: `Filter` object, usually a `CTFFilter`.
+        :param radial: Optionally attempt radial approximation if available.
+
+        :return: Representation of filter as `basis` operator.
+            Return type will be based on the class's `matrix_type`.
+        """
+
+        if (radial == True) and callable(
+            getattr(self.__class__, "expand_radial_vec", None)
+        ):
+            # previous code
+            # _res = self._filter_to_basis_mat(f, **kwargs)
+
+            # kwargs supports passing through pixel_size
+            h_vals = self._radial_ctf_filter_to_filter_vals(f, **kwargs).reshape(-1, 1)
+
+            warnings.warn("Using `expand_radial_vec`", UserWarning, stacklevel=1)
+            res = self.expand_radial_vec(h_vals)
+            # breakpoint()
+            return res
+        else:
+            warnings.warn(
+                "Using generic `_filter_to_basis_mat'", UserWarning, stacklevel=1
+            )
+            # use generic (legacy) filter path/code (may return DiagMatrix)
+            return self._filter_to_basis_mat(f, **kwargs)
+
     # `abstractmethod` enforces when a new subclass of
     # `SteerableBasis2D` is created that this method is explicitly
     # implemented.  This is intended to encourage future basis authors
     # to consider this method for their application.
     @abc.abstractmethod
-    def filter_to_basis_mat(self, f, method="evaluate_t", truncate=True, **kwargs):
+    def _filter_to_basis_mat(self, f, method="evaluate_t", truncate=True, **kwargs):
         """
         Convert a filter into a basis operator representation.
 
@@ -534,3 +581,17 @@ class SteerableBasis2D(Basis, abc.ABC):
             )
 
         return filt
+
+    #### xxx
+
+    def _radial_ctf(self, voltage, cs, alpha, defocus, pixel_size, h, pts):
+        wavelength = 12.2643247 / np.sqrt(voltage * 1e3 + 0.978466 * voltage**2)
+        c2_vec = (-np.pi * wavelength * defocus).reshape(-1, 1)
+        c4_vec = (0.5 * np.pi * (cs * 1e7) * wavelength**3).reshape(-1, 1)
+        r2 = (pts * h / (pixel_size * 2 * np.pi)) ** 2
+        r4 = r2**2
+
+        gamma = r2 @ c2_vec.T + r4 @ c4_vec.T
+        ctf_radial = np.sqrt(1 - alpha**2) * np.sin(gamma) - alpha * np.cos(gamma)
+        # assert ctf_radial.shape == self.num_radial_nodes, f"ctf_radial_shape {ctf_radial.shape} != num_radial_nodes {self.num_radial_nodes}"
+        return ctf_radial
