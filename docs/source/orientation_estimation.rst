@@ -239,24 +239,22 @@ used inside :class:`aspire.source.OrientedSource`. A simplified template is show
        """
 
        def estimate_rotations(self):
-           # Compute and cache the clmatrix
-           clmatrix = self.clmatrix
-
            # Custom synchronization using clmatrix statistics
-           sync_mat = self._fancy_sync(clmatrix)
-           est_rots = self._recover_rots(sync_mat)
+           self.fancy_sync()
+           self.recover_rots()
 
-	   return est_rots
+	   return self.rotations
 
-       def _fancy_sync(self, clmatrix):
-           # Placeholder illustrating where algorithm-specific logic would go
+       def fancy_sync(self):
+           # Placeholder illustrating where algorithm-specific logic would go.
+	   # Access self.clmatrix for computations and assign result to class attribute. 
 	   ...
-           return sync_mat
+	   self.sync_mat = fancy_sync_computations(self.clmatrix)
 
-       def _recover_rots(self, sync_mat):
+       def recover_rots(self):
            # Placeholder for additional algorithmic-specific logic
 	   ...
-	   return rots
+	   self.rotations = rot_recov_computions(self.sync_mat)
 	   
 With this skeleton in place, the new class inherits masking, caching, shift estimation,
 GPU dispatch hooks, and reference-free pipeline compatibility from the base classes.
