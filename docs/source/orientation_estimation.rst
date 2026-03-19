@@ -88,6 +88,8 @@ strategies, and the shift solving backend. It exposes:
 	   +estimate_rotations()
 	   +estimate_shifts()
 	   +pf
+	   +rotations
+	   +shifts
        }
 
 CLMatrixOrient3D
@@ -114,6 +116,8 @@ scores such as ``cl_dist`` or ``shifts_1d``. Key behaviors include:
 	   +estimate_shifts()
 	   +pf
 	   +clmatrix
+	   +rotations
+	   +shifts
        }
 
 Handedness Synchronization
