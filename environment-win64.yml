@@ -6,7 +6,7 @@ channels:
 
 dependencies:
   - pip
-  - python=3.9
+  - python=3.10
   - numpy=1.25.0
   - scipy=1.13.1
   - scikit-learn
