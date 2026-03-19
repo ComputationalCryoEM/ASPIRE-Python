@@ -236,7 +236,7 @@ class FFBBasis2D(FBBasis2D):
 
         return xp.asnumpy(v)
 
-    def filter_to_basis_mat(self, f, **kwargs):
+    def _filter_to_basis_mat(self, f, **kwargs):
         """
         See `SteerableBasis2D.filter_to_basis_mat`.
         """
