@@ -177,10 +177,10 @@ ASPIRE offers several orientation estimation algorithms for handling molecules w
   which is insensitive to the cryo-EM handedness ambiguity. For that reason a separate handedness
   synchronization step is not needed. An eigen-decomposition is then performed to recover the image
   orientations.
-- ``CommonlineSDP`` (:file:`src/aspire/abinitio/commonline_sdp.py`): This method uses a
-  relaxation of the least squares formulation of the orientation problem and frames it
-  semidefinite program. ``cvxpy`` is used to solve the SDP and the rotations are recovered
-  through deterministic rounding and ``nearest_rotations`` projection.
+- ``CommonlineSDP`` (:file:`src/aspire/abinitio/commonline_sdp.py`): Uses semidefinite
+  programming to relax the constraints of the least squares formulation of the orientation problem.
+  ``cvxpy`` is used to solve the SDP and the rotations are recovered through deterministic rounding
+  and ``nearest_rotations`` projection.
 - ``CommonlineLUD`` (:file:`src/aspire/abinitio/commonline_lud.py`): Reuses the SDP
   scaffolding but substitutes an ADMM-based least unsquared deviations solver. Parameters
   like ``alpha``, ``mu`` scheduling, and adaptive rank selection govern convergence.
