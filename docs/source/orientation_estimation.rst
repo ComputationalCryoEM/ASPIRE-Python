@@ -102,7 +102,7 @@ scores such as ``cl_dist`` or ``shifts_1d``. Key behaviors include:
   :doc:`installation` for details on enabling GPU) the class invokes CUDA kernels that
   drastically reduce wall time for large datasets.
 - Caching and lazy-evaluation of ``clmatrix`` and distance matrices to avoid recomputation.
-- Shared ``max_shift`` and ``shift_step`` parameters that influence accuracy/runtime
+- Tuning parameters such as ``max_shift`` and ``shift_step`` that influence accuracy/runtime
   trade-offs during 1D shift searches.
 
 .. mermaid::
