@@ -37,8 +37,8 @@ to view Conda's installation instructions.
 Getting Started - Installation
 ************************************
 
-Python 3.9 is used as an example, but the same procedure should work
-for any of our supported Python versions 3.9-3.12. Below we pip install
+Python 3.10 is used as an example, but the same procedure should work
+for any of our supported Python versions 3.10-3.13. Below we pip install
 the ``aspire`` package using the ``-e`` flag to install the project in
 editable mode. The ``".[dev]"`` command installs ``aspire`` from the local
 path with additional development tools such as pytest and Jupyter Notebook.
@@ -53,7 +53,7 @@ for more details on using pip install.
    cd ASPIRE-Python
 
    # Create a fresh environment
-   conda create --name aspire python=3.9 pip
+   conda create --name aspire python=3.10 pip
 
    # Enable the environment
    conda activate aspire
