@@ -58,6 +58,7 @@ dependencies = [
 
 [project.optional-dependencies]
 gpu-12x = ["cupy-cuda12x<14", "cufinufft==2.4.0"]
+gpu-13x = ["cupy-cuda13x", "cufinufft==2.4.0"]
 dev = [
     "black",
     "bumpversion",
