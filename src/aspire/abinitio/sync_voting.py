@@ -43,7 +43,8 @@ def _syncmatrix_ij_vote_3n(
 
     angles = np.zeros(3)
 
-    if alphas is not None:
+    # Note, len(alphas) case covers when no acceptable hist bin was found.
+    if (alphas is not None) and len(alphas) > 0:
         angles[0] = clmatrix[i, j] * 2 * np.pi / n_theta + np.pi / 2
         angles[1] = np.mean(alphas)
         angles[2] = -np.pi / 2 - clmatrix[j, i] * 2 * np.pi / n_theta
