@@ -44,9 +44,16 @@ def dtype(request):
 def get_images(parity, dtype):
     size = 768 - parity
     # numpy array for top-level functions that directly expect it
-    im_np = face(gray=True).astype(dtype)[np.newaxis, :size, :size]
+    g = grid_2d(size)
+    im_np = (
+        2 * gaussian_2d(size, sigma=size/5)
+        + np.sin(7 * np.pi * g["x"]) * np.cos(3 * np.pi * g["y"])
+    ).astype(dtype)[np.newaxis]
+
+    # Normalize test image data to 0,1
+    im_np -= im_np.min()
     denom = np.max(np.abs(im_np))
-    im_np /= denom  # Normalize test image data to 0,1
+    im_np /= denom
 
     # Independent Image object for testing Image methods
     im = Image(im_np.copy(), pixel_size=1.23)
