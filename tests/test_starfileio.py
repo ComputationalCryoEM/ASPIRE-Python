@@ -7,8 +7,6 @@ from unittest import TestCase
 import numpy as np
 
 import tests.saved_test_data
-from aspire.image import Image
-from aspire.source import ArrayImageSource
 from aspire.storage import StarFile, StarFileError
 from aspire.utils import RelionStarFile, importlib_path
 

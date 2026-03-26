@@ -45,7 +45,7 @@ def get_images(parity, dtype):
     # numpy array for top-level functions that directly expect it
     g = grid_2d(size)
     im_np = (
-        2 * gaussian_2d(size, sigma=size/5)
+        2 * gaussian_2d(size, sigma=size / 5)
         + np.sin(7 * np.pi * g["x"]) * np.cos(3 * np.pi * g["y"])
     ).astype(dtype)[np.newaxis]
 
