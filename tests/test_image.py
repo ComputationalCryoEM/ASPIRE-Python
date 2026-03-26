@@ -9,7 +9,6 @@ import numpy as np
 import pytest
 from PIL import Image as PILImage
 from pytest import raises
-from scipy.datasets import face
 
 from aspire.image import Image, compute_fastrotate_interp_tables, fastrotate, sp_rotate
 from aspire.utils import Rotation, gaussian_2d, grid_2d, powerset, utest_tolerance
