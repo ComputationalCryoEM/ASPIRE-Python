@@ -502,9 +502,13 @@ void estimate_all_angles2(int j,
   } /* fixed width */
 
   /* Divide accumulated angles (resulting in the mean alpha angle) */
-  // (todo, can we have cnt = 0?)
   /* convert degree to radian */
-  angles[pair_idx*3 + 1] *= M_PI / (180*cnt);
+  if(cnt>0){
+    angles[pair_idx*3 + 1] *= M_PI / (180*cnt);
+  } else /* cnt 0 case */
+  {
+    angles[pair_idx*3 + 1] = 0;
+  }
 
 } /* estimate_all_angles2 kernel */
 
