@@ -5,7 +5,6 @@ from itertools import zip_longest
 from unittest import TestCase
 
 import numpy as np
-from scipy.datasets import face
 
 import tests.saved_test_data
 from aspire.image import Image
@@ -45,18 +44,6 @@ class StarFileTestCase(TestCase):
             tests.saved_test_data, "sample_particles_relion31.star"
         ) as path:
             self.particles31 = path
-        # Independent Image object for testing Image source methods
-        L = 768
-        self.im = Image(face(gray=True).astype("float64")[:L, :L])
-        self.img_src = ArrayImageSource(self.im, pixel_size=1.0)
-
-        # We also want to flex the stack logic.
-        self.n = 21
-        im_stack = np.broadcast_to(self.im.asnumpy(), (self.n, L, L))
-        # make each image methodically different
-        im_stack = np.multiply(im_stack, np.arange(self.n)[:, None, None])
-        self.im_stack = Image(im_stack)
-        self.img_src_stack = ArrayImageSource(self.im_stack, pixel_size=1.0)
 
         # Create a tmpdir object for this test instance
         self._tmpdir = tempfile.TemporaryDirectory()
