@@ -13,7 +13,7 @@ from aspire.basis.fle_2d_utils import (
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, sparse, xp
 from aspire.operators import DiagMatrix
-from aspire.utils import complex_type, grid_2d
+from aspire.utils import complex_type, grid_1d, grid_2d
 
 logger = logging.getLogger(__name__)
 
@@ -887,11 +887,12 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         pts = xp.asnumpy(self.nodes)
 
-        # _filter_pts = np.pad(pts.reshape(1,-1), ((0,1),(0,0)))
-        # h_vals = f.evaluate(_filter_pts, **kwargs)
+        _filter_pts = np.pad(pts.reshape(1, -1), ((0, 1), (0, 0))) * self.h
+        _astig_h_vals = f.evaluate(_filter_pts, **kwargs)
+        h_vals = f.to_radial().evaluate(_filter_pts, **kwargs)
 
         pixel_size = kwargs.get("pixel_size")
-        h_vals = self._radial_ctf(
+        _h_vals = self._radial_ctf(
             f.voltage,
             f.Cs,
             f.alpha,
@@ -900,5 +901,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             self.h,
             pts,
         )
-        # breakpoint()
+        print("sum _astig_h_vals", np.sum(_astig_h_vals))
+        print("sum h_vals", np.sum(h_vals))
+        print("sum _h_vals", np.sum(_h_vals))
+        breakpoint()
         return h_vals

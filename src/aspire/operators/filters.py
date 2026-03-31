@@ -505,6 +505,21 @@ class CTFFilter(Filter):
 
         return h
 
+    def to_radial(self):
+        """
+        Return a new `RadialCTFFilter` with the mean of astigmatic defocus values.
+
+        :return: `RadialCTFFilter`
+        """
+        mean_defocus = (self.defocus_u + self.defocus_v) / 2
+        return RadialCTFFilter(
+            voltage=self.voltage,
+            defocus=mean_defocus,
+            Cs=self.Cs,
+            alpha=self.alpha,
+            B=self.B,
+        )
+
 
 class RadialCTFFilter(CTFFilter):
     def __init__(self, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0):

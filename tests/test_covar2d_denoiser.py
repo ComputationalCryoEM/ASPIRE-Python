@@ -4,7 +4,7 @@ import pytest
 from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D, FPSWFBasis2D, PSWFBasis2D
 from aspire.denoising import DenoisedSource, DenoiserCov2D
 from aspire.noise import WhiteNoiseAdder
-from aspire.operators import IdentityFilter, RadialCTFFilter
+from aspire.operators import CTFFilter, IdentityFilter, RadialCTFFilter
 from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 
@@ -16,7 +16,9 @@ noise_var = 0.1848
 noise_adder = WhiteNoiseAdder(var=noise_var)
 pixel_size = 5
 filters = [
-    RadialCTFFilter(200, defocus=d, Cs=2.0, alpha=0.1)
+    CTFFilter(
+        200, defocus_ang=np.pi / 3, defocus_u=d, defocus_v=d + 345, Cs=2.0, alpha=0.1
+    )
     for d in np.linspace(1.5e4, 2.5e4, 7)
 ]
 
