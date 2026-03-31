@@ -533,6 +533,14 @@ class RadialCTFFilter(CTFFilter):
             B=B,
         )
 
+    def to_radial(self):
+        """
+        `RadialCTFFilter` is already radial, Returns self. Supports code interop.
+
+        :return: `RadialCTFFilter`
+        """
+        return self
+
 
 class BlueFilter(Filter):
     """

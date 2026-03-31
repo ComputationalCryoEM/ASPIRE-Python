@@ -857,30 +857,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return DiagMatrix(coefs)
 
-    # def expand_radial_vec(self, radial_vec, **kwargs):
-
-    #     radial_vec = xp.asarray(radial_vec)
-
-    #     ## XXX looks like we do in fact need the padding/size-correction here...
-    #     if self.num_interp > self.num_radial_nodes:
-    #         radial_vec = fff.dct(radial_vec, axis=1, type=2) / (2 * self.num_radial_nodes)
-    #         radial_vec_z = xp.zeros(radial_vec.shape)
-    #         radial_vec = xp.concatenate((radial_vec, radial_vec_z), axis=1)
-    #         radial_vec = fff.idct(radial_vec, axis=1, type=2) * 2 * radial_vec.shape[1]
-
-    #     # appears equiv to angular ordering code
-    #     h_basis = xp.zeros(self.count, dtype=self.dtype)
-    #     # For now we just need to handle 1D (stack of one ctf)
-    #     breakpoint()
-    #     for j in range(self.ell_p_max + 1):
-    #         h_basis[self.idx_list[j]] = self.A3[j] @ radial_vec
-
-    #     # Convert from internal FLE ordering to FB convention
-    #     h_basis = h_basis[self._fle_to_fb_indices]
-
-    #     return DiagMatrix(xp.asnumpy(h_basis))
-
-    def _radial_ctf_filter_to_filter_vals(self, f, **kwargs):
+    def _radial_filter_to_vals(self, f, **kwargs):
         """
         Unpack filter attributes and pass to Yunpeng code.
         """
@@ -888,21 +865,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         pts = xp.asnumpy(self.nodes)
 
         _filter_pts = np.pad(pts.reshape(1, -1), ((0, 1), (0, 0))) * self.h
-        _astig_h_vals = f.evaluate(_filter_pts, **kwargs)
-        h_vals = f.to_radial().evaluate(_filter_pts, **kwargs)
+        h_vals = f.evaluate(_filter_pts, **kwargs)
 
-        pixel_size = kwargs.get("pixel_size")
-        _h_vals = self._radial_ctf(
-            f.voltage,
-            f.Cs,
-            f.alpha,
-            (f.defocus_u + f.defocus_v) / 2,
-            pixel_size,
-            self.h,
-            pts,
-        )
-        print("sum _astig_h_vals", np.sum(_astig_h_vals))
-        print("sum h_vals", np.sum(h_vals))
-        print("sum _h_vals", np.sum(_h_vals))
-        breakpoint()
         return h_vals
