@@ -490,31 +490,42 @@ class SteerableBasis2D(Basis, abc.ABC):
     #     # A basis with a specialized solution should implementat that in the respective subclass.
     #     return basis_mat
 
-    def filter_to_basis_mat(self, f, radial=None, **kwargs):
+    def filter_to_basis_mat(self, f, radial_optimization=None, **kwargs):
         """
         Convert a filter into a basis operator representation.
 
         See `_filter_to_basis_mat` here and in subclasses for available **kwargs.
 
         :param f: `Filter` object, usually a `CTFFilter`.
-        :param radial: Optionally attempt radial approximation if available.
+        :param radial_optimization: Optionally attempt radial approximation if available.
 
         :return: Representation of filter as `basis` operator.
             Return type will be based on the class's `matrix_type`.
         """
 
-        if (radial == True) and callable(
-            getattr(self.__class__, "expand_radial_vec", None)
+        # does the basis have optimized expand for radial vectors?
+        optimized_expand = callable(getattr(self.__class__, "expand_radial_vec", None))
+
+        filter_is_radial = f.radial == True
+        # does the filter have `to_radial`?
+        filter_has_to_radial = callable(getattr(f, "to_radial", None))
+
+        if (
+            (radial_optimization == True)
+            and optimized_expand
+            and (filter_is_radial or filter_has_to_radial)
         ):
-            # previous code
-            # _res = self._filter_to_basis_mat(f, **kwargs)
+
+            # Make `f` radial as needed
+            if not filter_is_radial:
+                f = f.to_radial()
 
             # kwargs supports passing through pixel_size
-            h_vals = self._radial_ctf_filter_to_filter_vals(f, **kwargs).reshape(-1, 1)
+            h_vals = self._radial_filter_to_vals(f, **kwargs).reshape(-1, 1)
 
             warnings.warn("Using `expand_radial_vec`", UserWarning, stacklevel=1)
             res = self.expand_radial_vec(h_vals)
-            # breakpoint()
+
             return res
         else:
             warnings.warn(
