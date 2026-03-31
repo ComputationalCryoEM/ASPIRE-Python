@@ -822,35 +822,13 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return DiagMatrix(xp.asnumpy(h_basis))
 
-    # def _fle_expand_radial_vec(self, radial_vec):
-
-    #     radial_vec = radial_vec.T
-    #     #if self.n_interp > self.n_radial:
-    #     if self.num_interp > self.num_radial_nodes:
-    #         radial_vec = fft.dct(radial_vec, axis=0, type=2, workers=-1) / (2 * self.num_radial_nodes)
-    #         radial_vec_z = xp.zeros(radial_vec.shape)
-    #         radial_vec = xp.concatenate((radial_vec, radial_vec_z), axis=0)
-    #         radial_vec = (
-    #             fft.idct(radial_vec, axis=0, type=2, workers=-1) * 2 * radial_vec.shape[0]
-    #         )
-
-    #     radial_fb = xp.zeros((self.count, radial_vec.shape[1]), dtype=self.dtype)
-
-    #     for i in range(self.ell_p_max + 1):
-    #         radial_fb[self.idx_list[i], :] = self.A3[i] @ radial_vec
-
-    #     return radial_fb.T
-
     def expand_radial_vec(self, radial_vec, **kwargs):
         coefs = self._radial_convolve_weights(radial_vec)
-        # _coefs = self._fle_expand_radial_vec(radial_vec.T)
-        # assert coefs.dtype == _coefs.dtype
-        # assert np.allclose(coefs,_coefs)
-        # #breakpoint()
 
         # check...
         # Convert to internal FLE indices ordering
         coefs = coefs[..., self._fb_to_fle_indices]
+
         # squeeze should probably be addressed in consuming code,
         #   for now match old `filter_to_basis_mat`
         coefs = xp.asnumpy(coefs).squeeze()
