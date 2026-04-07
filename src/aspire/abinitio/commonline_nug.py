@@ -41,7 +41,7 @@ class CommonlineNUG(CLOrient3D):
         **kwargs,
     ):
         """
-        Initialize object for estimating 3D orientations for molecules with C3 and C4 symmetry.
+        Initialize object for estimating 3D orientations for symmetric molecules.
 
         :param src: The source object of 2D denoised or class-averaged images with metadata
         :param symmetry: A string, ie. 'C3', indicating the symmetry type.
@@ -763,6 +763,9 @@ class CommonlineNUG(CLOrient3D):
             loadmat("data/Fejer/Ngrid=%i" % Ngrid + "/k=%i" % k + ".mat")["W1"]
             for k in range(1, Lmax + 1)
         ]
+
+        W0k, W1k = self.compute_fejer_weights()
+
         # AI_mat=np.zeros((Ngrid,D0+D1))
         # for p in range(Ngrid):
         #     w0=np.zeros(D0); w1=np.zeros(D1)
@@ -863,6 +866,47 @@ class CommonlineNUG(CLOrient3D):
             S1,
             Sq,
         )
+
+    def compute_fejer_weights(self):
+        SO3_grid = loadmat("data/SO3_grid.mat")["SO3"]
+        Ngrid = SO3_grid.shape[0]
+        start = 1
+
+        TT = []
+        TTI = []
+        for ell in range(start, self.Lmax + 1):
+            T, Tinv = self.complex2real(ell)
+            TT.append(T)
+            TTI.append(Tinv)
+
+        def permutek_block(Ak, k):
+            dk = 2 * k + 1
+            Pk = np.eye(dk)
+            for m in range(k):
+                for l in range(k - m):
+                    Pk[(m + 2 * l, m + 2 * l + 1), :] = Pk[
+                        (m + 2 * l + 1, m + 2 * l), :
+                    ]
+            AkP = Pk @ Ak @ Pk.T
+            return AkP[:k, :k], AkP[k:, k:]
+
+        W0 = []
+        W1 = []
+        for k in range(start, self.Lmax + 1):
+            print(k)
+            W0k = np.zeros((Ngrid, k, k))
+            W1k = np.zeros((Ngrid, k + 1, k + 1))
+
+            TkT = TT[k - start].T
+            TinvkT = TTI[k - start].T
+
+            for p in range(Ngrid):
+                w = np.real(TkT @ self.WD(k, SO3_grid[p]).conj() @ TinvkT)
+                W0k[p], W1k[p] = permutek_block(w, k)
+
+            W0.append(W0k)
+            W1.append(W1k)
+        return W0, W1
 
     #########################
     # Euler Estimation Step #
