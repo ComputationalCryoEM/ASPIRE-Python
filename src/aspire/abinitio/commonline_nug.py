@@ -168,10 +168,7 @@ class CommonlineNUG(CLOrient3D):
 
         BTK = []
         for k in range(1, Lmax + 1):
-            dk = 2 * k + 1
-            btk = np.zeros((dk, dk))
-            for n in range(2 * T):
-                btk = btk + bT[n] * self.Wd(k, beta_grid[n])
+            btk = np.sum(bT[:, None, None] * self.Wd(k, beta_grid), axis=0)
             BTK.append(btk.T)
 
         def fijhat_k(k, F):
@@ -755,16 +752,7 @@ class CommonlineNUG(CLOrient3D):
         bEq = xp.repeat(bEq[:, xp.newaxis], N * (N - 1) // 2, axis=1)
 
         # AI and bI
-        W0 = [
-            loadmat("data/Fejer/Ngrid=%i" % Ngrid + "/k=%i" % k + ".mat")["W0"]
-            for k in range(1, Lmax + 1)
-        ]
-        W1 = [
-            loadmat("data/Fejer/Ngrid=%i" % Ngrid + "/k=%i" % k + ".mat")["W1"]
-            for k in range(1, Lmax + 1)
-        ]
-
-        W0k, W1k = self.compute_fejer_weights()
+        W0, W1 = self.compute_fejer_weights()
 
         # AI_mat=np.zeros((Ngrid,D0+D1))
         # for p in range(Ngrid):
@@ -888,7 +876,7 @@ class CommonlineNUG(CLOrient3D):
                         (m + 2 * l + 1, m + 2 * l), :
                     ]
             AkP = Pk @ Ak @ Pk.T
-            return AkP[:k, :k], AkP[k:, k:]
+            return AkP[..., :k, :k], AkP[..., k:, k:]
 
         W0 = []
         W1 = []
@@ -900,9 +888,8 @@ class CommonlineNUG(CLOrient3D):
             TkT = TT[k - start].T
             TinvkT = TTI[k - start].T
 
-            for p in range(Ngrid):
-                w = np.real(TkT @ self.WD(k, SO3_grid[p]).conj() @ TinvkT)
-                W0k[p], W1k[p] = permutek_block(w, k)
+            w = np.real(TkT @ self.WD(k, SO3_grid).conj() @ TinvkT)
+            W0k, W1k = permutek_block(w, k)
 
             W0.append(W0k)
             W1.append(W1k)
@@ -979,14 +966,15 @@ class CommonlineNUG(CLOrient3D):
             Jk[S + 1 :: 2] = -1
             Jk[S - 1 :: -2] = -1
             Jk = np.diag(Jk)
+            ws = self.Wd(S, beta)
             for i in range(N):
+                wi = ws[i]
                 for j in range(i + 1, N):
                     Di = np.exp(-1j * np.arange(-S, S + 1) * alpha[i])
                     Dj = np.exp(-1j * np.arange(-S, S + 1) * alpha[j])
                     Xijm = Xm[dk * i : dk * (i + 1), dk * j : dk * (j + 1)]
                     DXijmD = np.diag(Di.conj()) @ Xijm @ np.diag(Dj)
-                    wi = self.Wd(S, beta[i])
-                    wj = self.Wd(S, beta[j])
+                    wj = ws[j]
                     C1 = (
                         wi[:, 0][:, None] @ (wj[:, 0][:, None].T)
                         + Jk @ wi[:, 0][:, None] @ (wj[:, 0][:, None].T) @ Jk
@@ -1125,10 +1113,7 @@ class CommonlineNUG(CLOrient3D):
         rk = xp.zeros(Lmax)
         A = []
         for k in range(1, Lmax + 1):
-            dk = 2 * k + 1
-            Ak = np.zeros((dk, dk), dtype=np.complex128)
-            for s in range(S):
-                Ak += self.WD(k, sym_euler[s])
+            Ak = np.sum(self.WD(k, sym_euler), axis=0)
             Ak = np.round(Ak / S, 6)
             A.append(Ak)
             rk[k - 1] = np.linalg.matrix_rank(Ak)
@@ -1168,22 +1153,22 @@ class CommonlineNUG(CLOrient3D):
 
     def WD(self, J, euler):
         # compute Wigner D matrix
-        alpha = euler[0]
-        beta = euler[1]
-        gamma = euler[2]
+        alpha = euler[:, 0]
+        beta = euler[:, 1]
+        gamma = euler[:, 2]
         d = self.Wd(J, beta)
-        D = (
-            np.diag(np.exp(-1j * alpha * np.arange(-J, J + 1)))
-            @ d
-            @ np.diag(np.exp(-1j * gamma * np.arange(-J, J + 1)))
-        )
+
+        m = np.arange(-J, J + 1)
+        left = np.exp(-1j * alpha[:, None] * m[None, :])
+        right = np.exp(-1j * gamma[:, None] * m[None, :])
+        D = left[:, :, None] * d * right[:, None, :]
+
         return D
 
     @staticmethod
     def Wd(J, beta):
         # compute Wigner small d matrix
-        d = np.zeros((2 * J + 1, 2 * J + 1))
-
+        d = np.zeros((len(beta), 2 * J + 1, 2 * J + 1))
         for m in range(-J, J + 1):
             for n in range(-J, J + 1):
                 smin = max(0, m - n)
@@ -1199,13 +1184,12 @@ class CommonlineNUG(CLOrient3D):
                         * np.sqrt(factorial(J - n))
                         / factorial(J - n - s)
                     )
-                    d[n + J, m + J] += (
+                    d[:, n + J, m + J] += (
                         mul
                         * (-1) ** (n - m + s)
                         * (np.cos(beta / 2)) ** (2 * J + m - n - 2 * s)
                         * (np.sin(beta / 2)) ** (n - m + 2 * s)
                     )
-
         return d
 
     @staticmethod
