@@ -490,7 +490,7 @@ class SteerableBasis2D(Basis, abc.ABC):
     #     # A basis with a specialized solution should implementat that in the respective subclass.
     #     return basis_mat
 
-    def filter_to_basis_mat(self, f, radial_optimization=None, **kwargs):
+    def filter_to_basis_mat(self, f, **kwargs):
         """
         Convert a filter into a basis operator representation.
 
@@ -505,21 +505,11 @@ class SteerableBasis2D(Basis, abc.ABC):
 
         # does the basis have optimized expand for radial vectors?
         optimized_expand = callable(getattr(self.__class__, "expand_radial_vec", None))
-
+        # is the filter radial?
         filter_is_radial = f.radial == True
-        # does the filter have `to_radial`?
-        filter_has_to_radial = callable(getattr(f, "to_radial", None))
+        radial_method = kwargs.get("expand_method", None) == "radial"
 
-        if (
-            (radial_optimization == True)
-            and optimized_expand
-            and (filter_is_radial or filter_has_to_radial)
-        ):
-
-            # Make `f` radial as needed
-            if not filter_is_radial:
-                f = f.to_radial()
-
+        if optimized_expand and filter_is_radial and radial_method:
             # kwargs supports passing through pixel_size
             h_vals = self._radial_filter_to_vals(f, **kwargs).reshape(-1, 1)
 
@@ -539,12 +529,12 @@ class SteerableBasis2D(Basis, abc.ABC):
     # implemented.  This is intended to encourage future basis authors
     # to consider this method for their application.
     @abc.abstractmethod
-    def _filter_to_basis_mat(self, f, method="evaluate_t", truncate=True, **kwargs):
+    def _filter_to_basis_mat(self, f, method=None, truncate=True, **kwargs):
         """
         Convert a filter into a basis operator representation.
 
         :param f: `Filter` object, usually a `CTFFilter`.
-        :param method: `evaluate_t` or `expand`.
+        :param method: `evaluate_t` or `expand`. Default `None` uses `evaluate_t`.
         :param truncate: Optionally, truncate dense matrix to BlkDiagMatrix.
             Defaults to True.
 
@@ -552,13 +542,13 @@ class SteerableBasis2D(Basis, abc.ABC):
             Return type will be based on the class's `matrix_type`.
         """
         # evaluate_t is not as accurate, but much much faster...
-        if method == "evaluate_t":
+        if method == "evaluate_t" or method == None:
             expand_method = self.evaluate_t
         elif method == "expand":
             expand_method = self.expand
         else:
             raise NotImplementedError(
-                "`filter_to_basis_mat` method {method} not supported."
+                f"`filter_to_basis_mat` method {method} not supported."
                 "  Try `evaluate_t` or `expand`."
             )
 
