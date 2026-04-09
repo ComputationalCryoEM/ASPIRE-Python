@@ -478,18 +478,6 @@ class SteerableBasis2D(Basis, abc.ABC):
 
         return ComplexCoef(self, complex_coef)
 
-    # @abc.abstractmethod
-    # def expand_radial_vec(self, h_vals, **kwargs):
-    #     """
-    #     Expand a radial vector given by `h_vals` into a basis mat.
-
-    #     :param h_vals: Radial vector(s)
-    #     :return: Basis representation (may be `BlkDiagMatrix`, or `DiagMatrix`) depending on basis.
-    #     """
-    #     # By default code can point here for a slow implementation.
-    #     # A basis with a specialized solution should implementat that in the respective subclass.
-    #     return basis_mat
-
     def filter_to_basis_mat(self, f, **kwargs):
         """
         Convert a filter into a basis operator representation.
@@ -582,17 +570,3 @@ class SteerableBasis2D(Basis, abc.ABC):
             )
 
         return filt
-
-    #### xxx
-
-    def _radial_ctf(self, voltage, cs, alpha, defocus, pixel_size, h, pts):
-        wavelength = 12.2643247 / np.sqrt(voltage * 1e3 + 0.978466 * voltage**2)
-        c2_vec = (-np.pi * wavelength * defocus).reshape(-1, 1)
-        c4_vec = (0.5 * np.pi * (cs * 1e7) * wavelength**3).reshape(-1, 1)
-        r2 = (pts * h / (pixel_size * 2 * np.pi)) ** 2
-        r4 = r2**2
-
-        gamma = r2 @ c2_vec.T + r4 @ c4_vec.T
-        ctf_radial = np.sqrt(1 - alpha**2) * np.sin(gamma) - alpha * np.cos(gamma)
-        # assert ctf_radial.shape == self.num_radial_nodes, f"ctf_radial_shape {ctf_radial.shape} != num_radial_nodes {self.num_radial_nodes}"
-        return ctf_radial
