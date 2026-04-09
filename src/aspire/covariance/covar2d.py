@@ -521,7 +521,7 @@ class BatchedRotCov2D(RotCov2D):
         scaling up to a larger value such as 8192 may yield better performance.
     """
 
-    def __init__(self, src, basis=None, batch_size=512):
+    def __init__(self, src, basis=None, expand_method=None, batch_size=512):
         self.src = src
         self.basis = basis
         self.batch_size = batch_size
@@ -532,6 +532,7 @@ class BatchedRotCov2D(RotCov2D):
         self.A_mean = None
         self.A_covar = None
         self.M_covar = None
+        self.expand_method = expand_method
 
         self._build()
 
@@ -553,7 +554,7 @@ class BatchedRotCov2D(RotCov2D):
             self.ctf_idx = src.filter_indices
             self.ctf_basis = [
                 self.basis.filter_to_basis_mat(
-                    f, pixel_size=self.src.pixel_size, radial=True
+                    f, pixel_size=self.src.pixel_size, method=self.expand_method
                 )
                 for f in unique_filters
             ]
