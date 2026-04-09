@@ -1,6 +1,5 @@
 import abc
 import logging
-import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -500,15 +499,9 @@ class SteerableBasis2D(Basis, abc.ABC):
         if optimized_expand and filter_is_radial and radial_method:
             # kwargs supports passing through pixel_size
             h_vals = self._radial_filter_to_vals(f, **kwargs).reshape(-1, 1)
-
-            warnings.warn("Using `expand_radial_vec`", UserWarning, stacklevel=1)
             res = self.expand_radial_vec(h_vals)
-
             return res
         else:
-            warnings.warn(
-                "Using generic `_filter_to_basis_mat'", UserWarning, stacklevel=1
-            )
             # use generic (legacy) filter path/code (may return DiagMatrix)
             return self._filter_to_basis_mat(f, **kwargs)
 
