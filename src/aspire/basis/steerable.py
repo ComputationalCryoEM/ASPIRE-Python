@@ -6,9 +6,8 @@ from collections.abc import Iterable
 import numpy as np
 
 from aspire.basis import Basis, Coef, ComplexCoef
-from aspire.numeric import xp
-from aspire.operators import BlkDiagMatrix, CTFFilter, DiagMatrix
-from aspire.utils import LogFilterByCount, complex_type, grid_1d, real_type, trange
+from aspire.operators import BlkDiagMatrix
+from aspire.utils import LogFilterByCount, complex_type, real_type, trange
 
 logger = logging.getLogger(__name__)
 
@@ -494,7 +493,8 @@ class SteerableBasis2D(Basis, abc.ABC):
         # does the basis have optimized expand for radial vectors?
         optimized_expand = callable(getattr(self.__class__, "expand_radial_vec", None))
         # is the filter radial?
-        filter_is_radial = f.radial == True
+        filter_is_radial = f.radial is True
+        # did user request the special radial expansion method?
         radial_method = kwargs.get("expand_method", None) == "radial"
 
         if optimized_expand and filter_is_radial and radial_method:
@@ -530,7 +530,7 @@ class SteerableBasis2D(Basis, abc.ABC):
             Return type will be based on the class's `matrix_type`.
         """
         # evaluate_t is not as accurate, but much much faster...
-        if expand_method == "evaluate_t" or expand_method == None:
+        if expand_method == "evaluate_t" or expand_method is None:
             expand_fun = self.evaluate_t
         elif expand_method == "expand":
             expand_fun = self.expand

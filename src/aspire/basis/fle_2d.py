@@ -13,7 +13,7 @@ from aspire.basis.fle_2d_utils import (
 from aspire.nufft import anufft, nufft
 from aspire.numeric import fft, sparse, xp
 from aspire.operators import DiagMatrix
-from aspire.utils import complex_type, grid_1d, grid_2d
+from aspire.utils import complex_type, grid_2d
 
 logger = logging.getLogger(__name__)
 
@@ -763,7 +763,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             b = xp.concatenate((b, bz), axis=0)
             b = fft.idct(b, axis=0, type=2) * 2 * b.shape[0]
         a = xp.zeros(self.count, dtype=self.dtype)
-        ## xx note these can be collapsed into one loop later
+        # xx note these can be collapsed into one loop later
         y = [None] * (self.ell_p_max + 1)
         for i in range(self.ell_p_max + 1):
             y[i] = (self.A3[i] @ b[:, 0]).flatten()
