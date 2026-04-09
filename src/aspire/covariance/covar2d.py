@@ -554,7 +554,7 @@ class BatchedRotCov2D(RotCov2D):
             self.ctf_idx = src.filter_indices
             self.ctf_basis = [
                 self.basis.filter_to_basis_mat(
-                    f, pixel_size=self.src.pixel_size, method=self.expand_method
+                    f, pixel_size=self.src.pixel_size, expand_method=self.expand_method
                 )
                 for f in unique_filters
             ]

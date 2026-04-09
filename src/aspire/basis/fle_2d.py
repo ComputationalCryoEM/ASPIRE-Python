@@ -775,13 +775,24 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     def _filter_to_basis_mat(self, f, **kwargs):
         """
         See `SteerableBasis2D.filter_to_basis_mat`.
+
+        This code implements a radially averaged filter, returning a `DiagMatrix`.
+        It is meant to be used with non radial filter inputs.
+        For radial filters, an optimized code path may be available via `expand_method='radial'`.
         """
-        # Note 'method' and 'truncate' not relevant for this optimized FLE code.
-        if kwargs.get("method", None) is not None:
+        # Note 'expand_method' and 'truncate' not relevant for this optimized FLE code.
+        expand_method = kwargs.get("expand_method", None)
+        if expand_method == "radial" and not f.radial:
             raise NotImplementedError(
-                "`FLEBasis2D.filter_to_basis_mat` method {method} not supported."
-                "  Use `method=None`."
+                f"`FLEBasis2D.filter_to_basis_mat` expand_method '{expand_method}' not supported for non radial {f}."
+                "  Convert filter to radial for optimized radial expansion, or use `expand_method=None` for a radially averaged approximation."
             )
+        elif expand_method is not None:
+            raise NotImplementedError(
+                f"`FLEBasis2D.filter_to_basis_mat` expand_method '{expand_method}' not supported."
+                "  Try `expand_method=None` or 'radial'."
+            )
+
         pixel_size = kwargs.get("pixel_size", None)
 
         # Get the filter's evaluate function.

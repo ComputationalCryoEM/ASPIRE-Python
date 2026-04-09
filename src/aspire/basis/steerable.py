@@ -529,12 +529,12 @@ class SteerableBasis2D(Basis, abc.ABC):
     # implemented.  This is intended to encourage future basis authors
     # to consider this method for their application.
     @abc.abstractmethod
-    def _filter_to_basis_mat(self, f, method=None, truncate=True, **kwargs):
+    def _filter_to_basis_mat(self, f, expand_method=None, truncate=True, **kwargs):
         """
         Convert a filter into a basis operator representation.
 
         :param f: `Filter` object, usually a `CTFFilter`.
-        :param method: `evaluate_t` or `expand`. Default `None` uses `evaluate_t`.
+        :param expand_method: `evaluate_t` or `expand`. Default `None` uses `evaluate_t`.
         :param truncate: Optionally, truncate dense matrix to BlkDiagMatrix.
             Defaults to True.
 
@@ -542,13 +542,13 @@ class SteerableBasis2D(Basis, abc.ABC):
             Return type will be based on the class's `matrix_type`.
         """
         # evaluate_t is not as accurate, but much much faster...
-        if method == "evaluate_t" or method == None:
-            expand_method = self.evaluate_t
-        elif method == "expand":
-            expand_method = self.expand
+        if expand_method == "evaluate_t" or expand_method == None:
+            expand_fun = self.evaluate_t
+        elif expand_method == "expand":
+            expand_fun = self.expand
         else:
             raise NotImplementedError(
-                f"`filter_to_basis_mat` method {method} not supported."
+                f"`filter_to_basis_mat` expand_method '{expand_method}' not supported."
                 "  Try `evaluate_t` or `expand`."
             )
 
@@ -568,7 +568,7 @@ class SteerableBasis2D(Basis, abc.ABC):
         with LogFilterByCount(logger, 1):
             for i in trange(self.count):
                 try:
-                    filt[i] = expand_method(img[i].filter(f)).asnumpy()[0]
+                    filt[i] = expand_fun(img[i].filter(f)).asnumpy()[0]
                 except Exception:
                     logger.warning(
                         f"Failed to expand basis vector {i} after filter {f}."

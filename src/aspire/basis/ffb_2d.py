@@ -241,10 +241,11 @@ class FFBBasis2D(FBBasis2D):
         See `SteerableBasis2D.filter_to_basis_mat`.
         """
         # Note 'method' and 'truncate' not relevant for this optimized FFB code.
-        if kwargs.get("method", None) is not None:
+        expand_method = kwargs.get("expand_method", None)
+        if expand_method is not None:
             raise NotImplementedError(
-                "`FFBBasis2D.filter_to_basis_mat` method {method} not supported."
-                "  Use `method=None`."
+                f"`FFBBasis2D.filter_to_basis_mat` expand_method '{expand_method}' not supported."
+                "  Use `expand_method=None`."
             )
 
         pixel_size = kwargs.get("pixel_size", None)
