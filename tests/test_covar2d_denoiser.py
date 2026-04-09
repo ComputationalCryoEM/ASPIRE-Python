@@ -224,15 +224,17 @@ def test_filter_to_basis_mat_id_expand(coef, basis):
     # IdentityFilter should produce id
     filt = IdentityFilter()
 
-    # Some basis do not provide alternative `method`s
+    # Some basis do not provide alternative `expand_method`s
     if isinstance(basis, FFBBasis2D) or isinstance(basis, FLEBasis2D):
         with pytest.raises(NotImplementedError, match=r".*not supported.*"):
-            _ = basis.filter_to_basis_mat(filt, method="expand")
+            _ = basis.filter_to_basis_mat(filt, expand_method="expand")
         return
 
     # Apply the basis filter operator.
     # Note transpose because `apply` expects and returns column vectors.
-    coef_ftbm = (basis.filter_to_basis_mat(filt, method="expand") @ coef.asnumpy().T).T
+    coef_ftbm = (
+        basis.filter_to_basis_mat(filt, expand_method="expand") @ coef.asnumpy().T
+    ).T
 
     # Apply evaluate->filter->expand manually
     imgs = coef.evaluate()
@@ -252,4 +254,4 @@ def test_filter_to_basis_mat_id_expand(coef, basis):
 def test_filter_to_basis_mat_bad(coef, basis):
     filt = IdentityFilter()
     with pytest.raises(NotImplementedError, match=r".*not supported.*"):
-        _ = basis.filter_to_basis_mat(filt, method="bad_method")
+        _ = basis.filter_to_basis_mat(filt, expand_method="bad_method")
