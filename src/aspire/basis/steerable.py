@@ -492,7 +492,7 @@ class SteerableBasis2D(Basis, abc.ABC):
         # does the basis have optimized expand for radial vectors?
         optimized_expand = callable(getattr(self.__class__, "expand_radial_vec", None))
         # is the filter radial?
-        filter_is_radial = f.radial is True
+        filter_is_radial = f.radial
         # did user request the special radial expansion method?
         radial_method = kwargs.get("expand_method", None) == "radial"
 
