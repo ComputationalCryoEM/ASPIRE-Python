@@ -782,15 +782,20 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         # Note 'expand_method' and 'truncate' not relevant for this optimized FLE code.
         expand_method = kwargs.get("expand_method", None)
-        if expand_method not in [None, "radial"]:
-            raise NotImplementedError(
-                f"`FLEBasis2D.filter_to_basis_mat` expand_method '{expand_method}' not supported."
-                "  Try `expand_method=None` or 'radial'."
-            )
+        # This first check is to guide users to either
+        #   the optimized purely radial (1d) calc,
+        #   or the radially averaged (2d) calc.
+        # Errors requesting a (1d) calc on a non radial filter.
+        # Errors on unknown `expand_method`.
         if expand_method == "radial" and not f.radial:
             raise NotImplementedError(
                 f"`FLEBasis2D.filter_to_basis_mat` expand_method '{expand_method}' not supported for non radial {f}."
                 "  Convert filter to radial for optimized radial expansion, or use `expand_method=None` for a radially averaged approximation."
+            )
+        elif expand_method is not None:
+            raise NotImplementedError(
+                f"`FLEBasis2D.filter_to_basis_mat` expand_method '{expand_method}' not supported."
+                "  Try `expand_method=None` or 'radial'."
             )
 
         pixel_size = kwargs.get("pixel_size", None)
