@@ -448,9 +448,16 @@ class CTFFilter(Filter):
         self.alpha = alpha
         self.B = B
 
-        # Convert angstrom to nm and divide by 2
-        self._defocus_mean_nm = 0.05 * (self.defocus_u + self.defocus_v)
-        self._defocus_diff_nm = 0.05 * (self.defocus_u - self.defocus_v)
+    def _ctf_params(self):
+        return (
+            self.voltage,
+            self.defocus_u,
+            self.defocus_v,
+            self.defocus_ang,
+            self.Cs,
+            self.alpha,
+            self.B,
+        )
 
     def _evaluate(self, omega, **kwargs):
         # Ensure we have a pixel size,
@@ -462,6 +469,22 @@ class CTFFilter(Filter):
         # and that it is a floating point value.
         pixel_size = float(pixel_size)
 
+        return self.ctf_formula(
+            omega,
+            pixel_size,
+            self.voltage,
+            self.defocus_u,
+            self.defocus_v,
+            self.defocus_ang,
+            self.Cs,
+            self.alpha,
+            self.B,
+        )
+
+    @staticmethod
+    def ctf_formula(
+        omega, pixel_size, voltage, defocus_u_a, defocus_v_a, defocus_ang, Cs, alpha, B
+    ):
         # Reference MATLAB code, includes reference to paper
         #    Mindell, J. A.; Grigorieff, N. (2003).
         # https://github.com/PrincetonUniversity/aspire/blob/760a43b35453e55ff2d9354339e9ffa109a25371/projections/cryo_CTF_Relion.m#L34
@@ -472,6 +495,16 @@ class CTFFilter(Filter):
         # and further rescale the radii `s` by half below.
         #
         # Additionally we upcast so downstream computations remain in doubles.
+
+        # First prepare arrays for broadcasting.
+        voltage = voltage[:, None]
+        defocus_u_a = defocus_u_a[:, None]
+        defocus_v_a = defocus_v_a[:, None]
+        defocus_ang = defocus_ang[:, None]
+        Cs = Cs[:, None]
+        alpha = alpha[:, None]
+        B = B[:, None]
+
         x, y = omega.astype(np.float64, copy=False) / np.pi
 
         # Returns radii such that when multiplied by the
@@ -479,29 +512,31 @@ class CTFFilter(Filter):
         # corresponding to each pixel in our nxn grid.
         theta, s = cart2pol(x, y)
         s = s / 2
+        theta = theta[None, :]
+        s = s[None, :]
 
         # Wavelength in nm.
-        lamb = 1.22639 / np.sqrt(self.voltage * 1000 + 0.97845 * self.voltage**2)
+        lamb = 1.22639 / np.sqrt(voltage * 1000 + 0.97845 * voltage**2)
 
         # Divide by 10 to make pixel size in nm. BW is the
         # bandwidth of the signal corresponding to the given pixel size.
         BW = 1 / (pixel_size / 10)
 
         s = s * BW
-        DFavg = self._defocus_mean_nm  # (DefocusU+DefocusV)/2
-        DFdiff = self._defocus_diff_nm  # (DefocusU-DefocusV)
+        DFavg = 0.05 * (defocus_u_a + defocus_v_a)  # (u+v)/2 * 1nm/10A
+        DFdiff = 0.05 * (defocus_u_a - defocus_v_a)  # (u-v)/2 * 1nm/10A
         # Note division by 2 is pre-computed in _defocus_diff_nm
-        df = DFavg + DFdiff * np.cos(2 * (theta - self.defocus_ang))
-
+        df = DFavg + DFdiff * np.cos(2 * (theta - defocus_ang))
         k2 = np.pi * lamb * df
         # 10*6 converts Cs from mm to nm.
-        k4 = np.pi / 2 * 10**6 * self.Cs * lamb**3
+        k4 = np.pi / 2 * 10**6 * Cs * lamb**3
         chi = k4 * s**4 - k2 * s**2
 
-        h = np.sqrt(1 - self.alpha**2) * np.sin(chi) - self.alpha * np.cos(chi)
+        alpha = alpha
+        h = np.sqrt(1 - alpha**2) * np.sin(chi) - alpha * np.cos(chi)
 
-        if self.B:
-            h *= np.exp(-self.B * s**2)
+        if np.any(B):
+            h *= np.exp(-B * s**2)
 
         return h
 

@@ -6,7 +6,8 @@ from numpy.linalg import eig, inv
 from scipy.linalg import solve, sqrtm
 
 from aspire.basis import Coef, FFBBasis2D
-from aspire.operators import BlkDiagMatrix, DiagMatrix
+from aspire.numeric import xp
+from aspire.operators import BlkDiagMatrix, CTFFilter, DiagMatrix
 from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import make_symmat, tqdm
 
@@ -549,16 +550,55 @@ class BatchedRotCov2D(RotCov2D):
             self.ctf_basis = [self._identity_mat()]
 
         else:
-            logger.info("Represent CTF filters in basis")
-            unique_filters = src.unique_filters
+            logger.info("Representing filters in basis")
             self.ctf_idx = src.filter_indices
-            self.ctf_basis = [
-                self.basis.filter_to_basis_mat(
-                    f, pixel_size=self.src.pixel_size, expand_method=self.expand_method
-                )
-                for f in tqdm(unique_filters,desc='Converting filters to basis')
-            ]
-            logger.info("Represent CTF filters in basis complete")
+            self.ctf_basis = self.filter_to_basis_mats()
+            logger.info("Representing filters in basis complete")
+
+    def filter_to_basis_mats(self):
+        if all(isinstance(f, CTFFilter) for f in self.src.unique_filters):
+            logger.info("Found all filters are CTF, using bulk basis mat eval")
+            return self._ctf_filter_to_basis_mats()
+        logger.info("Mixed filters, using sequential basis mat eval")
+        return self._filter_to_basis_mats()
+
+    def _filter_to_basis_mats(self):
+        """
+        old code, should work with all basis and filters. slow.
+        """
+        unique_filters = self.src.unique_filters
+        basis_mats = [
+            self.basis.filter_to_basis_mat(
+                f, pixel_size=self.src.pixel_size, expand_method=self.expand_method
+            )
+            for f in tqdm(unique_filters, desc="Converting filters to basis mats")
+        ]
+        return basis_mats
+
+    def _ctf_filter_to_basis_mats(self):
+        unique_filters = self.src.unique_filters
+
+        # lol
+        logger.info("Extracting CTF filter parameters and generating eval points")
+        params = np.empty((len(unique_filters), 7), dtype=self.dtype)
+        for i, f in enumerate(unique_filters):
+            params[i] = f._ctf_params()
+
+        _pts = xp.asnumpy(self.basis.nodes)
+        _filter_pts = np.pad(_pts.reshape(1, -1), ((0, 1), (0, 0))) * self.basis.h
+
+        logger.info("Computing CTF filters at eval points")
+        # if we have many filters, might be worth trip to GPU
+        if len(unique_filters) >= 2048:
+            params = xp.asarray(params)
+            _filter_pts = xp.asarray(_filter_pts)
+
+        _filter_vals = CTFFilter.ctf_formula(
+            _filter_pts, self.src.pixel_size, *(params.T)
+        )
+
+        logger.info("Computing basis radial expansion")
+        return [DiagMatrix(f) for f in self.basis.expand_radial_vec(_filter_vals.T)]
 
     def _calc_rhs(self):
         src = self.src
