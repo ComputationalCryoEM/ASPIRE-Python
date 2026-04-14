@@ -756,21 +756,21 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         Helper function for step 3 of convolving with a radial function.
         """
         # Developer note, this is equivalent `fle2d.expand_radial_vec` up to shapes.
-        b = xp.array(b)  # implies copy
+        b = xp.asarray(b)  # implies copy
         if self.num_interp > self.num_radial_nodes:
             b = fft.dct(b, axis=0, type=2) / (2 * self.num_radial_nodes)
             bz = xp.zeros(b.shape, dtype=self.dtype)
             b = xp.concatenate((b, bz), axis=0)
             b = fft.idct(b, axis=0, type=2) * 2 * b.shape[0]
-        a = xp.zeros(self.count, dtype=self.dtype)
+        a = xp.zeros((b.shape[-1], self.count), dtype=self.dtype)
         # xx note these can be collapsed into one loop later
         y = [None] * (self.ell_p_max + 1)
         for i in range(self.ell_p_max + 1):
-            y[i] = (self.A3[i] @ b[:, 0]).flatten()
+            y[i] = self.A3[i] @ b[:, :]  # .flatten()
         for i in range(self.ell_p_max + 1):
-            a[self.idx_list[i]] = y[i]
+            a[:, self.idx_list[i]] = y[i].T
 
-        return a.flatten()
+        return a  # .flatten()
 
     def _filter_to_basis_mat(self, f, **kwargs):
         """
