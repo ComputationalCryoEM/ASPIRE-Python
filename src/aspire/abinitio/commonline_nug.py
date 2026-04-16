@@ -10,6 +10,7 @@ from aspire.abinitio import CLOrient3D
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
 from aspire.operators import PolarFT, wemd_embed
+from aspire.utils import cart2sph
 
 logger = logging.getLogger(__name__)
 
@@ -785,6 +786,18 @@ class CommonlineNUG(CLOrient3D):
                 # this needs double checking
             AI_mat_offdiag[p, : d0[-1]] = w0
             AI_mat_offdiag[p, d0[-1] :] = w1
+
+        # Vectorized version, added by Josh
+        # AI_mat_offdiag_new = np.zeros((Ngrid, D0 + D1))
+        # for k in range(1, Lmax + 1):
+        #     scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
+
+        #     block0 = scale * W0[k - 1].transpose(0, 2, 1).reshape(Ngrid, -1)
+        #     block1 = scale * W1[k - 1].transpose(0, 2, 1).reshape(Ngrid, -1)
+
+        #     AI_mat_offdiag_new[:, d0[k - 1]:d0[k]] = block0
+        #     AI_mat_offdiag_new[:, d0[-1] + d1[k - 1]:d0[-1] + d1[k]] = block1
+
         AI_mat_diag = np.zeros((Ngrid, D0 + D1))
         for p in range(Ngrid):
             w0 = np.zeros(D0)
@@ -856,7 +869,7 @@ class CommonlineNUG(CLOrient3D):
         )
 
     def compute_fejer_weights(self):
-        SO3_grid = loadmat("data/SO3_grid.mat")["SO3"]
+        SO3_grid = self.discretize_SO3()
         Ngrid = SO3_grid.shape[0]
         start = 1
 
@@ -894,6 +907,29 @@ class CommonlineNUG(CLOrient3D):
             W0.append(W0k)
             W1.append(W1k)
         return W0, W1
+
+    def discretize_SO3(self):
+        S2 = loadmat("design20.mat")["design"]
+        S2_size = S2.shape[0]
+
+        # discretize S1
+        S1_size = round(np.sqrt(np.pi * S2_size))
+        alpha = np.linspace(0, 2 * np.pi, S1_size)
+
+        # discretize S2
+        gamma, beta, _ = cart2sph(S2[:, 0], S2[:, 1], S2[:, 2])
+        beta = np.pi / 2 - beta
+        gamma = gamma + np.pi
+
+        # SO(3) in Euler ZYZ
+        SO3 = np.zeros((S2_size * S1_size, 3))
+        count = 0
+        for i in range(S1_size):
+            for j in range(S2_size):
+                SO3[count] = [alpha[i], beta[j], gamma[j]]
+                count += 1
+
+        return SO3
 
     #########################
     # Euler Estimation Step #
