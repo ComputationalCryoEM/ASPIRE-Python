@@ -67,6 +67,11 @@ class FFBBasis2D(FBBasis2D):
             self._precomp["gl_nodes"]
         )
 
+        # Generate radial filter point set for radial optimized eval
+        self._filter_pts = np.pad(
+            self._precomp["gl_nodes"].reshape(1, -1), ((0, 1), (0, 0))
+        )  # should use self.gl_weighted_nodes ??
+
     def _precomp(self):
         """
         Precomute the basis functions on a polar Fourier grid
@@ -295,5 +300,52 @@ class FFBBasis2D(FBBasis2D):
             if ell > 0:
                 h_basis[ind_ell] = h_basis[ind_ell - 1]
                 ind_ell += 1
+
+        return h_basis
+
+    def expand_radial_vec(self, h_vals):
+        """ """
+        h_vals = h_vals.T  # why fle transposed...
+
+        # Set same dimensions as basis object
+        n_k = self.n_r
+        radial = self._precomp["radial"]
+
+        # hrrmm, can we always use the basis precomp, or do we need to use lgwt as in the old filter_to_basis_mat?
+        k_vals = xp.asarray(self._precomp["gl_nodes"])
+        wts = xp.asarray(self._precomp["gl_weights"])
+
+        # Represent 1D function values in basis
+        h_basis = [
+            BlkDiagMatrix.empty(2 * self.ell_max + 1, dtype=self.dtype) for _ in h_vals
+        ]
+
+        ind_ell = 0
+        for ell in range(0, self.ell_max + 1):
+            k_max = self.k_max[ell]
+            rmat = (
+                2 * xp.asnumpy(k_vals.reshape(n_k, 1)) * self.r0[ell][0:k_max].T
+            )  # WHAT IN THE WORLD IS GOING ON HERE
+            basis_vals = xp.zeros_like(rmat)
+            ind_radial = np.sum(self.k_max[0:ell])
+            basis_vals[:, 0:k_max] = xp.asarray(
+                radial[ind_radial : ind_radial + k_max]
+            ).T
+            h_basis_vals = basis_vals * h_vals.reshape(len(h_basis), n_k, 1)
+            h_basis_ell = basis_vals.T @ (
+                h_basis_vals * k_vals.reshape(1, n_k, 1) * wts.reshape(1, n_k, 1)
+            )
+            h_basis_ell = xp.asnumpy(h_basis_ell)
+            for _filter in range(len(h_vals)):
+                _tmp = h_basis[_filter][ind_ell] = h_basis_ell[_filter]
+                if ell > 0:
+                    h_basis[_filter][ind_ell + 1] = _tmp
+                if _filter == len(h_vals) - 1:
+                    ind_ell += 1
+                    if ell > 0:
+                        ind_ell += 1
+
+        # might as well just take the diagonal elements
+        h_basis = [h.diag() for h in h_basis]
 
         return h_basis

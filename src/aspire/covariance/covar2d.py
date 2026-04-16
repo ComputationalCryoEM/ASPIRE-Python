@@ -552,17 +552,17 @@ class BatchedRotCov2D(RotCov2D):
         else:
             logger.info("Representing filters in basis")
             self.ctf_idx = src.filter_indices
-            self.ctf_basis = self.filter_to_basis_mats()
+            self.ctf_basis = self.filters_to_basis_mats()
             logger.info("Representing filters in basis complete")
 
-    def filter_to_basis_mats(self):
+    def filters_to_basis_mats(self):
         if all(isinstance(f, CTFFilter) for f in self.src.unique_filters):
             logger.info("Found all filters are CTF, using bulk basis mat eval")
-            return self._ctf_filter_to_basis_mats()
+            return self._ctf_filters_to_basis_mats()
         logger.info("Mixed filters, using sequential basis mat eval")
-        return self._filter_to_basis_mats()
+        return self._filters_to_basis_mats()
 
-    def _filter_to_basis_mats(self):
+    def _filters_to_basis_mats(self):
         """
         old code, should work with all basis and filters. slow.
         """
@@ -575,7 +575,7 @@ class BatchedRotCov2D(RotCov2D):
         ]
         return basis_mats
 
-    def _ctf_filter_to_basis_mats(self):
+    def _ctf_filters_to_basis_mats(self):
         unique_filters = self.src.unique_filters
 
         # lol
@@ -584,21 +584,18 @@ class BatchedRotCov2D(RotCov2D):
         for i, f in enumerate(unique_filters):
             params[i] = f._ctf_params()
 
-        _pts = xp.asnumpy(self.basis.nodes)
-        _filter_pts = np.pad(_pts.reshape(1, -1), ((0, 1), (0, 0))) * self.basis.h
-
         logger.info("Computing CTF filters at eval points")
         # if we have many filters, might be worth trip to GPU
         if len(unique_filters) >= 2048:
             params = xp.asarray(params)
-            _filter_pts = xp.asarray(_filter_pts)
+            _filter_pts = xp.asarray(self.basis._filter_pts)
 
         _filter_vals = CTFFilter.ctf_formula(
             _filter_pts, self.src.pixel_size, *(params.T)
         )
 
         logger.info("Computing basis radial expansion")
-        return [DiagMatrix(f) for f in self.basis.expand_radial_vec(_filter_vals.T)]
+        return self.basis.expand_radial_vec(_filter_vals.T)
 
     def _calc_rhs(self):
         src = self.src
@@ -667,7 +664,12 @@ class BatchedRotCov2D(RotCov2D):
 
         A_mean = BlkDiagMatrix.zeros(self.basis.blk_diag_cov_shape, self.dtype)
         A_covar = [None for _ in ctf_basis]
-        M_covar = self._zeros_mat()
+        # If we're given all diag filters, A_covar and M can be diag
+        if all(isinstance(c, DiagMatrix) for c in ctf_basis):
+            M_covar = DiagMatrix.zeros(self.basis.count, dtype=self.dtype)
+        # otherwise, take the default `matrix_type` for the basis
+        else:
+            M_covar = self._zeros_mat()
 
         for k in np.unique(ctf_idx):
             weight = float(np.count_nonzero(ctf_idx == k) / src.n)
@@ -733,7 +735,7 @@ class BatchedRotCov2D(RotCov2D):
 
     def _solve_covar(self, A_covar, b_covar, M, covar_est_opt):
         method = self._solve_covar_cg
-        if self.basis.matrix_type == DiagMatrix:
+        if all(isinstance(a, DiagMatrix) for a in A_covar):
             method = self._solve_covar_direct
 
         return method(A_covar, b_covar, M, covar_est_opt)
@@ -798,7 +800,7 @@ class BatchedRotCov2D(RotCov2D):
             covar_coef[ell] = covar_coef_ell.reshape(p, p)
 
         t1 = perf_counter()
-        logger.info(f"_solve_covar_cgelapsed: {t1-t0}")
+        logger.info(f"_solve_covar_cg elapsed: {t1-t0}")
         return covar_coef
 
     def get_mean(self):
