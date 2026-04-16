@@ -317,6 +317,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         grid_xy[:] = grid_xy * self.nodes * h
         self.grid_xy = grid_xy.reshape(2, -1)
 
+        # Generate radial filter point set for radial optimized eval
+        self._filter_pts = (
+            np.pad(xp.asnumpy(self.nodes).reshape(1, -1), ((0, 1), (0, 0))) * self.h
+        )
+
     def _build_interpolation_matrix(self):
         """
         Create the matrix used in the third step of evaluate_t() and the first step of evaluate()
@@ -849,7 +854,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         #   for now match old `filter_to_basis_mat`
         coefs = xp.asnumpy(coefs).squeeze()
 
-        return DiagMatrix(coefs)
+        return [DiagMatrix(c) for c in coefs]
 
     def _radial_filter_to_vals(self, f, **kwargs):
         """
