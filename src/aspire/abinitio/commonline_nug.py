@@ -884,9 +884,9 @@ class CommonlineNUG(CLOrient3D):
             dk = 2 * k + 1
             Pk = np.eye(dk)
             for m in range(k):
-                for l in range(k - m):
-                    Pk[(m + 2 * l, m + 2 * l + 1), :] = Pk[
-                        (m + 2 * l + 1, m + 2 * l), :
+                for ell in range(k - m):
+                    Pk[(m + 2 * ell, m + 2 * ell + 1), :] = Pk[
+                        (m + 2 * ell + 1, m + 2 * ell), :
                     ]
             AkP = Pk @ Ak @ Pk.T
             return AkP[..., :k, :k], AkP[..., k:, k:]
@@ -894,7 +894,6 @@ class CommonlineNUG(CLOrient3D):
         W0 = []
         W1 = []
         for k in range(start, self.Lmax + 1):
-            print(k)
             W0k = np.zeros((Ngrid, k, k))
             W1k = np.zeros((Ngrid, k + 1, k + 1))
 
