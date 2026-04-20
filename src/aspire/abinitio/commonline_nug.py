@@ -10,7 +10,7 @@ from aspire.abinitio import CLOrient3D
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
 from aspire.operators import PolarFT, wemd_embed
-from aspire.utils import cart2sph
+from aspire.utils import Rotation, cart2sph
 from aspire.volume import SymmetryGroup
 
 logger = logging.getLogger(__name__)
@@ -1041,11 +1041,7 @@ class CommonlineNUG(CLOrient3D):
         Euler_est[:, 0] = find_alpha(X1)
         Euler_est[:, 1] = find_beta(X1)
         Euler_est[:, 2] = find_gamma(XS, Euler_est[:, 1], Euler_est[:, 0])
-        R_est = np.zeros((N, 3, 3))
-        for n in range(N):
-            R_est[n] = spr.from_euler("zyz", np.flip(Euler_est[n])).as_matrix().T
-            # note that the order of alpha and gamma are swapped due to convention
-
+        R_est = Rotation.from_euler(Euler_est).matrices.transpose(0, 2, 1)
         return R_est, Euler_est
 
     ####################
