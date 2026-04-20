@@ -11,6 +11,7 @@ from aspire.nufft import nufft
 from aspire.numeric import fft, xp
 from aspire.operators import PolarFT, wemd_embed
 from aspire.utils import cart2sph
+from aspire.volume import SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,11 @@ class CommonlineNUG(CLOrient3D):
         self.mult = mult
         self.Ngrid = Ngrid
         self.Nstep_yI = Nstep_yI
-        self.sym = symmetry
+
+        # Handle symmetry
+        self.sym_grp = SymmetryGroup.parse(symmetry)
+        self.sym_euler = self.sym_grp.rotations.angles
+        self.n_sym = len(self.sym_euler)
 
         self._build_full_pft()
 
@@ -79,11 +84,9 @@ class CommonlineNUG(CLOrient3D):
         self.pf_full = PolarFT.half_to_full(pf)
 
     def estimate_rotations(self):
-        sym_euler, S = self.Symmetry_Euler(self.sym)
         imgs = self.src.images[:]
         C = self.compute_coeff(imgs, self.loss, self.Lmax, T=self.T)
         X_est = self.admm_sym_J(
-            self.sym,
             C,
             self.Lmax,
             self.n_img,
@@ -96,7 +99,7 @@ class CommonlineNUG(CLOrient3D):
             self.Nstep_yI,
         )
 
-        R_est, Euler_est = self.euler_est(X_est[0], X_est[S - 1], self.sym, self.n_img)
+        R_est, Euler_est = self.euler_est(X_est[0], X_est[self.n_sym - 1])
         self.rotations = R_est
 
         return R_est
@@ -292,7 +295,6 @@ class CommonlineNUG(CLOrient3D):
 
     def admm_sym_J(
         self,
-        sym,
         C,
         Lmax,
         N,
@@ -333,8 +335,7 @@ class CommonlineNUG(CLOrient3D):
             Sq,
         ) = self.ADMM_preprocessing(C, Lmax, N, Ngrid)
 
-        # S=int(sym[1]); sym_euler=Symmetry_Euler(sym)
-        rank_Ak, _ = self.compute_rank(sym, Lmax)
+        rank_Ak, _ = self.compute_rank(Lmax)
         logger.info(f"Rank of Ak: {rank_Ak}")
 
         # rank_Ak=cp.zeros(Lmax)
@@ -934,8 +935,9 @@ class CommonlineNUG(CLOrient3D):
     # Euler Estimation Step #
     #########################
 
-    def euler_est(self, X1, XS, sym, N):
-        S = int(sym[1])
+    def euler_est(self, X1, XS):
+        S = self.n_sym
+        N = self.n_img
         sym_euler = np.zeros((S, 3))
         for s in range(S):
             sym_euler[s] = [2 * np.pi * s / S, 0, 0]
@@ -1143,48 +1145,15 @@ class CommonlineNUG(CLOrient3D):
         # Lambda=xp.linalg.eigvalsh(AI@AI.T)[-1]; print(Lambda)
         return Lambda
 
-    def compute_rank(self, sym, Lmax):
-        sym_euler, S = self.Symmetry_Euler(sym)
+    def compute_rank(self, Lmax):
         rk = xp.zeros(Lmax)
         A = []
         for k in range(1, Lmax + 1):
-            Ak = np.sum(self.WD(k, sym_euler), axis=0)
-            Ak = np.round(Ak / S, 6)
+            Ak = np.sum(self.WD(k, self.sym_euler), axis=0)
+            Ak = np.round(Ak / self.n_sym, 6)
             A.append(Ak)
             rk[k - 1] = np.linalg.matrix_rank(Ak)
         return rk, A
-
-    @staticmethod
-    def Symmetry_Euler(sym):
-        if sym[0] == "C":
-            order = int(sym[1:])
-            sym_euler = np.zeros((order, 3))
-            for i in range(order):
-                sym_euler[i] = spr.from_euler(
-                    "zyx", [2 * np.pi / order * i, 0, 0]
-                ).as_euler("zyz")
-
-        if sym[0] == "D":
-            order = int(sym[1:])
-            sym_euler = np.zeros((2 * order, 3))
-            for i in range(order):
-                sym_euler[i] = spr.from_euler(
-                    "zyx", [2 * np.pi / order * i, 0, 0]
-                ).as_euler("zyz")
-                sym_euler[i + order] = spr.from_euler(
-                    "zyx", [2 * np.pi / order * i, 0, np.pi]
-                ).as_euler("zyz")
-
-        if sym == "T12":
-            sym_euler = np.zeros((12, 3))
-            sym_euler[1] = spr.from_rotvec(
-                2 * np.pi / 3 * np.array([0, 0, 1])
-            ).as_euler("zyz")
-            sym_euler[2] = spr.from_rotvec(
-                4 * np.pi / 3 * np.array([0, 0, 1])
-            ).as_euler("zyz")
-
-        return sym_euler, sym_euler.shape[0]
 
     def WD(self, J, euler):
         # compute Wigner D matrix
