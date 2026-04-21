@@ -3,7 +3,6 @@ import time
 
 import numpy as np
 from scipy.io import loadmat
-from scipy.spatial.transform import Rotation as spr
 from scipy.special import factorial
 
 from aspire.abinitio import CLOrient3D
@@ -335,6 +334,7 @@ class CommonlineNUG(CLOrient3D):
             Sq,
         ) = self.ADMM_preprocessing(C, Lmax, N, Ngrid)
 
+        n_pairs = N * (N - 1) // 2
         rank_Ak, _ = self.compute_rank(Lmax)
         logger.info(f"Rank of Ak: {rank_Ak}")
 
@@ -473,10 +473,10 @@ class CommonlineNUG(CLOrient3D):
                     )
             toc1 = time.perf_counter()
             Time[1] += toc1 - tic1
+
             tic2 = time.perf_counter()
-            for count in range(N * (N - 1) // 2):
-                tmp = self.psd_projection(Sq[:, count].reshape(4, 4).T)
-                Sq[:, count] = tmp.T.reshape(16)
+            Sq = self.psd_projection(Sq.T.reshape(n_pairs, 4, 4))
+            Sq = Sq.T.reshape(-1, n_pairs)
             toc2 = time.perf_counter()
             Time[2] += toc2 - tic2
             return S0, S1, Sd0, Sd1, Sq
@@ -822,7 +822,7 @@ class CommonlineNUG(CLOrient3D):
         AI_mat_diag = xp.asarray(AI_mat_diag) / 1
         AI_mat_offdiag = xp.asarray(AI_mat_offdiag) / 1
         bI = -(Lmax + 2) * (Lmax + 1) / 2 / 1
-        np.save("AI_mat_offdiag_aspire.npy", AI_mat_offdiag)
+
         # largest eigenvalue for AIAIT
         Lambda = self.largest_eigenvalue(AI_mat_offdiag, Ngrid, N)
 
@@ -1203,12 +1203,17 @@ class CommonlineNUG(CLOrient3D):
     @staticmethod
     def psd_projection(B):
         # compute the PSD part of a symmstric matrix
-        evals, evecs = xp.linalg.eigh((B + B.T) / 2)
+        B_sym = (B + B.swapaxes(-1, -2)) / 2
+        evals, evecs = xp.linalg.eigh(B_sym)
         evals = xp.maximum(evals, 0)
-        return (evecs * evals) @ evecs.T
+        return (evecs * evals[..., None, :]) @ evecs.swapaxes(-1, -2)
 
     @staticmethod
     def transform_block(A, k, Pk=None):
+        single = A.ndim == 2
+        if single:
+            A = A[None, :, :]
+
         if Pk is None:
             dk = 2 * k + 1
             Pk = xp.eye(dk)
@@ -1218,14 +1223,26 @@ class CommonlineNUG(CLOrient3D):
                         (m + 2 * el + 1, m + 2 * el), :
                     ]
         AT = Pk @ A @ Pk.T
-        return AT[:k, :k].T.reshape(-1), AT[k:, k:].T.reshape(-1)
+        A0 = AT[:, :k, :k].swapaxes(-1, -2).reshape(A.shape[0], -1)
+        A1 = AT[:, k:, k:].swapaxes(-1, -2).reshape(A.shape[0], -1)
+
+        if single:
+            return A0[0], A1[0]
+
+        return A0, A1
 
     @staticmethod
     def transform_back_block(A0, A1, k, Pk=None):
         dk = 2 * k + 1
-        A = xp.zeros((dk, dk))
-        A[:k, :k] = A0.reshape(k, k).T
-        A[k:, k:] = A1.reshape(k + 1, k + 1).T
+        single = A0.ndim == 1
+
+        if single:
+            A0 = A0[None, :]
+            A1 = A1[None, :]
+
+        A = xp.zeros((A0.shape[0], dk, dk))
+        A[:, :k, :k] = A0.reshape(-1, k, k).swapaxes(-1, -2)
+        A[:, k:, k:] = A1.reshape(-1, k + 1, k + 1).swapaxes(-1, -2)
         if Pk is None:
             Pk = xp.eye(dk)
             for m in range(k):
@@ -1233,4 +1250,5 @@ class CommonlineNUG(CLOrient3D):
                     Pk[(m + 2 * el, m + 2 * el + 1), :] = Pk[
                         (m + 2 * el + 1, m + 2 * el), :
                     ]
-        return Pk.T @ A @ Pk
+        out = Pk.T @ A @ Pk
+        return out[0] if single else out
