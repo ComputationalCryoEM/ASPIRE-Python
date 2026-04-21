@@ -556,11 +556,19 @@ class BatchedRotCov2D(RotCov2D):
             logger.info("Representing filters in basis complete")
 
     def filters_to_basis_mats(self):
-        if all(isinstance(f, CTFFilter) for f in self.src.unique_filters):
-            logger.info("Found all filters are CTF, using bulk basis mat eval")
+        optimized_expand = callable(
+            getattr(self.basis.__class__, "expand_radial_vec", None)
+        )
+        if optimized_expand and all(
+            isinstance(f, CTFFilter) for f in self.src.unique_filters
+        ):
+            logger.info(
+                "Found all filters are CTF, and `basis.expand_radial_vec` available using, bulk basis mat eval"
+            )
             return self._ctf_filters_to_basis_mats()
-        logger.info("Mixed filters, using sequential basis mat eval")
-        return self._filters_to_basis_mats()
+        else:
+            logger.info("Using sequential basis mat eval")
+            return self._filters_to_basis_mats()
 
     def _filters_to_basis_mats(self):
         """
@@ -585,17 +593,18 @@ class BatchedRotCov2D(RotCov2D):
             params[i] = f._ctf_params()
 
         logger.info("Computing CTF filters at eval points")
+        _filter_pts = self.basis._filter_pts
         # if we have many filters, might be worth trip to GPU
         if len(unique_filters) >= 2048:
             params = xp.asarray(params)
-            _filter_pts = xp.asarray(self.basis._filter_pts)
+            _filter_pts = xp.asarray(_filter_pts)
 
         _filter_vals = CTFFilter.ctf_formula(
             _filter_pts, self.src.pixel_size, *(params.T)
         )
 
         logger.info("Computing basis radial expansion")
-        return self.basis.expand_radial_vec(_filter_vals.T)
+        return self.basis.expand_radial_vec(_filter_vals)
 
     def _calc_rhs(self):
         src = self.src
