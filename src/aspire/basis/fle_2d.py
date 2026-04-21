@@ -743,9 +743,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             _coefs = coefs[k, :]
             z = self._step1_t(radial_img)
             b = self._step2_t(z)
-            # squeeze previously in _radial_convolve_weights
-            b = b.squeeze()
-            weights = self._radial_convolve_weights(b)
+            weights = self._radial_convolve_weights(b[..., 0])
             b = weights / (self.h**2)
             b = b.reshape(self.count)
             coefs_conv[k, :] = (self.c2r @ (b * (self.r2c @ _coefs).flatten())).real
@@ -759,23 +757,31 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
     def _radial_convolve_weights(self, b):
         """
         Helper function for step 3 of convolving with a radial function.
+
+        :param b: Radial vector or stack of radial vectors
         """
         # Developer note, this is equivalent `fle2d.expand_radial_vec` up to shapes.
+        # Convert vector to (1,...)
+        if b.ndim == 1:
+            b = b.reshape(1, *b.shape)
         b = xp.asarray(b)  # implies copy
         if self.num_interp > self.num_radial_nodes:
-            b = fft.dct(b, axis=0, type=2) / (2 * self.num_radial_nodes)
+            b = fft.dct(b, axis=1, type=2) / (2 * self.num_radial_nodes)
             bz = xp.zeros(b.shape, dtype=self.dtype)
-            b = xp.concatenate((b, bz), axis=0)
-            b = fft.idct(b, axis=0, type=2) * 2 * b.shape[0]
-        a = xp.zeros((b.shape[-1], self.count), dtype=self.dtype)
+            b = xp.concatenate((b, bz), axis=1)
+            b = fft.idct(b, axis=1, type=2) * 2 * b.shape[1]
+        a = xp.zeros((b.shape[0], self.count), dtype=self.dtype)
         # xx note these can be collapsed into one loop later
         y = [None] * (self.ell_p_max + 1)
         for i in range(self.ell_p_max + 1):
-            y[i] = self.A3[i] @ b[:, :]  # .flatten()
+            # Wierd mul transpose forced by A3 being CSR.
+            # Can't reshape A3, but can broadcast over last dim of b.
+            # T here (c, num_img) and y[i].T below back to (num_img, c)
+            y[i] = self.A3[i] @ b[:, :].T
         for i in range(self.ell_p_max + 1):
             a[:, self.idx_list[i]] = y[i].T
 
-        return a  # .flatten()
+        return a
 
     def _filter_to_basis_mat(self, f, **kwargs):
         """

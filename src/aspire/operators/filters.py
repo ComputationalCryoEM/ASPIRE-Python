@@ -497,13 +497,13 @@ class CTFFilter(Filter):
         # Additionally we upcast so downstream computations remain in doubles.
 
         # First prepare arrays for broadcasting.
-        voltage = voltage[:, None]
-        defocus_u_a = defocus_u_a[:, None]
-        defocus_v_a = defocus_v_a[:, None]
-        defocus_ang = defocus_ang[:, None]
-        Cs = Cs[:, None]
-        alpha = alpha[:, None]
-        B = B[:, None]
+        voltage = np.atleast_1d(voltage)[:, None]
+        defocus_u_a = np.atleast_1d(defocus_u_a)[:, None]
+        defocus_v_a = np.atleast_1d(defocus_v_a)[:, None]
+        defocus_ang = np.atleast_1d(defocus_ang)[:, None]
+        Cs = np.atleast_1d(Cs)[:, None]
+        alpha = np.atleast_1d(alpha)[:, None]
+        B = np.atleast_1d(B)[:, None]
 
         x, y = omega.astype(np.float64, copy=False) / np.pi
 
