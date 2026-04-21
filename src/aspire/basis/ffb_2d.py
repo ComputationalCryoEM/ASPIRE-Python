@@ -68,12 +68,23 @@ class FFBBasis2D(FBBasis2D):
         )
 
         # Generate radial filter point set for radial optimized eval
-        self._filter_pts = np.pad(
-            self._precomp["gl_nodes"].reshape(1, -1), ((0, 1), (0, 0))
-        )  # should use self.gl_weighted_nodes ??
         # self._filter_pts = np.pad(
-        #     xp.asnumpy(self.gl_weighted_nodes).reshape(1, -1), ((0, 1), (0, 0))
+        #     self._precomp["gl_nodes"].reshape(1, -1), ((0, 1), (0, 0))
         # )
+
+        # Set same dimensions as basis object
+        n_k = self.n_r
+        n_theta = self.n_theta
+        radial = self._precomp["radial"]
+
+        # get 2D grid in polar coordinate
+        k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
+        k, theta = np.meshgrid(k_vals, np.array(0), indexing="ij")
+
+        # Get function values in polar 2D grid and average out angle contribution
+        omegax = k * np.cos(theta)
+        self._filter_pts = np.pad(2 * np.pi * omegax.reshape(1, -1), ((0, 1), (0, 0)))
+        breakpoint()
 
     def _precomp(self):
         """
@@ -307,7 +318,10 @@ class FFBBasis2D(FBBasis2D):
         return h_basis
 
     def expand_radial_vec(self, h_vals):
-        """ """
+        # Convert vector to (1,...)
+        if h_vals.ndim == 1:
+            h_vals = h_vals.reshape(1, *h_vals.shape)
+
         # Set same dimensions as basis object
         n_k = self.n_r
         radial = self._precomp["radial"]
@@ -320,6 +334,8 @@ class FFBBasis2D(FBBasis2D):
         h_basis = [
             BlkDiagMatrix.empty(2 * self.ell_max + 1, dtype=self.dtype) for _ in h_vals
         ]
+        print(h_vals)
+        breakpoint()
 
         ind_ell = 0
         for ell in range(0, self.ell_max + 1):

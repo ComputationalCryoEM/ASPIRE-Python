@@ -7,8 +7,9 @@ from scipy.special import jv
 
 from aspire.basis import Coef, FFBBasis2D
 from aspire.nufft import all_backends
+from aspire.operators import RadialCTFFilter
 from aspire.source import Simulation
-from aspire.utils.misc import grid_2d
+from aspire.utils import grid_2d, utest_tolerance
 from aspire.volume import Volume
 
 from ._basis_util import Steerable2DMixin, UniversalBasisMixin, basis_params_2d
@@ -161,3 +162,44 @@ def testHighResFFBBasis2D(L, dtype):
     np.testing.assert_allclose(
         im_ffb.asnumpy()[0][mask], im.asnumpy()[0][mask], rtol=1e-05, atol=1e-4
     )
+
+
+def test_bulk_expand_radial_vec():
+    """
+    For a given stack of radial vectors (such as from
+    RadialCTFFilters) `expand_radial_vec` should return equivalent
+    result as calling filter_to_basis_mat on each filter.
+    """
+
+    L = 32
+    dtype = np.float32
+    basis = FFBBasis2D(L, dtype=dtype)
+    pixel_size = 1.23
+
+    filters = [RadialCTFFilter(defocus=d) for d in np.linspace(10000, 15000, 3)]
+
+    references = [basis.filter_to_basis_mat(f, pixel_size=pixel_size) for f in filters]
+
+    # from cov code
+    params = np.empty((len(filters), 7), dtype=dtype)
+    for i, f in enumerate(filters):
+        params[i] = f._ctf_params()
+
+    _filter_vals = RadialCTFFilter.ctf_formula(
+        basis._filter_pts, pixel_size, *(params.T)
+    )
+
+    results = basis.expand_radial_vec(_filter_vals)
+    results2 = [basis.expand_radial_vec(f)[0] for f in _filter_vals]
+
+    # expand_radial_vec should be same as itself called sequentially
+    assert len(results2) == len(results)
+    for res, ref in zip(results2, results):
+        np.testing.assert_allclose(res.dense(), ref.dense())
+
+    # and should be equivalent to calling filter_to_basis_mat
+    assert len(results) == len(references)
+    for res, ref in zip(results, references):
+        np.testing.assert_allclose(
+            res.dense(), ref.dense(), atol=utest_tolerance(dtype)
+        )
