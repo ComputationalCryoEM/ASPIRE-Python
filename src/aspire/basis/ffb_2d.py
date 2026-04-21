@@ -71,6 +71,9 @@ class FFBBasis2D(FBBasis2D):
         self._filter_pts = np.pad(
             self._precomp["gl_nodes"].reshape(1, -1), ((0, 1), (0, 0))
         )  # should use self.gl_weighted_nodes ??
+        # self._filter_pts = np.pad(
+        #     xp.asnumpy(self.gl_weighted_nodes).reshape(1, -1), ((0, 1), (0, 0))
+        # )
 
     def _precomp(self):
         """
@@ -305,8 +308,6 @@ class FFBBasis2D(FBBasis2D):
 
     def expand_radial_vec(self, h_vals):
         """ """
-        h_vals = h_vals.T  # why fle transposed...
-
         # Set same dimensions as basis object
         n_k = self.n_r
         radial = self._precomp["radial"]
@@ -346,6 +347,6 @@ class FFBBasis2D(FBBasis2D):
                         ind_ell += 1
 
         # might as well just take the diagonal elements
-        h_basis = [h.diag() for h in h_basis]
+        # h_basis = [h.diag() for h in h_basis]
 
         return h_basis
