@@ -6,6 +6,7 @@ import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
 from aspire import config
+from aspire.numeric import xp
 from aspire.utils import cart2pol, grid_2d, voltage_to_wavelength
 
 logger = logging.getLogger(__name__)
@@ -497,13 +498,23 @@ class CTFFilter(Filter):
         # Additionally we upcast so downstream computations remain in doubles.
 
         # First prepare arrays for broadcasting.
-        voltage = np.atleast_1d(voltage)[:, None]
-        defocus_u_a = np.atleast_1d(defocus_u_a)[:, None]
-        defocus_v_a = np.atleast_1d(defocus_v_a)[:, None]
-        defocus_ang = np.atleast_1d(defocus_ang)[:, None]
-        Cs = np.atleast_1d(Cs)[:, None]
-        alpha = np.atleast_1d(alpha)[:, None]
-        B = np.atleast_1d(B)[:, None]
+        voltage = xp.atleast_1d(voltage)[:, None]
+        defocus_u_a = xp.atleast_1d(defocus_u_a)[:, None]
+        defocus_v_a = xp.atleast_1d(defocus_v_a)[:, None]
+        defocus_ang = xp.atleast_1d(defocus_ang)[:, None]
+        Cs = xp.atleast_1d(Cs)[:, None]
+        alpha = xp.atleast_1d(alpha)[:, None]
+        B = xp.atleast_1d(B)[:, None]
+
+        # If omega is on GPU, move the params over
+        if isinstance(omega, xp.ndarray) and not isinstance(omega, np.ndarray):
+            voltage = xp.asarray(voltage)
+            defocus_u_a = xp.array(defocus_u_a)
+            defocus_v_a = xp.array(defocus_v_a)
+            defocus_ang = xp.array(defocus_ang)
+            Cs = xp.array(Cs)
+            alpha = xp.array(alpha)
+            B = xp.array(B)
 
         x, y = omega.astype(np.float64, copy=False) / np.pi
 
