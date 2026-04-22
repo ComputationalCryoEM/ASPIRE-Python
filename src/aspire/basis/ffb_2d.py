@@ -68,21 +68,15 @@ class FFBBasis2D(FBBasis2D):
         )
 
         # Generate radial filter point set for radial optimized eval
+        k_vals, _ = lgwt(self.n_r, 0, 0.5, dtype=self.dtype)
+        self._filter_pts = np.pad(2 * np.pi * k_vals.reshape(1, -1), ((0, 1), (0, 0)))
+
+        # Ask Joakim about this...
+        # Why does filter_to_basis_mat hard code lgwt instead of following basis self.kcut
+        # they are the same by default.
         # self._filter_pts = np.pad(
-        #     self._precomp["gl_nodes"].reshape(1, -1), ((0, 1), (0, 0))
+        #      2 * np.pi * self._precomp["gl_nodes"].reshape(1, -1), ((0, 1), (0, 0))
         # )
-
-        # Set same dimensions as basis object
-        n_k = self.n_r
-        n_theta = self.n_theta
-
-        # get 2D grid in polar coordinate
-        k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
-        k, theta = np.meshgrid(k_vals, np.array(0), indexing="ij")
-
-        # Get function values in polar 2D grid and average out angle contribution
-        omegax = k * np.cos(theta)
-        self._filter_pts = np.pad(2 * np.pi * omegax.reshape(1, -1), ((0, 1), (0, 0)))
 
     def _precomp(self):
         """
@@ -257,7 +251,8 @@ class FFBBasis2D(FBBasis2D):
         """
         See `SteerableBasis2D.filter_to_basis_mat`.
         """
-        # Note 'method' and 'truncate' not relevant for this optimized FFB code.
+        # Note 'method' and 'truncate' not relevant for this specific FFB code.
+        # Method `radial` should have already been diverted.
         expand_method = kwargs.get("expand_method", None)
         if expand_method is not None:
             raise NotImplementedError(
@@ -279,6 +274,7 @@ class FFBBasis2D(FBBasis2D):
         radial = self._precomp["radial"]
 
         # get 2D grid in polar coordinate
+        # Confirm this lgwt call with Joakim (should it follow basis config self.kcut? same by default)
         k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
         k, theta = np.meshgrid(
             k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
@@ -315,22 +311,32 @@ class FFBBasis2D(FBBasis2D):
 
         return h_basis
 
-    def expand_radial_vec(self, h_vals):
+    def expand_radial_vec(self, radial_vec, force_diag=False):
+        """
+        Expands radial vector or stack of vetors `radial_vec` to basis matrix.
+
+        :param radial_vec: Array holding radial vector,
+            shaped (n_radial_pts) or (n_vectors, n_radial_pts)
+        :force_diag: Optionally flush off-diagonal elements to zero and return `DiagMatrix`
+        :return: List of `BlkDiagMatrix`, or list of `DiagMatrix`
+        """
         # Convert vector to (1,...)
-        if h_vals.ndim == 1:
-            h_vals = h_vals.reshape(1, *h_vals.shape)
+        if radial_vec.ndim == 1:
+            radial_vec = radial_vec.reshape(1, *radial_vec.shape)
 
         # Set same dimensions as basis object
         n_k = self.n_r
         radial = self._precomp["radial"]
 
-        # hrrmm, can we always use the basis precomp, or do we need to use lgwt as in the old filter_to_basis_mat?
+        # hrrmm, ask Joakim can we always use the basis precomp, or do we need to use lgwt as in the old filter_to_basis_mat?
+        # This is doing opposite logic (same result) by default. Joy.
         k_vals = xp.asarray(self._precomp["gl_nodes"])
         wts = xp.asarray(self._precomp["gl_weights"])
 
         # Represent 1D function values in basis
         h_basis = [
-            BlkDiagMatrix.empty(2 * self.ell_max + 1, dtype=self.dtype) for _ in h_vals
+            BlkDiagMatrix.empty(2 * self.ell_max + 1, dtype=self.dtype)
+            for _ in radial_vec
         ]
 
         ind_ell = 0
@@ -344,18 +350,20 @@ class FFBBasis2D(FBBasis2D):
             basis_vals[:, 0:k_max] = xp.asarray(
                 radial[ind_radial : ind_radial + k_max]
             ).T
-            h_basis_vals = basis_vals * h_vals.reshape(len(h_basis), n_k, 1)
+            h_basis_vals = basis_vals * radial_vec.reshape(len(h_basis), n_k, 1)
             h_basis_ell = basis_vals.T @ (
                 h_basis_vals * k_vals.reshape(1, n_k, 1) * wts.reshape(1, n_k, 1)
             )
             h_basis_ell = xp.asnumpy(h_basis_ell)
-            for _filter in range(len(h_vals)):
+            for _filter in range(len(radial_vec)):
                 _tmp = h_basis[_filter][ind_ell] = h_basis_ell[_filter]
                 if ell > 0:
                     h_basis[_filter][ind_ell + 1] = _tmp
-                if _filter == len(h_vals) - 1:
+                if _filter == len(radial_vec) - 1:
                     ind_ell += 1
                     if ell > 0:
                         ind_ell += 1
+        if force_diag:
+            h_basis = [h.diag() for h in h_basis]
 
         return h_basis
