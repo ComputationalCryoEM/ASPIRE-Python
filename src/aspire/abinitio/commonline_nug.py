@@ -458,19 +458,24 @@ class CommonlineNUG(CLOrient3D):
                 S1[d1[k - 1] : d1[k], :] = self.vec_block(tmp, N, k + 1, IDX_upper)
             toc0 = time.perf_counter()
             Time[0] += toc0 - tic0
+
+            # See if we can switch everything to C order before here.
+            Sd0 = Sd0.T
+            Sd1 = Sd1.T
             tic1 = time.perf_counter()
             for k in range(1, Lmax + 1):
-                for n in range(N):
-                    tmp = self.transform_back_block(
-                        Sd0[d0[k - 1] : d0[k], n],
-                        Sd1[d1[k - 1] : d1[k], n],
-                        k,
-                        P[k - 1],
-                    )
-                    tmp = self.psd_projection(tmp)
-                    Sd0[d0[k - 1] : d0[k], n], Sd1[d1[k - 1] : d1[k], n] = (
-                        self.transform_block(tmp, k, P[k - 1])
-                    )
+                tmp = self.transform_back_block(
+                    Sd0[:, d0[k - 1] : d0[k]],
+                    Sd1[:, d1[k - 1] : d1[k]],
+                    k,
+                    P[k - 1],
+                )
+                tmp = self.psd_projection(tmp)
+                Sd0[:, d0[k - 1] : d0[k]], Sd1[:, d1[k - 1] : d1[k]] = (
+                    self.transform_block(tmp, k, P[k - 1])
+                )
+            Sd0 = Sd0.T
+            Sd1 = Sd1.T
             toc1 = time.perf_counter()
             Time[1] += toc1 - tic1
 
