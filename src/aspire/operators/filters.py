@@ -37,8 +37,9 @@ def evaluate_src_filters_on_grid(src, indices=None):
         idx_k = np.where(src.filter_indices[indices] == i)[0]
         if len(idx_k) > 0:
             filter_values = filt.evaluate(omega, pixel_size=src.pixel_size)
-            h[:, idx_k] = np.column_stack((filter_values,) * len(idx_k))
-
+            # convert filter_values row vector to column vector and tile broadcast
+            filter_values = filter_values.reshape(-1, 1)
+            h[:, idx_k] = np.tile(filter_values, len(idx_k))
     h = np.reshape(h, grid2d["x"].shape + (len(indices),))
 
     return h
