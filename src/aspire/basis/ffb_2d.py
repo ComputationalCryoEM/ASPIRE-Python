@@ -326,6 +326,8 @@ class FFBBasis2D(FBBasis2D):
         # Convert vector to (1,...)
         if radial_vec.ndim == 1:
             radial_vec = radial_vec.reshape(1, *radial_vec.shape)
+        # Optionally transfer to GPU
+        radial_vec = xp.asarray(radial_vec)
 
         # Set same dimensions as basis object
         n_k = self.n_r
