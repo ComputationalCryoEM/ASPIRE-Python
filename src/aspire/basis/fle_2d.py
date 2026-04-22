@@ -850,6 +850,14 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         return DiagMatrix(xp.asnumpy(h_basis))
 
     def expand_radial_vec(self, radial_vec, **kwargs):
+        """
+        Expands radial vector or stack of vectors `radial_vec` to basis matrix.
+
+        :param radial_vec: Array holding radial vector,
+            shaped (n_radial_pts) or (n_vectors, n_radial_pts)
+        :return: List of `DiagMatrix`
+        """
+
         coefs = self._radial_convolve_weights(radial_vec)
 
         # check...
