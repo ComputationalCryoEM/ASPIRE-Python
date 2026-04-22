@@ -611,15 +611,16 @@ class CommonlineNUG(CLOrient3D):
                 res_psdX = res_psdX / (1 + np.linalg.norm(X0) + np.linalg.norm(X1))
                 res_psdD = 0
                 for k in range(1, Lmax + 1):
-                    for n in range(N):
-                        tmp = self.transform_back_block(
-                            Xd0[d0[k - 1] : d0[k], n],
-                            Xd1[d1[k - 1] : d1[k], n],
-                            k,
-                            P[k - 1],
-                        )
-                        res_psdD += np.linalg.norm(self.psd_projection(-tmp))
-                        # res_psdD+=norm(self.psd_projection(-tmp))/(1+norm(tmp))
+                    tmp = self.transform_back_block(
+                        Xd0[d0[k - 1] : d0[k]].T,
+                        Xd1[d1[k - 1] : d1[k]].T,
+                        k,
+                        P[k - 1],
+                    )
+                    res_psdD += np.linalg.norm(
+                        self.psd_projection(-tmp), axis=(-2, -1)
+                    ).sum()
+                    # res_psdD+=norm(self.psd_projection(-tmp))/(1+norm(tmp))
                 res_psdD = res_psdD / (1 + np.linalg.norm(Xd0) + np.linalg.norm(Xd1))
                 res_psdQ = 0
                 for count in range(N * (N - 1) // 2):
