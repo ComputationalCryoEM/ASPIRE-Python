@@ -358,7 +358,4 @@ class FFBBasis2D(FBBasis2D):
                     if ell > 0:
                         ind_ell += 1
 
-        # might as well just take the diagonal elements
-        # h_basis = [h.diag() for h in h_basis]
-
         return h_basis
