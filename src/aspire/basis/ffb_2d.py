@@ -68,8 +68,11 @@ class FFBBasis2D(FBBasis2D):
         )
 
         # Generate radial filter point set for radial optimized eval
-        k_vals, _ = lgwt(self.n_r, 0, 0.5, dtype=self.dtype)
-        self._filter_pts = np.pad(2 * np.pi * k_vals.reshape(1, -1), ((0, 1), (0, 0)))
+        # Weights appear a little sensitive to dtype ...
+        k_vals, _ = lgwt(self.n_r, 0, 0.5, dtype=np.float64)
+        self._filter_pts = np.pad(
+            2 * np.pi * k_vals.reshape(1, -1), ((0, 1), (0, 0))
+        ).astype(self.dtype)
 
         # Ask Joakim about this...
         # Why does filter_to_basis_mat hard code lgwt instead of following basis self.kcut
