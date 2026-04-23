@@ -771,15 +771,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             b = xp.concatenate((b, bz), axis=1)
             b = fft.idct(b, axis=1, type=2) * 2 * b.shape[1]
         a = xp.zeros((b.shape[0], self.count), dtype=self.dtype)
-        # xx note these can be collapsed into one loop later
-        y = [None] * (self.ell_p_max + 1)
         for i in range(self.ell_p_max + 1):
             # Wierd mul transpose forced by A3 being CSR.
-            # Can't reshape A3, but can broadcast over last dim of b.
-            # T here (c, num_img) and y[i].T below back to (num_img, c)
-            y[i] = self.A3[i] @ b[:, :].T
-        for i in range(self.ell_p_max + 1):
-            a[:, self.idx_list[i]] = y[i].T
+            # Can't reshape A3, but can broadcast over dims of b.
+            # T b first to yield (cnt, num_img) and T result back to (num_img, cnt)
+            a[:, self.idx_list[i]] = (self.A3[i] @ b[:, :].T).T
 
         return a
 
