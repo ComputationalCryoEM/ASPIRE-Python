@@ -167,7 +167,7 @@ utilities, synchronization helpers) before layering on algorithm-specific logic.
 Algorithms for Asymmetric Molecules
 -----------------------------------
 
-ASPIRE offers several orientation estimation algorithms for handling molecules with asymmetric data:
+ASPIRE offers several orientation estimation algorithms for handling asymmetric molecules:
 
 - ``CLSync3N`` (:file:`src/aspire/abinitio/commonline_sync3n.py`): ``CLSync3N`` detects
   common-lines between pairs of images and reduces misidentifications using a vote which
