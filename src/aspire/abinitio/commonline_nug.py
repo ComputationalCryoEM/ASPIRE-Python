@@ -39,6 +39,7 @@ class CommonlineNUG(CLOrient3D):
         mult=1.5,
         Ngrid=16317,
         Nstep_yI=10,
+        perform_pr=False,
         **kwargs,
     ):
         """
@@ -70,6 +71,7 @@ class CommonlineNUG(CLOrient3D):
         self.mult = mult
         self.Ngrid = Ngrid
         self.Nstep_yI = Nstep_yI
+        self.perform_pr = perform_pr
 
         # Handle symmetry
         self.sym_grp = SymmetryGroup.parse(symmetry)
@@ -97,6 +99,26 @@ class CommonlineNUG(CLOrient3D):
             self.mult,
             self.Nstep_yI,
         )
+
+        if self.perform_pr:
+            weight = 1 / (1 + np.arange(self.Lmax))
+            Penalty = [1, 1, 1, 1]
+            r = [3, 2, 1, 0]
+            X_est = self.proximal_refine(
+                X_est,
+                C,
+                self.n_img,
+                weight,
+                Penalty,
+                r,
+                self.Ngrid,
+                self.max_iter,
+                self.rho,
+                self.ratio,
+                self.factor,
+                self.mult,
+                self.Nstep_yI,
+            )
 
         R_est, Euler_est = self.euler_est(X_est[0], X_est[self.n_sym - 1])
         self.rotations = R_est
@@ -936,6 +958,81 @@ class CommonlineNUG(CLOrient3D):
                 count += 1
 
         return SO3
+
+    ############################
+    # Proximal Refinement Step #
+    ############################
+
+    def proximal_refine(
+        self,
+        X_admm,
+        C,
+        N,
+        weight,
+        Penalty,
+        r,
+        Ngrid,
+        max_iter,
+        rho,
+        ratio,
+        factor,
+        mult,
+        Nstep_yI,
+        verbose=True,
+    ):
+
+        def Ak(J, Euler):
+            # compute Ak matrix
+            order = Euler.shape[0]
+            # A = np.zeros((2 * J + 1, 2 * J + 1), dtype=np.complex128)
+            # for i in range(order):
+            #     A += self.WD(J, Euler[i])
+            A = self.WD(J, Euler).sum(axis=0)
+            return np.round(A / order, 10)
+
+        rank_Ak = xp.zeros(self.Lmax)
+        for k in range(self.Lmax):
+            C[k] = xp.asnumpy(C[k])
+            rank_Ak[k] = np.linalg.matrix_rank(
+                Ak(k + 1, self.sym_euler), tol=1e-6, hermitian=True
+            )
+
+        def low_rank_proj(X, r):
+            Xproj = []
+            for k in range(self.Lmax):
+                dk = 2 * k + 3
+                rk = int(rank_Ak[k] * 2) + r
+                tmp = np.copy(X[k])
+                for i in range(N):
+                    u, s, v = np.linalg.svd(
+                        tmp[i * dk : (i + 1) * dk, i * dk : (i + 1) * dk]
+                    )
+                    tmp[i * dk : (i + 1) * dk, i * dk : (i + 1) * dk] = (
+                        u[:, :rk] @ np.diag(s[:rk]) @ v[:rk]
+                    )
+                Xproj.append(tmp)
+            return Xproj
+
+        Niter = len(r)
+        CC = [None] * self.Lmax
+        for iter in range(Niter):
+            X_prox = low_rank_proj(X_admm, r[iter])
+            for k in range(self.Lmax):
+                CC[k] = C[k] - Penalty[iter] * weight[k] * (X_prox[k] + X_prox[k].T) / 2
+            X_prox = self.admm_sym_J(
+                CC,
+                self.Lmax,
+                N,
+                Ngrid,
+                max_iter,
+                rho,
+                ratio,
+                factor,
+                mult,
+                Nstep_yI,
+                verbose,
+            )
+        return X_prox
 
     #########################
     # Euler Estimation Step #
