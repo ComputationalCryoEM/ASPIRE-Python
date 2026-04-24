@@ -1,4 +1,4 @@
-Aspire v0.14.2
+Aspire v0.14.3
 ==============
 
 Algorithms for Single Particle Reconstruction
