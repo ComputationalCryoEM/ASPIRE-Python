@@ -43,7 +43,7 @@ class CommonlineLUD(CommonlineSDP):
         """
         Initialize a class for estimating 3D orientations using a Least Unsquared Deviations algorithm.
 
-        This class extends the `CLOrient3D` class, inheriting its initialization parameters. Additional
+        This class extends the `Orient3D` class, inheriting its initialization parameters. Additional
         parameters detailed below.
 
         :param alpha: Spectral norm constraint for ADMM algorithm. Default is None, which

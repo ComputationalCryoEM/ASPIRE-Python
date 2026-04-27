@@ -98,7 +98,7 @@ def test_estimator_error(src_fixture):
     junk_estimator = 123
     with pytest.raises(
         ValueError,
-        match="`orientation_estimator` should be subclass of `CLOrient3D`,* ",
+        match="`orientation_estimator` should be subclass of `Orient3D`,* ",
     ):
         _ = OrientedSource(og_src, junk_estimator)
 

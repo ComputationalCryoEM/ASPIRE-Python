@@ -9,7 +9,7 @@ from collections.abc import Iterable
 import mrcfile
 import numpy as np
 
-from aspire.abinitio import CLOrient3D, CLSync3N
+from aspire.abinitio import Orient3D, CLSync3N
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
     CropPad,
@@ -1834,7 +1834,7 @@ class OrientedSource(IndexedSource):
         performing orientation estimation using a supplied `orientation_estimator`.
 
         :param src: Source used for orientation estimation
-        :param orientation_estimator: CLOrient3D subclass used for orientation estimation.
+        :param orientation_estimator: Orient3D subclass used for orientation estimation.
             Default uses the CLSync3N method.
         """
 
@@ -1862,9 +1862,9 @@ class OrientedSource(IndexedSource):
             orientation_estimator = CLSync3N(src)
 
         self.orientation_estimator = orientation_estimator
-        if not isinstance(self.orientation_estimator, CLOrient3D):
+        if not isinstance(self.orientation_estimator, Orient3D):
             raise ValueError(
-                "`orientation_estimator` should be subclass of `CLOrient3D`,"
+                "`orientation_estimator` should be subclass of `Orient3D`,"
                 f" found {self.orientation_estimator}."
             )
 
