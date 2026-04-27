@@ -15,7 +15,7 @@ The reference-free workflow below illustrates how orientation solvers integrate 
 denoising and reconstruction utilities.
      
 #. Starting from an ``ImageSource`` (often the output of the class averaging stack
-   described in :doc:`class_source`), instantiate one of the ``CLOrient3D`` subclasses
+   described in :doc:`class_source`), instantiate one of the ``Orient3D`` subclasses
    with the source plus any tuning parameters (angular resolution, shift search ranges,
    histogram settings).
 
@@ -60,14 +60,14 @@ Layout of the Class Hierarchy
 -----------------------------
 
 All common-line estimators live under :mod:`aspire.abinitio` and share the base class
-``CLOrient3D``. Algorithms that rely on a pairwise common-line matrix inherit from the
-intermediary base class ``CLMatrixOrient3D``. Together they codify the data preparation
+``Orient3D``. Algorithms that rely on a pairwise common-line matrix inherit from the
+intermediary base class ``CLOrient3D``. Together they codify the data preparation
 steps, caching strategy, and the minimal interface each subclass must expose.
 
-CLOrient3D
-^^^^^^^^^^
+Orient3D
+^^^^^^^^
 
-``CLOrient3D`` manages dataset-wide configuration such as polar grid resolution, masking
+``Orient3D`` manages dataset-wide configuration such as polar grid resolution, masking
 strategies, and the shift solving backend. It exposes:
 
 - ``src``: the ``ImageSource`` supplying masked projection stacks.
@@ -83,7 +83,7 @@ strategies, and the shift solving backend. It exposes:
 .. mermaid::
 
    classDiagram
-       class CLOrient3D{
+       class Orient3D{
            src: ImageSource
 	   +estimate_rotations()
 	   +estimate_shifts()
@@ -92,10 +92,10 @@ strategies, and the shift solving backend. It exposes:
 	   +shifts
        }
 
-CLMatrixOrient3D
-^^^^^^^^^^^^^^^^
+CLOrient3D
+^^^^^^^^^^
 
-``CLMatrixOrient3D`` augments ``CLOrient3D`` with utilities for assembling the
+``CLOrient3D`` augments ``Orient3D`` with utilities for assembling the
 ``clmatrix`` (indices of correlated polar rays between image pairs) and any auxiliary
 scores such as ``cl_dist`` or ``shifts_1d``. Key behaviors include:
 
@@ -110,7 +110,7 @@ scores such as ``cl_dist`` or ``shifts_1d``. Key behaviors include:
 .. mermaid::
 
    classDiagram
-       class CLMatrixOrient3D{
+       class CLOrient3D{
            src: ImageSource
 	   +estimate_rotations()
 	   +estimate_shifts()
@@ -136,7 +136,7 @@ power-method based handedness synchronization to complete this task.
 - The solver supports CPU/GPU execution, configurable tolerances (``epsilon``) and
   iteration limits (``max_iters``), and logs residuals so that callers can monitor
   convergence.
-- ``CLOrient3D`` subclasses simply import the ``JSync`` module to access handedness
+- ``Orient3D`` subclasses simply import the ``JSync`` module to access handedness
   synchronization methods.
 
 Class Hierarchy Overview
@@ -148,16 +148,16 @@ utilities, synchronization helpers) before layering on algorithm-specific logic.
 .. mermaid::
 
    classDiagram
-       CLOrient3D <|-- CLMatrixOrient3D
-       CLMatrixOrient3D <|-- CLSync3N
-       CLMatrixOrient3D <|-- CLSyncVoting   
-       CLMatrixOrient3D <|-- CommonlineSDP
+       Orient3D <|-- CLOrient3D
+       CLOrient3D <|-- CLSync3N
+       CLOrient3D <|-- CLSyncVoting
+       CLOrient3D <|-- CommonlineSDP
        CommonlineSDP <|-- CommonlineLUD
        CommonlineLUD <|-- CommonlineIRLS
-       CLMatrixOrient3D <|-- CLSymmetryC2
-       CLMatrixOrient3D <|-- CLSymmetryC3C4
-       CLOrient3D <|-- CLSymmetryCn
-       CLOrient3D <|-- CLSymmetryD2
+       CLOrient3D <|-- CLSymmetryC2
+       CLOrient3D <|-- CLSymmetryC3C4
+       Orient3D <|-- CLSymmetryCn
+       Orient3D <|-- CLSymmetryD2
        class JSync
        CLSync3N o-- JSync
        CLSymmetryC2 o-- JSync
@@ -223,7 +223,7 @@ Extensibility
 
 Adding a new orientation estimator typically involves:
 
-#. Subclassing ``CLOrient3D`` (or ``CLMatrixOrient3D`` if you need common-line matrices).
+#. Subclassing ``Orient3D`` (or ``CLOrient3D`` if you need common-line matrices).
 #. Implementing ``estimate_rotations(self, **kwargs)``. This method must return an
    ``(n, 3, 3)`` array of rotations to be consumed by ``estimate_shifts`` and downstream
    reconstruction methods.
@@ -235,9 +235,9 @@ used inside :class:`aspire.source.OrientedSource`. A simplified template is show
 
 .. code-block:: python
 
-   from aspire.abinitio import CLMatrixOrient3D
+   from aspire.abinitio import CLOrient3D
 
-   class CLFancySync(CLMatrixOrient3D):
+   class CLFancySync(CLOrient3D):
        """
        Example orientation estimator built on the common-lines matrix workflow.
        """
