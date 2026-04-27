@@ -8,7 +8,7 @@ import pytest
 from click.testing import CliRunner
 
 from aspire.abinitio import (
-    CLOrient3D,
+    Orient3D,
     CLSymmetryC2,
     CLSymmetryC3C4,
     CLSymmetryCn,
@@ -231,9 +231,9 @@ def test_n_check_error():
     sim = Simulation()
 
     with pytest.raises(NotImplementedError, match=r"n_check must be in*"):
-        _ = CLOrient3D(sim, n_check=-2)
+        _ = Orient3D(sim, n_check=-2)
     with pytest.raises(NotImplementedError, match=r"n_check must be in*"):
-        _ = CLOrient3D(sim, n_check=sim.n + 1)
+        _ = Orient3D(sim, n_check=sim.n + 1)
 
 
 def test_command_line():

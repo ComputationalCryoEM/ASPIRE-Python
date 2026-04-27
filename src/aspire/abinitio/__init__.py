@@ -4,7 +4,7 @@ from .commonline_utils import (
     build_outer_products,
     g_sync,
 )
-from .commonline_base import CLOrient3D
+from .commonline_base import Orient3D
 from .commonline_matrix import CLMatrixOrient3D
 from .commonline_sdp import CommonlineSDP
 from .commonline_lud import CommonlineLUD

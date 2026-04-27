@@ -4,7 +4,7 @@ import numpy as np
 import scipy.sparse.linalg as la
 from numpy.linalg import norm
 
-from aspire.abinitio import CLOrient3D
+from aspire.abinitio import Orient3D
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, tqdm, trange
 from aspire.utils.random import randn
@@ -15,7 +15,7 @@ from .commonline_utils import _generate_shift_phase_and_filter
 logger = logging.getLogger(__name__)
 
 
-class CLSymmetryD2(CLOrient3D):
+class CLSymmetryD2(Orient3D):
     """
     Define a class to estimate 3D orientations using common lines methods for
     molecules with D2 (dihedral) symmetry.

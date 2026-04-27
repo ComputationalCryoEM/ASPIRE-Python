@@ -14,7 +14,7 @@ from .commonline_utils import _generate_shift_phase_and_filter
 logger = logging.getLogger(__name__)
 
 
-class CLOrient3D:
+class Orient3D:
     """
     Define a base class for estimating 3D orientations using common lines methods
     """
