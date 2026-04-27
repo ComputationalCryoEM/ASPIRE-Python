@@ -12,7 +12,7 @@ from .commonline_utils import _generate_shift_phase_and_filter
 logger = logging.getLogger(__name__)
 
 
-class CLMatrixOrient3D(Orient3D):
+class CLOrient3D(Orient3D):
     """
     An intermediate base class to serve commonline algorithms that use
     a commonline matrix.
