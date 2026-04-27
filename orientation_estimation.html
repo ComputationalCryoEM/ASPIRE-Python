@@ -1,0 +1,820 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orientation Estimation Architecture &mdash; ASPIRE 0.14.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=fd6457a4" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=a9ba800c"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/sg-tags.js?v=d80f6fa4"></script>
+      <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+      <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = `pre.mermaid {
+    /* Same as .mermaid-container > pre */
+    display: block;
+    width: 100%;
+}
+
+pre.mermaid > svg {
+    /* Same as .mermaid-container > pre > svg */
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}`;
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = `.mermaid-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+
+.mermaid-container > pre {
+    display: block;
+    width: 100%;
+}
+
+.mermaid-container > pre > svg {
+    height: 500px;
+    width: 100%;
+    max-width: 100% !important;
+}
+
+.mermaid-fullscreen-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    color: #333;
+}
+
+.mermaid-fullscreen-btn:hover {
+    opacity: 100% !important;
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-btn.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-btn.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal {
+    display: none;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 95vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.98);
+    z-index: 9999;
+    padding: 20px;
+    overflow: auto;
+}
+
+.mermaid-fullscreen-modal.dark-theme {
+    background: rgba(0, 0, 0, 0.98);
+}
+
+.mermaid-fullscreen-modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen {
+    position: relative;
+    width: 95vw;
+    height: 90vh;
+    max-width: 95vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    overflow: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen.dark-theme {
+    background: #1a1a1a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.mermaid-container-fullscreen pre.mermaid {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mermaid-container-fullscreen .mermaid svg {
+    height: 100% !important;
+    width: 100% !important;
+    cursor: grab;
+}
+
+.mermaid-fullscreen-close {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    font-size: 24px;
+    line-height: 1;
+    color: #333;
+}
+
+.mermaid-fullscreen-close:hover {
+    background: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transform: scale(1.1);
+}
+
+.mermaid-fullscreen-close.dark-theme {
+    background: rgba(50, 50, 50, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #e0e0e0;
+}
+
+.mermaid-fullscreen-close.dark-theme:hover {
+    background: rgba(60, 60, 60, 1);
+    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.mermaid-fullscreen-modal .mermaid-fullscreen-btn {
+    display: none !important;
+}`;
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        all_mermaids.forEach((el) => {
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+        await mermaid.run();
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    const mermaids_processed = document.querySelectorAll(".mermaid[data-processed='true']");
+
+    if ("False" === "True") {
+        const mermaids_to_add_zoom = -1 === -1 ? all_mermaids.length : -1;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("");
+            if(all_mermaids.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else if(svgs.size() !== mermaids_to_add_zoom) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            } else {
+                svgs.each(function() {
+                    var svg = d3.select(this);
+                    svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+                    var inner = svg.select("g");
+                    var zoom = d3.zoom().on("zoom", function(event) {
+                        inner.attr("transform", event.transform);
+                    });
+                    svg.call(zoom);
+                });
+            }
+        }
+    } else if(all_mermaids.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if ("True" !== "True") return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    const closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = '⛶';
+        fullscreenBtn.style.opacity = '50%';
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scroll, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.sdisplay = 'block';
+
+                if ("False" === "True") {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+const load = async () => {
+    initStyles();
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...JSON.parse(
+                    `{"startOnLoad": false}`
+                ),
+                ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...JSON.parse(
+        `{"startOnLoad": false}`
+    ),
+    ...{ darkMode: darkTheme, theme: darkTheme ? 'dark' : 'default' },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Modules" href="modules.html" />
+    <link rel="prev" title="Class Averaging Architecture" href="class_source.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ASPIRE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Getting Started - CLI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="class_source.html">Class Averaging Architecture</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Orientation Estimation Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#high-level-workflow">High-Level Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#layout-of-the-class-hierarchy">Layout of the Class Hierarchy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#orient3d">Orient3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#clorient3d">CLOrient3D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#handedness-synchronization">Handedness Synchronization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#class-hierarchy-overview">Class Hierarchy Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#algorithms-for-asymmetric-molecules">Algorithms for Asymmetric Molecules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#algorithms-for-symmetric-molecules">Algorithms for Symmetric Molecules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#extensibility">Extensibility</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Authors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Galleries:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="auto_tutorials/index.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="auto_experiments/index.html">Experiments</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ASPIRE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Orientation Estimation Architecture</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/orientation_estimation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="orientation-estimation-architecture">
+<h1>Orientation Estimation Architecture<a class="headerlink" href="#orientation-estimation-architecture" title="Link to this heading">¶</a></h1>
+<p>ASPIRE contains a collection of common-line algorithms for orientation estimation that
+are tailored to datasets with various characteristics, such as particle symmetry or
+viewing direction distribution. The solvers share infrastructure for polar Fourier
+preparation, rotation and shift estimation, and GPU-aware common-line computation,
+which makes it easy to swap algorithms within a pipeline or add new ones when novel data
+characteristics demand it.</p>
+<section id="high-level-workflow">
+<h2>High-Level Workflow<a class="headerlink" href="#high-level-workflow" title="Link to this heading">¶</a></h2>
+<p>The reference-free workflow below illustrates how orientation solvers integrate with
+denoising and reconstruction utilities.</p>
+<ol class="arabic">
+<li><p>Starting from an <code class="docutils literal notranslate"><span class="pre">ImageSource</span></code> (often the output of the class averaging stack
+described in <a class="reference internal" href="class_source.html"><span class="doc">Class Averaging Architecture</span></a>), instantiate one of the <code class="docutils literal notranslate"><span class="pre">Orient3D</span></code> subclasses
+with the source plus any tuning parameters (angular resolution, shift search ranges,
+histogram settings).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Instantiate orientation estimation object</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.abinitio</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLSync3N</span>
+<span class="n">orient_est</span> <span class="o">=</span> <span class="n">CLSync3N</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">n_theta</span><span class="o">=</span><span class="mi">180</span><span class="p">,</span> <span class="n">shift_step</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>Rotations and shifts can be estimated directly from the orientation solver by
+calling the methods <code class="docutils literal notranslate"><span class="pre">estimate_rotations()</span></code> and <code class="docutils literal notranslate"><span class="pre">estimate_shifts()</span></code> or by
+requesting them as attributes of the class (see below), which will initiate
+estimation if they do not already exist.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">est_rots</span> <span class="o">=</span> <span class="n">orient_est</span><span class="o">.</span><span class="n">rotations</span>
+<span class="n">est_shifts</span> <span class="o">=</span> <span class="n">orient_est</span><span class="o">.</span><span class="n">shifts</span>
+</pre></div>
+</div>
+</li>
+<li><p>Or, in the context of a full reconstruction pipeline, the image source and orientation
+estimation objects can be used to instantiate an <code class="docutils literal notranslate"><span class="pre">OrientedSource</span></code> to be consumed
+as input to a downstream volume reconstruction method. In this case, rotations and
+shifts will be estimated in a lazy fashion when requested by the reconstruction method.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create an &#39;OrientedSource&#39; to pass to a mean volume estimator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.reconstruction</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeanEstimator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">aspire.source</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrientedSource</span>
+
+<span class="n">oriented_src</span> <span class="o">=</span> <span class="n">OrientedSource</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">orient_est</span><span class="p">)</span>
+<span class="n">estimator</span> <span class="o">=</span> <span class="n">MeanEstimator</span><span class="p">(</span><span class="n">oriented_src</span><span class="p">)</span>
+
+<span class="c1"># Estimate volume</span>
+<span class="n">est_vol</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">estimate</span><span class="p">()</span>
+
+<span class="c1"># Estimated rotations/shifts can be accessed via the &#39;OrientedSource&#39;</span>
+<span class="n">est_rots</span> <span class="o">=</span> <span class="n">orient_src</span><span class="o">.</span><span class="n">rotations</span>
+<span class="n">est_shifts</span> <span class="o">=</span> <span class="n">orient_src</span><span class="o">.</span><span class="n">shifts</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="layout-of-the-class-hierarchy">
+<h2>Layout of the Class Hierarchy<a class="headerlink" href="#layout-of-the-class-hierarchy" title="Link to this heading">¶</a></h2>
+<p>All common-line estimators live under <a class="reference internal" href="aspire.abinitio.html#module-aspire.abinitio" title="aspire.abinitio"><code class="xref py py-mod docutils literal notranslate"><span class="pre">aspire.abinitio</span></code></a> and share the base class
+<code class="docutils literal notranslate"><span class="pre">Orient3D</span></code>. Algorithms that rely on a pairwise common-line matrix inherit from the
+intermediary base class <code class="docutils literal notranslate"><span class="pre">CLOrient3D</span></code>. Together they codify the data preparation
+steps, caching strategy, and the minimal interface each subclass must expose.</p>
+<section id="orient3d">
+<h3>Orient3D<a class="headerlink" href="#orient3d" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">Orient3D</span></code> manages dataset-wide configuration such as polar grid resolution, masking
+strategies, and the shift solving backend. It exposes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">src</span></code>: the <code class="docutils literal notranslate"><span class="pre">ImageSource</span></code> supplying masked projection stacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pf</span></code>: a lazily-evaluated <code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.operators.PolarFT</span></code> representation of the
+masked images produced by <code class="docutils literal notranslate"><span class="pre">_prepare_pf</span></code>. The helper applies the <code class="docutils literal notranslate"><span class="pre">fuzzy_mask</span></code> with
+<code class="docutils literal notranslate"><span class="pre">risetime=2</span></code> before stripping the DC component, ensuring historical parity with the
+MATLAB pipeline.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">estimate_rotations()</span></code>: abstract method overridden by subclasses with the algorithm-
+specific synchronization logic.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">estimate_shifts()</span></code>: provided implementation that solves the sparse 2D shift system
+once global rotations are estimated.</p></li>
+</ul>
+<pre  class="mermaid">
+        classDiagram
+    class Orient3D{
+        src: ImageSource
+        +estimate_rotations()
+        +estimate_shifts()
+        +pf
+        +rotations
+        +shifts
+    }
+    </pre></section>
+<section id="clorient3d">
+<h3>CLOrient3D<a class="headerlink" href="#clorient3d" title="Link to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">CLOrient3D</span></code> augments <code class="docutils literal notranslate"><span class="pre">Orient3D</span></code> with utilities for assembling the
+<code class="docutils literal notranslate"><span class="pre">clmatrix</span></code> (indices of correlated polar rays between image pairs) and any auxiliary
+scores such as <code class="docutils literal notranslate"><span class="pre">cl_dist</span></code> or <code class="docutils literal notranslate"><span class="pre">shifts_1d</span></code>. Key behaviors include:</p>
+<ul class="simple">
+<li><p>CPU/GPU dispatch within <code class="docutils literal notranslate"><span class="pre">build_clmatrix</span></code>. When GPUs are available and the GPU backend
+enabled (see <span class="xref std std-ref">config_enabling_gpu</span> in <a class="reference internal" href="auto_tutorials/configuration.html"><span class="doc">ASPIRE Configuration</span></a> and
+<a class="reference internal" href="installation.html"><span class="doc">Installation</span></a> for details on enabling GPU) the class invokes CUDA kernels that
+drastically reduce wall time for large datasets.</p></li>
+<li><p>Caching and lazy-evaluation of <code class="docutils literal notranslate"><span class="pre">clmatrix</span></code> and distance matrices to avoid recomputation.</p></li>
+<li><p>Tuning parameters such as <code class="docutils literal notranslate"><span class="pre">max_shift</span></code> and <code class="docutils literal notranslate"><span class="pre">shift_step</span></code> that influence accuracy/runtime
+trade-offs during 1D shift searches.</p></li>
+</ul>
+<pre  class="mermaid">
+        classDiagram
+    class CLOrient3D{
+        src: ImageSource
+        +estimate_rotations()
+        +estimate_shifts()
+        +pf
+        +clmatrix
+        +rotations
+        +shifts
+    }
+    </pre></section>
+<section id="handedness-synchronization">
+<h3>Handedness Synchronization<a class="headerlink" href="#handedness-synchronization" title="Link to this heading">¶</a></h3>
+<p>Many of the common-line algorithms involve solving for a set of relative rotations between
+pairs of image orientations. Due to the inherent handedness ambiguity in the cryo-EM problem,
+each estimated relative rotation might contain a spurious reflection. These spurious reflections
+must be resolved such that all relative rotation estimates either contain a global reflection
+or don’t before downstream reconstruction. The <a class="reference internal" href="aspire.abinitio.html#module-aspire.abinitio.J_sync" title="aspire.abinitio.J_sync"><code class="xref py py-mod docutils literal notranslate"><span class="pre">aspire.abinitio.J_sync</span></code></a> module implements a
+power-method based handedness synchronization to complete this task.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">JSync</span></code> builds a signed graph over triplets of relative rotations and iteratively
+estimates the optimal set of reflections that maximizes consistency of the recovered
+estimates.</p></li>
+<li><p>The solver supports CPU/GPU execution, configurable tolerances (<code class="docutils literal notranslate"><span class="pre">epsilon</span></code>) and
+iteration limits (<code class="docutils literal notranslate"><span class="pre">max_iters</span></code>), and logs residuals so that callers can monitor
+convergence.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Orient3D</span></code> subclasses simply import the <code class="docutils literal notranslate"><span class="pre">JSync</span></code> module to access handedness
+synchronization methods.</p></li>
+</ul>
+</section>
+<section id="class-hierarchy-overview">
+<h3>Class Hierarchy Overview<a class="headerlink" href="#class-hierarchy-overview" title="Link to this heading">¶</a></h3>
+<p>The relationships below show how the concrete solvers inherit shared behaviors (masking, CL matrix
+utilities, synchronization helpers) before layering on algorithm-specific logic.</p>
+<pre  class="mermaid">
+        classDiagram
+    Orient3D &lt;|-- CLOrient3D
+    CLOrient3D &lt;|-- CLSync3N
+    CLOrient3D &lt;|-- CLSyncVoting
+    CLOrient3D &lt;|-- CommonlineSDP
+    CommonlineSDP &lt;|-- CommonlineLUD
+    CommonlineLUD &lt;|-- CommonlineIRLS
+    CLOrient3D &lt;|-- CLSymmetryC2
+    CLOrient3D &lt;|-- CLSymmetryC3C4
+    Orient3D &lt;|-- CLSymmetryCn
+    Orient3D &lt;|-- CLSymmetryD2
+    class JSync
+    CLSync3N o-- JSync
+    CLSymmetryC2 o-- JSync
+    CLSymmetryC3C4 o-- JSync
+    CLSymmetryCn o-- JSync
+    </pre></section>
+</section>
+<section id="algorithms-for-asymmetric-molecules">
+<h2>Algorithms for Asymmetric Molecules<a class="headerlink" href="#algorithms-for-asymmetric-molecules" title="Link to this heading">¶</a></h2>
+<p>ASPIRE offers several orientation estimation algorithms for handling asymmetric molecules:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CLSync3N</span></code> (<code class="file docutils literal notranslate"><span class="pre">src/aspire/abinitio/commonline_sync3n.py</span></code>): <code class="docutils literal notranslate"><span class="pre">CLSync3N</span></code> detects
+common-lines between pairs of images and reduces misidentifications using a vote which
+incorporates information from all possible third images. This voting stage produces a
+set of pairwise rotations which are subsequently synchronized for handedness via <code class="docutils literal notranslate"><span class="pre">Jsync</span></code>.
+These pairwise rotations are then used to form a 3Nx3N synchronization matrix
+which is optionally weighted to favor more statistically indicative pairwise rotations.
+An eigen-decomposition is then performed to simultaneously recover all image orientations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CLSyncVoting</span></code> (<code class="file docutils literal notranslate"><span class="pre">src/aspire/abinitio/commonline_sync.py</span></code>): In <code class="docutils literal notranslate"><span class="pre">CLSyncVoting</span></code>,
+the voting scheme directly populates a 2N×2N synchronization matrix of XY rotation blocks
+which is insensitive to the cryo-EM handedness ambiguity. For that reason a separate handedness
+synchronization step is not needed. An eigen-decomposition is then performed to recover the image
+orientations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CommonlineSDP</span></code> (<code class="file docutils literal notranslate"><span class="pre">src/aspire/abinitio/commonline_sdp.py</span></code>): Uses semidefinite
+programming to relax the constraints of the least squares formulation of the orientation problem.
+<code class="docutils literal notranslate"><span class="pre">cvxpy</span></code> is used to solve the SDP and the rotations are recovered through deterministic rounding
+and <code class="docutils literal notranslate"><span class="pre">nearest_rotations</span></code> projection.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CommonlineLUD</span></code> (<code class="file docutils literal notranslate"><span class="pre">src/aspire/abinitio/commonline_lud.py</span></code>): Reuses the SDP
+scaffolding but substitutes an ADMM-based least unsquared deviations solver. Parameters
+like <code class="docutils literal notranslate"><span class="pre">alpha</span></code>, <code class="docutils literal notranslate"><span class="pre">mu</span></code> scheduling, and adaptive rank selection govern convergence.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CommonlineIRLS</span></code> (<code class="file docutils literal notranslate"><span class="pre">src/aspire/abinitio/commonline_irls.py</span></code>): Wraps LUD inside
+an outer reweighting loop, updating residual weights and penalty variables to improve
+robustness to outliers.</p></li>
+</ul>
+</section>
+<section id="algorithms-for-symmetric-molecules">
+<h2>Algorithms for Symmetric Molecules<a class="headerlink" href="#algorithms-for-symmetric-molecules" title="Link to this heading">¶</a></h2>
+<p>Symmetry-aware variants search for multiple common lines per image pair and embed symmetry
+group constraints while estimating rotations:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CLSymmetryC2</span></code> (<code class="file docutils literal notranslate"><span class="pre">src/aspire/abinitio/commonline_c2.py</span></code>): Estimates orientations
+for molecules with 2-fold cyclic symmetry by searching for two common-lines per image
+pair, construction a set of pairwise rotations, performing local and global handedness
+synchronization, and finally recovering the orientations from the synchronized relative
+rotations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CLSymmetryC3C4</span></code> (<code class="file docutils literal notranslate"><span class="pre">src/aspire/abinitio/commonline_c3_c4.py</span></code>): Targets order-3 and
+order-4 cyclic molecules by detecting self-common-lines, forming relative third-row outer
+products, running a local/global <code class="docutils literal notranslate"><span class="pre">JSync</span></code> pass, then extracts two rows of each rotation
+matrix from the outer products and finally estimates in-plane rotations to recover full rotations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CLSymmetryCn</span></code> (<code class="file docutils literal notranslate"><span class="pre">src/aspire/abinitio/commonline_cn.py</span></code>): Handles higher-order cyclic
+symmetry (n &gt; 4) by generating a discretized set of candidate rotations on the sphere, evaluating
+likelihoods of induced common/self-common lines, pruning equatorial degeneracies, and synchronizing
+the surviving outer-product blocks before estimating in-plane angles.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CLSymmetryD2</span></code> (<code class="file docutils literal notranslate"><span class="pre">src/aspire/abinitio/commonline_d2.py</span></code>): Deals with dihedral symmetry
+via a Saff–Kuijlaars sphere grid, equator/top-view filtering, exhaustive lookup tables for
+relative rotations, and a color/sign synchronization stage that enforces the <code class="docutils literal notranslate"><span class="pre">DnSymmetryGroup</span></code>
+constraints prior to assigning final rotations.</p></li>
+</ul>
+<p>These classes reuse the <code class="docutils literal notranslate"><span class="pre">estimate_shifts</span></code> implementation once symmetry-consistent rotations are available.</p>
+</section>
+<section id="extensibility">
+<h2>Extensibility<a class="headerlink" href="#extensibility" title="Link to this heading">¶</a></h2>
+<p>Adding a new orientation estimator typically involves:</p>
+<ol class="arabic simple">
+<li><p>Subclassing <code class="docutils literal notranslate"><span class="pre">Orient3D</span></code> (or <code class="docutils literal notranslate"><span class="pre">CLOrient3D</span></code> if you need common-line matrices).</p></li>
+<li><p>Implementing <code class="docutils literal notranslate"><span class="pre">estimate_rotations(self,</span> <span class="pre">**kwargs)</span></code>. This method must return an
+<code class="docutils literal notranslate"><span class="pre">(n,</span> <span class="pre">3,</span> <span class="pre">3)</span></code> array of rotations to be consumed by <code class="docutils literal notranslate"><span class="pre">estimate_shifts</span></code> and downstream
+reconstruction methods.</p></li>
+<li><p>(Optional) Overriding helpers like <code class="docutils literal notranslate"><span class="pre">build_clmatrix</span></code> when custom data structures or
+GPU kernels are required.</p></li>
+</ol>
+<p>After these steps the subclass plugs directly into the workflow shown earlier and can be
+used inside <code class="xref py py-class docutils literal notranslate"><span class="pre">aspire.source.OrientedSource</span></code>. A simplified template is shown below:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">aspire.abinitio</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLOrient3D</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CLFancySync</span><span class="p">(</span><span class="n">CLOrient3D</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Example orientation estimator built on the common-lines matrix workflow.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate_rotations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Custom synchronization using clmatrix statistics</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fancy_sync</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">recover_rots</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">rotations</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">fancy_sync</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Placeholder illustrating where algorithm-specific logic would go.</span>
+        <span class="c1"># Access self.clmatrix for computations and assign result to class attribute.</span>
+        <span class="o">...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sync_mat</span> <span class="o">=</span> <span class="n">fancy_sync_computations</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clmatrix</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">recover_rots</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Placeholder for additional algorithmic-specific logic</span>
+        <span class="o">...</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rotations</span> <span class="o">=</span> <span class="n">rot_recov_computions</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sync_mat</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With this skeleton in place, the new class inherits masking, caching, shift estimation,
+GPU dispatch hooks, and reference-free pipeline compatibility from the base classes.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="class_source.html" class="btn btn-neutral float-left" title="Class Averaging Architecture" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modules.html" class="btn btn-neutral float-right" title="Modules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019, Princeton University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,80 @@
+"""
+Simulated Stack to RELION Reconstruction
+========================================
+
+This experiment shows how to:
+
+1. build a synthetic dataset with ASPIRE,
+2. write the stack via ``ImageSource.save`` so RELION can consume it, and
+3. call :code:`relion_reconstruct` on the saved STAR file.
+"""
+
+# %%
+# Imports
+# -------
+
+import logging
+from pathlib import Path
+
+import numpy as np
+
+from aspire.downloader import emdb_2660
+from aspire.noise import WhiteNoiseAdder
+from aspire.operators import RadialCTFFilter
+from aspire.source import Simulation
+
+logger = logging.getLogger(__name__)
+
+
+# %%
+# Configuration
+# -------------
+# We set a few parameters to initialize the Simulation.
+# You can safely alter ``n_particles`` (or change the defocus values, etc.) when
+# trying this interactively; the defaults here are chosen for demonstrative purposes.
+
+output_dir = Path("relion_save_demo")
+output_dir.mkdir(exist_ok=True)
+
+n_particles = 512
+snr = 0.5
+defocus = np.linspace(
+    15000, 25000, 7
+)  # defocus values for the radial CTF filters (angstroms)
+star_file = f"sim_n{n_particles}.star"
+star_path = output_dir / star_file
+
+# %%
+# Volume and Filters
+# ------------------
+# Start from the EMDB-2660 ribosome map and build a small set of radial CTF filters
+# that RELION will recover as optics groups.
+
+vol = emdb_2660()
+ctf_filters = [RadialCTFFilter(defocus=d) for d in defocus]
+
+
+# %%
+# Simulate, Add Noise, Save
+# -------------------------
+# Initialize the Simulation:
+# mix the CTFs across the stack, add white noise at a target SNR,
+# and write the particles and metadata to a RELION-compatible STAR/MRC stack.
+
+sim = Simulation(
+    n=n_particles,
+    vols=vol,
+    unique_filters=ctf_filters,
+    noise_adder=WhiteNoiseAdder.from_snr(snr),
+)
+sim.save(star_path, overwrite=True)
+
+
+# %%
+# Running ``relion_reconstruct``
+# ------------------------------
+# ``relion_reconstruct`` is an external RELION command, so we just show the call.
+# Run this, from the output directory, in a RELION-enabled shell after generating
+# the STAR file above.
+
+logger.info(f"relion_reconstruct --i {star_file} " f"--o 'relion_recon.mrc' --ctf")

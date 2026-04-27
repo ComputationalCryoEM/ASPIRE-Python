@@ -1,0 +1,45 @@
+aspire.image package
+====================
+
+Submodules
+----------
+
+aspire.image.image module
+-------------------------
+
+.. automodule:: aspire.image.image
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.image.image\_stacker module
+----------------------------------
+
+.. automodule:: aspire.image.image_stacker
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.image.rotation module
+----------------------------
+
+.. automodule:: aspire.image.rotation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.image.xform module
+-------------------------
+
+.. automodule:: aspire.image.xform
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.image
+   :members:
+   :undoc-members:
+   :show-inheritance:

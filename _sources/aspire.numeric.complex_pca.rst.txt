@@ -1,0 +1,29 @@
+aspire.numeric.complex\_pca package
+===================================
+
+Submodules
+----------
+
+aspire.numeric.complex\_pca.complex\_pca module
+-----------------------------------------------
+
+.. automodule:: aspire.numeric.complex_pca.complex_pca
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+aspire.numeric.complex\_pca.validation module
+---------------------------------------------
+
+.. automodule:: aspire.numeric.complex_pca.validation
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: aspire.numeric.complex_pca
+   :members:
+   :undoc-members:
+   :show-inheritance:
