@@ -8,7 +8,6 @@ import pytest
 from click.testing import CliRunner
 
 from aspire.abinitio import (
-    Orient3D,
     CLSymmetryC2,
     CLSymmetryC3C4,
     CLSymmetryCn,
@@ -18,6 +17,7 @@ from aspire.abinitio import (
     CommonlineIRLS,
     CommonlineLUD,
     CommonlineSDP,
+    Orient3D,
 )
 from aspire.commands.orient3d import orient3d
 from aspire.downloader import emdb_2660
