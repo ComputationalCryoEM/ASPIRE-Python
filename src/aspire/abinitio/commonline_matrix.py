@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-from aspire.abinitio import CLOrient3D
+from aspire.abinitio import Orient3D
 from aspire.utils import complex_type, tqdm
 from aspire.utils.random import choice
 
@@ -12,7 +12,7 @@ from .commonline_utils import _generate_shift_phase_and_filter
 logger = logging.getLogger(__name__)
 
 
-class CLMatrixOrient3D(CLOrient3D):
+class CLMatrixOrient3D(Orient3D):
     """
     An intermediate base class to serve commonline algorithms that use
     a commonline matrix.
