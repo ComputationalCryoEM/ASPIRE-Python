@@ -3,7 +3,7 @@ import logging
 import numpy as np
 from numpy.linalg import norm
 
-from aspire.abinitio import Orient3D, JSync
+from aspire.abinitio import JSync, Orient3D
 from aspire.operators import PolarFT
 from aspire.utils import (
     J_conjugate,

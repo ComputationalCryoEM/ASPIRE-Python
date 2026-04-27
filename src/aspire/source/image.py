@@ -9,7 +9,7 @@ from collections.abc import Iterable
 import mrcfile
 import numpy as np
 
-from aspire.abinitio import Orient3D, CLSync3N
+from aspire.abinitio import CLSync3N, Orient3D
 from aspire.image import Image, normalize_bg
 from aspire.image.xform import (
     CropPad,
