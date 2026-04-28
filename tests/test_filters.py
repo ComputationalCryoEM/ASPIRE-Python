@@ -5,6 +5,7 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
+from aspire.image import Image
 from aspire.operators import (
     ArrayFilter,
     CTFFilter,
@@ -16,7 +17,7 @@ from aspire.operators import (
     ScaledFilter,
     ZeroFilter,
 )
-from aspire.utils import utest_tolerance
+from aspire.utils import gaussian_2d, grid_2d, utest_tolerance
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -245,3 +246,40 @@ def test_ctf_reference():
 
     # Test match all significant digits above
     np.testing.assert_allclose(h, ref_h, atol=5e-5)
+
+
+def test_rectangular_ctf():
+    """
+    Compare a truncated rectangular CTF application with the
+    application of CTF to a full square image.
+    """
+    # Configure square and truncated rectangle size
+    L = 128
+    rows, cols = 96, L
+    assert rows <= L and cols <= L and min(rows, cols) < L
+
+    # Create a test image of a disk
+    # A = gaussian_2d(size=L, mu=(0,-L//10), sigma=L//8, dtype=np.float64)
+    A = gaussian_2d(size=L, mu=(0, -L // 10), sigma=L // 32, dtype=np.float64)
+
+    full_img = Image(A, pixel_size=2)
+    truncated_img = Image(A[:rows, :cols], pixel_size=2)
+
+    # Create a CTFFilter
+    ctf_filter = CTFFilter()
+
+    # Apply to both Image instances
+    full_img_with_ctf = full_img.filter(ctf_filter)
+    truncated_img_with_ctf = truncated_img.filter(ctf_filter)
+
+    # Truncate the full square result
+    full_img_with_ctf_truncated = full_img_with_ctf.asnumpy()[:, :rows, :cols]
+
+    # Create mask for circular convolution effects
+    mask = (grid_2d(L, normalized=True)["r"] < 0.5)[:rows, :cols]
+
+    # Compare, we should be the same up to masked off differences in
+    #   circular convolution wrap around.
+    np.testing.assert_allclose(
+        truncated_img_with_ctf * mask, full_img_with_ctf_truncated * mask, atol=1e-6
+    )

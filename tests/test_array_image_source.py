@@ -81,7 +81,7 @@ class ImageTestCase(TestCase):
 
         # Test we raise with expected message from getter.
         with raises(RuntimeError, match=r"Creating Image object from Numpy.*"):
-            _ = ArrayImageSource(np.empty((3, 2, 1)))
+            _ = ArrayImageSource(np.empty((1)))
 
     def testArrayImageSourceAngGetterError(self):
         """
