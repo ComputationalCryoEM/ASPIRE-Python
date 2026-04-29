@@ -522,7 +522,7 @@ class BatchedRotCov2D(RotCov2D):
         scaling up to a larger value such as 8192 may yield better performance.
     """
 
-    def __init__(self, src, basis=None, expand_method=None, batch_size=512):
+    def __init__(self, src, basis=None, expand_method=None, force_diag=False, batch_size=512):
         self.src = src
         self.basis = basis
         self.batch_size = batch_size
@@ -534,6 +534,7 @@ class BatchedRotCov2D(RotCov2D):
         self.A_covar = None
         self.M_covar = None
         self.expand_method = expand_method
+        self.force_diag = force_diag
 
         self._build()
 
@@ -604,7 +605,7 @@ class BatchedRotCov2D(RotCov2D):
         )
 
         logger.info("Computing basis radial expansion")
-        return self.basis.expand_radial_vec(_filter_vals)
+        return self.basis.expand_radial_vec(_filter_vals, force_diag=self.force_diag)
 
     def _calc_rhs(self):
         src = self.src
