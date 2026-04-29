@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 # and assigning correct path.
 input_dir = "11618/data/particles/"
 starfile_in = f"{input_dir}/J43_particles.star"
-data_folder = f"{input_dir}"
+data_folder = "."
 
 # Config
 n_imgs = None  # Set to None for all images in starfile; set smaller for tests
