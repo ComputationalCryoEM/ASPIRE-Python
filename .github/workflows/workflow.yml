@@ -159,6 +159,13 @@ jobs:
         os: [ubuntu-latest, ubuntu-22.04, macOS-latest, macOS-14]
         backend: [default, openblas]
         python-version: ['3.10']
+        # Skip testing x86_64 openblas on M1 arch
+        # Users should be targetting arm64 installs on M1
+        exclude:
+          - os: macOS-latest
+            backend: openblas
+          - os: macOS-14
+            backend: openblas
         include:
           - os: ubuntu-latest
             backend: intel
