@@ -5,7 +5,7 @@ import numpy as np
 from scipy.io import loadmat
 from scipy.special import factorial
 
-from aspire.abinitio import CLOrient3D
+from aspire.abinitio import Orient3D
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
 from aspire.operators import PolarFT, wemd_embed
@@ -15,7 +15,7 @@ from aspire.volume import SymmetryGroup
 logger = logging.getLogger(__name__)
 
 
-class CommonlineNUG(CLOrient3D):
+class CommonlineNUG(Orient3D):
     """
     Class to estimate 3D orientations using non-uqique games.
     """
@@ -980,28 +980,33 @@ class CommonlineNUG(CLOrient3D):
         Nstep_yI,
         verbose=True,
     ):
-
         def Ak(J, Euler):
             # compute Ak matrix
             order = Euler.shape[0]
-            # A = np.zeros((2 * J + 1, 2 * J + 1), dtype=np.complex128)
-            # for i in range(order):
-            #     A += self.WD(J, Euler[i])
             A = self.WD(J, Euler).sum(axis=0)
             return np.round(A / order, 10)
 
-        rank_Ak = xp.zeros(self.Lmax)
+        def rel_change(A, B, eps=1e-12):
+            num = 0.0
+            den = 0.0
+            for k in range(len(A)):
+                num += np.linalg.norm(A[k] - B[k]) ** 2
+                den += np.linalg.norm(B[k]) ** 2
+            return np.sqrt(num) / max(np.sqrt(den), eps)
+
+        rank_Ak = np.zeros(self.Lmax)
+        C_base = [None] * self.Lmax
         for k in range(self.Lmax):
-            C[k] = xp.asnumpy(C[k])
+            C_base[k] = xp.asnumpy(C[k]).copy()
             rank_Ak[k] = np.linalg.matrix_rank(
                 Ak(k + 1, self.sym_euler), tol=1e-6, hermitian=True
             )
 
-        def low_rank_proj(X, r):
+        def low_rank_proj(X, r_step):
             Xproj = []
             for k in range(self.Lmax):
                 dk = 2 * k + 3
-                rk = int(rank_Ak[k] * 2) + r
+                rk = min(int(rank_Ak[k] * 2) + r_step, dk)
                 tmp = np.copy(X[k])
                 for i in range(N):
                     u, s, v = np.linalg.svd(
@@ -1015,11 +1020,18 @@ class CommonlineNUG(CLOrient3D):
 
         Niter = len(r)
         CC = [None] * self.Lmax
-        for iter in range(Niter):
-            X_prox = low_rank_proj(X_admm, r[iter])
+        current = [np.copy(Xk) for Xk in X_admm]
+
+        for step in range(Niter):
+            X_proj = low_rank_proj(current, r[step])
+
             for k in range(self.Lmax):
-                CC[k] = C[k] - Penalty[iter] * weight[k] * (X_prox[k] + X_prox[k].T) / 2
-            X_prox = self.admm_sym_J(
+                CC[k] = (
+                    C_base[k]
+                    - Penalty[step] * weight[k] * (X_proj[k] + X_proj[k].T) / 2
+                )
+
+            X_next = self.admm_sym_J(
                 CC,
                 self.Lmax,
                 N,
@@ -1030,9 +1042,20 @@ class CommonlineNUG(CLOrient3D):
                 factor,
                 mult,
                 Nstep_yI,
-                verbose,
+                verbose=False,
             )
-        return X_prox
+
+            if verbose:
+                logger.info(
+                    "Proximal refine step %d/%d: relative update %.3e",
+                    step + 1,
+                    Niter,
+                    rel_change(X_next, current),
+                )
+
+            current = [np.copy(Xk) for Xk in X_next]
+
+        return current
 
     #########################
     # Euler Estimation Step #
