@@ -10,7 +10,7 @@ from aspire.nufft import nufft
 from aspire.numeric import fft, xp
 from aspire.operators import PolarFT, wemd_embed
 from aspire.utils import Rotation, cart2sph
-from aspire.volume import SymmetryGroup
+from aspire.volume import CnSymmetryGroup, DnSymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +120,11 @@ class CommonlineNUG(Orient3D):
                 self.Nstep_yI,
             )
 
-        R_est, Euler_est = self.euler_est(X_est[0], X_est[self.n_sym - 1])
+        if isinstance(self.sym_grp, CnSymmetryGroup):
+            R_est, Euler_est = self.euler_est(X_est[0], X_est[self.n_sym - 1])
+        elif isinstance(self.sym_grp, DnSymmetryGroup):
+            R_est, Euler_est = self.euler_est_Dm(X_est)
+
         self.rotations = R_est
 
         return R_est
@@ -1168,6 +1172,149 @@ class CommonlineNUG(Orient3D):
         Euler_est[:, 1] = find_beta(X1)
         Euler_est[:, 2] = find_gamma(XS, Euler_est[:, 1], Euler_est[:, 0])
         R_est = Rotation.from_euler(Euler_est).matrices.transpose(0, 2, 1)
+        return R_est, Euler_est
+
+    def euler_est_Dm(self, X_est):
+
+        X2 = X_est[1]
+        S = self.sym_grp.order
+        N = self.n_img
+        XS = X_est[S - 1]
+        dk = 2 * S + 1
+
+        def find_alpha_beta(X2):
+            def find_phase(A, B):
+                # find a number c that minimizes ||cA-B||_F
+                Ar = np.real(A)
+                Ai = np.imag(A)
+                Br = np.real(B)
+                Bi = np.imag(B)
+                c = (np.vdot(Ar, Br) + np.vdot(Ai, Bi)) / (
+                    np.vdot(Ar, Ar) + np.vdot(Ai, Ai)
+                ) + 1j * (np.vdot(Ar, Bi) - np.vdot(Ai, Br)) / (
+                    np.vdot(Ar, Ar) + np.vdot(Ai, Ai)
+                )
+                return c / abs(c)
+
+            T, Tinv = self.complex2real(2)
+            X2 = np.kron(np.eye(N), T) @ X2 @ np.kron(np.eye(N), Tinv)
+
+            B1 = np.zeros((N, N))
+            for i in range(N):
+                for j in range(N):
+                    Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
+                    B1[i, j] = np.real((Xij[2, 2] - 2 * abs(Xij[0, 0]) + 0.5) / 3 * 2)
+            e1, v1 = np.linalg.eigh(B1)
+            idx = np.argmax(e1)
+            b1 = v1[:, idx] * np.sqrt(e1[idx]) * np.sign(v1[0, idx])
+            beta_est = np.arccos(np.clip(np.sqrt(b1), -1, 1)) % np.pi
+
+            Aminus = np.zeros((N, N), dtype=complex)
+            Aplus = np.zeros((N, N), dtype=complex)
+            for i in range(N):
+                for j in range(N):
+                    Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
+                    if abs(beta_est[i]) < 1e-6:
+                        beta_est[i] = 1e-6
+                    if abs(beta_est[j]) < 1e-6:
+                        beta_est[j] = 1e-6
+                    Aminus[i, j] = (
+                        Xij[1, 1]
+                        / np.sin(2 * beta_est[i])
+                        / np.sin(2 * beta_est[j])
+                        * 8
+                        / 3
+                    )
+                    Aplus[i, j] = (
+                        -Xij[1, 3]
+                        / np.sin(2 * beta_est[i])
+                        / np.sin(2 * beta_est[j])
+                        * 8
+                        / 3
+                    )
+
+            evals, evecs = np.linalg.eigh(Aminus)
+            idx = np.argmax(abs(evals))
+            Z = evecs[:, idx] * np.sqrt(abs(evals[idx]))
+            c = find_phase(Z[:, None] @ Z[:, None].T, Aplus)
+            Z = np.sqrt(c) * Z
+            alpha_est = (np.angle(Z)) % (2 * np.pi)
+
+            return alpha_est, beta_est
+
+        def find_gamma(Xm, alpha, beta):
+            def LS_D(W1, W2, W3, W4, Br, Bi):
+                A = np.array(
+                    [
+                        [np.vdot(W1 + W4, W1 + W4), np.vdot(W1 + W4, W2 + W3)],
+                        [np.vdot(W2 + W3, W1 + W4), np.vdot(W2 + W3, W2 + W3)],
+                    ]
+                )
+                B = np.array([np.vdot(W1 + W4, Br), np.vdot(W2 + W3, Br)])
+                a, c = np.linalg.lstsq(A, B)[0]
+
+                A = np.array(
+                    [
+                        [np.vdot(W1 - W4, W1 - W4), np.vdot(W1 - W4, W3 - W2)],
+                        [np.vdot(W1 - W4, W3 - W2), np.vdot(W3 - W2, W3 - W2)],
+                    ]
+                )
+                B = np.array([np.vdot(W1 - W4, Bi), np.vdot(W3 - W2, Bi)])
+                b, d = np.linalg.lstsq(A, B)[0]
+                return a + 1j * b
+
+            [T, Tinv] = self.complex2real(S)
+            Xm = np.kron(np.eye(N), T) @ Xm @ np.kron(np.eye(N), Tinv)
+            C = np.zeros((N, N), dtype=complex)
+            Jk = np.ones(dk)
+            Jk[S + 1 :: 2] = -1
+            Jk[S - 1 :: -2] = -1
+            Jk = np.diag(Jk)
+            ws = self.Wd(S, beta)
+            for i in range(N):
+                wi = ws[i]
+                for j in range(i + 1, N):
+                    Di = np.exp(-1j * np.arange(-S, S + 1) * alpha[i])
+                    Dj = np.exp(-1j * np.arange(-S, S + 1) * alpha[j])
+                    Xijm = Xm[dk * i : dk * (i + 1), dk * j : dk * (j + 1)]
+                    DXijmD = np.diag(Di.conj()) @ Xijm @ np.diag(Dj)
+                    wj = ws[j]
+                    W1 = (
+                        wi[:, 0][:, np.newaxis] @ wj[:, 0][:, np.newaxis].T
+                        + Jk @ wi[:, 0][:, np.newaxis] @ wj[:, 0][:, np.newaxis].T @ Jk
+                    )
+                    W2 = (
+                        wi[:, -1][:, np.newaxis] @ wj[:, 0][:, np.newaxis].T
+                        + Jk @ wi[:, -1][:, np.newaxis] @ wj[:, 0][:, np.newaxis].T @ Jk
+                    )
+                    W3 = (
+                        wi[:, 0][:, np.newaxis] @ wj[:, -1][:, np.newaxis].T
+                        + Jk @ wi[:, 0][:, np.newaxis] @ wj[:, -1][:, np.newaxis].T @ Jk
+                    )
+                    W4 = (
+                        wi[:, -1][:, np.newaxis] @ wj[:, -1][:, np.newaxis].T
+                        + Jk
+                        @ wi[:, -1][:, np.newaxis]
+                        @ wj[:, -1][:, np.newaxis].T
+                        @ Jk
+                    )
+                    Br = np.real(4 * DXijmD)
+                    Bi = np.imag(4 * DXijmD)
+                    C[i, j] = LS_D(W1, W2, W3, W4, Br, Bi)
+            C += C.T.conj() + np.eye(N)
+            evals, evecs = np.linalg.eigh(C)
+            idx = np.argmax(evals)
+            c = evecs[:, idx] * np.sqrt(evals[idx])
+            return (np.angle(c) / S) % (2 * np.pi)
+
+        alpha_est, beta_est = find_alpha_beta(X2)
+        gamma_est = find_gamma(XS, alpha_est, beta_est)
+        Euler_est = np.zeros((N, 3))
+        Euler_est[:, 0] = alpha_est
+        Euler_est[:, 1] = beta_est
+        Euler_est[:, 2] = gamma_est
+        R_est = Rotation.from_euler(Euler_est).matrices.transpose(0, 2, 1)
+
         return R_est, Euler_est
 
     ####################
