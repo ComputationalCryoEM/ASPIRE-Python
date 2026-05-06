@@ -183,7 +183,8 @@ def test_bulk_expand_radial_vec():
     # from cov code
     params = np.empty((len(filters), 7), dtype=dtype)
     for i, f in enumerate(filters):
-        params[i] = f._ctf_params()
+        # TODO xxx fix param dump, same as sim/source
+        params[i] = np.array(f._ctf_params()).flatten()
 
     _filter_vals = RadialCTFFilter.ctf_formula(
         basis._filter_pts, pixel_size, *(params.T)

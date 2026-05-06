@@ -114,7 +114,8 @@ class Filter:
         """
         return ScaledFilter(self, c)
 
-    @lru_cache(maxsize=config["cache"]["filter_cache_size"].get())  # noqa: B019
+    # this cache no longer appears to work? now unhashable? (fine but why not before?)
+    # @lru_cache(maxsize=config["cache"]["filter_cache_size"].get())  # noqa: B019
     def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
         """
         Generates a two dimensional grid with prescribed dtype,
@@ -441,14 +442,62 @@ class CTFFilter(Filter):
         :param B:           Envelope decay in inverse square angstrom (default 0)
         """
         super().__init__(dim=2, radial=defocus_u == defocus_v)
-        self.voltage = voltage
-        self.wavelength = voltage_to_wavelength(self.voltage)
-        self.defocus_u = defocus_u
-        self.defocus_v = defocus_v
-        self.defocus_ang = defocus_ang
-        self.Cs = Cs
-        self.alpha = alpha
-        self.B = B
+        voltage = np.atleast_1d(voltage)  # maybe allow singleton here for V
+        defocus_u = np.atleast_1d(defocus_u)
+        defocus_v = np.atleast_1d(defocus_v)
+        defocus_ang = np.atleast_1d(defocus_ang)
+        Cs = np.atleast_1d(Cs)
+        alpha = np.atleast_1d(alpha)
+        B = np.atleast_1d(B)
+
+        # TODO check all sizes match
+        self.n = max(
+            len(voltage),
+            len(defocus_u),
+            len(defocus_v),
+            len(defocus_ang),
+            len(Cs),
+            len(alpha),
+            len(B),
+        )
+
+        self.voltage = self._to_full(voltage)
+        self.defocus_u = self._to_full(defocus_u)
+        self.defocus_v = self._to_full(defocus_v)
+        self.defocus_ang = self._to_full(defocus_ang)
+        self.Cs = self._to_full(Cs)
+        self.alpha = self._to_full(alpha)
+        self.B = self._to_full(B)
+
+        # derived value
+        # todo, check/fix broadcast in voltage_to_wavelength
+        self.wavelength = np.array([voltage_to_wavelength(v) for v in self.voltage])
+
+    def _to_full(self, vals):
+        if len(vals) == self.n:
+            return vals
+        elif len(vals) == 1:
+            return np.full(self.n, fill_value=vals[0])
+        else:
+            raise RuntimeError("dont do that")
+
+    def __getitem__(self, items):
+        return CTFFilter(
+            self.voltage[items],
+            # self.wavelength[items],
+            self.defocus_u[items],
+            self.defocus_v[items],
+            self.defocus_ang[items],
+            self.Cs[items],
+            self.alpha[items],
+            self.B[items],
+        )
+
+    def __len__(self):
+        """
+        Return stack length
+        """
+        return self.n
 
     def _ctf_params(self):
         return (
@@ -462,6 +511,10 @@ class CTFFilter(Filter):
         )
 
     def _evaluate(self, omega, **kwargs):
+        indices = kwargs.get("indices", None)
+        if indices is None:
+            indices = np.arange(self.n)
+
         # Ensure we have a pixel size,
         pixel_size = kwargs.get("pixel_size", None)
         if pixel_size is None:
@@ -474,13 +527,13 @@ class CTFFilter(Filter):
         return self.ctf_formula(
             omega,
             pixel_size,
-            self.voltage,
-            self.defocus_u,
-            self.defocus_v,
-            self.defocus_ang,
-            self.Cs,
-            self.alpha,
-            self.B,
+            self.voltage[indices],
+            self.defocus_u[indices],
+            self.defocus_v[indices],
+            self.defocus_ang[indices],
+            self.Cs[indices],
+            self.alpha[indices],
+            self.B[indices],
         )
 
     @staticmethod
@@ -566,6 +619,11 @@ class CTFFilter(Filter):
             alpha=self.alpha,
             B=self.B,
         )
+
+    def __eq__(self, other):
+        if len(self) != len(other):
+            return False
+        return self._ctf_params() == other._ctf_params()
 
 
 class RadialCTFFilter(CTFFilter):

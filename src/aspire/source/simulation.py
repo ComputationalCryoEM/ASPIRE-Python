@@ -233,9 +233,10 @@ class Simulation(ImageSource):
         # and for each image (indexed by filter_indices)
         filter_values = np.zeros((len(filter_indices), len(CTFFilter_attributes)))
         for i, filt in enumerate(self.unique_filters):
-            filter_values[filter_indices == i] = [
-                getattr(filt, att, np.nan) for att in CTFFilter_attributes
-            ]
+            # TODO xxx change to param dump later
+            filter_values[filter_indices == i] = np.array(
+                [getattr(filt, att, np.nan) for att in CTFFilter_attributes]
+            ).flatten()
         # set the corresponding Relion metadata values that we would expect
         # from a STAR file
         self.set_metadata(
