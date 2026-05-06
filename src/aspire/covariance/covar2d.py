@@ -522,7 +522,9 @@ class BatchedRotCov2D(RotCov2D):
         scaling up to a larger value such as 8192 may yield better performance.
     """
 
-    def __init__(self, src, basis=None, expand_method=None, force_diag=False, batch_size=512):
+    def __init__(
+        self, src, basis=None, expand_method=None, force_diag=False, batch_size=512
+    ):
         self.src = src
         self.basis = basis
         self.batch_size = batch_size
@@ -591,7 +593,8 @@ class BatchedRotCov2D(RotCov2D):
         logger.info("Extracting CTF filter parameters and generating eval points")
         params = np.empty((len(unique_filters), 7), dtype=self.dtype)
         for i, f in enumerate(unique_filters):
-            params[i] = f._ctf_params()
+            ### TODO xxx fix up param dump, same as in source/sim
+            params[i] = np.array(f._ctf_params()).flatten()
 
         logger.info("Computing CTF filters at eval points")
         _filter_pts = self.basis._filter_pts

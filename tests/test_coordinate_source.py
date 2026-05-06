@@ -626,37 +626,34 @@ class CoordinateSourceTestCase(TestCase):
         # based on the arbitrary values we added to the CTF files
         # note these values are not realistic
         filter0 = src.unique_filters[0]
-        self.assertTrue(
-            np.allclose(
-                np.array(
-                    [
-                        1000.0,
-                        900.0,
-                        800.0 * np.pi / 180.0,
-                        700.0,
-                        600.0,
-                        500.0,
-                    ],
-                    dtype=src.dtype,
-                ),
-                np.array(
-                    [
-                        filter0.defocus_u,
-                        filter0.defocus_v,
-                        filter0.defocus_ang,
-                        filter0.Cs,
-                        filter0.alpha,
-                        filter0.voltage,
-                    ]
-                ),
-            )
+        np.testing.assert_allclose(
+            np.array(
+                [
+                    1000.0,
+                    900.0,
+                    800.0 * np.pi / 180.0,
+                    700.0,
+                    600.0,
+                    500.0,
+                ],
+                dtype=src.dtype,
+            ),
+            np.array(
+                [
+                    filter0.defocus_u,
+                    filter0.defocus_v,
+                    filter0.defocus_ang,
+                    filter0.Cs,
+                    filter0.alpha,
+                    filter0.voltage,
+                ]
+            ).flatten(),
         )
         filter1 = src.unique_filters[1]
         pixel_size1 = self.pixel_size
         if not uniform_pixel_sizes:
             pixel_size1 += 0.01
-        self.assertTrue(
-            np.allclose(
+            np.testing.assert_allclose(
                 np.array(
                     [
                         1001.0,
@@ -677,9 +674,8 @@ class CoordinateSourceTestCase(TestCase):
                         filter1.alpha,
                         filter1.voltage,
                     ]
-                ),
+                ).flatten(),
             )
-        )
         # the first 200 particles should correspond to the first filter
         # since they came from the first micrograph
         self.assertTrue(
