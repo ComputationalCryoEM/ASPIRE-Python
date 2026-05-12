@@ -621,11 +621,11 @@ class CoordinateSourceTestCase(TestCase):
     def _testCtfFilters(self, src, uniform_pixel_sizes=True):
         # there are two micrographs and two CTF files, so there should be two
         # unique CTF filters
-        self.assertEqual(len(src.unique_filters), 2)
+        self.assertEqual(len(src.filter_stack), 2)
         # test the properties of the CTF filters
         # based on the arbitrary values we added to the CTF files
         # note these values are not realistic
-        filter0 = src.unique_filters[0]
+        filter0 = src.filter_stack[0]
         np.testing.assert_allclose(
             np.array(
                 [
@@ -649,7 +649,7 @@ class CoordinateSourceTestCase(TestCase):
                 ]
             ).flatten(),
         )
-        filter1 = src.unique_filters[1]
+        filter1 = src.filter_stack[1]
         pixel_size1 = self.pixel_size
         if not uniform_pixel_sizes:
             pixel_size1 += 0.01

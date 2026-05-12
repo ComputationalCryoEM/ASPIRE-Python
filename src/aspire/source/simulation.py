@@ -22,7 +22,7 @@ class Simulation(ImageSource):
     `metadata`. The images are generated via projections of a supplied `Volume` object, `vols`, over
     orientations define by the Euler angles, `angles`. Various types of corruption, such as noise and
     CTF effects, can be added to the images by supplying a `Filter` object to the `noise_filter` or
-    `unique_filters` arguments.
+    `filter_stack` arguments.
     """
 
     def __init__(
@@ -31,7 +31,7 @@ class Simulation(ImageSource):
         n=1024,
         vols=None,
         states=None,
-        unique_filters=None,
+        filter_stack=None,
         filter_indices=None,
         offsets=None,
         amplitudes=None,
@@ -54,9 +54,9 @@ class Simulation(ImageSource):
             Default is generated with `volume.volume_synthesis.AsymmetricVolume`.
         :param states: A 1d array of n integers in the interval [0, C). The i'th integer indicates
             the volume stack index used to produce the i'th projection image. Default is a random set.
-        :param unique_filters: A list of Filter objects to be applied to projection images.
+        :param filter_stack: A Filter object to be applied to projection images.
         :param filter_indices: A 1d array of n integers indicating the `unique_filter` indices associated
-            with each image. Default is a random set of filter indices, .ie the filters from `unique_filters`
+            with each image. Default is a random set of filter indices, .ie the filters from `filter_stack`
             are randomly assigned to the stack of images.
         :param offsets: A n-by-2 array of coordinates to offset the images. Default is a normally
             distributed set of offsets. Set `offsets = 0` to disable offsets.
@@ -158,17 +158,15 @@ class Simulation(ImageSource):
 
         self.angles = self._init_angles(angles)
 
-        if unique_filters is None:
-            unique_filters = []
-        self.unique_filters = unique_filters
+        self.filter_stack = filter_stack
         # sim_filters must be a deep copy so that it is not changed
-        # when unique_filters is changed
-        self.sim_filters = copy.deepcopy(unique_filters)
+        # when filter_stack is changed
+        self.sim_filters = copy.deepcopy(filter_stack)
 
         # Create filter indices and fill the metadata based on unique filters
-        if unique_filters:
+        if filter_stack is not None:
             if filter_indices is None:
-                filter_indices = randi(len(unique_filters), n, seed=seed) - 1
+                filter_indices = randi(len(filter_stack), n, seed=seed) - 1
             self._populate_ctf_metadata(filter_indices)
             self.filter_indices = filter_indices
         else:
@@ -220,35 +218,31 @@ class Simulation(ImageSource):
         # for these columns
         #
         # class attributes of CTFFilter:
-        CTFFilter_attributes = (
-            "voltage",
-            "defocus_u",
-            "defocus_v",
-            "defocus_ang",
-            "Cs",
-            "alpha",
-        )
+        CTFFilter_attributes = [
+            "_rlnVoltage",
+            "_rlnDefocusU",
+            "_rlnDefocusV",
+            "_rlnDefocusAngle",
+            "_rlnSphericalAberration",
+            "_rlnAmplitudeContrast",
+        ]
 
-        # get the CTF parameters, if they exist, for each filter
-        # and for each image (indexed by filter_indices)
-        filter_values = np.zeros((len(filter_indices), len(CTFFilter_attributes)))
-        for i, filt in enumerate(self.unique_filters):
-            # TODO xxx change to param dump later
-            filter_values[filter_indices == i] = np.array(
-                [getattr(filt, att, np.nan) for att in CTFFilter_attributes]
-            ).flatten()
+        # Unpack the `filter_stack` params across images using `filter_indices` mapping
+        # Note this does not include the B factor term (unique to ASPIRE?,xxx should we add to star if used?)
+        filter_stack_params = self.filter_stack._ctf_params()[
+            :, :6
+        ]  # params per filter
+        image_filter_values = np.zeros(
+            (len(filter_indices), len(CTFFilter_attributes))
+        )  # params per image
+        for i, params in enumerate(filter_stack_params):
+            # assign `params` to all matching images
+            image_filter_values[filter_indices == i] = params
         # set the corresponding Relion metadata values that we would expect
         # from a STAR file
         self.set_metadata(
-            [
-                "_rlnVoltage",
-                "_rlnDefocusU",
-                "_rlnDefocusV",
-                "_rlnDefocusAngle",
-                "_rlnSphericalAberration",
-                "_rlnAmplitudeContrast",
-            ],
-            filter_values,
+            CTFFilter_attributes,
+            image_filter_values,
         )
 
     @property

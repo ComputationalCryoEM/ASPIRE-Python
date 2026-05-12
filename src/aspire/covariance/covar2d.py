@@ -546,7 +546,7 @@ class BatchedRotCov2D(RotCov2D):
         if self.basis is None:
             self.basis = FFBBasis2D((src.L, src.L), dtype=self.dtype)
 
-        if not src.unique_filters:
+        if src.filter_stack is None:
             logger.info("CTF filters are not included in Cov2D denoising")
             # set all CTF filters to an identity filter
             self.ctf_idx = np.zeros(src.n, dtype=int)
@@ -562,9 +562,7 @@ class BatchedRotCov2D(RotCov2D):
         optimized_expand = callable(
             getattr(self.basis.__class__, "expand_radial_vec", None)
         )
-        if optimized_expand and all(
-            isinstance(f, CTFFilter) for f in self.src.unique_filters
-        ):
+        if optimized_expand and isinstance(self.src.filter_stack, CTFFilter):
             logger.info(
                 "Found all filters are CTF, and `basis.expand_radial_vec` available using, bulk basis mat eval"
             )
@@ -577,29 +575,25 @@ class BatchedRotCov2D(RotCov2D):
         """
         old code, should work with all basis and filters. slow.
         """
-        unique_filters = self.src.unique_filters
         basis_mats = [
             self.basis.filter_to_basis_mat(
                 f, pixel_size=self.src.pixel_size, expand_method=self.expand_method
             )
-            for f in tqdm(unique_filters, desc="Converting filters to basis mats")
+            for f in tqdm(
+                self.src.filter_stack, desc="Converting filters to basis mats"
+            )
         ]
         return basis_mats
 
     def _ctf_filters_to_basis_mats(self):
-        unique_filters = self.src.unique_filters
-
         # lol
         logger.info("Extracting CTF filter parameters and generating eval points")
-        params = np.empty((len(unique_filters), 7), dtype=self.dtype)
-        for i, f in enumerate(unique_filters):
-            ### TODO xxx fix up param dump, same as in source/sim
-            params[i] = np.array(f._ctf_params()).flatten()
+        params = self.src.filter_stack._ctf_params()
 
         logger.info("Computing CTF filters at eval points")
         _filter_pts = self.basis._filter_pts
         # if we have many filters, might be worth trip to GPU
-        if len(unique_filters) >= 2048:
+        if len(self.src.filter_stack) >= 2048:
             params = xp.asarray(params)
             _filter_pts = xp.asarray(_filter_pts)
 

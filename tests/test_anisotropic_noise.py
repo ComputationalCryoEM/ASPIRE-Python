@@ -19,9 +19,7 @@ class SimTestCase(TestCase):
         self.sim = _LegacySimulation(
             n=1024,
             vols=self.vol,
-            unique_filters=[
-                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
-            ],
+            filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
             dtype=self.dtype,
         )
 

@@ -59,7 +59,7 @@ def test_repr(sim_fixture):
 @pytest.mark.expensive
 def test_filter_mapping():
     """
-    This test is designed to ensure that `unique_filters` and `filter_indices`
+    This test is designed to ensure that `filter_stack` and `filter_indices`
     are being remapped correctly upon slicing.
 
     Additionally it tests that a realistic preprocessing pipeline is equivalent
@@ -81,18 +81,14 @@ def test_filter_mapping():
     angles = Rotation(np.repeat(rots, 2, axis=0)).angles
 
     # Generate N//2 rotations and repeat indices
-    defoci = np.linspace(1000, 25000, N // 2)
-    ctf_filters = [
-        CTFFilter(
-            200,
-            defocus_u=defoci[d],
-            defocus_v=defoci[-d],
-            defocus_ang=np.pi / (N // 2) * d,
-            Cs=2.0,
-            alpha=0.1,
-        )
-        for d in range(N // 2)
-    ]
+    ctf_filters = CTFFilter(
+        200,
+        defocus_u=np.linspace(1000, 25000, N // 2),
+        defocus_v=np.linspace(1000, 25000, N // 2)[::-1],
+        defocus_ang=np.linspace(0, np.pi, N // 2),
+        Cs=2.0,
+        alpha=0.1,
+    )
     ctf_indices = np.repeat(np.arange(N // 2), 2)
 
     # Construct the source
@@ -101,7 +97,7 @@ def test_filter_mapping():
         n=N,
         dtype=DT,
         seed=SEED,
-        unique_filters=ctf_filters,
+        filter_stack=ctf_filters,
         filter_indices=ctf_indices,
         angles=angles,
         offsets=0,

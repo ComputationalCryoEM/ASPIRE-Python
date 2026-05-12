@@ -31,15 +31,17 @@ def evaluate_src_filters_on_grid(src, indices=None):
     grid2d = grid_2d(src.L, indexing="yx", dtype=src.dtype)
     omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
 
-    # Initialize h as ones to mimic an IdentityFilter when src.unique_filters is None.
+    #  xxx filter opt (eval in bulk instead of loop here), remove branch
+    # Initialize h as ones to mimic an IdentityFilter when src.filter_stack is None.
     h = np.ones((omega.shape[-1], len(indices)), dtype=src.dtype)
-    for i, filt in enumerate(src.unique_filters):
-        idx_k = np.where(src.filter_indices[indices] == i)[0]
-        if len(idx_k) > 0:
-            filter_values = filt.evaluate(omega, pixel_size=src.pixel_size)
-            # convert filter_values row vector to column vector and tile broadcast
-            filter_values = filter_values.reshape(-1, 1)
-            h[:, idx_k] = np.tile(filter_values, len(idx_k))
+    if src.filter_stack is not None:
+        for i, filt in enumerate(src.filter_stack):
+            idx_k = np.where(src.filter_indices[indices] == i)[0]
+            if len(idx_k) > 0:
+                filter_values = filt.evaluate(omega, pixel_size=src.pixel_size)
+                # convert filter_values row vector to column vector and tile broadcast
+                filter_values = filter_values.reshape(-1, 1)
+                h[:, idx_k] = np.tile(filter_values, len(idx_k))
     h = np.reshape(h, grid2d["x"].shape + (len(indices),))
 
     return h
@@ -252,6 +254,15 @@ class LambdaFilter(Filter):
     def _evaluate(self, omega, **kwargs):
         return self._f(self._filter.evaluate(omega, **kwargs))
 
+    def __len__(self):
+        """
+        Return length of underlying filter stack
+        """
+        return len(self._filter)
+
+    def __getitem__(self, item):
+        return LambdaFilter(self._filter[item], self._f)
+
 
 class MultiplicativeFilter(Filter):
     """
@@ -441,7 +452,7 @@ class CTFFilter(Filter):
         :param alpha:       Amplitude contrast phase in radians
         :param B:           Envelope decay in inverse square angstrom (default 0)
         """
-        super().__init__(dim=2, radial=defocus_u == defocus_v)
+        super().__init__(dim=2, radial=np.all(defocus_u == defocus_v))
         voltage = np.atleast_1d(voltage)  # maybe allow singleton here for V
         defocus_u = np.atleast_1d(defocus_u)
         defocus_v = np.atleast_1d(defocus_v)
@@ -500,15 +511,20 @@ class CTFFilter(Filter):
         return self.n
 
     def _ctf_params(self):
-        return (
-            self.voltage,
-            self.defocus_u,
-            self.defocus_v,
-            self.defocus_ang,
-            self.Cs,
-            self.alpha,
-            self.B,
-        )
+        """
+        Return n_filters-by-n_param array.
+        """
+        return np.array(
+            [
+                self.voltage,
+                self.defocus_u,
+                self.defocus_v,
+                self.defocus_ang,
+                self.Cs,
+                self.alpha,
+                self.B,
+            ]
+        ).T
 
     def _evaluate(self, omega, **kwargs):
         indices = kwargs.get("indices", None)

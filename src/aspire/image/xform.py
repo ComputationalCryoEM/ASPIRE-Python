@@ -314,6 +314,15 @@ class FilterXform(SymmetricXform):
     def __str__(self):
         return f"FilterXform ({self.filter})"
 
+    def __len__(self):
+        """
+        Return the len of the underlying filter stack.
+        """
+        return len(self.filter)
+
+    def __getitem__(self, item):
+        return FilterXform(self.filter[item])
+
 
 class Add(Xform):
     """
@@ -400,7 +409,9 @@ class IndexedXform(Xform):
 
         # A list of references to individual Xform objects, with possibly multiple references pointing to
         # the same Xform object.
-        self.xforms = [unique_xforms[i] for i in indices]
+        # Crap, im stuck
+        # self.xforms = [unique_xforms[i] for i in indices]
+        self.xforms = unique_xforms
 
     def _indexed_operation(self, im, indices, which):
         """
@@ -420,7 +431,7 @@ class IndexedXform(Xform):
         im_data = np.empty_like(im.asnumpy())
 
         # For each individual transformation
-        for i, xform in enumerate(self.unique_xforms):
+        for i in range(len(self.unique_xforms)):
             # Get the indices corresponding to that transformation
             idx = np.flatnonzero(self.indices == i)
             # For the incoming Image object, find out which transformation indices are applicable
@@ -429,7 +440,7 @@ class IndexedXform(Xform):
             im_data_indices = np.flatnonzero(np.isin(indices, idx))
             # Apply the transformation to the selected indices in the Image object
             if len(im_data_indices) > 0:
-                fn_handle = getattr(xform, which)
+                fn_handle = getattr(self.unique_xforms[i], which)
                 im_data[im_data_indices] = fn_handle(im[im_data_indices]).asnumpy()
 
         return Image(im_data, pixel_size=im.pixel_size)

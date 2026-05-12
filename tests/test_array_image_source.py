@@ -10,7 +10,6 @@ from pytest import raises
 
 from aspire.basis import FBBasis3D
 from aspire.image import Image
-from aspire.operators import IdentityFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source import ArrayImageSource, RelionSource, Simulation
 from aspire.utils import Rotation, utest_tolerance
@@ -31,7 +30,6 @@ class ImageTestCase(TestCase):
         self.sim = sim = Simulation(
             n=self.n,
             L=self.resolution,
-            unique_filters=[IdentityFilter()],
             seed=0,
             dtype=self.dtype,
             # We'll use random angles
