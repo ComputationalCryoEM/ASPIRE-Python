@@ -234,17 +234,16 @@ def test_simulation_relion_downsample():
     defocus_max = 25000
     defocus_ct = 7
 
-    ctf_filters = [
-        RadialCTFFilter(defocus=d)
-        for d in np.linspace(defocus_min, defocus_max, defocus_ct)
-    ]
+    ctf_filters = RadialCTFFilter(
+        defocus=np.linspace(defocus_min, defocus_max, defocus_ct)
+    )
 
     # Generate Simulation source and downsampled simulation.
     src = Simulation(
         L=64,
         n=10,
         C=1,
-        unique_filters=ctf_filters,
+        filter_stack=ctf_filters,
         noise_adder=WhiteNoiseAdder.from_snr(snr=1),
         pixel_size=1,
     )

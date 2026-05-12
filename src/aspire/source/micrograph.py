@@ -393,10 +393,7 @@ class MicrographSimulation(MicrographSource):
         self.filter_indices = None
         if ctf_filters is not None:
             acceptable_lens = [1, self.micrograph_count, self.total_particle_count]
-            if (
-                not isinstance(ctf_filters, list)
-                or len(ctf_filters) not in acceptable_lens
-            ):
+            if len(ctf_filters) not in acceptable_lens:
                 raise TypeError(
                     f"`ctf_filters` expects a list of len {acceptable_lens[0]},"
                     f" {acceptable_lens[1]}, or {acceptable_lens[2]}."
@@ -424,7 +421,7 @@ class MicrographSimulation(MicrographSource):
             offsets=0,
             amplitudes=self.particle_amplitudes,
             angles=self.projection_angles,
-            unique_filters=ctf_filters,
+            filter_stack=ctf_filters,
             filter_indices=self.filter_indices,
             pixel_size=self.pixel_size,
             dtype=self.dtype,
@@ -699,7 +696,7 @@ class MicrographSimulation(MicrographSource):
 
             # CTF
             ctf_metadata = dict()
-            if self.simulation.unique_filters:
+            if self.simulation.filter_stack:
                 ctf_metadata = self.simulation.get_metadata(
                     metadata_fields=_meta_fields["ctf"],
                     indices=self.get_particle_indices(m),

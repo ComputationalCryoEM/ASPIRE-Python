@@ -146,23 +146,12 @@ class RelionSource(ImageSource):
                 return_inverse=True,
                 axis=0,
             )
-            filters = []
-            # for each unique CTF configuration, create a CTFFilter object
-            for row in filter_params:
-                filters.append(
-                    CTFFilter(
-                        voltage=row[0],
-                        defocus_u=row[1],
-                        defocus_v=row[2],
-                        defocus_ang=row[3] * np.pi / 180,  # degrees to radians
-                        Cs=row[4],
-                        alpha=row[5],
-                        B=B,
-                    )
-                )
-            self.unique_filters = filters
+            # Convert `defocus_ang` from degrees to radians
+            filter_params[:, 3] = np.deg2rad(filter_params[:, 3])
+            # Create a CTFFilter stack
+            self.filter_stack = CTFFilter(*filter_params.T, B=B)
             # filter_indices stores, for each particle index, the index in
-            # self.unique_filters of the filter that should be applied
+            # self.filter_stack of the filter that should be applied
             self.filter_indices = filter_indices
 
         # If we detect ASPIRE added dummy variables, log and initialize identity filter
@@ -170,7 +159,7 @@ class RelionSource(ImageSource):
             logger.info(
                 "Detected ASPIRE-generated dummy optics; initializing identity filters."
             )
-            self.unique_filters = [IdentityFilter()]
+            self.filter_stack = IdentityFilter()
             self.filter_indices = np.zeros(self.n, dtype=int)
 
         # We have provided some, but not all the required params
@@ -182,7 +171,7 @@ class RelionSource(ImageSource):
 
         # If no CTF info in STAR, we initialize the filter values of metadata with default values
         else:
-            self.unique_filters = [IdentityFilter()]
+            self.filter_stack = IdentityFilter()
             self.filter_indices = np.zeros(self.n, dtype=int)
 
         logger.info(f"Populated {self.n_ctf_filters} CTFFilters from '{filepath}'")

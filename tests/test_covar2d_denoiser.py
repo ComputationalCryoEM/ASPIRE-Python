@@ -15,12 +15,10 @@ num_imgs = 1024
 noise_var = 0.1848
 noise_adder = WhiteNoiseAdder(var=noise_var)
 pixel_size = 5
-filters = [
-    CTFFilter(
-        200, defocus_ang=np.pi / 3, defocus_u=d, defocus_v=d + 345, Cs=2.0, alpha=0.1
-    )
-    for d in np.linspace(1.5e4, 2.5e4, 7)
-]
+d = np.linspace(1.5e4, 2.5e4, 7)
+filters = CTFFilter(
+    200, defocus_ang=np.pi / 3, defocus_u=d, defocus_v=d + 345, Cs=2.0, alpha=0.1
+)
 
 # For (F)PSWFBasis2D we get off-block entries which are truncated
 # when converting to block-diagonal. We filter these warnings.
@@ -61,7 +59,7 @@ def sim():
     sim = Simulation(
         L=img_size,
         n=num_imgs,
-        unique_filters=filters,
+        filter_stack=filters,
         offsets=0.0,
         amplitudes=1.0,
         dtype=dtype,

@@ -22,13 +22,7 @@ from aspire.image.xform import (
     Pipeline,
 )
 from aspire.noise import LegacyNoiseEstimator, NoiseEstimator, WhiteNoiseEstimator
-from aspire.operators import (
-    CTFFilter,
-    Filter,
-    IdentityFilter,
-    MultiplicativeFilter,
-    PowerFilter,
-)
+from aspire.operators import CTFFilter, Filter, MultiplicativeFilter, PowerFilter
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import (
     Rotation,
@@ -214,7 +208,7 @@ class ImageSource(ABC):
         self._populate_pixel_size(pixel_size)
         self._populate_symmetry_group(symmetry_group)
 
-        self.unique_filters = []
+        self.filter_stack = None
         self.generation_pipeline = Pipeline(xforms=None, memory=memory)
 
         logger.info(f"Creating {self.__class__.__name__} with {len(self)} images.")
@@ -443,7 +437,10 @@ class ImageSource(ABC):
         """
         Return the number of CTFFilters found in this Source.
         """
-        return len([f for f in self.unique_filters if isinstance(f, CTFFilter)])
+        n = 0
+        if isinstance(self.filter_stack, CTFFilter):
+            n = len(self.filter_stack)
+        return n
 
     @property
     def states(self):
@@ -785,6 +782,11 @@ class ImageSource(ABC):
 
         im = im_orig.copy()
 
+        if filters is None:
+            return im
+
+        # else evaluate filters
+        # XXXX broadcast filter eval
         for i, filt in enumerate(filters):
             idx_k = np.where(indices == i)[0]
             if len(idx_k) > 0:
@@ -795,7 +797,7 @@ class ImageSource(ABC):
     def _apply_source_filters(self, im_orig, indices):
         return self._apply_filters(
             im_orig,
-            self.unique_filters,
+            self.filter_stack,
             self.filter_indices[indices],
         )
 
@@ -868,8 +870,10 @@ class ImageSource(ABC):
             )
         )
 
+        # XXXX sigh
         ds_factor = self.L / L
-        self.unique_filters = [f.scale(ds_factor) for f in self.unique_filters]
+        if self.filter_stack is not None:
+            self.filter_stack = self.filter_stack.scale(ds_factor)
         if self.pixel_size is not None:
             self.pixel_size *= ds_factor
 
@@ -956,9 +960,8 @@ class ImageSource(ABC):
         whiten_filter = PowerFilter(noise_filter, power=-0.5, epsilon=epsilon)
 
         logger.info("Transforming all CTF Filters into Multiplicative Filters")
-        self.unique_filters = [
-            MultiplicativeFilter(f, whiten_filter) for f in self.unique_filters
-        ]
+        # XXXX
+        self.filter_stack = MultiplicativeFilter(self.filter_stack, whiten_filter)
         logger.info("Adding Whitening Filter Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
@@ -1005,8 +1008,9 @@ class ImageSource(ABC):
 
         logger.info("Perform phase flip on source object")
 
-        if len(self.unique_filters) >= 1:
-            unique_xforms = [FilterXform(f.sign) for f in self.unique_filters]
+        if self.filter_stack is not None:
+            # XXXX
+            unique_xforms = FilterXform(self.filter_stack.sign)
 
             logger.info("Adding Phase Flip Xform to end of generation pipeline")
             self.generation_pipeline.add_xform(
@@ -1781,18 +1785,20 @@ class IndexedSource(ImageSource):
             pixel_size=src.pixel_size,
         )
 
-        if src.unique_filters:
+        if src.filter_stack is not None:
             # Remap the filter indices to be unique.
             #   Removes duplicates and filters that are unused in new source.
             _filter_indices = src.filter_indices[self.index_map]
             # _unq[_inv] reconstructs _filter_indices
             _unq, _inv = np.unique(_filter_indices, return_inverse=True)
-            # Repack unique_filters
+            # Repack filter_stack
             self.filter_indices = _inv
-            self.unique_filters = [copy.copy(src.unique_filters[i]) for i in _unq]
+            self.filter_stack = copy.copy(
+                src.filter_stack[_unq]
+            )  # xxx, this might just work by slicing...
         else:
             # Pass through the None case
-            self.unique_filters = src.unique_filters
+            self.filter_stack = src.filter_stack
             self.filter_indices = np.zeros(self.n, dtype=int)
 
         # Any further operations should not mutate this instance.
@@ -2029,7 +2035,7 @@ class ArrayImageSource(ImageSource):
         # Create filter indices, these are required to pass unharmed through filter eval code
         #   that is potentially called by other methods later.
         self.filter_indices = np.zeros(self.n, dtype=int)
-        self.unique_filters = [IdentityFilter()]
+        self.filter_stack = None
 
         # Optionally populate angles/rotations.
         if angles is not None:

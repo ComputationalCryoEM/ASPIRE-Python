@@ -28,9 +28,7 @@ class Covar3DTestCase(TestCase):
         cls.sim = _LegacySimulation(
             n=1024,
             vols=cls.vols,
-            unique_filters=[
-                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
-            ],
+            filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
             dtype=cls.dtype,
         )
         basis = FBBasis3D((8, 8, 8), dtype=cls.dtype)

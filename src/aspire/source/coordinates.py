@@ -176,7 +176,7 @@ class CoordinateSource(ImageSource, ABC):
         # set CTF metadata to defaults
         # this can be updated with import_ctf()
         self.filter_indices = np.zeros(self.n, dtype=int)
-        self.unique_filters = [IdentityFilter()]
+        self.filter_stack = IdentityFilter()
         self.set_metadata("__filter_indices", np.zeros(self.n, dtype=int))
 
         # populate __mrc_filename and __mrc_index
@@ -406,25 +406,15 @@ class CoordinateSource(ImageSource, ABC):
         )
 
         # convert defocus_ang from degrees to radians
-        filter_params[:, 3] *= np.pi / 180.0
+        filter_params[:, 3] = np.deg2rad(filter_params[:, 3])
 
         # Warn if CTF pixel_sizes do match self.pixel_size
         ctf_pixel_sizes = np.unique(filter_params[:, 6])
         check_pixel_size(ctf_pixel_sizes, self.pixel_size)
 
         # construct filters
-        self.unique_filters = [
-            CTFFilter(
-                voltage=filter_params[i, 0],
-                defocus_u=filter_params[i, 1],
-                defocus_v=filter_params[i, 2],
-                defocus_ang=filter_params[i, 3],
-                Cs=filter_params[i, 4],
-                alpha=filter_params[i, 5],
-                B=self.B,
-            )
-            for i in range(len(filter_params))
-        ]
+        # drop pixel size column
+        self.filter_stack = CTFFilter(*(filter_params[:, :6]).T, B=self.B)
 
         # set metadata
         for mrc_idx, filter_index in enumerate(indices):

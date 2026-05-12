@@ -304,7 +304,7 @@ def test_sim_save():
     """
 
     v = AsymmetricVolume(L=16, C=1, pixel_size=4, dtype=np.float64).generate()
-    ctfs = [RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0)]
+    ctfs = RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0)
 
     mg_sim = MicrographSimulation(
         volume=v,
@@ -365,7 +365,7 @@ def test_save_overwrite(caplog):
     """
 
     v = AsymmetricVolume(L=16, C=1, pixel_size=4, dtype=np.float64).generate()
-    ctfs = [RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0)]
+    ctfs = RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0)
 
     mg_sim = MicrographSimulation(
         volume=v,
@@ -466,8 +466,5 @@ def test_bad_ctf(vol_fixture):
             particles_per_micrograph=1,
             micrograph_count=1,
             micrograph_size=512,
-            ctf_filters=[
-                RadialCTFFilter(),
-            ]
-            * 2,  # total particles == 1
+            ctf_filters=RadialCTFFilter(defocus=[10000, 20000]),  # total particles == 1
         )

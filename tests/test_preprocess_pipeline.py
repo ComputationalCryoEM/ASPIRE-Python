@@ -29,9 +29,7 @@ def get_sim_object(L, dtype):
     sim = Simulation(
         L=L,
         n=num_images,
-        unique_filters=[
-            RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
-        ],
+        filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
         noise_adder=noise_adder,
         pixel_size=1,
         dtype=dtype,

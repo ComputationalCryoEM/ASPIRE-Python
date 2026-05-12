@@ -79,22 +79,20 @@ def cov2d_fixture(volume, basis, ctf_enabled):
     n = 32
 
     # Default CTF params
-    unique_filters = None
+    filters = None
     h_idx = None
     h_ctf_fb = None
     # Popluate CTF
     if ctf_enabled:
-        unique_filters = [
-            RadialCTFFilter(200, defocus=d, Cs=2.0, alpha=0.1)
-            for d in np.linspace(1.5e4, 2.5e4, 7)
-        ]
+        filters = RadialCTFFilter(
+            200, defocus=np.linspace(1.5e4, 2.5e4, 7), Cs=2.0, alpha=0.1
+        )
 
         # Copied from simulation defaults to match legacy test files.
-        h_idx = randi(len(unique_filters), n, seed=0) - 1
+        h_idx = randi(len(filters), n, seed=0) - 1
 
         h_ctf_fb = [
-            basis.filter_to_basis_mat(f, pixel_size=volume.pixel_size)
-            for f in unique_filters
+            basis.filter_to_basis_mat(f, pixel_size=volume.pixel_size) for f in filters
         ]
 
     noise_adder = WhiteNoiseAdder(var=NOISE_VAR)
@@ -102,7 +100,7 @@ def cov2d_fixture(volume, basis, ctf_enabled):
     sim = _LegacySimulation(
         n=n,
         vols=volume,
-        unique_filters=unique_filters,
+        filter_stack=filters,
         filter_indices=h_idx,
         offsets=0.0,
         amplitudes=1.0,

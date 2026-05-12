@@ -128,9 +128,7 @@ class SimTestCase(TestCase):
             n=self.n,
             L=self.L,
             vols=self.vols,
-            unique_filters=[
-                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
-            ],
+            filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
         )
@@ -176,9 +174,7 @@ class SimTestCase(TestCase):
             L=self.L,
             vols=self.vols,
             offsets=self.sim.offsets,
-            unique_filters=[
-                RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)
-            ],
+            filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
             noise_adder=WhiteNoiseAdder(var=1),
             dtype=self.dtype,
         )
@@ -634,12 +630,10 @@ def test_simulation_save_optics_block(tmp_path):
     # Radial CTF Filters. Should make 3 distinct optics blocks
     kv_min, kv_max, kv_ct = 200, 300, 3
     voltages = np.linspace(kv_min, kv_max, kv_ct)
-    ctf_filters = [RadialCTFFilter(voltage=kv) for kv in voltages]
+    ctf_filters = RadialCTFFilter(voltage=voltages)
 
     # Generate and save Simulation
-    sim = Simulation(
-        n=9, L=res, C=1, unique_filters=ctf_filters, pixel_size=1.34
-    ).cache()
+    sim = Simulation(n=9, L=res, C=1, filter_stack=ctf_filters, pixel_size=1.34).cache()
     starpath = tmp_path / "sim.star"
     sim.save(starpath, overwrite=True)
 
@@ -699,10 +693,10 @@ def test_simulation_slice_save_roundtrip(tmp_path):
     # Radial CTF Filters
     kv_min, kv_max, kv_ct = 200, 300, 3
     voltages = np.linspace(kv_min, kv_max, kv_ct)
-    ctf_filters = [RadialCTFFilter(voltage=kv) for kv in voltages]
+    ctf_filters = RadialCTFFilter(voltage=voltages)
 
     # Generate and save slice of Simulation
-    sim = Simulation(n=9, L=16, C=1, unique_filters=ctf_filters, pixel_size=1.34)
+    sim = Simulation(n=9, L=16, C=1, filter_stack=ctf_filters, pixel_size=1.34)
     sliced_sim = sim[::2]
     save_path = tmp_path / "sliced_sim.star"
     sliced_sim.save(save_path, overwrite=True)
@@ -787,14 +781,14 @@ def test_cached_image_accessors():
     Test the behavior of image caching.
     """
     # Create a CTF
-    ctf = [RadialCTFFilter()]
+    ctf = RadialCTFFilter()
     # Create a Simulation with noise and `ctf`
     src = Simulation(
         L=32,
         n=3,
         C=1,
         noise_adder=WhiteNoiseAdder(var=0.123),
-        unique_filters=ctf,
+        filter_stack=ctf,
         pixel_size=5,
     )
     # Cache the simulation
@@ -818,14 +812,14 @@ def test_projections_and_clean_images_downsample():
     L = 32
     L_ds = 21
     px_sz = 1.23
-    ctf = [RadialCTFFilter(1.5e4)]
+    ctf = RadialCTFFilter(1.5e4)
 
     src = Simulation(
         L=L,
         n=n,
         C=1,
         noise_adder=WhiteNoiseAdder(var=0.123),
-        unique_filters=ctf,
+        filter_stack=ctf,
         pixel_size=px_sz,
     )
 
@@ -921,7 +915,7 @@ def test_save_load_dummy_ctf_values(tmp_path, caplog):
     are present. These values should be detected upon reloading the source.
     """
     star_path = tmp_path / "no_ctf.star"
-    sim = Simulation(n=8, L=16)  # no unique_filters, ie. no CTF info
+    sim = Simulation(n=8, L=16)  # no filter_stack, ie. no CTF info
     sim.save(star_path, overwrite=True)
 
     # STAR file should contain our fallback tag
