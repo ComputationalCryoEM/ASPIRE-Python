@@ -74,7 +74,18 @@ class CommonlineNUG(Orient3D):
         self.perform_pr = perform_pr
 
         # Handle symmetry
-        self.sym_grp = SymmetryGroup.parse(symmetry)
+        if symmetry is None:
+            logger.info(
+                f"Symmetry not provided. Using Source symmetry: {str(self.src.symmetry_group)}"
+            )
+            self.sym_grp = self.src.symmetry_group
+        else:
+            if symmetry != str(self.src.symmetry_group):
+                logger.info(
+                    f"Provided symmetry, {symmetry}, does not match source, {str(self.src.symmetry_group)}"
+                )
+            logger.info(f"Using provided symmetry: {symmetry}")
+            self.sym_grp = SymmetryGroup.parse(symmetry)
         self.sym_euler = self.sym_grp.rotations.angles
         self.n_sym = len(self.sym_euler)
 
@@ -142,11 +153,12 @@ class CommonlineNUG(Orient3D):
         Img_pft = np.zeros((L, n_theta, N), dtype=complex)
 
         # Replace with Image.project() later
-        Img = Img.asnumpy()
-        for n in range(N):
-            line_proj[:, :, n], Img_pft[:, :, n] = self.fast_radon_transform(
-                Img[n], angular_sampling
-            )
+        line_proj = Img.project(angular_sampling).asnumpy().T
+        # Img = Img.asnumpy()
+        # for n in range(N):
+        #     line_proj[:, :, n], Img_pft[:, :, n] = self.fast_radon_transform(
+        #         Img[n], angular_sampling
+        #     )
 
         dim_wave = len(wemd_embed(line_proj[:, 0, 0]))
         WE = np.zeros((dim_wave, n_theta, N))
@@ -156,22 +168,22 @@ class CommonlineNUG(Orient3D):
 
         def fij(alpha, gamma, i, j, loss):
             if loss == "l1":
-                Ii_hat = Img_pft[:, :, i]
-                Ij_hat = Img_pft[:, :, j]
-                idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
-                idxj = np.round((-gamma - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
-
-                Si = Ii_hat[:, int(idxi)]
-                Sj = Ij_hat[:, int(idxj)]
-
-                # Using aspire PolarFT. Replace later
-                # Ii_hat = self.pf_full[i]
-                # Ij_hat = self.pf_full[j]
+                # Ii_hat = Img_pft[:, :, i]
+                # Ij_hat = Img_pft[:, :, j]
                 # idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
                 # idxj = np.round((-gamma - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
 
-                # Si = Ii_hat[int(idxi)]
-                # Sj = Ij_hat[int(idxj)]
+                # Si = Ii_hat[:, int(idxi)]
+                # Sj = Ij_hat[:, int(idxj)]
+
+                # Using aspire PolarFT. Replace later
+                Ii_hat = self.pf_full[i]
+                Ij_hat = self.pf_full[j]
+                idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
+                idxj = np.round((-gamma - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
+
+                Si = Ii_hat[int(idxi)]
+                Sj = Ij_hat[int(idxj)]
                 # norm_new = np.linalg.norm(Si - Sj, 1)
 
                 return np.linalg.norm(Si - Sj, 1)
