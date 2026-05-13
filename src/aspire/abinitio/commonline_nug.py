@@ -149,11 +149,12 @@ class CommonlineNUG(Orient3D):
         N, L, _ = Img.shape
         n_theta = 360
         angular_sampling = np.arange(0, 360, 1)
-        line_proj = np.zeros((L, n_theta, N))
-        Img_pft = np.zeros((L, n_theta, N), dtype=complex)
 
-        # Replace with Image.project() later
+        # Using ASPIRE Image.project(). Leaving original method in comments for now.
         line_proj = Img.project(angular_sampling).asnumpy().T
+
+        # line_proj = np.zeros((L, n_theta, N))
+        # Img_pft = np.zeros((L, n_theta, N), dtype=complex)
         # Img = Img.asnumpy()
         # for n in range(N):
         #     line_proj[:, :, n], Img_pft[:, :, n] = self.fast_radon_transform(
