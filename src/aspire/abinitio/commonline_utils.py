@@ -288,6 +288,37 @@ def _cl_angles_to_ind(cl_angles, n_theta):
     return ind
 
 
+def saff_kuijlaars(N):
+    """
+    Generates N vertices on the unit sphere that are approximately evenly distributed.
+
+    This implements the recommended algorithm in spherical coordinates
+    (theta, phi) according to "Distributing many points on a sphere"
+    by E.B. Saff and A.B.J. Kuijlaars, Mathematical Intelligencer 19.1
+    (1997) 5--11.
+
+    :param N: Number of vertices to generate.
+
+    :return: Nx3 array of vertices in cartesian coordinates.
+    """
+    k = np.arange(1, N + 1)
+    h = -1 + 2 * (k - 1) / (N - 1)
+    theta = np.arccos(h)
+    phi = np.zeros(N)
+
+    for i in range(1, N - 1):
+        phi[i] = (phi[i - 1] + 3.6 / (np.sqrt(N * (1 - h[i] ** 2)))) % (2 * np.pi)
+
+    # Spherical coordinates
+    x = np.sin(theta) * np.cos(phi)
+    y = np.sin(theta) * np.sin(phi)
+    z = np.cos(theta)
+
+    mesh = np.column_stack((x, y, z))
+
+    return mesh
+
+
 def g_sync(rots, order, rots_gt):
     """
     Given ground truth rotations, synchronize estimated rotations over
