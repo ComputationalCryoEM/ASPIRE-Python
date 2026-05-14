@@ -498,7 +498,9 @@ class SteerableBasis2D(Basis, abc.ABC):
 
         if optimized_expand and filter_is_radial and radial_method:
             # kwargs supports passing through pixel_size
-            h_vals = self._radial_filter_to_vals(f, **kwargs).reshape(-1, 1)
+            h_vals = self._radial_filter_to_vals(
+                f, **kwargs
+            )  # check dont need  #.reshape(-1, 1)
             res = self.expand_radial_vec(h_vals)
             return res
         else:

@@ -771,6 +771,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             b = xp.concatenate((b, bz), axis=1)
             b = fft.idct(b, axis=1, type=2) * 2 * b.shape[1]
         a = xp.zeros((b.shape[0], self.count), dtype=self.dtype)
+
         for i in range(self.ell_p_max + 1):
             # Wierd mul transpose forced by A3 being CSR.
             # Can't reshape A3, but can broadcast over dims of b.
@@ -860,11 +861,15 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Convert to internal FLE indices ordering
         coefs = coefs[..., self._fb_to_fle_indices]
 
-        # squeeze should probably be addressed in consuming code,
-        #   for now match old `filter_to_basis_mat`
-        coefs = xp.asnumpy(coefs).squeeze()
+        coefs = xp.asnumpy(coefs)
 
-        return [DiagMatrix(c) for c in coefs]
+        # who needs this as a list?
+        if len(coefs) > 1:
+            coefs = [DiagMatrix(c) for c in coefs]
+        else:
+            coefs = DiagMatrix(coefs.flatten())
+
+        return coefs
 
     def _radial_filter_to_vals(self, f, **kwargs):
         """

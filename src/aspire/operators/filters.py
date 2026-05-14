@@ -301,6 +301,12 @@ class ScaledFilter(Filter):
         """
         return f"ScaledFilter (scales {self._filter} by {self._scale})"
 
+    def __getitem__(self, item):
+        return ScaledFilter(self._filter[item], self._scale)
+
+    def __len__(self):
+        return len(self._filter)
+
 
 class ArrayFilter(Filter):
     def __init__(self, xfer_fn_array):
