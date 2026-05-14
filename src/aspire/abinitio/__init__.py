@@ -3,6 +3,7 @@ from .J_sync import JSync
 from .commonline_utils import (
     build_outer_products,
     g_sync,
+    saff_kuijlaars,
 )
 from .commonline_base import Orient3D
 from .commonline_matrix import CLOrient3D
