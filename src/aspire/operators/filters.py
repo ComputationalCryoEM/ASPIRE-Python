@@ -149,6 +149,14 @@ class Filter:
         """
         return LambdaFilter(self, np.sign)
 
+    def __len__(self):
+        """
+        Default filters are length 1.
+
+        Some filters (eg CTFFilter) provide additional optimizations for stacks.
+        """
+        return 1
+
 
 class DualFilter(Filter):
     """
@@ -161,6 +169,9 @@ class DualFilter(Filter):
 
     def evaluate(self, omega, **kwargs):
         return self._filter.evaluate(-omega, **kwargs)
+
+    def __len__(self):
+        return len(self._filter)
 
 
 class FunctionFilter(Filter):
@@ -240,6 +251,9 @@ class PowerFilter(Filter):
 
         return filter_vals**self._power
 
+    def __len__(self):
+        return len(self._filter)
+
 
 class LambdaFilter(Filter):
     """
@@ -272,12 +286,33 @@ class MultiplicativeFilter(Filter):
     def __init__(self, *args):
         super().__init__(dim=args[0].dim, radial=all(c.radial for c in args))
         self._components = args
+        self._init_size()
+
+    def _init_size(self):
+        """
+        Check sizes of _components are coherent and initialize resulting length.
+        """
+        filter_lengths = [len(f) for f in self._components]
+        filter_lengths = np.unique(filter_lengths, sorted=True)
+
+        # Code should be able to broadcast n_filters with n_filters, or n_filters with 1_filters.
+        # Any other combination is considered an error.
+        if len(filter_lengths) > 2 or (
+            (len(filter_lengths) == 2) and (filter_lengths[0] != 1)
+        ):
+            raise RuntimeError(f"Incoherent filter lengths {filter_lengths}")
+        # filter_lengths is sorted, so this should be the larger of two values,
+        # or the single value in the 1_filter case
+        self._n = filter_lengths[-1]
 
     def _evaluate(self, omega, **kwargs):
         res = 1
         for c in self._components:
             res *= c.evaluate(omega, **kwargs)
         return res
+
+    def __len__(self):
+        return self._n
 
 
 class ScaledFilter(Filter):
