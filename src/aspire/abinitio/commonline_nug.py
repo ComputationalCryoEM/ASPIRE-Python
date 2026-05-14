@@ -12,6 +12,8 @@ from aspire.operators import PolarFT, wemd_embed
 from aspire.utils import Rotation, cart2sph
 from aspire.volume import CnSymmetryGroup, DnSymmetryGroup, SymmetryGroup
 
+from .commonline_utils import saff_kuijlaars
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +39,7 @@ class CommonlineNUG(Orient3D):
         ratio=1,
         factor=1.0,
         mult=1.5,
-        Ngrid=16317,
+        S2_grid=441,
         Nstep_yI=10,
         perform_pr=False,
         **kwargs,
@@ -69,7 +71,7 @@ class CommonlineNUG(Orient3D):
         self.ratio = ratio
         self.factor = factor
         self.mult = mult
-        self.Ngrid = Ngrid
+        self.S2_grid = S2_grid
         self.Nstep_yI = Nstep_yI
         self.perform_pr = perform_pr
 
@@ -102,7 +104,6 @@ class CommonlineNUG(Orient3D):
             C,
             self.Lmax,
             self.n_img,
-            self.Ngrid,
             self.max_iter,
             self.rho,
             self.ratio,
@@ -122,7 +123,6 @@ class CommonlineNUG(Orient3D):
                 weight,
                 Penalty,
                 r,
-                self.Ngrid,
                 self.max_iter,
                 self.rho,
                 self.ratio,
@@ -336,7 +336,6 @@ class CommonlineNUG(Orient3D):
         C,
         Lmax,
         N,
-        Ngrid,
         max_iter,
         rho,
         ratio,
@@ -371,9 +370,10 @@ class CommonlineNUG(Orient3D):
             S0,
             S1,
             Sq,
-        ) = self.ADMM_preprocessing(C, Lmax, N, Ngrid)
+        ) = self.ADMM_preprocessing(C, Lmax, N)
 
         n_pairs = N * (N - 1) // 2
+        Ngrid = self.Ngrid
         rank_Ak, _ = self.compute_rank(Lmax)
         logger.info(f"Rank of Ak: {rank_Ak}")
 
@@ -741,7 +741,7 @@ class CommonlineNUG(Orient3D):
             X_admm[k] = xp.asnumpy(X_admm[k])
         return X_admm
 
-    def ADMM_preprocessing(self, C, Lmax, N, Ngrid):
+    def ADMM_preprocessing(self, C, Lmax, N):
         # compute necessary quantities for ADMM
         # compute some useful index sets
         count = 0
@@ -799,8 +799,7 @@ class CommonlineNUG(Orient3D):
         bEq = xp.repeat(bEq[:, xp.newaxis], N * (N - 1) // 2, axis=1)
 
         # AI and bI
-        W0, W1 = self.compute_fejer_weights()
-
+        W0, W1, Ngrid = self.compute_fejer_weights()
         # AI_mat=np.zeros((Ngrid,D0+D1))
         # for p in range(Ngrid):
         #     w0=np.zeros(D0); w1=np.zeros(D1)
@@ -811,7 +810,6 @@ class CommonlineNUG(Orient3D):
         #     AI_mat[p,:d0[-1]]=w0; AI_mat[p,d0[-1]:]=w1
         # AI_mat=xp.asarray(AI_mat) / 10;
         # bI=-(Lmax+2)*(Lmax+1)/2 / 10
-
         AI_mat_offdiag = np.zeros((Ngrid, D0 + D1))
         for p in range(Ngrid):
             w0 = np.zeros(D0)
@@ -886,6 +884,7 @@ class CommonlineNUG(Orient3D):
         Sq = xp.zeros(Xq.shape)
         # S0=xp.zeros(X0.shape); S1=xp.zeros(X1.shape); Sq=xp.zeros(Xq.shape)
 
+        self.Ngrid = Ngrid
         # return C0,C1,normC,AEq,bEq,AEqAEqtinv,AI_mat,bI,Lambda,d0,d1,D0,D1,idx_diag,idx_offdiag,IDX_upper,IDX_lower,X0,X1,Xq,S0,S1,Sq
         return (
             C0,
@@ -951,10 +950,11 @@ class CommonlineNUG(Orient3D):
 
             W0.append(W0k)
             W1.append(W1k)
-        return W0, W1
+        return W0, W1, Ngrid
 
     def discretize_SO3(self):
-        S2 = loadmat("design20.mat")["design"]
+        # S2 = loadmat("design20.mat")["design"]
+        S2 = saff_kuijlaars(self.S2_grid)
         S2_size = S2.shape[0]
 
         # discretize S1
@@ -988,7 +988,6 @@ class CommonlineNUG(Orient3D):
         weight,
         Penalty,
         r,
-        Ngrid,
         max_iter,
         rho,
         ratio,
@@ -1052,7 +1051,6 @@ class CommonlineNUG(Orient3D):
                 CC,
                 self.Lmax,
                 N,
-                Ngrid,
                 max_iter,
                 rho,
                 ratio,
