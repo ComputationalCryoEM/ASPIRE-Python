@@ -42,6 +42,7 @@ class CommonlineNUG(Orient3D):
         S2_grid=441,
         Nstep_yI=10,
         perform_pr=False,
+        verbose=True,
         **kwargs,
     ):
         """
@@ -74,6 +75,7 @@ class CommonlineNUG(Orient3D):
         self.S2_grid = S2_grid
         self.Nstep_yI = Nstep_yI
         self.perform_pr = perform_pr
+        self.verbose = verbose
 
         # Handle symmetry
         if symmetry is None:
@@ -98,56 +100,24 @@ class CommonlineNUG(Orient3D):
         self.pf_full = PolarFT.half_to_full(pf)
 
     def estimate_rotations(self):
-        imgs = self.src.images[:]
-        C = self.compute_coeff(imgs, self.loss, self.Lmax, T=self.T)
-        X_est = self.admm_sym_J(
-            C,
-            self.Lmax,
-            self.n_img,
-            self.max_iter,
-            self.rho,
-            self.ratio,
-            self.factor,
-            self.mult,
-            self.Nstep_yI,
-        )
-
-        if self.perform_pr:
-            weight = 1 / (1 + np.arange(self.Lmax))
-            Penalty = [1, 1, 1, 1]
-            r = [3, 2, 1, 0]
-            X_est = self.proximal_refine(
-                X_est,
-                C,
-                self.n_img,
-                weight,
-                Penalty,
-                r,
-                self.max_iter,
-                self.rho,
-                self.ratio,
-                self.factor,
-                self.mult,
-                self.Nstep_yI,
-            )
-
-        if isinstance(self.sym_grp, CnSymmetryGroup):
-            R_est, Euler_est = self.euler_est(X_est[0], X_est[self.n_sym - 1])
-        elif isinstance(self.sym_grp, DnSymmetryGroup):
-            R_est, Euler_est = self.euler_est_Dm(X_est)
-
-        self.rotations = R_est
-
-        return R_est
+        self.compute_coeff()
+        self.perform_admm()
+        self.euler_est()
+        return self.rotations
 
     #######################
     # Compute Coeffs Step #
     #######################
 
-    def compute_coeff(self, Img, loss, Lmax, T):
+    def compute_coeff(self):
         # compute the coefficient matrix
-        N, L, _ = Img.shape
-        n_theta = 360
+        Img = self.src.images[:]
+        N = self.n_img
+        L = self.src.L
+        n_theta = self.n_theta
+        loss = self.loss
+        Lmax = self.Lmax
+        T = self.T
         angular_sampling = np.arange(0, 360, 1)
 
         # Using ASPIRE Image.project(). Leaving original method in comments for now.
@@ -264,7 +234,7 @@ class CommonlineNUG(Orient3D):
             )
             C[k - 1] = np.round(C[k - 1], 10)
 
-        return C
+        self.C = C
 
     @staticmethod
     def fast_radon_transform(array, angles, use_ramp=False):
@@ -331,19 +301,31 @@ class CommonlineNUG(Orient3D):
     # ADMM Step #
     #############
 
-    def admm_sym_J(
-        self,
-        C,
-        Lmax,
-        N,
-        max_iter,
-        rho,
-        ratio,
-        factor,
-        mult=1,
-        Nstep_yI=20,
-        verbose=True,
-    ):
+    def perform_admm(self):
+        X_est = self.admm_sym_J(self.C, self.verbose)
+
+        if self.perform_pr:
+            weight = 1 / (1 + np.arange(self.Lmax))
+            Penalty = [1, 1, 1, 1]
+            r = [3, 2, 1, 0]
+            X_est = self.proximal_refine(
+                X_est,
+                weight,
+                Penalty,
+                r,
+            )
+        self.X_est = X_est
+
+    def admm_sym_J(self, C, verbose):
+        Lmax = self.Lmax
+        N = self.n_img
+        max_iter = self.max_iter
+        rho = self.rho
+        ratio = self.ratio
+        factor = self.factor
+        mult = self.mult
+        Nstep_yI = self.Nstep_yI
+
         # admm for symmetric case
         (
             C0,
@@ -370,7 +352,7 @@ class CommonlineNUG(Orient3D):
             S0,
             S1,
             Sq,
-        ) = self.ADMM_preprocessing(C, Lmax, N)
+        ) = self.ADMM_preprocessing(C)
 
         n_pairs = N * (N - 1) // 2
         Ngrid = self.Ngrid
@@ -598,7 +580,7 @@ class CommonlineNUG(Orient3D):
                 rho = rho / factor
             return rho, p_resnorm, d_resnorm
 
-        def print_updates(verbose=True):
+        def print_updates(verbose):
             # X_admm=transform_coeff_back(X0,X1,Lmax,N); obj_p=0
             # for k in range(Lmax): obj_p+=xp.trace(C[k]@X_admm[k])
             if verbose:
@@ -741,9 +723,11 @@ class CommonlineNUG(Orient3D):
             X_admm[k] = xp.asnumpy(X_admm[k])
         return X_admm
 
-    def ADMM_preprocessing(self, C, Lmax, N):
+    def ADMM_preprocessing(self, C):
         # compute necessary quantities for ADMM
         # compute some useful index sets
+        Lmax = self.Lmax
+        N = self.n_img
         count = 0
         idx_diag = []
         idx_offdiag = []
@@ -980,22 +964,17 @@ class CommonlineNUG(Orient3D):
     # Proximal Refinement Step #
     ############################
 
-    def proximal_refine(
-        self,
-        X_admm,
-        C,
-        N,
-        weight,
-        Penalty,
-        r,
-        max_iter,
-        rho,
-        ratio,
-        factor,
-        mult,
-        Nstep_yI,
-        verbose=True,
-    ):
+    def proximal_refine(self, X_admm, weight, Penalty, r):
+        Lmax = self.Lmax
+        N = self.n_img
+        max_iter = self.max_iter
+        rho = self.rho
+        ratio = self.ratio
+        factor = self.factor
+        mult = self.mult
+        Nstep_yI = self.Nstep_yI
+        C = self.C
+
         def Ak(J, Euler):
             # compute Ak matrix
             order = Euler.shape[0]
@@ -1047,20 +1026,9 @@ class CommonlineNUG(Orient3D):
                     - Penalty[step] * weight[k] * (X_proj[k] + X_proj[k].T) / 2
                 )
 
-            X_next = self.admm_sym_J(
-                CC,
-                self.Lmax,
-                N,
-                max_iter,
-                rho,
-                ratio,
-                factor,
-                mult,
-                Nstep_yI,
-                verbose=False,
-            )
+            X_next = self.admm_sym_J(CC, verbose=False)
 
-            if verbose:
+            if self.verbose:
                 logger.info(
                     "Proximal refine step %d/%d: relative update %.3e",
                     step + 1,
@@ -1076,7 +1044,17 @@ class CommonlineNUG(Orient3D):
     # Euler Estimation Step #
     #########################
 
-    def euler_est(self, X1, XS):
+    def euler_est(self):
+        X_est = self.X_est
+        if isinstance(self.sym_grp, CnSymmetryGroup):
+            R_est, Euler_est = self.euler_est_Cm(X_est[0], X_est[self.n_sym - 1])
+        elif isinstance(self.sym_grp, DnSymmetryGroup):
+            R_est, Euler_est = self.euler_est_Dm(X_est)
+
+        self.Euler_est = Euler_est
+        self.rotations = R_est
+
+    def euler_est_Cm(self, X1, XS):
         S = self.n_sym
         N = self.n_img
         sym_euler = np.zeros((S, 3))
