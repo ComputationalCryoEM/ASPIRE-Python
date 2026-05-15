@@ -28,7 +28,7 @@ class CommonlineNUG(Orient3D):
         symmetry=None,
         n_rad=None,
         n_theta=360,
-        max_shift=0.15,
+        max_shift=0,
         shift_step=1,
         mask=True,
         Lmax=12,
