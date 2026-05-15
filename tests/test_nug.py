@@ -3,15 +3,6 @@ import pytest
 
 from aspire.abinitio import CommonlineNUG
 from aspire.source import Simulation
-from aspire.utils import (
-    J_conjugate,
-    Random,
-    Rotation,
-    all_pairs,
-    mean_aligned_angular_distance,
-    utest_tolerance,
-)
-from aspire.volume import CnSymmetricVolume, CnSymmetryGroup
 
 DTYPE = [np.float32]
 RESOLUTION = [48, 49]
@@ -56,6 +47,7 @@ def proximal_refine(request):
 # Fixtures #
 ############
 
+
 @pytest.fixture(scope="module")
 def source(n_img, resolution, dtype, offsets, order):
     vol = CnSymmetricVolume(
@@ -73,6 +65,7 @@ def source(n_img, resolution, dtype, offsets, order):
     src = src.cache()  # Precompute image stack
 
     return src
+
 
 @pytest.fixture(scope="module")
 def orient_est(src, proximal_refine):
@@ -94,4 +87,3 @@ def test_dtypes(orient_est):
     Check dtypes for each major step of the algorithm.
     """
     pass
-        
