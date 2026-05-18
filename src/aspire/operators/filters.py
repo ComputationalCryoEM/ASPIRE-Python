@@ -157,6 +157,9 @@ class Filter:
         """
         return 1
 
+    def _ctf_params(self):
+        raise NotImplementedError(f"Not implemented for {self.__class__.__name__}")
+
 
 class DualFilter(Filter):
     """
@@ -172,6 +175,12 @@ class DualFilter(Filter):
 
     def __len__(self):
         return len(self._filter)
+
+    def _ctf_params(self):
+        """
+        Return n_filters-by-n_param array from prior filter.
+        """
+        return self._filter._ctf_params()
 
 
 class FunctionFilter(Filter):
@@ -254,6 +263,12 @@ class PowerFilter(Filter):
     def __len__(self):
         return len(self._filter)
 
+    def _ctf_params(self):
+        """
+        Return n_filters-by-n_param array from prior filter.
+        """
+        return self._filter._ctf_params()
+
 
 class LambdaFilter(Filter):
     """
@@ -276,6 +291,12 @@ class LambdaFilter(Filter):
 
     def __getitem__(self, item):
         return LambdaFilter(self._filter[item], self._f)
+
+    def _ctf_params(self):
+        """
+        Return n_filters-by-n_param array from prior filter.
+        """
+        return self._filter._ctf_params()
 
 
 class MultiplicativeFilter(Filter):
@@ -314,6 +335,21 @@ class MultiplicativeFilter(Filter):
     def __len__(self):
         return self._n
 
+    def _ctf_params(self):
+        """
+        Return n_filters-by-n_param array from prior filter.
+
+        Raises error if multiple or none found.
+        """
+        _params = [getattr(c, "_ctf_params", None) for c in self._components]
+        _params = list(filter(_params, None))
+        if len(_params) > 1:
+            raise RuntimeError("Multiple filters with CTF parameters found.")
+        elif len(_params) == 0:
+            raise RuntimeError("No CTF parameters found.")
+
+        return _params[0]
+
 
 class ScaledFilter(Filter):
     """
@@ -341,6 +377,12 @@ class ScaledFilter(Filter):
 
     def __len__(self):
         return len(self._filter)
+
+    def _ctf_params(self):
+        """
+        Return n_filters-by-n_param array from prior filter.
+        """
+        return self._filter._ctf_params()
 
 
 class ArrayFilter(Filter):
