@@ -1,8 +1,11 @@
 import tempfile
 from unittest import TestCase
 
+from click.testing import CliRunner
+
 import tests.saved_test_data
 from aspire.apple.apple import Apple
+from aspire.commands.apple import apple
 from aspire.utils import importlib_path
 
 
@@ -543,3 +546,25 @@ class ApplePickerTestCase(TestCase):
                 centers_found = apple_picker.process_micrograph_centers(mrc_path)
 
         self.assertTrue(len(centers_found) == 0)
+
+
+def test_apple_command_line_folder(tmp_path):
+    """
+    Ensure folder-mode Apple CLI processes an MRC input without argument errors.
+    See issue #1382 describing argument error.
+    """
+    runner = CliRunner()
+
+    with importlib_path(tests.saved_test_data, "sample.mrc") as sample_mrc:
+        (tmp_path / "sample.mrc").symlink_to(sample_mrc)
+
+        result = runner.invoke(
+            apple,
+            [
+                f"--mrc_path={tmp_path}",
+                f"--output_dir={tmp_path / 'apple_out'}",
+                "--particle_size=78",
+            ],
+        )
+
+    assert result.exit_code == 0
