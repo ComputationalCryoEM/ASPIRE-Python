@@ -12,6 +12,13 @@ from aspire.utils import tqdm
 logger = logging.getLogger(__name__)
 
 
+# Add mrc extensions to PIL Image extensions
+def _micrograph_extensions():
+    extensions = set(Image.registered_extensions())
+    extensions.update({".mrc", ".mrcs"})
+    return extensions
+
+
 class Apple:
     def __init__(
         self,
@@ -158,7 +165,7 @@ class Apple:
     def process_folder(self, folder, create_jpg=False):
         # Gather matches for multiple possible file types.
         filenames = []
-        for ext in Image.extensions:
+        for ext in _micrograph_extensions():
             filenames.extend(glob(f"{folder}/*{ext}"))
         logger.info(f"converting {len(filenames)} input files")
         logger.info(f"launching {self.n_processes} processes")
