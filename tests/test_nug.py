@@ -3,12 +3,13 @@ import pytest
 
 from aspire.abinitio import CommonlineNUG
 from aspire.source import Simulation
+from aspire.volume import CnSymmetricVolume, SymmetryGroup
 
-DTYPE = [np.float32]
-RESOLUTION = [48, 49]
+DTYPE = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
+RESOLUTION = [48, pytest.param(48, marks=pytest.mark.expensive)]
 N_IMG = [5]
 OFFSETS = [0]
-ORDER = [3, 4]
+ORDER = [3, pytest.param(4, marks=pytest.mark.expensive)]
 PR = [False]
 SEED = 1980
 
@@ -68,12 +69,12 @@ def source(n_img, resolution, dtype, offsets, order):
 
 
 @pytest.fixture(scope="module")
-def orient_est(src, proximal_refine):
+def orient_est(source, proximal_refine):
     orient_est = CommonlineNUG(
-        src,
+        source,
         perform_pr=proximal_refine,
     )
-
+    orient_est.estimate_rotations()
     return orient_est
 
 
@@ -86,4 +87,55 @@ def test_dtypes(orient_est):
     """
     Check dtypes for each major step of the algorithm.
     """
-    pass
+    assert orient_est.dtype == orient_est.src.dtype
+
+    # Intermediate steps use doubles
+    for Ci in orient_est.C:
+        assert Ci.dtype == np.float64
+
+    for Xi in orient_est.X_est:
+        assert Xi.dtype == np.float64
+
+    assert orient_est.rotations.dtype == orient_est.dtype
+
+
+def test_estimate_rotations_pairwise(orient_est):
+    """ """
+    MSE = compare_rots_sym(
+        orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
+    )
+    np.testing.assert_array_less(MSE, 0.3)
+
+
+###########
+# Helpers #
+###########
+
+
+def compare_rots_sym(R_est, R_true, sym):
+    N = R_true.shape[0]
+    sym_euler = SymmetryGroup.parse(sym).matrices
+    order = sym_euler.shape[0]
+    J = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
+    error = np.zeros((N, N))
+    errorJ = np.zeros((N, N))
+    for i in range(N):
+        for j in range(N):
+            e = np.zeros(order)
+            eJ = np.zeros(order)
+            for s in range(order):
+                Rs = sym_euler[s]
+                e[s] = (
+                    np.linalg.norm(R_est[i].T @ R_est[j] - R_true[i].T @ Rs @ R_true[j])
+                    ** 2
+                )
+                eJ[s] = (
+                    np.linalg.norm(
+                        R_est[i].T @ R_est[j] - J @ R_true[i].T @ Rs @ R_true[j] @ J
+                    )
+                    ** 2
+                )
+            error[i, j] = e.min()
+            errorJ[i, j] = eJ.min()
+    E = min(error.sum(), errorJ.sum()) / N**2
+    return E
