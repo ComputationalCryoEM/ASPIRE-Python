@@ -2,14 +2,13 @@ import logging
 import time
 
 import numpy as np
-from scipy.io import loadmat
 from scipy.special import factorial
 
 from aspire.abinitio import Orient3D
 from aspire.nufft import nufft
 from aspire.numeric import fft, xp
 from aspire.operators import PolarFT, wemd_embed
-from aspire.utils import Rotation, cart2sph
+from aspire.utils import Rotation, cart2sph, complex_type
 from aspire.volume import CnSymmetryGroup, DnSymmetryGroup, SymmetryGroup
 
 from .commonline_utils import saff_kuijlaars
@@ -113,12 +112,11 @@ class CommonlineNUG(Orient3D):
         # compute the coefficient matrix
         Img = self.src.images[:]
         N = self.n_img
-        L = self.src.L
         n_theta = self.n_theta
         loss = self.loss
         Lmax = self.Lmax
         T = self.T
-        angular_sampling = np.arange(0, 360, 1)
+        angular_sampling = np.arange(0, 360, 1, dtype=np.float64)
 
         # Using ASPIRE Image.project(). Leaving original method in comments for now.
         line_proj = Img.project(angular_sampling).asnumpy().T
@@ -130,13 +128,6 @@ class CommonlineNUG(Orient3D):
         #     line_proj[:, :, n], Img_pft[:, :, n] = self.fast_radon_transform(
         #         Img[n], angular_sampling
         #     )
-
-        dim_wave = len(wemd_embed(line_proj[:, 0, 0]))
-        WE = np.zeros((dim_wave, n_theta, N))
-        for i in range(N):
-            for theta in range(n_theta):
-                WE[:, theta, i] = wemd_embed(line_proj[:, theta, i])
-
         def fij(alpha, gamma, i, j, loss):
             if loss == "l1":
                 # Ii_hat = Img_pft[:, :, i]
@@ -160,6 +151,12 @@ class CommonlineNUG(Orient3D):
                 return np.linalg.norm(Si - Sj, 1)
 
             if loss == "wemd":
+                dim_wave = len(wemd_embed(line_proj[:, 0, 0]))
+                WE = np.zeros((dim_wave, n_theta, N), dtype=np.float64)
+                for i in range(N):
+                    for theta in range(n_theta):
+                        WE[:, theta, i] = wemd_embed(line_proj[:, theta, i])
+
                 idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
                 idxj = np.round((-gamma - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
 
@@ -167,11 +164,11 @@ class CommonlineNUG(Orient3D):
                 Sj = WE[:, int(idxj), j]
                 return np.linalg.norm(Si - Sj, 1)
 
-        alpha_grid = np.arange(2 * T) * np.pi / T
-        beta_grid = (2 * np.arange(2 * T) + 1) * np.pi / 4 / T
-        gamma_grid = np.arange(2 * T) * np.pi / T
+        alpha_grid = np.arange(2 * T, dtype=np.float64) * np.pi / T
+        beta_grid = (2 * np.arange(2 * T, dtype=np.float64) + 1) * np.pi / 4 / T
+        gamma_grid = np.arange(2 * T, dtype=np.float64) * np.pi / T
 
-        bT = np.zeros(2 * T)
+        bT = np.zeros(2 * T, dtype=np.float64)
         for n in range(2 * T):
             ss = 0
             for m in range(T):
@@ -186,11 +183,11 @@ class CommonlineNUG(Orient3D):
         def fijhat_k(k, F):
             dk = 2 * k + 1
 
-            exp_alpha_grid = np.zeros((2 * T, dk), dtype=complex)
+            exp_alpha_grid = np.zeros((2 * T, dk), dtype=complex_type(np.float64))
             for m in range(-k, k + 1):
                 exp_alpha_grid[:, m + k] = np.exp(1j * m * alpha_grid)
 
-            exp_gamma_grid = np.zeros((2 * T, dk), dtype=complex)
+            exp_gamma_grid = np.zeros((2 * T, dk), dtype=complex_type(np.float64))
             for m in range(-k, k + 1):
                 exp_gamma_grid[:, m + k] = np.exp(1j * m * gamma_grid)
 
@@ -201,10 +198,10 @@ class CommonlineNUG(Orient3D):
         C = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
-            C.append(np.zeros((N * dk, N * dk), dtype=complex))
+            C.append(np.zeros((N * dk, N * dk), dtype=complex_type(np.float64)))
         for i in range(N):
             for j in range(i + 1, N):
-                Fij = np.zeros((2 * T, 2 * T))
+                Fij = np.zeros((2 * T, 2 * T), dtype=np.float64)
                 for j1 in range(2 * T):
                     for j2 in range(2 * T):
                         Fij[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, j, loss)
@@ -217,7 +214,7 @@ class CommonlineNUG(Orient3D):
             C[k - 1] = C[k - 1] + C[k - 1].conj().T
 
         for i in range(N):
-            Fii = np.zeros((2 * T, 2 * T))
+            Fii = np.zeros((2 * T, 2 * T), dtype=np.float64)
             for j1 in range(2 * T):
                 for j2 in range(2 * T):
                     Fii[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, i, loss)
@@ -230,9 +227,10 @@ class CommonlineNUG(Orient3D):
         for k in range(1, Lmax + 1):
             [T, Tinv] = self.complex2real(k)
             C[k - 1] = np.real(
-                np.kron(np.eye(N), Tinv) @ C[k - 1] @ np.kron(np.eye(N), T)
+                np.kron(np.eye(N, dtype=np.float64), Tinv)
+                @ C[k - 1]
+                @ np.kron(np.eye(N, dtype=np.float64), T)
             )
-            C[k - 1] = np.round(C[k - 1], 10)
 
         self.C = C
 
@@ -270,11 +268,10 @@ class CommonlineNUG(Orient3D):
 
         return projections, lines_f
 
-    @staticmethod
-    def complex2real(ell):
+    def complex2real(self, ell):
         # compute transformation matrices that convert complex representations to real ones
         diml = 2 * ell + 1
-        Tinv = np.zeros((diml, diml), dtype=complex)
+        Tinv = np.zeros((diml, diml), dtype=complex_type(np.float64))
         for i in range(diml):
             if i < ell:
                 Tinv[i, i] = 1j / np.sqrt(2)
@@ -285,7 +282,7 @@ class CommonlineNUG(Orient3D):
                 Tinv[i, i] = (-1) ** (i - ell) / np.sqrt(2)
                 Tinv[i, diml - 1 - i] = 1 / np.sqrt(2)
 
-        T = np.zeros((diml, diml), dtype=complex)
+        T = np.zeros((diml, diml), dtype=complex_type(np.float64))
         for i in range(diml):
             if i < ell:
                 T[i, i] = -1j / np.sqrt(2)
@@ -367,9 +364,9 @@ class CommonlineNUG(Orient3D):
         for k in range(1, Lmax + 1):
             s0 = k**2
             s1 = (k + 1) ** 2
-            AEk = xp.zeros((1 + s0 + s1, 2 * (s0 + s1)))
-            AEk[0, :s0] = xp.eye(k).T.reshape(-1)
-            AEk[0, s0 : s0 + s1] = xp.eye(k + 1).T.reshape(-1)
+            AEk = xp.zeros((1 + s0 + s1, 2 * (s0 + s1)), dtype=np.float64)
+            AEk[0, :s0] = xp.eye(k, dtype=np.float64).T.reshape(-1)
+            AEk[0, s0 : s0 + s1] = xp.eye(k + 1, dtype=np.float64).T.reshape(-1)
             for count in range(1, 1 + s0):
                 AEk[count, count - 1] = 1
                 AEk[count, count - 1 + s0 + s1] = 1
@@ -378,7 +375,7 @@ class CommonlineNUG(Orient3D):
                 AEk[count, count - 1 + s1 + s0] = 1
             AE.append(AEk)
             AEAETinv.append(np.linalg.pinv(AEk @ AEk.T))
-        bE = xp.zeros((Lmax + D0 + D1))
+        bE = xp.zeros((Lmax + D0 + D1), dtype=np.float64)
         for k in range(Lmax):
             bE[k + d0[k] + d1[k] :] = rank_Ak[k]
             bE[k + 1 + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k]] = xp.eye(
@@ -391,7 +388,7 @@ class CommonlineNUG(Orient3D):
         P = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
-            Pk = xp.eye(dk)
+            Pk = xp.eye(dk, dtype=np.float64)
             for m in range(k):
                 for el in range(k - m):
                     Pk[(m + 2 * el, m + 2 * el + 1), :] = Pk[
@@ -400,7 +397,7 @@ class CommonlineNUG(Orient3D):
             P.append(Pk)
 
         def fun_AE(X0, X1, Xd0, Xd1, Xq):
-            z = xp.zeros((Lmax + D0 + D1, N))
+            z = xp.zeros((Lmax + D0 + D1, N), dtype=np.float64)
             for k in range(Lmax):
                 z[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = AE[
                     k
@@ -418,10 +415,10 @@ class CommonlineNUG(Orient3D):
             )
 
         def fun_AET(yE, yEq):
-            Z0 = xp.zeros((D0, N * (N + 1) // 2))
-            Z1 = xp.zeros((D1, N * (N + 1) // 2))
-            Zd0 = xp.zeros((D0, N))
-            Zd1 = xp.zeros((D1, N))
+            Z0 = xp.zeros((D0, N * (N + 1) // 2), dtype=np.float64)
+            Z1 = xp.zeros((D1, N * (N + 1) // 2), dtype=np.float64)
+            Zd0 = xp.zeros((D0, N), dtype=np.float64)
+            Zd1 = xp.zeros((D1, N), dtype=np.float64)
             for k in range(Lmax):
                 s0 = (k + 1) ** 2
                 s1 = (k + 2) ** 2
@@ -436,7 +433,7 @@ class CommonlineNUG(Orient3D):
             return Z0, Z1, Zd0, Zd1, Zq[:16]
 
         def fun_AI(X0, X1):
-            z = xp.zeros((Ngrid, N * (N + 1) // 2))
+            z = xp.zeros((Ngrid, N * (N + 1) // 2), dtype=np.float64)
             tmp = xp.concatenate((X0, X1), axis=0)
             z[:, idx_diag] = AI_mat_diag @ tmp[:, idx_diag]
             z[:, idx_offdiag] = AI_mat_offdiag @ tmp[:, idx_offdiag]
@@ -446,7 +443,7 @@ class CommonlineNUG(Orient3D):
         def fun_AIT(yI):
             # Z=AI_mat.T@yI
             # return Z[:D0,:], Z[D0:,:]
-            Z = xp.zeros((D0 + D1, N * (N + 1) // 2))
+            Z = xp.zeros((D0 + D1, N * (N + 1) // 2), dtype=np.float64)
             Z[:, idx_diag] = AI_mat_diag.T @ yI[:, idx_diag]
             Z[:, idx_offdiag] = AI_mat_offdiag.T @ yI[:, idx_offdiag]
             return Z[:D0, :], Z[D0:, :]
@@ -516,7 +513,7 @@ class CommonlineNUG(Orient3D):
                 -Xd1 / rho - Sd1,
                 -Xq / rho - Sq,
             )
-            yE = xp.zeros((Lmax + D0 + D1, N))
+            yE = xp.zeros((Lmax + D0 + D1, N), dtype=np.float64)
             for k in range(Lmax):
                 yE[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = AEAETinv[k] @ (
                     bE[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] / rho
@@ -680,13 +677,13 @@ class CommonlineNUG(Orient3D):
                     + ", |X|=%1.2f" % normX
                 )
 
-        Xd0 = xp.zeros((D0, N))
-        Xd1 = xp.zeros((D1, N))
-        Sd0 = xp.zeros(Xd0.shape)
-        Sd1 = xp.zeros(Xd1.shape)
-        yI = xp.zeros((Ngrid, N * (N + 1) // 2))
-        yE = xp.zeros(bE.shape)
-        yEq = xp.zeros(bEq.shape)
+        Xd0 = xp.zeros((D0, N), dtype=np.float64)
+        Xd1 = xp.zeros((D1, N), dtype=np.float64)
+        Sd0 = xp.zeros(Xd0.shape, dtype=np.float64)
+        Sd1 = xp.zeros(Xd1.shape, dtype=np.float64)
+        yI = xp.zeros((Ngrid, N * (N + 1) // 2), dtype=np.float64)
+        yE = xp.zeros(bE.shape, dtype=np.float64)
+        yEq = xp.zeros(bEq.shape, dtype=np.float64)
 
         IDX = np.arange(3)
         Time = np.zeros(4)
@@ -774,11 +771,13 @@ class CommonlineNUG(Orient3D):
         D1 = d1[-1]
 
         # AE and bE for quaternion constraints
-        AEq = xp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEq"])
-        AEqAEqtinv = xp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEqAEqtinv"])
+        # AEq = xp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEq"])
+        # AEqAEqtinv = xp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEqAEqtinv"])
+        AEq = xp.asarray(self.construct_AEq())
+        AEqAEqtinv = xp.linalg.pinv(AEq @ AEq.T)
 
-        bEq = xp.zeros(17)
-        bEq[:16] = xp.eye(4).reshape(-1) / 4
+        bEq = xp.zeros(17, dtype=np.float64)
+        bEq[:16] = xp.eye(4, dtype=np.float64).reshape(-1) / 4
         bEq[-1] = 1
         bEq = xp.repeat(bEq[:, xp.newaxis], N * (N - 1) // 2, axis=1)
 
@@ -794,10 +793,10 @@ class CommonlineNUG(Orient3D):
         #     AI_mat[p,:d0[-1]]=w0; AI_mat[p,d0[-1]:]=w1
         # AI_mat=xp.asarray(AI_mat) / 10;
         # bI=-(Lmax+2)*(Lmax+1)/2 / 10
-        AI_mat_offdiag = np.zeros((Ngrid, D0 + D1))
+        AI_mat_offdiag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
         for p in range(Ngrid):
-            w0 = np.zeros(D0)
-            w1 = np.zeros(D1)
+            w0 = np.zeros(D0, dtype=np.float64)
+            w1 = np.zeros(D1, dtype=np.float64)
             for k in range(1, Lmax + 1):
                 w0[d0[k - 1] : d0[k]] = (
                     (Lmax - k + 2)
@@ -826,10 +825,10 @@ class CommonlineNUG(Orient3D):
         #     AI_mat_offdiag_new[:, d0[k - 1]:d0[k]] = block0
         #     AI_mat_offdiag_new[:, d0[-1] + d1[k - 1]:d0[-1] + d1[k]] = block1
 
-        AI_mat_diag = np.zeros((Ngrid, D0 + D1))
+        AI_mat_diag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
         for p in range(Ngrid):
-            w0 = np.zeros(D0)
-            w1 = np.zeros(D1)
+            w0 = np.zeros(D0, dtype=np.float64)
+            w1 = np.zeros(D1, dtype=np.float64)
             for k in range(1, Lmax + 1):
                 w0[d0[k - 1] : d0[k]] = (
                     (Lmax - k + 2)
@@ -857,15 +856,15 @@ class CommonlineNUG(Orient3D):
         II = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
-            II.append(xp.eye(N * dk))
+            II.append(xp.eye(N * dk, dtype=np.float64))
         I0, I1 = self.transform_coeff(II, Lmax, N, IDX_upper)
-        X0 = xp.zeros((D0, N * (N + 1) // 2))
-        X1 = xp.zeros((D1, N * (N + 1) // 2))
-        Xq = xp.zeros((16, N * (N - 1) // 2))
+        X0 = xp.zeros((D0, N * (N + 1) // 2), dtype=np.float64)
+        X1 = xp.zeros((D1, N * (N + 1) // 2), dtype=np.float64)
+        Xq = xp.zeros((16, N * (N - 1) // 2), dtype=np.float64)
         # X0,X1=transform_coeff(II,Lmax,N); Xq=xp.zeros((16,N*(N-1))); Xq[0,:]=1;
         S0 = xp.copy(I0)
         S1 = xp.copy(I1)
-        Sq = xp.zeros(Xq.shape)
+        Sq = xp.zeros(Xq.shape, dtype=np.float64)
         # S0=xp.zeros(X0.shape); S1=xp.zeros(X1.shape); Sq=xp.zeros(Xq.shape)
 
         self.Ngrid = Ngrid
@@ -911,7 +910,7 @@ class CommonlineNUG(Orient3D):
 
         def permutek_block(Ak, k):
             dk = 2 * k + 1
-            Pk = np.eye(dk)
+            Pk = np.eye(dk, dtype=np.float64)
             for m in range(k):
                 for ell in range(k - m):
                     Pk[(m + 2 * ell, m + 2 * ell + 1), :] = Pk[
@@ -923,8 +922,8 @@ class CommonlineNUG(Orient3D):
         W0 = []
         W1 = []
         for k in range(start, self.Lmax + 1):
-            W0k = np.zeros((Ngrid, k, k))
-            W1k = np.zeros((Ngrid, k + 1, k + 1))
+            W0k = np.zeros((Ngrid, k, k), dtype=np.float64)
+            W1k = np.zeros((Ngrid, k + 1, k + 1), dtype=np.float64)
 
             TkT = TT[k - start].T
             TinvkT = TTI[k - start].T
@@ -951,7 +950,7 @@ class CommonlineNUG(Orient3D):
         gamma = gamma + np.pi
 
         # SO(3) in Euler ZYZ
-        SO3 = np.zeros((S2_size * S1_size, 3))
+        SO3 = np.zeros((S2_size * S1_size, 3), dtype=np.float64)
         count = 0
         for i in range(S1_size):
             for j in range(S2_size):
@@ -965,14 +964,7 @@ class CommonlineNUG(Orient3D):
     ############################
 
     def proximal_refine(self, X_admm, weight, Penalty, r):
-        Lmax = self.Lmax
         N = self.n_img
-        max_iter = self.max_iter
-        rho = self.rho
-        ratio = self.ratio
-        factor = self.factor
-        mult = self.mult
-        Nstep_yI = self.Nstep_yI
         C = self.C
 
         def Ak(J, Euler):
@@ -989,7 +981,7 @@ class CommonlineNUG(Orient3D):
                 den += np.linalg.norm(B[k]) ** 2
             return np.sqrt(num) / max(np.sqrt(den), eps)
 
-        rank_Ak = np.zeros(self.Lmax)
+        rank_Ak = np.zeros(self.Lmax, dtype=np.float64)
         C_base = [None] * self.Lmax
         for k in range(self.Lmax):
             C_base[k] = xp.asnumpy(C[k]).copy()
@@ -1052,18 +1044,26 @@ class CommonlineNUG(Orient3D):
             R_est, Euler_est = self.euler_est_Dm(X_est)
 
         self.Euler_est = Euler_est
-        self.rotations = R_est
+        self.rotations = R_est.astype(self.dtype)
 
     def euler_est_Cm(self, X1, XS):
         S = self.n_sym
         N = self.n_img
-        sym_euler = np.zeros((S, 3))
+        sym_euler = np.zeros((S, 3), dtype=np.float64)
         for s in range(S):
             sym_euler[s] = [2 * np.pi * s / S, 0, 0]
         [T, Tinv] = self.complex2real(1)
-        X1 = np.kron(np.eye(N), T) @ X1 @ np.kron(np.eye(N), Tinv)
+        X1 = (
+            np.kron(np.eye(N, dtype=np.float64), T)
+            @ X1
+            @ np.kron(np.eye(N, dtype=np.float64), Tinv)
+        )
         [T, Tinv] = self.complex2real(S)
-        XS = np.kron(np.eye(N), T) @ XS @ np.kron(np.eye(N), Tinv)
+        XS = (
+            np.kron(np.eye(N, dtype=np.float64), T)
+            @ XS
+            @ np.kron(np.eye(N, dtype=np.float64), Tinv)
+        )
 
         def find_phase(A, B):
             # find a number c that minimizes ||cA-B||_F
@@ -1079,8 +1079,8 @@ class CommonlineNUG(Orient3D):
             return c / abs(c)
 
         def find_beta(X1):
-            B1 = np.zeros((N, N))
-            B2 = np.zeros((N, N))
+            B1 = np.zeros((N, N), dtype=np.float64)
+            B2 = np.zeros((N, N), dtype=np.float64)
             for i in range(N):
                 for j in range(N):
                     Xij = X1[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)]
@@ -1096,8 +1096,8 @@ class CommonlineNUG(Orient3D):
             return beta
 
         def find_alpha(X1):
-            ZZbar = np.zeros((N, N), dtype=complex)
-            ZZ = np.zeros((N, N), dtype=complex)
+            ZZbar = np.zeros((N, N), dtype=complex_type(np.float64))
+            ZZ = np.zeros((N, N), dtype=complex_type(np.float64))
             for i in range(N):
                 for j in range(N):
                     z = X1[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)][0, 0]
@@ -1112,12 +1112,12 @@ class CommonlineNUG(Orient3D):
 
             c = find_phase(Z[:, None] @ Z[:, None].T, ZZ)
             Z = np.sqrt(c) * Z
-            return np.angle(Z)
+            return np.angle(Z).astype(np.float64)
 
         dk = 2 * S + 1
 
         def find_gamma(Xm, beta, alpha):
-            C = np.zeros((N, N), dtype=complex)
+            C = np.zeros((N, N), dtype=complex_type(np.float64))
             Jk = np.ones(dk)
             Jk[S + 1 :: 2] = -1
             Jk[S - 1 :: -2] = -1
@@ -1150,13 +1150,13 @@ class CommonlineNUG(Orient3D):
                     C[i, j] = np.vdot(C1 + C2, np.real(C3)) / np.vdot(
                         C1 + C2, C1 + C2
                     ) + 1j * np.vdot(C1 - C2, np.imag(C3)) / np.vdot(C1 - C2, C1 - C2)
-            C += C.T.conj() + np.eye(N)
+            C += C.T.conj() + np.eye(N, dtype=np.float64)
             evals, evecs = np.linalg.eigh(C)
             idx = np.argmax(evals)
             c = evecs[:, idx] * np.sqrt(evals[idx])
             return np.angle(c) / S
 
-        Euler_est = np.zeros((N, 3))
+        Euler_est = np.zeros((N, 3), dtype=np.float64)
         Euler_est[:, 0] = find_alpha(X1)
         Euler_est[:, 1] = find_beta(X1)
         Euler_est[:, 2] = find_gamma(XS, Euler_est[:, 1], Euler_est[:, 0])
@@ -1186,9 +1186,13 @@ class CommonlineNUG(Orient3D):
                 return c / abs(c)
 
             T, Tinv = self.complex2real(2)
-            X2 = np.kron(np.eye(N), T) @ X2 @ np.kron(np.eye(N), Tinv)
+            X2 = (
+                np.kron(np.eye(N, dtype=np.float64), T)
+                @ X2
+                @ np.kron(np.eye(N, dtype=np.float64), Tinv)
+            )
 
-            B1 = np.zeros((N, N))
+            B1 = np.zeros((N, N), dtype=np.float64)
             for i in range(N):
                 for j in range(N):
                     Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
@@ -1198,8 +1202,8 @@ class CommonlineNUG(Orient3D):
             b1 = v1[:, idx] * np.sqrt(e1[idx]) * np.sign(v1[0, idx])
             beta_est = np.arccos(np.clip(np.sqrt(b1), -1, 1)) % np.pi
 
-            Aminus = np.zeros((N, N), dtype=complex)
-            Aplus = np.zeros((N, N), dtype=complex)
+            Aminus = np.zeros((N, N), dtype=complex_type(np.float64))
+            Aplus = np.zeros((N, N), dtype=complex_type(np.float64))
             for i in range(N):
                 for j in range(N):
                     Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
@@ -1253,8 +1257,12 @@ class CommonlineNUG(Orient3D):
                 return a + 1j * b
 
             [T, Tinv] = self.complex2real(S)
-            Xm = np.kron(np.eye(N), T) @ Xm @ np.kron(np.eye(N), Tinv)
-            C = np.zeros((N, N), dtype=complex)
+            Xm = (
+                np.kron(np.eye(N, dtype=np.float64), T)
+                @ Xm
+                @ np.kron(np.eye(N, dtype=np.float64), Tinv)
+            )
+            C = np.zeros((N, N), dtype=complex_type(np.float64))
             Jk = np.ones(dk)
             Jk[S + 1 :: 2] = -1
             Jk[S - 1 :: -2] = -1
@@ -1290,7 +1298,7 @@ class CommonlineNUG(Orient3D):
                     Br = np.real(4 * DXijmD)
                     Bi = np.imag(4 * DXijmD)
                     C[i, j] = LS_D(W1, W2, W3, W4, Br, Bi)
-            C += C.T.conj() + np.eye(N)
+            C += C.T.conj() + np.eye(N, dtype=np.float64)
             evals, evecs = np.linalg.eigh(C)
             idx = np.argmax(evals)
             c = evecs[:, idx] * np.sqrt(evals[idx])
@@ -1298,7 +1306,7 @@ class CommonlineNUG(Orient3D):
 
         alpha_est, beta_est = find_alpha_beta(X2)
         gamma_est = find_gamma(XS, alpha_est, beta_est)
-        Euler_est = np.zeros((N, 3))
+        Euler_est = np.zeros((N, 3), dtype=np.float64)
         Euler_est[:, 0] = alpha_est
         Euler_est[:, 1] = beta_est
         Euler_est[:, 2] = gamma_est
@@ -1315,8 +1323,8 @@ class CommonlineNUG(Orient3D):
         for k in range(1, Lmax + 1):
             d0.append(d0[-1] + k**2)
             d1.append(d1[-1] + (k + 1) ** 2)
-        A0 = xp.zeros((d0[-1], N * (N + 1) // 2))
-        A1 = xp.zeros((d1[-1], N * (N + 1) // 2))
+        A0 = xp.zeros((d0[-1], N * (N + 1) // 2), dtype=np.float64)
+        A1 = xp.zeros((d1[-1], N * (N + 1) // 2), dtype=np.float64)
         for k in range(1, Lmax + 1):
             a0, a1 = self.permutek(A[k - 1], k, N)
             A0[d0[k - 1] : d0[k], :] = self.vec_block(a0, N, k, IDX_upper)
@@ -1332,7 +1340,7 @@ class CommonlineNUG(Orient3D):
         A = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
-            Ak = xp.zeros((N * dk, N * dk))
+            Ak = xp.zeros((N * dk, N * dk), dtype=np.float64)
             Ak[: N * k, : N * k] = self.mat_block(
                 A0[d0[k - 1] : d0[k], :], N, k, IDX_upper, IDX_lower, idx_offdiag
             )
@@ -1347,13 +1355,17 @@ class CommonlineNUG(Orient3D):
     def permutek(Ak, k, N):
         AkP = xp.copy(Ak)
         dk = 2 * k + 1
-        Pk = xp.eye(dk)
+        Pk = xp.eye(dk, dtype=AkP.dtype)
         for m in range(k):
             for n in range(k - m):
                 Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
-        AkP = xp.kron(xp.eye(N), Pk) @ Ak @ xp.kron(xp.eye(N), Pk.T)
+        AkP = (
+            xp.kron(xp.eye(N, dtype=AkP.dtype), Pk)
+            @ Ak
+            @ xp.kron(xp.eye(N, dtype=AkP.dtype), Pk.T)
+        )
 
-        Pk = xp.eye(N * dk)
+        Pk = xp.eye(N * dk, dtype=AkP.dtype)
         idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
         for m in range(N - 1):
             for n in range(N - 1 - m):
@@ -1366,7 +1378,7 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def permutek_back(Ak, k, N):
         dk = 2 * k + 1
-        Pk = xp.eye(N * dk)
+        Pk = xp.eye(N * dk, dtype=Ak.dtype)
         idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
         for m in range(N - 1):
             for n in range(N - 1 - m):
@@ -1375,11 +1387,15 @@ class CommonlineNUG(Orient3D):
                 ][idx, :]
         AkB = Pk.T @ Ak @ Pk
         dk = 2 * k + 1
-        Pk = xp.eye(dk)
+        Pk = xp.eye(dk, dtype=Ak.dtype)
         for m in range(k):
             for n in range(k - m):
                 Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
-        AkB = xp.kron(xp.eye(N), Pk.T) @ AkB @ xp.kron(xp.eye(N), Pk)
+        AkB = (
+            xp.kron(xp.eye(N, dtype=Ak.dtype), Pk.T)
+            @ AkB
+            @ xp.kron(xp.eye(N, dtype=Ak.dtype), Pk)
+        )
         return AkB
 
     @staticmethod
@@ -1404,7 +1420,7 @@ class CommonlineNUG(Orient3D):
         return Lambda
 
     def compute_rank(self, Lmax):
-        rk = xp.zeros(Lmax)
+        rk = xp.zeros(Lmax, dtype=np.float64)
         A = []
         for k in range(1, Lmax + 1):
             Ak = np.sum(self.WD(k, self.sym_euler), axis=0)
@@ -1430,7 +1446,7 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def Wd(J, beta):
         # compute Wigner small d matrix
-        d = np.zeros((len(beta), 2 * J + 1, 2 * J + 1))
+        d = np.zeros((len(beta), 2 * J + 1, 2 * J + 1), dtype=beta.dtype)
         for m in range(-J, J + 1):
             for n in range(-J, J + 1):
                 smin = max(0, m - n)
@@ -1457,7 +1473,7 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def mat_block(vecA, N, sz, IDX_upper, IDX_lower, idx_offdiag):
         tmp = vecA.T.reshape(N * (N + 1) // 2, sz, sz).transpose(0, 2, 1)
-        AA = xp.zeros((N**2, sz, sz))
+        AA = xp.zeros((N**2, sz, sz), dtype=vecA.dtype)
         AA[IDX_upper] = tmp
         AA[IDX_lower] = tmp[idx_offdiag].transpose(0, 2, 1)
         return (AA.reshape(N, N, sz, sz).transpose(0, 2, 1, 3)).reshape(N * sz, N * sz)
@@ -1478,7 +1494,7 @@ class CommonlineNUG(Orient3D):
 
         if Pk is None:
             dk = 2 * k + 1
-            Pk = xp.eye(dk)
+            Pk = xp.eye(dk, dtype=A.dtype)
             for m in range(k):
                 for el in range(k - m):
                     Pk[(m + 2 * el, m + 2 * el + 1), :] = Pk[
@@ -1502,11 +1518,11 @@ class CommonlineNUG(Orient3D):
             A0 = A0[None, :]
             A1 = A1[None, :]
 
-        A = xp.zeros((A0.shape[0], dk, dk))
+        A = xp.zeros((A0.shape[0], dk, dk), dtype=A0.dtype)
         A[:, :k, :k] = A0.reshape(-1, k, k).swapaxes(-1, -2)
         A[:, k:, k:] = A1.reshape(-1, k + 1, k + 1).swapaxes(-1, -2)
         if Pk is None:
-            Pk = xp.eye(dk)
+            Pk = xp.eye(dk, dtype=A0.dtype)
             for m in range(k):
                 for el in range(k - m):
                     Pk[(m + 2 * el, m + 2 * el + 1), :] = Pk[
@@ -1514,3 +1530,42 @@ class CommonlineNUG(Orient3D):
                     ]
         out = Pk.T @ A @ Pk
         return out[0] if single else out
+
+    def construct_AEq(self):
+        """
+        Construct the linear equality matrix for quaternion constraints.
+        """
+        AEq = np.zeros((17, 21), np.float64)
+
+        # First 16 rows: identity constraints on first 16 variables
+        AEq[:16, :16] = np.eye(16, dtype=np.float64)
+
+        # Extra columns 16:21
+        extra = 0.25 * np.array(
+            [
+                [-1, 1, 0, 0, 1],
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, -1, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [1, 1, 0, 0, -1],
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 1, -1, 0],
+                [0, 0, 0, 0, 0],
+                [-1, -1, 0, 0, -1],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 0, 0, 0],
+                [1, -1, 0, 0, 1],
+            ],
+            dtype=np.float64,
+        )
+
+        AEq[:16, 16:] = extra
+
+        # Last row: redundant trace/sum constraint
+        AEq[16, [0, 5, 10, 15]] = 1
+
+        return AEq
