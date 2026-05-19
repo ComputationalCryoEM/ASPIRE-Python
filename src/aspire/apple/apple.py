@@ -174,9 +174,7 @@ class Apple:
         with futures.ProcessPoolExecutor(self.n_processes) as executor:
             to_do = []
             for filename in filenames:
-                future = executor.submit(
-                    self.process_micrograph, filename, False, create_jpg
-                )
+                future = executor.submit(self.process_micrograph, filename, create_jpg)
                 to_do.append(future)
 
             for future in futures.as_completed(to_do):
