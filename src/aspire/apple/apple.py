@@ -4,19 +4,13 @@ from concurrent import futures
 from glob import glob
 
 import numpy as np
-from PIL import Image
+from PIL import Image as PILImage
 
 from aspire.apple.picking import Picker
+from aspire.image import Image
 from aspire.utils import tqdm
 
 logger = logging.getLogger(__name__)
-
-
-# Add mrc extensions to PIL Image extensions
-def _micrograph_extensions():
-    extensions = set(Image.registered_extensions())
-    extensions.update({".mrc", ".mrcs"})
-    return extensions
 
 
 class Apple:
@@ -165,7 +159,7 @@ class Apple:
     def process_folder(self, folder, create_jpg=False):
         # Gather matches for multiple possible file types.
         filenames = []
-        for ext in _micrograph_extensions():
+        for ext in Image.extensions:
             filenames.extend(glob(f"{folder}/*{ext}"))
         logger.info(f"converting {len(filenames)} input files")
         logger.info(f"launching {self.n_processes} processes")
@@ -283,7 +277,7 @@ class Apple:
 
         if create_jpg:
             # Create the image
-            image_out = Image.fromarray((particle_image).astype(np.uint8))
+            image_out = PILImage.fromarray((particle_image).astype(np.uint8))
 
             # Construct filename
             base = os.path.splitext(os.path.basename(picker.filename))[0]
