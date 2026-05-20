@@ -165,16 +165,25 @@ class Apple:
         logger.info(f"launching {self.n_processes} processes")
 
         pbar = tqdm(total=len(filenames))
-        with futures.ProcessPoolExecutor(self.n_processes) as executor:
-            to_do = []
-            for filename in filenames:
-                future = executor.submit(self.process_micrograph, filename, create_jpg)
-                to_do.append(future)
 
-            for future in futures.as_completed(to_do):
-                # Retrieve (None) result, since this operation re-raises Exceptions, if any.
-                _ = future.result()
+        if self.n_processes == 1:
+            for filename in filenames:
+                self.process_micrograph(filename, create_jpg)
                 pbar.update(1)
+        else:
+            with futures.ProcessPoolExecutor(self.n_processes) as executor:
+                to_do = []
+                for filename in filenames:
+                    future = executor.submit(
+                        self.process_micrograph, filename, create_jpg
+                    )
+                    to_do.append(future)
+
+                for future in futures.as_completed(to_do):
+                    # Retrieve (None) result, since this operation re-raises Exceptions, if any.
+                    _ = future.result()
+                    pbar.update(1)
+
         pbar.close()
 
     def process_micrograph_centers(
