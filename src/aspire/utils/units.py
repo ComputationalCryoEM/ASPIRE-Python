@@ -30,6 +30,11 @@ def voltage_to_wavelength(voltage):
     :param voltage: float, The electron voltage in kV.
     :return: float, The electron wavelength in angstroms.
     """
+    import warnings
+
+    warnings.warn(
+        "temporary deprecation warning check", DeprecationWarning, stacklevel=1
+    )
     # We use de Broglie's relativistic formula for wavelength given by:
     # wavelength = h / np.sqrt(2 * m * q * V * (1 + q * V / (2 * m * c**2))),
     # where
@@ -53,6 +58,10 @@ def wavelength_to_voltage(wavelength):
     :param wavelength: float, The electron wavelength in angstroms.
     :return: float, The electron voltage in kV.
     """
+    # Added to test CI warnings filter
+    import warnings
+
+    warnings.warn("temporary user warning check", UserWarning, stacklevel=1)
     a = float(12.264259661581491)
     b = float(0.9784755917869367)
 
