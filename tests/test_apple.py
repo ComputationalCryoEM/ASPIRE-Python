@@ -550,8 +550,7 @@ class ApplePickerTestCase(TestCase):
 
 def test_apple_command_line_folder(tmp_path):
     """
-    Ensure folder-mode Apple CLI processes an MRC input without argument errors.
-    See issue #1382 describing argument error.
+    Test apple CLI.
     """
     runner = CliRunner()
 
