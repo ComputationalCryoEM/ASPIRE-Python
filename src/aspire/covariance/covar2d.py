@@ -562,12 +562,15 @@ class BatchedRotCov2D(RotCov2D):
         optimized_expand = callable(
             getattr(self.basis.__class__, "expand_radial_vec", None)
         )
-        if optimized_expand and isinstance(self.src.filter_stack, CTFFilter):
+        if optimized_expand and self.src.filter_stack.radial:
             logger.info(
-                "Found all filters are CTF, and `basis.expand_radial_vec` available using, bulk basis mat eval"
+                "Found radial filter stack and `basis.expand_radial_vec` available."
+                "  Using bulk basis mat eval."
             )
-            return self._ctf_filters_to_basis_mats()
+            return self._filter_stack_to_basis_mats()
         else:
+            # Note, can come back and optmize the filter eval to bulk, just not radial
+            # For now use legacy path.
             logger.info("Using sequential basis mat eval")
             return self._filters_to_basis_mats()
 
@@ -585,20 +588,18 @@ class BatchedRotCov2D(RotCov2D):
         ]
         return basis_mats
 
-    def _ctf_filters_to_basis_mats(self):
-        # lol
-        logger.info("Extracting CTF filter parameters and generating eval points")
-        params = self.src.filter_stack._ctf_params()
-
-        logger.info("Computing CTF filters at eval points")
+    # todo, either rename _radial_filters_to_basis_mats or handle none radial
+    # same remark as `filters_to_basis_mats`
+    def _filter_stack_to_basis_mats(self):
+        logger.info("Generating filter eval points")
         _filter_pts = self.basis._filter_pts
         # if we have many filters, might be worth trip to GPU
         if len(self.src.filter_stack) >= 2048:
             params = xp.asarray(params)
             _filter_pts = xp.asarray(_filter_pts)
 
-        _filter_vals = CTFFilter.ctf_formula(
-            _filter_pts, self.src.pixel_size, *(params.T)
+        _filter_vals = self.src.filter_stack.evaluate(
+            _filter_pts, pixel_size=self.src.pixel_size
         )
 
         logger.info("Computing basis radial expansion")

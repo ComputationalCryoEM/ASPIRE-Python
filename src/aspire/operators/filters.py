@@ -89,7 +89,16 @@ class Filter:
         h = self._evaluate(omega, **kwargs)
 
         if self.radial:
-            h = np.take(h, idx)
+            # The reshape and take axis gynmastics work to provide the
+            # legacy idx taking functionality for both singleton and
+            # stack cases.
+            #   reshape (stack, vals)
+            h = h.reshape(len(self), -1)
+            #   keep stack, take along vals axis
+            h = np.take(h, idx, axis=-1)
+            #   squeeze off stack dim from singleton case (preserves legacy behavior)
+            if h.shape[0] == 1:  # avoid error when len(h)>1
+                h = np.squeeze(h, axis=0)
 
         return h
 
@@ -158,7 +167,12 @@ class Filter:
         return 1
 
     def _ctf_params(self):
-        raise NotImplementedError(f"Not implemented for {self.__class__.__name__}")
+        """
+        Return n_filters-by-n_param array from prior filter.
+        """
+        raise NotImplementedError(
+            f"_ctf_params not implemented for {self.__class__.__name__}"
+        )
 
 
 class DualFilter(Filter):
@@ -329,7 +343,7 @@ class MultiplicativeFilter(Filter):
     def _evaluate(self, omega, **kwargs):
         res = 1
         for c in self._components:
-            res *= c.evaluate(omega, **kwargs)
+            res = res * c.evaluate(omega, **kwargs)
         return res
 
     def __len__(self):
@@ -341,8 +355,13 @@ class MultiplicativeFilter(Filter):
 
         Raises error if multiple or none found.
         """
-        _params = [getattr(c, "_ctf_params", None) for c in self._components]
-        _params = list(filter(_params, None))
+        _params = []
+        for c in self._components:
+            try:
+                _params.append(c._ctf_params())
+            except NotImplementedError as e:
+                pass
+
         if len(_params) > 1:
             raise RuntimeError("Multiple filters with CTF parameters found.")
         elif len(_params) == 0:
