@@ -233,7 +233,7 @@ def test_gaussian_3d(indexing):
     G_z = np.sum(G, axis=(x, y)) / np.sum(G)
 
     # Added to check CI config. Should fail on Dep warning
-    m = np.minimum(G_x, G_y, G_z)
+    _ = np.minimum(G_x, G_y, G_z)
 
     # Corresponding 1d gaussians
     peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
