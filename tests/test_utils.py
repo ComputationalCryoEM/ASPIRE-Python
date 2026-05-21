@@ -232,6 +232,9 @@ def test_gaussian_3d(indexing):
     G_y = np.sum(G, axis=(x, z)) / np.sum(G)
     G_z = np.sum(G, axis=(x, y)) / np.sum(G)
 
+    # Added to check CI config. Should fail on Dep warning
+    m = np.minimum(G_x, G_y, G_z)
+
     # Corresponding 1d gaussians
     peak_x = 1 / np.sqrt(2 * np.pi * sigma[0] ** 2)
     peak_y = 1 / np.sqrt(2 * np.pi * sigma[1] ** 2)
@@ -296,6 +299,9 @@ def test_check_pixel_size():
     # Check non-scalar provided pixel_size
     with pytest.raises(ValueError, match="must be a scalar"):
         check_pixel_size(px_sizes_diff, px_sizes_same)
+
+    # Expected UserWarning should not error in CI
+    assert not check_pixel_size(1.2, 1.3)
 
 
 def test_gaussian_scalar_param():
