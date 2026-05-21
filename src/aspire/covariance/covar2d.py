@@ -595,7 +595,6 @@ class BatchedRotCov2D(RotCov2D):
         _filter_pts = self.basis._filter_pts
         # if we have many filters, might be worth trip to GPU
         if len(self.src.filter_stack) >= 2048:
-            params = xp.asarray(params)
             _filter_pts = xp.asarray(_filter_pts)
 
         _filter_vals = self.src.filter_stack.evaluate(
