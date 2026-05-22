@@ -11,7 +11,7 @@ from aspire.operators import PolarFT, wemd_embed
 from aspire.utils import Rotation, cart2sph, complex_type
 from aspire.volume import CnSymmetryGroup, DnSymmetryGroup, SymmetryGroup
 
-from .commonline_utils import saff_kuijlaars
+from .commonline_utils import _generate_shift_phase_and_filter, saff_kuijlaars
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class CommonlineNUG(Orient3D):
         symmetry=None,
         n_rad=None,
         n_theta=360,
-        max_shift=0,
+        max_shift=0.15,
         shift_step=1,
         mask=True,
         Lmax=12,
@@ -98,6 +98,16 @@ class CommonlineNUG(Orient3D):
         pf = self.pf
         self.pf_full = PolarFT.half_to_full(pf)
 
+        # Prepare the shift phases to try and generate filter for common-line detection
+        r_max = self.pf_full.shape[2]
+        self.shifts, self.shift_phases, h = _generate_shift_phase_and_filter(
+            r_max, self.max_shift, self.shift_step, self.dtype
+        )
+
+        # Apply bandpass filter, normalize each ray of each image
+        # Note that only use half of each ray
+        # self.pf_full = self._apply_filter_and_norm("ijk, k -> ijk", pf_full, r_max, h)
+
     def estimate_rotations(self):
         self.compute_coeff()
         self.perform_admm()
@@ -138,7 +148,6 @@ class CommonlineNUG(Orient3D):
                 # Si = Ii_hat[:, int(idxi)]
                 # Sj = Ij_hat[:, int(idxj)]
 
-                # Using aspire PolarFT. Replace later
                 Ii_hat = self.pf_full[i]
                 Ij_hat = self.pf_full[j]
                 idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
@@ -146,9 +155,11 @@ class CommonlineNUG(Orient3D):
 
                 Si = Ii_hat[int(idxi)]
                 Sj = Ij_hat[int(idxj)]
-                # norm_new = np.linalg.norm(Si - Sj, 1)
 
-                return np.linalg.norm(Si - Sj, 1)
+                # Apply shifts
+                Sj_shifted = self.shift_phases * Sj
+                norms = np.linalg.norm(Si[None] - Sj_shifted, 1, axis=1)
+                return norms.min()
 
             if loss == "wemd":
                 dim_wave = len(wemd_embed(line_proj[:, 0, 0]))
@@ -162,6 +173,7 @@ class CommonlineNUG(Orient3D):
 
                 Si = WE[:, int(idxi), i]
                 Sj = WE[:, int(idxj), j]
+
                 return np.linalg.norm(Si - Sj, 1)
 
         alpha_grid = np.arange(2 * T, dtype=np.float64) * np.pi / T
