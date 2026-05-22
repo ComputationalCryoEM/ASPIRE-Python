@@ -72,6 +72,7 @@ def source(n_img, resolution, dtype, offsets, order):
 def orient_est(source, proximal_refine):
     orient_est = CommonlineNUG(
         source,
+        max_shift=0,
         perform_pr=proximal_refine,
     )
     orient_est.estimate_rotations()
