@@ -578,14 +578,33 @@ class BatchedRotCov2D(RotCov2D):
         """
         old code, should work with all basis and filters. slow.
         """
-        basis_mats = [
-            self.basis.filter_to_basis_mat(
-                f, pixel_size=self.src.pixel_size, expand_method=self.expand_method
-            )
-            for f in tqdm(
-                self.src.filter_stack, desc="Converting filters to basis mats"
-            )
-        ]
+        basis_mats = self.basis._filter_stack_to_basis_mats(
+            self.src.filter_stack,
+            pixel_size=self.src.pixel_size,
+            expand_method=self.expand_method,
+        )
+
+        # ## Legacy
+        # old_basis_mats = [
+        #     self.basis.filter_to_basis_mat(
+        #         f, pixel_size=self.src.pixel_size, expand_method=self.expand_method
+        #     )
+        #     for f in tqdm(
+        #         self.src.filter_stack, desc="Converting filters to basis mats"
+        #     )
+        # ]
+
+        # from tqdm import trange
+        # diff = 0
+        # for i in trange(len(basis_mats)):
+        #     a = basis_mats[i]
+        #     ref= old_basis_mats[i]
+        #     for j in range(len(ref)):
+        #         diff += np.sum(a[j]-ref[j])
+
+        # print("sum of diff across all filters", diff)
+        # breakpoint()
+
         return basis_mats
 
     # todo, either rename _radial_filters_to_basis_mats or handle none radial
