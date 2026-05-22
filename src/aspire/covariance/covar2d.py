@@ -7,7 +7,7 @@ from scipy.linalg import solve, sqrtm
 
 from aspire.basis import Coef, FFBBasis2D
 from aspire.numeric import xp
-from aspire.operators import BlkDiagMatrix, CTFFilter, DiagMatrix
+from aspire.operators import BlkDiagMatrix, DiagMatrix
 from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import make_symmat, tqdm
 

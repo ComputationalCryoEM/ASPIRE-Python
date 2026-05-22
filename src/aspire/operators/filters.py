@@ -359,7 +359,7 @@ class MultiplicativeFilter(Filter):
         for c in self._components:
             try:
                 _params.append(c._ctf_params())
-            except NotImplementedError as e:
+            except NotImplementedError:
                 pass
 
         if len(_params) > 1:
