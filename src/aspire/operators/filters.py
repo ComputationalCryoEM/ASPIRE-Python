@@ -283,6 +283,9 @@ class PowerFilter(Filter):
         """
         return self._filter._ctf_params()
 
+    def __getitem__(self, item):
+        return PowerFilter(self._filter[item], power=self._power, epsilon=self._epsilon)
+
 
 class LambdaFilter(Filter):
     """
@@ -368,6 +371,9 @@ class MultiplicativeFilter(Filter):
             raise RuntimeError("No CTF parameters found.")
 
         return _params[0]
+
+    def __getitem__(self, item):
+        return MultiplicativeFilter(*list(c[item] for c in self._components))
 
 
 class ScaledFilter(Filter):
@@ -510,6 +516,9 @@ class ScalarFilter(Filter):
 
     def _evaluate(self, omega, **kwargs):
         return self.value * np.ones_like(omega)
+
+    def __getitem__(self, item):
+        return self
 
 
 class ZeroFilter(ScalarFilter):
