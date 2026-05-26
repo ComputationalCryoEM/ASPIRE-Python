@@ -53,10 +53,6 @@ def wavelength_to_voltage(wavelength):
     :param wavelength: float, The electron wavelength in angstroms.
     :return: float, The electron voltage in kV.
     """
-    # Added to test CI warnings filter
-    import warnings
-
-    warnings.warn("temporary user warning check", UserWarning, stacklevel=1)
     a = float(12.264259661581491)
     b = float(0.9784755917869367)
 
