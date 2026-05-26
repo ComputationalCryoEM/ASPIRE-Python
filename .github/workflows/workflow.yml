@@ -274,7 +274,6 @@ jobs:
           ignore::UserWarning:tests.*
       run: |
         ASPIREDIR=${{ env.WORK_DIR }} python -m pytest \
-          -c tox.ini \
           -o "filterwarnings=${PYTEST_CI_FILTERWARNINGS}" \
           --durations=50 \
           --cov=aspire \
