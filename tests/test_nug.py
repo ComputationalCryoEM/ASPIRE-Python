@@ -6,9 +6,9 @@ from aspire.source import Simulation
 from aspire.volume import CnSymmetricVolume, SymmetryGroup
 
 DTYPE = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
-RESOLUTION = [48, pytest.param(48, marks=pytest.mark.expensive)]
-N_IMG = [5]
-OFFSETS = [0]
+RESOLUTION = [48, pytest.param(49, marks=pytest.mark.expensive)]
+N_IMG = [15]
+OFFSETS = [0, pytest.param(None, marks=pytest.mark.expensive)]
 ORDER = [3, pytest.param(4, marks=pytest.mark.expensive)]
 PR = [False]
 SEED = 1980
@@ -70,9 +70,15 @@ def source(n_img, resolution, dtype, offsets, order):
 
 @pytest.fixture(scope="module")
 def orient_est(source, proximal_refine):
+    max_shift = 0
+    shift_step = 1
+    if source.offsets.all() != 0:
+        max_shift = 0.20
+        shift_step = 0.25
     orient_est = CommonlineNUG(
         source,
-        max_shift=0,
+        max_shift=max_shift,
+        shift_step=shift_step,
         perform_pr=proximal_refine,
     )
     orient_est.estimate_rotations()
@@ -105,7 +111,7 @@ def test_estimate_rotations_pairwise(orient_est):
     MSE = compare_rots_sym(
         orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
     )
-    np.testing.assert_array_less(MSE, 0.3)
+    np.testing.assert_array_less(MSE, 0.1)
 
 
 ###########
