@@ -3,7 +3,7 @@ import pytest
 
 from aspire.abinitio import CommonlineNUG
 from aspire.source import Simulation
-from aspire.volume import CnSymmetricVolume, SymmetryGroup
+from aspire.volume import CnSymmetricVolume, DnSymmetricVolume, SymmetryGroup
 
 DTYPE = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
 RESOLUTION = [48, pytest.param(49, marks=pytest.mark.expensive)]
@@ -12,6 +12,10 @@ OFFSETS = [0, pytest.param(None, marks=pytest.mark.expensive)]
 ORDER = [3, pytest.param(4, marks=pytest.mark.expensive)]
 PR = [False]
 SEED = 1980
+VOLUME = [
+    CnSymmetricVolume,
+    pytest.param(DnSymmetricVolume, marks=pytest.mark.expensive),
+]
 
 
 @pytest.fixture(params=DTYPE, ids=lambda x: f"dtype={x}", scope="module")
@@ -44,14 +48,19 @@ def proximal_refine(request):
     return request.param
 
 
+@pytest.fixture(params=VOLUME, ids=lambda x: f"Volume={x}", scope="module")
+def Volume(request):
+    return request.param
+
+
 ############
 # Fixtures #
 ############
 
 
 @pytest.fixture(scope="module")
-def source(n_img, resolution, dtype, offsets, order):
-    vol = CnSymmetricVolume(
+def source(n_img, resolution, dtype, offsets, order, Volume):
+    vol = Volume(
         L=resolution, order=order, C=1, K=100, dtype=dtype, seed=SEED
     ).generate()
 
