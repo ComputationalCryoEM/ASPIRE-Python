@@ -567,40 +567,22 @@ class BatchedRotCov2D(RotCov2D):
             getattr(self.basis.__class__, "expand_radial_vec", None)
         )
 
+        # Are the filters radial?
+        if self.src.filter_stack.radial:
+            logger.info("Found radial filter stack.")
+        else:
+            logger.info("Found non-radial filter stack.")
+
         if optimized_expand and self.src.filter_stack.radial:
-            logger.info(
-                "Found radial filter stack and `basis.expand_radial_vec` available."
-                "  Using bulk basis mat eval."
-            )
+            logger.info("Using optimized `basis.expand_radial_vec`.")
             return self._radial_filter_stack_to_basis_mats()
         else:
-            # Note, can come back and optmize the filter eval to bulk, just not radial
-            # For now use legacy path.
-            logger.info("Using sequential basis mat eval")
-            return self._filters_to_basis_mats()
-
-    def _filters_to_basis_mats(self):
-        """
-        old code, should work with all basis and filters. slow.
-        """
-        basis_mats = self.basis.filter_stack_to_basis_mats(
-            self.src.filter_stack,
-            pixel_size=self.src.pixel_size,
-            expand_method=self.expand_method,
-        )
-
-        # from tqdm import trange
-        # diff = 0
-        # for i in trange(len(basis_mats)):
-        #     a = basis_mats[i]
-        #     ref= old_basis_mats[i]
-        #     for j in range(len(ref)):
-        #         diff += np.sum(a[j]-ref[j])
-
-        # print("sum of diff across all filters", diff)
-        # breakpoint()
-
-        return basis_mats
+            logger.info("Using basis.filter_stack_to_basis_mats.")
+            return self.basis.filter_stack_to_basis_mats(
+                self.src.filter_stack,
+                pixel_size=self.src.pixel_size,
+                expand_method=self.expand_method,
+            )
 
     def _radial_filter_stack_to_basis_mats(self):
         logger.info("Generating filter eval points")

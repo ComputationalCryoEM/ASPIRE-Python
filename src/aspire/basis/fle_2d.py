@@ -780,16 +780,15 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return a
 
-    # def filter_to_basis_mat(self, f, **kwargs):
-    #     """
-    #     See `SteerableBasis2D.filter_stack_to_basis_mats`.
-    #     """
-    #     if len(f) != 1:
-    #         raise RuntimeError("Unexpected filter length.")
-    #     return self._filter_stack_to_basis_mats(f, **kwargs)[0]
-
-    # XXX TODO, convert to _filter_stack_to_basis_mats via broadcasting.
     def filter_to_basis_mat(self, f, **kwargs):
+        """
+        See `SteerableBasis2D.filter_stack_to_basis_mats`.
+        """
+        if len(f) != 1:
+            raise RuntimeError("Unexpected filter length.")
+        return self._filter_stack_to_basis_mats(f, **kwargs)
+
+    def _filter_stack_to_basis_mats(self, f, **kwargs):
         """
         See `SteerableBasis2D.filter_to_basis_mat`.
 
@@ -840,20 +839,28 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         h_vals2d = (
             xp.asarray(h_fun(omega, pixel_size=pixel_size))
-            .reshape(n_k, n_theta)
+            .reshape(len(f), n_k, n_theta)
             .astype(self.dtype, copy=False)
         )
-        h_vals = xp.sum(h_vals2d, axis=1) / n_theta
+        h_vals = xp.sum(h_vals2d, axis=-1) / n_theta
 
-        h_basis = xp.zeros(self.count, dtype=self.dtype)
-        # For now we just need to handle 1D (stack of one ctf)
+        h_basis = xp.zeros((len(f), self.count), dtype=self.dtype)
+        # shape gymnastics to get a broadcast with csr A3
+        h_vals = h_vals.T
         for j in range(self.ell_p_max + 1):
-            h_basis[self.idx_list[j]] = self.A3[j] @ h_vals
+            h_basis[:, self.idx_list[j]] = (self.A3[j] @ h_vals).T
 
         # Convert from internal FLE ordering to FB convention
-        h_basis = h_basis[self._fle_to_fb_indices]
+        h_basis = h_basis[:, self._fle_to_fb_indices]
+        # who needs this as a list?
 
-        return DiagMatrix(xp.asnumpy(h_basis))
+        coefs = xp.asnumpy(h_basis)
+        if len(coefs) > 1:
+            coefs = [DiagMatrix(c) for c in coefs]
+        else:
+            coefs = DiagMatrix(coefs.flatten())
+
+        return coefs
 
     def expand_radial_vec(self, radial_vec, **kwargs):
         """
