@@ -250,7 +250,8 @@ class FFBBasis2D(FBBasis2D):
 
         return xp.asnumpy(v)
 
-    def _filter_to_basis_mat(self, f, **kwargs):
+    # XXX for testing comparison
+    def _legacy_filter_to_basis_mat(self, f, **kwargs):
         """
         See `SteerableBasis2D.filter_to_basis_mat`.
         """
@@ -390,6 +391,14 @@ class FFBBasis2D(FBBasis2D):
                 ind_ell += 1
 
         return h_basis
+
+    def filter_to_basis_mat(self, f, **kwargs):
+        """
+        See `SteerableBasis2D.filter_stack_to_basis_mats`.
+        """
+        if len(f) != 1:
+            raise RuntimeError("Unexpected filter length.")
+        return self._filter_stack_to_basis_mats(f, **kwargs)[0]
 
     def expand_radial_vec(self, radial_vec, force_diag=False):
         """
