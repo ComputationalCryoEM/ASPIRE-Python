@@ -6,7 +6,7 @@ import numpy as np
 
 from aspire.basis import Basis, Coef, ComplexCoef
 from aspire.operators import BlkDiagMatrix
-from aspire.utils import LogFilterByCount, complex_type, real_type, trange
+from aspire.utils import LogFilterByCount, complex_type, real_type, tqdm, trange
 
 logger = logging.getLogger(__name__)
 
@@ -476,17 +476,18 @@ class SteerableBasis2D(Basis, abc.ABC):
 
         return ComplexCoef(self, complex_coef)
 
-    def filter_to_basis_mat(self, f, **kwargs):
+    def filter_stack_to_basis_mats(self, f, **kwargs):
         """
-        Convert a filter into a basis operator representation.
+        Convert a filter stack into a list of basis operator representations.
 
-        See `_filter_to_basis_mat` here and in subclasses for available **kwargs.
+        See `_filter_stack_to_basis_mats` and `filter_to_basis_mat`
+        here and in subclasses for available **kwargs.
 
-        :param f: `Filter` object, usually a `CTFFilter`.
-        :param radial_optimization: Optionally attempt radial approximation if available.
+        :param f: `Filter` object, for example a `CTFFilter`.
 
-        :return: Representation of filter as `basis` operator.
-            Return type will be based on the class's `matrix_type`.
+        :return: List containing representations of Filter as `basis` operators.
+            Return type of list elements will be based on the class's `matrix_type`,
+            typically `BlkDiagMatrix` or `DiagMatrix`.
         """
 
         # does the basis have optimized expand for radial vectors?
@@ -496,6 +497,7 @@ class SteerableBasis2D(Basis, abc.ABC):
         # did user request the special radial expansion method?
         radial_method = kwargs.get("expand_method", None) == "radial"
 
+        # xxx, do we need this block anymore? (i dont think so, I think it was just bridge code?)...
         if optimized_expand and filter_is_radial and radial_method:
             # kwargs supports passing through pixel_size
             h_vals = self._radial_filter_to_vals(
@@ -505,14 +507,24 @@ class SteerableBasis2D(Basis, abc.ABC):
             return res
         else:
             # use generic (legacy) filter path/code (may return DiagMatrix)
-            return self._filter_to_basis_mat(f, **kwargs)
+            return self._filter_stack_to_basis_mats(f, **kwargs)
+
+    def _filter_stack_to_basis_mats(self, f, **kwargs):
+        """
+        Helper function for sequentially evaluating filters in a basis that does not provide optimized filter_stack_to_basis_mats.
+        """
+        basis_mats = [None] * len(f)
+        for i, _f in enumerate(tqdm(f, desc="Converting filters to basis mats")):
+            basis_mats[i] = self.filter_to_basis_mat(_f, **kwargs)
+        return basis_mats
 
     # `abstractmethod` enforces when a new subclass of
     # `SteerableBasis2D` is created that this method is explicitly
     # implemented.  This is intended to encourage future basis authors
     # to consider this method for their application.
+    # When possible, they should prefer to create an optimized _filter_stack_to_basis_mats.
     @abc.abstractmethod
-    def _filter_to_basis_mat(self, f, expand_method=None, truncate=True, **kwargs):
+    def filter_to_basis_mat(self, f, expand_method=None, truncate=True, **kwargs):
         """
         Convert a filter into a basis operator representation.
 

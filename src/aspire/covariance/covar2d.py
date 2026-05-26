@@ -9,7 +9,7 @@ from aspire.basis import Coef, FFBBasis2D
 from aspire.numeric import xp
 from aspire.operators import BlkDiagMatrix, DiagMatrix
 from aspire.optimization import conj_grad, fill_struct
-from aspire.utils import make_symmat, tqdm
+from aspire.utils import make_symmat
 
 logger = logging.getLogger(__name__)
 
@@ -559,15 +559,20 @@ class BatchedRotCov2D(RotCov2D):
             logger.info("Representing filters in basis complete")
 
     def filters_to_basis_mats(self):
+        """
+        Dispatch between various methods for converting filter stacks to basis matrices.
+        """
+        # Does the basis provide radially optimized expansion?
         optimized_expand = callable(
             getattr(self.basis.__class__, "expand_radial_vec", None)
         )
+
         if optimized_expand and self.src.filter_stack.radial:
             logger.info(
                 "Found radial filter stack and `basis.expand_radial_vec` available."
                 "  Using bulk basis mat eval."
             )
-            return self._filter_stack_to_basis_mats()
+            return self._radial_filter_stack_to_basis_mats()
         else:
             # Note, can come back and optmize the filter eval to bulk, just not radial
             # For now use legacy path.
@@ -578,21 +583,11 @@ class BatchedRotCov2D(RotCov2D):
         """
         old code, should work with all basis and filters. slow.
         """
-        basis_mats = self.basis._filter_stack_to_basis_mats(
+        basis_mats = self.basis.filter_stack_to_basis_mats(
             self.src.filter_stack,
             pixel_size=self.src.pixel_size,
             expand_method=self.expand_method,
         )
-
-        # ## Legacy
-        # old_basis_mats = [
-        #     self.basis.filter_to_basis_mat(
-        #         f, pixel_size=self.src.pixel_size, expand_method=self.expand_method
-        #     )
-        #     for f in tqdm(
-        #         self.src.filter_stack, desc="Converting filters to basis mats"
-        #     )
-        # ]
 
         # from tqdm import trange
         # diff = 0
@@ -607,9 +602,7 @@ class BatchedRotCov2D(RotCov2D):
 
         return basis_mats
 
-    # todo, either rename _radial_filters_to_basis_mats or handle none radial
-    # same remark as `filters_to_basis_mats`
-    def _filter_stack_to_basis_mats(self):
+    def _radial_filter_stack_to_basis_mats(self):
         logger.info("Generating filter eval points")
         _filter_pts = self.basis._filter_pts
         # if we have many filters, might be worth trip to GPU

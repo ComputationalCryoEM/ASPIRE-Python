@@ -289,8 +289,8 @@ class FBBasis2D(SteerableBasis2D, FBBasisMixin):
             freq_cutoff=freq_cutoff,
         )
 
-    def _filter_to_basis_mat(self, *args, **kwargs):
+    def filter_to_basis_mat(self, *args, **kwargs):
         """
-        See `SteerableBasis2D.filter_to_basis_mat`.
+        See `SteerableBasis2D.filter_stack_to_basis_mat`.
         """
-        return super()._filter_to_basis_mat(*args, **kwargs)
+        return super().filter_to_basis_mat(*args, **kwargs)

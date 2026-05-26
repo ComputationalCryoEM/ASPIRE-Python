@@ -780,7 +780,16 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         return a
 
-    def _filter_to_basis_mat(self, f, **kwargs):
+    # def filter_to_basis_mat(self, f, **kwargs):
+    #     """
+    #     See `SteerableBasis2D.filter_stack_to_basis_mats`.
+    #     """
+    #     if len(f) != 1:
+    #         raise RuntimeError("Unexpected filter length.")
+    #     return self._filter_stack_to_basis_mats(f, **kwargs)[0]
+
+    # XXX TODO, convert to _filter_stack_to_basis_mats via broadcasting.
+    def filter_to_basis_mat(self, f, **kwargs):
         """
         See `SteerableBasis2D.filter_to_basis_mat`.
 
