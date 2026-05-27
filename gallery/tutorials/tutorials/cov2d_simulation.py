@@ -67,10 +67,13 @@ alpha = 0.1  # Amplitude contrast
 
 print("Initialize simulation object and CTF filters.")
 # Create filters
-ctf_filters = [
-    RadialCTFFilter(voltage, defocus=d, Cs=2.0, alpha=0.1)
-    for d in np.linspace(defocus_min, defocus_max, defocus_ct)
-]
+ctf_filters = RadialCTFFilter(
+    voltage,
+    defocus=np.linspace(defocus_min, defocus_max, defocus_ct),
+    Cs=2.0,
+    alpha=0.1,
+)
+
 
 # Load the map file of a 70S Ribosome
 print(
@@ -89,7 +92,7 @@ sim = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    unique_filters=ctf_filters,
+    filter_stack=ctf_filters,
     offsets=0.0,
     amplitudes=1.0,
     dtype=dtype,
@@ -109,9 +112,7 @@ ffbbasis = FFBBasis2D((img_size, img_size), dtype=dtype)
 h_idx = sim.filter_indices
 
 # Evaluate CTF in the 8X8 FB basis
-h_ctf_fb = [
-    ffbbasis.filter_to_basis_mat(filt, pixel_size=pixel_size) for filt in ctf_filters
-]
+h_ctf_fb = ffbbasis.filter_stack_to_basis_mats(ctf_filters, pixel_size=pixel_size)
 
 # Get clean images from projections of 3D map.
 print("Apply CTF filters to clean images.")

@@ -51,7 +51,7 @@ star_path = output_dir / star_file
 # that RELION will recover as optics groups.
 
 vol = emdb_2660()
-ctf_filters = [RadialCTFFilter(defocus=d) for d in defocus]
+ctf_filters = RadialCTFFilter(defocus=defocus)
 
 
 # %%
@@ -64,7 +64,7 @@ ctf_filters = [RadialCTFFilter(defocus=d) for d in defocus]
 sim = Simulation(
     n=n_particles,
     vols=vol,
-    unique_filters=ctf_filters,
+    filter_stack=ctf_filters,
     noise_adder=WhiteNoiseAdder.from_snr(snr),
 )
 sim.save(star_path, overwrite=True)

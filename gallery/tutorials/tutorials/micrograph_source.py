@@ -181,9 +181,7 @@ from aspire.operators import RadialCTFFilter
 
 # Create our CTF Filter and add it to a list.
 # This configuration will apply the same CTF to all particles.
-ctfs = [
-    RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0),
-]
+ctfs = RadialCTFFilter(voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0)
 
 src = MicrographSimulation(
     vol,

@@ -505,6 +505,11 @@ class ArrayFilter(Filter):
             res = super().evaluate_grid(L, *args, dtype=dtype, **kwargs)
         return res
 
+    def __getitem__(self, item):
+        # Note, could extend to a stack dimension and lookup.
+        # For now, we have no use case for that.
+        return self
+
 
 class ScalarFilter(Filter):
     def __init__(self, dim=None, value=1):

@@ -66,10 +66,8 @@ defocus_min = 15000  # unit is angstroms
 defocus_max = 25000
 defocus_ct = 7
 
-ctf_filters = [
-    RadialCTFFilter(defocus=d)
-    for d in np.linspace(defocus_min, defocus_max, defocus_ct)
-]
+ctf_filters = RadialCTFFilter(defocus=np.linspace(defocus_min, defocus_max, defocus_ct))
+
 
 # %%
 # Initialize Simulation Object
@@ -96,7 +94,7 @@ src = Simulation(
     n=2500,  # number of projections
     vols=original_vol,  # volume source
     offsets=0,  # Default: images are randomly shifted
-    unique_filters=ctf_filters,
+    filter_stack=ctf_filters,
     noise_adder=WhiteNoiseAdder(var=0.0002),  # desired noise variance
 ).cache()
 

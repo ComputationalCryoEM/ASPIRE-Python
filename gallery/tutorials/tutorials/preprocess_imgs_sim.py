@@ -53,10 +53,13 @@ alpha = 0.1  # Amplitude contrast
 
 print("Initialize simulation object and CTF filters.")
 # Create CTF filters
-ctf_filters = [
-    RadialCTFFilter(voltage, defocus=d, Cs=2.0, alpha=0.1)
-    for d in np.linspace(defocus_min, defocus_max, defocus_ct)
-]
+ctf_filters = RadialCTFFilter(
+    voltage,
+    defocus=np.linspace(defocus_min, defocus_max, defocus_ct),
+    Cs=2.0,
+    alpha=0.1,
+)
+
 
 # Load the map file of a 70S ribosome and downsample the 3D map to desired image size.
 print("Load 3D map from mrc file")
@@ -73,7 +76,7 @@ source = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    unique_filters=ctf_filters,
+    filter_stack=ctf_filters,
     noise_adder=noise_adder,
     pixel_size=pixel_size,
 )
