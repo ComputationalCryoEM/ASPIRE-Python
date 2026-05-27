@@ -177,7 +177,7 @@ jobs:
     steps:
     - uses: actions/checkout@v5
     - name: Set up Conda ${{ matrix.os }} Python ${{ matrix.python-version }}
-      uses: conda-incubator/setup-miniconda@v2.3.0
+      uses: conda-incubator/setup-miniconda@v4
       with:
         miniconda-version: "latest"
         auto-update-conda: true
