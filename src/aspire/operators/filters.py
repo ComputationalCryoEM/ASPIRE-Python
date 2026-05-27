@@ -331,7 +331,7 @@ class MultiplicativeFilter(Filter):
         Check sizes of _components are coherent and initialize resulting length.
         """
         filter_lengths = [len(f) for f in self._components]
-        filter_lengths = np.unique(filter_lengths, sorted=True)
+        filter_lengths = np.unique(filter_lengths)  # defaults to sorted=True
 
         # Code should be able to broadcast n_filters with n_filters, or n_filters with 1_filters.
         # Any other combination is considered an error.
