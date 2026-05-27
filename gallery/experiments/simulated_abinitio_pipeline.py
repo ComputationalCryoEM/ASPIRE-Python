@@ -83,17 +83,19 @@ Cs = 2.0  # Spherical aberration
 alpha = 0.1  # Amplitude contrast
 
 # Create filters
-ctf_filters = [
-    RadialCTFFilter(pixel_size, voltage, defocus=d, Cs=2.0, alpha=0.1)
-    for d in np.linspace(defocus_min, defocus_max, defocus_ct)
-]
+ctf_filters = RadialCTFFilter(
+    voltage,
+    defocus=np.linspace(defocus_min, defocus_max, defocus_ct),
+    Cs=2.0,
+    alpha=0.1,
+)
 
 # Finally create the Simulation
 src = Simulation(
     n=num_imgs,
     vols=og_v,
     noise_adder=custom_noise,
-    unique_filters=ctf_filters,
+    filter_stack=ctf_filters,
 )
 
 # Downsample

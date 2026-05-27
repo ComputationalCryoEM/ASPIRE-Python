@@ -154,9 +154,8 @@ img.show()
 
 # Construct a range of CTF filters.
 defoci = [2500, 5000, 10000, 20000]
-ctf_filters = [
-    RadialCTFFilter(voltage=200, defocus=d, Cs=2.26, alpha=0.07, B=0) for d in defoci
-]
+ctf_filters = RadialCTFFilter(voltage=200, defocus=defoci, Cs=2.26, alpha=0.07, B=0)
+
 
 # %%
 # Generate CTF corrupted Images
@@ -334,7 +333,7 @@ plt.show()
 from aspire.source import Simulation
 
 # Create the Source.  ``ctf_filters`` are re-used from earlier section.
-src = Simulation(L=64, n=4, unique_filters=ctf_filters, pixel_size=1)
+src = Simulation(L=64, n=4, filter_stack=ctf_filters, pixel_size=1)
 src.images[:4].show()
 
 # %%

@@ -570,10 +570,7 @@ defocus_max = 25000
 defocus_ct = 7
 
 # Generate several CTFs.
-ctf_filters = [
-    RadialCTFFilter(defocus=d)
-    for d in np.linspace(defocus_min, defocus_max, defocus_ct)
-]
+ctf_filters = RadialCTFFilter(defocus=np.linspace(defocus_min, defocus_max, defocus_ct))
 
 # %%
 # Combining into a Simulation
@@ -586,7 +583,7 @@ sim = Simulation(
     amplitudes=1,
     offsets=0,
     noise_adder=white_noise_adder,
-    unique_filters=ctf_filters,
+    filter_stack=ctf_filters,
     seed=42,
 )
 

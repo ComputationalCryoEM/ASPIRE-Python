@@ -44,7 +44,7 @@ sim = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
-    unique_filters=[RadialCTFFilter(defocus=d) for d in np.linspace(1.5e4, 2.5e4, 7)],
+    filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
     dtype=dtype,
 )
 

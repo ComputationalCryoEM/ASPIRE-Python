@@ -960,8 +960,10 @@ class ImageSource(ABC):
         whiten_filter = PowerFilter(noise_filter, power=-0.5, epsilon=epsilon)
 
         logger.info("Transforming all CTF Filters into Multiplicative Filters")
-        # XXXX
-        self.filter_stack = MultiplicativeFilter(self.filter_stack, whiten_filter)
+        if self.filter_stack is not None:
+            self.filter_stack = MultiplicativeFilter(self.filter_stack, whiten_filter)
+        else:
+            self.filter_stack = whiten_filter
         logger.info("Adding Whitening Filter Xform to end of generation pipeline")
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 

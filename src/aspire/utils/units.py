@@ -3,7 +3,6 @@ Miscellaneous utilities for common unit conversions.
 """
 
 import logging
-import math
 
 import numpy as np
 
@@ -43,7 +42,7 @@ def voltage_to_wavelength(voltage):
     a = float(12.264259661581491)
     b = float(0.9784755917869367)
 
-    return a / math.sqrt(voltage * 1e3 + b * voltage**2)
+    return a / np.sqrt(voltage * 1e3 + b * voltage**2)
 
 
 def wavelength_to_voltage(wavelength):
@@ -56,4 +55,4 @@ def wavelength_to_voltage(wavelength):
     a = float(12.264259661581491)
     b = float(0.9784755917869367)
 
-    return (-1e3 + math.sqrt(1e6 + 4 * a**2 * b / wavelength**2)) / (2 * b)
+    return (-1e3 + np.sqrt(1e6 + 4 * a**2 * b / wavelength**2)) / (2 * b)
