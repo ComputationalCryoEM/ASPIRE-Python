@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from aspire.abinitio import CommonlineNUG
+from aspire.abinitio import CommonlineNUG, compare_rots_sym
 from aspire.source import Simulation
 from aspire.volume import CnSymmetricVolume, DnSymmetricVolume, SymmetryGroup
 
@@ -121,37 +121,3 @@ def test_estimate_rotations_pairwise(orient_est):
         orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
     )
     np.testing.assert_array_less(MSE, 0.1)
-
-
-###########
-# Helpers #
-###########
-
-
-def compare_rots_sym(R_est, R_true, sym):
-    N = R_true.shape[0]
-    sym_euler = SymmetryGroup.parse(sym).matrices
-    order = sym_euler.shape[0]
-    J = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
-    error = np.zeros((N, N))
-    errorJ = np.zeros((N, N))
-    for i in range(N):
-        for j in range(N):
-            e = np.zeros(order)
-            eJ = np.zeros(order)
-            for s in range(order):
-                Rs = sym_euler[s]
-                e[s] = (
-                    np.linalg.norm(R_est[i].T @ R_est[j] - R_true[i].T @ Rs @ R_true[j])
-                    ** 2
-                )
-                eJ[s] = (
-                    np.linalg.norm(
-                        R_est[i].T @ R_est[j] - J @ R_true[i].T @ Rs @ R_true[j] @ J
-                    )
-                    ** 2
-                )
-            error[i, j] = e.min()
-            errorJ[i, j] = eJ.min()
-    E = min(error.sum(), errorJ.sum()) / N**2
-    return E
