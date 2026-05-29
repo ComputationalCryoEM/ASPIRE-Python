@@ -5,6 +5,7 @@ from numpy.linalg import eigh, norm
 
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, cyclic_rotations, tqdm
+from aspire.volume import SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -418,3 +419,32 @@ def build_outer_products(n, dtype):
         viis[i] = np.outer(gt_vis[i], gt_vis[i])
 
     return vijs, viis, gt_vis
+
+
+def compare_rots_sym(R_est, R_true, sym):
+    N = R_true.shape[0]
+    sym_euler = SymmetryGroup.parse(sym).matrices
+    order = sym_euler.shape[0]
+    J = np.array([[-1, 0, 0], [0, -1, 0], [0, 0, 1]])
+    error = np.zeros((N, N))
+    errorJ = np.zeros((N, N))
+    for i in range(N):
+        for j in range(N):
+            e = np.zeros(order)
+            eJ = np.zeros(order)
+            for s in range(order):
+                Rs = sym_euler[s]
+                e[s] = (
+                    np.linalg.norm(R_est[i].T @ R_est[j] - R_true[i].T @ Rs @ R_true[j])
+                    ** 2
+                )
+                eJ[s] = (
+                    np.linalg.norm(
+                        R_est[i].T @ R_est[j] - J @ R_true[i].T @ Rs @ R_true[j] @ J
+                    )
+                    ** 2
+                )
+            error[i, j] = e.min()
+            errorJ[i, j] = eJ.min()
+    E = min(error.sum(), errorJ.sum()) / N**2
+    return E
