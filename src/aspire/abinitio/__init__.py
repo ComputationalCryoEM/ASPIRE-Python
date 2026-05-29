@@ -2,6 +2,7 @@
 from .J_sync import JSync
 from .commonline_utils import (
     build_outer_products,
+    compare_rots_sym,
     g_sync,
     saff_kuijlaars,
 )
