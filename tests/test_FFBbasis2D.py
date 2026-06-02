@@ -168,7 +168,8 @@ def test_bulk_expand_radial_vec():
     """
     For a given stack of radial vectors (such as from
     RadialCTFFilters) `expand_radial_vec` should return equivalent
-    result as calling filter_to_basis_mat on each filter.
+    result as calling filter_stack_to_basis_mats on filter_stack,
+    and calling filter_to_basis_mat on each filter.
     """
 
     L = 32
@@ -176,21 +177,20 @@ def test_bulk_expand_radial_vec():
     basis = FFBBasis2D(L, dtype=dtype)
     pixel_size = 1.23
 
-    filters = [RadialCTFFilter(defocus=d) for d in np.linspace(10000, 15000, 3)]
-
+    filters = RadialCTFFilter(defocus=np.linspace(10000, 15000, 3))
+    stack_references = basis.filter_stack_to_basis_mats(filters, pixel_size=pixel_size)
     references = [basis.filter_to_basis_mat(f, pixel_size=pixel_size) for f in filters]
 
-    # from cov code
-    params = np.empty((len(filters), 7), dtype=dtype)
-    for i, f in enumerate(filters):
-        # TODO xxx fix param dump, same as sim/source
-        params[i] = np.array(f._ctf_params()).flatten()
-
+    # Stack of all filter params
+    params = filters._ctf_params()
+    # Stack of filter values
     _filter_vals = RadialCTFFilter.ctf_formula(
         basis._filter_pts, pixel_size, *(params.T)
     )
 
+    # Stack result
     results = basis.expand_radial_vec(_filter_vals)
+    # Sequential result
     results2 = [basis.expand_radial_vec(f)[0] for f in _filter_vals]
 
     # expand_radial_vec should be same as itself called sequentially
@@ -198,9 +198,16 @@ def test_bulk_expand_radial_vec():
     for res, ref in zip(results2, results):
         np.testing.assert_allclose(res.dense(), ref.dense())
 
-    # and should be equivalent to calling filter_to_basis_mat
+    # and should be equivalent to calling filter_to_basis_mat (for this radial case)
     assert len(results) == len(references)
     for res, ref in zip(results, references):
+        np.testing.assert_allclose(
+            res.dense(), ref.dense(), atol=utest_tolerance(dtype)
+        )
+
+    # The list from filter_to_basis_mat should be equivalent to list filter_stack_to_basis_mats
+    assert len(references) == len(stack_references)
+    for res, ref in zip(stack_references, references):
         np.testing.assert_allclose(
             res.dense(), ref.dense(), atol=utest_tolerance(dtype)
         )
