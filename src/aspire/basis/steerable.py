@@ -490,28 +490,28 @@ class SteerableBasis2D(Basis, abc.ABC):
             typically `BlkDiagMatrix` or `DiagMatrix`.
         """
 
-        # does the basis have optimized expand for radial vectors?
+        # does the basis have optimized expansion for radial vectors?
         optimized_expand = callable(getattr(self.__class__, "expand_radial_vec", None))
         # is the filter radial?
         filter_is_radial = f.radial
         # did user request the special radial expansion method?
         radial_method = kwargs.get("expand_method", None) == "radial"
 
-        # xxx, do we need this block anymore? (i dont think so, I think it was just bridge code?)...
         if optimized_expand and filter_is_radial and radial_method:
             # kwargs supports passing through pixel_size
-            h_vals = self._radial_filter_to_vals(
-                f, **kwargs
-            )  # check dont need  #.reshape(-1, 1)
+            h_vals = self._radial_filter_to_vals(f, **kwargs)
             res = self.expand_radial_vec(h_vals)
-            return res
         else:
             # use generic (legacy) filter path/code (may return DiagMatrix)
-            return self._filter_stack_to_basis_mats(f, **kwargs)
+            res = self._filter_stack_to_basis_mats(f, **kwargs)
+
+        return res
 
     def _filter_stack_to_basis_mats(self, f, **kwargs):
         """
-        Helper function for sequentially evaluating filters in a basis that does not provide optimized filter_stack_to_basis_mats.
+        Helper function for sequentially evaluating filters in a basis.
+
+        This is a crude fall back for basis that do not provide optimized `filter_stack_to_basis_mats`.
         """
         basis_mats = [None] * len(f)
         for i, _f in enumerate(tqdm(f, desc="Converting filters to basis mats")):
