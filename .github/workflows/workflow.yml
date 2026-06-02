@@ -209,7 +209,8 @@ jobs:
         export ASPIREDIR=.
         export OMP_NUM_THREADS=2
         # -n runs test in parallel using pytest-xdist
-        pytest -n2 --durations=50 -s
+        pytest -n2 -vv --dist=loadscope --durations=50 -s
+        # pytest -n2 --durations=50 -s
 
   # Build and Deploy production (main) docs.
   docs_deploy:
