@@ -792,7 +792,7 @@ class ImageSource(ABC):
             return im
 
         # else evaluate filters
-        # XXXX broadcast filter eval
+        # TODO broadcast filter eval
         for i, filt in enumerate(filters):
             idx_k = np.where(indices == i)[0]
             if len(idx_k) > 0:
@@ -876,7 +876,6 @@ class ImageSource(ABC):
             )
         )
 
-        # XXXX sigh
         ds_factor = self.L / L
         if self.filter_stack is not None:
             self.filter_stack = self.filter_stack.scale(ds_factor)
@@ -1004,7 +1003,7 @@ class ImageSource(ABC):
         if delta is None:
             delta = np.finfo(np.float32).eps
 
-        # # XXX This "should be better" but totally breaks things.
+        # # TODO This "should be better" but totally breaks things.
         # # First guess would be to check the strange normalization.
         # # Can't fix everything at once.
         # logger.info(f"Extending filter stack by legacy whitening Filter")
@@ -1027,7 +1026,6 @@ class ImageSource(ABC):
         logger.info("Perform phase flip on source object")
 
         if self.filter_stack is not None:
-            # XXXX
             unique_xforms = FilterXform(self.filter_stack.sign)
 
             logger.info("Adding Phase Flip Xform to end of generation pipeline")
@@ -1811,9 +1809,11 @@ class IndexedSource(ImageSource):
             _unq, _inv = np.unique(_filter_indices, return_inverse=True)
             # Repack filter_stack
             self.filter_indices = _inv
-            self.filter_stack = copy.copy(
-                src.filter_stack[_unq]
-            )  # xxx, this might just work by slicing...
+            # This would work by slicing with current code,
+            #   but if future code mutated the filter objects, that would be a problem.
+            #   Copy for safety/intent.
+            #   Deep copy may be required if future code mutates underlying objects.
+            self.filter_stack = copy.copy(src.filter_stack[_unq])
         else:
             # Pass through the None case
             self.filter_stack = src.filter_stack
