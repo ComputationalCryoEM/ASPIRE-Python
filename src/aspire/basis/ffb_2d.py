@@ -302,19 +302,18 @@ class FFBBasis2D(FBBasis2D):
             BlkDiagMatrix.empty(2 * self.ell_max + 1, dtype=self.dtype) for _ in h_vals
         ]
         ind_ell = 0
+        # Reshapes for broadcasting
+        k_vals = k_vals.reshape(n_k, 1)
+        wts = wts.reshape(n_k, 1)
+        h_vals = h_vals.reshape(len(f), n_k, 1)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
-            # xxx todo, we can skip computing rmat, just need the shape
-            rmat = 2 * k_vals.reshape(n_k, 1) * self.r0[ell][0:k_max].T
-            basis_vals = np.zeros_like(rmat)
+            basis_vals = np.zeros((n_k, k_max), dtype=self.dtype)
             ind_radial = np.sum(self.k_max[0:ell])
             basis_vals[:, 0:k_max] = radial[ind_radial : ind_radial + k_max].T
-            h_basis_vals = basis_vals * h_vals.reshape(
-                len(f), n_k, 1
-            )  # check bcast here
-            h_basis_ell = basis_vals.T @ (
-                h_basis_vals * k_vals.reshape(n_k, 1) * wts.reshape(n_k, 1)
-            )
+            h_basis_vals = basis_vals * h_vals
+            h_basis_ell = basis_vals.T @ (h_basis_vals * k_vals * wts)
+
             # loop over assignment blocks.
             for i in range(len(f)):
                 h_basis[i][ind_ell] = h_basis_ell[i]
@@ -353,8 +352,6 @@ class FFBBasis2D(FBBasis2D):
         n_k = self.n_r
         radial = self._precomp["radial"]
 
-        # hrrmm, ask Joakim can we always use the basis precomp, or do we need to use lgwt as in the old filter_to_basis_mat?
-        # This is doing opposite logic (same result) by default. Joy.
         k_vals = xp.asarray(self._precomp["gl_nodes"])
         wts = xp.asarray(self._precomp["gl_weights"])
 
@@ -365,20 +362,19 @@ class FFBBasis2D(FBBasis2D):
         ]
 
         ind_ell = 0
+        # Reshapes for broadcasting
+        radial_vec = radial_vec.reshape(len(h_basis), n_k, 1)
+        k_vals = k_vals.reshape(1, n_k, 1)
+        wts = wts.reshape(1, n_k, 1)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
-            rmat = (
-                2 * xp.asnumpy(k_vals.reshape(n_k, 1)) * self.r0[ell][0:k_max].T
-            )  # WHAT IN THE WORLD IS GOING ON HERE
-            basis_vals = xp.zeros_like(rmat)
+            basis_vals = np.zeros((n_k, k_max), dtype=self.dtype)
             ind_radial = np.sum(self.k_max[0:ell])
             basis_vals[:, 0:k_max] = xp.asarray(
                 radial[ind_radial : ind_radial + k_max]
             ).T
-            h_basis_vals = basis_vals * radial_vec.reshape(len(h_basis), n_k, 1)
-            h_basis_ell = basis_vals.T @ (
-                h_basis_vals * k_vals.reshape(1, n_k, 1) * wts.reshape(1, n_k, 1)
-            )
+            h_basis_vals = basis_vals * radial_vec
+            h_basis_ell = basis_vals.T @ (h_basis_vals * k_vals * wts)
             h_basis_ell = xp.asnumpy(h_basis_ell)
             for _filter in range(len(radial_vec)):
                 _tmp = h_basis[_filter][ind_ell] = h_basis_ell[_filter]
