@@ -228,7 +228,8 @@ class Simulation(ImageSource):
         ]
 
         # Unpack the `filter_stack` params across images using `filter_indices` mapping
-        # Note this does not include the B factor term (unique to ASPIRE?,xxx should we add to star if used?)
+        # Note this does not include the B factor term (hence the truncation)
+        #   B factor term looks unique to ASPIRE, should we add to star if used?
         filter_stack_params = self.filter_stack._ctf_params()[
             :, :6
         ]  # params per filter

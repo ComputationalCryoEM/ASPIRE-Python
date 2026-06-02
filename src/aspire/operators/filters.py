@@ -31,14 +31,18 @@ def evaluate_src_filters_on_grid(src, indices=None):
     grid2d = grid_2d(src.L, indexing="yx", dtype=src.dtype)
     omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
 
-    #  xxx filter opt (eval in bulk instead of loop here), remove branch
     # Initialize h as ones to mimic an IdentityFilter when src.filter_stack is None.
     h = np.ones((omega.shape[-1], len(indices)), dtype=src.dtype)
+    #### XXX I believe this might be what Tony reported ^
+
     if src.filter_stack is not None:
-        for i, filt in enumerate(src.filter_stack):
+        # Evaluate all filters in bulk
+        filter_stack_values = src.filter_stack.evaluate(
+            omega, pixel_size=src.pixel_size
+        )
+        for i, filter_values in enumerate(filter_stack_values):
             idx_k = np.where(src.filter_indices[indices] == i)[0]
             if len(idx_k) > 0:
-                filter_values = filt.evaluate(omega, pixel_size=src.pixel_size)
                 # convert filter_values row vector to column vector and tile broadcast
                 filter_values = filter_values.reshape(-1, 1)
                 h[:, idx_k] = np.tile(filter_values, len(idx_k))
