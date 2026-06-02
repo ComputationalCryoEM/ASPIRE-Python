@@ -22,7 +22,13 @@ from aspire.image.xform import (
     Pipeline,
 )
 from aspire.noise import LegacyNoiseEstimator, NoiseEstimator, WhiteNoiseEstimator
-from aspire.operators import CTFFilter, Filter, MultiplicativeFilter, PowerFilter
+from aspire.operators import (
+    ArrayFilter,
+    CTFFilter,
+    Filter,
+    MultiplicativeFilter,
+    PowerFilter,
+)
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import (
     Rotation,
@@ -959,12 +965,12 @@ class ImageSource(ABC):
         logger.info("Whitening source object")
         whiten_filter = PowerFilter(noise_filter, power=-0.5, epsilon=epsilon)
 
-        logger.info("Transforming all CTF Filters into Multiplicative Filters")
+        logger.info(f"Extending filter stack by whitening filter")
         if self.filter_stack is not None:
             self.filter_stack = MultiplicativeFilter(self.filter_stack, whiten_filter)
         else:
             self.filter_stack = whiten_filter
-        logger.info("Adding Whitening Filter Xform to end of generation pipeline")
+        logger.info("Adding whitening FilterXform to end of generation pipeline")
         self.generation_pipeline.add_xform(FilterXform(whiten_filter))
 
     @_as_copy
@@ -997,6 +1003,16 @@ class ImageSource(ABC):
 
         if delta is None:
             delta = np.finfo(np.float32).eps
+
+        # # XXX This "should be better" but totally breaks things.
+        # # First guess would be to check the strange normalization.
+        # # Can't fix everything at once.
+        # logger.info(f"Extending filter stack by legacy whitening Filter")
+        # whiten_filter = ArrayFilter(psd)
+        # if self.filter_stack is not None:
+        #     self.filter_stack = MultiplicativeFilter(self.filter_stack, whiten_filter)
+        # else:
+        #     self.filter_stack = whiten_filter
 
         logger.info("Adding LegacyWhiten Filter Xform to end of generation pipeline.")
         self.generation_pipeline.add_xform(LegacyWhiten(psd, delta))
