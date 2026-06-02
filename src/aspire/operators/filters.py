@@ -33,7 +33,7 @@ def evaluate_src_filters_on_grid(src, indices=None):
 
     # Initialize h as ones to mimic an IdentityFilter when src.filter_stack is None.
     h = np.ones((omega.shape[-1], len(indices)), dtype=src.dtype)
-    #### XXX I believe this might be what Tony reported ^
+    # ### XXX I believe this might be what Tony reported ^
 
     if src.filter_stack is not None:
         # Evaluate all filters in bulk

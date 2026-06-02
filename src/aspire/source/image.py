@@ -23,7 +23,6 @@ from aspire.image.xform import (
 )
 from aspire.noise import LegacyNoiseEstimator, NoiseEstimator, WhiteNoiseEstimator
 from aspire.operators import (
-    ArrayFilter,
     CTFFilter,
     Filter,
     MultiplicativeFilter,
@@ -964,7 +963,7 @@ class ImageSource(ABC):
         logger.info("Whitening source object")
         whiten_filter = PowerFilter(noise_filter, power=-0.5, epsilon=epsilon)
 
-        logger.info(f"Extending filter stack by whitening filter")
+        logger.info("Extending filter stack by whitening filter")
         if self.filter_stack is not None:
             self.filter_stack = MultiplicativeFilter(self.filter_stack, whiten_filter)
         else:
