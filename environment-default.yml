@@ -11,3 +11,4 @@ dependencies:
   - scipy=1.13.1
   - scikit-learn
   - scikit-image
+  - finufft=2.5.0  # must be installed via conda if using (conda) optimized backends
