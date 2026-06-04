@@ -22,12 +22,7 @@ from aspire.image.xform import (
     Pipeline,
 )
 from aspire.noise import LegacyNoiseEstimator, NoiseEstimator, WhiteNoiseEstimator
-from aspire.operators import (
-    CTFFilter,
-    Filter,
-    MultiplicativeFilter,
-    PowerFilter,
-)
+from aspire.operators import CTFFilter, Filter, MultiplicativeFilter, PowerFilter
 from aspire.storage import MrcStats, StarFile
 from aspire.utils import (
     Rotation,
