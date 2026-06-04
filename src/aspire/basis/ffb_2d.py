@@ -368,7 +368,7 @@ class FFBBasis2D(FBBasis2D):
         wts = wts.reshape(1, n_k, 1)
         for ell in range(0, self.ell_max + 1):
             k_max = self.k_max[ell]
-            basis_vals = np.zeros((n_k, k_max), dtype=self.dtype)
+            basis_vals = xp.zeros((n_k, k_max), dtype=self.dtype)
             ind_radial = np.sum(self.k_max[0:ell])
             basis_vals[:, 0:k_max] = xp.asarray(
                 radial[ind_radial : ind_radial + k_max]
