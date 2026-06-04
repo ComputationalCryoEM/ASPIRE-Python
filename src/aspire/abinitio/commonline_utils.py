@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import eigh, norm
 
 from aspire.operators import PolarFT
-from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, cyclic_rotations, tqdm
+from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, tqdm
 from aspire.volume import CnSymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
