@@ -4,6 +4,7 @@ from .commonline_utils import (
     build_outer_products,
     compare_rots_sym,
     g_sync,
+    g_sync_finite_group,
     saff_kuijlaars,
 )
 from .commonline_base import Orient3D

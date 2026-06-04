@@ -5,7 +5,7 @@ from numpy.linalg import eigh, norm
 
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, cyclic_rotations, tqdm
-from aspire.volume import SymmetryGroup
+from aspire.volume import CnSymmetryGroup, SymmetryGroup
 
 logger = logging.getLogger(__name__)
 
@@ -320,10 +320,31 @@ def saff_kuijlaars(N):
     return mesh
 
 
-def g_sync(rots, order, rots_gt):
+def g_sync(rots, rots_gt, symmetry):
     """
     Given ground truth rotations, synchronize estimated rotations over
-    symmetry group elements.
+    symmetry group elements. This method dispatches to either the faster
+    cyclic implementation for Cn symmetry or the generalized version for
+    all other symmetries.
+
+    :param rots: Estimated rotation matrices
+    :param rots_gt: Ground truth rotation matrices
+    :param symmetry: The symmetry of the underlying molecule.
+
+    :return: g-synchronized ground truth rotations.
+    """
+    sym_grp = SymmetryGroup.parse(symmetry)
+
+    if isinstance(sym_grp, CnSymmetryGroup):
+        return g_sync_cyclic(rots, rots_gt, symmetry)
+    # else
+    return g_sync_finite_group(rots, rots_gt, symmetry)
+
+
+def g_sync_cyclic(rots, rots_gt, symmetry):
+    """
+    Given ground truth rotations, synchronize estimated rotations over
+    cyclic symmetry group elements.
 
     Every estimated rotation might be a version of the ground truth rotation
     rotated by g^{s_i}, where s_i = 0, 1, ..., order. This method synchronizes the
@@ -331,8 +352,8 @@ def g_sync(rots, order, rots_gt):
     to all estimates for error analysis.
 
     :param rots: Estimated rotation matrices
-    :param order: The cyclic order asssociated with the symmetry of the underlying molecule.
-    :param rots_gt: Ground truth rotation matrices.
+    :param rots_gt: Ground truth rotation matrices
+    :param symmetry: The symmetry of the underlying molecule.
 
     :return: g-synchronized ground truth rotations.
     """
@@ -342,8 +363,8 @@ def g_sync(rots, order, rots_gt):
     n_img = len(rots)
     dtype = rots.dtype
 
-    rots_symm = cyclic_rotations(order, dtype).matrices
-
+    rots_symm = SymmetryGroup.parse(symmetry).matrices
+    order = len(rots_symm)
     A_g = np.zeros((n_img, n_img), dtype=complex)
 
     pairs = all_pairs(n_img)
@@ -382,6 +403,152 @@ def g_sync(rots, order, rots_gt):
         angle_dists = np.abs(np.angle(leading_eig_vec[i] / angles))
         power_g_Ri = np.argmin(angle_dists)
         rots_gt_sync[i] = rots_symm[power_g_Ri] @ rot_gt
+
+    return rots_gt_sync
+
+
+def g_sync_finite_group(rots, rots_gt, symmetry):
+    """
+    Synchronize ground-truth rotations over a finite symmetry group.
+
+    This is a finite-group generalization of cyclic synchronization.  The
+    pairwise matching step estimates relative symmetry elements between image
+    pairs.  The spectral synchronization step then recovers one symmetry
+    element per image that is globally consistent with those pairwise estimates.
+
+    Unlike the cyclic case, the relative symmetry cannot generally be encoded
+    as a scalar complex phase.  For non-commutative groups such as D_n, we instead
+    represent each group element by its left-regular permutation matrix.
+
+    :param rots: Estimated rotation matrices
+    :param rots_gt: Ground truth rotation matrices
+    :param symmetry: The symmetry of the underlying molecule.
+
+    :return: g-synchronized ground truth rotations.
+    """
+    assert len(rots) == len(
+        rots_gt
+    ), "Number of estimates not equal to number of references."
+
+    n_img = len(rots)
+    dtype = rots.dtype
+
+    # All matrices in the symmetry group.
+    G = SymmetryGroup.parse(symmetry).matrices
+    n_group = len(G)
+
+    def find_group_index(A):
+        """Return the index of the group matrix closest to A."""
+        dists = np.linalg.norm(G - A, axis=(1, 2))
+        return np.argmin(dists)
+
+    # Build multiplication and inverse tables for the symmetry group.
+    # mult[a, b] is the index c such that:
+    #     G[a] @ G[b] == G[c]
+    # inv[a] is the index b such that:
+    #     G[a] @ G[b] == identity
+    mult = np.empty((n_group, n_group), dtype=int)
+    inv = np.empty(n_group, dtype=int)
+
+    for a in range(n_group):
+        inv[a] = find_group_index(G[a].T)
+
+        for b in range(n_group):
+            mult[a, b] = find_group_index(G[a] @ G[b])
+
+    # Build the left-regular representation of the group.
+    #
+    # reps[a] is an n_group x n_group permutation matrix representing left
+    # multiplication by group element a:
+    #
+    #     reps[a] @ e_b = e_{a b}
+    #
+    # This lets us store arbitrary finite-group relative elements in a block
+    # synchronization matrix.  This is the key generalization beyond cyclic
+    # scalar phases in g_sync_Cn.
+    reps = np.zeros((n_group, n_group, n_group), dtype=float)
+
+    for a in range(n_group):
+        for b in range(n_group):
+            reps[a, mult[a, b], b] = 1.0
+
+    # Block synchronization matrix.
+    # A is made of n_img x n_img blocks, each of size n_group x n_group.
+    # Block (i, j) stores the representation of the estimated relative
+    # symmetry element between images i and j.
+    A = np.zeros((n_img * n_group, n_img * n_group), dtype=float)
+
+    # The relative symmetry from an image to itself is the identity.
+    for i in range(n_img):
+        sl_i = slice(i * n_group, (i + 1) * n_group)
+        A[sl_i, sl_i] = np.eye(n_group)
+
+    for i, j in all_pairs(n_img):
+        # Estimated relative rotation.
+        Ri = rots[i]
+        Rj = rots[j]
+        Rij = Ri.T @ Rj
+
+        # Ground-truth rotations for this pair.
+        Ri_gt = rots_gt[i]
+        Rj_gt = rots_gt[j]
+
+        # Try every symmetry element and find which one makes the
+        # ground-truth relative rotation most closely match the estimated
+        # relative rotation.
+        diffs = np.zeros(n_group, dtype=float)
+
+        for s, g_s in enumerate(G):
+            Rij_gt = Ri_gt.T @ g_s @ Rj_gt
+            diffs[s] = min(
+                np.linalg.norm(Rij - Rij_gt),
+                np.linalg.norm(Rij - J_conjugate(Rij_gt)),
+            )
+
+        # Estimates relative group element h_i^{-1} h_j.
+        idx_ij = np.argmin(diffs)
+
+        sl_i = slice(i * n_group, (i + 1) * n_group)
+        sl_j = slice(j * n_group, (j + 1) * n_group)
+
+        # Store the pairwise relative group elements in blocks (i, j)/(j, i).
+        A[sl_i, sl_j] = reps[idx_ij]
+        A[sl_j, sl_i] = reps[idx_ij].T
+
+    # Spectral synchronization:
+    # In the noiseless case, this block matrix has a top eigenspace of
+    # dimension n_group. That eigenspace encodes the unknown per-image group
+    # elements, up to one global group action.
+    _, eig_vecs = np.linalg.eigh(A)
+    V = eig_vecs[:, -n_group:]
+
+    # Fix the global gauge using image 0 as a reference:
+    # The recovered group elements are only determined up to a common global
+    # symmetry. This is fine for error analysis, because a single remaining
+    # global rotation/symmetry can still be applied later.
+    V0 = V[:n_group, :]
+    V0_pinv = np.linalg.pinv(V0)
+
+    rots_gt_sync = np.zeros_like(rots_gt, dtype=dtype)
+
+    for i, rot_gt in enumerate(rots_gt):
+        sl_i = slice(i * n_group, (i + 1) * n_group)
+        Vi = V[sl_i, :]
+
+        # Compare image i's eigenspace block to the reference block.
+        # Ideally, this matrix is close to the representation of one group
+        # element. Noise makes it approximate, so we round it to the nearest
+        # valid group representation below.
+        M_i = Vi @ V0_pinv
+
+        # Round to nearest group representation.
+        dists = np.linalg.norm(M_i - reps, axis=(1, 2))
+        q_i = np.argmin(dists)
+
+        # Apply the synchronized group element to the ground-truth rotation.
+        h_i_sync = inv[q_i]
+
+        rots_gt_sync[i] = G[h_i_sync] @ rot_gt
 
     return rots_gt_sync
 
