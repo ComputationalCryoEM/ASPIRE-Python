@@ -4,7 +4,7 @@ import pytest
 from aspire.abinitio import CommonlineNUG, compare_rots_sym, g_sync
 from aspire.source import Simulation
 from aspire.utils import mean_aligned_angular_distance
-from aspire.volume import CnSymmetricVolume, DnSymmetricVolume, SymmetryGroup
+from aspire.volume import CnSymmetricVolume, DnSymmetricVolume
 
 DTYPE = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
 RESOLUTION = [48, pytest.param(49, marks=pytest.mark.expensive)]
