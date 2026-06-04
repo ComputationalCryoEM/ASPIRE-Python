@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
 
-from aspire.abinitio import CommonlineNUG, compare_rots_sym
+from aspire.abinitio import CommonlineNUG, compare_rots_sym, g_sync
 from aspire.source import Simulation
+from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import CnSymmetricVolume, DnSymmetricVolume, SymmetryGroup
 
 DTYPE = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
@@ -121,3 +122,10 @@ def test_estimate_rotations_pairwise(orient_est):
         orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
     )
     np.testing.assert_array_less(MSE, 0.1)
+
+
+def test_estimate_rotations(orient_est):
+    gt_rots_synced = g_sync(
+        orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
+    )
+    mean_aligned_angular_distance(orient_est.rotations, gt_rots_synced, 8.0)
