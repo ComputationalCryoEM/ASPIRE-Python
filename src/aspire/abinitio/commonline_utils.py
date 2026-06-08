@@ -394,6 +394,9 @@ def g_sync_cyclic(rots, rots_gt, symmetry):
     _, eig_vecs = eigh(A_g)
     leading_eig_vec = eig_vecs[:, -1]
 
+    # Remove arbitrary global phase (eigh returns +-1 eigenvector)
+    leading_eig_vec *= np.exp(-1j * np.angle(leading_eig_vec[0]))
+
     angles = np.exp(1j * 2 * np.pi / order * np.arange(order))
     rots_gt_sync = np.zeros((n_img, 3, 3), dtype=dtype)
 

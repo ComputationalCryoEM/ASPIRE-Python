@@ -1,13 +1,20 @@
 import numpy as np
 import pytest
 
-from aspire.abinitio import JSync
+from aspire.abinitio import JSync, g_sync
 from aspire.abinitio.commonline_utils import (
     _complete_third_row_to_rot,
     _estimate_third_rows,
     build_outer_products,
 )
-from aspire.utils import J_conjugate, Rotation, randn, utest_tolerance
+from aspire.utils import (
+    J_conjugate,
+    Rotation,
+    mean_aligned_angular_distance,
+    randn,
+    utest_tolerance,
+)
+from aspire.volume import SymmetryGroup
 
 DTYPES = [np.float32, np.float64]
 
@@ -116,3 +123,45 @@ def test_J_sync(dtype):
 
     np.testing.assert_allclose(Rijs_sync, Rijs_gt)
     assert Rijs_sync.dtype == dtype
+
+
+@pytest.mark.parametrize("symmetry", ["C3", "C4", "D3", "D4", "T", "O"])
+def test_g_sync(symmetry):
+    n = 100
+    dtype = np.float64
+
+    # Get symmetry group matrices
+    gs = SymmetryGroup.parse(symmetry).matrices
+
+    # Build set of ground truth rotations
+    gt_rots = Rotation.generate_random_rotations(n, dtype=dtype)
+
+    # Build set of estimates which are close to ground truth
+    # by generating set of small perturbation rotations to apply
+    # to ground truth rotations.
+    target_mean_deg = 2.0
+    axes = np.random.normal(size=(n, 3)).astype(dtype)
+    axes /= np.linalg.norm(axes, axis=1, keepdims=True)
+    angles = np.random.uniform(0, 2 * np.deg2rad(target_mean_deg), n).astype(dtype)
+    delta_rots = Rotation.from_rotvec(axes * angles[:, None], dtype=dtype)
+    perturbed_rots = Rotation(delta_rots.matrices @ gt_rots.matrices)
+
+    # Get mean ang dist for aligned estimates
+    # and check we're close to target.
+    og_maad = mean_aligned_angular_distance(perturbed_rots, gt_rots)
+    np.testing.assert_array_less(abs(og_maad - target_mean_deg), 0.2)
+
+    # Simulate symmetry desynchronization
+    g_idx = np.random.randint(len(gs), size=n)
+    desynced_rots = Rotation(gs[g_idx] @ perturbed_rots.matrices)
+
+    # Mean aligned angular distance of unsynced rots should be bad
+    np.testing.assert_array_less(
+        10 * og_maad, mean_aligned_angular_distance(desynced_rots, gt_rots)
+    )
+
+    # Perform g_sync and check that mean aligned angular distance
+    # matches ground truth MAAD to within .1 degrees.
+    rots_gt_synced = g_sync(desynced_rots, gt_rots, symmetry)
+    est_maad = mean_aligned_angular_distance(desynced_rots, rots_gt_synced)
+    np.testing.assert_array_less(abs(og_maad - est_maad), 0.1)
