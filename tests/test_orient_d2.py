@@ -7,11 +7,10 @@ from aspire.utils import (
     J_conjugate,
     Random,
     Rotation,
-    all_pairs,
     mean_aligned_angular_distance,
     utest_tolerance,
 )
-from aspire.volume import DnSymmetricVolume, DnSymmetryGroup
+from aspire.volume import DnSymmetricVolume
 
 ##############
 # Parameters #
