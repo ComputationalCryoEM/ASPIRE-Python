@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from aspire.abinitio import CLSymmetryD2
+from aspire.abinitio import CLSymmetryD2, g_sync
 from aspire.source import Simulation
 from aspire.utils import (
     J_conjugate,
