@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 class CommonlineNUG(Orient3D):
     """
-    Class to estimate 3D orientations using non-uqique games.
+    Class to estimate 3D orientations using non-uqique games for molecules with cyclic
+    or dihedral symmetry.
     """
 
     def __init__(
@@ -95,15 +96,11 @@ class CommonlineNUG(Orient3D):
         pf = self.pf
         self.pf_full = PolarFT.half_to_full(pf)
 
-        # Prepare the shift phases to try and generate filter for common-line detection
+        # Prepare the shift phases for common-line detection
         r_max = self.pf_full.shape[2]
-        self.shifts, self.shift_phases, h = _generate_shift_phase_and_filter(
+        self.shifts, self.shift_phases, _ = _generate_shift_phase_and_filter(
             r_max, self.max_shift, self.shift_step, self.dtype
         )
-
-        # Apply bandpass filter, normalize each ray of each image
-        # Note that only use half of each ray
-        # self.pf_full = self._apply_filter_and_norm("ijk, k -> ijk", pf_full, r_max, h)
 
     def estimate_rotations(self):
         self.compute_coeff()
@@ -709,8 +706,6 @@ class CommonlineNUG(Orient3D):
         D1 = d1[-1]
 
         # AE and bE for quaternion constraints
-        # AEq = xp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEq"])
-        # AEqAEqtinv = xp.asarray(loadmat("data/Eq_constraints/AEqJ.mat")["AEqAEqtinv"])
         AEq = xp.asarray(self.construct_AEq())
         AEqAEqtinv = xp.linalg.pinv(AEq @ AEq.T)
 
@@ -721,16 +716,6 @@ class CommonlineNUG(Orient3D):
 
         # AI and bI
         W0, W1, Ngrid = self.compute_fejer_weights()
-        # AI_mat=np.zeros((Ngrid,D0+D1))
-        # for p in range(Ngrid):
-        #     w0=np.zeros(D0); w1=np.zeros(D1)
-        #     for k in range(1,Lmax+1):
-        #         w0[d0[k-1]:d0[k]]=(Lmax-k+2)*(Lmax-k+1)*(k+0.5)*W0[k-1][p].T.reshape(-1)
-        #         w1[d1[k-1]:d1[k]]=(Lmax-k+2)*(Lmax-k+1)*(k+0.5)*W1[k-1][p].T.reshape(-1)
-        #         # this needs double checking
-        #     AI_mat[p,:d0[-1]]=w0; AI_mat[p,d0[-1]:]=w1
-        # AI_mat=xp.asarray(AI_mat) / 10;
-        # bI=-(Lmax+2)*(Lmax+1)/2 / 10
         AI_mat_offdiag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
         for p in range(Ngrid):
             w0 = np.zeros(D0, dtype=np.float64)
@@ -874,7 +859,6 @@ class CommonlineNUG(Orient3D):
         return W0, W1, Ngrid
 
     def discretize_SO3(self):
-        # S2 = loadmat("design20.mat")["design"]
         S2 = saff_kuijlaars(self.S2_grid)
         S2_size = S2.shape[0]
 
@@ -1354,7 +1338,6 @@ class CommonlineNUG(Orient3D):
             z = AI @ (AI.T @ z)
         Lambda += 2000
         logger.info("Largest eigenvalue of AIAIT is approximately %1.2f" % Lambda)
-        # Lambda=xp.linalg.eigvalsh(AI@AI.T)[-1]; print(Lambda)
         return Lambda
 
     def compute_rank(self, Lmax):
