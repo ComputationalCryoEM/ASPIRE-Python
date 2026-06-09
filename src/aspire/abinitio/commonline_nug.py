@@ -5,9 +5,8 @@ import numpy as np
 from scipy.special import factorial
 
 from aspire.abinitio import Orient3D
-from aspire.nufft import nufft
-from aspire.numeric import fft, xp
-from aspire.operators import PolarFT, wemd_embed
+from aspire.numeric import xp
+from aspire.operators import PolarFT
 from aspire.utils import Rotation, cart2sph, complex_type
 from aspire.volume import CnSymmetryGroup, DnSymmetryGroup, SymmetryGroup
 
@@ -31,7 +30,6 @@ class CommonlineNUG(Orient3D):
         shift_step=1,
         mask=True,
         Lmax=12,
-        loss="l1",
         T=36,
         max_iter=501,
         rho=0.05,
@@ -64,7 +62,6 @@ class CommonlineNUG(Orient3D):
         )
 
         self.Lmax = Lmax
-        self.loss = loss
         self.T = T
         self.max_iter = max_iter
         self.rho = rho
@@ -120,61 +117,24 @@ class CommonlineNUG(Orient3D):
 
     def compute_coeff(self):
         # compute the coefficient matrix
-        Img = self.src.images[:]
         N = self.n_img
         n_theta = self.n_theta
-        loss = self.loss
         Lmax = self.Lmax
         T = self.T
-        angular_sampling = np.arange(0, 360, 1, dtype=np.float64)
 
-        # Using ASPIRE Image.project(). Leaving original method in comments for now.
-        line_proj = Img.project(angular_sampling).asnumpy().T
+        def fij(alpha, gamma, i, j):
+            Ii_hat = self.pf_full[i]
+            Ij_hat = self.pf_full[j]
+            idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
+            idxj = np.round((-gamma - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
 
-        # line_proj = np.zeros((L, n_theta, N))
-        # Img_pft = np.zeros((L, n_theta, N), dtype=complex)
-        # Img = Img.asnumpy()
-        # for n in range(N):
-        #     line_proj[:, :, n], Img_pft[:, :, n] = self.fast_radon_transform(
-        #         Img[n], angular_sampling
-        #     )
-        def fij(alpha, gamma, i, j, loss):
-            if loss == "l1":
-                # Ii_hat = Img_pft[:, :, i]
-                # Ij_hat = Img_pft[:, :, j]
-                # idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
-                # idxj = np.round((-gamma - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
+            Si = Ii_hat[int(idxi)]
+            Sj = Ij_hat[int(idxj)]
 
-                # Si = Ii_hat[:, int(idxi)]
-                # Sj = Ij_hat[:, int(idxj)]
-
-                Ii_hat = self.pf_full[i]
-                Ij_hat = self.pf_full[j]
-                idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
-                idxj = np.round((-gamma - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
-
-                Si = Ii_hat[int(idxi)]
-                Sj = Ij_hat[int(idxj)]
-
-                # Apply shifts
-                Sj_shifted = self.shift_phases * Sj
-                norms = np.linalg.norm(Si[None] - Sj_shifted, 1, axis=1)
-                return norms.min()
-
-            if loss == "wemd":
-                dim_wave = len(wemd_embed(line_proj[:, 0, 0]))
-                WE = np.zeros((dim_wave, n_theta, N), dtype=np.float64)
-                for i in range(N):
-                    for theta in range(n_theta):
-                        WE[:, theta, i] = wemd_embed(line_proj[:, theta, i])
-
-                idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
-                idxj = np.round((-gamma - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
-
-                Si = WE[:, int(idxi), i]
-                Sj = WE[:, int(idxj), j]
-
-                return np.linalg.norm(Si - Sj, 1)
+            # Apply shifts
+            Sj_shifted = self.shift_phases * Sj
+            norms = np.linalg.norm(Si[None] - Sj_shifted, 1, axis=1)
+            return norms.min()
 
         alpha_grid = np.arange(2 * T, dtype=np.float64) * np.pi / T
         beta_grid = (2 * np.arange(2 * T, dtype=np.float64) + 1) * np.pi / 4 / T
@@ -216,7 +176,7 @@ class CommonlineNUG(Orient3D):
                 Fij = np.zeros((2 * T, 2 * T), dtype=np.float64)
                 for j1 in range(2 * T):
                     for j2 in range(2 * T):
-                        Fij[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, j, loss)
+                        Fij[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, j)
                 for k in range(1, Lmax + 1):
                     dk = 2 * k + 1
                     C[k - 1][j * dk : (j + 1) * dk, i * dk : (i + 1) * dk] = fijhat_k(
@@ -229,7 +189,7 @@ class CommonlineNUG(Orient3D):
             Fii = np.zeros((2 * T, 2 * T), dtype=np.float64)
             for j1 in range(2 * T):
                 for j2 in range(2 * T):
-                    Fii[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, i, loss)
+                    Fii[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, i)
             for k in range(1, Lmax + 1):
                 dk = 2 * k + 1
                 C[k - 1][i * dk : (i + 1) * dk, i * dk : (i + 1) * dk] = fijhat_k(
@@ -245,40 +205,6 @@ class CommonlineNUG(Orient3D):
             )
 
         self.C = C
-
-    @staticmethod
-    def fast_radon_transform(array, angles, use_ramp=False):
-
-        angles = np.array(angles).flatten()
-        img_size = array.shape[1]
-        rads = angles / 180 * np.pi
-        y_idx = np.arange(-img_size / 2, img_size / 2) / img_size * 2
-        x_theta = y_idx[:, np.newaxis] * np.sin(rads)[np.newaxis, :]
-        y_theta = y_idx[:, np.newaxis] * np.cos(rads)[np.newaxis, :]
-
-        pts = np.pi * np.vstack(
-            [
-                x_theta.flatten(),
-                y_theta.flatten(),
-            ]
-        )
-        pts = pts.astype(array.dtype)
-
-        # array = array.astype(np.float32)
-        lines_f = nufft(array, pts).reshape((img_size, -1))
-
-        if img_size % 2 == 0:
-            lines_f[0, :] = 0
-
-        if use_ramp:
-            freqs = np.abs(np.pi * y_idx)
-            lines_f *= freqs[:, np.newaxis]
-
-        projections = np.real(
-            xp.asnumpy(fft.centered_ifft(xp.asarray(lines_f), axis=0))
-        )
-
-        return projections, lines_f
 
     def complex2real(self, ell):
         # compute transformation matrices that convert complex representations to real ones
