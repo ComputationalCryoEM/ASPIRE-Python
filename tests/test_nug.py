@@ -6,7 +6,7 @@ from aspire.source import Simulation
 from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import CnSymmetricVolume, DnSymmetricVolume
 
-DTYPE = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
+DTYPE = [np.float64, pytest.param(np.float32, marks=pytest.mark.expensive)]
 RESOLUTION = [48, pytest.param(49, marks=pytest.mark.expensive)]
 N_IMG = [15]
 OFFSETS = [0, pytest.param(None, marks=pytest.mark.expensive)]
