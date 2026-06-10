@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 class CommonlineNUG(Orient3D):
     """
-    Class to estimate 3D orientations using non-uqique games for molecules with cyclic
-    or dihedral symmetry.
+    Estimate orientations of cyclically or dihedrally symmetric molecules using the non-unique games framework.
     """
 
     def __init__(
@@ -44,7 +43,7 @@ class CommonlineNUG(Orient3D):
         **kwargs,
     ):
         """
-        Initialize object for estimating 3D orientations for symmetric molecules.
+        Initialize the symmetric NUG orientation estimator.
 
         :param src: The source object of 2D denoised or class-averaged images with metadata
         :param symmetry: A string, ie. 'C3', indicating the symmetry type.
@@ -93,6 +92,9 @@ class CommonlineNUG(Orient3D):
         self._build_full_pft()
 
     def _build_full_pft(self):
+        """
+        Construct the full polar Fourier transforms and candidate shift phases.
+        """
         pf = self.pf
         self.pf_full = PolarFT.half_to_full(pf)
 
@@ -103,6 +105,9 @@ class CommonlineNUG(Orient3D):
         )
 
     def estimate_rotations(self):
+        """
+        Estimate rotations by computing NUG coefficients, solving the SDP relaxation, and recovering Euler angles.
+        """
         self.compute_coeff()
         self.perform_admm()
         self.euler_est()
@@ -113,6 +118,9 @@ class CommonlineNUG(Orient3D):
     #######################
 
     def compute_coeff(self):
+        """
+        Compute the truncated Fourier coefficient matrices of the pairwise common-line losses.
+        """
         # compute the coefficient matrix
         N = self.n_img
         n_theta = self.n_theta
@@ -204,7 +212,9 @@ class CommonlineNUG(Orient3D):
         self.C = C
 
     def complex2real(self, ell):
-        # compute transformation matrices that convert complex representations to real ones
+        """
+        Construct the transformation matrices between complex and real degree ell representations.
+        """
         diml = 2 * ell + 1
         Tinv = np.zeros((diml, diml), dtype=complex_type(np.float64))
         for i in range(diml):
@@ -234,6 +244,9 @@ class CommonlineNUG(Orient3D):
     #############
 
     def perform_admm(self):
+        """
+        Solve the symmetric NUG relaxation and optionally apply proximal refinement.
+        """
         X_est = self.admm_sym_J(self.C, self.verbose)
 
         if self.perform_pr:
@@ -249,6 +262,9 @@ class CommonlineNUG(Orient3D):
         self.X_est = X_est
 
     def admm_sym_J(self, C, verbose):
+        """
+        Solve the symmetry-constrained NUG semidefinite relaxation using ADMM.
+        """
         Lmax = self.Lmax
         N = self.n_img
         max_iter = self.max_iter
@@ -656,8 +672,9 @@ class CommonlineNUG(Orient3D):
         return X_admm
 
     def ADMM_preprocessing(self, C):
-        # compute necessary quantities for ADMM
-        # compute some useful index sets
+        """
+        Construct the transformed coefficients, constraints, indices, and initial variables used by ADMM.
+        """
         Lmax = self.Lmax
         N = self.n_img
         count = 0
@@ -820,6 +837,9 @@ class CommonlineNUG(Orient3D):
         )
 
     def compute_fejer_weights(self):
+        """
+        Evaluate the real Wigner representation blocks used by the discretized Fejer inequality constraints.
+        """
         SO3_grid = self.discretize_SO3()
         Ngrid = SO3_grid.shape[0]
         start = 1
@@ -859,6 +879,9 @@ class CommonlineNUG(Orient3D):
         return W0, W1, Ngrid
 
     def discretize_SO3(self):
+        """
+        Construct an approximately uniform Euler-angle grid over SO(3).
+        """
         S2 = saff_kuijlaars(self.S2_grid)
         S2_size = S2.shape[0]
 
@@ -886,6 +909,9 @@ class CommonlineNUG(Orient3D):
     ############################
 
     def proximal_refine(self, X_admm, weight, Penalty, r):
+        """
+        Refine the relaxed solution by iteratively encouraging lower-rank representation matrices.
+        """
         N = self.n_img
         C = self.C
 
@@ -959,6 +985,9 @@ class CommonlineNUG(Orient3D):
     #########################
 
     def euler_est(self):
+        """
+        Recover rotations and Euler angles using the estimator for the configured symmetry group.
+        """
         X_est = self.X_est
         if isinstance(self.sym_grp, CnSymmetryGroup):
             R_est, Euler_est = self.euler_est_Cm(X_est[0], X_est[self.n_sym - 1])
@@ -969,6 +998,9 @@ class CommonlineNUG(Orient3D):
         self.rotations = R_est.astype(self.dtype)
 
     def euler_est_Cm(self, X1, XS):
+        """
+        Recover Euler angles from the degree-one and degree-m solutions for cyclic symmetry.
+        """
         S = self.n_sym
         N = self.n_img
         sym_euler = np.zeros((S, 3), dtype=np.float64)
@@ -1086,7 +1118,9 @@ class CommonlineNUG(Orient3D):
         return R_est, Euler_est
 
     def euler_est_Dm(self, X_est):
-
+        """
+        Recover Euler angles from the degree-two and degree-m solutions for dihedral symmetry.
+        """
         X2 = X_est[1]
         S = self.sym_grp.order
         N = self.n_img
@@ -1240,6 +1274,9 @@ class CommonlineNUG(Orient3D):
     # Helper Functions #
     ####################
     def transform_coeff(self, A, Lmax, N, IDX_upper):
+        """
+        Transform representation matrices into the two block-vector forms used by ADMM.
+        """
         d0 = [0]
         d1 = [0]
         for k in range(1, Lmax + 1):
@@ -1254,6 +1291,9 @@ class CommonlineNUG(Orient3D):
         return A0, A1
 
     def transform_coeff_back(self, A0, A1, Lmax, N, IDX_upper, IDX_lower, idx_offdiag):
+        """
+        Reconstruct representation matrices from the ADMM block-vector forms.
+        """
         d0 = [0]
         d1 = [0]
         for k in range(1, Lmax + 1):
@@ -1275,6 +1315,9 @@ class CommonlineNUG(Orient3D):
 
     @staticmethod
     def permutek(Ak, k, N):
+        """
+        Permute and split a degree-k matrix into blocks of sizes k and k + 1.
+        """
         AkP = xp.copy(Ak)
         dk = 2 * k + 1
         Pk = xp.eye(dk, dtype=AkP.dtype)
@@ -1299,6 +1342,9 @@ class CommonlineNUG(Orient3D):
 
     @staticmethod
     def permutek_back(Ak, k, N):
+        """
+        Undo the degree-k block permutation and reconstruct the full matrix.
+        """
         dk = 2 * k + 1
         Pk = xp.eye(N * dk, dtype=Ak.dtype)
         idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
@@ -1322,11 +1368,17 @@ class CommonlineNUG(Orient3D):
 
     @staticmethod
     def vec_block(A, N, sz, IDX_upper):
+        """
+        Vectorize the upper-triangular image-pair blocks of a block matrix.
+        """
         vecA = (A.reshape(N, sz, N, sz).transpose(0, 2, 3, 1)).reshape(N**2, sz**2).T
         return vecA[:, IDX_upper]
 
     @staticmethod
     def largest_eigenvalue(AI, Ngrid, N):
+        """
+        Estimate the largest eigenvalue of the Fejér constraint operator.
+        """
         # find the largest eigenvalue of the operator AI
         np.random.seed(0)
         z = xp.random.normal(0, 1, (Ngrid, N**2))
@@ -1341,6 +1393,9 @@ class CommonlineNUG(Orient3D):
         return Lambda
 
     def compute_rank(self, Lmax):
+        """
+        Compute the ranks and matrices of the symmetry-averaging projectors at each degree.
+        """
         rk = xp.zeros(Lmax, dtype=np.float64)
         A = []
         for k in range(1, Lmax + 1):
@@ -1351,6 +1406,9 @@ class CommonlineNUG(Orient3D):
         return rk, A
 
     def WD(self, J, euler):
+        """
+        Evaluate degree-J Wigner D matrices at the supplied ZYZ Euler angles.
+        """
         # compute Wigner D matrix
         alpha = euler[:, 0]
         beta = euler[:, 1]
@@ -1366,6 +1424,9 @@ class CommonlineNUG(Orient3D):
 
     @staticmethod
     def Wd(J, beta):
+        """
+        Evaluate degree-J Wigner small-d matrices at the supplied polar angles.
+        """
         # compute Wigner small d matrix
         d = np.zeros((len(beta), 2 * J + 1, 2 * J + 1), dtype=beta.dtype)
         for m in range(-J, J + 1):
@@ -1393,6 +1454,9 @@ class CommonlineNUG(Orient3D):
 
     @staticmethod
     def mat_block(vecA, N, sz, IDX_upper, IDX_lower, idx_offdiag):
+        """
+        Reconstruct a symmetric block matrix from its vectorized upper-triangular blocks.
+        """
         tmp = vecA.T.reshape(N * (N + 1) // 2, sz, sz).transpose(0, 2, 1)
         AA = xp.zeros((N**2, sz, sz), dtype=vecA.dtype)
         AA[IDX_upper] = tmp
@@ -1401,6 +1465,9 @@ class CommonlineNUG(Orient3D):
 
     @staticmethod
     def psd_projection(B):
+        """
+        Project one or more symmetric matrices onto the positive semidefinite cone.
+        """
         # compute the PSD part of a symmstric matrix
         B_sym = (B + B.swapaxes(-1, -2)) / 2
         evals, evecs = xp.linalg.eigh(B_sym)
@@ -1409,6 +1476,9 @@ class CommonlineNUG(Orient3D):
 
     @staticmethod
     def transform_block(A, k, Pk=None):
+        """
+        Permute and vectorize the two invariant blocks of a degree-k matrix.
+        """
         single = A.ndim == 2
         if single:
             A = A[None, :, :]
@@ -1432,6 +1502,9 @@ class CommonlineNUG(Orient3D):
 
     @staticmethod
     def transform_back_block(A0, A1, k, Pk=None):
+        """
+        Reconstruct a degree-k matrix from its two invariant block vectors.
+        """
         dk = 2 * k + 1
         single = A0.ndim == 1
 
@@ -1454,7 +1527,7 @@ class CommonlineNUG(Orient3D):
 
     def construct_AEq(self):
         """
-        Construct the linear equality matrix for quaternion constraints.
+        Construct the linear equality operator encoding the quaternion constraints.
         """
         AEq = np.zeros((17, 21), np.float64)
 
