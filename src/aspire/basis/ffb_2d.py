@@ -295,7 +295,7 @@ class FFBBasis2D(FBBasis2D):
             .reshape(len(f), n_k, n_theta)
             .astype(self.dtype)
         )
-        h_vals = np.sum(h_vals2d, axis=-1) / n_theta
+        h_vals = h_vals2d.sum(axis=-1) / n_theta
 
         # Represent each 1D functions values in basis
         h_basis = [
