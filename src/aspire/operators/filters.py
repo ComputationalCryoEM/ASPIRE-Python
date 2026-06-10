@@ -7,7 +7,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 from aspire import config
 from aspire.numeric import xp
-from aspire.utils import cart2pol, grid_2d, voltage_to_wavelength
+from aspire.utils import cart2pol, grid_2d, trange, voltage_to_wavelength
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,6 @@ def evaluate_src_filters_on_grid(src, indices=None):
 
     # Initialize h as ones to mimic an IdentityFilter when src.filter_stack is None.
     h = np.ones((omega.shape[-1], len(indices)), dtype=src.dtype)
-    # ### XXX I believe this might be what Tony reported ^
 
     if src.filter_stack is not None:
         # Evaluate all filters in bulk
@@ -53,6 +52,9 @@ def evaluate_src_filters_on_grid(src, indices=None):
 
 # TODO: filters should probably be dtyped...
 class Filter:
+    max_size = 4e9  # Max element count for a single evaluate batch
+    batch_size = 512  # Batch size in elements
+
     def __init__(self, dim=None, radial=False):
         self.dim = dim
         self.radial = radial
@@ -90,7 +92,28 @@ class Filter:
             omega, idx = np.unique(omega, return_inverse=True)
             omega = np.vstack((omega, np.zeros_like(omega)))
 
-        h = self._evaluate(omega, **kwargs)
+        # Batch over large problems that may not fit in memory/GPU
+        filter_ind_count = len(self)
+        indices = np.arange(filter_ind_count)
+        if kwargs.get("indices", None) is not None:
+            indices = kwargs["indices"]
+            filter_ind_count = len(indices)
+        if (omega.shape[-1] * filter_ind_count) > self.max_size:
+            # Create an empty result array
+            # For large (2D) problems this will not fit on a GPU
+            h = np.empty((filter_ind_count, omega.shape[-1]), dtype=np.float64)
+            # Batch over filter indices
+            for i in trange(
+                0, filter_ind_count, self.batch_size, desc="Filter evaluation"
+            ):
+                # Form the subset of filter indices
+                s = slice(i, min(filter_ind_count, i + self.batch_size))
+                kwargs["indices"] = indices[s]
+                # Evaluate filter for the subset of indices and assign
+                h[s] = xp.asnumpy(self._evaluate(omega, **kwargs))
+        else:
+            # Compute as one problem
+            h = self._evaluate(omega, **kwargs)
 
         if self.radial:
             # The reshape and take axis gynmastics work to provide the

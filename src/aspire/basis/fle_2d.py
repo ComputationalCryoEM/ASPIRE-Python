@@ -17,6 +17,9 @@ from aspire.utils import complex_type, grid_2d
 
 logger = logging.getLogger(__name__)
 
+# Number of elements in filter_to_basis_mat before breaking into batches
+MAX_ELEM_COUNT = 2e9
+
 
 def _cleanup():
     """
@@ -837,12 +840,17 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         omegay = k * xp.sin(theta)
         omega = 2 * xp.pi * xp.vstack((omegax.flatten("C"), omegay.flatten("C")))
 
-        h_vals2d = (
-            xp.asarray(h_fun(omega, pixel_size=pixel_size))
-            .reshape(len(f), n_k, n_theta)
-            .astype(self.dtype, copy=False)
-        )
-        h_vals = xp.sum(h_vals2d, axis=-1) / n_theta
+        # For high non-radial filter counts at higher pixel counts
+        # h_vals2d requires a large amount of memory and is too large
+        # to fit on a GPU
+        # In the smaller cases, the code attepts using GPU.
+        h_vals2d = h_fun(omega, pixel_size=pixel_size)
+        if len(f) * xp.size(omega) < MAX_ELEM_COUNT:
+            h_vals2d = xp.asarray(h_vals2d)
+
+        h_vals2d = h_vals2d.reshape(len(f), n_k, n_theta).astype(self.dtype, copy=False)
+        h_vals = h_vals2d.sum(axis=-1) / n_theta
+        h_vals = xp.asarray(h_vals)  # no-op if already fit on GPU
 
         h_basis = xp.zeros((len(f), self.count), dtype=self.dtype)
         # shape gymnastics to get a broadcast with csr A3
