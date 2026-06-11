@@ -68,18 +68,11 @@ class FFBBasis2D(FBBasis2D):
         )
 
         # Generate radial filter point set for radial optimized eval
-        # Weights appear a little sensitive to dtype ...
+        # Weights appear a little sensitive to dtype, otherwise could use self._precomp["gl_nodes"]
         k_vals, _ = lgwt(self.n_r, 0, 0.5, dtype=np.float64)
         self._filter_pts = np.pad(
             2 * np.pi * k_vals.reshape(1, -1), ((0, 1), (0, 0))
         ).astype(self.dtype)
-
-        # Ask Joakim about this...
-        # Why does filter_to_basis_mat hard code lgwt instead of following basis self.kcut
-        # they are the same by default.
-        # self._filter_pts = np.pad(
-        #      2 * np.pi * self._precomp["gl_nodes"].reshape(1, -1), ((0, 1), (0, 0))
-        # )
 
     def _precomp(self):
         """
@@ -277,7 +270,6 @@ class FFBBasis2D(FBBasis2D):
         radial = self._precomp["radial"]
 
         # get 2D grid in polar coordinate
-        # Confirm this lgwt call with Joakim (should it follow basis config self.kcut? same by default)
         k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
         k, theta = np.meshgrid(
             k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
