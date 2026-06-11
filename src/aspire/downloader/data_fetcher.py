@@ -288,6 +288,104 @@ def emdb_6458():
     return vol
 
 
+def emdb_14803():
+    """
+    Downloads the EMDB-14803 volume map and returns the file path.
+
+    This molecule exhibits D3 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_14803.map")
+    vol = Volume.load(file_path, symmetry_group="D3")
+
+    return vol
+
+
+def emdb_3952():
+    """
+    Downloads the EMDB-3952 volume map and returns the file path.
+
+    This molecule exhibits I symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_3952.map")
+    vol = Volume.load(file_path, symmetry_group="I")
+
+    return vol
+
+
+def emdb_22308():
+    """
+    Downloads the EMDB-22308 volume map and returns the file path.
+
+    This molecule exhibits D4 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_22308.map")
+    vol = Volume.load(file_path, symmetry_group="D4")
+
+    return vol
+
+
+def emdb_28025():
+    """
+    Downloads the EMDB-28025 volume map and returns the file path.
+
+    This molecule exhibits D5 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_28025.map")
+    vol = Volume.load(file_path, symmetry_group="D5")
+
+    return vol
+
+
+def emdb_22358():
+    """
+    Downloads the EMDB-22358 volume map and returns the file path.
+
+    This molecule exhibits D6 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_22358.map")
+    vol = Volume.load(file_path, symmetry_group="D6")
+
+    return vol
+
+
+def emdb_9571():
+    """
+    Downloads the EMDB-9571 volume map and returns the file path.
+
+    This molecule exhibits D8 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_9571.map")
+    vol = Volume.load(file_path, symmetry_group="D8")
+
+    return vol
+
+
+def emdb_10920():
+    """
+    Downloads the EMDB-10920 volume map and returns the file path.
+
+    This molecule exhibits D10 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_10920.map")
+    vol = Volume.load(file_path, symmetry_group="D10")
+
+    return vol
+
+
 def simulated_channelspin():
     """
     Downloads the Simulated ChannelSpin dataset and returns the file path.

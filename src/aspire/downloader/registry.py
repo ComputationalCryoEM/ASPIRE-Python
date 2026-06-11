@@ -13,6 +13,13 @@ registry = {
     "emdb_14621.map": "98363ae950229243131025995b5ba0486857ccb1256b3df8d25c1c282155238c",
     "emdb_2484.map": "6a324e23352bea101c191d5e854026162a5a9b0b8fc73ac5a085cc22038e1999",
     "emdb_6458.map": "645208af6d36bbd3d172c549e58d387b81142fd320e064bc66105be0eae540d1",
+    "emdb_14803.map": "sha256:10e1d3bbc11b6660c97b2ef8b654306c0a4c9a0c621386653f2464402ad1d20b",
+    "emdb_3952.map": "sha256:8367cd35fba18806b07b0461505c4588bd61ac6cdced5ebf51fa6f10e71559fa",
+    "emdb_22308.map": "sha256:2feceb32ec0cd645881e8a46957727c076a1711074e874860e94b7c0330c8201",
+    "emdb_28025.map": "sha256:64cd10920048bbd459d791523d65c20712b8fc199bdcdca1ce5cf6e0843d4364",
+    "emdb_22358.map": "sha256:b9dee4a27d92b7fe93ab6aa08087f9b4db8abc68ca553041061ad9c8cea05f54",
+    "emdb_9571.map": "sha256:e399b5a53c23e06e2384b15150ad1f9e6120a4799ea1fdfcaf213948d959bb65",
+    "emdb_10920.map": "sha256:8e08a511903d2f088b5ed69446843dad8214fa34128e513b90a3fc75cf3fa795",
     "simulated_channelspin.npz": "c0752674acb85417f6a77a28ac55280c1926c73fda9e25ce0a9940728b1dfcc8",
 }
 
@@ -30,6 +37,13 @@ registry_urls = {
     "emdb_14621.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-14621/map/emd_14621.map.gz",
     "emdb_2484.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-2484/map/emd_2484.map.gz",
     "emdb_6458.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-6458/map/emd_6458.map.gz",
+    "emdb_14803.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-14803/map/emd_14803.map.gz",
+    "emdb_3952.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-3952/map/emd_3952.map.gz",
+    "emdb_22308.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-22308/map/emd_22308.map.gz",
+    "emdb_28025.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-28025/map/emd_28025.map.gz",
+    "emdb_22358.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-22358/map/emd_22358.map.gz",
+    "emdb_9571.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-9571/map/emd_9571.map.gz",
+    "emdb_10920.map": "https://ftp.ebi.ac.uk/pub/databases/emdb/structures/EMD-10920/map/emd_10920.map.gz",
     "simulated_channelspin.npz": "https://zenodo.org/records/8186548/files/example_FakeKV_dataset.npz",
 }
 
@@ -47,5 +61,12 @@ file_to_method_map = {
     "emdb_14621.map": "emdb_14621",
     "emdb_2484.map": "emdb_2484",
     "emdb_6458.map": "emdb_6458",
+    "emdb_14803.map": "emdb_14803",
+    "emdb_3952.map": "emdb_3952",
+    "emdb_22308.map": "emdb_22308",
+    "emdb_28025.map": "emdb_28025",
+    "emdb_22358.map": "emdb_22358",
+    "emdb_9571.map": "emdb_9571",
+    "emdb_10920.map": "emdb_10920",
     "simulated_channelspin.npz": "simulated_channelspin",
 }
