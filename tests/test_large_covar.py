@@ -1,3 +1,12 @@
+"""
+This file contains a collection of parameterized source setups and calls
+to the covariance component applied to real problem sizes and real data.
+
+It can time/excercise the code paths used for CWF denoising and class
+averaging under different basis and CTF filter assumptions (ie radial
+optimizations).
+"""
+
 import os
 import socket
 
@@ -115,7 +124,7 @@ def preprocessed_src(img_size, molecule, force_radial, dtype):
 
 
 @pytest.mark.covar
-def test_covar(preprocessed_src, basis, force_radial):
+def test_covar2d(preprocessed_src, basis, force_radial):
 
     # To run radially optimized code we need
     #  i) radial filters
