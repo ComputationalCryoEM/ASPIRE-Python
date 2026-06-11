@@ -409,8 +409,6 @@ class IndexedXform(Xform):
 
         # A list of references to individual Xform objects, with possibly multiple references pointing to
         # the same Xform object.
-        # Crap, im stuck
-        # self.xforms = [unique_xforms[i] for i in indices]
         self.xforms = unique_xforms
 
     def _indexed_operation(self, im, indices, which):

@@ -881,7 +881,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         coefs = self._radial_convolve_weights(radial_vec)
 
-        # check...
         # Convert to internal FLE indices ordering
         coefs = coefs[..., self._fb_to_fle_indices]
 
