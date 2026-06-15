@@ -64,18 +64,18 @@ def fetch_data(dataset_name):
 
 def download_all():
     """
-    Download all ASPIRE example data and return a dictionary of filepaths.
+    Download all ASPIRE example data and return a dictionary of files.
 
-    :return: A dictionary of method names and associated file paths.
+    :return: A dictionary of method names and associated files.
     """
 
-    file_paths = {}
+    items = {}
     for data_set in registry:
-        path = fetch_data(data_set)
+        item = fetch_data(data_set)
         name = file_to_method_map[data_set]
-        file_paths[name] = path
+        items[name] = item
 
-    return file_paths
+    return items
 
 
 def remove_downloads():
@@ -111,7 +111,7 @@ def emdb_2660():
 
 def emdb_8012():
     """
-    Downloads the EMDB-8012 volume map and returns the file path.
+    Downloads the EMDB-8012 volume map and returns a `Volume` instance.
 
     The overall structure of the yeast spliceosomal U4/U6.U5 tri-snRNP at 3.7 Angstrom.
 
@@ -125,7 +125,7 @@ def emdb_8012():
 
 def emdb_2984():
     """
-    Downloads the EMDB-2984 volume map and returns the file path.
+    Downloads the EMDB-2984 volume map and returns a `Volume` instance.
 
     2.2 A resolution cryo-EM structure of beta-galactosidase in complex with a cell-permeant inhibitor.
     This molecule exhibits D2 symmetry.
@@ -140,7 +140,7 @@ def emdb_2984():
 
 def emdb_8511():
     """
-    Downloads the EMDB-8511 volume map and returns the file path.
+    Downloads the EMDB-8511 volume map and returns a `Volume` instance.
 
     Structure of the human HCN1 hyperpolarization-activated cyclic nucleotide-gated ion channel.
     This molecule exhibits C4 symmetry.
@@ -155,7 +155,7 @@ def emdb_8511():
 
 def emdb_3645():
     """
-    Downloads the EMDB-3645 volume map and returns the file path.
+    Downloads the EMDB-3645 volume map and returns a `Volume` instance.
 
     CryoEM density of TcdA1 in prepore state (SPHIRE tutorial).
     This molecule exhibits C5 symmetry.
@@ -170,7 +170,7 @@ def emdb_3645():
 
 def emdb_4905():
     """
-    Downloads the EMDB-4905 volume map and returns the file path.
+    Downloads the EMDB-4905 volume map and returns a `Volume` instance.
 
     3D structure of horse spleen apoferritin determined using multifunctional
     graphene supports for electron cryomicroscopy. This molecule exhibits octahedral symmetry.
@@ -185,7 +185,7 @@ def emdb_4905():
 
 def emdb_10835():
     """
-    Downloads the EMDB-10835 volume map and returns the file path.
+    Downloads the EMDB-10835 volume map and returns a `Volume` instance.
 
     High resolution cryo-EM structure of urease from the pathogen Yersinia enterocolitica.
     This molecule exhibits tetrahedral symmetry.
@@ -200,7 +200,7 @@ def emdb_10835():
 
 def emdb_5778():
     """
-    Downloads the EMDB-5778 volume map and returns the file path.
+    Downloads the EMDB-5778 volume map and returns a `Volume` instance.
 
     Structure of the capsaicin receptor, TRPV1, determined by single particle electron cryo-microscopy.
     This molecule exhibits C4 symmetry.
@@ -215,7 +215,7 @@ def emdb_5778():
 
 def emdb_6287():
     """
-    Downloads the EMDB-6287 volume map and returns the file path.
+    Downloads the EMDB-6287 volume map and returns a `Volume` instance.
 
     2.8 Angstrom resolution reconstruction of the T20S proteasome.
     This molecule exhibits D7 symmetry.
@@ -230,7 +230,7 @@ def emdb_6287():
 
 def emdb_2824():
     """
-    Downloads the EMDB-2824 volume map and returns the file path.
+    Downloads the EMDB-2824 volume map and returns a `Volume` instance.
 
     Beta-galactosidase reconstruction.
     This molecule exhibits C2 symmetry.
@@ -245,7 +245,7 @@ def emdb_2824():
 
 def emdb_14621():
     """
-    Downloads the EMDB-14621 volume map and returns the file path.
+    Downloads the EMDB-14621 volume map and returns a `Volume` instance.
 
     Map of SARSCoV2 spike protein.
     This molecule exhibits C3 symmetry.
@@ -260,7 +260,7 @@ def emdb_14621():
 
 def emdb_2484():
     """
-    Downloads the EMDB-2484 volume map and returns the file path.
+    Downloads the EMDB-2484 volume map and returns a `Volume` instance.
 
     Pre-fusion structure of trimeric HIV-1 envelope glycoprotein determined by cryo-electron microscopy.
     This molecule exhibits C3 symmetry.
@@ -275,7 +275,7 @@ def emdb_2484():
 
 def emdb_6458():
     """
-    Downloads the EMDB-6458 volume map and returns the file path.
+    Downloads the EMDB-6458 volume map and returns a `Volume` instance.
 
     Cryo-EM Structure of the Activated NAIP2/NLRC4 Inflammasome Reveals Nucleated Polymerization.
     This molecule exhibits C11 symmetry.
@@ -288,9 +288,107 @@ def emdb_6458():
     return vol
 
 
+def emdb_14803():
+    """
+    Downloads the EMDB-14803 volume map and returns a `Volume` instance.
+
+    This molecule exhibits D3 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_14803.map")
+    vol = Volume.load(file_path, symmetry_group="D3")
+
+    return vol
+
+
+def emdb_3952():
+    """
+    Downloads the EMDB-3952 volume map and returns a `Volume` instance.
+
+    This molecule exhibits I symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_3952.map")
+    vol = Volume.load(file_path, symmetry_group="I")
+
+    return vol
+
+
+def emdb_22308():
+    """
+    Downloads the EMDB-22308 volume map and returns a `Volume` instance.
+
+    This molecule exhibits D4 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_22308.map")
+    vol = Volume.load(file_path, symmetry_group="D4")
+
+    return vol
+
+
+def emdb_28025():
+    """
+    Downloads the EMDB-28025 volume map and returns a `Volume` instance.
+
+    This molecule exhibits D5 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_28025.map")
+    vol = Volume.load(file_path, symmetry_group="D5")
+
+    return vol
+
+
+def emdb_22358():
+    """
+    Downloads the EMDB-22358 volume map and returns a `Volume` instance.
+
+    This molecule exhibits D6 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_22358.map")
+    vol = Volume.load(file_path, symmetry_group="D6")
+
+    return vol
+
+
+def emdb_9571():
+    """
+    Downloads the EMDB-9571 volume map and returns a `Volume` instance.
+
+    This molecule exhibits D8 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_9571.map")
+    vol = Volume.load(file_path, symmetry_group="D8")
+
+    return vol
+
+
+def emdb_10920():
+    """
+    Downloads the EMDB-10920 volume map and returns a `Volume` instance.
+
+    This molecule exhibits D10 symmetry.
+
+    :return: A 'Volume' instance.
+    """
+    file_path = fetch_data("emdb_10920.map")
+    vol = Volume.load(file_path, symmetry_group="D10")
+
+    return vol
+
+
 def simulated_channelspin():
     """
-    Downloads the Simulated ChannelSpin dataset and returns the file path.
+    Downloads the Simulated ChannelSpin dataset and returns a `Volume` instance.
 
     This dataset includes a stack of 54 volumes sized (54,54,54)
     and a corresponding stack of 10000 projection images (54,54).
