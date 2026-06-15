@@ -468,7 +468,7 @@ def g_sync_finite_group(rots, rots_gt, symmetry):
     #
     # This lets us store arbitrary finite-group relative elements in a block
     # synchronization matrix.  This is the key generalization beyond cyclic
-    # scalar phases in g_sync_Cn.
+    # scalar phases in g_sync_cyclic.
     reps = np.zeros((n_group, n_group, n_group), dtype=float)
 
     for a in range(n_group):

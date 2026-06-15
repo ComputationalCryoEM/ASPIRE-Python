@@ -45,10 +45,25 @@ class CommonlineNUG(Orient3D):
         """
         Initialize the symmetric NUG orientation estimator.
 
-        :param src: The source object of 2D denoised or class-averaged images with metadata
-        :param symmetry: A string, ie. 'C3', indicating the symmetry type.
-        :param n_rad: The number of points in the radial direction
-        :param n_theta: The number of points in the theta direction. Default = 360.
+        :param src: Source containing the input projection images.
+        :param symmetry: Cyclic or dihedral symmetry specification, such as 'C3' or
+            'D4'. If omitted, uses the source symmetry.
+        :param n_rad: Number of radial samples in the polar Fourier transform.
+        :param n_theta: Number of angular samples in the polar Fourier transform.
+        :param max_shift: Maximum shift considered when comparing common lines.
+        :param shift_step: Sampling interval for candidate shifts.
+        :param mask: Whether to apply a circular mask to the input images.
+        :param Lmax: Maximum Wigner representation degree used in the relaxation.
+        :param T: Quadrature resolution used to compute the Fourier coefficients.
+        :param max_iter: Number of ADMM iterations.
+        :param rho: Initial ADMM penalty parameter.
+        :param ratio: Residual ratio used when updating the ADMM penalty.
+        :param factor: Scaling factor used when updating the ADMM penalty.
+        :param mult: Step-size multiplier for the ADMM primal update.
+        :param S2_grid: Number of sphere samples used to discretize SO(3).
+        :param Nstep_yI: Number of inequality-multiplier updates per ADMM iteration.
+        :param perform_pr: Whether to apply proximal refinement after ADMM.
+        :param verbose: Whether to log ADMM progress.
         """
 
         super().__init__(
