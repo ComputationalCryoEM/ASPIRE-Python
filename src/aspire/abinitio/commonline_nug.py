@@ -333,9 +333,6 @@ class CommonlineNUG(Orient3D):
         rank_Ak, _ = self.compute_rank()
         logger.info(f"Rank of Ak: {rank_Ak}")
 
-        # rank_Ak=cp.zeros(Lmax)
-        # for ell in range(Lmax): rank_Ak[ell]=np.linalg.matrix_rank(Ak(ell+1,sym_euler))
-
         AE = []
         AEAETinv = []
         for k in range(1, Lmax + 1):
@@ -414,12 +411,9 @@ class CommonlineNUG(Orient3D):
             tmp = xp.concatenate((X0, X1), axis=0)
             z[:, idx_diag] = AI_mat_diag @ tmp[:, idx_diag]
             z[:, idx_offdiag] = AI_mat_offdiag @ tmp[:, idx_offdiag]
-            # return AI_mat@xp.concatenate((X0,X1),axis=0)
             return z
 
         def fun_AIT(yI):
-            # Z=AI_mat.T@yI
-            # return Z[:D0,:], Z[D0:,:]
             Z = xp.zeros((D0 + D1, N * (N + 1) // 2), dtype=np.float64)
             Z[:, idx_diag] = AI_mat_diag.T @ yI[:, idx_diag]
             Z[:, idx_offdiag] = AI_mat_offdiag.T @ yI[:, idx_offdiag]
@@ -454,7 +448,6 @@ class CommonlineNUG(Orient3D):
             toc0 = time.perf_counter()
             Time[0] += toc0 - tic0
 
-            # See if we can switch everything to C order before here.
             Sd0 = Sd0.T
             Sd1 = Sd1.T
             tic1 = time.perf_counter()
@@ -590,7 +583,6 @@ class CommonlineNUG(Orient3D):
                         idx_offdiag,
                     )
                     res_psdX += np.linalg.norm(self.psd_projection(-tmp))
-                    # res_psdX+=norm(self.psd_projection(-tmp))/(1+norm(tmp))
                     tmp = self.mat_block(
                         X1[d1[k - 1] : d1[k], :],
                         N,
@@ -600,7 +592,6 @@ class CommonlineNUG(Orient3D):
                         idx_offdiag,
                     )
                     res_psdX += np.linalg.norm(self.psd_projection(-tmp))
-                    # res_psdX+=norm(self.psd_projection(-tmp))/(1+norm(tmp))
                 res_psdX = res_psdX / (1 + np.linalg.norm(X0) + np.linalg.norm(X1))
                 res_psdD = 0
                 for k in range(1, Lmax + 1):
@@ -613,13 +604,11 @@ class CommonlineNUG(Orient3D):
                     res_psdD += np.linalg.norm(
                         self.psd_projection(-tmp), axis=(-2, -1)
                     ).sum()
-                    # res_psdD+=norm(self.psd_projection(-tmp))/(1+norm(tmp))
                 res_psdD = res_psdD / (1 + np.linalg.norm(Xd0) + np.linalg.norm(Xd1))
                 res_psdQ = 0
                 for count in range(N * (N - 1) // 2):
                     tmp = Xq[:, count].reshape(4, 4).T
                     res_psdQ += np.linalg.norm(self.psd_projection(-tmp))
-                    # res_psdQ+=norm(self.psd_projection(-tmp))/(1+norm(tmp))
                 res_psdQ = res_psdQ / (1 + np.linalg.norm(Xq))
 
                 normS = np.sqrt(
@@ -773,7 +762,7 @@ class CommonlineNUG(Orient3D):
                     * (k + 0.5)
                     * W1[k - 1][p].T.reshape(-1)
                 )
-                # this needs double checking
+                # this needs double checking (Ruiyi)
             AI_mat_offdiag[p, : d0[-1]] = w0
             AI_mat_offdiag[p, d0[-1] :] = w1
 
@@ -805,7 +794,7 @@ class CommonlineNUG(Orient3D):
                     * (k + 0.5)
                     * (0.5 * W1[k - 1][p] + 0.5 * W1[k - 1][p].T).T.reshape(-1)
                 )
-                # this needs double checking
+                # this needs double checking (Ruiyi)
             AI_mat_diag[p, : d0[-1]] = w0
             AI_mat_diag[p, d0[-1] :] = w1
         AI_mat_diag = xp.asarray(AI_mat_diag) / 1
@@ -1093,10 +1082,10 @@ class CommonlineNUG(Orient3D):
                 for j in range(N):
                     z = X1[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)][0, 0]
                     ZZbar[i, j] = z / abs(z)
-                    # ZZbar[i,j]=z*2/sin(beta[i])/sin(beta[j])
+
                     z = X1[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)][0, 2]
                     ZZ[i, j] = -z / abs(z)
-                    # ZZ[i,j]=-z*2/sin(beta[i])/sin(beta[j])
+
             evals, evecs = np.linalg.eigh(ZZbar)
             idx = np.argmax(abs(evals))
             Z = evecs[:, idx] * np.sqrt(abs(evals[idx]))
