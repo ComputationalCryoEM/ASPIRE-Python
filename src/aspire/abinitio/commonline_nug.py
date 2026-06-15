@@ -122,6 +122,8 @@ class CommonlineNUG(Orient3D):
     def estimate_rotations(self):
         """
         Estimate rotations by computing NUG coefficients, solving the SDP relaxation, and recovering Euler angles.
+
+        :return: Estimated rotation matrices.
         """
         self.compute_coeff()
         self.perform_admm()
@@ -229,6 +231,10 @@ class CommonlineNUG(Orient3D):
     def complex2real(self, ell):
         """
         Construct the transformation matrices between complex and real degree ell representations.
+
+        :param ell: Wigner representation degree.
+
+        :return: Forward and inverse change-of-basis matrices.
         """
         diml = 2 * ell + 1
         Tinv = np.zeros((diml, diml), dtype=complex_type(np.float64))
@@ -279,6 +285,11 @@ class CommonlineNUG(Orient3D):
     def admm_sym_J(self, C, verbose):
         """
         Solve the symmetry-constrained NUG semidefinite relaxation using ADMM.
+
+        :param C: Fourier coefficient matrices of the NUG objective.
+        :param verbose: Whether to log ADMM progress.
+
+        :return: Relaxed representation matrices.
         """
         Lmax = self.Lmax
         N = self.n_img
@@ -319,7 +330,7 @@ class CommonlineNUG(Orient3D):
 
         n_pairs = N * (N - 1) // 2
         Ngrid = self.Ngrid
-        rank_Ak, _ = self.compute_rank(Lmax)
+        rank_Ak, _ = self.compute_rank()
         logger.info(f"Rank of Ak: {rank_Ak}")
 
         # rank_Ak=cp.zeros(Lmax)
@@ -544,8 +555,6 @@ class CommonlineNUG(Orient3D):
             return rho, p_resnorm, d_resnorm
 
         def print_updates(verbose):
-            # X_admm=transform_coeff_back(X0,X1,Lmax,N); obj_p=0
-            # for k in range(Lmax): obj_p+=xp.trace(C[k]@X_admm[k])
             if verbose:
                 obj_p = (
                     xp.vdot(C0[:, idx_diag], X0[:, idx_diag])
@@ -676,12 +685,7 @@ class CommonlineNUG(Orient3D):
                 X0, X1, Xd0, Xd1, Xq, bE, bEq, bI, res_X, rho, factor, normC
             )
 
-        X_admm = self.transform_coeff_back(
-            X0, X1, Lmax, N, IDX_upper, IDX_lower, idx_offdiag
-        )
-        # if self.GPU:
-        #     for k in range(Lmax):
-        #         X_admm[k] = X_admm[k].get()
+        X_admm = self.transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
         for k in range(Lmax):
             X_admm[k] = xp.asnumpy(X_admm[k])
         return X_admm
@@ -689,6 +693,10 @@ class CommonlineNUG(Orient3D):
     def ADMM_preprocessing(self, C):
         """
         Construct the transformed coefficients, constraints, indices, and initial variables used by ADMM.
+
+        :param C: Fourier coefficient matrices of the NUG objective.
+
+        :return: Quantities required by the ADMM solver.
         """
         Lmax = self.Lmax
         N = self.n_img
@@ -724,7 +732,7 @@ class CommonlineNUG(Orient3D):
         Xnorm = np.sqrt(Xnorm)
         for k in range(Lmax):
             C[k] = xp.asarray(Xnorm / Cnorm * C[k])
-        C0, C1 = self.transform_coeff(C, Lmax, N, IDX_upper)
+        C0, C1 = self.transform_coeff(C, IDX_upper)
         normC = np.sqrt(np.linalg.norm(C0) ** 2 + np.linalg.norm(C1) ** 2)
         del C
 
@@ -812,18 +820,16 @@ class CommonlineNUG(Orient3D):
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
             II.append(xp.eye(N * dk, dtype=np.float64))
-        I0, I1 = self.transform_coeff(II, Lmax, N, IDX_upper)
+        I0, I1 = self.transform_coeff(II, IDX_upper)
         X0 = xp.zeros((D0, N * (N + 1) // 2), dtype=np.float64)
         X1 = xp.zeros((D1, N * (N + 1) // 2), dtype=np.float64)
         Xq = xp.zeros((16, N * (N - 1) // 2), dtype=np.float64)
-        # X0,X1=transform_coeff(II,Lmax,N); Xq=xp.zeros((16,N*(N-1))); Xq[0,:]=1;
         S0 = xp.copy(I0)
         S1 = xp.copy(I1)
         Sq = xp.zeros(Xq.shape, dtype=np.float64)
-        # S0=xp.zeros(X0.shape); S1=xp.zeros(X1.shape); Sq=xp.zeros(Xq.shape)
 
         self.Ngrid = Ngrid
-        # return C0,C1,normC,AEq,bEq,AEqAEqtinv,AI_mat,bI,Lambda,d0,d1,D0,D1,idx_diag,idx_offdiag,IDX_upper,IDX_lower,X0,X1,Xq,S0,S1,Sq
+
         return (
             C0,
             C1,
@@ -854,6 +860,8 @@ class CommonlineNUG(Orient3D):
     def compute_fejer_weights(self):
         """
         Evaluate the real Wigner representation blocks used by the discretized Fejer inequality constraints.
+
+        :return: Two sets of block weights and the number of SO(3) grid points.
         """
         SO3_grid = self.discretize_SO3()
         Ngrid = SO3_grid.shape[0]
@@ -896,6 +904,8 @@ class CommonlineNUG(Orient3D):
     def discretize_SO3(self):
         """
         Construct an approximately uniform Euler-angle grid over SO(3).
+
+        :return: Array of ZYZ Euler angles.
         """
         S2 = saff_kuijlaars(self.S2_grid)
         S2_size = S2.shape[0]
@@ -926,6 +936,13 @@ class CommonlineNUG(Orient3D):
     def proximal_refine(self, X_admm, weight, Penalty, r):
         """
         Refine the relaxed solution by iteratively encouraging lower-rank representation matrices.
+
+        :param X_admm: Initial relaxed representation matrices.
+        :param weight: Degree-dependent refinement weights.
+        :param Penalty: Penalty value for each refinement step.
+        :param r: Rank offset for each refinement step.
+
+        :return: Refined representation matrices.
         """
         N = self.n_img
         C = self.C
@@ -1014,7 +1031,12 @@ class CommonlineNUG(Orient3D):
 
     def euler_est_Cm(self, X1, XS):
         """
-        Recover Euler angles from the degree-one and degree-m solutions for cyclic symmetry.
+        Recover Euler angles for cyclic symmetry.
+
+        :param X1: Relaxed degree-one representation matrix.
+        :param XS: Relaxed representation matrix at the symmetry order.
+
+        :return: Estimated rotation matrices and Euler angles.
         """
         S = self.n_sym
         N = self.n_img
@@ -1134,7 +1156,11 @@ class CommonlineNUG(Orient3D):
 
     def euler_est_Dm(self, X_est):
         """
-        Recover Euler angles from the degree-two and degree-m solutions for dihedral symmetry.
+        Recover Euler angles for dihedral symmetry.
+
+        :param X_est: Relaxed representation matrices.
+
+        :return: Estimated rotation matrices and Euler angles.
         """
         X2 = X_est[1]
         S = self.sym_grp.order
@@ -1288,34 +1314,48 @@ class CommonlineNUG(Orient3D):
     ####################
     # Helper Functions #
     ####################
-    def transform_coeff(self, A, Lmax, N, IDX_upper):
+    def transform_coeff(self, A, IDX_upper):
         """
-        Transform representation matrices into the two block-vector forms used by ADMM.
+        Convert representation matrices to the block-vector form used by ADMM.
+
+        :param A: Representation matrices.
+        :param IDX_upper: Indices of upper-triangular image pair blocks.
+
+        :return: The two block-vector coefficient arrays.
         """
         d0 = [0]
         d1 = [0]
-        for k in range(1, Lmax + 1):
+        for k in range(1, self.Lmax + 1):
             d0.append(d0[-1] + k**2)
             d1.append(d1[-1] + (k + 1) ** 2)
-        A0 = xp.zeros((d0[-1], N * (N + 1) // 2), dtype=np.float64)
-        A1 = xp.zeros((d1[-1], N * (N + 1) // 2), dtype=np.float64)
-        for k in range(1, Lmax + 1):
-            a0, a1 = self.permutek(A[k - 1], k, N)
-            A0[d0[k - 1] : d0[k], :] = self.vec_block(a0, N, k, IDX_upper)
-            A1[d1[k - 1] : d1[k], :] = self.vec_block(a1, N, k + 1, IDX_upper)
+        A0 = xp.zeros((d0[-1], self.n_img * (self.n_img + 1) // 2), dtype=np.float64)
+        A1 = xp.zeros((d1[-1], self.n_img * (self.n_img + 1) // 2), dtype=np.float64)
+        for k in range(1, self.Lmax + 1):
+            a0, a1 = self.permutek(A[k - 1], k, self.n_img)
+            A0[d0[k - 1] : d0[k], :] = self.vec_block(a0, self.n_img, k, IDX_upper)
+            A1[d1[k - 1] : d1[k], :] = self.vec_block(a1, self.n_img, k + 1, IDX_upper)
         return A0, A1
 
-    def transform_coeff_back(self, A0, A1, Lmax, N, IDX_upper, IDX_lower, idx_offdiag):
+    def transform_coeff_back(self, A0, A1, IDX_upper, IDX_lower, idx_offdiag):
         """
-        Reconstruct representation matrices from the ADMM block-vector forms.
+        Reconstruct representation matrices from their ADMM block-vector form.
+
+        :param A0: First block-vector array.
+        :param A1: Second block-vector array.
+        :param IDX_upper: Indices of upper-triangular image-pair blocks.
+        :param IDX_lower: Indices of lower-triangular image-pair blocks.
+        :param idx_offdiag: Indices of off-diagonal image pairs.
+
+        :return: Reconstructed representation matrices.
         """
         d0 = [0]
         d1 = [0]
-        for k in range(1, Lmax + 1):
+        N = self.n_img
+        for k in range(1, self.Lmax + 1):
             d0.append(d0[-1] + k**2)
             d1.append(d1[-1] + (k + 1) ** 2)
         A = []
-        for k in range(1, Lmax + 1):
+        for k in range(1, self.Lmax + 1):
             dk = 2 * k + 1
             Ak = xp.zeros((N * dk, N * dk), dtype=np.float64)
             Ak[: N * k, : N * k] = self.mat_block(
@@ -1332,6 +1372,12 @@ class CommonlineNUG(Orient3D):
     def permutek(Ak, k, N):
         """
         Permute and split a degree-k matrix into blocks of sizes k and k + 1.
+
+        :param Ak: Degree-k block matrix.
+        :param k: Representation degree.
+        :param N: Number of images.
+
+        :return: The two permuted matrix blocks.
         """
         AkP = xp.copy(Ak)
         dk = 2 * k + 1
@@ -1359,6 +1405,12 @@ class CommonlineNUG(Orient3D):
     def permutek_back(Ak, k, N):
         """
         Undo the degree-k block permutation and reconstruct the full matrix.
+
+        :param Ak: Permuted degree-k matrix.
+        :param k: Representation degree.
+        :param N: Number of images.
+
+        :return: Matrix in the original block ordering.
         """
         dk = 2 * k + 1
         Pk = xp.eye(N * dk, dtype=Ak.dtype)
@@ -1407,13 +1459,17 @@ class CommonlineNUG(Orient3D):
         logger.info("Largest eigenvalue of AIAIT is approximately %1.2f" % Lambda)
         return Lambda
 
-    def compute_rank(self, Lmax):
+    def compute_rank(self):
         """
         Compute the ranks and matrices of the symmetry-averaging projectors at each degree.
+
+        :param Lmax: Maximum representation degree.
+
+        :return: Ranks and symmetry-averaging matrices for each degree.
         """
-        rk = xp.zeros(Lmax, dtype=np.float64)
+        rk = xp.zeros(self.Lmax, dtype=np.float64)
         A = []
-        for k in range(1, Lmax + 1):
+        for k in range(1, self.Lmax + 1):
             Ak = np.sum(self.WD(k, self.sym_euler), axis=0)
             Ak = np.round(Ak / self.n_sym, 6)
             A.append(Ak)
