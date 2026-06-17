@@ -144,24 +144,45 @@ def test_g_sync(symmetry):
     axes /= np.linalg.norm(axes, axis=1, keepdims=True)
     angles = np.random.uniform(0, 2 * np.deg2rad(target_mean_deg), n).astype(dtype)
     delta_rots = Rotation.from_rotvec(axes * angles[:, None], dtype=dtype)
-    perturbed_rots = Rotation(delta_rots.matrices @ gt_rots.matrices)
+    noisy_rots = Rotation(delta_rots.matrices @ gt_rots.matrices)
 
     # Get mean ang dist for aligned estimates
     # and check we're close to target.
-    og_maad = mean_aligned_angular_distance(perturbed_rots, gt_rots)
+    og_maad = mean_aligned_angular_distance(noisy_rots, gt_rots)
     np.testing.assert_array_less(abs(og_maad - target_mean_deg), 0.2)
 
-    # Simulate symmetry desynchronization
+    # Simulate symmetry desynchronization for clean and noisy case.
     g_idx = np.random.randint(len(gs), size=n)
-    desynced_rots = Rotation(gs[g_idx] @ perturbed_rots.matrices)
+    desynced_noisy_rots = Rotation(gs[g_idx] @ noisy_rots)
+    desynced_clean_rots = Rotation(gs[g_idx] @ gt_rots.matrices)
+
+    # Apply a global rotation to the noisy rotations to
+    # to simulate a set of estimated rotations
+    desynced_noisy_rots = (
+        Rotation.generate_random_rotations(1, dtype=dtype).matrices
+        @ desynced_noisy_rots
+    )
 
     # Mean aligned angular distance of unsynced rots should be bad
     np.testing.assert_array_less(
-        10 * og_maad, mean_aligned_angular_distance(desynced_rots, gt_rots)
+        10 * og_maad, mean_aligned_angular_distance(desynced_noisy_rots, gt_rots)
     )
 
     # Perform g_sync and check that mean aligned angular distance
     # matches ground truth MAAD to within .1 degrees.
-    rots_gt_synced = g_sync(desynced_rots, gt_rots, symmetry)
-    est_maad = mean_aligned_angular_distance(desynced_rots, rots_gt_synced)
+    rots_gt_synced_to_noisy = g_sync(desynced_noisy_rots, gt_rots, symmetry)
+    est_maad = mean_aligned_angular_distance(
+        desynced_noisy_rots, rots_gt_synced_to_noisy
+    )
     np.testing.assert_array_less(abs(og_maad - est_maad), 0.1)
+
+    # For the clean case the synced rotations should match allclose up to
+    # a global multiplication by one of the symmetry group elements.
+    gt_rots_synced_to_clean = g_sync(desynced_clean_rots, gt_rots, symmetry)
+    errs = np.linalg.norm(
+        gs @ gt_rots_synced_to_clean[0] - desynced_clean_rots[0], axis=(-2, -1)
+    )
+    best_g = np.argmin(errs)
+    np.testing.assert_allclose(
+        gs[best_g] @ gt_rots_synced_to_clean, desynced_clean_rots
+    )
