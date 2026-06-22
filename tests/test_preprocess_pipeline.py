@@ -193,6 +193,28 @@ def testWhiten2(dtype):
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def testWhitenNoCTF(dtype):
+    """
+    Test operation with `filter_stack=None`.
+    """
+    # Note this atol holds only for L even. Odd tested in testWhiten2.
+    L = 64
+    sim = get_sim_object(L, dtype)
+    sim.filter_stack = None
+    noise_estimator = AnisotropicNoiseEstimator(sim)
+    sim = sim.whiten(noise_estimator)
+    imgs_wt = sim.images[:num_images].asnumpy()
+
+    # calculate correlation between two neighboring pixels from background
+    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
+
+    # correlation matrix should be close to identity
+    np.testing.assert_allclose(np.eye(2), corr_coef, atol=1e-1)
+    # dtype of returned images should be the same
+    assert dtype == imgs_wt.dtype
+
+
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_whiten_safeguard(dtype):
     """Test that whitening safeguard works as expected."""
     L = 25

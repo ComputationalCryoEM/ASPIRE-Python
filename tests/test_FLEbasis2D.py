@@ -9,6 +9,7 @@ from aspire.basis import Coef, FBBasis2D, FLEBasis2D
 from aspire.image import Image
 from aspire.nufft import backend_available
 from aspire.numeric import fft
+from aspire.operators import RadialCTFFilter
 from aspire.source import Simulation
 from aspire.volume import Volume
 
@@ -121,6 +122,12 @@ class TestFLEBasis2D(UniversalBasisMixin):
         expand = basis.evaluate(basis.expand(evaluate_t))
 
         assert relerr(expand.asnumpy(), evaluate_t.asnumpy()) < basis.epsilon
+
+    def testBadFilterLength(self, basis):
+        filt = RadialCTFFilter(defocus=np.linspace(1000, 10000, 3))  # len 3
+        with pytest.raises(RuntimeError, match=r".*Unexpected filter length.*"):
+            # filter_to_basis_mat should enforce len 1
+            _ = basis.filter_to_basis_mat(filt)
 
 
 @pytest.mark.parametrize("basis", test_bases_match_fb, ids=show_fle_params)

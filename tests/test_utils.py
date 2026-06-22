@@ -13,6 +13,7 @@ from pytest import raises
 
 import aspire
 from aspire import __version__
+from aspire.numeric import xp
 from aspire.utils import (
     LogFilterByCount,
     all_pairs,
@@ -498,3 +499,24 @@ def matplotlib_dry_run(func):
             return func(*args, **kwargs)
 
     return wrapper
+
+
+def test_atleast1d():
+    """
+    Test xp.atleast_1d is agnostic to inputs.
+    """
+    x = 1.0
+    y = xp.asnumpy(xp.atleast_1d(x))
+    ref = np.atleast_1d(x)
+    np.testing.assert_allclose(y, ref)
+
+    x = np.arange(9)
+    # x is host input
+    y = xp.atleast_1d(x)
+    # cp input when in GPU mode
+    #   xp functions should pass through as np otherwise
+    y2 = xp.atleast_1d(xp.asarray(x))
+
+    ref = np.atleast_1d(x)
+    np.testing.assert_allclose(xp.asnumpy(y), ref)
+    np.testing.assert_allclose(xp.asnumpy(y2), ref)

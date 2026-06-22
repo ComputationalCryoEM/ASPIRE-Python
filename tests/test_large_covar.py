@@ -15,7 +15,8 @@ import pytest
 
 from aspire.basis import FFBBasis2D, FLEBasis2D
 from aspire.covariance import BatchedRotCov2D
-from aspire.source import RelionSource
+from aspire.operators import RadialCTFFilter
+from aspire.source import RelionSource, Simulation
 
 DTYPES = [
     np.float32,
@@ -137,5 +138,32 @@ def test_covar2d(preprocessed_src, basis, force_radial):
         expand_method = "radial"
 
     cov2d = BatchedRotCov2D(preprocessed_src, basis, expand_method=expand_method)
+    # smoke test
+    _ = cov2d.get_covar()
+
+
+def test_covar2d_many_ctf():
+    """
+    Smoke test for many CTF case using optimized radial expansion code path.
+    """
+    # N must be >= 2048 to enable auto GPU filter eval branch
+    #   in covar2d _radial_filter_stack_to_basis_mats
+    N = 2500
+    L = 33
+    dt = np.float32
+    src = Simulation(
+        C=1,
+        n=N,
+        L=L,
+        filter_stack=RadialCTFFilter(defocus=np.linspace(10000, 20000, N)),
+        offsets=0,
+        amplitudes=1,
+        dtype=dt,
+    ).cache()
+
+    basis = FLEBasis2D(L, dtype=dt)
+
+    cov2d = BatchedRotCov2D(src, basis, expand_method="radial")
+
     # smoke test
     _ = cov2d.get_covar()

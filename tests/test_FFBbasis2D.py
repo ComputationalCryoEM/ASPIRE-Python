@@ -128,6 +128,12 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
         # Check pixel_size passthrough
         np.testing.assert_array_equal(f_imgs.pixel_size, f_shifted_imgs.pixel_size)
 
+    def testBadFilterLength(self, basis):
+        filt = RadialCTFFilter(defocus=np.linspace(1000, 10000, 3))  # len 3
+        with pytest.raises(RuntimeError, match=r".*Unexpected filter length.*"):
+            # filter_to_basis_mat should enforce len 1
+            _ = basis.filter_to_basis_mat(filt)
+
 
 params = [pytest.param(512, np.float32, marks=pytest.mark.expensive)]
 

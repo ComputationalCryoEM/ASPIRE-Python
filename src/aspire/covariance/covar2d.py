@@ -736,7 +736,7 @@ class BatchedRotCov2D(RotCov2D):
 
     def _solve_covar(self, A_covar, b_covar, M, covar_est_opt):
         method = self._solve_covar_cg
-        if all(isinstance(a, DiagMatrix) for a in A_covar):
+        if all(isinstance(a, DiagMatrix) or a is None for a in A_covar):
             method = self._solve_covar_direct
 
         return method(A_covar, b_covar, M, covar_est_opt)
