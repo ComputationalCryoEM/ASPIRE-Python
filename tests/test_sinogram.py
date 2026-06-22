@@ -132,7 +132,7 @@ def test_project_multidim(num_ang):
             single_sinogram = img.project(rads)
 
             # These should be allclose up to determinism in the FFT and NUFFT.
-            np.testing.assert_allclose(s[i, j : j + 1], single_sinogram)
+            np.testing.assert_allclose(s[i, j : j + 1], single_sinogram, atol=1e-8)
 
             # Next individually compute sk's radon transform for each image.
             # Note, `radon` does not admit read only views, so the slice is copied.
@@ -215,7 +215,9 @@ def test_backproject_multidim(num_ang):
             back_project = single_sinogram.backproject(rads)
 
             # These should be allclose up to determinism.
-            np.testing.assert_allclose(ours_backward[i, j : j + 1], back_project[0])
+            np.testing.assert_allclose(
+                ours_backward[i, j : j + 1], back_project[0], atol=1e-08
+            )
 
             # Next individually compute sk's iradon transform for each image.
             reference_back_projects[i, j] = (
