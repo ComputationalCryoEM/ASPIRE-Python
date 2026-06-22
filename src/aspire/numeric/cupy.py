@@ -17,6 +17,6 @@ class Cupy:
         Returns same type as input.
         """
         _fn = np.atleast_1d
-        if cp and isinstance(x, cp.ndarray):
+        if isinstance(x, cp.ndarray):
             _fn = cp.atleast_1d
         return _fn(x)
