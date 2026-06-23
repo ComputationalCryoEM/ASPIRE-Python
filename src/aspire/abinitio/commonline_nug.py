@@ -101,6 +101,12 @@ class CommonlineNUG(Orient3D):
                 )
             logger.info(f"Using provided symmetry: {symmetry}")
             self.sym_grp = SymmetryGroup.parse(symmetry)
+
+        if not isinstance(self.sym_grp, (CnSymmetryGroup, DnSymmetryGroup)):
+            raise ValueError(
+                f"This algorithm supports cyclic or dihedral symmetry. Found {str(self.sym_grp)}."
+            )
+
         self.sym_euler = self.sym_grp.rotations.angles
         self.n_sym = len(self.sym_euler)
 
@@ -722,7 +728,7 @@ class CommonlineNUG(Orient3D):
         for k in range(Lmax):
             C[k] = xp.asarray(Xnorm / Cnorm * C[k])
         C0, C1 = self.transform_coeff(C, IDX_upper)
-        normC = np.sqrt(np.linalg.norm(C0) ** 2 + np.linalg.norm(C1) ** 2)
+        normC = xp.sqrt(xp.linalg.norm(C0) ** 2 + xp.linalg.norm(C1) ** 2)
         del C
 
         # compute the block sizes for X
