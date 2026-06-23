@@ -6,16 +6,16 @@ from aspire.source import Simulation
 from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import CnSymmetricVolume, DnSymmetricVolume, TSymmetricVolume
 
-DTYPE = [np.float64, pytest.param(np.float32, marks=pytest.mark.expensive)]
-RESOLUTION = [48, pytest.param(49, marks=pytest.mark.expensive)]
+DTYPE = [np.float64, np.float32]
+RESOLUTION = [48, 49]
 N_IMG = [15]
-OFFSETS = [0, pytest.param(None, marks=pytest.mark.expensive)]
-ORDER = [3, pytest.param(4, marks=pytest.mark.expensive)]
+OFFSETS = [0, None]
+ORDER = [3, 4]
 PR = [False]
 SEED = 1980
 VOLUME = [
     CnSymmetricVolume,
-    pytest.param(DnSymmetricVolume, marks=pytest.mark.expensive),
+    DnSymmetricVolume,
 ]
 
 
@@ -101,6 +101,38 @@ def orient_est(source, proximal_refine):
 #########
 
 
+def test_smoke_nug(dtype, Volume):
+    """
+    Perform quick smoke test since other tests are long running.
+    """
+    vol = Volume(L=32, order=3, C=1, dtype=dtype, seed=SEED).generate()
+
+    src = Simulation(
+        n=20,
+        vols=vol,
+        offsets=0,
+        amplitudes=1,
+        seed=SEED,
+    ).cache()
+
+    orient_est = CommonlineNUG(
+        src,
+        Lmax=4,
+        T=5,
+        max_iter=10,
+        S2_grid=50,
+        max_shift=0,
+        mask=False,
+        verbose=False,
+    )
+
+    rots = orient_est.estimate_rotations()
+
+    assert rots.shape == (src.n, 3, 3)
+    assert rots.dtype == dtype
+
+
+@pytest.mark.expensive
 def test_dtypes(orient_est):
     """
     Check dtypes for each major step of the algorithm.
@@ -117,6 +149,7 @@ def test_dtypes(orient_est):
     assert orient_est.rotations.dtype == orient_est.dtype
 
 
+@pytest.mark.expensive
 def test_estimate_rotations_pairwise(orient_est):
     """ """
     MSE = compare_rots_sym(
@@ -125,6 +158,7 @@ def test_estimate_rotations_pairwise(orient_est):
     np.testing.assert_array_less(MSE, 0.1)
 
 
+@pytest.mark.expensive
 def test_estimate_rotations(orient_est):
     gt_rots_synced = g_sync(
         orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
