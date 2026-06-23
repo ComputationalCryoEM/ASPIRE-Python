@@ -348,7 +348,7 @@ class CommonlineNUG(Orient3D):
                 AEk[count, count - 1] = 1
                 AEk[count, count - 1 + s1 + s0] = 1
             AE.append(AEk)
-            AEAETinv.append(np.linalg.pinv(AEk @ AEk.T))
+            AEAETinv.append(xp.linalg.pinv(AEk @ AEk.T))
         bE = xp.zeros((Lmax + D0 + D1), dtype=np.float64)
         for k in range(Lmax):
             bE[k + d0[k] + d1[k] :] = rank_Ak[k]
@@ -358,7 +358,7 @@ class CommonlineNUG(Orient3D):
             bE[k + 1 + d0[k + 1] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = xp.eye(
                 k + 2
             ).T.reshape(-1)
-        bE = np.repeat(bE[:, np.newaxis], N, axis=1)
+        bE = xp.repeat(bE[:, np.newaxis], N, axis=1)
         P = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
@@ -499,7 +499,7 @@ class CommonlineNUG(Orient3D):
                 -X0 / rho + C0 - S0 - Z0 - AIT_yI0, -X1 / rho + C1 - S1 - Z1 - AIT_yI1
             )
             yI = yI + bI / rho / Lambda + tmp / Lambda
-            yI = np.maximum(yI, 0)
+            yI = xp.maximum(yI, 0)
             return yI
 
         def update_X(
@@ -509,35 +509,35 @@ class CommonlineNUG(Orient3D):
             AIT_yI0, AIT_yI1 = fun_AIT(yI)
             tmp = S0 + Z0 + AIT_yI0 - C0
             X0 = X0 + mult * rho * tmp
-            resX0 = np.linalg.norm(tmp)
+            resX0 = xp.linalg.norm(tmp)
             tmp = S1 + Z1 + AIT_yI1 - C1
             X1 = X1 + mult * rho * tmp
-            resX1 = np.linalg.norm(tmp)
+            resX1 = xp.linalg.norm(tmp)
             tmp = Sd0 + Zd0
             Xd0 = Xd0 + mult * rho * tmp
-            resXd0 = np.linalg.norm(tmp)
+            resXd0 = xp.linalg.norm(tmp)
             tmp = Sd1 + Zd1
             Xd1 = Xd1 + mult * rho * tmp
-            resXd1 = np.linalg.norm(tmp)
+            resXd1 = xp.linalg.norm(tmp)
             tmp = Sq + Zq
             Xq = Xq + mult * rho * tmp
-            resXq = np.linalg.norm(tmp)
+            resXq = xp.linalg.norm(tmp)
             return (
                 X0,
                 X1,
                 Xd0,
                 Xd1,
                 Xq,
-                np.sqrt(resX0**2 + resX1**2 + resXd0**2 + resXd1**2 + resXq**2),
+                xp.sqrt(resX0**2 + resX1**2 + resXd0**2 + resXd1**2 + resXq**2),
             )
 
         def update_rho(X0, X1, Xd0, Xd1, Xq, bE, bEq, bI, res_X, rho, factor, normC):
             z, zq = fun_AE(X0, X1, Xd0, Xd1, Xq)
-            res_eq = np.linalg.norm(z - bE) / (1 + np.linalg.norm(bE)) + np.linalg.norm(
+            res_eq = xp.linalg.norm(z - bE) / (1 + xp.linalg.norm(bE)) + xp.linalg.norm(
                 zq - bEq
-            ) / (1 + np.linalg.norm(bEq))
-            res_inq = np.linalg.norm(np.maximum(bI - fun_AI(X0, X1), 0)) / (
-                1 + abs(bI) * np.sqrt(Ngrid * N**2)
+            ) / (1 + xp.linalg.norm(bEq))
+            res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
+                1 + abs(bI) * xp.sqrt(Ngrid * N**2)
             )
             p_resnorm = res_eq + res_inq
             d_resnorm = res_X / (1 + normC)
