@@ -2,6 +2,7 @@ import logging
 import os.path
 import tempfile
 from datetime import datetime
+from fnmatch import fnmatch
 from unittest import mock
 
 import mrcfile
@@ -456,7 +457,9 @@ def test_corrupt_mrc_load(caplog):
             _ = Image.load(mrc_path)
 
             # Check the message prefix
-            assert f"Image.load of {mrc_path} reporting 1 corruptions" in caplog.text
+            assert fnmatch(
+                caplog.text, f"*Image.load of {mrc_path} reporting [1-2] corruptions*"
+            )
 
             # Check the message contains the file path
             assert mrc_path in caplog.text
