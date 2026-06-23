@@ -90,6 +90,7 @@ def orient_est(source, proximal_refine):
         max_shift=max_shift,
         shift_step=shift_step,
         perform_pr=proximal_refine,
+        verbose=False,
     )
     orient_est.estimate_rotations()
     return orient_est
