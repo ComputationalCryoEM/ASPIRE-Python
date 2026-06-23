@@ -4,7 +4,7 @@ import pytest
 from aspire.abinitio import CommonlineNUG, compare_rots_sym, g_sync
 from aspire.source import Simulation
 from aspire.utils import mean_aligned_angular_distance
-from aspire.volume import CnSymmetricVolume, DnSymmetricVolume
+from aspire.volume import CnSymmetricVolume, DnSymmetricVolume, TSymmetricVolume
 
 DTYPE = [np.float64, pytest.param(np.float32, marks=pytest.mark.expensive)]
 RESOLUTION = [48, pytest.param(49, marks=pytest.mark.expensive)]
@@ -130,3 +130,11 @@ def test_estimate_rotations(orient_est):
         orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
     )
     mean_aligned_angular_distance(orient_est.rotations, gt_rots_synced, 8.0)
+
+
+def test_unspupported_symmetry_raises(dtype):
+    vol = TSymmetricVolume(L=16, C=1, K=10, dtype=dtype).generate()
+    src = Simulation(n=3, vols=vol)
+
+    with pytest.raises(ValueError, match="supports cyclic or dihedral symmetry"):
+        _ = CommonlineNUG(src)
