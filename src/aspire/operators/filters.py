@@ -782,7 +782,8 @@ class CTFFilter(Filter):
     def __eq__(self, other):
         if len(self) != len(other):
             return False
-        return self._ctf_params() == other._ctf_params()
+
+        return np.all(self._ctf_params() == other._ctf_params())
 
 
 class RadialCTFFilter(CTFFilter):
