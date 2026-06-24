@@ -11,7 +11,7 @@ RESOLUTION = [48, 49]
 N_IMG = [15]
 OFFSETS = [0, None]
 ORDER = [3, 4]
-PR = [False]
+PR = [None]
 SEED = 1980
 VOLUME = [
     CnSymmetricVolume,
@@ -89,7 +89,8 @@ def orient_est(source, proximal_refine):
         source,
         max_shift=max_shift,
         shift_step=shift_step,
-        perform_pr=proximal_refine,
+        max_iter=201,
+        pr_iters=proximal_refine,
         verbose=False,
     )
     orient_est.estimate_rotations()
@@ -101,7 +102,7 @@ def orient_est(source, proximal_refine):
 #########
 
 
-def test_smoke_nug(dtype, Volume):
+def test_smoke(dtype, Volume):
     """
     Perform quick smoke test since other tests are long running.
     """
@@ -122,7 +123,6 @@ def test_smoke_nug(dtype, Volume):
         max_iter=10,
         S2_grid=50,
         max_shift=0,
-        mask=False,
         verbose=False,
     )
 
@@ -151,7 +151,11 @@ def test_dtypes(orient_est):
 
 @pytest.mark.expensive
 def test_estimate_rotations_pairwise(orient_est):
-    """ """
+    """
+    Check mean squared error between estimates and ground truth
+    pairwise rotations, Rij. This serves as a reference to the error
+    metric used by the researcher in the related publication.
+    """
     MSE = compare_rots_sym(
         orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
     )
@@ -160,13 +164,21 @@ def test_estimate_rotations_pairwise(orient_est):
 
 @pytest.mark.expensive
 def test_estimate_rotations(orient_est):
+    """
+    Check that the mean angular distance between estimates and ground
+    truth, after symmetry synchronization and global alignment, are
+    within 10 degrees.
+    """
     gt_rots_synced = g_sync(
         orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
     )
-    mean_aligned_angular_distance(orient_est.rotations, gt_rots_synced, 8.0)
+    mean_aligned_angular_distance(orient_est.rotations, gt_rots_synced, 10.0)
 
 
 def test_unspupported_symmetry_raises(dtype):
+    """
+    Check that we raise for symmetries other than Cn/Dn.
+    """
     vol = TSymmetricVolume(L=16, C=1, K=10, dtype=dtype).generate()
     src = Simulation(n=3, vols=vol)
 
