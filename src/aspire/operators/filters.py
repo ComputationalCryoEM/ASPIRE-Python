@@ -171,7 +171,8 @@ class Filter:
         omega = np.pi * np.vstack((grid2d["x"].flatten(), grid2d["y"].flatten()))
         h = self.evaluate(omega, *args, **kwargs)
 
-        h = h.reshape(grid2d["x"].shape)
+        # squeeze off singleton stacks
+        h = h.reshape(-1, *grid2d["x"].shape).squeeze()
 
         return h
 

@@ -487,3 +487,70 @@ def test_ctf_to_radial():
 
     rctf_filt2 = rctf_filt.to_radial()  # should be a no-op
     assert rctf_filt2 == rctf_filt, "Filters should be equal"
+
+
+def test_ctf_getitem():
+    """
+    Test various CTFFilters' __getitem__ method.
+    """
+
+    n = 3
+    angs = np.linspace(0, 2 * np.pi, n)
+    ctf_filt = CTFFilter(defocus_u=10000, defocus_v=15000, defocus_ang=angs)
+    seq_ctf_filt = [
+        CTFFilter(defocus_u=10000, defocus_v=15000, defocus_ang=ang) for ang in angs
+    ]
+
+    # Averaging the defocus should yield equal CTF params
+    for i, filt in enumerate(ctf_filt):
+        assert filt == ctf_filt[i], "Filters should be equal"
+        assert ctf_filt[i] == seq_ctf_filt[i], "Filters should be equal"
+
+
+def test_getitem():
+    """
+    Test __getitem__ on a non-trivial filter stack.
+    """
+    px = 1.34
+    s = 2.0  # scale
+    p = 0.5  # power
+    n = 10  # number of filters in stack
+    L = 32  # evaluate grid
+    angs = np.linspace(0, 2 * np.pi, n)
+
+    ctf_filter_stack = CTFFilter(defocus_u=10000, defocus_v=15000, defocus_ang=angs)
+    filter_stack = ScaledFilter(ctf_filter_stack, s)
+    more_filters = PowerFilter(ArrayFilter(np.random.random((L, L))), p)
+    filter_stack = MultiplicativeFilter(filter_stack, more_filters)
+
+    stack_eval = filter_stack.evaluate_grid(L, pixel_size=px)
+
+    for i, flt in enumerate(filter_stack):
+        # compute reference as singleton filters
+        ref = MultiplicativeFilter(ScaledFilter(ctf_filter_stack[i], s), more_filters)
+        ref_eval = ref.evaluate_grid(L, pixel_size=px)
+        # compare singleton evaluation with __getitem__ from stack
+        np.testing.assert_allclose(flt.evaluate_grid(L, pixel_size=px), ref_eval)
+        np.testing.assert_allclose(stack_eval[i], ref_eval)
+
+
+def test_batching_eval():
+    """
+    Test __getitem__ on a very large filter stack to induce the batching logic.
+    """
+    px = 1.34
+    n = 3000  # number of filters in stack
+    L = 65  # evaluate grid
+    angs = np.linspace(0, 2 * np.pi, n)
+
+    filter_stack = CTFFilter(defocus_u=10000, defocus_v=15000, defocus_ang=angs)
+    # Reduce the max_size (required to switch into batching) so the test is faster
+    filter_stack.max_size = n * L * L - 1
+
+    stack_eval = filter_stack.evaluate_grid(L, pixel_size=px)
+
+    for i in range(n):
+        # compute reference as singleton filters
+        ref_eval = filter_stack[i].evaluate_grid(L, pixel_size=px)
+        # compare singleton evaluation with __getitem__ from stack
+        np.testing.assert_allclose(stack_eval[i], ref_eval)
