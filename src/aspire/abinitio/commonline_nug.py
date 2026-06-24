@@ -38,7 +38,7 @@ class CommonlineNUG(Orient3D):
         mult=1.5,
         S2_grid=441,
         Nstep_yI=10,
-        perform_pr=False,
+        pr_iters=None,
         verbose=True,
         **kwargs,
     ):
@@ -62,7 +62,8 @@ class CommonlineNUG(Orient3D):
         :param mult: Step-size multiplier for the ADMM primal update.
         :param S2_grid: Number of sphere samples used to discretize SO(3).
         :param Nstep_yI: Number of inequality-multiplier updates per ADMM iteration.
-        :param perform_pr: Whether to apply proximal refinement after ADMM.
+        :param pr_iters: Number of proximal refinement iterations. Default of None
+            does not perform proximal refinement. Recommended value is 4.
         :param verbose: Whether to log ADMM progress.
         """
 
@@ -85,7 +86,6 @@ class CommonlineNUG(Orient3D):
         self.mult = mult
         self.S2_grid = S2_grid
         self.Nstep_yI = Nstep_yI
-        self.perform_pr = perform_pr
         self.verbose = verbose
 
         # Handle symmetry
@@ -109,6 +109,13 @@ class CommonlineNUG(Orient3D):
 
         self.sym_euler = self.sym_grp.rotations.angles
         self.n_sym = len(self.sym_euler)
+
+        # Set up proximal refinement terms
+        if pr_iters is not None:
+            self.pr_weights = 1 / (1 + np.arange(self.Lmax))
+            self.pr_penalty = [1] * pr_iters
+            self.pr_rank = list(range(pr_iters - 1, -1, -1))  # [pr_iters - 1,..., 0]
+        self.pr_iters = pr_iters
 
         self._build_full_pft()
 
@@ -276,15 +283,12 @@ class CommonlineNUG(Orient3D):
         """
         X_est = self.admm_sym_J(self.C, self.verbose)
 
-        if self.perform_pr:
-            weight = 1 / (1 + np.arange(self.Lmax))
-            Penalty = [1, 1, 1, 1]
-            r = [3, 2, 1, 0]
+        if self.pr_iters is not None:
             X_est = self.proximal_refine(
                 X_est,
-                weight,
-                Penalty,
-                r,
+                self.pr_weights,
+                self.pr_penalty,
+                self.pr_rank,
             )
         self.X_est = X_est
 
@@ -980,11 +984,10 @@ class CommonlineNUG(Orient3D):
                 Xproj.append(tmp)
             return Xproj
 
-        Niter = len(r)
         CC = [None] * self.Lmax
         current = [np.copy(Xk) for Xk in X_admm]
 
-        for step in range(Niter):
+        for step in range(self.pr_iters):
             X_proj = low_rank_proj(current, r[step])
 
             for k in range(self.Lmax):
@@ -999,7 +1002,7 @@ class CommonlineNUG(Orient3D):
                 logger.info(
                     "Proximal refine step %d/%d: relative update %.3e",
                     step + 1,
-                    Niter,
+                    self.pr_iters,
                     rel_change(X_next, current),
                 )
 
