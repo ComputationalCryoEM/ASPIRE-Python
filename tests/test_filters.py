@@ -8,8 +8,11 @@ import pytest
 from aspire.operators import (
     ArrayFilter,
     CTFFilter,
+    DualFilter,
     FunctionFilter,
     IdentityFilter,
+    LambdaFilter,
+    MultiplicativeFilter,
     PowerFilter,
     RadialCTFFilter,
     ScalarFilter,
@@ -17,6 +20,8 @@ from aspire.operators import (
     ZeroFilter,
 )
 from aspire.utils import utest_tolerance
+
+logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -245,3 +250,240 @@ def test_ctf_reference():
 
     # Test match all significant digits above
     np.testing.assert_allclose(h, ref_h, atol=5e-5)
+
+
+ALL_FILTER_TYPES = [
+    ArrayFilter,
+    CTFFilter,
+    DualFilter,
+    FunctionFilter,
+    IdentityFilter,
+    LambdaFilter,
+    MultiplicativeFilter,
+    PowerFilter,
+    RadialCTFFilter,
+    ScalarFilter,
+    ScaledFilter,
+    ZeroFilter,
+]
+
+
+@pytest.fixture(params=ALL_FILTER_TYPES, ids=lambda x: f"filter={x}", scope="module")
+def filter_type(request):
+    """
+    Instantiate a basis filter of each type, handle filters that need args.
+    """
+    # instantiate a filter
+    _f = request.param
+
+    id_filter = IdentityFilter()
+
+    if _f == ArrayFilter:
+        f = _f(np.ones((8, 8)))
+    elif _f == DualFilter:
+        f = _f(id_filter)
+    elif _f == FunctionFilter:
+        f = _f(lambda x, y: np.exp(-(x**2 + y**2) / 2))
+    elif _f == LambdaFilter:
+        f = _f(id_filter, np.abs)
+    elif _f == MultiplicativeFilter:
+        f = _f(id_filter, id_filter)
+    elif _f == PowerFilter:
+        f = _f(id_filter, 0.5)
+    elif _f == ScaledFilter:
+        f = _f(id_filter, 2.0)
+    else:
+        f = _f()
+
+    return f
+
+
+def test_repr(filter_type):
+    """Smoke test repr"""
+    logger.debug(repr(filter_type))
+
+
+def test_str(filter_type):
+    """Smoke test str"""
+    logger.debug(f"{filter_type})")
+
+
+def test_len(filter_type):
+    """Smoke test `len`"""
+    n = len(filter_type)
+    assert n == 1, "Length of filter should be 1"
+
+
+def test_ctf_len():
+    """
+    Test filter stack `len` for CTFFilter
+    """
+    n = 3
+    filt = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
+    assert len(filt) == n, f"Length of filter should be {n}"
+
+
+def test_mul_len():
+    """
+    Test filter stack `len` for MultiplicativeFilter
+    """
+
+    n = 3
+    id_filter = IdentityFilter()
+    ctf_filt = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
+    assert len(ctf_filt) == n, f"Length of ctf_filter should be {n}"
+
+    filt = MultiplicativeFilter(id_filter, ctf_filt)
+    assert len(filt) == n, f"Length of MultiplicativeFilter should be {n}"
+
+
+def test_pow_len():
+    """
+    Test filter stack `len` for PowerFilter
+    """
+
+    n = 3
+    ctf_filt = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
+    assert len(ctf_filt) == n, f"Length of ctf_filter should be {n}"
+
+    filt = PowerFilter(ctf_filt, 0.5)
+    assert len(filt) == n, f"Length of MultiplicativeFilter should be {n}"
+
+
+def test_scl_len():
+    """
+    Test filter stack `len` for ScaledFilter
+    """
+
+    n = 3
+    ctf_filt = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
+    assert len(ctf_filt) == n, f"Length of ctf_filter should be {n}"
+
+    filt = ScaledFilter(ctf_filt, 2.0)
+    assert len(filt) == n, f"Length of ScaledFilter should be {n}"
+
+
+def test_ctf_params(filter_type):
+    """
+    Test calling _ctf_params().
+
+    Test raise when there are is not a CTFFilter subclass in the filter chain,
+    and return parameter stack when CTFFilter.
+    More complicated pass through for filter chains and multiplicative
+    filters will be tested seperately.
+    """
+
+    if isinstance(filter_type, CTFFilter):
+        params = filter_type._ctf_params()
+        assert len(params) == len(filter_type)
+    elif isinstance(filter_type, MultiplicativeFilter):
+        # Multiplicative filters need to cycle through all possible underlying filters
+        msg = "No CTF parameters found."
+        with pytest.raises(RuntimeError, match=msg):
+            _ = filter_type._ctf_params()
+    else:
+        msg = "_ctf_params not implemented for"
+        with pytest.raises(NotImplementedError, match=msg):
+            _ = filter_type._ctf_params()
+
+
+def test_ctf_params_stack():
+    n = 3
+    ctf_filt = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
+
+    params = ctf_filt._ctf_params()
+    assert len(params) == n
+
+    # Scaling the CTFFilter should still return params from the underlying CTFFilter
+    scaled_filt = ScaledFilter(ctf_filt, 2)
+    _params = scaled_filt._ctf_params()
+    np.testing.assert_allclose(_params, params)
+
+
+def test_ctf_params_mult_stack():
+    n = 3
+    ctf_filt = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
+
+    params = ctf_filt._ctf_params()
+    assert len(params) == n
+
+    # MultiplicativeFilter should still return params from the underlying CTFFilter
+    # Three filters are multiplied together here.
+    scalar_filt = ScalarFilter(2)
+    arr_filt = ArrayFilter(np.ones((8, 8)))
+    mul_filt = MultiplicativeFilter(ctf_filt, scalar_filt, arr_filt)
+    _params = mul_filt._ctf_params()
+    np.testing.assert_allclose(_params, params)
+
+    # Error on mulitple underlying CTFFilters
+    lamb_filt = LambdaFilter(ctf_filt, np.sign)
+    # both ctf_filt and lamb_filt resolve to a CTFFilter
+    mul_filt = MultiplicativeFilter(ctf_filt, scalar_filt, lamb_filt)
+    with pytest.raises(
+        RuntimeError, match="Multiple filters with CTF parameters found"
+    ):
+        _params = mul_filt._ctf_params()
+
+
+def test_mismatch_filter_lens():
+    """
+    MultiplicativeFilter should raise when two non singleton filters have differing stack lengths.
+    """
+
+    n = 3
+    ctf_filt = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
+    rctf_filt = RadialCTFFilter(B=np.array([0, 0.1]))
+
+    with pytest.raises(RuntimeError, match="Incoherent filter lengths"):
+        _ = MultiplicativeFilter(ctf_filt, rctf_filt)
+
+
+def test_ctf_eq():
+    """
+    Test CTFFilter equality.
+    """
+    n = 3
+    ctf_filt = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
+    ctf_filt2 = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
+    assert ctf_filt2 == ctf_filt, "CTFFilters should be equal"
+
+
+def test_ctf_ineq():
+    """
+    Test CTFFilter equality.
+    """
+    n = 3
+    ctf_filt = CTFFilter(
+        defocus_u=10000, defocus_v=15000, defocus_ang=np.linspace(0, 2 * np.pi, n)
+    )
+    ctf_filt2 = CTFFilter(
+        defocus_u=12500, defocus_v=12500, defocus_ang=np.linspace(0, np.pi, n)
+    )
+    rctf_filt = ctf_filt.to_radial()
+    assert ctf_filt != ctf_filt2, "Filters should not be equal"
+    assert ctf_filt != rctf_filt, "Filters should not be equal"
+
+
+def test_ctf_to_radial():
+    """
+    Test CTFFilter equality.
+    """
+
+    n = 3
+    angs = np.zeros(n)
+    ctf_filt = CTFFilter(
+        defocus_u=10000, defocus_v=np.linspace(15000, 20000, 3), defocus_ang=angs
+    )
+    # Manually average the defocus to make a radial filter.
+    # Note this only works up to zero angles (RadialCTFFilter defaults to 0)
+    avg_defocus = (ctf_filt.defocus_u + ctf_filt.defocus_v) / 2
+    ctf_filt2 = CTFFilter(
+        defocus_u=avg_defocus, defocus_v=avg_defocus, defocus_ang=angs
+    )
+    rctf_filt = ctf_filt.to_radial()
+
+    # Averaging the defocus should yield equal CTF params
+    assert ctf_filt2 == rctf_filt, "Filters should be equal"
+
+    rctf_filt2 = rctf_filt.to_radial()  # should be a no-op
+    assert rctf_filt2 == rctf_filt, "Filters should be equal"
