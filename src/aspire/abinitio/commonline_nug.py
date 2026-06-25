@@ -158,6 +158,23 @@ class CommonlineNUG(Orient3D):
         T = self.T
 
         def fij(alpha, gamma, i, j):
+            """
+            Evaluate the pairwise common-line loss used to approximate NUG Fourier coefficients.
+
+            For a relative orientation parameterized by ZYZ Euler angles, the common-line
+            loss f_ij depends only on the first and third angles, alpha and gamma.
+            This function samples the corresponding polar Fourier rays from images i and j,
+            compares them over all candidate 1D shifts, and returns the minimum shifted
+            L1 mismatch.
+
+            :param alpha: First ZYZ Euler angle of the relative orientation, in radians.
+            :param gamma: Third ZYZ Euler angle of the relative orientation, in radians.
+            :param i: Index of the first image.
+            :param j: Index of the second image.
+
+            :return: Minimum shifted L1 mismatch between the induced common-line rays.
+            """
+
             Ii_hat = self.pf_full[i]
             Ij_hat = self.pf_full[j]
             idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
