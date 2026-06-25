@@ -6,7 +6,6 @@ from numpy.linalg import eig, inv
 from scipy.linalg import solve, sqrtm
 
 from aspire.basis import Coef, FFBBasis2D
-from aspire.numeric import xp
 from aspire.operators import BlkDiagMatrix, DiagMatrix
 from aspire.optimization import conj_grad, fill_struct
 from aspire.utils import make_symmat
@@ -535,6 +534,20 @@ class BatchedRotCov2D(RotCov2D):
         self.A_mean = None
         self.A_covar = None
         self.M_covar = None
+
+        # Autodetect if passed a radial filter_stack and enable
+        # `radial` filter expansion.
+        # The underlying code in `filter_stack_to_basis_mats` will
+        # further qualify and log if optimized path is possible, or
+        # default to the legacy computation.
+        if expand_method is None and (
+            self.src.filter_stack is not None and self.src.filter_stack.radial
+        ):
+            logger.info(
+                "Found `src.filter_stack` is radial, autoenabling expand_method='radial'"
+            )
+            expand_method = "radial"
+
         self.expand_method = expand_method
         self.force_diag = force_diag
 
@@ -560,43 +573,14 @@ class BatchedRotCov2D(RotCov2D):
 
     def filters_to_basis_mats(self):
         """
-        Dispatch between various methods for converting filter stacks to basis matrices.
+        Convert filter stacks to basis matrices.
         """
-        # Does the basis provide radially optimized expansion?
-        optimized_expand = callable(
-            getattr(self.basis.__class__, "expand_radial_vec", None)
+
+        return self.basis.filter_stack_to_basis_mats(
+            self.src.filter_stack,
+            pixel_size=self.src.pixel_size,
+            expand_method=self.expand_method,
         )
-
-        # Are the filters radial?
-        if self.src.filter_stack.radial:
-            logger.info("Found radial filter stack.")
-        else:
-            logger.info("Found non-radial filter stack.")
-
-        if optimized_expand and self.src.filter_stack.radial:
-            logger.info("Using optimized `basis.expand_radial_vec`.")
-            return self._radial_filter_stack_to_basis_mats()
-        else:
-            logger.info("Using basis.filter_stack_to_basis_mats.")
-            return self.basis.filter_stack_to_basis_mats(
-                self.src.filter_stack,
-                pixel_size=self.src.pixel_size,
-                expand_method=self.expand_method,
-            )
-
-    def _radial_filter_stack_to_basis_mats(self):
-        logger.info("Generating filter eval points")
-        _filter_pts = self.basis._filter_pts
-        # if we have many filters, might be worth trip to GPU
-        if len(self.src.filter_stack) >= 2048:
-            _filter_pts = xp.asarray(_filter_pts)
-
-        _filter_vals = self.src.filter_stack.evaluate(
-            _filter_pts, pixel_size=self.src.pixel_size
-        )
-
-        logger.info("Computing basis radial expansion")
-        return self.basis.expand_radial_vec(_filter_vals, force_diag=self.force_diag)
 
     def _calc_rhs(self):
         src = self.src

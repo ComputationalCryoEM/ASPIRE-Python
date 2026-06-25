@@ -325,7 +325,7 @@ class FFBBasis2D(FBBasis2D):
             raise RuntimeError("Unexpected filter length.")
         return self._filter_stack_to_basis_mats(f, **kwargs)[0]
 
-    def expand_radial_vec(self, radial_vec, force_diag=False):
+    def expand_radial_vec(self, radial_vec, **kwargs):
         """
         Expands radial vector or stack of vetors `radial_vec` to basis matrix.
 
@@ -334,6 +334,8 @@ class FFBBasis2D(FBBasis2D):
         :force_diag: Optionally flush off-diagonal elements to zero and return `DiagMatrix`
         :return: List of `BlkDiagMatrix`, or list of `DiagMatrix`
         """
+        force_diag = kwargs.get("force_diag", False)
+
         # Convert vector to (1,...)
         if radial_vec.ndim == 1:
             radial_vec = radial_vec.reshape(1, *radial_vec.shape)

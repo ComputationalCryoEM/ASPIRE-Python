@@ -5,6 +5,7 @@ from collections.abc import Iterable
 import numpy as np
 
 from aspire.basis import Basis, Coef, ComplexCoef
+from aspire.numeric import xp
 from aspire.operators import BlkDiagMatrix
 from aspire.utils import LogFilterByCount, complex_type, real_type, tqdm, trange
 
@@ -490,14 +491,24 @@ class SteerableBasis2D(Basis, abc.ABC):
             typically `BlkDiagMatrix` or `DiagMatrix`.
         """
 
-        # does the basis have optimized expansion for radial vectors?
+        # Does the basis provide radially  optimized expansion?
         optimized_expand = callable(getattr(self.__class__, "expand_radial_vec", None))
+        if optimized_expand:
+            logger.info(f"{self.__class__.__name__} provides `optimized_expand`")
+
         # is the filter radial?
         filter_is_radial = f.radial
-        # did user request the special radial expansion method?
+        if filter_is_radial:
+            logger.info("Found radial filter stack.")
+        else:
+            logger.info("Found non-radial filter stack.")
+
+        # Did user request the special radial expansion method?
         radial_method = kwargs.get("expand_method", None) == "radial"
 
         if optimized_expand and filter_is_radial and radial_method:
+            logger.info("Using optimized radial filter expansion")
+            logger.info("Collecting radial filter eval points")
             # Basis needs to provide the radial filter points
             _filter_pts = self._filter_pts
 
@@ -507,10 +518,13 @@ class SteerableBasis2D(Basis, abc.ABC):
 
             # Evaluate the radial filter points
             #   kwargs supports passing through pixel_size
+            logger.info("Evaluating radial filter points")
             h_vals = f.evaluate(_filter_pts, **kwargs)
 
             # Expand radial points into basis
-            res = self.expand_radial_vec(h_vals)
+            logger.info("Computing basis radial expansion")
+            #   kwargs supports passing force_diag
+            res = self.expand_radial_vec(h_vals, **kwargs)
         else:
             # use generic (legacy) filter path/code (may return DiagMatrix)
             res = self._filter_stack_to_basis_mats(f, **kwargs)
