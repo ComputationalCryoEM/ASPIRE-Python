@@ -185,3 +185,28 @@ def test_unspupported_symmetry_raises(dtype):
 
     with pytest.raises(ValueError, match="supports cyclic or dihedral symmetry"):
         _ = CommonlineNUG(src)
+
+
+def test_symmetry_logging(caplog):
+    """
+    Check expected log messages for mismatch or unprovided symmetry.
+    """
+    vol = CnSymmetricVolume(L=16, order=3, C=1, dtype=np.float64, seed=SEED).generate()
+    src = Simulation(n=3, vols=vol).cache()
+
+    # Check unprovided symmetry populates with source symmetry and logs messsage
+    caplog.clear()
+    with caplog.at_level("INFO"):
+        orient_est = CommonlineNUG(src)
+
+    assert str(orient_est.sym_grp) == "C3"
+    assert "Symmetry not provided. Using Source symmetry: C3" in caplog.text
+
+    # Check we use provided symmetry on mismatch, with log
+    caplog.clear()
+    with caplog.at_level("INFO"):
+        orient_est = CommonlineNUG(src, symmetry="D3")
+
+    assert str(orient_est.sym_grp) == "D3"
+    assert "Provided symmetry, D3, does not match source, C3" in caplog.text
+    assert "Using provided symmetry: D3" in caplog.text
