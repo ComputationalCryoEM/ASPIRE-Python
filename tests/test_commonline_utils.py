@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from aspire.abinitio import JSync, g_sync
+from aspire.abinitio import JSync, compare_rots_sym, g_sync
 from aspire.abinitio.commonline_utils import (
     _complete_third_row_to_rot,
     _estimate_third_rows,
@@ -186,3 +186,30 @@ def test_g_sync(symmetry):
     np.testing.assert_allclose(
         gs[best_g] @ gt_rots_synced_to_clean, desynced_clean_rots
     )
+
+
+@pytest.mark.parametrize("symmetry", ["C3", "C4", "D3", "D4", "T", "O"])
+def test_compare_rots_sym(symmetry):
+    """
+    This method find the mean squared error between all pairs of rotations
+    taking into account each rotation being multiplied by an arbitrary
+    symmetry group element. In this test we check that a set of rotations
+    multiplied by random symmetry group elements gives a zero MSE when compared
+    to the original set.
+    """
+    n = 100
+    dtype = np.float64
+
+    # Get symmetry group matrices
+    gs = SymmetryGroup.parse(symmetry).matrices
+
+    # Build set of ground truth rotations
+    gt_rots = Rotation.generate_random_rotations(n, dtype=dtype).matrices
+
+    # Multiply by random group elements
+    g_idx = np.random.randint(len(gs), size=n)
+    rots_with_sym = gs[g_idx] @ gt_rots
+
+    # Check MSE is zero
+    MSE = compare_rots_sym(rots_with_sym, gt_rots, symmetry)
+    np.testing.assert_allclose(MSE, 0, atol=np.finfo(dtype).eps)
