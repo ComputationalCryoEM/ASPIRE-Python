@@ -1544,55 +1544,25 @@ class CommonlineNUG(Orient3D):
         return (evecs * evals[..., None, :]) @ evecs.swapaxes(-1, -2)
 
     @staticmethod
-    def transform_block(A, k, Pk=None):
+    def transform_block(A, k, Pk):
         """
         Permute and vectorize the two invariant blocks of a degree-k matrix.
         """
-        single = A.ndim == 2
-        if single:
-            A = A[None, :, :]
-
-        if Pk is None:
-            dk = 2 * k + 1
-            Pk = xp.eye(dk, dtype=A.dtype)
-            for m in range(k):
-                for el in range(k - m):
-                    Pk[(m + 2 * el, m + 2 * el + 1), :] = Pk[
-                        (m + 2 * el + 1, m + 2 * el), :
-                    ]
         AT = Pk @ A @ Pk.T
         A0 = AT[:, :k, :k].swapaxes(-1, -2).reshape(A.shape[0], -1)
         A1 = AT[:, k:, k:].swapaxes(-1, -2).reshape(A.shape[0], -1)
-
-        if single:
-            return A0[0], A1[0]
-
         return A0, A1
 
     @staticmethod
-    def transform_back_block(A0, A1, k, Pk=None):
+    def transform_back_block(A0, A1, k, Pk):
         """
         Reconstruct a degree-k matrix from its two invariant block vectors.
         """
         dk = 2 * k + 1
-        single = A0.ndim == 1
-
-        if single:
-            A0 = A0[None, :]
-            A1 = A1[None, :]
-
         A = xp.zeros((A0.shape[0], dk, dk), dtype=A0.dtype)
         A[:, :k, :k] = A0.reshape(-1, k, k).swapaxes(-1, -2)
         A[:, k:, k:] = A1.reshape(-1, k + 1, k + 1).swapaxes(-1, -2)
-        if Pk is None:
-            Pk = xp.eye(dk, dtype=A0.dtype)
-            for m in range(k):
-                for el in range(k - m):
-                    Pk[(m + 2 * el, m + 2 * el + 1), :] = Pk[
-                        (m + 2 * el + 1, m + 2 * el), :
-                    ]
-        out = Pk.T @ A @ Pk
-        return out[0] if single else out
+        return Pk.T @ A @ Pk
 
     def construct_AEq(self):
         """
