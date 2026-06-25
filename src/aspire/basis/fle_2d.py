@@ -893,15 +893,3 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
             coefs = DiagMatrix(coefs.flatten())
 
         return coefs
-
-    def _radial_filter_to_vals(self, f, **kwargs):
-        """
-        Unpack filter attributes and pass to Yunpeng code.
-        """
-
-        pts = xp.asnumpy(self.nodes)
-
-        _filter_pts = np.pad(pts.reshape(1, -1), ((0, 1), (0, 0))) * self.h
-        h_vals = f.evaluate(_filter_pts, **kwargs)
-
-        return h_vals

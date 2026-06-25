@@ -498,8 +498,18 @@ class SteerableBasis2D(Basis, abc.ABC):
         radial_method = kwargs.get("expand_method", None) == "radial"
 
         if optimized_expand and filter_is_radial and radial_method:
-            # kwargs supports passing through pixel_size
-            h_vals = self._radial_filter_to_vals(f, **kwargs)
+            # Basis needs to provide the radial filter points
+            _filter_pts = self._filter_pts
+
+            # If filter stack is long, might be worth using GPU for eval
+            if len(f) >= 2048:
+                _filter_pts = xp.asarray(_filter_pts)
+
+            # Evaluate the radial filter points
+            #   kwargs supports passing through pixel_size
+            h_vals = f.evaluate(_filter_pts, **kwargs)
+
+            # Expand radial points into basis
             res = self.expand_radial_vec(h_vals)
         else:
             # use generic (legacy) filter path/code (may return DiagMatrix)
