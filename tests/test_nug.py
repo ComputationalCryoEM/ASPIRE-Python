@@ -121,9 +121,10 @@ def test_smoke(dtype, Volume):
         Lmax=4,
         T=5,
         max_iter=10,
+        pr_iters=1,
         S2_grid=50,
         max_shift=0,
-        verbose=False,
+        verbose=True,
     )
 
     rots = orient_est.estimate_rotations()
