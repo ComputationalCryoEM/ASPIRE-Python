@@ -1,5 +1,4 @@
 import logging
-import time
 
 import numpy as np
 from scipy.special import factorial
@@ -466,7 +465,6 @@ class CommonlineNUG(Orient3D):
             Sd0 = -Zd0 - Xd0 / rho
             Sd1 = -Zd1 - Xd1 / rho
             Sq = -Zq - Xq / rho
-            tic0 = time.perf_counter()
             for k in range(1, Lmax + 1):
                 tmp = self.mat_block(
                     S0[d0[k - 1] : d0[k], :], N, k, IDX_upper, IDX_lower, idx_offdiag
@@ -484,12 +482,9 @@ class CommonlineNUG(Orient3D):
                 )
                 tmp = self.psd_projection(tmp)
                 S1[d1[k - 1] : d1[k], :] = self.vec_block(tmp, N, k + 1, IDX_upper)
-            toc0 = time.perf_counter()
-            Time[0] += toc0 - tic0
 
             Sd0 = Sd0.T
             Sd1 = Sd1.T
-            tic1 = time.perf_counter()
             for k in range(1, Lmax + 1):
                 tmp = self.transform_back_block(
                     Sd0[:, d0[k - 1] : d0[k]],
@@ -503,14 +498,8 @@ class CommonlineNUG(Orient3D):
                 )
             Sd0 = Sd0.T
             Sd1 = Sd1.T
-            toc1 = time.perf_counter()
-            Time[1] += toc1 - tic1
-
-            tic2 = time.perf_counter()
             Sq = self.psd_projection(Sq.T.reshape(n_pairs, 4, 4))
             Sq = Sq.T.reshape(-1, n_pairs)
-            toc2 = time.perf_counter()
-            Time[2] += toc2 - tic2
             return S0, S1, Sd0, Sd1, Sq
 
         def update_yE(C0, C1, X0, X1, Xd0, Xd1, Xq, S0, S1, Sd0, Sd1, Sq, yI, rho):
@@ -689,7 +678,6 @@ class CommonlineNUG(Orient3D):
         yEq = xp.zeros(bEq.shape, dtype=np.float64)
 
         IDX = np.arange(3)
-        Time = np.zeros(4)
         for t in range(max_iter):
             np.random.shuffle(IDX)
             for idx in IDX:
