@@ -142,7 +142,7 @@ def test_covar2d(preprocessed_src, basis, force_radial):
     _ = cov2d.get_covar()
 
 
-def test_covar2d_many_ctf():
+def test_covar2d_sim_many_ctf():
     """
     Smoke test for many CTF case using optimized radial expansion code path.
     """
@@ -156,6 +156,7 @@ def test_covar2d_many_ctf():
         n=N,
         L=L,
         filter_stack=RadialCTFFilter(defocus=np.linspace(10000, 20000, N)),
+        filter_indices=np.arange(N),  # by default sim does a random choice
         offsets=0,
         amplitudes=1,
         dtype=dt,
