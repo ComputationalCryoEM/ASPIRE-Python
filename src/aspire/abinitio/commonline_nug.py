@@ -716,26 +716,19 @@ class CommonlineNUG(Orient3D):
         """
         Lmax = self.Lmax
         N = self.n_img
-        count = 0
-        idx_diag = []
-        idx_offdiag = []
-        for i in range(N):
-            for j in range(i, N):
-                if j == i:
-                    idx_diag.append(count)
-                else:
-                    idx_offdiag.append(count)
-                count += 1
-        IDX_upper = []
-        IDX_lower = []
-        for i in range(N):
-            for j in range(N):
-                if j >= i:
-                    IDX_upper.append(i * N + j)
-        for j in range(N):
-            for i in range(N):
-                if j < i:
-                    IDX_lower.append(i * N + j)
+
+        # Indices into the packed upper-triangular image-pair columns:
+        # diagonal self-pairs (i, i) and off-diagonal pairs (i, j), i < j.
+        iu, ju = np.triu_indices(N)
+        idx_diag = xp.asarray(np.flatnonzero(iu == ju))
+        idx_offdiag = xp.asarray(np.flatnonzero(iu != ju))
+
+        # Linear indices into the full N x N image-pair grid. IDX_upper selects
+        # upper-triangular pairs (i, j), i <= j; IDX_lower selects the matching
+        # lower-triangular pairs (j, i), i < j, in the same order as idx_offdiag.
+        iu_off, ju_off = np.triu_indices(N, k=1)
+        IDX_upper = xp.asarray(iu * N + ju)
+        IDX_lower = xp.asarray(ju_off * N + iu_off)
 
         # normalize C matrix
         Cnorm = 0
