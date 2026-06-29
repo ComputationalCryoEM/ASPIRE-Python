@@ -152,8 +152,6 @@ class Filter:
         """
         return ScaledFilter(self, c)
 
-    # this cache no longer appears to work? now unhashable? (fine but why not before?)
-    # @lru_cache(maxsize=config["cache"]["filter_cache_size"].get())  # noqa: B019
     def evaluate_grid(self, L, *args, dtype=np.float32, **kwargs):
         """
         Generates a two dimensional grid with prescribed dtype,
@@ -188,15 +186,22 @@ class Filter:
 
     def __len__(self):
         """
-        Default filters are length 1.
+        Length of filter stack.
 
-        Some filters (eg CTFFilter) provide additional optimizations for stacks.
+        Default filters are length 1. Some filters (eg CTFFilter)
+        provide additional optimizations for stacks.
+
+        :return: Integer filter stack length.
         """
         return 1
 
     def _ctf_params(self):
         """
-        Return n_filters-by-n_param array from prior filter.
+        Attempts to return n_filters-by-n_param array from prior filter.
+
+        When not avaiable from prior filter, raises error.
+
+        :return: return n_filters-by-n_param array or error.
         """
         raise NotImplementedError(
             f"_ctf_params not implemented for {self.__class__.__name__}"
@@ -216,11 +221,19 @@ class DualFilter(Filter):
         return self._filter.evaluate(-omega, **kwargs)
 
     def __len__(self):
+        """
+        Length of filter stack.
+
+        :return: Integer filter stack length.
+        """
+
         return len(self._filter)
 
     def _ctf_params(self):
         """
         Return n_filters-by-n_param array from prior filter.
+
+        :return: return n_filters-by-n_param array or error.
         """
         return self._filter._ctf_params()
 
@@ -303,15 +316,28 @@ class PowerFilter(Filter):
         return filter_vals**self._power
 
     def __len__(self):
+        """
+        Length of filter stack.
+
+        :return: Integer filter stack length.
+        """
+
         return len(self._filter)
 
     def _ctf_params(self):
         """
         Return n_filters-by-n_param array from prior filter.
+
+        :return: return n_filters-by-n_param array or error.
         """
         return self._filter._ctf_params()
 
     def __getitem__(self, item):
+        """
+        Return slice from filter stack as a new filter stack.
+
+        :return: `item` slice of underlying filter stack
+        """
         return PowerFilter(self._filter[item], power=self._power, epsilon=self._epsilon)
 
 
@@ -330,16 +356,26 @@ class LambdaFilter(Filter):
 
     def __len__(self):
         """
-        Return length of underlying filter stack
+        Length of filter stack.
+
+        :return: Integer filter stack length.
         """
         return len(self._filter)
 
     def __getitem__(self, item):
+        """
+        Return slice from filter stack as a new filter stack.
+
+        :return: `item` slice of underlying filter stack
+        """
+
         return LambdaFilter(self._filter[item], self._f)
 
     def _ctf_params(self):
         """
         Return n_filters-by-n_param array from prior filter.
+
+        :return: return n_filters-by-n_param array or error.
         """
         return self._filter._ctf_params()
 
@@ -378,6 +414,12 @@ class MultiplicativeFilter(Filter):
         return res
 
     def __len__(self):
+        """
+        Length of filter stack.
+
+        :return: Integer filter stack length.
+        """
+
         return self._n
 
     def _ctf_params(self):
@@ -385,6 +427,8 @@ class MultiplicativeFilter(Filter):
         Return n_filters-by-n_param array from prior filter.
 
         Raises error if multiple or none found.
+
+        :return: return n_filters-by-n_param array or error.
         """
         _params = []
         for c in self._components:
@@ -401,6 +445,12 @@ class MultiplicativeFilter(Filter):
         return _params[0]
 
     def __getitem__(self, item):
+        """
+        Return slice from filter stack as a new filter stack.
+
+        :return: `item` slice of underlying filter stack
+        """
+
         return MultiplicativeFilter(*list(c[item] for c in self._components))
 
 
@@ -426,14 +476,28 @@ class ScaledFilter(Filter):
         return f"ScaledFilter (scales {self._filter} by {self._scale})"
 
     def __getitem__(self, item):
+        """
+        Return slice from filter stack as a new filter stack.
+
+        :return: `item` slice of underlying filter stack
+        """
+
         return ScaledFilter(self._filter[item], self._scale)
 
     def __len__(self):
+        """
+        Length of filter stack.
+
+        :return: Integer filter stack length.
+        """
+
         return len(self._filter)
 
     def _ctf_params(self):
         """
         Return n_filters-by-n_param array from prior filter.
+
+        :return: return n_filters-by-n_param array or error.
         """
         return self._filter._ctf_params()
 
@@ -534,6 +598,12 @@ class ArrayFilter(Filter):
         return res
 
     def __getitem__(self, item):
+        """
+        Return slice from filter stack as a new filter stack.
+
+        :return: `item` slice of underlying filter stack
+        """
+
         # Note, could extend to a stack dimension and lookup.
         # For now, we have no use case for that.
         return self
@@ -551,6 +621,12 @@ class ScalarFilter(Filter):
         return self.value * np.ones_like(omega)
 
     def __getitem__(self, item):
+        """
+        Return slice from filter stack as a new filter stack.
+
+        :return: `item` slice of underlying filter stack
+        """
+
         return self
 
 
@@ -637,6 +713,12 @@ class CTFFilter(Filter):
             raise RuntimeError("dont do that")
 
     def __getitem__(self, items):
+        """
+        Return slice from filter stack as a new filter stack.
+
+        :return: `item` slice of underlying filter stack
+        """
+
         return CTFFilter(
             self.voltage[items],
             # self.wavelength[items],
@@ -650,13 +732,17 @@ class CTFFilter(Filter):
 
     def __len__(self):
         """
-        Return stack length
+        Length of filter stack.
+
+        :return: Integer filter stack length.
         """
         return self.n
 
     def _ctf_params(self):
         """
         Return n_filters-by-n_param array.
+
+        :return: return n_filters-by-n_param array or error.
         """
         return np.array(
             [
@@ -700,6 +786,27 @@ class CTFFilter(Filter):
     def ctf_formula(
         omega, pixel_size, voltage, defocus_u_a, defocus_v_a, defocus_ang, Cs, alpha, B
     ):
+        """
+        Function for computing CTF using given parameters on `omega` grid.
+
+        Parameters may be scalars or 1d arrays.
+        `omega` grid may be on host or gpu.
+        When on GPU, the parameter arrays will be transfered to the GPU as needed.
+
+        :param omega: A vector of size n (for 1d filters), or an array of size 2-by-n, representing the spatial
+            frequencies at which the filter is to be evaluated.
+        :param pixel_size: Pixel size in Angstrom
+
+        :param voltage:     Electron voltage in kV
+        :param defocus_u_a:   Defocus depth along the u-axis in angstrom
+        :param defocus_v_a:   Defocus depth along the v-axis in angstrom
+        :param defocus_ang: Angle between the x-axis and the u-axis in radians
+        :param Cs:          Spherical aberration constant in mm
+        :param alpha:       Amplitude contrast phase in radians
+        :param B:           Envelope decay in inverse square angstrom (default 0)
+
+        :return: Array of CTF values evaluated on the grid `omega`.
+        """
         # Reference MATLAB code, includes reference to paper
         #    Mindell, J. A.; Grigorieff, N. (2003).
         # https://github.com/PrincetonUniversity/aspire/blob/760a43b35453e55ff2d9354339e9ffa109a25371/projections/cryo_CTF_Relion.m#L34
