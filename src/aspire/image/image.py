@@ -600,29 +600,23 @@ class Image:
             original_stack_shape
         )
 
-    def filter(self, filter):
+    def convolve(self, filter_values):
         """
-        Apply a `Filter` object to the Image and returns a new Image.
+        Return Image data convolved with `filter_values`
 
-        :param filter: An object of type `Filter`.
-        :return: A new filtered `Image` object.
+        :param filter_values: Filter values (grid matching image shape)
+        :return: Image object containing convolved data.
         """
-        original_stack_shape = self.stack_shape
-
-        im = self.stack_reshape(-1)
-
         # Note image and filter data is intentionally migrated via
         # `xp.asarray` because all of the subsequent calls until
         # `asnumpy` are GPU when xp and fft in `cupy` mode.
         #
-        # Second note, filter and grid dtype may not match image dtype,
-        # upcast both here for most accurate convolution.
-        filter_values = xp.asarray(
-            filter.evaluate_grid(
-                self.resolution, dtype=np.float64, pixel_size=self.pixel_size
-            ),
-            dtype=np.float64,
-        )
+        # Second note, filter dtype may not match image dtype,
+        # upcast here for most accurate convolution.
+        filter_values = xp.asarray(filter_values, dtype=np.float64)
+
+        original_stack_shape = self.stack_shape
+        im = self.stack_reshape(-1)
 
         # Convolve
         _im = xp.asarray(im._data, dtype=np.float64)
@@ -630,6 +624,7 @@ class Image:
         im_f = filter_values * im_f
         im = fft.centered_ifft2(im_f)
 
+        # Potentially return to host and/or downcast as needed.
         im = xp.asnumpy(im.real).astype(
             self.dtype, copy=False
         )  # restore to original dtype
@@ -637,6 +632,26 @@ class Image:
         return self.__class__(im, pixel_size=self.pixel_size).stack_reshape(
             original_stack_shape
         )
+
+    def filter(self, filter):
+        """
+        Apply a `Filter` object to the Image and returns a new Image.
+
+        :param filter: An object of type `Filter`.
+        :return: A new filtered `Image` object.
+        """
+        # Note image and filter data is intentionally migrated via
+        # `xp.asarray` because all of the subsequent calls until
+        # `asnumpy` are GPU when xp and fft in `cupy` mode.
+        #
+        # Second note, filter and grid dtype may not match image dtype,
+        # upcast filter evaluation here for most accurate convolution.
+        # Convolution code will
+        filter_values = filter.evaluate_grid(
+            self.resolution, dtype=np.float64, pixel_size=self.pixel_size
+        )
+
+        return self.convolve(filter_values)
 
     def rotate(self, theta, method="scipy", mask=1, **kwargs):
         """
