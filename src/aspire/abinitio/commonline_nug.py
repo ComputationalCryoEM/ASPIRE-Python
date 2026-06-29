@@ -43,28 +43,41 @@ class CommonlineNUG(Orient3D):
         **kwargs,
     ):
         """
-        Initialize the symmetric NUG orientation estimator.
+        Initialize the symmetric NUG orientation estimator. All default values match those used
+        for publication results, with exception of `pr_iters`, which controls how many iterations
+        of proximal refinement to be used. The default of None runs the algorithm without proximal
+        refinement. Set to `pr_iters` to 4 to match the proximal refinement workflow in the related
+        publication.
 
         :param src: Source containing the input projection images.
         :param symmetry: Cyclic or dihedral symmetry specification, such as 'C3' or
             'D4'. If omitted, uses the source symmetry.
-        :param n_rad: Number of radial samples in the polar Fourier transform.
-        :param n_theta: Number of angular samples in the polar Fourier transform.
-        :param max_shift: Maximum shift considered when comparing common lines.
-        :param shift_step: Sampling interval for candidate shifts.
-        :param mask: Whether to apply a circular mask to the input images.
+        :param n_rad: Number of radial samples in the polar Fourier transform. If None,
+            n_rad will default to the ceiling of half the resolution of the source.
+        :param n_theta: Number of angular samples in the polar Fourier transform. This
+            value must be even. Default is 360.
+        :param max_shift: Determines maximum range for shifts for common-line detection
+            as a proportion of the resolution. Default is 0.15.
+        :param shift_step:Resolution of shift estimation common-line detection in pixels.
+            Default is 1 pixel.
+        :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
+            Default, `True`, applies a mask.
         :param Lmax: Maximum Wigner representation degree used in the relaxation.
+            Default is 12.
         :param T: Quadrature resolution used to compute the Fourier coefficients.
-        :param max_iter: Number of ADMM iterations.
-        :param rho: Initial ADMM penalty parameter.
-        :param ratio: Residual ratio used when updating the ADMM penalty.
-        :param factor: Scaling factor used when updating the ADMM penalty.
-        :param mult: Step-size multiplier for the ADMM primal update.
-        :param S2_grid: Number of sphere samples used to discretize SO(3).
+            Default is 36.
+        :param max_iter: Number of ADMM iterations. Default is 501.
+        :param rho: Initial ADMM penalty parameter. Default 0.05.
+        :param ratio: Residual ratio used when updating the ADMM penalty. Default is 1.
+        :param factor: Scaling factor used when updating the ADMM penalty. Default is 1.0.
+        :param mult: Step-size multiplier for the ADMM primal update. Default is 1.5.
+        :param S2_grid: Number of sphere samples used to discretize SO(3). Default is 441.
         :param Nstep_yI: Number of inequality-multiplier updates per ADMM iteration.
+            Default is 10.
         :param pr_iters: Number of proximal refinement iterations. Default of None
-            does not perform proximal refinement. Recommended value is 4.
-        :param verbose: Whether to log ADMM progress.
+            does not perform proximal refinement. Recommended value when using is 4.
+        :param verbose: Whether to log ADMM and proximal refinement progress.
+            Default is True.
         """
 
         super().__init__(
