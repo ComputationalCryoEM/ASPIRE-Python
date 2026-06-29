@@ -860,7 +860,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         # Convert from internal FLE ordering to FB convention
         h_basis = h_basis[:, self._fle_to_fb_indices]
-        # who needs this as a list?
 
         coefs = xp.asnumpy(h_basis)
         if len(coefs) > 1:
@@ -886,7 +885,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         coefs = xp.asnumpy(coefs)
 
-        # who needs this as a list?
         if len(coefs) > 1:
             coefs = [DiagMatrix(c) for c in coefs]
         else:
