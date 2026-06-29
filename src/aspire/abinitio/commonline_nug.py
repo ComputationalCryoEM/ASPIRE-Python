@@ -101,7 +101,8 @@ class CommonlineNUG(Orient3D):
         self.Nstep_yI = Nstep_yI
         self.verbose = verbose
 
-        # Handle symmetry
+        # Handle symmetry.
+        # Get from source if not provided. Warn on mismatch if provided.
         if symmetry is None:
             logger.info(
                 f"Symmetry not provided. Using Source symmetry: {str(self.src.symmetry_group)}"
@@ -174,8 +175,6 @@ class CommonlineNUG(Orient3D):
             """
             Evaluate the pairwise common-line loss used to approximate NUG Fourier coefficients.
 
-            For a relative orientation parameterized by ZYZ Euler angles, the common-line
-            loss f_ij depends only on the first and third angles, alpha and gamma.
             This function samples the corresponding polar Fourier rays from images i and j,
             compares them over all candidate 1D shifts, and returns the minimum shifted
             L1 mismatch.
@@ -398,7 +397,7 @@ class CommonlineNUG(Orient3D):
             bE[k + 1 + d0[k + 1] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = xp.eye(
                 k + 2
             ).T.reshape(-1)
-        bE = xp.repeat(bE[:, np.newaxis], N, axis=1)
+        bE = xp.repeat(bE[:, None], N, axis=1)
         P = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
@@ -781,65 +780,41 @@ class CommonlineNUG(Orient3D):
         bEq = xp.zeros(17, dtype=np.float64)
         bEq[:16] = xp.eye(4, dtype=np.float64).reshape(-1) / 4
         bEq[-1] = 1
-        bEq = xp.repeat(bEq[:, xp.newaxis], N * (N - 1) // 2, axis=1)
+        bEq = xp.repeat(bEq[:, None], N * (N - 1) // 2, axis=1)
 
-        # AI and bI
+        # Compute AI and bI
         W0, W1, Ngrid = self.compute_fejer_weights()
+
+        # AI_mat_offdiag computation has been vectorized, but originally
+        # had the note by block1: this needs double checking (Ruiyi)
         AI_mat_offdiag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
-        for p in range(Ngrid):
-            w0 = np.zeros(D0, dtype=np.float64)
-            w1 = np.zeros(D1, dtype=np.float64)
-            for k in range(1, Lmax + 1):
-                w0[d0[k - 1] : d0[k]] = (
-                    (Lmax - k + 2)
-                    * (Lmax - k + 1)
-                    * (k + 0.5)
-                    * W0[k - 1][p].T.reshape(-1)
-                )
-                w1[d1[k - 1] : d1[k]] = (
-                    (Lmax - k + 2)
-                    * (Lmax - k + 1)
-                    * (k + 0.5)
-                    * W1[k - 1][p].T.reshape(-1)
-                )
-                # this needs double checking (Ruiyi)
-            AI_mat_offdiag[p, : d0[-1]] = w0
-            AI_mat_offdiag[p, d0[-1] :] = w1
+        for k in range(1, Lmax + 1):
+            scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
 
-        # Vectorized version, added by Josh
-        # AI_mat_offdiag_new = np.zeros((Ngrid, D0 + D1))
-        # for k in range(1, Lmax + 1):
-        #     scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
+            block0 = scale * W0[k - 1].transpose(0, 2, 1).reshape(Ngrid, -1)
+            block1 = scale * W1[k - 1].transpose(0, 2, 1).reshape(Ngrid, -1)
 
-        #     block0 = scale * W0[k - 1].transpose(0, 2, 1).reshape(Ngrid, -1)
-        #     block1 = scale * W1[k - 1].transpose(0, 2, 1).reshape(Ngrid, -1)
+            AI_mat_offdiag[:, d0[k - 1] : d0[k]] = block0
+            AI_mat_offdiag[:, d0[-1] + d1[k - 1] : d0[-1] + d1[k]] = block1
 
-        #     AI_mat_offdiag_new[:, d0[k - 1]:d0[k]] = block0
-        #     AI_mat_offdiag_new[:, d0[-1] + d1[k - 1]:d0[-1] + d1[k]] = block1
-
+        # AI_mat_diag computation has been vectorized, but originally
+        # had the note by block1: this needs double checking (Ruiyi)
         AI_mat_diag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
-        for p in range(Ngrid):
-            w0 = np.zeros(D0, dtype=np.float64)
-            w1 = np.zeros(D1, dtype=np.float64)
-            for k in range(1, Lmax + 1):
-                w0[d0[k - 1] : d0[k]] = (
-                    (Lmax - k + 2)
-                    * (Lmax - k + 1)
-                    * (k + 0.5)
-                    * (0.5 * W0[k - 1][p] + 0.5 * W0[k - 1][p].T).T.reshape(-1)
-                )
-                w1[d1[k - 1] : d1[k]] = (
-                    (Lmax - k + 2)
-                    * (Lmax - k + 1)
-                    * (k + 0.5)
-                    * (0.5 * W1[k - 1][p] + 0.5 * W1[k - 1][p].T).T.reshape(-1)
-                )
-                # this needs double checking (Ruiyi)
-            AI_mat_diag[p, : d0[-1]] = w0
-            AI_mat_diag[p, d0[-1] :] = w1
-        AI_mat_diag = xp.asarray(AI_mat_diag) / 1
-        AI_mat_offdiag = xp.asarray(AI_mat_offdiag) / 1
-        bI = -(Lmax + 2) * (Lmax + 1) / 2 / 1
+        for k in range(1, Lmax + 1):
+            scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
+
+            W0_sym = 0.5 * (W0[k - 1] + W0[k - 1].transpose(0, 2, 1))
+            W1_sym = 0.5 * (W1[k - 1] + W1[k - 1].transpose(0, 2, 1))
+
+            block0 = scale * W0_sym.transpose(0, 2, 1).reshape(Ngrid, -1)
+            block1 = scale * W1_sym.transpose(0, 2, 1).reshape(Ngrid, -1)
+
+            AI_mat_diag[:, d0[k - 1] : d0[k]] = block0
+            AI_mat_diag[:, d0[-1] + d1[k - 1] : d0[-1] + d1[k]] = block1
+
+        AI_mat_diag = xp.asarray(AI_mat_diag)
+        AI_mat_offdiag = xp.asarray(AI_mat_offdiag)
+        bI = -(Lmax + 2) * (Lmax + 1) / 2
 
         # largest eigenvalue for AIAIT
         Lambda = self.largest_eigenvalue(AI_mat_offdiag, Ngrid, N)
@@ -1302,23 +1277,20 @@ class CommonlineNUG(Orient3D):
                     DXijmD = np.diag(Di.conj()) @ Xijm @ np.diag(Dj)
                     wj = ws[j]
                     W1 = (
-                        wi[:, 0][:, np.newaxis] @ wj[:, 0][:, np.newaxis].T
-                        + Jk @ wi[:, 0][:, np.newaxis] @ wj[:, 0][:, np.newaxis].T @ Jk
+                        wi[:, 0][:, None] @ wj[:, 0][:, None].T
+                        + Jk @ wi[:, 0][:, None] @ wj[:, 0][:, None].T @ Jk
                     )
                     W2 = (
-                        wi[:, -1][:, np.newaxis] @ wj[:, 0][:, np.newaxis].T
-                        + Jk @ wi[:, -1][:, np.newaxis] @ wj[:, 0][:, np.newaxis].T @ Jk
+                        wi[:, -1][:, None] @ wj[:, 0][:, None].T
+                        + Jk @ wi[:, -1][:, None] @ wj[:, 0][:, None].T @ Jk
                     )
                     W3 = (
-                        wi[:, 0][:, np.newaxis] @ wj[:, -1][:, np.newaxis].T
-                        + Jk @ wi[:, 0][:, np.newaxis] @ wj[:, -1][:, np.newaxis].T @ Jk
+                        wi[:, 0][:, None] @ wj[:, -1][:, None].T
+                        + Jk @ wi[:, 0][:, None] @ wj[:, -1][:, None].T @ Jk
                     )
                     W4 = (
-                        wi[:, -1][:, np.newaxis] @ wj[:, -1][:, np.newaxis].T
-                        + Jk
-                        @ wi[:, -1][:, np.newaxis]
-                        @ wj[:, -1][:, np.newaxis].T
-                        @ Jk
+                        wi[:, -1][:, None] @ wj[:, -1][:, None].T
+                        + Jk @ wi[:, -1][:, None] @ wj[:, -1][:, None].T @ Jk
                     )
                     Br = np.real(4 * DXijmD)
                     Bi = np.imag(4 * DXijmD)
