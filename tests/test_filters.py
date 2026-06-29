@@ -388,6 +388,9 @@ def test_ctf_params(filter_type):
 
 
 def test_ctf_params_stack():
+    """
+    Test ctf_params for filter stack is passing through other filter (`ScaledFilter`).
+    """
     n = 3
     ctf_filt = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
 
@@ -401,6 +404,11 @@ def test_ctf_params_stack():
 
 
 def test_ctf_params_mult_stack():
+    """
+    Test ctf_params for filter stack is passing through `MultiplicativeFilter`.
+    Additioinally tests that multiple CTF filter stacks in a chain raises error.
+    """
+
     n = 3
     ctf_filt = CTFFilter(defocus_ang=np.linspace(0, 2 * np.pi, n))
 
@@ -450,7 +458,7 @@ def test_ctf_eq():
 
 def test_ctf_ineq():
     """
-    Test CTFFilter equality.
+    Test CTFFilter inequality.
     """
     n = 3
     ctf_filt = CTFFilter(
@@ -466,7 +474,7 @@ def test_ctf_ineq():
 
 def test_ctf_to_radial():
     """
-    Test CTFFilter equality.
+    Test CTFFilter equality with RadialCTFFilter of equivalant parameters (up to angle).
     """
 
     n = 3
