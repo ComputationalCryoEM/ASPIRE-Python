@@ -785,12 +785,21 @@ class ImageSource(ABC):
         if filters is None:
             return im
 
-        # else evaluate filters
-        # TODO broadcast filter eval
-        for i, filt in enumerate(filters):
+        # Note, this approach replaces looping over filters and
+        # calling `Image.filter()` which internally evaluates only a
+        # single filter's values and applies the convolution. Instead
+        # this code evaluate filters' values in bulk then loops over
+        # precomputed filter values to apply the convolution.
+        # Essentially this code is only exists to do the source based index mapping.
+        filters_values = filters.evaluate_grid(
+            im.resolution, dtype=np.float64, pixel_size=im.pixel_size
+        )  # Force double precision.
+
+        # Perform the convolution for images having filter index `i`
+        for i, filter_values in enumerate(filters_values):
             idx_k = np.where(indices == i)[0]
             if len(idx_k) > 0:
-                im[idx_k] = im[idx_k].filter(filt).asnumpy()
+                im[idx_k] = im[idx_k].convolve(filter_values).asnumpy()
 
         return im
 
