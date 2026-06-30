@@ -592,6 +592,18 @@ def build_outer_products(n, dtype):
 
 
 def compare_rots_sym(R_est, R_true, sym):
+    """
+    Compute the mean squared error between all pairs of estimate relative rotations,
+    R_est(i).T @ R_est(j), and a reference set, R_true(i).T @ R_true(j), taking into
+    account each estimate rotation being multiplied by an arbitrary symmetry group
+    element, ie. g @ R_est(i), where g is an element of the symmetry group 'sym'.
+
+    :param R_est: Nx3x3 array of estimate rotations.
+    :param R_true: Nx3x3 array of reference rotations.
+    :param sym: A string designating the symmetry of the underlying molecule, ie 'D3'.
+
+    :return: The pairwise mean squared error.
+    """
     N = R_true.shape[0]
     sym_euler = SymmetryGroup.parse(sym).matrices
     order = sym_euler.shape[0]
