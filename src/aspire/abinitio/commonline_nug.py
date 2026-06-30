@@ -338,7 +338,8 @@ class CommonlineNUG(Orient3D):
         mult = self.mult
         Nstep_yI = self.Nstep_yI
 
-        # admm for symmetric case
+        # Solve the symmetry-constrained SDP relaxation in the real, packed
+        # representation basis prepared by ADMM_preprocessing.
         (
             C0,
             C1,
@@ -371,6 +372,8 @@ class CommonlineNUG(Orient3D):
         rank_Ak, _ = self.compute_rank()
         logger.info(f"Rank of Ak: {rank_Ak}")
 
+        # Build per-degree equality operators coupling the k and k+1 invariant
+        # blocks. These encode the representation constraints imposed by symmetry.
         AE = []
         AEAETinv = []
         for k in range(1, Lmax + 1):
@@ -387,6 +390,9 @@ class CommonlineNUG(Orient3D):
                 AEk[count, count - 1 + s1 + s0] = 1
             AE.append(AEk)
             AEAETinv.append(xp.linalg.pinv(AEk @ AEk.T))
+
+        # Right-hand sides for the equality constraints: symmetry projector ranks
+        # and identity constraints on diagonal representation blocks.
         bE = xp.zeros((Lmax + D0 + D1), dtype=np.float64)
         for k in range(Lmax):
             bE[k + d0[k] + d1[k] :] = rank_Ak[k]
@@ -397,6 +403,9 @@ class CommonlineNUG(Orient3D):
                 k + 2
             ).T.reshape(-1)
         bE = xp.repeat(bE[:, None], N, axis=1)
+
+        # Degree-wise permutations used to move between full Wigner blocks and the
+        # two invariant block variables used by the relaxation.
         P = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
@@ -409,6 +418,15 @@ class CommonlineNUG(Orient3D):
             P.append(Pk)
 
         def fun_AE(X0, X1, Xd0, Xd1, Xq):
+            """
+            Apply the equality constraint operator to the current primal variables.
+
+            z contains the per-image, per-degree equality constraints that couple
+            diagonal X0/X1 blocks to auxiliary diagonal variables Xd0/Xd1.
+
+            zq contains the off-diagonal quaternion constraints built from Xq and
+            the lowest-degree off-diagonal representation blocks.
+            """
             z = xp.zeros((Lmax + D0 + D1, N), dtype=np.float64)
             for k in range(Lmax):
                 z[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = AE[
@@ -422,11 +440,24 @@ class CommonlineNUG(Orient3D):
                     ),
                     axis=0,
                 )
-            return z, AEq @ xp.concatenate(
+            zq = AEq @ xp.concatenate(
                 (Xq, X0[:1, idx_offdiag], X1[:4, idx_offdiag]), axis=0
             )
+            return z, zq
 
         def fun_AET(yE, yEq):
+            """
+            Apply the adjoint of the equality constraint operator.
+
+            yE contains multipliers for the per-image, per-degree equality
+            constraints produced as z by fun_AE.
+
+            yEq contains multipliers for the off-diagonal quaternion constraints
+            produced as zq by fun_AE.
+
+            Returns the contribution of these equality multipliers back into each
+            packed primal variable block: X0, X1, Xd0, Xd1, and Xq.
+            """
             Z0 = xp.zeros((D0, N * (N + 1) // 2), dtype=np.float64)
             Z1 = xp.zeros((D1, N * (N + 1) // 2), dtype=np.float64)
             Zd0 = xp.zeros((D0, N), dtype=np.float64)
@@ -445,6 +476,15 @@ class CommonlineNUG(Orient3D):
             return Z0, Z1, Zd0, Zd1, Zq[:16]
 
         def fun_AI(X0, X1):
+            """
+            Evaluate the Fejer inequality operator on the packed representation blocks.
+
+            Each output column corresponds to one packed image pair. Each row
+            corresponds to one sampled SO(3) grid point.
+
+            The result is compared against bI to enforce the discretized
+            nonnegativity constraints of the truncated SDP relaxation.
+            """
             z = xp.zeros((Ngrid, N * (N + 1) // 2), dtype=np.float64)
             tmp = xp.concatenate((X0, X1), axis=0)
             z[:, idx_diag] = AI_mat_diag @ tmp[:, idx_diag]
@@ -452,19 +492,36 @@ class CommonlineNUG(Orient3D):
             return z
 
         def fun_AIT(yI):
+            """
+            Apply the adjoint of the Fejer inequality operator.
+            """
             Z = xp.zeros((D0 + D1, N * (N + 1) // 2), dtype=np.float64)
             Z[:, idx_diag] = AI_mat_diag.T @ yI[:, idx_diag]
             Z[:, idx_offdiag] = AI_mat_offdiag.T @ yI[:, idx_offdiag]
             return Z[:D0, :], Z[D0:, :]
 
         def update_S(C0, C1, yE, yEq, yI, X0, X1, Xd0, Xd1, Xq, rho, Lmax, N):
+            """
+            Update PSD slack variables for the current ADMM iterate.
+
+            The slack variables S0/S1/Sd0/Sd1/Sq carry the semidefinite constraints.
+            This step forms the unconstrained slack minimizers and projects each
+            matrix block onto the positive semidefinite cone.
+            """
+            # Equality multipliers mapped back to each primal variable block.
             Z0, Z1, Zd0, Zd1, Zq = fun_AET(yE, yEq)
+
+            # Inequality multipliers mapped back to the X0/X1 variable blocks.
             AIT_yI0, AIT_yI1 = fun_AIT(yI)
+
+            # Unconstrained slack updates before PSD projection.
             S0 = C0 - Z0 - AIT_yI0 - X0 / rho
             S1 = C1 - Z1 - AIT_yI1 - X1 / rho
             Sd0 = -Zd0 - Xd0 / rho
             Sd1 = -Zd1 - Xd1 / rho
             Sq = -Zq - Xq / rho
+
+            # Project packed X0/X1 blocks degree by degree.
             for k in range(1, Lmax + 1):
                 tmp = self.mat_block(
                     S0[d0[k - 1] : d0[k], :], N, k, IDX_upper, IDX_lower, idx_offdiag
@@ -483,6 +540,7 @@ class CommonlineNUG(Orient3D):
                 tmp = self.psd_projection(tmp)
                 S1[d1[k - 1] : d1[k], :] = self.vec_block(tmp, N, k + 1, IDX_upper)
 
+            # Project the diagonal coupling blocks.
             Sd0 = Sd0.T
             Sd1 = Sd1.T
             for k in range(1, Lmax + 1):
@@ -498,11 +556,19 @@ class CommonlineNUG(Orient3D):
                 )
             Sd0 = Sd0.T
             Sd1 = Sd1.T
+
+            # Project each 4x4 quaternion slack block for off-diagonal image pairs.
             Sq = self.psd_projection(Sq.T.reshape(n_pairs, 4, 4))
             Sq = Sq.T.reshape(-1, n_pairs)
             return S0, S1, Sd0, Sd1, Sq
 
         def update_yE(C0, C1, X0, X1, Xd0, Xd1, Xq, S0, S1, Sd0, Sd1, Sq, yI, rho):
+            """
+            Update equality multipliers for the ADMM iterate.
+
+            yE enforces the per-degree symmetry/diagonal constraints.
+            yEq enforces the off-diagonal quaternion constraints.
+            """
             AIT_yI0, AIT_yI1 = fun_AIT(yI)
             z, zq = fun_AE(
                 -X0 / rho + C0 - S0 - AIT_yI0,
@@ -521,6 +587,12 @@ class CommonlineNUG(Orient3D):
             return yE, yEq
 
         def update_yI(C0, C1, X0, X1, S0, S1, yE, yEq, yI, rho, Lambda):
+            """
+            Update nonnegative multipliers for the Fejer inequality constraints.
+
+            yI corresponds to the discretized constraints fun_AI(X0, X1) >= bI,
+            one multiplier per SO(3) grid point and packed image-pair column.
+            """
             Z0, Z1, _, _, _ = fun_AET(yE, yEq)
             AIT_yI0, AIT_yI1 = fun_AIT(yI)
             tmp = fun_AI(
@@ -533,6 +605,12 @@ class CommonlineNUG(Orient3D):
         def update_X(
             C0, C1, X0, X1, Xd0, Xd1, Xq, yE, yEq, yI, S0, S1, Sd0, Sd1, Sq, rho
         ):
+            """
+            Update the primal ADMM multipliers and compute their combined residual.
+
+            Each tmp below is the current residual for one block family.
+            The multiplier is advanced by mult * rho * tmp.
+            """
             Z0, Z1, Zd0, Zd1, Zq = fun_AET(yE, yEq)
             AIT_yI0, AIT_yI1 = fun_AIT(yI)
             tmp = S0 + Z0 + AIT_yI0 - C0
@@ -560,6 +638,9 @@ class CommonlineNUG(Orient3D):
             )
 
         def update_rho(X0, X1, Xd0, Xd1, Xq, bE, bEq, bI, res_X, rho, factor, normC):
+            """
+            Update the ADMM penalty parameter rho.
+            """
             z, zq = fun_AE(X0, X1, Xd0, Xd1, Xq)
             res_eq = xp.linalg.norm(z - bE) / (1 + xp.linalg.norm(bE)) + xp.linalg.norm(
                 zq - bEq
@@ -677,6 +758,8 @@ class CommonlineNUG(Orient3D):
         yE = xp.zeros(bE.shape, dtype=np.float64)
         yEq = xp.zeros(bEq.shape, dtype=np.float64)
 
+        # Run ADMM iterations, randomly ordering the block updates before each primal
+        # multiplier update and penalty adjustment.
         IDX = np.arange(3)
         for t in range(max_iter):
             np.random.shuffle(IDX)
@@ -701,6 +784,8 @@ class CommonlineNUG(Orient3D):
                 X0, X1, Xd0, Xd1, Xq, bE, bEq, bI, res_X, rho, factor, normC
             )
 
+        # Convert the optimized packed block variables back to full degree-wise
+        # representation matrices for Euler-angle recovery.
         X_admm = self.transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
         for k in range(Lmax):
             X_admm[k] = xp.asnumpy(X_admm[k])
