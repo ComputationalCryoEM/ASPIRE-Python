@@ -108,18 +108,18 @@ def preprocessed_src(img_size, molecule, force_radial, dtype):
 
     src = RelionSource(starfile_path, dtype=dtype)
 
+    # To run radially optimized code we need
+    #  i) radial filters
+    #  ii) set radial expand mode in cov2d
+    if force_radial:
+        src.filter_stack = src.filter_stack.to_radial()
+
     # preprocess
     src = src.downsample(img_size).cache()
     src = src.phase_flip().cache()
     src = src.normalize_background().cache()
     src = src.whiten().cache()
     src = src.invert_contrast()
-
-    # To run radially optimized code we need
-    #  i) radial filters
-    #  ii) set radial expand mode in cov2d
-    if force_radial:
-        src.filter_stack = src.filter_stack.to_radial()
 
     return src
 
