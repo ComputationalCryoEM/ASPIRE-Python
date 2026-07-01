@@ -247,13 +247,15 @@ class FFBBasis2D(FBBasis2D):
         """
         See `SteerableBasis2D.filter_to_basis_mat`.
         """
-        # Note 'method' and 'truncate' not relevant for this specific FFB code.
-        # Method `radial` should have already been diverted.
+        # Note 'truncate' not relevant for this specific FFB code.
+        # `expand_method=radial` should have already been diverted
+        # by the wrapping code in `super().filter_stack_to_basis_mats`.
+        # Permits forcing 2d calc on a radial filter via `expand_method=evaluate_t`
         expand_method = kwargs.get("expand_method", None)
-        if expand_method is not None:
+        if expand_method not in [None, "evaluate_t"]:
             raise NotImplementedError(
                 f"`FFBBasis2D.filter_to_basis_mat` expand_method '{expand_method}' not supported."
-                "  Use `expand_method=None`."
+                "  Use `expand_method=` `None` or `evaluate_t`."
             )
 
         pixel_size = kwargs.get("pixel_size", None)

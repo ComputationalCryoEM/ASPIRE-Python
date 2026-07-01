@@ -493,8 +493,6 @@ class SteerableBasis2D(Basis, abc.ABC):
 
         # Does the basis provide radially  optimized expansion?
         optimized_expand = callable(getattr(self.__class__, "expand_radial_vec", None))
-        if optimized_expand:
-            logger.info(f"{self.__class__.__name__} provides `optimized_expand`")
 
         # is the filter radial?
         filter_is_radial = f.radial

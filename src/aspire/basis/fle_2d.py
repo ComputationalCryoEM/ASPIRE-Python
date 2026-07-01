@@ -799,19 +799,20 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         It is meant to be used with non radial filter inputs.
         For radial filters, an optimized code path may be available via `expand_method='radial'`.
         """
-        # Note 'expand_method' and 'truncate' not relevant for this optimized FLE code.
+        # Note 'truncate' not relevant for this optimized FLE code.
         expand_method = kwargs.get("expand_method", None)
         # This first check is to guide users to either
         #   the optimized purely radial (1d) calc,
         #   or the radially averaged (2d) calc.
         # Errors requesting a (1d) calc on a non radial filter.
         # Errors on unknown `expand_method`.
+        # Permits forcing 2d calc on a radial filter via `expand_method=evaluate_t`
         if expand_method == "radial" and not f.radial:
             raise NotImplementedError(
                 f"`FLEBasis2D.filter_to_basis_mat` expand_method '{expand_method}' not supported for non radial {f}."
                 "  Convert filter to radial for optimized radial expansion, or use `expand_method=None` for a radially averaged approximation."
             )
-        elif expand_method is not None:
+        elif expand_method not in [None, "evaluate_t"]:
             raise NotImplementedError(
                 f"`FLEBasis2D.filter_to_basis_mat` expand_method '{expand_method}' not supported."
                 "  Try `expand_method=None` or 'radial'."
@@ -844,8 +845,14 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # h_vals2d requires a large amount of memory and is too large
         # to fit on a GPU
         # In the smaller cases, the code attepts using GPU.
+        if len(f) * omega.size >= MAX_ELEM_COUNT:
+            # when too large put omega on host
+            omega = xp.asnumpy(omega)
+
         h_vals2d = h_fun(omega, pixel_size=pixel_size)
-        if len(f) * xp.size(omega) < MAX_ELEM_COUNT:
+
+        # when possible, perform sum via GPU
+        if len(f) * omega.size < MAX_ELEM_COUNT:
             h_vals2d = xp.asarray(h_vals2d)
 
         h_vals2d = h_vals2d.reshape(len(f), n_k, n_theta).astype(self.dtype, copy=False)
