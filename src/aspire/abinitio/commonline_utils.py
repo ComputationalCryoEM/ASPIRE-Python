@@ -414,13 +414,13 @@ def g_sync_finite_group(rots, rots_gt, symmetry):
     """
     Synchronize ground-truth rotations over a finite symmetry group.
 
-    This is a finite-group generalization of cyclic synchronization.  The
+    This is a finite-group generalization of cyclic synchronization. The
     pairwise matching step estimates relative symmetry elements between image
-    pairs.  The spectral synchronization step then recovers one symmetry
+    pairs. The spectral synchronization step then recovers one symmetry
     element per image that is globally consistent with those pairwise estimates.
 
     Unlike the cyclic case, the relative symmetry cannot generally be encoded
-    as a scalar complex phase.  For non-commutative groups such as D_n, we instead
+    as a scalar complex phase. For non-commutative groups such as D_n, we instead
     represent each group element by its left-regular permutation matrix.
 
     :param rots: Estimated rotation matrices
@@ -467,7 +467,7 @@ def g_sync_finite_group(rots, rots_gt, symmetry):
     #     reps[a] @ e_b = e_{a b}
     #
     # This lets us store arbitrary finite-group relative elements in a block
-    # synchronization matrix.  This is the key generalization beyond cyclic
+    # synchronization matrix. This is the key generalization beyond cyclic
     # scalar phases in g_sync_cyclic.
     reps = np.zeros((n_group, n_group, n_group), dtype=float)
 
