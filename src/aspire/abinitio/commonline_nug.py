@@ -1032,12 +1032,18 @@ class CommonlineNUG(Orient3D):
         C = self.C
 
         def Ak(J, Euler):
-            # compute Ak matrix
+            """
+            Average the degree-J representation over the symmetry
+            group to form the symmetry projector Ak.
+            """
             order = Euler.shape[0]
             A = self.WD(J, Euler).sum(axis=0)
             return np.round(A / order, 10)
 
         def rel_change(A, B, eps=1e-12):
+            """
+            Measure relative change across all degree-wise relaxed matrices.
+            """
             num = 0.0
             den = 0.0
             for k in range(len(A)):
@@ -1045,7 +1051,12 @@ class CommonlineNUG(Orient3D):
                 den += np.linalg.norm(B[k]) ** 2
             return np.sqrt(num) / max(np.sqrt(den), eps)
 
+        # The symmetry projector ranks give the expected low-rank structure
+        # for each degree of a valid orbit solution.
         rank_Ak = np.zeros(self.Lmax, dtype=np.float64)
+
+        # Keep an unmodified copy of the original objective coefficients; each
+        # refinement step adds a temporary proximal term to these.
         C_base = [None] * self.Lmax
         for k in range(self.Lmax):
             C_base[k] = xp.asnumpy(C[k]).copy()
@@ -1054,6 +1065,9 @@ class CommonlineNUG(Orient3D):
             )
 
         def low_rank_proj(X, r_step):
+            """
+            Project diagonal image blocks toward the rank expected from symmetry.
+            """
             Xproj = []
             for k in range(self.Lmax):
                 dk = 2 * k + 3
@@ -1069,9 +1083,12 @@ class CommonlineNUG(Orient3D):
                 Xproj.append(tmp)
             return Xproj
 
+        # CC stores the modified objective coefficients for the next proximal ADMM solve.
         CC = [None] * self.Lmax
         current = [np.copy(Xk) for Xk in X_admm]
 
+        # Proximal refinement step.
+        # Repeatedly bias the SDP objective toward the low-rank projection and resolve.
         for step in range(self.pr_iters):
             X_proj = low_rank_proj(current, r[step])
 
@@ -1091,6 +1108,7 @@ class CommonlineNUG(Orient3D):
                     rel_change(X_next, current),
                 )
 
+            # Use the refined SDP solution as the starting point for the next projection step
             current = [np.copy(Xk) for Xk in X_next]
 
         return current
