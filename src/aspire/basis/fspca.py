@@ -30,7 +30,13 @@ class FSPCABasis(SteerableBasis2D):
     """
 
     def __init__(
-        self, src, basis=None, noise_var=None, components=None, batch_size=512
+        self,
+        src,
+        basis=None,
+        noise_var=None,
+        components=None,
+        filter_expand_method=None,
+        batch_size=512,
     ):
         """
 
@@ -42,12 +48,18 @@ class FSPCABasis(SteerableBasis2D):
         :param noise_var: Optionally assign noise variance.
             Default value of `None` will estimate noise with WhiteNoiseEstimator.
             Use 0 when using clean images so cov2d skips applying noisy covar coefs..
+        :param filter_expand_method: Passed to
+            `basis.filter_stack_to_basis_mats` via BatchedRotCov2D.
+            Examples include `evaluate_t`, `radial`, or the default
+            `None` which will attempt to automatically choose. See
+            `filter_stack_to_basis_mats`.
         :param batch_size: Batch size for computing basis coefficients.
             `batch_size` is also passed to BatchedRotCov2D.
         """
 
         self.src = src
         self.batch_size = batch_size
+        self.filter_expand_method = filter_expand_method
 
         # Automatically generate basis if needed.
         if basis is None:
@@ -150,7 +162,10 @@ class FSPCABasis(SteerableBasis2D):
         from aspire.covariance import BatchedRotCov2D
 
         cov2d = BatchedRotCov2D(
-            src=self.src, basis=self.basis, batch_size=self.batch_size
+            src=self.src,
+            basis=self.basis,
+            expand_method=self.filter_expand_method,
+            batch_size=self.batch_size,
         )
         covar_opt = {
             "shrinker": "frobenius_norm",
