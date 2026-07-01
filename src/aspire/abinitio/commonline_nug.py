@@ -45,7 +45,7 @@ class CommonlineNUG(Orient3D):
         Initialize the symmetric NUG orientation estimator. All default values match those used
         for publication results, with exception of `pr_iters`, which controls how many iterations
         of proximal refinement to be used. The default of None runs the algorithm without proximal
-        refinement. Set to `pr_iters` to 4 to match the proximal refinement workflow in the related
+        refinement. Set `pr_iters=4` to match t3he proximal refinement workflow in the related
         publication.
 
         :param src: Source containing the input projection images.
@@ -57,7 +57,7 @@ class CommonlineNUG(Orient3D):
             value must be even. Default is 360.
         :param max_shift: Determines maximum range for shifts for common-line detection
             as a proportion of the resolution. Default is 0.15.
-        :param shift_step:Resolution of shift estimation common-line detection in pixels.
+        :param shift_step: Resolution of shift estimation common-line detection in pixels.
             Default is 1 pixel.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
@@ -164,7 +164,7 @@ class CommonlineNUG(Orient3D):
         """
         Compute the truncated Fourier coefficient matrices of the pairwise common-line losses.
         """
-        # compute the coefficient matrix
+        # Build degree-wise coefficient matrices C[k] for the linear SDP objective.
         N = self.n_img
         n_theta = self.n_theta
         Lmax = self.Lmax
@@ -199,10 +199,12 @@ class CommonlineNUG(Orient3D):
             norms = np.linalg.norm(Si[None] - Sj_shifted, 1, axis=1)
             return norms.min()
 
+        # Quadrature grid used to sample the pairwise loss over SO(3) Euler angles.
         alpha_grid = np.arange(2 * T, dtype=np.float64) * np.pi / T
         beta_grid = (2 * np.arange(2 * T, dtype=np.float64) + 1) * np.pi / 4 / T
         gamma_grid = np.arange(2 * T, dtype=np.float64) * np.pi / T
 
+        # Beta quadrature weights for the truncated Wigner-D Fourier expansion.
         bT = np.zeros(2 * T, dtype=np.float64)
         for n in range(2 * T):
             ss = 0
@@ -210,12 +212,16 @@ class CommonlineNUG(Orient3D):
                 ss = ss + np.sin(beta_grid[n] * (2 * m + 1)) / (2 * m + 1)
             bT[n] = 2 / T * np.sin(beta_grid[n]) * ss
 
+        # Precompute degree-wise beta/Wigner weight matrices used in each coefficient transform.
         BTK = []
         for k in range(1, Lmax + 1):
             btk = np.sum(bT[:, None, None] * self.Wd(k, beta_grid), axis=0)
             BTK.append(btk.T)
 
         def fijhat_k(k, F):
+            """
+            Approximate the degree-k Fourier coefficient block of a sampled pairwise loss.
+            """
             dk = 2 * k + 1
 
             exp_alpha_grid = np.zeros((2 * T, dk), dtype=complex_type(np.float64))
@@ -230,10 +236,14 @@ class CommonlineNUG(Orient3D):
             fhat = BTK[k - 1] * S / 4 / T**2
             return fhat
 
+        # Allocate one coefficient matrix per Wigner degree;
+        # each is block-indexed by image pair.
         C = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
             C.append(np.zeros((N * dk, N * dk), dtype=complex_type(np.float64)))
+
+        # Compute off-diagonal image-pair losses and insert their degree-wise coefficients.
         for i in range(N):
             for j in range(i + 1, N):
                 Fij = np.zeros((2 * T, 2 * T), dtype=np.float64)
@@ -245,9 +255,12 @@ class CommonlineNUG(Orient3D):
                     C[k - 1][j * dk : (j + 1) * dk, i * dk : (i + 1) * dk] = fijhat_k(
                         k, Fij
                     )  # *dk
+
+        # Fill the conjugate transpose blocks so each coefficient matrix is Hermitian.
         for k in range(1, Lmax + 1):
             C[k - 1] = C[k - 1] + C[k - 1].conj().T
 
+        # Diagonal blocks encode self-pair losses and are handled separately.
         for i in range(N):
             Fii = np.zeros((2 * T, 2 * T), dtype=np.float64)
             for j1 in range(2 * T):
@@ -259,6 +272,7 @@ class CommonlineNUG(Orient3D):
                     k, Fii
                 )  # *dk
 
+        # Convert complex Wigner coefficients to the real representation basis used by ADMM.
         for k in range(1, Lmax + 1):
             [T, Tinv] = self.complex2real(k)
             C[k - 1] = np.real(
@@ -1641,7 +1655,8 @@ class CommonlineNUG(Orient3D):
         # First 16 rows: identity constraints on first 16 variables
         AEq[:16, :16] = np.eye(16, dtype=np.float64)
 
-        # Extra columns 16:21
+        # Columns 16:21 map the low-degree X0/X1 entries into the quaternion
+        # convex-hull constraint Xq = I/4 - linear(X^(1)).
         extra = 0.25 * np.array(
             [
                 [-1, 1, 0, 0, 1],
