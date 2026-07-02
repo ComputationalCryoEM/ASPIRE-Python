@@ -509,21 +509,22 @@ class BatchedRotCov2D(RotCov2D):
         T. Bhamre, T. Zhang, and A. Singer, "Denoising and covariance estimation
         of single particle cryo-EM images", J. Struct. Biol. 195, 27-81 (2016).
         DOI: 10.1016/j.jsb.2016.04.013
-
-    :param src: The `ImageSource` object from which the sample images are to
-        be extracted.
-    :param basis: The `FBBasis2D` object used to decompose the images. By
-        default, this is set to `FFBBasis2D((src.L, src.L))`.
-    :param batch_size: The number of images to process at a time (default 512).
-        512 is a good starting point for large images with a GPU where
-        memory is a concern.  If the GPU runs out of memory, try
-        scaling down `batch_size`.  For hi-memory CPU applications,
-        scaling up to a larger value such as 8192 may yield better performance.
     """
 
-    def __init__(
-        self, src, basis=None, expand_method=None, force_diag=False, batch_size=512
-    ):
+    def __init__(self, src, basis=None, expand_method=None, batch_size=512):
+        """
+        Initialize from `src` with optional configuration for `basis` and filter expansion.
+
+        :param src: The `ImageSource` object from which the sample images are to
+            be extracted.
+        :param basis: The `FBBasis2D` object used to decompose the images. By
+            default, this is set to `FFBBasis2D((src.L, src.L))`.
+        :param batch_size: The number of images to process at a time (default 512).
+            512 is a good starting point for large images with a GPU where
+            memory is a concern.  If the GPU runs out of memory, try
+            scaling down `batch_size`.  For hi-memory CPU applications,
+            scaling up to a larger value such as 8192 may yield better performance.
+        """
         self.src = src
         self.basis = basis
         self.batch_size = batch_size
@@ -549,7 +550,12 @@ class BatchedRotCov2D(RotCov2D):
             expand_method = "radial"
 
         self.expand_method = expand_method
-        self.force_diag = force_diag
+        # Developer note,
+        #   _force_diag is passed to `basis.filter_stack_to_basis_mats`
+        #   It may useful for diagnostic/debug purposes to force running code branches
+        #   under different conditions but isn't mathematically correct
+        #   and not exposed for regular users.
+        self._force_diag = False
 
         self._build()
 
@@ -580,6 +586,7 @@ class BatchedRotCov2D(RotCov2D):
             self.src.filter_stack,
             pixel_size=self.src.pixel_size,
             expand_method=self.expand_method,
+            force_diag=self._force_diag,
         )
 
     def _calc_rhs(self):
