@@ -381,6 +381,9 @@ class FFBBasis2D(FBBasis2D):
                     if ell > 0:
                         ind_ell += 1
         if force_diag:
+            logger.warning(
+                "Forcing block diagonal to diagonal. Zeroing all off diagonal values."
+            )
             h_basis = [h.diag() for h in h_basis]
 
         return h_basis
