@@ -887,9 +887,6 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
 
         coefs = self._radial_convolve_weights(radial_vec)
 
-        # Convert to internal FLE indices ordering
-        coefs = coefs[..., self._fb_to_fle_indices]
-
         coefs = xp.asnumpy(coefs)
 
         if len(coefs) > 1:
