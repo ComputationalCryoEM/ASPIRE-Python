@@ -259,14 +259,19 @@ class Orient3D:
 
         n_theta_half = self.n_theta // 2
         n_img = self.n_img
-
-        # `estimate_shifts()` requires that rotations have already been estimated.
-        rotations = Rotation(self.rotations)
-
         pf = self.pf.copy()
 
-        # Estimate number of equations that will be used to calculate the shifts
-        n_equations = self._estimate_num_shift_equations(n_img)
+        # `estimate_shifts()` requires that rotations have already been estimated.
+        rotations = self.rotations
+
+        # Apply symmetry group to rotations
+        sym_rots = self.src.symmetry_group.matrices.astype(self.dtype, copy=False)
+        n_sym = len(sym_rots)
+
+        # Estimate number of equations that will be used to calculate the shifts,
+        # taking into account particle symmetry.
+        n_pair_equations = self._estimate_num_shift_equations(n_img)
+        n_equations = n_pair_equations * n_sym
 
         # Allocate local variables for estimating 2D shifts based on the estimated number
         # of equations. The shift equations are represented using a sparse matrix,
@@ -291,85 +296,93 @@ class Orient3D:
         d_theta = np.pi / n_theta_half
 
         # Generate two index lists for [i, j] pairs of images
-        idx_i, idx_j = self._generate_index_pairs(n_equations)
+        idx_i, idx_j = self._generate_index_pairs(n_pair_equations)
 
         # Go through all shift equations in the size of n_equations
         # Iterate over the common lines pairs and for each pair find the 1D
         # relative shift between the two Fourier lines in the pair.
-        for shift_eq_idx in range(n_equations):
-            i = idx_i[shift_eq_idx]
-            j = idx_j[shift_eq_idx]
-            # get the common line indices based on the rotations from i and j images
-            c_ij, c_ji = self._get_cl_indices(rotations, i, j, n_theta_half)
+        for pair_eq_idx in range(n_pair_equations):
+            i = idx_i[pair_eq_idx]
+            j = idx_j[pair_eq_idx]
 
-            # Extract the Fourier rays that correspond to the common line
-            pf_i = pf[i, c_ij]
+            for sym_idx, g in enumerate(sym_rots):
+                shift_eq_idx = pair_eq_idx + sym_idx * n_pair_equations
 
-            # Check whether need to flip or not Fourier ray of j image
-            # Is the common line in image j in the positive
-            # direction of the ray (is_pf_j_flipped=False) or in the
-            # negative direction (is_pf_j_flipped=True).
-            is_pf_j_flipped = c_ji >= n_theta_half
-            if not is_pf_j_flipped:
-                pf_j = pf[j, c_ji]
-            else:
-                pf_j = pf[j, c_ji - n_theta_half]
-
-            # Use ray from opposite side of origin.
-            # Correpsonds to `freqs` convention in PFT,
-            #   where the legacy code used a negated frequency grid.
-            pf_i, pf_j = np.conj(pf_i), np.conj(pf_j)
-
-            # perform bandpass filter, normalize each ray of each image,
-            pf_i = self._apply_filter_and_norm("i, i -> i", pf_i, r_max, h)
-            pf_j = self._apply_filter_and_norm("i, i -> i", pf_j, r_max, h)
-
-            # apply the shifts to images
-            pf_i_flipped = np.conj(pf_i)
-            pf_i_stack = pf_i[:, None] * shift_phases.T
-            pf_i_flipped_stack = pf_i_flipped[:, None] * shift_phases.T
-
-            c1 = 2 * np.dot(pf_i_stack.T.conj(), pf_j).real
-            c2 = 2 * np.dot(pf_i_flipped_stack.T.conj(), pf_j).real
-
-            # find the indices for the maximum values
-            # and apply corresponding shifts
-            sidx1 = np.argmax(c1)
-            sidx2 = np.argmax(c2)
-            sidx = sidx1 if c1[sidx1] > c2[sidx2] else sidx2
-            dx = -self.offsets_max_shift + sidx * self.offsets_shift_step
-
-            # angle of common ray in image i
-            shift_alpha = c_ij * d_theta
-            # Angle of common ray in image j.
-            shift_beta = c_ji * d_theta
-            # Row index to construct the sparse equations
-            shift_i[shift_eq_idx] = shift_eq_idx
-            # Columns of the shift variables that correspond to the current pair [i, j]
-            shift_j[shift_eq_idx] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
-            # Right hand side of the current equation
-            shift_b[shift_eq_idx] = dx
-
-            # Compute the coefficients of the current equation
-            if not is_pf_j_flipped:
-                shift_eq[shift_eq_idx] = np.array(
-                    [
-                        np.sin(shift_alpha),
-                        np.cos(shift_alpha),
-                        -np.sin(shift_beta),
-                        -np.cos(shift_beta),
-                    ]
+                # get the common line indices based on the rotations from i and j images
+                c_ij, c_ji = self._get_cl_indices_from_rot_pair(
+                    rotations[i],
+                    g @ rotations[j],
+                    n_theta_half,
                 )
-            else:
-                shift_beta = shift_beta - np.pi
-                shift_eq[shift_eq_idx] = np.array(
-                    [
-                        -np.sin(shift_alpha),
-                        -np.cos(shift_alpha),
-                        -np.sin(shift_beta),
-                        -np.cos(shift_beta),
-                    ]
-                )
+
+                # Extract the Fourier rays that correspond to the common line
+                pf_i = pf[i, c_ij]
+
+                # Check whether need to flip or not Fourier ray of j image
+                # Is the common line in image j in the positive
+                # direction of the ray (is_pf_j_flipped=False) or in the
+                # negative direction (is_pf_j_flipped=True).
+                is_pf_j_flipped = c_ji >= n_theta_half
+                if not is_pf_j_flipped:
+                    pf_j = pf[j, c_ji]
+                else:
+                    pf_j = pf[j, c_ji - n_theta_half]
+
+                # Use ray from opposite side of origin.
+                # Correpsonds to `freqs` convention in PFT,
+                #   where the legacy code used a negated frequency grid.
+                pf_i, pf_j = np.conj(pf_i), np.conj(pf_j)
+
+                # perform bandpass filter, normalize each ray of each image,
+                pf_i = self._apply_filter_and_norm("i, i -> i", pf_i, r_max, h)
+                pf_j = self._apply_filter_and_norm("i, i -> i", pf_j, r_max, h)
+
+                # apply the shifts to images
+                pf_i_flipped = np.conj(pf_i)
+                pf_i_stack = pf_i[:, None] * shift_phases.T
+                pf_i_flipped_stack = pf_i_flipped[:, None] * shift_phases.T
+
+                c1 = 2 * np.dot(pf_i_stack.T.conj(), pf_j).real
+                c2 = 2 * np.dot(pf_i_flipped_stack.T.conj(), pf_j).real
+
+                # find the indices for the maximum values
+                # and apply corresponding shifts
+                sidx1 = np.argmax(c1)
+                sidx2 = np.argmax(c2)
+                sidx = sidx1 if c1[sidx1] > c2[sidx2] else sidx2
+                dx = -self.offsets_max_shift + sidx * self.offsets_shift_step
+
+                # angle of common ray in image i
+                shift_alpha = c_ij * d_theta
+                # Angle of common ray in image j.
+                shift_beta = c_ji * d_theta
+                # Row index to construct the sparse equations
+                shift_i[shift_eq_idx] = shift_eq_idx
+                # Columns of the shift variables that correspond to the current pair [i, j]
+                shift_j[shift_eq_idx] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
+                # Right hand side of the current equation
+                shift_b[shift_eq_idx] = dx
+
+                # Compute the coefficients of the current equation
+                if not is_pf_j_flipped:
+                    shift_eq[shift_eq_idx] = np.array(
+                        [
+                            np.sin(shift_alpha),
+                            np.cos(shift_alpha),
+                            -np.sin(shift_beta),
+                            -np.cos(shift_beta),
+                        ]
+                    )
+                else:
+                    shift_beta = shift_beta - np.pi
+                    shift_eq[shift_eq_idx] = np.array(
+                        [
+                            -np.sin(shift_alpha),
+                            -np.cos(shift_alpha),
+                            -np.sin(shift_beta),
+                            -np.cos(shift_beta),
+                        ]
+                    )
 
         # create sparse matrix object only containing non-zero elements
         shift_equations = sparse.csr_matrix(
@@ -450,6 +463,21 @@ class Orient3D:
 
         # To match clmatrix, c_ij is always less than PI
         # and c_ji may be be larger than PI.
+        if c_ij >= n_theta:
+            c_ij -= n_theta
+            c_ji -= n_theta
+        if c_ji < 0:
+            c_ji += 2 * n_theta
+
+        return c_ij, c_ji
+
+    def _get_cl_indices_from_rot_pair(self, Ri, Rj, n_theta):
+        """
+        Get common-line indices for an explicit pair of rotation matrices.
+        """
+        rotations = Rotation(np.stack((Ri, Rj))).invert()
+        c_ij, c_ji = rotations.common_lines(0, 1, 2 * n_theta)
+
         if c_ij >= n_theta:
             c_ij -= n_theta
             c_ji -= n_theta
