@@ -51,14 +51,26 @@ def basis(request, img_size, dtype):
     return request.param(img_size, dtype=dtype)
 
 
-RADIAL = [
+RADIAL_FILTERS = [
     False,
     True,
 ]
 
 
-@pytest.fixture(params=RADIAL, ids=lambda x: f"force_radial={x}", scope="module")
-def force_radial(request):
+@pytest.fixture(
+    params=RADIAL_FILTERS, ids=lambda x: f"radial_filters={x}", scope="module"
+)
+def radial_filters(request):
+    return request.param
+
+
+EXPAND_METHODS = [None, "radial", "evaluate_t", "badinput"]
+
+
+@pytest.fixture(
+    params=EXPAND_METHODS, ids=lambda x: f"expand_method={x}", scope="module"
+)
+def expand_method(request):
     return request.param
 
 
@@ -101,7 +113,7 @@ def _raw_data_path():
 
 
 @pytest.fixture(scope="module")
-def preprocessed_src(img_size, molecule, force_radial, dtype):
+def preprocessed_src(img_size, molecule, radial_filters, dtype):
     starfile_path = os.path.join(_raw_data_path(), MOLECULES[molecule])
     if not os.path.exists(starfile_path):
         raise RuntimeError(f"Expected starfile path {starfile_path} does not exist.")
@@ -111,12 +123,12 @@ def preprocessed_src(img_size, molecule, force_radial, dtype):
     # To run radially optimized code we need
     #  i) radial filters
     #  ii) set radial expand mode in cov2d
-    if force_radial:
+    if radial_filters:
         src.filter_stack = src.filter_stack.to_radial()
 
     # preprocess
-    src = src.downsample(img_size).cache()
     src = src.phase_flip().cache()
+    src = src.downsample(img_size).cache()
     src = src.normalize_background().cache()
     src = src.whiten().cache()
     src = src.invert_contrast()
@@ -125,21 +137,24 @@ def preprocessed_src(img_size, molecule, force_radial, dtype):
 
 
 @pytest.mark.covar
-def test_covar2d(preprocessed_src, basis, force_radial):
+def test_covar2d(preprocessed_src, basis, radial_filters, expand_method):
 
     # To run radially optimized code we need
     #  i) radial filters
     #  ii) set radial expand mode in cov2d
-    expand_method = None  # default for cov2d
-    if force_radial:
-        assert (
-            preprocessed_src.filter_stack.radial
-        ), "Expected radial filters under `force_radial=True`"
-        expand_method = "radial"
 
-    cov2d = BatchedRotCov2D(preprocessed_src, basis, expand_method=expand_method)
-    # smoke test
-    _ = cov2d.get_covar()
+    def smoke_test():
+        cov2d = BatchedRotCov2D(preprocessed_src, basis, expand_method=expand_method)
+        _ = cov2d.get_covar()
+
+    if (expand_method == "radial" and not radial_filters) or (
+        expand_method == "badinput"
+    ):
+        # These cases should raise an Error
+        with pytest.raises(NotImplementedError):
+            smoke_test()
+    else:
+        smoke_test()
 
 
 def test_covar2d_sim_many_ctf():
