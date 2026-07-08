@@ -6,7 +6,7 @@ import scipy.sparse as sparse
 
 from aspire.image import Image
 from aspire.operators import PolarFT
-from aspire.utils import Rotation, fuzzy_mask
+from aspire.utils import fuzzy_mask
 from aspire.utils.random import choice
 
 from .commonline_utils import _generate_shift_phase_and_filter
