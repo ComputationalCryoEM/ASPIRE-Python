@@ -888,6 +888,12 @@ class CTFFilter(Filter):
 
         return np.all(self._ctf_params() == other._ctf_params())
 
+    def scale(self, c=1):
+        """
+        Override internal scaling for CTFFilter because they are passed pixel size explicitly.
+        """
+        return self
+
 
 class RadialCTFFilter(CTFFilter):
     def __init__(self, voltage=200, defocus=15000, Cs=2.26, alpha=0.07, B=0):
