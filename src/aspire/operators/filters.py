@@ -700,10 +700,6 @@ class CTFFilter(Filter):
         self.alpha = self._to_full(alpha)
         self.B = self._to_full(B)
 
-        # derived value
-        # todo, check/fix broadcast in voltage_to_wavelength
-        self.wavelength = np.array([voltage_to_wavelength(v) for v in self.voltage])
-
     def _to_full(self, vals):
         if len(vals) == self.n:
             return vals
@@ -721,7 +717,6 @@ class CTFFilter(Filter):
 
         return CTFFilter(
             self.voltage[items],
-            # self.wavelength[items],
             self.defocus_u[items],
             self.defocus_v[items],
             self.defocus_ang[items],
