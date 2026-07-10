@@ -69,7 +69,7 @@ class FFBBasis2D(FBBasis2D):
 
         # Generate radial filter point set for radial optimized eval
         # Weights appear a little sensitive to dtype, otherwise could use self._precomp["gl_nodes"]
-        k_vals, _ = lgwt(self.n_r, 0, 0.5, dtype=np.float64)
+        k_vals, _ = lgwt(self.n_r, 0, self.kcut, dtype=np.float64)
         self._filter_pts = np.pad(
             2 * np.pi * k_vals.reshape(1, -1), ((0, 1), (0, 0))
         ).astype(self.dtype)
@@ -272,7 +272,7 @@ class FFBBasis2D(FBBasis2D):
         radial = self._precomp["radial"]
 
         # get 2D grid in polar coordinate
-        k_vals, wts = lgwt(n_k, 0, 0.5, dtype=self.dtype)
+        k_vals, wts = lgwt(n_k, 0, self.kcut, dtype=self.dtype)
         k, theta = np.meshgrid(
             k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
         )
