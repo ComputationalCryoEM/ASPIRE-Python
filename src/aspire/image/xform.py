@@ -226,9 +226,9 @@ class Downsample(LinearXform):
             centered_fft=self.centered_fft,
         )
 
-        # pixel_size has already been adjusted in the ImageSource and passed
-        # to `im`, so we instantiate the new Image with im.pixel_size.
-        return Image(im_ds, pixel_size=im.pixel_size).stack_reshape(
+        # pixel_size needs to be maintained correctly
+        scale = im.resolution / self.resolution
+        return Image(im_ds, pixel_size=im.pixel_size * scale).stack_reshape(
             original_stack_shape
         )
 
