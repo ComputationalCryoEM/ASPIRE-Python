@@ -5,6 +5,7 @@ from unittest import TestCase
 import numpy as np
 import pytest
 
+from aspire.downloader import emdb_2660
 from aspire.operators import (
     ArrayFilter,
     CTFFilter,
@@ -19,6 +20,7 @@ from aspire.operators import (
     ScaledFilter,
     ZeroFilter,
 )
+from aspire.source import ArrayImageSource, Simulation
 from aspire.utils import utest_tolerance
 
 logger = logging.getLogger(__name__)
@@ -562,3 +564,66 @@ def test_batching_eval():
         ref_eval = filter_stack[i].evaluate_grid(L, pixel_size=px)
         # compare singleton evaluation with __getitem__ from stack
         np.testing.assert_allclose(stack_eval[i], ref_eval)
+
+def testCTFdownsample():
+    """
+    Compare CTF Phaseflip -> Downsample vs Downsample -> Phaseflip
+    """
+    n = 10  # number of filters in stack
+    K = 179  # simulation pixel downsampled
+    SEED = 707
+
+    angs = np.linspace(0, 2 * np.pi, n)
+    filter_stack = [
+        CTFFilter(defocus_u=10000, defocus_v=15000, defocus_ang=ang) for ang in angs
+    ]
+
+    vol = emdb_2660().astype(np.float64)
+    sim = Simulation(
+        n=n,
+        vols=vol,
+        offsets=0,
+        amplitudes=1,
+        unique_filters=filter_stack,
+        filter_indices=np.arange(n),
+        seed=707,
+    )
+    # Reduce possibility of simulation generation code interacting with the test.
+    src = ArrayImageSource(sim.images[:])
+    src.unique_filters = sim.unique_filters
+    src.filter_indices = sim.filter_indices
+
+    sim_pf_ds = src.phase_flip().downsample(K).images[:]
+    print("----------------------------------")
+    sim_ds_pf = src.downsample(K).phase_flip().images[:]
+    print("2----------------------------------")
+
+    np.testing.assert_allclose(sim_ds_pf, sim_pf_ds)
+
+    sim_dsc_pf = src.downsample(K).cache().phase_flip().images[:]
+    np.testing.assert_allclose(sim_dsc_pf, sim_pf_ds)
+
+
+def testdownsamplecache():
+    """
+    Compare Downsample Cache vs Downsample
+    """
+    n = 10  # number of filters in stack
+    K = 179  # simulation pixel downsampled
+    SEED = 707
+
+    vol = emdb_2660().astype(np.float64)
+    src = Simulation(
+        n=n,
+        vols=vol,
+        offsets=0,
+        amplitudes=1,
+        seed=707,
+    )
+
+    sim_ds = src.downsample(K).images[:]
+    print("----------------------------------")
+    sim_dsc = src.downsample(K).cache().images[:]
+
+    np.testing.assert_allclose(sim_dsc, sim_ds)
+
