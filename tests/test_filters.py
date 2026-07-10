@@ -594,17 +594,14 @@ def testCTFdownsample():
     src.filter_indices = sim.filter_indices
 
     sim_pf_ds = src.phase_flip().downsample(K).images[:]
-    print("----------------------------------")
     sim_ds_pf = src.downsample(K).phase_flip().images[:]
-    print("2----------------------------------")
-
     np.testing.assert_allclose(sim_ds_pf, sim_pf_ds)
 
     sim_dsc_pf = src.downsample(K).cache().phase_flip().images[:]
     np.testing.assert_allclose(sim_dsc_pf, sim_pf_ds)
 
 
-def testdownsamplecache():
+def test_downsample_cache():
     """
     Compare Downsample Cache vs Downsample
     """
@@ -622,7 +619,6 @@ def testdownsamplecache():
     )
 
     sim_ds = src.downsample(K).images[:]
-    print("----------------------------------")
     sim_dsc = src.downsample(K).cache().images[:]
 
     np.testing.assert_allclose(sim_dsc, sim_ds)
