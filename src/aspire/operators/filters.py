@@ -7,7 +7,7 @@ from scipy.interpolate import RegularGridInterpolator
 
 from aspire import config
 from aspire.numeric import xp
-from aspire.utils import cart2pol, grid_2d, trange, voltage_to_wavelength
+from aspire.utils import cart2pol, grid_2d, trange
 
 logger = logging.getLogger(__name__)
 
