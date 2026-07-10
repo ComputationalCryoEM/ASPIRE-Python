@@ -260,9 +260,6 @@ class FFBBasis2D(FBBasis2D):
 
         pixel_size = kwargs.get("pixel_size", None)
 
-        # These form a circular dependence, import locally until time to clean up.
-        from aspire.basis.basis_utils import lgwt
-
         # Get the filter's evaluate function.
         h_fun = f.evaluate
 
@@ -270,9 +267,10 @@ class FFBBasis2D(FBBasis2D):
         n_k = self.n_r
         n_theta = self.n_theta
         radial = self._precomp["radial"]
+        k_vals = self._precomp["gl_nodes"]
+        wts = self._precomp["gl_weights"]
 
         # get 2D grid in polar coordinate
-        k_vals, wts = lgwt(n_k, 0, self.kcut, dtype=self.dtype)
         k, theta = np.meshgrid(
             k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
         )
@@ -291,32 +289,7 @@ class FFBBasis2D(FBBasis2D):
         )
         h_vals = h_vals2d.sum(axis=-1) / n_theta
 
-        # Represent each 1D functions values in basis
-        h_basis = [
-            BlkDiagMatrix.empty(2 * self.ell_max + 1, dtype=self.dtype) for _ in h_vals
-        ]
-        ind_ell = 0
-        # Reshapes for broadcasting
-        k_vals = k_vals.reshape(n_k, 1)
-        wts = wts.reshape(n_k, 1)
-        h_vals = h_vals.reshape(len(f), n_k, 1)
-        for ell in range(0, self.ell_max + 1):
-            k_max = self.k_max[ell]
-            basis_vals = np.zeros((n_k, k_max), dtype=self.dtype)
-            ind_radial = np.sum(self.k_max[0:ell])
-            basis_vals[:, 0:k_max] = radial[ind_radial : ind_radial + k_max].T
-            h_basis_vals = basis_vals * h_vals
-            h_basis_ell = basis_vals.T @ (h_basis_vals * k_vals * wts)
-
-            # loop over assignment blocks.
-            for i in range(len(f)):
-                h_basis[i][ind_ell] = h_basis_ell[i]
-            ind_ell += 1
-            if ell > 0:
-                for i in range(len(f)):
-                    h_basis[i][ind_ell] = h_basis[i][ind_ell - 1]
-                ind_ell += 1
-
+        h_basis = self.expand_radial_vec(h_vals, **kwargs)
         return h_basis
 
     def filter_to_basis_mat(self, f, **kwargs):
@@ -349,7 +322,6 @@ class FFBBasis2D(FBBasis2D):
         # Set same dimensions as basis object
         n_k = self.n_r
         radial = self._precomp["radial"]
-
         k_vals = xp.asarray(self._precomp["gl_nodes"])
         wts = xp.asarray(self._precomp["gl_weights"])
 
@@ -374,12 +346,18 @@ class FFBBasis2D(FBBasis2D):
             h_basis_vals = basis_vals * radial_vec
             h_basis_ell = basis_vals.T @ (h_basis_vals * k_vals * wts)
             h_basis_ell = xp.asnumpy(h_basis_ell)
+
+            # loop over filters in `radial_vec`,
+            #   assigning current `ind_ell`.
             for _filter in range(len(radial_vec)):
                 _tmp = h_basis[_filter][ind_ell] = h_basis_ell[_filter]
                 if ell > 0:
+                    # for non-zero `elle` also assign `ind_ell+1`
                     h_basis[_filter][ind_ell + 1] = _tmp
+                # On the last filter, iterate the outer `ind_ell`
                 if _filter == len(radial_vec) - 1:
                     ind_ell += 1
+                    #   For non-zero `ell`, iterate twice.
                     if ell > 0:
                         ind_ell += 1
         if force_diag:
