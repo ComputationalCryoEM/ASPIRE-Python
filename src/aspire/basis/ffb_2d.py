@@ -271,14 +271,16 @@ class FFBBasis2D(FBBasis2D):
         wts = self._precomp["gl_weights"]
 
         # get 2D grid in polar coordinate
-        k, theta = np.meshgrid(
-            k_vals, np.arange(n_theta) * 2 * np.pi / (2 * n_theta), indexing="ij"
+        k, theta = xp.meshgrid(
+            xp.asarray(k_vals),
+            xp.arange(n_theta) * 2 * np.pi / (2 * n_theta),
+            indexing="ij",
         )
 
         # Get function values in polar 2D grid and average out angle contribution
-        omegax = k * np.cos(theta)
-        omegay = k * np.sin(theta)
-        omega = 2 * np.pi * np.vstack((omegax.flatten("C"), omegay.flatten("C")))
+        omegax = k * xp.cos(theta)
+        omegay = k * xp.sin(theta)
+        omega = 2 * np.pi * xp.vstack((omegax.flatten("C"), omegay.flatten("C")))
 
         # This should return either a single 2d array, or stack of 2d arrays
         # Reshape singleton to stack of 1.
