@@ -799,7 +799,7 @@ class ImageSource(ABC):
         for i, filter_values in enumerate(filters_values):
             idx_k = np.where(indices == i)[0]
             if len(idx_k) > 0:
-                im[idx_k] = im[idx_k].convolve(filter_values).asnumpy()
+                im[idx_k] = im[idx_k]._filter(filter_values).asnumpy()
 
         return im
 
