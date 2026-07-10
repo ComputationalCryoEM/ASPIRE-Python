@@ -880,6 +880,8 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         """
         Expands radial vector or stack of vectors `radial_vec` to basis matrix.
 
+        See `_filter_pts` for point set.
+
         :param radial_vec: Array holding radial vector,
             shaped (n_radial_pts) or (n_vectors, n_radial_pts)
         :return: List of `DiagMatrix`

@@ -331,6 +331,8 @@ class FFBBasis2D(FBBasis2D):
         """
         Expands radial vector or stack of vetors `radial_vec` to basis matrix.
 
+        See `_filter_pts` for point set.
+
         :param radial_vec: Array holding radial vector,
             shaped (n_radial_pts) or (n_vectors, n_radial_pts)
         :force_diag: Optionally flush off-diagonal elements to zero and return `DiagMatrix`
