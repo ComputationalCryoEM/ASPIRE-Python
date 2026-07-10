@@ -757,24 +757,27 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # Return as Coef on host
         return Coef(self, xp.asnumpy(coefs_conv), pixel_size=px_sz)
 
-    def _radial_convolve_weights(self, b):
+    def _radial_convolve_weights(self, b, pad=True):
         """
         Helper function for step 3 of convolving with a radial function.
 
         :param b: Radial vector or stack of radial vectors
+        :param pad: Perform padding via dct-idct, default `True`.
         """
+
         # Developer note, this is equivalent `fle2d.expand_radial_vec` up to shapes.
         # Convert vector to (1,...)
         if b.ndim == 1:
             b = b.reshape(1, *b.shape)
         b = xp.asarray(b)  # implies copy
-        if self.num_interp > self.num_radial_nodes:
+
+        if pad and self.num_interp > self.num_radial_nodes:
             b = fft.dct(b, axis=1, type=2) / (2 * self.num_radial_nodes)
             bz = xp.zeros(b.shape, dtype=self.dtype)
             b = xp.concatenate((b, bz), axis=1)
             b = fft.idct(b, axis=1, type=2) * 2 * b.shape[1]
-        a = xp.zeros((b.shape[0], self.count), dtype=self.dtype)
 
+        a = xp.zeros((b.shape[0], self.count), dtype=self.dtype)
         for i in range(self.ell_p_max + 1):
             # Wierd mul transpose forced by A3 being CSR.
             # Can't reshape A3, but can broadcast over dims of b.
@@ -859,20 +862,7 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         h_vals = h_vals2d.sum(axis=-1) / n_theta
         h_vals = xp.asarray(h_vals)  # no-op if already fit on GPU
 
-        h_basis = xp.zeros((len(f), self.count), dtype=self.dtype)
-        # shape gymnastics to get a broadcast with csr A3
-        h_vals = h_vals.T
-        for j in range(self.ell_p_max + 1):
-            h_basis[:, self.idx_list[j]] = (self.A3[j] @ h_vals).T
-
-        # Convert from internal FLE ordering to FB convention
-        h_basis = h_basis[:, self._fle_to_fb_indices]
-
-        coefs = xp.asnumpy(h_basis)
-        if len(coefs) > 1:
-            coefs = [DiagMatrix(c) for c in coefs]
-        else:
-            coefs = DiagMatrix(coefs.flatten())
+        coefs = self.expand_radial_vec(h_vals, pad=False)
 
         return coefs
 
@@ -887,9 +877,11 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         :return: List of `DiagMatrix`
         """
 
-        coefs = self._radial_convolve_weights(radial_vec)
+        coefs = self._radial_convolve_weights(radial_vec, pad=kwargs.get("pad", True))
 
         coefs = xp.asnumpy(coefs)
+
+        coefs = coefs[..., self._fle_to_fb_indices]
 
         if len(coefs) > 1:
             coefs = [DiagMatrix(c) for c in coefs]
