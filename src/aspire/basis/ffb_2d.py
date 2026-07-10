@@ -266,9 +266,7 @@ class FFBBasis2D(FBBasis2D):
         # Set same dimensions as basis object
         n_k = self.n_r
         n_theta = self.n_theta
-        radial = self._precomp["radial"]
         k_vals = self._precomp["gl_nodes"]
-        wts = self._precomp["gl_weights"]
 
         # get 2D grid in polar coordinate
         k, theta = xp.meshgrid(
