@@ -26,6 +26,7 @@ from aspire.utils import utest_tolerance
 logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
+SEED = 707
 
 
 class SimTestCase(TestCase):
@@ -575,13 +576,13 @@ def test_batching_eval():
         # compare singleton evaluation with __getitem__ from stack
         np.testing.assert_allclose(stack_eval[i], ref_eval)
 
+
 def testCTFdownsample():
     """
     Compare CTF Phaseflip -> Downsample vs Downsample -> Phaseflip
     """
     n = 10  # number of filters in stack
     K = 179  # simulation pixel downsampled
-    SEED = 707
 
     angs = np.linspace(0, 2 * np.pi, n)
     filter_stack = [
@@ -596,7 +597,7 @@ def testCTFdownsample():
         amplitudes=1,
         unique_filters=filter_stack,
         filter_indices=np.arange(n),
-        seed=707,
+        seed=SEED,
     )
     # Reduce possibility of simulation generation code interacting with the test.
     src = ArrayImageSource(sim.images[:])
@@ -617,7 +618,6 @@ def test_downsample_cache():
     """
     n = 10  # number of filters in stack
     K = 179  # simulation pixel downsampled
-    SEED = 707
 
     vol = emdb_2660().astype(np.float64)
     src = Simulation(
@@ -625,11 +625,10 @@ def test_downsample_cache():
         vols=vol,
         offsets=0,
         amplitudes=1,
-        seed=707,
+        seed=SEED,
     )
 
     sim_ds = src.downsample(K).images[:]
     sim_dsc = src.downsample(K).cache().images[:]
 
     np.testing.assert_allclose(sim_dsc, sim_ds)
-
