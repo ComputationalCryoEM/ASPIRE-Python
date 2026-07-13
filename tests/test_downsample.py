@@ -98,7 +98,9 @@ def test_downsample_2d_case(L, L_ds):
     assert checkCenterPoint(imgs_org, imgs_ds)
     # Confirm default `pixel_size`
     assert np.allclose(imgs_org.pixel_size, 1.0)
-    assert np.allclose(imgs_ds.pixel_size, imgs_org.pixel_size * (L / L_ds)), f"{imgs_ds.pixel_size}, {imgs_org.pixel_size*(L / L_ds)}"
+    assert np.allclose(
+        imgs_ds.pixel_size, imgs_org.pixel_size * (L / L_ds)
+    ), f"{imgs_ds.pixel_size}, {imgs_org.pixel_size*(L / L_ds)}"
 
 
 @pytest.mark.parametrize("L", [65, 66])
