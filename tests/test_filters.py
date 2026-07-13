@@ -146,10 +146,20 @@ class SimTestCaseCTFFilter(SimTestCase):
         result1 = filt.evaluate(self.omega, **self.filter_eval_kwargs)
         scale_value = 2.5
         filt = filt.scale(scale_value)
-        # scaling a CTFFilter scales the pixel size which cancels out
-        # a corresponding scaling in omega
-        result2 = filt.evaluate(self.omega * scale_value, **self.filter_eval_kwargs)
+        # Scaling a CTFFilter is a no op; as of v15.0 scaling controlled by the pixel size.
+        result2 = filt.evaluate(self.omega, **self.filter_eval_kwargs)
         self.assertTrue(np.allclose(result1, result2, atol=utest_tolerance(self.dtype)))
+
+        # However, we can still test scaling pixel_size against scaling omega grid
+        px_sz = self.filter_eval_kwargs["pixel_size"]
+        # Scaling a CTFFilter pixel size should match a corresponding scaling in omega.
+        result3 = filt.evaluate(
+            self.omega / scale_value, pixel_size=px_sz
+        )  # scale omega
+        result4 = filt.evaluate(
+            self.omega, pixel_size=px_sz * scale_value
+        )  # scale pixel size
+        self.assertTrue(np.allclose(result4, result3, atol=utest_tolerance(self.dtype)))
 
 
 DTYPES = [np.float32, np.float64]
