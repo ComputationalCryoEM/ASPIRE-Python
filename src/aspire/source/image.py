@@ -773,12 +773,6 @@ class ImageSource(ABC):
         :param filters: A list of `Filter` objects
         :param indices: A list of indices indicating the corresponding filter in `filters`
         """
-        if not isinstance(im_orig, Image):
-            logger.warning(
-                f"_apply_filters() passed {type(im_orig)} instead of Image instance"
-            )
-            # for now just convert it
-            im_orig = Image(im_orig, pixel_size=self.pixel_size)
 
         im = im_orig.copy()
 
