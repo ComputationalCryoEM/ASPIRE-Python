@@ -316,7 +316,6 @@ class Simulation(ImageSource):
         if not clean_images and self.noise_adder is not None:
             im = self.noise_adder.forward(im, indices=indices)
 
-        # scaling pixel_size in source, scaling filter, and scaling in IMage.downsample in conflict...
         # Finally, apply transforms to resulting Image
         return self.generation_pipeline.forward(im, indices)
 
@@ -326,9 +325,6 @@ class Simulation(ImageSource):
             self.sim_filters,
             self.filter_indices[indices],
         )
-
-        # Assign correct pixel_size
-        im.pixel_size = self.pixel_size
 
         return im
 
