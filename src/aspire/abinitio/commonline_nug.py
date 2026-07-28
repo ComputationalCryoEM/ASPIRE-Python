@@ -689,11 +689,11 @@ class CommonlineNUG(Orient3D):
                 )
 
                 z, zq = fun_AE(X0, X1, Xd0, Xd1, Xq)
-                res_eq = np.linalg.norm(z - bE) / (
-                    1 + np.linalg.norm(bE)
-                ) + np.linalg.norm(zq - bEq) / (1 + np.linalg.norm(bEq))
-                res_inq = np.linalg.norm(np.maximum(bI - fun_AI(X0, X1), 0)) / (
-                    1 + abs(bI) * np.sqrt(Ngrid * N * (N + 1) / 2)
+                res_eq = xp.linalg.norm(z - bE) / (
+                    1 + xp.linalg.norm(bE)
+                ) + xp.linalg.norm(zq - bEq) / (1 + xp.linalg.norm(bEq))
+                res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
+                    1 + abs(bI) * xp.sqrt(Ngrid * N * (N + 1) / 2)
                 )
                 res_psdX = 0
                 for k in range(1, Lmax + 1):
@@ -705,7 +705,7 @@ class CommonlineNUG(Orient3D):
                         IDX_lower,
                         idx_offdiag,
                     )
-                    res_psdX += np.linalg.norm(self.psd_projection(-tmp))
+                    res_psdX += xp.linalg.norm(self.psd_projection(-tmp))
                     tmp = self.mat_block(
                         X1[d1[k - 1] : d1[k], :],
                         N,
@@ -714,8 +714,8 @@ class CommonlineNUG(Orient3D):
                         IDX_lower,
                         idx_offdiag,
                     )
-                    res_psdX += np.linalg.norm(self.psd_projection(-tmp))
-                res_psdX = res_psdX / (1 + np.linalg.norm(X0) + np.linalg.norm(X1))
+                    res_psdX += xp.linalg.norm(self.psd_projection(-tmp))
+                res_psdX = res_psdX / (1 + xp.linalg.norm(X0) + xp.linalg.norm(X1))
                 res_psdD = 0
                 for k in range(1, Lmax + 1):
                     tmp = self.transform_back_block(
@@ -724,29 +724,29 @@ class CommonlineNUG(Orient3D):
                         k,
                         P[k - 1],
                     )
-                    res_psdD += np.linalg.norm(
+                    res_psdD += xp.linalg.norm(
                         self.psd_projection(-tmp), axis=(-2, -1)
                     ).sum()
-                res_psdD = res_psdD / (1 + np.linalg.norm(Xd0) + np.linalg.norm(Xd1))
+                res_psdD = res_psdD / (1 + xp.linalg.norm(Xd0) + xp.linalg.norm(Xd1))
                 res_psdQ = 0
                 for count in range(N * (N - 1) // 2):
                     tmp = Xq[:, count].reshape(4, 4).T
-                    res_psdQ += np.linalg.norm(self.psd_projection(-tmp))
-                res_psdQ = res_psdQ / (1 + np.linalg.norm(Xq))
+                    res_psdQ += xp.linalg.norm(self.psd_projection(-tmp))
+                res_psdQ = res_psdQ / (1 + xp.linalg.norm(Xq))
 
-                normS = np.sqrt(
-                    np.linalg.norm(S0) ** 2
-                    + np.linalg.norm(S1) ** 2
-                    + np.linalg.norm(Sd0) ** 2
-                    + np.linalg.norm(Sd1) ** 2
-                    + np.linalg.norm(Sq) ** 2
+                normS = xp.sqrt(
+                    xp.linalg.norm(S0) ** 2
+                    + xp.linalg.norm(S1) ** 2
+                    + xp.linalg.norm(Sd0) ** 2
+                    + xp.linalg.norm(Sd1) ** 2
+                    + xp.linalg.norm(Sq) ** 2
                 )
-                normX = np.sqrt(
-                    np.linalg.norm(X0) ** 2
-                    + np.linalg.norm(X1) ** 2
-                    + np.linalg.norm(Xd0) ** 2
-                    + np.linalg.norm(Xd1) ** 2
-                    + np.linalg.norm(Xq) ** 2
+                normX = xp.sqrt(
+                    xp.linalg.norm(X0) ** 2
+                    + xp.linalg.norm(X1) ** 2
+                    + xp.linalg.norm(Xd0) ** 2
+                    + xp.linalg.norm(Xd1) ** 2
+                    + xp.linalg.norm(Xq) ** 2
                 )
                 p_res = res_eq + res_inq + res_psdX + res_psdD + res_psdQ
                 d_res = res_X / (1 + normC)
@@ -764,13 +764,13 @@ class CommonlineNUG(Orient3D):
                     + ", |X|=%1.2f" % normX
                 )
 
-        Xd0 = xp.zeros((D0, N), dtype=np.float64)
-        Xd1 = xp.zeros((D1, N), dtype=np.float64)
-        Sd0 = xp.zeros(Xd0.shape, dtype=np.float64)
-        Sd1 = xp.zeros(Xd1.shape, dtype=np.float64)
-        yI = xp.zeros((Ngrid, N * (N + 1) // 2), dtype=np.float64)
-        yE = xp.zeros(bE.shape, dtype=np.float64)
-        yEq = xp.zeros(bEq.shape, dtype=np.float64)
+        Xd0 = xp.zeros((D0, N), dtype=xp.float64)
+        Xd1 = xp.zeros((D1, N), dtype=xp.float64)
+        Sd0 = xp.zeros(Xd0.shape, dtype=xp.float64)
+        Sd1 = xp.zeros(Xd1.shape, dtype=xp.float64)
+        yI = xp.zeros((Ngrid, N * (N + 1) // 2), dtype=xp.float64)
+        yE = xp.zeros(bE.shape, dtype=xp.float64)
+        yEq = xp.zeros(bEq.shape, dtype=xp.float64)
 
         # Run ADMM iterations, randomly ordering the block updates before each primal
         # multiplier update and penalty adjustment.
