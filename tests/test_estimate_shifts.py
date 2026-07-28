@@ -117,7 +117,7 @@ def test_estimate_shifts(estimator):
     """
     # Build the sparse common-line shift system Ax = b and solve it directly,
     # matching the solver used by estimate_shifts().
-    A, b = estimator._get_shift_equations_approx()
+    A, b = estimator._get_shift_equations()
     lsqr_result = sparse.linalg.lsqr(A, b, atol=1e-8, btol=1e-8, iter_lim=100)
     x_est = lsqr_result[0]
 
