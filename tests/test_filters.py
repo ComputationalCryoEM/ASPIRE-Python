@@ -585,9 +585,7 @@ def testCTFdownsample():
     K = 179  # simulation pixel downsampled
 
     angs = np.linspace(0, 2 * np.pi, n)
-    filter_stack = [
-        CTFFilter(defocus_u=10000, defocus_v=15000, defocus_ang=ang) for ang in angs
-    ]
+    filter_stack = CTFFilter(defocus_u=10000, defocus_v=15000, defocus_ang=angs)
 
     vol = emdb_2660().astype(np.float64)
     sim = Simulation(
@@ -595,13 +593,13 @@ def testCTFdownsample():
         vols=vol,
         offsets=0,
         amplitudes=1,
-        unique_filters=filter_stack,
+        filter_stack=filter_stack,
         filter_indices=np.arange(n),
         seed=SEED,
     )
     # Reduce possibility of simulation generation code interacting with the test.
     src = ArrayImageSource(sim.images[:])
-    src.unique_filters = sim.unique_filters
+    src.filter_stack = sim.filter_stack
     src.filter_indices = sim.filter_indices
 
     sim_pf_ds = src.phase_flip().downsample(K).images[:]
