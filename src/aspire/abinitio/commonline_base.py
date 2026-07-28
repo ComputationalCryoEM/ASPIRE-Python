@@ -6,7 +6,7 @@ import scipy.sparse as sparse
 
 from aspire.image import Image
 from aspire.operators import PolarFT
-from aspire.utils import fuzzy_mask
+from aspire.utils import Rotation, fuzzy_mask
 from aspire.utils.random import choice
 
 from .commonline_utils import _generate_shift_phase_and_filter
@@ -212,7 +212,7 @@ class Orient3D:
         """
 
         # Generate approximated shift equations from estimated rotations
-        shift_equations, shift_b = self._get_shift_equations_approx()
+        shift_equations, shift_b = self._get_shift_equations()
 
         # Solve the linear equation, optionally printing numerical debug details.
         show = False
@@ -241,6 +241,22 @@ class Orient3D:
 
         return self.rotations, self.shifts
 
+    def _get_shift_equations(self):
+        """
+        Generate shift equations from the estimated rotations.
+
+        Dispatches to the legacy asymmetric shift-equation construction for C1
+        sources, and to the symmetry-expanded construction for sources with
+        nontrivial symmetry. This keeps the C1 code path unchanged while allowing
+        symmetric molecules to contribute multiple common-line equations per image
+        pair without introducing additional shift unknowns.
+
+        :return: The sparse shift-equation matrix and right-hand side vector.
+        """
+        if str(self.src.symmetry_group) == "C1":
+            return self._get_shift_equations_approx()
+        return self._get_shift_equations_approx_symmetric()
+
     def _get_shift_equations_approx(self):
         """
         Generate approximated shift equations from estimated rotations
@@ -259,6 +275,142 @@ class Orient3D:
 
         n_theta_half = self.n_theta // 2
         n_img = self.n_img
+
+        # `estimate_shifts()` requires that rotations have already been estimated.
+        rotations = Rotation(self.rotations)
+
+        pf = self.pf.copy()
+
+        # Estimate number of equations that will be used to calculate the shifts
+        n_equations = self._estimate_num_shift_equations(n_img)
+
+        # Allocate local variables for estimating 2D shifts based on the estimated number
+        # of equations. The shift equations are represented using a sparse matrix,
+        # since each row in the system contains four non-zeros (as it involves
+        # exactly four unknowns). The variables below are used to construct
+        # this sparse system. The k'th non-zero element of the equations matrix
+        # is stored at index (shift_i(k),shift_j(k)).
+        shift_i = np.zeros((n_equations, 4), dtype=self.dtype)
+        shift_j = np.zeros((n_equations, 4), dtype=self.dtype)
+        shift_eq = np.zeros((n_equations, 4), dtype=self.dtype)
+        shift_b = np.zeros(n_equations, dtype=self.dtype)
+
+        # Prepare the shift phases to try and generate filter for common-line detection
+        # The shift phases are pre-defined in a range of max_shift that can be
+        # applied to maximize the common line calculation. The common-line filter
+        # is also applied to the radial direction for easier detection.
+        r_max = pf.shape[2]
+        _, shift_phases, h = _generate_shift_phase_and_filter(
+            r_max, self.offsets_max_shift, self.offsets_shift_step, self.dtype
+        )
+
+        d_theta = np.pi / n_theta_half
+
+        # Generate two index lists for [i, j] pairs of images
+        idx_i, idx_j = self._generate_index_pairs(n_equations)
+
+        # Go through all shift equations in the size of n_equations
+        # Iterate over the common lines pairs and for each pair find the 1D
+        # relative shift between the two Fourier lines in the pair.
+        for shift_eq_idx in range(n_equations):
+            i = idx_i[shift_eq_idx]
+            j = idx_j[shift_eq_idx]
+            # get the common line indices based on the rotations from i and j images
+            c_ij, c_ji = self._get_cl_indices(rotations, i, j, n_theta_half)
+
+            # Extract the Fourier rays that correspond to the common line
+            pf_i = pf[i, c_ij]
+
+            # Check whether need to flip or not Fourier ray of j image
+            # Is the common line in image j in the positive
+            # direction of the ray (is_pf_j_flipped=False) or in the
+            # negative direction (is_pf_j_flipped=True).
+            is_pf_j_flipped = c_ji >= n_theta_half
+            if not is_pf_j_flipped:
+                pf_j = pf[j, c_ji]
+            else:
+                pf_j = pf[j, c_ji - n_theta_half]
+
+            # Use ray from opposite side of origin.
+            # Correpsonds to `freqs` convention in PFT,
+            #   where the legacy code used a negated frequency grid.
+            pf_i, pf_j = np.conj(pf_i), np.conj(pf_j)
+
+            # perform bandpass filter, normalize each ray of each image,
+            pf_i = self._apply_filter_and_norm("i, i -> i", pf_i, r_max, h)
+            pf_j = self._apply_filter_and_norm("i, i -> i", pf_j, r_max, h)
+
+            # apply the shifts to images
+            pf_i_flipped = np.conj(pf_i)
+            pf_i_stack = pf_i[:, None] * shift_phases.T
+            pf_i_flipped_stack = pf_i_flipped[:, None] * shift_phases.T
+
+            c1 = 2 * np.dot(pf_i_stack.T.conj(), pf_j).real
+            c2 = 2 * np.dot(pf_i_flipped_stack.T.conj(), pf_j).real
+
+            # find the indices for the maximum values
+            # and apply corresponding shifts
+            sidx1 = np.argmax(c1)
+            sidx2 = np.argmax(c2)
+            sidx = sidx1 if c1[sidx1] > c2[sidx2] else sidx2
+            dx = -self.offsets_max_shift + sidx * self.offsets_shift_step
+
+            # angle of common ray in image i
+            shift_alpha = c_ij * d_theta
+            # Angle of common ray in image j.
+            shift_beta = c_ji * d_theta
+            # Row index to construct the sparse equations
+            shift_i[shift_eq_idx] = shift_eq_idx
+            # Columns of the shift variables that correspond to the current pair [i, j]
+            shift_j[shift_eq_idx] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
+            # Right hand side of the current equation
+            shift_b[shift_eq_idx] = dx
+
+            # Compute the coefficients of the current equation
+            if not is_pf_j_flipped:
+                shift_eq[shift_eq_idx] = np.array(
+                    [
+                        np.sin(shift_alpha),
+                        np.cos(shift_alpha),
+                        -np.sin(shift_beta),
+                        -np.cos(shift_beta),
+                    ]
+                )
+            else:
+                shift_beta = shift_beta - np.pi
+                shift_eq[shift_eq_idx] = np.array(
+                    [
+                        -np.sin(shift_alpha),
+                        -np.cos(shift_alpha),
+                        -np.sin(shift_beta),
+                        -np.cos(shift_beta),
+                    ]
+                )
+
+        # create sparse matrix object only containing non-zero elements
+        shift_equations = sparse.csr_matrix(
+            (shift_eq.flatten(), (shift_i.flatten(), shift_j.flatten())),
+            shape=(n_equations, 2 * n_img),
+            dtype=self.dtype,
+        )
+
+        return shift_equations, shift_b
+
+    def _get_shift_equations_approx_symmetric(self):
+        """
+        Generate symmetry-expanded approximate shift equations from estimated rotations.
+
+        For each sampled image pair, this method computes the common lines induced by
+        the first image rotation and every symmetry-transformed copy of the second
+        image rotation. Each symmetry copy contributes one shift equation involving
+        the same two 2D image-shift unknowns, adding constraints without duplicating
+        images or introducing independent shift variables for symmetry copies.
+
+        :return: The sparse shift-equation matrix and right-hand side vector.
+        """
+
+        n_theta_half = self.n_theta // 2
+        n_img = self.n_img
         pf = self.pf.copy()
 
         # `estimate_shifts()` requires that rotations have already been estimated.
@@ -270,7 +422,7 @@ class Orient3D:
         n_sym = len(sym_rots)
 
         # Estimate base image-pair equations, then expand each pair by symmetry.
-        n_pair_equations = self._estimate_num_shift_equations(n_img)
+        n_pair_equations = self._estimate_num_shift_equations(n_img, n_sym=n_sym)
         n_equations = n_pair_equations * n_sym
 
         # Allocate local variables for estimating 2D shifts based on the estimated number
@@ -387,7 +539,7 @@ class Orient3D:
 
         return shift_equations, shift_b
 
-    def _estimate_num_shift_equations(self, n_img):
+    def _estimate_num_shift_equations(self, n_img, n_sym=1):
         """
         Estimate total number of shift equations in images
 
@@ -395,7 +547,9 @@ class Orient3D:
         number of images and preselected memory factor.
 
         :param n_img:  The total number of input images
-        :return: Estimated number of shift equations
+        :param n_sym: Number of symmetry-expanded rows generated per sampled image pair.
+            Defaults to 1 for the legacy asymmetric path.
+        :return: Number of base image-pair equations to sample before any symmetry expansion.
         """
         # Number of equations that will be used to estimation the shifts
         n_equations_total = int(np.ceil(n_img * (self.n_check - 1) / 2))
@@ -404,7 +558,7 @@ class Orient3D:
         # This ignores the sparsity of the system, since backslash seems to
         # ignore it.
         memory_total = self.offsets_equations_factor * (
-            n_equations_total * 2 * n_img * self.dtype.itemsize
+            n_equations_total * n_sym * 2 * n_img * self.dtype.itemsize
         )
 
         if memory_total < (self.offsets_max_memory * 10**6):
