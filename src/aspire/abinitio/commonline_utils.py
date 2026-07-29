@@ -412,7 +412,7 @@ def g_sync_cyclic(rots, rots_gt, symmetry):
 
 def g_sync_finite_group(rots, rots_gt, symmetry):
     """
-    Synchronize ground-truth rotations over a finite symmetry group.
+    Synchronize ground truth rotations over a finite symmetry group.
 
     This is a finite-group generalization of cyclic synchronization. The
     pairwise matching step estimates relative symmetry elements between image
@@ -422,6 +422,12 @@ def g_sync_finite_group(rots, rots_gt, symmetry):
     Unlike the cyclic case, the relative symmetry cannot generally be encoded
     as a scalar complex phase. For non-commutative groups such as D_n, we instead
     represent each group element by its left-regular permutation matrix.
+
+    This follows the standard spectral group-synchronization template: build a
+    block matrix of pairwise group measurements, compute the leading group-sized
+    eigenspace, and round the recovered blocks back to group elements. See Ling,
+    "Near-Optimal Performance Bounds for Orthogonal and Permutation Group
+    Synchronization via Spectral Methods", Appl. Comput. Harmon. Anal. 2022.
 
     :param rots: Estimated rotation matrices
     :param rots_gt: Ground truth rotation matrices
