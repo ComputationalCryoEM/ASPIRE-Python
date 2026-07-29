@@ -17,9 +17,6 @@ from aspire.utils import complex_type, grid_2d
 
 logger = logging.getLogger(__name__)
 
-# Number of elements in filter_to_basis_mat before breaking into batches
-MAX_ELEM_COUNT = 2e9
-
 
 def _cleanup():
     """
@@ -848,14 +845,14 @@ class FLEBasis2D(SteerableBasis2D, FBBasisMixin):
         # h_vals2d requires a large amount of memory and is too large
         # to fit on a GPU
         # In the smaller cases, the code attepts using GPU.
-        if len(f) * omega.size >= MAX_ELEM_COUNT:
+        if len(f) * omega.size >= self.MAX_GPU_ELEM_COUNT:
             # when too large put omega on host
             omega = xp.asnumpy(omega)
 
         h_vals2d = h_fun(omega, pixel_size=pixel_size)
 
         # when possible, perform sum via GPU
-        if len(f) * omega.size < MAX_ELEM_COUNT:
+        if len(f) * omega.size < self.MAX_GPU_ELEM_COUNT:
             h_vals2d = xp.asarray(h_vals2d)
 
         h_vals2d = h_vals2d.reshape(len(f), n_k, n_theta).astype(self.dtype, copy=False)
