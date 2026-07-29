@@ -280,16 +280,28 @@ class FFBBasis2D(FBBasis2D):
         omegay = k * xp.sin(theta)
         omega = 2 * np.pi * xp.vstack((omegax.flatten("C"), omegay.flatten("C")))
 
+        # For high non-radial filter counts at higher pixel counts
+        # h_vals2d requires a large amount of memory and is too large
+        # to fit on a GPU
+        # In the smaller cases, the code attepts using GPU.
+        if len(f) * omega.size >= self.MAX_GPU_ELEM_COUNT:
+            # when too large put omega on host
+            omega = xp.asnumpy(omega)
+
         # This should return either a single 2d array, or stack of 2d arrays
-        # Reshape singleton to stack of 1.
-        h_vals2d = (
-            h_fun(omega, pixel_size=pixel_size)
-            .reshape(len(f), n_k, n_theta)
-            .astype(self.dtype)
-        )
+        # Code will reshape singleton to stack of 1 below.
+        h_vals2d = h_fun(omega, pixel_size=pixel_size)
+
+        # when possible, perform sum via GPU
+        if len(f) * omega.size < self.MAX_GPU_ELEM_COUNT:
+            h_vals2d = xp.asarray(h_vals2d)
+
+        h_vals2d = h_vals2d.reshape(len(f), n_k, n_theta).astype(self.dtype, copy=False)
         h_vals = h_vals2d.sum(axis=-1) / n_theta
+        h_vals = xp.asarray(h_vals)  # no-op if already fit on GPU
 
         h_basis = self.expand_radial_vec(h_vals, **kwargs)
+
         return h_basis
 
     def filter_to_basis_mat(self, f, **kwargs):

@@ -21,6 +21,9 @@ class SteerableBasis2D(Basis, abc.ABC):
     # Default matrix type for basis representation.
     matrix_type = BlkDiagMatrix
 
+    # Number of elements in filter_to_basis_mat before breaking into batches
+    MAX_GPU_ELEM_COUNT = 2e9
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
