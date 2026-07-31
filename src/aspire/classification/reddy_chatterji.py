@@ -39,7 +39,7 @@ def _phase_cross_correlation(img0, img1):
     maxima = np.unravel_index(
         np.argmax(np.abs(cross_correlation)), cross_correlation.shape
     )
-    midpoints = np.array([np.fix(axis_size / 2) for axis_size in shape])
+    midpoints = np.array([np.trunc(axis_size / 2) for axis_size in shape])
 
     shifts = np.array(maxima, dtype=np.float64)
     shifts[shifts > midpoints] -= np.array(shape)[shifts > midpoints]
