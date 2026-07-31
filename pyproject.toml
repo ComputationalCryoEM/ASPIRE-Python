@@ -29,7 +29,7 @@ classifiers = [
 
 dependencies = [
     "click",
-    "confuse == 2.1.0",
+    "confuse >= 2.2.1",
     "cvxpy",
     "finufft==2.5.0 ; sys_platform!='darwin' or (sys_platform=='darwin' and platform_machine!='x86_64')",
     # wheel for 2.5.0 on x86_64 not available. x86_64 macs are phasing out.
