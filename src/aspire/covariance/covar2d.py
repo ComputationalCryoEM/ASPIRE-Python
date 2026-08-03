@@ -31,6 +31,8 @@ def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
     ), "Unsupported shrink method"
 
     lambs, eig_vec = eig(make_symmat(covar))
+    lambs = np.real_if_close(lambs)
+    eig_vec = np.real_if_close(eig_vec)
 
     lambda_max = noise_var * (1 + np.sqrt(gamma)) ** 2
 
