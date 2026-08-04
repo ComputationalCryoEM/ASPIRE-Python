@@ -2,7 +2,7 @@ import logging
 from time import perf_counter
 
 import numpy as np
-from numpy.linalg import eig, inv
+from numpy.linalg import eigh, inv
 from scipy.linalg import solve, sqrtm
 
 from aspire.basis import Coef, FFBBasis2D
@@ -30,9 +30,7 @@ def shrink_covar(covar, noise_var, gamma, shrinker="frobenius_norm"):
         "soft_threshold",
     ), "Unsupported shrink method"
 
-    lambs, eig_vec = eig(make_symmat(covar))
-    lambs = np.real_if_close(lambs)
-    eig_vec = np.real_if_close(eig_vec)
+    lambs, eig_vec = eigh(make_symmat(covar))
 
     lambda_max = noise_var * (1 + np.sqrt(gamma)) ** 2
 
