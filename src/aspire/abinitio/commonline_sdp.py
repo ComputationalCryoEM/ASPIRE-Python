@@ -1,4 +1,5 @@
 import logging
+import warnings
 
 import cvxpy as cp
 import numpy as np
@@ -142,7 +143,18 @@ class CommonlineSDP(CLOrient3D):
         G = cp.Variable((n, n), symmetric=True)
         # The operator >> denotes matrix inequality.
         constraints = [G >> 0]
-        constraints += [cp.trace(A[i] @ G) == b[i] for i in range(3 * self.n_img)]
+
+        # cvxpy.trace uses uninitialized scratch array to infer shapes.
+        # This can cause a RuntimeWarning, see cvxpy issue #3235.
+        # This warnings filter can be removed once cvxpy > 1.9.2
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=r"invalid value encountered in reduce",
+                category=RuntimeWarning,
+            )
+            constraints += [cp.trace(A[i] @ G) == b[i] for i in range(3 * self.n_img)]
+
         prob = cp.Problem(cp.Minimize(cp.trace(-S @ G)), constraints)
         prob.solve()
 
