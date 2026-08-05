@@ -154,8 +154,7 @@ class CommonlineSDP(CLOrient3D):
                 category=RuntimeWarning,
             )
             constraints += [cp.trace(A[i] @ G) == b[i] for i in range(3 * self.n_img)]
-
-        prob = cp.Problem(cp.Minimize(cp.trace(-S @ G)), constraints)
+            prob = cp.Problem(cp.Minimize(cp.trace(-S @ G)), constraints)
         prob.solve()
 
         return G.value.astype(self.dtype, copy=False)
