@@ -153,9 +153,15 @@ class CommonlineSDP(CLOrient3D):
                 message=r"invalid value encountered in reduce",
                 category=RuntimeWarning,
             )
+            warnings.filterwarnings(
+                "ignore",
+                message=r"overflow encountered in reduce",
+                category=RuntimeWarning,
+            )
+
             constraints += [cp.trace(A[i] @ G) == b[i] for i in range(3 * self.n_img)]
             prob = cp.Problem(cp.Minimize(cp.trace(-S @ G)), constraints)
-        prob.solve()
+            prob.solve()
 
         return G.value.astype(self.dtype, copy=False)
 
