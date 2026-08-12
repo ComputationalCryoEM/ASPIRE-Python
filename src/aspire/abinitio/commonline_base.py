@@ -212,7 +212,7 @@ class Orient3D:
         """
 
         # Generate approximated shift equations from estimated rotations
-        shift_equations, shift_b = self._get_shift_equations_approx()
+        shift_equations, shift_b = self._get_shift_equations()
 
         # Solve the linear equation, optionally printing numerical debug details.
         show = False
@@ -240,6 +240,22 @@ class Orient3D:
         self.estimate_shifts(**kwargs)
 
         return self.rotations, self.shifts
+
+    def _get_shift_equations(self):
+        """
+        Generate shift equations from the estimated rotations.
+
+        Dispatches to the legacy asymmetric shift-equation construction for C1
+        sources, and to the symmetry-expanded construction for sources with
+        nontrivial symmetry. This keeps the C1 code path unchanged while allowing
+        symmetric molecules to contribute multiple common-line equations per image
+        pair without introducing additional shift unknowns.
+
+        :return: The sparse shift-equation matrix and right-hand side vector.
+        """
+        if str(self.src.symmetry_group) == "C1":
+            return self._get_shift_equations_approx()
+        return self._get_shift_equations_approx_symmetric()
 
     def _get_shift_equations_approx(self):
         """
@@ -380,7 +396,150 @@ class Orient3D:
 
         return shift_equations, shift_b
 
-    def _estimate_num_shift_equations(self, n_img):
+    def _get_shift_equations_approx_symmetric(self):
+        """
+        Generate symmetry-expanded approximate shift equations from estimated rotations.
+
+        For each sampled image pair, this method computes the common lines induced by
+        the first image rotation and every symmetry-transformed copy of the second
+        image rotation. Each symmetry copy contributes one shift equation involving
+        the same two 2D image-shift unknowns, adding constraints without duplicating
+        images or introducing independent shift variables for symmetry copies.
+
+        :return: The sparse shift-equation matrix and right-hand side vector.
+        """
+
+        n_theta_half = self.n_theta // 2
+        n_img = self.n_img
+        pf = self.pf.copy()
+
+        # `estimate_shifts()` requires that rotations have already been estimated.
+        rotations = self.rotations
+
+        # Apply symmetry group to rotations.
+        # Symmetry copies add more equations for the same per-image shift unknowns.
+        sym_rots = self.src.symmetry_group.matrices.astype(self.dtype, copy=False)
+        n_sym = len(sym_rots)
+
+        # Estimate base image-pair equations, then expand each pair by symmetry.
+        n_pair_equations = self._estimate_num_shift_equations(n_img, n_sym=n_sym)
+        n_equations = n_pair_equations * n_sym
+
+        # Allocate local variables for estimating 2D shifts based on the estimated number
+        # of equations. The shift equations are represented using a sparse matrix,
+        # since each row in the system contains four non-zeros (as it involves
+        # exactly four unknowns). The variables below are used to construct
+        # this sparse system. The k'th non-zero element of the equations matrix
+        # is stored at index (shift_i(k),shift_j(k)).
+        shift_i = np.zeros((n_equations, 4), dtype=self.dtype)
+        shift_j = np.zeros((n_equations, 4), dtype=self.dtype)
+        shift_eq = np.zeros((n_equations, 4), dtype=self.dtype)
+        shift_b = np.zeros(n_equations, dtype=self.dtype)
+
+        # Prepare the shift phases to try and generate filter for common-line detection
+        # The shift phases are pre-defined in a range of max_shift that can be
+        # applied to maximize the common line calculation. The common-line filter
+        # is also applied to the radial direction for easier detection.
+        r_max = pf.shape[2]
+        _, shift_phases, h = _generate_shift_phase_and_filter(
+            r_max, self.offsets_max_shift, self.offsets_shift_step, self.dtype
+        )
+
+        d_theta = np.pi / n_theta_half
+
+        # Generate base [i, j] image pairs before symmetry expansion.
+        idx_i, idx_j = self._generate_index_pairs(n_pair_equations)
+
+        # Filter, normalize, and conjugate all rays once instead of once per equation.
+        # Conjugation uses ray from opposite side of origin.
+        # Correpsonds to `freqs` convention in PFT,
+        #   where the legacy code used a negated frequency grid.
+        pf = np.conj(self._apply_filter_and_norm("ijk, k -> ijk", pf, r_max, h))
+
+        # Iterate over image pairs; each iteration fills one block of n_sym
+        # symmetry-induced common-line shift equations.
+        for pair_eq_idx in range(n_pair_equations):
+            i = idx_i[pair_eq_idx]
+            j = idx_j[pair_eq_idx]
+            rows = pair_eq_idx + np.arange(n_sym) * n_pair_equations
+
+            # Common lines for Ri against all symmetry copies g @ Rj.
+            Rjs = sym_rots @ rotations[j]
+            c_ij, c_ji = self._get_cl_indices_from_rot_pairs(
+                rotations[i], Rjs, n_theta_half
+            )
+
+            # Extract the Fourier rays that correspond to the common lines
+            pf_i = pf[i, c_ij]  # shape (n_sym, n_rad)
+
+            # Track which symmetry-induced rays in image j use the opposite ray direction.
+            is_pf_j_flipped = c_ji >= n_theta_half
+            pf_j = pf[j, c_ji % n_theta_half]
+
+            # Apply candidate 1D shifts to all symmetry-induced rays for this image pair.
+            pf_i_stack = pf_i[:, :, None] * shift_phases.T[None, :, :]
+            pf_i_flipped_stack = np.conj(pf_i)[:, :, None] * shift_phases.T[None, :, :]
+
+            c1 = 2 * np.sum(pf_i_stack.conj() * pf_j[:, :, None], axis=1).real
+            c2 = 2 * np.sum(pf_i_flipped_stack.conj() * pf_j[:, :, None], axis=1).real
+
+            # Pick the best candidate shift for each symmetry-induced ray pair.
+            sidx1 = np.argmax(c1, axis=1)
+            sidx2 = np.argmax(c2, axis=1)
+
+            score1 = c1[np.arange(n_sym), sidx1]
+            score2 = c2[np.arange(n_sym), sidx2]
+            sidx = np.where(score1 > score2, sidx1, sidx2)
+            dx = -self.offsets_max_shift + sidx * self.offsets_shift_step
+
+            # Angle(s) of common ray(s) in image i
+            shift_alpha = c_ij * d_theta
+            # Angle(s) of common ray(s) in image j
+            shift_beta = c_ji * d_theta
+            # Row indices to construct the sparse equations
+            shift_i[rows] = rows[:, None]
+            # All symmetry rows for this pair use the same set of image shift unknowns.
+            shift_j[rows] = [2 * i, 2 * i + 1, 2 * j, 2 * j + 1]
+            # Right hand side of the current equation(s)
+            shift_b[rows] = dx
+
+            # Initialize shift equation block.
+            # One four-coefficient equation row per symmetry-induced common line.
+            eq = np.empty((n_sym, 4), dtype=self.dtype)
+
+            # Compute the coefficients of the current block of equations.
+            not_flipped = ~is_pf_j_flipped
+            eq[not_flipped] = np.column_stack(
+                (
+                    np.sin(shift_alpha[not_flipped]),
+                    np.cos(shift_alpha[not_flipped]),
+                    -np.sin(shift_beta[not_flipped]),
+                    -np.cos(shift_beta[not_flipped]),
+                )
+            )
+
+            beta_flipped = shift_beta[is_pf_j_flipped] - np.pi
+            eq[is_pf_j_flipped] = np.column_stack(
+                (
+                    -np.sin(shift_alpha[is_pf_j_flipped]),
+                    -np.cos(shift_alpha[is_pf_j_flipped]),
+                    -np.sin(beta_flipped),
+                    -np.cos(beta_flipped),
+                )
+            )
+
+            shift_eq[rows] = eq
+
+        # create sparse matrix object only containing non-zero elements
+        shift_equations = sparse.csr_matrix(
+            (shift_eq.flatten(), (shift_i.flatten(), shift_j.flatten())),
+            shape=(n_equations, 2 * n_img),
+            dtype=self.dtype,
+        )
+
+        return shift_equations, shift_b
+
+    def _estimate_num_shift_equations(self, n_img, n_sym=1):
         """
         Estimate total number of shift equations in images
 
@@ -388,7 +547,9 @@ class Orient3D:
         number of images and preselected memory factor.
 
         :param n_img:  The total number of input images
-        :return: Estimated number of shift equations
+        :param n_sym: Number of symmetry-expanded rows generated per sampled image pair.
+            Defaults to 1 for the legacy asymmetric path.
+        :return: Number of base image-pair equations to sample before any symmetry expansion.
         """
         # Number of equations that will be used to estimation the shifts
         n_equations_total = int(np.ceil(n_img * (self.n_check - 1) / 2))
@@ -397,7 +558,7 @@ class Orient3D:
         # This ignores the sparsity of the system, since backslash seems to
         # ignore it.
         memory_total = self.offsets_equations_factor * (
-            n_equations_total * 2 * n_img * self.dtype.itemsize
+            n_equations_total * n_sym * 2 * n_img * self.dtype.itemsize
         )
 
         if memory_total < (self.offsets_max_memory * 10**6):
@@ -455,6 +616,29 @@ class Orient3D:
             c_ji -= n_theta
         if c_ji < 0:
             c_ji += 2 * n_theta
+
+        return c_ij, c_ji
+
+    def _get_cl_indices_from_rot_pairs(self, Ri, Rjs, n_theta):
+        """
+        Get common-line indices for one rotation Ri and multiple rotations Rjs.
+        """
+        ell = 2 * n_theta
+
+        # Match _get_cl_indices, which calls
+        # Rotation(np.stack((Ri, Rj))).invert().common_lines(i, j, ...).
+        ut = np.swapaxes(Rjs, -1, -2) @ Ri
+
+        alpha_ij = np.arctan2(ut[:, 2, 0], -ut[:, 2, 1]) + np.pi
+        alpha_ji = np.arctan2(-ut[:, 0, 2], ut[:, 1, 2]) + np.pi
+
+        c_ij = np.mod(np.round(alpha_ij * ell / (2 * np.pi)), ell).astype(int)
+        c_ji = np.mod(np.round(alpha_ji * ell / (2 * np.pi)), ell).astype(int)
+
+        mask = c_ij >= n_theta
+        c_ij[mask] -= n_theta
+        c_ji[mask] -= n_theta
+        c_ji[c_ji < 0] += ell
 
         return c_ij, c_ji
 
