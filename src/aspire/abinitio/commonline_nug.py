@@ -7,7 +7,12 @@ from aspire.abinitio import Orient3D
 from aspire.numeric import xp
 from aspire.operators import PolarFT
 from aspire.utils import Rotation, cart2sph, complex_type
-from aspire.volume import CnSymmetryGroup, DnSymmetryGroup, IdentitySymmetryGroup, SymmetryGroup
+from aspire.volume import (
+    CnSymmetryGroup,
+    DnSymmetryGroup,
+    IdentitySymmetryGroup,
+    SymmetryGroup,
+)
 
 from .commonline_utils import _generate_shift_phase_and_filter, saff_kuijlaars
 
@@ -115,7 +120,9 @@ class CommonlineNUG(Orient3D):
             logger.info(f"Using provided symmetry: {symmetry}")
             self.sym_grp = SymmetryGroup.parse(symmetry)
 
-        if not isinstance(self.sym_grp, (IdentitySymmetryGroup, CnSymmetryGroup, DnSymmetryGroup)):
+        if not isinstance(
+            self.sym_grp, (IdentitySymmetryGroup, CnSymmetryGroup, DnSymmetryGroup)
+        ):
             raise ValueError(
                 f"This algorithm supports Cn, Dn, and asymmetric molecules. Found {str(self.sym_grp)}."
             )
@@ -441,9 +448,7 @@ class CommonlineNUG(Orient3D):
             The plain formulation does not apply these inequalities to the fixed
             diagonal representation blocks.
             """
-            tmp = xp.concatenate(
-                (X0[:, idx_offdiag], X1[:, idx_offdiag]), axis=0
-            )
+            tmp = xp.concatenate((X0[:, idx_offdiag], X1[:, idx_offdiag]), axis=0)
             return AI_mat_offdiag @ tmp
 
         def fun_AIT(yI):
@@ -582,9 +587,9 @@ class CommonlineNUG(Orient3D):
                 + xp.linalg.norm(bE1 - z1) / (1 + xp.linalg.norm(bE1))
                 + xp.linalg.norm(bEq - zq) / (1 + xp.linalg.norm(bEq))
             )
-            res_inq = xp.linalg.norm(
-                xp.maximum(bI - fun_AI(X0, X1), 0)
-            ) / (1 + abs(bI) * xp.sqrt(Ngrid * n_pairs))
+            res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
+                1 + abs(bI) * xp.sqrt(Ngrid * n_pairs)
+            )
 
             p_resnorm = res_eq + res_inq
             d_resnorm = res_X / (1 + normC)
@@ -620,9 +625,9 @@ class CommonlineNUG(Orient3D):
                 + xp.linalg.norm(bE1 - z1) / (1 + xp.linalg.norm(bE1))
                 + xp.linalg.norm(bEq - zq) / (1 + xp.linalg.norm(bEq))
             )
-            res_inq = xp.linalg.norm(
-                xp.maximum(bI - fun_AI(X0, X1), 0)
-            ) / (1 + abs(bI) * xp.sqrt(Ngrid * n_pairs))
+            res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
+                1 + abs(bI) * xp.sqrt(Ngrid * n_pairs)
+            )
 
             res_psdX = 0
             for k in range(1, Lmax + 1):
@@ -688,16 +693,12 @@ class CommonlineNUG(Orient3D):
 
         IDX = np.arange(3)
         for t in range(max_iter):
-            #np.random.shuffle(IDX)
+            # np.random.shuffle(IDX)
             for idx in IDX:
                 if idx == 0:
-                    S0, S1, Sq = update_S(
-                        C0, C1, yE0, yE1, yEq, yI, X0, X1, Xq, rho
-                    )
+                    S0, S1, Sq = update_S(C0, C1, yE0, yE1, yEq, yI, X0, X1, Xq, rho)
                 elif idx == 1:
-                    yE0, yE1, yEq = update_yE(
-                        C0, C1, S0, S1, Sq, yI, X0, X1, Xq, rho
-                    )
+                    yE0, yE1, yEq = update_yE(C0, C1, S0, S1, Sq, yI, X0, X1, Xq, rho)
                 else:
                     for _ in range(Nstep_yI):
                         yI = update_yI(
@@ -722,9 +723,7 @@ class CommonlineNUG(Orient3D):
                 print_updates(verbose)
             rho, p_resnorm, d_resnorm = update_rho(X0, X1, Xq, res_X, rho)
 
-        X_admm = self.transform_coeff_back(
-            X0, X1, IDX_upper, IDX_lower, idx_offdiag
-        )
+        X_admm = self.transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
         for k in range(Lmax):
             X_admm[k] = xp.asnumpy(X_admm[k])
         return X_admm
@@ -1517,13 +1516,61 @@ class CommonlineNUG(Orient3D):
         Recover rotations and Euler angles using the estimator for the configured symmetry group.
         """
         X_est = self.X_est
-        if isinstance(self.sym_grp, CnSymmetryGroup):
+        if isinstance(self.sym_grp, IdentitySymmetryGroup):
+            R_est, Euler_est = self.euler_est_C1(X_est[0])
+        elif isinstance(self.sym_grp, CnSymmetryGroup):
             R_est, Euler_est = self.euler_est_Cm(X_est[0], X_est[self.n_sym - 1])
         elif isinstance(self.sym_grp, DnSymmetryGroup):
             R_est, Euler_est = self.euler_est_Dm(X_est)
 
         self.Euler_est = Euler_est
         self.rotations = R_est.astype(self.dtype)
+
+    def euler_est_C1(self, X1):
+        """
+        Recover Euler angles for asymmetric molecules.
+
+        :param X1: Relaxed degree-one representation matrix.
+
+        :return: Estimated rotation matrices and Euler angles.
+        """
+        clmatrix = self.build_commonline_matrix_from_X1(X1)
+
+    def build_commonline_matrix_from_X1(self, X1):
+        clmatrix = -np.ones((self.n_img, self.n_img), dtype=self.dtype)
+
+        [T, Tinv] = self.complex2real(1)
+
+        for i in range(1, self.n_img):
+            for j in range(i):
+                Rij = X1[
+                    3 * i : 3 * (i + 1),
+                    3 * j : 3 * (j + 1),
+                ]
+
+                Wij = T @ Rij @ Tinv
+
+                gamma_ij = (np.angle(Wij[0, 2]) + np.angle(Wij[2, 2])) / 2
+
+                alpha_ij = (np.angle(Wij[2, 0]) + np.angle(Wij[2, 2])) / 2
+
+                theta_i = -alpha_ij - np.pi / 2
+                theta_j = gamma_ij - np.pi / 2
+
+                idx_i = self.n_theta * theta_i / (2 * np.pi)
+                idx_j = self.n_theta * theta_j / (2 * np.pi)
+
+                clmatrix[i, j] = np.round(idx_i) % self.n_theta
+                clmatrix[j, i] = np.round(idx_j) % self.n_theta
+
+                half = self.n_theta // 2
+
+                if clmatrix[j, i] >= half:
+                    clmatrix[j, i] -= half
+                    clmatrix[i, j] += half
+                    clmatrix[i, j] %= self.n_theta
+
+        return clmatrix
 
     def euler_est_Cm(self, X1, XS):
         """
