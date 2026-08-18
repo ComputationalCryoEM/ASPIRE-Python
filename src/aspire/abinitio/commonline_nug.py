@@ -1541,8 +1541,8 @@ class CommonlineNUG(Orient3D):
 
         [T, Tinv] = self.complex2real(1)
 
-        for i in range(1, self.n_img):
-            for j in range(i):
+        for i in range(self.n_img - 1):
+            for j in range(i + 1, self.n_img):
                 Rij = X1[
                     3 * i : 3 * (i + 1),
                     3 * j : 3 * (j + 1),
@@ -1565,10 +1565,10 @@ class CommonlineNUG(Orient3D):
 
                 half = self.n_theta // 2
 
-                if clmatrix[j, i] >= half:
-                    clmatrix[j, i] -= half
-                    clmatrix[i, j] += half
-                    clmatrix[i, j] %= self.n_theta
+                if clmatrix[i, j] >= half:
+                    clmatrix[i, j] -= half
+                    clmatrix[j, i] += half
+                    clmatrix[j, i] %= self.n_theta
 
         return clmatrix
 
