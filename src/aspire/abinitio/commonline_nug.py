@@ -1536,6 +1536,8 @@ class CommonlineNUG(Orient3D):
         """
         clmatrix = self.build_commonline_matrix_from_X1(X1)
 
+        return clmatrix
+
     def build_commonline_matrix_from_X1(self, X1):
         clmatrix = -np.ones((self.n_img, self.n_img), dtype=self.dtype)
 
