@@ -59,6 +59,49 @@ def _syncmatrix_ij_vote_3n(
     return rot
 
 
+def _rotratio_eulerangle(clmatrix, n_theta):
+    """
+    Given a 3x3 common lines matrix, where the index of each common line is
+    between 1 and n_theta, compute the rotation that takes image 1 to image 2.
+
+    :param clmatrix: A 3-by-3 common lines matrix.
+    :param n_theta: Number of angular samples used to discretize the common
+        lines.
+    :return: A 3-by-3 rotation matrix taking the first image to the second,
+        or ``None`` if the common lines form a degenerate triangle.
+    """
+
+    # Prepare the theta values from the differences of common-line indices.
+    #
+    # These correspond to idx3, idx2, and idx1, respectively, in the
+    # original MATLAB implementation.
+    cl_diff1 = np.asarray([clmatrix[0, 2] - clmatrix[0, 1]])
+    cl_diff2 = np.asarray([clmatrix[1, 2] - clmatrix[1, 0]])
+    cl_diff3 = np.asarray([clmatrix[2, 1] - clmatrix[2, 0]])
+
+    # Calculate the cos values of rotation angles between the two images.
+    c_alpha, _ = _get_cos_phis(
+        cl_diff1,
+        cl_diff2,
+        cl_diff3,
+        n_theta,
+        sync=False,
+    )
+
+    if len(c_alpha) == 0:
+        return None
+
+    alpha = np.arccos(c_alpha[0])
+
+    # Convert the Euler angles with ZYZ conversion to rotation matrices
+    angles = np.zeros(3)
+    angles[0] = clmatrix[0, 1] * 2 * np.pi / n_theta + np.pi / 2
+    angles[1] = alpha
+    angles[2] = -np.pi / 2 - clmatrix[1, 0] * 2 * np.pi / n_theta
+
+    return Rotation.from_euler(angles).matrices
+
+
 def _rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta):
     """
     Compute the rotation that takes image i to image j
