@@ -183,7 +183,9 @@ def test_unspupported_symmetry_raises(dtype):
     vol = TSymmetricVolume(L=16, C=1, K=10, dtype=dtype).generate()
     src = Simulation(n=3, vols=vol)
 
-    with pytest.raises(ValueError, match="supports cyclic or dihedral symmetry"):
+    with pytest.raises(
+        ValueError, match="supports cyclic, dihedral, and asymmetric molecules"
+    ):
         _ = CommonlineNUG(src)
 
 
