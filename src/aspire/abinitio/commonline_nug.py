@@ -124,7 +124,7 @@ class CommonlineNUG(Orient3D):
             self.sym_grp, (IdentitySymmetryGroup, CnSymmetryGroup, DnSymmetryGroup)
         ):
             raise ValueError(
-                f"This algorithm supports Cn, Dn, and asymmetric molecules. Found {str(self.sym_grp)}."
+                f"This algorithm supports cyclic, dihedral, and asymmetric molecules. Found {str(self.sym_grp)}."
             )
 
         self.sym_euler = self.sym_grp.rotations.angles
