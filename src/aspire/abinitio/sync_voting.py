@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from aspire.utils import Rotation
+from aspire.utils import J_conjugate, Rotation
 
 logger = logging.getLogger(__name__)
 
