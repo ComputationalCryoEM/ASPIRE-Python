@@ -4,6 +4,7 @@ import numpy as np
 from scipy.special import factorial
 
 from aspire.abinitio import Orient3D
+from aspire.abinitio.sync_voting import _syncmatrix, _syncrotations
 from aspire.numeric import xp
 from aspire.operators import PolarFT
 from aspire.utils import Rotation, cart2sph, complex_type
@@ -1517,13 +1518,13 @@ class CommonlineNUG(Orient3D):
         """
         X_est = self.X_est
         if isinstance(self.sym_grp, IdentitySymmetryGroup):
-            R_est, Euler_est = self.euler_est_C1(X_est[0])
+            R_est = self.euler_est_C1(X_est[0])
         elif isinstance(self.sym_grp, CnSymmetryGroup):
             R_est, Euler_est = self.euler_est_Cm(X_est[0], X_est[self.n_sym - 1])
         elif isinstance(self.sym_grp, DnSymmetryGroup):
             R_est, Euler_est = self.euler_est_Dm(X_est)
 
-        self.Euler_est = Euler_est
+        # self.Euler_est = Euler_est
         self.rotations = R_est.astype(self.dtype)
 
     def euler_est_C1(self, X1):
@@ -1534,9 +1535,63 @@ class CommonlineNUG(Orient3D):
 
         :return: Estimated rotation matrices and Euler angles.
         """
-        clmatrix = self.build_commonline_matrix_from_X1(X1)
+        ### clmatrix = self.build_commonline_matrix_from_X1(X1)
+        ### S = _syncmatrix(clmatrix, self.n_theta, self.dtype)
+        S = self.syncmatrix_from_X1(X1)
+        rots = _syncrotations(S)
+        return rots
 
-        return clmatrix
+    def syncmatrix_from_X1(self, X1):
+        """
+        Construct the synchronization matrix directly from the degree-one
+        NUG solution.
+
+        :param X1: Degree-one NUG solution of shape (3 * n_img, 3 * n_img).
+
+        :return: Synchronization matrix of shape (2 * n_img, 2 * n_img).
+        """
+        # View X1 as an n_img-by-n_img array of 3-by-3 blocks.
+        X1_blocks = X1.reshape(self.n_img, 3, self.n_img, 3)
+
+        # The NUG block decomposition gives each degree-one block X1_ij the
+        # structure
+        #
+        #     [a  0  b]
+        #     [0  c  0]
+        #     [d  0  e].
+        #
+        # The one-dimensional component occupies index 1, while the
+        # two-dimensional component used to construct the synchronization
+        # matrix occupies indices 0 and 2. Extract that 2-by-2 component from
+        # every image-pair block.
+        corner_blocks = X1_blocks[:, [0, 2], :, :]
+        corner_blocks = corner_blocks[:, :, :, [0, 2]]
+
+        # The extracted blocks use the degree-one real spherical-harmonic
+        # coordinate ordering (y, -x), while the synchronization matrix uses
+        # Cartesian ordering (x, y). If
+        #
+        #     P = [[0, 1],
+        #          [-1, 0]],
+        #
+        # maps Cartesian coordinates to the real-basis coordinates, then each
+        # block must be converted according to
+        #
+        #     S_ij = P.T @ corner_ij @ P.
+        #
+        # The assignments below apply this change of basis to every image-pair
+        # block simultaneously.
+        syncmatrix = np.empty_like(corner_blocks)
+        syncmatrix[:, 0, :, 0] = corner_blocks[:, 1, :, 1]
+        syncmatrix[:, 0, :, 1] = -corner_blocks[:, 1, :, 0]
+        syncmatrix[:, 1, :, 0] = -corner_blocks[:, 0, :, 1]
+        syncmatrix[:, 1, :, 1] = corner_blocks[:, 0, :, 0]
+
+        # Collapse the image and Cartesian-coordinate axes to obtain the
+        # conventional 2*n_img-by-2*n_img synchronization matrix.
+        syncmatrix = syncmatrix.reshape(2 * self.n_img, 2 * self.n_img)
+
+        return syncmatrix
 
     def build_commonline_matrix_from_X1(self, X1):
         clmatrix = -np.ones((self.n_img, self.n_img), dtype=self.dtype)
