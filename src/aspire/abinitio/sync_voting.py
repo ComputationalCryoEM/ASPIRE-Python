@@ -193,7 +193,7 @@ def _rotratio_eulerangle(clmatrix, n_theta):
     angles[1] = alpha
     angles[2] = -np.pi / 2 - clmatrix[1, 0] * 2 * np.pi / n_theta
 
-    return Rotation.from_euler(angles).matrices
+    return Rotation.from_euler(angles).matrices[0]
 
 
 def _syncmatrix(clmatrix, n_theta, dtype):
