@@ -2201,3 +2201,56 @@ class CommonlineNUG(Orient3D):
         AEq[16, [0, 5, 10, 15]] = 1
 
         return AEq
+
+    def form_ground_truth_X(self, euler_angles):
+        """
+        Construct handedness-averaged ground-truth NUG representation matrices.
+
+        This helper is intended for validating the relaxed ADMM solution when
+        ground-truth rotations are available.
+
+        :param euler_angles: Ground-truth ZYZ Euler angles of shape (n_img, 3).
+        :return: List containing one ground-truth representation matrix for
+            each degree from 1 through Lmax.
+        """
+        X_gt = []
+
+        # Internally, euler_angles correspond to R.T, so we adjust them
+        # here so X_gt corresponds to the ground truth rotations.
+        euler_angles = -euler_angles[:, ::-1]
+
+        for k in range(1, self.Lmax + 1):
+            dk = 2 * k + 1
+
+            # Evaluate the degree-k Wigner representations.
+            wigner = self.WD(k, euler_angles)
+
+            # Average the degree-k representation over the molecular symmetry
+            # group. For the asymmetric case, self.sym_euler contains only the
+            # identity and Ak is therefore the identity matrix.
+            Ak = np.mean(self.WD(k, self.sym_euler), axis=0)
+
+            # Construct the globally handedness-conjugated solution.
+            Jk = np.ones(dk)
+            Jk[k + 1 :: 2] = -1
+            Jk[k - 1 :: -2] = -1
+            Jk = np.diag(Jk)
+
+            wigner_J = Jk @ wigner @ Jk
+
+            # Convert each representation to the real basis used by ADMM.
+            _, Tinv = self.complex2real(k)
+            wigner_real = Tinv @ wigner
+            wigner_J_real = Tinv @ wigner_J
+
+            # Stack the image representations and construct their Gram matrices.
+            wigner_real = wigner_real.reshape(self.n_img * dk, dk)
+            wigner_J_real = wigner_J_real.reshape(self.n_img * dk, dk)
+
+            Xk = wigner_real @ Ak @ wigner_real.conj().T
+            XJk = wigner_J_real @ Ak @ wigner_J_real.conj().T
+
+            # Average the two globally indistinguishable handedness choices.
+            X_gt.append(np.real((Xk + XJk) / 2))
+
+        return X_gt
