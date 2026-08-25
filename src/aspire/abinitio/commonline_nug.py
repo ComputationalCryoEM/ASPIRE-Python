@@ -4,7 +4,7 @@ import numpy as np
 from scipy.special import factorial
 
 from aspire.abinitio import Orient3D
-from aspire.abinitio.sync_voting import _syncmatrix, _syncrotations
+from aspire.abinitio.sync_voting import _syncrotations
 from aspire.numeric import xp
 from aspire.operators import PolarFT
 from aspire.utils import Rotation, cart2sph, complex_type
@@ -1535,8 +1535,6 @@ class CommonlineNUG(Orient3D):
 
         :return: Estimated rotation matrices and Euler angles.
         """
-        ### clmatrix = self.build_commonline_matrix_from_X1(X1)
-        ### S = _syncmatrix(clmatrix, self.n_theta, self.dtype)
         S = self.syncmatrix_from_X1(X1)
         rots = _syncrotations(S)
         return rots
