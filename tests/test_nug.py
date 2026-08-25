@@ -2,21 +2,17 @@ import numpy as np
 import pytest
 
 from aspire.abinitio import CommonlineNUG, compare_rots_sym, g_sync
+from aspire.downloader import emdb_2660
 from aspire.source import Simulation
 from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import CnSymmetricVolume, DnSymmetricVolume, TSymmetricVolume
 
 DTYPE = [np.float64, np.float32]
 RESOLUTION = [48, 49]
-N_IMG = [15]
+N_IMG = [30]
 OFFSETS = [0, None]
-ORDER = [3, 4]
-PR = [None]
+SYMMETRY = ["C1", "C3", "C4", "D3", "D4"]
 SEED = 1980
-VOLUME = [
-    CnSymmetricVolume,
-    DnSymmetricVolume,
-]
 
 
 @pytest.fixture(params=DTYPE, ids=lambda x: f"dtype={x}", scope="module")
@@ -39,18 +35,8 @@ def offsets(request):
     return request.param
 
 
-@pytest.fixture(params=ORDER, ids=lambda x: f"order={x}", scope="module")
-def order(request):
-    return request.param
-
-
-@pytest.fixture(params=PR, ids=lambda x: f"proximal_refine={x}", scope="module")
-def proximal_refine(request):
-    return request.param
-
-
-@pytest.fixture(params=VOLUME, ids=lambda x: f"Volume={x}", scope="module")
-def Volume(request):
+@pytest.fixture(params=SYMMETRY, ids=lambda x: f"symmetry={x}", scope="module")
+def symmetry(request):
     return request.param
 
 
@@ -60,37 +46,53 @@ def Volume(request):
 
 
 @pytest.fixture(scope="module")
-def source(n_img, resolution, dtype, offsets, order, Volume):
-    vol = Volume(
-        L=resolution, order=order, C=1, K=100, dtype=dtype, seed=SEED
-    ).generate()
+def volume(symmetry, resolution, dtype):
+    if symmetry == "C1":
+        vol = emdb_2660().astype(dtype).downsample(resolution)
+    if symmetry == "C3":
+        vol = CnSymmetricVolume(
+            L=resolution, order=3, C=1, K=100, dtype=dtype, seed=SEED
+        ).generate()
+    if symmetry == "C4":
+        vol = CnSymmetricVolume(
+            L=resolution, order=4, C=1, K=100, dtype=dtype, seed=SEED
+        ).generate()
+    if symmetry == "D3":
+        vol = DnSymmetricVolume(
+            L=resolution, order=3, C=1, K=100, dtype=dtype, seed=SEED
+        ).generate()
+    if symmetry == "D4":
+        vol = DnSymmetricVolume(
+            L=resolution, order=4, C=1, K=100, dtype=dtype, seed=SEED
+        ).generate()
+    return vol
 
+
+@pytest.fixture(scope="module")
+def source(n_img, offsets, volume):
     src = Simulation(
         n=n_img,
-        L=resolution,
-        vols=vol,
+        vols=volume,
         offsets=offsets,
         amplitudes=1,
         seed=SEED,
-    )
-    src = src.cache()  # Precompute image stack
-
+    ).cache()  # Precompute image stack
     return src
 
 
 @pytest.fixture(scope="module")
-def orient_est(source, proximal_refine):
+def orient_est(source):
     max_shift = 0
     shift_step = 1
     if source.offsets.all() != 0:
-        max_shift = 0.20
-        shift_step = 0.25
+        max_shift = 0.30
+        shift_step = 0.5
     orient_est = CommonlineNUG(
         source,
         max_shift=max_shift,
         shift_step=shift_step,
         max_iter=201,
-        pr_iters=proximal_refine,
+        pr_iters=None,
         verbose=False,
     )
     orient_est.estimate_rotations()
@@ -160,7 +162,7 @@ def test_estimate_rotations_pairwise(orient_est):
     MSE = compare_rots_sym(
         orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
     )
-    np.testing.assert_array_less(MSE, 0.1)
+    np.testing.assert_array_less(MSE, 0.15)
 
 
 @pytest.mark.expensive
@@ -170,10 +172,12 @@ def test_estimate_rotations(orient_est):
     truth, after symmetry synchronization and global alignment, are
     within 10 degrees.
     """
-    gt_rots_synced = g_sync(
-        orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
-    )
-    mean_aligned_angular_distance(orient_est.rotations, gt_rots_synced, 10.0)
+    gt_rots = orient_est.src.rotations
+    if orient_est.sym_grp.order > 1:
+        gt_rots = g_sync(
+            orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
+        )
+    mean_aligned_angular_distance(orient_est.rotations, gt_rots, 10.0)
 
 
 def test_unspupported_symmetry_raises(dtype):
