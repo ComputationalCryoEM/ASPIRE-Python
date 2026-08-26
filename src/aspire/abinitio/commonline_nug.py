@@ -161,13 +161,13 @@ class CommonlineNUG(Orient3D):
 
     def estimate_rotations(self):
         """
-        Estimate rotations by computing NUG coefficients, solving the SDP relaxation, and recovering Euler angles.
+        Estimate rotations by computing NUG coefficients, solving the SDP relaxation, and recovering rotations.
 
         :return: Estimated rotation matrices.
         """
         self.compute_coeff()
         self.perform_admm()
-        self.euler_est()
+        self.recover_rotations()
         return self.rotations
 
     #######################
@@ -1514,26 +1514,28 @@ class CommonlineNUG(Orient3D):
 
         return current
 
-    #########################
-    # Euler Estimation Step #
-    #########################
+    ##########################
+    # Rotation Recovery Step #
+    ##########################
 
-    def euler_est(self):
+    def recover_rotations(self):
         """
-        Recover rotations and Euler angles using the estimator for the configured symmetry group.
+        Recover rotations from the NUG representation matrices, using synchronization-based
+        rounding for asymmetric molecules and symmetry-specific Euler estimation for cyclic and
+        dihedral molecules.
         """
         X_est = self.X_est
         if isinstance(self.sym_grp, IdentitySymmetryGroup):
-            R_est = self.euler_est_C1(X_est[0])
+            R_est = self.rounding_C1(X_est[0])
         elif isinstance(self.sym_grp, CnSymmetryGroup):
-            R_est, Euler_est = self.euler_est_Cm(X_est[0], X_est[self.n_sym - 1])
+            R_est = self.euler_est_Cm(X_est[0], X_est[self.n_sym - 1])
         elif isinstance(self.sym_grp, DnSymmetryGroup):
-            R_est, Euler_est = self.euler_est_Dm(X_est)
+            R_est = self.euler_est_Dm(X_est)
 
         # self.Euler_est = Euler_est
         self.rotations = R_est.astype(self.dtype)
 
-    def euler_est_C1(self, X1):
+    def rounding_C1(self, X1):
         """
         Recover Euler angles for asymmetric molecules.
 
@@ -1720,7 +1722,7 @@ class CommonlineNUG(Orient3D):
         Euler_est[:, 1] = find_beta(X1)
         Euler_est[:, 2] = find_gamma(XS, Euler_est[:, 1], Euler_est[:, 0])
         R_est = Rotation.from_euler(Euler_est).matrices.transpose(0, 2, 1)
-        return R_est, Euler_est
+        return R_est
 
     def euler_est_Dm(self, X_est):
         """
@@ -1874,7 +1876,7 @@ class CommonlineNUG(Orient3D):
         Euler_est[:, 2] = gamma_est
         R_est = Rotation.from_euler(Euler_est).matrices.transpose(0, 2, 1)
 
-        return R_est, Euler_est
+        return R_est
 
     ####################
     # Helper Functions #
