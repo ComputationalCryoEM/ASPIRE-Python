@@ -1606,52 +1606,92 @@ class CommonlineNUG(Orient3D):
         :param X1: Relaxed degree-one representation matrix.
         :param XS: Relaxed representation matrix at the symmetry order.
 
-        :return: Estimated rotation matrices and Euler angles.
+        :return: Estimated rotation matrices.
         """
         S = self.n_sym
         N = self.n_img
 
+        # Convert the relaxed NUG matrices from the real representation used by
+        # the SDP solver to the complex Wigner-D basis used in the recovery formulas.
         X1 = self._real_to_complex_representation(X1, degree=1)
         XS = self._real_to_complex_representation(XS, degree=S)
 
         def find_beta(X1):
             B1 = np.zeros((N, N), dtype=np.float64)
             B2 = np.zeros((N, N), dtype=np.float64)
+
+            # From equation (36) in the paper, we have
+            #
+            #   2 * abs(X1_ij[0, 0]) = sin(beta_i) * sin(beta_j)
+            #   real(X1_ij[1, 1])    = cos(beta_i) * cos(beta_j).
+            #
+            # Therefore, B1 and B2 are approximately rank-one outer-product
+            # matrices containing the sine and cosine factors, respectively.
             for i in range(N):
                 for j in range(N):
                     Xij = X1[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)]
                     B1[i, j] = abs(Xij[0, 0]) * 2
                     B2[i, j] = np.real(Xij[1, 1])
+
+            # Recover vectors approximating sin(beta_i) and cos(beta_i) from
+            # the leading eigenpairs of their rank-one Gram matrices.
             e1, v1 = np.linalg.eigh(B1)
             idx = np.argmax(e1)
             b1 = -v1[:, idx] * np.sqrt(e1[idx])
+
             e2, v2 = np.linalg.eigh(B2)
             idx = np.argmax(e2)
             b2 = v2[:, idx] * np.sqrt(e2[idx])
+
+            # Combine the synchronized sine and cosine factors to recover beta.
+            # The eigenvector sign ambiguity corresponds to the global
+            # beta <-> pi - beta ambiguity described in the paper.
             beta = np.arctan(b1 / b2) % np.pi
             return beta
 
         def find_alpha(X1):
             ZZbar = np.zeros((N, N), dtype=complex_type(np.float64))
             ZZ = np.zeros((N, N), dtype=complex_type(np.float64))
+
+            # Equation (36) also gives the pairwise phase measurements
+            #
+            #   X1_ij[0, 0] / abs(X1_ij[0, 0])
+            #       = exp(i * (alpha_i - alpha_j))
+            #
+            #  -X1_ij[0, 2] / abs(X1_ij[0, 2])
+            #       = exp(i * (alpha_i + alpha_j)).
+            #
+            # Store these as the difference-phase and sum-phase matrices.
             for i in range(N):
                 for j in range(N):
-                    z = X1[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)][0, 0]
+                    Xij = X1[
+                        3 * i : 3 * (i + 1),
+                        3 * j : 3 * (j + 1),
+                    ]
+
+                    z = Xij[0, 0]
                     ZZbar[i, j] = z / abs(z)
 
-                    z = X1[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)][0, 2]
+                    z = Xij[0, 2]
                     ZZ[i, j] = -z / abs(z)
 
+            # Angular synchronization of the difference phases recovers
+            # exp(i * alpha_i) up to a common phase.
             evals, evecs = np.linalg.eigh(ZZbar)
             idx = np.argmax(abs(evals))
             Z = evecs[:, idx] * np.sqrt(abs(evals[idx]))
 
+            # Use the sum phases to resolve the remaining common phase.
             c = self._find_phase(Z[:, None] @ Z[:, None].T, ZZ)
             Z = np.sqrt(c) * Z
             return np.angle(Z).astype(np.float64)
 
         alpha_est = find_alpha(X1)
         beta_est = find_beta(X1)
+
+        # Estimate the remaining Euler angle from the degree-S solution.
+        # The cyclic pair estimator extracts measurements of
+        # exp(i * S * (gamma_i - gamma_j)), which are then synchronized.
         gamma_est = self._estimate_gamma(
             XS,
             alpha_est,
