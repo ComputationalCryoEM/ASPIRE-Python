@@ -128,7 +128,13 @@ class CommonlineNUG(Orient3D):
                 f"This algorithm supports cyclic, dihedral, and asymmetric molecules. Found {str(self.sym_grp)}."
             )
 
-        self.sym_euler = self.sym_grp.rotations.angles
+        # Get Euler angles for the symmetry group.
+        # Supress expected gimbal-lock warning (due to identity matrix).
+        sym_rotations = Rotation(
+            self.sym_grp.matrices,
+            gimble_lock_warnings=False,
+        )
+        self.sym_euler = sym_rotations.angles
         self.n_sym = len(self.sym_euler)
 
         # Set up proximal refinement terms
