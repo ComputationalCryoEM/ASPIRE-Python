@@ -1719,25 +1719,51 @@ class CommonlineNUG(Orient3D):
         S = self.sym_grp.order
         N = self.n_img
 
+        # Convert the degree-two and degree-S solutions from the real
+        # representation used by the SDP solver to the complex Wigner-D basis.
         X2 = self._real_to_complex_representation(X_est[1], degree=2)
         XS = self._real_to_complex_representation(X_est[S - 1], degree=S)
 
         def find_alpha_beta(X2):
             B1 = np.zeros((N, N), dtype=np.float64)
+
+            # Equations (59)-(63) combine two entries of each degree-two block
+            # to isolate
+            #
+            #   B1[i, j] = cos(beta_i)^2 * cos(beta_j)^2.
+            #
+            # Thus, B1 is approximately a rank-one outer-product matrix.
             for i in range(N):
                 for j in range(N):
                     Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
                     B1[i, j] = np.real((Xij[2, 2] - 2 * abs(Xij[0, 0]) + 0.5) / 3 * 2)
+
+            # Recover the vector cos(beta_i)^2 from the leading eigenpair.
+            # Its entries should be nonnegative, so orient the eigenvector
+            # using the sign of its first entry.
             e1, v1 = np.linalg.eigh(B1)
             idx = np.argmax(e1)
             b1 = v1[:, idx] * np.sqrt(e1[idx]) * np.sign(v1[0, idx])
+
+            # Taking the square root recovers abs(cos(beta_i)). Consequently,
+            # each image retains an independent beta_i <-> pi - beta_i
+            # ambiguity, as described in the paper.
             beta_est = np.arccos(np.clip(np.sqrt(b1), -1, 1)) % np.pi
 
             Aminus = np.zeros((N, N), dtype=complex_type(np.float64))
             Aplus = np.zeros((N, N), dtype=complex_type(np.float64))
+
+            # Equations (64)-(66) remove the known sin(2*beta) factors from
+            # two entries of X2_ij, producing the pairwise phases
+            #
+            #   Aminus[i, j] = exp(i * (alpha_i - alpha_j))
+            #   Aplus[i, j]  = exp(i * (alpha_i + alpha_j)).
             for i in range(N):
                 for j in range(N):
                     Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
+
+                    # Avoid division by a numerically vanishing
+                    # sin(2*beta) factor.
                     if abs(beta_est[i]) < 1e-6:
                         beta_est[i] = 1e-6
                     if abs(beta_est[j]) < 1e-6:
@@ -1757,9 +1783,14 @@ class CommonlineNUG(Orient3D):
                         / 3
                     )
 
+            # Angular synchronization of the difference phases recovers
+            # exp(i * alpha_i) up to a common phase.
             evals, evecs = np.linalg.eigh(Aminus)
             idx = np.argmax(abs(evals))
             Z = evecs[:, idx] * np.sqrt(abs(evals[idx]))
+
+            # Use the sum phases to resolve the remaining common phase.
+            # The square root leaves a global pi ambiguity.
             c = self._find_phase(Z[:, None] @ Z[:, None].T, Aplus)
             Z = np.sqrt(c) * Z
             alpha_est = (np.angle(Z)) % (2 * np.pi)
@@ -1767,6 +1798,10 @@ class CommonlineNUG(Orient3D):
             return alpha_est, beta_est
 
         alpha_est, beta_est = find_alpha_beta(X2)
+
+        # Estimate gamma from the degree-S solution. The dihedral pair
+        # estimator separates the gamma-difference and gamma-sum terms,
+        # retaining the difference phases needed for synchronization.
         gamma_est = self._estimate_gamma(
             XS,
             alpha_est,
