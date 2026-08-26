@@ -1597,42 +1597,6 @@ class CommonlineNUG(Orient3D):
 
         return syncmatrix
 
-    def build_commonline_matrix_from_X1(self, X1):
-        clmatrix = -np.ones((self.n_img, self.n_img), dtype=self.dtype)
-
-        [T, Tinv] = self.complex2real(1)
-
-        for i in range(self.n_img - 1):
-            for j in range(i + 1, self.n_img):
-                Rij = X1[
-                    3 * i : 3 * (i + 1),
-                    3 * j : 3 * (j + 1),
-                ]
-
-                Wij = T @ Rij @ Tinv
-
-                gamma_ij = (np.angle(Wij[0, 2]) + np.angle(Wij[2, 2])) / 2
-
-                alpha_ij = (np.angle(Wij[2, 0]) + np.angle(Wij[2, 2])) / 2
-
-                theta_i = -alpha_ij - np.pi / 2
-                theta_j = gamma_ij - np.pi / 2
-
-                idx_i = self.n_theta * theta_i / (2 * np.pi)
-                idx_j = self.n_theta * theta_j / (2 * np.pi)
-
-                clmatrix[i, j] = np.round(idx_i) % self.n_theta
-                clmatrix[j, i] = np.round(idx_j) % self.n_theta
-
-                half = self.n_theta // 2
-
-                if clmatrix[i, j] >= half:
-                    clmatrix[i, j] -= half
-                    clmatrix[j, i] += half
-                    clmatrix[j, i] %= self.n_theta
-
-        return clmatrix
-
     def euler_est_Cm(self, X1, XS):
         """
         Recover Euler angles for cyclic symmetry.
