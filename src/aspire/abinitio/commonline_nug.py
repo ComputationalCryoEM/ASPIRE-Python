@@ -1812,12 +1812,12 @@ class CommonlineNUG(Orient3D):
 
         :return: rotation matrices.
         """
-        euler_nug = np.column_stack((alpha, beta, gamma)).astype(
+        euler_angles = np.column_stack((alpha, beta, gamma)).astype(
             np.float64,
             copy=False,
         )
 
-        rotations = Rotation.from_euler(euler_nug).matrices.swapaxes(-1, -2)
+        rotations = Rotation.from_euler(euler_angles).matrices.swapaxes(-1, -2)
 
         return rotations
 
@@ -1891,6 +1891,28 @@ class CommonlineNUG(Orient3D):
 
     @staticmethod
     def _cyclic_gamma_pair(wi, wj, DXijD, Jk, degree):
+        """
+        Estimate the pairwise gamma phase for cyclic symmetry.
+
+        Construct the handedness-invariant Wigner terms induced by images
+        i and j, subtract the contribution of the central Wigner component
+        from the corresponding representation block, and fit the remaining
+        real and imaginary components. The resulting complex value is inserted
+        into the phase-synchronization matrix used to recover the gamma angles.
+
+        :param wi: Degree-k Wigner small-d matrix evaluated at the
+            estimated beta angle of image i. Shape (2 * k + 1, 2 * k + 1).
+        :param wj: Degree-k Wigner small-d matrix evaluated at the
+            estimated beta angle of image j. Shape (2 * k + 1, 2 * k + 1).
+        :param DXijD: Complex representation block for images i and j after
+            removing their estimated alpha phases. Shape (2 * k + 1, 2 * k + 1).
+        :param Jk: Degree-k handedness-conjugation matrix. Shape
+            (2 * k + 1, 2 * k + 1).
+        :param degree: Wigner representation degree (k).
+
+        :return: Complex pairwise phase measurement used for gamma
+            synchronization.
+        """
         outer_first = np.outer(wi[:, 0], wj[:, 0])
         C1 = (outer_first + Jk @ outer_first @ Jk) / 2
 
@@ -1906,6 +1928,33 @@ class CommonlineNUG(Orient3D):
 
     @staticmethod
     def _solve_dihedral_gamma_pair(W1, W2, W3, W4, Br, Bi):
+        """
+        Fit one dihedral pairwise gamma-phase measurement.
+
+        Solve separate two-variable least-squares systems for the real and
+        imaginary components of the pairwise phase. The systems express the
+        real and imaginary parts of the alpha-corrected representation block
+        in terms of handedness-invariant combinations of the four extreme
+        Wigner outer products.
+
+        :param W1: Handedness-invariant outer product formed from the first
+            Wigner columns of both images.
+        :param W2: Handedness-invariant outer product formed from the last
+            Wigner column of the first image and the first Wigner column of
+            the second image.
+        :param W3: Handedness-invariant outer product formed from the first
+            Wigner column of the first image and the last Wigner column of
+            the second image.
+        :param W4: Handedness-invariant outer product formed from the last
+            Wigner columns of both images.
+        :param Br: Scaled real part of the alpha-corrected representation
+            block.
+        :param Bi: Scaled imaginary part of the alpha-corrected representation
+            block.
+
+        :return: Complex pairwise phase measurement whose real and imaginary
+          components are obtained from the two least-squares fits.
+        """
         A = np.array(
             [
                 [np.vdot(W1 + W4, W1 + W4), np.vdot(W1 + W4, W2 + W3)],
@@ -1927,6 +1976,26 @@ class CommonlineNUG(Orient3D):
         return a + 1j * b
 
     def _dihedral_gamma_pair(self, wi, wj, DXijD, Jk, degree):
+        """
+        Estimate the pairwise gamma phase for dihedral symmetry.
+
+        Form the four handedness-invariant outer products associated with the
+        outer Wigner columns for images i and j. Fit these terms to the real
+        and imaginary parts of the alpha-corrected representation block to
+        obtain the complex measurement used for gamma synchronization.
+
+        :param wi: Degree-k Wigner small-d matrix evaluated at the estimated
+            beta angle of image i. Shape (2 * k + 1, 2 * k + 1).
+        :param wj: Degree-k Wigner small-d matrix evaluated at the estimated
+            beta angle of image j. Shape (2 * k + 1, 2 * k + 1).
+        :param DXijD: Complex representation block for images i and j after
+            removing their estimated alpha phases. Shape (2 * k + 1, 2 * k + 1).
+        :param Jk: Degree-k handedness-conjugation matrix. Shape (2 * k + 1, 2 * k + 1).
+        :param degree: Wigner representation degree. This parameter is included
+            to provide the common pair-estimator interface used by `_estimate_gamma`.
+
+        :return: Complex pairwise phase measurement used for gamma synchronization.
+        """
         outer_11 = np.outer(wi[:, 0], wj[:, 0])
         outer_21 = np.outer(wi[:, -1], wj[:, 0])
         outer_12 = np.outer(wi[:, 0], wj[:, -1])
