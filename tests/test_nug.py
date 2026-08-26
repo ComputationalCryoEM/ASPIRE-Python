@@ -104,9 +104,12 @@ def orient_est(source):
 #########
 
 
+@pytest.mark.parametrize("Volume", [CnSymmetricVolume, DnSymmetricVolume])
 def test_smoke(dtype, Volume):
     """
-    Perform quick smoke test since other tests are long running.
+    Perform quick smoke test since other tests are expensive.
+    This runs through both symmetry cases and the proximal refine
+    code path.
     """
     vol = Volume(L=32, order=3, C=1, dtype=dtype, seed=SEED).generate()
 
