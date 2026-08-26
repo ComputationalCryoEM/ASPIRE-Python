@@ -1610,34 +1610,9 @@ class CommonlineNUG(Orient3D):
         """
         S = self.n_sym
         N = self.n_img
-        sym_euler = np.zeros((S, 3), dtype=np.float64)
-        for s in range(S):
-            sym_euler[s] = [2 * np.pi * s / S, 0, 0]
-        [T, Tinv] = self.complex2real(1)
-        X1 = (
-            np.kron(np.eye(N, dtype=np.float64), T)
-            @ X1
-            @ np.kron(np.eye(N, dtype=np.float64), Tinv)
-        )
-        [T, Tinv] = self.complex2real(S)
-        XS = (
-            np.kron(np.eye(N, dtype=np.float64), T)
-            @ XS
-            @ np.kron(np.eye(N, dtype=np.float64), Tinv)
-        )
 
-        def find_phase(A, B):
-            # find a number c that minimizes ||cA-B||_F
-            Ar = np.real(A)
-            Ai = np.imag(A)
-            Br = np.real(B)
-            Bi = np.imag(B)
-            c = (np.vdot(Ar, Br) + np.vdot(Ai, Bi)) / (
-                np.vdot(Ar, Ar) + np.vdot(Ai, Ai)
-            ) + 1j * (np.vdot(Ar, Bi) - np.vdot(Ai, Br)) / (
-                np.vdot(Ar, Ar) + np.vdot(Ai, Ai)
-            )
-            return c / abs(c)
+        X1 = self._real_to_complex_representation(X1, degree=1)
+        XS = self._real_to_complex_representation(XS, degree=S)
 
         def find_beta(X1):
             B1 = np.zeros((N, N), dtype=np.float64)
@@ -1671,57 +1646,26 @@ class CommonlineNUG(Orient3D):
             idx = np.argmax(abs(evals))
             Z = evecs[:, idx] * np.sqrt(abs(evals[idx]))
 
-            c = find_phase(Z[:, None] @ Z[:, None].T, ZZ)
+            c = self._find_phase(Z[:, None] @ Z[:, None].T, ZZ)
             Z = np.sqrt(c) * Z
             return np.angle(Z).astype(np.float64)
 
-        dk = 2 * S + 1
+        alpha_est = find_alpha(X1)
+        beta_est = find_beta(X1)
+        gamma_est = self._estimate_gamma(
+            XS,
+            alpha_est,
+            beta_est,
+            degree=S,
+            pair_estimator=self._cyclic_gamma_pair,
+        )
 
-        def find_gamma(Xm, beta, alpha):
-            C = np.zeros((N, N), dtype=complex_type(np.float64))
-            Jk = np.ones(dk)
-            Jk[S + 1 :: 2] = -1
-            Jk[S - 1 :: -2] = -1
-            Jk = np.diag(Jk)
-            ws = self.Wd(S, beta)
-            for i in range(N):
-                wi = ws[i]
-                for j in range(i + 1, N):
-                    Di = np.exp(-1j * np.arange(-S, S + 1) * alpha[i])
-                    Dj = np.exp(-1j * np.arange(-S, S + 1) * alpha[j])
-                    Xijm = Xm[dk * i : dk * (i + 1), dk * j : dk * (j + 1)]
-                    DXijmD = np.diag(Di.conj()) @ Xijm @ np.diag(Dj)
-                    wj = ws[j]
-                    C1 = (
-                        wi[:, 0][:, None] @ (wj[:, 0][:, None].T)
-                        + Jk @ wi[:, 0][:, None] @ (wj[:, 0][:, None].T) @ Jk
-                    ) / 2
-                    C2 = (
-                        wi[:, -1][:, None] @ (wj[:, -1][:, None].T)
-                        + Jk @ wi[:, -1][:, None] @ (wj[:, -1][:, None].T) @ Jk
-                    ) / 2
-                    C3 = (
-                        DXijmD
-                        - (
-                            wi[:, S][:, None] @ (wj[:, S][:, None].T)
-                            + Jk @ wi[:, S][:, None] @ (wj[:, S][:, None].T) @ Jk
-                        )
-                        / 2
-                    )
-                    C[i, j] = np.vdot(C1 + C2, np.real(C3)) / np.vdot(
-                        C1 + C2, C1 + C2
-                    ) + 1j * np.vdot(C1 - C2, np.imag(C3)) / np.vdot(C1 - C2, C1 - C2)
-            C += C.T.conj() + np.eye(N, dtype=np.float64)
-            evals, evecs = np.linalg.eigh(C)
-            idx = np.argmax(evals)
-            c = evecs[:, idx] * np.sqrt(evals[idx])
-            return np.angle(c) / S
+        R_est = self._assemble_rotation_estimates(
+            alpha_est,
+            beta_est,
+            gamma_est,
+        )
 
-        Euler_est = np.zeros((N, 3), dtype=np.float64)
-        Euler_est[:, 0] = find_alpha(X1)
-        Euler_est[:, 1] = find_beta(X1)
-        Euler_est[:, 2] = find_gamma(XS, Euler_est[:, 1], Euler_est[:, 0])
-        R_est = Rotation.from_euler(Euler_est).matrices.transpose(0, 2, 1)
         return R_est
 
     def euler_est_Dm(self, X_est):
@@ -1732,33 +1676,13 @@ class CommonlineNUG(Orient3D):
 
         :return: Estimated rotation matrices and Euler angles.
         """
-        X2 = X_est[1]
         S = self.sym_grp.order
         N = self.n_img
-        XS = X_est[S - 1]
-        dk = 2 * S + 1
+
+        X2 = self._real_to_complex_representation(X_est[1], degree=2)
+        XS = self._real_to_complex_representation(X_est[S - 1], degree=S)
 
         def find_alpha_beta(X2):
-            def find_phase(A, B):
-                # find a number c that minimizes ||cA-B||_F
-                Ar = np.real(A)
-                Ai = np.imag(A)
-                Br = np.real(B)
-                Bi = np.imag(B)
-                c = (np.vdot(Ar, Br) + np.vdot(Ai, Bi)) / (
-                    np.vdot(Ar, Ar) + np.vdot(Ai, Ai)
-                ) + 1j * (np.vdot(Ar, Bi) - np.vdot(Ai, Br)) / (
-                    np.vdot(Ar, Ar) + np.vdot(Ai, Ai)
-                )
-                return c / abs(c)
-
-            T, Tinv = self.complex2real(2)
-            X2 = (
-                np.kron(np.eye(N, dtype=np.float64), T)
-                @ X2
-                @ np.kron(np.eye(N, dtype=np.float64), Tinv)
-            )
-
             B1 = np.zeros((N, N), dtype=np.float64)
             for i in range(N):
                 for j in range(N):
@@ -1796,87 +1720,231 @@ class CommonlineNUG(Orient3D):
             evals, evecs = np.linalg.eigh(Aminus)
             idx = np.argmax(abs(evals))
             Z = evecs[:, idx] * np.sqrt(abs(evals[idx]))
-            c = find_phase(Z[:, None] @ Z[:, None].T, Aplus)
+            c = self._find_phase(Z[:, None] @ Z[:, None].T, Aplus)
             Z = np.sqrt(c) * Z
             alpha_est = (np.angle(Z)) % (2 * np.pi)
 
             return alpha_est, beta_est
 
-        def find_gamma(Xm, alpha, beta):
-            def LS_D(W1, W2, W3, W4, Br, Bi):
-                A = np.array(
-                    [
-                        [np.vdot(W1 + W4, W1 + W4), np.vdot(W1 + W4, W2 + W3)],
-                        [np.vdot(W2 + W3, W1 + W4), np.vdot(W2 + W3, W2 + W3)],
-                    ]
-                )
-                B = np.array([np.vdot(W1 + W4, Br), np.vdot(W2 + W3, Br)])
-                a, c = np.linalg.lstsq(A, B)[0]
-
-                A = np.array(
-                    [
-                        [np.vdot(W1 - W4, W1 - W4), np.vdot(W1 - W4, W3 - W2)],
-                        [np.vdot(W1 - W4, W3 - W2), np.vdot(W3 - W2, W3 - W2)],
-                    ]
-                )
-                B = np.array([np.vdot(W1 - W4, Bi), np.vdot(W3 - W2, Bi)])
-                b, d = np.linalg.lstsq(A, B)[0]
-                return a + 1j * b
-
-            [T, Tinv] = self.complex2real(S)
-            Xm = (
-                np.kron(np.eye(N, dtype=np.float64), T)
-                @ Xm
-                @ np.kron(np.eye(N, dtype=np.float64), Tinv)
-            )
-            C = np.zeros((N, N), dtype=complex_type(np.float64))
-            Jk = np.ones(dk)
-            Jk[S + 1 :: 2] = -1
-            Jk[S - 1 :: -2] = -1
-            Jk = np.diag(Jk)
-            ws = self.Wd(S, beta)
-            for i in range(N):
-                wi = ws[i]
-                for j in range(i + 1, N):
-                    Di = np.exp(-1j * np.arange(-S, S + 1) * alpha[i])
-                    Dj = np.exp(-1j * np.arange(-S, S + 1) * alpha[j])
-                    Xijm = Xm[dk * i : dk * (i + 1), dk * j : dk * (j + 1)]
-                    DXijmD = np.diag(Di.conj()) @ Xijm @ np.diag(Dj)
-                    wj = ws[j]
-                    W1 = (
-                        wi[:, 0][:, None] @ wj[:, 0][:, None].T
-                        + Jk @ wi[:, 0][:, None] @ wj[:, 0][:, None].T @ Jk
-                    )
-                    W2 = (
-                        wi[:, -1][:, None] @ wj[:, 0][:, None].T
-                        + Jk @ wi[:, -1][:, None] @ wj[:, 0][:, None].T @ Jk
-                    )
-                    W3 = (
-                        wi[:, 0][:, None] @ wj[:, -1][:, None].T
-                        + Jk @ wi[:, 0][:, None] @ wj[:, -1][:, None].T @ Jk
-                    )
-                    W4 = (
-                        wi[:, -1][:, None] @ wj[:, -1][:, None].T
-                        + Jk @ wi[:, -1][:, None] @ wj[:, -1][:, None].T @ Jk
-                    )
-                    Br = np.real(4 * DXijmD)
-                    Bi = np.imag(4 * DXijmD)
-                    C[i, j] = LS_D(W1, W2, W3, W4, Br, Bi)
-            C += C.T.conj() + np.eye(N, dtype=np.float64)
-            evals, evecs = np.linalg.eigh(C)
-            idx = np.argmax(evals)
-            c = evecs[:, idx] * np.sqrt(evals[idx])
-            return (np.angle(c) / S) % (2 * np.pi)
-
         alpha_est, beta_est = find_alpha_beta(X2)
-        gamma_est = find_gamma(XS, alpha_est, beta_est)
-        Euler_est = np.zeros((N, 3), dtype=np.float64)
-        Euler_est[:, 0] = alpha_est
-        Euler_est[:, 1] = beta_est
-        Euler_est[:, 2] = gamma_est
-        R_est = Rotation.from_euler(Euler_est).matrices.transpose(0, 2, 1)
+        gamma_est = self._estimate_gamma(
+            XS,
+            alpha_est,
+            beta_est,
+            degree=S,
+            pair_estimator=self._dihedral_gamma_pair,
+            wrap=True,
+        )
+
+        R_est = self._assemble_rotation_estimates(
+            alpha_est,
+            beta_est,
+            gamma_est,
+        )
 
         return R_est
+
+    ############################
+    # Euler Estimation Helpers #
+    ############################
+    def _real_to_complex_representation(self, X, degree):
+        """
+        Convert a degree-wise representation matrix from the real basis used
+        by ADMM to the complex Wigner basis.
+
+        :param X: Representation matrix of shape
+            (n_img * (2 * degree + 1), n_img * (2 * degree + 1)).
+        :param degree: Wigner representation degree.
+
+        :return: Representation matrix in the complex Wigner basis.
+        """
+        T, Tinv = self.complex2real(degree)
+        identity = np.eye(self.n_img, dtype=np.float64)
+
+        return np.kron(identity, T) @ X @ np.kron(identity, Tinv)
+
+    @staticmethod
+    def _find_phase(A, B):
+        """
+        Find the unit-modulus scalar c that minimizes ||cA - B||_F.
+
+        :param A: First complex-valued matrix.
+        :param B: Second complex-valued matrix.
+
+        :return: Unit-modulus complex phase.
+        """
+        Ar = np.real(A)
+        Ai = np.imag(A)
+        Br = np.real(B)
+        Bi = np.imag(B)
+
+        denominator = np.vdot(Ar, Ar) + np.vdot(Ai, Ai)
+
+        c = (np.vdot(Ar, Br) + np.vdot(Ai, Bi)) / denominator + 1j * (
+            np.vdot(Ar, Bi) - np.vdot(Ai, Br)
+        ) / denominator
+
+        return c / abs(c)
+
+    @staticmethod
+    def _handedness_matrix(degree):
+        """
+        Construct the handedness-conjugation matrix at a Wigner degree.
+
+        :param degree: Wigner representation degree.
+
+        :return: Diagonal matrix of shape (2 * degree + 1, 2 * degree + 1).
+        """
+        signs = np.ones(2 * degree + 1)
+        signs[degree + 1 :: 2] = -1
+        signs[degree - 1 :: -2] = -1
+
+        return np.diag(signs)
+
+    @staticmethod
+    def _assemble_rotation_estimates(alpha, beta, gamma):
+        """
+        Assemble internal NUG Euler estimates and convert rotation matrices.
+
+        :param alpha: Estimated alpha angles.
+        :param beta: Estimated beta angles.
+        :param gamma: Estimated gamma angles.
+
+        :return: rotation matrices.
+        """
+        euler_nug = np.column_stack((alpha, beta, gamma)).astype(
+            np.float64,
+            copy=False,
+        )
+
+        rotations = Rotation.from_euler(euler_nug).matrices.swapaxes(-1, -2)
+
+        return rotations
+
+    def _estimate_gamma(
+        self,
+        Xm,
+        alpha,
+        beta,
+        degree,
+        pair_estimator,
+        wrap=False,
+    ):
+        """
+        Estimate gamma angles by synchronizing pairwise phase measurements.
+
+        Xm must already be expressed in the complex Wigner basis.
+
+        :param Xm: Complex-basis representation matrix at `degree`.
+        :param alpha: Estimated alpha angles.
+        :param beta: Estimated beta angles.
+        :param degree: Representation degree used for gamma recovery.
+        :param pair_estimator: Callable that computes one pairwise phase
+            measurement.
+        :param wrap: Whether to wrap the results to [0, 2*pi).
+
+        :return: Estimated gamma angles.
+        """
+        N = self.n_img
+        dk = 2 * degree + 1
+        modes = np.arange(-degree, degree + 1)
+
+        C = np.zeros((N, N), dtype=complex_type(np.float64))
+        Jk = self._handedness_matrix(degree)
+        ws = self.Wd(degree, beta)
+
+        for i in range(N):
+            wi = ws[i]
+            Di = np.exp(-1j * modes * alpha[i])
+
+            for j in range(i + 1, N):
+                wj = ws[j]
+                Dj = np.exp(-1j * modes * alpha[j])
+
+                Xij = Xm[
+                    dk * i : dk * (i + 1),
+                    dk * j : dk * (j + 1),
+                ]
+
+                DXijD = np.diag(Di.conj()) @ Xij @ np.diag(Dj)
+
+                C[i, j] = pair_estimator(
+                    wi,
+                    wj,
+                    DXijD,
+                    Jk,
+                    degree,
+                )
+
+        C += C.T.conj() + np.eye(N, dtype=np.float64)
+
+        eigenvalues, eigenvectors = np.linalg.eigh(C)
+        leading_idx = np.argmax(eigenvalues)
+        phase_vector = eigenvectors[:, leading_idx] * np.sqrt(eigenvalues[leading_idx])
+
+        gamma = np.angle(phase_vector) / degree
+
+        if wrap:
+            gamma %= 2 * np.pi
+
+        return gamma
+
+    @staticmethod
+    def _cyclic_gamma_pair(wi, wj, DXijD, Jk, degree):
+        outer_first = np.outer(wi[:, 0], wj[:, 0])
+        C1 = (outer_first + Jk @ outer_first @ Jk) / 2
+
+        outer_last = np.outer(wi[:, -1], wj[:, -1])
+        C2 = (outer_last + Jk @ outer_last @ Jk) / 2
+
+        outer_middle = np.outer(wi[:, degree], wj[:, degree])
+        C3 = DXijD - (outer_middle + Jk @ outer_middle @ Jk) / 2
+
+        return np.vdot(C1 + C2, np.real(C3)) / np.vdot(C1 + C2, C1 + C2) + 1j * np.vdot(
+            C1 - C2, np.imag(C3)
+        ) / np.vdot(C1 - C2, C1 - C2)
+
+    @staticmethod
+    def _solve_dihedral_gamma_pair(W1, W2, W3, W4, Br, Bi):
+        A = np.array(
+            [
+                [np.vdot(W1 + W4, W1 + W4), np.vdot(W1 + W4, W2 + W3)],
+                [np.vdot(W2 + W3, W1 + W4), np.vdot(W2 + W3, W2 + W3)],
+            ]
+        )
+        B = np.array([np.vdot(W1 + W4, Br), np.vdot(W2 + W3, Br)])
+        a, _ = np.linalg.lstsq(A, B, rcond=None)[0]
+
+        A = np.array(
+            [
+                [np.vdot(W1 - W4, W1 - W4), np.vdot(W1 - W4, W3 - W2)],
+                [np.vdot(W1 - W4, W3 - W2), np.vdot(W3 - W2, W3 - W2)],
+            ]
+        )
+        B = np.array([np.vdot(W1 - W4, Bi), np.vdot(W3 - W2, Bi)])
+        b, _ = np.linalg.lstsq(A, B, rcond=None)[0]
+
+        return a + 1j * b
+
+    def _dihedral_gamma_pair(self, wi, wj, DXijD, Jk, degree):
+        outer_11 = np.outer(wi[:, 0], wj[:, 0])
+        outer_21 = np.outer(wi[:, -1], wj[:, 0])
+        outer_12 = np.outer(wi[:, 0], wj[:, -1])
+        outer_22 = np.outer(wi[:, -1], wj[:, -1])
+
+        W1 = outer_11 + Jk @ outer_11 @ Jk
+        W2 = outer_21 + Jk @ outer_21 @ Jk
+        W3 = outer_12 + Jk @ outer_12 @ Jk
+        W4 = outer_22 + Jk @ outer_22 @ Jk
+
+        return self._solve_dihedral_gamma_pair(
+            W1,
+            W2,
+            W3,
+            W4,
+            np.real(4 * DXijD),
+            np.imag(4 * DXijD),
+        )
 
     ####################
     # Helper Functions #
