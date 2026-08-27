@@ -1924,8 +1924,13 @@ class CommonlineNUG(Orient3D):
         dk = 2 * degree + 1
         modes = np.arange(-degree, degree + 1)
 
+        # Store pairwise estimates of exp(i * degree * (gamma_i - gamma_j)).
         C = np.zeros((N, N), dtype=complex_type(np.float64))
+
+        # Construct the handedness-conjugation matrix.
         Jk = self._handedness_matrix(degree)
+
+        # Evaluate the Wigner small-d matrices at the recovered beta angles.
         ws = self.Wd(degree, beta)
 
         for i in range(N):
@@ -1936,13 +1941,23 @@ class CommonlineNUG(Orient3D):
                 wj = ws[j]
                 Dj = np.exp(-1j * modes * alpha[j])
 
+                # Each degree-m image-pair block factors as
+                #
+                #   X_ij = D(alpha_i) @ M_ij @ D(alpha_j)^*,
+                #
+                # where M_ij contains the beta- and gamma-dependent terms.
                 Xij = Xm[
                     dk * i : dk * (i + 1),
                     dk * j : dk * (j + 1),
                 ]
 
+                # Cancel the known alpha-dependent factors to isolate M_ij:
+                #
+                #   D(alpha_i)^* @ X_ij @ D(alpha_j).
                 DXijD = np.diag(Di.conj()) @ Xij @ np.diag(Dj)
 
+                # Since beta is already estimated, the remaining unknown coefficients
+                # are pairwise phases involving gamma_i and gamma_j.
                 C[i, j] = pair_estimator(
                     wi,
                     wj,
@@ -1951,12 +1966,16 @@ class CommonlineNUG(Orient3D):
                     degree,
                 )
 
+        # Complete the Hermitian synchronization matrix.
         C += C.T.conj() + np.eye(N, dtype=np.float64)
 
+        # Angular synchronization recovers exp(i * degree * gamma_i) up to one common phase.
         eigenvalues, eigenvectors = np.linalg.eigh(C)
         leading_idx = np.argmax(eigenvalues)
         phase_vector = eigenvectors[:, leading_idx] * np.sqrt(eigenvalues[leading_idx])
 
+        # Divide by the representation degree to recover gamma. Each estimate
+        # remains defined modulo 2*pi/degree, as expected from the symmetry.
         gamma = np.angle(phase_vector) / degree
 
         if wrap:
