@@ -123,7 +123,7 @@ def test_estimate_rotations(n_img, L, order, dtype):
     rots_gt = src.rotations
 
     # g-synchronize ground truth rotations.
-    rots_gt_sync = g_sync(rots_est, order, rots_gt)
+    rots_gt_sync = g_sync(rots_est, rots_gt, src.symmetry_group)
 
     # Register estimates to ground truth rotations and check that the
     # mean angular distance between them is less than 3 degrees.
