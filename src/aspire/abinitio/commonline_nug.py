@@ -1432,13 +1432,13 @@ class CommonlineNUG(Orient3D):
         N = self.n_img
         C = self.C
 
-        def Ak(J, Euler):
+        def Ak(k, Euler):
             """
-            Average the degree-J representation over the symmetry
+            Average the degree-k representation over the symmetry
             group to form the symmetry projector Ak.
             """
             order = Euler.shape[0]
-            A = self.WD(J, Euler).sum(axis=0)
+            A = self.WD(k, Euler).sum(axis=0)
             return np.round(A / order, 10)
 
         def rel_change(A, B, eps=1e-12):
@@ -2273,17 +2273,17 @@ class CommonlineNUG(Orient3D):
             rk[k - 1] = np.linalg.matrix_rank(Ak)
         return rk, A
 
-    def WD(self, J, euler):
+    def WD(self, k, euler):
         """
-        Evaluate degree-J Wigner D matrices at the supplied ZYZ Euler angles.
+        Evaluate degree-k Wigner D matrices at the supplied ZYZ Euler angles.
         """
         # compute Wigner D matrix
         alpha = euler[:, 0]
         beta = euler[:, 1]
         gamma = euler[:, 2]
-        d = self.Wd(J, beta)
+        d = self.Wd(k, beta)
 
-        m = np.arange(-J, J + 1)
+        m = np.arange(-k, k + 1)
         left = np.exp(-1j * alpha[:, None] * m[None, :])
         right = np.exp(-1j * gamma[:, None] * m[None, :])
         D = left[:, :, None] * d * right[:, None, :]
@@ -2291,31 +2291,31 @@ class CommonlineNUG(Orient3D):
         return D
 
     @staticmethod
-    def Wd(J, beta):
+    def Wd(k, beta):
         """
-        Evaluate degree-J Wigner small-d matrices at the supplied polar angles.
+        Evaluate degree-k Wigner small-d matrices at the supplied polar angles.
         """
         # compute Wigner small d matrix
-        d = np.zeros((len(beta), 2 * J + 1, 2 * J + 1), dtype=beta.dtype)
-        for m in range(-J, J + 1):
-            for n in range(-J, J + 1):
+        d = np.zeros((len(beta), 2 * k + 1, 2 * k + 1), dtype=beta.dtype)
+        for m in range(-k, k + 1):
+            for n in range(-k, k + 1):
                 smin = max(0, m - n)
-                smax = min(J + m, J - n)
+                smax = min(k + m, k - n)
                 for s in range(smin, smax + 1):
                     mul = (
-                        np.sqrt(factorial(J + m))
-                        / factorial(J + m - s)
-                        * np.sqrt(factorial(J + n))
+                        np.sqrt(factorial(k + m))
+                        / factorial(k + m - s)
+                        * np.sqrt(factorial(k + n))
                         / factorial(s)
-                        * np.sqrt(factorial(J - m))
+                        * np.sqrt(factorial(k - m))
                         / factorial(n - m + s)
-                        * np.sqrt(factorial(J - n))
-                        / factorial(J - n - s)
+                        * np.sqrt(factorial(k - n))
+                        / factorial(k - n - s)
                     )
-                    d[:, n + J, m + J] += (
+                    d[:, n + k, m + k] += (
                         mul
                         * (-1) ** (n - m + s)
-                        * (np.cos(beta / 2)) ** (2 * J + m - n - 2 * s)
+                        * (np.cos(beta / 2)) ** (2 * k + m - n - 2 * s)
                         * (np.sin(beta / 2)) ** (n - m + 2 * s)
                     )
         return d
