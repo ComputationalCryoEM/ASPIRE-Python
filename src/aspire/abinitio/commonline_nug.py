@@ -477,28 +477,15 @@ class CommonlineNUG(Orient3D):
             S1 = C1 - Z1 - AIT_yI1 - X1 / rho
             Sq = -Zq - Xq / rho
 
-            for k in range(1, Lmax + 1):
-                tmp = self.mat_block(
-                    S0[d0[k - 1] : d0[k]],
-                    N,
-                    k,
-                    IDX_upper,
-                    IDX_lower,
-                    idx_offdiag,
-                )
-                tmp = self.psd_projection(tmp)
-                S0[d0[k - 1] : d0[k]] = self.vec_block(tmp, N, k, IDX_upper)
-
-                tmp = self.mat_block(
-                    S1[d1[k - 1] : d1[k]],
-                    N,
-                    k + 1,
-                    IDX_upper,
-                    IDX_lower,
-                    idx_offdiag,
-                )
-                tmp = self.psd_projection(tmp)
-                S1[d1[k - 1] : d1[k]] = self.vec_block(tmp, N, k + 1, IDX_upper)
+            S0, S1 = self._project_representation_blocks(
+                S0,
+                S1,
+                d0,
+                d1,
+                IDX_upper,
+                IDX_lower,
+                idx_offdiag,
+            )
 
             # This is the established batched equivalent of projecting each 4x4
             # quaternion block and storing tmp.T.reshape(16) in each column.
@@ -937,23 +924,15 @@ class CommonlineNUG(Orient3D):
             Sq = -Zq - Xq / rho
 
             # Project packed X0/X1 blocks degree by degree.
-            for k in range(1, Lmax + 1):
-                tmp = self.mat_block(
-                    S0[d0[k - 1] : d0[k], :], N, k, IDX_upper, IDX_lower, idx_offdiag
-                )
-                tmp = self.psd_projection(tmp)
-                S0[d0[k - 1] : d0[k], :] = self.vec_block(tmp, N, k, IDX_upper)
-
-                tmp = self.mat_block(
-                    S1[d1[k - 1] : d1[k], :],
-                    N,
-                    k + 1,
-                    IDX_upper,
-                    IDX_lower,
-                    idx_offdiag,
-                )
-                tmp = self.psd_projection(tmp)
-                S1[d1[k - 1] : d1[k], :] = self.vec_block(tmp, N, k + 1, IDX_upper)
+            S0, S1 = self._project_representation_blocks(
+                S0,
+                S1,
+                d0,
+                d1,
+                IDX_upper,
+                IDX_lower,
+                idx_offdiag,
+            )
 
             # Project the diagonal coupling blocks.
             Sd0 = Sd0.T
@@ -2112,6 +2091,66 @@ class CommonlineNUG(Orient3D):
     ####################
     # Helper Functions #
     ####################
+
+    def _project_representation_blocks(
+        self,
+        Z0,
+        Z1,
+        d0,
+        d1,
+        IDX_upper,
+        IDX_lower,
+        idx_offdiag,
+    ):
+        """
+        Project packed degree-wise representation blocks onto the PSD cone.
+
+        :param Z0: Packed blocks of sizes 1 through `Lmax`.
+        :param Z1: Packed blocks of sizes 2 through `Lmax + 1`.
+        :param d0: Cumulative row offsets for the blocks in `Z0`.
+        :param d1: Cumulative row offsets for the blocks in `Z1`.
+        :param IDX_upper: Linear indices of upper-triangular image pairs.
+        :param IDX_lower: Linear indices of lower-triangular image pairs.
+        :param idx_offdiag: Linear indices of off-diagonal image pairs in the
+            packed upper-triangular representation.
+
+        :return: The projected packed arrays `Z0` and `Z1`.
+        """
+        for k in range(1, self.Lmax + 1):
+            block0 = self.mat_block(
+                Z0[d0[k - 1] : d0[k]],
+                self.n_img,
+                k,
+                IDX_upper,
+                IDX_lower,
+                idx_offdiag,
+            )
+            block0 = self.psd_projection(block0)
+            Z0[d0[k - 1] : d0[k]] = self.vec_block(
+                block0,
+                self.n_img,
+                k,
+                IDX_upper,
+            )
+
+            block1 = self.mat_block(
+                Z1[d1[k - 1] : d1[k]],
+                self.n_img,
+                k + 1,
+                IDX_upper,
+                IDX_lower,
+                idx_offdiag,
+            )
+            block1 = self.psd_projection(block1)
+            Z1[d1[k - 1] : d1[k]] = self.vec_block(
+                block1,
+                self.n_img,
+                k + 1,
+                IDX_upper,
+            )
+
+        return Z0, Z1
+
     def transform_coeff(self, A, IDX_upper):
         """
         Convert representation matrices to the block-vector form used by ADMM.
