@@ -297,38 +297,6 @@ class CommonlineNUG(Orient3D):
 
         self.C = C
 
-    def complex2real(self, ell):
-        """
-        Construct the transformation matrices between complex and real degree ell representations.
-
-        :param ell: Wigner representation degree.
-
-        :return: Forward and inverse change-of-basis matrices.
-        """
-        diml = 2 * ell + 1
-        Tinv = np.zeros((diml, diml), dtype=complex_type(np.float64))
-        for i in range(diml):
-            if i < ell:
-                Tinv[i, i] = 1j / np.sqrt(2)
-                Tinv[i, diml - 1 - i] = -1j * (-1) ** (i - ell) / np.sqrt(2)
-            if i == ell:
-                Tinv[i, i] = 1
-            if i > ell:
-                Tinv[i, i] = (-1) ** (i - ell) / np.sqrt(2)
-                Tinv[i, diml - 1 - i] = 1 / np.sqrt(2)
-
-        T = np.zeros((diml, diml), dtype=complex_type(np.float64))
-        for i in range(diml):
-            if i < ell:
-                T[i, i] = -1j / np.sqrt(2)
-                T[i, diml - 1 - i] = 1 / np.sqrt(2)
-            if i == ell:
-                T[i, i] = 1
-            if i > ell:
-                T[i, i] = (-1) ** (i - ell) / np.sqrt(2)
-                T[i, diml - 1 - i] = 1j * (-1) ** (i - ell) / np.sqrt(2)
-        return T, Tinv
-
     #############
     # ADMM Step #
     #############
@@ -1185,6 +1153,10 @@ class CommonlineNUG(Orient3D):
             X_admm[k] = xp.asnumpy(X_admm[k])
         return X_admm
 
+    ################
+    # ADMM Helpers #
+    ################
+
     def ADMM_preprocessing(self, C):
         """
         Construct the transformed coefficients, constraints, indices, and initial variables used by ADMM.
@@ -1392,6 +1364,309 @@ class CommonlineNUG(Orient3D):
                 count += 1
 
         return SO3
+
+    @staticmethod
+    def largest_eigenvalue(AI, Ngrid, N):
+        """
+        Estimate the largest eigenvalue of the Fejér constraint operator.
+        """
+        # find the largest eigenvalue of the operator AI
+        z = xp.random.normal(0, 1, (Ngrid, N**2))
+        Lambda = 0
+
+        while abs(Lambda - xp.linalg.norm(z)) > 500:
+            Lambda = xp.linalg.norm(z)
+            z = z / xp.linalg.norm(z)
+            z = AI @ (AI.T @ z)
+        Lambda += 2000
+        logger.info("Largest eigenvalue of AIAIT is approximately %1.2f" % Lambda)
+        return Lambda
+
+    def compute_rank(self):
+        """
+        Compute the ranks and matrices of the symmetry-averaging projectors at each degree.
+
+        :param Lmax: Maximum representation degree.
+
+        :return: Ranks and symmetry-averaging matrices for each degree.
+        """
+        rk = xp.zeros(self.Lmax, dtype=np.float64)
+        A = []
+        for k in range(1, self.Lmax + 1):
+            Ak = np.sum(self.WD(k, self.sym_euler), axis=0)
+            Ak = np.round(Ak / self.n_sym, 6)
+            A.append(Ak)
+            rk[k - 1] = np.linalg.matrix_rank(Ak)
+        return rk, A
+
+    def construct_AEq(self):
+        """
+        Construct the linear equality operator encoding the quaternion constraints.
+        """
+        AEq = np.zeros((17, 21), np.float64)
+
+        # First 16 rows: identity constraints on first 16 variables
+        AEq[:16, :16] = np.eye(16, dtype=np.float64)
+
+        # Columns 16:21 map the low-degree X0/X1 entries into the quaternion
+        # convex-hull constraint Xq = I/4 - linear(X^(1)).
+        extra = 0.25 * np.array(
+            [
+                [-1, 1, 0, 0, 1],
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, -1, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [1, 1, 0, 0, -1],
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 1, -1, 0],
+                [0, 0, 0, 0, 0],
+                [-1, -1, 0, 0, -1],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 0, 0, 0],
+                [1, -1, 0, 0, 1],
+            ],
+            dtype=np.float64,
+        )
+
+        AEq[:16, 16:] = extra
+
+        # Last row: redundant trace/sum constraint
+        AEq[16, [0, 5, 10, 15]] = 1
+
+        return AEq
+
+    def _project_representation_blocks(
+        self,
+        Z0,
+        Z1,
+        d0,
+        d1,
+        IDX_upper,
+        IDX_lower,
+        idx_offdiag,
+    ):
+        """
+        Project packed degree-wise representation blocks onto the PSD cone.
+
+        :param Z0: Packed blocks of sizes 1 through `Lmax`.
+        :param Z1: Packed blocks of sizes 2 through `Lmax + 1`.
+        :param d0: Cumulative row offsets for the blocks in `Z0`.
+        :param d1: Cumulative row offsets for the blocks in `Z1`.
+        :param IDX_upper: Linear indices of upper-triangular image pairs.
+        :param IDX_lower: Linear indices of lower-triangular image pairs.
+        :param idx_offdiag: Linear indices of off-diagonal image pairs in the
+            packed upper-triangular representation.
+
+        :return: The projected packed arrays `Z0` and `Z1`.
+        """
+        for k in range(1, self.Lmax + 1):
+            block0 = self.mat_block(
+                Z0[d0[k - 1] : d0[k]],
+                self.n_img,
+                k,
+                IDX_upper,
+                IDX_lower,
+                idx_offdiag,
+            )
+            block0 = self.psd_projection(block0)
+            Z0[d0[k - 1] : d0[k]] = self.vec_block(
+                block0,
+                self.n_img,
+                k,
+                IDX_upper,
+            )
+
+            block1 = self.mat_block(
+                Z1[d1[k - 1] : d1[k]],
+                self.n_img,
+                k + 1,
+                IDX_upper,
+                IDX_lower,
+                idx_offdiag,
+            )
+            block1 = self.psd_projection(block1)
+            Z1[d1[k - 1] : d1[k]] = self.vec_block(
+                block1,
+                self.n_img,
+                k + 1,
+                IDX_upper,
+            )
+
+        return Z0, Z1
+
+    @staticmethod
+    def psd_projection(B):
+        """
+        Project one or more symmetric matrices onto the positive semidefinite cone.
+        """
+        # compute the PSD part of a symmstric matrix
+        B_sym = (B + B.swapaxes(-1, -2)) / 2
+        evals, evecs = xp.linalg.eigh(B_sym)
+        evals = xp.maximum(evals, 0)
+        return (evecs * evals[..., None, :]) @ evecs.swapaxes(-1, -2)
+
+    def transform_coeff(self, A, IDX_upper):
+        """
+        Convert representation matrices to the block-vector form used by ADMM.
+
+        :param A: Representation matrices.
+        :param IDX_upper: Indices of upper-triangular image pair blocks.
+
+        :return: The two block-vector coefficient arrays.
+        """
+        d0 = [0]
+        d1 = [0]
+        for k in range(1, self.Lmax + 1):
+            d0.append(d0[-1] + k**2)
+            d1.append(d1[-1] + (k + 1) ** 2)
+        A0 = xp.zeros((d0[-1], self.n_img * (self.n_img + 1) // 2), dtype=np.float64)
+        A1 = xp.zeros((d1[-1], self.n_img * (self.n_img + 1) // 2), dtype=np.float64)
+        for k in range(1, self.Lmax + 1):
+            a0, a1 = self.permutek(A[k - 1], k, self.n_img)
+            A0[d0[k - 1] : d0[k], :] = self.vec_block(a0, self.n_img, k, IDX_upper)
+            A1[d1[k - 1] : d1[k], :] = self.vec_block(a1, self.n_img, k + 1, IDX_upper)
+        return A0, A1
+
+    def transform_coeff_back(self, A0, A1, IDX_upper, IDX_lower, idx_offdiag):
+        """
+        Reconstruct representation matrices from their ADMM block-vector form.
+
+        :param A0: First block-vector array.
+        :param A1: Second block-vector array.
+        :param IDX_upper: Indices of upper-triangular image-pair blocks.
+        :param IDX_lower: Indices of lower-triangular image-pair blocks.
+        :param idx_offdiag: Indices of off-diagonal image pairs.
+
+        :return: Reconstructed representation matrices.
+        """
+        d0 = [0]
+        d1 = [0]
+        N = self.n_img
+        for k in range(1, self.Lmax + 1):
+            d0.append(d0[-1] + k**2)
+            d1.append(d1[-1] + (k + 1) ** 2)
+        A = []
+        for k in range(1, self.Lmax + 1):
+            dk = 2 * k + 1
+            Ak = xp.zeros((N * dk, N * dk), dtype=np.float64)
+            Ak[: N * k, : N * k] = self.mat_block(
+                A0[d0[k - 1] : d0[k], :], N, k, IDX_upper, IDX_lower, idx_offdiag
+            )
+            Ak[N * k :, N * k :] = self.mat_block(
+                A1[d1[k - 1] : d1[k], :], N, k + 1, IDX_upper, IDX_lower, idx_offdiag
+            )
+            Ak = self.permutek_back(Ak, k, N)
+            A.append(Ak)
+        return A
+
+    @staticmethod
+    def permutek(Ak, k, N):
+        """
+        Permute and split a degree-k matrix into blocks of sizes k and k + 1.
+
+        :param Ak: Degree-k block matrix.
+        :param k: Representation degree.
+        :param N: Number of images.
+
+        :return: The two permuted matrix blocks.
+        """
+        AkP = xp.copy(Ak)
+        dk = 2 * k + 1
+        Pk = xp.eye(dk, dtype=AkP.dtype)
+        for m in range(k):
+            for n in range(k - m):
+                Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
+        AkP = (
+            xp.kron(xp.eye(N, dtype=AkP.dtype), Pk)
+            @ Ak
+            @ xp.kron(xp.eye(N, dtype=AkP.dtype), Pk.T)
+        )
+
+        Pk = xp.eye(N * dk, dtype=AkP.dtype)
+        idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
+        for m in range(N - 1):
+            for n in range(N - 1 - m):
+                Pk[k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk] = Pk[
+                    k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk
+                ][idx, :]
+        AkP = Pk @ AkP @ Pk.T
+        return AkP[: N * k, : N * k], AkP[N * k :, N * k :]
+
+    @staticmethod
+    def permutek_back(Ak, k, N):
+        """
+        Undo the degree-k block permutation and reconstruct the full matrix.
+
+        :param Ak: Permuted degree-k matrix.
+        :param k: Representation degree.
+        :param N: Number of images.
+
+        :return: Matrix in the original block ordering.
+        """
+        dk = 2 * k + 1
+        Pk = xp.eye(N * dk, dtype=Ak.dtype)
+        idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
+        for m in range(N - 1):
+            for n in range(N - 1 - m):
+                Pk[k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk] = Pk[
+                    k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk
+                ][idx, :]
+        AkB = Pk.T @ Ak @ Pk
+        dk = 2 * k + 1
+        Pk = xp.eye(dk, dtype=Ak.dtype)
+        for m in range(k):
+            for n in range(k - m):
+                Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
+        AkB = (
+            xp.kron(xp.eye(N, dtype=Ak.dtype), Pk.T)
+            @ AkB
+            @ xp.kron(xp.eye(N, dtype=Ak.dtype), Pk)
+        )
+        return AkB
+
+    @staticmethod
+    def vec_block(A, N, sz, IDX_upper):
+        """
+        Vectorize the upper-triangular image-pair blocks of a block matrix.
+        """
+        vecA = (A.reshape(N, sz, N, sz).transpose(0, 2, 3, 1)).reshape(N**2, sz**2).T
+        return vecA[:, IDX_upper]
+
+    @staticmethod
+    def mat_block(vecA, N, sz, IDX_upper, IDX_lower, idx_offdiag):
+        """
+        Reconstruct a symmetric block matrix from its vectorized upper-triangular blocks.
+        """
+        tmp = vecA.T.reshape(N * (N + 1) // 2, sz, sz).transpose(0, 2, 1)
+        AA = xp.zeros((N**2, sz, sz), dtype=vecA.dtype)
+        AA[IDX_upper] = tmp
+        AA[IDX_lower] = tmp[idx_offdiag].transpose(0, 2, 1)
+        return (AA.reshape(N, N, sz, sz).transpose(0, 2, 1, 3)).reshape(N * sz, N * sz)
+
+    @staticmethod
+    def transform_block(A, k, Pk):
+        """
+        Permute and vectorize the two invariant blocks of a degree-k matrix.
+        """
+        AT = Pk @ A @ Pk.T
+        A0 = AT[:, :k, :k].swapaxes(-1, -2).reshape(A.shape[0], -1)
+        A1 = AT[:, k:, k:].swapaxes(-1, -2).reshape(A.shape[0], -1)
+        return A0, A1
+
+    @staticmethod
+    def transform_back_block(A0, A1, k, Pk):
+        """
+        Reconstruct a degree-k matrix from its two invariant block vectors.
+        """
+        dk = 2 * k + 1
+        A = xp.zeros((A0.shape[0], dk, dk), dtype=A0.dtype)
+        A[:, :k, :k] = A0.reshape(-1, k, k).swapaxes(-1, -2)
+        A[:, k:, k:] = A1.reshape(-1, k + 1, k + 1).swapaxes(-1, -2)
+        return Pk.T @ A @ Pk
 
     ############################
     # Proximal Refinement Step #
@@ -1798,24 +2073,9 @@ class CommonlineNUG(Orient3D):
 
         return R_est
 
-    ############################
-    # Euler Estimation Helpers #
-    ############################
-    def _real_to_complex_representation(self, X, degree):
-        """
-        Convert a degree-wise representation matrix from the real basis used
-        by ADMM to the complex Wigner basis.
-
-        :param X: Representation matrix of shape
-            (n_img * (2 * degree + 1), n_img * (2 * degree + 1)).
-        :param degree: Wigner representation degree.
-
-        :return: Representation matrix in the complex Wigner basis.
-        """
-        T, Tinv = self.complex2real(degree)
-        identity = np.eye(self.n_img, dtype=np.float64)
-
-        return np.kron(identity, T) @ X @ np.kron(identity, Tinv)
+    #############################
+    # Rotation Recovery Helpers #
+    #############################
 
     @staticmethod
     def _find_phase(A, B):
@@ -1839,21 +2099,6 @@ class CommonlineNUG(Orient3D):
         ) / denominator
 
         return c / abs(c)
-
-    @staticmethod
-    def _handedness_matrix(degree):
-        """
-        Construct the handedness-conjugation matrix at a Wigner degree.
-
-        :param degree: Wigner representation degree.
-
-        :return: Diagonal matrix of shape (2 * degree + 1, 2 * degree + 1).
-        """
-        signs = np.ones(2 * degree + 1)
-        signs[degree + 1 :: 2] = -1
-        signs[degree - 1 :: -2] = -1
-
-        return np.diag(signs)
 
     @staticmethod
     def _assemble_rotation_estimates(alpha, beta, gamma):
@@ -2088,229 +2333,40 @@ class CommonlineNUG(Orient3D):
             np.imag(4 * DXijD),
         )
 
-    ####################
-    # Helper Functions #
-    ####################
-
-    def _project_representation_blocks(
-        self,
-        Z0,
-        Z1,
-        d0,
-        d1,
-        IDX_upper,
-        IDX_lower,
-        idx_offdiag,
-    ):
+    def _real_to_complex_representation(self, X, degree):
         """
-        Project packed degree-wise representation blocks onto the PSD cone.
+        Convert a degree-wise representation matrix from the real basis used
+        by ADMM to the complex Wigner basis.
 
-        :param Z0: Packed blocks of sizes 1 through `Lmax`.
-        :param Z1: Packed blocks of sizes 2 through `Lmax + 1`.
-        :param d0: Cumulative row offsets for the blocks in `Z0`.
-        :param d1: Cumulative row offsets for the blocks in `Z1`.
-        :param IDX_upper: Linear indices of upper-triangular image pairs.
-        :param IDX_lower: Linear indices of lower-triangular image pairs.
-        :param idx_offdiag: Linear indices of off-diagonal image pairs in the
-            packed upper-triangular representation.
+        :param X: Representation matrix of shape
+            (n_img * (2 * degree + 1), n_img * (2 * degree + 1)).
+        :param degree: Wigner representation degree.
 
-        :return: The projected packed arrays `Z0` and `Z1`.
+        :return: Representation matrix in the complex Wigner basis.
         """
-        for k in range(1, self.Lmax + 1):
-            block0 = self.mat_block(
-                Z0[d0[k - 1] : d0[k]],
-                self.n_img,
-                k,
-                IDX_upper,
-                IDX_lower,
-                idx_offdiag,
-            )
-            block0 = self.psd_projection(block0)
-            Z0[d0[k - 1] : d0[k]] = self.vec_block(
-                block0,
-                self.n_img,
-                k,
-                IDX_upper,
-            )
+        T, Tinv = self.complex2real(degree)
+        identity = np.eye(self.n_img, dtype=np.float64)
 
-            block1 = self.mat_block(
-                Z1[d1[k - 1] : d1[k]],
-                self.n_img,
-                k + 1,
-                IDX_upper,
-                IDX_lower,
-                idx_offdiag,
-            )
-            block1 = self.psd_projection(block1)
-            Z1[d1[k - 1] : d1[k]] = self.vec_block(
-                block1,
-                self.n_img,
-                k + 1,
-                IDX_upper,
-            )
-
-        return Z0, Z1
-
-    def transform_coeff(self, A, IDX_upper):
-        """
-        Convert representation matrices to the block-vector form used by ADMM.
-
-        :param A: Representation matrices.
-        :param IDX_upper: Indices of upper-triangular image pair blocks.
-
-        :return: The two block-vector coefficient arrays.
-        """
-        d0 = [0]
-        d1 = [0]
-        for k in range(1, self.Lmax + 1):
-            d0.append(d0[-1] + k**2)
-            d1.append(d1[-1] + (k + 1) ** 2)
-        A0 = xp.zeros((d0[-1], self.n_img * (self.n_img + 1) // 2), dtype=np.float64)
-        A1 = xp.zeros((d1[-1], self.n_img * (self.n_img + 1) // 2), dtype=np.float64)
-        for k in range(1, self.Lmax + 1):
-            a0, a1 = self.permutek(A[k - 1], k, self.n_img)
-            A0[d0[k - 1] : d0[k], :] = self.vec_block(a0, self.n_img, k, IDX_upper)
-            A1[d1[k - 1] : d1[k], :] = self.vec_block(a1, self.n_img, k + 1, IDX_upper)
-        return A0, A1
-
-    def transform_coeff_back(self, A0, A1, IDX_upper, IDX_lower, idx_offdiag):
-        """
-        Reconstruct representation matrices from their ADMM block-vector form.
-
-        :param A0: First block-vector array.
-        :param A1: Second block-vector array.
-        :param IDX_upper: Indices of upper-triangular image-pair blocks.
-        :param IDX_lower: Indices of lower-triangular image-pair blocks.
-        :param idx_offdiag: Indices of off-diagonal image pairs.
-
-        :return: Reconstructed representation matrices.
-        """
-        d0 = [0]
-        d1 = [0]
-        N = self.n_img
-        for k in range(1, self.Lmax + 1):
-            d0.append(d0[-1] + k**2)
-            d1.append(d1[-1] + (k + 1) ** 2)
-        A = []
-        for k in range(1, self.Lmax + 1):
-            dk = 2 * k + 1
-            Ak = xp.zeros((N * dk, N * dk), dtype=np.float64)
-            Ak[: N * k, : N * k] = self.mat_block(
-                A0[d0[k - 1] : d0[k], :], N, k, IDX_upper, IDX_lower, idx_offdiag
-            )
-            Ak[N * k :, N * k :] = self.mat_block(
-                A1[d1[k - 1] : d1[k], :], N, k + 1, IDX_upper, IDX_lower, idx_offdiag
-            )
-            Ak = self.permutek_back(Ak, k, N)
-            A.append(Ak)
-        return A
+        return np.kron(identity, T) @ X @ np.kron(identity, Tinv)
 
     @staticmethod
-    def permutek(Ak, k, N):
+    def _handedness_matrix(degree):
         """
-        Permute and split a degree-k matrix into blocks of sizes k and k + 1.
+        Construct the handedness-conjugation matrix at a Wigner degree.
 
-        :param Ak: Degree-k block matrix.
-        :param k: Representation degree.
-        :param N: Number of images.
+        :param degree: Wigner representation degree.
 
-        :return: The two permuted matrix blocks.
+        :return: Diagonal matrix of shape (2 * degree + 1, 2 * degree + 1).
         """
-        AkP = xp.copy(Ak)
-        dk = 2 * k + 1
-        Pk = xp.eye(dk, dtype=AkP.dtype)
-        for m in range(k):
-            for n in range(k - m):
-                Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
-        AkP = (
-            xp.kron(xp.eye(N, dtype=AkP.dtype), Pk)
-            @ Ak
-            @ xp.kron(xp.eye(N, dtype=AkP.dtype), Pk.T)
-        )
+        signs = np.ones(2 * degree + 1)
+        signs[degree + 1 :: 2] = -1
+        signs[degree - 1 :: -2] = -1
 
-        Pk = xp.eye(N * dk, dtype=AkP.dtype)
-        idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
-        for m in range(N - 1):
-            for n in range(N - 1 - m):
-                Pk[k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk] = Pk[
-                    k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk
-                ][idx, :]
-        AkP = Pk @ AkP @ Pk.T
-        return AkP[: N * k, : N * k], AkP[N * k :, N * k :]
+        return np.diag(signs)
 
-    @staticmethod
-    def permutek_back(Ak, k, N):
-        """
-        Undo the degree-k block permutation and reconstruct the full matrix.
-
-        :param Ak: Permuted degree-k matrix.
-        :param k: Representation degree.
-        :param N: Number of images.
-
-        :return: Matrix in the original block ordering.
-        """
-        dk = 2 * k + 1
-        Pk = xp.eye(N * dk, dtype=Ak.dtype)
-        idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
-        for m in range(N - 1):
-            for n in range(N - 1 - m):
-                Pk[k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk] = Pk[
-                    k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk
-                ][idx, :]
-        AkB = Pk.T @ Ak @ Pk
-        dk = 2 * k + 1
-        Pk = xp.eye(dk, dtype=Ak.dtype)
-        for m in range(k):
-            for n in range(k - m):
-                Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
-        AkB = (
-            xp.kron(xp.eye(N, dtype=Ak.dtype), Pk.T)
-            @ AkB
-            @ xp.kron(xp.eye(N, dtype=Ak.dtype), Pk)
-        )
-        return AkB
-
-    @staticmethod
-    def vec_block(A, N, sz, IDX_upper):
-        """
-        Vectorize the upper-triangular image-pair blocks of a block matrix.
-        """
-        vecA = (A.reshape(N, sz, N, sz).transpose(0, 2, 3, 1)).reshape(N**2, sz**2).T
-        return vecA[:, IDX_upper]
-
-    @staticmethod
-    def largest_eigenvalue(AI, Ngrid, N):
-        """
-        Estimate the largest eigenvalue of the Fejér constraint operator.
-        """
-        # find the largest eigenvalue of the operator AI
-        z = xp.random.normal(0, 1, (Ngrid, N**2))
-        Lambda = 0
-
-        while abs(Lambda - xp.linalg.norm(z)) > 500:
-            Lambda = xp.linalg.norm(z)
-            z = z / xp.linalg.norm(z)
-            z = AI @ (AI.T @ z)
-        Lambda += 2000
-        logger.info("Largest eigenvalue of AIAIT is approximately %1.2f" % Lambda)
-        return Lambda
-
-    def compute_rank(self):
-        """
-        Compute the ranks and matrices of the symmetry-averaging projectors at each degree.
-
-        :param Lmax: Maximum representation degree.
-
-        :return: Ranks and symmetry-averaging matrices for each degree.
-        """
-        rk = xp.zeros(self.Lmax, dtype=np.float64)
-        A = []
-        for k in range(1, self.Lmax + 1):
-            Ak = np.sum(self.WD(k, self.sym_euler), axis=0)
-            Ak = np.round(Ak / self.n_sym, 6)
-            A.append(Ak)
-            rk[k - 1] = np.linalg.matrix_rank(Ak)
-        return rk, A
+    ##########################
+    # Representation Helpers #
+    ##########################
 
     def WD(self, k, euler):
         """
@@ -2359,88 +2415,41 @@ class CommonlineNUG(Orient3D):
                     )
         return d
 
-    @staticmethod
-    def mat_block(vecA, N, sz, IDX_upper, IDX_lower, idx_offdiag):
+    def complex2real(self, ell):
         """
-        Reconstruct a symmetric block matrix from its vectorized upper-triangular blocks.
-        """
-        tmp = vecA.T.reshape(N * (N + 1) // 2, sz, sz).transpose(0, 2, 1)
-        AA = xp.zeros((N**2, sz, sz), dtype=vecA.dtype)
-        AA[IDX_upper] = tmp
-        AA[IDX_lower] = tmp[idx_offdiag].transpose(0, 2, 1)
-        return (AA.reshape(N, N, sz, sz).transpose(0, 2, 1, 3)).reshape(N * sz, N * sz)
+        Construct the transformation matrices between complex and real degree ell representations.
 
-    @staticmethod
-    def psd_projection(B):
-        """
-        Project one or more symmetric matrices onto the positive semidefinite cone.
-        """
-        # compute the PSD part of a symmstric matrix
-        B_sym = (B + B.swapaxes(-1, -2)) / 2
-        evals, evecs = xp.linalg.eigh(B_sym)
-        evals = xp.maximum(evals, 0)
-        return (evecs * evals[..., None, :]) @ evecs.swapaxes(-1, -2)
+        :param ell: Wigner representation degree.
 
-    @staticmethod
-    def transform_block(A, k, Pk):
+        :return: Forward and inverse change-of-basis matrices.
         """
-        Permute and vectorize the two invariant blocks of a degree-k matrix.
-        """
-        AT = Pk @ A @ Pk.T
-        A0 = AT[:, :k, :k].swapaxes(-1, -2).reshape(A.shape[0], -1)
-        A1 = AT[:, k:, k:].swapaxes(-1, -2).reshape(A.shape[0], -1)
-        return A0, A1
+        diml = 2 * ell + 1
+        Tinv = np.zeros((diml, diml), dtype=complex_type(np.float64))
+        for i in range(diml):
+            if i < ell:
+                Tinv[i, i] = 1j / np.sqrt(2)
+                Tinv[i, diml - 1 - i] = -1j * (-1) ** (i - ell) / np.sqrt(2)
+            if i == ell:
+                Tinv[i, i] = 1
+            if i > ell:
+                Tinv[i, i] = (-1) ** (i - ell) / np.sqrt(2)
+                Tinv[i, diml - 1 - i] = 1 / np.sqrt(2)
 
-    @staticmethod
-    def transform_back_block(A0, A1, k, Pk):
-        """
-        Reconstruct a degree-k matrix from its two invariant block vectors.
-        """
-        dk = 2 * k + 1
-        A = xp.zeros((A0.shape[0], dk, dk), dtype=A0.dtype)
-        A[:, :k, :k] = A0.reshape(-1, k, k).swapaxes(-1, -2)
-        A[:, k:, k:] = A1.reshape(-1, k + 1, k + 1).swapaxes(-1, -2)
-        return Pk.T @ A @ Pk
+        T = np.zeros((diml, diml), dtype=complex_type(np.float64))
+        for i in range(diml):
+            if i < ell:
+                T[i, i] = -1j / np.sqrt(2)
+                T[i, diml - 1 - i] = 1 / np.sqrt(2)
+            if i == ell:
+                T[i, i] = 1
+            if i > ell:
+                T[i, i] = (-1) ** (i - ell) / np.sqrt(2)
+                T[i, diml - 1 - i] = 1j * (-1) ** (i - ell) / np.sqrt(2)
+        return T, Tinv
 
-    def construct_AEq(self):
-        """
-        Construct the linear equality operator encoding the quaternion constraints.
-        """
-        AEq = np.zeros((17, 21), np.float64)
-
-        # First 16 rows: identity constraints on first 16 variables
-        AEq[:16, :16] = np.eye(16, dtype=np.float64)
-
-        # Columns 16:21 map the low-degree X0/X1 entries into the quaternion
-        # convex-hull constraint Xq = I/4 - linear(X^(1)).
-        extra = 0.25 * np.array(
-            [
-                [-1, 1, 0, 0, 1],
-                [0, 0, 0, 0, 0],
-                [0, 0, 1, -1, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [1, 1, 0, 0, -1],
-                [0, 0, 0, 0, 0],
-                [0, 0, 1, 1, 0],
-                [0, 0, 1, -1, 0],
-                [0, 0, 0, 0, 0],
-                [-1, -1, 0, 0, -1],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 1, 1, 0],
-                [0, 0, 0, 0, 0],
-                [1, -1, 0, 0, 1],
-            ],
-            dtype=np.float64,
-        )
-
-        AEq[:16, 16:] = extra
-
-        # Last row: redundant trace/sum constraint
-        AEq[16, [0, 5, 10, 15]] = 1
-
-        return AEq
+    ######################
+    # Validation Helpers #
+    ######################
 
     def form_ground_truth_X(self, euler_angles):
         """
