@@ -20,4 +20,5 @@ from .data_fetcher import (
     emdb_14621,
     remove_downloads,
     simulated_channelspin,
+    nug_10081,
 )
