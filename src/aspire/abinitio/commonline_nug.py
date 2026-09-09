@@ -655,7 +655,7 @@ class CommonlineNUG(Orient3D):
 
         IDX = np.arange(3)
         for t in range(max_iter):
-            # np.random.shuffle(IDX)
+            np.random.shuffle(IDX)
             for idx in IDX:
                 if idx == 0:
                     S0, S1, Sq = update_S(C0, C1, yE0, yE1, yEq, yI, X0, X1, Xq, rho)
