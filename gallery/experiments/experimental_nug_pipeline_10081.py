@@ -31,6 +31,7 @@ https://www.ebi.ac.uk/emdb/EMD-8511
 # First import the necessary utilities and ASPIRE
 # classes used throughout the notebook.
 import logging
+
 import numpy as np
 
 from aspire.abinitio import CommonlineNUG
@@ -58,9 +59,9 @@ volume_output_fn = "nug_10081_abinitio.mrc"
 # ----------------
 #
 # The 17 class averages can be accessed as an ASPIRE ``Image`` object
-# via the built-in downloader utility. 
+# via the built-in downloader utility.
 
-logger.info("Load Precomputed Class Averages") 
+logger.info("Load Precomputed Class Averages")
 ims = nug_10081()
 avgs = ArrayImageSource(ims, pixel_size=1.3, symmetry_group="C4")
 
@@ -71,12 +72,13 @@ avgs = ArrayImageSource(ims, pixel_size=1.3, symmetry_group="C4")
 #
 # Create an orientation estimation object for the ``avgs``.
 # The ``CommonlineNUG`` algorithm will detect the symmetry from
-# the ``avgs`` metadata and use the approriate NUG solver to estimate
-# orientations. This experiment uses 15 iterations of the optional
-# proximal refinement method to improve the initial estimation.
+# the ``avgs`` metadata and use the approriate NUG ADMM-solver to estimate
+# orientations. To replicate the original experiment as closely as possible,
+# we use the 15 iterations of proximal refinement and disable searching over
+# the commonline shift space.
 
 logger.info("Begin Orientation Estimation")
-orient_est = CommonlineNUG(avgs, pr_iters=15)
+orient_est = CommonlineNUG(avgs, max_shift=0, pr_iters=15)
 
 # Create an ``OrientedSource`` class instance that performs orientation
 # estimation in a lazy fashion upon request of images or rotations.
@@ -88,7 +90,7 @@ oriented_src.rotations
 oriented_src = oriented_src.update(offsets=0)
 
 # Confirm offsets have been set to zero.
-logger.info(f"Offsets: {oriented_src.offsets}") 
+logger.info(f"Offsets: {oriented_src.offsets}")
 
 # Save oriented source.
 oriented_src.save(oriented_fn)
