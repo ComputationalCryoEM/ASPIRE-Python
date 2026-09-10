@@ -32,11 +32,8 @@ https://www.ebi.ac.uk/emdb/EMD-8511
 # classes used throughout the notebook.
 import logging
 
-import numpy as np
-
 from aspire.abinitio import CommonlineNUG
 from aspire.downloader import nug_10081
-from aspire.image import Image
 from aspire.reconstruction import MeanEstimator
 from aspire.source import ArrayImageSource, OrientedSource
 
