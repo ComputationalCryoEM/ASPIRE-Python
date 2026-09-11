@@ -13,7 +13,7 @@ def main_entry():
     # @click.option('-v', '--verbosity', default=0, help='Verbosity level (0-3).')
 
     for importer, modname, _ in pkgutil.iter_modules(aspire.commands.__path__):
-        module = importer.find_module(modname).load_module(modname)
+        module = importer.find_spec(modname).loader.load_module(modname)
         commands = [v for v in module.__dict__.values() if isinstance(v, Command)]
         for command in commands:
             main.add_command(command)
