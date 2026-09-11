@@ -244,7 +244,7 @@ def test_scalar_add(vols_1, data_1):
 def test_scalar_r_add(vols_1, data_1):
     result = 42 + vols_1
     assert np.all(result == data_1 + 42)
-    isinstance(result, Volume)
+    assert isinstance(result, Volume)
 
 
 def test_sub(vols_1, vols_2, data_1, data_2):
@@ -255,7 +255,7 @@ def test_sub(vols_1, vols_2, data_1, data_2):
 
 def test_scalar_sub(vols_1, data_1):
     result = vols_1 - 42
-    np.all(result == data_1 - 42)
+    assert np.all(result == data_1 - 42)
     assert isinstance(result, Volume)
 
 
