@@ -1,3 +1,4 @@
+import importlib
 import pkgutil
 
 from click.core import Command, Group
@@ -12,8 +13,8 @@ def main_entry():
     # @click.option('--debug/--no-debug', default=False, help="Default is --no-debug.")
     # @click.option('-v', '--verbosity', default=0, help='Verbosity level (0-3).')
 
-    for importer, modname, _ in pkgutil.iter_modules(aspire.commands.__path__):
-        module = importer.find_spec(modname).loader.load_module(modname)
+    for _, modname, _ in pkgutil.iter_modules(aspire.commands.__path__):
+        module = importlib.import_module(f"aspire.commands.{modname}")
         commands = [v for v in module.__dict__.values() if isinstance(v, Command)]
         for command in commands:
             main.add_command(command)
