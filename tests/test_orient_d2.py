@@ -5,7 +5,6 @@ from aspire.abinitio import CLSymmetryD2
 from aspire.source import Simulation
 from aspire.utils import (
     J_conjugate,
-    Random,
     Rotation,
     all_pairs,
     mean_aligned_angular_distance,
@@ -289,22 +288,20 @@ def test_sync_colors(orient_est):
     Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
     gt_colors = np.zeros((orient_est.n_pairs, 3), dtype=int)
 
-    with Random(123):
-        for p, (i, j) in enumerate(orient_est.pairs):
-            gs = orient_est.gs
-            if p > 0:
-                np.random.shuffle(gs)  # Mix up the ordering of all but 1st Rijs.
+    rng = np.random.default_rng(123)
+    for p, (i, j) in enumerate(orient_est.pairs):
+        gs = orient_est.gs
+        if p > 0:
+            rng.shuffle(gs)  # Mix up the ordering of all but 1st Rijs.
 
-            # Compute the rotation row permutation created by the ordering of gs.
-            # See Proposition 5.1 in the related publication for details.
-            for m in range(3):
-                gt_colors[p, m] = np.argmax(
-                    np.sum(abs(0.5 * (gs[0] + gs[m + 1])), axis=0)
-                )
+        # Compute the rotation row permutation created by the ordering of gs.
+        # See Proposition 5.1 in the related publication for details.
+        for m in range(3):
+            gt_colors[p, m] = np.argmax(np.sum(abs(0.5 * (gs[0] + gs[m + 1])), axis=0))
 
-            # Compute Rijs with shuffled gs.
-            Rij = rots[i].T @ gs @ rots[j]
-            Rijs[p] = Rij
+        # Compute Rijs with shuffled gs.
+        Rij = rots[i].T @ gs @ rots[j]
+        Rijs[p] = Rij
 
     # Compute ground truth m'th row outer products.
     vijs = np.zeros((orient_est.n_pairs, 3, 3, 3), dtype=orient_est.dtype)
