@@ -10,8 +10,9 @@ import numpy as np
 import pymanopt
 from numpy.linalg import norm
 from scipy.optimize import minimize
+from scipy.stats import special_ortho_group
 
-from aspire.utils.rotation import Random, Rotation
+from aspire.utils import Rotation
 
 # Store parameters specific to each loss_type.
 # `lengthscale` is used to scale the modeled covariance
@@ -62,7 +63,7 @@ def align_BO(
     :param verbosity: Surrogate problem optimization detail level. integer, defaults 0 (silent). 2 is most verbose.
     :param dtype: Numeric dtype to perform computations with.
         Default `None` infers dtype from `vol_ref`.
-    :param seed: Random seed for reproducible results. Integer, defaults None.
+    :param seed: Seed for RNG. Defaults None.
     :return: Rotation matrix R_init (without refinement) or (R_init, R_est) (with refinement).
     """
     # Avoid utils/operators/utils circular import
@@ -131,6 +132,9 @@ def align_BO(
     loss = np.zeros(max_iters, dtype=dtype)
     loss[0] = loss_fun(R[0])
 
+    # Initialize RNG with `seed`
+    rng = np.random.default_rng(seed)
+
     for t in range(1, max_iters):
         # See discussion 3.2 and equation 10 in the paper.
         q = np.linalg.solve(cov[:t, :t] + tau * np.eye(t, dtype=dtype), loss[:t])
@@ -170,11 +174,11 @@ def align_BO(
             verbosity=verbosity,
         )
 
-        # If provided, use seed to set initial point for optimizer
+        # If provided, use seeded RNG to set initial point for optimizer
+        # otherwise let pymanopt handle it.
         initial = None
         if seed is not None:
-            with Random(seed + t):
-                initial = manifold.random_point()
+            initial = special_ortho_group.rvs(3, random_state=rng)
 
         result = optimizer.run(problem, initial_point=initial)
         R_new = result.point.astype(dtype, copy=False)
