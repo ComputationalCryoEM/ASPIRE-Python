@@ -14,7 +14,6 @@ from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import _LegacySimulation
 from aspire.utils import eigs
-from aspire.utils.random import Random
 from aspire.volume import LegacyVolume, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
