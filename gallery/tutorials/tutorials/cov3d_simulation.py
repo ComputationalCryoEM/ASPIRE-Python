@@ -17,7 +17,6 @@ from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils import eigs
-from aspire.utils.random import Random
 from aspire.volume import LegacyVolume, Volume
 
 # %%
@@ -107,10 +106,8 @@ coords_est = src_wiener_coords(
 # we expect, so we can use this parameter here. Typically, one would take
 # the number of clusters to be one plus the number of eigenvectors extracted.
 
-# Since kmeans2 relies on randomness for initialization, important to push random seed to context manager here.
-with Random(0):
-    centers, vol_idx = kmeans2(coords_est.T, num_vols)
-    centers = centers.squeeze()
+centers, vol_idx = kmeans2(coords_est.T, num_vols)
+centers = centers.squeeze()
 
 # %%
 # Performance Evaluation
