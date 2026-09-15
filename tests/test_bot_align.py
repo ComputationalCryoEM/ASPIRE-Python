@@ -4,7 +4,6 @@ import os
 import numpy as np
 import pytest
 from numpy.linalg import norm
-from numpy.random import default_rng
 
 from aspire.utils import Rotation, align_BO
 from aspire.volume import Volume
