@@ -34,7 +34,6 @@ import logging
 
 from aspire.abinitio import CommonlineNUG
 from aspire.downloader import nug_12036
-from aspire.image import Image
 from aspire.reconstruction import MeanEstimator
 from aspire.source import ArrayImageSource, OrientedSource
 
