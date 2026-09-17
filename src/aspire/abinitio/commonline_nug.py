@@ -1521,7 +1521,15 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def psd_projection(B):
         """
-        Project one or more symmetric matrices onto the positive semidefinite cone.
+        Project real sqaure matrices onto the positive semidefinite cone.
+
+        Each matrix is first symmetrized. Negative eigenvalues are then
+        replaced with zero before the matrix is reconstructed. Leading
+        dimensions are treated as stack dimensions.
+
+        :param B: Matrix or stack of matrices with shape (..., n, n).
+
+        :return: Positive semidefinite projection with same shape as B.
         """
         # compute the PSD part of a symmstric matrix
         B_sym = (B + B.swapaxes(-1, -2)) / 2
