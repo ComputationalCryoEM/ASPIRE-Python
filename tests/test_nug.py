@@ -219,3 +219,20 @@ def test_symmetry_logging(caplog):
     assert str(orient_est.sym_grp) == "D3"
     assert "Provided symmetry, D3, does not match source, C3" in caplog.text
     assert "Using provided symmetry: D3" in caplog.text
+
+
+def test_c1_proximal_refinement_raises(dtype):
+    vol = emdb_2660().astype(dtype).downsample(16)
+    src = Simulation(
+        n=3,
+        vols=vol,
+        offsets=0,
+        amplitudes=1,
+        seed=SEED,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"Proximal refinement is not supported for asymmetric",
+    ):
+        CommonlineNUG(src, pr_iters=1)

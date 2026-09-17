@@ -79,8 +79,10 @@ class CommonlineNUG(Orient3D):
         :param S2_grid: Number of sphere samples used to discretize SO(3). Default is 441.
         :param Nstep_yI: Number of inequality-multiplier updates per ADMM iteration.
             Default is 10.
-        :param pr_iters: Number of proximal refinement iterations. Default of None
-            does not perform proximal refinement. Recommended value when using is 4.
+        :param pr_iters: Number of proximal-refinement iterations for nontrivial
+            cyclic and dihedral symmetry groups. Default is None, which disables
+            proximal refinement. Supplying a value for an asymmetric (C1)
+            problem raises a ValueError.
         :param verbose: Whether to log ADMM and proximal refinement progress.
             Default is True.
         """
@@ -137,7 +139,14 @@ class CommonlineNUG(Orient3D):
         self.sym_euler = sym_rotations.angles
         self.n_sym = len(self.sym_euler)
 
-        # Set up proximal refinement terms
+        # Proximal refinement is implemented only for cyclic and dihedral symmetry groups.
+        if self.n_sym == 1 and pr_iters is not None:
+            raise ValueError(
+                "Proximal refinement is not supported for asymmetric (C1) NUG. "
+                "Set pr_iters=None."
+            )
+
+        # Set up proximal refinement terms.
         if pr_iters is not None:
             self.pr_weights = 1 / (1 + np.arange(self.Lmax))
             self.pr_penalty = [1] * pr_iters
@@ -317,11 +326,6 @@ class CommonlineNUG(Orient3D):
             X_est = self.admm_sym_J(self.C, self.verbose)
 
         if self.pr_iters is not None:
-            if is_asymmetric:
-                raise NotImplementedError(
-                    "Proximal refinement is not yet implemented for asymmetric NUG."
-                )
-
             X_est = self.proximal_refine(
                 X_est,
                 self.pr_weights,
