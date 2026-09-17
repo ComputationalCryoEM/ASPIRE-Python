@@ -222,14 +222,12 @@ def test_symmetry_logging(caplog):
 
 
 def test_c1_proximal_refinement_raises(dtype):
+    """
+    Proximal refinement is only supported for cyclic and dihedral problems.
+    Check we raise when pr_iters are provided.
+    """
     vol = emdb_2660().astype(dtype).downsample(16)
-    src = Simulation(
-        n=3,
-        vols=vol,
-        offsets=0,
-        amplitudes=1,
-        seed=SEED,
-    )
+    src = Simulation(n=3, vols=vol)
 
     with pytest.raises(
         ValueError,
