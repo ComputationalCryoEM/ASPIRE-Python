@@ -1257,7 +1257,7 @@ class CommonlineNUG(Orient3D):
         bI = -(Lmax + 2) * (Lmax + 1) / 2
 
         # largest eigenvalue for AIAIT
-        Lambda = self.largest_eigenvalue(AI_mat_offdiag, Ngrid, N)
+        Lambda = self._largest_eigenvalue(AI_mat_offdiag, N)
 
         # initialization
         II = []
@@ -1374,12 +1374,24 @@ class CommonlineNUG(Orient3D):
         return SO3
 
     @staticmethod
-    def largest_eigenvalue(AI, Ngrid, N):
+    def _largest_eigenvalue(AI, N):
         """
-        Estimate the largest eigenvalue of the Fejér constraint operator.
+        Estimate the largest eigenvalue of the Fejér constraint operator,
+        AI @ AI.T, using power iteration.
+
+        A fixed empirical margin is added to the estimate, following the
+        researcher's implementation, to obtain a more conservative step
+        size for the inequality-multiplier update.
+
+        :param AI: Matrix representation of the Fejer inequality operator,
+          with shape (Ngrid, n_coefficients).
+        :param N: Number of images.
+
+        :return: Estimated largest eigenvalue of AI @ AI.T.
         """
         # find the largest eigenvalue of the operator AI
-        z = xp.random.normal(0, 1, (Ngrid, N**2))
+        n_grid = AI.shape[0]
+        z = xp.random.normal(0, 1, (n_grid, N**2))
         Lambda = 0
 
         while abs(Lambda - xp.linalg.norm(z)) > 500:
