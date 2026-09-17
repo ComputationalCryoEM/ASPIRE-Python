@@ -1709,7 +1709,18 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def transform_block(A, k, Pk):
         """
-        Permute and vectorize the two invariant blocks of a degree-k matrix.
+        Permute and pack the two components of degree-k matrices.
+
+        Each input matrix is transformed as Pk @ A @ Pk.T. The leading k-by-k
+        and trailing (k + 1)-by-(k + 1) diagonal blocks are then vectorized
+        column-wise. Entries in the two off-diagonal blocks are not retained.
+
+        :param A: Batch of degree-k matrices with shape (n_blocks, 2 * k + 1, 2 * k + 1).
+        :param k: Wigner representation degree.
+        :param Pk: Permutation matrix with shape (2 * k + 1, 2 * k + 1).
+
+        :return: Packed leading and trailing block arrays with shapes
+            (n_blocks, k**2) and (n_blocks, (k + 1)**2), respectively.
         """
         AT = Pk @ A @ Pk.T
         A0 = AT[:, :k, :k].swapaxes(-1, -2).reshape(A.shape[0], -1)
@@ -1719,7 +1730,20 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def transform_back_block(A0, A1, k, Pk):
         """
-        Reconstruct a degree-k matrix from its two invariant block vectors.
+        Reconstruct degree-k matrices from two packed components.
+
+        Each row of A0 and A1 is interpreted as a column-wise vectorization
+        of a k-by-k or (k + 1)-by-(k + 1) block. The two blocks are placed
+        on the diagonal of a (2 * k + 1)-by-(2 * k + 1) matrix, with zeros in the
+        off-diagonal blocks. The permutation represented by Pk is then reversed.
+
+        :param A0: Packed leading blocks with shape (n_blocks, k**2).
+        :param A1: Packed trailing blocks with shape (n_blocks, (k + 1)**2).
+        :param k: Wigner representation degree.
+        :param Pk: Permutation matrix with shape (2 * k + 1, 2 * k + 1).
+
+        :return: Reconstructed degree-k matrices with shape
+            (n_blocks, 2 * k + 1, 2 * k + 1).
         """
         dk = 2 * k + 1
         A = xp.zeros((A0.shape[0], dk, dk), dtype=A0.dtype)
