@@ -1659,7 +1659,20 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def vec_block(A, N, sz, IDX_upper):
         """
-        Vectorize the upper-triangular image-pair blocks of a block matrix.
+        Pack the upper-triangular image-pair blocks of a block matrix.
+
+        The input is interpreted as an N-by-N array of sz-by-sz blocks.
+        Blocks from the upper triangle, including the diagonal, are vectorized
+        column-wise and stored as columns of the returned array.
+
+        :param A: Block matrix with shape (N * sz, N * sz).
+        :param N: Number of block rows and columns, corresponding to the
+            number of images.
+        :param sz: Row and column size of each square block.
+        :param IDX_upper: Linear indices of the upper-triangular blocks in
+           the flattened N-by-N block grid.
+
+        :return: Packed block array with shape (sz**2, N * (N + 1) // 2).
         """
         vecA = (A.reshape(N, sz, N, sz).transpose(0, 2, 3, 1)).reshape(N**2, sz**2).T
         return vecA[:, IDX_upper]
@@ -1667,7 +1680,25 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def mat_block(vecA, N, sz, IDX_upper, IDX_lower, idx_offdiag):
         """
-        Reconstruct a symmetric block matrix from its vectorized upper-triangular blocks.
+        Unpack upper-triangular blocks into a symmetric block matrix.
+
+        Each column of `vecA` is reshaped column-wise into an sz-by-sz block.
+        The blocks are placed in the upper triangle of an N-by-N block grid,
+        including the diagonal. Transposes of the off-diagonal blocks are placed
+        in the corresponding lower-triangular positions.
+
+        :param vecA: Packed block array with shape (sz**2, N * (N + 1) // 2).
+        :param N: Number of block rows and columns, corresponding to the
+            number of images.
+        :param sz: Row and column size of each square block.
+        :param IDX_upper: Linear indices of the upper-triangular blocks in
+            the flattened N-by-N block grid.
+        :param IDX_lower: Linear indices of the corresponding
+            lower-triangular off-diagonal blocks in the flattened block grid.
+        :param idx_offdiag: Column indices selecting the off-diagonal blocks
+            from vecA.
+
+        :return: Symmetric block matrix with shape (N * sz, N * sz).
         """
         tmp = vecA.T.reshape(N * (N + 1) // 2, sz, sz).transpose(0, 2, 1)
         AA = xp.zeros((N**2, sz, sz), dtype=vecA.dtype)
