@@ -48,15 +48,19 @@ class CommonlineNUG(Orient3D):
         **kwargs,
     ):
         """
-        Initialize the symmetric NUG orientation estimator. All default values match those used
-        for publication results, with exception of `pr_iters`, which controls how many iterations
-        of proximal refinement to be used. The default of None runs the algorithm without proximal
-        refinement. Set `pr_iters=4` to match t3he proximal refinement workflow in the related
-        publication.
+        Initialize the NUG orientation estimator.
+
+        The estimator supports asymmetric molecules (C1) and molecules with
+        cyclic (Cn) or dihedral (Dn) symmetry. Most defaults match those used
+        for the experiments in the associated publication. Proximal refinement
+        is available only for nontrivial cyclic and dihedral symmetry groups.
+
+        For complete experimental workflows, see the NUG examples in
+        ``gallery/experiments``.
 
         :param src: Source containing the input projection images.
-        :param symmetry: Cyclic or dihedral symmetry specification, such as 'C3' or
-            'D4'. If omitted, uses the source symmetry.
+        :param symmetry: Cyclic or dihedral symmetry specification, such as 'C1', 'C3',
+            or 'D4'. If None, use the symmetry specified by `src`. Default is None.
         :param n_rad: Number of radial samples in the polar Fourier transform. If None,
             n_rad will default to the ceiling of half the resolution of the source.
         :param n_theta: Number of angular samples in the polar Fourier transform. This
@@ -80,9 +84,9 @@ class CommonlineNUG(Orient3D):
         :param Nstep_yI: Number of inequality-multiplier updates per ADMM iteration.
             Default is 10.
         :param pr_iters: Number of proximal-refinement iterations for nontrivial
-            cyclic and dihedral symmetry groups. Default is None, which disables
-            proximal refinement. Supplying a value for an asymmetric (C1)
-            problem raises a ValueError.
+            cyclic and dihedral symmetry groups. If None, do not perform proximal
+            refinement. Supplying a value for an asymmetric C1 problem raises a
+            `ValueError`. Default is None.
         :param verbose: Whether to log ADMM and proximal refinement progress.
             Default is True.
         """
