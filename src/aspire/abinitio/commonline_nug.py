@@ -717,7 +717,7 @@ class CommonlineNUG(Orient3D):
         Nstep_yI = self.Nstep_yI
 
         # Solve the symmetry-constrained SDP relaxation in the real, packed
-        # representation basis prepared by ADMM_preprocessing.
+        # ion basis prepared by ADMM_preprocessing.
         (
             C0,
             C1,
@@ -754,19 +754,17 @@ class CommonlineNUG(Orient3D):
         # blocks. These encode the representation constraints imposed by symmetry.
         AE = []
         AEAETinv = []
-        for degree_idx in range(Lmax):
-            degree = degree_idx + 1
-            size0 = degree**2
-            size1 = (degree + 1) ** 2
+        for k_idx in range(Lmax):
+            k = k_idx + 1
+            size0 = k**2
+            size1 = (k + 1) ** 2
             n_components = size0 + size1
 
             AEk = xp.zeros((1 + n_components, 2 * n_components), dtype=np.float64)
 
             # Row zero contains the trace constraint for the two components.
-            AEk[0, :size0] = xp.eye(degree, dtype=np.float64).T.reshape(-1)
-            AEk[0, size0:n_components] = xp.eye(degree + 1, dtype=np.float64).T.reshape(
-                -1
-            )
+            AEk[0, :size0] = xp.eye(k, dtype=np.float64).T.reshape(-1)
+            AEk[0, size0:n_components] = xp.eye(k + 1, dtype=np.float64).T.reshape(-1)
 
             # The remaining rows couple every representation entry to its
             # corresponding auxiliary diagonal variable.
@@ -781,24 +779,24 @@ class CommonlineNUG(Orient3D):
         # Right-hand sides for the equality constraints: symmetry projector ranks
         # and identity constraints on diagonal representation blocks.
         bE = xp.zeros((Lmax + D0 + D1), dtype=np.float64)
-        for degree_idx in range(Lmax):
-            degree = degree_idx + 1
+        for k_idx in range(Lmax):
+            k = k_idx + 1
 
-            start = degree_idx + d0[degree_idx] + d1[degree_idx]
-            split = degree_idx + 1 + d0[degree_idx + 1] + d1[degree_idx]
-            stop = degree_idx + 1 + d0[degree_idx + 1] + d1[degree_idx + 1]
+            start = k_idx + d0[k_idx] + d1[k_idx]
+            split = k_idx + 1 + d0[k_idx + 1] + d1[k_idx]
+            stop = k_idx + 1 + d0[k_idx + 1] + d1[k_idx + 1]
 
-            bE[start:] = rank_Ak[degree_idx]
+            bE[start:] = rank_Ak[k_idx]
             bE[start + 1 : split] = xp.eye(
-                degree,
+                k,
                 dtype=np.float64,
             ).T.reshape(-1)
-            bE_new[split:stop] = xp.eye(
-                degree + 1,
+            bE[split:stop] = xp.eye(
+                k + 1,
                 dtype=np.float64,
             ).T.reshape(-1)
 
-        bE_new = xp.repeat(bE_new[:, None], N, axis=1)
+        bE = xp.repeat(bE[:, None], N, axis=1)
 
         # Degree-wise permutations used to move between full Wigner blocks and the
         # two invariant block variables used by the relaxation.
@@ -1507,9 +1505,20 @@ class CommonlineNUG(Orient3D):
 
         :return: The projected packed arrays `Z0` and `Z1`.
         """
-        for k in range(1, self.Lmax + 1):
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+
+            block0_rows = slice(
+                d0[k_idx],
+                d0[k_idx + 1],
+            )
+            block1_rows = slice(
+                d1[k_idx],
+                d1[k_idx + 1],
+            )
+
             block0 = self.mat_block(
-                Z0[d0[k - 1] : d0[k]],
+                Z0[block0_rows],
                 self.n_img,
                 k,
                 IDX_upper,
@@ -1517,7 +1526,7 @@ class CommonlineNUG(Orient3D):
                 idx_offdiag,
             )
             block0 = self.psd_projection(block0)
-            Z0[d0[k - 1] : d0[k]] = self.vec_block(
+            Z0[block0_rows] = self.vec_block(
                 block0,
                 self.n_img,
                 k,
@@ -1525,7 +1534,7 @@ class CommonlineNUG(Orient3D):
             )
 
             block1 = self.mat_block(
-                Z1[d1[k - 1] : d1[k]],
+                Z1[block1_rows],
                 self.n_img,
                 k + 1,
                 IDX_upper,
@@ -1533,13 +1542,12 @@ class CommonlineNUG(Orient3D):
                 idx_offdiag,
             )
             block1 = self.psd_projection(block1)
-            Z1[d1[k - 1] : d1[k]] = self.vec_block(
+            Z1[block1_rows] = self.vec_block(
                 block1,
                 self.n_img,
                 k + 1,
                 IDX_upper,
             )
-
         return Z0, Z1
 
     @staticmethod
@@ -1575,12 +1583,20 @@ class CommonlineNUG(Orient3D):
         for k in range(1, self.Lmax + 1):
             d0.append(d0[-1] + k**2)
             d1.append(d1[-1] + (k + 1) ** 2)
+
         A0 = xp.zeros((d0[-1], self.n_img * (self.n_img + 1) // 2), dtype=np.float64)
         A1 = xp.zeros((d1[-1], self.n_img * (self.n_img + 1) // 2), dtype=np.float64)
-        for k in range(1, self.Lmax + 1):
-            a0, a1 = self.permutek(A[k - 1], k, self.n_img)
-            A0[d0[k - 1] : d0[k], :] = self.vec_block(a0, self.n_img, k, IDX_upper)
-            A1[d1[k - 1] : d1[k], :] = self.vec_block(a1, self.n_img, k + 1, IDX_upper)
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+
+            block0_rows = slice(d0[k_idx], d0[k_idx + 1])
+            block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+
+            block0, block1 = self.permutek(A[k_idx], k, self.n_img)
+
+            A0[block0_rows] = self.vec_block(block0, self.n_img, k, IDX_upper)
+            A1[block1_rows] = self.vec_block(block1, self.n_img, k + 1, IDX_upper)
+
         return A0, A1
 
     def transform_coeff_back(self, A0, A1, IDX_upper, IDX_lower, idx_offdiag):
@@ -1601,15 +1617,31 @@ class CommonlineNUG(Orient3D):
         for k in range(1, self.Lmax + 1):
             d0.append(d0[-1] + k**2)
             d1.append(d1[-1] + (k + 1) ** 2)
+
         A = []
-        for k in range(1, self.Lmax + 1):
-            dk = 2 * k + 1
-            Ak = xp.zeros((N * dk, N * dk), dtype=np.float64)
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+            dimension = 2 * k + 1
+
+            block0_rows = slice(d0[k_idx], d0[k_idx + 1])
+            block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+
+            Ak = xp.zeros((N * dimension, N * dimension), dtype=np.float64)
             Ak[: N * k, : N * k] = self.mat_block(
-                A0[d0[k - 1] : d0[k], :], N, k, IDX_upper, IDX_lower, idx_offdiag
+                A0[block0_rows],
+                N,
+                k,
+                IDX_upper,
+                IDX_lower,
+                idx_offdiag,
             )
             Ak[N * k :, N * k :] = self.mat_block(
-                A1[d1[k - 1] : d1[k], :], N, k + 1, IDX_upper, IDX_lower, idx_offdiag
+                A1[block1_rows],
+                N,
+                k + 1,
+                IDX_upper,
+                IDX_lower,
+                idx_offdiag,
             )
             Ak = self.permutek_back(Ak, k, N)
             A.append(Ak)
