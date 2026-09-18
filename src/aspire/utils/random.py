@@ -47,8 +47,8 @@ def randn(*args, **kwargs):
         seed = kwargs.pop("seed")
 
     with Random(seed) as rng:
-        # uniform = rng.random(args, **kwargs)
-        uniform = np.random.rand(*args, **kwargs)
+        # uniform = np.random.rand(*args, **kwargs)
+        uniform = rng.random(args, **kwargs)
         result = np.sqrt(2) * erfinv(2 * uniform - 1)
         # Note, rearranging elements to get consistent behavior with MATLAB 'randn2'
         result = result.T.reshape(args, order="F")
@@ -94,7 +94,9 @@ class Random:
         self.seed = seed
 
     def __enter__(self):
-        if self.seed is not None:
+        if isinstance(self.seed, np.random.Generator):
+            rng = self.seed
+        elif self.seed is not None:
             # Push current state on stack
             random_states.append(np.random.get_state())
 
@@ -115,5 +117,5 @@ class Random:
         return rng
 
     def __exit__(self, *args):
-        if self.seed is not None:
+        if self.seed is not None and len(random_states):
             np.random.set_state(random_states.pop())

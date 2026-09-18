@@ -9,8 +9,6 @@ from numpy.linalg import norm
 from scipy.linalg import svd
 from scipy.spatial.transform import Rotation as sp_rot
 
-from aspire.utils.random import Random
-
 
 class Rotation:
     def __init__(self, matrices, gimble_lock_warnings=True):
@@ -356,20 +354,19 @@ class Rotation:
         Generate Rotation object with random 3D rotation matrices
 
         :param n: The number of rotation matrices to generate
-        :param seed: Random integer seed to use. If None,
-            the current random state is used.
+        :param seed: Optional RNG seed
         :param dtype:  data type for rotational angles and matrices
         :return: A new Rotation object
         """
         # Generate random rotation angles, in radians
-        with Random(seed):
-            angles = np.column_stack(
-                (
-                    np.random.random(n) * 2 * np.pi,
-                    np.arccos(2 * np.random.random(n) - 1),
-                    np.random.random(n) * 2 * np.pi,
-                )
-            ).astype(dtype=dtype)
+        rng = np.random.default_rng(seed)
+        angles = np.column_stack(
+            (
+                rng.random(n) * 2 * np.pi,
+                np.arccos(2 * rng.random(n) - 1),
+                rng.random(n) * 2 * np.pi,
+            )
+        ).astype(dtype=dtype)
 
         return Rotation.from_euler(angles, dtype=dtype)
 
