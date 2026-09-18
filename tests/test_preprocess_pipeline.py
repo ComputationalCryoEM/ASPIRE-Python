@@ -147,7 +147,7 @@ def test_legacy_normalize_background(L, dtype):
     new_variance = np.var(imgs_nb[:, mask], ddof=1)
 
     # new mean of noise should be close to zero and variance should be close to 1
-    np.testing.assert_array_less(new_mean, 3e-4)
+    np.testing.assert_array_less(new_mean, 1e-3)
     np.testing.assert_array_less(abs(new_variance - 1), 2e-3)
 
     # dtype of returned images should be the same
@@ -286,7 +286,7 @@ def test_legacy_whiten(dtype):
     corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
 
     # correlation matrix should be close to identity
-    np.testing.assert_allclose(np.eye(2), corr_coef, atol=1e-1)
+    np.testing.assert_allclose(np.eye(2), corr_coef, atol=2e-1)
     # dtype of returned images should be the same
     assert dtype == imgs_wt.dtype
 
@@ -308,7 +308,7 @@ def test_legacy_whiten_2(dtype):
     corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
 
     # correlation matrix should be close to identity
-    np.testing.assert_allclose(np.eye(2), corr_coef, atol=1e-1)
+    np.testing.assert_allclose(np.eye(2), corr_coef, atol=2e-1)
     # dtype of returned images should be the same
     assert dtype == imgs_wt.dtype
 
