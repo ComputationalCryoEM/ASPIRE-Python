@@ -1406,8 +1406,6 @@ class CommonlineNUG(Orient3D):
         """
         Compute the ranks and matrices of the symmetry-averaging projectors at each degree.
 
-        :param Lmax: Maximum representation degree.
-
         :return: Ranks and symmetry-averaging matrices for each degree.
         """
         rk = xp.zeros(self.Lmax, dtype=np.float64)
@@ -1422,6 +1420,14 @@ class CommonlineNUG(Orient3D):
     def construct_AEq(self):
         """
         Construct the linear equality operator encoding the quaternion constraints.
+
+        The operator acts on 21 variables consisting of the 16 vectorized
+        entries of an auxiliary 4-by-4 quaternion matrix followed by five
+        entries from the lowest-degree representation blocks. The first
+        16 rows couple the quaternion and representation variables. The
+        final row constrains the trace of the quaternion matrix.
+
+        :return: Equality-constraint matrix with shape (17, 21).
         """
         AEq = np.zeros((17, 21), np.float64)
 
@@ -1521,7 +1527,7 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def psd_projection(B):
         """
-        Project real sqaure matrices onto the positive semidefinite cone.
+        Project real square matrices onto the positive semidefinite cone.
 
         Each matrix is first symmetrized. Negative eigenvalues are then
         replaced with zero before the matrix is reconstructed. Leading
@@ -2454,6 +2460,11 @@ class CommonlineNUG(Orient3D):
     def WD(self, k, euler):
         """
         Evaluate degree-k Wigner D matrices at the supplied ZYZ Euler angles.
+
+        :param k: Wigner representation degree.
+        :param euler: ZYZ Euler angles with shape (n_rotations, 3).
+
+        :return: Complex Wigner D matrices with shape (n_rotations, 2 * k + 1, 2 * k + 1).
         """
         # compute Wigner D matrix
         alpha = euler[:, 0]
@@ -2472,6 +2483,17 @@ class CommonlineNUG(Orient3D):
     def Wd(k, beta):
         """
         Evaluate degree-k Wigner small-d matrices at the supplied polar angles.
+
+        Matrix rows and columns correspond to orders from -k through k. These
+        real, beta-dependent matrices are used to construct the corresponding
+        Wigner D matrices.
+
+        :param k: Wigner representation degree.
+        :param beta: One-dimensional array of polar angles in radians, with
+          shape (n_rotations,).
+
+        :return: Wigner small-d matrices with shape
+            (n_rotations, 2 * k + 1, 2 * k + 1).
         """
         # compute Wigner small d matrix
         d = np.zeros((len(beta), 2 * k + 1, 2 * k + 1), dtype=beta.dtype)
