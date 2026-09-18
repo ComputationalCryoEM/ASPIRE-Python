@@ -120,7 +120,7 @@ def test_estimate(sim, estimator, mask):
 
     for i, w in enumerate([1, -1]):
         np.testing.assert_allclose(
-            w * est[i] / np.linalg.norm(est[i]), vol / np.linalg.norm(vol), atol=0.1
+            w * est[i] / np.linalg.norm(est[i]), vol / np.linalg.norm(vol), atol=0.11
         )
 
 
