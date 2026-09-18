@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import qr
 
 from aspire.utils import bump_3d, grid_3d
-from aspire.utils.random import Random, randn
+from aspire.utils.random import randn
 from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
@@ -21,6 +21,7 @@ class SyntheticVolumeBase(abc.ABC):
         self.L = L
         self.C = C
         self.seed = seed
+        self.rng = np.random.default_rng(self.seed)
         self.dtype = dtype
         self.pixel_size = pixel_size
 
@@ -96,11 +97,10 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         :return: An ndarray containing C Gaussian blob volumes.
         """
         vols = np.zeros(shape=((self.C,) + (self.L,) * 3)).astype(self.dtype)
-        with Random(self.seed):
-            for c in range(self.C):
-                Q, D, mu = self._gen_gaussians()
-                Q_rot, D_sym, mu_rot = self._symmetrize_gaussians(Q, D, mu)
-                vols[c] = self._eval_gaussians(Q_rot, D_sym, mu_rot)
+        for c in range(self.C):
+            Q, D, mu = self._gen_gaussians()
+            Q_rot, D_sym, mu_rot = self._symmetrize_gaussians(Q, D, mu)
+            vols[c] = self._eval_gaussians(Q_rot, D_sym, mu_rot)
         return vols
 
     def _gen_gaussians(self):
@@ -114,13 +114,12 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
         mu = np.zeros(shape=(self.K, 3)).astype(self.dtype)
 
         for k in range(self.K):
-            V = randn(3, 3).astype(self.dtype) / np.sqrt(3)
+            V = self.rng.standard_normal((3, 3), dtype=self.dtype) / np.sqrt(3)
             Q[k, :, :] = qr(V)[0]
             D[k, :, :] = (
                 self.alpha**2 / self.n_blobs * np.diag(np.sum(abs(V) ** 2, axis=0))
             )
-            mu[k, :] = 0.5 * randn(3) / np.sqrt(3)
-
+            mu[k, :] = 0.5 * self.rng.standard_normal(3) / np.sqrt(3)
         return Q, D, mu
 
     def _symmetrize_gaussians(self, Q, D, mu):
@@ -296,6 +295,14 @@ class LegacyVolume(AsymmetricVolume):
     """
 
     def __init__(self, L, C=2, K=16, pixel_size=None, seed=0, dtype=np.float64):
+
+        # Reproduce legacy (MATLAB) RNG Seed
+        if seed == 0:
+            seed = 5489
+        # Reproduce legacy RNG
+        # Will be converted to modern Generator as `self.rng` by base class.
+        seed = np.random.RandomState(seed)
+
         super().__init__(L=L, C=C, K=K, pixel_size=pixel_size, seed=seed, dtype=dtype)
 
     def generate(self):
@@ -308,3 +315,25 @@ class LegacyVolume(AsymmetricVolume):
         vols = np.swapaxes(vols, 1, 3)
 
         return Volume(vols, pixel_size=self.pixel_size)
+
+    def _gen_gaussians(self):
+        """
+        For K gaussians, generate random orientation (Q), mean (mu), and variance (D).
+
+        Note, implements different random number generation to replicate legacy code.
+
+        :return: Orientations Q, Variances D, Means mu.
+        """
+        Q = np.zeros(shape=(self.K, 3, 3)).astype(self.dtype)
+        D = np.zeros(shape=(self.K, 3, 3)).astype(self.dtype)
+        mu = np.zeros(shape=(self.K, 3)).astype(self.dtype)
+
+        for k in range(self.K):
+            V = randn(3, 3, seed=self.rng).astype(self.dtype) / np.sqrt(3)
+            Q[k, :, :] = qr(V)[0]
+            D[k, :, :] = (
+                self.alpha**2 / self.n_blobs * np.diag(np.sum(abs(V) ** 2, axis=0))
+            )
+            mu[k, :] = 0.5 * randn(3, seed=self.rng) / np.sqrt(3)
+
+        return Q, D, mu
