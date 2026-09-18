@@ -754,33 +754,51 @@ class CommonlineNUG(Orient3D):
         # blocks. These encode the representation constraints imposed by symmetry.
         AE = []
         AEAETinv = []
-        for k in range(1, Lmax + 1):
-            s0 = k**2
-            s1 = (k + 1) ** 2
-            AEk = xp.zeros((1 + s0 + s1, 2 * (s0 + s1)), dtype=np.float64)
-            AEk[0, :s0] = xp.eye(k, dtype=np.float64).T.reshape(-1)
-            AEk[0, s0 : s0 + s1] = xp.eye(k + 1, dtype=np.float64).T.reshape(-1)
-            for count in range(1, 1 + s0):
-                AEk[count, count - 1] = 1
-                AEk[count, count - 1 + s0 + s1] = 1
-            for count in range(1 + s0, 1 + s0 + s1):
-                AEk[count, count - 1] = 1
-                AEk[count, count - 1 + s1 + s0] = 1
+        for degree_idx in range(Lmax):
+            degree = degree_idx + 1
+            size0 = degree**2
+            size1 = (degree + 1) ** 2
+            n_components = size0 + size1
+
+            AEk = xp.zeros((1 + n_components, 2 * n_components), dtype=np.float64)
+
+            # Row zero contains the trace constraint for the two components.
+            AEk[0, :size0] = xp.eye(degree, dtype=np.float64).T.reshape(-1)
+            AEk[0, size0:n_components] = xp.eye(degree + 1, dtype=np.float64).T.reshape(
+                -1
+            )
+
+            # The remaining rows couple every representation entry to its
+            # corresponding auxiliary diagonal variable.
+            for component_idx in range(n_components):
+                row_idx = component_idx + 1
+                AEk[row_idx, component_idx] = 1
+                AEk[row_idx, component_idx + n_components] = 1
+
             AE.append(AEk)
             AEAETinv.append(xp.linalg.pinv(AEk @ AEk.T))
 
         # Right-hand sides for the equality constraints: symmetry projector ranks
         # and identity constraints on diagonal representation blocks.
         bE = xp.zeros((Lmax + D0 + D1), dtype=np.float64)
-        for k in range(Lmax):
-            bE[k + d0[k] + d1[k] :] = rank_Ak[k]
-            bE[k + 1 + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k]] = xp.eye(
-                k + 1
+        for degree_idx in range(Lmax):
+            degree = degree_idx + 1
+
+            start = degree_idx + d0[degree_idx] + d1[degree_idx]
+            split = degree_idx + 1 + d0[degree_idx + 1] + d1[degree_idx]
+            stop = degree_idx + 1 + d0[degree_idx + 1] + d1[degree_idx + 1]
+
+            bE[start:] = rank_Ak[degree_idx]
+            bE[start + 1 : split] = xp.eye(
+                degree,
+                dtype=np.float64,
             ).T.reshape(-1)
-            bE[k + 1 + d0[k + 1] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = xp.eye(
-                k + 2
+            bE_new[split:stop] = xp.eye(
+                degree + 1,
+                dtype=np.float64,
             ).T.reshape(-1)
-        bE = xp.repeat(bE[:, None], N, axis=1)
+
+        bE_new = xp.repeat(bE_new[:, None], N, axis=1)
 
         # Degree-wise permutations used to move between full Wigner blocks and the
         # two invariant block variables used by the relaxation.
