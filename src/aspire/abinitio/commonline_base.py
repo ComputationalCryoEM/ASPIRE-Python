@@ -7,7 +7,6 @@ import scipy.sparse as sparse
 from aspire.image import Image
 from aspire.operators import PolarFT
 from aspire.utils import Rotation, fuzzy_mask
-from aspire.utils.random import choice
 
 from .commonline_utils import _generate_shift_phase_and_filter
 
@@ -32,6 +31,7 @@ class Orient3D:
         offsets_max_memory=10000,
         offsets_equations_factor=1,
         mask=True,
+        seed=None,
     ):
         """
         Initialize an object for estimating 3D orientations using common lines.
@@ -70,7 +70,10 @@ class Orient3D:
             references in `estimate_shifts`.  Defaults to 10GB.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
+        :param seed: Optional RNG seed
         """
+        self.seed = seed
+        self.rng = np.random.default_rng(self.seed)
         self.src = src
         # Note dtype is inferred from self.src
         self.dtype = self.src.dtype
@@ -431,7 +434,7 @@ class Orient3D:
         idx_i, idx_j = np.triu_indices(self.n_img, k=1)
 
         # Select random pairs based on the size of n_equations
-        rp = choice(np.arange(len(idx_j)), size=n_equations, replace=False)
+        rp = self.rng.choice(np.arange(len(idx_j)), size=n_equations, replace=False)
 
         return idx_i[rp], idx_j[rp]
 
