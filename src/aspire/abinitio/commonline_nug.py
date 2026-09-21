@@ -988,10 +988,13 @@ class CommonlineNUG(Orient3D):
                 -Xq / rho - Sq,
             )
             yE = xp.zeros((Lmax + D0 + D1, N), dtype=np.float64)
-            for k in range(Lmax):
-                yE[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = AEAETinv[k] @ (
-                    bE[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] / rho
-                    + z[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]]
+            for k_idx in range(Lmax):
+                constraint_start = k_idx + d0[k_idx] + d1[k_idx]
+                constraint_stop = k_idx + 1 + d0[k_idx + 1] + d1[k_idx + 1]
+                constraint_rows = slice(constraint_start, constraint_stop)
+
+                yE[constraint_rows] = AEAETinv[k_idx] @ (
+                    bE[constraint_rows] / rho + z[constraint_rows]
                 )
             yEq = AEqAEqtinv @ (bEq / rho + zq)
             return yE, yEq
