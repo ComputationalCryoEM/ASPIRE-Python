@@ -40,6 +40,10 @@ def randi(i_max, size, seed=None):
 
 def randn(*args, **kwargs):
     """
+    Legacy MATLAB compatible random normal generation.
+    Supports reproducing MATLAB sequences/results.
+    New code should instead be implemented using modern Numpy practices.
+
     Calls rand and applies inverse transform sampling to the output.
     """
     seed = None
@@ -47,13 +51,11 @@ def randn(*args, **kwargs):
         seed = kwargs.pop("seed")
 
     with Random(seed) as rng:
-        # uniform = np.random.rand(*args, **kwargs)
         uniform = rng.random(args, **kwargs)
         result = np.sqrt(2) * erfinv(2 * uniform - 1)
         # Note, rearranging elements to get consistent behavior with MATLAB 'randn2'
         result = result.T.reshape(args, order="F")
         return result
-        # return rng.standard_normal(size=tuple(*args), **kwargs)
 
 
 def matlab_rand(size, seed=None):

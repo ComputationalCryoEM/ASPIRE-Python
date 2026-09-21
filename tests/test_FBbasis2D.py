@@ -10,7 +10,6 @@ from aspire.image import Image
 from aspire.source import Simulation
 from aspire.utils import complex_type, real_type
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.random import randn
 
 from ._basis_util import (
     Steerable2DMixin,
@@ -72,7 +71,8 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
             self._testElement(basis, ell, k, sgn)
 
     def testComplexCoversion(self, basis):
-        x = Image(randn(*basis.sz, seed=self.seed), dtype=basis.dtype)
+        rng = np.random.default_rng(self.seed)
+        x = Image(rng.standard_normal(basis.sz), dtype=basis.dtype)
 
         # Express in an FB basis
         v1 = basis.expand(x)
@@ -94,7 +94,8 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         assert np.allclose(v1, v2)
 
     def testComplexCoversionErrorsToComplex(self, basis):
-        x = randn(*basis.sz, seed=self.seed).astype(basis.dtype)
+        rng = np.random.default_rng(self.seed)
+        x = rng.standard_normal(basis.sz, dtype=basis.dtype)
 
         # Express in an FB basis, cast to array.
         v1 = basis.expand(x).asnumpy()
@@ -127,7 +128,8 @@ class TestFBBasis2D(UniversalBasisMixin, Steerable2DMixin):
         assert v3.dtype == result_dtype
 
     def testComplexCoversionErrorsToReal(self, basis):
-        x = randn(*basis.sz, seed=self.seed)
+        rng = np.random.default_rng(self.seed)
+        x = rng.standard_normal(basis.sz, dtype=basis.dtype)
 
         # Express in an FB basis
         cv = basis.expand(x.astype(basis.dtype))

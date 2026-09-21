@@ -143,7 +143,8 @@ def volume(emdb_vol, res, dtype):
 
 @pytest.fixture
 def random_data(res, dtype):
-    return np.random.randn(res, res, res).astype(dtype)
+    rng = np.random.default_rng()
+    return rng.standard_normal((res, res, res), dtype=dtype)
 
 
 @pytest.fixture

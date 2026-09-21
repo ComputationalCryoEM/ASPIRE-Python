@@ -193,11 +193,12 @@ class ImageTestCase(TestCase):
         msg = r"Angles should be shape.*"
 
         # Construct the source with wrong shape.
-        wrong_width = np.random.randn(self.n, 2)
+        rng = np.random.default_rng()
+        wrong_width = rng.standard_normal((self.n, 2))
         with raises(ValueError, match=msg):
             _ = ArrayImageSource(self.im, angles=wrong_width)
 
-        wrong_dim = np.random.randn(self.n, 3, 3)
+        wrong_dim = rng.standard_normal((self.n, 3, 3))
         with raises(ValueError, match=msg):
             _ = ArrayImageSource(self.im, angles=wrong_dim)
 
