@@ -10,7 +10,8 @@ from aspire.covariance import RotCov2D
 from aspire.noise import WhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import _LegacySimulation
-from aspire.utils import randi, utest_tolerance
+from aspire.utils import utest_tolerance
+from aspire.utils.random import randi
 from aspire.volume import Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
