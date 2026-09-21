@@ -14,7 +14,8 @@ from aspire.operators import (
     PowerFilter,
     ScalarFilter,
 )
-from aspire.utils import gaussian_window, grid_2d, randn, trange
+from aspire.utils import gaussian_window, grid_2d, trange
+from aspire.utils.random import randn
 
 logger = logging.getLogger(__name__)
 

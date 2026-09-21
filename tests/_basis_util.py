@@ -5,7 +5,6 @@ from aspire.basis import Coef
 from aspire.image import Image
 from aspire.utils import gaussian_2d, utest_tolerance
 from aspire.utils.coor_trans import grid_2d
-from aspire.utils.random import randn
 from aspire.volume import Volume
 
 # Parameter combinations for testing 2D bases
@@ -133,7 +132,8 @@ class Steerable2DMixin:
             assert energy_ratio < 0.10
 
     def testEvaluateExpand(self, basis):
-        coef1 = randn(basis.count, seed=self.seed)
+        rng = np.random.default_rng(self.seed)
+        coef1 = rng.standard_normal(basis.count)
         coef1 = Coef(basis, coef1.astype(basis.dtype))
 
         im = basis.evaluate(coef1)
@@ -147,14 +147,15 @@ class Steerable2DMixin:
         assert np.allclose(coef1, coef2, atol=utest_tolerance(basis.dtype))
 
     def testAdjoint(self, basis):
-        u = randn(basis.count, seed=self.seed)
+        rng = np.random.default_rng(self.seed)
+        u = rng.standard_normal(basis.count)
         u = Coef(basis, u, dtype=basis.dtype)
 
         Au = basis.evaluate(u)
         if isinstance(Au, Image):
             Au = Au.asnumpy()
 
-        x = Image(randn(*basis.sz, seed=self.seed), dtype=basis.dtype)
+        x = Image(rng.standard_normal(basis.sz), dtype=basis.dtype)
 
         ATx = basis.evaluate_t(x)
 

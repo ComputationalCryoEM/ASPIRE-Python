@@ -7,7 +7,7 @@ from aspire.abinitio.commonline_utils import (
     _estimate_third_rows,
     build_outer_products,
 )
-from aspire.utils import J_conjugate, Rotation, randn, utest_tolerance
+from aspire.utils import J_conjugate, Rotation, utest_tolerance
 
 DTYPES = [np.float32, np.float64]
 
@@ -48,7 +48,8 @@ def test_complete_third_row(dtype):
     given a set of 3rd rows.
     """
     # Build random third rows.
-    r3 = randn(10, 3, seed=123).astype(dtype)
+    rng = np.random.default_rng()
+    r3 = rng.standard_normal((10, 3), dtype=dtype)
     r3 /= np.linalg.norm(r3, axis=1)[..., np.newaxis]
 
     # Set first row to be identical with z-axis.

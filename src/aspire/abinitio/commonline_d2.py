@@ -7,7 +7,6 @@ from numpy.linalg import norm
 from aspire.abinitio import Orient3D
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, tqdm, trange
-from aspire.utils.random import randn
 from aspire.volume import DnSymmetryGroup
 
 from .commonline_utils import _generate_shift_phase_and_filter
@@ -76,6 +75,7 @@ class CLSymmetryD2(Orient3D):
         self.n_inplane_rots = int(360 / self.inplane_res)
         self.eq_min_dist = eq_min_dist
         self.seed = seed
+        self.rng = np.random.default_rng(self.seed)
         self.epsilon = epsilon
 
         self.triplets = all_triplets(self.n_img)
@@ -1020,7 +1020,7 @@ class CLSymmetryD2(Orient3D):
         max_iters = 100
 
         # Initialize candidate eigenvectors
-        vec = randn(self.n_pairs, seed=self.seed)
+        vec = self.rng.standard_normal(self.n_pairs)
         vec = vec / norm(vec)
         residual = 1
         itr = 0
@@ -1155,7 +1155,7 @@ class CLSymmetryD2(Orient3D):
 
         # Seed eigs initial vector for iterative method.
         # scipy LinearOperator needs doubles for some architectures (arm).
-        v0 = randn(3 * n_pairs, seed=self.seed).astype(np.float64, copy=False)
+        v0 = self.rng.standard_normal(3 * n_pairs, dtype=np.float64)
 
         v0 = v0 / norm(v0)
         vals, colors = la.eigs(color_mat, k=3, which="LR", v0=v0)
