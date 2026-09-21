@@ -717,7 +717,7 @@ class CommonlineNUG(Orient3D):
         Nstep_yI = self.Nstep_yI
 
         # Solve the symmetry-constrained SDP relaxation in the real, packed
-        # ion basis prepared by ADMM_preprocessing.
+        # representation basis prepared by ADMM_preprocessing.
         (
             C0,
             C1,
@@ -822,15 +822,20 @@ class CommonlineNUG(Orient3D):
             the lowest-degree off-diagonal representation blocks.
             """
             z = xp.zeros((Lmax + D0 + D1, N), dtype=np.float64)
-            for k in range(Lmax):
-                z[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]] = AE[
-                    k
-                ] @ xp.concatenate(
+            for k_idx in range(Lmax):
+                block0_rows = slice(d0[k_idx], d0[k_idx + 1])
+                block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+
+                constraint_start = k_idx + d0[k_idx] + d1[k_idx]
+                constraint_stop = k_idx + 1 + d0[k_idx + 1] + d1[k_idx + 1]
+                constraint_rows = slice(constraint_start, constraint_stop)
+
+                z[constraint_rows] = AE[k_idx] @ xp.concatenate(
                     (
-                        X0[d0[k] : d0[k + 1], idx_diag],
-                        X1[d1[k] : d1[k + 1], idx_diag],
-                        Xd0[d0[k] : d0[k + 1]],
-                        Xd1[d1[k] : d1[k + 1]],
+                        X0[block0_rows, idx_diag],
+                        X1[block1_rows, idx_diag],
+                        Xd0[block0_rows],
+                        Xd1[block1_rows],
                     ),
                     axis=0,
                 )
@@ -856,14 +861,26 @@ class CommonlineNUG(Orient3D):
             Z1 = xp.zeros((D1, N * (N + 1) // 2), dtype=np.float64)
             Zd0 = xp.zeros((D0, N), dtype=np.float64)
             Zd1 = xp.zeros((D1, N), dtype=np.float64)
-            for k in range(Lmax):
-                s0 = (k + 1) ** 2
-                s1 = (k + 2) ** 2
-                Ztmp = AE[k].T @ yE[k + d0[k] + d1[k] : k + 1 + d0[k + 1] + d1[k + 1]]
-                Z0[d0[k] : d0[k + 1], idx_diag] = Ztmp[:s0]
-                Z1[d1[k] : d1[k + 1], idx_diag] = Ztmp[s0 : s0 + s1]
-                Zd0[d0[k] : d0[k + 1]] = Ztmp[s0 + s1 : 2 * s0 + s1]
-                Zd1[d1[k] : d1[k + 1]] = Ztmp[2 * s0 + s1 : 2 * s0 + 2 * s1]
+
+            for k_idx in range(Lmax):
+                k = k_idx + 1  # degree
+                size0 = k**2
+                size1 = (k + 1) ** 2
+
+                block0_rows = slice(d0[k_idx], d0[k_idx + 1])
+                block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+
+                constraint_start = k_idx + d0[k_idx] + d1[k_idx]
+                constraint_stop = k_idx + 1 + d0[k_idx + 1] + d1[k_idx + 1]
+                constraint_rows = slice(constraint_start, constraint_stop)
+
+                Ztmp = AE[k_idx].T @ yE[constraint_rows]
+
+                Z0[block0_rows, idx_diag] = Ztmp[:size0]
+                Z1[block1_rows, idx_diag] = Ztmp[size0 : size0 + size1]
+                Zd0[block0_rows] = Ztmp[size0 + size1 : 2 * size0 + size1]
+                Zd1[block1_rows] = Ztmp[2 * size0 + size1 : 2 * size0 + 2 * size1]
+
             Zq = AEq.T @ yEq
             Z0[:1, idx_offdiag] = Zq[16:17]
             Z1[:4, idx_offdiag] = Zq[17:]
