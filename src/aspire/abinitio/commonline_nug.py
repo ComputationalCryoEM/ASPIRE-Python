@@ -156,7 +156,7 @@ class CommonlineNUG(Orient3D):
             self.pr_penalty = [1] * pr_iters
             self.pr_rank = list(range(pr_iters - 1, -1, -1))  # [pr_iters - 1,..., 0]
         self.pr_iters = pr_iters
-
+        self.count_S_iter = 0
         self._build_full_pft()
 
     def _build_full_pft(self):
@@ -946,17 +946,24 @@ class CommonlineNUG(Orient3D):
             # Project the diagonal coupling blocks.
             Sd0 = Sd0.T
             Sd1 = Sd1.T
-            for k in range(1, Lmax + 1):
+            for k_idx in range(Lmax):
+                k = k_idx + 1  # degreee
+                block0_rows = slice(d0[k_idx], d0[k_idx + 1])
+                block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+                permutation = P[k_idx]
+
                 tmp = self.transform_back_block(
-                    Sd0[:, d0[k - 1] : d0[k]],
-                    Sd1[:, d1[k - 1] : d1[k]],
+                    Sd0[:, block0_rows],
+                    Sd1[:, block1_rows],
                     k,
-                    P[k - 1],
+                    permutation,
                 )
                 tmp = self.psd_projection(tmp)
-                Sd0[:, d0[k - 1] : d0[k]], Sd1[:, d1[k - 1] : d1[k]] = (
-                    self.transform_block(tmp, k, P[k - 1])
+
+                Sd0[:, block0_rows], Sd1[:, block1_rows] = self.transform_block(
+                    tmp, k, permutation
                 )
+
             Sd0 = Sd0.T
             Sd1 = Sd1.T
 
