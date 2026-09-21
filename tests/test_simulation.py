@@ -964,3 +964,24 @@ def check_metadata(sim_src, relion_src):
             np.testing.assert_allclose(
                 v, np.array(relion_src._metadata[k]).astype(type(v[0]))
             )
+
+
+def test_rng_seed_repro():
+    """
+    Test basic reproducibility using same seed, and inequality using default (randomized).
+    """
+
+    a = Simulation()
+    b = Simulation(seed=a.seed)
+    c = Simulation()
+
+    # Assert that `b` reproduces `b` images
+    np.testing.assert_equal(a.seed, b.seed)
+    np.testing.assert_allclose(a.images[:], b.images[:])
+
+    # Assert that `c` does not get the same seed
+    assert (
+        a.seed != c.seed
+    ), "Simulations should derive differing random seeds by default"
+    # or images
+    assert not np.array_equal(a.images[:], c.images[:], equal_nan=True)
