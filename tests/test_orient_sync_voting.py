@@ -263,8 +263,8 @@ def test_offset_param_passthrough(cl_algo):
     """
     Systematically test that offset search configuration passes through all CL classes.
     """
-
-    src = ArrayImageSource(np.random.randn(4, 4), pixel_size=1.23)
+    rng = np.random.default_rng()
+    src = ArrayImageSource(rng.standard_normal((4, 4)), pixel_size=1.23)
 
     test_args = {
         "offsets_max_shift": 0.5,
