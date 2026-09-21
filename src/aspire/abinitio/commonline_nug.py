@@ -1094,10 +1094,15 @@ class CommonlineNUG(Orient3D):
                 res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
                     1 + abs(bI) * xp.sqrt(Ngrid * N * (N + 1) / 2)
                 )
+
                 res_psdX = 0
-                for k in range(1, Lmax + 1):
+                for k_idx in range(Lmax):
+                    k = k_idx + 1  # degree
+                    block0_rows = slice(d0[k_idx], d0[k_idx + 1])
+                    block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+
                     tmp = self.mat_block(
-                        X0[d0[k - 1] : d0[k], :],
+                        X0[block0_rows],
                         N,
                         k,
                         IDX_upper,
@@ -1105,8 +1110,9 @@ class CommonlineNUG(Orient3D):
                         idx_offdiag,
                     )
                     res_psdX += xp.linalg.norm(self.psd_projection(-tmp))
+
                     tmp = self.mat_block(
-                        X1[d1[k - 1] : d1[k], :],
+                        X1[block1_rows],
                         N,
                         k + 1,
                         IDX_upper,
@@ -1115,21 +1121,27 @@ class CommonlineNUG(Orient3D):
                     )
                     res_psdX += xp.linalg.norm(self.psd_projection(-tmp))
                 res_psdX = res_psdX / (1 + xp.linalg.norm(X0) + xp.linalg.norm(X1))
+
                 res_psdD = 0
-                for k in range(1, Lmax + 1):
+                for k_idx in range(Lmax):
+                    k = k_idx + 1  # degree
+                    block0_rows = slice(d0[k_idx], d0[k_idx + 1])
+                    block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+
                     tmp = self.transform_back_block(
-                        Xd0[d0[k - 1] : d0[k]].T,
-                        Xd1[d1[k - 1] : d1[k]].T,
+                        Xd0[block0_rows].T,
+                        Xd1[block1_rows].T,
                         k,
-                        P[k - 1],
+                        P[k_idx],
                     )
                     res_psdD += xp.linalg.norm(
                         self.psd_projection(-tmp), axis=(-2, -1)
                     ).sum()
                 res_psdD = res_psdD / (1 + xp.linalg.norm(Xd0) + xp.linalg.norm(Xd1))
+
                 res_psdQ = 0
-                for count in range(N * (N - 1) // 2):
-                    tmp = Xq[:, count].reshape(4, 4).T
+                for pair in range(n_pairs):
+                    tmp = Xq[:, pair].reshape(4, 4).T
                     res_psdQ += xp.linalg.norm(self.psd_projection(-tmp))
                 res_psdQ = res_psdQ / (1 + xp.linalg.norm(Xq))
 
