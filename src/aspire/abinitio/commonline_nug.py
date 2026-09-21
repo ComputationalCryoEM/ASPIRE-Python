@@ -156,7 +156,7 @@ class CommonlineNUG(Orient3D):
             self.pr_penalty = [1] * pr_iters
             self.pr_rank = list(range(pr_iters - 1, -1, -1))  # [pr_iters - 1,..., 0]
         self.pr_iters = pr_iters
-        self.count_S_iter = 0
+
         self._build_full_pft()
 
     def _build_full_pft(self):
@@ -947,7 +947,7 @@ class CommonlineNUG(Orient3D):
             Sd0 = Sd0.T
             Sd1 = Sd1.T
             for k_idx in range(Lmax):
-                k = k_idx + 1  # degreee
+                k = k_idx + 1  # degree
                 block0_rows = slice(d0[k_idx], d0[k_idx + 1])
                 block1_rows = slice(d1[k_idx], d1[k_idx + 1])
                 permutation = P[k_idx]
@@ -1140,8 +1140,8 @@ class CommonlineNUG(Orient3D):
                 res_psdD = res_psdD / (1 + xp.linalg.norm(Xd0) + xp.linalg.norm(Xd1))
 
                 res_psdQ = 0
-                for pair in range(n_pairs):
-                    tmp = Xq[:, pair].reshape(4, 4).T
+                for pair_idx in range(n_pairs):
+                    tmp = Xq[:, pair_idx].reshape(4, 4).T
                     res_psdQ += xp.linalg.norm(self.psd_projection(-tmp))
                 res_psdQ = res_psdQ / (1 + xp.linalg.norm(Xq))
 
@@ -1602,7 +1602,7 @@ class CommonlineNUG(Orient3D):
 
         :return: Positive semidefinite projection with same shape as B.
         """
-        # compute the PSD part of a symmstric matrix
+        # compute the PSD part of a symmetric matrix
         B_sym = (B + B.swapaxes(-1, -2)) / 2
         evals, evecs = xp.linalg.eigh(B_sym)
         evals = xp.maximum(evals, 0)
