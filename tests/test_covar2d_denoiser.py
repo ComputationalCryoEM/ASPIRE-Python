@@ -9,6 +9,7 @@ from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 
 # TODO, parameterize these further.
+SEED = 0
 dtype = np.float32
 img_size = 32
 num_imgs = 1024
@@ -65,6 +66,7 @@ def sim():
         dtype=dtype,
         noise_adder=noise_adder,
         pixel_size=pixel_size,
+        seed=SEED,
     )
     sim = sim.cache()
     return sim
