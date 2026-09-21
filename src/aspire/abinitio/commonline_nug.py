@@ -391,10 +391,13 @@ class CommonlineNUG(Orient3D):
         # In the asymmetric formulation, diagonal representation blocks are identity.
         bE0 = xp.zeros(D0, dtype=np.float64)
         bE1 = xp.zeros(D1, dtype=np.float64)
+        for k_idx in range(Lmax):
+            k = k_idx + 1
+            block0_rows = slice(d0[k_idx], d0[k_idx + 1])
+            block1_rows = slice(d1[k_idx], d1[k_idx + 1])
 
-        for k in range(1, Lmax + 1):
-            bE0[d0[k - 1] : d0[k]] = xp.eye(k, dtype=np.float64).reshape(-1)
-            bE1[d1[k - 1] : d1[k]] = xp.eye(k + 1, dtype=np.float64).reshape(-1)
+            bE0[block0_rows] = xp.eye(k, dtype=np.float64).reshape(-1)
+            bE1[block1_rows] = xp.eye(k + 1, dtype=np.float64).reshape(-1)
 
         bE0 = xp.repeat(bE0[:, None], N, axis=1)
         bE1 = xp.repeat(bE1[:, None], N, axis=1)
@@ -600,9 +603,13 @@ class CommonlineNUG(Orient3D):
             )
 
             res_psdX = 0
-            for k in range(1, Lmax + 1):
+            for k_idx in range(Lmax):
+                k = k_idx + 1
+                block0_rows = slice(d0[k_idx], d0[k_idx + 1])
+                block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+
                 tmp = self.mat_block(
-                    X0[d0[k - 1] : d0[k]],
+                    X0[block0_rows],
                     N,
                     k,
                     IDX_upper,
@@ -612,7 +619,7 @@ class CommonlineNUG(Orient3D):
                 res_psdX += xp.linalg.norm(self.psd_projection(-tmp))
 
                 tmp = self.mat_block(
-                    X1[d1[k - 1] : d1[k]],
+                    X1[block1_rows],
                     N,
                     k + 1,
                     IDX_upper,
@@ -620,7 +627,6 @@ class CommonlineNUG(Orient3D):
                     idx_offdiag,
                 )
                 res_psdX += xp.linalg.norm(self.psd_projection(-tmp))
-
             res_psdX /= 1 + xp.linalg.norm(X0) + xp.linalg.norm(X1)
 
             Xq_blocks = Xq.T.reshape(n_pairs, 4, 4)
@@ -661,13 +667,13 @@ class CommonlineNUG(Orient3D):
         yE1 = xp.zeros(bE1.shape, dtype=np.float64)
         yEq = xp.zeros(bEq.shape, dtype=np.float64)
 
-        IDX = np.arange(3)
+        update_order = np.arange(3)
         for t in range(max_iter):
-            np.random.shuffle(IDX)
-            for idx in IDX:
-                if idx == 0:
+            np.random.shuffle(update_order)
+            for update_idx in update_order:
+                if update_idx == 0:
                     S0, S1, Sq = update_S(C0, C1, yE0, yE1, yEq, yI, X0, X1, Xq, rho)
-                elif idx == 1:
+                elif update_idx == 1:
                     yE0, yE1, yEq = update_yE(C0, C1, S0, S1, Sq, yI, X0, X1, Xq, rho)
                 else:
                     for _ in range(Nstep_yI):
@@ -694,8 +700,7 @@ class CommonlineNUG(Orient3D):
             rho, p_resnorm, d_resnorm = update_rho(X0, X1, Xq, res_X, rho)
 
         X_admm = self.transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
-        for k in range(Lmax):
-            X_admm[k] = xp.asnumpy(X_admm[k])
+        X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
         return X_admm
 
     def admm_sym_J(self, C, verbose):
@@ -1185,19 +1190,19 @@ class CommonlineNUG(Orient3D):
 
         # Run ADMM iterations, randomly ordering the block updates before each primal
         # multiplier update and penalty adjustment.
-        IDX = np.arange(3)
+        update_order = np.arange(3)
         for t in range(max_iter):
-            np.random.shuffle(IDX)
-            for idx in IDX:
-                if idx == 0:
+            np.random.shuffle(update_order)
+            for update_idx in update_order:
+                if update_idx == 0:
                     S0, S1, Sd0, Sd1, Sq = update_S(
                         C0, C1, yE, yEq, yI, X0, X1, Xd0, Xd1, Xq, rho, Lmax, N
                     )
-                if idx == 1:
+                if update_idx == 1:
                     yE, yEq = update_yE(
                         C0, C1, X0, X1, Xd0, Xd1, Xq, S0, S1, Sd0, Sd1, Sq, yI, rho
                     )
-                if idx == 2:
+                if update_idx == 2:
                     for _ in range(Nstep_yI):
                         yI = update_yI(C0, C1, X0, X1, S0, S1, yE, yEq, yI, rho, Lambda)
             X0, X1, Xd0, Xd1, Xq, res_X = update_X(
@@ -1212,8 +1217,7 @@ class CommonlineNUG(Orient3D):
         # Convert the optimized packed block variables back to full degree-wise
         # representation matrices for Euler-angle recovery.
         X_admm = self.transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
-        for k in range(Lmax):
-            X_admm[k] = xp.asnumpy(X_admm[k])
+        X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
         return X_admm
 
     ################
