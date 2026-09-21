@@ -67,6 +67,7 @@ class CLSymmetryD2(Orient3D):
             max_shift=max_shift,
             shift_step=shift_step,
             mask=mask,
+            seed=seed,
             **kwargs,
         )
 
@@ -74,8 +75,6 @@ class CLSymmetryD2(Orient3D):
         self.inplane_res = inplane_res
         self.n_inplane_rots = int(360 / self.inplane_res)
         self.eq_min_dist = eq_min_dist
-        self.seed = seed
-        self.rng = np.random.default_rng(self.seed)
         self.epsilon = epsilon
 
         self.triplets = all_triplets(self.n_img)
