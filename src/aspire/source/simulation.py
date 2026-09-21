@@ -1,5 +1,6 @@
 import copy
 import logging
+import secrets
 
 import numpy as np
 from scipy.linalg import eigh, qr
@@ -66,7 +67,7 @@ class Simulation(ImageSource):
         :param C: Number of Volumes used to generate projection images. The default is C=2.
             If a `Volume` object is provided this parameter is overridden and `self.C` = `self.vols.n_vols`.
         :param angles: A n-by-3 array of Euler angles for use in projection. Default is a random set.
-        :param seed: Random seed.
+        :param seed: Optional RNG seed.  Default of `None` will generate a seed.
         :param memory: str or None. The path of the base directory to use as a data store or None.
             If None is given, no caching is performed.
         :param noise_adder: Optionally append instance of `NoiseAdder`
@@ -78,7 +79,12 @@ class Simulation(ImageSource):
         :return: A Simulation object.
         """
 
+        # Initialize RNG
+        if seed is None:
+            # Generate a random integer (so we can easily log it for repro).
+            seed = secrets.randbits(128)
         self.seed = seed
+        logger.info(f"Initializing RNG with seed {self.seed}")
         self.rng = np.random.default_rng(self.seed)
 
         # If a Volume is not provided we default to the legacy Gaussian blob volume.
