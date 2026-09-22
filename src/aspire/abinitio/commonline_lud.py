@@ -130,7 +130,7 @@ class CommonlineLUD(CommonlineSDP):
         self.eps = eps
 
         # Adjust rank limits
-        self.max_rankZ = max_rankW or max(6, self.n_img // 2)
+        self.max_rankZ = max_rankZ or max(6, self.n_img // 2)
         self.max_rankW = max_rankW or max(6, self.n_img // 2)
 
         # Upper-triangular mask used in `_Q_theta`

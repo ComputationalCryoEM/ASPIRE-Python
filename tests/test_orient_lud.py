@@ -22,7 +22,7 @@ DTYPES = [
 ]
 
 SPECTRAL_NORM_CONSTRAINT = [
-    2 / 3,
+    0.8,  # Bsaed on measured ground truth Gram matrix spectral norm.
     pytest.param(None, marks=pytest.mark.expensive),
 ]
 
@@ -82,6 +82,7 @@ def source(resolution, offsets, dtype):
 def orient_est(source, alpha, adp_proj):
     """Fixture for LUD orientation estimation object."""
     # Generate LUD orientation estimation object.
+    shift_step = 0.5 if np.any(source.offsets != 0) else 1
     orient_est = CommonlineLUD(
         source,
         alpha=alpha,
@@ -89,6 +90,7 @@ def orient_est(source, alpha, adp_proj):
         delta_mu_l=0.4,  # Ensures branch is tested
         mask=False,
         tol=0.005,  # Improves test speed
+        shift_step=shift_step,
     )
 
     return orient_est
