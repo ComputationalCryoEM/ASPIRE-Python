@@ -100,7 +100,9 @@ class TestFFBBasis2D(Steerable2DMixin, UniversalBasisMixin):
             pixel_size=1.234,
         ).downsample(basis.nres)
 
-        src = Simulation(L=basis.nres, n=n_img, vols=v, dtype=basis.dtype)
+        src = Simulation(
+            L=basis.nres, n=n_img, vols=v, dtype=basis.dtype, seed=self.seed
+        )
 
         # Shift images using the Image method directly
         shifted_imgs = src.images[:n_img].shift(test_shift)
