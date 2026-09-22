@@ -57,7 +57,6 @@ from .multiprocessing import (
     physical_core_cpu_suggestion,
     virtual_core_cpu_suggestion,
 )
-from .random import random
 from .relion_interop import RelionStarFile, relion_metadata_fields
 from .resolution_estimation import FourierRingCorrelation, FourierShellCorrelation
 from .rotation import Rotation
