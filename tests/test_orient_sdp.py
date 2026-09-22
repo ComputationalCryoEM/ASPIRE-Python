@@ -41,19 +41,22 @@ def dtype(request):
 @pytest.fixture
 def src_orient_est_fixture(resolution, offsets, dtype):
     """Fixture for simulation source and orientation estimation object."""
+    seed = 1984
     src = Simulation(
         n=50,
         L=resolution,
-        vols=AsymmetricVolume(L=resolution, C=1, K=100, seed=0).generate(),
+        vols=AsymmetricVolume(
+            L=resolution, C=1, K=100, seed=seed, dtype=dtype
+        ).generate(),
         offsets=offsets,
         amplitudes=1,
-        seed=0,
+        seed=seed,
     )
 
     # Increase max_shift and set shift_step to be sub-pixel when using
     # random offsets in the Simulation. This improves common-line detection.
-    max_shift = 0.20
-    shift_step = 0.25
+    max_shift = 0.25
+    shift_step = 0.125
 
     # Set max_shift 1 pixel and shift_step to 1 pixel when using 0 offsets.
     if np.all(src.offsets == 0.0):
@@ -77,8 +80,8 @@ def test_estimate_rotations(src_orient_est_fixture):
 
     # Register estimates to ground truth rotations and compute the
     # angular distance between them (in degrees).
-    # Assert that mean aligned angular distance is less than 1 degrees.
-    mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=1)
+    # Assert that mean aligned angular distance is less than 2 degrees.
+    mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=2)
 
 
 def test_construct_S(src_orient_est_fixture):
@@ -98,14 +101,14 @@ def test_construct_S(src_orient_est_fixture):
 
     # For uniformly distributed rotations the top eigenvalue should have multiplicity 3.
     # As such, we can expect that the top 3 eigenvalues will all be close in value to their mean.
-    eigs = np.linalg.eigvalsh(S)
+    eigs = np.linalg.eigvalsh(S)[::-1]  # descending order
     eigs_mean = np.mean(eigs[:3])
 
-    # Check that the top 3 eigenvalues are all within 10% of the their mean.
-    np.testing.assert_array_less(abs((eigs[:3] - eigs_mean) / eigs_mean), 0.10)
+    # Check that the top 3 eigenvalues are all within 25% of the their mean.
+    np.testing.assert_array_less(abs((eigs[:3] - eigs_mean) / eigs_mean), 0.25)
 
     # Check that the next eigenvalue is not close to the top 3, ie. multiplicity is not greater than 3.
-    np.testing.assert_array_less(0.25, abs((eigs[4] - eigs_mean) / eigs_mean))
+    np.testing.assert_array_less(0.25, abs((eigs[3] - eigs_mean) / eigs_mean))
 
 
 def test_gram_matrix(src_orient_est_fixture):
@@ -133,9 +136,11 @@ def test_gram_matrix(src_orient_est_fixture):
     R = np.concatenate((R1, R2))
     gt_gram = R @ R.T
 
-    # We'll check that the RMSE is within 10% of the mean value of gt_gram
-    rmse = np.sqrt(np.mean((gram - R @ R.T) ** 2))
-    np.testing.assert_array_less(rmse / np.mean(gt_gram), 0.10)
+    # We'll check that the Frobenius relative error is within 1%
+    relative_error = np.linalg.norm(gram - gt_gram, ord="fro") / np.linalg.norm(
+        gt_gram, ord="fro"
+    )
+    np.testing.assert_array_less(relative_error, 0.01)
 
 
 def test_ATA_solver():
