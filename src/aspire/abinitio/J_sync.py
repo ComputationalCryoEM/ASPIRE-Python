@@ -4,7 +4,7 @@ import os.path
 import numpy as np
 from numpy.linalg import norm
 
-from aspire.utils import J_conjugate, all_pairs, random, trange
+from aspire.utils import J_conjugate, all_pairs, trange
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,7 @@ class JSync:
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.seed = seed
+        self.rng = np.random.default_rng(self.seed)
         self.J_weighting = J_weighting
 
         # Generate pair mappings
@@ -123,7 +124,7 @@ class JSync:
 
         # Initialize candidate eigenvectors
         n_Rijs = Rijs.shape[0]
-        vec = random(n_Rijs, seed=self.seed)
+        vec = self.rng.random(n_Rijs)
         vec = vec / norm(vec)
         residual = 1
         itr = 0

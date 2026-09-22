@@ -39,6 +39,7 @@ class Class2D(ABC):
 
         self.n_nbor = n_nbor
         self.seed = seed
+        self.rng = np.random.default_rng(self.seed)
 
     @abstractmethod
     def classify(self):
