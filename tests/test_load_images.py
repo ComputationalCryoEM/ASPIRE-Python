@@ -9,7 +9,6 @@ import numpy as np
 from aspire.image import Image
 from aspire.source import RelionSource
 from aspire.storage import StarFile
-from aspire.utils.random import random
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -26,6 +25,7 @@ class LoadImagesTestCase(TestCase):
         self.L = 16
         self.dtype = np.float32
         self.seed = 14
+        self.rng = np.random.default_rng(self.seed)
 
         # setting up starfile for simulated RelionSource file structure
         self.starfile_path = os.path.join(self.data_folder, "load_images_test.star")
@@ -36,8 +36,8 @@ class LoadImagesTestCase(TestCase):
         for i in range(self.num_stacks):
             # fill 10 mrcs files with random data
             mrcs_fn = f"particle_stack_{i:02d}.mrcs"
-            data = random(
-                seed=14, size=(self.particles_per_stack, self.L, self.L)
+            data = self.rng.random(
+                size=(self.particles_per_stack, self.L, self.L)
             ).astype(self.dtype)
             with mrcfile.new(os.path.join(self.data_folder, mrcs_fn)) as mrc:
                 mrc.set_data(data)

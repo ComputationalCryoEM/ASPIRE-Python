@@ -4,8 +4,6 @@ import numpy as np
 import scipy.sparse as sps
 from scipy.linalg import qr
 
-from aspire.utils import random
-
 logger = logging.getLogger(__name__)
 
 
@@ -24,6 +22,8 @@ def pca_y(x, k, num_iters=2, seed=None):
     :return: (left Singular Vectors, Singular Values, right Singular Vectors)
     """
 
+    rng = np.random.default_rng(seed)
+
     m, n = x.shape
 
     def operator(mat):
@@ -41,11 +41,11 @@ def pca_y(x, k, num_iters=2, seed=None):
     ones = np.ones((n, k + 2))
     if x.dtype == np.dtype("complex"):
         h = operator(
-            (2 * random((k + 2, n), seed=seed).T - ones)
-            + 1j * (2 * random((k + 2, n), seed=seed).T - ones)
+            (2 * rng.random((k + 2, n)).T - ones)
+            + 1j * (2 * rng.random((k + 2, n)).T - ones)
         )
     else:
-        h = operator(2 * random((k + 2, n), seed=seed).T - ones)
+        h = operator(2 * rng.random((k + 2, n)).T - ones)
 
     f = [h]
 
@@ -130,6 +130,8 @@ def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, seed=None):
     alpha 1/3
     sample_n 4000
     """
+    rng = np.random.default_rng(seed)
+
     freqs_not_zero = freqs != 0
 
     coef_norm = np.log(np.power(np.absolute(coef[freqs_not_zero]), alpha))
@@ -147,7 +149,7 @@ def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, seed=None):
     mask = np.where(p, p, -1)  # taking the log in the next step will yield a 0
     m = np.exp(o1 * np.log(p, where=(mask > 0), out=None))
     p_m = m / m.sum()
-    x = random(size=len(m), seed=seed)
+    x = rng.random(size=len(m))
     m_id = np.where(x < sample_n * p_m)[0]
     o1 = o1[m_id]
     o2 = o2[m_id]
