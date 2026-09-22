@@ -20,6 +20,8 @@ from aspire.utils import (
 )
 from aspire.volume import CnSymmetricVolume
 
+rng = np.random.default_rng()
+
 # A set of these parameters are marked expensive to reduce testing time.
 # Each tuple holds the parameters (n_img, resolution "L", cyclic order "order", dtype).
 param_list_c2 = [(55, 44, 2, np.float32)]
@@ -457,8 +459,8 @@ def test_global_J_sync(n_img, dtype):
 
     # J-conjugate some of these outer products (every other element).
     vijs_conj, viis_conj = vijs.copy(), viis.copy()
-    inds_ij = np.random.choice(len(vijs), size=len(vijs) // 2, replace=False)
-    inds_ii = np.random.choice(len(viis), size=len(viis) // 2, replace=False)
+    inds_ij = rng.choice(len(vijs), size=len(vijs) // 2, replace=False)
+    inds_ii = rng.choice(len(viis), size=len(viis) // 2, replace=False)
     vijs_conj[inds_ij] = J_conjugate(vijs[inds_ij])
     viis_conj[inds_ii] = J_conjugate(viis[inds_ii])
 
