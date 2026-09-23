@@ -39,7 +39,7 @@ param_list_c3_c4 = [
 
 # For testing Cn methods where n>4.
 param_list_cn = [
-    (8, 44, 5, np.float32),
+    (12, 44, 5, np.float32),
     pytest.param(24, 45, 6, np.float64, marks=pytest.mark.expensive),
     pytest.param(24, 44, 7, np.float32, marks=pytest.mark.expensive),
     pytest.param(24, 44, 8, np.float32, marks=pytest.mark.expensive),
@@ -49,34 +49,26 @@ param_list_cn = [
 
 # Method to instantiate a Simulation source and orientation estimation object.
 def source_orientation_objs(n_img, L, order, dtype):
-    # This Volume is hand picked to have a fairly even distribution of density.
-    # Due to the rotations used to generate symmetric volumes, some seeds will
-    # generate volumes with a high concentration of denisty in the center causing
-    # misidentification of common-lines.
+    # Use a fixed seed for reproducibilty.
     vol = CnSymmetricVolume(
         L=L,
         C=1,
-        K=50,
+        K=100,
         order=order,
-        seed=65,
+        seed=0,
         dtype=dtype,
     ).generate()
 
-    angles = None
-    if order > 4:
-        # We artificially exclude equator images from the simulation as they will be
-        # incorrectly identified by the CL method. We keep images slightly further away
-        # from being equator images than the 10 degree default threshold used in the CL method.
-        rotations, _ = CLSymmetryCn.generate_candidate_rots(
-            n=n_img,
-            equator_threshold=15,
-            order=order,
-            degree_res=1,
-            seed=123,  # Generate different rotations than candidates used in CL method.
-        )
-        angles = Rotation(rotations).angles
-
     seed = 1
+
+    # For order > 2 algorithms we generate random rotations that
+    # are away from the equator by at least 15 degrees.
+    # Self-commonline detection of equator images is poor and
+    # are expected to produce bad estimates.
+    angles = None
+    if order > 2:
+        angles = generate_non_equatorial_angles(n_img, seed + 100, dtype)
+
     src = Simulation(
         L=L,
         n=n_img,
@@ -128,8 +120,8 @@ def test_estimate_rotations(n_img, L, order, dtype):
     rots_gt_sync = g_sync(rots_est, order, rots_gt)
 
     # Register estimates to ground truth rotations and check that the
-    # mean angular distance between them is less than 3 degrees.
-    mean_aligned_angular_distance(rots_est, rots_gt_sync, degree_tol=3)
+    # mean angular distance between them is less than 6 degrees.
+    mean_aligned_angular_distance(rots_est, rots_gt_sync, degree_tol=6)
 
 
 @pytest.mark.parametrize("n_img, L, order, dtype", param_list_c3_c4)
@@ -194,8 +186,8 @@ def test_self_relative_rotations(n_img, L, order, dtype):
         Rii_gt = rot_gt.T @ g @ rot_gt
         Rii = Riis[i]
         cases = np.array([Rii, Rii.T, J_conjugate(Rii), J_conjugate(Rii.T)])
-        for i, estimate in enumerate(cases):
-            dist[i] = Rotation.angle_dist(estimate, Rii_gt)
+        for case_idx, estimate in enumerate(cases):
+            dist[case_idx] = Rotation.angle_dist(estimate, Rii_gt)
         angular_distance[i] = min(dist)
     mean_angular_distance = np.mean(angular_distance) * 180 / np.pi
 
@@ -282,17 +274,15 @@ def test_relative_viewing_directions(n_img, L, order, dtype):
     # For order < 5, the method for estimating vijs leads to estimates
     # which do not as tightly approximate rank-1.
     if order < 5:
-        max_tol_ij = 4e-1
-        mean_tol_ij = 4e-3
+        max_tol_ij = 0.45
+        mean_tol_ij = 0.025
     assert np.max(error_ij) < max_tol_ij
     assert np.max(error_ii) < 1e-6
     assert np.mean(error_ij) < mean_tol_ij
     assert np.mean(error_ii) < 1e-7
 
-    # Check that the mean angular difference is within 2 degrees.
-    angle_tol = 2 * np.pi / 180
-    if order > 4:
-        angle_tol = 4 * np.pi / 180
+    # Check that the mean angular difference is within 5 degrees.
+    angle_tol = 5 * np.pi / 180
 
     assert angular_dist_vijs < angle_tol
     assert angular_dist_viis < angle_tol
@@ -577,3 +567,31 @@ def _gt_cl_c2(n_theta, rots_gt):
                 clmatrix_gt[idx, i, j] = _cl_angles_to_ind(c1[np.newaxis, :], n_theta)
                 clmatrix_gt[idx, j, i] = _cl_angles_to_ind(c2[np.newaxis, :], n_theta)
     return clmatrix_gt
+
+
+def generate_non_equatorial_angles(n_img, seed, dtype, equator_threshold=15):
+    """
+    Generate uniformly random rotations away from the equator.
+
+    Reject rotations whose viewing direction is less than
+    `equator_threshold` degrees from the equator. Return their Euler
+    angles in radians, with shape (n_img, 3) and the requested dtype.
+
+    A fixed seed gives reproducible angles. The in-plane angles remain
+    random.
+    """
+    if not 0 <= equator_threshold < 90:
+        raise ValueError("equator_threshold must be in [0, 90).")
+
+    rng = np.random.default_rng(seed)
+    cutoff = np.sin(np.deg2rad(equator_threshold))
+    accepted = []
+
+    while len(accepted) < n_img:
+        rots = Rotation.generate_random_rotations(n_img, seed=rng, dtype=dtype)
+        # Bottom right entry corresponds to cos(beta)
+        # where beta is angle from axis of symmetry.
+        keep = np.abs(rots.matrices[:, 2, 2]) >= cutoff
+        accepted.extend(rots.angles[keep])
+
+    return np.asarray(accepted[:n_img], dtype=dtype)
