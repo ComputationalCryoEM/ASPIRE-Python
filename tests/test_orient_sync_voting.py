@@ -160,9 +160,7 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     else:
         # For non-zero offsets we account for the global 3D
         # translation ambiguity and find mean Euclidean error
-        mean_dist = mean_aligned_shift_error(
-            src.rotations, est_shifts, src.offsets
-        )
+        mean_dist = mean_aligned_shift_error(src.rotations, est_shifts, src.offsets)
 
         # Check we are within 0.5 pixels on average.
         np.testing.assert_array_less(mean_dist, 0.5)
@@ -180,9 +178,7 @@ def test_estimate_shifts_with_est_rots(source_orientation_objs):
     else:
         # For non-zero offsets we account for the global 3D
         # translation ambiguity and find mean Euclidean error
-        mean_dist = mean_aligned_shift_error(
-            src.rotations, est_shifts, src.offsets
-        )
+        mean_dist = mean_aligned_shift_error(src.rotations, est_shifts, src.offsets)
 
         # Check we are within 0.5 pixels on average.
         np.testing.assert_array_less(mean_dist, 0.5)
