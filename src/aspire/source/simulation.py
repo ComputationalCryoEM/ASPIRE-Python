@@ -1,5 +1,6 @@
 import copy
 import logging
+import secrets
 
 import numpy as np
 from scipy.linalg import eigh, qr
@@ -38,7 +39,7 @@ class Simulation(ImageSource):
         dtype=None,
         C=2,
         angles=None,
-        seed=0,
+        seed=None,
         memory=None,
         noise_adder=None,
         symmetry_group=None,
@@ -66,7 +67,7 @@ class Simulation(ImageSource):
         :param C: Number of Volumes used to generate projection images. The default is C=2.
             If a `Volume` object is provided this parameter is overridden and `self.C` = `self.vols.n_vols`.
         :param angles: A n-by-3 array of Euler angles for use in projection. Default is a random set.
-        :param seed: Random seed.
+        :param seed: Optional RNG seed.  Default of `None` will generate a seed.
         :param memory: str or None. The path of the base directory to use as a data store or None.
             If None is given, no caching is performed.
         :param noise_adder: Optionally append instance of `NoiseAdder`
@@ -78,7 +79,13 @@ class Simulation(ImageSource):
         :return: A Simulation object.
         """
 
+        # Initialize RNG
+        if seed is None:
+            # Generate a random integer (so we can easily log it for repro).
+            seed = secrets.randbits(128)
         self.seed = seed
+        logger.info(f"Initializing RNG with seed {self.seed}")
+        self.rng = np.random.default_rng(self.seed)
 
         # If a Volume is not provided we default to the legacy Gaussian blob volume.
         # If a Simulation resolution or dtype is not provided, we default to L=8 and np.float32.
@@ -142,42 +149,22 @@ class Simulation(ImageSource):
         # We need to keep track of the original resolution we were initialized with,
         # to be able to generate projections of volumes later, when we are asked to supply images.
         self._original_L = self.L
-
-        if offsets is None:
-            offsets = self.L / 16 * randn(2, n, seed=seed).astype(dtype).T
-
-        if amplitudes is None:
-            min_, max_ = 2.0 / 3, 3.0 / 2
-            amplitudes = min_ + random(n, seed=seed).astype(dtype) * (max_ - min_)
-
         self.C = self.vols.n_vols
-
-        if states is None:
-            states = randi(self.C, n, seed=seed)
-        self.states = states
-
-        self.angles = self._init_angles(angles)
-
         self.filter_stack = filter_stack
         # sim_filters must be a deep copy so that it is not changed
         # when filter_stack is changed
         self.sim_filters = copy.deepcopy(filter_stack)
 
-        # Create filter indices and fill the metadata based on unique filters
-        if filter_stack is not None:
-            if filter_indices is None:
-                filter_indices = randi(len(filter_stack), n, seed=seed) - 1
-            self._populate_ctf_metadata(filter_indices)
-            self.filter_indices = filter_indices
-        else:
-            self.filter_indices = np.zeros(n, dtype=int)
+        # Initialize Simulation components that rely on RNG
+        #   Supports isolating legacy behaviors mostly to LegacySimulation
+        self._init_randomized_components(
+            angles, offsets, amplitudes, states, filter_indices
+        )
 
         # Initialize ImageSource values
         # Assign the Simulation projection values with deep copy of the same.
         # This uncouples the ImageSource and Simulation attributes
-        self.offsets = offsets
         self.sim_offsets = copy.deepcopy(self.offsets)
-        self.amplitudes = amplitudes
         self.sim_amplitudes = copy.deepcopy(self.amplitudes)
 
         self._projections_accessor = _ImageAccessor(self._projections, self.n)
@@ -201,6 +188,60 @@ class Simulation(ImageSource):
 
         # Any further operations should not mutate this instance.
         self._mutable = False
+
+    def _init_randomized_components(
+        self, angles, offsets, amplitudes, states, filter_indices
+    ):
+
+        self.angles = self._init_angles(angles)
+
+        if offsets is None:
+            offsets = (
+                self.L / 16 * self.rng.standard_normal((self.n, 2), dtype=self.dtype)
+            )
+        self.offsets = offsets
+
+        if amplitudes is None:
+            min_, max_ = 2.0 / 3, 3.0 / 2
+            amplitudes = min_ + self.rng.random(self.n).astype(self.dtype) * (
+                max_ - min_
+            )
+        self.amplitudes = amplitudes
+
+        if states is None:
+            # Generate n random integers between [1,C]
+            states = self.rng.integers(1, self.C + 1, self.n)
+        self.states = states
+
+        # Create filter indices and fill the metadata based on unique filters
+        if self.filter_stack is not None:
+            if filter_indices is None:
+                if len(self.filter_stack) > self.n:
+                    # This could happen with user provided inputs.  Discuss Raise or allow?
+                    filter_indices = self.rng.integers(
+                        0, len(self.filter_stack), self.n
+                    )
+                else:
+                    # Random choice, but guarentee each filter is used at least once.
+                    # Avoids some odd corner cases with metadata.
+
+                    # Force each index to be in the set at least once.
+                    filter_indices = np.arange(len(self.filter_stack), dtype=int)
+                    # Fill remaining indices with random filter choices
+                    remaining = self.n - len(self.filter_stack)
+                    filter_indices = np.concatenate(
+                        (
+                            filter_indices,
+                            self.rng.integers(0, len(self.filter_stack), remaining),
+                        )
+                    )
+                    # Further randomize the indices, now that we've ensured each index is included
+                    self.rng.shuffle(filter_indices)
+
+            self._populate_ctf_metadata(filter_indices)
+            self.filter_indices = filter_indices
+        else:
+            self.filter_indices = np.zeros(self.n, dtype=int)
 
     def _init_angles(self, angles):
         if angles is None:
@@ -579,6 +620,12 @@ class _LegacySimulation(Simulation):
     `rots_zyx_to_legacy_aspire()`.
     """
 
+    def __init__(self, *args, **kwargs):
+        # Legacy seed default, to reproduce hardcoded/MATLAB results.
+        kwargs.setdefault("seed", 0)
+
+        super().__init__(*args, **kwargs)
+
     def _init_angles(self, angles):
         angles = super()._init_angles(angles)
 
@@ -617,3 +664,45 @@ class _LegacySimulation(Simulation):
         new_rots = rots[:, ::-1] @ flip_xy
 
         return new_rots.reshape(og_shape)
+
+    def _init_randomized_components(
+        self, angles, offsets, amplitudes, states, filter_indices
+    ):
+        _reset_seed = False
+        if self.seed == 0:
+            _reset_seed = True
+            # Generator using MATLAB repro seed
+            self.seed = np.random.default_rng(np.random.RandomState(5489))
+
+        self.angles = self._init_angles(angles)
+
+        if _reset_seed:
+            self.seed = 0
+
+        if offsets is None:
+            offsets = (
+                self.L / 16 * randn(2, self.n, seed=self.seed).astype(self.dtype).T
+            )
+        self.offsets = offsets
+
+        if amplitudes is None:
+            min_, max_ = 2.0 / 3, 3.0 / 2
+            amplitudes = min_ + random(self.n, seed=self.seed).astype(self.dtype) * (
+                max_ - min_
+            )
+        self.amplitudes = amplitudes
+
+        if states is None:
+            states = randi(self.C, self.n, seed=self.seed)
+        self.states = states
+
+        # Create filter indices and fill the metadata based on unique filters
+        if self.filter_stack is not None:
+            if filter_indices is None:
+                filter_indices = (
+                    randi(len(self.filter_stack), self.n, seed=self.seed) - 1
+                )
+            self._populate_ctf_metadata(filter_indices)
+            self.filter_indices = filter_indices
+        else:
+            self.filter_indices = np.zeros(self.n, dtype=int)

@@ -579,7 +579,8 @@ def test_as_blk_diag(matrix_size, blk_diag):
     """
 
     # Construct via Numpy.
-    d_np = np.random.randn(matrix_size).astype(blk_diag.dtype)
+    rng = np.random.default_rng()
+    d_np = rng.standard_normal(matrix_size, dtype=blk_diag.dtype)
     A = np.diag(d_np)
 
     # Create DiagMatrix then convert to BlkDiagMatrix

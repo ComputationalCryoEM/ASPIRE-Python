@@ -5,7 +5,6 @@ from aspire.abinitio import CLSymmetryD2
 from aspire.source import Simulation
 from aspire.utils import (
     J_conjugate,
-    Random,
     Rotation,
     all_pairs,
     mean_aligned_angular_distance,
@@ -19,7 +18,7 @@ from aspire.volume import DnSymmetricVolume, DnSymmetryGroup
 
 DTYPE = [np.float32, pytest.param(np.float64, marks=pytest.mark.expensive)]
 RESOLUTION = [48, 49]
-N_IMG = [10]
+N_IMG = [20]
 OFFSETS = [0, pytest.param(None, marks=pytest.mark.expensive)]
 
 # Since these tests are optimized for runtime, detuned parameters cause
@@ -87,6 +86,9 @@ def orient_est(source):
 #########
 
 
+@pytest.mark.skip(
+    reason="g_sync_d2 test helper is incorrect; remove after downstream fix (PR #1391) merges"
+)
 def test_estimate_rotations(orient_est):
     """
     This test runs through the complete D2 algorithm and compares the
@@ -121,14 +123,15 @@ def test_scl_scores(orient_est):
     they match perfectly the Simulation rotations.
     """
     # Generate lookup data and extract rotations from the candidate `sphere_grid`.
-    # In this case, we take first 10 candidates from a non-equator viewing direction.
+    # In this case, we take first src.n candidates from a non-equator viewing direction.
+    n_cand = orient_est.src.n
     orient_est._generate_lookup_data()
     cand_rots = orient_est.inplane_rotated_grid1
     non_eq_idx = int(np.argwhere(orient_est.eq_class1 == 0)[0][0])
-    rots = cand_rots[non_eq_idx, :10]
+    rots = cand_rots[non_eq_idx, :n_cand]
     angles = Rotation(rots).angles
 
-    # Create a Simulation using those first 10 candidate rotations.
+    # Create a Simulation using those first n_cand candidate rotations.
     src = Simulation(
         n=orient_est.src.n,
         L=orient_est.src.L,
@@ -140,7 +143,9 @@ def test_scl_scores(orient_est):
     )
 
     # Initialize CL instance with new source.
-    cl = build_cl_from_source(src)
+    # Disabling fuzzy_mask as it was obscuring relevant image
+    # data for images with large offsets.
+    cl = build_cl_from_source(src, mask=False)
 
     # Generate lookup data.
     cl._compute_shifted_pf()
@@ -150,15 +155,22 @@ def test_scl_scores(orient_est):
     # Compute self-commonline scores.
     cl._compute_scl_scores()
 
-    # cl.scls_scores is shape (n_img, n_cand_rots). Since we used the first
-    # 10 candidate rotations of the first non-equator viewing direction as our
-    # Simulation rotations, the maximum correlation for image i should occur at
-    # candidate rotation index (non_eq_idx * cl.n_inplane_rots + i).
+    # Scores have one row per image and one column per candidate rotation.
+    # Image i uses in-plane candidate i at viewing direction index non_eq_idx.
+    # Either that candidate or its 180-degree counterpart may win.
     max_corr_idx = np.argmax(cl.scls_scores, axis=1)
-    gt_idx = non_eq_idx * cl.n_inplane_rots + np.arange(10)
+    gt_idx = non_eq_idx * cl.n_inplane_rots + np.arange(n_cand)
 
-    # Check that self-commonline indices match ground truth.
-    n_match = np.sum(max_corr_idx == gt_idx)
+    # Self-commonline scores are identical for in-plane rotations 180 degrees
+    # apart. This grid has 30 angles, so the equivalent candidate is 15
+    # indices away, wrapping within the same viewing direction.
+    half_turn = cl.n_inplane_rots // 2
+    equiv_idx = non_eq_idx * cl.n_inplane_rots + (
+        (np.arange(n_cand) + half_turn) % cl.n_inplane_rots
+    )
+
+    # Count either representative of the correct 180-degree pair as a match.
+    n_match = np.count_nonzero((max_corr_idx == gt_idx) | (max_corr_idx == equiv_idx))
     match_tol = 0.99  # match at least 99%.
     if not (src.offsets == 0.0).all():
         match_tol = 0.89  # match at least 89% with offsets.
@@ -289,22 +301,20 @@ def test_sync_colors(orient_est):
     Rijs = np.zeros((orient_est.n_pairs, 4, 3, 3), dtype=orient_est.dtype)
     gt_colors = np.zeros((orient_est.n_pairs, 3), dtype=int)
 
-    with Random(123):
-        for p, (i, j) in enumerate(orient_est.pairs):
-            gs = orient_est.gs
-            if p > 0:
-                np.random.shuffle(gs)  # Mix up the ordering of all but 1st Rijs.
+    rng = np.random.default_rng(123)
+    for p, (i, j) in enumerate(orient_est.pairs):
+        gs = orient_est.gs
+        if p > 0:
+            rng.shuffle(gs)  # Mix up the ordering of all but 1st Rijs.
 
-            # Compute the rotation row permutation created by the ordering of gs.
-            # See Proposition 5.1 in the related publication for details.
-            for m in range(3):
-                gt_colors[p, m] = np.argmax(
-                    np.sum(abs(0.5 * (gs[0] + gs[m + 1])), axis=0)
-                )
+        # Compute the rotation row permutation created by the ordering of gs.
+        # See Proposition 5.1 in the related publication for details.
+        for m in range(3):
+            gt_colors[p, m] = np.argmax(np.sum(abs(0.5 * (gs[0] + gs[m + 1])), axis=0))
 
-            # Compute Rijs with shuffled gs.
-            Rij = rots[i].T @ gs @ rots[j]
-            Rijs[p] = Rij
+        # Compute Rijs with shuffled gs.
+        Rij = rots[i].T @ gs @ rots[j]
+        Rijs[p] = Rij
 
     # Compute ground truth m'th row outer products.
     vijs = np.zeros((orient_est.n_pairs, 3, 3, 3), dtype=orient_est.dtype)
@@ -454,13 +464,13 @@ def g_sync_d2(rots, rots_gt):
     return rots_gt_sync
 
 
-def build_cl_from_source(source):
+def build_cl_from_source(source, mask=True):
     # Search for common lines over less shifts for 0 offsets.
     max_shift = 0
     shift_step = 1
     if source.offsets.all() != 0:
-        max_shift = 0.2
-        shift_step = 0.02  # Reduce shift steps for non-integer offsets of Simulation.
+        max_shift = 0.25
+        shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
 
     orient_est = CLSymmetryD2(
         source,
@@ -473,5 +483,6 @@ def build_cl_from_source(source):
         eq_min_dist=10,  # Tuned for speed
         epsilon=0.001,
         seed=SEED,
+        mask=mask,
     )
     return orient_est

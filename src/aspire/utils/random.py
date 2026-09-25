@@ -19,8 +19,8 @@ def choice(*args, **kwargs):
     if "seed" in kwargs:
         seed = kwargs.pop("seed")
 
-    with Random(seed):
-        return np.random.choice(*args, **kwargs)
+    with Random(seed) as rng:
+        return rng.choice(*args, **kwargs)
 
 
 def randi(i_max, size, seed=None):
@@ -34,24 +34,27 @@ def randi(i_max, size, seed=None):
     :param seed: Random seed to use (None to apply no seed)
     :return: A np array
     """
-    with Random(seed):
-        return np.ceil(i_max * np.random.random(size=size)).astype("int")
+    with Random(seed) as rng:
+        return np.ceil(i_max * rng.random(size=size)).astype("int")
 
 
 def randn(*args, **kwargs):
     """
+    Legacy MATLAB compatible random normal generation.
+    Supports reproducing MATLAB sequences/results.
+    New code should instead be implemented using modern Numpy practices.
+
     Calls rand and applies inverse transform sampling to the output.
     """
     seed = None
     if "seed" in kwargs:
         seed = kwargs.pop("seed")
 
-    with Random(seed):
-        uniform = np.random.rand(*args, **kwargs)
+    with Random(seed) as rng:
+        uniform = rng.random(args, **kwargs)
         result = np.sqrt(2) * erfinv(2 * uniform - 1)
         # Note, rearranging elements to get consistent behavior with MATLAB 'randn2'
         result = result.T.reshape(args, order="F")
-
         return result
 
 
@@ -69,8 +72,8 @@ def matlab_rand(size, seed=None):
         DeprecationWarning,
         stacklevel=2,
     )
-    with Random(seed):
-        return np.random.random(size).reshape(size, order="F")
+    with Random(seed) as rng:
+        return rng.random(size).reshape(size, order="F")
 
 
 def random(*args, **kwargs):
@@ -79,8 +82,8 @@ def random(*args, **kwargs):
     """
     seed = kwargs.pop("seed", None)
 
-    with Random(seed):
-        return np.random.random(*args, **kwargs)
+    with Random(seed) as rng:
+        return rng.random(*args, **kwargs)
 
 
 class Random:
@@ -93,7 +96,9 @@ class Random:
         self.seed = seed
 
     def __enter__(self):
-        if self.seed is not None:
+        if isinstance(self.seed, np.random.Generator):
+            rng = self.seed
+        elif self.seed is not None:
             # Push current state on stack
             random_states.append(np.random.get_state())
 
@@ -102,9 +107,17 @@ class Random:
             if seed == 0:
                 seed = 5489
 
+            # Bridge code, supports pure context and `as rng`.
             new_state = np.random.RandomState(seed)
+            rng = np.random.default_rng(new_state)
             np.random.set_state(new_state.get_state())
+        else:
+            # get existing state and return as a rng handle
+            state = np.random.get_state()
+            rng = np.random.RandomState()
+            rng.set_state(state)
+        return rng
 
     def __exit__(self, *args):
-        if self.seed is not None:
+        if self.seed is not None and len(random_states):
             np.random.set_state(random_states.pop())

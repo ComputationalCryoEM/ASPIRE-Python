@@ -8,7 +8,7 @@ from aspire.basis import Coef, ComplexCoef, FSPCABasis
 from aspire.classification import Class2D
 from aspire.classification.legacy_implementations import bispec_2drot_large, pca_y
 from aspire.numeric import ComplexPCA
-from aspire.utils import random, trange
+from aspire.utils import trange
 
 logger = logging.getLogger(__name__)
 
@@ -427,7 +427,7 @@ class RIRClass2D(Class2D):
             self.pca_basis.complex_angular_indices != 0
         ]  # filter non_zero_freqs eq 18,19
         pm = m / np.sum(m)
-        x = random(len(m))
+        x = self.rng.random(len(m))
         m_mask = x < self.sample_n * pm
 
         M = None

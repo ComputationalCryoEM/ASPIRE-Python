@@ -14,7 +14,6 @@ from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import _LegacySimulation
 from aspire.utils import eigs
-from aspire.utils.random import Random
 from aspire.volume import LegacyVolume, Volume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -418,9 +417,7 @@ class Covar3DTestCase(TestCase):
         # Cluster the coordinates using k-means. Again, we know how many volumes we expect, so we can use this parameter
         # here. Typically, one would take the number of clusters to be one plus the number of eigenvectors extracted.
 
-        # Since kmeans2 relies on randomness for initialization, important to push random seed to context manager here.
-        with Random(0):
-            centers, vol_idx = kmeans2(coords_est.T, C)
+        centers, vol_idx = kmeans2(coords_est.T, C)
 
         clustering_accuracy = self.sim.eval_clustering(vol_idx)
         self.assertEqual(clustering_accuracy, 1)

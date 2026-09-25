@@ -147,7 +147,8 @@ class SimTestCase(TestCase):
         See Parseval/Plancherel's Theorem.
         """
 
-        wht_noise = np.random.randn(1024, 128, 128).astype(self.dtype)
+        rng = np.random.default_rng()
+        wht_noise = rng.standard_normal((1024, 128, 128), dtype=self.dtype)
         src = ArrayImageSource(wht_noise, pixel_size=1.0)
 
         wht_noise_estimator = WhiteNoiseEstimator(src, batch_size=512)

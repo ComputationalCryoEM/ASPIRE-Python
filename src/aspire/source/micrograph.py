@@ -10,7 +10,7 @@ from aspire.image import Image
 from aspire.source import Simulation
 from aspire.source.image import _ImageAccessor
 from aspire.storage import StarFile
-from aspire.utils import Random, check_pixel_size, grid_2d, rename_with_timestamp
+from aspire.utils import check_pixel_size, grid_2d, rename_with_timestamp
 from aspire.volume import Volume
 
 logger = logging.getLogger(__name__)
@@ -325,7 +325,7 @@ class MicrographSimulation(MicrographSource):
              When provided must have shape `(particles_per_micrograph * micrograph_count, 3)`.
         :param pixel_size: Pixel size of the images in angstroms. Default `None` infers pixel_size
             from `volume` if possible. If set, overrides `volume` pixel_size.
-        :param seed: Random seed.
+        :param seed: Optional RNG seed.
         :param noise_adder: Append instance of NoiseAdder to generation pipeline.
         :param ctf_filters: Optional list of `Filter` objects to apply to particles.
             This list should be 1, n_micrographs, or particles_per_micrograph * micrograph_count.
@@ -348,6 +348,7 @@ class MicrographSimulation(MicrographSource):
                 pixel_size = self.volume.pixel_size
 
         self.seed = seed
+        self.rng = np.random.default_rng(self.seed)
 
         # Note pixel_size is taken from `volume`.
         super().__init__(
@@ -463,9 +464,8 @@ class MicrographSimulation(MicrographSource):
         self._fail_limit = 0.1 * self.micrograph_count
         self._fail_count = 0
 
-        with Random(seed=self.seed) as _:
-            for i in range(self.micrograph_count):
-                self.centers[i] = self._create_centers(i)
+        for i in range(self.micrograph_count):
+            self.centers[i] = self._create_centers(i)
 
         self._clean_images_accessor = _ImageAccessor(
             self._clean_images, self.micrograph_count
@@ -510,7 +510,7 @@ class MicrographSimulation(MicrographSource):
             self._fail_count += 1
             raise RuntimeError("Not enough centers generated.")
 
-        random_index = np.random.choice(available_centers.shape[0])
+        random_index = self.rng.choice(available_centers.shape[0])
         x, y = available_centers[random_index]
         x_vals = self.grid_x + x
         y_vals = self.grid_y + y

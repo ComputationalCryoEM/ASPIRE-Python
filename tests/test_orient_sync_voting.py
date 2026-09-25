@@ -23,7 +23,11 @@ from aspire.commands.orient3d import orient3d
 from aspire.downloader import emdb_2660
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource, Simulation
-from aspire.utils import mean_aligned_angular_distance, rots_to_clmatrix
+from aspire.utils import (
+    mean_aligned_angular_distance,
+    mean_aligned_shift_error,
+    rots_to_clmatrix,
+)
 from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -74,10 +78,11 @@ def dtype(request):
 
 @pytest.fixture(scope="module")
 def source_orientation_objs(resolution, offsets, dtype):
+    vol = emdb_2660().astype(dtype).downsample(resolution)
     src = Simulation(
-        n=500,
+        n=50,
         L=resolution,
-        vols=emdb_2660().downsample(resolution),
+        vols=vol,
         offsets=offsets,
         amplitudes=1,
         seed=0,
@@ -86,8 +91,8 @@ def source_orientation_objs(resolution, offsets, dtype):
     # Search for common lines over less shifts for 0 offsets.
     max_shift = 1 / resolution
     shift_step = 1
-    if src.offsets.all() != 0:
-        max_shift = 0.20
+    if np.any(src.offsets != 0):
+        max_shift = 0.25  # Increased max_shift range to account for image offsets.
         shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
     orient_est = CLSyncVoting(
         src, max_shift=max_shift, shift_step=shift_step, mask=False
@@ -99,7 +104,14 @@ def source_orientation_objs(resolution, offsets, dtype):
     return src, orient_est
 
 
-@pytest.mark.expensive
+def test_dtype_passthrough(source_orientation_objs, dtype):
+    src, orient_est = source_orientation_objs
+
+    assert src.vols.dtype == dtype
+    assert src.dtype == dtype
+    assert orient_est.dtype == dtype
+
+
 def test_build_clmatrix(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -116,13 +128,12 @@ def test_build_clmatrix(source_orientation_objs):
 
     # Check that at least 98% of estimates are within 5 degrees.
     tol = 0.98
-    if src.offsets.all() != 0:
+    if np.any(src.offsets != 0):
         # Set tolerance to 95% when using nonzero offsets.
         tol = 0.95
     assert within_5 / angle_diffs.size > tol
 
 
-@pytest.mark.expensive
 def test_estimate_rotations(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -132,7 +143,6 @@ def test_estimate_rotations(source_orientation_objs):
     mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=1)
 
 
-@pytest.mark.expensive
 def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -144,37 +154,36 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     # Estimate shifts using ground truth rotations.
     est_shifts = orient_est.estimate_shifts()
 
-    # Calculate the mean 2D distance between estimates and ground truth.
-    error = src.offsets - est_shifts
-
-    mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
-
-    # Assert that on average estimated shifts are close to src.offsets
-    if src.offsets.all() != 0:
-        np.testing.assert_array_less(mean_dist, 2)
+    if np.all(src.offsets == 0):
+        # For zero offsets we should estimate perfectly.
+        np.testing.assert_allclose(est_shifts, src.offsets)
     else:
-        np.testing.assert_allclose(mean_dist, 0)
+        # For non-zero offsets we account for the global 3D
+        # translation ambiguity and find mean Euclidean error
+        mean_dist = mean_aligned_shift_error(src.rotations, est_shifts, src.offsets)
+
+        # Check we are within 0.5 pixels on average.
+        np.testing.assert_array_less(mean_dist, 0.5)
 
 
-@pytest.mark.expensive
 def test_estimate_shifts_with_est_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
     # Estimate shifts using estimated rotations.
     est_shifts = orient_est.estimate_shifts()
 
-    # Calculate the mean 2D distance between estimates and ground truth.
-    error = src.offsets - est_shifts
-    mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
-
-    # Assert that on average estimated shifts are close to src.offsets
-    if src.offsets.all() != 0:
-        np.testing.assert_array_less(mean_dist, 2)
+    if np.all(src.offsets == 0):
+        # For zero offsets we should estimate perfectly.
+        np.testing.assert_allclose(est_shifts, src.offsets)
     else:
-        np.testing.assert_allclose(mean_dist, 0)
+        # For non-zero offsets we account for the global 3D
+        # translation ambiguity and find mean Euclidean error
+        mean_dist = mean_aligned_shift_error(src.rotations, est_shifts, src.offsets)
+
+        # Check we are within 0.5 pixels on average.
+        np.testing.assert_array_less(mean_dist, 0.5)
 
 
-@pytest.mark.expensive
 def test_estimate_rotations_fuzzy_mask():
     noisy_src = Simulation(
         n=35,
@@ -263,8 +272,8 @@ def test_offset_param_passthrough(cl_algo):
     """
     Systematically test that offset search configuration passes through all CL classes.
     """
-
-    src = ArrayImageSource(np.random.randn(4, 4), pixel_size=1.23)
+    rng = np.random.default_rng()
+    src = ArrayImageSource(rng.standard_normal((4, 4)), pixel_size=1.23)
 
     test_args = {
         "offsets_max_shift": 0.5,

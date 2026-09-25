@@ -23,7 +23,7 @@ DTYPES = [
 
 SPECTRAL_NORM_CONSTRAINT = [
     None,
-    2 / 3,
+    0.8,  # Bsaed on measured ground truth Gram matrix spectral norm.
 ]
 
 ADAPTIVE_PROJECTION = [

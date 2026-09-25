@@ -30,7 +30,8 @@ SEED = 707
 
 
 class SimTestCase(TestCase):
-    test_filter = ArrayFilter(np.random.randn(8, 8))
+    rng = np.random.default_rng()
+    test_filter = ArrayFilter(rng.standard_normal((8, 8)))
     filter_eval_kwargs = dict()
 
     def setUp(self):
