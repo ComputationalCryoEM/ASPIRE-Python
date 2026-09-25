@@ -74,10 +74,11 @@ def dtype(request):
 
 @pytest.fixture(scope="module")
 def source_orientation_objs(resolution, offsets, dtype):
+    vol = emdb_2660().astype(dtype).downsample(resolution)
     src = Simulation(
-        n=500,
+        n=50,
         L=resolution,
-        vols=emdb_2660().downsample(resolution),
+        vols=vol,
         offsets=offsets,
         amplitudes=1,
         seed=0,
@@ -86,8 +87,8 @@ def source_orientation_objs(resolution, offsets, dtype):
     # Search for common lines over less shifts for 0 offsets.
     max_shift = 1 / resolution
     shift_step = 1
-    if src.offsets.all() != 0:
-        max_shift = 0.20
+    if np.any(src.offsets != 0):
+        max_shift = 0.25  # Increased max_shift range to account for image offsets.
         shift_step = 0.25  # Reduce shift steps for non-integer offsets of Simulation.
     orient_est = CLSyncVoting(
         src, max_shift=max_shift, shift_step=shift_step, mask=False
@@ -99,7 +100,14 @@ def source_orientation_objs(resolution, offsets, dtype):
     return src, orient_est
 
 
-@pytest.mark.expensive
+def test_dtype_passthrough(source_orientation_objs, dtype):
+    src, orient_est = source_orientation_objs
+
+    assert src.vols.dtype == dtype
+    assert src.dtype == dtype
+    assert orient_est.dtype == dtype
+
+
 def test_build_clmatrix(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -116,13 +124,12 @@ def test_build_clmatrix(source_orientation_objs):
 
     # Check that at least 98% of estimates are within 5 degrees.
     tol = 0.98
-    if src.offsets.all() != 0:
+    if np.any(src.offsets != 0):
         # Set tolerance to 95% when using nonzero offsets.
         tol = 0.95
     assert within_5 / angle_diffs.size > tol
 
 
-@pytest.mark.expensive
 def test_estimate_rotations(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -132,7 +139,6 @@ def test_estimate_rotations(source_orientation_objs):
     mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=1)
 
 
-@pytest.mark.expensive
 def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
@@ -144,37 +150,40 @@ def test_estimate_shifts_with_gt_rots(source_orientation_objs):
     # Estimate shifts using ground truth rotations.
     est_shifts = orient_est.estimate_shifts()
 
-    # Calculate the mean 2D distance between estimates and ground truth.
-    error = src.offsets - est_shifts
-
-    mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
-
-    # Assert that on average estimated shifts are close to src.offsets
-    if src.offsets.all() != 0:
-        np.testing.assert_array_less(mean_dist, 2)
+    if np.all(src.offsets == 0):
+        # For zero offsets we should estimate perfectly.
+        np.testing.assert_allclose(est_shifts, src.offsets)
     else:
-        np.testing.assert_allclose(mean_dist, 0)
+        # For non-zero offsets we account for the global 3D
+        # translation ambiguity and find mean Euclidean error
+        mean_dist = mean_aligned_shift_error(
+            orient_est.rotations, est_shifts, src.offsets
+        )
+
+        # Check we are within 0.5 pixels on average.
+        np.testing.assert_array_less(mean_dist, 0.5)
 
 
-@pytest.mark.expensive
 def test_estimate_shifts_with_est_rots(source_orientation_objs):
     src, orient_est = source_orientation_objs
 
     # Estimate shifts using estimated rotations.
     est_shifts = orient_est.estimate_shifts()
 
-    # Calculate the mean 2D distance between estimates and ground truth.
-    error = src.offsets - est_shifts
-    mean_dist = np.hypot(error[:, 0], error[:, 1]).mean()
-
-    # Assert that on average estimated shifts are close to src.offsets
-    if src.offsets.all() != 0:
-        np.testing.assert_array_less(mean_dist, 2)
+    if np.all(src.offsets == 0):
+        # For zero offsets we should estimate perfectly.
+        np.testing.assert_allclose(est_shifts, src.offsets)
     else:
-        np.testing.assert_allclose(mean_dist, 0)
+        # For non-zero offsets we account for the global 3D
+        # translation ambiguity and find mean Euclidean error
+        mean_dist = mean_aligned_shift_error(
+            orient_est.rotations, est_shifts, src.offsets
+        )
+
+        # Check we are within 0.5 pixels on average.
+        np.testing.assert_array_less(mean_dist, 0.5)
 
 
-@pytest.mark.expensive
 def test_estimate_rotations_fuzzy_mask():
     noisy_src = Simulation(
         n=35,
@@ -294,3 +303,34 @@ def test_offset_param_passthrough(cl_algo):
             arg, val = "order", int(val[1:])
 
         assert getattr(orient_est, arg) == val
+
+
+def mean_aligned_shift_error(rots, est_shifts, gt_shifts):
+    """
+    Mean per-image shift error after aligning the 3D translation ambiguity.
+
+    :param rots: Rotations used to estimate shifts.
+    :param est_shifts: Estimated shifts.
+    :param gt_shifts: Ground truth shifts.
+
+    :return: The mean Euclidean distance between ground truth and
+        estimated shifts after aligning the 3D translational ambiguity.
+    """
+
+    # For image i, R_i.T expresses a global 3D translation t in that image's
+    # coordinates: (image_x, image_y, viewing_axis). Only the first two
+    # components shift the 2D image, so stack those rows for every image.
+    basis = rots.transpose(0, 2, 1)[:, :2, :].reshape(-1, 3)
+
+    # QR gives perpendicular unit directions spanning the same shift patterns.
+    q, _ = np.linalg.qr(basis, mode="reduced")
+
+    # Flatten the per-image (x, y) errors to match the row order of basis and q.
+    error = (gt_shifts - est_shifts).reshape(-1)
+
+    # q.T @ error finds the amount of error along each column of q.
+    # q @ (q.T @ error) projects the error onto shifts caused by a global 3D translation.
+    aligned_error = error - q @ (q.T @ error)
+
+    # Return mean Euclidean error.
+    return np.linalg.norm(aligned_error.reshape(-1, 2), axis=1).mean()
