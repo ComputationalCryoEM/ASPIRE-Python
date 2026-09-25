@@ -7,7 +7,7 @@ channels:
 dependencies:
   - pip
   - python=3.10
-  - numpy=1.25.0
+  - numpy=2.2.6
   - scipy=1.13.1
   - finufft=2.5.0  # must be installed via conda if using (conda) optimized backends
   - scikit-learn
