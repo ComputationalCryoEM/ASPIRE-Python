@@ -23,7 +23,11 @@ from aspire.commands.orient3d import orient3d
 from aspire.downloader import emdb_2660
 from aspire.noise import WhiteNoiseAdder
 from aspire.source import ArrayImageSource, Simulation
-from aspire.utils import mean_aligned_angular_distance, rots_to_clmatrix
+from aspire.utils import (
+    mean_aligned_angular_distance,
+    mean_aligned_shift_error,
+    rots_to_clmatrix,
+)
 from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -303,34 +307,3 @@ def test_offset_param_passthrough(cl_algo):
             arg, val = "order", int(val[1:])
 
         assert getattr(orient_est, arg) == val
-
-
-def mean_aligned_shift_error(rots, est_shifts, gt_shifts):
-    """
-    Mean per-image shift error after aligning the 3D translation ambiguity.
-
-    :param rots: Rotations used to estimate shifts.
-    :param est_shifts: Estimated shifts.
-    :param gt_shifts: Ground truth shifts.
-
-    :return: The mean Euclidean distance between ground truth and
-        estimated shifts after aligning the 3D translational ambiguity.
-    """
-
-    # For image i, R_i.T expresses a global 3D translation t in that image's
-    # coordinates: (image_x, image_y, viewing_axis). Only the first two
-    # components shift the 2D image, so stack those rows for every image.
-    basis = rots.transpose(0, 2, 1)[:, :2, :].reshape(-1, 3)
-
-    # QR gives perpendicular unit directions spanning the same shift patterns.
-    q, _ = np.linalg.qr(basis, mode="reduced")
-
-    # Flatten the per-image (x, y) errors to match the row order of basis and q.
-    error = (gt_shifts - est_shifts).reshape(-1)
-
-    # q.T @ error finds the amount of error along each column of q.
-    # q @ (q.T @ error) projects the error onto shifts caused by a global 3D translation.
-    aligned_error = error - q @ (q.T @ error)
-
-    # Return mean Euclidean error.
-    return np.linalg.norm(aligned_error.reshape(-1, 2), axis=1).mean()
