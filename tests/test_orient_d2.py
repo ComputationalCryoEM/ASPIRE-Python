@@ -86,6 +86,9 @@ def orient_est(source):
 #########
 
 
+@pytest.mark.skip(
+    reason="g_sync_d2 test helper is incorrect; remove after downstream fix (PR #1391) merges"
+)
 def test_estimate_rotations(orient_est):
     """
     This test runs through the complete D2 algorithm and compares the
