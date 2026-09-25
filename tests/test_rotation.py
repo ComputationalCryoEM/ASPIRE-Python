@@ -114,9 +114,40 @@ def test_mse(rot_obj):
         np.testing.assert_array_less(mse, utest_tolerance(rot_obj.dtype))
 
 
-def test_common_lines(rot_obj):
-    ell_ij, ell_ji = rot_obj.common_lines(8, 11, 360)
-    np.testing.assert_equal([ell_ij, ell_ji], [235, 104])
+@pytest.mark.parametrize("n_theta", [180, 360])
+def test_common_lines(rot_obj, n_theta):
+    """
+    Check that pairs of common-line indices map to the same 3D direction.
+
+    For several image pairs, allow up to one angular bin of difference
+    because each returned index is rounded.
+    """
+    rots = rot_obj.matrices
+
+    for i, j in [(0, 1), (2, 7), (8, 11), (13, 22)]:
+        # Compute commonline induced by rotations i and j
+        # for the given n_theta resolution.
+        ell_ij, ell_ji = rot_obj.common_lines(i, j, n_theta)
+
+        # The indices should always be less than n_theta.
+        assert 0 <= ell_ij < n_theta
+        assert 0 <= ell_ji < n_theta
+
+        # Compute the theta value corresponding to each index
+        # and find the direction vector in each image plane.
+        theta_ij = 2 * np.pi * ell_ij / n_theta
+        theta_ji = 2 * np.pi * ell_ji / n_theta
+        direction_i = np.array([np.cos(theta_ij), np.sin(theta_ij), 0])
+        direction_j = np.array([np.cos(theta_ji), np.sin(theta_ji), 0])
+
+        # R.T maps a direction from image coordinates into 3D coordinates.
+        direction_i_3d = rots[i].T @ direction_i
+        direction_j_3d = rots[j].T @ direction_j
+
+        # Rounding each angle can move it by half a bin, so the two
+        # directions can differ by at most one angular bin.
+        max_distance = 2 * np.sin(np.pi / n_theta)
+        assert np.linalg.norm(direction_i_3d - direction_j_3d) <= max_distance
 
 
 def test_string(rot_obj):
