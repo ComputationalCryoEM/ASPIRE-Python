@@ -10,6 +10,7 @@ from aspire.utils import (
     grid_2d,
     grid_3d,
     mean_aligned_angular_distance,
+    mean_aligned_shift_error,
 )
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -336,3 +337,54 @@ def test_mean_aligned_angular_distance():
 
     # Test internal assert using the `degree_tol` argument.
     mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=0.1)
+
+
+def test_mean_aligned_shift_error():
+    """
+    Check that global 3D translation is ignored but image-specific shift error remains.
+    """
+    n = 8
+    rots = Rotation.generate_random_rotations(n, seed=0, dtype=np.float64).matrices
+
+    # Give each image a random reference shift.
+    reference_offsets = np.random.default_rng(1).normal(size=(n, 2))
+
+    # Fix a global 3D translation and project it onto each image plane
+    # to find its 2D contribution to that image's shift.
+    translation = np.array([1.2, -0.8, 0.5])
+    projected_translation = np.array([(rot.T @ translation)[:2] for rot in rots])
+
+    # A global 3D translation should contribute no aligned error.
+    np.testing.assert_allclose(
+        mean_aligned_shift_error(
+            rots, reference_offsets + projected_translation, reference_offsets
+        ),
+        0,
+        atol=1e-12,
+    )
+
+    # Now we add some error that cannot be accounted for by a global translation:
+    # The third column of each rotation is that image's viewing direction.
+    # Their cross product lies in the planes of both images. Make it
+    # unit length so the errors added below each have length 1.
+    u = np.cross(rots[0, :, 2], rots[1, :, 2])
+    u /= np.linalg.norm(u)
+
+    # Add opposite errors along this shared direction to two images.
+    # No single move of the 3D object can explain this pair of errors.
+    non_translation_error = np.zeros_like(reference_offsets)
+    non_translation_error[0] = (rots[0].T @ u)[:2]
+    non_translation_error[1] = -(rots[1].T @ u)[:2]
+
+    # Each of those two images has an error of length 1; the others have 0.
+    # The mean error over all n images should then be 2 / n.
+    np.testing.assert_allclose(
+        mean_aligned_shift_error(
+            rots,
+            reference_offsets + projected_translation + non_translation_error,
+            reference_offsets,
+        ),
+        2 / n,
+        rtol=0,
+        atol=1e-12,
+    )
