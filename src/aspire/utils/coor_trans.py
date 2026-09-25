@@ -186,7 +186,7 @@ def mean_aligned_shift_error(rots, est_shifts, gt_shifts):
     """
     Mean per-image shift error after aligning the 3D translation ambiguity.
 
-    :param rots: Rotations used to estimate shifts.
+    :param rots: Reference rotations used to define global 3D translation.
     :param est_shifts: Estimated shifts.
     :param gt_shifts: Ground truth shifts.
 
@@ -207,6 +207,8 @@ def mean_aligned_shift_error(rots, est_shifts, gt_shifts):
 
     # q.T @ error finds the amount of error along each column of q.
     # q @ (q.T @ error) projects the error onto shifts caused by a global 3D translation.
+    # We subtract away the error caused by global translation leaving the error
+    # inherent to the shift estimation alone.
     aligned_error = error - q @ (q.T @ error)
 
     # Return mean Euclidean error.
