@@ -106,7 +106,7 @@ coords_est = src_wiener_coords(
 # we expect, so we can use this parameter here. Typically, one would take
 # the number of clusters to be one plus the number of eigenvectors extracted.
 
-centers, vol_idx = kmeans2(coords_est.T, num_vols)
+centers, vol_idx = kmeans2(coords_est.T, num_vols, minit="points")
 centers = centers.squeeze()
 
 # %%
