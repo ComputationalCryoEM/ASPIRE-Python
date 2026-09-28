@@ -98,8 +98,11 @@ def test_J_sync(dtype):
             Rijs_conjugated[ij] = Rij
             ij += 1
 
-    # Initialize JSync instance with default params.
-    J_sync = JSync(n)
+    # Initialize JSync instance.
+    # For this small problem, set epsilon to 1e-3 (default is 1e-2)
+    # to prevent premature power method stoppage due to residual
+    # dipping below epsilon on a single early iteration.
+    J_sync = JSync(n, epsilon=1e-3)
 
     # Perform power method and check that signs are correct up to
     # multilication by -1. Also check dtype pass-through.
