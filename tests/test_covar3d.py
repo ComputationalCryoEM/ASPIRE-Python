@@ -417,7 +417,7 @@ class Covar3DTestCase(TestCase):
         # Cluster the coordinates using k-means. Again, we know how many volumes we expect, so we can use this parameter
         # here. Typically, one would take the number of clusters to be one plus the number of eigenvectors extracted.
 
-        centers, vol_idx = kmeans2(coords_est.T, C, minit="points")
+        centers, vol_idx = kmeans2(coords_est.T, C, minit="points", seed=0)
 
         clustering_accuracy = self.sim.eval_clustering(vol_idx)
         self.assertEqual(clustering_accuracy, 1)
