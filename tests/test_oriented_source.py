@@ -31,7 +31,7 @@ def src_fixture_id(params):
 @pytest.fixture(params=ESTIMATOR_SYMMETRY, ids=src_fixture_id)
 def src_fixture(request):
     estimator, symmetry = request.param
-    L = 8
+    L = 12  # Must be greater than 8 for Cn algos.
     n = 10
     vol = None
 
