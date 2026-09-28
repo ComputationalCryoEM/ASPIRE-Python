@@ -43,7 +43,7 @@ def src_fixture(request):
         estimator_kwargs.update({"n_theta": 36, "symmetry": symmetry})
 
     # Generate an origianl source and an oriented source.
-    og_src = Simulation(L=L, n=n, vols=vol, offsets=0)
+    og_src = Simulation(L=L, n=n, vols=vol, C=1, offsets=0, seed=0)
     orient_est = estimator(og_src, max_shift=1 / L, mask=False, **estimator_kwargs)
     oriented_src = OrientedSource(og_src, orient_est)
 
