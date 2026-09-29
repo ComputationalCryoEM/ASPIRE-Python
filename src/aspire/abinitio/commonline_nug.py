@@ -245,10 +245,11 @@ class CommonlineNUG(Orient3D):
             btk = np.sum(bT[:, None, None] * self.Wd(k, beta_grid), axis=0)
             BTK.append(btk.T)
 
-        def fijhat_k(k, F):
+        def fijhat_k(k_idx, F):
             """
             Approximate the degree-k Fourier coefficient block of a sampled pairwise loss.
             """
+            k = k_idx + 1  # degree
             dk = 2 * k + 1
 
             exp_alpha_grid = np.zeros((2 * T, dk), dtype=complex_type(np.float64))
@@ -260,7 +261,7 @@ class CommonlineNUG(Orient3D):
                 exp_gamma_grid[:, m + k] = np.exp(1j * m * gamma_grid)
 
             S = (exp_alpha_grid.T @ F @ exp_gamma_grid).T
-            fhat = BTK[k - 1] * S / 4 / T**2
+            fhat = BTK[k_idx] * S / 4 / T**2
             return fhat
 
         # Allocate one coefficient matrix per Wigner degree;
@@ -277,15 +278,16 @@ class CommonlineNUG(Orient3D):
                 for j1 in range(2 * T):
                     for j2 in range(2 * T):
                         Fij[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, j)
-                for k in range(1, Lmax + 1):
+                for k_idx in range(Lmax):
+                    k = k_idx + 1
                     dk = 2 * k + 1
-                    C[k - 1][j * dk : (j + 1) * dk, i * dk : (i + 1) * dk] = fijhat_k(
-                        k, Fij
+                    C[k_idx][j * dk : (j + 1) * dk, i * dk : (i + 1) * dk] = fijhat_k(
+                        k_idx, Fij
                     )  # *dk
 
         # Fill the conjugate transpose blocks so each coefficient matrix is Hermitian.
-        for k in range(1, Lmax + 1):
-            C[k - 1] = C[k - 1] + C[k - 1].conj().T
+        for k_idx in range(Lmax):
+            C[k_idx] = C[k_idx] + C[k_idx].conj().T
 
         # Diagonal blocks encode self-pair losses and are handled separately.
         for i in range(N):
@@ -293,18 +295,20 @@ class CommonlineNUG(Orient3D):
             for j1 in range(2 * T):
                 for j2 in range(2 * T):
                     Fii[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, i)
-            for k in range(1, Lmax + 1):
+            for k_idx in range(Lmax):
+                k = k_idx + 1
                 dk = 2 * k + 1
-                C[k - 1][i * dk : (i + 1) * dk, i * dk : (i + 1) * dk] = fijhat_k(
-                    k, Fii
+                C[k_idx][i * dk : (i + 1) * dk, i * dk : (i + 1) * dk] = fijhat_k(
+                    k_idx, Fii
                 )  # *dk
 
         # Convert complex Wigner coefficients to the real representation basis used by ADMM.
-        for k in range(1, Lmax + 1):
-            [T, Tinv] = self.complex2real(k)
-            C[k - 1] = np.real(
+        for k_idx in range(Lmax):
+            k = k_idx + 1
+            T, Tinv = self.complex2real(k)
+            C[k_idx] = np.real(
                 np.kron(np.eye(N, dtype=np.float64), Tinv)
-                @ C[k - 1]
+                @ C[k_idx]
                 @ np.kron(np.eye(N, dtype=np.float64), T)
             )
 
