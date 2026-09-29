@@ -1383,12 +1383,12 @@ class CommonlineNUG(Orient3D):
         """
         SO3_grid = self.discretize_SO3()
         Ngrid = SO3_grid.shape[0]
-        start = 1
 
         TT = []
         TTI = []
-        for ell in range(start, self.Lmax + 1):
-            T, Tinv = self.complex2real(ell)
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+            T, Tinv = self.complex2real(k)
             TT.append(T)
             TTI.append(Tinv)
 
@@ -1405,12 +1405,13 @@ class CommonlineNUG(Orient3D):
 
         W0 = []
         W1 = []
-        for k in range(start, self.Lmax + 1):
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
             W0k = np.zeros((Ngrid, k, k), dtype=np.float64)
             W1k = np.zeros((Ngrid, k + 1, k + 1), dtype=np.float64)
 
-            TkT = TT[k - start].T
-            TinvkT = TTI[k - start].T
+            TkT = TT[k_idx].T
+            TinvkT = TTI[k_idx].T
 
             w = np.real(TkT @ self.WD(k, SO3_grid).conj() @ TinvkT)
             W0k, W1k = permutek_block(w, k)
