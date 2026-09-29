@@ -138,7 +138,7 @@ def test_save(src_fixture, save_mode):
     Test save function and save_mode.
     """
 
-    src = src_fixture[1]
+    src = src_fixture[1].cache()
 
     # Make a fresh tmp_dir
     with tempfile.TemporaryDirectory() as tmp_dir:
