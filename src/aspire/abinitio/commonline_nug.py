@@ -1480,11 +1480,12 @@ class CommonlineNUG(Orient3D):
         """
         rk = xp.zeros(self.Lmax, dtype=np.float64)
         A = []
-        for k in range(1, self.Lmax + 1):
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1  # degree
             Ak = np.sum(self.WD(k, self.sym_euler), axis=0)
             Ak = np.round(Ak / self.n_sym, 6)
             A.append(Ak)
-            rk[k - 1] = np.linalg.matrix_rank(Ak)
+            rk[k_idx] = np.linalg.matrix_rank(Ak)
         return rk, A
 
     def construct_AEq(self):
