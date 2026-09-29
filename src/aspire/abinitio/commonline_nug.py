@@ -1251,14 +1251,19 @@ class CommonlineNUG(Orient3D):
         # normalize C matrix
         Cnorm = 0
         Xnorm = 0
-        for k in range(Lmax):
+        for k_idx in range(Lmax):
+            k = k_idx + 1  # degree
             dk = 2 * k + 1
-            Cnorm += np.linalg.norm(C[k]) ** 2
+
+            Cnorm += np.linalg.norm(C[k_idx]) ** 2
             Xnorm += dk * N**2
+
         Cnorm = np.sqrt(Cnorm)
         Xnorm = np.sqrt(Xnorm)
-        for k in range(Lmax):
-            C[k] = xp.asarray(Xnorm / Cnorm * C[k])
+
+        for k_idx in range(Lmax):
+            C[k_idx] = xp.asarray(Xnorm / Cnorm * C[k_idx])
+
         C0, C1 = self.transform_coeff(C, IDX_upper)
         normC = xp.sqrt(xp.linalg.norm(C0) ** 2 + xp.linalg.norm(C1) ** 2)
         del C
