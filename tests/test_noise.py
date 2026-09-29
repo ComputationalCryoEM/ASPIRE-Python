@@ -62,7 +62,7 @@ def sim_fixture(resolution, dtype):
     # ie, clean centered projections.
     return Simulation(
         vols=AsymmetricVolume(L=resolution, C=1, dtype=dtype).generate(),
-        n=128,
+        n=256,
         amplitudes=1,
         offsets=0,
         dtype=dtype,
