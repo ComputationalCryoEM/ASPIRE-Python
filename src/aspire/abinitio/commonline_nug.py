@@ -1912,10 +1912,11 @@ class CommonlineNUG(Orient3D):
         # Keep an unmodified copy of the original objective coefficients; each
         # refinement step adds a temporary proximal term to these.
         C_base = [None] * self.Lmax
-        for k in range(self.Lmax):
-            C_base[k] = xp.asnumpy(C[k]).copy()
-            rank_Ak[k] = np.linalg.matrix_rank(
-                Ak(k + 1, self.sym_euler), tol=1e-6, hermitian=True
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+            C_base[k_idx] = xp.asnumpy(C[k_idx]).copy()
+            rank_Ak[k_idx] = np.linalg.matrix_rank(
+                Ak(k, self.sym_euler), tol=1e-6, hermitian=True
             )
 
         def low_rank_proj(X, r_step):
@@ -1923,10 +1924,11 @@ class CommonlineNUG(Orient3D):
             Project diagonal image blocks toward the rank expected from symmetry.
             """
             Xproj = []
-            for k in range(self.Lmax):
-                dk = 2 * k + 3
-                rk = min(int(rank_Ak[k] * 2) + r_step, dk)
-                tmp = np.copy(X[k])
+            for k_idx in range(self.Lmax):
+                k = k_idx + 1
+                dk = 2 * k + 1
+                rk = min(int(rank_Ak[k_idx] * 2) + r_step, dk)
+                tmp = np.copy(X[k_idx])
                 for i in range(N):
                     u, s, v = np.linalg.svd(
                         tmp[i * dk : (i + 1) * dk, i * dk : (i + 1) * dk]
@@ -1946,10 +1948,13 @@ class CommonlineNUG(Orient3D):
         for step in range(self.pr_iters):
             X_proj = low_rank_proj(current, r[step])
 
-            for k in range(self.Lmax):
-                CC[k] = (
-                    C_base[k]
-                    - Penalty[step] * weight[k] * (X_proj[k] + X_proj[k].T) / 2
+            for k_idx in range(self.Lmax):
+                CC[k_idx] = (
+                    C_base[k_idx]
+                    - Penalty[step]
+                    * weight[k_idx]
+                    * (X_proj[k_idx] + X_proj[k_idx].T)
+                    / 2
                 )
 
             X_next = self.admm_sym_J(CC, verbose=False)
