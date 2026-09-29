@@ -1292,29 +1292,35 @@ class CommonlineNUG(Orient3D):
         # AI_mat_offdiag computation has been vectorized, but originally
         # had the note by block1: this needs double checking (Ruiyi)
         AI_mat_offdiag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
-        for k in range(1, Lmax + 1):
+        for k_idx in range(Lmax):
+            k = k_idx + 1
             scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
+            block0_cols = slice(d0[k_idx], d0[k_idx + 1])
+            block1_cols = slice(D0 + d1[k_idx], D0 + d1[k_idx + 1])
 
-            block0 = scale * W0[k - 1].transpose(0, 2, 1).reshape(Ngrid, -1)
-            block1 = scale * W1[k - 1].transpose(0, 2, 1).reshape(Ngrid, -1)
+            block0 = scale * W0[k_idx].transpose(0, 2, 1).reshape(Ngrid, -1)
+            block1 = scale * W1[k_idx].transpose(0, 2, 1).reshape(Ngrid, -1)
 
-            AI_mat_offdiag[:, d0[k - 1] : d0[k]] = block0
-            AI_mat_offdiag[:, d0[-1] + d1[k - 1] : d0[-1] + d1[k]] = block1
+            AI_mat_offdiag[:, block0_cols] = block0
+            AI_mat_offdiag[:, block1_cols] = block1
 
         # AI_mat_diag computation has been vectorized, but originally
         # had the note by block1: this needs double checking (Ruiyi)
         AI_mat_diag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
-        for k in range(1, Lmax + 1):
+        for k_idx in range(Lmax):
+            k = k_idx + 1
             scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
+            block0_cols = slice(d0[k_idx], d0[k_idx + 1])
+            block1_cols = slice(D0 + d1[k_idx], D0 + d1[k_idx + 1])
 
-            W0_sym = 0.5 * (W0[k - 1] + W0[k - 1].transpose(0, 2, 1))
-            W1_sym = 0.5 * (W1[k - 1] + W1[k - 1].transpose(0, 2, 1))
+            W0_sym = 0.5 * (W0[k_idx] + W0[k_idx].transpose(0, 2, 1))
+            W1_sym = 0.5 * (W1[k_idx] + W1[k_idx].transpose(0, 2, 1))
 
             block0 = scale * W0_sym.transpose(0, 2, 1).reshape(Ngrid, -1)
             block1 = scale * W1_sym.transpose(0, 2, 1).reshape(Ngrid, -1)
 
-            AI_mat_diag[:, d0[k - 1] : d0[k]] = block0
-            AI_mat_diag[:, d0[-1] + d1[k - 1] : d0[-1] + d1[k]] = block1
+            AI_mat_diag[:, block0_cols] = block0
+            AI_mat_diag[:, block1_cols] = block1
 
         AI_mat_diag = xp.asarray(AI_mat_diag)
         AI_mat_offdiag = xp.asarray(AI_mat_offdiag)
