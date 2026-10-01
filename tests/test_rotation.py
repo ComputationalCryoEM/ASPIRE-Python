@@ -32,7 +32,7 @@ def dtype(request):
 
 @pytest.fixture(scope="module")
 def rot_obj(dtype):
-    return Rotation.generate_random_rotations(NUM_ROTS, seed=SEED, dtype=dtype)
+    return Rotation.generate_random_rotations(NUM_ROTS, rng=SEED, dtype=dtype)
 
 
 # Rotation Class Tests
@@ -95,7 +95,7 @@ def test_register(rot_obj):
     # These will yield two more distinct sets of random rotations wrt rot_obj
     set1 = Rotation.generate_random_rotations(NUM_ROTS, dtype=rot_obj.dtype)
     set2 = Rotation.generate_random_rotations(
-        NUM_ROTS, dtype=rot_obj.dtype, seed=SEED + 7
+        NUM_ROTS, dtype=rot_obj.dtype, rng=SEED + 7
     )
     # Align both sets of random rotations to rot_obj
     aligned_rots1 = rot_obj.register(set1)
@@ -244,7 +244,7 @@ def test_rot_with_refl(dtype):
 
     # Generate a sample of random rotations
     random_rot_mats = Rotation.generate_random_rotations(
-        N, seed=SEED, dtype=dtype
+        N, rng=SEED, dtype=dtype
     ).matrices
 
     # Sanity check we are starting with pure rotations

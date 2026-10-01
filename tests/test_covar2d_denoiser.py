@@ -66,7 +66,7 @@ def sim():
         dtype=dtype,
         noise_adder=noise_adder,
         pixel_size=pixel_size,
-        seed=SEED,
+        rng=SEED,
     )
     sim = sim.cache()
     return sim

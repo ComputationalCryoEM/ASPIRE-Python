@@ -89,7 +89,7 @@ def vol_fixture(request, dtype_fixture):
     vol_kwargs = dict(
         L=res,
         C=1,
-        seed=0,
+        rng=0,
         dtype=dtype_fixture,
     )
     if len(params) > 2:

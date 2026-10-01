@@ -170,7 +170,7 @@ def classifier(class_sim_fixture):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
-        seed=SEED,
+        rng=SEED,
     )
 
 
@@ -248,7 +248,7 @@ def cls_fixture(class_sim_fixture):
         n_nbor=10,
         sample_n=50000,
         nn_implementation="sklearn",
-        seed=SEED,
+        rng=SEED,
     )
     # Compute the classification
     # (classes, reflections, distances)

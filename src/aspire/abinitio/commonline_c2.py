@@ -83,13 +83,13 @@ class CLSymmetryC2(CLOrient3D):
             shift_step=shift_step,
             mask=mask,
             disable_gpu=disable_gpu,
+            rng=rng,
             **kwargs,
         )
 
         self.min_dist_cls = min_dist_cls
         self.epsilon = epsilon
         self.max_iters = max_iters
-        self.seed = seed
         self.order = 2
 
         # Setup J-synchronization
