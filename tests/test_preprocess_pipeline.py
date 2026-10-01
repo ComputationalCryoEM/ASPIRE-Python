@@ -33,7 +33,7 @@ def get_sim_object(L, dtype):
         noise_adder=noise_adder,
         pixel_size=1,
         dtype=dtype,
-        seed=1337,
+        rng=1337,
     )
     return sim
 

@@ -174,7 +174,7 @@ def testHighResFBBasis2D(L, dtype):
         dtype=dtype,
         amplitudes=1,
         offsets=0,
-        seed=seed,
+        rng=seed,
     )
     im = sim.images[0]
 

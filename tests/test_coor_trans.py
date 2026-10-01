@@ -344,7 +344,7 @@ def test_mean_aligned_shift_error():
     Check that global 3D translation is ignored but image-specific shift error remains.
     """
     n = 8
-    rots = Rotation.generate_random_rotations(n, seed=0, dtype=np.float64).matrices
+    rots = Rotation.generate_random_rotations(n, rng=0, dtype=np.float64).matrices
 
     # Give each image a random reference shift.
     reference_offsets = np.random.default_rng(1).normal(size=(n, 2))

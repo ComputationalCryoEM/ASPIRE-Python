@@ -208,7 +208,7 @@ def test_downsample_legacy(volume, res_ds):
         vols=volume,
         amplitudes=1,
         dtype=dtype,
-        seed=1980,
+        rng=1980,
     )
     ims = src.images[:]
 
@@ -283,7 +283,7 @@ def test_downsample_offsets(dtype, res):
         L=L,
         n=n,
         offsets=offsets,
-        seed=1234,
+        rng=1234,
         dtype=dtype,
     )
 
@@ -291,7 +291,7 @@ def test_downsample_offsets(dtype, res):
         L=L,
         n=n,
         offsets=0,
-        seed=1234,
+        rng=1234,
         dtype=dtype,
     )
 

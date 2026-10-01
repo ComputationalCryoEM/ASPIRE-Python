@@ -102,6 +102,7 @@ class CLSync3N(CLOrient3D):
             full_width=full_width,
             mask=mask,
             disable_gpu=disable_gpu,
+            rng=rng,
             **kwargs,
         )
 
@@ -111,7 +112,6 @@ class CLSync3N(CLOrient3D):
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.sigma = float(sigma)
-        self.rng = rng
 
         # Sync3N specific vars
         self.S_weighting = S_weighting

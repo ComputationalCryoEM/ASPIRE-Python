@@ -24,8 +24,7 @@ class LoadImagesTestCase(TestCase):
         self.n = self.particles_per_stack * self.num_stacks  # 1000
         self.L = 16
         self.dtype = np.float32
-        self.seed = 14
-        self.rng = np.random.default_rng(self.seed)
+        self.rng = np.random.default_rng(14)
 
         # setting up starfile for simulated RelionSource file structure
         self.starfile_path = os.path.join(self.data_folder, "load_images_test.star")

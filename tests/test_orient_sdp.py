@@ -46,11 +46,11 @@ def src_orient_est_fixture(resolution, offsets, dtype):
         n=50,
         L=resolution,
         vols=AsymmetricVolume(
-            L=resolution, C=1, K=100, seed=seed, dtype=dtype
+            L=resolution, C=1, K=100, rng=seed, dtype=dtype
         ).generate(),
         offsets=offsets,
         amplitudes=1,
-        seed=seed,
+        rng=seed,
     )
 
     # Increase max_shift and set shift_step to be sub-pixel when using
@@ -148,7 +148,7 @@ def test_ATA_solver():
     seed = 42
     n_rots = 73
     dtype = np.float32
-    rots = Rotation.generate_random_rotations(n=n_rots, seed=seed, dtype=dtype).matrices
+    rots = Rotation.generate_random_rotations(n=n_rots, rng=seed, dtype=dtype).matrices
 
     # Create a simple reference linear transformation A that is rank-3.
     A_ref = np.diag([1, 2, 3]).astype(dtype, copy=False)

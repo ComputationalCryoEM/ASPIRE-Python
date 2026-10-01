@@ -216,7 +216,7 @@ class MatrixTestCase(TestCase):
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_nearest_rotations(dtype):
     n_rots = 5
-    rots = Rotation.generate_random_rotations(n_rots, seed=0, dtype=dtype).matrices
+    rots = Rotation.generate_random_rotations(n_rots, rng=0, dtype=dtype).matrices
 
     # Add some noise to the rotations.
     rng = np.random.default_rng()
@@ -239,7 +239,7 @@ def test_nearest_rotations(dtype):
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_nearest_rotations_reflection(dtype):
     # Generate singleton rotation.
-    rot = Rotation.generate_random_rotations(1, seed=0, dtype=dtype).matrices[0]
+    rot = Rotation.generate_random_rotations(1, rng=0, dtype=dtype).matrices[0]
 
     # Add a reflection and some noise to the rotation.
     refl = rot @ np.diag((1, -1, 1)).astype(dtype)
