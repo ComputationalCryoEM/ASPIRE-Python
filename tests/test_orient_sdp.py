@@ -80,8 +80,12 @@ def test_estimate_rotations(src_orient_est_fixture):
 
     # Register estimates to ground truth rotations and compute the
     # angular distance between them (in degrees).
-    # Assert that mean aligned angular distance is less than 2 degrees.
-    mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=2)
+    # Assert that mean aligned angular distance is less than 1 degree
+    # for centered images and 5 degrees for offset images.
+    tol = 1
+    if np.any(src.offsets != 0):
+        tol = 5
+    mean_aligned_angular_distance(orient_est.rotations, src.rotations, degree_tol=tol)
 
 
 def test_construct_S(src_orient_est_fixture):
