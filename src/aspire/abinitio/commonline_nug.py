@@ -1782,7 +1782,7 @@ class CommonlineNUG(Orient3D):
 
         The input is interpreted as an N-by-N array of sz-by-sz blocks.
         Blocks from the upper triangle, including the diagonal, are vectorized
-        column-wise and stored as columns of the returned array.
+        row-wise and stored as columns of the returned array.
 
         :param A: Block matrix with shape (N * sz, N * sz).
         :param N: Number of block rows and columns, corresponding to the
@@ -1801,7 +1801,7 @@ class CommonlineNUG(Orient3D):
         """
         Unpack upper-triangular blocks into a symmetric block matrix.
 
-        Each column of `vecA` is reshaped column-wise into an sz-by-sz block.
+        Each column of `vecA` is reshaped row-wise into an sz-by-sz block.
         The blocks are placed in the upper triangle of an N-by-N block grid,
         including the diagonal. Transposes of the off-diagonal blocks are placed
         in the corresponding lower-triangular positions.
@@ -1832,7 +1832,7 @@ class CommonlineNUG(Orient3D):
 
         Each input matrix is transformed as Pk @ A @ Pk.T. The leading k-by-k
         and trailing (k + 1)-by-(k + 1) diagonal blocks are then vectorized
-        column-wise. Entries in the two off-diagonal blocks are not retained.
+        row-wise. Entries in the two off-diagonal blocks are not retained.
 
         :param A: Batch of degree-k matrices with shape (n_blocks, 2 * k + 1, 2 * k + 1).
         :param k: Wigner representation degree.
@@ -1851,7 +1851,7 @@ class CommonlineNUG(Orient3D):
         """
         Reconstruct degree-k matrices from two packed components.
 
-        Each row of A0 and A1 is interpreted as a column-wise vectorization
+        Each row of A0 and A1 is interpreted as a row-wise vectorization
         of a k-by-k or (k + 1)-by-(k + 1) block. The two blocks are placed
         on the diagonal of a (2 * k + 1)-by-(2 * k + 1) matrix, with zeros in the
         off-diagonal blocks. The permutation represented by Pk is then reversed.
