@@ -1302,8 +1302,8 @@ class CommonlineNUG(Orient3D):
             block0_cols = slice(d0[k_idx], d0[k_idx + 1])
             block1_cols = slice(D0 + d1[k_idx], D0 + d1[k_idx + 1])
 
-            block0 = scale * W0[k_idx].transpose(0, 2, 1).reshape(Ngrid, -1)
-            block1 = scale * W1[k_idx].transpose(0, 2, 1).reshape(Ngrid, -1)
+            block0 = scale * W0[k_idx].reshape(Ngrid, -1)
+            block1 = scale * W1[k_idx].reshape(Ngrid, -1)
 
             AI_mat_offdiag[:, block0_cols] = block0
             AI_mat_offdiag[:, block1_cols] = block1
@@ -1320,8 +1320,8 @@ class CommonlineNUG(Orient3D):
             W0_sym = 0.5 * (W0[k_idx] + W0[k_idx].transpose(0, 2, 1))
             W1_sym = 0.5 * (W1[k_idx] + W1[k_idx].transpose(0, 2, 1))
 
-            block0 = scale * W0_sym.transpose(0, 2, 1).reshape(Ngrid, -1)
-            block1 = scale * W1_sym.transpose(0, 2, 1).reshape(Ngrid, -1)
+            block0 = scale * W0_sym.reshape(Ngrid, -1)
+            block1 = scale * W1_sym.reshape(Ngrid, -1)
 
             AI_mat_diag[:, block0_cols] = block0
             AI_mat_diag[:, block1_cols] = block1
@@ -1534,7 +1534,10 @@ class CommonlineNUG(Orient3D):
             dtype=np.float64,
         )
 
-        AEq[:16, 16:] = extra
+        # `extra` uses the original column-wise order
+        # [X0_00, X1_00, X1_10, X1_01, X1_11].
+        # Swap the two off-diagonal columns to match row-wise packing of X1.
+        AEq[:16, 16:] = extra[:, [0, 1, 3, 2, 4]]
 
         # Last row: redundant trace/sum constraint
         AEq[16, [0, 5, 10, 15]] = 1
@@ -1790,7 +1793,7 @@ class CommonlineNUG(Orient3D):
 
         :return: Packed block array with shape (sz**2, N * (N + 1) // 2).
         """
-        vecA = (A.reshape(N, sz, N, sz).transpose(0, 2, 3, 1)).reshape(N**2, sz**2).T
+        vecA = (A.reshape(N, sz, N, sz).transpose(0, 2, 1, 3)).reshape(N**2, sz**2).T
         return vecA[:, IDX_upper]
 
     @staticmethod
@@ -1816,7 +1819,7 @@ class CommonlineNUG(Orient3D):
 
         :return: Symmetric block matrix with shape (N * sz, N * sz).
         """
-        tmp = vecA.T.reshape(N * (N + 1) // 2, sz, sz).transpose(0, 2, 1)
+        tmp = vecA.T.reshape(N * (N + 1) // 2, sz, sz)
         AA = xp.zeros((N**2, sz, sz), dtype=vecA.dtype)
         AA[IDX_upper] = tmp
         AA[IDX_lower] = tmp[idx_offdiag].transpose(0, 2, 1)
@@ -1839,8 +1842,8 @@ class CommonlineNUG(Orient3D):
             (n_blocks, k**2) and (n_blocks, (k + 1)**2), respectively.
         """
         AT = Pk @ A @ Pk.T
-        A0 = AT[:, :k, :k].swapaxes(-1, -2).reshape(A.shape[0], -1)
-        A1 = AT[:, k:, k:].swapaxes(-1, -2).reshape(A.shape[0], -1)
+        A0 = AT[:, :k, :k].reshape(A.shape[0], -1)
+        A1 = AT[:, k:, k:].reshape(A.shape[0], -1)
         return A0, A1
 
     @staticmethod
@@ -1863,8 +1866,8 @@ class CommonlineNUG(Orient3D):
         """
         dk = 2 * k + 1
         A = xp.zeros((A0.shape[0], dk, dk), dtype=A0.dtype)
-        A[:, :k, :k] = A0.reshape(-1, k, k).swapaxes(-1, -2)
-        A[:, k:, k:] = A1.reshape(-1, k + 1, k + 1).swapaxes(-1, -2)
+        A[:, :k, :k] = A0.reshape(-1, k, k)
+        A[:, k:, k:] = A1.reshape(-1, k + 1, k + 1)
         return Pk.T @ A @ Pk
 
     ############################
