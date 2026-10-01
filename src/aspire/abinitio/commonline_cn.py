@@ -46,7 +46,7 @@ class CLSymmetryCn(Orient3D):
         degree_res=1,
         n_points_sphere=500,
         equator_threshold=10,
-        seed=None,
+        rng=None,
         mask=True,
         J_weighting=False,
         disable_gpu=False,
@@ -67,7 +67,7 @@ class CLSymmetryCn(Orient3D):
         :param n_points_sphere: The number of candidate rotations used to estimate viewing directions.
         :param equator_threshold: Threshold for removing candidate rotations within `equator_threshold`
             degrees of being an equator image. Default is 10 degrees.
-        :param seed: Optional seed for RNG.
+        :param rng: Optional RNG or seed.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         :param J_weighting: Optionally use `J` weights instead of
@@ -84,6 +84,7 @@ class CLSymmetryCn(Orient3D):
             max_shift=max_shift,
             shift_step=shift_step,
             mask=mask,
+            rng=rng,
             **kwargs,
         )
 
@@ -91,7 +92,6 @@ class CLSymmetryCn(Orient3D):
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.degree_res = degree_res
-        self.seed = seed
         self.n_points_sphere = n_points_sphere
         self.equator_threshold = equator_threshold
 
@@ -100,7 +100,7 @@ class CLSymmetryCn(Orient3D):
             src.n,
             epsilon=self.epsilon,
             max_iters=self.max_iters,
-            seed=self.seed,
+            rng=self.rng,
             disable_gpu=disable_gpu,
             J_weighting=J_weighting,
         )
@@ -159,7 +159,7 @@ class CLSymmetryCn(Orient3D):
             self.equator_threshold,
             self.order,
             self.degree_res,
-            self.seed,
+            self.rng,
         )
         cijs_inds = self._compute_cls_inds(Ris_tilde, R_theta_ijs)
         scls_inds = self._compute_scls_inds(Ris_tilde)
@@ -380,7 +380,7 @@ class CLSymmetryCn(Orient3D):
         return c1s, c2s
 
     @staticmethod
-    def generate_candidate_rots(n, equator_threshold, order, degree_res, seed=None):
+    def generate_candidate_rots(n, equator_threshold, order, degree_res, rng=None):
         """
         Generate random rotations that exclude rotations inducing equator images
         for use as candidates in the CLSymmetryCn algorithm.
@@ -389,7 +389,7 @@ class CLSymmetryCn(Orient3D):
         :param equator_threshold: Angular distance from equator (in degrees).
         :param order: Cyclic order of underlying molecule.
         :param degree_res: Degree resolution for in-plane rotations.
-        :param seed: Optional RNG seed.
+        :param rng: Optional RNG or seed.
 
         :returns: Candidate rotations, In-plane rotations
         """
@@ -398,7 +398,7 @@ class CLSymmetryCn(Orient3D):
         # Construct candidate rotations, Ris_tilde.
         Ris_tilde = np.zeros((n, 3, 3))
         counter = 0
-        rng = np.random.default_rng(seed)
+        rng = np.random.default_rng(rng)
         while counter < n:
             third_row = rng.standard_normal(3)
             third_row /= anorm(third_row, axes=(-1,))

@@ -47,7 +47,7 @@ class CLSymmetryC3C4(CLOrient3D):
         epsilon=1e-2,
         max_iters=1000,
         degree_res=1,
-        seed=None,
+        rng=None,
         mask=True,
         J_weighting=False,
         disable_gpu=False,
@@ -65,7 +65,7 @@ class CLSymmetryC3C4(CLOrient3D):
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param degree_res: Degree resolution for estimating in-plane rotations.
-        :param seed: Optional seed for RNG.
+        :param rng: Optional RNG or seed.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         :param J_weighting: Optionally use `J` weights instead of
@@ -90,14 +90,14 @@ class CLSymmetryC3C4(CLOrient3D):
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.degree_res = degree_res
-        self.seed = seed
+        self.rng = rng
 
         # Setup J-synchronization
         self.J_sync = JSync(
             src.n,
             epsilon=self.epsilon,
             max_iters=self.max_iters,
-            seed=self.seed,
+            rng=self.rng,
             disable_gpu=disable_gpu,
             J_weighting=J_weighting,
         )

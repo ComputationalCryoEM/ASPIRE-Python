@@ -15,7 +15,7 @@ class Class2D(ABC):
         self,
         src,
         n_nbor=100,
-        seed=None,
+        rng=None,
         dtype=None,
     ):
         """
@@ -23,7 +23,7 @@ class Class2D(ABC):
 
         :param src: ImageSource or subclass, provides images.
         :param n_nbor: Number of nearest neighbors to compute.
-        :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
+        :param rng: Optional RNG or seed.
         :param dtype: Numpy dtype, defaults to `src.dtype`.
         """
         self.src = src
@@ -38,8 +38,7 @@ class Class2D(ABC):
             self.dtype = self.src.dtype
 
         self.n_nbor = n_nbor
-        self.seed = seed
-        self.rng = np.random.default_rng(self.seed)
+        self.rng = np.random.default_rng(rng)
 
     @abstractmethod
     def classify(self):

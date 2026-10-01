@@ -1,5 +1,11 @@
 """
-Utilities for controlling and generating random numbers.
+Legacy utilities for controlling and generating random numbers.
+
+These methods should be considered deprecated and only used to
+reproduce legacy MATLAB behaviors.  New code should instead use Numpy
+methods directly via a handle returned from `np.random.default_rng()`.
+
+This module may be removed in the future.
 """
 
 import warnings
@@ -15,9 +21,7 @@ def choice(*args, **kwargs):
     """
     Wraps numpy random.choice call in ASPIRE Random context.
     """
-    seed = None
-    if "seed" in kwargs:
-        seed = kwargs.pop("seed")
+    seed = kwargs.pop("seed", None)
 
     with Random(seed) as rng:
         return rng.choice(*args, **kwargs)
@@ -46,9 +50,7 @@ def randn(*args, **kwargs):
 
     Calls rand and applies inverse transform sampling to the output.
     """
-    seed = None
-    if "seed" in kwargs:
-        seed = kwargs.pop("seed")
+    seed = kwargs.pop("seed", None)
 
     with Random(seed) as rng:
         uniform = rng.random(args, **kwargs)

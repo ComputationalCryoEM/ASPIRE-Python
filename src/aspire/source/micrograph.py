@@ -301,7 +301,7 @@ class MicrographSimulation(MicrographSource):
         particle_amplitudes=None,
         projection_angles=None,
         pixel_size=None,
-        seed=None,
+        rng=None,
         ctf_filters=None,
         noise_adder=None,
         boundary=None,
@@ -325,7 +325,7 @@ class MicrographSimulation(MicrographSource):
              When provided must have shape `(particles_per_micrograph * micrograph_count, 3)`.
         :param pixel_size: Pixel size of the images in angstroms. Default `None` infers pixel_size
             from `volume` if possible. If set, overrides `volume` pixel_size.
-        :param seed: Optional RNG seed.
+        :param rng: Optional RNG or seed.
         :param noise_adder: Append instance of NoiseAdder to generation pipeline.
         :param ctf_filters: Optional list of `Filter` objects to apply to particles.
             This list should be 1, n_micrographs, or particles_per_micrograph * micrograph_count.
@@ -347,8 +347,7 @@ class MicrographSimulation(MicrographSource):
             else:
                 pixel_size = self.volume.pixel_size
 
-        self.seed = seed
-        self.rng = np.random.default_rng(self.seed)
+        self.rng = np.random.default_rng(rng)
 
         # Note pixel_size is taken from `volume`.
         super().__init__(
@@ -426,7 +425,7 @@ class MicrographSimulation(MicrographSource):
             filter_indices=self.filter_indices,
             pixel_size=self.pixel_size,
             dtype=self.dtype,
-            seed=self.seed,
+            rng=self.rng,
         )
 
         if boundary is None:

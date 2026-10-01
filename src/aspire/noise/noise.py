@@ -1,3 +1,11 @@
+"""
+Noise utilities.
+
+Note that the RNG system used here is legacy,
+and this file is not Scientific Python Spec 7 compliant.
+This is done to reproduce collections of legacy results.
+"""
+
 import abc
 import logging
 from functools import cached_property
@@ -34,7 +42,7 @@ class NoiseAdder(Xform):
 
         `noise_filter` will be provided by the user or instantiated automatically by the subclass.
 
-        :param seed: The random seed used to generate white noise.
+        :param seed: Integer seed used to generate white noise.
         :param noise_filter: An `aspire.operators.Filter` object.
             `NoiseAdders` start by generating gaussian noise,
             then apply `noise_filter` to transform the noise.
@@ -108,7 +116,7 @@ class WhiteNoiseAdder(NoiseAdder):
         Return a `WhiteNoiseAdder` instance from `var` and using `seed`.
 
         :param var: Target noise variance.
-        :param seed: Optinally provide a random seed used to generate white noise.
+        :param seed: Optinally provide an integer seed used to generate white noise.
         """
 
         self.signal_power = None  # Used with `from_snr`
@@ -146,7 +154,7 @@ class WhiteNoiseAdder(NoiseAdder):
         :param snr: Desired signal to noise ratio of
             the returned source.
         :param signal_power: Optional, if the signal power is known.
-        :param seed: Optionally provide a random seed used to generate white noise.
+        :param seed: Optionally provide an integer seed used to generate white noise.
         """
 
         noise_adder = cls(var=None, seed=seed)

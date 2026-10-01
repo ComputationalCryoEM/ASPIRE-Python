@@ -89,7 +89,7 @@ def cov2d_fixture(volume, basis, ctf_enabled):
             200, defocus=np.linspace(1.5e4, 2.5e4, 7), Cs=2.0, alpha=0.1
         )
 
-        # Copied from simulation defaults to match legacy test files.
+        # Copied from simulation defaults to match legacy test files from _LegacySimulation
         h_idx = randi(len(filters), n, seed=0) - 1
 
         h_ctf_fb = [

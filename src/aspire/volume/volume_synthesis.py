@@ -17,11 +17,10 @@ from aspire.volume import (
 
 
 class SyntheticVolumeBase(abc.ABC):
-    def __init__(self, L, C, pixel_size=None, seed=None, dtype=np.float64):
+    def __init__(self, L, C, pixel_size=None, rng=None, dtype=np.float64):
         self.L = L
         self.C = C
-        self.seed = seed
-        self.rng = np.random.default_rng(self.seed)
+        self.rng = np.random.default_rng(rng)
         self.dtype = dtype
         self.pixel_size = pixel_size
 
@@ -43,7 +42,7 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
     """
 
     def __init__(
-        self, L, C, K=16, alpha=1, pixel_size=None, seed=None, dtype=np.float64
+        self, L, C, K=16, alpha=1, pixel_size=None, rng=None, dtype=np.float64
     ):
         """
         :param L: Resolution of the Volume(s) in pixels.
@@ -54,12 +53,12 @@ class GaussianBlobsVolume(SyntheticVolumeBase):
             When provided will be saved with `map`/`mrc` metadata.
             Default of `None` will not write to file,
             but will be considered unit pixels (1) for FSC.
-        :param seed: Random seed for generating random Gaussian blobs.
+        :param rng: Optional RNG or seed for generating random Gaussian blobs.
         :param dtype: dtype for Volume(s)
         """
         self.K = int(K)
         self.alpha = float(alpha)
-        super().__init__(L=L, C=C, pixel_size=pixel_size, seed=seed, dtype=dtype)
+        super().__init__(L=L, C=C, pixel_size=pixel_size, rng=rng, dtype=dtype)
         self._set_symmetry_group()
 
     @abc.abstractproperty
@@ -180,7 +179,7 @@ class CnSymmetricVolume(GaussianBlobsVolume):
     """
 
     def __init__(
-        self, L, C, order, K=16, alpha=1, pixel_size=None, seed=None, dtype=np.float64
+        self, L, C, order, K=16, alpha=1, pixel_size=None, rng=None, dtype=np.float64
     ):
         """
         :param L: Resolution of the Volume(s) in pixels.
@@ -191,13 +190,13 @@ class CnSymmetricVolume(GaussianBlobsVolume):
             When provided will be saved with `map`/`mrc` metadata.
             Default of `None` will not write to file,
             but will be considered unit pixels (1) for FSC.
-        :param seed: Random seed for generating random Gaussian blobs.
+        :param rng: Optional RNG or seed for generating random Gaussian blobs.
         :param dtype: dtype for Volume(s)
         """
         self.order = int(order)
         self._check_order()
         super().__init__(
-            L=L, C=C, K=K, alpha=alpha, pixel_size=pixel_size, seed=seed, dtype=dtype
+            L=L, C=C, K=K, alpha=alpha, pixel_size=pixel_size, rng=rng, dtype=dtype
         )
 
     def _check_order(self):
@@ -271,9 +270,9 @@ class AsymmetricVolume(CnSymmetricVolume):
     An asymmetric Volume constructed of random 3D Gaussian blobs with compact support in the unit sphere.
     """
 
-    def __init__(self, L, C, K=64, pixel_size=None, seed=None, dtype=np.float64):
+    def __init__(self, L, C, K=64, pixel_size=None, rng=None, dtype=np.float64):
         super().__init__(
-            L=L, C=C, K=K, order=1, pixel_size=pixel_size, seed=seed, dtype=dtype
+            L=L, C=C, K=K, order=1, pixel_size=pixel_size, rng=rng, dtype=dtype
         )
 
     def _check_order(self):
@@ -294,16 +293,16 @@ class LegacyVolume(AsymmetricVolume):
     An asymmetric Volume object used for testing of legacy code.
     """
 
-    def __init__(self, L, C=2, K=16, pixel_size=None, seed=0, dtype=np.float64):
+    def __init__(self, L, C=2, K=16, pixel_size=None, rng=0, dtype=np.float64):
 
         # Reproduce legacy (MATLAB) RNG Seed
-        if seed == 0:
-            seed = 5489
+        if rng == 0:
+            rng = 5489
         # Reproduce legacy RNG
         # Will be converted to modern Generator as `self.rng` by base class.
-        seed = np.random.RandomState(seed)
+        rng = np.random.RandomState(rng)
 
-        super().__init__(L=L, C=C, K=K, pixel_size=pixel_size, seed=seed, dtype=dtype)
+        super().__init__(L=L, C=C, K=K, pixel_size=pixel_size, rng=rng, dtype=dtype)
 
     def generate(self):
         """
