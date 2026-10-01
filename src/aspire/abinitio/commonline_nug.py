@@ -772,8 +772,8 @@ class CommonlineNUG(Orient3D):
             AEk = xp.zeros((1 + n_components, 2 * n_components), dtype=np.float64)
 
             # Row zero contains the trace constraint for the two components.
-            AEk[0, :size0] = xp.eye(k, dtype=np.float64).T.reshape(-1)
-            AEk[0, size0:n_components] = xp.eye(k + 1, dtype=np.float64).T.reshape(-1)
+            AEk[0, :size0] = xp.eye(k, dtype=np.float64).reshape(-1)
+            AEk[0, size0:n_components] = xp.eye(k + 1, dtype=np.float64).reshape(-1)
 
             # The remaining rows couple every representation entry to its
             # corresponding auxiliary diagonal variable.
@@ -799,11 +799,11 @@ class CommonlineNUG(Orient3D):
             bE[start + 1 : split] = xp.eye(
                 k,
                 dtype=np.float64,
-            ).T.reshape(-1)
+            ).reshape(-1)
             bE[split:stop] = xp.eye(
                 k + 1,
                 dtype=np.float64,
-            ).T.reshape(-1)
+            ).reshape(-1)
 
         bE = xp.repeat(bE[:, None], N, axis=1)
 
