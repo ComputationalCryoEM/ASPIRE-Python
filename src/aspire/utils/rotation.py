@@ -347,19 +347,19 @@ class Rotation:
     @staticmethod
     def generate_random_rotations(
         n,
-        seed=None,
+        rng=None,
         dtype=np.float32,
     ):
         """
         Generate Rotation object with random 3D rotation matrices
 
         :param n: The number of rotation matrices to generate
-        :param seed: Optional RNG seed
+        :param rng: Optional RNG or seed.
         :param dtype:  data type for rotational angles and matrices
         :return: A new Rotation object
         """
         # Generate random rotation angles, in radians
-        rng = np.random.default_rng(seed)
+        rng = np.random.default_rng(rng)
         angles = np.column_stack(
             (
                 rng.random(n) * 2 * np.pi,

@@ -55,7 +55,7 @@ class CLSync3N(CLOrient3D):
         epsilon=1e-2,
         max_iters=1000,
         sigma=3,
-        seed=None,
+        rng=None,
         mask=True,
         S_weighting=False,
         J_weighting=False,
@@ -78,7 +78,7 @@ class CLSync3N(CLOrient3D):
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param sigma: Voting contribution smoothing factor.
-        :param seed: Optional seed for RNG.
+        :param rng: Optional RNG or seed.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         :param S_weighting: Optionally apply probabilistic weighting
@@ -111,7 +111,7 @@ class CLSync3N(CLOrient3D):
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.sigma = float(sigma)
-        self.seed = seed
+        self.rng = rng
 
         # Sync3N specific vars
         self.S_weighting = S_weighting
@@ -129,7 +129,7 @@ class CLSync3N(CLOrient3D):
             src.n,
             epsilon=self.epsilon,
             max_iters=self.max_iters,
-            seed=self.seed,
+            rng=self.rng,
             disable_gpu=disable_gpu,
             J_weighting=J_weighting,
         )

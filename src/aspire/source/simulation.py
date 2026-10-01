@@ -39,7 +39,7 @@ class Simulation(ImageSource):
         dtype=None,
         C=2,
         angles=None,
-        seed=None,
+        rng=None,
         memory=None,
         noise_adder=None,
         symmetry_group=None,
@@ -67,7 +67,7 @@ class Simulation(ImageSource):
         :param C: Number of Volumes used to generate projection images. The default is C=2.
             If a `Volume` object is provided this parameter is overridden and `self.C` = `self.vols.n_vols`.
         :param angles: A n-by-3 array of Euler angles for use in projection. Default is a random set.
-        :param seed: Optional RNG seed.  Default of `None` will generate a seed.
+        :param rng: Optional RNG or seed.  Default of `None` will generate a seed.
         :param memory: str or None. The path of the base directory to use as a data store or None.
             If None is given, no caching is performed.
         :param noise_adder: Optionally append instance of `NoiseAdder`
@@ -80,12 +80,11 @@ class Simulation(ImageSource):
         """
 
         # Initialize RNG
-        if seed is None:
+        if rng is None:
             # Generate a random integer (so we can easily log it for repro).
-            seed = secrets.randbits(128)
-        self.seed = seed
-        logger.info(f"Initializing RNG with seed {self.seed}")
-        self.rng = np.random.default_rng(self.seed)
+            rng = secrets.randbits(128)
+        logger.info(f"Initializing RNG with seed {rng}")
+        self.rng = np.random.default_rng(rng)
 
         # If a Volume is not provided we default to the legacy Gaussian blob volume.
         # If a Simulation resolution or dtype is not provided, we default to L=8 and np.float32.
@@ -94,7 +93,7 @@ class Simulation(ImageSource):
                 L=L or 8,
                 C=C,
                 pixel_size=pixel_size,
-                seed=self.seed,
+                rng=self.rng,
                 dtype=dtype or np.float32,
             ).generate()
         else:
@@ -247,7 +246,7 @@ class Simulation(ImageSource):
         if angles is None:
             angles = Rotation.generate_random_rotations(
                 self.n,
-                seed=self.seed,
+                rng=self.rng,
                 dtype=self.dtype,
             ).angles
 
@@ -621,8 +620,10 @@ class _LegacySimulation(Simulation):
     """
 
     def __init__(self, *args, **kwargs):
-        # Legacy seed default, to reproduce hardcoded/MATLAB results.
-        kwargs.setdefault("seed", 0)
+        # Legacy rng seed default, to reproduce hardcoded/MATLAB results.
+        rng = kwargs.setdefault("rng", 0)
+        if rng == 0:
+            self._legacy_rng = True
 
         super().__init__(*args, **kwargs)
 
@@ -668,39 +669,35 @@ class _LegacySimulation(Simulation):
     def _init_randomized_components(
         self, angles, offsets, amplitudes, states, filter_indices
     ):
-        _reset_seed = False
-        if self.seed == 0:
-            _reset_seed = True
+        if self._legacy_rng:
             # Generator using MATLAB repro seed
-            self.seed = np.random.default_rng(np.random.RandomState(5489))
+            self.rng = np.random.default_rng(np.random.RandomState(5489))
 
         self.angles = self._init_angles(angles)
 
-        if _reset_seed:
-            self.seed = 0
+        if self._legacy_rng:
+            self.rng = 0
 
         if offsets is None:
-            offsets = (
-                self.L / 16 * randn(2, self.n, seed=self.seed).astype(self.dtype).T
-            )
+            offsets = self.L / 16 * randn(2, self.n, seed=self.rng).astype(self.dtype).T
         self.offsets = offsets
 
         if amplitudes is None:
             min_, max_ = 2.0 / 3, 3.0 / 2
-            amplitudes = min_ + random(self.n, seed=self.seed).astype(self.dtype) * (
+            amplitudes = min_ + random(self.n, seed=self.rng).astype(self.dtype) * (
                 max_ - min_
             )
         self.amplitudes = amplitudes
 
         if states is None:
-            states = randi(self.C, self.n, seed=self.seed)
+            states = randi(self.C, self.n, seed=self.rng)
         self.states = states
 
         # Create filter indices and fill the metadata based on unique filters
         if self.filter_stack is not None:
             if filter_indices is None:
                 filter_indices = (
-                    randi(len(self.filter_stack), self.n, seed=self.seed) - 1
+                    randi(len(self.filter_stack), self.n, seed=self.rng) - 1
                 )
             self._populate_ctf_metadata(filter_indices)
             self.filter_indices = filter_indices

@@ -39,7 +39,7 @@ def align_BO(
     surrogate_min_step=0.1,
     verbosity=0,
     dtype=None,
-    seed=None,
+    rng=None,
 ):
     """
     This function returns a rotation matrix R that best aligns vol_ref with the rotated version of vol_given.
@@ -63,7 +63,7 @@ def align_BO(
     :param verbosity: Surrogate problem optimization detail level. integer, defaults 0 (silent). 2 is most verbose.
     :param dtype: Numeric dtype to perform computations with.
         Default `None` infers dtype from `vol_ref`.
-    :param seed: Seed for RNG. Defaults None.
+    :param rng: Optional RNG or seed.
     :return: Rotation matrix R_init (without refinement) or (R_init, R_est) (with refinement).
     """
     # Avoid utils/operators/utils circular import
@@ -132,8 +132,9 @@ def align_BO(
     loss = np.zeros(max_iters, dtype=dtype)
     loss[0] = loss_fun(R[0])
 
-    # Initialize RNG with `seed`
-    rng = np.random.default_rng(seed)
+    # Initialize RNG
+    if rng is not None:
+        rng = np.random.default_rng(rng)
 
     for t in range(1, max_iters):
         # See discussion 3.2 and equation 10 in the paper.
@@ -174,10 +175,10 @@ def align_BO(
             verbosity=verbosity,
         )
 
-        # If provided, use seeded RNG to set initial point for optimizer
-        # otherwise let pymanopt handle it.
+        # If provided, use `rng` to set initial point for optimizer
+        # otherwise let pymanopt handle it internally.
         initial = None
-        if seed is not None:
+        if rng is not None:
             initial = special_ortho_group.rvs(3, random_state=rng)
 
         result = optimizer.run(problem, initial_point=initial)

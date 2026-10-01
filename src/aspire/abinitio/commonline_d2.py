@@ -36,7 +36,7 @@ class CLSymmetryD2(Orient3D):
         inplane_res=5,
         eq_min_dist=7,
         epsilon=0.01,
-        seed=None,
+        rng=None,
         mask=True,
         **kwargs,
     ):
@@ -55,7 +55,7 @@ class CLSymmetryD2(Orient3D):
         :param eq_min_dist: Width of strip around equator projection directions from
             which we do not sample directions. Default value is 7 degrees.
         :param epsilon: Tolerance for J-synchronization power method.
-        :param seed: Optional seed for RNG.
+        :param rng: Optional RNG or seed.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         """
@@ -67,7 +67,7 @@ class CLSymmetryD2(Orient3D):
             max_shift=max_shift,
             shift_step=shift_step,
             mask=mask,
-            seed=seed,
+            rng=rng,
             **kwargs,
         )
 
@@ -1152,7 +1152,7 @@ class CLSymmetryD2(Orient3D):
             (3 * n_pairs,) * 2, lambda v: self._mult_cmat_by_vec(color_perms, v)
         )
 
-        # Seed eigs initial vector for iterative method.
+        # Initial eigs vector for iterative method.
         # scipy LinearOperator needs doubles for some architectures (arm).
         v0 = self.rng.standard_normal(3 * n_pairs, dtype=np.float64)
 

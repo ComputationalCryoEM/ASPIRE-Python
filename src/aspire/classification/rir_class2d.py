@@ -29,7 +29,7 @@ class RIRClass2D(Class2D):
         bispectrum_implementation="legacy",
         batch_size=512,
         dtype=None,
-        seed=None,
+        rng=None,
     ):
         """
         Constructor of an object for classifying 2D images using
@@ -58,14 +58,14 @@ class RIRClass2D(Class2D):
         :param bispectrum_implementation: See `bispectrum`.
         :param batch_size: Chunk size (typically number of images) for batched methods.
         :param dtype: Optional dtype, otherwise taken from src.
-        :param seed: Optional RNG seed to be passed to random methods, (example Random NN).
+        :param rng: Optional RNG or seed.
         :return: RIRClass2D instance to be used to compute bispectrum-like rotationally invariant 2D classification.
         """
 
         super().__init__(
             src=src,
             n_nbor=n_nbor,
-            seed=seed,
+            rng=rng,
             dtype=dtype,
         )
         self.batch_size = int(batch_size)
@@ -366,7 +366,7 @@ class RIRClass2D(Class2D):
 
         # ### The following was from legacy code. Be careful wrt order.
         M = M.T
-        u, s, v = pca_y(M, self.bispectrum_components, seed=self.seed)
+        u, s, v = pca_y(M, self.bispectrum_components, rng=self.rng)
 
         # Contruct coefficients
         coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
@@ -391,7 +391,7 @@ class RIRClass2D(Class2D):
             self.bispectrum_components,
             copy=False,  # careful, overwrites data matrix... we'll handle the copies.
             svd_solver="auto",  # use randomized (Halko) for larger problems
-            random_state=self.seed,
+            random_state=self.rng,
         )
         coef_b = pca.fit_transform(M.copy())
         coef_b_r = coef_b.conj()
@@ -501,9 +501,9 @@ class RIRClass2D(Class2D):
         # In this case we can retry, but if not successful raise an error.
         # This seems to occur more frequently at very low resolutions (<=32),
         # and likely requires tuning other RIR parameters for small problems.
+        # `rng` should be a Generator and thus continue to return
+        # different sequences on iteration.
         attempt = 0
-        # create a local seed, convert None to an integer for this method.
-        _seed = self.seed or 0
         while attempt < retry_attempts:
             coef_b, coef_b_r = bispec_2drot_large(
                 coef=coef.T,  # Note F style transpose here and in return
@@ -511,7 +511,7 @@ class RIRClass2D(Class2D):
                 eigval=complex_eigvals,
                 alpha=self.alpha,
                 sample_n=self.sample_n,
-                seed=_seed + attempt,
+                rng=self.rng,
             )
             attempt += 1
             # If we have produced a feature vector

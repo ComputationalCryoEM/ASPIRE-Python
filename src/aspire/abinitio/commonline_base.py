@@ -31,7 +31,7 @@ class Orient3D:
         offsets_max_memory=10000,
         offsets_equations_factor=1,
         mask=True,
-        seed=None,
+        rng=None,
     ):
         """
         Initialize an object for estimating 3D orientations using common lines.
@@ -70,10 +70,9 @@ class Orient3D:
             references in `estimate_shifts`.  Defaults to 10GB.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
-        :param seed: Optional RNG seed
+        :param rng: Optional RNG or seed.
         """
-        self.seed = seed
-        self.rng = np.random.default_rng(self.seed)
+        self.rng = np.random.default_rng(rng)
         self.src = src
         # Note dtype is inferred from self.src
         self.dtype = self.src.dtype
