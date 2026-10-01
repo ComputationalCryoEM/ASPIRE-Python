@@ -46,7 +46,7 @@ dependencies = [
     "psutil",
     "pymanopt",
     "PyWavelets",
-    "scipy >= 1.13.0",
+    "scipy >= 1.15.0",
     "scikit-learn >= 1.5.0",
     "scikit-image",
     "setuptools >= 0.41",
