@@ -30,7 +30,7 @@ class ImageTestCase(TestCase):
         self.sim = sim = Simulation(
             n=self.n,
             L=self.resolution,
-            seed=0,
+            rng=0,
             dtype=self.dtype,
             # We'll use random angles
             offsets=np.zeros((self.n, 2)),  # No offsets

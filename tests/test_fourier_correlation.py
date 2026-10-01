@@ -69,7 +69,7 @@ def image_fixture(img_size, dtype):
         C=1,
         noise_adder=BlueNoiseAdder.from_snr(2),
         dtype=dtype,
-        seed=0,
+        rng=0,
     )
     img = noisy_src.clean_images[0]
     img_noisy = noisy_src.images[0]

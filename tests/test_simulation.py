@@ -841,9 +841,9 @@ def test_save_overwrite(caplog):
     - overwrite=False: Raises an error if the file exists.
     - overwrite=None: Renames the existing file and saves the new one.
     """
-    sim1 = Simulation(seed=1)
-    sim2 = Simulation(seed=2)
-    sim3 = Simulation(seed=3)
+    sim1 = Simulation(rng=1)
+    sim2 = Simulation(rng=2)
+    sim3 = Simulation(rng=3)
 
     # Create a tmp dir for this test output
     with tempfile.TemporaryDirectory() as tmpdir_name:
@@ -972,16 +972,15 @@ def test_rng_seed_repro():
     """
 
     a = Simulation()
-    b = Simulation(seed=a.seed)
+    b = Simulation(rng=a._seed)
     c = Simulation()
 
-    # Assert that `b` reproduces `b` images
-    np.testing.assert_equal(a.seed, b.seed)
+    # Assert that `b` reproduces `a` images
     np.testing.assert_allclose(a.images[:], b.images[:])
 
     # Assert that `c` does not get the same seed
     assert (
-        a.seed != c.seed
+        a._seed != c._seed
     ), "Simulations should derive differing random seeds by default"
     # or images
     assert not np.array_equal(a.images[:], c.images[:], equal_nan=True)

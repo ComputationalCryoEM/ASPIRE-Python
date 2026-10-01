@@ -60,7 +60,7 @@ def offsets(request):
 @pytest.fixture(scope="module")
 def source(n_img, resolution, dtype, offsets):
     vol = DnSymmetricVolume(
-        L=resolution, order=2, C=1, K=100, dtype=dtype, seed=SEED
+        L=resolution, order=2, C=1, K=100, dtype=dtype, rng=SEED
     ).generate()
 
     src = Simulation(
@@ -69,7 +69,7 @@ def source(n_img, resolution, dtype, offsets):
         vols=vol,
         offsets=offsets,
         amplitudes=1,
-        seed=SEED,
+        rng=SEED,
     )
     src = src.cache()  # Precompute image stack
 
@@ -139,7 +139,7 @@ def test_scl_scores(orient_est):
         angles=angles,
         offsets=orient_est.src.offsets,
         amplitudes=1,
-        seed=SEED,
+        rng=SEED,
     )
 
     # Initialize CL instance with new source.
@@ -251,7 +251,7 @@ def test_global_J_sync_single_triplet(dtype):
     possible problem size, a single triplets of relative rotations Rijs.
     """
     # Generate 3 image source and orientation object.
-    src = Simulation(n=3, L=10, dtype=dtype, seed=SEED)
+    src = Simulation(n=3, L=10, dtype=dtype, rng=SEED)
     orient_est = build_cl_from_source(src)
 
     # Grab set of rotations and generate a set of relative rotations, Rijs.
@@ -482,7 +482,7 @@ def build_cl_from_source(source, mask=True):
         inplane_res=12,  # Tuned for speed
         eq_min_dist=10,  # Tuned for speed
         epsilon=0.001,
-        seed=SEED,
+        rng=SEED,
         mask=mask,
     )
     return orient_est

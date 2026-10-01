@@ -55,7 +55,7 @@ def source_orientation_objs(n_img, L, order, dtype):
         C=1,
         K=100,
         order=order,
-        seed=0,
+        rng=0,
         dtype=dtype,
     ).generate()
 
@@ -78,14 +78,14 @@ def source_orientation_objs(n_img, L, order, dtype):
         vols=vol,
         angles=angles,
         C=1,
-        seed=seed,
+        rng=seed,
     )
 
     # Use default n_theta = 360.
     cl_kwargs = dict(
         src=src,
         max_shift=1 / L,
-        seed=seed,
+        rng=seed,
         mask=False,
     )
 
@@ -588,7 +588,7 @@ def generate_non_equatorial_angles(n_img, seed, dtype, equator_threshold=15):
     accepted = []
 
     while len(accepted) < n_img:
-        rots = Rotation.generate_random_rotations(n_img, seed=rng, dtype=dtype)
+        rots = Rotation.generate_random_rotations(n_img, rng=rng, dtype=dtype)
         # Bottom right entry corresponds to cos(beta)
         # where beta is angle from axis of symmetry.
         keep = np.abs(rots.matrices[:, 2, 2]) >= cutoff

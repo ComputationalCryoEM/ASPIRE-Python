@@ -48,7 +48,7 @@ def src(dtype):
         vols=emdb_2660().astype(dtype).downsample(32),
         offsets=0,
         amplitudes=1,
-        seed=0,
+        rng=0,
     ).cache()
 
     return src

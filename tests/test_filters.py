@@ -596,7 +596,7 @@ def testCTFdownsample():
         amplitudes=1,
         filter_stack=filter_stack,
         filter_indices=np.arange(n),
-        seed=SEED,
+        rng=SEED,
     )
     # Reduce possibility of simulation generation code interacting with the test.
     src = ArrayImageSource(sim.images[:])
@@ -624,7 +624,7 @@ def test_downsample_cache():
         vols=vol,
         offsets=0,
         amplitudes=1,
-        seed=SEED,
+        rng=SEED,
     )
 
     sim_ds = src.downsample(K).images[:]

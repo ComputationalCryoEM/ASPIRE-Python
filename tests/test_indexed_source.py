@@ -77,7 +77,7 @@ def test_filter_mapping():
     v = emdb_8012().astype(DT)
 
     # Generate N//2 rotations
-    rots = Rotation.generate_random_rotations(N // 2, dtype=DT, seed=SEED)
+    rots = Rotation.generate_random_rotations(N // 2, dtype=DT, rng=SEED)
     angles = Rotation(np.repeat(rots, 2, axis=0)).angles
 
     # Generate N//2 rotations and repeat indices
@@ -96,7 +96,7 @@ def test_filter_mapping():
         vols=v,
         n=N,
         dtype=DT,
-        seed=SEED,
+        rng=SEED,
         filter_stack=ctf_filters,
         filter_indices=ctf_indices,
         angles=angles,

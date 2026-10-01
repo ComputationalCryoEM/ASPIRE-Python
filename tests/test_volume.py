@@ -95,14 +95,14 @@ def vols_12(data_12):
 
 @pytest.fixture
 def asym_vols(res, dtype):
-    vols = AsymmetricVolume(L=res, C=N, dtype=dtype, seed=0).generate()
+    vols = AsymmetricVolume(L=res, C=N, dtype=dtype, rng=0).generate()
     return vols
 
 
 @pytest.fixture(scope="module")
 def symmetric_vols(res, dtype):
-    vol_c3 = CnSymmetricVolume(L=res, C=1, order=3, dtype=dtype, seed=0).generate()
-    vol_c4 = CnSymmetricVolume(L=res, C=1, order=4, dtype=dtype, seed=0).generate()
+    vol_c3 = CnSymmetricVolume(L=res, C=1, order=3, dtype=dtype, rng=0).generate()
+    vol_c4 = CnSymmetricVolume(L=res, C=1, order=4, dtype=dtype, rng=0).generate()
     return vol_c3, vol_c4
 
 
@@ -579,7 +579,7 @@ def test_rotate_broadcast_unicast(asym_vols):
     # Build `Rotation` objects. A singleton for broadcasting and a stack for unicasting.
     # The stack consists of copies of the singleton.
     dtype = asym_vols.dtype
-    rot = Rotation.generate_random_rotations(n=1, seed=1234, dtype=dtype)
+    rot = Rotation.generate_random_rotations(n=1, rng=1234, dtype=dtype)
     rots = Rotation(np.broadcast_to(rot.matrices, (asym_vols.n_vols, 3, 3)))
 
     # Broadcast the singleton `Rotation` across the `Volume` stack.

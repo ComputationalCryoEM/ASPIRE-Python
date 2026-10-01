@@ -57,7 +57,7 @@ def sim(L, dtype):
         filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
         pixel_size=1,
         dtype=dtype,
-        seed=SEED,
+        rng=SEED,
     )
 
     sim = sim.cache()  # precompute images

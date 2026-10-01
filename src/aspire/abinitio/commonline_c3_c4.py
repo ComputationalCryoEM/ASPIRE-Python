@@ -83,6 +83,7 @@ class CLSymmetryC3C4(CLOrient3D):
             shift_step=shift_step,
             mask=mask,
             disable_gpu=disable_gpu,
+            rng=rng,
             **kwargs,
         )
 
@@ -90,7 +91,6 @@ class CLSymmetryC3C4(CLOrient3D):
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.degree_res = degree_res
-        self.rng = rng
 
         # Setup J-synchronization
         self.J_sync = JSync(

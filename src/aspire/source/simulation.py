@@ -82,8 +82,11 @@ class Simulation(ImageSource):
         # Initialize RNG
         if rng is None:
             # Generate a random integer (so we can easily log it for repro).
-            rng = secrets.randbits(128)
-        logger.info(f"Initializing RNG with seed {rng}")
+            # Save for developer and testing usage.
+            self._seed = rng = secrets.randbits(128)
+            logger.info(f"Initializing RNG with random seed {self._seed}")
+        else:
+            logger.info(f"Initializing RNG with {rng}")
         self.rng = np.random.default_rng(rng)
 
         # If a Volume is not provided we default to the legacy Gaussian blob volume.

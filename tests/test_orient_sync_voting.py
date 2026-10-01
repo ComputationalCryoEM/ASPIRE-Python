@@ -85,7 +85,7 @@ def source_orientation_objs(resolution, offsets, dtype):
         vols=vol,
         offsets=offsets,
         amplitudes=1,
-        seed=0,
+        rng=0,
     ).cache()
 
     # Search for common lines over less shifts for 0 offsets.
@@ -187,11 +187,11 @@ def test_estimate_shifts_with_est_rots(source_orientation_objs):
 def test_estimate_rotations_fuzzy_mask():
     noisy_src = Simulation(
         n=35,
-        vols=AsymmetricVolume(L=128, C=1, K=400, seed=0).generate(),
+        vols=AsymmetricVolume(L=128, C=1, K=400, rng=0).generate(),
         offsets=0,
         amplitudes=1,
         noise_adder=WhiteNoiseAdder.from_snr(snr=2),
-        seed=0,
+        rng=0,
     )
 
     # Orientation estimation without fuzzy_mask.

@@ -151,7 +151,7 @@ def matlab_ref_fixture():
 
     # Create CL object for testing function calls
     src = Simulation(L=8, n=n, C=1, dtype=DTYPE)
-    cl3n = CLSync3N(src, seed=314, S_weighting=False, J_weighting=False)
+    cl3n = CLSync3N(src, rng=314, S_weighting=False, J_weighting=False)
 
     return Rijs, cl3n
 
