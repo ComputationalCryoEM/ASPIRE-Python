@@ -32,6 +32,7 @@ import numpy as np
 from numpy import linalg as npla
 from scipy.optimize import linprog
 from scipy.signal.windows import dpss
+from aspire.utils import tqdm
 
 from aspire.basis import Coef, FFBBasis2D
 from aspire.image import Image
@@ -761,7 +762,7 @@ def estimate_ctf(
     ffbbasis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
 
     results = {}
-    for name in file_names:
+    for name in tqdm(file_names, desc="Processing files"):
         with mrcfile.open(
             os.path.join(data_folder, name), mode="r", permissive=True
         ) as mrc:
