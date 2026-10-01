@@ -7,7 +7,7 @@ from scipy.linalg import qr
 logger = logging.getLogger(__name__)
 
 
-def pca_y(x, k, num_iters=2, seed=None):
+def pca_y(x, k, num_iters=2, rng=None):
     """
     PCA using QR factorization.
 
@@ -19,10 +19,11 @@ def pca_y(x, k, num_iters=2, seed=None):
     :param x: Data matrix
     :param k: Number of estimated Principal Components.
     :param num_iters: Number of dot product applications.
+    :param rng: Optional RNG or seed.
     :return: (left Singular Vectors, Singular Values, right Singular Vectors)
     """
 
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(rng)
 
     m, n = x.shape
 
@@ -125,12 +126,12 @@ def bispec_operator_1(freqs):
     return o1, o2
 
 
-def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, seed=None):
+def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, rng=None):
     """
     alpha 1/3
     sample_n 4000
     """
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(rng)
 
     freqs_not_zero = freqs != 0
 
@@ -156,7 +157,7 @@ def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, seed=None):
     m = np.exp(o1 * coef_norm + 1j * o2 * phase)
 
     # svd of the reduced bispectrum
-    u, s, v = pca_y(m, min(300, len(m)), seed=seed)
+    u, s, v = pca_y(m, min(300, len(m)), rng=rng)
 
     coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
     coef_b_r = np.conjugate(u.T).dot(np.conjugate(m))
