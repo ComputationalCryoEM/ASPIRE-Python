@@ -3,6 +3,7 @@ import pytest
 
 from aspire.abinitio import CommonlineNUG, compare_rots_sym, g_sync
 from aspire.downloader import emdb_2660
+from aspire.numeric import xp
 from aspire.source import Simulation
 from aspire.utils import mean_aligned_angular_distance
 from aspire.volume import CnSymmetricVolume, DnSymmetricVolume, TSymmetricVolume
@@ -181,6 +182,39 @@ def test_estimate_rotations(orient_est):
             orient_est.rotations, orient_est.src.rotations, orient_est.sym_grp
         )
     mean_aligned_angular_distance(orient_est.rotations, gt_rots, 10.0)
+
+
+@pytest.mark.parametrize("block_size", [2, 3, 12, 13])
+def test_mat_block_vec_block_roundtrip(block_size):
+    """
+    Packing and unpacking preserve nonsymmetric image-pair blocks.
+    """
+    # Build random symmetric image pair block matrix
+    n_img = 5
+    rng = np.random.default_rng(SEED)
+    rand_matrix = rng.normal(size=(n_img * block_size, n_img * block_size))
+    sym_mat = rand_matrix + rand_matrix.T
+
+    # The full matrix is symmetric, but an off-diagonal image-pair
+    # block is not generally symmetric. Check at least one block is
+    # not symmetric as a safegaurd to expose mistaken transposes.
+    pair_block = sym_mat[:block_size, block_size : 2 * block_size]
+    assert not np.allclose(pair_block, pair_block.T)
+
+    # Construct indices as in ADMM_preprocessing
+    i_upper, j_upper = np.triu_indices(n_img)
+    idx_upper = xp.asarray(i_upper * n_img + j_upper)
+    idx_offdiag = xp.asarray(np.flatnonzero(i_upper != j_upper))
+
+    i_off, j_off = np.triu_indices(n_img, k=1)
+    idx_lower = xp.asarray(j_off * n_img + i_off)
+
+    # Perform round trip and check mat_block(vec_block(A)) == A
+    packed = CommonlineNUG.vec_block(xp.asarray(sym_mat), n_img, block_size, idx_upper)
+    restored = CommonlineNUG.mat_block(
+        packed, n_img, block_size, idx_upper, idx_lower, idx_offdiag
+    )
+    np.testing.assert_allclose(xp.asnumpy(restored), sym_mat)
 
 
 def test_unspupported_symmetry_raises(dtype):
