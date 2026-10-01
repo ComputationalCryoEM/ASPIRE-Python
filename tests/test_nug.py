@@ -187,7 +187,7 @@ def test_estimate_rotations(orient_est):
 @pytest.mark.parametrize("block_size", [2, 3, 12, 13])
 def test_mat_block_vec_block_roundtrip(block_size):
     """
-    Packing and unpacking preserve nonsymmetric image-pair blocks.
+    Check that mat_block(vec_block(A)) == A, for symmetric block matrix A.
     """
     # Build random symmetric image pair block matrix
     n_img = 5
@@ -215,6 +215,37 @@ def test_mat_block_vec_block_roundtrip(block_size):
         packed, n_img, block_size, idx_upper, idx_lower, idx_offdiag
     )
     np.testing.assert_allclose(xp.asnumpy(restored), sym_mat)
+
+
+def test_transform_block_round_trip():
+    """
+    Reconstruct degree-k matrices from their two packed components.
+    """
+    k = 2
+    dk = 2 * k + 1
+    rng = np.random.default_rng(SEED)
+
+    # In the permuted basis, a degree-k matrix has components of sizes
+    # k-by-k and (k+1)-by-(k+1). Give both components arbitrary entries
+    # so a row/column packing mismatch is visible.
+    components = np.zeros((2, dk, dk))
+    components[:, :k, :k] = rng.normal(size=(2, k, k))
+    components[:, k:, k:] = rng.normal(size=(2, k + 1, k + 1))
+
+    # Keep the cross-component blocks zero: transform_block intentionally
+    # discards them, so they cannot be recovered by a round trip.
+
+    # Reproduce NUG's permutation, which groups the odd-indexed coordinates
+    # before the even-indexed coordinates.
+    row_order = np.r_[np.arange(1, dk, 2), np.arange(0, dk, 2)]
+    permutation = xp.asarray(np.eye(dk)[row_order])
+    matrices = permutation.T @ xp.asarray(components) @ permutation
+
+    # Pack the components as done in ADMM, then reconstruct the full matrices.
+    packed0, packed1 = CommonlineNUG.transform_block(matrices, k, permutation)
+    restored = CommonlineNUG.transform_back_block(packed0, packed1, k, permutation)
+
+    np.testing.assert_allclose(xp.asnumpy(restored), xp.asnumpy(matrices))
 
 
 def test_unspupported_symmetry_raises(dtype):
