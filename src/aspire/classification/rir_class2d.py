@@ -392,7 +392,7 @@ class RIRClass2D(Class2D):
             copy=False,  # careful, overwrites data matrix... we'll handle the copies.
             svd_solver="auto",  # use randomized (Halko) for larger problems
             # sk does not currently accept rng, instead we use rng to generate a seed integer.
-            random_state=self.rng.integers(0, 2**31 - 1)
+            random_state=self.rng.integers(0, 2**31 - 1),
         )
         coef_b = pca.fit_transform(M.copy())
         coef_b_r = coef_b.conj()

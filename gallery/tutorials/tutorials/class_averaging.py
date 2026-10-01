@@ -86,8 +86,8 @@ for i, theta in enumerate(thetas):
 # We'll make an example data set by concatentating then shuffling
 # these.
 example_array = np.concatenate((classRound, classOval, classYOvalL, classYOvalR))
-np.random.seed(1234567)
-np.random.shuffle(example_array)
+rng = np.random.default_rng(1234567)
+rng.shuffle(example_array)
 
 # So now that we have cooked up an example dataset, lets create an
 # ASPIRE source
