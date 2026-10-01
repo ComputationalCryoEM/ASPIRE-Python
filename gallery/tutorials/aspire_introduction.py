@@ -207,7 +207,7 @@ Image(orthographic_projections).show()
 from aspire.utils import Rotation
 
 num_rotations = 2
-rots = Rotation.generate_random_rotations(n=num_rotations, seed=12345)
+rots = Rotation.generate_random_rotations(n=num_rotations, rng=12345)
 
 # %%
 # We can access the Numpy array holding the actual stack of 3x3 matrices:
@@ -370,20 +370,20 @@ num_imgs = 100
 
 # %%
 # Generate a Simulation instance based on the original volume data.
-sim = Simulation(n=num_imgs, vols=vol)
+sim = Simulation(n=num_imgs, vols=vol, rng=42)
 # Display the first 10 images
 sim.images[:10].show()  # Hi Res
 
 # %%
 # Repeat for the lower resolution (downsampled) volume vol_ds.
-sim = Simulation(n=num_imgs, vols=vol_ds)
+sim = Simulation(n=num_imgs, vols=vol_ds, rng=42)
 sim.images[:10].show()  # Lo Res
 
 # %%
 # Note both of those simulations have the same rotations because they
-# had the same seed by default, We recreate ``sim`` with a distinct
-# seed to get different random samples (of rotations).
-sim = Simulation(n=num_imgs, vols=vol_ds, seed=42)
+# had the same RNG seed, We recreate ``sim`` with a random
+# seed (default) to get different random samples (of rotations).
+sim = Simulation(n=num_imgs, vols=vol_ds)
 sim.images[:10].show()
 
 # %%
@@ -446,8 +446,7 @@ white_noise_adder = WhiteNoiseAdder(target_noise_variance)
 # the projection images with noise.  Internally the
 # ``WhiteNoiseAdder`` creates a ``ScalarFilter`` which is multiplied
 # (convolution) by a Gaussian random sample.  Similar to before, if
-# you require a different sample, this can be controlled via a
-# ``seed``.
+# you require a different sample, this can be controlled via ``rng``.
 
 # Creating the new simulation with this additional noise is easy:
 sim = Simulation(n=num_imgs, vols=vol_ds, noise_adder=white_noise_adder)
@@ -584,7 +583,7 @@ sim = Simulation(
     offsets=0,
     noise_adder=white_noise_adder,
     filter_stack=ctf_filters,
-    seed=42,
+    rng=42,
 )
 
 # Simulation has two unique accessors ``clean_images`` which disables
