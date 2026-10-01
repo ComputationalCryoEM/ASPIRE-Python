@@ -31,7 +31,7 @@ dtype = np.float32
 
 # Generate a ``Volume`` object for use in the simulation. Here we use C = 3 to generate 3 unique random volumes.
 vols = AsymmetricVolume(
-    L=img_size, C=3, K=16, dtype=dtype, pixel_size=10, seed=0
+    L=img_size, C=3, K=16, dtype=dtype, pixel_size=10, rng=0
 ).generate()
 
 # Create a simulation object with specified filters
@@ -43,7 +43,7 @@ sim = Simulation(
     offsets=0,
     filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
     dtype=dtype,
-    seed=0,
+    rng=0,
 )
 
 # The Simulation object was created using 3 volumes.
@@ -105,7 +105,7 @@ coords_est = src_wiener_coords(
 # we expect, so we can use this parameter here. Typically, one would take
 # the number of clusters to be one plus the number of eigenvectors extracted.
 
-centers, vol_idx = kmeans2(coords_est.T, num_vols, minit="points", seed=0)
+centers, vol_idx = kmeans2(coords_est.T, num_vols, minit="points", rng=0)
 centers = centers.squeeze()
 
 # %%
