@@ -49,17 +49,14 @@ param_list_cn = [
 
 # Method to instantiate a Simulation source and orientation estimation object.
 def source_orientation_objs(n_img, L, order, dtype):
-    # Use a fixed seed for reproducibilty.
     vol = CnSymmetricVolume(
         L=L,
         C=1,
         K=100,
         order=order,
-        rng=0,
+        rng=rng,
         dtype=dtype,
     ).generate()
-
-    seed = 1
 
     # For order > 2 algorithms we generate random rotations that
     # are away from the equator by at least 15 degrees.
@@ -67,7 +64,7 @@ def source_orientation_objs(n_img, L, order, dtype):
     # are expected to produce bad estimates.
     angles = None
     if order > 2:
-        angles = generate_non_equatorial_angles(n_img, seed + 100, dtype)
+        angles = generate_non_equatorial_angles(n_img, dtype, rng=rng)
 
     src = Simulation(
         L=L,
@@ -78,14 +75,14 @@ def source_orientation_objs(n_img, L, order, dtype):
         vols=vol,
         angles=angles,
         C=1,
-        rng=seed,
+        rng=rng,
     )
 
     # Use default n_theta = 360.
     cl_kwargs = dict(
         src=src,
         max_shift=1 / L,
-        rng=seed,
+        rng=rng,
         mask=False,
     )
 
@@ -569,21 +566,18 @@ def _gt_cl_c2(n_theta, rots_gt):
     return clmatrix_gt
 
 
-def generate_non_equatorial_angles(n_img, seed, dtype, equator_threshold=15):
+def generate_non_equatorial_angles(n_img, dtype, equator_threshold=15, rng=None):
     """
     Generate uniformly random rotations away from the equator.
 
     Reject rotations whose viewing direction is less than
     `equator_threshold` degrees from the equator. Return their Euler
     angles in radians, with shape (n_img, 3) and the requested dtype.
-
-    A fixed seed gives reproducible angles. The in-plane angles remain
-    random.
     """
     if not 0 <= equator_threshold < 90:
         raise ValueError("equator_threshold must be in [0, 90).")
 
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(rng)
     cutoff = np.sin(np.deg2rad(equator_threshold))
     accepted = []
 
