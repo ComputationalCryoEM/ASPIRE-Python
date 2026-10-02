@@ -23,7 +23,7 @@ DTYPES = [
 
 SPECTRAL_NORM_CONSTRAINT = [
     None,
-    2 / 3,
+    0.8,  # Bsaed on measured ground truth Gram matrix spectral norm.
 ]
 
 ADAPTIVE_PROJECTION = [
@@ -63,12 +63,10 @@ def source(resolution, offsets, dtype):
     src = Simulation(
         n=60,
         L=resolution,
-        vols=AsymmetricVolume(
-            L=resolution, C=1, K=100, seed=10, dtype=dtype
-        ).generate(),
+        vols=AsymmetricVolume(L=resolution, C=1, K=100, rng=10, dtype=dtype).generate(),
         offsets=offsets,
         amplitudes=1,
-        seed=0,
+        rng=0,
         dtype=dtype,
     )
 

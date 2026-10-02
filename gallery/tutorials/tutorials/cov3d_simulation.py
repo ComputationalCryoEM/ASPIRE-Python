@@ -17,8 +17,7 @@ from aspire.operators import RadialCTFFilter
 from aspire.reconstruction import MeanEstimator
 from aspire.source.simulation import Simulation
 from aspire.utils import eigs
-from aspire.utils.random import Random
-from aspire.volume import LegacyVolume, Volume
+from aspire.volume import AsymmetricVolume, Volume
 
 # %%
 # Create Simulation Object
@@ -30,13 +29,9 @@ num_imgs = 1024  # number of images
 num_eigs = 16  # number of eigen-vectors to keep
 dtype = np.float32
 
-# Generate a ``Volume`` object for use in the simulation. Here we use a ``LegacyVolume`` and
-# set C = 3 to generate 3 unique random volumes.
-vols = LegacyVolume(
-    L=img_size,
-    C=3,
-    dtype=dtype,
-    pixel_size=10,
+# Generate a ``Volume`` object for use in the simulation. Here we use C = 3 to generate 3 unique random volumes.
+vols = AsymmetricVolume(
+    L=img_size, C=3, K=16, dtype=dtype, pixel_size=10, rng=0
 ).generate()
 
 # Create a simulation object with specified filters
@@ -44,8 +39,11 @@ sim = Simulation(
     L=img_size,
     n=num_imgs,
     vols=vols,
+    amplitudes=1,
+    offsets=0,
     filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
     dtype=dtype,
+    rng=0,
 )
 
 # The Simulation object was created using 3 volumes.
@@ -107,10 +105,8 @@ coords_est = src_wiener_coords(
 # we expect, so we can use this parameter here. Typically, one would take
 # the number of clusters to be one plus the number of eigenvectors extracted.
 
-# Since kmeans2 relies on randomness for initialization, important to push random seed to context manager here.
-with Random(0):
-    centers, vol_idx = kmeans2(coords_est.T, num_vols)
-    centers = centers.squeeze()
+centers, vol_idx = kmeans2(coords_est.T, num_vols, minit="points", rng=0)
+centers = centers.squeeze()
 
 # %%
 # Performance Evaluation

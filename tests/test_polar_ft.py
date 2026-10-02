@@ -71,7 +71,7 @@ def gaussian(img_size, dtype):
 def symmetric_image(img_size, dtype):
     """Cyclically (C4) symmetric image."""
     symmetric_vol = CnSymmetricVolume(
-        img_size, C=1, order=4, K=25, seed=10, dtype=dtype
+        img_size, C=1, order=4, K=25, rng=10, dtype=dtype
     ).generate()
     symmetric_image = symmetric_vol.project(np.eye(3, dtype=dtype))
     pf = pf_transform(symmetric_image)[0]

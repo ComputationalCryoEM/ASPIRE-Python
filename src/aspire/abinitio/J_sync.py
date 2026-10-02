@@ -4,7 +4,7 @@ import os.path
 import numpy as np
 from numpy.linalg import norm
 
-from aspire.utils import J_conjugate, all_pairs, random, trange
+from aspire.utils import J_conjugate, all_pairs, trange
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class JSync:
         n,
         epsilon=1e-2,
         max_iters=1000,
-        seed=None,
+        rng=None,
         disable_gpu=False,
         J_weighting=False,
     ):
@@ -46,12 +46,12 @@ class JSync:
         :param n: Number of images/rotations.
         :param epsilon: Tolerance for the power method.
         :param max_iters: Maximum iterations for the power method.
-        :param seed: Optional seed for power method initial random vector.
+        :param rng: Optional RNG or seed for power method initial random vector.
         """
         self.n_img = n
         self.epsilon = epsilon
         self.max_iters = max_iters
-        self.seed = seed
+        self.rng = np.random.default_rng(rng)
         self.J_weighting = J_weighting
 
         # Generate pair mappings
@@ -123,7 +123,7 @@ class JSync:
 
         # Initialize candidate eigenvectors
         n_Rijs = Rijs.shape[0]
-        vec = random(n_Rijs, seed=self.seed)
+        vec = self.rng.random(n_Rijs)
         vec = vec / norm(vec)
         residual = 1
         itr = 0

@@ -7,7 +7,6 @@ from numpy.linalg import norm
 from aspire.abinitio import Orient3D
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, tqdm, trange
-from aspire.utils.random import randn
 from aspire.volume import DnSymmetryGroup
 
 from .commonline_utils import _generate_shift_phase_and_filter
@@ -37,7 +36,7 @@ class CLSymmetryD2(Orient3D):
         inplane_res=5,
         eq_min_dist=7,
         epsilon=0.01,
-        seed=None,
+        rng=None,
         mask=True,
         **kwargs,
     ):
@@ -56,7 +55,7 @@ class CLSymmetryD2(Orient3D):
         :param eq_min_dist: Width of strip around equator projection directions from
             which we do not sample directions. Default value is 7 degrees.
         :param epsilon: Tolerance for J-synchronization power method.
-        :param seed: Optional seed for RNG.
+        :param rng: Optional RNG or seed.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         """
@@ -68,6 +67,7 @@ class CLSymmetryD2(Orient3D):
             max_shift=max_shift,
             shift_step=shift_step,
             mask=mask,
+            rng=rng,
             **kwargs,
         )
 
@@ -75,7 +75,6 @@ class CLSymmetryD2(Orient3D):
         self.inplane_res = inplane_res
         self.n_inplane_rots = int(360 / self.inplane_res)
         self.eq_min_dist = eq_min_dist
-        self.seed = seed
         self.epsilon = epsilon
 
         self.triplets = all_triplets(self.n_img)
@@ -1020,7 +1019,7 @@ class CLSymmetryD2(Orient3D):
         max_iters = 100
 
         # Initialize candidate eigenvectors
-        vec = randn(self.n_pairs, seed=self.seed)
+        vec = self.rng.standard_normal(self.n_pairs)
         vec = vec / norm(vec)
         residual = 1
         itr = 0
@@ -1153,9 +1152,9 @@ class CLSymmetryD2(Orient3D):
             (3 * n_pairs,) * 2, lambda v: self._mult_cmat_by_vec(color_perms, v)
         )
 
-        # Seed eigs initial vector for iterative method.
+        # Initial eigs vector for iterative method.
         # scipy LinearOperator needs doubles for some architectures (arm).
-        v0 = randn(3 * n_pairs, seed=self.seed).astype(np.float64, copy=False)
+        v0 = self.rng.standard_normal(3 * n_pairs, dtype=np.float64)
 
         v0 = v0 / norm(v0)
         vals, colors = la.eigs(color_mat, k=3, which="LR", v0=v0)

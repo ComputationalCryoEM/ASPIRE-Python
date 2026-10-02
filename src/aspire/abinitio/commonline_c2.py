@@ -48,7 +48,7 @@ class CLSymmetryC2(CLOrient3D):
         epsilon=1e-3,
         max_iters=1000,
         min_dist_cls=25,
-        seed=None,
+        rng=None,
         mask=True,
         J_weighting=False,
         disable_gpu=False,
@@ -65,7 +65,7 @@ class CLSymmetryC2(CLOrient3D):
         :param epsilon: Tolerance for the power method.
         :param max_iters: Maximum iterations for the power method.
         :param min_dist_cls: Minimum distance between mutual common-lines. Default = 25 degrees.
-        :param seed: Optional seed for RNG.
+        :param rng: Optional RNG or seed.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
         :param J_weighting: Optionally use `J` weights instead of
@@ -83,13 +83,13 @@ class CLSymmetryC2(CLOrient3D):
             shift_step=shift_step,
             mask=mask,
             disable_gpu=disable_gpu,
+            rng=rng,
             **kwargs,
         )
 
         self.min_dist_cls = min_dist_cls
         self.epsilon = epsilon
         self.max_iters = max_iters
-        self.seed = seed
         self.order = 2
 
         # Setup J-synchronization
@@ -97,7 +97,7 @@ class CLSymmetryC2(CLOrient3D):
             src.n,
             epsilon=self.epsilon,
             max_iters=self.max_iters,
-            seed=self.seed,
+            rng=self.rng,
             disable_gpu=disable_gpu,
             J_weighting=J_weighting,
         )

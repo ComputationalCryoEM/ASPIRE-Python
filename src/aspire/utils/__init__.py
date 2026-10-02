@@ -1,6 +1,7 @@
 from .types import complex_type, real_type, utest_tolerance  # isort:skip
 from .coor_trans import (  # isort:skip
     mean_aligned_angular_distance,
+    mean_aligned_shift_error,
     cart2pol,
     crop_pad_2d,
     crop_pad_3d,
@@ -57,7 +58,6 @@ from .multiprocessing import (
     physical_core_cpu_suggestion,
     virtual_core_cpu_suggestion,
 )
-from .random import Random, choice, matlab_rand, randi, randn, random
 from .relion_interop import RelionStarFile, relion_metadata_fields
 from .resolution_estimation import FourierRingCorrelation, FourierShellCorrelation
 from .rotation import Rotation
