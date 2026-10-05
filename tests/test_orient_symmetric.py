@@ -91,7 +91,7 @@ def source_orientation_objs(n_img, L, order, dtype):
         cl_kwargs["symmetry"] = f"C{order}"
     elif order == 2:
         cl_class = CLSymmetryC2
-        cl_kwargs["min_dist_cls"] = 15
+        cl_kwargs["min_dist_cls"] = 5
     else:
         cl_class = CLSymmetryCn
         cl_kwargs["symmetry"] = f"C{order}"
