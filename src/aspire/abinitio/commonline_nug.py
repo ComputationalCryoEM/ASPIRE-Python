@@ -396,12 +396,12 @@ class CommonlineNUG(Orient3D):
         bE0 = xp.zeros(D0, dtype=np.float64)
         bE1 = xp.zeros(D1, dtype=np.float64)
         for k_idx in range(Lmax):
-            k = k_idx + 1
-            block0_rows = slice(d0[k_idx], d0[k_idx + 1])
-            block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+            k = k_idx + 1  # degree
 
-            bE0[block0_rows] = xp.eye(k, dtype=np.float64).reshape(-1)
-            bE1[block1_rows] = xp.eye(k + 1, dtype=np.float64).reshape(-1)
+            # Encode the k-by-k and (k+1)-by-(k+1) identity blocks. A flattened
+            # m-by-m identity has diagonal entries every m+1 positions.
+            bE0[d0[k_idx] : d0[k_idx + 1] : k + 1] = 1
+            bE1[d1[k_idx] : d1[k_idx + 1] : k + 2] = 1
 
         bE0 = xp.repeat(bE0[:, None], N, axis=1)
         bE1 = xp.repeat(bE1[:, None], N, axis=1)
