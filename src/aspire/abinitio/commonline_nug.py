@@ -1278,7 +1278,7 @@ class CommonlineNUG(Orient3D):
         AEqAEqtinv = xp.linalg.pinv(AEq @ AEq.T)
 
         bEq = xp.zeros(17, dtype=np.float64)
-        bEq[:16] = xp.eye(4, dtype=np.float64).reshape(-1) / 4
+        bEq[:16:5] = 0.25  # Flattened np.eye(4)/4
         bEq[-1] = 1
         bEq = xp.repeat(bEq[:, None], N * (N - 1) // 2, axis=1)
 
