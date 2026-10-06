@@ -795,15 +795,9 @@ class CommonlineNUG(Orient3D):
             split = k_idx + 1 + d0[k_idx + 1] + d1[k_idx]
             stop = k_idx + 1 + d0[k_idx + 1] + d1[k_idx + 1]
 
-            bE[start:] = rank_Ak[k_idx]
-            bE[start + 1 : split] = xp.eye(
-                k,
-                dtype=np.float64,
-            ).reshape(-1)
-            bE[split:stop] = xp.eye(
-                k + 1,
-                dtype=np.float64,
-            ).reshape(-1)
+            bE[start] = rank_Ak[k_idx]
+            bE[start + 1 : split : k + 1] = 1
+            bE[split:stop:k + 2] = 1
 
         bE = xp.repeat(bE[:, None], N, axis=1)
 
