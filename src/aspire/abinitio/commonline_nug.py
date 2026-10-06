@@ -1481,7 +1481,7 @@ class CommonlineNUG(Orient3D):
 
         :return: Ranks and symmetry-averaging matrices for each degree.
         """
-        rk = xp.zeros(self.Lmax, dtype=np.float64)
+        rk = np.zeros(self.Lmax, dtype=np.float64)
         A = []
         for k_idx in range(self.Lmax):
             k = k_idx + 1  # degree
