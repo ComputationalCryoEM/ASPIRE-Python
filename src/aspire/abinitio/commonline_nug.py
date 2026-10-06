@@ -565,7 +565,7 @@ class CommonlineNUG(Orient3D):
                 + xp.linalg.norm(bEq - zq) / (1 + xp.linalg.norm(bEq))
             )
             res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
-                1 + abs(bI) * xp.sqrt(Ngrid * n_pairs)
+                1 + abs(bI) * np.sqrt(Ngrid * n_pairs)
             )
 
             p_resnorm = res_eq + res_inq
@@ -603,7 +603,7 @@ class CommonlineNUG(Orient3D):
                 + xp.linalg.norm(bEq - zq) / (1 + xp.linalg.norm(bEq))
             )
             res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
-                1 + abs(bI) * xp.sqrt(Ngrid * n_pairs)
+                1 + abs(bI) * np.sqrt(Ngrid * n_pairs)
             )
 
             res_psdX = 0
@@ -1068,7 +1068,7 @@ class CommonlineNUG(Orient3D):
                 zq - bEq
             ) / (1 + xp.linalg.norm(bEq))
             res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
-                1 + abs(bI) * xp.sqrt(Ngrid * N**2)
+                1 + abs(bI) * np.sqrt(Ngrid * N**2)
             )
             p_resnorm = res_eq + res_inq
             d_resnorm = res_X / (1 + normC)
@@ -1099,7 +1099,7 @@ class CommonlineNUG(Orient3D):
                     1 + xp.linalg.norm(bE)
                 ) + xp.linalg.norm(zq - bEq) / (1 + xp.linalg.norm(bEq))
                 res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
-                    1 + abs(bI) * xp.sqrt(Ngrid * N * (N + 1) / 2)
+                    1 + abs(bI) * np.sqrt(Ngrid * N * (N + 1) / 2)
                 )
 
                 res_psdX = 0
