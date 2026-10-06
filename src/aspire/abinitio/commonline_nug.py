@@ -1086,14 +1086,12 @@ class CommonlineNUG(Orient3D):
                     + 2 * xp.vdot(C0[:, idx_offdiag], X0[:, idx_offdiag])
                     + 2 * xp.vdot(C1[:, idx_offdiag], X1[:, idx_offdiag])
                 )
+
                 obj_d = (
                     xp.vdot(yE, bE)
                     + 2 * xp.vdot(yEq, bEq)
-                    + xp.vdot(yI[:, idx_diag], bI * xp.ones((Ngrid, N)))
-                    + 2
-                    * xp.vdot(
-                        yI[:, idx_offdiag], bI * xp.ones((Ngrid, N * (N - 1) // 2))
-                    )
+                    + bI * xp.sum(yI[:, idx_diag])
+                    + 2 * bI * xp.sum(yI[:, idx_offdiag])
                 )
 
                 z, zq = fun_AE(X0, X1, Xd0, Xd1, Xq)
