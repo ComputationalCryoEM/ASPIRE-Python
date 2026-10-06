@@ -797,7 +797,7 @@ class CommonlineNUG(Orient3D):
 
             bE[start] = rank_Ak[k_idx]
             bE[start + 1 : split : k + 1] = 1
-            bE[split:stop:k + 2] = 1
+            bE[split : stop : k + 2] = 1
 
         bE = xp.repeat(bE[:, None], N, axis=1)
 
