@@ -1714,10 +1714,11 @@ class CommonlineNUG(Orient3D):
         :return: The two permuted matrix blocks.
         """
         dk = 2 * k + 1
-        Pk = xp.eye(dk, dtype=Ak.dtype)
+        Pk = np.eye(dk, dtype=Ak.dtype)
         for m in range(k):
             for n in range(k - m):
                 Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
+        Pk = xp.asarray(Pk)
         AkP = (
             xp.kron(xp.eye(N, dtype=Ak.dtype), Pk)
             @ Ak
