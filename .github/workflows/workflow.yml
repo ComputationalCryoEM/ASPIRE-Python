@@ -156,7 +156,7 @@ jobs:
         shell: bash -el {0}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-22.04, macOS-latest, macOS-14]
+        os: [ubuntu-latest, ubuntu-22.04, macOS-latest, macOS-15]
         backend: [default, openblas]
         python-version: ['3.10']
         # Skip testing x86_64 openblas on M1 arch
@@ -164,7 +164,7 @@ jobs:
         exclude:
           - os: macOS-latest
             backend: openblas
-          - os: macOS-14
+          - os: macOS-15
             backend: openblas
         include:
           - os: ubuntu-latest
@@ -329,7 +329,7 @@ jobs:
 
   osx_arm:
     needs: [check, data-cache]
-    runs-on: macos-14
+    runs-on: macos-15
     # Run on every code push, but only on review ready PRs
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft == false }}
     steps:
