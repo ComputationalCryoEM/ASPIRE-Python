@@ -1756,10 +1756,11 @@ class CommonlineNUG(Orient3D):
                 ][idx, :]
         AkB = Pk.T @ Ak @ Pk
         dk = 2 * k + 1
-        Pk = xp.eye(dk, dtype=Ak.dtype)
+        Pk = np.eye(dk, dtype=Ak.dtype)
         for m in range(k):
             for n in range(k - m):
                 Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
+        Pk = xp.asarray(Pk)
         AkB = (
             xp.kron(xp.eye(N, dtype=Ak.dtype), Pk.T)
             @ AkB
