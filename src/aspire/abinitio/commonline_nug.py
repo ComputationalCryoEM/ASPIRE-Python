@@ -1325,17 +1325,21 @@ class CommonlineNUG(Orient3D):
         # largest eigenvalue for AIAIT
         Lambda = self._largest_eigenvalue(AI_mat_offdiag, N)
 
-        # initialization
-        II = []
-        for k in range(1, Lmax + 1):
-            dk = 2 * k + 1
-            II.append(xp.eye(N * dk, dtype=np.float64))
-        I0, I1 = self.transform_coeff(II, IDX_upper)
-        X0 = xp.zeros((D0, N * (N + 1) // 2), dtype=np.float64)
-        X1 = xp.zeros((D1, N * (N + 1) // 2), dtype=np.float64)
+        # Initialize the primal variables in packed image-pair form.
+        n_packed = N * (N + 1) // 2
+        X0 = xp.zeros((D0, n_packed), dtype=np.float64)
+        X1 = xp.zeros((D1, n_packed), dtype=np.float64)
         Xq = xp.zeros((16, N * (N - 1) // 2), dtype=np.float64)
-        S0 = xp.copy(I0)
-        S1 = xp.copy(I1)
+
+        # The initial slack matrices are identity blocks for self-pairs and zero
+        # for distinct image pairs. Build them directly in packed form.
+        S0 = xp.zeros_like(X0)
+        S1 = xp.zeros_like(X1)
+        for k_idx in range(Lmax):
+            k = k_idx + 1
+            S0[d0[k_idx] : d0[k_idx + 1] : k + 1, idx_diag] = 1
+            S1[d1[k_idx] : d1[k_idx + 1] : k + 2, idx_diag] = 1
+
         Sq = xp.zeros(Xq.shape, dtype=np.float64)
 
         self.Ngrid = Ngrid
