@@ -2,7 +2,8 @@ import logging
 
 import numpy as np
 
-from aspire.utils import Rotation
+from aspire.utils import Rotation, nearest_rotations
+from aspire.utils.matlab_compat import stable_eigsh
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +58,99 @@ def _syncmatrix_ij_vote_3n(
         rot = np.zeros((3, 3))
 
     return rot
+
+
+def _syncrotations(S):
+    """
+    Compute the rotations from the syncronization matrix S.
+
+    :param S: A 2Kx2K synchronization matrix.
+
+    :return: Kx3x3 rotations.
+    """
+    sz = S.shape
+    dtype = S.dtype
+    assert sz[0] == sz[1], "syncmatrix must be a square matrix."
+    assert sz[0] % 2 == 0, "syncmatrix must be a square matrix of size 2Kx2K."
+
+    n_img = sz[0] // 2
+
+    # S is a 2Kx2K matrix (K=n_img), containing KxK blocks of size 2x2.
+    # The [i,j] block is given by [r11 r12; r12 r22], where
+    # r_{kl}=<R_{i}^{k},R_{j}^{l}>, k,l=1,2, namely, the dot product of
+    # column k of R_{i} and columns l of R_{j}. Thus, given the true
+    # rotations R_{1},...,R_{K}, S is decomposed as S=W^{T}W where
+    # W=(R_{1}^{1},R_{1}^{2},...,R_{K}^{1},R_{K}^{2}), where R_{j}^{k}
+    # the k column of R_{j}. Therefore, S is a rank-3 matrix, and thus, it
+    # three eigenvectors that correspond to non-zero eigenvalues, are linear
+    # combinations of the column space of S, namely, W^{T}.
+
+    # Extract three eigenvectors corresponding to non-zero eigenvalues.
+    d, v = stable_eigsh(S, 10)
+    sort_idx = np.argsort(-d)
+    logger.info(f"Top 10 eigenvalues from synchronization voting matrix: {d[sort_idx]}")
+
+    # Only need the top 3 eigen-vectors.
+    v = v[:, sort_idx[:3]]
+    # According to the structure of W^{T} above, the odd rows of V, denoted V1,
+    # are a linear combination of the vectors R_{i}^{1}, i=1,...,K, that is of
+    # column 1 of all rotation matrices. Similarly, the even rows of V,
+    # denoted, V2, are linear combinations of R_{i}^{1}, i=1,...,K.
+    v1 = v[: 2 * n_img : 2].T.copy()
+    v2 = v[1 : 2 * n_img : 2].T.copy()
+
+    # We look for a linear transformation (3 x 3 matrix) A such that
+    # A*V1'=R1 and A*V2=R2 are the columns of the rotations matrices.
+    # Therefore:
+    # V1 * A'*A V1' = 1
+    # V2 * A'*A V2' = 1
+    # V1 * A'*A V2' = 0
+    # These are 3*K linear equations for 9 matrix entries of A'*A
+    # Actually, there are only 6 unknown variables, because A'*A is symmetric.
+    # So we will truncate from 9 variables to 6 variables corresponding
+    # to the upper half of the matrix A'*A
+    truncated_equations = np.zeros((3 * n_img, 6), dtype=dtype)
+    k = 0
+    for i in range(3):
+        for j in range(i, 3):
+            truncated_equations[0::3, k] = v1[i] * v1[j]
+            truncated_equations[1::3, k] = v2[i] * v2[j]
+            truncated_equations[2::3, k] = v1[i] * v2[j]
+            k += 1
+
+    # b = [1 1 0 1 1 0 ...]' is the right hand side vector
+    b = np.ones(3 * n_img)
+    b[2::3] = 0
+
+    # Find the least squares approximation of A'*A in vector form
+    ATA_vec = np.linalg.lstsq(truncated_equations, b, rcond=None)[0]
+
+    # Construct the matrix A'*A from the vectorized matrix.
+    ATA = np.zeros((3, 3), dtype=dtype)
+    upper_mask = np.triu_indices(3)
+    ATA[upper_mask] = ATA_vec
+    lower_mask = np.tril_indices(3)
+    ATA[lower_mask] = ATA.T[lower_mask]
+
+    # The Cholesky decomposition of A'*A gives A
+    # numpy returns lower, matlab upper
+    a = np.linalg.cholesky(ATA)
+
+    # Recover the rotations. The first two columns of all rotation
+    # matrices are given by unmixing V1 and V2 using A. The third
+    # column is the cross product of the first two.
+    r1 = np.dot(a, v1)
+    r2 = np.dot(a, v2)
+    r3 = np.cross(r1, r2, axis=0)
+
+    rotations = np.empty((n_img, 3, 3), dtype=dtype)
+    rotations[:, :, 0] = r1.T
+    rotations[:, :, 1] = r2.T
+    rotations[:, :, 2] = r3.T
+
+    # Make sure that we got rotations by enforcing R to be
+    # a rotation (in case the error is large)
+    return nearest_rotations(rotations)
 
 
 def _rotratio_eulerangle_vec(clmatrix, i, j, good_k, n_theta):
