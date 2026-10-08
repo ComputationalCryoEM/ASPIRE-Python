@@ -7,7 +7,7 @@ from aspire.abinitio import Orient3D
 from aspire.abinitio.sync_voting import _syncrotations
 from aspire.numeric import xp
 from aspire.operators import PolarFT
-from aspire.utils import Rotation, cart2sph, complex_type, trange
+from aspire.utils import Rotation, cart2sph, complex_type, tqdm, trange
 from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
@@ -272,25 +272,30 @@ class CommonlineNUG(Orient3D):
             C.append(np.zeros((N * dk, N * dk), dtype=complex_type(np.float64)))
 
         # Compute off-diagonal image-pair losses and insert their degree-wise coefficients.
-        for i in range(N):
-            for j in range(i + 1, N):
-                Fij = np.zeros((2 * T, 2 * T), dtype=np.float64)
-                for j1 in range(2 * T):
-                    for j2 in range(2 * T):
-                        Fij[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, j)
-                for k_idx in range(Lmax):
-                    k = k_idx + 1
-                    dk = 2 * k + 1
-                    C[k_idx][j * dk : (j + 1) * dk, i * dk : (i + 1) * dk] = fijhat_k(
-                        k_idx, Fij
-                    )  # *dk
+        with tqdm(
+            total=N * (N - 1) // 2,
+            desc="Computing off-diagonal coefficients",
+        ) as pbar:
+            for i in range(N):
+                for j in range(i + 1, N):
+                    Fij = np.zeros((2 * T, 2 * T), dtype=np.float64)
+                    for j1 in range(2 * T):
+                        for j2 in range(2 * T):
+                            Fij[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, j)
+                    for k_idx in range(Lmax):
+                        k = k_idx + 1
+                        dk = 2 * k + 1
+                        C[k_idx][j * dk : (j + 1) * dk, i * dk : (i + 1) * dk] = (
+                            fijhat_k(k_idx, Fij)
+                        )  # *dk
+                    pbar.update(1)
 
         # Fill the conjugate transpose blocks so each coefficient matrix is Hermitian.
         for k_idx in range(Lmax):
             C[k_idx] = C[k_idx] + C[k_idx].conj().T
 
         # Diagonal blocks encode self-pair losses and are handled separately.
-        for i in range(N):
+        for i in trange(N, desc="Computing diagonal coefficients"):
             Fii = np.zeros((2 * T, 2 * T), dtype=np.float64)
             for j1 in range(2 * T):
                 for j2 in range(2 * T):
