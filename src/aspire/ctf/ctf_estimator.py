@@ -1,6 +1,6 @@
 """
 Contains code supporting CTF parameter estimation.
-Generally, this is a port of ASPIRE-CTF from MATLAB.
+Generally, this is a Python version of ASPIRE-CTF from MATLAB.
 
 See paper:
 
@@ -27,18 +27,25 @@ import logging
 import os
 from collections import OrderedDict
 
+import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
 from numpy import linalg as npla
 from scipy.optimize import linprog
 from scipy.signal.windows import dpss
-from aspire.utils import tqdm
 
 from aspire.basis import Coef, FFBBasis2D
 from aspire.image import Image
 from aspire.numeric import fft
 from aspire.storage import StarFile
-from aspire.utils import abs2, complex_type, grid_1d, grid_2d, voltage_to_wavelength
+from aspire.utils import (
+    abs2,
+    complex_type,
+    grid_1d,
+    grid_2d,
+    tqdm,
+    voltage_to_wavelength,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -215,6 +222,89 @@ class CtfEstimator:
 
         return self.normalize_blocks(self.micrograph_to_blocks(micrograph, block_size))
 
+    def legacy_preprocess_micrograph(self, micrograph, block_size):
+        """
+        Returns half-overlapping blocks extracted from the micrograph.
+        Equivalent to MATLAB's ctf_extract_blocks.
+
+        Note, internally transposes micrograph to match MATLAB computations.
+        Returns (num_blocks, block_size, block_size)
+        """
+        h, w = micrograph.shape
+
+        if min(h, w) < block_size:
+            raise ValueError(
+                f"Blocks of size {block_size} x {block_size} cannot be extracted from image."
+            )
+
+        block_size = block_size - (block_size % 2)  # force even
+        half = block_size // 2
+
+        # Compute crop bounds
+        end_val1 = (h // block_size) * block_size + (
+            half if (h % block_size) > half else 0
+        )
+        end_val2 = (w // block_size) * block_size + (
+            half if (w % block_size) > half else 0
+        )
+
+        # Crop
+        cropped_micrograph = micrograph[:end_val1, :end_val2]
+
+        # Compute number of half blocks
+        n_bh = end_val1 // half  # number of half-blocks along rows
+        n_bw = end_val2 // half  # number of half-blocks along cols
+        n_total = n_bh * n_bw
+
+        # im2col `distinct` extracts non-overlapping half blocks
+        # column-major block ordering to match MATLAB (down-first)
+        # TODO, I don't think the order will matter here later,
+        # but keeping now for diagnostics.
+        blocks = (
+            cropped_micrograph.reshape(n_bh, half, n_bw, half)
+            .transpose(1, 3, 0, 2)
+            .reshape(half * half, n_total, order="F")
+        )
+
+        # Reshape to (half, half, n_total) so each slice is one half-block
+        blocks = blocks.reshape(half, half, n_total, order="F")
+
+        # TODO, compare which method is faster later, if we really need these...
+        # First cat
+        # stack each half-block with the one below it (rows overlap)
+        # by shifting the block indices by 1
+        row_shifted = np.concatenate([blocks[:, :, 1:], blocks[:, :, :1]], axis=2)
+        blocks = np.concatenate(
+            [blocks, row_shifted], axis=0
+        )  # (block_size, half, n_total)
+
+        # Second cat
+        # stack each block with the one to its right (cols overlap)
+        # by rolling the blocks
+        col_shifted = np.roll(blocks, -n_bh, axis=2)
+        blocks = np.concatenate(
+            [blocks, col_shifted], axis=1
+        )  # (block_size, block_size, n_total)
+
+        # Reshape to blocksize-by-blocksize grid
+        n_row_blocks = int(np.floor(2 * h / block_size))
+        n_col_blocks = int(np.floor(2 * w / block_size))
+        blocks = blocks.reshape(
+            block_size, block_size, n_row_blocks, n_col_blocks, order="F"
+        )
+
+        # Drop last row and col (bounds artifacts)
+        blocks = blocks[:, :, :-1, :-1]
+        # Flatten
+        block = blocks.reshape(block_size, block_size, -1, order="F")
+
+        # De-mean each block
+        block_mean = block.sum(axis=(0, 1), keepdims=True) / (block_size**2)
+        block = block - block_mean
+
+        # Transpose output to C order (n,block_size, block_size)
+        return block.T
+
     def tapers(self, N, NW, L):
         """
         Compute data tapers (which are discrete prolate spheroidal sequences (dpss))
@@ -228,9 +318,12 @@ class CtfEstimator:
         :return: NumPy array of data tapers
         """
 
-        # Note the original ASPIRE implementation is negated from original scipy...
-        #  but at time of writing subsequent code was agnostic to sign.
-        return dpss(M=N, NW=NW, Kmax=L, return_ratios=False).T
+        # Note the original ASPIRE MATLAB implementation computed these.
+        # This call should be close up to sign, but is not identical.
+        #
+        # In the CtfEstimator application, the signs will pass through
+        # the mul and fft steps, then are absolute valued.
+        return dpss(M=N, NW=NW, Kmax=L, return_ratios=False, sym=False, norm=2).T
 
     def estimate_psd(self, blocks, tapers_1d):
         """
@@ -264,13 +357,12 @@ class CtfEstimator:
                     np.multiply(blocks[m, :, :], taper_2d, out=blocks_tapered)
                     blocks_mt_post_fft = fft.fftn(blocks_tapered, axes=(-2, -1))
                     blocks_mt += abs2(blocks_mt_post_fft)
+                    # blocks_mt += np.abs(blocks_mt_post_fft)**2
 
+        blocks_mt /= blocks.shape[1] ** 2
         blocks_mt /= blocks.shape[0] ** 2
-        blocks_mt /= tapers_1d.shape[0] ** 2
 
-        amplitude_spectrum = fft.fftshift(
-            blocks_mt
-        )  # max difference 10^-13, max relative difference 10^-14
+        amplitude_spectrum = fft.fftshift(blocks_mt)
 
         return Image(amplitude_spectrum)
 
@@ -284,8 +376,11 @@ class CtfEstimator:
         :return: PSD and noise as 2-tuple of NumPy arrays.
         """
 
+        # TODO breakup into two functions as the noise is unused in first call?
+
         # RCOPT, come back and change the indices for this method
         coefs_s = ffbbasis.evaluate_t(amplitude_spectrum).asnumpy().copy().T
+        # TODO only needed in one case...
         coefs_n = coefs_s.copy()
 
         coefs_s[np.argwhere(ffbbasis.angular_indices == 1)] = 0
@@ -302,7 +397,7 @@ class CtfEstimator:
         return psd, noise
 
     def background_subtract_1d(
-        self, amplitude_spectrum, linprog_method="highs", n_low_freq_cutoffs=14
+        self, amplitude_spectrum, linprog_method="highs-ds", n_low_freq_cutoffs=14
     ):
         """
         Estimate and subtract the background from the power spectrum
@@ -344,6 +439,9 @@ class CtfEstimator:
             N = amplitude_spectrum.shape[-1] - low_freq_cutoff
 
             f = np.concatenate((np.ones(N), -1 * np.ones(N)), axis=0)
+            lb = np.concatenate([signal, np.full_like(signal, -np.inf)])
+            ub = np.concatenate([signal, np.full_like(signal, np.inf)])
+            bounds = np.column_stack([lb, ub])
 
             superposition_condition = np.concatenate(
                 (-1 * np.eye(N), np.eye(N)), axis=1
@@ -374,28 +472,22 @@ class CtfEstimator:
                 axis=0,
             )
 
-            # The original code used `bounds`,
-            #   but for many problems, linprog reports infeasable constraints.
-            # In practice for a micrograph from the paper, and our tutorial,
-            #   the code seems to work better without it...
-            # ASPIRE #417
-
-            x = linprog(
+            res = linprog(
                 f,
                 A_ub=A,
                 b_ub=np.zeros(A.shape[0]),
                 method=linprog_method,
+                bounds=bounds,
             )
 
-            if not x.success:
+            if not res.success:
                 raise RuntimeError("Linear program did not succeed. Halting")
 
-            background = x.x[N:]
+            background = res.x[N:]
 
             bs_psd = signal - background
 
             final_signal[low_freq_cutoff - 1, low_freq_cutoff:] = bs_psd.T
-            # expected difference: 10^-7 (absolute)
             final_background[low_freq_cutoff - 1, low_freq_cutoff:] = background.T
 
         return final_signal, final_background
@@ -428,6 +520,8 @@ class CtfEstimator:
         center = N // 2
 
         grid = grid_1d(N, normalized=True, dtype=self.dtype)
+
+        # TODO, try using use self.r_ctf?
         rb = grid["r"][center:] / 2
 
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
@@ -441,6 +535,7 @@ class CtfEstimator:
         c = np.zeros((max_defocus - min_defocus, signal.shape[1]), dtype=self.dtype)
 
         for f in range(min_defocus, max_defocus):
+            # TODO try replace with ASPIRE's CTF formula?
             ctf_im = np.abs(
                 np.sin(
                     np.pi * lmbd * f * r_ctf_sq
@@ -456,8 +551,8 @@ class CtfEstimator:
             for m in range(0, signal.shape[1]):
                 signal[:, m] = signal[:, m] - np.mean(signal[m + 1 :, m], axis=0)
                 ctf_im[:, m] = ctf_im[:, m] - np.mean(ctf_im[m + 1 :, m], axis=0)
-                ctf_im[: m + 1, m] = np.zeros((m + 1))
-                signal[: m + 1, m] = np.zeros((m + 1))
+                ctf_im[: m + 1, m] = 0  # np.zeros((m + 1))
+                signal[: m + 1, m] = 0  # np.zeros((m + 1))
 
             Sx = np.sqrt(np.sum(ctf_im**2, axis=0))
             Sy = np.sqrt(np.sum(signal**2, axis=0))
@@ -482,9 +577,9 @@ class CtfEstimator:
 
         N = signal.shape[1]
         grid = grid_2d(N, normalized=False, indexing="yx", dtype=self.dtype)
+        radii = grid["r"]  # can probably get elsewhere if signal.shape is consistent.
 
-        radii = np.sqrt((grid["x"] / 2) ** 2 + (grid["y"] / 2) ** 2)
-
+        # okay now, but review max_col and vectorize this
         background = np.zeros(signal.shape, dtype=self.dtype)
         for r in range(max_col + 2, background_p1.shape[1]):
             background[:, (r < radii) & (radii <= r + 1)] = background_p1[max_col, r]
@@ -716,6 +811,24 @@ class CtfEstimator:
         star = StarFile(blocks=blocks)
         star.write(os.path.join(output_dir, os.path.splitext(name)[0]) + ".star")
 
+    def _plot_1d_psd(self, signal_1d, background_1d):
+        center = self.r_ctf.shape[0] // 2
+        x = self.r_ctf[center, center : center + signal_1d.shape[1]]
+        plt.plot(x, signal_1d[1] + background_1d[1])
+        # xlabel('$\vert \mathbf{k} \vert^2 \, \, [\mathrm{nm}^{-1}]$', 'Interpreter','latex');
+        # ylabel('$S_y \left( \mathbf{k} \right)$', 'Interpreter','latex');
+        # title('1-d PSD')
+        plt.show()
+
+    def _plot_1d_bg_sub_psd(self, signal_1d):
+        center = self.r_ctf.shape[0] // 2
+        x = self.r_ctf[center, center : center + signal_1d.shape[1]]
+        plt.plot(x, signal_1d[1])
+        # title('Background subtracted 1-d PSD')
+        # xlabel('$\vert \mathbf{k} \vert^2 \, \, [\mathrm{nm}^{-1}]$', 'Interpreter','latex');
+        # ylabel('$S_y \left( \mathbf{k} \right) - S_e \left( \mathbf{k} \right)$', 'Interpreter','latex');
+        plt.show()
+
 
 def estimate_ctf(
     data_folder,
@@ -761,6 +874,10 @@ def estimate_ctf(
     #   closer to original code.
     ffbbasis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
 
+    # Only need to compute tapers once
+    # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
+    tapers_1d = ctf_object.tapers(psd_size, num_tapers, num_tapers)
+
     results = {}
     for name in tqdm(file_names, desc="Processing files"):
         with mrcfile.open(
@@ -771,23 +888,27 @@ def estimate_ctf(
         # Try to match dtype used in Basis instance
         micrograph = micrograph.astype(dtype, copy=False)
 
-        micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
-
-        tapers_1d = ctf_object.tapers(psd_size, num_tapers / 2, num_tapers)
+        # TODO compare now that remainder of code repros.
+        # TODO migrate code into a main method in CtfEstimator
+        # micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
+        micrograph_blocks = ctf_object.legacy_preprocess_micrograph(
+            micrograph, psd_size
+        )
 
         signal_observed = ctf_object.estimate_psd(micrograph_blocks, tapers_1d)
+        np.save("signal_observed.npy", signal_observed)
 
         amplitude_spectrum, _ = ctf_object.elliptical_average(
             ffbbasis, signal_observed, True
-        )  # absolute differenceL 10^-14. Relative error: 10^-7
-
-        # Optionally changing to: linprog_method='simplex',
-        # will more deterministically repro results in exchange for speed.
-        # linprog_method was changed from 'interior-point' to 'highs' due to
-        # "interior-point' being deprecated.
-        signal_1d, background_1d = ctf_object.background_subtract_1d(
-            amplitude_spectrum, linprog_method="highs"
         )
+        np.save("amplitude_spectrum.npy", amplitude_spectrum)
+
+        # TODO expose linprog as a init var
+        signal_1d, background_1d = ctf_object.background_subtract_1d(amplitude_spectrum)
+
+        # TODO complete diagnostic plots and complete implementation in class.
+        # ctf_object._plot_1d_psd(signal_1d, background_1d)
+        # ctf_object._plot_1d_bg_sub_psd(signal_1d)
 
         avg_defocus, low_freq_skip = ctf_object.opt1d(
             signal_1d,
@@ -798,7 +919,7 @@ def estimate_ctf(
             signal_observed.shape[-1],
         )
 
-        low_freq_skip = 12
+        # TODO check the low_freq_skip +-1, it is col ind or value
         signal, background_2d = ctf_object.background_subtract_2d(
             signal_observed, background_1d, low_freq_skip
         )
@@ -808,7 +929,6 @@ def estimate_ctf(
         signal, additional_background = ctf_object.elliptical_average(
             ffbbasis, signal.sqrt(), False
         )
-
         background_2d = background_2d + additional_background
 
         initial_df1 = (avg_defocus * 2) / (1 + ratio)
@@ -816,10 +936,13 @@ def estimate_ctf(
 
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=dtype)
 
+        # TODO, try to avoid why computing r_ctf again,
+        # similarly theta can be computed in init
         r_ctf = grid["r"] / 2 * (10 / pixel_size)
         theta = grid["phi"]
 
         angle = -5 / 12 * np.pi  # Radians (-75 degrees)
+        # TODO replace 6 with a variable
         cc_array = np.zeros((6, 4))
         for a in range(0, 6):
             df1, df2, angle_ast, p = ctf_object.gd(
@@ -843,6 +966,7 @@ def estimate_ctf(
             cc_array[a, 3] = p
         ml = np.argmax(cc_array[:, 3], -1)
 
+        # TODO what is the ultimate purpose of the result dictionary?
         result = {
             "defocus_u": cc_array[ml, 0] * 10,  # Convert from nm to A
             "defocus_v": cc_array[ml, 1] * 10,  # Convert from nm to A
@@ -854,11 +978,13 @@ def estimate_ctf(
         }
         results[name] = result
 
+        # TODO consolidate all the IO our of here and into functions
         # we write each micrograph's ctf parameters to an individual starfile
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         ctf_object.write_star(name, result, output_dir)
 
+        # TODO compare these images with expected outputs from MATLAB
         if save_noise_images:
             with mrcfile.new(
                 os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc"),
