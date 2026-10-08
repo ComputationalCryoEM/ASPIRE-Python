@@ -266,8 +266,6 @@ def test_relative_viewing_directions(n_img, L, order, dtype):
     )  # Normalize for comparison to [1, 0, 0]
     error_ij = np.linalg.norm(np.array([1, 0, 0], dtype=dtype) - sij, axis=1)
     error_ii = np.linalg.norm(np.array([1, 0, 0], dtype=dtype) - sii, axis=1)
-    max_tol_ij = 1e-7
-    mean_tol_ij = 1e-7
     # For order < 5, the method for estimating vijs leads to estimates
     # which do not as tightly approximate rank-1.
     if order < 5:
