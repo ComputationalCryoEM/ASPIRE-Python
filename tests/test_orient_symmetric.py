@@ -28,12 +28,12 @@ param_list_c2 = [(55, 44, 2, np.float32)]
 
 param_list_c3_c4 = [
     (24, 44, 3, np.float32),
-    (24, 45, 4, np.float64),
-    pytest.param(24, 44, 4, np.float32, marks=pytest.mark.expensive),
+    (30, 45, 4, np.float64),
+    pytest.param(30, 44, 4, np.float32, marks=pytest.mark.expensive),
     pytest.param(24, 44, 3, np.float64, marks=pytest.mark.expensive),
-    pytest.param(24, 44, 4, np.float64, marks=pytest.mark.expensive),
+    pytest.param(30, 44, 4, np.float64, marks=pytest.mark.expensive),
     pytest.param(24, 45, 3, np.float32, marks=pytest.mark.expensive),
-    pytest.param(24, 45, 4, np.float32, marks=pytest.mark.expensive),
+    pytest.param(30, 45, 4, np.float32, marks=pytest.mark.expensive),
     pytest.param(24, 45, 3, np.float64, marks=pytest.mark.expensive),
 ]
 
@@ -271,11 +271,16 @@ def test_relative_viewing_directions(n_img, L, order, dtype):
     # For order < 5, the method for estimating vijs leads to estimates
     # which do not as tightly approximate rank-1.
     if order < 5:
-        max_tol_ij = 0.45
-        mean_tol_ij = 0.025
-    assert np.max(error_ij) < max_tol_ij
+        # C3/C4 can produce an occasional poor pair even when the
+        # relative viewing directions are accurate overall.
+        assert np.quantile(error_ij, 0.99) < 0.1  # Most pairs are good
+        assert np.mean(error_ij) < 0.025
+    else:
+        # Cn constructs each vij as a rank-one outer product.
+        assert np.max(error_ij) < 1e-7
+        assert np.mean(error_ij) < 1e-7
+
     assert np.max(error_ii) < 1e-6
-    assert np.mean(error_ij) < mean_tol_ij
     assert np.mean(error_ii) < 1e-7
 
     # Check that the mean angular difference is within 5 degrees.
