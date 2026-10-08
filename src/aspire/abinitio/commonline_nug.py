@@ -7,7 +7,7 @@ from aspire.abinitio import Orient3D
 from aspire.abinitio.sync_voting import _syncrotations
 from aspire.numeric import xp
 from aspire.operators import PolarFT
-from aspire.utils import Rotation, cart2sph, complex_type
+from aspire.utils import Rotation, cart2sph, complex_type, trange
 from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
@@ -653,17 +653,12 @@ class CommonlineNUG(Orient3D):
             d_res = res_X / (1 + normC)
 
             logger.info(
-                "Iter %i" % t
-                + ": p_res=%1.5f" % p_res
-                + ", d_res=%1.5f" % d_res
-                + ", obj_primal=%1.2f" % obj_p
-                + ", obj_dual=%1.2f" % obj_d
-                + ", duality gap=%1.2f" % (obj_p - obj_d)
-                + "\n        eq_res=%1.5f" % res_eq
-                + ", inq_res=%1.5f" % res_inq
-                + ", psd_res=%1.5f" % (res_psdX + res_psdQ)
-                + ", |S|=%1.2f" % normS
-                + ", |X|=%1.2f" % normX
+                f"Iter {t}: p_res={p_res:.5f}, d_res={d_res:.5f}, "
+                f"obj_primal={obj_p:.2f}, obj_dual={obj_d:.2f}, "
+                f"duality gap={obj_p - obj_d:.2f}\n"
+                f"        eq_res={res_eq:.5f}, inq_res={res_inq:.5f}, "
+                f"psd_res={res_psdX + res_psdQ:.5f}, "
+                f"|S|={normS:.2f}, |X|={normX:.2f}"
             )
 
         yI = xp.zeros((Ngrid, n_pairs), dtype=np.float64)
@@ -672,7 +667,7 @@ class CommonlineNUG(Orient3D):
         yEq = xp.zeros(bEq.shape, dtype=np.float64)
 
         update_order = np.arange(3)
-        for t in range(max_iter):
+        for t in trange(max_iter, desc="C1 NUG ADMM"):
             np.random.shuffle(update_order)
             for update_idx in update_order:
                 if update_idx == 0:
@@ -1163,17 +1158,12 @@ class CommonlineNUG(Orient3D):
                 p_res = res_eq + res_inq + res_psdX + res_psdD + res_psdQ
                 d_res = res_X / (1 + normC)
                 logger.info(
-                    "Iter %i" % t
-                    + ": p_res=%1.5f" % p_res
-                    + ", d_res=%1.5f" % d_res
-                    + ", obj_primal=%1.2f" % obj_p
-                    + ", obj_dual=%1.2f" % obj_d
-                    + ", duality gap=%1.2f" % (obj_p - obj_d)
-                    + "\n        eq_res=%1.5f" % res_eq
-                    + ", inq_res=%1.5f" % res_inq
-                    + ", psd_res=%1.5f" % (res_psdX + res_psdD + res_psdQ)
-                    + ", |S|=%1.2f" % normS
-                    + ", |X|=%1.2f" % normX
+                    f"Iter {t}: p_res={p_res:.5f}, d_res={d_res:.5f}, "
+                    f"obj_primal={obj_p:.2f}, obj_dual={obj_d:.2f}, "
+                    f"duality gap={obj_p - obj_d:.2f}\n"
+                    f"        eq_res={res_eq:.5f}, inq_res={res_inq:.5f}, "
+                    f"psd_res={res_psdX + res_psdD + res_psdQ:.5f}, "
+                    f"|S|={normS:.2f}, |X|={normX:.2f}"
                 )
 
         Xd0 = xp.zeros((D0, N), dtype=xp.float64)
@@ -1187,7 +1177,7 @@ class CommonlineNUG(Orient3D):
         # Run ADMM iterations, randomly ordering the block updates before each primal
         # multiplier update and penalty adjustment.
         update_order = np.arange(3)
-        for t in range(max_iter):
+        for t in trange(max_iter, desc="Symmetric NUG ADMM"):
             np.random.shuffle(update_order)
             for update_idx in update_order:
                 if update_idx == 0:
@@ -1470,7 +1460,7 @@ class CommonlineNUG(Orient3D):
             z = z / xp.linalg.norm(z)
             z = AI @ (AI.T @ z)
         Lambda += 2000
-        logger.info("Largest eigenvalue of AIAIT is approximately %1.2f" % Lambda)
+        logger.info(f"Largest eigenvalue of AIAIT is approximately {Lambda:.2f}")
         return Lambda
 
     def compute_rank(self):
@@ -1961,10 +1951,8 @@ class CommonlineNUG(Orient3D):
 
             if self.verbose:
                 logger.info(
-                    "Proximal refine step %d/%d: relative update %.3e",
-                    step + 1,
-                    self.pr_iters,
-                    rel_change(X_next, current),
+                    f"Proximal refine step {step + 1}/{self.pr_iters}: "
+                    f"relative update {rel_change(X_next, current):.3e}"
                 )
 
             # Use the refined SDP solution as the starting point for the next projection step
