@@ -63,6 +63,7 @@ class CtfEstimator:
         voltage,
         psd_size,
         num_tapers,
+        gradient_descent_iterations=6,
         dtype=np.float32,
     ):
         """
@@ -73,7 +74,10 @@ class CtfEstimator:
         :param amplitude_contrast: Amplitude contrast.
         :param voltage: Voltage of electron microscope.
         :param psd_size: Block size (in pixels) for PSD estimation.
-        :param num_tapers: Number of tapers to apply in PSD estimation.
+        :param num_tapers: Optional, number of tapers to apply in PSD estimation.
+            Defaults to 4.
+        :param gradient_descent_iterations: Optional, number of Gradient Descent attempts.
+            Defaults to 6.
         :returns: CtfEstimator instance.
         """
 
@@ -81,9 +85,10 @@ class CtfEstimator:
         self.cs = cs
         self.amplitude_contrast = amplitude_contrast
         self.voltage = voltage
-        self.psd_size = psd_size
-        self.num_tapers = num_tapers
+        self.psd_size = int(psd_size)
+        self.num_tapers = int(num_tapers)
         self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert angstrom to nm
+        self.gd_iters = int(gradient_descent_iterations)
         self.dtype = np.dtype(dtype)
 
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=self.dtype)
@@ -836,10 +841,11 @@ def estimate_ctf(
     cs=2.0,
     amplitude_contrast=0.07,
     voltage=300,
-    num_tapers=2,
+    num_tapers=4,
     psd_size=512,
     g_min=30,
     g_max=5,
+    gradient_descent_iterations=6,
     output_dir="results",
     dtype=np.float32,
     save_ctf_images=False,
@@ -867,7 +873,14 @@ def estimate_ctf(
     lmbd = voltage_to_wavelength(voltage) / 10  # Convert from angstrom to nm
 
     ctf_object = CtfEstimator(
-        pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
+        pixel_size,
+        cs,
+        amplitude_contrast,
+        voltage,
+        psd_size,
+        num_tapers=num_tapers,
+        gradient_descent_iterations=gradient_descent_iterations,
+        dtype=dtype,
     )
 
     # Note for repro debugging, suggest use of doubles,
@@ -942,9 +955,9 @@ def estimate_ctf(
         theta = grid["phi"]
 
         angle = -5 / 12 * np.pi  # Radians (-75 degrees)
-        # TODO replace 6 with a variable
-        cc_array = np.zeros((6, 4))
-        for a in range(0, 6):
+
+        cc_array = np.zeros((self.gd_iters, 4))
+        for a in range(0, self.gd_iters):
             df1, df2, angle_ast, p = ctf_object.gd(
                 signal,
                 initial_df1,
