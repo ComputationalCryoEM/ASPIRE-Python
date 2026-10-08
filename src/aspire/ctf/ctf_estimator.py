@@ -371,33 +371,46 @@ class CtfEstimator:
 
         return Image(amplitude_spectrum)
 
-    def elliptical_average(self, ffbbasis, amplitude_spectrum, circular):
+    def radial_average(self, basis, amplitude_spectrum):
         """
         Computes radial/elliptical average of the power spectrum
 
-        :param ffbbasis: FFBBasis instance.
-        :param amplitude_spectrum: Power spectrum.
-        :param circular: True for radial averaging and False for elliptical averaging.
+        :param basis: SteerableBasis instance (typically FFBBasis).
+        :param amplitude_spectrum: Power spectrum to average.
+        :return: PSD and noise as 2-tuple of NumPy arrays.
+        """
+        noise = amplitude_spectrum  # pass through
+        coefs_s = basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
+
+        mask_s = (basis.angular_indices == 1) | (basis.angular_indices == 2)
+        coefs_s[:, mask_s] = 0
+
+        psd = Coef(basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size).evaluate()
+
+        return psd, noise
+
+    def elliptical_average(self, basis, amplitude_spectrum):
+        """
+        Computes elliptical average of the power spectrum
+
+        :param basis: SteerableBasis instance (typically FFBBasis).
+        :param amplitude_spectrum: Power spectrum to average.
         :return: PSD and noise as 2-tuple of NumPy arrays.
         """
 
-        # TODO breakup into two functions as the noise is unused in first call?
-
-        # RCOPT, come back and change the indices for this method
-        coefs_s = ffbbasis.evaluate_t(amplitude_spectrum).asnumpy().copy().T
-        # TODO only needed in one case...
+        coefs_s = basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
         coefs_n = coefs_s.copy()
 
-        coefs_s[np.argwhere(ffbbasis.angular_indices == 1)] = 0
-        if circular:
-            coefs_s[np.argwhere(ffbbasis.angular_indices == 2)] = 0
-            noise = amplitude_spectrum
-        else:
-            coefs_n[np.argwhere(ffbbasis.angular_indices == 0)] = 0
-            coefs_n[np.argwhere(ffbbasis.angular_indices == 2)] = 0
-            noise = Coef(ffbbasis, coefs_n.T).evaluate()
+        mask_s = basis.angular_indices == 1
+        coefs_s[:, mask_s] = 0
 
-        psd = Coef(ffbbasis, coefs_s.T).evaluate()
+        mask_n = (basis.angular_indices == 0) | (basis.angular_indices == 2)
+        coefs_n[:, mask_n] = 0
+
+        noise = Coef(
+            basis, coefs_n, pixel_size=amplitude_spectrum.pixel_size
+        ).evaluate()
+        psd = Coef(basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size).evaluate()
 
         return psd, noise
 
@@ -885,7 +898,7 @@ def estimate_ctf(
 
     # Note for repro debugging, suggest use of doubles,
     #   closer to original code.
-    ffbbasis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
+    basis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
 
     # Only need to compute tapers once
     # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
@@ -911,9 +924,7 @@ def estimate_ctf(
         signal_observed = ctf_object.estimate_psd(micrograph_blocks, tapers_1d)
         np.save("signal_observed.npy", signal_observed)
 
-        amplitude_spectrum, _ = ctf_object.elliptical_average(
-            ffbbasis, signal_observed, True
-        )
+        amplitude_spectrum, _ = ctf_object.radial_average(basis, signal_observed)
         np.save("amplitude_spectrum.npy", amplitude_spectrum)
 
         # TODO expose linprog as a init var
@@ -940,7 +951,7 @@ def estimate_ctf(
         ratio = ctf_object.pca(signal_observed, pixel_size, g_min, g_max)
 
         signal, additional_background = ctf_object.elliptical_average(
-            ffbbasis, signal.sqrt(), False
+            basis, signal.sqrt()
         )
         background_2d = background_2d + additional_background
 
@@ -956,8 +967,8 @@ def estimate_ctf(
 
         angle = -5 / 12 * np.pi  # Radians (-75 degrees)
 
-        cc_array = np.zeros((self.gd_iters, 4))
-        for a in range(0, self.gd_iters):
+        cc_array = np.zeros((ctf_object.gd_iters, 4))
+        for a in range(0, ctf_object.gd_iters):
             df1, df2, angle_ast, p = ctf_object.gd(
                 signal,
                 initial_df1,
