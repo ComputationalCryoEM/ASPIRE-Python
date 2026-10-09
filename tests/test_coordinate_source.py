@@ -1,6 +1,5 @@
 import logging
 import os
-import random
 import shutil
 import tempfile
 from collections import OrderedDict
@@ -20,6 +19,8 @@ from aspire.storage import StarFile
 from aspire.utils import RelionStarFile, importlib_path
 
 logger = logging.getLogger(__name__)
+
+rng = np.random.default_rng()
 
 
 class CoordinateSourceTestCase(TestCase):
@@ -56,25 +57,25 @@ class CoordinateSourceTestCase(TestCase):
             # the max particle_size into the micrograph
             # in this case, the particles must fit into
             # a box of at least size 300
-            x = random.choice([j for j in range(150, shape_x - 150)])
-            y = random.choice([j for j in range(150, shape_y - 150)])
+            x = rng.choice([j for j in range(150, shape_x - 150)])
+            y = rng.choice([j for j in range(150, shape_y - 150)])
             centers.append((x, y))
 
         for _i in range(num_particles_excl):
             # now the particles must fit into a 256x256 box
             # but NOT into a 300x300 box
-            x = random.choice(
+            x = rng.choice(
                 [j for j in range(128, 150)]
                 + [j for j in range(shape_x - 150, shape_x - 128)]
             )
-            y = random.choice(
+            y = rng.choice(
                 [j for j in range(128, 150)]
                 + [j for j in range(shape_y - 150, shape_y - 128)]
             )
             centers.append((x, y))
 
         # randomize order of centers for when they are written to files
-        random.shuffle(centers)
+        rng.shuffle(centers)
 
         for i in range(2):
             # copy mrc to temp location
@@ -436,13 +437,13 @@ class CoordinateSourceTestCase(TestCase):
             self.assertTrue(np.array_equal(images_in_order[2 * i + 1], odd_images[i]))
 
         # random sample of [0,400) of length 100
-        random_sample = np.array(random.sample([i for i in range(400)], 100))
+        random_sample = rng.choice(400, 100, replace=False)
         random_images = src_from_box.images[random_sample]
         for i, idx in enumerate(random_sample):
             self.assertTrue(np.array_equal(images_in_order[idx], random_images[i]))
 
         # include negative indices
-        random_sample_neg = np.array(random.sample([i for i in range(-200, 200)], 100))
+        random_sample_neg = rng.choice(np.arange(-200, 200), 100, replace=False)
         random_images_neg = src_from_box.images[random_sample_neg]
         for i, idx in enumerate(random_sample_neg):
             self.assertTrue(np.array_equal(images_in_order[idx], random_images_neg[i]))
@@ -816,7 +817,7 @@ class CoordinateSourceTestCase(TestCase):
 
 def create_test_rectangular_micrograph_and_star(tmp_path, voxel_size=(2.0, 2.0, 1.0)):
     # Create a rectangular micrograph (e.g., 128x256)
-    data = np.random.rand(128, 256).astype(np.float32)
+    data = rng.random((128, 256)).astype(np.float32)
     mrc_path = tmp_path / "test_micrograph.mrc"
 
     with mrcfile.new(mrc_path, overwrite=True) as mrc:

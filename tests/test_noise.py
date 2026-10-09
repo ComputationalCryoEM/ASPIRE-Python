@@ -62,7 +62,7 @@ def sim_fixture(resolution, dtype):
     # ie, clean centered projections.
     return Simulation(
         vols=AsymmetricVolume(L=resolution, C=1, dtype=dtype).generate(),
-        n=128,
+        n=256,
         amplitudes=1,
         offsets=0,
         dtype=dtype,
@@ -151,7 +151,7 @@ def test_custom_noise_adder(sim_fixture, target_noise_variance):
     )
 
     # Create the CustomNoiseAdder
-    sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter)
+    sim_fixture.noise_adder = CustomNoiseAdder(noise_filter=custom_filter, rng=123)
 
     # Estimate the noise_variance
     estimated_noise_var = sim_fixture.noise_adder.noise_var

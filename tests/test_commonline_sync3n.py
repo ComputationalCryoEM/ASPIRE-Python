@@ -48,11 +48,11 @@ def source_orientation_objs(resolution, offsets, dtype):
         n=100,
         L=resolution,
         vols=AsymmetricVolume(
-            L=resolution, C=1, K=100, seed=123, dtype=dtype
+            L=resolution, C=1, K=100, rng=123, dtype=dtype
         ).generate(),
         offsets=offsets,
         amplitudes=1,
-        seed=456,
+        rng=456,
     ).cache()
 
     # Search for common lines over less shifts for 0 offsets.
@@ -66,7 +66,7 @@ def source_orientation_objs(resolution, offsets, dtype):
         src,
         max_shift=max_shift,
         shift_step=shift_step,
-        seed=789,
+        rng=789,
     )
 
     # Estimate rotations once for all tests.
@@ -163,7 +163,7 @@ def test_weighted_sync3n(source_orientation_objs):
         src,
         max_shift=max_shift,
         shift_step=shift_step,
-        seed=789,
+        rng=789,
         S_weighting=True,
         J_weighting=True,
         full_width=2,

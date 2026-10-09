@@ -11,7 +11,6 @@ from aspire.utils import (
     mat_to_vec,
     mean_aligned_angular_distance,
     nearest_rotations,
-    randn,
     symmat_to_vec_iso,
     utest_tolerance,
     vec_to_symmat,
@@ -217,12 +216,11 @@ class MatrixTestCase(TestCase):
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_nearest_rotations(dtype):
     n_rots = 5
-    rots = Rotation.generate_random_rotations(n_rots, seed=0, dtype=dtype).matrices
+    rots = Rotation.generate_random_rotations(n_rots, rng=0, dtype=dtype).matrices
 
     # Add some noise to the rotations.
-    noise = 1e-3 * randn(n_rots * 9, seed=0).astype(dtype, copy=False).reshape(
-        n_rots, 3, 3
-    )
+    rng = np.random.default_rng()
+    noise = 1e-3 * rng.standard_normal(n_rots * 9, dtype=dtype).reshape(n_rots, 3, 3)
     noisy_rots = rots + noise
 
     # Find nearest rotations for stack.
@@ -241,11 +239,12 @@ def test_nearest_rotations(dtype):
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
 def test_nearest_rotations_reflection(dtype):
     # Generate singleton rotation.
-    rot = Rotation.generate_random_rotations(1, seed=0, dtype=dtype).matrices[0]
+    rot = Rotation.generate_random_rotations(1, rng=0, dtype=dtype).matrices[0]
 
     # Add a reflection and some noise to the rotation.
     refl = rot @ np.diag((1, -1, 1)).astype(dtype)
-    noise = 1e-3 * randn(9, seed=0).astype(dtype, copy=False).reshape(3, 3)
+    rng = np.random.default_rng()
+    noise = 1e-3 * rng.standard_normal(9, dtype=dtype).reshape(3, 3)
     noisy_refl = refl + noise
 
     # Find nearest rotation.

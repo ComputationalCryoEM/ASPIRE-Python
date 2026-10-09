@@ -17,6 +17,7 @@ from aspire.volume import Volume
 
 N = 27
 DTYPE = np.float32
+rng = np.random.default_rng()
 
 
 def createImages(L, L_ds):
@@ -207,7 +208,7 @@ def test_downsample_legacy(volume, res_ds):
         vols=volume,
         amplitudes=1,
         dtype=dtype,
-        seed=1980,
+        rng=1980,
     )
     ims = src.images[:]
 
@@ -277,12 +278,12 @@ def test_downsample_offsets(dtype, res):
     n = 10
     ds_scale = 2
 
-    offsets = np.random.choice([L // 8, -L // 8], size=(n, 2)).astype(dtype, copy=False)
+    offsets = rng.choice([L // 8, -L // 8], size=(n, 2)).astype(dtype, copy=False)
     src = Simulation(
         L=L,
         n=n,
         offsets=offsets,
-        seed=1234,
+        rng=1234,
         dtype=dtype,
     )
 
@@ -290,7 +291,7 @@ def test_downsample_offsets(dtype, res):
         L=L,
         n=n,
         offsets=0,
-        seed=1234,
+        rng=1234,
         dtype=dtype,
     )
 

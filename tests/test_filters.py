@@ -30,7 +30,8 @@ SEED = 707
 
 
 class SimTestCase(TestCase):
-    test_filter = ArrayFilter(np.random.randn(8, 8))
+    rng = np.random.default_rng()
+    test_filter = ArrayFilter(rng.standard_normal((8, 8)))
     filter_eval_kwargs = dict()
 
     def setUp(self):
@@ -595,7 +596,7 @@ def testCTFdownsample():
         amplitudes=1,
         filter_stack=filter_stack,
         filter_indices=np.arange(n),
-        seed=SEED,
+        rng=SEED,
     )
     # Reduce possibility of simulation generation code interacting with the test.
     src = ArrayImageSource(sim.images[:])
@@ -623,7 +624,7 @@ def test_downsample_cache():
         vols=vol,
         offsets=0,
         amplitudes=1,
-        seed=SEED,
+        rng=SEED,
     )
 
     sim_ds = src.downsample(K).images[:]

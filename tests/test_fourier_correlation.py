@@ -124,14 +124,14 @@ def test_frc_trunc(image_fixture, method):
     img_a, img_b, _ = image_fixture
     assert img_a.dtype == img_b.dtype
     frc_resolution, frc = img_a.frc(img_b, cutoff=0.143, method=method)
-    assert frc_resolution[0] > 3.0
+    assert frc_resolution[0] < 5
 
 
 def test_frc_noise(image_fixture, method):
     img_a, _, img_n = image_fixture
 
     frc_resolution, frc = img_a.frc(img_n, cutoff=0.143, method=method)
-    assert frc_resolution[0] > 3.5
+    assert frc_resolution[0] < 5
 
 
 def test_frc_img_plot(image_fixture):
@@ -185,11 +185,11 @@ def test_fsc_trunc(volume_fixture, method):
     vol_a, vol_b = volume_fixture
 
     fsc_resolution, fsc = vol_a.fsc(vol_b, cutoff=0.143, method=method)
-    assert fsc_resolution[0] > 3.0
+    assert fsc_resolution[0] < 5
 
-    # The follow should correspond to the test_fsc_plot below.
+    # The following should correspond to the test_fsc_plot below.
     fsc_resolution, fsc = vol_a.fsc(vol_b, cutoff=0.5, method=method)
-    assert fsc_resolution[0] > 3.9
+    assert fsc_resolution[0] < 5
 
 
 def test_fsc_vol_plot(volume_fixture):

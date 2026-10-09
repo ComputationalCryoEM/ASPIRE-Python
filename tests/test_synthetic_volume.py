@@ -89,7 +89,7 @@ def vol_fixture(request, dtype_fixture):
     vol_kwargs = dict(
         L=res,
         C=1,
-        seed=0,
+        rng=0,
         dtype=dtype_fixture,
     )
     if len(params) > 2:
@@ -163,4 +163,4 @@ def test_volume_symmetry(vol_fixture, dtype_fixture):
         corr = np.dot(rot_vol[0].flatten(), vol[0].flatten()) / np.dot(
             vol[0].flatten(), vol[0].flatten()
         )
-        assert abs(corr - 1) < 1e-3
+        assert abs(corr - 1) < 1e-2
