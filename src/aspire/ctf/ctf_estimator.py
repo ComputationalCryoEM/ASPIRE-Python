@@ -64,6 +64,7 @@ class CtfEstimator:
         psd_size,
         num_tapers,
         gradient_descent_iterations=6,
+        linprog_method="highs-ds",
         dtype=np.float32,
     ):
         """
@@ -78,6 +79,8 @@ class CtfEstimator:
             Defaults to 4.
         :param gradient_descent_iterations: Optional, number of Gradient Descent attempts.
             Defaults to 6.
+        :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
+            Defaults to 'highs-ds'.
         :returns: CtfEstimator instance.
         """
 
@@ -89,6 +92,7 @@ class CtfEstimator:
         self.num_tapers = int(num_tapers)
         self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert angstrom to nm
         self.gd_iters = int(gradient_descent_iterations)
+        self.linprog_method = linprog_method
         self.dtype = np.dtype(dtype)
 
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=self.dtype)
@@ -539,7 +543,6 @@ class CtfEstimator:
 
         grid = grid_1d(N, normalized=True, dtype=self.dtype)
 
-        # TODO, try using use self.r_ctf?
         rb = grid["r"][center:] / 2
 
         r_ctf = rb * (10 / pixel_size)  # units: inverse nm
@@ -670,8 +673,6 @@ class CtfEstimator:
         df1,
         df2,
         angle_ast,
-        r,
-        theta,
         pixel_size,
         g_min,
         g_max,
@@ -686,8 +687,6 @@ class CtfEstimator:
         :param df1: Defocus value in the direction perpendicular to df2.
         :param df2: Defocus value in the direction perpendicular to df1.
         :param angle_ast: Angle between df1 and the x-axis, Radians.
-        :param r: Magnitude of spatial frequencies.
-        :param theta: Phase of spatial frequencies.
         :param pixel_size: Pixel size in \u212b (angstrom).
         :param g_min: Inverse of minimun resolution for PSD.
         :param g_max: Inverse of maximum resolution for PSD.
@@ -706,9 +705,9 @@ class CtfEstimator:
         y = (df1 - df2) * np.cos(2 * angle_ast)
         z = (df1 - df2) * np.sin(2 * angle_ast)
 
-        a = np.pi * lmbd * r**2 / 2
-        b = np.pi * lmbd**3 * cs * 1e6 * r**4 / 2 - np.full(
-            shape=r.shape, fill_value=amplitude_contrast, dtype=self.dtype
+        a = np.pi * lmbd * self.r_ctf**2 / 2
+        b = np.pi * lmbd**3 * cs * 1e6 * self.r_ctf**4 / 2 - np.full(
+            shape=self.r_ctf.shape, fill_value=amplitude_contrast, dtype=self.dtype
         )
 
         signal = signal.asnumpy()[0].T
@@ -718,15 +717,15 @@ class CtfEstimator:
         rad_sq_min = N * pixel_size / g_min
         rad_sq_max = N * pixel_size / g_max
 
-        max_val = r[center, int(center - 1 + np.floor(rad_sq_max))]
-        min_val = r[center, int(center - 1 + np.ceil(rad_sq_min))]
+        max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
+        min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
 
-        mask = (r <= max_val) & (r > min_val)
+        mask = (self.r_ctf <= max_val) & (self.r_ctf > min_val)
         a = a[mask]
         b = b[mask]
         signal = signal[..., mask]
-        r = r[mask]
-        theta = theta[mask]
+        # r = self.r_ctf[mask]
+        theta = self.theta[mask]
 
         sum_A = np.sum(signal**2)
 
@@ -927,8 +926,9 @@ def estimate_ctf(
         amplitude_spectrum, _ = ctf_object.radial_average(basis, signal_observed)
         np.save("amplitude_spectrum.npy", amplitude_spectrum)
 
-        # TODO expose linprog as a init var
-        signal_1d, background_1d = ctf_object.background_subtract_1d(amplitude_spectrum)
+        signal_1d, background_1d = ctf_object.background_subtract_1d(
+            amplitude_spectrum, linprog_method=ctf_object.linprog_method
+        )
 
         # TODO complete diagnostic plots and complete implementation in class.
         # ctf_object._plot_1d_psd(signal_1d, background_1d)
@@ -958,13 +958,6 @@ def estimate_ctf(
         initial_df1 = (avg_defocus * 2) / (1 + ratio)
         initial_df2 = (avg_defocus * 2) - initial_df1
 
-        grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=dtype)
-
-        # TODO, try to avoid why computing r_ctf again,
-        # similarly theta can be computed in init
-        r_ctf = grid["r"] / 2 * (10 / pixel_size)
-        theta = grid["phi"]
-
         angle = -5 / 12 * np.pi  # Radians (-75 degrees)
 
         cc_array = np.zeros((ctf_object.gd_iters, 4))
@@ -974,8 +967,6 @@ def estimate_ctf(
                 initial_df1,
                 initial_df2,
                 angle + a * np.pi / 6.0,  # Radians, + a*30degrees
-                r_ctf,
-                theta,
                 pixel_size,
                 g_min,
                 g_max,
@@ -1023,12 +1014,19 @@ def estimate_ctf(
             ctf_object.set_angle(cc_array[ml, 2])  # Radians
             ctf_object.generate_ctf()
             df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(
-                theta.shape, theta.dtype
+                ctf_object.theta.shape, ctf_object.theta.dtype
             ) + (cc_array[ml, 0] - cc_array[ml, 1]) * np.cos(
-                2 * theta - 2 * cc_array[ml, 2] * np.ones(theta.shape, theta.dtype)
+                2 * ctf_object.theta
+                - 2
+                * cc_array[ml, 2]
+                * np.ones(ctf_object.theta.shape, ctf_object.theta.dtype)
             )
             ctf_im = -np.sin(
-                np.pi * lmbd * r_ctf**2 / 2 * (df - lmbd**2 * r_ctf**2 * cs * 1e6)
+                np.pi
+                * lmbd
+                * ctf_object.r_ctf**2
+                / 2
+                * (df - lmbd**2 * ctf_object.r_ctf**2 * cs * 1e6)
                 + amplitude_contrast
             )
             ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
