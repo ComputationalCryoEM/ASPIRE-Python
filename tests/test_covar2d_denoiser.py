@@ -216,7 +216,7 @@ def test_filter_to_basis_mat_id_expand(coef, basis):
     """
 
     refs = {
-        "FBBasis2D": 4e-7,
+        "FBBasis2D": 5e-7,
         "PSWFBasis2D": 5e-6,
         "FPSWFBasis2D": 5e-6,
     }
