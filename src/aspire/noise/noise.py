@@ -36,43 +36,47 @@ class NoiseAdder(Xform):
     Defines interface for `CustomNoiseAdder`s.
     """
 
-    def __init__(self, noise_filter, seed=0):
+    def __init__(self, noise_filter, rng=None):
         """
-        Initialize the random state of this `NoiseAdder` using `noise_filter` and `seed`.
+        Initialize the random state of this `NoiseAdder` using `noise_filter` and `rng`.
 
         `noise_filter` will be provided by the user or instantiated automatically by the subclass.
 
-        :param seed: Integer seed used to generate white noise.
+        :param rng: RNG or seed used to generate white noise.
         :param noise_filter: An `aspire.operators.Filter` object.
             `NoiseAdders` start by generating gaussian noise,
             then apply `noise_filter` to transform the noise.
             Note the `noise_filter` will be raised to the 1/2 power.
         """
         super().__init__()
-        self.seed = seed
+        self.rng = np.random.default_rng(rng)
+        # Use the RNG to generate a fixed `_seed` to be used in `_forward`
+        # _seed is fixed so individual frames of noise can be regenerated at any time based on their image index
+        self._seed = self.rng.integers(1, 2**31)
         self._noise_filter = noise_filter
         self.noise_filter = PowerFilter(noise_filter, power=0.5)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(noise_filter={self._noise_filter}, seed={self.seed})"
+        return f"{self.__class__.__name__}(noise_filter={self._noise_filter}, rng={self.rng})"
 
     def __str__(self):
         return f"{self.__class__.__name__}"
 
     def _forward(self, im, indices):
-        _im = im.asnumpy().copy()
+        _im = np.empty_like(im.asnumpy())
+        L = im.resolution
+        px_sz = im.pixel_size
 
         for i, idx in enumerate(indices):
-            # Changing this code will break hardcoded tests where the reference files are dependent on noise.
-            # Pushing to a "_Legacy" implementation is under consideration.
-            # Note: The following random seed behavior is directly taken from MATLAB Cov3D code.
-            random_seed = self.seed + 191 * (idx + 1)
-            im_s = randn(2 * im.resolution, 2 * im.resolution, seed=random_seed)
-            # Use numpy because im_s and im are different image sizes
-            im_s = Image(im_s).filter(self.noise_filter).asnumpy()[0]
-            _im[i] += im_s[: im.resolution, : im.resolution]
+            idx_seed = self._seed * (idx + 1)  # reproducible large non-zero int
+            rng = np.random.default_rng(idx_seed)
+            normal_noise = rng.standard_normal((2 * L, 2 * L), dtype=im.dtype)
+            # Use numpy because noise and im are different image sizes
+            normal_noise = Image(normal_noise, pixel_size=px_sz)
+            filtered_noise = normal_noise.filter(self.noise_filter).asnumpy()[0]
+            _im[i] = im[i].asnumpy()[0] + filtered_noise[:L, :L]
 
-        return Image(_im, pixel_size=im.pixel_size)
+        return Image(_im, pixel_size=px_sz)
 
     @abc.abstractproperty
     def noise_var(self):
@@ -106,23 +110,21 @@ class CustomNoiseAdder(NoiseAdder):
 
 class WhiteNoiseAdder(NoiseAdder):
     """
-    A Xform that adds white noise, optionally passed through a Filter
-    object, to all incoming images.
+    A Xform that adds white noise to incoming images.
     """
 
-    # TODO, check if we can change seed and/or why not.
-    def __init__(self, var, seed=0):
+    def __init__(self, var, rng=None):
         """
-        Return a `WhiteNoiseAdder` instance from `var` and using `seed`.
+        Return a `WhiteNoiseAdder` instance from `var` and using `rng`.
 
         :param var: Target noise variance.
-        :param seed: Optinally provide an integer seed used to generate white noise.
+        :param rng: Optinal RNG or integer seed.
         """
 
         self.signal_power = None  # Used with `from_snr`
         self.requires_signal_power = False  # Used with `from_snr`
         self.noise_var = var
-        self.seed = seed
+        self.rng = np.random.default_rng(rng)
         # When we know the var, complete building the filter.
         if var is not None:
             self._build()
@@ -137,11 +139,11 @@ class WhiteNoiseAdder(NoiseAdder):
         Builds underlying Filter for this NoiseAdder.
         """
         super().__init__(
-            noise_filter=ScalarFilter(dim=2, value=self.noise_var), seed=self.seed
+            noise_filter=ScalarFilter(dim=2, value=self.noise_var), rng=self.rng
         )
 
     @classmethod
-    def from_snr(cls, snr, signal_power=None, seed=0):
+    def from_snr(cls, snr, signal_power=None, rng=None):
         """
         Generates a WhiteNoiseAdder configured to produce a target
         signal to noise ratio.
@@ -154,10 +156,10 @@ class WhiteNoiseAdder(NoiseAdder):
         :param snr: Desired signal to noise ratio of
             the returned source.
         :param signal_power: Optional, if the signal power is known.
-        :param seed: Optionally provide an integer seed used to generate white noise.
+        :param rng: Optionally provide an integer rng used to generate white noise.
         """
 
-        noise_adder = cls(var=None, seed=seed)
+        noise_adder = cls(var=None, rng=rng)
         # signal_power.setter will use `_snr` to compute the noise
         # variance.
         noise_adder._snr = snr
@@ -172,7 +174,7 @@ class WhiteNoiseAdder(NoiseAdder):
         return f"{self.__class__.__name__} with variance={self._noise_var}"
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(var={self._noise_var}, seed={self.seed})"
+        return f"{self.__class__.__name__}(var={self._noise_var}, rng={self.rng})"
 
     @property
     def noise_var(self):
@@ -201,6 +203,29 @@ class WhiteNoiseAdder(NoiseAdder):
             self._build()
 
 
+class LegacyWhiteNoiseAdder(WhiteNoiseAdder):
+    def __init__(self, var, seed=0):
+        self.seed = seed
+        assert isinstance(self.seed, int), "LegacyWhiteNoiseAdder requires integer seed"
+        # Note `self.rng` should not be used in `LegacyWhiteNoiseAdder`
+        super().__init__(var=var)
+
+    def _forward(self, im, indices):
+        _im = im.asnumpy().copy()
+
+        for i, idx in enumerate(indices):
+            # Changing this code will break hardcoded tests where the reference files are dependent on noise.
+            # Pushing to a "_Legacy" implementation is under consideration.
+            # Note: The following random seed behavior is directly taken from MATLAB Cov3D code.
+            random_seed = self.seed + 191 * (idx + 1)
+            im_s = randn(2 * im.resolution, 2 * im.resolution, seed=random_seed)
+            # Use numpy because im_s and im are different image sizes
+            im_s = Image(im_s).filter(self.noise_filter).asnumpy()[0]
+            _im[i] += im_s[: im.resolution, : im.resolution]
+
+        return Image(_im, pixel_size=im.pixel_size)
+
+
 class BlueNoiseAdder(WhiteNoiseAdder):
     """
     NoiseAdder where noise power increases with frequency.
@@ -213,7 +238,7 @@ class BlueNoiseAdder(WhiteNoiseAdder):
 
         # Call the __init__ from parent of WhiteNoiseAdder.
         super(WhiteNoiseAdder, self).__init__(
-            noise_filter=BlueFilter(var=self.noise_var), seed=self.seed
+            noise_filter=BlueFilter(var=self.noise_var), rng=self.rng
         )
 
 
@@ -229,7 +254,7 @@ class PinkNoiseAdder(WhiteNoiseAdder):
 
         # Call the __init__ from parent of WhiteNoiseAdder.
         super(WhiteNoiseAdder, self).__init__(
-            noise_filter=PinkFilter(var=self.noise_var), seed=self.seed
+            noise_filter=PinkFilter(var=self.noise_var), rng=self.rng
         )
 
 

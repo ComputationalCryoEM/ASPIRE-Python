@@ -284,7 +284,9 @@ def test_noise_works(vol_fixture):
     Tests that adding noise works by comparing to a micrograph with noise manually applied.
     """
 
-    noise = WhiteNoiseAdder(1e-3)
+    seed = 123  # must use same seed
+    noise = WhiteNoiseAdder(1e-3, rng=seed)
+    ref_noise = WhiteNoiseAdder(1e-3, rng=seed)
     m = MicrographSimulation(
         vol_fixture,
         noise_adder=noise,
@@ -292,7 +294,7 @@ def test_noise_works(vol_fixture):
         particles_per_micrograph=4,
         micrograph_size=200,
     )
-    noisy_micrograph = noise.forward(m.clean_images[:], [0])
+    noisy_micrograph = ref_noise.forward(m.clean_images[:], [0])
     assert np.array_equal(m.images[0], noisy_micrograph[0])
 
 

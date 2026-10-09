@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from aspire.noise import WhiteNoiseAdder
+from aspire.noise.noise import LegacyWhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source import RelionSource, Simulation, _LegacySimulation
 from aspire.utils import RelionStarFile, utest_tolerance
@@ -129,7 +130,7 @@ class SimTestCase(TestCase):
             L=self.L,
             vols=self.vols,
             filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
-            noise_adder=WhiteNoiseAdder(var=1),
+            noise_adder=LegacyWhiteNoiseAdder(var=1),
             dtype=self.dtype,
         )
 
@@ -175,7 +176,7 @@ class SimTestCase(TestCase):
             vols=self.vols,
             offsets=self.sim.offsets,
             filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
-            noise_adder=WhiteNoiseAdder(var=1),
+            noise_adder=LegacyWhiteNoiseAdder(var=1),
             dtype=self.dtype,
         )
         sim_cached = sim_cached.cache()
