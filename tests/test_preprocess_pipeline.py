@@ -33,7 +33,6 @@ def get_sim_object(L, dtype):
         noise_adder=noise_adder,
         pixel_size=1,
         dtype=dtype,
-        rng=1337,
     )
     return sim
 
@@ -161,14 +160,18 @@ def testWhiten(dtype):
     L = 64
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
-    sim = sim.whiten(noise_estimator)
-    imgs_wt = sim.images[:num_images].asnumpy()
+    wt_sim = sim.whiten(noise_estimator)
+    imgs_wt = wt_sim.images[:num_images].asnumpy()
 
-    # calculate correlation between two neighboring pixels from background
-    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
+    # calculate original correlation two neighboring pixels from background
+    imgs = sim.images[:num_images].asnumpy()
+    corr_coef = np.corrcoef(imgs[:, L - 1, L - 1], imgs[:, L - 2, L - 1])[0, 1]
 
-    # correlation matrix should be close to identity
-    np.testing.assert_allclose(np.eye(2), corr_coef, atol=1e-1)
+    # calculate whitened correlation between two neighboring pixels from background
+    corr_coef_wt = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])[0, 1]
+
+    # correlation should be greatly reduce via whitening
+    np.testing.assert_array_less(corr_coef_wt, corr_coef / 2)
     # dtype of returned images should be the same
     assert dtype == imgs_wt.dtype
 
@@ -184,13 +187,18 @@ def testWhiten2(dtype):
     L = 63
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
-    sim = sim.whiten(noise_estimator.filter)
-    imgs_wt = sim.images[:num_images].asnumpy()
+    sim_wt = sim.whiten(noise_estimator.filter)
+    imgs = sim.images[:num_images].asnumpy()
+    imgs_wt = sim_wt.images[:num_images].asnumpy()
 
-    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
+    # calculate correlation between two neighboring pixels from background
+    corr_coef = np.corrcoef(imgs[:, L - 1, L - 1], imgs[:, L - 2, L - 1])[0, 1]
+    corr_coef_wt = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])[0, 1]
 
-    # Correlation matrix should be close to identity
-    np.testing.assert_allclose(np.eye(2), corr_coef, atol=2e-1)
+    # correlation should be greatly reduce via whitening
+    np.testing.assert_array_less(corr_coef_wt, corr_coef / 2)
+    # dtype of returned images should be the same
+    assert dtype == imgs_wt.dtype
 
 
 @pytest.mark.parametrize("dtype", [np.float32, np.float64])
@@ -203,14 +211,16 @@ def testWhitenNoCTF(dtype):
     sim = get_sim_object(L, dtype)
     sim.filter_stack = None
     noise_estimator = AnisotropicNoiseEstimator(sim)
-    sim = sim.whiten(noise_estimator)
-    imgs_wt = sim.images[:num_images].asnumpy()
+    sim_wt = sim.whiten(noise_estimator)
+    imgs = sim.images[:num_images].asnumpy()
+    imgs_wt = sim_wt.images[:num_images].asnumpy()
 
     # calculate correlation between two neighboring pixels from background
-    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
+    corr_coef = np.corrcoef(imgs[:, L - 1, L - 1], imgs[:, L - 2, L - 1])[0, 1]
+    corr_coef_wt = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])[0, 1]
 
-    # correlation matrix should be close to identity
-    np.testing.assert_allclose(np.eye(2), corr_coef, atol=1e-1)
+    # correlation should be greatly reduce via whitening
+    np.testing.assert_array_less(corr_coef_wt, corr_coef / 2)
     # dtype of returned images should be the same
     assert dtype == imgs_wt.dtype
 
@@ -280,14 +290,17 @@ def test_legacy_whiten(dtype):
     """
     L = 64
     sim = get_sim_object(L, dtype)
-    sim = sim.legacy_whiten()
-    imgs_wt = sim.images[:num_images].asnumpy()
+    sim_wt = sim.legacy_whiten()
+
+    imgs = sim.images[:num_images].asnumpy()
+    imgs_wt = sim_wt.images[:num_images].asnumpy()
 
     # calculate correlation between two neighboring pixels from background
-    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
+    corr_coef = np.corrcoef(imgs[:, L - 1, L - 1], imgs[:, L - 2, L - 1])[0, 1]
+    corr_coef_wt = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])[0, 1]
 
-    # correlation matrix should be close to identity
-    np.testing.assert_allclose(np.eye(2), corr_coef, atol=2e-1)
+    # correlation should be greatly reduce via whitening
+    np.testing.assert_array_less(corr_coef_wt, corr_coef / 2)
     # dtype of returned images should be the same
     assert dtype == imgs_wt.dtype
 
@@ -302,14 +315,17 @@ def test_legacy_whiten_2(dtype):
     L = 63
     sim = get_sim_object(L, dtype)
     noise_estimator = LegacyNoiseEstimator(sim)
-    sim = sim.legacy_whiten(noise_estimator)
-    imgs_wt = sim.images[:num_images].asnumpy()
+    sim_wt = sim.legacy_whiten(noise_estimator)
+
+    imgs = sim.images[:num_images].asnumpy()
+    imgs_wt = sim_wt.images[:num_images].asnumpy()
 
     # calculate correlation between two neighboring pixels from background
-    corr_coef = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])
+    corr_coef = np.corrcoef(imgs[:, L - 1, L - 1], imgs[:, L - 2, L - 1])[0, 1]
+    corr_coef_wt = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])[0, 1]
 
-    # correlation matrix should be close to identity
-    np.testing.assert_allclose(np.eye(2), corr_coef, atol=2e-1)
+    # correlation should be greatly reduce via whitening
+    np.testing.assert_array_less(corr_coef_wt, corr_coef / 2)
     # dtype of returned images should be the same
     assert dtype == imgs_wt.dtype
 

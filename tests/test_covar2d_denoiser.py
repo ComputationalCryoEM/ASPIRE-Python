@@ -14,7 +14,7 @@ dtype = np.float32
 img_size = 32
 num_imgs = 1024
 noise_var = 0.1848
-noise_adder = WhiteNoiseAdder(var=noise_var)
+noise_adder = WhiteNoiseAdder(var=noise_var, rng=SEED)
 pixel_size = 5
 d = np.linspace(1.5e4, 2.5e4, 7)
 filters = CTFFilter(

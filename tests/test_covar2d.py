@@ -7,7 +7,7 @@ from pytest import raises
 
 from aspire.basis import FFBBasis2D
 from aspire.covariance import RotCov2D
-from aspire.noise import WhiteNoiseAdder
+from aspire.noise.noise import LegacyWhiteNoiseAdder
 from aspire.operators import RadialCTFFilter
 from aspire.source.simulation import _LegacySimulation
 from aspire.utils import utest_tolerance
@@ -96,7 +96,7 @@ def cov2d_fixture(volume, basis, ctf_enabled):
             basis.filter_to_basis_mat(f, pixel_size=volume.pixel_size) for f in filters
         ]
 
-    noise_adder = WhiteNoiseAdder(var=NOISE_VAR)
+    noise_adder = LegacyWhiteNoiseAdder(var=NOISE_VAR)
 
     sim = _LegacySimulation(
         n=n,
