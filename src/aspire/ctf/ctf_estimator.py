@@ -932,9 +932,13 @@ def estimate_ctf(
 
         micrograph = micrograph.astype(dtype, copy=False)
 
+        from time import perf_counter
+        tic = perf_counter()
         params, background_2d, signal = ctf_est.estimate(
             micrograph, g_min=g_min, g_max=g_max
         )
+        toc = perf_counter()
+        print('TIME:', toc-tic)
 
         results[name] = params
 
