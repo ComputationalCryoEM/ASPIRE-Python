@@ -106,6 +106,13 @@ class CtfEstimator:
         self.angle = 0  # Radians
         self.h = 0
 
+        # TODO, try to extend to any steerable basis
+        self.basis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
+
+        # Only need to compute tapers once
+        # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
+        self.tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
+
     def set_df1(self, df):
         """
         Sets defocus.
@@ -846,6 +853,88 @@ class CtfEstimator:
         # ylabel('$S_y \left( \mathbf{k} \right) - S_e \left( \mathbf{k} \right)$', 'Interpreter','latex');
         plt.show()
 
+    def estimate(self, micrograph, g_min=30, g_max=5):
+        # TODO compare now that remainder of code repros.
+        # micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
+        micrograph_blocks = self.legacy_preprocess_micrograph(micrograph, self.psd_size)
+
+        signal_observed = self.estimate_psd(micrograph_blocks, self.tapers_1d)
+        # np.save("signal_observed.npy", signal_observed)
+
+        amplitude_spectrum, _ = self.radial_average(self.basis, signal_observed)
+        # np.save("amplitude_spectrum.npy", amplitude_spectrum)
+
+        signal_1d, background_1d = self.background_subtract_1d(
+            amplitude_spectrum, linprog_method=self.linprog_method
+        )
+
+        # TODO complete diagnostic plots and complete implementation in class.
+        # self._plot_1d_psd(signal_1d, background_1d)
+        # self._plot_1d_bg_sub_psd(signal_1d)
+
+        avg_defocus, low_freq_skip = self.opt1d(
+            signal_1d,
+            self.pixel_size,
+            self.cs,
+            self.lmbd,  # (angstrom)
+            self.amplitude_contrast,
+            signal_observed.shape[-1],
+        )
+
+        # TODO check the low_freq_skip +-1, it is col ind or value
+        signal, background_2d = self.background_subtract_2d(
+            signal_observed, background_1d, low_freq_skip
+        )
+
+        ratio = self.pca(signal_observed, self.pixel_size, g_min, g_max)
+
+        signal, additional_background = self.elliptical_average(
+            self.basis, signal.sqrt()
+        )
+        background_2d = background_2d + additional_background
+
+        initial_df1 = (avg_defocus * 2) / (1 + ratio)
+        initial_df2 = (avg_defocus * 2) - initial_df1
+
+        angle = -5 / 12 * np.pi  # Radians (-75 degrees)
+
+        # This array holds results from each of the `gd_iters`
+        cc_array = np.zeros((self.gd_iters, 4))
+        for a in range(0, self.gd_iters):
+            df1, df2, angle_ast, p = self.gd(
+                signal,
+                initial_df1,
+                initial_df2,
+                angle + a * np.pi / 6.0,  # Radians, + a*30degrees
+                self.pixel_size,
+                g_min,
+                g_max,
+                self.amplitude_contrast,
+                self.lmbd,  # (angstrom)
+                self.cs,
+            )
+
+            cc_array[a, 0] = df1
+            cc_array[a, 1] = df2
+            cc_array[a, 2] = angle_ast  # Radians
+            cc_array[a, 3] = p
+
+        # Select the best result index
+        ml = np.argmax(cc_array[:, 3], -1)
+
+        # TODO what is the ultimate purpose of the result dictionary?
+        result = {
+            "defocus_u": cc_array[ml, 0] * 10,  # Convert from nm to A
+            "defocus_v": cc_array[ml, 1] * 10,  # Convert from nm to A
+            "defocus_ang": cc_array[ml, 2],  # Radians
+            "cs": self.cs,
+            "voltage": self.voltage,
+            "pixel_size": self.pixel_size,
+            "amplitude_contrast": self.amplitude_contrast,
+        }
+
+        return result
+
 
 def estimate_ctf(
     data_folder,
@@ -871,18 +960,18 @@ def estimate_ctf(
     dtype = np.dtype(dtype)
     assert dtype in (np.float32, np.float64)
 
+    # TODO confirm if scans multi-dir
     dir_content = os.scandir(data_folder)
 
+    # TODO change to full path
     mrc_files = [f.name for f in dir_content if os.path.splitext(f)[1] == ".mrc"]
     mrcs_files = [f.name for f in dir_content if os.path.splitext(f)[1] == ".mrcs"]
     file_names = mrc_files + mrcs_files
 
-    amp = amplitude_contrast
+    # Why
     amplitude_contrast = np.arctan(
         amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
-
-    lmbd = voltage_to_wavelength(voltage) / 10  # Convert from angstrom to nm
 
     ctf_object = CtfEstimator(
         pixel_size,
@@ -895,14 +984,6 @@ def estimate_ctf(
         dtype=dtype,
     )
 
-    # Note for repro debugging, suggest use of doubles,
-    #   closer to original code.
-    basis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
-
-    # Only need to compute tapers once
-    # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
-    tapers_1d = ctf_object.tapers(psd_size, num_tapers, num_tapers)
-
     results = {}
     for name in tqdm(file_names, desc="Processing files"):
         with mrcfile.open(
@@ -910,87 +991,10 @@ def estimate_ctf(
         ) as mrc:
             micrograph = mrc.data
 
-        # Try to match dtype used in Basis instance
         micrograph = micrograph.astype(dtype, copy=False)
 
-        # TODO compare now that remainder of code repros.
-        # TODO migrate code into a main method in CtfEstimator
-        # micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
-        micrograph_blocks = ctf_object.legacy_preprocess_micrograph(
-            micrograph, psd_size
-        )
+        result = ctf_object.estimate(micrograph, g_min=g_min, g_max=g_max)
 
-        signal_observed = ctf_object.estimate_psd(micrograph_blocks, tapers_1d)
-        np.save("signal_observed.npy", signal_observed)
-
-        amplitude_spectrum, _ = ctf_object.radial_average(basis, signal_observed)
-        np.save("amplitude_spectrum.npy", amplitude_spectrum)
-
-        signal_1d, background_1d = ctf_object.background_subtract_1d(
-            amplitude_spectrum, linprog_method=ctf_object.linprog_method
-        )
-
-        # TODO complete diagnostic plots and complete implementation in class.
-        # ctf_object._plot_1d_psd(signal_1d, background_1d)
-        # ctf_object._plot_1d_bg_sub_psd(signal_1d)
-
-        avg_defocus, low_freq_skip = ctf_object.opt1d(
-            signal_1d,
-            pixel_size,
-            cs,
-            lmbd,  # (angstrom)
-            amplitude_contrast,
-            signal_observed.shape[-1],
-        )
-
-        # TODO check the low_freq_skip +-1, it is col ind or value
-        signal, background_2d = ctf_object.background_subtract_2d(
-            signal_observed, background_1d, low_freq_skip
-        )
-
-        ratio = ctf_object.pca(signal_observed, pixel_size, g_min, g_max)
-
-        signal, additional_background = ctf_object.elliptical_average(
-            basis, signal.sqrt()
-        )
-        background_2d = background_2d + additional_background
-
-        initial_df1 = (avg_defocus * 2) / (1 + ratio)
-        initial_df2 = (avg_defocus * 2) - initial_df1
-
-        angle = -5 / 12 * np.pi  # Radians (-75 degrees)
-
-        cc_array = np.zeros((ctf_object.gd_iters, 4))
-        for a in range(0, ctf_object.gd_iters):
-            df1, df2, angle_ast, p = ctf_object.gd(
-                signal,
-                initial_df1,
-                initial_df2,
-                angle + a * np.pi / 6.0,  # Radians, + a*30degrees
-                pixel_size,
-                g_min,
-                g_max,
-                amplitude_contrast,
-                lmbd,  # (angstrom)
-                cs,
-            )
-
-            cc_array[a, 0] = df1
-            cc_array[a, 1] = df2
-            cc_array[a, 2] = angle_ast  # Radians
-            cc_array[a, 3] = p
-        ml = np.argmax(cc_array[:, 3], -1)
-
-        # TODO what is the ultimate purpose of the result dictionary?
-        result = {
-            "defocus_u": cc_array[ml, 0] * 10,  # Convert from nm to A
-            "defocus_v": cc_array[ml, 1] * 10,  # Convert from nm to A
-            "defocus_ang": cc_array[ml, 2],  # Radians
-            "cs": cs,
-            "voltage": voltage,
-            "pixel_size": pixel_size,
-            "amplitude_contrast": amp,
-        }
         results[name] = result
 
         # TODO consolidate all the IO our of here and into functions
@@ -999,47 +1003,47 @@ def estimate_ctf(
             os.mkdir(output_dir)
         ctf_object.write_star(name, result, output_dir)
 
-        # TODO compare these images with expected outputs from MATLAB
-        if save_noise_images:
-            with mrcfile.new(
-                os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc"),
-                overwrite=True,
-            ) as mrc:
-                mrc.set_data(background_2d.asnumpy()[0].astype(np.float32))
-                mrc.voxel_size = pixel_size
+        # # TODO compare these images with expected outputs from MATLAB
+        # if save_noise_images:
+        #     with mrcfile.new(
+        #         os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc"),
+        #         overwrite=True,
+        #     ) as mrc:
+        #         mrc.set_data(background_2d.asnumpy()[0].astype(np.float32))
+        #         mrc.voxel_size = pixel_size
 
-        if save_ctf_images:
-            ctf_object.set_df1(cc_array[ml, 0])  # angstrom
-            ctf_object.set_df2(cc_array[ml, 1])  # angstrom
-            ctf_object.set_angle(cc_array[ml, 2])  # Radians
-            ctf_object.generate_ctf()
-            df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(
-                ctf_object.theta.shape, ctf_object.theta.dtype
-            ) + (cc_array[ml, 0] - cc_array[ml, 1]) * np.cos(
-                2 * ctf_object.theta
-                - 2
-                * cc_array[ml, 2]
-                * np.ones(ctf_object.theta.shape, ctf_object.theta.dtype)
-            )
-            ctf_im = -np.sin(
-                np.pi
-                * lmbd
-                * ctf_object.r_ctf**2
-                / 2
-                * (df - lmbd**2 * ctf_object.r_ctf**2 * cs * 1e6)
-                + amplitude_contrast
-            )
-            ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
-            ctf_signal[: ctf_im.shape[0] // 2, :] = ctf_im[: ctf_im.shape[0] // 2, :]
-            ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal.asnumpy()[
-                :, :, ctf_im.shape[0] // 2 + 1
-            ]
+        # if save_ctf_images:
+        #     ctf_object.set_df1(cc_array[ml, 0])  # angstrom
+        #     ctf_object.set_df2(cc_array[ml, 1])  # angstrom
+        #     ctf_object.set_angle(cc_array[ml, 2])  # Radians
+        #     ctf_object.generate_ctf()
+        #     df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(
+        #         ctf_object.theta.shape, ctf_object.theta.dtype
+        #     ) + (cc_array[ml, 0] - cc_array[ml, 1]) * np.cos(
+        #         2 * ctf_object.theta
+        #         - 2
+        #         * cc_array[ml, 2]
+        #         * np.ones(ctf_object.theta.shape, ctf_object.theta.dtype)
+        #     )
+        #     ctf_im = -np.sin(
+        #         np.pi
+        #         * ctf_object.lmbd
+        #         * ctf_object.r_ctf**2
+        #         / 2
+        #         * (df - ctf_object.lmbd**2 * ctf_object.r_ctf**2 * cs * 1e6)
+        #         + self.amplitude_contrast
+        #     )
+        #     ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
+        #     ctf_signal[: ctf_im.shape[0] // 2, :] = ctf_im[: ctf_im.shape[0] // 2, :]
+        #     ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal.asnumpy()[
+        #         :, :, ctf_im.shape[0] // 2 + 1
+        #     ]
 
-            with mrcfile.new(
-                os.path.join(output_dir, os.path.splitext(name)[0] + ".ctf"),
-                overwrite=True,
-            ) as mrc:
-                mrc.set_data(np.float32(ctf_signal))
-                mrc.voxel_size = pixel_size
+        #     with mrcfile.new(
+        #         os.path.join(output_dir, os.path.splitext(name)[0] + ".ctf"),
+        #         overwrite=True,
+        #     ) as mrc:
+        #         mrc.set_data(np.float32(ctf_signal))
+        #         mrc.voxel_size = pixel_size
 
     return results
