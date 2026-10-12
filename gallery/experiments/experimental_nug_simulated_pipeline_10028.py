@@ -62,14 +62,18 @@ for n_images in N_IMAGES:
         logger.info(f"Estimating rotations: n={n_images}, SNR={snr}")
         # Keeping the simulation seed fixed gives corresponding ground-truth
         # orientations across SNR conditions.
-        source = Simulation(
-            n=n_images,
-            vols=volume,
-            offsets=0,
-            amplitudes=1,
-            seed=SEED,
-            noise_adder=WhiteNoiseAdder.from_snr(snr=snr),
-        ).downsample(RESOLUTION).cache()
+        source = (
+            Simulation(
+                n=n_images,
+                vols=volume,
+                offsets=0,
+                amplitudes=1,
+                seed=SEED,
+                noise_adder=WhiteNoiseAdder.from_snr(snr=snr),
+            )
+            .downsample(RESOLUTION)
+            .cache()
+        )
 
         # Initialize the NUG orientation estimator, matching paramters
         # to the referenced experiment.
