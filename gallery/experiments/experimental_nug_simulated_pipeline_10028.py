@@ -8,6 +8,12 @@ known simulation rotations at several signal-to-noise ratios (SNRs). A
 volume is reconstructed and saved off for comparison against the generating
 volume.
 
+EMDB-2660 is the volume entry reconstructed from the experimental dataset
+EMPIAR 10028, both available here:
+
+https://www.ebi.ac.uk/emdb/EMD-2660
+https://www.ebi.ac.uk/empiar/EMPIAR-10028
+
 This experiment is based on:
 
 .. admonition:: Reference
