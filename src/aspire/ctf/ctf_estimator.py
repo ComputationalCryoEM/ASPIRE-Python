@@ -101,10 +101,6 @@ class CtfEstimator:
         self.r_ctf = grid["r"] / 2 * (10 / pixel_size)  # units: inverse nm
 
         self.theta = grid["phi"]
-        self.defocus1 = 0
-        self.defocus2 = 0
-        self.angle = 0  # Radians
-        self.h = 0
 
         # TODO, try to extend to any steerable basis
         self.basis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
@@ -113,64 +109,6 @@ class CtfEstimator:
         # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
         self.tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
 
-    def set_df1(self, df):
-        """
-        Sets defocus.
-
-        :param df: Defocus value in the direction perpendicular to df2.
-        """
-
-        self.defocus1 = df
-
-    def set_df2(self, df):
-        """
-        Sets defocus.
-
-        :param df: Defocus value in the direction perpendicular to df1.
-        """
-
-        self.defocus2 = df
-
-    def set_angle(self, angle):
-        """
-        Sets angle.
-
-        :param angle: Angle (in Radians) between df1 and the x-axis.
-        """
-
-        self.angle = angle
-
-    def generate_ctf(self):
-        """
-        Generates internal representation of the Contrast Transfer Function using parameters from this instance.
-        """
-
-        astigmatism_angle = np.full(
-            shape=self.theta.shape, fill_value=self.angle, dtype=self.dtype
-        )
-
-        defocus_sum = np.full(
-            shape=self.theta.shape,
-            fill_value=self.defocus1 + self.defocus2,
-            dtype=self.dtype,
-        )
-
-        defocus = defocus_sum + (
-            (self.defocus1 - self.defocus2)
-            * np.cos(2 * (self.theta - astigmatism_angle))
-        )
-        defocus_factor = np.pi * self.lmbd * self.r_ctf * defocus / 2
-        amplitude_contrast_term = self.amplitude_contrast / np.sqrt(
-            1 - self.amplitude_contrast**2
-        )
-
-        chi = (
-            defocus_factor
-            - np.pi * self.lmbd**3 * self.cs * 1e6 * self.r_ctf**2 / 2
-            + amplitude_contrast_term
-        )
-        h = -np.sin(chi)
-        self.h = h
 
     def micrograph_to_blocks(self, micrograph, block_size):
         """
@@ -617,7 +555,7 @@ class CtfEstimator:
         signal = signal - background
         signal = np.maximum(0, signal)
 
-        return Image(signal), Image(background)
+        return Image(signal, pixel_size=self.pixel_size), Image(background, pixel_size=self.pixel_size)
 
     def pca(self, signal, pixel_size, g_min, g_max):
         """
@@ -923,7 +861,7 @@ class CtfEstimator:
         ml = np.argmax(cc_array[:, 3], -1)
 
         # TODO what is the ultimate purpose of the result dictionary?
-        result = {
+        params = {
             "defocus_u": cc_array[ml, 0] * 10,  # Convert from nm to A
             "defocus_v": cc_array[ml, 1] * 10,  # Convert from nm to A
             "defocus_ang": cc_array[ml, 2],  # Radians
@@ -933,7 +871,7 @@ class CtfEstimator:
             "amplitude_contrast": self.amplitude_contrast,
         }
 
-        return result
+        return params, background_2d, signal
 
 
 def estimate_ctf(
@@ -993,24 +931,21 @@ def estimate_ctf(
 
         micrograph = micrograph.astype(dtype, copy=False)
 
-        result = ctf_object.estimate(micrograph, g_min=g_min, g_max=g_max)
+        params, background_2d, signal = ctf_object.estimate(micrograph, g_min=g_min, g_max=g_max)
 
-        results[name] = result
+        results[name] = params
 
         # TODO consolidate all the IO our of here and into functions
         # we write each micrograph's ctf parameters to an individual starfile
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
-        ctf_object.write_star(name, result, output_dir)
+        ctf_object.write_star(name, params, output_dir)
 
-        # # TODO compare these images with expected outputs from MATLAB
-        # if save_noise_images:
-        #     with mrcfile.new(
-        #         os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc"),
-        #         overwrite=True,
-        #     ) as mrc:
-        #         mrc.set_data(background_2d.asnumpy()[0].astype(np.float32))
-        #         mrc.voxel_size = pixel_size
+        # Save the noise
+        if save_noise_images:
+            noise_filepath = os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc")
+            background_2d.save(noise_filepath, overwrite=True)
+
 
         # if save_ctf_images:
         #     ctf_object.set_df1(cc_array[ml, 0])  # angstrom
