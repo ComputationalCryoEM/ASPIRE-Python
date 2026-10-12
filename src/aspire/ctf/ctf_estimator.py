@@ -84,10 +84,10 @@ class CtfEstimator:
         :returns: CtfEstimator instance.
         """
 
-        self.pixel_size = pixel_size
-        self.cs = cs
-        self.amplitude_contrast = amplitude_contrast
-        self.voltage = voltage
+        self.pixel_size = float(pixel_size)
+        self.cs = float(cs)
+        self.amplitude_contrast = float(amplitude_contrast)
+        self.voltage = float(voltage)
         self.psd_size = int(psd_size)
         self.num_tapers = int(num_tapers)
         self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert angstrom to nm
@@ -95,11 +95,10 @@ class CtfEstimator:
         self.linprog_method = linprog_method
         self.dtype = np.dtype(dtype)
 
+        # Grids
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=self.dtype)
-
         # Note range is -half to half.
         self.r_ctf = grid["r"] / 2 * (10 / pixel_size)  # units: inverse nm
-
         self.theta = grid["phi"]
 
         # TODO, try to extend to any steerable basis
@@ -108,7 +107,6 @@ class CtfEstimator:
         # Only need to compute tapers once
         # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
         self.tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
-
 
     def micrograph_to_blocks(self, micrograph, block_size):
         """
@@ -555,7 +553,9 @@ class CtfEstimator:
         signal = signal - background
         signal = np.maximum(0, signal)
 
-        return Image(signal, pixel_size=self.pixel_size), Image(background, pixel_size=self.pixel_size)
+        return Image(signal, pixel_size=self.pixel_size), Image(
+            background, pixel_size=self.pixel_size
+        )
 
     def pca(self, signal, pixel_size, g_min, g_max):
         """
@@ -753,17 +753,15 @@ class CtfEstimator:
     # Note, This doesn't actually use anything from the class.
     # It is used in a solver loop of some sort, so it may not be correct
     # to just use what is avail in the obj.
-    def write_star(self, name, params_dict, output_dir):
+    def write_star(self, star_filepath, params_dict):
         """
         Writes CTF parameters to starfile for a single micrograph.
         """
         data_block = {}
-        data_block["_rlnMicrographName"] = name
+        data_block["_rlnMicrographName"] = star_filepath
         data_block["_rlnDefocusU"] = params_dict["defocus_u"]  # Should already be in A
         data_block["_rlnDefocusV"] = params_dict["defocus_v"]  # Should already be in A
-        data_block["_rlnDefocusAngle"] = (
-            params_dict["defocus_ang"] * 180 / np.pi
-        )  # Convert from radian to degree
+        data_block["_rlnDefocusAngle"] = np.rad2deg(params_dict["defocus_ang"])
         data_block["_rlnSphericalAberration"] = params_dict["cs"]
         data_block["_rlnAmplitudeContrast"] = params_dict["amplitude_contrast"]
         data_block["_rlnVoltage"] = params_dict["voltage"]
@@ -771,7 +769,7 @@ class CtfEstimator:
         blocks = OrderedDict()
         blocks["root"] = data_block
         star = StarFile(blocks=blocks)
-        star.write(os.path.join(output_dir, os.path.splitext(name)[0]) + ".star")
+        star.write(star_filepath)
 
     def _plot_1d_psd(self, signal_1d, background_1d):
         center = self.r_ctf.shape[0] // 2
@@ -881,7 +879,7 @@ def estimate_ctf(
     amplitude_contrast=0.07,
     voltage=300,
     num_tapers=4,
-    psd_size=512,
+    psd_size=512,  # should change to 1024?
     g_min=30,
     g_max=5,
     gradient_descent_iterations=6,
@@ -895,9 +893,15 @@ def estimate_ctf(
     and returns CTF as a mrc file.
     """
 
+    # Checks ------------------------------------------------------------------
     dtype = np.dtype(dtype)
     assert dtype in (np.float32, np.float64)
 
+    # Ensure we can write outputs before we get too far
+    if not os.path.isdir(output_dir):
+        os.mkdir(output_dir)
+
+    # File inputs -------------------------------------------------------------
     # TODO confirm if scans multi-dir
     dir_content = os.scandir(data_folder)
 
@@ -906,12 +910,13 @@ def estimate_ctf(
     mrcs_files = [f.name for f in dir_content if os.path.splitext(f)[1] == ".mrcs"]
     file_names = mrc_files + mrcs_files
 
+    # Setup a CTFEstimator -----------------------------------------------------
     # Why
     amplitude_contrast = np.arctan(
         amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
     )
 
-    ctf_object = CtfEstimator(
+    ctf_est = CtfEstimator(
         pixel_size,
         cs,
         amplitude_contrast,
@@ -922,6 +927,7 @@ def estimate_ctf(
         dtype=dtype,
     )
 
+    # Main Loop ---------------------------------------------------------------
     results = {}
     for name in tqdm(file_names, desc="Processing files"):
         with mrcfile.open(
@@ -931,41 +937,44 @@ def estimate_ctf(
 
         micrograph = micrograph.astype(dtype, copy=False)
 
-        params, background_2d, signal = ctf_object.estimate(micrograph, g_min=g_min, g_max=g_max)
+        params, background_2d, signal = ctf_est.estimate(
+            micrograph, g_min=g_min, g_max=g_max
+        )
 
         results[name] = params
 
         # TODO consolidate all the IO our of here and into functions
         # we write each micrograph's ctf parameters to an individual starfile
-        if not os.path.isdir(output_dir):
-            os.mkdir(output_dir)
-        ctf_object.write_star(name, params, output_dir)
+        star_filepath = os.path.join(output_dir, os.path.splitext(name)[0]) + ".star"
+        ctf_est.write_star(star_filepath, params)
 
         # Save the noise
         if save_noise_images:
-            noise_filepath = os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc")
+            noise_filepath = os.path.join(
+                output_dir, os.path.splitext(name)[0] + "_noise.mrc"
+            )
             background_2d.save(noise_filepath, overwrite=True)
 
-
+        # TODO, do after resolve CTF formula/grids issues, uses CTF formula.
         # if save_ctf_images:
-        #     ctf_object.set_df1(cc_array[ml, 0])  # angstrom
-        #     ctf_object.set_df2(cc_array[ml, 1])  # angstrom
-        #     ctf_object.set_angle(cc_array[ml, 2])  # Radians
-        #     ctf_object.generate_ctf()
+        #     ctf_est.set_df1(cc_array[ml, 0])  # angstrom
+        #     ctf_est.set_df2(cc_array[ml, 1])  # angstrom
+        #     ctf_est.set_angle(cc_array[ml, 2])  # Radians
+        #     ctf_est.generate_ctf()
         #     df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(
-        #         ctf_object.theta.shape, ctf_object.theta.dtype
+        #         ctf_est.theta.shape, ctf_est.theta.dtype
         #     ) + (cc_array[ml, 0] - cc_array[ml, 1]) * np.cos(
-        #         2 * ctf_object.theta
+        #         2 * ctf_est.theta
         #         - 2
         #         * cc_array[ml, 2]
-        #         * np.ones(ctf_object.theta.shape, ctf_object.theta.dtype)
+        #         * np.ones(ctf_est.theta.shape, ctf_est.theta.dtype)
         #     )
         #     ctf_im = -np.sin(
         #         np.pi
-        #         * ctf_object.lmbd
-        #         * ctf_object.r_ctf**2
+        #         * ctf_est.lmbd
+        #         * ctf_est.r_ctf**2
         #         / 2
-        #         * (df - ctf_object.lmbd**2 * ctf_object.r_ctf**2 * cs * 1e6)
+        #         * (df - ctf_est.lmbd**2 * ctf_est.r_ctf**2 * cs * 1e6)
         #         + self.amplitude_contrast
         #     )
         #     ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
