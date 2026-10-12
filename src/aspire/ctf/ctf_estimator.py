@@ -275,7 +275,7 @@ class CtfEstimator:
         #
         # In the CtfEstimator application, the signs will pass through
         # the mul and fft steps, then are absolute valued.
-        return dpss(M=N, NW=NW, Kmax=L, return_ratios=False, sym=False, norm=2).T
+        return dpss(M=N, NW=NW, Kmax=L, return_ratios=False, sym=False, norm=2)
 
     def estimate_psd(self, blocks, tapers_1d):
         """
@@ -286,7 +286,7 @@ class CtfEstimator:
         :return: NumPy array of estimated power spectrum.
         """
 
-        num_1d_tapers = tapers_1d.shape[-1]
+        num_1d_tapers = tapers_1d.shape[0]
         tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=False)
 
         blocks_mt = np.zeros(blocks[0, :, :].shape, dtype=self.dtype)
@@ -300,8 +300,8 @@ class CtfEstimator:
         for ax1 in range(num_1d_tapers):
             for ax2 in range(num_1d_tapers):
                 np.matmul(
-                    tapers_1d[:, ax1, np.newaxis],
-                    tapers_1d[:, ax2, np.newaxis].T,
+                    tapers_1d[ax1, :, np.newaxis],
+                    tapers_1d[ax2, :, np.newaxis].T,
                     out=taper_2d,
                 )
 
