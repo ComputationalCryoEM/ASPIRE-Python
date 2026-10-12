@@ -47,11 +47,10 @@ logger = logging.getLogger(__name__)
 SEED = 1980
 RESOLUTION = 129
 N_IMAGES = (100,)
-SNR_VALUES = (1, 1 / 2, 1 / 4, 1 / 8)
+SNR_VALUES = (1, 1 / 2, 1 / 4, 1 / 8, 1 / 16)
 
-# Download and downsample once; every SNR uses the same underlying volume.
-volume = emdb_2660().astype(np.float64).downsample(RESOLUTION)
-
+# Download volume once; every SNR uses the same underlying volume.
+volume = emdb_2660().astype(np.float64)
 
 # %%
 # Estimate rotations at each SNR
@@ -60,29 +59,24 @@ results = []
 
 for n_images in N_IMAGES:
     for snr in SNR_VALUES:
-        logger.info(f"Estimating C1 rotations: n={n_images}, SNR={snr}")
-
+        logger.info(f"Estimating rotations: n={n_images}, SNR={snr}")
         # Keeping the simulation seed fixed gives corresponding ground-truth
-        # orientations across SNR conditions. The noise seed is also fixed,
-        # so the noise realization is scaled as the requested SNR changes.
+        # orientations across SNR conditions.
         source = Simulation(
             n=n_images,
             vols=volume,
             offsets=0,
             amplitudes=1,
             seed=SEED,
-            noise_adder=WhiteNoiseAdder.from_snr(snr=snr, seed=SEED),
-        ).cache()
+            noise_adder=WhiteNoiseAdder.from_snr(snr=snr),
+        ).downsample(RESOLUTION).cache()
 
-        # The ADMM update order uses NumPy randomness. Reset it for a
-        # reproducible run at each SNR.
-        np.random.seed(SEED)
-
+        # Initialize the NUG orientation estimator, matching paramters
+        # to the referenced experiment.
         estimator = CommonlineNUG(
             source,
             symmetry="C1",
             max_shift=0,
-            max_iter=501,
             verbose=False,
         )
 
@@ -100,12 +94,13 @@ for n_images in N_IMAGES:
         # with zero shifts to reconstruct from the cached noisy images.
         oriented_source = oriented_source.update(offsets=0)
 
-        snr_tag = f"{snr:g}".replace(".", "p")
+        snr_tag = f"{snr:g}"
         volume_filename = f"nug_2660_c1_n{n_images}_snr{snr_tag}_recon.mrc"
 
         logger.info(f"Reconstructing and saving {volume_filename}")
         estimated_volume = MeanEstimator(oriented_source).estimate()
         estimated_volume.save(volume_filename, overwrite=True)
+
 # %%
 # Summary
 # -------
