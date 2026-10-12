@@ -53,7 +53,7 @@ img = img.downsample(new_resolution)
 noise_var = np.var(img.asnumpy()) * 5
 
 # Then create a WhiteNoiseAdder.
-noise = WhiteNoiseAdder(var=noise_var, seed=123)
+noise = WhiteNoiseAdder(var=noise_var)
 
 # We can apply the WhiteNoiseAdder to our image data.
 img_with_noise = noise.forward(img)
@@ -95,7 +95,7 @@ def noise_function(x, y):
 # We can create a custom filter from that function.
 f = FunctionFilter(noise_function)
 # And use the filter to add the noise to our stack of images.
-noise_adder = CustomNoiseAdder(noise_filter=f, seed=123)
+noise_adder = CustomNoiseAdder(noise_filter=f)
 imgs_with_noise = noise_adder.forward(imgs)
 
 # Let's see the first two noisy images.

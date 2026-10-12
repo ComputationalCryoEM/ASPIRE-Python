@@ -204,7 +204,7 @@ src.images[:].show()
 from aspire.noise import WhiteNoiseAdder
 
 # Create our noise using WhiteNoiseAdder
-noise = WhiteNoiseAdder(4e-3, seed=1234)
+noise = WhiteNoiseAdder(4e-3)
 
 # Add noise to our MicrographSimulation using the noise_adder argument
 src = MicrographSimulation(

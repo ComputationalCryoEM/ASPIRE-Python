@@ -144,7 +144,7 @@ var = np.var(src.images[:].asnumpy())
 noise_var = var * 2**4
 
 # Then create noise with the ``WhiteNoiseAdder`` class.
-noise = WhiteNoiseAdder(var=noise_var, seed=123)
+noise = WhiteNoiseAdder(var=noise_var)
 
 # Add noise to the images by performing ``forward``
 noisy_im = noise.forward(src.images[:])
