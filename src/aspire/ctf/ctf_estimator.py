@@ -36,7 +36,7 @@ from scipy.signal.windows import dpss
 
 from aspire.basis import Coef, FFBBasis2D
 from aspire.image import Image
-from aspire.numeric import fft
+from aspire.numeric import fft, xp
 from aspire.storage import StarFile
 from aspire.utils import (
     abs2,
@@ -102,8 +102,8 @@ class CtfEstimator:
         self.theta = grid["phi"]
 
         # Re-scale to unnormalized grids for X, Y (avoids recompute)
-        self.X = grid['x'] * psd_size/2
-        self.Y = grid['y'] * psd_size/2
+        self.X = grid["x"] * psd_size / 2
+        self.Y = grid["y"] * psd_size / 2
 
         # TODO, try to extend to any steerable basis
         self.basis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
@@ -291,26 +291,29 @@ class CtfEstimator:
         """
 
         num_1d_tapers = tapers_1d.shape[0]
-        tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=False)
+        tapers_1d = xp.asarray(tapers_1d, dtype=complex_type(self.dtype))
 
-        blocks_mt = np.zeros(blocks[0, :, :].shape, dtype=self.dtype)
+        blocks_mt = xp.zeros(blocks[0, :, :].shape, dtype=self.dtype)
 
-        blocks_tapered = np.zeros(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
+        blocks_tapered = xp.zeros(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
 
-        taper_2d = np.zeros(
+        taper_2d = xp.zeros(
             (blocks.shape[1], blocks.shape[2]), dtype=complex_type(self.dtype)
         )
 
+        # Ensure blocks are on GPU
+        blocks = xp.asarray(blocks)
+
         for ax1 in range(num_1d_tapers):
             for ax2 in range(num_1d_tapers):
-                np.matmul(
+                xp.matmul(
                     tapers_1d[ax1, :, np.newaxis],
                     tapers_1d[ax2, :, np.newaxis].T,
                     out=taper_2d,
                 )
 
                 for m in range(blocks.shape[0]):
-                    np.multiply(blocks[m, :, :], taper_2d, out=blocks_tapered)
+                    xp.multiply(blocks[m, :, :], taper_2d, out=blocks_tapered)
                     blocks_mt_post_fft = fft.fftn(blocks_tapered, axes=(-2, -1))
                     blocks_mt += abs2(blocks_mt_post_fft)
                     # blocks_mt += np.abs(blocks_mt_post_fft)**2
@@ -320,7 +323,7 @@ class CtfEstimator:
 
         amplitude_spectrum = fft.fftshift(blocks_mt)
 
-        return Image(amplitude_spectrum)
+        return Image(xp.asnumpy(amplitude_spectrum))
 
     def radial_average(self, basis, amplitude_spectrum):
         """
@@ -571,7 +574,7 @@ class CtfEstimator:
         :return: ratio.
         """
 
-        signal = signal.asnumpy()[0] # Convert from Image to square array.
+        signal = signal.asnumpy()[0]  # Convert from Image to square array.
 
         N = signal.shape[0]
         center = N // 2
@@ -743,7 +746,7 @@ class CtfEstimator:
 
         p = c1 / c2
 
-        return df1, df2, angle_ast, p
+        return df1, df2, angle_ast, p, iter_no
 
     # Note, This doesn't actually use anything from the class.
     # It is used in a solver loop of some sort, so it may not be correct
@@ -832,7 +835,7 @@ class CtfEstimator:
         # This array holds results from each of the `gd_iters`
         cc_array = np.zeros((self.gd_iters, 4))
         for a in range(0, self.gd_iters):
-            df1, df2, angle_ast, p = self.gd(
+            df1, df2, angle_ast, p, iters = self.gd(
                 signal,
                 initial_df1,
                 initial_df2,
@@ -849,6 +852,9 @@ class CtfEstimator:
             cc_array[a, 1] = df2
             cc_array[a, 2] = angle_ast  # Radians
             cc_array[a, 3] = p
+            logger.debug(
+                f"Gradient Descent {a+1} of {self.gd_iters}:\tp={p}\titers={iters}"
+            )
 
         # Select the best result index
         ml = np.argmax(cc_array[:, 3], -1)
@@ -932,13 +938,9 @@ def estimate_ctf(
 
         micrograph = micrograph.astype(dtype, copy=False)
 
-        from time import perf_counter
-        tic = perf_counter()
         params, background_2d, signal = ctf_est.estimate(
             micrograph, g_min=g_min, g_max=g_max
         )
-        toc = perf_counter()
-        print('TIME:', toc-tic)
 
         results[name] = params
 
