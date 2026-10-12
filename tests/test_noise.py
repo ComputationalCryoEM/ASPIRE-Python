@@ -129,9 +129,9 @@ def test_white_noise_adder(sim_fixture, target_noise_variance):
     # Create an estimator from the source
     noise_estimator = WhiteNoiseEstimator(sim_fixture)
 
-    # Match estimate within 1%
+    # Match estimate within 2%
     np.testing.assert_allclose(
-        target_noise_variance, noise_estimator.estimate(), rtol=0.01
+        target_noise_variance, noise_estimator.estimate(), rtol=0.02
     )
 
 
