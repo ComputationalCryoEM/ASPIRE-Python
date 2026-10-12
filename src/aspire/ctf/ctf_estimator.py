@@ -101,6 +101,10 @@ class CtfEstimator:
         self.r_ctf = grid["r"] / 2 * (10 / pixel_size)  # units: inverse nm
         self.theta = grid["phi"]
 
+        # Re-scale to unnormalized grids for X, Y (avoids recompute)
+        self.X = grid['x'] * psd_size/2
+        self.Y = grid['y'] * psd_size/2
+
         # TODO, try to extend to any steerable basis
         self.basis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
 
@@ -567,38 +571,29 @@ class CtfEstimator:
         :return: ratio.
         """
 
-        # RCOPT
-        signal = signal.asnumpy()[0].T
+        signal = signal.asnumpy()[0] # Convert from Image to square array.
 
         N = signal.shape[0]
         center = N // 2
-
-        grid = grid_2d(N, normalized=True, indexing="yx", dtype=self.dtype)
-
-        r_ctf = grid["r"] / 2 * (10 / pixel_size)
-
-        grid = grid_2d(N, normalized=False, indexing="yx", dtype=self.dtype)
-        X = grid["x"]
-        Y = grid["y"]
 
         signal = signal - np.min(signal)
 
         rad_sq_min = N * pixel_size / g_min
         rad_sq_max = N * pixel_size / g_max
 
-        min_limit = r_ctf[center, (center + np.floor(rad_sq_min)).astype(int)]
-        signal[r_ctf < min_limit] = 0
+        min_limit = self.r_ctf[center, (center + np.floor(rad_sq_min)).astype(int)]
+        signal[self.r_ctf < min_limit] = 0
 
-        max_limit = r_ctf[center, (center + np.ceil(rad_sq_max)).astype(int)]
-        signal = np.where(r_ctf > max_limit, 0, signal)
+        max_limit = self.r_ctf[center, (center + np.ceil(rad_sq_max)).astype(int)]
+        signal[self.r_ctf > max_limit] = 0
 
-        moment_02 = Y**2 * signal
+        moment_02 = self.Y**2 * signal
         moment_02 = np.sum(moment_02, axis=(0, 1))
 
-        moment_11 = Y * X * signal
+        moment_11 = self.Y * self.X * signal
         moment_11 = np.sum(moment_11, axis=(0, 1))
 
-        moment_20 = X**2 * signal
+        moment_20 = self.X**2 * signal
         moment_20 = np.sum(moment_20, axis=(0, 1))
 
         moment_mat = np.zeros((2, 2))
