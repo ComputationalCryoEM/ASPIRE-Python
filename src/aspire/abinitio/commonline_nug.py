@@ -1484,7 +1484,8 @@ class CommonlineNUG(Orient3D):
             rk[k_idx] = np.linalg.matrix_rank(Ak)
         return rk, A
 
-    def construct_AEq(self):
+    @staticmethod
+    def construct_AEq():
         """
         Construct the linear equality operator encoding the quaternion constraints.
 
@@ -2628,7 +2629,8 @@ class CommonlineNUG(Orient3D):
                     )
         return d
 
-    def complex2real(self, ell):
+    @staticmethod
+    def complex2real(ell):
         """
         Construct the transformation matrices between complex and real degree ell representations.
 
