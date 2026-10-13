@@ -28,7 +28,6 @@ from aspire.utils import (
     mean_aligned_shift_error,
     rots_to_clmatrix,
 )
-from aspire.volume import AsymmetricVolume
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
@@ -187,9 +186,10 @@ def test_estimate_shifts_with_est_rots(source_orientation_objs):
 
 
 def test_estimate_rotations_fuzzy_mask():
+    vol = emdb_2660().downsample(128)
     noisy_src = Simulation(
         n=35,
-        vols=AsymmetricVolume(L=128, C=1, K=400, rng=0).generate(),
+        vols=vol,
         offsets=0,
         amplitudes=1,
         noise_adder=WhiteNoiseAdder.from_snr(snr=2),
