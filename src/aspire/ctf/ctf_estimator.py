@@ -37,15 +37,9 @@ from scipy.signal.windows import dpss
 from aspire.basis import Coef, FFBBasis2D
 from aspire.image import Image
 from aspire.numeric import fft, xp
+from aspire.operators import CTFFilter
 from aspire.storage import StarFile
-from aspire.utils import (
-    abs2,
-    complex_type,
-    grid_1d,
-    grid_2d,
-    tqdm,
-    voltage_to_wavelength,
-)
+from aspire.utils import abs2, complex_type, grid_2d, tqdm, voltage_to_wavelength
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +94,10 @@ class CtfEstimator:
         # Note range is -half to half.
         self.r_ctf = grid["r"] / 2 * (10 / pixel_size)  # units: inverse nm
         self.theta = grid["phi"]
+        # Construct radial omega grid for ASPIRE's ctf_formula
+        center = self.psd_size // 2
+        r = np.pi * grid["r"][center, center:]
+        self.radial_omega = np.stack((r, np.zeros_like(r)))
 
         # Re-scale to unnormalized grids for X, Y (avoids recompute)
         self.X = grid["x"] * psd_size / 2
@@ -471,7 +469,6 @@ class CtfEstimator:
         cs,
         lmbd,
         w,
-        N,
         min_defocus=500,
         max_defocus=10000,
     ):
@@ -483,38 +480,35 @@ class CtfEstimator:
         :param cs: Spherical aberration in mm.
         :param lmbd: Electron wavelength \u212b (angstrom).
         :param w: Amplitude contrast.
-        :param N: Number of rows (or columns) in the estimate power spectrum.
-        :param min_defocus: Start of defocus loop scan.
-        :param max_defocus: End of defocus loop scan.
+        :param min_defocus: Start of defocus loop scan (xxx units).
+        :param max_defocus: End of defocus loop scan (xxx units).
         :return: 2-tuple of NumPy arrays (Estimated average of defocus and low_freq_cutoff)
         """
-
-        center = N // 2
-
-        grid = grid_1d(N, normalized=True, dtype=self.dtype)
-
-        rb = grid["r"][center:] / 2
-
-        r_ctf = rb * (10 / pixel_size)  # units: inverse nm
 
         signal = amplitude_spectrum.T
         signal = np.maximum(0.0, signal)
         signal = np.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
 
-        r_ctf_sq = r_ctf**2
+        # XXX Note ask Ayelet about original range units, I read as nm, but that is 5000-100000A ...?
         c = np.zeros((max_defocus - min_defocus, signal.shape[1]), dtype=self.dtype)
 
         for f in range(min_defocus, max_defocus):
-            # TODO try replace with ASPIRE's CTF formula?
+
             ctf_im = np.abs(
-                np.sin(
-                    np.pi * lmbd * f * r_ctf_sq
-                    - 0.5 * np.pi * (lmbd**3) * cs * 1e6 * r_ctf_sq**2
-                    + w
-                )
+                CTFFilter.ctf_formula(
+                    self.radial_omega,
+                    pixel_size=self.pixel_size,
+                    voltage=self.voltage,
+                    defocus_u_a=10 * f,
+                    defocus_v_a=10 * f,
+                    defocus_ang=0,
+                    Cs=self.cs,
+                    alpha=self.amplitude_contrast,
+                    B=0,
+                )[0]
             )
-            ctf_im = ctf_im[: signal.shape[0]]
+            ctf_im = ctf_im[: signal.shape[0]]  # xxx I think can remove this?
 
             ctf_im = np.reshape(ctf_im, (ctf_im.shape[0], 1))
             ctf_im = np.tile(ctf_im, (1, signal.shape[1]))
@@ -812,7 +806,6 @@ class CtfEstimator:
             self.cs,
             self.lmbd,  # (angstrom)
             self.amplitude_contrast,
-            signal_observed.shape[-1],
         )
 
         # TODO check the low_freq_skip +-1, it is col ind or value
