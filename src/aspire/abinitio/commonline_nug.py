@@ -756,7 +756,7 @@ class CommonlineNUG(Orient3D):
 
         n_pairs = N * (N - 1) // 2
         Ngrid = self.Ngrid
-        rank_Ak, _ = self.compute_rank()
+        rank_Ak, _ = self._compute_rank()
         logger.info(f"Rank of Ak: {rank_Ak}")
 
         # Build per-degree equality operators coupling the k and k+1 invariant
@@ -1269,7 +1269,7 @@ class CommonlineNUG(Orient3D):
         D1 = d1[-1]
 
         # AE and bE for quaternion constraints
-        AEq = xp.asarray(self.construct_AEq())
+        AEq = xp.asarray(self._construct_AEq())
         AEqAEqtinv = xp.linalg.pinv(AEq @ AEq.T)
 
         bEq = xp.zeros(17, dtype=np.float64)
@@ -1278,7 +1278,7 @@ class CommonlineNUG(Orient3D):
         bEq = xp.repeat(bEq[:, None], N * (N - 1) // 2, axis=1)
 
         # Compute AI and bI
-        W0, W1, Ngrid = self.compute_fejer_weights()
+        W0, W1, Ngrid = self._compute_fejer_weights()
 
         # AI_mat_offdiag computation has been vectorized, but originally
         # had the note by block1: this needs double checking (Ruiyi)
@@ -1366,13 +1366,13 @@ class CommonlineNUG(Orient3D):
             Sq,
         )
 
-    def compute_fejer_weights(self):
+    def _compute_fejer_weights(self):
         """
         Evaluate the real Wigner representation blocks used by the discretized Fejer inequality constraints.
 
         :return: Two sets of block weights and the number of SO(3) grid points.
         """
-        SO3_grid = self.discretize_SO3()
+        SO3_grid = self._discretize_SO3()
         Ngrid = SO3_grid.shape[0]
 
         TT = []
@@ -1411,7 +1411,7 @@ class CommonlineNUG(Orient3D):
             W1.append(W1k)
         return W0, W1, Ngrid
 
-    def discretize_SO3(self):
+    def _discretize_SO3(self):
         """
         Construct an approximately uniform Euler-angle grid over SO(3).
 
@@ -1468,7 +1468,7 @@ class CommonlineNUG(Orient3D):
         logger.info(f"Largest eigenvalue of AIAIT is approximately {Lambda:.2f}")
         return Lambda
 
-    def compute_rank(self):
+    def _compute_rank(self):
         """
         Compute the ranks and matrices of the symmetry-averaging projectors at each degree.
 
@@ -1485,7 +1485,7 @@ class CommonlineNUG(Orient3D):
         return rk, A
 
     @staticmethod
-    def construct_AEq():
+    def _construct_AEq():
         """
         Construct the linear equality operator encoding the quaternion constraints.
 
