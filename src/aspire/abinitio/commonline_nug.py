@@ -242,7 +242,7 @@ class CommonlineNUG(Orient3D):
         # Precompute degree-wise beta/Wigner weight matrices used in each coefficient transform.
         BTK = []
         for k in range(1, Lmax + 1):
-            btk = np.sum(bT[:, None, None] * self.Wd(k, beta_grid), axis=0)
+            btk = np.sum(bT[:, None, None] * self._Wd(k, beta_grid), axis=0)
             BTK.append(btk.T)
 
         def fijhat_k(k_idx, F):
@@ -310,7 +310,7 @@ class CommonlineNUG(Orient3D):
         # Convert complex Wigner coefficients to the real representation basis used by ADMM.
         for k_idx in range(Lmax):
             k = k_idx + 1
-            T, Tinv = self.complex2real(k)
+            T, Tinv = self._complex2real(k)
             C[k_idx] = np.real(
                 np.kron(np.eye(N, dtype=np.float64), Tinv)
                 @ C[k_idx]
@@ -477,7 +477,7 @@ class CommonlineNUG(Orient3D):
 
             # This is the established batched equivalent of projecting each 4x4
             # quaternion block and storing tmp.T.reshape(16) in each column.
-            Sq = self.psd_projection(Sq.T.reshape(n_pairs, 4, 4))
+            Sq = self._psd_projection(Sq.T.reshape(n_pairs, 4, 4))
             Sq = Sq.T.reshape(16, n_pairs)
             return S0, S1, Sq
 
@@ -625,7 +625,7 @@ class CommonlineNUG(Orient3D):
                     IDX_lower,
                     idx_offdiag,
                 )
-                res_psdX += xp.linalg.norm(self.psd_projection(-tmp))
+                res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
 
                 tmp = self.mat_block(
                     X1[block1_rows],
@@ -635,12 +635,12 @@ class CommonlineNUG(Orient3D):
                     IDX_lower,
                     idx_offdiag,
                 )
-                res_psdX += xp.linalg.norm(self.psd_projection(-tmp))
+                res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
             res_psdX /= 1 + xp.linalg.norm(X0) + xp.linalg.norm(X1)
 
             Xq_blocks = Xq.T.reshape(n_pairs, 4, 4)
             res_psdQ = xp.linalg.norm(
-                self.psd_projection(-Xq_blocks), axis=(-2, -1)
+                self._psd_projection(-Xq_blocks), axis=(-2, -1)
             ).sum()
             res_psdQ /= 1 + xp.linalg.norm(Xq)
 
@@ -703,7 +703,7 @@ class CommonlineNUG(Orient3D):
                 print_updates(verbose)
             rho, p_resnorm, d_resnorm = update_rho(X0, X1, Xq, res_X, rho)
 
-        X_admm = self.transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
+        X_admm = self._transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
         X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
         return X_admm
 
@@ -961,7 +961,7 @@ class CommonlineNUG(Orient3D):
                     k,
                     permutation,
                 )
-                tmp = self.psd_projection(tmp)
+                tmp = self._psd_projection(tmp)
 
                 Sd0[:, block0_rows], Sd1[:, block1_rows] = self.transform_block(
                     tmp, k, permutation
@@ -971,7 +971,7 @@ class CommonlineNUG(Orient3D):
             Sd1 = Sd1.T
 
             # Project each 4x4 quaternion slack block for off-diagonal image pairs.
-            Sq = self.psd_projection(Sq.T.reshape(n_pairs, 4, 4))
+            Sq = self._psd_projection(Sq.T.reshape(n_pairs, 4, 4))
             Sq = Sq.T.reshape(-1, n_pairs)
             return S0, S1, Sd0, Sd1, Sq
 
@@ -1110,7 +1110,7 @@ class CommonlineNUG(Orient3D):
                         IDX_lower,
                         idx_offdiag,
                     )
-                    res_psdX += xp.linalg.norm(self.psd_projection(-tmp))
+                    res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
 
                     tmp = self.mat_block(
                         X1[block1_rows],
@@ -1120,7 +1120,7 @@ class CommonlineNUG(Orient3D):
                         IDX_lower,
                         idx_offdiag,
                     )
-                    res_psdX += xp.linalg.norm(self.psd_projection(-tmp))
+                    res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
                 res_psdX = res_psdX / (1 + xp.linalg.norm(X0) + xp.linalg.norm(X1))
 
                 res_psdD = 0
@@ -1136,14 +1136,14 @@ class CommonlineNUG(Orient3D):
                         P[k_idx],
                     )
                     res_psdD += xp.linalg.norm(
-                        self.psd_projection(-tmp), axis=(-2, -1)
+                        self._psd_projection(-tmp), axis=(-2, -1)
                     ).sum()
                 res_psdD = res_psdD / (1 + xp.linalg.norm(Xd0) + xp.linalg.norm(Xd1))
 
                 res_psdQ = 0
                 for pair_idx in range(n_pairs):
                     tmp = Xq[:, pair_idx].reshape(4, 4).T
-                    res_psdQ += xp.linalg.norm(self.psd_projection(-tmp))
+                    res_psdQ += xp.linalg.norm(self._psd_projection(-tmp))
                 res_psdQ = res_psdQ / (1 + xp.linalg.norm(Xq))
 
                 normS = xp.sqrt(
@@ -1207,7 +1207,7 @@ class CommonlineNUG(Orient3D):
 
         # Convert the optimized packed block variables back to full degree-wise
         # representation matrices for Euler-angle recovery.
-        X_admm = self.transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
+        X_admm = self._transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
         X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
         return X_admm
 
@@ -1255,7 +1255,7 @@ class CommonlineNUG(Orient3D):
         for k_idx in range(Lmax):
             C[k_idx] = xp.asarray(Xnorm / Cnorm * C[k_idx])
 
-        C0, C1 = self.transform_coeff(C, IDX_upper)
+        C0, C1 = self._transform_coeff(C, IDX_upper)
         normC = xp.sqrt(xp.linalg.norm(C0) ** 2 + xp.linalg.norm(C1) ** 2)
         del C
 
@@ -1379,7 +1379,7 @@ class CommonlineNUG(Orient3D):
         TTI = []
         for k_idx in range(self.Lmax):
             k = k_idx + 1
-            T, Tinv = self.complex2real(k)
+            T, Tinv = self._complex2real(k)
             TT.append(T)
             TTI.append(Tinv)
 
@@ -1404,7 +1404,7 @@ class CommonlineNUG(Orient3D):
             TkT = TT[k_idx].T
             TinvkT = TTI[k_idx].T
 
-            w = np.real(TkT @ self.WD(k, SO3_grid).conj() @ TinvkT)
+            w = np.real(TkT @ self._WD(k, SO3_grid).conj() @ TinvkT)
             W0k, W1k = permutek_block(w, k)
 
             W0.append(W0k)
@@ -1478,7 +1478,7 @@ class CommonlineNUG(Orient3D):
         A = []
         for k_idx in range(self.Lmax):
             k = k_idx + 1  # degree
-            Ak = np.sum(self.WD(k, self.sym_euler), axis=0)
+            Ak = np.sum(self._WD(k, self.sym_euler), axis=0)
             Ak = np.round(Ak / self.n_sym, 6)
             A.append(Ak)
             rk[k_idx] = np.linalg.matrix_rank(Ak)
@@ -1580,7 +1580,7 @@ class CommonlineNUG(Orient3D):
                 IDX_lower,
                 idx_offdiag,
             )
-            block0 = self.psd_projection(block0)
+            block0 = self._psd_projection(block0)
             Z0[block0_rows] = self.vec_block(
                 block0,
                 self.n_img,
@@ -1596,7 +1596,7 @@ class CommonlineNUG(Orient3D):
                 IDX_lower,
                 idx_offdiag,
             )
-            block1 = self.psd_projection(block1)
+            block1 = self._psd_projection(block1)
             Z1[block1_rows] = self.vec_block(
                 block1,
                 self.n_img,
@@ -1606,7 +1606,7 @@ class CommonlineNUG(Orient3D):
         return Z0, Z1
 
     @staticmethod
-    def psd_projection(B):
+    def _psd_projection(B):
         """
         Project real square matrices onto the positive semidefinite cone.
 
@@ -1624,7 +1624,7 @@ class CommonlineNUG(Orient3D):
         evals = xp.maximum(evals, 0)
         return (evecs * evals[..., None, :]) @ evecs.swapaxes(-1, -2)
 
-    def transform_coeff(self, A, IDX_upper):
+    def _transform_coeff(self, A, IDX_upper):
         """
         Convert representation matrices to the block-vector form used by ADMM.
 
@@ -1647,14 +1647,14 @@ class CommonlineNUG(Orient3D):
             block0_rows = slice(d0[k_idx], d0[k_idx + 1])
             block1_rows = slice(d1[k_idx], d1[k_idx + 1])
 
-            block0, block1 = self.permutek(A[k_idx], k, self.n_img)
+            block0, block1 = self._permutek(A[k_idx], k, self.n_img)
 
             A0[block0_rows] = self.vec_block(block0, self.n_img, k, IDX_upper)
             A1[block1_rows] = self.vec_block(block1, self.n_img, k + 1, IDX_upper)
 
         return A0, A1
 
-    def transform_coeff_back(self, A0, A1, IDX_upper, IDX_lower, idx_offdiag):
+    def _transform_coeff_back(self, A0, A1, IDX_upper, IDX_lower, idx_offdiag):
         """
         Reconstruct representation matrices from their ADMM block-vector form.
 
@@ -1698,12 +1698,12 @@ class CommonlineNUG(Orient3D):
                 IDX_lower,
                 idx_offdiag,
             )
-            Ak = self.permutek_back(Ak, k, N)
+            Ak = self._permutek_back(Ak, k, N)
             A.append(Ak)
         return A
 
     @staticmethod
-    def permutek(Ak, k, N):
+    def _permutek(Ak, k, N):
         """
         Permute and split a degree-k matrix into blocks of sizes k and k + 1.
 
@@ -1736,7 +1736,7 @@ class CommonlineNUG(Orient3D):
         return AkP[: N * k, : N * k], AkP[N * k :, N * k :]
 
     @staticmethod
-    def permutek_back(Ak, k, N):
+    def _permutek_back(Ak, k, N):
         """
         Undo the degree-k block permutation and reconstruct the full matrix.
 
@@ -1887,7 +1887,7 @@ class CommonlineNUG(Orient3D):
             group to form the symmetry projector Ak.
             """
             order = Euler.shape[0]
-            A = self.WD(k, Euler).sum(axis=0)
+            A = self._WD(k, Euler).sum(axis=0)
             return np.round(A / order, 10)
 
         def rel_change(A, B, eps=1e-12):
@@ -2353,7 +2353,7 @@ class CommonlineNUG(Orient3D):
         Jk = self._handedness_matrix(degree)
 
         # Evaluate the Wigner small-d matrices at the recovered beta angles.
-        ws = self.Wd(degree, beta)
+        ws = self._Wd(degree, beta)
 
         for i in range(N):
             wi = ws[i]
@@ -2542,7 +2542,7 @@ class CommonlineNUG(Orient3D):
 
         :return: Representation matrix in the complex Wigner basis.
         """
-        T, Tinv = self.complex2real(degree)
+        T, Tinv = self._complex2real(degree)
         identity = np.eye(self.n_img, dtype=np.float64)
 
         return np.kron(identity, T) @ X @ np.kron(identity, Tinv)
@@ -2566,7 +2566,7 @@ class CommonlineNUG(Orient3D):
     # Representation Helpers #
     ##########################
 
-    def WD(self, k, euler):
+    def _WD(self, k, euler):
         """
         Evaluate degree-k Wigner D matrices at the supplied ZYZ Euler angles.
 
@@ -2579,7 +2579,7 @@ class CommonlineNUG(Orient3D):
         alpha = euler[:, 0]
         beta = euler[:, 1]
         gamma = euler[:, 2]
-        d = self.Wd(k, beta)
+        d = self._Wd(k, beta)
 
         m = np.arange(-k, k + 1)
         left = np.exp(-1j * alpha[:, None] * m[None, :])
@@ -2589,7 +2589,7 @@ class CommonlineNUG(Orient3D):
         return D
 
     @staticmethod
-    def Wd(k, beta):
+    def _Wd(k, beta):
         """
         Evaluate degree-k Wigner small-d matrices at the supplied polar angles.
 
@@ -2630,7 +2630,7 @@ class CommonlineNUG(Orient3D):
         return d
 
     @staticmethod
-    def complex2real(ell):
+    def _complex2real(ell):
         """
         Construct the transformation matrices between complex and real degree ell representations.
 
@@ -2687,12 +2687,12 @@ class CommonlineNUG(Orient3D):
             dk = 2 * k + 1
 
             # Evaluate the degree-k Wigner representations.
-            wigner = self.WD(k, euler_angles)
+            wigner = self._WD(k, euler_angles)
 
             # Average the degree-k representation over the molecular symmetry
             # group. For the asymmetric case, self.sym_euler contains only the
             # identity and Ak is therefore the identity matrix.
-            Ak = np.mean(self.WD(k, self.sym_euler), axis=0)
+            Ak = np.mean(self._WD(k, self.sym_euler), axis=0)
 
             # Construct the globally handedness-conjugated solution.
             Jk = np.ones(dk)
@@ -2703,7 +2703,7 @@ class CommonlineNUG(Orient3D):
             wigner_J = Jk @ wigner @ Jk
 
             # Convert each representation to the real basis used by ADMM.
-            _, Tinv = self.complex2real(k)
+            _, Tinv = self._complex2real(k)
             wigner_real = Tinv @ wigner
             wigner_J_real = Tinv @ wigner_J
 
