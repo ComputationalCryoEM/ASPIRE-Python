@@ -699,7 +699,7 @@ params = [pytest.param(64, np.float32, marks=pytest.mark.expensive)]
 def testHighResFBbasis3D(L, dtype):
     seed = 42
     basis = FBBasis3D(L, dtype=dtype)
-    vol = AsymmetricVolume(L=L, C=1, K=64, dtype=dtype, seed=seed).generate()
+    vol = AsymmetricVolume(L=L, C=1, K=64, dtype=dtype, rng=seed).generate()
 
     # Round trip
     coef = basis.expand(vol)

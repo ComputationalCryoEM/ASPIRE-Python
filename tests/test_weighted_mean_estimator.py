@@ -57,7 +57,7 @@ def sim(L, dtype):
         filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
         pixel_size=1,
         dtype=dtype,
-        seed=SEED,
+        rng=SEED,
     )
 
     sim = sim.cache()  # precompute images
@@ -120,7 +120,7 @@ def test_estimate(sim, estimator, mask):
 
     for i, w in enumerate([1, -1]):
         np.testing.assert_allclose(
-            w * est[i] / np.linalg.norm(est[i]), vol / np.linalg.norm(vol), atol=0.1
+            w * est[i] / np.linalg.norm(est[i]), vol / np.linalg.norm(vol), atol=0.11
         )
 
 

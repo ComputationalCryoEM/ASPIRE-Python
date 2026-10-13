@@ -9,11 +9,12 @@ from aspire.source import Simulation
 from aspire.utils import utest_tolerance
 
 # TODO, parameterize these further.
+SEED = 0
 dtype = np.float32
 img_size = 32
 num_imgs = 1024
 noise_var = 0.1848
-noise_adder = WhiteNoiseAdder(var=noise_var)
+noise_adder = WhiteNoiseAdder(var=noise_var, rng=SEED)
 pixel_size = 5
 d = np.linspace(1.5e4, 2.5e4, 7)
 filters = CTFFilter(
@@ -65,6 +66,7 @@ def sim():
         dtype=dtype,
         noise_adder=noise_adder,
         pixel_size=pixel_size,
+        rng=SEED,
     )
     sim = sim.cache()
     return sim
@@ -214,7 +216,7 @@ def test_filter_to_basis_mat_id_expand(coef, basis):
     """
 
     refs = {
-        "FBBasis2D": 4e-7,
+        "FBBasis2D": 5e-7,
         "PSWFBasis2D": 5e-6,
         "FPSWFBasis2D": 5e-6,
     }

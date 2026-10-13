@@ -4,9 +4,8 @@ import os
 import numpy as np
 import pytest
 from numpy.linalg import norm
-from numpy.random import normal
 
-from aspire.utils import Random, Rotation, align_BO
+from aspire.utils import Rotation, align_BO
 from aspire.volume import Volume
 
 
@@ -75,11 +74,11 @@ def vol_data_fixture(snr, dtype):
     L = v.resolution
     shape = (L, L, L)
     ns_std = np.sqrt(norm(v) ** 2 / (L**3 * snr)).astype(v.dtype)
-    r = Rotation.generate_random_rotations(1, dtype=v.dtype, seed=SEED)
+    r = Rotation.generate_random_rotations(1, dtype=v.dtype, rng=SEED)
     R_true = r.matrices[0]
-    with Random(SEED):
-        reference_vol = v + normal(0, ns_std, shape).astype(dtype, copy=False)
-        test_vol = v.rotate(r) + normal(0, ns_std, shape).astype(dtype, copy=False)
+    rng = np.random.default_rng(SEED)
+    reference_vol = v + rng.normal(0, ns_std, shape).astype(dtype, copy=False)
+    test_vol = v.rotate(r) + rng.normal(0, ns_std, shape).astype(dtype, copy=False)
 
     return reference_vol, test_vol, R_true
 
@@ -99,7 +98,7 @@ def test_bot_align(algo_params, vol_data_fixture):
         loss_type=algo_params[0],
         downsampled_size=algo_params[1],
         max_iters=algo_params[2],
-        seed=SEED,
+        rng=SEED,
     )
 
     # Recovery without refinement (degrees)

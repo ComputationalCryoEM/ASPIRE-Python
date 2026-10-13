@@ -5,7 +5,6 @@ import numpy as np
 
 from aspire.abinitio import Orient3D
 from aspire.utils import complex_type, tqdm
-from aspire.utils.random import choice
 
 from .commonline_utils import _generate_shift_phase_and_filter
 
@@ -175,7 +174,7 @@ class CLOrient3D(Orient3D):
             # build the subset of j images if n_check < n_img
             n_remaining = n_img - i - 1
             n_j = min(n_remaining, n_check)
-            subset_j = np.sort(choice(n_remaining, n_j, replace=False) + i + 1)
+            subset_j = np.sort(self.rng.choice(n_remaining, n_j, replace=False) + i + 1)
 
             for j in subset_j:
                 p2_flipped = np.conj(pf[j])

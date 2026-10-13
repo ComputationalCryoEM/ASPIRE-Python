@@ -69,7 +69,7 @@ def sim_fixture(volume, img_size, dtype):
     """
 
     # Create a src from the volume
-    src = Simulation(L=img_size, n=321, vols=volume, dtype=dtype, seed=SEED)
+    src = Simulation(L=img_size, n=321, vols=volume, dtype=dtype, rng=SEED)
     src = src.cache()  # Precompute image stack
 
     # Calculate some projection images
@@ -168,7 +168,7 @@ def sim_fixture2(volume, basis, img_size, dtype):
     n_img = 150
 
     # Clean
-    clean_src = Simulation(L=img_size, n=n_img, vols=volume, dtype=dtype, seed=SEED)
+    clean_src = Simulation(L=img_size, n=n_img, vols=volume, dtype=dtype, rng=SEED)
     clean_src = clean_src.cache()
 
     # With Noise
@@ -180,7 +180,7 @@ def sim_fixture2(volume, basis, img_size, dtype):
         vols=volume,
         dtype=dtype,
         noise_adder=noise_adder,
-        seed=SEED,
+        rng=SEED,
     )
     noisy_src = noisy_src.cache()
 
@@ -249,7 +249,7 @@ def test_incorrect_components(sim_fixture2):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
-        seed=SEED,
+        rng=SEED,
     )
 
 
@@ -270,7 +270,7 @@ def test_RIR_legacy(basis, sim_fixture2):
         large_pca_implementation="legacy",
         nn_implementation="legacy",
         bispectrum_implementation="legacy",
-        seed=SEED,
+        rng=SEED,
     )
 
     _ = rir.classify()
@@ -312,13 +312,13 @@ def test_RIR_sk(sim_fixture2):
         large_pca_implementation="sklearn",
         nn_implementation="sklearn",
         bispectrum_implementation="devel",
-        seed=SEED,
+        rng=SEED,
     )
 
     _ = rir.classify()
 
 
-def test_eigein_images(sim_fixture2):
+def test_eigen_images(sim_fixture2):
     """
     Test we can return eigenimages.
     """
