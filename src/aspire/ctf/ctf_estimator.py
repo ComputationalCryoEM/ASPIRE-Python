@@ -94,14 +94,16 @@ class CtfEstimator:
         # Note range is -half to half.
         self.r_ctf = grid["r"] / 2 * (10 / pixel_size)  # units: inverse nm
         self.theta = grid["phi"]
-        # Construct radial omega grid for ASPIRE's ctf_formula
+        # Construct omega grids for use in ASPIRE's ctf_formula
+        self.omega = np.pi * np.vstack((grid["x"].flatten(), grid["y"].flatten()))
         center = self.psd_size // 2
         r = np.pi * grid["r"][center, center:]
-        self.radial_omega = np.stack((r, np.zeros_like(r)))
+        self.radial_omega = np.stack((r, np.zeros_like(r)))  # 1d (ray)
 
-        # Re-scale to unnormalized grids for X, Y (avoids recompute)
+        # Re-scale to unnormalized grids for X, Y, and R (avoids recompute)
         self.X = grid["x"] * psd_size / 2
         self.Y = grid["y"] * psd_size / 2
+        self.R = grid["r"] * psd_size / 2
 
         # TODO, try to extend to any steerable basis
         self.basis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
@@ -540,15 +542,11 @@ class CtfEstimator:
 
         signal = signal.asnumpy()
 
-        N = signal.shape[1]
-        grid = grid_2d(N, normalized=False, indexing="yx", dtype=self.dtype)
-        radii = grid["r"]  # can probably get elsewhere if signal.shape is consistent.
-
-        # okay now, but review max_col and vectorize this
+        # TODO, review max_col and vectorize this
         background = np.zeros(signal.shape, dtype=self.dtype)
         for r in range(max_col + 2, background_p1.shape[1]):
-            background[:, (r < radii) & (radii <= r + 1)] = background_p1[max_col, r]
-        mask = radii <= max_col + 2
+            background[:, (r < self.R) & (self.R <= r + 1)] = background_p1[max_col, r]
+        mask = self.R <= max_col + 2
         background[:, mask] = signal[:, mask]
 
         signal = signal - background
@@ -781,6 +779,16 @@ class CtfEstimator:
         # ylabel('$S_y \left( \mathbf{k} \right) - S_e \left( \mathbf{k} \right)$', 'Interpreter','latex');
         plt.show()
 
+    def _plot_2d_psd(self, psd):
+        plt.imshow(psd)
+        # title('2-d PSD')
+        plt.show()
+
+    def _plot_2d_bg_sub_psd(self, bg_sub_psd):
+        plt.imshow(bg_sub_psd)
+        # title('Background subtracted 2-d PSD')
+        plt.show()
+
     def estimate(self, micrograph, g_min=30, g_max=5):
         # TODO compare now that remainder of code repros.
         # micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
@@ -812,6 +820,9 @@ class CtfEstimator:
         signal, background_2d = self.background_subtract_2d(
             signal_observed, background_1d, low_freq_skip
         )
+
+        # self._plot_2d_psd(amplitude_spectrum.asnumpy()[0])
+        # self._plot_2d_bg_sub_psd(signal.asnumpy()[0])
 
         ratio = self.pca(signal_observed, self.pixel_size, g_min, g_max)
 
@@ -852,7 +863,6 @@ class CtfEstimator:
         # Select the best result index
         ml = np.argmax(cc_array[:, 3], -1)
 
-        # TODO what is the ultimate purpose of the result dictionary?
         params = {
             "defocus_u": cc_array[ml, 0] * 10,  # Convert from nm to A
             "defocus_v": cc_array[ml, 1] * 10,  # Convert from nm to A
@@ -950,38 +960,29 @@ def estimate_ctf(
             background_2d.save(noise_filepath, overwrite=True)
 
         # TODO, do after resolve CTF formula/grids issues, uses CTF formula.
-        # if save_ctf_images:
-        #     ctf_est.set_df1(cc_array[ml, 0])  # angstrom
-        #     ctf_est.set_df2(cc_array[ml, 1])  # angstrom
-        #     ctf_est.set_angle(cc_array[ml, 2])  # Radians
-        #     ctf_est.generate_ctf()
-        #     df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(
-        #         ctf_est.theta.shape, ctf_est.theta.dtype
-        #     ) + (cc_array[ml, 0] - cc_array[ml, 1]) * np.cos(
-        #         2 * ctf_est.theta
-        #         - 2
-        #         * cc_array[ml, 2]
-        #         * np.ones(ctf_est.theta.shape, ctf_est.theta.dtype)
-        #     )
-        #     ctf_im = -np.sin(
-        #         np.pi
-        #         * ctf_est.lmbd
-        #         * ctf_est.r_ctf**2
-        #         / 2
-        #         * (df - ctf_est.lmbd**2 * ctf_est.r_ctf**2 * cs * 1e6)
-        #         + self.amplitude_contrast
-        #     )
-        #     ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
-        #     ctf_signal[: ctf_im.shape[0] // 2, :] = ctf_im[: ctf_im.shape[0] // 2, :]
-        #     ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal.asnumpy()[
-        #         :, :, ctf_im.shape[0] // 2 + 1
-        #     ]
+        if save_ctf_images:
+            ctf_im = CTFFilter.ctf_formula(
+                ctf_est.omega,
+                pixel_size=ctf_est.pixel_size,
+                voltage=ctf_est.voltage,
+                defocus_u_a=params["defocus_u"],
+                defocus_v_a=params["defocus_v"],
+                defocus_ang=params["defocus_ang"],
+                Cs=ctf_est.cs,
+                alpha=ctf_est.amplitude_contrast,
+                B=0,
+            ).reshape(psd_size, psd_size)
 
-        #     with mrcfile.new(
-        #         os.path.join(output_dir, os.path.splitext(name)[0] + ".ctf"),
-        #         overwrite=True,
-        #     ) as mrc:
-        #         mrc.set_data(np.float32(ctf_signal))
-        #         mrc.voxel_size = pixel_size
+            center = psd_size // 2
+            # Overwrite half the `ctf_im` with `signal`
+            ctf_im[center:, :] = signal.asnumpy()[0, center:, :]
+            # debug plots
+            # plt.imshow(ctf_im)
+            # plt.show()
+
+            ctf_filepath = os.path.join(output_dir, os.path.splitext(name)[0] + ".ctf")
+            with mrcfile.new(ctf_filepath, overwrite=True) as mrc:
+                mrc.set_data(ctf_im.astype(np.float32))  # MRC only supports singles
+                mrc.voxel_size = ctf_est.pixel_size
 
     return results
