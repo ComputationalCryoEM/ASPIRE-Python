@@ -59,6 +59,7 @@ class CtfEstimator:
         num_tapers,
         gradient_descent_iterations=6,
         linprog_method="highs-ds",
+        diagnostic_plots=False,
         dtype=np.float32,
     ):
         """
@@ -75,6 +76,9 @@ class CtfEstimator:
             Defaults to 6.
         :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
             Defaults to 'highs-ds'.
+        :param diagnostic_plots: Optionally generate diagnostic_plots.
+            Note, these are blocking plot calls.
+            Defaults to False.
         :returns: CtfEstimator instance.
         """
 
@@ -87,6 +91,7 @@ class CtfEstimator:
         self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert angstrom to nm
         self.gd_iters = int(gradient_descent_iterations)
         self.linprog_method = linprog_method
+        self.diagnostic_plots = diagnostic_plots
         self.dtype = np.dtype(dtype)
 
         # Grids
@@ -110,7 +115,8 @@ class CtfEstimator:
 
         # Only need to compute tapers once
         # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
-        self.tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
+        tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
+        self.tapers_1d = xp.asarray(tapers_1d, dtype=complex_type(self.dtype))
 
     def micrograph_to_blocks(self, micrograph, block_size):
         """
@@ -281,17 +287,15 @@ class CtfEstimator:
         # the mul and fft steps, then are absolute valued.
         return dpss(M=N, NW=NW, Kmax=L, return_ratios=False, sym=False, norm=2)
 
-    def estimate_psd(self, blocks, tapers_1d):
+    def estimate_psd(self, blocks):
         """
         Estimate the power spectrum of the micrograph using the multi-taper method
 
         :param blocks: 3-D NumPy array containing windows extracted from the micrograph in the preprocess function.
-        :param tapers_1d: NumPy array of data tapers.
         :return: NumPy array of estimated power spectrum.
         """
 
-        num_1d_tapers = tapers_1d.shape[0]
-        tapers_1d = xp.asarray(tapers_1d, dtype=complex_type(self.dtype))
+        num_1d_tapers = self.tapers_1d.shape[0]
 
         blocks_mt = xp.zeros(blocks[0, :, :].shape, dtype=self.dtype)
 
@@ -307,8 +311,8 @@ class CtfEstimator:
         for ax1 in range(num_1d_tapers):
             for ax2 in range(num_1d_tapers):
                 xp.matmul(
-                    tapers_1d[ax1, :, np.newaxis],
-                    tapers_1d[ax2, :, np.newaxis].T,
+                    self.tapers_1d[ax1, :, np.newaxis],
+                    self.tapers_1d[ax2, :, np.newaxis].T,
                     out=taper_2d,
                 )
 
@@ -325,46 +329,48 @@ class CtfEstimator:
 
         return Image(xp.asnumpy(amplitude_spectrum))
 
-    def radial_average(self, basis, amplitude_spectrum):
+    def radial_average(self, amplitude_spectrum):
         """
         Computes radial/elliptical average of the power spectrum
 
-        :param basis: SteerableBasis instance (typically FFBBasis).
         :param amplitude_spectrum: Power spectrum to average.
         :return: PSD and noise as 2-tuple of NumPy arrays.
         """
         noise = amplitude_spectrum  # pass through
-        coefs_s = basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
+        coefs_s = self.basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
 
-        mask_s = (basis.angular_indices == 1) | (basis.angular_indices == 2)
+        mask_s = (self.basis.angular_indices == 1) | (self.basis.angular_indices == 2)
         coefs_s[:, mask_s] = 0
 
-        psd = Coef(basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size).evaluate()
+        psd = Coef(
+            self.basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size
+        ).evaluate()
 
         return psd, noise
 
-    def elliptical_average(self, basis, amplitude_spectrum):
+    def elliptical_average(self, amplitude_spectrum):
         """
         Computes elliptical average of the power spectrum
 
-        :param basis: SteerableBasis instance (typically FFBBasis).
         :param amplitude_spectrum: Power spectrum to average.
         :return: PSD and noise as 2-tuple of NumPy arrays.
         """
 
-        coefs_s = basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
+        coefs_s = self.basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
         coefs_n = coefs_s.copy()
 
-        mask_s = basis.angular_indices == 1
+        mask_s = self.basis.angular_indices == 1
         coefs_s[:, mask_s] = 0
 
-        mask_n = (basis.angular_indices == 0) | (basis.angular_indices == 2)
+        mask_n = (self.basis.angular_indices == 0) | (self.basis.angular_indices == 2)
         coefs_n[:, mask_n] = 0
 
         noise = Coef(
-            basis, coefs_n, pixel_size=amplitude_spectrum.pixel_size
+            self.basis, coefs_n, pixel_size=amplitude_spectrum.pixel_size
         ).evaluate()
-        psd = Coef(basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size).evaluate()
+        psd = Coef(
+            self.basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size
+        ).evaluate()
 
         return psd, noise
 
@@ -467,10 +473,6 @@ class CtfEstimator:
     def opt1d(
         self,
         amplitude_spectrum,
-        pixel_size,
-        cs,
-        lmbd,
-        w,
         min_defocus=500,
         max_defocus=10000,
     ):
@@ -478,10 +480,6 @@ class CtfEstimator:
         Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
         :param amplitude_spectrum: Estimated power specrtum.
-        :param pixel_size: Pixel size in \u212b (angstrom).
-        :param cs: Spherical aberration in mm.
-        :param lmbd: Electron wavelength \u212b (angstrom).
-        :param w: Amplitude contrast.
         :param min_defocus: Start of defocus loop scan (xxx units).
         :param max_defocus: End of defocus loop scan (xxx units).
         :return: 2-tuple of NumPy arrays (Estimated average of defocus and low_freq_cutoff)
@@ -492,7 +490,7 @@ class CtfEstimator:
         signal = np.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
 
-        # XXX Note ask Ayelet about original range units, I read as nm, but that is 5000-100000A ...?
+        # Ask Ay about original range units, I read as nm, but that is 5000-100000A ...? xxx
         c = np.zeros((max_defocus - min_defocus, signal.shape[1]), dtype=self.dtype)
 
         for f in range(min_defocus, max_defocus):
@@ -510,7 +508,9 @@ class CtfEstimator:
                     B=0,
                 )[0]
             )
-            ctf_im = ctf_im[: signal.shape[0]]  # xxx I think can remove this?
+            # Shouldn't normally be needed within class calls,
+            #    but if user running manually clip to signal len.
+            ctf_im = ctf_im[: signal.shape[0]]
 
             ctf_im = np.reshape(ctf_im, (ctf_im.shape[0], 1))
             ctf_im = np.tile(ctf_im, (1, signal.shape[1]))
@@ -518,8 +518,8 @@ class CtfEstimator:
             for m in range(0, signal.shape[1]):
                 signal[:, m] = signal[:, m] - np.mean(signal[m + 1 :, m], axis=0)
                 ctf_im[:, m] = ctf_im[:, m] - np.mean(ctf_im[m + 1 :, m], axis=0)
-                ctf_im[: m + 1, m] = 0  # np.zeros((m + 1))
-                signal[: m + 1, m] = 0  # np.zeros((m + 1))
+                ctf_im[: m + 1, m] = 0
+                signal[: m + 1, m] = 0
 
             Sx = np.sqrt(np.sum(ctf_im**2, axis=0))
             Sy = np.sqrt(np.sum(signal**2, axis=0))
@@ -556,11 +556,10 @@ class CtfEstimator:
             background, pixel_size=self.pixel_size
         )
 
-    def pca(self, signal, pixel_size, g_min, g_max):
+    def pca(self, signal, g_min, g_max):
         """
 
         :param signal: Estimated power spectrum.
-        :param pixel_size: Pixel size in \u212b (angstrom).
         :param g_min: Inverse of minimun resolution for PSD.
         :param g_max: Inverse of maximum resolution for PSD.
         :return: ratio.
@@ -573,8 +572,8 @@ class CtfEstimator:
 
         signal = signal - np.min(signal)
 
-        rad_sq_min = N * pixel_size / g_min
-        rad_sq_max = N * pixel_size / g_max
+        rad_sq_min = N * self.pixel_size / g_min
+        rad_sq_max = N * self.pixel_size / g_max
 
         min_limit = self.r_ctf[center, (center + np.floor(rad_sq_min)).astype(int)]
         signal[self.r_ctf < min_limit] = 0
@@ -608,12 +607,8 @@ class CtfEstimator:
         df1,
         df2,
         angle_ast,
-        pixel_size,
         g_min,
         g_max,
-        amplitude_contrast,
-        lmbd,
-        cs,
     ):
         """
         Runs gradient ascent to optimize defocus parameters
@@ -622,12 +617,8 @@ class CtfEstimator:
         :param df1: Defocus value in the direction perpendicular to df2.
         :param df2: Defocus value in the direction perpendicular to df1.
         :param angle_ast: Angle between df1 and the x-axis, Radians.
-        :param pixel_size: Pixel size in \u212b (angstrom).
         :param g_min: Inverse of minimun resolution for PSD.
         :param g_max: Inverse of maximum resolution for PSD.
-        :param amplitude_contrast: Amplitude contrast.
-        :param lmbd: Electron wavelength \u212b (angstrom).
-        :param cs: Spherical aberration in mm.
         :return: Optimal defocus parameters
         """
 
@@ -640,17 +631,21 @@ class CtfEstimator:
         y = (df1 - df2) * np.cos(2 * angle_ast)
         z = (df1 - df2) * np.sin(2 * angle_ast)
 
-        a = np.pi * lmbd * self.r_ctf**2 / 2
-        b = np.pi * lmbd**3 * cs * 1e6 * self.r_ctf**4 / 2 - np.full(
-            shape=self.r_ctf.shape, fill_value=amplitude_contrast, dtype=self.dtype
+        a = np.pi * self.lmbd * self.r_ctf**2 / 2
+        # Ask Ay, Does this amplitude_contrast need to be the arctan'd one?
+        # amplitude_contrast = np.arctan(
+        #     self.amplitude_contrast / np.sqrt(1 - self.amplitude_contrast**2)
+        # )
+        b = np.pi * self.lmbd**3 * self.cs * 1e6 * self.r_ctf**4 / 2 - np.full(
+            shape=self.r_ctf.shape, fill_value=self.amplitude_contrast, dtype=self.dtype
         )
 
         signal = signal.asnumpy()[0].T
         N = signal.shape[1]
         center = N // 2
 
-        rad_sq_min = N * pixel_size / g_min
-        rad_sq_max = N * pixel_size / g_max
+        rad_sq_min = N * self.pixel_size / g_min
+        rad_sq_max = N * self.pixel_size / g_max
 
         max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
         min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
@@ -794,41 +789,35 @@ class CtfEstimator:
         # micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
         micrograph_blocks = self.legacy_preprocess_micrograph(micrograph, self.psd_size)
 
-        signal_observed = self.estimate_psd(micrograph_blocks, self.tapers_1d)
+        signal_observed = self.estimate_psd(micrograph_blocks)
         # np.save("signal_observed.npy", signal_observed)
 
-        amplitude_spectrum, _ = self.radial_average(self.basis, signal_observed)
+        amplitude_spectrum, _ = self.radial_average(signal_observed)
         # np.save("amplitude_spectrum.npy", amplitude_spectrum)
 
         signal_1d, background_1d = self.background_subtract_1d(
             amplitude_spectrum, linprog_method=self.linprog_method
         )
 
-        # TODO complete diagnostic plots and complete implementation in class.
-        # self._plot_1d_psd(signal_1d, background_1d)
-        # self._plot_1d_bg_sub_psd(signal_1d)
+        if self.diagnostic_plots:
+            self._plot_1d_psd(signal_1d, background_1d)
+            self._plot_1d_bg_sub_psd(signal_1d)
 
-        avg_defocus, low_freq_skip = self.opt1d(
-            signal_1d,
-            self.pixel_size,
-            self.cs,
-            self.lmbd,  # (angstrom)
-            self.amplitude_contrast,
-        )
+        avg_defocus, low_freq_skip = self.opt1d(signal_1d)
 
         # TODO check the low_freq_skip +-1, it is col ind or value
         signal, background_2d = self.background_subtract_2d(
             signal_observed, background_1d, low_freq_skip
         )
 
-        # self._plot_2d_psd(amplitude_spectrum.asnumpy()[0])
-        # self._plot_2d_bg_sub_psd(signal.asnumpy()[0])
+        if self.diagnostic_plots:
+            self._plot_2d_psd(amplitude_spectrum.asnumpy()[0])
+            self._plot_2d_bg_sub_psd(signal.asnumpy()[0])
 
-        ratio = self.pca(signal_observed, self.pixel_size, g_min, g_max)
+        ratio = self.pca(signal_observed, g_min, g_max)
 
-        signal, additional_background = self.elliptical_average(
-            self.basis, signal.sqrt()
-        )
+        signal, additional_background = self.elliptical_average(signal.sqrt())
+
         background_2d = background_2d + additional_background
 
         initial_df1 = (avg_defocus * 2) / (1 + ratio)
@@ -838,18 +827,14 @@ class CtfEstimator:
 
         # This array holds results from each of the `gd_iters`
         cc_array = np.zeros((self.gd_iters, 4))
-        for a in range(0, self.gd_iters):
+        for a, angle in enumerate(np.linspace(0, np.pi, self.gd_iters)):
             df1, df2, angle_ast, p, iters = self.gd(
                 signal,
                 initial_df1,
                 initial_df2,
-                angle + a * np.pi / 6.0,  # Radians, + a*30degrees
-                self.pixel_size,
+                angle,
                 g_min,
                 g_max,
-                self.amplitude_contrast,
-                self.lmbd,  # (angstrom)
-                self.cs,
             )
 
             cc_array[a, 0] = df1
@@ -874,6 +859,35 @@ class CtfEstimator:
         }
 
         return params, background_2d, signal
+
+    def _create_ctf_image(self, signal, df1, df2, dfang):
+        """
+        Create a diagnostic array comparing estimated CTF and signal.
+
+        :param signal: PSD of signal
+        :param df1: Major defocus (Angstrom)
+        :param df2: Minor defocus (Angstrom)
+        :param dfang: Defocus angle (radians)
+        :return: 2d array containing image data.
+        """
+
+        ctf_im = CTFFilter.ctf_formula(
+            self.omega,
+            pixel_size=self.pixel_size,
+            voltage=self.voltage,
+            defocus_u_a=df1,
+            defocus_v_a=df2,
+            defocus_ang=dfang,
+            Cs=self.cs,
+            alpha=self.amplitude_contrast,
+            B=0,
+        ).reshape(self.psd_size, self.psd_size)
+
+        # Overwrite half the `ctf_im` with `signal`
+        center = self.psd_size // 2
+        ctf_im[center:, :] = signal.asnumpy()[0, center:, :]
+
+        return ctf_im
 
 
 def estimate_ctf(
@@ -915,11 +929,6 @@ def estimate_ctf(
     file_names = mrc_files + mrcs_files
 
     # Setup a CTFEstimator -----------------------------------------------------
-    # Why
-    amplitude_contrast = np.arctan(
-        amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
-    )
-
     ctf_est = CtfEstimator(
         pixel_size,
         cs,
@@ -928,6 +937,7 @@ def estimate_ctf(
         psd_size,
         num_tapers=num_tapers,
         gradient_descent_iterations=gradient_descent_iterations,
+        diagnostic_plots=False,
         dtype=dtype,
     )
 
@@ -947,8 +957,7 @@ def estimate_ctf(
 
         results[name] = params
 
-        # TODO consolidate all the IO our of here and into functions
-        # we write each micrograph's ctf parameters to an individual starfile
+        # Write each micrograph's ctf parameters to an individual STAR file
         star_filepath = os.path.join(output_dir, os.path.splitext(name)[0]) + ".star"
         ctf_est.write_star(star_filepath, params)
 
@@ -959,26 +968,13 @@ def estimate_ctf(
             )
             background_2d.save(noise_filepath, overwrite=True)
 
-        # TODO, do after resolve CTF formula/grids issues, uses CTF formula.
         if save_ctf_images:
-            ctf_im = CTFFilter.ctf_formula(
-                ctf_est.omega,
-                pixel_size=ctf_est.pixel_size,
-                voltage=ctf_est.voltage,
-                defocus_u_a=params["defocus_u"],
-                defocus_v_a=params["defocus_v"],
-                defocus_ang=params["defocus_ang"],
-                Cs=ctf_est.cs,
-                alpha=ctf_est.amplitude_contrast,
-                B=0,
-            ).reshape(psd_size, psd_size)
-
-            center = psd_size // 2
-            # Overwrite half the `ctf_im` with `signal`
-            ctf_im[center:, :] = signal.asnumpy()[0, center:, :]
-            # debug plots
-            # plt.imshow(ctf_im)
-            # plt.show()
+            ctf_im = ctf_est._create_ctf_image(
+                signal,
+                params["defocus_u"],
+                params["defocus_v"],
+                params["defocus_ang"],
+            )
 
             ctf_filepath = os.path.join(output_dir, os.path.splitext(name)[0] + ".ctf")
             with mrcfile.new(ctf_filepath, overwrite=True) as mrc:
