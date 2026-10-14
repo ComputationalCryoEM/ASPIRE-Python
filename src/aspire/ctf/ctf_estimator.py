@@ -26,6 +26,7 @@ Integrated into ASPIRE-Python by Garrett Wright Feb 2021.
 import logging
 import os
 from collections import OrderedDict
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import mrcfile
@@ -897,7 +898,7 @@ def estimate_ctf(
     amplitude_contrast=0.07,
     voltage=300,
     num_tapers=4,
-    psd_size=512,  # should change to 1024?
+    psd_size=1024,
     g_min=30,
     g_max=5,
     gradient_descent_iterations=6,
@@ -920,13 +921,12 @@ def estimate_ctf(
         os.mkdir(output_dir)
 
     # File inputs -------------------------------------------------------------
-    # TODO confirm if scans multi-dir
-    dir_content = os.scandir(data_folder)
-
-    # TODO change to full path
-    mrc_files = [f.name for f in dir_content if os.path.splitext(f)[1] == ".mrc"]
-    mrcs_files = [f.name for f in dir_content if os.path.splitext(f)[1] == ".mrcs"]
-    file_names = mrc_files + mrcs_files
+    data_folder = Path(data_folder)
+    # Handles recursive directory searching for both mrc and mrcs extensions
+    file_paths = list(data_folder.rglob("*.mrc[s]"))
+    if len(file_paths) == 0:
+        raise RuntimeError(f"No mrc or mrcs files found at {data_folder}.")
+    logger.info("Found {len(file_paths)} at {data_folder}.")
 
     # Setup a CTFEstimator -----------------------------------------------------
     ctf_est = CtfEstimator(
@@ -943,7 +943,7 @@ def estimate_ctf(
 
     # Main Loop ---------------------------------------------------------------
     results = {}
-    for name in tqdm(file_names, desc="Processing files"):
+    for name in tqdm(file_paths, desc="Processing files"):
         with mrcfile.open(
             os.path.join(data_folder, name), mode="r", permissive=True
         ) as mrc:
