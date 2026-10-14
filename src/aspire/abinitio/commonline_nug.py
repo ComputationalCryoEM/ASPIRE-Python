@@ -2070,7 +2070,7 @@ class CommonlineNUG(Orient3D):
             B1 = np.zeros((N, N), dtype=np.float64)
             B2 = np.zeros((N, N), dtype=np.float64)
 
-            # From equation (36) in the paper, we have
+            # The cyclic-symmetry degree-one block gives
             #
             #   2 * abs(X1_ij[0, 0]) = sin(beta_i) * sin(beta_j)
             #   real(X1_ij[1, 1])    = cos(beta_i) * cos(beta_j).
@@ -2103,7 +2103,7 @@ class CommonlineNUG(Orient3D):
             ZZbar = np.zeros((N, N), dtype=complex_type(np.float64))
             ZZ = np.zeros((N, N), dtype=complex_type(np.float64))
 
-            # Equation (36) also gives the pairwise phase measurements
+            # The same degree-one block also gives the pairwise phase measurements
             #
             #   X1_ij[0, 0] / abs(X1_ij[0, 0])
             #       = exp(i * (alpha_i - alpha_j))
@@ -2177,8 +2177,7 @@ class CommonlineNUG(Orient3D):
         def find_alpha_beta(X2):
             B1 = np.zeros((N, N), dtype=np.float64)
 
-            # Equations (59)-(63) combine two entries of each degree-two block
-            # to isolate
+            # Combining two entries of the dihedral degree-two block isolates
             #
             #   B1[i, j] = cos(beta_i)^2 * cos(beta_j)^2.
             #
@@ -2203,8 +2202,8 @@ class CommonlineNUG(Orient3D):
             Aminus = np.zeros((N, N), dtype=complex_type(np.float64))
             Aplus = np.zeros((N, N), dtype=complex_type(np.float64))
 
-            # Equations (64)-(66) remove the known sin(2*beta) factors from
-            # two entries of X2_ij, producing the pairwise phases
+            # Divide two degree-two block entries by their known sin(2*beta)
+            # factors to recover the pairwise phases:
             #
             #   Aminus[i, j] = exp(i * (alpha_i - alpha_j))
             #   Aplus[i, j]  = exp(i * (alpha_i + alpha_j)).
