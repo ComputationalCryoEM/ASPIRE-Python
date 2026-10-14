@@ -621,6 +621,105 @@ class CtfEstimator:
         :param g_max: Inverse of maximum resolution for PSD.
         :return: Optimal defocus parameters
         """
+        # step sizes for (x, y, z)
+        alpha = np.array([1e5, 1e4, 1e4])
+
+        # initialization
+        x = df1 + df2
+        y = (df1 - df2) * np.cos(2 * angle_ast)
+        z = (df1 - df2) * np.sin(2 * angle_ast)
+
+        signal = signal.asnumpy()[0].T
+        N = signal.shape[1]
+        center = N // 2
+
+        rad_sq_min = N * self.pixel_size / g_min
+        rad_sq_max = N * self.pixel_size / g_max
+
+        max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
+        min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
+        mask = (self.r_ctf <= max_val) & (self.r_ctf > min_val)
+
+        # everything below depends only on the ring of pixels
+        r2 = self.r_ctf[mask] ** 2
+        a = (np.pi * self.lmbd / 2) * r2
+        b = (np.pi * self.lmbd**3 * self.cs * 1e6 / 2) * r2**2 - self.amplitude_contrast
+
+        sig = np.ascontiguousarray(signal[mask])  # repack for compute below
+        theta2 = 2 * self.theta[mask]
+
+        # Referencing old implementation,
+        # psi = x*a + y*a*cos2t + z*a*sin2t - b  ==  v @ A - b
+        A = np.ascontiguousarray(np.stack([a, a * np.cos(theta2), a * np.sin(theta2)]))
+
+        sum_A = sig @ sig
+        v = np.array([x, y, z], dtype=A.dtype)
+        W = np.empty((sig.size, 2), dtype=A.dtype)
+
+        def evaluate(v, need_grad=True):
+            psi = v @ A
+            psi -= b
+            s = np.sin(psi)
+            c1 = np.abs(s) @ sig
+            c2 = np.sqrt(sum_A * (s @ s))
+            grad = None
+            if need_grad:
+                cs = np.cos(psi)
+                np.multiply(np.sign(s), cs, out=W[:, 0])
+                W[:, 0] *= sig  # sign(s) * cos * signal
+                np.multiply(s, cs, out=W[:, 1])
+                W[:, 1] *= 2  # d(sin^2)/d(psi)
+                G = A @ W  # compute all gradient sums
+                dc1 = G[:, 0]
+                dc2 = sum_A * G[:, 1] / (2 * c2)  # derivative_sqrt = 1 / (2 * c2)
+                grad = (dc1 * c2 - dc2 * c1) / c2**2
+            return c1, c2, grad
+
+        dx = dy = dz = 1.0
+        stop_cond = 1e-20
+        iter_no = 1
+
+        while max(dx, dy, dz) > stop_cond:
+            _, _, grad = evaluate(v)
+            dx, dy, dz = grad
+            v += alpha * grad
+
+            if iter_no < 2:
+                stop_cond = min(dx, dy, dz) / 1000
+            if iter_no > 400:
+                stop_cond = max(dx, dy, dz) + 1
+            iter_no += 1
+
+        x, y, z = v
+        df1 = (x + np.hypot(y, z)) / 2
+        df2 = (x - np.hypot(y, z)) / 2
+        angle_ast = np.arctan2(z, y) / 2
+
+        c1, c2, _ = evaluate(v, need_grad=False)
+        p = c1 / c2
+
+        return df1, df2, angle_ast, p, iter_no
+
+    def _gd(
+        self,
+        signal,
+        df1,
+        df2,
+        angle_ast,
+        g_min,
+        g_max,
+    ):
+        """
+        Runs gradient ascent to optimize defocus parameters
+
+        :param signal: Estimated power spectrum
+        :param df1: Defocus value in the direction perpendicular to df2.
+        :param df2: Defocus value in the direction perpendicular to df1.
+        :param angle_ast: Angle between df1 and the x-axis, Radians.
+        :param g_min: Inverse of minimun resolution for PSD.
+        :param g_max: Inverse of maximum resolution for PSD.
+        :return: Optimal defocus parameters
+        """
 
         # step size
         alpha1 = 1e5
@@ -654,7 +753,6 @@ class CtfEstimator:
         a = a[mask]
         b = b[mask]
         signal = signal[..., mask]
-        # r = self.r_ctf[mask]
         theta = self.theta[mask]
 
         sum_A = np.sum(signal**2)
@@ -735,9 +833,6 @@ class CtfEstimator:
 
         return df1, df2, angle_ast, p, iter_no
 
-    # Note, This doesn't actually use anything from the class.
-    # It is used in a solver loop of some sort, so it may not be correct
-    # to just use what is avail in the obj.
     def write_star(self, star_filepath, params_dict):
         """
         Writes CTF parameters to starfile for a single micrograph.
