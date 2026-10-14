@@ -28,13 +28,13 @@ logger = logging.getLogger("aspire")
 )
 @click.option(
     "--num_tapers",
-    default=2,
+    default=4,
     type=int,
     help="Number of tapers to apply in PSD estimation",
 )
 @click.option(
     "--psd_size",
-    default=512,
+    default=1024,
     type=int,
     help="Size of blocks for use in Power Spectrum estimation",
 )
@@ -57,6 +57,8 @@ logger = logging.getLogger("aspire")
     default="results",
     help="Path to output files, defaults to './results'",
 )
+@click.option('--save_ctf_images', is_flag=True, default=False, help="Save ctf diagnostic images.")
+@click.option('--save_noise_images', is_flag=True, default=False, help="Save noise diagnostic images.")
 @log_level_option
 def estimate_ctf(
     data_folder,
@@ -70,6 +72,8 @@ def estimate_ctf(
     g_max,
     output_dir,
     dtype,
+    save_ctf_images,
+    save_noise_images,
     loglevel,
 ):
     """
@@ -85,14 +89,16 @@ def estimate_ctf(
 
     return ctf.estimate_ctf(
         data_folder,
-        pixel_size,
-        cs,
-        amplitude_contrast,
-        voltage,
-        num_tapers,
-        psd_size,
-        g_min,
-        g_max,
-        output_dir,
-        dtype,
+        pixel_size=pixel_size,
+        cs=cs,
+        amplitude_contrast=amplitude_contrast,
+        voltage=voltage,
+        num_tapers=num_tapers,
+        psd_size=psd_size,
+        g_min=g_min,
+        g_max=g_max,
+        output_dir=output_dir,
+        dtype=dtype,
+        save_ctf_images=save_ctf_images,
+        save_noise_images=save_noise_images,
     )
