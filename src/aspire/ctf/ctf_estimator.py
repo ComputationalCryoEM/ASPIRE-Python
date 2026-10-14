@@ -525,10 +525,10 @@ class CtfEstimator:
             Sy = np.sqrt(np.sum(signal**2, axis=0))
             c[f - min_defocus, :] = np.sum(ctf_im * signal, axis=0) / (Sx * Sy)
 
-        avg_defocus, low_freq_cutoff = np.unravel_index(np.argmax(c), c.shape)[:2]
+        avg_defocus, low_freq_cutoff_col = np.unravel_index(np.argmax(c), c.shape)[:2]
         avg_defocus += min_defocus
 
-        return avg_defocus, low_freq_cutoff
+        return avg_defocus, low_freq_cutoff_col
 
     def background_subtract_2d(self, signal, background_p1, max_col):
         """
@@ -544,9 +544,9 @@ class CtfEstimator:
 
         background = np.zeros(signal.shape, dtype=self.dtype)
         idx = np.ceil(self.R).astype(int) - 1
-        rings = (self.R > max_col + 2) & (self.R <= background_p1.shape[1])
+        rings = (self.R > max_col + 1) & (self.R <= background_p1.shape[1])
         background[:, rings] = background_p1[max_col, idx[rings]]
-        mask = self.R <= max_col + 2
+        mask = self.R <= max_col + 1
         background[:, mask] = signal[:, mask]
 
         signal = signal - background
@@ -803,11 +803,10 @@ class CtfEstimator:
             self._plot_1d_psd(signal_1d, background_1d)
             self._plot_1d_bg_sub_psd(signal_1d)
 
-        avg_defocus, low_freq_skip = self.opt1d(signal_1d)
+        avg_defocus, low_freq_skip_col = self.opt1d(signal_1d)
 
-        # TODO check the low_freq_skip +-1, it is col ind or value
         signal, background_2d = self.background_subtract_2d(
-            signal_observed, background_1d, low_freq_skip
+            signal_observed, background_1d, low_freq_skip_col
         )
 
         if self.diagnostic_plots:
@@ -960,7 +959,6 @@ def estimate_ctf(
             parents=True, exist_ok=True
         )  # Ensure output_file_dir exists
         output_file_prefix = output_file_dir / input_file.stem
-        breakpoint()
 
         with mrcfile.open(input_file, mode="r", permissive=True) as mrc:
             micrograph = mrc.data
