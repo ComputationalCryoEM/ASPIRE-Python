@@ -366,32 +366,33 @@ class CommonlineNUG(Orient3D):
         mult = self.mult
         Nstep_yI = self.Nstep_yI
 
-        (
-            C0,
-            C1,
-            normC,
-            AEq,
-            bEq,
-            AEqAEqtinv,
-            AI_mat_diag,
-            AI_mat_offdiag,
-            bI,
-            Lambda,
-            d0,
-            d1,
-            D0,
-            D1,
-            idx_diag,
-            idx_offdiag,
-            IDX_upper,
-            IDX_lower,
-            X0,
-            X1,
-            Xq,
-            S0,
-            S1,
-            Sq,
-        ) = self.ADMM_preprocessing(C)
+        # Prepare the objective, constraints, block layout, and initial ADMM variables.
+        pre = self.ADMM_preprocessing(C)
+
+        # Packed objective coefficients and their norm.
+        C0, C1, normC = pre["C0"], pre["C1"], pre["normC"]
+
+        # Quaternion equality constraints.
+        AEq, bEq = pre["AEq"], pre["bEq"]
+        AEqAEqtinv = pre["AEqAEqtinv"]
+
+        # Fejér inequality constraints and spectral scale.
+        AI_mat_diag = pre["AI_mat_diag"]
+        AI_mat_offdiag = pre["AI_mat_offdiag"]
+        bI, Lambda = pre["bI"], pre["Lambda"]
+
+        # Row boundaries by degree: d0 applies to C0/X0/S0, and d1 to C1/X1/S1.
+        # Their final entries give the total row counts.
+        d0, d1 = pre["d0"], pre["d1"]
+        D0, D1 = d0[-1], d1[-1]
+
+        # Indices into packed columns and the full image-pair grid, respectively.
+        idx_diag, idx_offdiag = pre["idx_diag"], pre["idx_offdiag"]
+        IDX_upper, IDX_lower = pre["IDX_upper"], pre["IDX_lower"]
+
+        # Initial primal and slack variables.
+        X0, X1, Xq = pre["X0"], pre["X1"], pre["Xq"]
+        S0, S1, Sq = pre["S0"], pre["S1"], pre["Sq"]
 
         Ngrid = self.Ngrid
         n_pairs = N * (N - 1) // 2
@@ -725,34 +726,33 @@ class CommonlineNUG(Orient3D):
         mult = self.mult
         Nstep_yI = self.Nstep_yI
 
-        # Solve the symmetry-constrained SDP relaxation in the real, packed
-        # representation basis prepared by ADMM_preprocessing.
-        (
-            C0,
-            C1,
-            normC,
-            AEq,
-            bEq,
-            AEqAEqtinv,
-            AI_mat_diag,
-            AI_mat_offdiag,
-            bI,
-            Lambda,
-            d0,
-            d1,
-            D0,
-            D1,
-            idx_diag,
-            idx_offdiag,
-            IDX_upper,
-            IDX_lower,
-            X0,
-            X1,
-            Xq,
-            S0,
-            S1,
-            Sq,
-        ) = self.ADMM_preprocessing(C)
+        # Prepare the objective, constraints, block layout, and initial ADMM variables.
+        pre = self.ADMM_preprocessing(C)
+
+        # Packed objective coefficients and their norm.
+        C0, C1, normC = pre["C0"], pre["C1"], pre["normC"]
+
+        # Quaternion equality constraints.
+        AEq, bEq = pre["AEq"], pre["bEq"]
+        AEqAEqtinv = pre["AEqAEqtinv"]
+
+        # Fejér inequality constraints and spectral scale.
+        AI_mat_diag = pre["AI_mat_diag"]
+        AI_mat_offdiag = pre["AI_mat_offdiag"]
+        bI, Lambda = pre["bI"], pre["Lambda"]
+
+        # Row boundaries by degree: d0 applies to C0/X0/S0, and d1 to C1/X1/S1.
+        # Their final entries give the total row counts.
+        d0, d1 = pre["d0"], pre["d1"]
+        D0, D1 = d0[-1], d1[-1]
+
+        # Indices into packed columns and the full image-pair grid, respectively.
+        idx_diag, idx_offdiag = pre["idx_diag"], pre["idx_offdiag"]
+        IDX_upper, IDX_lower = pre["IDX_upper"], pre["IDX_lower"]
+
+        # Initial primal and slack variables.
+        X0, X1, Xq = pre["X0"], pre["X1"], pre["Xq"]
+        S0, S1, Sq = pre["S0"], pre["S1"], pre["Sq"]
 
         n_pairs = N * (N - 1) // 2
         Ngrid = self.Ngrid
@@ -1221,7 +1221,7 @@ class CommonlineNUG(Orient3D):
 
         :param C: Fourier coefficient matrices of the NUG objective.
 
-        :return: Quantities required by the ADMM solver.
+        :return: Dictionary of quantities required by the ADMM solver.
         """
         Lmax = self.Lmax
         N = self.n_img
@@ -1339,32 +1339,30 @@ class CommonlineNUG(Orient3D):
 
         self.Ngrid = Ngrid
 
-        return (
-            C0,
-            C1,
-            normC,
-            AEq,
-            bEq,
-            AEqAEqtinv,
-            AI_mat_diag,
-            AI_mat_offdiag,
-            bI,
-            Lambda,
-            d0,
-            d1,
-            D0,
-            D1,
-            idx_diag,
-            idx_offdiag,
-            IDX_upper,
-            IDX_lower,
-            X0,
-            X1,
-            Xq,
-            S0,
-            S1,
-            Sq,
-        )
+        return {
+            "C0": C0,
+            "C1": C1,
+            "normC": normC,
+            "AEq": AEq,
+            "bEq": bEq,
+            "AEqAEqtinv": AEqAEqtinv,
+            "AI_mat_diag": AI_mat_diag,
+            "AI_mat_offdiag": AI_mat_offdiag,
+            "bI": bI,
+            "Lambda": Lambda,
+            "d0": d0,
+            "d1": d1,
+            "idx_diag": idx_diag,
+            "idx_offdiag": idx_offdiag,
+            "IDX_upper": IDX_upper,
+            "IDX_lower": IDX_lower,
+            "X0": X0,
+            "X1": X1,
+            "Xq": Xq,
+            "S0": S0,
+            "S1": S1,
+            "Sq": Sq,
+        }
 
     def _compute_fejer_weights(self):
         """
