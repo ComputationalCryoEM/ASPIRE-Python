@@ -24,7 +24,6 @@ Integrated into ASPIRE-Python by Garrett Wright Feb 2021.
 """
 
 import logging
-import os
 from collections import OrderedDict
 from pathlib import Path
 
@@ -543,10 +542,10 @@ class CtfEstimator:
 
         signal = signal.asnumpy()
 
-        # TODO, review max_col and vectorize this
         background = np.zeros(signal.shape, dtype=self.dtype)
-        for r in range(max_col + 2, background_p1.shape[1]):
-            background[:, (r < self.R) & (self.R <= r + 1)] = background_p1[max_col, r]
+        idx = np.ceil(self.R).astype(int) - 1
+        rings = (self.R > max_col + 2) & (self.R <= background_p1.shape[1])
+        background[:, rings] = background_p1[max_col, idx[rings]]
         mask = self.R <= max_col + 2
         background[:, mask] = signal[:, mask]
 
@@ -906,27 +905,33 @@ def estimate_ctf(
     dtype=np.float32,
     save_ctf_images=False,
     save_noise_images=False,
+    rglob=r"*.mrc",
 ):
     """
     Given paramaters estimates CTF from experimental data
     and returns CTF as a mrc file.
+
+    :param rglob: File search pattern.
+        By default will search for **/*.mrc files.
+        Using "*.mrc[s]" will additonally include mrcs files, etc.
     """
 
     # Checks ------------------------------------------------------------------
     dtype = np.dtype(dtype)
     assert dtype in (np.float32, np.float64)
 
-    # Ensure we can write outputs before we get too far
-    if not os.path.isdir(output_dir):
-        os.mkdir(output_dir)
-
     # File inputs -------------------------------------------------------------
     data_folder = Path(data_folder)
-    # Handles recursive directory searching for both mrc and mrcs extensions
-    file_paths = list(data_folder.rglob("*.mrc[s]"))
+    # Handles recursive directory searching for both `rglob` patten
+    file_paths = list(data_folder.rglob(rglob))
     if len(file_paths) == 0:
-        raise RuntimeError(f"No mrc or mrcs files found at {data_folder}.")
-    logger.info("Found {len(file_paths)} at {data_folder}.")
+        raise RuntimeError(f"No mrc or mrcs files found in {data_folder}.")
+    logger.info(f"Found {len(file_paths)} files in '{data_folder}'.")
+
+    # File outputs -----------------------------------------------------------
+    # Ensure we can write outputs before we get too far
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Setup a CTFEstimator -----------------------------------------------------
     ctf_est = CtfEstimator(
@@ -943,10 +948,21 @@ def estimate_ctf(
 
     # Main Loop ---------------------------------------------------------------
     results = {}
-    for name in tqdm(file_paths, desc="Processing files"):
-        with mrcfile.open(
-            os.path.join(data_folder, name), mode="r", permissive=True
-        ) as mrc:
+    for input_file in tqdm(file_paths, desc="Processing files"):
+
+        # Handle path stuff first, in case it fails
+        relative_input_path = input_file.relative_to(
+            data_folder
+        )  # File path relative to data_folder
+        directory_stub = relative_input_path.parent  # directory relative to data_folder
+        output_file_dir = output_dir / directory_stub  # Join onto output_dir
+        output_file_dir.mkdir(
+            parents=True, exist_ok=True
+        )  # Ensure output_file_dir exists
+        output_file_prefix = output_file_dir / input_file.stem
+        breakpoint()
+
+        with mrcfile.open(input_file, mode="r", permissive=True) as mrc:
             micrograph = mrc.data
 
         micrograph = micrograph.astype(dtype, copy=False)
@@ -955,17 +971,16 @@ def estimate_ctf(
             micrograph, g_min=g_min, g_max=g_max
         )
 
-        results[name] = params
+        # Store files' params into results dictionary
+        results[relative_input_path] = params
 
         # Write each micrograph's ctf parameters to an individual STAR file
-        star_filepath = os.path.join(output_dir, os.path.splitext(name)[0]) + ".star"
+        star_filepath = output_file_prefix.with_suffix(".star")
         ctf_est.write_star(star_filepath, params)
 
         # Save the noise
         if save_noise_images:
-            noise_filepath = os.path.join(
-                output_dir, os.path.splitext(name)[0] + "_noise.mrc"
-            )
+            noise_filepath = Path(f"{output_file_prefix}_noise.mrc")
             background_2d.save(noise_filepath, overwrite=True)
 
         if save_ctf_images:
@@ -976,7 +991,7 @@ def estimate_ctf(
                 params["defocus_ang"],
             )
 
-            ctf_filepath = os.path.join(output_dir, os.path.splitext(name)[0] + ".ctf")
+            ctf_filepath = output_file_prefix.with_suffix(".ctf")
             with mrcfile.new(ctf_filepath, overwrite=True) as mrc:
                 mrc.set_data(ctf_im.astype(np.float32))  # MRC only supports singles
                 mrc.voxel_size = ctf_est.pixel_size
