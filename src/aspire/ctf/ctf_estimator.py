@@ -34,7 +34,7 @@ from numpy import linalg as npla
 from scipy.optimize import linprog
 from scipy.signal.windows import dpss
 
-from aspire.basis import Coef, FFBBasis2D
+from aspire.basis import Coef, FFBBasis2D, SteerableBasis2D
 from aspire.image import Image
 from aspire.numeric import fft, xp
 from aspire.operators import CTFFilter
@@ -60,6 +60,7 @@ class CtfEstimator:
         g_min=30,
         g_max=5,
         gradient_descent_iterations=6,
+        basis=None,
         linprog_method="highs-ds",
         diagnostic_plots=False,
         dtype=np.float32,
@@ -78,6 +79,7 @@ class CtfEstimator:
         :param g_max: Inverse of maximum resolution for PSD. Default 5.
         :param gradient_descent_iterations: Optional, number of Gradient Descent attempts.
             Defaults to 6.
+        :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
         :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
             Defaults to 'highs-ds'.
         :param diagnostic_plots: Optionally generate diagnostic_plots.
@@ -93,8 +95,8 @@ class CtfEstimator:
         self.psd_size = int(psd_size)
         self.num_tapers = int(num_tapers)
         self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert angstrom to nm
-        self.g_min=float(g_min)
-        self.g_max=float(g_max)
+        self.g_min = float(g_min)
+        self.g_max = float(g_max)
         self.gd_iters = int(gradient_descent_iterations)
         self.linprog_method = linprog_method
         self.diagnostic_plots = diagnostic_plots
@@ -116,8 +118,12 @@ class CtfEstimator:
         self.Y = grid["y"] * psd_size / 2
         self.R = grid["r"] * psd_size / 2
 
-        # TODO, try to extend to any steerable basis
-        self.basis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
+        # Setup Basis
+        if basis is None:
+            basis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
+        if not isinstance(basis, SteerableBasis2D):
+            raise RuntimeError("Basis must be subclass of SteerableBasis2D.")
+        self.basis = basis
 
         # Only need to compute tapers once
         # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
@@ -626,7 +632,7 @@ class CtfEstimator:
         """
 
         if stop_cond is None:
-            stop_cond = 1e-10 if self.dtype==np.float32 else 1e-20
+            stop_cond = 1e-10 if self.dtype == np.float32 else 1e-20
         stop_cond = float(stop_cond)
 
         # step sizes for (x, y, z)
@@ -673,7 +679,7 @@ class CtfEstimator:
             grad = None
             if need_grad:
                 cs = np.cos(psi)
-                W[:,0] = np.sign(s) * cs
+                W[:, 0] = np.sign(s) * cs
                 W[:, 0] *= sig  # sign(s) * cos * signal
                 W[:, 1] = s * cs
                 W[:, 1] *= 2  # d(sin^2)/d(psi)
@@ -885,7 +891,7 @@ class CtfEstimator:
     def estimate(self, micrograph):
         # TODO compare now that remainder of code repros.
         micrograph_blocks = self.preprocess_micrograph(micrograph, self.psd_size)
-        #micrograph_blocks = self.legacy_preprocess_micrograph(micrograph, self.psd_size)
+        # micrograph_blocks = self.legacy_preprocess_micrograph(micrograph, self.psd_size)
 
         signal_observed = self.estimate_psd(micrograph_blocks)
 
@@ -994,6 +1000,7 @@ def estimate_ctf(
     g_min=30,
     g_max=5,
     gradient_descent_iterations=6,
+    basis=None,
     output_dir="results",
     dtype=np.float32,
     save_ctf_images=False,
@@ -1001,12 +1008,33 @@ def estimate_ctf(
     rglob=r"*.mrc",
 ):
     """
-    Given paramaters estimates CTF from experimental data
-    and returns CTF as a mrc file.
+    Given paramaters estimates CTF from experimental data in `data_folder
+    and returns dictionary of estimated CTF parameters.
 
+    Optionally saves diagnostic CTF and noise image (mrc) files.
+
+    :param pixel_size: Size of the pixel in \u212b (angstrom).
+    :param cs: Spherical aberration in mm.
+    :param amplitude_contrast: Amplitude contrast.
+    :param voltage: Voltage of electron microscope.
+    :param num_tapers: Optional, number of tapers to apply in PSD estimation.
+        Defaults to 4.
+    :param psd_size: Block size (in pixels) for PSD estimation.
+    :param g_min: Inverse of minimun resolution for PSD. Default 30.
+    :param g_max: Inverse of maximum resolution for PSD. Default 5.
+    :param gradient_descent_iterations: Optional, number of Gradient Descent attempts.
+        Defaults to 6.
+    :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
+    :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
+        Defaults to 'highs-ds'.
+    :param diagnostic_plots: Optionally generate diagnostic_plots.
+        Note, these are blocking plot calls.
+        Defaults to False.
     :param rglob: File search pattern.
         By default will search for **/*.mrc files.
         Using "*.mrc[s]" will additonally include mrcs files, etc.
+    :param save_ctf_images: Save diagnostic ctf images.
+    :param save_noise_images: Save diagnostic noise images.
     """
 
     # Checks ------------------------------------------------------------------
@@ -1037,6 +1065,7 @@ def estimate_ctf(
         g_min=g_min,
         g_max=g_max,
         gradient_descent_iterations=gradient_descent_iterations,
+        basis=basis,
         diagnostic_plots=False,
         dtype=dtype,
     )
