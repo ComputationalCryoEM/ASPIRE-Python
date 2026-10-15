@@ -57,8 +57,15 @@ logger = logging.getLogger("aspire")
     default="results",
     help="Path to output files, defaults to './results'",
 )
-@click.option('--save_ctf_images', is_flag=True, default=False, help="Save ctf diagnostic images.")
-@click.option('--save_noise_images', is_flag=True, default=False, help="Save noise diagnostic images.")
+@click.option(
+    "--save_ctf_images", is_flag=True, default=False, help="Save ctf diagnostic images."
+)
+@click.option(
+    "--save_noise_images",
+    is_flag=True,
+    default=False,
+    help="Save noise diagnostic images.",
+)
 @log_level_option
 def estimate_ctf(
     data_folder,
