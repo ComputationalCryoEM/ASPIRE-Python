@@ -805,13 +805,13 @@ class CommonlineNUG(Orient3D):
         P = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
-            Pk = xp.eye(dk, dtype=np.float64)
+            Pk = np.eye(dk, dtype=np.float64)
             for m in range(k):
                 for el in range(k - m):
                     Pk[(m + 2 * el, m + 2 * el + 1), :] = Pk[
                         (m + 2 * el + 1, m + 2 * el), :
                     ]
-            P.append(Pk)
+            P.append(xp.asarray(Pk))
 
         def fun_AE(X0, X1, Xd0, Xd1, Xq):
             """
