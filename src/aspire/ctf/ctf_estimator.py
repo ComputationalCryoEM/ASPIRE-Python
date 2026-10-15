@@ -226,7 +226,6 @@ class CtfEstimator:
 
         # im2col `distinct` extracts non-overlapping half blocks
         # column-major block ordering to match MATLAB (down-first)
-        # TODO, I don't think the order will matter here later,
         # but keeping now for diagnostics.
         blocks = (
             cropped_micrograph.reshape(n_bh, half, n_bw, half)
@@ -237,7 +236,6 @@ class CtfEstimator:
         # Reshape to (half, half, n_total) so each slice is one half-block
         blocks = blocks.reshape(half, half, n_total, order="F")
 
-        # TODO, compare which method is faster later, if we really need these...
         # First cat
         # stack each half-block with the one below it (rows overlap)
         # by shifting the block indices by 1
