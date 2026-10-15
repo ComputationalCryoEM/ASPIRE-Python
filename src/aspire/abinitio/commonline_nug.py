@@ -377,7 +377,6 @@ class CommonlineNUG(Orient3D):
         AEqAEqtinv = pre["AEqAEqtinv"]
 
         # Fejér inequality constraints and spectral scale.
-        AI_mat_diag = pre["AI_mat_diag"]
         AI_mat_offdiag = pre["AI_mat_offdiag"]
         bI, Lambda = pre["bI"], pre["Lambda"]
 
