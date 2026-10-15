@@ -1711,25 +1711,30 @@ class CommonlineNUG(Orient3D):
         :return: The two permuted matrix blocks.
         """
         dk = 2 * k + 1
-        Pk = np.eye(dk, dtype=Ak.dtype)
-        for m in range(k):
-            for n in range(k - m):
-                Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
-        Pk = xp.asarray(Pk)
-        AkP = (
-            xp.kron(xp.eye(N, dtype=Ak.dtype), Pk)
-            @ Ak
-            @ xp.kron(xp.eye(N, dtype=Ak.dtype), Pk.T)
+
+        # The real degree-k basis interleaves its k- and (k+1)-coordinate
+        # components. Put the odd-indexed basis coordinates first.
+        coordinate_order = xp.asarray(
+            np.concatenate((np.arange(1, dk, 2), np.arange(0, dk, 2)))
         )
 
-        Pk = xp.eye(N * dk, dtype=AkP.dtype)
-        idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
-        for m in range(N - 1):
-            for n in range(N - 1 - m):
-                Pk[k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk] = Pk[
-                    k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk
-                ][idx, :]
-        AkP = Pk @ AkP @ Pk.T
+        # Reshape into blocks (image i, coordinate i, image j, coordinate j)
+        # and reorder the coordinate axes.
+        blocks = Ak.reshape(N, dk, N, dk)
+        blocks = blocks[:, coordinate_order, :, :]
+        blocks = blocks[:, :, :, coordinate_order]
+        AkP = blocks.reshape(N * dk, N * dk)
+
+        # Group the k-coordinate component of every image first, followed by
+        # the (k + 1)-coordinate component of every image.
+        image_offsets = dk * np.arange(N)[:, None]
+        first_component = (image_offsets + np.arange(k)).reshape(-1)
+        second_component = (image_offsets + np.arange(k, dk)).reshape(-1)
+        group_order = xp.asarray(np.concatenate((first_component, second_component)))
+
+        # Apply the same permutation to rows and columns.
+        AkP = AkP[group_order[:, None], group_order[None, :]]
+
         return AkP[: N * k, : N * k], AkP[N * k :, N * k :]
 
     @staticmethod
