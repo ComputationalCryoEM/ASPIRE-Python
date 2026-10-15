@@ -56,7 +56,9 @@ class CtfEstimator:
         amplitude_contrast,
         voltage,
         psd_size,
-        num_tapers,
+        num_tapers=4,
+        g_min=30,
+        g_max=5,
         gradient_descent_iterations=6,
         linprog_method="highs-ds",
         diagnostic_plots=False,
@@ -72,6 +74,8 @@ class CtfEstimator:
         :param psd_size: Block size (in pixels) for PSD estimation.
         :param num_tapers: Optional, number of tapers to apply in PSD estimation.
             Defaults to 4.
+        :param g_min: Inverse of minimun resolution for PSD. Default 30.
+        :param g_max: Inverse of maximum resolution for PSD. Default 5.
         :param gradient_descent_iterations: Optional, number of Gradient Descent attempts.
             Defaults to 6.
         :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
@@ -89,6 +93,8 @@ class CtfEstimator:
         self.psd_size = int(psd_size)
         self.num_tapers = int(num_tapers)
         self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert angstrom to nm
+        self.g_min=float(g_min)
+        self.g_max=float(g_max)
         self.gd_iters = int(gradient_descent_iterations)
         self.linprog_method = linprog_method
         self.diagnostic_plots = diagnostic_plots
@@ -556,12 +562,10 @@ class CtfEstimator:
             background, pixel_size=self.pixel_size
         )
 
-    def pca(self, signal, g_min, g_max):
+    def pca(self, signal):
         """
 
         :param signal: Estimated power spectrum.
-        :param g_min: Inverse of minimun resolution for PSD.
-        :param g_max: Inverse of maximum resolution for PSD.
         :return: ratio.
         """
 
@@ -572,8 +576,8 @@ class CtfEstimator:
 
         signal = signal - np.min(signal)
 
-        rad_sq_min = N * self.pixel_size / g_min
-        rad_sq_max = N * self.pixel_size / g_max
+        rad_sq_min = N * self.pixel_size / self.g_min
+        rad_sq_max = N * self.pixel_size / self.g_max
 
         min_limit = self.r_ctf[center, (center + np.floor(rad_sq_min)).astype(int)]
         signal[self.r_ctf < min_limit] = 0
@@ -607,8 +611,8 @@ class CtfEstimator:
         df1,
         df2,
         angle_ast,
-        g_min,
-        g_max,
+        stop_cond=None,
+        max_gd_iterations=400,
     ):
         """
         Runs gradient ascent to optimize defocus parameters
@@ -617,10 +621,16 @@ class CtfEstimator:
         :param df1: Defocus value in the direction perpendicular to df2.
         :param df2: Defocus value in the direction perpendicular to df1.
         :param angle_ast: Angle between df1 and the x-axis, Radians.
-        :param g_min: Inverse of minimun resolution for PSD.
-        :param g_max: Inverse of maximum resolution for PSD.
+        :param stop_cond: Optionally select value to stop iterations early.
+            Default `None` is 1e-10 for float32 `dtype` and 1e20 otherwise.
+        :param max_gd_iterations: 400
         :return: Optimal defocus parameters
         """
+
+        if stop_cond is None:
+            stop_cond = 1e-10 if self.dtype==np.float32 else 1e-20
+        stop_cond = float(stop_cond)
+
         # step sizes for (x, y, z)
         alpha = np.array([1e5, 1e4, 1e4])
 
@@ -633,8 +643,8 @@ class CtfEstimator:
         N = signal.shape[1]
         center = N // 2
 
-        rad_sq_min = N * self.pixel_size / g_min
-        rad_sq_max = N * self.pixel_size / g_max
+        rad_sq_min = N * self.pixel_size / self.g_min
+        rad_sq_max = N * self.pixel_size / self.g_max
 
         max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
         min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
@@ -665,9 +675,9 @@ class CtfEstimator:
             grad = None
             if need_grad:
                 cs = np.cos(psi)
-                np.multiply(np.sign(s), cs, out=W[:, 0])
+                W[:,0] = np.sign(s) * cs
                 W[:, 0] *= sig  # sign(s) * cos * signal
-                np.multiply(s, cs, out=W[:, 1])
+                W[:, 1] = s * cs
                 W[:, 1] *= 2  # d(sin^2)/d(psi)
                 G = A @ W  # compute all gradient sums
                 dc1 = G[:, 0]
@@ -676,7 +686,6 @@ class CtfEstimator:
             return c1, c2, grad
 
         dx = dy = dz = 1.0
-        stop_cond = 1e-20
         iter_no = 1
 
         while max(dx, dy, dz) > stop_cond:
@@ -686,7 +695,7 @@ class CtfEstimator:
 
             if iter_no < 2:
                 stop_cond = min(dx, dy, dz) / 1000
-            if iter_no > 400:
+            if iter_no > max_gd_iterations:
                 stop_cond = max(dx, dy, dz) + 1
             iter_no += 1
 
@@ -706,8 +715,6 @@ class CtfEstimator:
         df1,
         df2,
         angle_ast,
-        g_min,
-        g_max,
     ):
         """
         Runs gradient ascent to optimize defocus parameters
@@ -716,8 +723,6 @@ class CtfEstimator:
         :param df1: Defocus value in the direction perpendicular to df2.
         :param df2: Defocus value in the direction perpendicular to df1.
         :param angle_ast: Angle between df1 and the x-axis, Radians.
-        :param g_min: Inverse of minimun resolution for PSD.
-        :param g_max: Inverse of maximum resolution for PSD.
         :return: Optimal defocus parameters
         """
 
@@ -743,8 +748,8 @@ class CtfEstimator:
         N = signal.shape[1]
         center = N // 2
 
-        rad_sq_min = N * self.pixel_size / g_min
-        rad_sq_max = N * self.pixel_size / g_max
+        rad_sq_min = N * self.pixel_size / self.g_min
+        rad_sq_max = N * self.pixel_size / self.g_max
 
         max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
         min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
@@ -879,16 +884,14 @@ class CtfEstimator:
         # title('Background subtracted 2-d PSD')
         plt.show()
 
-    def estimate(self, micrograph, g_min=30, g_max=5):
+    def estimate(self, micrograph):
         # TODO compare now that remainder of code repros.
-        # micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
-        micrograph_blocks = self.legacy_preprocess_micrograph(micrograph, self.psd_size)
+        micrograph_blocks = self.preprocess_micrograph(micrograph, self.psd_size)
+        #micrograph_blocks = self.legacy_preprocess_micrograph(micrograph, self.psd_size)
 
         signal_observed = self.estimate_psd(micrograph_blocks)
-        # np.save("signal_observed.npy", signal_observed)
 
         amplitude_spectrum, _ = self.radial_average(signal_observed)
-        # np.save("amplitude_spectrum.npy", amplitude_spectrum)
 
         signal_1d, background_1d = self.background_subtract_1d(
             amplitude_spectrum, linprog_method=self.linprog_method
@@ -908,7 +911,7 @@ class CtfEstimator:
             self._plot_2d_psd(amplitude_spectrum.asnumpy()[0])
             self._plot_2d_bg_sub_psd(signal.asnumpy()[0])
 
-        ratio = self.pca(signal_observed, g_min, g_max)
+        ratio = self.pca(signal_observed)
 
         signal, additional_background = self.elliptical_average(signal.sqrt())
 
@@ -921,14 +924,12 @@ class CtfEstimator:
 
         # This array holds results from each of the `gd_iters`
         cc_array = np.zeros((self.gd_iters, 4))
-        for a, angle in enumerate(np.linspace(0, np.pi, self.gd_iters)):
+        for a, angle in enumerate(np.linspace(0, np.pi, self.gd_iters, endpoint=False)):
             df1, df2, angle_ast, p, iters = self.gd(
                 signal,
                 initial_df1,
                 initial_df2,
                 angle,
-                g_min,
-                g_max,
             )
 
             cc_array[a, 0] = df1
@@ -1035,6 +1036,8 @@ def estimate_ctf(
         voltage,
         psd_size,
         num_tapers=num_tapers,
+        g_min=g_min,
+        g_max=g_max,
         gradient_descent_iterations=gradient_descent_iterations,
         diagnostic_plots=False,
         dtype=dtype,
@@ -1060,9 +1063,7 @@ def estimate_ctf(
 
         micrograph = micrograph.astype(dtype, copy=False)
 
-        params, background_2d, signal = ctf_est.estimate(
-            micrograph, g_min=g_min, g_max=g_max
-        )
+        params, background_2d, signal = ctf_est.estimate(micrograph)
 
         # Store files' params into results dictionary
         results[relative_input_path] = params
