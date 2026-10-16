@@ -7,12 +7,15 @@ import mrcfile
 import numpy as np
 import pytest
 
+from aspire.basis import FBBasis2D, FLEBasis2D, FPSWFBasis2D, PSWFBasis2D
 from aspire.ctf import estimate_ctf
 
 logger = logging.getLogger(__name__)
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
 
+DTYPE = np.float64
+PSD_SIZE = 512
 TEST_INPUT_FN = "sample.mrc"
 # These values are from CTFFIND4
 TEST_OUTPUT = {
@@ -25,8 +28,27 @@ TEST_OUTPUT = {
     "amplitude_contrast": 0.07,
 }
 
+BASES = [
+    None,  # resolves to FFBBasis2D,
+    pytest.param(FLEBasis2D, marks=pytest.mark.expensive),
+    # The following are very long and may require a higher memory machine
+    pytest.param(FBBasis2D, marks=pytest.mark.ctf),
+    pytest.param(PSWFBasis2D, marks=pytest.mark.ctf),
+    pytest.param(FPSWFBasis2D, marks=pytest.mark.ctf),
+]
 
-def test_estimate_CTF():
+
+@pytest.fixture(params=BASES, ids=lambda x: f"basis={x}", scope="module")
+def basis(request):
+    cls = request.param
+    if cls is None:
+        return None
+    # Setup a Basis
+    basis = cls(PSD_SIZE, dtype=DTYPE)
+    return basis
+
+
+def test_estimate_CTF(basis):
     with tempfile.TemporaryDirectory() as tmp_input_dir:
         # Copy input file
         copyfile(
@@ -43,11 +65,12 @@ def test_estimate_CTF():
                 amplitude_contrast=0.07,
                 voltage=300.0,
                 num_tapers=2,
-                psd_size=512,
+                psd_size=PSD_SIZE,
                 g_min=30.0,
                 g_max=5.0,
                 output_dir=tmp_output_dir,
-                dtype=np.float64,
+                basis=basis,
+                dtype=DTYPE,
                 save_ctf_images=True,
                 save_noise_images=True,
             )
