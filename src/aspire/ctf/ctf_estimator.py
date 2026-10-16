@@ -96,15 +96,17 @@ class CtfEstimator:
         :returns: CtfEstimator instance.
         """
 
-        self.pixel_size = float(pixel_size)
-        self.cs = float(cs)
-        self.amplitude_contrast = float(amplitude_contrast)
-        self.voltage = float(voltage)
+        self.pixel_size = np.asarray(pixel_size).item()
+        self.cs = np.asarray(cs).item()
+        self.amplitude_contrast = np.asarray(amplitude_contrast).item()
+        self.voltage = np.asarray(voltage).item()
         self.psd_size = int(psd_size)
         self.num_tapers = int(num_tapers)
-        self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert angstrom to nm
-        self.g_min = float(g_min)
-        self.g_max = float(g_max)
+        self.lmbd = (
+            voltage_to_wavelength(np.asarray(voltage).item()) / 10.0
+        )  # Convert angstrom to nm
+        self.g_min = np.asarray(g_min).item()
+        self.g_max = np.asarray(g_max).item()
         self.gd_iters = int(gradient_descent_iterations)
         _solver_methods = ("gd", "bfgs")
         if solver_method not in _solver_methods:
