@@ -1317,7 +1317,7 @@ class CommonlineNUG(Orient3D):
         bI = -(Lmax + 2) * (Lmax + 1) / 2
 
         # largest eigenvalue for AIAIT
-        Lambda = self._largest_eigenvalue(AI_mat_offdiag, N)
+        Lambda = self._largest_eigenvalue_gram(AI_mat_offdiag)
 
         # Initialize the primal variables in packed image-pair form.
         n_packed = N * (N + 1) // 2
@@ -1437,33 +1437,19 @@ class CommonlineNUG(Orient3D):
         return SO3
 
     @staticmethod
-    def _largest_eigenvalue(AI, N):
+    def _largest_eigenvalue_gram(AI):
         """
-        Estimate the largest eigenvalue of the Fejér constraint operator,
-        AI @ AI.T, using power iteration.
+        Compute the denominator for the Fejér inequality-multiplier update.
 
-        A fixed empirical margin is added to the estimate, following the
-        researcher's implementation, to obtain a more conservative step
-        size for the inequality-multiplier update.
+        The largest eigenvalue of AI @ AI.T is computed from the smaller
+        AI.T @ AI Gram matrix. Retain the fixed 2000 offset used by the
+        original implementation.
 
-        :param AI: Matrix representation of the Fejer inequality operator,
-          with shape (Ngrid, n_coefficients).
-        :param N: Number of images.
+        :param AI: Real Fejér inequality operator of shape (Ngrid, D0 + D1).
 
-        :return: Estimated largest eigenvalue of AI @ AI.T.
+        :return: Largest eigenvalue of AI @ AI.T, plus 2000.
         """
-        # find the largest eigenvalue of the operator AI
-        n_grid = AI.shape[0]
-        z = xp.random.normal(0, 1, (n_grid, N**2))
-        Lambda = 0
-
-        while abs(Lambda - xp.linalg.norm(z)) > 500:
-            Lambda = xp.linalg.norm(z)
-            z = z / xp.linalg.norm(z)
-            z = AI @ (AI.T @ z)
-        Lambda += 2000
-        logger.info(f"Largest eigenvalue of AIAIT is approximately {Lambda:.2f}")
-        return Lambda
+        return xp.linalg.eigvalsh(AI.T @ AI)[-1] + 2000
 
     def _compute_rank(self):
         """
