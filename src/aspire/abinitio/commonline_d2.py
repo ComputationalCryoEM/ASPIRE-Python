@@ -10,7 +10,7 @@ from aspire.utils import J_conjugate, Rotation, all_pairs, all_triplets, tqdm, t
 from aspire.utils.random import randn
 from aspire.volume import DnSymmetryGroup
 
-from .commonline_utils import _generate_shift_phase_and_filter
+from .commonline_utils import _generate_shift_phase_and_filter, saff_kuijlaars
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +160,7 @@ class CLSymmetryD2(Orient3D):
         logger.info("Generating commonline lookup data.")
         # Generate uniform grid on sphere with Saff-Kuijlaars and take one quarter
         # of sphere because of D2 symmetry redundancy.
-        sphere_grid = self._saff_kuijlaars(self.grid_res)
+        sphere_grid = saff_kuijlaars(self.grid_res)
         octant1_mask = np.all(sphere_grid > 0, axis=1)
         octant2_mask = (
             (sphere_grid[:, 0] > 0) & (sphere_grid[:, 1] > 0) & (sphere_grid[:, 2] < 0)
@@ -1821,37 +1821,6 @@ class CLSymmetryD2(Orient3D):
         seq = np.arange(n1, n2 + 1).astype(int) % L
 
         return seq
-
-    @staticmethod
-    def _saff_kuijlaars(N):
-        """
-        Generates N vertices on the unit sphere that are approximately evenly distributed.
-
-        This implements the recommended algorithm in spherical coordinates
-        (theta, phi) according to "Distributing many points on a sphere"
-        by E.B. Saff and A.B.J. Kuijlaars, Mathematical Intelligencer 19.1
-        (1997) 5--11.
-
-        :param N: Number of vertices to generate.
-
-        :return: Nx3 array of vertices in cartesian coordinates.
-        """
-        k = np.arange(1, N + 1)
-        h = -1 + 2 * (k - 1) / (N - 1)
-        theta = np.arccos(h)
-        phi = np.zeros(N)
-
-        for i in range(1, N - 1):
-            phi[i] = (phi[i - 1] + 3.6 / (np.sqrt(N * (1 - h[i] ** 2)))) % (2 * np.pi)
-
-        # Spherical coordinates
-        x = np.sin(theta) * np.cos(phi)
-        y = np.sin(theta) * np.sin(phi)
-        z = np.cos(theta)
-
-        mesh = np.column_stack((x, y, z))
-
-        return mesh
 
     @staticmethod
     def _mark_equators(sphere_grid, eq_filter_angle):
