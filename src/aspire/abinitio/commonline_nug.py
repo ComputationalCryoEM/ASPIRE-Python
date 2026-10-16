@@ -1749,26 +1749,24 @@ class CommonlineNUG(Orient3D):
         :return: Matrix in the original block ordering.
         """
         dk = 2 * k + 1
-        Pk = xp.eye(N * dk, dtype=Ak.dtype)
-        idx = xp.concatenate((xp.arange(dk - k, dk), xp.arange(k + 1)))
-        for m in range(N - 1):
-            for n in range(N - 1 - m):
-                Pk[k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk] = Pk[
-                    k * (m + 1) + n * dk : k * (m + 1) + (n + 1) * dk
-                ][idx, :]
-        AkB = Pk.T @ Ak @ Pk
-        dk = 2 * k + 1
-        Pk = np.eye(dk, dtype=Ak.dtype)
-        for m in range(k):
-            for n in range(k - m):
-                Pk[(m + 2 * n, m + 2 * n + 1), :] = Pk[(m + 2 * n + 1, m + 2 * n), :]
-        Pk = xp.asarray(Pk)
-        AkB = (
-            xp.kron(xp.eye(N, dtype=Ak.dtype), Pk.T)
-            @ AkB
-            @ xp.kron(xp.eye(N, dtype=Ak.dtype), Pk)
-        )
-        return AkB
+
+        # Undo the grouping of all k-coordinate components before all
+        # (k + 1)-coordinate components.
+        image_offsets = dk * np.arange(N)[:, None]
+        first_component = (image_offsets + np.arange(k)).reshape(-1)
+        second_component = (image_offsets + np.arange(k, dk)).reshape(-1)
+        group_order = np.concatenate((first_component, second_component))
+        inverse_group_order = xp.asarray(np.argsort(group_order))
+        AkB = Ak[inverse_group_order[:, None], inverse_group_order[None, :]]
+
+        # Undo the within-image ordering of the degree-k basis coordinates.
+        coordinate_order = np.concatenate((np.arange(1, dk, 2), np.arange(0, dk, 2)))
+        inverse_coordinate_order = xp.asarray(np.argsort(coordinate_order))
+
+        blocks = AkB.reshape(N, dk, N, dk)
+        blocks = blocks[:, inverse_coordinate_order, :, :]
+        blocks = blocks[:, :, :, inverse_coordinate_order]
+        return blocks.reshape(N * dk, N * dk)
 
     @staticmethod
     def vec_block(A, N, sz, IDX_upper):
