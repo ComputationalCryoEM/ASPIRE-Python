@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
 from numpy import linalg as npla
-from scipy.optimize import linprog
+from scipy.optimize import linprog, minimize
 from scipy.signal.windows import dpss
 
 from aspire.basis import Coef, FFBBasis2D, SteerableBasis2D
@@ -61,6 +61,7 @@ class CtfEstimator:
         g_max=5,
         gradient_descent_iterations=6,
         basis=None,
+        solver_method="bfgs",
         linprog_method="highs-ds",
         diagnostic_plots=False,
         dtype=np.float32,
@@ -98,6 +99,12 @@ class CtfEstimator:
         self.g_min = float(g_min)
         self.g_max = float(g_max)
         self.gd_iters = int(gradient_descent_iterations)
+        _solver_methods = ("gd", "bfgs")
+        if solver_method not in _solver_methods:
+            raise RuntimeError(
+                f"Provided solver_method {solver_method} must be one of {_solver_methods}"
+            )
+        self.solver_method = solver_method
         self.linprog_method = linprog_method
         self.diagnostic_plots = diagnostic_plots
         self.dtype = np.dtype(dtype)
@@ -490,8 +497,8 @@ class CtfEstimator:
         Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
         :param amplitude_spectrum: Estimated power specrtum.
-        :param min_defocus: Start of defocus loop scan (xxx units).
-        :param max_defocus: End of defocus loop scan (xxx units).
+        :param min_defocus: Start of defocus loop scan
+        :param max_defocus: End of defocus loop scan
         :return: 2-tuple of NumPy arrays (Estimated average of defocus and low_freq_cutoff)
         """
 
@@ -500,7 +507,6 @@ class CtfEstimator:
         signal = np.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
 
-        # Ask Ay about original range units, I read as nm, but that is 5000-100000A ...? xxx
         c = np.zeros((max_defocus - min_defocus, signal.shape[1]), dtype=self.dtype)
 
         for f in range(min_defocus, max_defocus):
@@ -609,7 +615,7 @@ class CtfEstimator:
 
         return ratio
 
-    def gd(
+    def _gd(
         self,
         signal,
         df1,
@@ -619,7 +625,7 @@ class CtfEstimator:
         max_gd_iterations=400,
     ):
         """
-        Runs gradient ascent to optimize defocus parameters
+        Runs inner gradient ascent to optimize defocus parameters.
 
         :param signal: Estimated power spectrum
         :param df1: Defocus value in the direction perpendicular to df2.
@@ -713,134 +719,135 @@ class CtfEstimator:
 
         return df1, df2, angle_ast, p, iter_no
 
-    def _gd(
-        self,
-        signal,
-        df1,
-        df2,
-        angle_ast,
+    def gd(self, signal, initial_df1, initial_df2):
+        """
+        Calls gradient descent loop `gd_iters` times and
+        returns best optimum found.
+
+        This implementation was adapted and optimized from the original MATLAB code.
+
+        :param signal: Signal PSD array.
+        :param initial_df1: Initial major defocus (nm)
+        :param initial_df2: Initial minor defocus (nm)
+        :return: defocus_u_nm, defocus_v_nm, defocus_ang_radian
+        """
+        # This array holds results from each of the `gd_iters`
+        cc_array = np.zeros((self.gd_iters, 4))
+        for a, angle in enumerate(np.linspace(0, np.pi, self.gd_iters, endpoint=False)):
+            df1, df2, angle_ast, p, iters = self._gd(
+                signal,
+                initial_df1,
+                initial_df2,
+                angle,
+            )
+
+            cc_array[a, 0] = df1
+            cc_array[a, 1] = df2
+            cc_array[a, 2] = angle_ast  # Radians
+            cc_array[a, 3] = p
+            logger.debug(
+                f"Gradient Descent {a+1} of {self.gd_iters}:\tp={p}\titers={iters}"
+            )
+
+        # Select the best result index
+        ml = np.argmax(cc_array[:, 3], -1)
+        return cc_array[ml, 0:3]
+
+    def bfgs(
+        self, signal, initial_df1, initial_df2, stop_cond=1e-10, max_gd_iterations=200
     ):
         """
-        Runs gradient ascent to optimize defocus parameters
+        Calls quasi-newton method BFGS and returns found optimal values.
 
-        :param signal: Estimated power spectrum
-        :param df1: Defocus value in the direction perpendicular to df2.
-        :param df2: Defocus value in the direction perpendicular to df1.
-        :param angle_ast: Angle between df1 and the x-axis, Radians.
-        :return: Optimal defocus parameters
+        :param signal: Signal PSD array.
+        :param initial_df1: Initial major defocus (nm)
+        :param initial_df2: Initial minor defocus (nm)
+        :param stop_cond: Optionally select value to stop iterations.
+            Default is 1e-10.
+        :param max_gd_iterations: Optionally provide a max number of iterations for BFGS.
+            Defaults to 200.
+        :return: defocus_u_nm, defocus_v_nm, defocus_ang_radian
         """
 
-        # step size
-        alpha1 = 1e5
-        alpha2 = 1e4
-
-        # initialization
-        x = df1 + df2
-        y = (df1 - df2) * np.cos(2 * angle_ast)
-        z = (df1 - df2) * np.sin(2 * angle_ast)
-
-        a = np.pi * self.lmbd * self.r_ctf**2 / 2
-        # Ask Ay, Does this amplitude_contrast need to be the arctan'd one?
-        # amplitude_contrast = np.arctan(
-        #     self.amplitude_contrast / np.sqrt(1 - self.amplitude_contrast**2)
-        # )
-        b = np.pi * self.lmbd**3 * self.cs * 1e6 * self.r_ctf**4 / 2 - np.full(
-            shape=self.r_ctf.shape, fill_value=self.amplitude_contrast, dtype=self.dtype
+        # Initial v = [x, y, z]
+        angle_ast = np.deg2rad(-75)  # legacy value, shouldn't matter in bfgs
+        v0 = np.array(
+            [
+                initial_df1 + initial_df2,
+                (initial_df1 - initial_df2) * np.cos(2 * angle_ast),
+                (initial_df1 - initial_df2) * np.sin(2 * angle_ast),
+            ]
         )
 
         signal = signal.asnumpy()[0].T
         N = signal.shape[1]
         center = N // 2
-
         rad_sq_min = N * self.pixel_size / self.g_min
         rad_sq_max = N * self.pixel_size / self.g_max
 
         max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
         min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
-
         mask = (self.r_ctf <= max_val) & (self.r_ctf > min_val)
-        a = a[mask]
-        b = b[mask]
-        signal = signal[..., mask]
-        theta = self.theta[mask]
 
-        sum_A = np.sum(signal**2)
+        # Everything that does not depend on (x, y, z)
+        # psi = x*a + y*a*cos(2t) + z*a*sin(2t) - b  ==  v @ A - b
+        r2 = self.r_ctf[mask] ** 2
+        a = (np.pi * self.lmbd / 2) * r2
+        b = (np.pi * self.lmbd**3 * self.cs * 1e6 / 2) * r2**2 - self.amplitude_contrast
+        sig = np.ascontiguousarray(signal[mask])
+        theta2 = 2 * self.theta[mask]
+        A = np.ascontiguousarray(np.stack([a, a * np.cos(theta2), a * np.sin(theta2)]))
+        sum_A = sig @ sig
 
-        dx = 1
-        dy = 1
-        dz = 1
+        # Variable scaling
+        scale = np.array([1e2, 1e1, 1e1])
 
-        stop_cond = 1e-20
-        iter_no = 1
+        def neg_p_and_grad(u):
+            v = u * scale
+            psi = v @ A
+            psi -= b
+            s = np.sin(psi)
+            c = np.cos(psi)
 
-        while np.maximum(np.maximum(dx, dy), dz) > stop_cond:
-            inner_cosine = y * np.cos(2 * theta) + z * np.sin(2 * theta)
-            psi = a * x + a * inner_cosine - b
-            outer_sine = np.sin(psi)
-            outer_cosine = np.cos(psi)
+            c1 = np.abs(s) @ sig
+            c2 = np.sqrt(sum_A * (s @ s))
 
-            sine_x_term = a
-            sine_y_term = a * np.cos(2 * theta)
-            sine_z_term = a * np.sin(2 * theta)
+            dc1 = A @ (np.sign(s) * c * sig)
+            dc2 = (sum_A / (2 * c2)) * (A @ (2 * s * c))
+            grad = (dc1 * c2 - dc2 * c1) / c2**2
 
-            c1 = np.sum(np.abs(outer_sine) * signal)
-            c2 = np.sqrt(sum_A * np.sum(outer_sine**2))
+            return -c1 / c2, -grad * scale
 
-            # gradients of numerator
-            dx_c1 = np.sum(np.sign(outer_sine) * outer_cosine * a * signal)
+        res = minimize(
+            neg_p_and_grad,
+            v0 / scale,
+            jac=True,
+            method="BFGS",
+            options={"gtol": stop_cond, "maxiter": max_gd_iterations},
+        )
 
-            dy_c1 = np.sum(
-                np.sign(outer_sine) * outer_cosine * a * np.cos(2 * theta) * signal
-            )
-            dz_c1 = np.sum(
-                np.sign(outer_sine) * outer_cosine * a * np.sin(2 * theta) * signal
-            )
+        x, y, z = res.x * scale
+        df1 = (x + np.hypot(y, z)) / 2  # nm
+        df2 = (x - np.hypot(y, z)) / 2  # nm
+        angle_ast = np.arctan2(z, y) / 2  # Radians
 
-            derivative_sqrt = 1 / (2 * np.sqrt(sum_A * np.sum(outer_sine**2)))
+        logger.debug(f"BFGS :\tp={-res.fun}\titers={res.nit}")
 
-            derivative_sine2 = 2 * outer_sine * outer_cosine
+        return df1, df2, angle_ast
 
-            #  gradients of denomenator
-            dx_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_x_term)
-            dy_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_y_term)
-            dz_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_z_term)
+    def maximize_correlation(self, signal, initial_df1, initial_df2):
+        """
+        Selects which solver to use for optimizing CTF estimates.
 
-            # gradients
-            dx = (dx_c1 * c2 - dx_c2 * c1) / c2**2
-            dy = (dy_c1 * c2 - dy_c2 * c1) / c2**2
-            dz = (dz_c1 * c2 - dz_c2 * c1) / c2**2
-
-            # update
-            x = x + alpha1 * dx
-            y = y + alpha2 * dy
-            z = z + alpha2 * dz
-
-            if iter_no < 2:
-                stop_cond = np.minimum(np.minimum(dx, dy), dz) / 1000
-
-            if iter_no > 400:
-                stop_cond = np.maximum(np.maximum(dx, dy), dz) + 1
-
-            iter_no = iter_no + 1
-
-        df1 = (x + np.abs(y + z * 1j)) / 2
-        df2 = (x - np.abs(y + z * 1j)) / 2
-        angle_ast = np.angle(y + z * 1j) / 2  # Radians
-
-        inner_cosine = y * np.cos(2 * theta) + z * np.sin(2 * theta)
-        outer_sine = np.sin(a * x + a * inner_cosine - b)
-        outer_cosine = np.cos(a * x + a * inner_cosine - b)
-
-        sine_x_term = a
-        sine_y_term = a * np.cos(2 * theta)
-        sine_z_term = a * np.sin(2 * theta)
-
-        c1 = np.sum(np.abs(outer_sine) * signal)
-        c2 = np.sqrt(sum_A * np.sum(outer_sine**2))
-
-        p = c1 / c2
-
-        return df1, df2, angle_ast, p, iter_no
+        :param signal: Signal PSD array
+        :param initial_df1: Initial major defocus (nm)
+        :param initial_df2: Initial minor defocus (nm)
+        :return: defocus_u_nm, defocus_v_nm, defocus_ang_rad
+        """
+        if self.solver_method == "gd":
+            return self.gd(signal, initial_df1, initial_df2)
+        elif self.solver_method == "bfgs":
+            return self.bfgs(signal, initial_df1, initial_df2)
 
     def write_star(self, star_filepath, params_dict):
         """
@@ -924,33 +931,14 @@ class CtfEstimator:
         initial_df1 = (avg_defocus * 2) / (1 + ratio)
         initial_df2 = (avg_defocus * 2) - initial_df1
 
-        angle = -5 / 12 * np.pi  # Radians (-75 degrees)
-
-        # This array holds results from each of the `gd_iters`
-        cc_array = np.zeros((self.gd_iters, 4))
-        for a, angle in enumerate(np.linspace(0, np.pi, self.gd_iters, endpoint=False)):
-            df1, df2, angle_ast, p, iters = self.gd(
-                signal,
-                initial_df1,
-                initial_df2,
-                angle,
-            )
-
-            cc_array[a, 0] = df1
-            cc_array[a, 1] = df2
-            cc_array[a, 2] = angle_ast  # Radians
-            cc_array[a, 3] = p
-            logger.debug(
-                f"Gradient Descent {a+1} of {self.gd_iters}:\tp={p}\titers={iters}"
-            )
-
-        # Select the best result index
-        ml = np.argmax(cc_array[:, 3], -1)
+        defocus_u, defocus_v, defocus_ang = self.maximize_correlation(
+            signal, initial_df1, initial_df2
+        )
 
         params = {
-            "defocus_u": cc_array[ml, 0] * 10,  # Convert from nm to A
-            "defocus_v": cc_array[ml, 1] * 10,  # Convert from nm to A
-            "defocus_ang": cc_array[ml, 2],  # Radians
+            "defocus_u": defocus_u * 10,  # Convert from nm to A
+            "defocus_v": defocus_v * 10,  # Convert from nm to A
+            "defocus_ang": defocus_ang,  # radians
             "cs": self.cs,
             "voltage": self.voltage,
             "pixel_size": self.pixel_size,
