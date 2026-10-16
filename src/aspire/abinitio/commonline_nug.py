@@ -1702,13 +1702,22 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def _permutek(Ak, k, N):
         """
-        Permute and split a degree-k matrix into blocks of sizes k and k + 1.
+        Separate the two coordinate groups of a degree-k matrix.
 
-        :param Ak: Degree-k block matrix.
+        Each image contributes 2k + 1 coordinates. Within an image, the
+        k-coordinate group occupies odd indices and the k + 1 group occupies
+        even indices. Reorder both axes within each image, then place the
+        k-coordinate group from every image before the (k + 1)-coordinate
+        group. Return the two diagonal blocks so they can be processed
+        separately by ADMM. Cross-group blocks are not returned.
+
+        :param Ak: Matrix in image-wise coordinate order, with shape
+            (N * (2k + 1), N * (2k + 1)).
         :param k: Representation degree.
         :param N: Number of images.
 
-        :return: The two permuted matrix blocks.
+        :return: The k-component and (k + 1)-component blocks, with shapes
+            (N*k, N*k) and (N*(k + 1), N*(k + 1)).
         """
         dk = 2 * k + 1
 
@@ -1740,13 +1749,21 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def _permutek_back(Ak, k, N):
         """
-        Undo the degree-k block permutation and reconstruct the full matrix.
+        Restore image-wise coordinate order after ADMM block processing.
 
-        :param Ak: Permuted degree-k matrix.
+        The input is in component-grouped order: all N*k coordinates of
+        the first group precede all N*(k + 1) coordinates of the second.
+        `_transform_coeff_back` places the two processed blocks on the
+        diagonal of this matrix, with zeros elsewhere. This method then
+        restores the original image-wise coordinate order.
+
+        :param Ak: Full matrix in component-grouped order, with shape
+            (N * (2k + 1), N * (2k + 1)).
         :param k: Representation degree.
         :param N: Number of images.
 
-        :return: Matrix in the original block ordering.
+        :return: Matrix in image-wise coordinate order, with the same shape
+            as Ak.
         """
         dk = 2 * k + 1
 
