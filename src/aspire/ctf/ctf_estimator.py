@@ -1,6 +1,8 @@
 """
 Contains code supporting CTF parameter estimation.
-Generally, this is a Python version of ASPIRE-CTF from MATLAB.
+This implements a version of ASPIRE-CTF originally written in MATLAB,
+
+This Python version supports multiple basis and solvers.
 
 See paper:
 
@@ -20,7 +22,9 @@ successfully in such situations.
 Created on Sep 10, 2019
 @author: Ayelet Heimowitz, Amit Moscovich
 
-Integrated into ASPIRE-Python by Garrett Wright Feb 2021.
+Originally integrated into ASPIRE-Python Feb 2021,
+optimized and refactored by Garrett Wright Oct 2026.
+
 """
 
 import logging
@@ -79,8 +83,11 @@ class CtfEstimator:
         :param g_min: Inverse of minimun resolution for PSD. Default 30.
         :param g_max: Inverse of maximum resolution for PSD. Default 5.
         :param gradient_descent_iterations: Optional, number of Gradient Descent attempts.
-            Defaults to 6.
+            Defaults to 6.  Unused for `bfgs`.
         :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
+        :param solver_method: Solver used to optimize defocus params.  `gd` or `bfgs`.
+            Default uses single call to `bfgs`.
+            Original implementation used repeated gradient descent and is provided for reproducibility.
         :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
             Defaults to 'highs-ds'.
         :param diagnostic_plots: Optionally generate diagnostic_plots.
@@ -137,7 +144,7 @@ class CtfEstimator:
         tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
         self.tapers_1d = xp.asarray(tapers_1d, dtype=complex_type(self.dtype))
 
-    def micrograph_to_blocks(self, micrograph, block_size):
+    def micrograph_to_blocks(self, micrograph):
         """
         Preprocess micrograph into blocks using block_size.
 
@@ -146,8 +153,8 @@ class CtfEstimator:
         :return: NumPy array of blocks extracted from the micrograph.
         """
 
-        # verify block_size is even
-        assert block_size % 2 == 0
+        # verify self.psd_size is even
+        assert self.psd_size % 2 == 0
 
         if micrograph.ndim == 3:
             assert (
@@ -158,7 +165,7 @@ class CtfEstimator:
         size_x = micrograph.shape[-1]
         size_y = micrograph.shape[-2]
 
-        step_size = block_size // 2
+        step_size = self.psd_size // 2
         range_y = size_y // step_size - 1
         range_x = size_x // step_size - 1
 
@@ -192,33 +199,35 @@ class CtfEstimator:
 
         return blocks
 
-    def preprocess_micrograph(self, micrograph, block_size):
+    def preprocess_micrograph(self, micrograph):
         """
         Preprocess micrograph into normalized blocks using block_size.
 
-        :param micrograph: Micrograph as NumPy array. #NOTE looks like F order
-        :param blocksize: Size of the square blocks to partition micrograph.
+        :param micrograph: Micrograph as NumPy array.
         :return: NumPy array of normalized blocks extracted from the micrograph.
         """
 
-        return self.normalize_blocks(self.micrograph_to_blocks(micrograph, block_size))
+        return self.normalize_blocks(self.micrograph_to_blocks(micrograph))
 
-    def legacy_preprocess_micrograph(self, micrograph, block_size):
+    def legacy_preprocess_micrograph(self, micrograph):
         """
         Returns half-overlapping blocks extracted from the micrograph.
         Equivalent to MATLAB's ctf_extract_blocks.
 
         Note, internally transposes micrograph to match MATLAB computations.
         Returns (num_blocks, block_size, block_size)
+
+        :param micrograph: Micrograph as NumPy array.
+        :return: NumPy array of normalized blocks extracted from the micrograph.
         """
         h, w = micrograph.shape
 
-        if min(h, w) < block_size:
+        if min(h, w) < self.psd_size:
             raise ValueError(
-                f"Blocks of size {block_size} x {block_size} cannot be extracted from image."
+                f"Blocks of size {self.psd_size} x {self.psd_size} cannot be extracted from image."
             )
 
-        block_size = block_size - (block_size % 2)  # force even
+        block_size = self.psd_size - (self.psd_size % 2)  # force even
         half = block_size // 2
 
         # Compute crop bounds
@@ -281,7 +290,7 @@ class CtfEstimator:
         block_mean = block.sum(axis=(0, 1), keepdims=True) / (block_size**2)
         block = block - block_mean
 
-        # Transpose output to C order (n,block_size, block_size)
+        # Transpose output to (n,block_size, block_size)
         return block.T
 
     def tapers(self, N, NW, L):
@@ -312,35 +321,28 @@ class CtfEstimator:
         :return: NumPy array of estimated power spectrum.
         """
 
-        num_1d_tapers = self.tapers_1d.shape[0]
-
-        blocks_mt = xp.zeros(blocks[0, :, :].shape, dtype=self.dtype)
-
-        blocks_tapered = xp.zeros(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
-
-        taper_2d = xp.zeros(
-            (blocks.shape[1], blocks.shape[2]), dtype=complex_type(self.dtype)
-        )
-
         # Ensure blocks are on GPU
         blocks = xp.asarray(blocks)
 
+        num_1d_tapers = self.tapers_1d.shape[0]
+
+        blocks_mt = xp.zeros(blocks[0, :, :].shape, dtype=self.dtype)
+        blocks_tapered = xp.empty(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
+        taper_2d = xp.empty(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
+
         for ax1 in range(num_1d_tapers):
             for ax2 in range(num_1d_tapers):
-                xp.matmul(
-                    self.tapers_1d[ax1, :, np.newaxis],
-                    self.tapers_1d[ax2, :, np.newaxis].T,
-                    out=taper_2d,
+                taper_2d[:, :] = (
+                    self.tapers_1d[ax1, :, np.newaxis]
+                    @ self.tapers_1d[ax2, :, np.newaxis].T
                 )
-
                 for m in range(blocks.shape[0]):
-                    xp.multiply(blocks[m, :, :], taper_2d, out=blocks_tapered)
+                    blocks_tapered[:, :] = blocks[m] * taper_2d
                     blocks_mt_post_fft = fft.fftn(blocks_tapered, axes=(-2, -1))
                     blocks_mt += abs2(blocks_mt_post_fft)
-                    # blocks_mt += np.abs(blocks_mt_post_fft)**2
 
-        blocks_mt /= blocks.shape[1] ** 2
-        blocks_mt /= blocks.shape[0] ** 2
+        # Normalize
+        blocks_mt /= blocks.shape[1] ** 2 * blocks.shape[0] ** 2
 
         amplitude_spectrum = fft.fftshift(blocks_mt)
 
@@ -574,6 +576,7 @@ class CtfEstimator:
 
     def pca(self, signal):
         """
+        Compute PCA to yield ratio for estimating  defocus values.
 
         :param signal: Estimated power spectrum.
         :return: ratio.
@@ -757,7 +760,7 @@ class CtfEstimator:
         self, signal, initial_df1, initial_df2, stop_cond=1e-10, max_gd_iterations=200
     ):
         """
-        Calls quasi-newton method BFGS and returns found optimal values.
+        Calls quasi-newton method BFGS and returns found optimized values.
 
         :param signal: Signal PSD array.
         :param initial_df1: Initial major defocus (nm)
@@ -868,37 +871,66 @@ class CtfEstimator:
         star.write(star_filepath)
 
     def _plot_1d_psd(self, signal_1d, background_1d):
+        """
+        Helper function plots 1D PSD.
+
+        :param signal_1d: Background subtracted radial PSD
+        :param background_1d: Background radial PSD.
+        """
         center = self.r_ctf.shape[0] // 2
         x = self.r_ctf[center, center : center + signal_1d.shape[1]]
         plt.plot(x, signal_1d[1] + background_1d[1])
-        # xlabel('$\vert \mathbf{k} \vert^2 \, \, [\mathrm{nm}^{-1}]$', 'Interpreter','latex');
-        # ylabel('$S_y \left( \mathbf{k} \right)$', 'Interpreter','latex');
-        # title('1-d PSD')
+        plt.title("1-d PSD")
+        plt.xlabel(r"$\vert \mathbf{k} \vert^2 \, \, [\mathrm{nm}^{-1}]$")
+        plt.ylabel(r"$S_y \left( \mathbf{k} \right)$")
         plt.show()
 
     def _plot_1d_bg_sub_psd(self, signal_1d):
+        """
+        Helper function plots 1D PSD.
+
+        :param signal_1d: Background subtracted radial PSD
+        """
         center = self.r_ctf.shape[0] // 2
         x = self.r_ctf[center, center : center + signal_1d.shape[1]]
         plt.plot(x, signal_1d[1])
-        # title('Background subtracted 1-d PSD')
-        # xlabel('$\vert \mathbf{k} \vert^2 \, \, [\mathrm{nm}^{-1}]$', 'Interpreter','latex');
-        # ylabel('$S_y \left( \mathbf{k} \right) - S_e \left( \mathbf{k} \right)$', 'Interpreter','latex');
+        plt.title("Background subtracted 1-d PSD")
+        plt.xlabel(r"$\vert \mathbf{k} \vert^2 \, \, [\mathrm{nm}^{-1}]$")
+        plt.ylabel(r"$S_y \left( \mathbf{k} \right) - S_e \left( \mathbf{k} \right)$")
         plt.show()
 
     def _plot_2d_psd(self, psd):
+        """
+        Helper function plots 2D PSD.
+
+        :param psd: 2D PSD array
+        """
         plt.imshow(psd)
-        # title('2-d PSD')
+        plt.title("2-d PSD")
         plt.show()
 
     def _plot_2d_bg_sub_psd(self, bg_sub_psd):
+        """
+        Helper function plots 2D background subtracted PSD.
+
+        :param psd: 2D background subtracted PSD
+        """
         plt.imshow(bg_sub_psd)
-        # title('Background subtracted 2-d PSD')
+        plt.title("Background subtracted 2-d PSD")
         plt.show()
 
     def estimate(self, micrograph):
-        # TODO compare now that remainder of code repros.
-        micrograph_blocks = self.preprocess_micrograph(micrograph, self.psd_size)
-        # micrograph_blocks = self.legacy_preprocess_micrograph(micrograph, self.psd_size)
+        """
+        Estimate the CTF parameters of `micrograph`.
+
+        This is the main method implementing the algorithm at a high level.
+
+        :param micrograph: 2D Array of micrograph data.
+        :return: CTF params, estimated background PSD, estimated signal PSD
+        """
+        # TODO Ask Ayelet about legacy version intent and rm if not needed.
+        micrograph_blocks = self.preprocess_micrograph(micrograph)
+        # micrograph_blocks = self.legacy_preprocess_micrograph(micrograph)
 
         signal_observed = self.estimate_psd(micrograph_blocks)
 
@@ -998,6 +1030,8 @@ def estimate_ctf(
     """
     Given paramaters estimates CTF from experimental data in `data_folder
     and returns dictionary of estimated CTF parameters.
+
+    Saves STAR files to `output_dir`, which can be loaded into ASPIRE etc.
 
     Optionally saves diagnostic CTF and noise image (mrc) files.
 
