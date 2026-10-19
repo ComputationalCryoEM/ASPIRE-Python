@@ -34,6 +34,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
+from line_profiler import profile
 from numpy import linalg as npla
 from scipy.optimize import linprog, minimize
 from scipy.signal.windows import dpss
@@ -43,7 +44,7 @@ from aspire.image import Image
 from aspire.numeric import fft, xp
 from aspire.operators import CTFFilter
 from aspire.storage import StarFile
-from aspire.utils import abs2, complex_type, grid_2d, tqdm, voltage_to_wavelength
+from aspire.utils import complex_type, grid_2d, tqdm, voltage_to_wavelength
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +166,7 @@ class CtfEstimator:
         # Only need to compute tapers once
         # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
         tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
-        self.tapers_1d = xp.asarray(tapers_1d, dtype=complex_type(self.dtype))
+        self.tapers_1d = xp.asarray(tapers_1d, dtype=self.dtype)
 
     def micrograph_to_blocks(self, micrograph):
         """
@@ -344,30 +345,47 @@ class CtfEstimator:
         :return: NumPy array of estimated power spectrum.
         """
 
-        # Ensure blocks are on GPU
-        blocks = xp.asarray(blocks)
-
+        # Shapes
+        num_blocks, N, _ = blocks.shape
+        Nhalf = N // 2 + 1  # rfft size
         num_1d_tapers = self.tapers_1d.shape[0]
 
-        blocks_mt = xp.zeros(blocks[0, :, :].shape, dtype=self.dtype)
-        blocks_tapered = xp.empty(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
-        taper_2d = xp.empty(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
+        # Ensure blocks are on GPU and consistent dtype
+        blocks = xp.asarray(blocks, dtype=self.dtype)
 
-        for ax1 in range(num_1d_tapers):
-            for ax2 in range(num_1d_tapers):
-                taper_2d[:, :] = (
-                    self.tapers_1d[ax1, :, np.newaxis]
-                    @ self.tapers_1d[ax2, :, np.newaxis].T
-                )
-                for m in range(blocks.shape[0]):
-                    blocks_tapered[:, :] = blocks[m] * taper_2d
-                    blocks_mt_post_fft = fft.fftn(blocks_tapered, axes=(-2, -1))
-                    blocks_mt += abs2(blocks_mt_post_fft)
+        # Array to accumulate PSD
+        # Use hermitian symmetry to cut PSD compute in half
+        psd_half = xp.zeros((N, Nhalf), dtype=self.dtype)
+        accum = xp.empty((N, Nhalf), dtype=self.dtype)
+
+        for ax2 in range(num_1d_tapers):
+            # taper along columns
+            A = fft.rfft(
+                blocks * self.tapers_1d[ax2][None, None, :], axis=-1
+            )  # (num_1d_tapers, N, Nhalf)
+
+            for ax1 in range(num_1d_tapers):
+                # taper along rows
+                Bf = fft.fft(
+                    A * self.tapers_1d[ax1][None, :, None], axis=-2
+                )  # (num_1d_tapers, N, Nhalf)
+                # Accumulate abs2 summed over all blocks into temp array `accum`
+                _abs2_sum0(Bf, accum)
+                psd_half += accum
+
+        # Rebuild the full spectrum from psd_half
+        amplitude_spectrum = xp.empty((N, N), dtype=self.dtype)
+        amplitude_spectrum[:, :Nhalf] = psd_half
+        # reflect all the positive freq columns (1:N - Nhalf + 1), roll the single zero column.
+        amplitude_spectrum[:, Nhalf:] = xp.roll(
+            psd_half[:, 1 : N - Nhalf + 1][::-1, ::-1], 1, axis=0
+        )
 
         # Normalize
-        blocks_mt /= blocks.shape[1] ** 2 * blocks.shape[0] ** 2
+        # Ask Ayelet about the num_blocks factor. Needed to match MATLAB intermediate.
+        amplitude_spectrum /= N**2 * num_blocks**2
 
-        amplitude_spectrum = fft.fftshift(blocks_mt)
+        amplitude_spectrum = fft.fftshift(amplitude_spectrum)
 
         return Image(xp.asnumpy(amplitude_spectrum))
 
@@ -512,6 +530,7 @@ class CtfEstimator:
 
         return final_signal, final_background
 
+    @profile
     def opt1d(
         self,
         amplitude_spectrum,
@@ -527,46 +546,51 @@ class CtfEstimator:
         :return: 2-tuple of NumPy arrays (Estimated average of defocus and low_freq_cutoff)
         """
 
-        signal = amplitude_spectrum.T
-        signal = np.maximum(0.0, signal)
-        signal = np.sqrt(signal)
+        signal = xp.asarray(amplitude_spectrum.T)
+        signal = xp.maximum(0.0, signal)
+        signal = xp.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
 
-        c = np.zeros((max_defocus - min_defocus, signal.shape[1]), dtype=self.dtype)
+        c = xp.zeros((max_defocus - min_defocus, signal.shape[1]), dtype=self.dtype)
 
-        for f in range(min_defocus, max_defocus):
-
-            ctf_im = np.abs(
-                CTFFilter.ctf_formula(
-                    self.radial_omega,
-                    pixel_size=self.pixel_size,
-                    voltage=self.voltage,
-                    defocus_u_a=10 * f,
-                    defocus_v_a=10 * f,
-                    defocus_ang=0,
-                    Cs=self.cs,
-                    alpha=self.amplitude_contrast,
-                    B=0,
-                )[0]
+        defoci_angstrom = xp.arange(min_defocus, max_defocus, dtype=int) * 10
+        ctf_ims = np.abs(
+            CTFFilter.ctf_formula(
+                xp.asarray(self.radial_omega),
+                pixel_size=self.pixel_size,
+                voltage=self.voltage,
+                defocus_u_a=defoci_angstrom,
+                defocus_v_a=defoci_angstrom,
+                defocus_ang=0,
+                Cs=self.cs,
+                alpha=self.amplitude_contrast,
+                B=0,
             )
+        )
+        defoci_angstrom = xp.asnumpy(defoci_angstrom // 10)  # nm
+
+        # Think we can optimize this way better...
+        for f, ctf_im in zip(defoci_angstrom, ctf_ims):
             # Shouldn't normally be needed within class calls,
-            #    but if user running manually clip to signal len.
+            #    but if user running manually, ensure clip to signal len.
             ctf_im = ctf_im[: signal.shape[0]]
 
-            ctf_im = np.reshape(ctf_im, (ctf_im.shape[0], 1))
-            ctf_im = np.tile(ctf_im, (1, signal.shape[1]))
+            ctf_im = ctf_im.reshape((ctf_im.shape[0], 1))
+            ctf_im = xp.tile(ctf_im, (1, signal.shape[1]))
 
             for m in range(0, signal.shape[1]):
-                signal[:, m] = signal[:, m] - np.mean(signal[m + 1 :, m], axis=0)
-                ctf_im[:, m] = ctf_im[:, m] - np.mean(ctf_im[m + 1 :, m], axis=0)
+                signal[:, m] = signal[:, m] - xp.mean(signal[m + 1 :, m], axis=0)
+                ctf_im[:, m] = ctf_im[:, m] - xp.mean(ctf_im[m + 1 :, m], axis=0)
                 ctf_im[: m + 1, m] = 0
                 signal[: m + 1, m] = 0
 
-            Sx = np.sqrt(np.sum(ctf_im**2, axis=0))
-            Sy = np.sqrt(np.sum(signal**2, axis=0))
-            c[f - min_defocus, :] = np.sum(ctf_im * signal, axis=0) / (Sx * Sy)
+            Sx = xp.sqrt(xp.sum(ctf_im**2, axis=0))
+            Sy = xp.sqrt(xp.sum(signal**2, axis=0))
+            c[f - min_defocus, :] = xp.sum(ctf_im * signal, axis=0) / (Sx * Sy)
 
-        avg_defocus, low_freq_cutoff_col = np.unravel_index(np.argmax(c), c.shape)[:2]
+        avg_defocus, low_freq_cutoff_col = np.unravel_index(
+            xp.argmax(c).item(), c.shape
+        )[:2]
         avg_defocus += min_defocus
 
         return avg_defocus, low_freq_cutoff_col
@@ -1184,3 +1208,25 @@ def estimate_ctf(
                 mrc.voxel_size = ctf_est.pixel_size
 
     return results
+
+
+# Helper function for sum(abs^2(x))
+# numpy expression fallback
+def _abs2_sum0(x, out):
+    out[:] = (x.real**2 + x.imag**2).sum(axis=0)
+
+
+# CuPy
+if hasattr(xp, "ReductionKernel"):
+    _abs2_sum0_kernel = xp.ReductionKernel(
+        "T x",
+        "Y y",
+        "x.real() * x.real() + x.imag() * x.imag()",
+        "a + b",
+        "y = a",
+        "0",
+        name="abs2_sum0",
+    )
+
+    def _abs2_sum0(x, out):
+        _abs2_sum0_kernel(x, axis=0, out=out)
