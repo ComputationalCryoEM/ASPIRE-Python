@@ -1117,7 +1117,7 @@ def estimate_ctf(
         params, background_2d, signal = ctf_est.estimate(micrograph)
 
         # Store files' params into results dictionary
-        results[relative_input_path] = params
+        results[str(relative_input_path)] = params
 
         # Write each micrograph's ctf parameters to an individual STAR file
         star_filepath = output_file_prefix.with_suffix(".star")
