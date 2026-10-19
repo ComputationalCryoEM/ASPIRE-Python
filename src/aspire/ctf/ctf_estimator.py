@@ -44,7 +44,7 @@ from aspire.image import Image
 from aspire.numeric import fft, xp
 from aspire.operators import CTFFilter
 from aspire.storage import StarFile
-from aspire.utils import complex_type, grid_2d, tqdm, voltage_to_wavelength
+from aspire.utils import grid_2d, tqdm, voltage_to_wavelength
 
 logger = logging.getLogger(__name__)
 
@@ -550,11 +550,11 @@ class CtfEstimator:
         signal = xp.maximum(0.0, signal)
         signal = xp.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
+        N, M = signal.shape
 
-        c = xp.zeros((max_defocus - min_defocus, signal.shape[1]), dtype=self.dtype)
-
+        # Compute the (radial) CTF filter stack in bulk
         defoci_angstrom = xp.arange(min_defocus, max_defocus, dtype=int) * 10
-        ctf_ims = np.abs(
+        ctf_ims = xp.abs(
             CTFFilter.ctf_formula(
                 xp.asarray(self.radial_omega),
                 pixel_size=self.pixel_size,
@@ -569,24 +569,25 @@ class CtfEstimator:
         )
         defoci_angstrom = xp.asnumpy(defoci_angstrom // 10)  # nm
 
-        # Think we can optimize this way better...
-        for f, ctf_im in zip(defoci_angstrom, ctf_ims):
-            # Shouldn't normally be needed within class calls,
-            #    but if user running manually, ensure clip to signal len.
-            ctf_im = ctf_im[: signal.shape[0]]
+        # Compute `signal` statistics, independent of defocus
+        LT = xp.tril(signal, k=-1)  # keep lower triangle
+        sx = LT.sum(axis=0)  # sum of row values
+        sxx = (LT * LT).sum(axis=0)  # sum of squared row values
+        nrows = (N - 1 - xp.arange(M)).astype(
+            self.dtype
+        )  # rows below diagonal for each column
+        Sxx = sxx - sx**2 / nrows  # centered
 
-            ctf_im = ctf_im.reshape((ctf_im.shape[0], 1))
-            ctf_im = xp.tile(ctf_im, (1, signal.shape[1]))
+        # CTF statistics
+        ctf_ims = xp.asarray(ctf_ims, dtype=self.dtype)[:, :N]
+        sy = tail_sum(ctf_ims, M)
+        syy = tail_sum(ctf_ims * ctf_ims, M)
+        Syy = syy - sy**2 / nrows
 
-            for m in range(0, signal.shape[1]):
-                signal[:, m] = signal[:, m] - xp.mean(signal[m + 1 :, m], axis=0)
-                ctf_im[:, m] = ctf_im[:, m] - xp.mean(ctf_im[m + 1 :, m], axis=0)
-                ctf_im[: m + 1, m] = 0
-                signal[: m + 1, m] = 0
-
-            Sx = xp.sqrt(xp.sum(ctf_im**2, axis=0))
-            Sy = xp.sqrt(xp.sum(signal**2, axis=0))
-            c[f - min_defocus, :] = xp.sum(ctf_im * signal, axis=0) / (Sx * Sy)
+        # Compute the cross corr using one GEMM
+        c = ctf_ims @ LT
+        c -= sy * sx[None, :] / nrows
+        c = c / xp.sqrt(Sxx[None, :] * Syy)
 
         avg_defocus, low_freq_cutoff_col = np.unravel_index(
             xp.argmax(c).item(), c.shape
@@ -1211,11 +1212,6 @@ def estimate_ctf(
 
 
 # Helper function for sum(abs^2(x))
-# numpy expression fallback
-def _abs2_sum0(x, out):
-    out[:] = (x.real**2 + x.imag**2).sum(axis=0)
-
-
 # CuPy
 if hasattr(xp, "ReductionKernel"):
     _abs2_sum0_kernel = xp.ReductionKernel(
@@ -1230,3 +1226,15 @@ if hasattr(xp, "ReductionKernel"):
 
     def _abs2_sum0(x, out):
         _abs2_sum0_kernel(x, axis=0, out=out)
+
+else:
+    # numpy expression fallback
+    def _abs2_sum0(x, out):
+        out[:] = (x.real**2 + x.imag**2).sum(axis=0)
+
+
+# Helper function
+def tail_sum(x, M):
+    """sum over i > m  (exclusive reverse cumsum)"""
+    cs = xp.cumsum(x, axis=1)
+    return cs[:, -1:] - cs[:, :M]
