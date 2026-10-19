@@ -197,39 +197,45 @@ class CommonlineNUG(Orient3D):
         Lmax = self.Lmax
         T = self.T
 
-        def fij(alpha, gamma, i, j):
-            """
-            Evaluate the pairwise common-line loss used to approximate NUG Fourier coefficients.
-
-            This function samples the corresponding polar Fourier rays from images i and j,
-            compares them over all candidate 1D shifts, and returns the minimum shifted
-            L1 mismatch.
-
-            :param alpha: First ZYZ Euler angle of the relative orientation, in radians.
-            :param gamma: Third ZYZ Euler angle of the relative orientation, in radians.
-            :param i: Index of the first image.
-            :param j: Index of the second image.
-
-            :return: Minimum shifted L1 mismatch between the induced common-line rays.
-            """
-
-            Ii_hat = self.pf_full[i]
-            Ij_hat = self.pf_full[j]
-            idxi = np.round((alpha - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
-            idxj = np.round((-gamma - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
-
-            Si = Ii_hat[int(idxi)]
-            Sj = Ij_hat[int(idxj)]
-
-            # Apply shifts
-            Sj_shifted = self.shift_phases * Sj
-            norms = np.linalg.norm(Si[None] - Sj_shifted, 1, axis=1)
-            return norms.min()
-
         # Quadrature grid used to sample the pairwise loss over SO(3) Euler angles.
         alpha_grid = np.arange(2 * T, dtype=np.float64) * np.pi / T
         beta_grid = (2 * np.arange(2 * T, dtype=np.float64) + 1) * np.pi / 4 / T
         gamma_grid = np.arange(2 * T, dtype=np.float64) * np.pi / T
+
+        # Map the sampled angles to polar Fourier ray indices once for all image pairs.
+        alpha_idx = (
+            np.round((alpha_grid - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
+        ).astype(int)
+        gamma_idx = (
+            np.round((-gamma_grid - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
+        ).astype(int)
+
+        def fij(i, j):
+            """
+            Evaluate the pairwise common-line loss on the alpha–gamma grid.
+
+            For each sampled pair of angles, select the corresponding polar Fourier
+            rays from images i and j. Compare the rays using the L1 norm over radial
+            samples, then retain the smallest mismatch over the candidate 1D shifts.
+
+            :param i: Index of the first image.
+            :param j: Index of the second image.
+
+            :return: Loss array of shape (2*T, 2*T). Rows correspond to alpha_grid
+                and columns to gamma_grid.
+            """
+            rays_i = self.pf_full[i, alpha_idx]
+            rays_j = self.pf_full[j, gamma_idx]
+            loss_grid = np.empty((2 * T, 2 * T), dtype=np.float64)
+
+            for gamma_col, ray_j in enumerate(rays_j):
+                shifted_j = self.shift_phases * ray_j
+                differences = rays_i[:, None, :] - shifted_j[None, :, :]
+                loss_grid[:, gamma_col] = np.linalg.norm(
+                    differences, ord=1, axis=-1
+                ).min(axis=-1)
+
+            return loss_grid
 
         # Beta quadrature weights for the truncated Wigner-D Fourier expansion.
         bT = np.zeros(2 * T, dtype=np.float64)
@@ -278,10 +284,7 @@ class CommonlineNUG(Orient3D):
         ) as pbar:
             for i in range(N):
                 for j in range(i + 1, N):
-                    Fij = np.zeros((2 * T, 2 * T), dtype=np.float64)
-                    for j1 in range(2 * T):
-                        for j2 in range(2 * T):
-                            Fij[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, j)
+                    Fij = fij(i, j)
                     for k_idx in range(Lmax):
                         k = k_idx + 1
                         dk = 2 * k + 1
@@ -296,10 +299,7 @@ class CommonlineNUG(Orient3D):
 
         # Diagonal blocks encode self-pair losses and are handled separately.
         for i in trange(N, desc="Computing diagonal coefficients"):
-            Fii = np.zeros((2 * T, 2 * T), dtype=np.float64)
-            for j1 in range(2 * T):
-                for j2 in range(2 * T):
-                    Fii[j1, j2] = fij(alpha_grid[j1], gamma_grid[j2], i, i)
+            Fii = fij(i, i)
             for k_idx in range(Lmax):
                 k = k_idx + 1
                 dk = 2 * k + 1
