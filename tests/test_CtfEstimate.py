@@ -7,7 +7,7 @@ import mrcfile
 import numpy as np
 import pytest
 
-from aspire.basis import FBBasis2D, FLEBasis2D, FPSWFBasis2D, PSWFBasis2D
+from aspire.basis import FBBasis2D, FFBBasis2D, FLEBasis2D, FPSWFBasis2D, PSWFBasis2D
 from aspire.ctf import estimate_ctf
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,8 @@ def basis(request):
     return basis
 
 
-def test_estimate_CTF(basis):
+def test_estimate_CTF(basis, **customized_args):
+    _dtype = customized_args.pop("dtype", DTYPE)  # avoid duplicate dtype arg
     with tempfile.TemporaryDirectory() as tmp_input_dir:
         # Copy input file
         copyfile(
@@ -70,9 +71,10 @@ def test_estimate_CTF(basis):
                 g_max=5.0,
                 output_dir=tmp_output_dir,
                 basis=basis,
-                dtype=DTYPE,
+                dtype=_dtype,
                 save_ctf_images=True,
                 save_noise_images=True,
+                **customized_args,
             )
 
             logger.debug(f"results: {results}")
@@ -112,6 +114,21 @@ def test_estimate_CTF(basis):
 
                 for param in ["cs", "amplitude_contrast", "voltage", "pixel_size"]:
                     np.testing.assert_allclose(result[param], TEST_OUTPUT[param])
+
+
+def test_customized_estimate_CTF():
+    basis = FFBBasis2D(PSD_SIZE, dtype=np.float32)
+    customized = dict(
+        dtype=basis.dtype,
+        solver_method="gd",
+        solver_opts={
+            "gradient_descent_iterations": 4,
+            "max_iterations": 300,
+            "stop_cond": 1e-8,
+        },
+        linprog_method="highs",
+    )
+    return test_estimate_CTF(basis, **customized)
 
 
 # we are chopping the micrograph into a vertical and a horizontal rectangle
