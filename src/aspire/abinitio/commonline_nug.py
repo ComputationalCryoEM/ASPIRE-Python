@@ -258,11 +258,11 @@ class CommonlineNUG(Orient3D):
             k = k_idx + 1  # degree
             dk = 2 * k + 1
 
-            exp_alpha_grid = np.zeros((2 * T, dk), dtype=complex_type(np.float64))
+            exp_alpha_grid = np.zeros((2 * T, dk), dtype=np.complex128)
             for m in range(-k, k + 1):
                 exp_alpha_grid[:, m + k] = np.exp(1j * m * alpha_grid)
 
-            exp_gamma_grid = np.zeros((2 * T, dk), dtype=complex_type(np.float64))
+            exp_gamma_grid = np.zeros((2 * T, dk), dtype=np.complex128)
             for m in range(-k, k + 1):
                 exp_gamma_grid[:, m + k] = np.exp(1j * m * gamma_grid)
 
@@ -275,7 +275,7 @@ class CommonlineNUG(Orient3D):
         C = []
         for k in range(1, Lmax + 1):
             dk = 2 * k + 1
-            C.append(np.zeros((N * dk, N * dk), dtype=complex_type(np.float64)))
+            C.append(np.zeros((N * dk, N * dk), dtype=np.complex128))
 
         # Compute off-diagonal image-pair losses and insert their degree-wise coefficients.
         with tqdm(
@@ -1033,7 +1033,7 @@ class CommonlineNUG(Orient3D):
             resX0 = xp.linalg.norm(tmp)
             tmp = S1 + Z1 + AIT_yI1 - C1
             X1 = X1 + mult * rho * tmp
-            resX1 = xp.linalg.norm(tmp)
+            resX1 = Xp.linalg.norm(tmp)
             tmp = Sd0 + Zd0
             Xd0 = Xd0 + mult * rho * tmp
             resXd0 = xp.linalg.norm(tmp)
@@ -1256,7 +1256,6 @@ class CommonlineNUG(Orient3D):
 
         C0, C1 = self._transform_coeff(C, IDX_upper)
         normC = xp.sqrt(xp.linalg.norm(C0) ** 2 + xp.linalg.norm(C1) ** 2)
-        del C
 
         # compute the block sizes for X
         d0 = [0]
@@ -2220,8 +2219,8 @@ class CommonlineNUG(Orient3D):
         :return: Estimated alpha angles in radians, with shape (n_img,).
         """
         N = self.n_img
-        ZZbar = np.zeros((N, N), dtype=complex_type(np.float64))
-        ZZ = np.zeros((N, N), dtype=complex_type(np.float64))
+        ZZbar = np.zeros((N, N), dtype=np.complex128)
+        ZZ = np.zeros((N, N), dtype=np.complex128)
 
         # The same degree-one block also gives the pairwise phase measurements
         #
@@ -2296,8 +2295,8 @@ class CommonlineNUG(Orient3D):
         # ambiguity, as described in the paper.
         beta_est = np.arccos(np.clip(np.sqrt(b1), -1, 1)) % np.pi
 
-        Aminus = np.zeros((N, N), dtype=complex_type(np.float64))
-        Aplus = np.zeros((N, N), dtype=complex_type(np.float64))
+        Aminus = np.zeros((N, N), dtype=np.complex128)
+        Aplus = np.zeros((N, N), dtype=np.complex128)
 
         # Divide two degree-two block entries by their known sin(2*beta)
         # factors to recover the pairwise phases:
@@ -2392,7 +2391,7 @@ class CommonlineNUG(Orient3D):
         modes = np.arange(-degree, degree + 1)
 
         # Store pairwise estimates of exp(i * degree * (gamma_i - gamma_j)).
-        C = np.zeros((N, N), dtype=complex_type(np.float64))
+        C = np.zeros((N, N), dtype=np.complex128)
 
         # Construct the handedness-conjugation matrix.
         Jk = self._handedness_matrix(degree)
@@ -2684,7 +2683,7 @@ class CommonlineNUG(Orient3D):
         :return: Forward and inverse change-of-basis matrices.
         """
         diml = 2 * ell + 1
-        Tinv = np.zeros((diml, diml), dtype=complex_type(np.float64))
+        Tinv = np.zeros((diml, diml), dtype=np.complex128)
         for i in range(diml):
             if i < ell:
                 Tinv[i, i] = 1j / np.sqrt(2)
@@ -2695,7 +2694,7 @@ class CommonlineNUG(Orient3D):
                 Tinv[i, i] = (-1) ** (i - ell) / np.sqrt(2)
                 Tinv[i, diml - 1 - i] = 1 / np.sqrt(2)
 
-        T = np.zeros((diml, diml), dtype=complex_type(np.float64))
+        T = np.zeros((diml, diml), dtype=np.complex128)
         for i in range(diml):
             if i < ell:
                 T[i, i] = -1j / np.sqrt(2)
