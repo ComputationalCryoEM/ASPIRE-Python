@@ -53,6 +53,21 @@ class CtfEstimator:
     CtfEstimator Class ...
     """
 
+    # Allow configuration for advanced users and future solvers.
+    default_solver_opts = {
+        "gd": {
+            "gradient_descent_iterations": 6,
+            "max_iterations": 400,
+            "stop_cond": None,  # Base on dtype
+        },
+        "bfgs": {
+            "maxiter": 200,
+            "gtol": 1e-10,
+        },
+    }
+
+    _solver_methods = default_solver_opts.keys()
+
     def __init__(
         self,
         pixel_size,
@@ -63,9 +78,9 @@ class CtfEstimator:
         num_tapers=4,
         g_min=30,
         g_max=5,
-        gradient_descent_iterations=6,
         basis=None,
         solver_method="bfgs",
+        solver_opts=None,
         linprog_method="highs-ds",
         diagnostic_plots=False,
         dtype=np.float32,
@@ -82,12 +97,13 @@ class CtfEstimator:
             Defaults to 4.
         :param g_min: Inverse of minimun resolution for PSD. Default 30.
         :param g_max: Inverse of maximum resolution for PSD. Default 5.
-        :param gradient_descent_iterations: Optional, number of Gradient Descent attempts.
-            Defaults to 6.  Unused for `bfgs`.
         :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
         :param solver_method: Solver used to optimize defocus params.  `gd` or `bfgs`.
             Default uses single call to `bfgs`.
             Original implementation used repeated gradient descent and is provided for reproducibility.
+            Each solver may have unique configuration options, optionally passed via a dictionary.
+        :param solver_opts: Optional dictionary of solver options.
+            Populated with `default_solver_opts[solver]` by default.
         :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
             Defaults to 'highs-ds'.
         :param diagnostic_plots: Optionally generate diagnostic_plots.
@@ -105,16 +121,21 @@ class CtfEstimator:
         self.lmbd = (
             voltage_to_wavelength(np.asarray(voltage).item()) / 10.0
         )  # Convert angstrom to nm
+
         self.g_min = np.asarray(g_min).item()
         self.g_max = np.asarray(g_max).item()
-        self.gd_iters = int(gradient_descent_iterations)
-        _solver_methods = ("gd", "bfgs")
-        if solver_method not in _solver_methods:
+
+        # Setup solvers and respective solver options
+        if solver_method not in self._solver_methods:
             raise RuntimeError(
-                f"Provided solver_method {solver_method} must be one of {_solver_methods}"
+                f"Provided solver_method {solver_method} must be one of {self._solver_methods}"
             )
         self.solver_method = solver_method
+        if solver_opts is None:
+            solver_opts = self.default_solver_opts[solver_method]
+        self.solver_opts = solver_opts
         self.linprog_method = linprog_method
+
         self.diagnostic_plots = diagnostic_plots
         self.dtype = np.dtype(dtype)
 
@@ -627,7 +648,7 @@ class CtfEstimator:
         df2,
         angle_ast,
         stop_cond=None,
-        max_gd_iterations=400,
+        max_iterations=400,
     ):
         """
         Runs inner gradient ascent to optimize defocus parameters.
@@ -638,7 +659,8 @@ class CtfEstimator:
         :param angle_ast: Angle between df1 and the x-axis, Radians.
         :param stop_cond: Optionally select value to stop iterations early.
             Default `None` is 1e-10 for float32 `dtype` and 1e20 otherwise.
-        :param max_gd_iterations: 400
+        :param max_iterations: Maximum number of inner gd steps.
+            Default 400.
         :return: Optimal defocus parameters
         """
 
@@ -710,7 +732,7 @@ class CtfEstimator:
 
             if iter_no < 2:
                 stop_cond = min(dx, dy, dz) / 1000
-            if iter_no > max_gd_iterations:
+            if iter_no > max_iterations:
                 stop_cond = max(dx, dy, dz) + 1
             iter_no += 1
 
@@ -724,9 +746,11 @@ class CtfEstimator:
 
         return df1, df2, angle_ast, p, iter_no
 
-    def gd(self, signal, initial_df1, initial_df2):
+    def gd(
+        self, signal, initial_df1, initial_df2, gradient_descent_iterations=6, **kwargs
+    ):
         """
-        Calls gradient descent loop `gd_iters` times and
+        Calls gradient descent loop multiple times and
         returns best optimum found.
 
         This implementation was adapted and optimized from the original MATLAB code.
@@ -734,16 +758,22 @@ class CtfEstimator:
         :param signal: Signal PSD array.
         :param initial_df1: Initial major defocus (nm)
         :param initial_df2: Initial minor defocus (nm)
+        :param gradient_descent_iterations: Optional, number of Gradient Descent attempts.
+            Defaults to 6.
         :return: defocus_u_nm, defocus_v_nm, defocus_ang_radian
         """
-        # This array holds results from each of the `gd_iters`
-        cc_array = np.zeros((self.gd_iters, 4))
-        for a, angle in enumerate(np.linspace(0, np.pi, self.gd_iters, endpoint=False)):
+
+        # This array holds results from each of the `gradient_descent_iterations`
+        cc_array = np.zeros((gradient_descent_iterations, 4))
+        for a, angle in enumerate(
+            np.linspace(0, np.pi, gradient_descent_iterations, endpoint=False)
+        ):
             df1, df2, angle_ast, p, iters = self._gd(
                 signal,
                 initial_df1,
                 initial_df2,
                 angle,
+                **kwargs,
             )
 
             cc_array[a, 0] = df1
@@ -751,7 +781,7 @@ class CtfEstimator:
             cc_array[a, 2] = angle_ast  # Radians
             cc_array[a, 3] = p
             logger.debug(
-                f"Gradient Descent {a+1} of {self.gd_iters}:\tp={p}\titers={iters}"
+                f"Gradient Descent {a+1} of {gradient_descent_iterations}:\tp={p}\titers={iters}"
             )
 
         # Select the best result index
@@ -759,7 +789,12 @@ class CtfEstimator:
         return cc_array[ml, 0:3]
 
     def bfgs(
-        self, signal, initial_df1, initial_df2, stop_cond=1e-10, max_gd_iterations=200
+        self,
+        signal,
+        initial_df1,
+        initial_df2,
+        gtol=1e-10,
+        maxiter=200,
     ):
         """
         Calls quasi-newton method BFGS and returns found optimized values.
@@ -767,9 +802,9 @@ class CtfEstimator:
         :param signal: Signal PSD array.
         :param initial_df1: Initial major defocus (nm)
         :param initial_df2: Initial minor defocus (nm)
-        :param stop_cond: Optionally select value to stop iterations.
+        :param gtol: Optionally select value to stop iterations.
             Default is 1e-10.
-        :param max_gd_iterations: Optionally provide a max number of iterations for BFGS.
+        :param maxiter: Optionally provide a max number of iterations for BFGS.
             Defaults to 200.
         :return: defocus_u_nm, defocus_v_nm, defocus_ang_radian
         """
@@ -828,7 +863,7 @@ class CtfEstimator:
             v0 / scale,
             jac=True,
             method="BFGS",
-            options={"gtol": stop_cond, "maxiter": max_gd_iterations},
+            options={"gtol": gtol, "maxiter": maxiter},
         )
 
         x, y, z = res.x * scale
@@ -850,9 +885,9 @@ class CtfEstimator:
         :return: defocus_u_nm, defocus_v_nm, defocus_ang_rad
         """
         if self.solver_method == "gd":
-            return self.gd(signal, initial_df1, initial_df2)
+            return self.gd(signal, initial_df1, initial_df2, **self.solver_opts)
         elif self.solver_method == "bfgs":
-            return self.bfgs(signal, initial_df1, initial_df2)
+            return self.bfgs(signal, initial_df1, initial_df2, **self.solver_opts)
 
     def write_star(self, star_filepath, params_dict):
         """
@@ -1021,7 +1056,6 @@ def estimate_ctf(
     psd_size=1024,
     g_min=30,
     g_max=5,
-    gradient_descent_iterations=6,
     basis=None,
     output_dir="results",
     dtype=np.float32,
@@ -1046,8 +1080,6 @@ def estimate_ctf(
     :param psd_size: Block size (in pixels) for PSD estimation.
     :param g_min: Inverse of minimun resolution for PSD. Default 30.
     :param g_max: Inverse of maximum resolution for PSD. Default 5.
-    :param gradient_descent_iterations: Optional, number of Gradient Descent attempts.
-        Defaults to 6.
     :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
     :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
         Defaults to 'highs-ds'.
@@ -1088,7 +1120,6 @@ def estimate_ctf(
         num_tapers=num_tapers,
         g_min=g_min,
         g_max=g_max,
-        gradient_descent_iterations=gradient_descent_iterations,
         basis=basis,
         diagnostic_plots=False,
         dtype=dtype,
