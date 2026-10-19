@@ -88,7 +88,11 @@ def estimate_ctf(
     and returns CTF as a mrc file.
 
     This is a Click command line interface wrapper for
-    the aspire.ctf module.
+    the aspire.ctf.CtfEstimator.
+
+    Note not every option to `CtfEstimator` is exposed via CLI.  Users
+    may want to consider calling `estimate_ctf` directly for advanced
+    applications.  The CLI is provided convenient general use.
     """
 
     # Set desired logging option for the command line

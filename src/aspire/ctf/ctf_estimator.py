@@ -1062,6 +1062,9 @@ def estimate_ctf(
     save_ctf_images=False,
     save_noise_images=False,
     rglob=r"*.mrc",
+    solver_method="gd",
+    solver_opts=None,
+    linprog_method="highs-ds",
 ):
     """
     Given paramaters estimates CTF from experimental data in `data_folder
@@ -1091,6 +1094,14 @@ def estimate_ctf(
         Using "*.mrc[s]" will additonally include mrcs files, etc.
     :param save_ctf_images: Save diagnostic ctf images.
     :param save_noise_images: Save diagnostic noise images.
+    :param solver_method: Solver used to optimize defocus params.  `gd` or `bfgs`.
+        Default uses single call to `bfgs`.
+        Original implementation used repeated gradient descent and is provided for reproducibility.
+        Each solver may have unique configuration options, optionally passed via a dictionary.
+    :param solver_opts: Optional dictionary of solver options.
+        Populated with `CtfEstimator.default_solver_opts[solver]` by default.
+    :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
+        Defaults to 'highs-ds'.
     """
 
     # Checks ------------------------------------------------------------------
