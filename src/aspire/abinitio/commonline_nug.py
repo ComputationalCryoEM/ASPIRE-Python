@@ -1033,7 +1033,7 @@ class CommonlineNUG(Orient3D):
             resX0 = xp.linalg.norm(tmp)
             tmp = S1 + Z1 + AIT_yI1 - C1
             X1 = X1 + mult * rho * tmp
-            resX1 = Xp.linalg.norm(tmp)
+            resX1 = xp.linalg.norm(tmp)
             tmp = Sd0 + Zd0
             Xd0 = Xd0 + mult * rho * tmp
             resXd0 = xp.linalg.norm(tmp)
