@@ -2071,78 +2071,9 @@ class CommonlineNUG(Orient3D):
         X1 = self._real_to_complex_representation(X1, degree=1)
         XS = self._real_to_complex_representation(XS, degree=S)
 
-        def find_beta(X1):
-            B1 = np.zeros((N, N), dtype=np.float64)
-            B2 = np.zeros((N, N), dtype=np.float64)
-
-            # The cyclic-symmetry degree-one block gives
-            #
-            #   2 * abs(X1_ij[0, 0]) = sin(beta_i) * sin(beta_j)
-            #   real(X1_ij[1, 1])    = cos(beta_i) * cos(beta_j).
-            #
-            # Therefore, B1 and B2 are approximately rank-one outer-product
-            # matrices containing the sine and cosine factors, respectively.
-            for i in range(N):
-                for j in range(N):
-                    Xij = X1[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)]
-                    B1[i, j] = abs(Xij[0, 0]) * 2
-                    B2[i, j] = np.real(Xij[1, 1])
-
-            # Recover vectors approximating sin(beta_i) and cos(beta_i) from
-            # the leading eigenpairs of their rank-one Gram matrices.
-            e1, v1 = np.linalg.eigh(B1)
-            idx = np.argmax(e1)
-            b1 = -v1[:, idx] * np.sqrt(e1[idx])
-
-            e2, v2 = np.linalg.eigh(B2)
-            idx = np.argmax(e2)
-            b2 = v2[:, idx] * np.sqrt(e2[idx])
-
-            # Combine the synchronized sine and cosine factors to recover beta.
-            # The eigenvector sign ambiguity corresponds to the global
-            # beta <-> pi - beta ambiguity described in the paper.
-            beta = np.arctan(b1 / b2) % np.pi
-            return beta
-
-        def find_alpha(X1):
-            ZZbar = np.zeros((N, N), dtype=complex_type(np.float64))
-            ZZ = np.zeros((N, N), dtype=complex_type(np.float64))
-
-            # The same degree-one block also gives the pairwise phase measurements
-            #
-            #   X1_ij[0, 0] / abs(X1_ij[0, 0])
-            #       = exp(i * (alpha_i - alpha_j))
-            #
-            #  -X1_ij[0, 2] / abs(X1_ij[0, 2])
-            #       = exp(i * (alpha_i + alpha_j)).
-            #
-            # Store these as the difference-phase and sum-phase matrices.
-            for i in range(N):
-                for j in range(N):
-                    Xij = X1[
-                        3 * i : 3 * (i + 1),
-                        3 * j : 3 * (j + 1),
-                    ]
-
-                    z = Xij[0, 0]
-                    ZZbar[i, j] = z / abs(z)
-
-                    z = Xij[0, 2]
-                    ZZ[i, j] = -z / abs(z)
-
-            # Angular synchronization of the difference phases recovers
-            # exp(i * alpha_i) up to a common phase.
-            evals, evecs = np.linalg.eigh(ZZbar)
-            idx = np.argmax(abs(evals))
-            Z = evecs[:, idx] * np.sqrt(abs(evals[idx]))
-
-            # Use the sum phases to resolve the remaining common phase.
-            c = self._find_phase(Z[:, None] @ Z[:, None].T, ZZ)
-            Z = np.sqrt(c) * Z
-            return np.angle(Z).astype(np.float64)
-
-        alpha_est = find_alpha(X1)
-        beta_est = find_beta(X1)
+        # Estimate alpha/beta Euler angles.
+        alpha_est = self._find_alpha(X1)
+        beta_est = self._find_beta(X1)
 
         # Estimate the remaining Euler angle from the degree-S solution.
         # The cyclic pair estimator extracts measurements of
@@ -2179,79 +2110,8 @@ class CommonlineNUG(Orient3D):
         X2 = self._real_to_complex_representation(X_est[1], degree=2)
         XS = self._real_to_complex_representation(X_est[S - 1], degree=S)
 
-        def find_alpha_beta(X2):
-            B1 = np.zeros((N, N), dtype=np.float64)
-
-            # Combining two entries of the dihedral degree-two block isolates
-            #
-            #   B1[i, j] = cos(beta_i)^2 * cos(beta_j)^2.
-            #
-            # Thus, B1 is approximately a rank-one outer-product matrix.
-            for i in range(N):
-                for j in range(N):
-                    Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
-                    B1[i, j] = np.real((Xij[2, 2] - 2 * abs(Xij[0, 0]) + 0.5) / 3 * 2)
-
-            # Recover the vector cos(beta_i)^2 from the leading eigenpair.
-            # Its entries should be nonnegative, so orient the eigenvector
-            # using the sign of its first entry.
-            e1, v1 = np.linalg.eigh(B1)
-            idx = np.argmax(e1)
-            b1 = v1[:, idx] * np.sqrt(e1[idx]) * np.sign(v1[0, idx])
-
-            # Taking the square root recovers abs(cos(beta_i)). Consequently,
-            # each image retains an independent beta_i <-> pi - beta_i
-            # ambiguity, as described in the paper.
-            beta_est = np.arccos(np.clip(np.sqrt(b1), -1, 1)) % np.pi
-
-            Aminus = np.zeros((N, N), dtype=complex_type(np.float64))
-            Aplus = np.zeros((N, N), dtype=complex_type(np.float64))
-
-            # Divide two degree-two block entries by their known sin(2*beta)
-            # factors to recover the pairwise phases:
-            #
-            #   Aminus[i, j] = exp(i * (alpha_i - alpha_j))
-            #   Aplus[i, j]  = exp(i * (alpha_i + alpha_j)).
-            for i in range(N):
-                for j in range(N):
-                    Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
-
-                    # Avoid division by a numerically vanishing
-                    # sin(2*beta) factor.
-                    if abs(beta_est[i]) < 1e-6:
-                        beta_est[i] = 1e-6
-                    if abs(beta_est[j]) < 1e-6:
-                        beta_est[j] = 1e-6
-                    Aminus[i, j] = (
-                        Xij[1, 1]
-                        / np.sin(2 * beta_est[i])
-                        / np.sin(2 * beta_est[j])
-                        * 8
-                        / 3
-                    )
-                    Aplus[i, j] = (
-                        -Xij[1, 3]
-                        / np.sin(2 * beta_est[i])
-                        / np.sin(2 * beta_est[j])
-                        * 8
-                        / 3
-                    )
-
-            # Angular synchronization of the difference phases recovers
-            # exp(i * alpha_i) up to a common phase.
-            evals, evecs = np.linalg.eigh(Aminus)
-            idx = np.argmax(abs(evals))
-            Z = evecs[:, idx] * np.sqrt(abs(evals[idx]))
-
-            # Use the sum phases to resolve the remaining common phase.
-            # The square root leaves a global pi ambiguity.
-            c = self._find_phase(Z[:, None] @ Z[:, None].T, Aplus)
-            Z = np.sqrt(c) * Z
-            alpha_est = (np.angle(Z)) % (2 * np.pi)
-
-            return alpha_est, beta_est
-
-        alpha_est, beta_est = find_alpha_beta(X2)
+        # Estimate alpha/beta Euler angles.
+        alpha_est, beta_est = self._find_alpha_beta(X2)
 
         # Estimate gamma from the degree-S solution. The dihedral pair
         # estimator separates the gamma-difference and gamma-sum terms,
@@ -2299,6 +2159,189 @@ class CommonlineNUG(Orient3D):
         ) / denominator
 
         return c / abs(c)
+
+    def _find_beta(self, X1):
+        """
+        Estimate beta angles for cyclic symmetry from the degree-one solution.
+
+        Entries of each image pair block provide approximate outer products of
+        sin(beta) and cos(beta). Recover those factors from their leading
+        eigenvectors, then combine them to estimate one beta angle per image.
+
+        :param X1: Degree-one representation matrix in the complex Wigner basis,
+            with shape (3 * n_img, 3 * n_img).
+
+        :return: Estimated beta angles in radians, with shape (n_img,).
+        """
+        N = self.n_img
+        B1 = np.zeros((N, N), dtype=np.float64)
+        B2 = np.zeros((N, N), dtype=np.float64)
+
+        # The cyclic symmetry degree-one block gives
+        #
+        #   2 * abs(X1_ij[0, 0]) = sin(beta_i) * sin(beta_j)
+        #   real(X1_ij[1, 1])    = cos(beta_i) * cos(beta_j).
+        #
+        # Therefore, B1 and B2 are approximately rank-one outer-product
+        # matrices containing the sine and cosine factors, respectively.
+        for i in range(N):
+            for j in range(N):
+                Xij = X1[3 * i : 3 * (i + 1), 3 * j : 3 * (j + 1)]
+                B1[i, j] = abs(Xij[0, 0]) * 2
+                B2[i, j] = np.real(Xij[1, 1])
+
+        # Recover vectors approximating sin(beta_i) and cos(beta_i) from
+        # the leading eigenpairs of their rank-one Gram matrices.
+        e1, v1 = np.linalg.eigh(B1)
+        idx = np.argmax(e1)
+        b1 = -v1[:, idx] * np.sqrt(e1[idx])
+
+        e2, v2 = np.linalg.eigh(B2)
+        idx = np.argmax(e2)
+        b2 = v2[:, idx] * np.sqrt(e2[idx])
+
+        # Combine the synchronized sine and cosine factors to recover beta.
+        # The eigenvector sign ambiguity corresponds to the global
+        # beta <-> pi - beta ambiguity described in the paper.
+        beta = np.arctan(b1 / b2) % np.pi
+        return beta
+
+    def _find_alpha(self, X1):
+        """
+        Estimate alpha angles for cyclic symmetry from the degree-one solution.
+
+        Extract pairwise alpha difference and sum phases from the image pair
+        blocks. Synchronize the difference phases and use the sum phases to
+        resolve the remaining common phase.
+
+        :param X1: Degree-one representation matrix in the complex Wigner basis,
+            with shape (3 * n_img, 3 * n_img).
+
+        :return: Estimated alpha angles in radians, with shape (n_img,).
+        """
+        N = self.n_img
+        ZZbar = np.zeros((N, N), dtype=complex_type(np.float64))
+        ZZ = np.zeros((N, N), dtype=complex_type(np.float64))
+
+        # The same degree-one block also gives the pairwise phase measurements
+        #
+        #   X1_ij[0, 0] / abs(X1_ij[0, 0])
+        #       = exp(i * (alpha_i - alpha_j))
+        #
+        #  -X1_ij[0, 2] / abs(X1_ij[0, 2])
+        #       = exp(i * (alpha_i + alpha_j)).
+        #
+        # Store these as the difference-phase and sum-phase matrices.
+        for i in range(N):
+            for j in range(N):
+                Xij = X1[
+                    3 * i : 3 * (i + 1),
+                    3 * j : 3 * (j + 1),
+                ]
+
+                z = Xij[0, 0]
+                ZZbar[i, j] = z / abs(z)
+
+                z = Xij[0, 2]
+                ZZ[i, j] = -z / abs(z)
+
+        # Angular synchronization of the difference phases recovers
+        # exp(i * alpha_i) up to a common phase.
+        evals, evecs = np.linalg.eigh(ZZbar)
+        idx = np.argmax(abs(evals))
+        Z = evecs[:, idx] * np.sqrt(abs(evals[idx]))
+
+        # Use the sum phases to resolve the remaining common phase.
+        c = self._find_phase(Z[:, None] @ Z[:, None].T, ZZ)
+        Z = np.sqrt(c) * Z
+        return np.angle(Z).astype(np.float64)
+
+    def _find_alpha_beta(self, X2):
+        """
+        Estimate alpha and beta angles for dihedral symmetry.
+
+        Use the degree-two image pair blocks to estimate beta from an approximate
+        rank-one matrix. Then extract pairwise alpha difference and sum phases,
+        synchronize them, and resolve the remaining common phase. The beta
+        estimates retain the ambiguity inherent in the dihedral data.
+
+        :param X2: Degree-two representation matrix in the complex Wigner basis,
+            with shape (5 * n_img, 5 * n_img).
+
+        :return: Tuple of estimated alpha and beta angle arrays in radians;
+            each has shape (n_img,).
+        """
+        N = self.n_img
+        B1 = np.zeros((N, N), dtype=np.float64)
+
+        # Combining two entries of the dihedral degree-two block isolates
+        #
+        #   B1[i, j] = cos(beta_i)^2 * cos(beta_j)^2.
+        #
+        # Thus, B1 is approximately a rank-one outer-product matrix.
+        for i in range(N):
+            for j in range(N):
+                Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
+                B1[i, j] = np.real((Xij[2, 2] - 2 * abs(Xij[0, 0]) + 0.5) / 3 * 2)
+
+        # Recover the vector cos(beta_i)^2 from the leading eigenpair.
+        # Its entries should be nonnegative, so orient the eigenvector
+        # using the sign of its first entry.
+        e1, v1 = np.linalg.eigh(B1)
+        idx = np.argmax(e1)
+        b1 = v1[:, idx] * np.sqrt(e1[idx]) * np.sign(v1[0, idx])
+
+        # Taking the square root recovers abs(cos(beta_i)). Consequently,
+        # each image retains an independent beta_i <-> pi - beta_i
+        # ambiguity, as described in the paper.
+        beta_est = np.arccos(np.clip(np.sqrt(b1), -1, 1)) % np.pi
+
+        Aminus = np.zeros((N, N), dtype=complex_type(np.float64))
+        Aplus = np.zeros((N, N), dtype=complex_type(np.float64))
+
+        # Divide two degree-two block entries by their known sin(2*beta)
+        # factors to recover the pairwise phases:
+        #
+        #   Aminus[i, j] = exp(i * (alpha_i - alpha_j))
+        #   Aplus[i, j]  = exp(i * (alpha_i + alpha_j)).
+        for i in range(N):
+            for j in range(N):
+                Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
+
+                # Avoid division by a numerically vanishing
+                # sin(2*beta) factor.
+                if abs(beta_est[i]) < 1e-6:
+                    beta_est[i] = 1e-6
+                if abs(beta_est[j]) < 1e-6:
+                    beta_est[j] = 1e-6
+                Aminus[i, j] = (
+                    Xij[1, 1]
+                    / np.sin(2 * beta_est[i])
+                    / np.sin(2 * beta_est[j])
+                    * 8
+                    / 3
+                )
+                Aplus[i, j] = (
+                    -Xij[1, 3]
+                    / np.sin(2 * beta_est[i])
+                    / np.sin(2 * beta_est[j])
+                    * 8
+                    / 3
+                )
+
+        # Angular synchronization of the difference phases recovers
+        # exp(i * alpha_i) up to a common phase.
+        evals, evecs = np.linalg.eigh(Aminus)
+        idx = np.argmax(abs(evals))
+        Z = evecs[:, idx] * np.sqrt(abs(evals[idx]))
+
+        # Use the sum phases to resolve the remaining common phase.
+        # The square root leaves a global pi ambiguity.
+        c = self._find_phase(Z[:, None] @ Z[:, None].T, Aplus)
+        Z = np.sqrt(c) * Z
+        alpha_est = (np.angle(Z)) % (2 * np.pi)
+
+        return alpha_est, beta_est
 
     @staticmethod
     def _assemble_rotation_estimates(alpha, beta, gamma):
