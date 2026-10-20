@@ -518,6 +518,13 @@ class CtfEstimator:
                 axis=0,
             )
 
+            # Rescale to avoid small values conflicting with internal bounds checks.
+            #     It is possible to disable with  `options={'presolve': False}`,
+            #     but this may impact the solution.
+            # Instead the input and bounds are rescaled, then the solution is rescaled.
+            _scale = 1e4
+            f, bounds = f / _scale, bounds * _scale
+
             res = linprog(
                 f,
                 A_ub=A,
@@ -527,9 +534,11 @@ class CtfEstimator:
             )
 
             if not res.success:
-                raise RuntimeError("Linear program did not succeed. Halting")
+                raise RuntimeError(
+                    f"Linear program did not succeed after {res.nit} iterations with condition {res.status}: '{res.message}'.\tHalting."
+                )
 
-            background = res.x[N:]
+            background = res.x[N:] / _scale
 
             bs_psd = signal - background
 
@@ -1175,6 +1184,7 @@ def estimate_ctf(
 
     # Main Loop ---------------------------------------------------------------
     results = {}
+    failed = {}
     for input_file in tqdm(file_paths, desc="Processing files"):
 
         # Handle path stuff first, in case it fails
@@ -1193,7 +1203,12 @@ def estimate_ctf(
 
         micrograph = micrograph.astype(dtype, copy=False)
 
-        params, background_2d, signal = ctf_est.estimate(micrograph)
+        try:
+            params, background_2d, signal = ctf_est.estimate(micrograph)
+        except Exception as e:
+            failed[str(relative_input_path)] = e
+            logger.warning(f"Estimation failed for {str(relative_input_path)}")
+            continue  # skip results for this failure
 
         # Store files' params into results dictionary
         results[str(relative_input_path)] = params
@@ -1219,6 +1234,15 @@ def estimate_ctf(
             with mrcfile.new(ctf_filepath, overwrite=True) as mrc:
                 mrc.set_data(ctf_im.astype(np.float32))  # MRC only supports singles
                 mrc.voxel_size = ctf_est.pixel_size
+
+    if len(failed) > 0:
+        failure_fname = "failures.txt"
+        logger.info(
+            f"{len(failed)} files failed to estimate. Writing to '{failure_fname}'"
+        )
+        with open(failure_fname, "w") as f:
+            for k, v in failed.items():
+                f.write(f"{k}\t{v}\n")
 
     return results
 
