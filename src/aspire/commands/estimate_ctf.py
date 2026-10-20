@@ -48,19 +48,19 @@ logger = logging.getLogger("aspire")
     "--g_max", default=5, type=float, help="Inverse of maximum resolution for PSD"
 )
 @click.option(
-    "--defocus_min",
+    "--min_defocus",
     default=5000,
     type=int,
     help="Start of defocus loop scan (Angstrom).",
 )
 @click.option(
-    "--defocus_max",
+    "--max_defocus",
     default=100000,
     type=int,
     help="End of defocus loop scan (Angstrom).",
 )
 @click.option(
-    "--defocus_step", default=10, type=int, help="Step of defocus loop scan (Angstrom)."
+    "--step_defocus", default=10, type=int, help="Step of defocus loop scan (Angstrom)."
 )
 @click.option(
     "--dtype",
