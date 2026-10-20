@@ -34,7 +34,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
-from line_profiler import profile
 from numpy import linalg as npla
 from scipy.optimize import linprog, minimize
 from scipy.signal.windows import dpss
@@ -539,7 +538,6 @@ class CtfEstimator:
 
         return final_signal, final_background
 
-    @profile
     def opt1d(
         self,
         amplitude_spectrum,
