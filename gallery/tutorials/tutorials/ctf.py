@@ -260,7 +260,7 @@ with TemporaryDirectory() as d:
         amplitude_contrast=radial_ctf_filter.alpha,
         voltage=radial_ctf_filter.voltage,
         psd_size=512,
-        num_tapers=2,
+        num_tapers=4,
         dtype=np.float64,
     )
 
