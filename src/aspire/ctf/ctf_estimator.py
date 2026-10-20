@@ -79,6 +79,9 @@ class CtfEstimator:
         num_tapers=4,
         g_min=30,
         g_max=5,
+        min_defocus=5000,
+        max_defocus=100000,
+        step_defocus=10,
         basis=None,
         solver_method="bfgs",
         solver_opts=None,
@@ -98,6 +101,9 @@ class CtfEstimator:
             Defaults to 4.
         :param g_min: Inverse of minimun resolution for PSD. Default 30.
         :param g_max: Inverse of maximum resolution for PSD. Default 5.
+        :param min_defocus: Start of defocus loop scan (Angstrom). Default 5000.
+        :param max_defocus: End of defocus loop scan (Angstrom). Default 100000.
+        :param step_defocus: Step size of defocus loop scan (Angstrom). Default 10.
         :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
         :param solver_method: Solver used to optimize defocus params.  `gd` or `bfgs`.
             Default uses single call to `bfgs`.
@@ -125,6 +131,9 @@ class CtfEstimator:
 
         self.g_min = np.asarray(g_min).item()
         self.g_max = np.asarray(g_max).item()
+        self.min_defocus = np.asarray(min_defocus, dtype=int).item()
+        self.max_defocus = np.asarray(max_defocus, dtype=int).item()
+        self.step_defocus = np.asarray(step_defocus, dtype=int).item()
 
         # Setup solvers and respective solver options
         if solver_method not in self._solver_methods:
@@ -534,15 +543,11 @@ class CtfEstimator:
     def opt1d(
         self,
         amplitude_spectrum,
-        min_defocus=500,
-        max_defocus=10000,
     ):
         """
         Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
         :param amplitude_spectrum: Estimated power specrtum.
-        :param min_defocus: Start of defocus loop scan
-        :param max_defocus: End of defocus loop scan
         :return: 2-tuple of NumPy arrays (Estimated average of defocus and low_freq_cutoff)
         """
 
@@ -553,7 +558,9 @@ class CtfEstimator:
         N, M = signal.shape
 
         # Compute the (radial) CTF filter stack in bulk
-        defoci_angstrom = xp.arange(min_defocus, max_defocus, dtype=int) * 10
+        defoci_angstrom = xp.arange(
+            self.min_defocus, self.max_defocus, self.step_defocus, dtype=int
+        )
         ctf_ims = xp.abs(
             CTFFilter.ctf_formula(
                 xp.asarray(self.radial_omega),
@@ -567,7 +574,6 @@ class CtfEstimator:
                 B=0,
             )
         )
-        defoci_angstrom = xp.asnumpy(defoci_angstrom // 10)  # nm
 
         # Compute `signal` statistics, independent of defocus
         LT = xp.tril(signal, k=-1)  # keep lower triangle
@@ -589,10 +595,9 @@ class CtfEstimator:
         c -= sy * sx[None, :] / nrows
         c = c / xp.sqrt(Sxx[None, :] * Syy)
 
-        avg_defocus, low_freq_cutoff_col = np.unravel_index(
-            xp.argmax(c).item(), c.shape
-        )[:2]
-        avg_defocus += min_defocus
+        max_c = xp.argmax(c).item()
+        avg_defocus, low_freq_cutoff_col = np.unravel_index(max_c, c.shape)[:2]
+        avg_defocus += self.min_defocus / 10  # (nm)
 
         return avg_defocus, low_freq_cutoff_col
 
@@ -1081,6 +1086,9 @@ def estimate_ctf(
     psd_size=1024,
     g_min=30,
     g_max=5,
+    min_defocus=5000,
+    max_defocus=100000,
+    step_defocus=10,
     basis=None,
     output_dir="results",
     dtype=np.float32,
@@ -1108,6 +1116,9 @@ def estimate_ctf(
     :param psd_size: Block size (in pixels) for PSD estimation.
     :param g_min: Inverse of minimun resolution for PSD. Default 30.
     :param g_max: Inverse of maximum resolution for PSD. Default 5.
+    :param min_defocus: Start of defocus loop scan (Angstrom). Default 5000.
+    :param max_defocus: End of defocus loop scan (Angstrom). Default 100000.
+    :param step_defocus: Step size of defocus loop scan (Angstrom). Default 10.
     :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
     :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
         Defaults to 'highs-ds'.
@@ -1156,6 +1167,9 @@ def estimate_ctf(
         num_tapers=num_tapers,
         g_min=g_min,
         g_max=g_max,
+        min_defocus=min_defocus,
+        max_defocus=max_defocus,
+        step_defocus=step_defocus,
         basis=basis,
         diagnostic_plots=False,
         dtype=dtype,
