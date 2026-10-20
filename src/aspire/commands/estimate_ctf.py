@@ -48,6 +48,21 @@ logger = logging.getLogger("aspire")
     "--g_max", default=5, type=float, help="Inverse of maximum resolution for PSD"
 )
 @click.option(
+    "--defocus_min",
+    default=5000,
+    type=int,
+    help="Start of defocus loop scan (Angstrom).",
+)
+@click.option(
+    "--defocus_max",
+    default=100000,
+    type=int,
+    help="End of defocus loop scan (Angstrom).",
+)
+@click.option(
+    "--defocus_step", default=10, type=int, help="Step of defocus loop scan (Angstrom)."
+)
+@click.option(
     "--dtype",
     default="float32",
     help="NumPy dtype to use in computation.  Example: 'float32' or 'float64'.",
@@ -77,6 +92,9 @@ def estimate_ctf(
     psd_size,
     g_min,
     g_max,
+    min_defocus,
+    max_defocus,
+    step_defocus,
     output_dir,
     dtype,
     save_ctf_images,
@@ -108,6 +126,9 @@ def estimate_ctf(
         psd_size=psd_size,
         g_min=g_min,
         g_max=g_max,
+        min_defocus=min_defocus,
+        max_defocus=max_defocus,
+        step_defocus=step_defocus,
         output_dir=output_dir,
         dtype=dtype,
         save_ctf_images=save_ctf_images,
