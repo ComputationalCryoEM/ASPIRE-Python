@@ -74,7 +74,7 @@ class CtfEstimator:
         cs,
         amplitude_contrast,
         voltage,
-        psd_size,
+        psd_size=1024,
         num_tapers=4,
         g_min=30,
         g_max=5,
@@ -95,7 +95,7 @@ class CtfEstimator:
         :param cs: Spherical aberration in mm.
         :param amplitude_contrast: Amplitude contrast.
         :param voltage: Voltage of electron microscope.
-        :param psd_size: Block size (in pixels) for PSD estimation.
+        :param psd_size: Block size (in pixels) for PSD estimation. Default 1024.
         :param num_tapers: Optional, number of tapers to apply in PSD estimation.
             Defaults to 4.
         :param g_min: Inverse of minimun resolution for PSD. Default 30.
@@ -1170,7 +1170,7 @@ def estimate_ctf(
         cs,
         amplitude_contrast,
         voltage,
-        psd_size,
+        psd_size=psd_size,
         num_tapers=num_tapers,
         g_min=g_min,
         g_max=g_max,
