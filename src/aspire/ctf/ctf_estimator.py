@@ -943,12 +943,13 @@ class CtfEstimator:
         elif self.solver_method == "bfgs":
             return self.bfgs(signal, initial_df1, initial_df2, **self.solver_opts)
 
-    def write_star(self, star_filepath, params_dict):
+    def write_star(self, star_filepath, micrograph_name, params_dict):
         """
         Writes CTF parameters to starfile for a single micrograph.
         """
+
         data_block = {}
-        data_block["_rlnMicrographName"] = star_filepath
+        data_block["_rlnMicrographName"] = micrograph_name
         data_block["_rlnDefocusU"] = params_dict["defocus_u"]  # Should already be in A
         data_block["_rlnDefocusV"] = params_dict["defocus_v"]  # Should already be in A
         data_block["_rlnDefocusAngle"] = np.rad2deg(params_dict["defocus_ang"])
@@ -1232,7 +1233,7 @@ def estimate_ctf(
 
         # Write each micrograph's ctf parameters to an individual STAR file
         star_filepath = output_file_prefix.with_suffix(".star")
-        ctf_est.write_star(star_filepath, params)
+        ctf_est.write_star(star_filepath, str(relative_input_path), params)
 
         # Save the noise
         if save_noise_images:
