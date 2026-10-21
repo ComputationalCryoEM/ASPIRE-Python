@@ -395,7 +395,7 @@ class CtfEstimator:
 
         amplitude_spectrum = fft.fftshift(amplitude_spectrum)
 
-        return Image(xp.asnumpy(amplitude_spectrum))
+        return Image(xp.asnumpy(amplitude_spectrum), pixel_size=self.pixel_size)
 
     def radial_average(self, amplitude_spectrum):
         """
@@ -413,6 +413,12 @@ class CtfEstimator:
         psd = Coef(
             self.basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size
         ).evaluate()
+
+        if (_min := np.min(psd)) < 0:
+            logger.debug(
+                f"PSD should be strictly greater than 0, found {_min}, clipping to 0."
+            )
+            psd = Image(np.maximum(psd, 0), pixel_size=self.pixel_size)
 
         return psd, noise
 
@@ -439,6 +445,17 @@ class CtfEstimator:
         psd = Coef(
             self.basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size
         ).evaluate()
+
+        if (_min := np.min(psd)) < 0:
+            logger.debug(
+                f"PSD should be strictly greater than 0, found {_min}, clipping to 0."
+            )
+            psd = Image(np.maximum(psd, 0), pixel_size=self.pixel_size)
+        if (_min := np.min(noise)) < 0:
+            logger.debug(
+                f"noise should be strictly greater than 0, found {_min}, clipping to 0."
+            )
+            noise = Image(np.maximum(noise, 0), pixel_size=self.pixel_size)
 
         return psd, noise
 
