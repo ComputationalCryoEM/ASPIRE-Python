@@ -176,17 +176,16 @@ class CtfEstimator:
         tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
         self.tapers_1d = xp.asarray(tapers_1d, dtype=self.dtype)
 
-    def micrograph_to_blocks(self, micrograph):
+    def preprocess_micrograph(self, micrograph):
         """
-        Preprocess micrograph into blocks using block_size.
+        Preprocess micrograph into normalized half overlapping blocks of `psd_size` by `psd_size`.
 
-        :param micrograph: Micrograph as NumPy array. #NOTE looks like F order
-        :param blocksize: Size of the square blocks to partition micrograph.
-        :return: NumPy array of blocks extracted from the micrograph.
+        :param micrograph: Micrograph as NumPy array.
+        :return: Array of normalized blocks extracted from the micrograph (..., psd_size, psd_size).
+            Note, may be a CuPy array depending on `xp` mode.
         """
 
-        # verify self.psd_size is even
-        assert self.psd_size % 2 == 0
+        assert self.psd_size % 2 == 0, "psd_size must be even"
 
         if micrograph.ndim == 3:
             assert (
@@ -194,138 +193,59 @@ class CtfEstimator:
             ), f"micrograph should be 2D or stack of 1 2D image: {micrograph.shape}"
             micrograph = micrograph[0]
 
-        size_x = micrograph.shape[-1]
-        size_y = micrograph.shape[-2]
+        assert (
+            min(micrograph.shape) >= self.psd_size
+        ), f"micrograph {micrograph.shape} must be larger than psd_size {self.psd_size}"
+        step = self.psd_size // 2
 
-        step_size = self.psd_size // 2
-        range_y = size_y // step_size - 1
-        range_x = size_x // step_size - 1
+        # Perform the micrograph processing on the gpu when in xp mode
+        micrograph = xp.asarray(micrograph)
 
-        block_list = [
-            micrograph[
-                j * step_size : (j + 2) * step_size, i * step_size : (i + 2) * step_size
-            ]
-            for j in range(range_y)
-            for i in range(range_x)
-        ]
-        blocks = np.asarray(block_list, dtype=micrograph.dtype)
-
-        return blocks
-
-    def normalize_blocks(self, blocks):
-        """
-        Preprocess CTF of micrograph using block_size.
-
-        :param blocks: NumPy array of blocks extracted from the micrograph.
-        :return: NumPy array of normalized blocks.
-        """
-
-        # Take block size from blocks, check still square
-        block_size = blocks.shape[1]
-        assert block_size == blocks.shape[2]
-
-        # Sum per block
-        blocks_sum = blocks.sum(axis=(-1, -2), keepdims=True)
-
-        blocks -= blocks_sum / (block_size**2)
-
-        return blocks
-
-    def preprocess_micrograph(self, micrograph):
-        """
-        Preprocess micrograph into normalized blocks using block_size.
-
-        :param micrograph: Micrograph as NumPy array.
-        :return: NumPy array of normalized blocks extracted from the micrograph.
-        """
-        blocks = self.normalize_blocks(self.micrograph_to_blocks(micrograph))
-        # Cheaper to transpose block (window) than whole micrograph in beginning.
+        # Cheaper to transpose whole micrograph than all the blocks later
         # Without this tranpose the astig axis will be reflected wrt other tools' convention.
-        return blocks.transpose(0, 2, 1)
+        micrograph = micrograph.T
 
-    def legacy_preprocess_micrograph(self, micrograph):
-        """
-        Returns half-overlapping blocks extracted from the micrograph.
-        Equivalent to MATLAB's ctf_extract_blocks.
+        # Strided view of psd_size windows, using stride `step`
+        # Avoids repeatedly building the entire blocklist
+        # Note, modifying this view can modify underlying array.
+        #
+        # (ny, nx, psd_size, psd_size), no copy
+        windows = xp.lib.stride_tricks.sliding_window_view(
+            micrograph, (self.psd_size, self.psd_size)
+        )[::step, ::step]
 
-        Note, internally transposes micrograph to match MATLAB computations.
-        Returns (num_blocks, block_size, block_size)
+        # The following tiling code is a little complicated,
+        # but yields good comprimise of performance on both CPU and GPU.
+        # It is equivalent to the following simpler code:
+        #   windows_sum = windows.sum(axis=(-1, -2), keepdims=True, dtype=np.float64)
+        #   normalized_blocks = windows - windows_sum / (self.psd_size**2)
 
-        :param micrograph: Micrograph as NumPy array.
-        :return: NumPy array of normalized blocks extracted from the micrograph.
-        """
-        h, w = micrograph.shape
-
-        if min(h, w) < self.psd_size:
-            raise ValueError(
-                f"Blocks of size {self.psd_size} x {self.psd_size} cannot be extracted from image."
-            )
-
-        block_size = self.psd_size - (self.psd_size % 2)  # force even
-        half = block_size // 2
-
-        # Compute crop bounds
-        end_val1 = (h // block_size) * block_size + (
-            half if (h % block_size) > half else 0
-        )
-        end_val2 = (w // block_size) * block_size + (
-            half if (w % block_size) > half else 0
+        # Instead of looping over windows (which repeat calculations on sub-tiles),
+        # each window is subdivided into tiles, which are read only once each.
+        # Use doubles for intermediates.
+        ny, nx = windows.shape[:2]
+        tiles = micrograph[: (ny + 1) * step, : (nx + 1) * step]
+        tile_sums = tiles.reshape(ny + 1, step, nx + 1, step).sum(
+            axis=(1, 3), dtype=np.float64
         )
 
-        # Crop
-        cropped_micrograph = micrograph[:end_val1, :end_val2]
+        # Now for each window, gather the respective tile_sums
+        window_means = (
+            tile_sums[:-1, :-1]  # Upper Left
+            + tile_sums[1:, :-1]  # Lower Left
+            + tile_sums[:-1, 1:]  # Upper Right
+            + tile_sums[1:, 1:]  # Lower Right
+        ) / (
+            4 * step**2
+        )  # divide sum to yield mean
 
-        # Compute number of half blocks
-        n_bh = end_val1 // half  # number of half-blocks along rows
-        n_bw = end_val2 // half  # number of half-blocks along cols
-        n_total = n_bh * n_bw
+        normalized_blocks = xp.empty(windows.shape, dtype=self.dtype)
+        normalized_blocks[:, :] = windows - window_means[:, :, None, None]
+        # This should be a free reshape
+        normalized_blocks = normalized_blocks.reshape(-1, self.psd_size, self.psd_size)
 
-        # im2col `distinct` extracts non-overlapping half blocks
-        # column-major block ordering to match MATLAB (down-first)
-        # but keeping now for diagnostics.
-        blocks = (
-            cropped_micrograph.reshape(n_bh, half, n_bw, half)
-            .transpose(1, 3, 0, 2)
-            .reshape(half * half, n_total, order="F")
-        )
-
-        # Reshape to (half, half, n_total) so each slice is one half-block
-        blocks = blocks.reshape(half, half, n_total, order="F")
-
-        # First cat
-        # stack each half-block with the one below it (rows overlap)
-        # by shifting the block indices by 1
-        row_shifted = np.concatenate([blocks[:, :, 1:], blocks[:, :, :1]], axis=2)
-        blocks = np.concatenate(
-            [blocks, row_shifted], axis=0
-        )  # (block_size, half, n_total)
-
-        # Second cat
-        # stack each block with the one to its right (cols overlap)
-        # by rolling the blocks
-        col_shifted = np.roll(blocks, -n_bh, axis=2)
-        blocks = np.concatenate(
-            [blocks, col_shifted], axis=1
-        )  # (block_size, block_size, n_total)
-
-        # Reshape to blocksize-by-blocksize grid
-        n_row_blocks = int(np.floor(2 * h / block_size))
-        n_col_blocks = int(np.floor(2 * w / block_size))
-        blocks = blocks.reshape(
-            block_size, block_size, n_row_blocks, n_col_blocks, order="F"
-        )
-
-        # Drop last row and col (bounds artifacts)
-        blocks = blocks[:, :, :-1, :-1]
-        # Flatten
-        block = blocks.reshape(block_size, block_size, -1, order="F")
-
-        # De-mean each block
-        block_mean = block.sum(axis=(0, 1), keepdims=True) / (block_size**2)
-        block = block - block_mean
-
-        # Transpose output to (n,block_size, block_size)
-        return block.T
+        # Since this might be large-ish, keep on GPU when in xp mode (ie skip the usual asarray())
+        return normalized_blocks
 
     def tapers(self, N, NW, L):
         """
@@ -1022,9 +942,8 @@ class CtfEstimator:
         :param micrograph: 2D Array of micrograph data.
         :return: CTF params, estimated background PSD, estimated signal PSD
         """
-        # TODO Ask Ayelet about legacy version intent and rm if not needed.
+
         micrograph_blocks = self.preprocess_micrograph(micrograph)
-        # micrograph_blocks = self.legacy_preprocess_micrograph(micrograph)
 
         signal_observed = self.estimate_psd(micrograph_blocks)
 
