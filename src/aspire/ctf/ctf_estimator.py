@@ -66,6 +66,8 @@ class CtfEstimator:
         },
     }
 
+    _detector_models = (None, "k2")
+
     _solver_methods = default_solver_opts.keys()
 
     def __init__(
@@ -86,6 +88,7 @@ class CtfEstimator:
         solver_opts=None,
         linprog_method="highs-ds",
         diagnostic_plots=False,
+        detector_model=None,
         dtype=np.float32,
     ):
         """
@@ -144,6 +147,12 @@ class CtfEstimator:
             solver_opts = self.default_solver_opts[solver_method]
         self.solver_opts = solver_opts
         self.linprog_method = linprog_method
+
+        if detector_model not in self._detector_models:
+            raise RuntimeError(
+                f"Provided detector_model {detector_model} must be one of {self._detector_models}"
+            )
+        self.detector_model = detector_model
 
         self.diagnostic_plots = diagnostic_plots
         self.dtype = np.dtype(dtype)
@@ -407,6 +416,7 @@ class CtfEstimator:
             )
 
         amplitude_spectrum = amplitude_spectrum.asnumpy()[0, center, center:]
+        breakpoint() ## I believe may need to "filter" here, will need to inspect a "bad" case visually
         amplitude_spectrum = amplitude_spectrum[
             0 : 3 * amplitude_spectrum.shape[-1] // 4
         ]
@@ -448,12 +458,14 @@ class CtfEstimator:
             convex_condition = np.roll(convex_condition, -1, axis=0)
             convex_condition[N - 2 :] = 0
 
-            positivity_condition = np.concatenate(
-                (np.zeros((N, N)), -1 * np.eye(N)), axis=1
-            )
+            # Normally positivity-condition
+            sign_condition = np.concatenate((np.zeros((N, N)), -1 * np.eye(N)), axis=1)
+            # the 'k2' model is negated
+            if self.detector_model == "k2":
+                sign_condition *= -1
 
             A = np.concatenate(
-                (superposition_condition, convex_condition, positivity_condition),
+                (superposition_condition, convex_condition, sign_condition),
                 axis=0,
             )
 
