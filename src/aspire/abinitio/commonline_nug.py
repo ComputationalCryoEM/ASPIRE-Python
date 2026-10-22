@@ -7,7 +7,7 @@ from aspire.abinitio import Orient3D
 from aspire.abinitio.sync_voting import _syncrotations
 from aspire.numeric import xp
 from aspire.operators import PolarFT
-from aspire.utils import Rotation, cart2sph, complex_type, tqdm, trange
+from aspire.utils import Rotation, cart2sph, tqdm, trange
 from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
@@ -2063,7 +2063,6 @@ class CommonlineNUG(Orient3D):
         :return: Estimated rotation matrices.
         """
         S = self.n_sym
-        N = self.n_img
 
         # Convert the relaxed NUG matrices from the real representation used by
         # the SDP solver to the complex Wigner-D basis used in the recovery formulas.
@@ -2102,7 +2101,6 @@ class CommonlineNUG(Orient3D):
         :return: Estimated rotation matrices and Euler angles.
         """
         S = self.sym_grp.order
-        N = self.n_img
 
         # Convert the degree-two and degree-S solutions from the real
         # representation used by the SDP solver to the complex Wigner-D basis.
