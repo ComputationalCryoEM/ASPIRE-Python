@@ -479,6 +479,54 @@ def test_dtype_pass_through(dtype):
     assert src.dtype == cl_symm.dtype
 
 
+def test_detect_equator_images():
+    """
+    Check that _detect_equator_images detects most ground truth equator views.
+
+    The method is heuristic and selects the highest-scoring 10% of images
+    by default, so some missed detections and false positives are expected.
+    """
+    n_img = 200
+    L = 44
+    dtype = np.float32
+
+    vol = CnSymmetricVolume(
+        L=L,
+        C=1,
+        K=100,
+        order=4,
+        dtype=dtype,
+    ).generate()
+
+    src = Simulation(
+        vols=vol,
+        n=n_img,
+        C=1,
+        offsets=0,
+        amplitudes=1,
+        dtype=dtype,
+    )
+
+    # Find viewing directions within 5 degrees of the equator.
+    equator_indices_gt = np.flatnonzero(
+        np.abs(src.rotations[:, 2, 2]) < np.sin(np.deg2rad(5))
+    )
+    if len(equator_indices_gt) == 0:
+        pytest.skip("Simulation contains no equator views.")
+
+    # Detect equator images and check at least 80% are correctly identified.
+    cl_symm = CLSymmetryC3C4(src, symmetry="C4")
+
+    equator_indices = cl_symm._detect_equator_images()
+
+    recall = np.isin(equator_indices_gt, equator_indices).mean()
+    assert recall >= 0.8, (
+        f"Equator recall: {recall}; "
+        f"ground truth: {equator_indices_gt}; "
+        f"detected: {equator_indices}"
+    )
+
+
 def build_self_commonlines_matrix(n_theta, rots, order):
     # Construct rotatation matrices associated with cyclic order.
     rots_symm = cyclic_rotations(order, rots.dtype).matrices
