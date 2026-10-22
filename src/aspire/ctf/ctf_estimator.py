@@ -220,12 +220,12 @@ class CtfEstimator:
         :return: NumPy array of normalized blocks.
         """
 
-        # Take block size from blocks
+        # Take block size from blocks, check still square
         block_size = blocks.shape[1]
         assert block_size == blocks.shape[2]
 
-        # Create a sum and reshape so it may be broadcast with `block`.
-        blocks_sum = np.sum(blocks, axis=(-1, -2))[:, np.newaxis, np.newaxis]
+        # Sum per block
+        blocks_sum = blocks.sum(axis=(-1, -2), keepdims=True)
 
         blocks -= blocks_sum / (block_size**2)
 
@@ -238,8 +238,10 @@ class CtfEstimator:
         :param micrograph: Micrograph as NumPy array.
         :return: NumPy array of normalized blocks extracted from the micrograph.
         """
-
-        return self.normalize_blocks(self.micrograph_to_blocks(micrograph))
+        blocks = self.normalize_blocks(self.micrograph_to_blocks(micrograph))
+        # Cheaper to transpose block (window) than whole micrograph in beginning.
+        # Without this tranpose the astig axis will be reflected wrt other tools' convention.
+        return blocks.transpose(0, 2, 1)
 
     def legacy_preprocess_micrograph(self, micrograph):
         """
@@ -350,7 +352,7 @@ class CtfEstimator:
         Estimate the power spectrum of the micrograph using the multi-taper method
 
         :param blocks: 3-D NumPy array containing windows extracted from the micrograph in the preprocess function.
-        :return: NumPy array of estimated power spectrum.
+        :return: Image of estimated power spectrum.
         """
 
         # Shapes
@@ -402,7 +404,7 @@ class CtfEstimator:
         Computes radial/elliptical average of the power spectrum
 
         :param amplitude_spectrum: Power spectrum to average.
-        :return: PSD and noise as 2-tuple of NumPy arrays.
+        :return: PSD and noise as 2-tuple of Image instances
         """
         noise = amplitude_spectrum  # pass through
         coefs_s = self.basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
@@ -427,7 +429,7 @@ class CtfEstimator:
         Computes elliptical average of the power spectrum
 
         :param amplitude_spectrum: Power spectrum to average.
-        :return: PSD and noise as 2-tuple of NumPy arrays.
+        :return: PSD and noise as 2-tuple of Image instances.
         """
 
         coefs_s = self.basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
@@ -1225,7 +1227,9 @@ def estimate_ctf(
             params, background_2d, signal = ctf_est.estimate(micrograph)
         except Exception as e:
             failed[str(relative_input_path)] = e
-            logger.warning(f"Estimation failed for {str(relative_input_path)}")
+            logger.warning(
+                f"Estimation failed for {str(relative_input_path)}: {str(e)}"
+            )
             continue  # skip results for this failure
 
         # Store files' params into results dictionary
