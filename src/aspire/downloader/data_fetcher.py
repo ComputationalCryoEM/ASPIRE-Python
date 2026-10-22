@@ -408,3 +408,33 @@ def simulated_channelspin():
     data["rots"] = Rotation(_LegacySimulation.rots_zyx_to_legacy_aspire(data["rots"]))
 
     return data
+
+
+def nug_10081():
+    """
+    Download class averages used in the symmetric NUG experiment.
+
+    The dataset contains 17 manually selected, 256-by-256 RELION class
+    averages with 1.3 Angstrom pixel size, derived from EMPIAR-10081.
+    The class averages were used for the C4 experimental example in the
+    symmetric NUG manuscript.
+
+    :return: An `Image` instance containing the 17 class averages.
+    """
+    file_path = fetch_data("nug_10081.npy")
+    return Image(np.load(file_path).astype(np.float64), pixel_size=1.3)
+
+
+def nug_12036():
+    """
+    Download class averages used in the symmetric NUG experiment.
+
+    The dataset contains 93 manually selected, 320-by-320 RELION class
+    averages with 0.945 Angstrom pixel size, derived from EMPIAR-12036.
+    The class averages were used for the D3 experimental example in the
+    symmetric NUG manuscript.
+
+    :return: An `Image` instance containing the 93 class averages.
+    """
+    file_path = fetch_data("nug_12036.mrcs")
+    return Image.load(file_path)

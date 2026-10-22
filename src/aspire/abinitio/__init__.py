@@ -2,10 +2,14 @@
 from .J_sync import JSync
 from .commonline_utils import (
     build_outer_products,
+    compare_rots_sym,
     g_sync,
+    g_sync_finite_group,
+    saff_kuijlaars,
 )
 from .commonline_base import Orient3D
 from .commonline_matrix import CLOrient3D
+from .commonline_nug import CommonlineNUG
 from .commonline_sdp import CommonlineSDP
 from .commonline_lud import CommonlineLUD
 from .commonline_irls import CommonlineIRLS
