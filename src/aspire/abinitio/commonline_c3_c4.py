@@ -280,6 +280,33 @@ class CLSymmetryC3C4(CLOrient3D):
             shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
             sclmatrix[i] = [scl1, scl2]
 
+        # Correct C4 equator self-common-lines using the shared symmetry axis.
+        if order == 4:
+            # Detect equator images.
+            equator_indices = self._detect_equator_images()
+
+            if len(equator_indices) >= 2:
+                # Equator self-common-lines are 180 degrees apart and cannot
+                # be distinguished from conjugate symmetry. All equator views
+                # share the symmetry axis, including an image and its
+                # symmetry-related copies. Estimate this axis from each
+                # image's median common-line with the other equator views.
+                clmatrix_eq = self.clmatrix[equator_indices][:, equator_indices]
+                n_theta_half = n_theta // 2
+
+                for i, image_index in enumerate(equator_indices):
+                    # Exclude diagonal entries and missing common-lines.
+                    lines = clmatrix_eq[i]
+                    lines = lines[lines >= 0]  # diagonal vals are -1
+
+                    # Map common-lines into [0, 180 degrees) before
+                    # taking the median.
+                    line = np.median(lines % n_theta_half)
+                    sclmatrix[image_index] = [
+                        line,
+                        (line + n_theta_half) % n_theta,
+                    ]
+
         return sclmatrix
 
     def _estimate_all_Riis_c3_c4(self, sclmatrix):
@@ -497,8 +524,6 @@ class CLSymmetryC3C4(CLOrient3D):
             shifted /= norm(shifted, axis=1, keepdims=True)
 
             # Reverse angular order to form a reflected version.
-            # Circular correlation below searches angular alignments of
-            # this reflection, allowing different reflection-axis directions.
             reflected = shifted[:, ::-1, :]
 
             # Compute circular cross-correlation along the angular axis:
