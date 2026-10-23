@@ -204,7 +204,19 @@ class WhiteNoiseAdder(NoiseAdder):
 
 
 class LegacyWhiteNoiseAdder(WhiteNoiseAdder):
+    """
+    LegacyWhiteNoiseAdder exists only to reproduce legacy datasets for testing etc.
+
+    All other use cases should use WhiteNoiseAdder directly or a subclass.
+    """
+
     def __init__(self, var, seed=0):
+        """
+        Initialize a legacy noise adder.
+
+        :param var: Float representing the target variance
+        :param seed: Integer seed.  Default 0.
+        """
         self.seed = seed
         assert isinstance(self.seed, int), "LegacyWhiteNoiseAdder requires integer seed"
         # Note `self.rng` should not be used in `LegacyWhiteNoiseAdder`
