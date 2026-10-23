@@ -5,7 +5,7 @@ Here we provide an abstract base class with two naive approaches as
 concrete implementations.
 
 `RandomClassSelector` will select random indices from across the
-entire dataset, with RNG controlled by `seed`.
+entire dataset, with RNG controlled by `rng`.
 
 `TopClassSelector' will select the first `n_classes` in order.  This
 may be useful for debugging and development.
@@ -139,11 +139,12 @@ class TopClassSelector(ClassSelector):
 
 
 class RandomClassSelector(ClassSelector):
-    def __init__(self, seed=None):
+    def __init__(self, rng=None):
         """
-        :param seed: RNG seed, de
+        :param rng: Option RNG or seed.
         """
-        self.seed = seed
+        # Instantiate a random Generator
+        self.rng = np.random.default_rng(rng)
 
     def _select(self, classes, reflections, distances):
         """
@@ -152,11 +153,9 @@ class RandomClassSelector(ClassSelector):
         # Assign uniform quality.
         self._quality_scores = np.zeros(self.n)
 
-        # Instantiate a random Generator
-        rng = np.random.default_rng(self.seed)
         # Generate and return indices for random sample
         # +1 for zero indexing
-        return rng.choice(self.n, size=self.n, replace=False)
+        return self.rng.choice(self.n, size=self.n, replace=False)
 
 
 class NeighborVarianceClassSelector(ClassSelector):

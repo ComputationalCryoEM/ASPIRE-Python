@@ -706,9 +706,9 @@ def test_fastrotate_M_arg(dtype):
     """
     Smoke test precomputed `M` input  to `fastrotate`.
     """
-
-    imgs = np.random.randn(6, 8, 8).astype(dtype)
-    theta = np.random.uniform(0, 2 * np.pi)
+    rng = np.random.default_rng()
+    imgs = rng.standard_normal((6, 8, 8), dtype=dtype)
+    theta = rng.uniform(0, 2 * np.pi)
 
     # Precompute M
     M = compute_fastrotate_interp_tables(theta, *imgs.shape[-2:])

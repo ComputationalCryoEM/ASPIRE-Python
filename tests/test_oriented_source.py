@@ -31,7 +31,7 @@ def src_fixture_id(params):
 @pytest.fixture(params=ESTIMATOR_SYMMETRY, ids=src_fixture_id)
 def src_fixture(request):
     estimator, symmetry = request.param
-    L = 8
+    L = 12  # Must be greater than 8 for Cn algos.
     n = 10
     vol = None
 
@@ -43,7 +43,7 @@ def src_fixture(request):
         estimator_kwargs.update({"n_theta": 36, "symmetry": symmetry})
 
     # Generate an origianl source and an oriented source.
-    og_src = Simulation(L=L, n=n, vols=vol, offsets=0)
+    og_src = Simulation(L=L, n=n, vols=vol, C=1, offsets=0, rng=0)
     orient_est = estimator(og_src, max_shift=1 / L, mask=False, **estimator_kwargs)
     oriented_src = OrientedSource(og_src, orient_est)
 
@@ -138,7 +138,7 @@ def test_save(src_fixture, save_mode):
     Test save function and save_mode.
     """
 
-    src = src_fixture[1]
+    src = src_fixture[1].cache()
 
     # Make a fresh tmp_dir
     with tempfile.TemporaryDirectory() as tmp_dir:

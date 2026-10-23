@@ -74,7 +74,7 @@ src = Simulation(
     angles=rots.angles,  # pass our rotations as Euler angles
     offsets=shifts,  # translations (wrt to origin)
     amplitudes=amplitudes,  # amplification ( 1 is identity)
-    seed=12345,  # RNG seed for reproducibility
+    rng=12345,  # RNG seed for reproducibility
     dtype=v.dtype,  # match our datatype to the Volume.
     noise_adder=white_noise_adder,  # optionally prescribe noise
 )

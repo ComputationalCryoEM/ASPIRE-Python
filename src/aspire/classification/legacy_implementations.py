@@ -4,12 +4,10 @@ import numpy as np
 import scipy.sparse as sps
 from scipy.linalg import qr
 
-from aspire.utils import random
-
 logger = logging.getLogger(__name__)
 
 
-def pca_y(x, k, num_iters=2, seed=None):
+def pca_y(x, k, num_iters=2, rng=None):
     """
     PCA using QR factorization.
 
@@ -21,8 +19,11 @@ def pca_y(x, k, num_iters=2, seed=None):
     :param x: Data matrix
     :param k: Number of estimated Principal Components.
     :param num_iters: Number of dot product applications.
+    :param rng: Optional RNG or seed.
     :return: (left Singular Vectors, Singular Values, right Singular Vectors)
     """
+
+    rng = np.random.default_rng(rng)
 
     m, n = x.shape
 
@@ -41,11 +42,11 @@ def pca_y(x, k, num_iters=2, seed=None):
     ones = np.ones((n, k + 2))
     if x.dtype == np.dtype("complex"):
         h = operator(
-            (2 * random((k + 2, n), seed=seed).T - ones)
-            + 1j * (2 * random((k + 2, n), seed=seed).T - ones)
+            (2 * rng.random((k + 2, n)).T - ones)
+            + 1j * (2 * rng.random((k + 2, n)).T - ones)
         )
     else:
-        h = operator(2 * random((k + 2, n), seed=seed).T - ones)
+        h = operator(2 * rng.random((k + 2, n)).T - ones)
 
     f = [h]
 
@@ -125,11 +126,13 @@ def bispec_operator_1(freqs):
     return o1, o2
 
 
-def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, seed=None):
+def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, rng=None):
     """
     alpha 1/3
     sample_n 4000
     """
+    rng = np.random.default_rng(rng)
+
     freqs_not_zero = freqs != 0
 
     coef_norm = np.log(np.power(np.absolute(coef[freqs_not_zero]), alpha))
@@ -147,14 +150,14 @@ def bispec_2drot_large(coef, freqs, eigval, alpha, sample_n, seed=None):
     mask = np.where(p, p, -1)  # taking the log in the next step will yield a 0
     m = np.exp(o1 * np.log(p, where=(mask > 0), out=None))
     p_m = m / m.sum()
-    x = random(size=len(m), seed=seed)
+    x = rng.random(size=len(m))
     m_id = np.where(x < sample_n * p_m)[0]
     o1 = o1[m_id]
     o2 = o2[m_id]
     m = np.exp(o1 * coef_norm + 1j * o2 * phase)
 
     # svd of the reduced bispectrum
-    u, s, v = pca_y(m, min(300, len(m)), seed=seed)
+    u, s, v = pca_y(m, min(300, len(m)), rng=rng)
 
     coef_b = np.einsum("i, ij -> ij", s, np.conjugate(v))
     coef_b_r = np.conjugate(u.T).dot(np.conjugate(m))

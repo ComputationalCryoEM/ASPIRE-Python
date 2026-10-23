@@ -61,7 +61,7 @@ from aspire.source import ArrayMicrographSource
 #            particles_per_micrograph: Optional, int
 #            particle_amplitudes: Optional, np.ndarray
 #            projection_angles: Optional, np.ndarray
-#            seed: Optional, int
+#            rng: Optional, int
 #            ctf_filters: Optional, list
 #            noise_adder: Optional, NoiseAdder
 #            boundary: Optional, int
@@ -144,7 +144,7 @@ vol = AsymmetricVolume(
     L=100,
     C=1,
     pixel_size=4,
-    seed=1234,
+    rng=1234,
     dtype=np.float32,
 ).generate()
 
@@ -163,7 +163,7 @@ src = MicrographSimulation(
     particle_amplitudes=1,
     micrograph_size=1024,
     micrograph_count=n_micrographs,
-    seed=1234,
+    rng=1234,
 )
 
 # Plot the micrographs
@@ -189,7 +189,7 @@ src = MicrographSimulation(
     micrograph_size=1024,
     micrograph_count=n_micrographs,
     ctf_filters=ctfs,
-    seed=1234,
+    rng=1234,
 )
 
 # Plot the micrographs
@@ -204,7 +204,7 @@ src.images[:].show()
 from aspire.noise import WhiteNoiseAdder
 
 # Create our noise using WhiteNoiseAdder
-noise = WhiteNoiseAdder(4e-3, seed=1234)
+noise = WhiteNoiseAdder(4e-3)
 
 # Add noise to our MicrographSimulation using the noise_adder argument
 src = MicrographSimulation(
@@ -214,7 +214,7 @@ src = MicrographSimulation(
     micrograph_size=1024,
     micrograph_count=n_micrographs,
     ctf_filters=ctfs,
-    seed=1234,
+    rng=1234,
 )
 
 # Plot the micrographs

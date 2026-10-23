@@ -58,7 +58,7 @@ def volume(request, resolution, dtype):
     vol_kwargs = dict(
         L=resolution,
         C=1,
-        seed=SEED,
+        rng=SEED,
         dtype=dtype,
     )
     if order:
@@ -74,7 +74,7 @@ def source(volume):
         vols=volume,
         offsets=0,
         amplitudes=1,
-        seed=SEED,
+        rng=SEED,
         dtype=volume.dtype,
     )
     src = src.cache()  # precompute images
@@ -107,7 +107,7 @@ def weighted_volume(request, resolution, dtype):
     vol_kwargs = dict(
         L=resolution,
         C=2,
-        seed=SEED,
+        rng=SEED,
         dtype=dtype,
     )
     if order:
@@ -123,7 +123,7 @@ def weighted_source(weighted_volume):
         vols=weighted_volume,
         offsets=0,
         amplitudes=1,
-        seed=SEED,
+        rng=SEED,
         dtype=weighted_volume.dtype,
     )
 

@@ -182,6 +182,39 @@ def mean_aligned_angular_distance(rots_est, rots_gt, degree_tol=None):
     return mean_ang_dist
 
 
+def mean_aligned_shift_error(rots, est_shifts, gt_shifts):
+    """
+    Mean per-image shift error after aligning the 3D translation ambiguity.
+
+    :param rots: Reference rotations used to define global 3D translation.
+    :param est_shifts: Estimated shifts.
+    :param gt_shifts: Ground truth shifts.
+
+    :return: The mean Euclidean distance between ground truth and
+        estimated shifts after aligning the 3D translational ambiguity.
+    """
+
+    # For image i, R_i.T expresses a global 3D translation t in that image's
+    # coordinates: (image_x, image_y, viewing_axis). Only the first two
+    # components shift the 2D image, so stack those rows for every image.
+    basis = rots.transpose(0, 2, 1)[:, :2, :].reshape(-1, 3)
+
+    # QR gives perpendicular unit directions spanning the same shift patterns.
+    q, _ = np.linalg.qr(basis, mode="reduced")
+
+    # Flatten the per-image (x, y) errors to match the row order of basis and q.
+    error = (gt_shifts - est_shifts).reshape(-1)
+
+    # q.T @ error finds the amount of error along each column of q.
+    # q @ (q.T @ error) projects the error onto shifts caused by a global 3D translation.
+    # We subtract away the error caused by global translation leaving the error
+    # inherent to the shift estimation alone.
+    aligned_error = error - q @ (q.T @ error)
+
+    # Return mean Euclidean error.
+    return np.linalg.norm(aligned_error.reshape(-1, 2), axis=1).mean()
+
+
 def rots_to_clmatrix(rots, n_theta):
     """
     Compute the common lines matrix induced by all pairs of rotation

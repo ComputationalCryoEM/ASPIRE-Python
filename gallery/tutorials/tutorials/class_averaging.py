@@ -86,8 +86,8 @@ for i, theta in enumerate(thetas):
 # We'll make an example data set by concatentating then shuffling
 # these.
 example_array = np.concatenate((classRound, classOval, classYOvalL, classYOvalR))
-np.random.seed(1234567)
-np.random.shuffle(example_array)
+rng = np.random.default_rng(1234567)
+rng.shuffle(example_array)
 
 # So now that we have cooked up an example dataset, lets create an
 # ASPIRE source
@@ -144,7 +144,7 @@ var = np.var(src.images[:].asnumpy())
 noise_var = var * 2**4
 
 # Then create noise with the ``WhiteNoiseAdder`` class.
-noise = WhiteNoiseAdder(var=noise_var, seed=123)
+noise = WhiteNoiseAdder(var=noise_var)
 
 # Add noise to the images by performing ``forward``
 noisy_im = noise.forward(src.images[:])

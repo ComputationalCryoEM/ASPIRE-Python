@@ -170,7 +170,7 @@ class AligningAverager2DBase(Averager2DBase):
             angles=self.rotations.angles,
             offsets=self.shifts,
             amplitudes=np.ones(self.n_img),
-            seed=12345,
+            rng=12345,
             dtype=self.dtype,
         )
 
