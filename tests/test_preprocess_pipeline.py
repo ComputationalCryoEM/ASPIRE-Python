@@ -32,6 +32,7 @@ def get_sim_object(L, dtype):
         filter_stack=RadialCTFFilter(defocus=np.linspace(1.5e4, 2.5e4, 7)),
         noise_adder=noise_adder,
         pixel_size=1,
+        rng=12345,
         dtype=dtype,
     )
     return sim
