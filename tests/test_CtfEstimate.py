@@ -127,6 +127,7 @@ def test_customized_estimate_CTF():
             "stop_cond": 1e-8,
         },
         linprog_method="highs",
+        step_defocus=25,
     )
     return test_estimate_CTF(basis, **customized)
 
