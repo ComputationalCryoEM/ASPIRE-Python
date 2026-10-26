@@ -3,13 +3,12 @@ from functools import partial
 
 import numpy as np
 from scipy.linalg import norm
-from scipy.sparse.linalg import LinearOperator
+from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire import config
 from aspire.basis import Coef
 from aspire.nufft import anufft
 from aspire.numeric import fft
-from aspire.numeric.scipy import cg
 from aspire.operators import evaluate_src_filters_on_grid
 from aspire.reconstruction import Estimator, FourierKernel, FourierKernelMatrix
 from aspire.volume import Volume, rotated_grids
