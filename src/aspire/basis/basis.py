@@ -2,10 +2,9 @@ import logging
 import warnings
 
 import numpy as np
-from scipy.sparse.linalg import LinearOperator
+from scipy.sparse.linalg import LinearOperator, cg
 
 from aspire.image import Image
-from aspire.numeric.scipy import cg
 from aspire.utils import mdim_mat_fun_conj
 from aspire.volume import Volume
 
