@@ -175,7 +175,6 @@ class CtfEstimator:
         # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
         tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
         self.tapers_1d = xp.asarray(tapers_1d, dtype=self.dtype)
-        breakpoint()
 
     def preprocess_micrograph(self, micrograph):
         """
@@ -495,7 +494,7 @@ class CtfEstimator:
         Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
         :param amplitude_spectrum: Estimated power specrtum.
-        :return: 2-tuple of NumPy arrays (Estimated average of defocus and low_freq_cutoff)
+        :return: 2-tuple of NumPy arrays (Estimated average of defocus (nm), low_freq_cutoff)
         """
 
         signal = xp.asarray(amplitude_spectrum.T)
@@ -543,10 +542,13 @@ class CtfEstimator:
         c = c / xp.sqrt(Sxx[None, :] * Syy)
 
         max_c = xp.argmax(c).item()
-        avg_defocus, low_freq_cutoff_col = np.unravel_index(max_c, c.shape)[:2]
-        avg_defocus += self.min_defocus / 10  # (nm)
+        avg_defocus_steps, low_freq_cutoff_col = np.unravel_index(max_c, c.shape)[:2]
+        # Convert from number of steps to nm defocus units
+        avg_defocus_nm = (
+            self.min_defocus + avg_defocus_steps * self.step_defocus
+        ) / 10  # (nm)
 
-        return avg_defocus, low_freq_cutoff_col
+        return avg_defocus_nm, low_freq_cutoff_col
 
     def background_subtract_2d(self, signal, background_p1, max_col):
         """
@@ -958,7 +960,7 @@ class CtfEstimator:
             self._plot_1d_psd(signal_1d, background_1d)
             self._plot_1d_bg_sub_psd(signal_1d)
 
-        avg_defocus, low_freq_skip_col = self.opt1d(signal_1d)
+        avg_defocus_nm, low_freq_skip_col = self.opt1d(signal_1d)
 
         signal, background_2d = self.background_subtract_2d(
             signal_observed, background_1d, low_freq_skip_col
@@ -974,8 +976,8 @@ class CtfEstimator:
 
         background_2d = background_2d + additional_background
 
-        initial_df1 = (avg_defocus * 2) / (1 + ratio)
-        initial_df2 = (avg_defocus * 2) - initial_df1
+        initial_df1 = (avg_defocus_nm * 2) / (1 + ratio)
+        initial_df2 = (avg_defocus_nm * 2) - initial_df1
 
         defocus_u, defocus_v, defocus_ang = self.maximize_correlation(
             signal, initial_df1, initial_df2
