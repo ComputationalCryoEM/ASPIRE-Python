@@ -2,7 +2,7 @@
 Contains code supporting CTF parameter estimation.
 This implements a version of ASPIRE-CTF originally written in MATLAB,
 
-This Python version supports multiple basis and solvers.
+This Python version supports multiple bases and solvers.
 
 See paper:
 
@@ -98,7 +98,7 @@ class CtfEstimator:
         :param psd_size: Block size (in pixels) for PSD estimation. Default 1024.
         :param num_tapers: Optional, number of tapers to apply in PSD estimation.
             Defaults to 4.
-        :param g_min: Inverse of minimun resolution for PSD. Default 30.
+        :param g_min: Inverse of minimum resolution for PSD. Default 30.
         :param g_max: Inverse of maximum resolution for PSD. Default 5.
         :param min_defocus: Start of defocus loop scan (Angstrom). Default 5000.
         :param max_defocus: End of defocus loop scan (Angstrom). Default 100000.
@@ -151,7 +151,7 @@ class CtfEstimator:
         # Grids
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=self.dtype)
         # Note range is -half to half.
-        self.r_ctf = grid["r"] / 2 * (10 / pixel_size)  # units: inverse nm
+        self.r_ctf = grid["r"] / 2 * (10 / self.pixel_size)  # units: inverse nm
         self.theta = grid["phi"]
         # Construct omega grids for use in ASPIRE's ctf_formula
         self.omega = np.pi * np.vstack((grid["x"].flatten(), grid["y"].flatten()))
@@ -175,6 +175,7 @@ class CtfEstimator:
         # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
         tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
         self.tapers_1d = xp.asarray(tapers_1d, dtype=self.dtype)
+        breakpoint()
 
     def preprocess_micrograph(self, micrograph):
         """
@@ -202,7 +203,7 @@ class CtfEstimator:
         micrograph = xp.asarray(micrograph)
 
         # Cheaper to transpose whole micrograph than all the blocks later
-        # Without this tranpose the astig axis will be reflected wrt other tools' convention.
+        # Without this transpose the astig axis will be reflected wrt other tools' convention.
         micrograph = micrograph.T
 
         # Strided view of psd_size windows, using stride `step`
@@ -215,7 +216,7 @@ class CtfEstimator:
         )[::step, ::step]
 
         # The following tiling code is a little complicated,
-        # but yields good comprimise of performance on both CPU and GPU.
+        # but yields good compromise of performance on both CPU and GPU.
         # It is equivalent to the following simpler code:
         #   windows_sum = windows.sum(axis=(-1, -2), keepdims=True, dtype=np.float64)
         #   normalized_blocks = windows - windows_sum / (self.psd_size**2)
@@ -321,7 +322,7 @@ class CtfEstimator:
 
     def radial_average(self, amplitude_spectrum):
         """
-        Computes radial/elliptical average of the power spectrum
+        Computes radial average of the power spectrum.
 
         :param amplitude_spectrum: Power spectrum to average.
         :return: PSD and noise as 2-tuple of Image instances
@@ -346,7 +347,7 @@ class CtfEstimator:
 
     def elliptical_average(self, amplitude_spectrum):
         """
-        Computes elliptical average of the power spectrum
+        Computes elliptical average of the power spectrum.
 
         :param amplitude_spectrum: Power spectrum to average.
         :return: PSD and noise as 2-tuple of Image instances.
@@ -634,7 +635,7 @@ class CtfEstimator:
         :param df2: Defocus value in the direction perpendicular to df1.
         :param angle_ast: Angle between df1 and the x-axis, Radians.
         :param stop_cond: Optionally select value to stop iterations early.
-            Default `None` is 1e-10 for float32 `dtype` and 1e20 otherwise.
+            Default `None` is 1e-10 for float32 `dtype` and 1e-20 otherwise.
         :param max_iterations: Maximum number of inner gd steps.
             Default 400.
         :return: Optimal defocus parameters
@@ -1041,7 +1042,7 @@ def estimate_ctf(
     save_ctf_images=False,
     save_noise_images=False,
     rglob=r"*.mrc",
-    solver_method="gd",
+    solver_method="bfgs",
     solver_opts=None,
     linprog_method="highs-ds",
 ):
@@ -1060,17 +1061,12 @@ def estimate_ctf(
     :param num_tapers: Optional, number of tapers to apply in PSD estimation.
         Defaults to 4.
     :param psd_size: Block size (in pixels) for PSD estimation.
-    :param g_min: Inverse of minimun resolution for PSD. Default 30.
+    :param g_min: Inverse of minimum resolution for PSD. Default 30.
     :param g_max: Inverse of maximum resolution for PSD. Default 5.
     :param min_defocus: Start of defocus loop scan (Angstrom). Default 5000.
     :param max_defocus: End of defocus loop scan (Angstrom). Default 100000.
     :param step_defocus: Step size of defocus loop scan (Angstrom). Default 10.
     :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
-    :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
-        Defaults to 'highs-ds'.
-    :param diagnostic_plots: Optionally generate diagnostic_plots.
-        Note, these are blocking plot calls.
-        Defaults to False.
     :param rglob: File search pattern.
         By default will search for **/*.mrc files.
         Using "*.mrc[s]" will additonally include mrcs files, etc.
@@ -1105,10 +1101,10 @@ def estimate_ctf(
 
     # Setup a CTFEstimator -----------------------------------------------------
     ctf_est = CtfEstimator(
-        pixel_size,
-        cs,
-        amplitude_contrast,
-        voltage,
+        pixel_size=pixel_size,
+        cs=cs,
+        amplitude_contrast=amplitude_contrast,
+        voltage=voltage,
         psd_size=psd_size,
         num_tapers=num_tapers,
         g_min=g_min,
@@ -1118,6 +1114,9 @@ def estimate_ctf(
         step_defocus=step_defocus,
         basis=basis,
         diagnostic_plots=False,
+        solver_method=solver_method,
+        solver_opts=solver_opts,
+        linprog_method=linprog_method,
         dtype=dtype,
     )
 
