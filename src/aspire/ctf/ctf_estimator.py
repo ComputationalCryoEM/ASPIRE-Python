@@ -1,6 +1,8 @@
 """
 Contains code supporting CTF parameter estimation.
-Generally, this is a port of ASPIRE-CTF from MATLAB.
+This implements a version of ASPIRE-CTF originally written in MATLAB,
+
+This Python version supports multiple bases and solvers.
 
 See paper:
 
@@ -20,24 +22,28 @@ successfully in such situations.
 Created on Sep 10, 2019
 @author: Ayelet Heimowitz, Amit Moscovich
 
-Integrated into ASPIRE-Python by Garrett Wright Feb 2021.
+Originally integrated into ASPIRE-Python Feb 2021,
+optimized and refactored by Garrett Wright Oct 2026.
+
 """
 
 import logging
-import os
 from collections import OrderedDict
+from pathlib import Path
 
+import matplotlib.pyplot as plt
 import mrcfile
 import numpy as np
 from numpy import linalg as npla
-from scipy.optimize import linprog
+from scipy.optimize import linprog, minimize
 from scipy.signal.windows import dpss
 
-from aspire.basis import Coef, FFBBasis2D
+from aspire.basis import Coef, FFBBasis2D, SteerableBasis2D
 from aspire.image import Image
-from aspire.numeric import fft
+from aspire.numeric import fft, xp
+from aspire.operators import CTFFilter
 from aspire.storage import StarFile
-from aspire.utils import abs2, complex_type, grid_1d, grid_2d, voltage_to_wavelength
+from aspire.utils import grid_2d, tqdm, voltage_to_wavelength
 
 logger = logging.getLogger(__name__)
 
@@ -47,14 +53,39 @@ class CtfEstimator:
     CtfEstimator Class ...
     """
 
+    # Allow configuration for advanced users and future solvers.
+    default_solver_opts = {
+        "gd": {
+            "gradient_descent_iterations": 6,
+            "max_iterations": 400,
+            "stop_cond": None,  # Base on dtype
+        },
+        "bfgs": {
+            "maxiter": 200,
+            "gtol": 1e-10,
+        },
+    }
+
+    _solver_methods = default_solver_opts.keys()
+
     def __init__(
         self,
         pixel_size,
         cs,
         amplitude_contrast,
         voltage,
-        psd_size,
-        num_tapers,
+        psd_size=1024,
+        num_tapers=4,
+        g_min=30,
+        g_max=5,
+        min_defocus=5000,
+        max_defocus=100000,
+        step_defocus=10,
+        basis=None,
+        solver_method="bfgs",
+        solver_opts=None,
+        linprog_method="highs-ds",
+        diagnostic_plots=False,
         dtype=np.float32,
     ):
         """
@@ -64,101 +95,97 @@ class CtfEstimator:
         :param cs: Spherical aberration in mm.
         :param amplitude_contrast: Amplitude contrast.
         :param voltage: Voltage of electron microscope.
-        :param psd_size: Block size (in pixels) for PSD estimation.
-        :param num_tapers: Number of tapers to apply in PSD estimation.
+        :param psd_size: Block size (in pixels) for PSD estimation. Default 1024.
+        :param num_tapers: Optional, number of tapers to apply in PSD estimation.
+            Defaults to 4.
+        :param g_min: Inverse of minimum resolution for PSD. Default 30.
+        :param g_max: Inverse of maximum resolution for PSD. Default 5.
+        :param min_defocus: Start of defocus loop scan (Angstrom). Default 5000.
+        :param max_defocus: End of defocus loop scan (Angstrom). Default 100000.
+        :param step_defocus: Step size of defocus loop scan (Angstrom). Default 10.
+        :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
+        :param solver_method: Solver used to optimize defocus params.  `gd` or `bfgs`.
+            Default uses single call to `bfgs`.
+            Original implementation used repeated gradient descent and is provided for reproducibility.
+            Each solver may have unique configuration options, optionally passed via a dictionary.
+        :param solver_opts: Optional dictionary of solver options.
+            Populated with `default_solver_opts[solver]` by default.
+        :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
+            Defaults to 'highs-ds'.
+        :param diagnostic_plots: Optionally generate diagnostic_plots.
+            Note, these are blocking plot calls.
+            Defaults to False.
         :returns: CtfEstimator instance.
         """
 
-        self.pixel_size = pixel_size
-        self.cs = cs
-        self.amplitude_contrast = amplitude_contrast
-        self.voltage = voltage
-        self.psd_size = psd_size
-        self.num_tapers = num_tapers
-        self.lmbd = voltage_to_wavelength(voltage) / 10.0  # Convert angstrom to nm
+        self.pixel_size = np.asarray(pixel_size).item()
+        self.cs = np.asarray(cs).item()
+        self.amplitude_contrast = np.asarray(amplitude_contrast).item()
+        self.voltage = np.asarray(voltage).item()
+        self.psd_size = int(psd_size)
+        self.num_tapers = int(num_tapers)
+        self.lmbd = (
+            voltage_to_wavelength(np.asarray(voltage).item()) / 10.0
+        )  # Convert angstrom to nm
+
+        self.g_min = np.asarray(g_min).item()
+        self.g_max = np.asarray(g_max).item()
+        self.min_defocus = np.asarray(min_defocus, dtype=int).item()
+        self.max_defocus = np.asarray(max_defocus, dtype=int).item()
+        self.step_defocus = np.asarray(step_defocus, dtype=int).item()
+
+        # Setup solvers and respective solver options
+        if solver_method not in self._solver_methods:
+            raise RuntimeError(
+                f"Provided solver_method {solver_method} must be one of {self._solver_methods}"
+            )
+        self.solver_method = solver_method
+        if solver_opts is None:
+            solver_opts = self.default_solver_opts[solver_method]
+        self.solver_opts = solver_opts
+        self.linprog_method = linprog_method
+
+        self.diagnostic_plots = diagnostic_plots
         self.dtype = np.dtype(dtype)
 
+        # Grids
         grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=self.dtype)
-
         # Note range is -half to half.
-        self.r_ctf = grid["r"] / 2 * (10 / pixel_size)  # units: inverse nm
-
+        self.r_ctf = grid["r"] / 2 * (10 / self.pixel_size)  # units: inverse nm
         self.theta = grid["phi"]
-        self.defocus1 = 0
-        self.defocus2 = 0
-        self.angle = 0  # Radians
-        self.h = 0
+        # Construct omega grids for use in ASPIRE's ctf_formula
+        self.omega = np.pi * np.vstack((grid["x"].flatten(), grid["y"].flatten()))
+        center = self.psd_size // 2
+        r = np.pi * grid["r"][center, center:]
+        self.radial_omega = np.stack((r, np.zeros_like(r)))  # 1d (ray)
 
-    def set_df1(self, df):
+        # Re-scale to unnormalized grids for X, Y, and R (avoids recompute)
+        self.X = grid["x"] * psd_size / 2
+        self.Y = grid["y"] * psd_size / 2
+        self.R = grid["r"] * psd_size / 2
+
+        # Setup Basis
+        if basis is None:
+            basis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
+        if not isinstance(basis, SteerableBasis2D):
+            raise RuntimeError("Basis must be subclass of SteerableBasis2D.")
+        self.basis = basis
+
+        # Only need to compute tapers once
+        # Relating to MATLAB code, NW:= R * N / 2 = (2*L)/N * N / 2 = L
+        tapers_1d = self.tapers(psd_size, num_tapers, num_tapers)
+        self.tapers_1d = xp.asarray(tapers_1d, dtype=self.dtype)
+
+    def preprocess_micrograph(self, micrograph):
         """
-        Sets defocus.
+        Preprocess micrograph into normalized half overlapping blocks of `psd_size` by `psd_size`.
 
-        :param df: Defocus value in the direction perpendicular to df2.
-        """
-
-        self.defocus1 = df
-
-    def set_df2(self, df):
-        """
-        Sets defocus.
-
-        :param df: Defocus value in the direction perpendicular to df1.
-        """
-
-        self.defocus2 = df
-
-    def set_angle(self, angle):
-        """
-        Sets angle.
-
-        :param angle: Angle (in Radians) between df1 and the x-axis.
-        """
-
-        self.angle = angle
-
-    def generate_ctf(self):
-        """
-        Generates internal representation of the Contrast Transfer Function using parameters from this instance.
+        :param micrograph: Micrograph as NumPy array.
+        :return: Array of normalized blocks extracted from the micrograph (..., psd_size, psd_size).
+            Note, may be a CuPy array depending on `xp` mode.
         """
 
-        astigmatism_angle = np.full(
-            shape=self.theta.shape, fill_value=self.angle, dtype=self.dtype
-        )
-
-        defocus_sum = np.full(
-            shape=self.theta.shape,
-            fill_value=self.defocus1 + self.defocus2,
-            dtype=self.dtype,
-        )
-
-        defocus = defocus_sum + (
-            (self.defocus1 - self.defocus2)
-            * np.cos(2 * (self.theta - astigmatism_angle))
-        )
-        defocus_factor = np.pi * self.lmbd * self.r_ctf * defocus / 2
-        amplitude_contrast_term = self.amplitude_contrast / np.sqrt(
-            1 - self.amplitude_contrast**2
-        )
-
-        chi = (
-            defocus_factor
-            - np.pi * self.lmbd**3 * self.cs * 1e6 * self.r_ctf**2 / 2
-            + amplitude_contrast_term
-        )
-        h = -np.sin(chi)
-        self.h = h
-
-    def micrograph_to_blocks(self, micrograph, block_size):
-        """
-        Preprocess micrograph into blocks using block_size.
-
-        :param micrograph: Micrograph as NumPy array. #NOTE looks like F order
-        :param blocksize: Size of the square blocks to partition micrograph.
-        :return: NumPy array of blocks extracted from the micrograph.
-        """
-
-        # verify block_size is even
-        assert block_size % 2 == 0
+        assert self.psd_size % 2 == 0, "psd_size must be even"
 
         if micrograph.ndim == 3:
             assert (
@@ -166,53 +193,59 @@ class CtfEstimator:
             ), f"micrograph should be 2D or stack of 1 2D image: {micrograph.shape}"
             micrograph = micrograph[0]
 
-        size_x = micrograph.shape[-1]
-        size_y = micrograph.shape[-2]
+        assert (
+            min(micrograph.shape) >= self.psd_size
+        ), f"micrograph {micrograph.shape} must be larger than psd_size {self.psd_size}"
+        step = self.psd_size // 2
 
-        step_size = block_size // 2
-        range_y = size_y // step_size - 1
-        range_x = size_x // step_size - 1
+        # Perform the micrograph processing on the gpu when in xp mode
+        micrograph = xp.asarray(micrograph)
 
-        block_list = [
-            micrograph[
-                j * step_size : (j + 2) * step_size, i * step_size : (i + 2) * step_size
-            ]
-            for j in range(range_y)
-            for i in range(range_x)
-        ]
-        blocks = np.asarray(block_list, dtype=micrograph.dtype)
+        # Cheaper to transpose whole micrograph than all the blocks later
+        # Without this transpose the astig axis will be reflected wrt other tools' convention.
+        micrograph = micrograph.T
 
-        return blocks
+        # Strided view of psd_size windows, using stride `step`
+        # Avoids repeatedly building the entire blocklist
+        # Note, modifying this view can modify underlying array.
+        #
+        # (ny, nx, psd_size, psd_size), no copy
+        windows = xp.lib.stride_tricks.sliding_window_view(
+            micrograph, (self.psd_size, self.psd_size)
+        )[::step, ::step]
 
-    def normalize_blocks(self, blocks):
-        """
-        Preprocess CTF of micrograph using block_size.
+        # The following tiling code is a little complicated,
+        # but yields good compromise of performance on both CPU and GPU.
+        # It is equivalent to the following simpler code:
+        #   windows_sum = windows.sum(axis=(-1, -2), keepdims=True, dtype=np.float64)
+        #   normalized_blocks = windows - windows_sum / (self.psd_size**2)
 
-        :param blocks: NumPy array of blocks extracted from the micrograph.
-        :return: NumPy array of normalized blocks.
-        """
+        # Instead of looping over windows (which repeat calculations on sub-tiles),
+        # each window is subdivided into tiles, which are read only once each.
+        # Use doubles for intermediates.
+        ny, nx = windows.shape[:2]
+        tiles = micrograph[: (ny + 1) * step, : (nx + 1) * step]
+        tile_sums = tiles.reshape(ny + 1, step, nx + 1, step).sum(
+            axis=(1, 3), dtype=np.float64
+        )
 
-        # Take block size from blocks
-        block_size = blocks.shape[1]
-        assert block_size == blocks.shape[2]
+        # Now for each window, gather the respective tile_sums
+        window_means = (
+            tile_sums[:-1, :-1]  # Upper Left
+            + tile_sums[1:, :-1]  # Lower Left
+            + tile_sums[:-1, 1:]  # Upper Right
+            + tile_sums[1:, 1:]  # Lower Right
+        ) / (
+            4 * step**2
+        )  # divide sum to yield mean
 
-        # Create a sum and reshape so it may be broadcast with `block`.
-        blocks_sum = np.sum(blocks, axis=(-1, -2))[:, np.newaxis, np.newaxis]
+        normalized_blocks = xp.empty(windows.shape, dtype=self.dtype)
+        normalized_blocks[:, :] = windows - window_means[:, :, None, None]
+        # This should be a free reshape
+        normalized_blocks = normalized_blocks.reshape(-1, self.psd_size, self.psd_size)
 
-        blocks -= blocks_sum / (block_size**2)
-
-        return blocks
-
-    def preprocess_micrograph(self, micrograph, block_size):
-        """
-        Preprocess micrograph into normalized blocks using block_size.
-
-        :param micrograph: Micrograph as NumPy array. #NOTE looks like F order
-        :param blocksize: Size of the square blocks to partition micrograph.
-        :return: NumPy array of normalized blocks extracted from the micrograph.
-        """
-
-        return self.normalize_blocks(self.micrograph_to_blocks(micrograph, block_size))
+        # Since this might be large-ish, keep on GPU when in xp mode (ie skip the usual asarray())
+        return normalized_blocks
 
     def tapers(self, N, NW, L):
         """
@@ -227,81 +260,129 @@ class CtfEstimator:
         :return: NumPy array of data tapers
         """
 
-        # Note the original ASPIRE implementation is negated from original scipy...
-        #  but at time of writing subsequent code was agnostic to sign.
-        return dpss(M=N, NW=NW, Kmax=L, return_ratios=False).T
+        # Note the original ASPIRE MATLAB implementation computed these.
+        # This call should be close up to sign, but is not identical.
+        #
+        # In the CtfEstimator application, the signs will pass through
+        # the mul and fft steps, then are absolute valued.
+        return dpss(M=N, NW=NW, Kmax=L, return_ratios=False, sym=False, norm=2)
 
-    def estimate_psd(self, blocks, tapers_1d):
+    def estimate_psd(self, blocks):
         """
         Estimate the power spectrum of the micrograph using the multi-taper method
 
         :param blocks: 3-D NumPy array containing windows extracted from the micrograph in the preprocess function.
-        :param tapers_1d: NumPy array of data tapers.
-        :return: NumPy array of estimated power spectrum.
+        :return: Image of estimated power spectrum.
         """
 
-        num_1d_tapers = tapers_1d.shape[-1]
-        tapers_1d = tapers_1d.astype(complex_type(self.dtype), copy=False)
+        # Shapes
+        num_blocks, N, _ = blocks.shape
+        Nhalf = N // 2 + 1  # rfft size
+        num_1d_tapers = self.tapers_1d.shape[0]
 
-        blocks_mt = np.zeros(blocks[0, :, :].shape, dtype=self.dtype)
+        # Ensure blocks are on GPU and consistent dtype
+        blocks = xp.asarray(blocks, dtype=self.dtype)
 
-        blocks_tapered = np.zeros(blocks[0, :, :].shape, dtype=complex_type(self.dtype))
+        # Array to accumulate PSD
+        # Use hermitian symmetry to cut PSD compute in half
+        psd_half = xp.zeros((N, Nhalf), dtype=self.dtype)
+        accum = xp.empty((N, Nhalf), dtype=self.dtype)
 
-        taper_2d = np.zeros(
-            (blocks.shape[1], blocks.shape[2]), dtype=complex_type(self.dtype)
+        for ax2 in range(num_1d_tapers):
+            # taper along columns
+            A = fft.rfft(
+                blocks * self.tapers_1d[ax2][None, None, :], axis=-1
+            )  # (num_1d_tapers, N, Nhalf)
+
+            for ax1 in range(num_1d_tapers):
+                # taper along rows
+                Bf = fft.fft(
+                    A * self.tapers_1d[ax1][None, :, None], axis=-2
+                )  # (num_1d_tapers, N, Nhalf)
+                # Accumulate abs2 summed over all blocks into temp array `accum`
+                _abs2_sum0(Bf, accum)
+                psd_half += accum
+
+        # Rebuild the full spectrum from psd_half
+        amplitude_spectrum = xp.empty((N, N), dtype=self.dtype)
+        amplitude_spectrum[:, :Nhalf] = psd_half
+        # reflect all the positive freq columns (1:N - Nhalf + 1), roll the single zero column.
+        amplitude_spectrum[:, Nhalf:] = xp.roll(
+            psd_half[:, 1 : N - Nhalf + 1][::-1, ::-1], 1, axis=0
         )
 
-        for ax1 in range(num_1d_tapers):
-            for ax2 in range(num_1d_tapers):
-                np.matmul(
-                    tapers_1d[:, ax1, np.newaxis],
-                    tapers_1d[:, ax2, np.newaxis].T,
-                    out=taper_2d,
-                )
+        # Normalize
+        # Ask Ayelet about the num_blocks factor. Needed to match MATLAB intermediate.
+        amplitude_spectrum /= N**2 * num_blocks**2
 
-                for m in range(blocks.shape[0]):
-                    np.multiply(blocks[m, :, :], taper_2d, out=blocks_tapered)
-                    blocks_mt_post_fft = fft.fftn(blocks_tapered, axes=(-2, -1))
-                    blocks_mt += abs2(blocks_mt_post_fft)
+        amplitude_spectrum = fft.fftshift(amplitude_spectrum)
 
-        blocks_mt /= blocks.shape[0] ** 2
-        blocks_mt /= tapers_1d.shape[0] ** 2
+        return Image(xp.asnumpy(amplitude_spectrum), pixel_size=self.pixel_size)
 
-        amplitude_spectrum = fft.fftshift(
-            blocks_mt
-        )  # max difference 10^-13, max relative difference 10^-14
-
-        return Image(amplitude_spectrum)
-
-    def elliptical_average(self, ffbbasis, amplitude_spectrum, circular):
+    def radial_average(self, amplitude_spectrum):
         """
-        Computes radial/elliptical average of the power spectrum
+        Computes radial average of the power spectrum.
 
-        :param ffbbasis: FFBBasis instance.
-        :param amplitude_spectrum: Power spectrum.
-        :param circular: True for radial averaging and False for elliptical averaging.
-        :return: PSD and noise as 2-tuple of NumPy arrays.
+        :param amplitude_spectrum: Power spectrum to average.
+        :return: PSD and noise as 2-tuple of Image instances
+        """
+        noise = amplitude_spectrum  # pass through
+        coefs_s = self.basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
+
+        mask_s = (self.basis.angular_indices == 1) | (self.basis.angular_indices == 2)
+        coefs_s[:, mask_s] = 0
+
+        psd = Coef(
+            self.basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size
+        ).evaluate()
+
+        if (_min := np.min(psd)) < 0:
+            logger.debug(
+                f"PSD should be strictly greater than 0, found {_min}, clipping to 0."
+            )
+            psd = Image(np.maximum(psd, 0), pixel_size=self.pixel_size)
+
+        return psd, noise
+
+    def elliptical_average(self, amplitude_spectrum):
+        """
+        Computes elliptical average of the power spectrum.
+
+        :param amplitude_spectrum: Power spectrum to average.
+        :return: PSD and noise as 2-tuple of Image instances.
         """
 
-        # RCOPT, come back and change the indices for this method
-        coefs_s = ffbbasis.evaluate_t(amplitude_spectrum).asnumpy().copy().T
+        coefs_s = self.basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
         coefs_n = coefs_s.copy()
 
-        coefs_s[np.argwhere(ffbbasis.angular_indices == 1)] = 0
-        if circular:
-            coefs_s[np.argwhere(ffbbasis.angular_indices == 2)] = 0
-            noise = amplitude_spectrum
-        else:
-            coefs_n[np.argwhere(ffbbasis.angular_indices == 0)] = 0
-            coefs_n[np.argwhere(ffbbasis.angular_indices == 2)] = 0
-            noise = Coef(ffbbasis, coefs_n.T).evaluate()
+        mask_s = self.basis.angular_indices == 1
+        coefs_s[:, mask_s] = 0
 
-        psd = Coef(ffbbasis, coefs_s.T).evaluate()
+        mask_n = (self.basis.angular_indices == 0) | (self.basis.angular_indices == 2)
+        coefs_n[:, mask_n] = 0
+
+        noise = Coef(
+            self.basis, coefs_n, pixel_size=amplitude_spectrum.pixel_size
+        ).evaluate()
+        psd = Coef(
+            self.basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size
+        ).evaluate()
+
+        if (_min := np.min(psd)) < 0:
+            logger.debug(
+                f"PSD should be strictly greater than 0, found {_min}, clipping to 0."
+            )
+            psd = Image(np.maximum(psd, 0), pixel_size=self.pixel_size)
+        if (_min := np.min(noise)) < 0:
+            logger.debug(
+                f"noise should be strictly greater than 0, found {_min}, clipping to 0."
+            )
+            noise = Image(np.maximum(noise, 0), pixel_size=self.pixel_size)
 
         return psd, noise
 
     def background_subtract_1d(
-        self, amplitude_spectrum, linprog_method="highs", n_low_freq_cutoffs=14
+        self, amplitude_spectrum, linprog_method="highs-ds", n_low_freq_cutoffs=14
     ):
         """
         Estimate and subtract the background from the power spectrum
@@ -343,6 +424,9 @@ class CtfEstimator:
             N = amplitude_spectrum.shape[-1] - low_freq_cutoff
 
             f = np.concatenate((np.ones(N), -1 * np.ones(N)), axis=0)
+            lb = np.concatenate([signal, np.full_like(signal, -np.inf)])
+            ub = np.concatenate([signal, np.full_like(signal, np.inf)])
+            bounds = np.column_stack([lb, ub])
 
             superposition_condition = np.concatenate(
                 (-1 * np.eye(N), np.eye(N)), axis=1
@@ -373,28 +457,31 @@ class CtfEstimator:
                 axis=0,
             )
 
-            # The original code used `bounds`,
-            #   but for many problems, linprog reports infeasable constraints.
-            # In practice for a micrograph from the paper, and our tutorial,
-            #   the code seems to work better without it...
-            # ASPIRE #417
+            # Rescale to avoid small values conflicting with internal bounds checks.
+            #     It is possible to disable with  `options={'presolve': False}`,
+            #     but this may impact the solution.
+            # Instead the input and bounds are rescaled, then the solution is rescaled.
+            _scale = 1e4
+            f, bounds = f / _scale, bounds * _scale
 
-            x = linprog(
+            res = linprog(
                 f,
                 A_ub=A,
                 b_ub=np.zeros(A.shape[0]),
                 method=linprog_method,
+                bounds=bounds,
             )
 
-            if not x.success:
-                raise RuntimeError("Linear program did not succeed. Halting")
+            if not res.success:
+                raise RuntimeError(
+                    f"Linear program did not succeed after {res.nit} iterations with condition {res.status}: '{res.message}'.\tHalting."
+                )
 
-            background = x.x[N:]
+            background = res.x[N:] / _scale
 
             bs_psd = signal - background
 
             final_signal[low_freq_cutoff - 1, low_freq_cutoff:] = bs_psd.T
-            # expected difference: 10^-7 (absolute)
             final_background[low_freq_cutoff - 1, low_freq_cutoff:] = background.T
 
         return final_signal, final_background
@@ -402,70 +489,66 @@ class CtfEstimator:
     def opt1d(
         self,
         amplitude_spectrum,
-        pixel_size,
-        cs,
-        lmbd,
-        w,
-        N,
-        min_defocus=500,
-        max_defocus=10000,
     ):
         """
         Find optimal defocus for the radially symmetric case (where no astigmatism is present)
 
         :param amplitude_spectrum: Estimated power specrtum.
-        :param pixel_size: Pixel size in \u212b (angstrom).
-        :param cs: Spherical aberration in mm.
-        :param lmbd: Electron wavelength \u212b (angstrom).
-        :param w: Amplitude contrast.
-        :param N: Number of rows (or columns) in the estimate power spectrum.
-        :param min_defocus: Start of defocus loop scan.
-        :param max_defocus: End of defocus loop scan.
-        :return: 2-tuple of NumPy arrays (Estimated average of defocus and low_freq_cutoff)
+        :return: 2-tuple of NumPy arrays (Estimated average of defocus (nm), low_freq_cutoff)
         """
 
-        center = N // 2
-
-        grid = grid_1d(N, normalized=True, dtype=self.dtype)
-        rb = grid["r"][center:] / 2
-
-        r_ctf = rb * (10 / pixel_size)  # units: inverse nm
-
-        signal = amplitude_spectrum.T
-        signal = np.maximum(0.0, signal)
-        signal = np.sqrt(signal)
+        signal = xp.asarray(amplitude_spectrum.T)
+        signal = xp.maximum(0.0, signal)
+        signal = xp.sqrt(signal)
         signal = signal[: 3 * signal.shape[0] // 4]
+        N, M = signal.shape
 
-        r_ctf_sq = r_ctf**2
-        c = np.zeros((max_defocus - min_defocus, signal.shape[1]), dtype=self.dtype)
-
-        for f in range(min_defocus, max_defocus):
-            ctf_im = np.abs(
-                np.sin(
-                    np.pi * lmbd * f * r_ctf_sq
-                    - 0.5 * np.pi * (lmbd**3) * cs * 1e6 * r_ctf_sq**2
-                    + w
-                )
+        # Compute the (radial) CTF filter stack in bulk
+        defoci_angstrom = xp.arange(
+            self.min_defocus, self.max_defocus, self.step_defocus, dtype=int
+        )
+        ctf_ims = xp.abs(
+            CTFFilter.ctf_formula(
+                xp.asarray(self.radial_omega),
+                pixel_size=self.pixel_size,
+                voltage=self.voltage,
+                defocus_u_a=defoci_angstrom,
+                defocus_v_a=defoci_angstrom,
+                defocus_ang=0,
+                Cs=self.cs,
+                alpha=self.amplitude_contrast,
+                B=0,
             )
-            ctf_im = ctf_im[: signal.shape[0]]
+        )
 
-            ctf_im = np.reshape(ctf_im, (ctf_im.shape[0], 1))
-            ctf_im = np.tile(ctf_im, (1, signal.shape[1]))
+        # Compute `signal` statistics, independent of defocus
+        LT = xp.tril(signal, k=-1)  # keep lower triangle
+        sx = LT.sum(axis=0)  # sum of row values
+        sxx = (LT * LT).sum(axis=0)  # sum of squared row values
+        nrows = (N - 1 - xp.arange(M)).astype(
+            self.dtype
+        )  # rows below diagonal for each column
+        Sxx = sxx - sx**2 / nrows  # centered
 
-            for m in range(0, signal.shape[1]):
-                signal[:, m] = signal[:, m] - np.mean(signal[m + 1 :, m], axis=0)
-                ctf_im[:, m] = ctf_im[:, m] - np.mean(ctf_im[m + 1 :, m], axis=0)
-                ctf_im[: m + 1, m] = np.zeros((m + 1))
-                signal[: m + 1, m] = np.zeros((m + 1))
+        # CTF statistics
+        ctf_ims = xp.asarray(ctf_ims, dtype=self.dtype)[:, :N]
+        sy = tail_sum(ctf_ims, M)
+        syy = tail_sum(ctf_ims * ctf_ims, M)
+        Syy = syy - sy**2 / nrows
 
-            Sx = np.sqrt(np.sum(ctf_im**2, axis=0))
-            Sy = np.sqrt(np.sum(signal**2, axis=0))
-            c[f - min_defocus, :] = np.sum(ctf_im * signal, axis=0) / (Sx * Sy)
+        # Compute the cross corr using one GEMM
+        c = ctf_ims @ LT
+        c -= sy * sx[None, :] / nrows
+        c = c / xp.sqrt(Sxx[None, :] * Syy)
 
-        avg_defocus, low_freq_cutoff = np.unravel_index(np.argmax(c), c.shape)[:2]
-        avg_defocus += min_defocus
+        max_c = xp.argmax(c).item()
+        avg_defocus_steps, low_freq_cutoff_col = np.unravel_index(max_c, c.shape)[:2]
+        # Convert from number of steps to nm defocus units
+        avg_defocus_nm = (
+            self.min_defocus + avg_defocus_steps * self.step_defocus
+        ) / 10  # (nm)
 
-        return avg_defocus, low_freq_cutoff
+        return avg_defocus_nm, low_freq_cutoff_col
 
     def background_subtract_2d(self, signal, background_p1, max_col):
         """
@@ -479,64 +562,51 @@ class CtfEstimator:
 
         signal = signal.asnumpy()
 
-        N = signal.shape[1]
-        grid = grid_2d(N, normalized=False, indexing="yx", dtype=self.dtype)
-
-        radii = np.sqrt((grid["x"] / 2) ** 2 + (grid["y"] / 2) ** 2)
-
         background = np.zeros(signal.shape, dtype=self.dtype)
-        for r in range(max_col + 2, background_p1.shape[1]):
-            background[:, (r < radii) & (radii <= r + 1)] = background_p1[max_col, r]
-        mask = radii <= max_col + 2
+        idx = np.ceil(self.R).astype(int) - 1
+        rings = (self.R > max_col + 1) & (self.R <= background_p1.shape[1])
+        background[:, rings] = background_p1[max_col, idx[rings]]
+        mask = self.R <= max_col + 1
         background[:, mask] = signal[:, mask]
 
         signal = signal - background
         signal = np.maximum(0, signal)
 
-        return Image(signal), Image(background)
+        return Image(signal, pixel_size=self.pixel_size), Image(
+            background, pixel_size=self.pixel_size
+        )
 
-    def pca(self, signal, pixel_size, g_min, g_max):
+    def pca(self, signal):
         """
+        Compute PCA to yield ratio for estimating  defocus values.
 
         :param signal: Estimated power spectrum.
-        :param pixel_size: Pixel size in \u212b (angstrom).
-        :param g_min: Inverse of minimun resolution for PSD.
-        :param g_max: Inverse of maximum resolution for PSD.
         :return: ratio.
         """
 
-        # RCOPT
-        signal = signal.asnumpy()[0].T
+        signal = signal.asnumpy()[0]  # Convert from Image to square array.
 
         N = signal.shape[0]
         center = N // 2
 
-        grid = grid_2d(N, normalized=True, indexing="yx", dtype=self.dtype)
-
-        r_ctf = grid["r"] / 2 * (10 / pixel_size)
-
-        grid = grid_2d(N, normalized=False, indexing="yx", dtype=self.dtype)
-        X = grid["x"]
-        Y = grid["y"]
-
         signal = signal - np.min(signal)
 
-        rad_sq_min = N * pixel_size / g_min
-        rad_sq_max = N * pixel_size / g_max
+        rad_sq_min = N * self.pixel_size / self.g_min
+        rad_sq_max = N * self.pixel_size / self.g_max
 
-        min_limit = r_ctf[center, (center + np.floor(rad_sq_min)).astype(int)]
-        signal[r_ctf < min_limit] = 0
+        min_limit = self.r_ctf[center, (center + np.floor(rad_sq_min)).astype(int)]
+        signal[self.r_ctf < min_limit] = 0
 
-        max_limit = r_ctf[center, (center + np.ceil(rad_sq_max)).astype(int)]
-        signal = np.where(r_ctf > max_limit, 0, signal)
+        max_limit = self.r_ctf[center, (center + np.ceil(rad_sq_max)).astype(int)]
+        signal[self.r_ctf > max_limit] = 0
 
-        moment_02 = Y**2 * signal
+        moment_02 = self.Y**2 * signal
         moment_02 = np.sum(moment_02, axis=(0, 1))
 
-        moment_11 = Y * X * signal
+        moment_11 = self.Y * self.X * signal
         moment_11 = np.sum(moment_11, axis=(0, 1))
 
-        moment_20 = X**2 * signal
+        moment_20 = self.X**2 * signal
         moment_20 = np.sum(moment_20, axis=(0, 1))
 
         moment_mat = np.zeros((2, 2))
@@ -550,162 +620,264 @@ class CtfEstimator:
 
         return ratio
 
-    def gd(
+    def _gd(
         self,
         signal,
         df1,
         df2,
         angle_ast,
-        r,
-        theta,
-        pixel_size,
-        g_min,
-        g_max,
-        amplitude_contrast,
-        lmbd,
-        cs,
+        stop_cond=None,
+        max_iterations=400,
     ):
         """
-        Runs gradient ascent to optimize defocus parameters
+        Runs inner gradient ascent to optimize defocus parameters.
 
         :param signal: Estimated power spectrum
         :param df1: Defocus value in the direction perpendicular to df2.
         :param df2: Defocus value in the direction perpendicular to df1.
         :param angle_ast: Angle between df1 and the x-axis, Radians.
-        :param r: Magnitude of spatial frequencies.
-        :param theta: Phase of spatial frequencies.
-        :param pixel_size: Pixel size in \u212b (angstrom).
-        :param g_min: Inverse of minimun resolution for PSD.
-        :param g_max: Inverse of maximum resolution for PSD.
-        :param amplitude_contrast: Amplitude contrast.
-        :param lmbd: Electron wavelength \u212b (angstrom).
-        :param cs: Spherical aberration in mm.
+        :param stop_cond: Optionally select value to stop iterations early.
+            Default `None` is 1e-10 for float32 `dtype` and 1e-20 otherwise.
+        :param max_iterations: Maximum number of inner gd steps.
+            Default 400.
         :return: Optimal defocus parameters
         """
 
-        # step size
-        alpha1 = 1e5
-        alpha2 = 1e4
+        if stop_cond is None:
+            stop_cond = 1e-10 if self.dtype == np.float32 else 1e-20
+        stop_cond = float(stop_cond)
+
+        # step sizes for (x, y, z)
+        alpha = np.array([1e5, 1e4, 1e4])
 
         # initialization
         x = df1 + df2
         y = (df1 - df2) * np.cos(2 * angle_ast)
         z = (df1 - df2) * np.sin(2 * angle_ast)
 
-        a = np.pi * lmbd * r**2 / 2
-        b = np.pi * lmbd**3 * cs * 1e6 * r**4 / 2 - np.full(
-            shape=r.shape, fill_value=amplitude_contrast, dtype=self.dtype
+        signal = signal.asnumpy()[0].T
+        N = signal.shape[1]
+        center = N // 2
+
+        rad_sq_min = N * self.pixel_size / self.g_min
+        rad_sq_max = N * self.pixel_size / self.g_max
+
+        max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
+        min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
+        mask = (self.r_ctf <= max_val) & (self.r_ctf > min_val)
+
+        # everything below depends only on the ring of pixels
+        r2 = self.r_ctf[mask] ** 2
+        a = (np.pi * self.lmbd / 2) * r2
+        b = (np.pi * self.lmbd**3 * self.cs * 1e6 / 2) * r2**2 - self.amplitude_contrast
+
+        sig = np.ascontiguousarray(signal[mask])  # repack for compute below
+        theta2 = 2 * self.theta[mask]
+
+        # Referencing old implementation,
+        # psi = x*a + y*a*cos2t + z*a*sin2t - b  ==  v @ A - b
+        A = np.ascontiguousarray(np.stack([a, a * np.cos(theta2), a * np.sin(theta2)]))
+
+        sum_A = sig @ sig
+        v = np.array([x, y, z], dtype=A.dtype)
+        W = np.empty((sig.size, 2), dtype=A.dtype)
+
+        def evaluate(v, need_grad=True):
+            psi = v @ A
+            psi -= b
+            s = np.sin(psi)
+            c1 = np.abs(s) @ sig
+            c2 = np.sqrt(sum_A * (s @ s))
+            grad = None
+            if need_grad:
+                cs = np.cos(psi)
+                W[:, 0] = np.sign(s) * cs
+                W[:, 0] *= sig  # sign(s) * cos * signal
+                W[:, 1] = s * cs
+                W[:, 1] *= 2  # d(sin^2)/d(psi)
+                G = A @ W  # compute all gradient sums
+                dc1 = G[:, 0]
+                dc2 = sum_A * G[:, 1] / (2 * c2)  # derivative_sqrt = 1 / (2 * c2)
+                grad = (dc1 * c2 - dc2 * c1) / c2**2
+            return c1, c2, grad
+
+        dx = dy = dz = 1.0
+        iter_no = 1
+
+        while max(dx, dy, dz) > stop_cond:
+            _, _, grad = evaluate(v)
+            dx, dy, dz = grad
+            v += alpha * grad
+
+            if iter_no < 2:
+                stop_cond = min(dx, dy, dz) / 1000
+            if iter_no > max_iterations:
+                stop_cond = max(dx, dy, dz) + 1
+            iter_no += 1
+
+        x, y, z = v
+        df1 = (x + np.hypot(y, z)) / 2
+        df2 = (x - np.hypot(y, z)) / 2
+        angle_ast = np.arctan2(z, y) / 2
+
+        c1, c2, _ = evaluate(v, need_grad=False)
+        p = c1 / c2
+
+        return df1, df2, angle_ast, p, iter_no
+
+    def gd(
+        self, signal, initial_df1, initial_df2, gradient_descent_iterations=6, **kwargs
+    ):
+        """
+        Calls gradient descent loop multiple times and
+        returns best optimum found.
+
+        This implementation was adapted and optimized from the original MATLAB code.
+
+        :param signal: Signal PSD array.
+        :param initial_df1: Initial major defocus (nm)
+        :param initial_df2: Initial minor defocus (nm)
+        :param gradient_descent_iterations: Optional, number of Gradient Descent attempts.
+            Defaults to 6.
+        :return: defocus_u_nm, defocus_v_nm, defocus_ang_radian
+        """
+
+        # This array holds results from each of the `gradient_descent_iterations`
+        cc_array = np.zeros((gradient_descent_iterations, 4))
+        for a, angle in enumerate(
+            np.linspace(0, np.pi, gradient_descent_iterations, endpoint=False)
+        ):
+            df1, df2, angle_ast, p, iters = self._gd(
+                signal,
+                initial_df1,
+                initial_df2,
+                angle,
+                **kwargs,
+            )
+
+            cc_array[a, 0] = df1
+            cc_array[a, 1] = df2
+            cc_array[a, 2] = angle_ast  # Radians
+            cc_array[a, 3] = p
+            logger.debug(
+                f"Gradient Descent {a+1} of {gradient_descent_iterations}:\tp={p}\titers={iters}"
+            )
+
+        # Select the best result index
+        ml = np.argmax(cc_array[:, 3], -1)
+        return cc_array[ml, 0:3]
+
+    def bfgs(
+        self,
+        signal,
+        initial_df1,
+        initial_df2,
+        gtol=1e-10,
+        maxiter=200,
+    ):
+        """
+        Calls quasi-newton method BFGS and returns found optimized values.
+
+        :param signal: Signal PSD array.
+        :param initial_df1: Initial major defocus (nm)
+        :param initial_df2: Initial minor defocus (nm)
+        :param gtol: Optionally select value to stop iterations.
+            Default is 1e-10.
+        :param maxiter: Optionally provide a max number of iterations for BFGS.
+            Defaults to 200.
+        :return: defocus_u_nm, defocus_v_nm, defocus_ang_radian
+        """
+
+        # Initial v = [x, y, z]
+        angle_ast = np.deg2rad(-75)  # legacy value, shouldn't matter in bfgs
+        v0 = np.array(
+            [
+                initial_df1 + initial_df2,
+                (initial_df1 - initial_df2) * np.cos(2 * angle_ast),
+                (initial_df1 - initial_df2) * np.sin(2 * angle_ast),
+            ]
         )
 
         signal = signal.asnumpy()[0].T
         N = signal.shape[1]
         center = N // 2
+        rad_sq_min = N * self.pixel_size / self.g_min
+        rad_sq_max = N * self.pixel_size / self.g_max
 
-        rad_sq_min = N * pixel_size / g_min
-        rad_sq_max = N * pixel_size / g_max
+        max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
+        min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
+        mask = (self.r_ctf <= max_val) & (self.r_ctf > min_val)
 
-        max_val = r[center, int(center - 1 + np.floor(rad_sq_max))]
-        min_val = r[center, int(center - 1 + np.ceil(rad_sq_min))]
+        # Everything that does not depend on (x, y, z)
+        # psi = x*a + y*a*cos(2t) + z*a*sin(2t) - b  ==  v @ A - b
+        r2 = self.r_ctf[mask] ** 2
+        a = (np.pi * self.lmbd / 2) * r2
+        b = (np.pi * self.lmbd**3 * self.cs * 1e6 / 2) * r2**2 - self.amplitude_contrast
+        sig = np.ascontiguousarray(signal[mask])
+        theta2 = 2 * self.theta[mask]
+        A = np.ascontiguousarray(np.stack([a, a * np.cos(theta2), a * np.sin(theta2)]))
+        sum_A = sig @ sig
 
-        mask = (r <= max_val) & (r > min_val)
-        a = a[mask]
-        b = b[mask]
-        signal = signal[..., mask]
-        r = r[mask]
-        theta = theta[mask]
+        # Variable scaling
+        scale = np.array([1e2, 1e1, 1e1])
 
-        sum_A = np.sum(signal**2)
+        def neg_p_and_grad(u):
+            v = u * scale
+            psi = v @ A
+            psi -= b
+            s = np.sin(psi)
+            c = np.cos(psi)
 
-        dx = 1
-        dy = 1
-        dz = 1
+            c1 = np.abs(s) @ sig
+            c2 = np.sqrt(sum_A * (s @ s))
 
-        stop_cond = 1e-20
-        iter_no = 1
+            dc1 = A @ (np.sign(s) * c * sig)
+            dc2 = (sum_A / (2 * c2)) * (A @ (2 * s * c))
+            grad = (dc1 * c2 - dc2 * c1) / c2**2
 
-        while np.maximum(np.maximum(dx, dy), dz) > stop_cond:
-            inner_cosine = y * np.cos(2 * theta) + z * np.sin(2 * theta)
-            psi = a * x + a * inner_cosine - b
-            outer_sine = np.sin(psi)
-            outer_cosine = np.cos(psi)
+            return -c1 / c2, -grad * scale
 
-            sine_x_term = a
-            sine_y_term = a * np.cos(2 * theta)
-            sine_z_term = a * np.sin(2 * theta)
+        res = minimize(
+            neg_p_and_grad,
+            v0 / scale,
+            jac=True,
+            method="BFGS",
+            options={"gtol": gtol, "maxiter": maxiter},
+        )
 
-            c1 = np.sum(np.abs(outer_sine) * signal)
-            c2 = np.sqrt(sum_A * np.sum(outer_sine**2))
+        x, y, z = res.x * scale
+        df1 = (x + np.hypot(y, z)) / 2  # nm
+        df2 = (x - np.hypot(y, z)) / 2  # nm
+        angle_ast = np.arctan2(z, y) / 2  # Radians
 
-            # gradients of numerator
-            dx_c1 = np.sum(np.sign(outer_sine) * outer_cosine * a * signal)
+        logger.debug(f"BFGS :\tp={-res.fun}\titers={res.nit}")
 
-            dy_c1 = np.sum(
-                np.sign(outer_sine) * outer_cosine * a * np.cos(2 * theta) * signal
-            )
-            dz_c1 = np.sum(
-                np.sign(outer_sine) * outer_cosine * a * np.sin(2 * theta) * signal
-            )
+        return df1, df2, angle_ast
 
-            derivative_sqrt = 1 / (2 * np.sqrt(sum_A * np.sum(outer_sine**2)))
+    def maximize_correlation(self, signal, initial_df1, initial_df2):
+        """
+        Selects which solver to use for optimizing CTF estimates.
 
-            derivative_sine2 = 2 * outer_sine * outer_cosine
+        :param signal: Signal PSD array
+        :param initial_df1: Initial major defocus (nm)
+        :param initial_df2: Initial minor defocus (nm)
+        :return: defocus_u_nm, defocus_v_nm, defocus_ang_rad
+        """
+        if self.solver_method == "gd":
+            return self.gd(signal, initial_df1, initial_df2, **self.solver_opts)
+        elif self.solver_method == "bfgs":
+            return self.bfgs(signal, initial_df1, initial_df2, **self.solver_opts)
 
-            #  gradients of denomenator
-            dx_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_x_term)
-            dy_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_y_term)
-            dz_c2 = derivative_sqrt * sum_A * np.sum(derivative_sine2 * sine_z_term)
-
-            # gradients
-            dx = (dx_c1 * c2 - dx_c2 * c1) / c2**2
-            dy = (dy_c1 * c2 - dy_c2 * c1) / c2**2
-            dz = (dz_c1 * c2 - dz_c2 * c1) / c2**2
-
-            # update
-            x = x + alpha1 * dx
-            y = y + alpha2 * dy
-            z = z + alpha2 * dz
-
-            if iter_no < 2:
-                stop_cond = np.minimum(np.minimum(dx, dy), dz) / 1000
-
-            if iter_no > 400:
-                stop_cond = np.maximum(np.maximum(dx, dy), dz) + 1
-
-            iter_no = iter_no + 1
-
-        df1 = (x + np.abs(y + z * 1j)) / 2
-        df2 = (x - np.abs(y + z * 1j)) / 2
-        angle_ast = np.angle(y + z * 1j) / 2  # Radians
-
-        inner_cosine = y * np.cos(2 * theta) + z * np.sin(2 * theta)
-        outer_sine = np.sin(a * x + a * inner_cosine - b)
-        outer_cosine = np.cos(a * x + a * inner_cosine - b)
-
-        sine_x_term = a
-        sine_y_term = a * np.cos(2 * theta)
-        sine_z_term = a * np.sin(2 * theta)
-
-        c1 = np.sum(np.abs(outer_sine) * signal)
-        c2 = np.sqrt(sum_A * np.sum(outer_sine**2))
-
-        p = c1 / c2
-
-        return df1, df2, angle_ast, p
-
-    # Note, This doesn't actually use anything from the class.
-    # It is used in a solver loop of some sort, so it may not be correct
-    # to just use what is avail in the obj.
-    def write_star(self, name, params_dict, output_dir):
+    def write_star(self, star_filepath, micrograph_name, params_dict):
         """
         Writes CTF parameters to starfile for a single micrograph.
         """
+
         data_block = {}
-        data_block["_rlnMicrographName"] = name
+        data_block["_rlnMicrographName"] = micrograph_name
         data_block["_rlnDefocusU"] = params_dict["defocus_u"]  # Should already be in A
         data_block["_rlnDefocusV"] = params_dict["defocus_v"]  # Should already be in A
-        data_block["_rlnDefocusAngle"] = (
-            params_dict["defocus_ang"] * 180 / np.pi
-        )  # Convert from radian to degree
+        data_block["_rlnDefocusAngle"] = np.rad2deg(params_dict["defocus_ang"])
         data_block["_rlnSphericalAberration"] = params_dict["cs"]
         data_block["_rlnAmplitudeContrast"] = params_dict["amplitude_contrast"]
         data_block["_rlnVoltage"] = params_dict["voltage"]
@@ -713,7 +885,144 @@ class CtfEstimator:
         blocks = OrderedDict()
         blocks["root"] = data_block
         star = StarFile(blocks=blocks)
-        star.write(os.path.join(output_dir, os.path.splitext(name)[0]) + ".star")
+        star.write(star_filepath)
+
+    def _plot_1d_psd(self, signal_1d, background_1d):
+        """
+        Helper function plots 1D PSD.
+
+        :param signal_1d: Background subtracted radial PSD
+        :param background_1d: Background radial PSD.
+        """
+        center = self.r_ctf.shape[0] // 2
+        x = self.r_ctf[center, center : center + signal_1d.shape[1]]
+        plt.plot(x, signal_1d[1] + background_1d[1])
+        plt.title("1-d PSD")
+        plt.xlabel(r"$\vert \mathbf{k} \vert^2 \, \, [\mathrm{nm}^{-1}]$")
+        plt.ylabel(r"$S_y \left( \mathbf{k} \right)$")
+        plt.show()
+
+    def _plot_1d_bg_sub_psd(self, signal_1d):
+        """
+        Helper function plots 1D PSD.
+
+        :param signal_1d: Background subtracted radial PSD
+        """
+        center = self.r_ctf.shape[0] // 2
+        x = self.r_ctf[center, center : center + signal_1d.shape[1]]
+        plt.plot(x, signal_1d[1])
+        plt.title("Background subtracted 1-d PSD")
+        plt.xlabel(r"$\vert \mathbf{k} \vert^2 \, \, [\mathrm{nm}^{-1}]$")
+        plt.ylabel(r"$S_y \left( \mathbf{k} \right) - S_e \left( \mathbf{k} \right)$")
+        plt.show()
+
+    def _plot_2d_psd(self, psd):
+        """
+        Helper function plots 2D PSD.
+
+        :param psd: 2D PSD array
+        """
+        plt.imshow(psd)
+        plt.title("2-d PSD")
+        plt.show()
+
+    def _plot_2d_bg_sub_psd(self, bg_sub_psd):
+        """
+        Helper function plots 2D background subtracted PSD.
+
+        :param psd: 2D background subtracted PSD
+        """
+        plt.imshow(bg_sub_psd)
+        plt.title("Background subtracted 2-d PSD")
+        plt.show()
+
+    def estimate(self, micrograph):
+        """
+        Estimate the CTF parameters of `micrograph`.
+
+        This is the main method implementing the algorithm at a high level.
+
+        :param micrograph: 2D Array of micrograph data.
+        :return: CTF params, estimated background PSD, estimated signal PSD
+        """
+
+        micrograph_blocks = self.preprocess_micrograph(micrograph)
+
+        signal_observed = self.estimate_psd(micrograph_blocks)
+
+        amplitude_spectrum, _ = self.radial_average(signal_observed)
+
+        signal_1d, background_1d = self.background_subtract_1d(
+            amplitude_spectrum, linprog_method=self.linprog_method
+        )
+
+        if self.diagnostic_plots:
+            self._plot_1d_psd(signal_1d, background_1d)
+            self._plot_1d_bg_sub_psd(signal_1d)
+
+        avg_defocus_nm, low_freq_skip_col = self.opt1d(signal_1d)
+
+        signal, background_2d = self.background_subtract_2d(
+            signal_observed, background_1d, low_freq_skip_col
+        )
+
+        if self.diagnostic_plots:
+            self._plot_2d_psd(amplitude_spectrum.asnumpy()[0])
+            self._plot_2d_bg_sub_psd(signal.asnumpy()[0])
+
+        ratio = self.pca(signal_observed)
+
+        signal, additional_background = self.elliptical_average(signal.sqrt())
+
+        background_2d = background_2d + additional_background
+
+        initial_df1 = (avg_defocus_nm * 2) / (1 + ratio)
+        initial_df2 = (avg_defocus_nm * 2) - initial_df1
+
+        defocus_u, defocus_v, defocus_ang = self.maximize_correlation(
+            signal, initial_df1, initial_df2
+        )
+
+        params = {
+            "defocus_u": defocus_u * 10,  # Convert from nm to A
+            "defocus_v": defocus_v * 10,  # Convert from nm to A
+            "defocus_ang": defocus_ang,  # radians
+            "cs": self.cs,
+            "voltage": self.voltage,
+            "pixel_size": self.pixel_size,
+            "amplitude_contrast": self.amplitude_contrast,
+        }
+
+        return params, background_2d, signal
+
+    def _create_ctf_image(self, signal, df1, df2, dfang):
+        """
+        Create a diagnostic array comparing estimated CTF and signal.
+
+        :param signal: PSD of signal
+        :param df1: Major defocus (Angstrom)
+        :param df2: Minor defocus (Angstrom)
+        :param dfang: Defocus angle (radians)
+        :return: 2d array containing image data.
+        """
+
+        ctf_im = CTFFilter.ctf_formula(
+            self.omega,
+            pixel_size=self.pixel_size,
+            voltage=self.voltage,
+            defocus_u_a=df1,
+            defocus_v_a=df2,
+            defocus_ang=dfang,
+            Cs=self.cs,
+            alpha=self.amplitude_contrast,
+            B=0,
+        ).reshape(self.psd_size, self.psd_size)
+
+        # Overwrite half the `ctf_im` with `signal`
+        center = self.psd_size // 2
+        ctf_im[center:, :] = signal.asnumpy()[0, center:, :]
+
+        return ctf_im
 
 
 def estimate_ctf(
@@ -722,175 +1031,188 @@ def estimate_ctf(
     cs=2.0,
     amplitude_contrast=0.07,
     voltage=300,
-    num_tapers=2,
-    psd_size=512,
+    num_tapers=4,
+    psd_size=1024,
     g_min=30,
     g_max=5,
+    min_defocus=5000,
+    max_defocus=100000,
+    step_defocus=10,
+    basis=None,
     output_dir="results",
     dtype=np.float32,
     save_ctf_images=False,
     save_noise_images=False,
+    rglob=r"*.mrc",
+    solver_method="bfgs",
+    solver_opts=None,
+    linprog_method="highs-ds",
 ):
     """
-    Given paramaters estimates CTF from experimental data
-    and returns CTF as a mrc file.
+    Given paramaters estimates CTF from experimental data in `data_folder
+    and returns dictionary of estimated CTF parameters.
+
+    Saves STAR files to `output_dir`, which can be loaded into ASPIRE etc.
+
+    Optionally saves diagnostic CTF and noise image (mrc) files.
+
+    :param pixel_size: Size of the pixel in \u212b (angstrom).
+    :param cs: Spherical aberration in mm.
+    :param amplitude_contrast: Amplitude contrast.
+    :param voltage: Voltage of electron microscope.
+    :param num_tapers: Optional, number of tapers to apply in PSD estimation.
+        Defaults to 4.
+    :param psd_size: Block size (in pixels) for PSD estimation.
+    :param g_min: Inverse of minimum resolution for PSD. Default 30.
+    :param g_max: Inverse of maximum resolution for PSD. Default 5.
+    :param min_defocus: Start of defocus loop scan (Angstrom). Default 5000.
+    :param max_defocus: End of defocus loop scan (Angstrom). Default 100000.
+    :param step_defocus: Step size of defocus loop scan (Angstrom). Default 10.
+    :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
+    :param rglob: File search pattern.
+        By default will search for **/*.mrc files.
+        Using "*.mrc[s]" will additonally include mrcs files, etc.
+    :param save_ctf_images: Save diagnostic ctf images.
+    :param save_noise_images: Save diagnostic noise images.
+    :param solver_method: Solver used to optimize defocus params.  `gd` or `bfgs`.
+        Default uses single call to `bfgs`.
+        Original implementation used repeated gradient descent and is provided for reproducibility.
+        Each solver may have unique configuration options, optionally passed via a dictionary.
+    :param solver_opts: Optional dictionary of solver options.
+        Populated with `CtfEstimator.default_solver_opts[solver]` by default.
+    :param linprog_method: Method passed to linear program solver (scipy.optimize.linprog).
+        Defaults to 'highs-ds'.
     """
 
+    # Checks ------------------------------------------------------------------
     dtype = np.dtype(dtype)
     assert dtype in (np.float32, np.float64)
 
-    dir_content = os.scandir(data_folder)
+    # File inputs -------------------------------------------------------------
+    data_folder = Path(data_folder)
+    # Handles recursive directory searching for both `rglob` patten
+    file_paths = list(data_folder.rglob(rglob))
+    if len(file_paths) == 0:
+        raise RuntimeError(f"No mrc or mrcs files found in {data_folder}.")
+    logger.info(f"Found {len(file_paths)} files in '{data_folder}'.")
 
-    mrc_files = [f.name for f in dir_content if os.path.splitext(f)[1] == ".mrc"]
-    mrcs_files = [f.name for f in dir_content if os.path.splitext(f)[1] == ".mrcs"]
-    file_names = mrc_files + mrcs_files
+    # File outputs -----------------------------------------------------------
+    # Ensure we can write outputs before we get too far
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    amp = amplitude_contrast
-    amplitude_contrast = np.arctan(
-        amplitude_contrast / np.sqrt(1 - amplitude_contrast**2)
+    # Setup a CTFEstimator -----------------------------------------------------
+    ctf_est = CtfEstimator(
+        pixel_size=pixel_size,
+        cs=cs,
+        amplitude_contrast=amplitude_contrast,
+        voltage=voltage,
+        psd_size=psd_size,
+        num_tapers=num_tapers,
+        g_min=g_min,
+        g_max=g_max,
+        min_defocus=min_defocus,
+        max_defocus=max_defocus,
+        step_defocus=step_defocus,
+        basis=basis,
+        diagnostic_plots=False,
+        solver_method=solver_method,
+        solver_opts=solver_opts,
+        linprog_method=linprog_method,
+        dtype=dtype,
     )
 
-    lmbd = voltage_to_wavelength(voltage) / 10  # Convert from angstrom to nm
-
-    ctf_object = CtfEstimator(
-        pixel_size, cs, amplitude_contrast, voltage, psd_size, num_tapers, dtype=dtype
-    )
-
-    # Note for repro debugging, suggest use of doubles,
-    #   closer to original code.
-    ffbbasis = FFBBasis2D((psd_size, psd_size), 2, dtype=dtype)
-
+    # Main Loop ---------------------------------------------------------------
     results = {}
-    for name in file_names:
-        with mrcfile.open(
-            os.path.join(data_folder, name), mode="r", permissive=True
-        ) as mrc:
+    failed = {}
+    for input_file in tqdm(file_paths, desc="Processing files"):
+
+        # Handle path stuff first, in case it fails
+        relative_input_path = input_file.relative_to(
+            data_folder
+        )  # File path relative to data_folder
+        directory_stub = relative_input_path.parent  # directory relative to data_folder
+        output_file_dir = output_dir / directory_stub  # Join onto output_dir
+        output_file_dir.mkdir(
+            parents=True, exist_ok=True
+        )  # Ensure output_file_dir exists
+        output_file_prefix = output_file_dir / input_file.stem
+
+        with mrcfile.open(input_file, mode="r", permissive=True) as mrc:
             micrograph = mrc.data
 
-        # Try to match dtype used in Basis instance
         micrograph = micrograph.astype(dtype, copy=False)
 
-        micrograph_blocks = ctf_object.preprocess_micrograph(micrograph, psd_size)
-
-        tapers_1d = ctf_object.tapers(psd_size, num_tapers / 2, num_tapers)
-
-        signal_observed = ctf_object.estimate_psd(micrograph_blocks, tapers_1d)
-
-        amplitude_spectrum, _ = ctf_object.elliptical_average(
-            ffbbasis, signal_observed, True
-        )  # absolute differenceL 10^-14. Relative error: 10^-7
-
-        # Optionally changing to: linprog_method='simplex',
-        # will more deterministically repro results in exchange for speed.
-        # linprog_method was changed from 'interior-point' to 'highs' due to
-        # "interior-point' being deprecated.
-        signal_1d, background_1d = ctf_object.background_subtract_1d(
-            amplitude_spectrum, linprog_method="highs"
-        )
-
-        avg_defocus, low_freq_skip = ctf_object.opt1d(
-            signal_1d,
-            pixel_size,
-            cs,
-            lmbd,  # (angstrom)
-            amplitude_contrast,
-            signal_observed.shape[-1],
-        )
-
-        low_freq_skip = 12
-        signal, background_2d = ctf_object.background_subtract_2d(
-            signal_observed, background_1d, low_freq_skip
-        )
-
-        ratio = ctf_object.pca(signal_observed, pixel_size, g_min, g_max)
-
-        signal, additional_background = ctf_object.elliptical_average(
-            ffbbasis, signal.sqrt(), False
-        )
-
-        background_2d = background_2d + additional_background
-
-        initial_df1 = (avg_defocus * 2) / (1 + ratio)
-        initial_df2 = (avg_defocus * 2) - initial_df1
-
-        grid = grid_2d(psd_size, normalized=True, indexing="yx", dtype=dtype)
-
-        r_ctf = grid["r"] / 2 * (10 / pixel_size)
-        theta = grid["phi"]
-
-        angle = -5 / 12 * np.pi  # Radians (-75 degrees)
-        cc_array = np.zeros((6, 4))
-        for a in range(0, 6):
-            df1, df2, angle_ast, p = ctf_object.gd(
-                signal,
-                initial_df1,
-                initial_df2,
-                angle + a * np.pi / 6.0,  # Radians, + a*30degrees
-                r_ctf,
-                theta,
-                pixel_size,
-                g_min,
-                g_max,
-                amplitude_contrast,
-                lmbd,  # (angstrom)
-                cs,
+        try:
+            params, background_2d, signal = ctf_est.estimate(micrograph)
+        except Exception as e:
+            failed[str(relative_input_path)] = e
+            logger.warning(
+                f"Estimation failed for {str(relative_input_path)}: {str(e)}"
             )
+            continue  # skip results for this failure
 
-            cc_array[a, 0] = df1
-            cc_array[a, 1] = df2
-            cc_array[a, 2] = angle_ast  # Radians
-            cc_array[a, 3] = p
-        ml = np.argmax(cc_array[:, 3], -1)
+        # Store files' params into results dictionary
+        results[str(relative_input_path)] = params
 
-        result = {
-            "defocus_u": cc_array[ml, 0] * 10,  # Convert from nm to A
-            "defocus_v": cc_array[ml, 1] * 10,  # Convert from nm to A
-            "defocus_ang": cc_array[ml, 2],  # Radians
-            "cs": cs,
-            "voltage": voltage,
-            "pixel_size": pixel_size,
-            "amplitude_contrast": amp,
-        }
-        results[name] = result
+        # Write each micrograph's ctf parameters to an individual STAR file
+        star_filepath = output_file_prefix.with_suffix(".star")
+        ctf_est.write_star(star_filepath, str(relative_input_path), params)
 
-        # we write each micrograph's ctf parameters to an individual starfile
-        if not os.path.isdir(output_dir):
-            os.mkdir(output_dir)
-        ctf_object.write_star(name, result, output_dir)
-
+        # Save the noise
         if save_noise_images:
-            with mrcfile.new(
-                os.path.join(output_dir, os.path.splitext(name)[0] + "_noise.mrc"),
-                overwrite=True,
-            ) as mrc:
-                mrc.set_data(background_2d.asnumpy()[0].astype(np.float32))
-                mrc.voxel_size = pixel_size
+            noise_filepath = Path(f"{output_file_prefix}_noise.mrc")
+            background_2d.save(noise_filepath, overwrite=True)
 
         if save_ctf_images:
-            ctf_object.set_df1(cc_array[ml, 0])  # angstrom
-            ctf_object.set_df2(cc_array[ml, 1])  # angstrom
-            ctf_object.set_angle(cc_array[ml, 2])  # Radians
-            ctf_object.generate_ctf()
-            df = (cc_array[ml, 0] + cc_array[ml, 1]) * np.ones(
-                theta.shape, theta.dtype
-            ) + (cc_array[ml, 0] - cc_array[ml, 1]) * np.cos(
-                2 * theta - 2 * cc_array[ml, 2] * np.ones(theta.shape, theta.dtype)
+            ctf_im = ctf_est._create_ctf_image(
+                signal,
+                params["defocus_u"],
+                params["defocus_v"],
+                params["defocus_ang"],
             )
-            ctf_im = -np.sin(
-                np.pi * lmbd * r_ctf**2 / 2 * (df - lmbd**2 * r_ctf**2 * cs * 1e6)
-                + amplitude_contrast
-            )
-            ctf_signal = np.zeros(ctf_im.shape, ctf_im.dtype)
-            ctf_signal[: ctf_im.shape[0] // 2, :] = ctf_im[: ctf_im.shape[0] // 2, :]
-            ctf_signal[ctf_im.shape[0] // 2 + 1 :, :] = signal.asnumpy()[
-                :, :, ctf_im.shape[0] // 2 + 1
-            ]
 
-            with mrcfile.new(
-                os.path.join(output_dir, os.path.splitext(name)[0] + ".ctf"),
-                overwrite=True,
-            ) as mrc:
-                mrc.set_data(np.float32(ctf_signal))
-                mrc.voxel_size = pixel_size
+            ctf_filepath = output_file_prefix.with_suffix(".ctf")
+            with mrcfile.new(ctf_filepath, overwrite=True) as mrc:
+                mrc.set_data(ctf_im.astype(np.float32))  # MRC only supports singles
+                mrc.voxel_size = ctf_est.pixel_size
+
+    if len(failed) > 0:
+        failure_fname = "failures.txt"
+        logger.info(
+            f"{len(failed)} files failed to estimate. Writing to '{failure_fname}'"
+        )
+        with open(failure_fname, "w") as f:
+            for k, v in failed.items():
+                f.write(f"{k}\t{v}\n")
 
     return results
+
+
+# Helper function for sum(abs^2(x))
+# CuPy
+if hasattr(xp, "ReductionKernel"):
+    _abs2_sum0_kernel = xp.ReductionKernel(
+        "T x",
+        "Y y",
+        "x.real() * x.real() + x.imag() * x.imag()",
+        "a + b",
+        "y = a",
+        "0",
+        name="abs2_sum0",
+    )
+
+    def _abs2_sum0(x, out):
+        _abs2_sum0_kernel(x, axis=0, out=out)
+
+else:
+    # numpy expression fallback
+    def _abs2_sum0(x, out):
+        out[:] = (x.real**2 + x.imag**2).sum(axis=0)
+
+
+# Helper function
+def tail_sum(x, M):
+    """sum over i > m  (exclusive reverse cumsum)"""
+    cs = xp.cumsum(x, axis=1)
+    return cs[:, -1:] - cs[:, :M]
