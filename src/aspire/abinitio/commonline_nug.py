@@ -181,6 +181,11 @@ class CommonlineNUG(Orient3D):
         self.compute_coeff()
         self.perform_admm()
         self.recover_rotations()
+
+        # Return unused CuPy allocations before downstream reconstruction.
+        if hasattr(xp, "get_default_memory_pool"):
+            xp.get_default_memory_pool().free_all_blocks()
+
         return self.rotations
 
     #######################
@@ -352,6 +357,10 @@ class CommonlineNUG(Orient3D):
         """
         Solve the asymmetric NUG semidefinite relaxation using ADMM.
 
+        To limit peak GPU memory use, Fejer inequality operations process
+        off-diagonal image pairs in chunks, and large temporary arrays are
+        released before memory intensive projections.
+
         :param C: Fourier coefficient matrices of the NUG objective.
         :param verbose: Whether to log ADMM progress.
 
@@ -376,7 +385,7 @@ class CommonlineNUG(Orient3D):
         AEq, bEq = pre["AEq"], pre["bEq"]
         AEqAEqtinv = pre["AEqAEqtinv"]
 
-        # Fejér inequality constraints and spectral scale.
+        # Fejer inequality constraints and spectral scale.
         AI_mat_offdiag = pre["AI_mat_offdiag"]
         bI, Lambda = pre["bI"], pre["Lambda"]
 
@@ -393,9 +402,23 @@ class CommonlineNUG(Orient3D):
         X0, X1, Xq = pre["X0"], pre["X1"], pre["Xq"]
         S0, S1, Sq = pre["S0"], pre["S1"], pre["Sq"]
 
+        # Safe to remove pre now that it is unpacked.
+        del pre
+
         Ngrid = self.Ngrid
         n_pairs = N * (N - 1) // 2
         n_packed = N * (N + 1) // 2
+
+        # Process off-diagonal image pairs in chunks to limit temporary GPU memory
+        # used by the Fejer inequality operators.
+        pair_chunk_size = 1024
+
+        def pair_chunks():
+            """
+            Yield bounded slices of the off-diagonal image-pair columns.
+            """
+            for start in range(0, n_pairs, pair_chunk_size):
+                yield slice(start, min(start + pair_chunk_size, n_pairs))
 
         # In the asymmetric formulation, diagonal representation blocks are identity.
         bE0 = xp.zeros(D0, dtype=np.float64)
@@ -436,23 +459,51 @@ class CommonlineNUG(Orient3D):
             Z1[:4, idx_offdiag] = Zq[17:]
             return Z0, Z1, Zq[:16]
 
-        def fun_AI(X0, X1):
+        def fun_AI(X0_chunk, X1_chunk):
             """
-            Apply the Fejer inequality operator to off-diagonal image pairs.
+            Apply the Fejer operator to one chunk of off-diagonal pairs.
+            """
+            coefficients = xp.concatenate((X0_chunk, X1_chunk), axis=0)
+            return AI_mat_offdiag @ coefficients
 
-            The plain formulation does not apply these inequalities to the fixed
-            diagonal representation blocks.
+        def fun_AIT_chunk(yI_chunk):
             """
-            tmp = xp.concatenate((X0[:, idx_offdiag], X1[:, idx_offdiag]), axis=0)
-            return AI_mat_offdiag @ tmp
+            Apply the Fejer adjoint to one chunk of off-diagonal pairs.
+            """
+            return AI_mat_offdiag.T @ yI_chunk
 
         def fun_AIT(yI):
             """
-            Apply the adjoint of the asymmetric Fejer operator.
+            Assemble the Fejer adjoint in packed image-pair order.
             """
             Z = xp.zeros((D0 + D1, n_packed), dtype=np.float64)
-            Z[:, idx_offdiag] = AI_mat_offdiag.T @ yI
+
+            for columns in pair_chunks():
+                packed_columns = idx_offdiag[columns]
+                Z[:, packed_columns] = fun_AIT_chunk(yI[:, columns])
+
             return Z[:D0], Z[D0:]
+
+        def fejer_residual_norm(X0, X1):
+            """
+            Compute the norm of the positive Fejer inequality residual in chunks.
+            This avoids storing a residual over the full Fejer grid.
+            """
+            squared_norm = xp.zeros((), dtype=np.float64)
+
+            for columns in pair_chunks():
+                packed_columns = idx_offdiag[columns]
+                residual = xp.maximum(
+                    bI
+                    - fun_AI(
+                        X0[:, packed_columns],
+                        X1[:, packed_columns],
+                    ),
+                    0,
+                )
+                squared_norm += xp.sum(residual * residual)
+
+            return xp.sqrt(squared_norm)
 
         def update_S(C0, C1, yE0, yE1, yEq, yI, X0, X1, Xq, rho):
             """
@@ -461,9 +512,25 @@ class CommonlineNUG(Orient3D):
             Z0, Z1, Zq = fun_AET(yE0, yE1, yEq)
             AIT_yI0, AIT_yI1 = fun_AIT(yI)
 
-            S0 = C0 - Z0 - AIT_yI0 - X0 / rho
-            S1 = C1 - Z1 - AIT_yI1 - X1 / rho
+            S0 = C0.copy()
+            S0 -= Z0
+            S0 -= AIT_yI0
+            xp.divide(X0, rho, out=Z0)  # Z0 is no longer needed.
+            S0 -= Z0
+
+            S1 = C1.copy()
+            S1 -= Z1
+            S1 -= AIT_yI1
+            xp.divide(X1, rho, out=Z1)  # Z1 is no longer needed.
+            S1 -= Z1
+
+            # S0 = C0 - Z0 - AIT_yI0 - X0 / rho
+            # S1 = C1 - Z1 - AIT_yI1 - X1 / rho
             Sq = -Zq - Xq / rho
+
+            # These full size adjoint and equality arrays are no longer needed during
+            # the PSD eigendecompositions. Release them for the eigensolver workspace.
+            del Z0, Z1, AIT_yI0, AIT_yI1
 
             S0, S1 = self._project_representation_blocks(
                 S0,
@@ -475,8 +542,8 @@ class CommonlineNUG(Orient3D):
                 idx_offdiag,
             )
 
-            # This is the established batched equivalent of projecting each 4x4
-            # quaternion block and storing tmp.T.reshape(16) in each column.
+            # This is the batched equivalent of projecting each 4x4 quaternion block
+            # and storing tmp.T.reshape(16) in each column.
             Sq = self._psd_projection(Sq.T.reshape(n_pairs, 4, 4))
             Sq = Sq.T.reshape(16, n_pairs)
             return S0, S1, Sq
@@ -511,16 +578,35 @@ class CommonlineNUG(Orient3D):
             Lambda,
         ):
             """
-            Update the nonnegative Fejer inequality multipliers.
+            Update the nonnegative Fejer multipliers in pair-column chunks.
+            Each chunk is updated in place to limit temporary GPU allocations.
             """
             AET_yE0, AET_yE1, _ = fun_AET(yE0, yE1, yEq)
-            AIT_yI0, AIT_yI1 = fun_AIT(yI)
-            tmp = fun_AI(
-                -X0 / rho + C0 - S0 - AIT_yI0 - AET_yE0,
-                -X1 / rho + C1 - S1 - AIT_yI1 - AET_yE1,
-            )
-            yI = yI + bI / rho / Lambda + tmp / Lambda
-            yI = xp.maximum(yI, 0)
+
+            for columns in pair_chunks():
+                packed_columns = idx_offdiag[columns]
+                AIT_yI = fun_AIT_chunk(yI[:, columns])
+
+                tmp0 = (
+                    -X0[:, packed_columns] / rho
+                    + C0[:, packed_columns]
+                    - S0[:, packed_columns]
+                    - AIT_yI[:D0]
+                    - AET_yE0[:, packed_columns]
+                )
+                tmp1 = (
+                    -X1[:, packed_columns] / rho
+                    + C1[:, packed_columns]
+                    - S1[:, packed_columns]
+                    - AIT_yI[D0:]
+                    - AET_yE1[:, packed_columns]
+                )
+
+                yI_chunk = yI[:, columns]
+                yI_chunk += bI / rho / Lambda
+                yI_chunk += fun_AI(tmp0, tmp1) / Lambda
+                xp.maximum(yI_chunk, 0, out=yI_chunk)
+
             return yI
 
         def update_X(
@@ -569,7 +655,7 @@ class CommonlineNUG(Orient3D):
                 + xp.linalg.norm(bE1 - z1) / (1 + xp.linalg.norm(bE1))
                 + xp.linalg.norm(bEq - zq) / (1 + xp.linalg.norm(bEq))
             )
-            res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
+            res_inq = fejer_residual_norm(X0, X1) / (
                 1 + abs(bI) * np.sqrt(Ngrid * n_pairs)
             )
 
@@ -607,7 +693,8 @@ class CommonlineNUG(Orient3D):
                 + xp.linalg.norm(bE1 - z1) / (1 + xp.linalg.norm(bE1))
                 + xp.linalg.norm(bEq - zq) / (1 + xp.linalg.norm(bEq))
             )
-            res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
+
+            res_inq = fejer_residual_norm(X0, X1) / (
                 1 + abs(bI) * np.sqrt(Ngrid * n_pairs)
             )
 
@@ -703,6 +790,10 @@ class CommonlineNUG(Orient3D):
                 print_updates(verbose)
             rho, p_resnorm, d_resnorm = update_rho(X0, X1, Xq, res_X, rho)
 
+        # The inequality multipliers and other ADMM-only arrays are no longer needed
+        # while reconstructing the full degree matrices.
+        del yI, C0, C1, S0, S1, Sq, Xq, AI_mat_offdiag
+
         X_admm = self._transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
         X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
         return X_admm
@@ -735,7 +826,7 @@ class CommonlineNUG(Orient3D):
         AEq, bEq = pre["AEq"], pre["bEq"]
         AEqAEqtinv = pre["AEqAEqtinv"]
 
-        # Fejér inequality constraints and spectral scale.
+        # Fejer inequality constraints and spectral scale.
         AI_mat_diag = pre["AI_mat_diag"]
         AI_mat_offdiag = pre["AI_mat_offdiag"]
         bI, Lambda = pre["bI"], pre["Lambda"]
@@ -1438,13 +1529,13 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def _largest_eigenvalue_gram(AI):
         """
-        Compute the denominator for the Fejér inequality-multiplier update.
+        Compute the denominator for the Fejer inequality-multiplier update.
 
         The largest eigenvalue of AI @ AI.T is computed from the smaller
         AI.T @ AI Gram matrix. Retain the fixed 2000 offset used by the
         original implementation.
 
-        :param AI: Real Fejér inequality operator of shape (Ngrid, D0 + D1).
+        :param AI: Real Fejer inequality operator of shape (Ngrid, D0 + D1).
 
         :return: Largest eigenvalue of AI @ AI.T, plus 2000.
         """
