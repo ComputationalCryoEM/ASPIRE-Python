@@ -192,8 +192,8 @@ def test_self_relative_rotations(n_img, L, order, dtype):
         Rii_gt = rot_gt.T @ g @ rot_gt
         Rii = Riis[i]
         cases = np.array([Rii, Rii.T, J_conjugate(Rii), J_conjugate(Rii.T)])
-        for i, estimate in enumerate(cases):
-            dist[i] = Rotation.angle_dist(estimate, Rii_gt)
+        for case_idx, estimate in enumerate(cases):
+            dist[case_idx] = Rotation.angle_dist(estimate, Rii_gt)
         angular_distance[i] = min(dist)
     mean_angular_distance = np.mean(angular_distance) * 180 / np.pi
 
