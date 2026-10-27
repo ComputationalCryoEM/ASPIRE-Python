@@ -2,7 +2,7 @@
 Symmetric NUG Pipeline
 ======================
 
-This notebook demonstrates reproducing simliar results to the
+This notebook demonstrates reproducing similar results to the
 experiment found in:
 
 .. admonition:: Publication
@@ -69,7 +69,7 @@ avgs = ArrayImageSource(ims, pixel_size=1.3, symmetry_group="C4")
 #
 # Create an orientation estimation object for the ``avgs``.
 # The ``CommonlineNUG`` algorithm will detect the symmetry from
-# the ``avgs`` metadata and use the approriate NUG ADMM-solver to estimate
+# the ``avgs`` metadata and use the appropriate NUG ADMM-solver to estimate
 # orientations. To replicate the original experiment as closely as possible,
 # we use the 15 iterations of proximal refinement and disable searching over
 # the commonline shift space.
