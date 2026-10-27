@@ -792,7 +792,11 @@ class CommonlineNUG(Orient3D):
 
         # The inequality multipliers and other ADMM-only arrays are no longer needed
         # while reconstructing the full degree matrices.
-        del yI, C0, C1, S0, S1, Sq, Xq, AI_mat_offdiag
+        yI = None
+        C0 = C1 = None
+        S0 = S1 = Sq = None
+        Xq = None
+        AI_mat_offdiag = None
 
         X_admm = self._transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
         X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
