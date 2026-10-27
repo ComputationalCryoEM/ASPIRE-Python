@@ -81,7 +81,7 @@ for n_images in N_IMAGES:
             .cache()
         )
 
-        # Initialize the NUG orientation estimator, matching paramters
+        # Initialize the NUG orientation estimator, matching parameters
         # to the referenced experiment.
         estimator = CommonlineNUG(
             source,
