@@ -375,6 +375,8 @@ class CommonlineNUG(Orient3D):
         mult = self.mult
         Nstep_yI = self.Nstep_yI
 
+        # --------------------------- Preprocessing and problem data ----------------------------
+
         # Prepare the objective, constraints, block layout, and initial ADMM variables.
         pre = self.ADMM_preprocessing(C)
 
@@ -409,17 +411,6 @@ class CommonlineNUG(Orient3D):
         n_pairs = N * (N - 1) // 2
         n_packed = N * (N + 1) // 2
 
-        # Process off-diagonal image pairs in chunks to limit temporary GPU memory
-        # used by the Fejer inequality operators.
-        pair_chunk_size = 1024
-
-        def pair_chunks():
-            """
-            Yield bounded slices of the off-diagonal image-pair columns.
-            """
-            for start in range(0, n_pairs, pair_chunk_size):
-                yield slice(start, min(start + pair_chunk_size, n_pairs))
-
         # In the asymmetric formulation, diagonal representation blocks are identity.
         bE0 = xp.zeros(D0, dtype=np.float64)
         bE1 = xp.zeros(D1, dtype=np.float64)
@@ -433,6 +424,8 @@ class CommonlineNUG(Orient3D):
 
         bE0 = xp.repeat(bE0[:, None], N, axis=1)
         bE1 = xp.repeat(bE1[:, None], N, axis=1)
+
+        # -------------------------------- Constraint operators ---------------------------------
 
         def fun_AE(X0, X1, Xq):
             """
@@ -458,6 +451,14 @@ class CommonlineNUG(Orient3D):
             Z0[:1, idx_offdiag] = Zq[16:17]
             Z1[:4, idx_offdiag] = Zq[17:]
             return Z0, Z1, Zq[:16]
+
+        def pair_chunks():
+            """
+            Yield off-diagonal image-pair slices that bound GPU temporaries.
+            """
+            chunk_size = 1024
+            for start in range(0, n_pairs, chunk_size):
+                yield slice(start, min(start + chunk_size, n_pairs))
 
         def fun_AI(X0_chunk, X1_chunk):
             """
@@ -504,6 +505,8 @@ class CommonlineNUG(Orient3D):
                 squared_norm += xp.sum(residual * residual)
 
             return xp.sqrt(squared_norm)
+
+        # ---------------------------------- ADMM update rules ----------------------------------
 
         def update_S(C0, C1, yE0, yE1, yEq, yI, X0, X1, Xq, rho):
             """
@@ -667,6 +670,8 @@ class CommonlineNUG(Orient3D):
                 rho = rho / factor
             return rho, p_resnorm, d_resnorm
 
+        # ----------------------------- Optional iteration logging ------------------------------
+
         def print_updates(verbose):
             """
             Log diagnostics for the current asymmetric ADMM iterate.
@@ -753,6 +758,8 @@ class CommonlineNUG(Orient3D):
                 f"|S|={normS:.2f}, |X|={normX:.2f}"
             )
 
+        # ----------------------------------- ADMM iterations -----------------------------------
+
         yI = xp.zeros((Ngrid, n_pairs), dtype=np.float64)
         yE0 = xp.zeros(bE0.shape, dtype=np.float64)
         yE1 = xp.zeros(bE1.shape, dtype=np.float64)
@@ -798,6 +805,8 @@ class CommonlineNUG(Orient3D):
         Xq = None
         AI_mat_offdiag = None
 
+        # ---------------------------- Assemble degree-wise results -----------------------------
+
         X_admm = self._transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
         X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
         return X_admm
@@ -819,6 +828,8 @@ class CommonlineNUG(Orient3D):
         factor = self.factor
         mult = self.mult
         Nstep_yI = self.Nstep_yI
+
+        # --------------------------- Preprocessing and problem data ----------------------------
 
         # Prepare the objective, constraints, block layout, and initial ADMM variables.
         pre = self.ADMM_preprocessing(C)
@@ -850,6 +861,9 @@ class CommonlineNUG(Orient3D):
 
         n_pairs = N * (N - 1) // 2
         Ngrid = self.Ngrid
+
+        # ---------------------------- Symmetry-specific constraints ----------------------------
+
         rank_Ak, _ = self._compute_rank()
         logger.info(f"Rank of Ak: {rank_Ak}")
 
@@ -907,6 +921,8 @@ class CommonlineNUG(Orient3D):
                         (m + 2 * el + 1, m + 2 * el), :
                     ]
             P.append(xp.asarray(Pk))
+
+        # -------------------------------- Constraint operators ---------------------------------
 
         def fun_AE(X0, X1, Xd0, Xd1, Xq):
             """
@@ -1007,6 +1023,8 @@ class CommonlineNUG(Orient3D):
             Z[:, idx_diag] = AI_mat_diag.T @ yI[:, idx_diag]
             Z[:, idx_offdiag] = AI_mat_offdiag.T @ yI[:, idx_offdiag]
             return Z[:D0, :], Z[D0:, :]
+
+        # ---------------------------------- ADMM update rules ----------------------------------
 
         def update_S(C0, C1, yE, yEq, yI, X0, X1, Xd0, Xd1, Xq, rho, Lmax, N):
             """
@@ -1166,6 +1184,8 @@ class CommonlineNUG(Orient3D):
                 rho = rho / factor
             return rho, p_resnorm, d_resnorm
 
+        # ----------------------------- Optional iteration logging ------------------------------
+
         def print_updates(verbose):
             if verbose:
                 obj_p = (
@@ -1265,6 +1285,8 @@ class CommonlineNUG(Orient3D):
                     f"|S|={normS:.2f}, |X|={normX:.2f}"
                 )
 
+        # ----------------------------------- ADMM iterations -----------------------------------
+
         Xd0 = xp.zeros((D0, N), dtype=xp.float64)
         Xd1 = xp.zeros((D1, N), dtype=xp.float64)
         Sd0 = xp.zeros(Xd0.shape, dtype=xp.float64)
@@ -1299,6 +1321,8 @@ class CommonlineNUG(Orient3D):
                 X0, X1, Xd0, Xd1, Xq, bE, bEq, bI, res_X, rho, factor, normC
             )
 
+        # ---------------------------- Assemble degree-wise results -----------------------------
+
         # Convert the optimized packed block variables back to full degree-wise
         # representation matrices for Euler-angle recovery.
         X_admm = self._transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
@@ -1311,7 +1335,8 @@ class CommonlineNUG(Orient3D):
 
     def ADMM_preprocessing(self, C):
         """
-        Construct the transformed coefficients, constraints, indices, and initial variables used by ADMM.
+        Construct the transformed coefficients, constraints, indices, and
+        initial variables used by ADMM.
 
         :param C: Fourier coefficient matrices of the NUG objective.
 
