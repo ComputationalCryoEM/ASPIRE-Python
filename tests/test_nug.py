@@ -139,21 +139,39 @@ def test_smoke(dtype, Volume):
     assert rots.dtype == dtype
 
 
-@pytest.mark.expensive
-def test_dtypes(orient_est):
+# Narrow the symmetry parametrization to cover each path only once.
+@pytest.mark.parametrize("symmetry", ["C1", "C3", "D3"], indirect=True)
+def test_dtypes(volume):
     """
-    Check dtypes for each major step of the algorithm.
+    Check input/output dtype and internal precision for asymmetric, cyclic,
+    and dihedral NUG paths.
     """
-    assert orient_est.dtype == orient_est.src.dtype
+    src = Simulation(
+        n=20,
+        vols=volume,
+        offsets=0,
+        amplitudes=1,
+        seed=SEED,
+    ).cache()
 
-    # Intermediate steps use doubles
-    for Ci in orient_est.C:
-        assert Ci.dtype == np.float64
+    # Detuned estimator for quick test
+    orient_est = CommonlineNUG(
+        src,
+        max_shift=0,
+        Lmax=4,
+        T=5,
+        S2_grid=50,
+        max_iter=2,
+        Nstep_yI=1,
+        pr_iters=None,
+        verbose=False,
+    )
+    rots = orient_est.estimate_rotations()
 
-    for Xi in orient_est.X_est:
-        assert Xi.dtype == np.float64
-
-    assert orient_est.rotations.dtype == orient_est.dtype
+    assert orient_est.dtype == src.dtype
+    assert all(Ci.dtype == np.float64 for Ci in orient_est.C)
+    assert all(Xi.dtype == np.float64 for Xi in orient_est.X_est)
+    assert rots.dtype == src.dtype
 
 
 @pytest.mark.expensive
