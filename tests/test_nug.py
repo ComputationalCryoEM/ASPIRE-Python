@@ -202,6 +202,34 @@ def test_estimate_rotations(orient_est):
     mean_aligned_angular_distance(orient_est.rotations, gt_rots, 10.0)
 
 
+def test_c1_admm_pair_batching():
+    """
+    Run C1 ADMM with enough image pairs to require two chunks.
+    This is just a smoke test.
+    """
+    n_img = 46
+
+    # assert we have more pairs than the 1024 batch size.
+    assert n_img * (n_img - 1) // 2 > 1024
+
+    vol = emdb_2660().astype(np.float64).downsample(16)
+    src = Simulation(n=n_img, vols=vol, offsets=0, seed=SEED).cache()
+    estimator = CommonlineNUG(
+        src,
+        Lmax=4,
+        T=5,
+        S2_grid=50,
+        max_shift=0,
+        max_iter=2,
+        Nstep_yI=1,
+        pr_iters=None,
+        verbose=False,
+    )
+
+    estimator.compute_coeff()
+    estimator.perform_admm()
+
+
 @pytest.mark.parametrize("block_size", [2, 3, 12, 13])
 def test_mat_block_vec_block_roundtrip(block_size):
     """
