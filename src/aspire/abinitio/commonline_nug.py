@@ -295,7 +295,7 @@ class CommonlineNUG(Orient3D):
                         dk = 2 * k + 1
                         C[k_idx][j * dk : (j + 1) * dk, i * dk : (i + 1) * dk] = (
                             fijhat_k(k_idx, Fij)
-                        )  # *dk
+                        )
                     pbar.update(1)
 
         # Fill the conjugate transpose blocks so each coefficient matrix is Hermitian.
@@ -310,7 +310,7 @@ class CommonlineNUG(Orient3D):
                 dk = 2 * k + 1
                 C[k_idx][i * dk : (i + 1) * dk, i * dk : (i + 1) * dk] = fijhat_k(
                     k_idx, Fii
-                )  # *dk
+                )
 
         # Convert complex Wigner coefficients to the real representation basis used by ADMM.
         for k_idx in range(Lmax):
