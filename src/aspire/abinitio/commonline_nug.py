@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 
 import numpy as np
 from scipy.special import factorial
@@ -18,6 +19,73 @@ from aspire.volume import (
 from .commonline_utils import _generate_shift_phase_and_filter, saff_kuijlaars
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class _ADMMData:
+    """
+    Data constructed for the C1 and symmetric ADMM solvers.
+
+    Array fields use the active NumPy or CuPy backend. Some array fields are
+    set to None after their last use to release GPU memory. All fields are
+    populated when preprocessing returns.
+
+    Objective:
+        C0, C1: Coefficients packed into the two representation blocks.
+        normC: Combined norm of those coefficients.
+
+    Quaternion equalities:
+        AEq: Equality-constraint matrix.
+        bEq: Equality right-hand side.
+        AEqAEqtinv: Pseudoinverse used when updating equality multipliers.
+
+    Fejer inequalities:
+        AI_mat_diag: Operator for self-pairs (used by the symmetric solver).
+        AI_mat_offdiag: Operator for distinct image pairs.
+        bI: Inequality bound.
+        Lambda: Scale used for inequality-multiplier updates.
+
+    Block layout:
+        d0, d1: Degree-block row boundaries for the two packed arrays.
+        idx_diag, idx_offdiag: Column indices in packed image-pair order.
+        IDX_upper, IDX_lower: Indices in the full image-pair grid.
+
+    ADMM variables:
+        X0, X1, Xq: Primal variables for the two blocks and quaternion terms.
+        S0, S1, Sq: Corresponding slack variables.
+    """
+
+    # Objective
+    C0: xp.ndarray | None
+    C1: xp.ndarray | None
+    normC: float | xp.ndarray
+
+    # Quaternion equalities
+    AEq: xp.ndarray
+    bEq: xp.ndarray
+    AEqAEqtinv: xp.ndarray
+
+    # Fejer inequalities
+    AI_mat_diag: xp.ndarray | None
+    AI_mat_offdiag: xp.ndarray | None
+    bI: float
+    Lambda: float | xp.ndarray
+
+    # Block layout
+    d0: list[int]
+    d1: list[int]
+    idx_diag: xp.ndarray
+    idx_offdiag: xp.ndarray
+    IDX_upper: xp.ndarray
+    IDX_lower: xp.ndarray
+
+    # Initial and subsequently updated ADMM variables
+    X0: xp.ndarray
+    X1: xp.ndarray
+    Xq: xp.ndarray | None
+    S0: xp.ndarray | None
+    S1: xp.ndarray | None
+    Sq: xp.ndarray | None
 
 
 class CommonlineNUG(Orient3D):
@@ -379,33 +447,8 @@ class CommonlineNUG(Orient3D):
 
         # Prepare the objective, constraints, block layout, and initial ADMM variables.
         pre = self.ADMM_preprocessing(C)
-
-        # Packed objective coefficients and their norm.
-        C0, C1, normC = pre["C0"], pre["C1"], pre["normC"]
-
-        # Quaternion equality constraints.
-        AEq, bEq = pre["AEq"], pre["bEq"]
-        AEqAEqtinv = pre["AEqAEqtinv"]
-
-        # Fejer inequality constraints and spectral scale.
-        AI_mat_offdiag = pre["AI_mat_offdiag"]
-        bI, Lambda = pre["bI"], pre["Lambda"]
-
-        # Row boundaries by degree: d0 applies to C0/X0/S0, and d1 to C1/X1/S1.
-        # Their final entries give the total row counts.
-        d0, d1 = pre["d0"], pre["d1"]
-        D0, D1 = d0[-1], d1[-1]
-
-        # Indices into packed columns and the full image-pair grid, respectively.
-        idx_diag, idx_offdiag = pre["idx_diag"], pre["idx_offdiag"]
-        IDX_upper, IDX_lower = pre["IDX_upper"], pre["IDX_lower"]
-
-        # Initial primal and slack variables.
-        X0, X1, Xq = pre["X0"], pre["X1"], pre["Xq"]
-        S0, S1, Sq = pre["S0"], pre["S1"], pre["Sq"]
-
-        # Safe to remove pre now that it is unpacked.
-        del pre
+        pre.AI_mat_diag = None  # C1 does not use this operator.
+        D0, D1 = pre.d0[-1], pre.d1[-1]
 
         Ngrid = self.Ngrid
         n_pairs = N * (N - 1) // 2
@@ -419,8 +462,8 @@ class CommonlineNUG(Orient3D):
 
             # Encode the k-by-k and (k+1)-by-(k+1) identity blocks. A flattened
             # m-by-m identity has diagonal entries every m+1 positions.
-            bE0[d0[k_idx] : d0[k_idx + 1] : k + 1] = 1
-            bE1[d1[k_idx] : d1[k_idx + 1] : k + 2] = 1
+            bE0[pre.d0[k_idx] : pre.d0[k_idx + 1] : k + 1] = 1
+            bE1[pre.d1[k_idx] : pre.d1[k_idx + 1] : k + 2] = 1
 
         bE0 = xp.repeat(bE0[:, None], N, axis=1)
         bE1 = xp.repeat(bE1[:, None], N, axis=1)
@@ -431,10 +474,10 @@ class CommonlineNUG(Orient3D):
             """
             Apply the asymmetric equality constraints.
             """
-            z0 = X0[:, idx_diag]
-            z1 = X1[:, idx_diag]
-            zq = AEq @ xp.concatenate(
-                (Xq, X0[:1, idx_offdiag], X1[:4, idx_offdiag]), axis=0
+            z0 = X0[:, pre.idx_diag]
+            z1 = X1[:, pre.idx_diag]
+            zq = pre.AEq @ xp.concatenate(
+                (Xq, X0[:1, pre.idx_offdiag], X1[:4, pre.idx_offdiag]), axis=0
             )
             return z0, z1, zq
 
@@ -444,12 +487,12 @@ class CommonlineNUG(Orient3D):
             """
             Z0 = xp.zeros((D0, n_packed), dtype=np.float64)
             Z1 = xp.zeros((D1, n_packed), dtype=np.float64)
-            Z0[:, idx_diag] = yE0
-            Z1[:, idx_diag] = yE1
+            Z0[:, pre.idx_diag] = yE0
+            Z1[:, pre.idx_diag] = yE1
 
-            Zq = AEq.T @ yEq
-            Z0[:1, idx_offdiag] = Zq[16:17]
-            Z1[:4, idx_offdiag] = Zq[17:]
+            Zq = pre.AEq.T @ yEq
+            Z0[:1, pre.idx_offdiag] = Zq[16:17]
+            Z1[:4, pre.idx_offdiag] = Zq[17:]
             return Z0, Z1, Zq[:16]
 
         def pair_chunks():
@@ -465,13 +508,13 @@ class CommonlineNUG(Orient3D):
             Apply the Fejer operator to one chunk of off-diagonal pairs.
             """
             coefficients = xp.concatenate((X0_chunk, X1_chunk), axis=0)
-            return AI_mat_offdiag @ coefficients
+            return pre.AI_mat_offdiag @ coefficients
 
         def fun_AIT_chunk(yI_chunk):
             """
             Apply the Fejer adjoint to one chunk of off-diagonal pairs.
             """
-            return AI_mat_offdiag.T @ yI_chunk
+            return pre.AI_mat_offdiag.T @ yI_chunk
 
         def fun_AIT(yI):
             """
@@ -480,7 +523,7 @@ class CommonlineNUG(Orient3D):
             Z = xp.zeros((D0 + D1, n_packed), dtype=np.float64)
 
             for columns in pair_chunks():
-                packed_columns = idx_offdiag[columns]
+                packed_columns = pre.idx_offdiag[columns]
                 Z[:, packed_columns] = fun_AIT_chunk(yI[:, columns])
 
             return Z[:D0], Z[D0:]
@@ -493,9 +536,9 @@ class CommonlineNUG(Orient3D):
             squared_norm = xp.zeros((), dtype=np.float64)
 
             for columns in pair_chunks():
-                packed_columns = idx_offdiag[columns]
+                packed_columns = pre.idx_offdiag[columns]
                 residual = xp.maximum(
-                    bI
+                    pre.bI
                     - fun_AI(
                         X0[:, packed_columns],
                         X1[:, packed_columns],
@@ -538,11 +581,11 @@ class CommonlineNUG(Orient3D):
             S0, S1 = self._project_representation_blocks(
                 S0,
                 S1,
-                d0,
-                d1,
-                IDX_upper,
-                IDX_lower,
-                idx_offdiag,
+                pre.d0,
+                pre.d1,
+                pre.IDX_upper,
+                pre.IDX_lower,
+                pre.idx_offdiag,
             )
 
             # This is the batched equivalent of projecting each 4x4 quaternion block
@@ -563,7 +606,7 @@ class CommonlineNUG(Orient3D):
             )
             yE0 = bE0 / rho + z0
             yE1 = bE1 / rho + z1
-            yEq = AEqAEqtinv @ (bEq / rho + zq)
+            yEq = pre.AEqAEqtinv @ (pre.bEq / rho + zq)
             return yE0, yE1, yEq
 
         def update_yI(
@@ -587,7 +630,7 @@ class CommonlineNUG(Orient3D):
             AET_yE0, AET_yE1, _ = fun_AET(yE0, yE1, yEq)
 
             for columns in pair_chunks():
-                packed_columns = idx_offdiag[columns]
+                packed_columns = pre.idx_offdiag[columns]
                 AIT_yI = fun_AIT_chunk(yI[:, columns])
 
                 tmp0 = (
@@ -606,7 +649,7 @@ class CommonlineNUG(Orient3D):
                 )
 
                 yI_chunk = yI[:, columns]
-                yI_chunk += bI / rho / Lambda
+                yI_chunk += pre.bI / rho / Lambda
                 yI_chunk += fun_AI(tmp0, tmp1) / Lambda
                 xp.maximum(yI_chunk, 0, out=yI_chunk)
 
@@ -656,14 +699,14 @@ class CommonlineNUG(Orient3D):
             res_eq = (
                 xp.linalg.norm(bE0 - z0) / (1 + xp.linalg.norm(bE0))
                 + xp.linalg.norm(bE1 - z1) / (1 + xp.linalg.norm(bE1))
-                + xp.linalg.norm(bEq - zq) / (1 + xp.linalg.norm(bEq))
+                + xp.linalg.norm(pre.bEq - zq) / (1 + xp.linalg.norm(pre.bEq))
             )
             res_inq = fejer_residual_norm(X0, X1) / (
-                1 + abs(bI) * np.sqrt(Ngrid * n_pairs)
+                1 + abs(pre.bI) * np.sqrt(Ngrid * n_pairs)
             )
 
             p_resnorm = res_eq + res_inq
-            d_resnorm = res_X / (1 + normC)
+            d_resnorm = res_X / (1 + pre.normC)
             if d_resnorm > ratio * p_resnorm:
                 rho = rho * factor
             if d_resnorm < ratio * p_resnorm:
@@ -680,74 +723,74 @@ class CommonlineNUG(Orient3D):
                 return
 
             obj_p = (
-                xp.vdot(C0[:, idx_diag], X0[:, idx_diag])
-                + xp.vdot(C1[:, idx_diag], X1[:, idx_diag])
-                + 2 * xp.vdot(C0[:, idx_offdiag], X0[:, idx_offdiag])
-                + 2 * xp.vdot(C1[:, idx_offdiag], X1[:, idx_offdiag])
+                xp.vdot(pre.C0[:, pre.idx_diag], pre.X0[:, pre.idx_diag])
+                + xp.vdot(pre.C1[:, pre.idx_diag], pre.X1[:, pre.idx_diag])
+                + 2 * xp.vdot(pre.C0[:, pre.idx_offdiag], pre.X0[:, pre.idx_offdiag])
+                + 2 * xp.vdot(pre.C1[:, pre.idx_offdiag], pre.X1[:, pre.idx_offdiag])
             )
             obj_d = (
                 xp.vdot(yE0, bE0)
                 + xp.vdot(yE1, bE1)
-                + 2 * xp.vdot(yEq, bEq)
-                + 2 * bI * xp.sum(yI)
+                + 2 * xp.vdot(yEq, pre.bEq)
+                + 2 * pre.bI * xp.sum(yI)
             )
 
-            z0, z1, zq = fun_AE(X0, X1, Xq)
+            z0, z1, zq = fun_AE(pre.X0, pre.X1, pre.Xq)
             res_eq = (
                 xp.linalg.norm(bE0 - z0) / (1 + xp.linalg.norm(bE0))
                 + xp.linalg.norm(bE1 - z1) / (1 + xp.linalg.norm(bE1))
-                + xp.linalg.norm(bEq - zq) / (1 + xp.linalg.norm(bEq))
+                + xp.linalg.norm(pre.bEq - zq) / (1 + xp.linalg.norm(pre.bEq))
             )
 
-            res_inq = fejer_residual_norm(X0, X1) / (
-                1 + abs(bI) * np.sqrt(Ngrid * n_pairs)
+            res_inq = fejer_residual_norm(pre.X0, pre.X1) / (
+                1 + abs(pre.bI) * np.sqrt(Ngrid * n_pairs)
             )
 
             res_psdX = 0
             for k_idx in range(Lmax):
                 k = k_idx + 1
-                block0_rows = slice(d0[k_idx], d0[k_idx + 1])
-                block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+                block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
+                block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
 
                 tmp = self.mat_block(
-                    X0[block0_rows],
+                    pre.X0[block0_rows],
                     N,
                     k,
-                    IDX_upper,
-                    IDX_lower,
-                    idx_offdiag,
+                    pre.IDX_upper,
+                    pre.IDX_lower,
+                    pre.idx_offdiag,
                 )
                 res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
 
                 tmp = self.mat_block(
-                    X1[block1_rows],
+                    pre.X1[block1_rows],
                     N,
                     k + 1,
-                    IDX_upper,
-                    IDX_lower,
-                    idx_offdiag,
+                    pre.IDX_upper,
+                    pre.IDX_lower,
+                    pre.idx_offdiag,
                 )
                 res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
-            res_psdX /= 1 + xp.linalg.norm(X0) + xp.linalg.norm(X1)
+            res_psdX /= 1 + xp.linalg.norm(pre.X0) + xp.linalg.norm(pre.X1)
 
-            Xq_blocks = Xq.T.reshape(n_pairs, 4, 4)
+            Xq_blocks = pre.Xq.T.reshape(n_pairs, 4, 4)
             res_psdQ = xp.linalg.norm(
                 self._psd_projection(-Xq_blocks), axis=(-2, -1)
             ).sum()
-            res_psdQ /= 1 + xp.linalg.norm(Xq)
+            res_psdQ /= 1 + xp.linalg.norm(pre.Xq)
 
             normS = xp.sqrt(
-                xp.linalg.norm(S0) ** 2
-                + xp.linalg.norm(S1) ** 2
-                + xp.linalg.norm(Sq) ** 2
+                xp.linalg.norm(pre.S0) ** 2
+                + xp.linalg.norm(pre.S1) ** 2
+                + xp.linalg.norm(pre.Sq) ** 2
             )
             normX = xp.sqrt(
-                xp.linalg.norm(X0) ** 2
-                + xp.linalg.norm(X1) ** 2
-                + xp.linalg.norm(Xq) ** 2
+                xp.linalg.norm(pre.X0) ** 2
+                + xp.linalg.norm(pre.X1) ** 2
+                + xp.linalg.norm(pre.Xq) ** 2
             )
             p_res = res_eq + res_inq + res_psdX + res_psdQ
-            d_res = res_X / (1 + normC)
+            d_res = res_X / (1 + pre.normC)
 
             logger.info(
                 f"Iter {t}: p_res={p_res:.5f}, d_res={d_res:.5f}, "
@@ -763,51 +806,78 @@ class CommonlineNUG(Orient3D):
         yI = xp.zeros((Ngrid, n_pairs), dtype=np.float64)
         yE0 = xp.zeros(bE0.shape, dtype=np.float64)
         yE1 = xp.zeros(bE1.shape, dtype=np.float64)
-        yEq = xp.zeros(bEq.shape, dtype=np.float64)
+        yEq = xp.zeros(pre.bEq.shape, dtype=np.float64)
 
         update_order = np.arange(3)
         for t in trange(max_iter, desc="C1 NUG ADMM"):
             np.random.shuffle(update_order)
             for update_idx in update_order:
                 if update_idx == 0:
-                    S0, S1, Sq = update_S(C0, C1, yE0, yE1, yEq, yI, X0, X1, Xq, rho)
+                    pre.S0, pre.S1, pre.Sq = update_S(
+                        pre.C0, pre.C1, yE0, yE1, yEq, yI, pre.X0, pre.X1, pre.Xq, rho
+                    )
                 elif update_idx == 1:
-                    yE0, yE1, yEq = update_yE(C0, C1, S0, S1, Sq, yI, X0, X1, Xq, rho)
+                    yE0, yE1, yEq = update_yE(
+                        pre.C0,
+                        pre.C1,
+                        pre.S0,
+                        pre.S1,
+                        pre.Sq,
+                        yI,
+                        pre.X0,
+                        pre.X1,
+                        pre.Xq,
+                        rho,
+                    )
                 else:
                     for _ in range(Nstep_yI):
                         yI = update_yI(
-                            C0,
-                            C1,
-                            S0,
-                            S1,
+                            pre.C0,
+                            pre.C1,
+                            pre.S0,
+                            pre.S1,
                             yE0,
                             yE1,
                             yEq,
                             yI,
-                            X0,
-                            X1,
+                            pre.X0,
+                            pre.X1,
                             rho,
-                            Lambda,
+                            pre.Lambda,
                         )
 
-            X0, X1, Xq, res_X = update_X(
-                C0, C1, S0, S1, Sq, yE0, yE1, yEq, yI, X0, X1, Xq, rho
+            pre.X0, pre.X1, pre.Xq, res_X = update_X(
+                pre.C0,
+                pre.C1,
+                pre.S0,
+                pre.S1,
+                pre.Sq,
+                yE0,
+                yE1,
+                yEq,
+                yI,
+                pre.X0,
+                pre.X1,
+                pre.Xq,
+                rho,
             )
             if t % 100 == 0:
                 print_updates(verbose)
-            rho, p_resnorm, d_resnorm = update_rho(X0, X1, Xq, res_X, rho)
+            rho, p_resnorm, d_resnorm = update_rho(pre.X0, pre.X1, pre.Xq, res_X, rho)
 
         # The inequality multipliers and other ADMM-only arrays are no longer needed
         # while reconstructing the full degree matrices.
         yI = None
-        C0 = C1 = None
-        S0 = S1 = Sq = None
-        Xq = None
-        AI_mat_offdiag = None
+        pre.C0 = pre.C1 = None
+        pre.S0 = pre.S1 = pre.Sq = None
+        pre.Xq = None
+        pre.AI_mat_offdiag = None
 
         # ---------------------------- Assemble degree-wise results -----------------------------
 
-        X_admm = self._transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
+        X_admm = self._transform_coeff_back(
+            pre.X0, pre.X1, pre.IDX_upper, pre.IDX_lower, pre.idx_offdiag
+        )
         X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
         return X_admm
 
@@ -833,31 +903,7 @@ class CommonlineNUG(Orient3D):
 
         # Prepare the objective, constraints, block layout, and initial ADMM variables.
         pre = self.ADMM_preprocessing(C)
-
-        # Packed objective coefficients and their norm.
-        C0, C1, normC = pre["C0"], pre["C1"], pre["normC"]
-
-        # Quaternion equality constraints.
-        AEq, bEq = pre["AEq"], pre["bEq"]
-        AEqAEqtinv = pre["AEqAEqtinv"]
-
-        # Fejer inequality constraints and spectral scale.
-        AI_mat_diag = pre["AI_mat_diag"]
-        AI_mat_offdiag = pre["AI_mat_offdiag"]
-        bI, Lambda = pre["bI"], pre["Lambda"]
-
-        # Row boundaries by degree: d0 applies to C0/X0/S0, and d1 to C1/X1/S1.
-        # Their final entries give the total row counts.
-        d0, d1 = pre["d0"], pre["d1"]
-        D0, D1 = d0[-1], d1[-1]
-
-        # Indices into packed columns and the full image-pair grid, respectively.
-        idx_diag, idx_offdiag = pre["idx_diag"], pre["idx_offdiag"]
-        IDX_upper, IDX_lower = pre["IDX_upper"], pre["IDX_lower"]
-
-        # Initial primal and slack variables.
-        X0, X1, Xq = pre["X0"], pre["X1"], pre["Xq"]
-        S0, S1, Sq = pre["S0"], pre["S1"], pre["Sq"]
+        D0, D1 = pre.d0[-1], pre.d1[-1]
 
         n_pairs = N * (N - 1) // 2
         Ngrid = self.Ngrid
@@ -899,9 +945,9 @@ class CommonlineNUG(Orient3D):
         for k_idx in range(Lmax):
             k = k_idx + 1
 
-            start = k_idx + d0[k_idx] + d1[k_idx]
-            split = k_idx + 1 + d0[k_idx + 1] + d1[k_idx]
-            stop = k_idx + 1 + d0[k_idx + 1] + d1[k_idx + 1]
+            start = k_idx + pre.d0[k_idx] + pre.d1[k_idx]
+            split = k_idx + 1 + pre.d0[k_idx + 1] + pre.d1[k_idx]
+            stop = k_idx + 1 + pre.d0[k_idx + 1] + pre.d1[k_idx + 1]
 
             bE[start] = rank_Ak[k_idx]
             bE[start + 1 : split : k + 1] = 1
@@ -936,24 +982,24 @@ class CommonlineNUG(Orient3D):
             """
             z = xp.zeros((Lmax + D0 + D1, N), dtype=np.float64)
             for k_idx in range(Lmax):
-                block0_rows = slice(d0[k_idx], d0[k_idx + 1])
-                block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+                block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
+                block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
 
-                constraint_start = k_idx + d0[k_idx] + d1[k_idx]
-                constraint_stop = k_idx + 1 + d0[k_idx + 1] + d1[k_idx + 1]
+                constraint_start = k_idx + pre.d0[k_idx] + pre.d1[k_idx]
+                constraint_stop = k_idx + 1 + pre.d0[k_idx + 1] + pre.d1[k_idx + 1]
                 constraint_rows = slice(constraint_start, constraint_stop)
 
                 z[constraint_rows] = AE[k_idx] @ xp.concatenate(
                     (
-                        X0[block0_rows, idx_diag],
-                        X1[block1_rows, idx_diag],
+                        X0[block0_rows, pre.idx_diag],
+                        X1[block1_rows, pre.idx_diag],
                         Xd0[block0_rows],
                         Xd1[block1_rows],
                     ),
                     axis=0,
                 )
-            zq = AEq @ xp.concatenate(
-                (Xq, X0[:1, idx_offdiag], X1[:4, idx_offdiag]), axis=0
+            zq = pre.AEq @ xp.concatenate(
+                (Xq, X0[:1, pre.idx_offdiag], X1[:4, pre.idx_offdiag]), axis=0
             )
             return z, zq
 
@@ -980,23 +1026,23 @@ class CommonlineNUG(Orient3D):
                 size0 = k**2
                 size1 = (k + 1) ** 2
 
-                block0_rows = slice(d0[k_idx], d0[k_idx + 1])
-                block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+                block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
+                block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
 
-                constraint_start = k_idx + d0[k_idx] + d1[k_idx]
-                constraint_stop = k_idx + 1 + d0[k_idx + 1] + d1[k_idx + 1]
+                constraint_start = k_idx + pre.d0[k_idx] + pre.d1[k_idx]
+                constraint_stop = k_idx + 1 + pre.d0[k_idx + 1] + pre.d1[k_idx + 1]
                 constraint_rows = slice(constraint_start, constraint_stop)
 
                 Ztmp = AE[k_idx].T @ yE[constraint_rows]
 
-                Z0[block0_rows, idx_diag] = Ztmp[:size0]
-                Z1[block1_rows, idx_diag] = Ztmp[size0 : size0 + size1]
+                Z0[block0_rows, pre.idx_diag] = Ztmp[:size0]
+                Z1[block1_rows, pre.idx_diag] = Ztmp[size0 : size0 + size1]
                 Zd0[block0_rows] = Ztmp[size0 + size1 : 2 * size0 + size1]
                 Zd1[block1_rows] = Ztmp[2 * size0 + size1 : 2 * size0 + 2 * size1]
 
-            Zq = AEq.T @ yEq
-            Z0[:1, idx_offdiag] = Zq[16:17]
-            Z1[:4, idx_offdiag] = Zq[17:]
+            Zq = pre.AEq.T @ yEq
+            Z0[:1, pre.idx_offdiag] = Zq[16:17]
+            Z1[:4, pre.idx_offdiag] = Zq[17:]
             return Z0, Z1, Zd0, Zd1, Zq[:16]
 
         def fun_AI(X0, X1):
@@ -1011,8 +1057,8 @@ class CommonlineNUG(Orient3D):
             """
             z = xp.zeros((Ngrid, N * (N + 1) // 2), dtype=np.float64)
             tmp = xp.concatenate((X0, X1), axis=0)
-            z[:, idx_diag] = AI_mat_diag @ tmp[:, idx_diag]
-            z[:, idx_offdiag] = AI_mat_offdiag @ tmp[:, idx_offdiag]
+            z[:, pre.idx_diag] = pre.AI_mat_diag @ tmp[:, pre.idx_diag]
+            z[:, pre.idx_offdiag] = pre.AI_mat_offdiag @ tmp[:, pre.idx_offdiag]
             return z
 
         def fun_AIT(yI):
@@ -1020,8 +1066,8 @@ class CommonlineNUG(Orient3D):
             Apply the adjoint of the Fejer inequality operator.
             """
             Z = xp.zeros((D0 + D1, N * (N + 1) // 2), dtype=np.float64)
-            Z[:, idx_diag] = AI_mat_diag.T @ yI[:, idx_diag]
-            Z[:, idx_offdiag] = AI_mat_offdiag.T @ yI[:, idx_offdiag]
+            Z[:, pre.idx_diag] = pre.AI_mat_diag.T @ yI[:, pre.idx_diag]
+            Z[:, pre.idx_offdiag] = pre.AI_mat_offdiag.T @ yI[:, pre.idx_offdiag]
             return Z[:D0, :], Z[D0:, :]
 
         # ---------------------------------- ADMM update rules ----------------------------------
@@ -1051,11 +1097,11 @@ class CommonlineNUG(Orient3D):
             S0, S1 = self._project_representation_blocks(
                 S0,
                 S1,
-                d0,
-                d1,
-                IDX_upper,
-                IDX_lower,
-                idx_offdiag,
+                pre.d0,
+                pre.d1,
+                pre.IDX_upper,
+                pre.IDX_lower,
+                pre.idx_offdiag,
             )
 
             # Project the diagonal coupling blocks.
@@ -1063,8 +1109,8 @@ class CommonlineNUG(Orient3D):
             Sd1 = Sd1.T
             for k_idx in range(Lmax):
                 k = k_idx + 1  # degree
-                block0_rows = slice(d0[k_idx], d0[k_idx + 1])
-                block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+                block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
+                block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
                 permutation = P[k_idx]
 
                 tmp = self.transform_back_block(
@@ -1104,14 +1150,14 @@ class CommonlineNUG(Orient3D):
             )
             yE = xp.zeros((Lmax + D0 + D1, N), dtype=np.float64)
             for k_idx in range(Lmax):
-                constraint_start = k_idx + d0[k_idx] + d1[k_idx]
-                constraint_stop = k_idx + 1 + d0[k_idx + 1] + d1[k_idx + 1]
+                constraint_start = k_idx + pre.d0[k_idx] + pre.d1[k_idx]
+                constraint_stop = k_idx + 1 + pre.d0[k_idx + 1] + pre.d1[k_idx + 1]
                 constraint_rows = slice(constraint_start, constraint_stop)
 
                 yE[constraint_rows] = AEAETinv[k_idx] @ (
                     bE[constraint_rows] / rho + z[constraint_rows]
                 )
-            yEq = AEqAEqtinv @ (bEq / rho + zq)
+            yEq = pre.AEqAEqtinv @ (pre.bEq / rho + zq)
             return yE, yEq
 
         def update_yI(C0, C1, X0, X1, S0, S1, yE, yEq, yI, rho, Lambda):
@@ -1126,7 +1172,7 @@ class CommonlineNUG(Orient3D):
             tmp = fun_AI(
                 -X0 / rho + C0 - S0 - Z0 - AIT_yI0, -X1 / rho + C1 - S1 - Z1 - AIT_yI1
             )
-            yI = yI + bI / rho / Lambda + tmp / Lambda
+            yI = yI + pre.bI / rho / Lambda + tmp / Lambda
             yI = xp.maximum(yI, 0)
             return yI
 
@@ -1189,59 +1235,63 @@ class CommonlineNUG(Orient3D):
         def print_updates(verbose):
             if verbose:
                 obj_p = (
-                    xp.vdot(C0[:, idx_diag], X0[:, idx_diag])
-                    + xp.vdot(C1[:, idx_diag], X1[:, idx_diag])
-                    + 2 * xp.vdot(C0[:, idx_offdiag], X0[:, idx_offdiag])
-                    + 2 * xp.vdot(C1[:, idx_offdiag], X1[:, idx_offdiag])
+                    xp.vdot(pre.C0[:, pre.idx_diag], pre.X0[:, pre.idx_diag])
+                    + xp.vdot(pre.C1[:, pre.idx_diag], pre.X1[:, pre.idx_diag])
+                    + 2
+                    * xp.vdot(pre.C0[:, pre.idx_offdiag], pre.X0[:, pre.idx_offdiag])
+                    + 2
+                    * xp.vdot(pre.C1[:, pre.idx_offdiag], pre.X1[:, pre.idx_offdiag])
                 )
 
                 obj_d = (
                     xp.vdot(yE, bE)
-                    + 2 * xp.vdot(yEq, bEq)
-                    + bI * xp.sum(yI[:, idx_diag])
-                    + 2 * bI * xp.sum(yI[:, idx_offdiag])
+                    + 2 * xp.vdot(yEq, pre.bEq)
+                    + pre.bI * xp.sum(yI[:, pre.idx_diag])
+                    + 2 * pre.bI * xp.sum(yI[:, pre.idx_offdiag])
                 )
 
-                z, zq = fun_AE(X0, X1, Xd0, Xd1, Xq)
+                z, zq = fun_AE(pre.X0, pre.X1, Xd0, Xd1, pre.Xq)
                 res_eq = xp.linalg.norm(z - bE) / (
                     1 + xp.linalg.norm(bE)
-                ) + xp.linalg.norm(zq - bEq) / (1 + xp.linalg.norm(bEq))
-                res_inq = xp.linalg.norm(xp.maximum(bI - fun_AI(X0, X1), 0)) / (
-                    1 + abs(bI) * np.sqrt(Ngrid * N * (N + 1) / 2)
-                )
+                ) + xp.linalg.norm(zq - pre.bEq) / (1 + xp.linalg.norm(pre.bEq))
+                res_inq = xp.linalg.norm(
+                    xp.maximum(pre.bI - fun_AI(pre.X0, pre.X1), 0)
+                ) / (1 + abs(pre.bI) * np.sqrt(Ngrid * N * (N + 1) / 2))
 
                 res_psdX = 0
                 for k_idx in range(Lmax):
                     k = k_idx + 1  # degree
-                    block0_rows = slice(d0[k_idx], d0[k_idx + 1])
-                    block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+                    block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
+                    block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
 
                     tmp = self.mat_block(
-                        X0[block0_rows],
+                        pre.X0[block0_rows],
                         N,
                         k,
-                        IDX_upper,
-                        IDX_lower,
-                        idx_offdiag,
+                        pre.IDX_upper,
+                        pre.IDX_lower,
+                        pre.idx_offdiag,
                     )
                     res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
 
                     tmp = self.mat_block(
-                        X1[block1_rows],
+                        pre.X1[block1_rows],
                         N,
                         k + 1,
-                        IDX_upper,
-                        IDX_lower,
-                        idx_offdiag,
+                        pre.IDX_upper,
+                        pre.IDX_lower,
+                        pre.idx_offdiag,
                     )
                     res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
-                res_psdX = res_psdX / (1 + xp.linalg.norm(X0) + xp.linalg.norm(X1))
+                res_psdX = res_psdX / (
+                    1 + xp.linalg.norm(pre.X0) + xp.linalg.norm(pre.X1)
+                )
 
                 res_psdD = 0
                 for k_idx in range(Lmax):
                     k = k_idx + 1  # degree
-                    block0_rows = slice(d0[k_idx], d0[k_idx + 1])
-                    block1_rows = slice(d1[k_idx], d1[k_idx + 1])
+                    block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
+                    block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
 
                     tmp = self.transform_back_block(
                         Xd0[block0_rows].T,
@@ -1256,26 +1306,26 @@ class CommonlineNUG(Orient3D):
 
                 res_psdQ = 0
                 for pair_idx in range(n_pairs):
-                    tmp = Xq[:, pair_idx].reshape(4, 4).T
+                    tmp = pre.Xq[:, pair_idx].reshape(4, 4).T
                     res_psdQ += xp.linalg.norm(self._psd_projection(-tmp))
-                res_psdQ = res_psdQ / (1 + xp.linalg.norm(Xq))
+                res_psdQ = res_psdQ / (1 + xp.linalg.norm(pre.Xq))
 
                 normS = xp.sqrt(
-                    xp.linalg.norm(S0) ** 2
-                    + xp.linalg.norm(S1) ** 2
+                    xp.linalg.norm(pre.S0) ** 2
+                    + xp.linalg.norm(pre.S1) ** 2
                     + xp.linalg.norm(Sd0) ** 2
                     + xp.linalg.norm(Sd1) ** 2
-                    + xp.linalg.norm(Sq) ** 2
+                    + xp.linalg.norm(pre.Sq) ** 2
                 )
                 normX = xp.sqrt(
-                    xp.linalg.norm(X0) ** 2
-                    + xp.linalg.norm(X1) ** 2
+                    xp.linalg.norm(pre.X0) ** 2
+                    + xp.linalg.norm(pre.X1) ** 2
                     + xp.linalg.norm(Xd0) ** 2
                     + xp.linalg.norm(Xd1) ** 2
-                    + xp.linalg.norm(Xq) ** 2
+                    + xp.linalg.norm(pre.Xq) ** 2
                 )
                 p_res = res_eq + res_inq + res_psdX + res_psdD + res_psdQ
-                d_res = res_X / (1 + normC)
+                d_res = res_X / (1 + pre.normC)
                 logger.info(
                     f"Iter {t}: p_res={p_res:.5f}, d_res={d_res:.5f}, "
                     f"obj_primal={obj_p:.2f}, obj_dual={obj_d:.2f}, "
@@ -1293,7 +1343,7 @@ class CommonlineNUG(Orient3D):
         Sd1 = xp.zeros(Xd1.shape, dtype=xp.float64)
         yI = xp.zeros((Ngrid, N * (N + 1) // 2), dtype=xp.float64)
         yE = xp.zeros(bE.shape, dtype=xp.float64)
-        yEq = xp.zeros(bEq.shape, dtype=xp.float64)
+        yEq = xp.zeros(pre.bEq.shape, dtype=xp.float64)
 
         # Run ADMM iterations, randomly ordering the block updates before each primal
         # multiplier update and penalty adjustment.
@@ -1302,30 +1352,95 @@ class CommonlineNUG(Orient3D):
             np.random.shuffle(update_order)
             for update_idx in update_order:
                 if update_idx == 0:
-                    S0, S1, Sd0, Sd1, Sq = update_S(
-                        C0, C1, yE, yEq, yI, X0, X1, Xd0, Xd1, Xq, rho, Lmax, N
+                    pre.S0, pre.S1, Sd0, Sd1, pre.Sq = update_S(
+                        pre.C0,
+                        pre.C1,
+                        yE,
+                        yEq,
+                        yI,
+                        pre.X0,
+                        pre.X1,
+                        Xd0,
+                        Xd1,
+                        pre.Xq,
+                        rho,
+                        Lmax,
+                        N,
                     )
                 if update_idx == 1:
                     yE, yEq = update_yE(
-                        C0, C1, X0, X1, Xd0, Xd1, Xq, S0, S1, Sd0, Sd1, Sq, yI, rho
+                        pre.C0,
+                        pre.C1,
+                        pre.X0,
+                        pre.X1,
+                        Xd0,
+                        Xd1,
+                        pre.Xq,
+                        pre.S0,
+                        pre.S1,
+                        Sd0,
+                        Sd1,
+                        pre.Sq,
+                        yI,
+                        rho,
                     )
                 if update_idx == 2:
                     for _ in range(Nstep_yI):
-                        yI = update_yI(C0, C1, X0, X1, S0, S1, yE, yEq, yI, rho, Lambda)
-            X0, X1, Xd0, Xd1, Xq, res_X = update_X(
-                C0, C1, X0, X1, Xd0, Xd1, Xq, yE, yEq, yI, S0, S1, Sd0, Sd1, Sq, rho
+                        yI = update_yI(
+                            pre.C0,
+                            pre.C1,
+                            pre.X0,
+                            pre.X1,
+                            pre.S0,
+                            pre.S1,
+                            yE,
+                            yEq,
+                            yI,
+                            rho,
+                            pre.Lambda,
+                        )
+            pre.X0, pre.X1, Xd0, Xd1, pre.Xq, res_X = update_X(
+                pre.C0,
+                pre.C1,
+                pre.X0,
+                pre.X1,
+                Xd0,
+                Xd1,
+                pre.Xq,
+                yE,
+                yEq,
+                yI,
+                pre.S0,
+                pre.S1,
+                Sd0,
+                Sd1,
+                pre.Sq,
+                rho,
             )
             if t % 100 == 0:
                 print_updates(verbose)
             rho, p_resnorm, d_resnorm = update_rho(
-                X0, X1, Xd0, Xd1, Xq, bE, bEq, bI, res_X, rho, factor, normC
+                pre.X0,
+                pre.X1,
+                Xd0,
+                Xd1,
+                pre.Xq,
+                bE,
+                pre.bEq,
+                pre.bI,
+                res_X,
+                rho,
+                factor,
+                pre.normC,
             )
 
         # ---------------------------- Assemble degree-wise results -----------------------------
 
         # Convert the optimized packed block variables back to full degree-wise
         # representation matrices for Euler-angle recovery.
-        X_admm = self._transform_coeff_back(X0, X1, IDX_upper, IDX_lower, idx_offdiag)
+        X_admm = self._transform_coeff_back(
+            pre.X0, pre.X1, pre.IDX_upper, pre.IDX_lower, pre.idx_offdiag
+        )
         X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
         return X_admm
 
@@ -1340,7 +1455,8 @@ class CommonlineNUG(Orient3D):
 
         :param C: Fourier coefficient matrices of the NUG objective.
 
-        :return: Dictionary of quantities required by the ADMM solver.
+        :return: An _ADMMData instance containing the constraints, layout,
+            and ADMM variables.
         """
         Lmax = self.Lmax
         N = self.n_img
@@ -1457,30 +1573,30 @@ class CommonlineNUG(Orient3D):
 
         self.Ngrid = Ngrid
 
-        return {
-            "C0": C0,
-            "C1": C1,
-            "normC": normC,
-            "AEq": AEq,
-            "bEq": bEq,
-            "AEqAEqtinv": AEqAEqtinv,
-            "AI_mat_diag": AI_mat_diag,
-            "AI_mat_offdiag": AI_mat_offdiag,
-            "bI": bI,
-            "Lambda": Lambda,
-            "d0": d0,
-            "d1": d1,
-            "idx_diag": idx_diag,
-            "idx_offdiag": idx_offdiag,
-            "IDX_upper": IDX_upper,
-            "IDX_lower": IDX_lower,
-            "X0": X0,
-            "X1": X1,
-            "Xq": Xq,
-            "S0": S0,
-            "S1": S1,
-            "Sq": Sq,
-        }
+        return _ADMMData(
+            C0=C0,
+            C1=C1,
+            normC=normC,
+            AEq=AEq,
+            bEq=bEq,
+            AEqAEqtinv=AEqAEqtinv,
+            AI_mat_diag=AI_mat_diag,
+            AI_mat_offdiag=AI_mat_offdiag,
+            bI=bI,
+            Lambda=Lambda,
+            d0=d0,
+            d1=d1,
+            idx_diag=idx_diag,
+            idx_offdiag=idx_offdiag,
+            IDX_upper=IDX_upper,
+            IDX_lower=IDX_lower,
+            X0=X0,
+            X1=X1,
+            Xq=Xq,
+            S0=S0,
+            S1=S1,
+            Sq=Sq,
+        )
 
     def _compute_fejer_weights(self):
         """
