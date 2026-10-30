@@ -123,7 +123,7 @@ def test_estimate_rotations(n_img, L, order, dtype):
     rots_gt = src.rotations
 
     # g-synchronize ground truth rotations.
-    rots_gt_sync = g_sync(rots_est, order, rots_gt)
+    rots_gt_sync = g_sync(rots_est, rots_gt, src.symmetry_group)
 
     # Register estimates to ground truth rotations and check that the
     # mean angular distance between them is less than 3 degrees.
@@ -192,8 +192,8 @@ def test_self_relative_rotations(n_img, L, order, dtype):
         Rii_gt = rot_gt.T @ g @ rot_gt
         Rii = Riis[i]
         cases = np.array([Rii, Rii.T, J_conjugate(Rii), J_conjugate(Rii.T)])
-        for i, estimate in enumerate(cases):
-            dist[i] = Rotation.angle_dist(estimate, Rii_gt)
+        for case_idx, estimate in enumerate(cases):
+            dist[case_idx] = Rotation.angle_dist(estimate, Rii_gt)
         angular_distance[i] = min(dist)
     mean_angular_distance = np.mean(angular_distance) * 180 / np.pi
 
