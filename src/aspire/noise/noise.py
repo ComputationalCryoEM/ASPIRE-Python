@@ -1,9 +1,10 @@
 """
 Noise utilities.
 
-Note that the RNG system used here is legacy,
-and this file is not Scientific Python Spec 7 compliant.
-This is done to reproduce collections of legacy results.
+Note that the RNG system used in `LegacyWhiteNoiseAdder` is not
+Scientific Python Spec 7 compliant.  It exists only to reproduce
+legacy data for specific unit tests using legacy reference files.
+`LegacyWhiteNoiseAdder` is not to be used for new development.
 """
 
 import abc
@@ -143,7 +144,7 @@ class WhiteNoiseAdder(NoiseAdder):
         )
 
     @classmethod
-    def from_snr(cls, snr, signal_power=None, rng=None):
+    def from_snr(cls, snr, signal_power=None, rng=None, **kwargs):
         """
         Generates a WhiteNoiseAdder configured to produce a target
         signal to noise ratio.
@@ -158,6 +159,11 @@ class WhiteNoiseAdder(NoiseAdder):
         :param signal_power: Optional, if the signal power is known.
         :param rng: Optionally provide an integer rng used to generate white noise.
         """
+
+        if cls == LegacyWhiteNoiseAdder:
+            raise RuntimeError(
+                "`LegacyWhiteNoiseAdder` is deprecated and should not be used for new development.  Use `WhiteNoiseAdder`."
+            )
 
         noise_adder = cls(var=None, rng=rng)
         # signal_power.setter will use `_snr` to compute the noise

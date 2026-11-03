@@ -625,6 +625,7 @@ class _LegacySimulation(Simulation):
     def __init__(self, *args, **kwargs):
         # Legacy rng seed default, to reproduce hardcoded/MATLAB results.
         rng = kwargs.setdefault("rng", 0)
+        self._legacy_rng = False
         if rng == 0:
             self._legacy_rng = True
 
