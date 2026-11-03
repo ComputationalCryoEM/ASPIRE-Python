@@ -224,7 +224,7 @@ class Simulation(ImageSource):
                         0, len(self.filter_stack), self.n
                     )
                 else:
-                    # Random choice, but guarentee each filter is used at least once.
+                    # Random choice, but guarantee each filter is used at least once.
                     # Avoids some odd corner cases with metadata.
 
                     # Force each index to be in the set at least once.
