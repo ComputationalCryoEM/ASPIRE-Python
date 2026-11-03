@@ -114,10 +114,9 @@ class Random:
             rng = np.random.default_rng(new_state)
             np.random.set_state(new_state.get_state())
         else:
-            # get existing state and return as a rng handle
-            state = np.random.get_state()
-            rng = np.random.RandomState()
-            rng.set_state(state)
+            # For `None` case, call numpy random directly
+            # Warning, this will alter np global random state
+            rng = np.random
         return rng
 
     def __exit__(self, *args):
