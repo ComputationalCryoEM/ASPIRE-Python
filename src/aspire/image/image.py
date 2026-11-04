@@ -119,7 +119,7 @@ def load_mrc(filepath, verbose=True):
 
         # Log a single warning to user
         # Give context and note assocated filepath
-        if verbose and len(ws) > 0:
+        if verbose and (len(ws) > 0):
             logger.warning(
                 f"Image.load of {filepath} reporting {len(ws)} corruptions."
                 " Most likely this is a problem with the header contents."
