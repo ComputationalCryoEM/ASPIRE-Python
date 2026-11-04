@@ -312,8 +312,7 @@ class CtfEstimator:
         )
 
         # Normalize
-        # Ask Ayelet about the num_blocks factor. Needed to match MATLAB intermediate.
-        amplitude_spectrum /= N**2 * num_blocks**2
+        amplitude_spectrum /= N**2 * num_blocks * num_1d_tapers
 
         amplitude_spectrum = fft.fftshift(amplitude_spectrum)
 
@@ -922,8 +921,8 @@ class CtfEstimator:
 
         :param psd: 2D PSD array
         """
-        plt.imshow(psd)
-        plt.title("2-d PSD")
+        plt.imshow(np.log1p(psd))
+        plt.title("2-d PSD (log)")
         plt.show()
 
     def _plot_2d_bg_sub_psd(self, bg_sub_psd):
@@ -932,8 +931,8 @@ class CtfEstimator:
 
         :param psd: 2D background subtracted PSD
         """
-        plt.imshow(bg_sub_psd)
-        plt.title("Background subtracted 2-d PSD")
+        plt.imshow(np.log1p(bg_sub_psd))
+        plt.title("Background subtracted 2-d PSD (log)")
         plt.show()
 
     def estimate(self, micrograph):
