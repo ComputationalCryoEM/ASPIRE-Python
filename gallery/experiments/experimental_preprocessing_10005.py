@@ -1,52 +1,79 @@
+"""
+Preprocessing Pipeline - Experimental Data EMPIAR 10005
+=======================================================
+
+This notebook introduces a selection of components corresponding to
+using a `CentersCoordinateSource` in conjunction with CTF estimation
+for real cryo-EM data.
+
+Specifically this pipeline uses the EMPIAR 10005 TRPV1 summed frame
+micrographs and particle coordinates available here:
+
+https://www.ebi.ac.uk/empiar/EMPIAR-10005
+"""
+
+# %%
+# Imports
+# -------
+# Import packages that will be used throughout this experiment.
+
 import glob
 import logging
 import os
 import re
+from pathlib import Path
 
 import numpy as np
 
 from aspire.ctf import estimate_ctf
-from aspire.denoising import LegacyClassAvgSource
-from aspire.reconstruction import MeanEstimator
-from aspire.source import CentersCoordinateSource, OrientedSource
+from aspire.source import CentersCoordinateSource
 
 logger = logging.getLogger(__name__)
 
+# %%
+# Parameters
+# ---------------
+#
+
+# These parameters are taken from the published data.
 PIXEL_SIZE = 1.2156
 PRTCL_SIZE = 256
-DTYPE = np.float32
 
-img_size = 129  # Downsample the images/reconstruction to a desired resolution
-n_classes = 3000  # How many class averages to compute.
-n_nbor = 50  # How many neighbors to stack
-
-# Outputs
-# preprocessed_fn = f"10005_preprocessed_{img_size}px.star"
-class_avg_fn = f"10005_var_sorted_cls_avgs_m{n_nbor}_{img_size}px.star"
-oriented_fn = f"10005_oriented_class_averages_{img_size}px.star"
-volume_output_filename = f"10005_abinitio_c{n_classes}_m{n_nbor}_{img_size}px.mrc"
-
-
-root_data_dir = "/Users/gbwright/work/ASPIRE-Python.mrc_src/test_10005"
+# Data location
+root_data_dir = "10005/data/micrographs/summed_frames"
 centers_dir = os.path.join(root_data_dir, "picked_coordinates/TRPV1_coords_35645")
-
+# Build list of input files.
 mrc_flist = glob.glob(os.path.join(root_data_dir, "*.mrc"))
 centers_flist = glob.glob(os.path.join(centers_dir, "*.dat"))
 
-# ---------
 
-ctf_result_dir = os.path.join(root_data_dir, "ctf_estimate_results")
+# These are user configurable
+DTYPE = np.float32
+IMG_SIZE = 129  # Desired resolution for downsampled images
+
+
+# %%
+# CTF Estimation
+# --------------
+# This section demonstrates configuration and execution of CTF estimation using ASPIRE.
+# The results are saved, and imported in a later stage.
+
+ctf_result_dir = "./ctf_estimate_results"
 ctf_globber = lambda: glob.glob(os.path.join(ctf_result_dir, "*.star"))
 
-# skip re-running estimator if already generated
+# Because CTF estimation may take some time, This code will skip
+# re-running estimator if results already exist in the expected
+# location and have the expected length.
 if not (
     os.path.exists(ctf_result_dir) and len(mrc_flist) == len(ctf_flist := ctf_globber())
 ):
-
+    # Most of these are default values, shown here for
+    # convenience/reference, except `cs`, `amplitude_contrast`, and
+    # `voltage`, which should correspond to the published dataset.
     estimate_ctf(
         data_folder=root_data_dir,
         pixel_size=PIXEL_SIZE,
-        cs=2.7,
+        cs=2.0,
         amplitude_contrast=0.07,
         voltage=300,
         num_tapers=4,
@@ -59,14 +86,24 @@ if not (
         save_noise_images=True,
     )
 
+    # Collect the resulting set of CTF estimation results.
     ctf_flist = ctf_globber()
 
 
-# ---------
+# %%
+# Map Source Paths
+# ----------------
+# The following code handles organizing and mapping the MRC, centers,
+# and CTF estimates into coherent lists for the
+# `CentersCoordinateSource` to consume.  `CoordinateSource` classes
+# generally expect an implicitly organized mapping of the input
+# micrographs.  This code achieves that by using a helper function to
+# parse out a unique and sortable identifier from the filenames.  This
+# type of code may need to be customized for other datasets.
 
 
 def extract_ids(paths, regex=r"stack_(\d{4})_"):
-    """Return {num_id: path} for every path matching the `regex`."""
+    """Return `{num_id: path,}` dict for every path matching the `regex`."""
     rx = re.compile(regex)
 
     res = {}
@@ -77,20 +114,35 @@ def extract_ids(paths, regex=r"stack_(\d{4})_"):
     return res
 
 
-# convert into dicts of {id:path...}
+# Convert each type of available data into dicts of {id:path...}
 mrc_flist = extract_ids(mrc_flist)
 centers_flist = extract_ids(centers_flist)
 ctf_flist = extract_ids(ctf_flist)
 
+# Define the set of ids where both the MRC and centers are provided.
+# This handles the situation where no particles were chosen from some micrographs.
 selected_ids = sorted(set(centers_flist.keys()) & set(mrc_flist.keys()))
+
+# Loop over the `selected_ids` generating sorted lists of MRC, centers, and CTF input files.
 selected_src_flist = []
 selected_ctf_flist = []
 for i in selected_ids:
     selected_src_flist.append((mrc_flist[i], centers_flist[i]))
     selected_ctf_flist.append(ctf_flist[i])
 
-
-# ---------
+# %%
+# Setup CentersCoordinateSource
+# -----------------------------
+# Besides correctly loading the source files, this dataset requires
+# two additional customizations.
+#
+# The published data's centers were provided in a 3x bin coordinate
+# system, so we use the `bin_multiplier=3` to remap them internally
+# into the micrograph coordinate system.
+#
+# Additionally the published `.dat` files list the center coordinates
+# in the last two columns as opposed to the default (first two).
+# `xy_cols` is used to inform the source to parse alternative columns.
 
 # Setup Source
 src = CentersCoordinateSource(
@@ -99,80 +151,34 @@ src = CentersCoordinateSource(
     particle_size=PRTCL_SIZE,
     bin_multiplier=3,
     xy_cols=(2, 3),
-)
+).cache()
 
 # Assign CTF estimates to src
+# This file list order must match the src list in `CentersCoordinateSource`
 src.import_aspire_ctf(selected_ctf_flist)
 
+# %%
+# Preprocessing
+# -------------
+# Execute the preprocessing stack, saving results
 
-# Legacy preprocessing stack
+# Legacy preprocessing
 legacy_src = src.phase_flip().cache()
 legacy_src = legacy_src.crop_pad(src.L - 1).cache()
-legacy_src = legacy_src.legacy_downsample(img_size).cache()
+legacy_src = legacy_src.legacy_downsample(IMG_SIZE).cache()
 legacy_src = legacy_src.legacy_normalize_background().cache()
 legacy_src = legacy_src.legacy_whiten().cache()
 legacy_src = legacy_src.invert_contrast().cache()
-legacy_src.save("legacy_10005_preproc.star", overwrite=True, save_mode="single")
+legacy_src.save(
+    f"10005_legacy_preproc_{IMG_SIZE}.star", overwrite=True, save_mode="single"
+)
 
-# Development preprocessing stack
-dev_src = src.downsample(img_size).cache()
-dev_src = src.phase_flip().cache()
+# Development preprocessing
+dev_src = src.downsample(IMG_SIZE).cache()
+dev_src = dev_src.phase_flip().cache()
 dev_src = dev_src.normalize_background().cache()
 dev_src = dev_src.whiten().cache()
 dev_src = dev_src.invert_contrast().cache()
-dev_src.save("development_10005_preproc.star", overwrite=True, save_mode="single")
-
-
-# ---- Recon
-
-# %%
-# Class Averaging
-# ----------------------
-#
-# Now perform classification and averaging for each class.
-logger.info("Begin Class Averaging")
-avgs = LegacyClassAvgSource(legacy_src, n_nbor=n_nbor).cache()
-
-# Save the entire set of class averages to disk so they can be re-used.
-avgs.save(class_avg_fn, save_mode="single", overwrite=True)
-
-# We'll continue our pipeline with the first ``n_classes`` from
-# ``avgs``.  The classes will be selected by the ``class_selector`` of a
-# ``ClassAvgSource``, which in this case will be the class averages
-# having the largest variance.  Note global sorting requires computing
-# all class averages, which is computationally intensive.
-avgs = avgs[:n_classes].cache()
-
-
-# %%
-# Common Line Estimation
-# ----------------------
-#
-# Estimate orientation of projections and assign to source by
-# applying ``OrientedSource`` to the class averages from the prior
-# step. By default this applies the Common Line with Synchronization
-# Voting ``CLSync3N`` method.
-
-logger.info("Begin Orientation Estimation")
-oriented_src = OrientedSource(avgs)
-
-# Save off the selected set of class average images, along with the
-# estimated orientations and shifts.  These can be reused to
-# experiment with alternative volume reconstructions.
-oriented_src.save(oriented_fn, save_mode="single", overwrite=True)
-
-# %%
-# Volume Reconstruction
-# ----------------------
-#
-# Using the oriented source, attempt to reconstruct a volume.
-
-logger.info("Begin Volume reconstruction")
-
-# Set up an estimator to perform the backprojection.
-estimator = MeanEstimator(oriented_src)
-
-# Perform the estimation and save the volume.
-estimated_volume = estimator.estimate()
-estimated_volume.save(volume_output_filename, overwrite=True)
-logger.info(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")
+legacy_src.save(
+    f"10005_dev_preproc_{IMG_SIZE}.star", overwrite=True, save_mode="single"
+)
