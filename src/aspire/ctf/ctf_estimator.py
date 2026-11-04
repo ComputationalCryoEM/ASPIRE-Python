@@ -1137,10 +1137,13 @@ def estimate_ctf(
         )  # Ensure output_file_dir exists
         output_file_prefix = output_file_dir / input_file.stem
 
-        with mrcfile.open(input_file, mode="r", permissive=True) as mrc:
-            micrograph = mrc.data
-
-        micrograph = micrograph.astype(dtype, copy=False)
+        micrograph, _ = Image._load_raw(input_file, dtype=dtype)
+        micrograph = micrograph.reshape(-1, *micrograph.shape[-2:])
+        if len(micrograph) > 1:
+            raise RuntimeError(
+                f"{input_file} contains multiple ({len(micrograph)}) micrographs; currently unsupported."
+            )
+        micrograph = micrograph[0]
 
         try:
             params, background_2d, signal = ctf_est.estimate(micrograph)
