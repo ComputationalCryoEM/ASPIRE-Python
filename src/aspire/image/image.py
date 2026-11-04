@@ -1040,7 +1040,8 @@ class Image:
         # Convert from recarray to single values,
         #   checks uniformity.
         if isinstance(vx, np.recarray):
-            if vx.x != vx.y:
+            # Avoid spamming for nan voxels
+            if np.isfinite(vx.x) and vx.x != vx.y:
                 logger.warning(f"Voxel sizes are not uniform: {vx}")
             vx = vx.x
 
