@@ -1137,7 +1137,7 @@ def estimate_ctf(
         )  # Ensure output_file_dir exists
         output_file_prefix = output_file_dir / input_file.stem
 
-        micrograph, _ = Image._load_raw(input_file, dtype=dtype)
+        micrograph, _ = Image._load_raw(input_file, dtype=dtype, verbose=False)
         micrograph = micrograph.reshape(-1, *micrograph.shape[-2:])
         if len(micrograph) > 1:
             raise RuntimeError(
