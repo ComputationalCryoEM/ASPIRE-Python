@@ -393,48 +393,18 @@ class CommonlineNUG(Orient3D):
 
         Ngrid = self.Ngrid
         n_pairs = N * (N - 1) // 2
-        n_packed = N * (N + 1) // 2
 
-        # In the asymmetric formulation, diagonal representation blocks are identity.
-        bE0 = xp.zeros(D0, dtype=np.float64)
-        bE1 = xp.zeros(D1, dtype=np.float64)
-        for k_idx in range(Lmax):
-            k = k_idx + 1  # degree
-
-            # Encode the k-by-k and (k+1)-by-(k+1) identity blocks. A flattened
-            # m-by-m identity has diagonal entries every m+1 positions.
-            bE0[pre.d0[k_idx] : pre.d0[k_idx + 1] : k + 1] = 1
-            bE1[pre.d1[k_idx] : pre.d1[k_idx + 1] : k + 2] = 1
-
-        bE0 = xp.repeat(bE0[:, None], N, axis=1)
-        bE1 = xp.repeat(bE1[:, None], N, axis=1)
-
-        # -------------------------------- Constraint operators ---------------------------------
-
-        def fun_AE(X0, X1, Xq):
-            """
-            Apply the asymmetric equality constraints.
-            """
-            z0 = X0[:, pre.idx_diag]
-            z1 = X1[:, pre.idx_diag]
-            zq = pre.AEq @ xp.concatenate(
-                (Xq, X0[:1, pre.idx_offdiag], X1[:4, pre.idx_offdiag]), axis=0
-            )
-            return z0, z1, zq
-
-        def fun_AET(yE0, yE1, yEq):
-            """
-            Apply the adjoint of the asymmetric equality operator.
-            """
-            Z0 = xp.zeros((D0, n_packed), dtype=np.float64)
-            Z1 = xp.zeros((D1, n_packed), dtype=np.float64)
-            Z0[:, pre.idx_diag] = yE0
-            Z1[:, pre.idx_diag] = yE1
-
-            Zq = pre.AEq.T @ yEq
-            Z0[:1, pre.idx_offdiag] = Zq[16:17]
-            Z1[:4, pre.idx_offdiag] = Zq[17:]
-            return Z0, Z1, Zq[:16]
+        # Prepare the self-pair identity and quaternion equality constraints.
+        equality = _C1EqualityConstraints(
+            n_img=N,
+            d0=pre.d0,
+            d1=pre.d1,
+            idx_diag=pre.idx_diag,
+            idx_offdiag=pre.idx_offdiag,
+            AEq=pre.AEq,
+            AEqAEqtinv=pre.AEqAEqtinv,
+            bEq=pre.bEq,
+        )
 
         # ---------------------------------- ADMM update rules ----------------------------------
 
@@ -442,7 +412,7 @@ class CommonlineNUG(Orient3D):
             """
             Update and project the asymmetric PSD slack variables.
             """
-            Z0, Z1, Zq = fun_AET(yE0, yE1, yEq)
+            Z0, Z1, Zq = equality.fun_AET(yE0, yE1, yEq)
             AIT_yI0, AIT_yI1 = fejer.fun_AIT(yI)
 
             S0 = C0.copy()
@@ -486,15 +456,16 @@ class CommonlineNUG(Orient3D):
             Update the asymmetric equality multipliers.
             """
             AIT_yI0, AIT_yI1 = fejer.fun_AIT(yI)
-            z0, z1, zq = fun_AE(
+            z0, z1, zq = equality.fun_AE(
                 -X0 / rho + C0 - S0 - AIT_yI0,
                 -X1 / rho + C1 - S1 - AIT_yI1,
                 -Xq / rho - Sq,
             )
-            yE0 = bE0 / rho + z0
-            yE1 = bE1 / rho + z1
-            yEq = pre.AEqAEqtinv @ (pre.bEq / rho + zq)
-            return yE0, yE1, yEq
+            return equality.solve_normal(
+                equality.bE0 / rho + z0,
+                equality.bE1 / rho + z1,
+                equality.bEq / rho + zq,
+            )
 
         def update_yI(
             C0,
@@ -514,7 +485,7 @@ class CommonlineNUG(Orient3D):
             Update the nonnegative Fejer multipliers in pair-column chunks.
             Each chunk is updated in place to limit temporary GPU allocations.
             """
-            AET_yE0, AET_yE1, _ = fun_AET(yE0, yE1, yEq)
+            AET_yE0, AET_yE1, _ = equality.fun_AET(yE0, yE1, yEq)
 
             for columns in fejer.pair_chunks():
                 packed_columns = pre.idx_offdiag[columns]
@@ -560,7 +531,7 @@ class CommonlineNUG(Orient3D):
             """
             Update the asymmetric primal multipliers.
             """
-            Z0, Z1, Zq = fun_AET(yE0, yE1, yEq)
+            Z0, Z1, Zq = equality.fun_AET(yE0, yE1, yEq)
             AIT_yI0, AIT_yI1 = fejer.fun_AIT(yI)
 
             tmp = S0 + AIT_yI0 + Z0 - C0
@@ -582,11 +553,11 @@ class CommonlineNUG(Orient3D):
             """
             Update the ADMM penalty parameter.
             """
-            z0, z1, zq = fun_AE(X0, X1, Xq)
+            z0, z1, zq = equality.fun_AE(X0, X1, Xq)
             res_eq = (
-                xp.linalg.norm(bE0 - z0) / (1 + xp.linalg.norm(bE0))
-                + xp.linalg.norm(bE1 - z1) / (1 + xp.linalg.norm(bE1))
-                + xp.linalg.norm(pre.bEq - zq) / (1 + xp.linalg.norm(pre.bEq))
+                xp.linalg.norm(equality.bE0 - z0) / (1 + xp.linalg.norm(equality.bE0))
+                + xp.linalg.norm(equality.bE1 - z1) / (1 + xp.linalg.norm(equality.bE1))
+                + xp.linalg.norm(equality.bEq - zq) / (1 + xp.linalg.norm(equality.bEq))
             )
             res_inq = fejer.residual_norm(X0, X1) / (
                 1 + abs(fejer.bI) * np.sqrt(Ngrid * n_pairs)
@@ -616,17 +587,17 @@ class CommonlineNUG(Orient3D):
                 + 2 * xp.vdot(pre.C1[:, pre.idx_offdiag], pre.X1[:, pre.idx_offdiag])
             )
             obj_d = (
-                xp.vdot(yE0, bE0)
-                + xp.vdot(yE1, bE1)
-                + 2 * xp.vdot(yEq, pre.bEq)
+                xp.vdot(yE0, equality.bE0)
+                + xp.vdot(yE1, equality.bE1)
+                + 2 * xp.vdot(yEq, equality.bEq)
                 + 2 * fejer.bI * xp.sum(yI)
             )
 
-            z0, z1, zq = fun_AE(pre.X0, pre.X1, pre.Xq)
+            z0, z1, zq = equality.fun_AE(pre.X0, pre.X1, pre.Xq)
             res_eq = (
-                xp.linalg.norm(bE0 - z0) / (1 + xp.linalg.norm(bE0))
-                + xp.linalg.norm(bE1 - z1) / (1 + xp.linalg.norm(bE1))
-                + xp.linalg.norm(pre.bEq - zq) / (1 + xp.linalg.norm(pre.bEq))
+                xp.linalg.norm(equality.bE0 - z0) / (1 + xp.linalg.norm(equality.bE0))
+                + xp.linalg.norm(equality.bE1 - z1) / (1 + xp.linalg.norm(equality.bE1))
+                + xp.linalg.norm(equality.bEq - zq) / (1 + xp.linalg.norm(equality.bEq))
             )
 
             res_inq = fejer.residual_norm(pre.X0, pre.X1) / (
@@ -691,9 +662,9 @@ class CommonlineNUG(Orient3D):
         # ----------------------------------- ADMM iterations -----------------------------------
 
         yI = xp.zeros((Ngrid, n_pairs), dtype=np.float64)
-        yE0 = xp.zeros(bE0.shape, dtype=np.float64)
-        yE1 = xp.zeros(bE1.shape, dtype=np.float64)
-        yEq = xp.zeros(pre.bEq.shape, dtype=np.float64)
+        yE0 = xp.zeros(equality.bE0.shape, dtype=np.float64)
+        yE1 = xp.zeros(equality.bE1.shape, dtype=np.float64)
+        yEq = xp.zeros(equality.bEq.shape, dtype=np.float64)
 
         update_order = np.arange(3)
         for t in trange(max_iter, desc="C1 NUG ADMM"):
@@ -2894,6 +2865,145 @@ class _FejerConstraints:
         return xp.sqrt(squared_norm)
 
 
+class _C1EqualityConstraints:
+    """
+    Fixed equality constraints for asymmetric (C1) ADMM.
+
+    Owns the identity right-hand sides for self-pair representation blocks
+    and the quaternion equality data. Current ADMM variables are supplied
+    explicitly to each operation.
+
+    In the docstrings below, N is the number of images. X0 and X1 contain
+    the two representation block families, with D0 and D1 rows, respectively.
+    Their columns correspond to upper-triangular image pairs, including
+    self-pairs.
+    """
+
+    def __init__(
+        self,
+        n_img,
+        d0,
+        d1,
+        idx_diag,
+        idx_offdiag,
+        AEq,
+        AEqAEqtinv,
+        bEq,
+    ):
+        """
+        Prepare the C1 equality operators and right-hand sides.
+
+        :param n_img: Number of images.
+        :param d0: Degree-block row boundaries for X0.
+        :param d1: Degree-block row boundaries for X1.
+        :param idx_diag: Self-pair column indices.
+        :param idx_offdiag: Distinct image-pair column indices.
+        :param AEq: Quaternion equality operator of shape (17, 21).
+        :param AEqAEqtinv: Pseudoinverse of AEq @ AEq.T.
+        :param bEq: Right-hand side of the quaternion equality constraints,
+            with shape (17, N(N-1)/2).
+        """
+        self.idx_diag = idx_diag
+        self.idx_offdiag = idx_offdiag
+        self.D0 = d0[-1]
+        self.D1 = d1[-1]
+        self.n_packed = n_img * (n_img + 1) // 2
+
+        self.AEq = AEq
+        self.AEqAEqtinv = AEqAEqtinv
+        self.bEq = bEq
+
+        # Build the right-hand sides requiring each self-pair block
+        # of X0 and X1 to be an identity matrix.
+        bE0 = xp.zeros(self.D0, dtype=np.float64)
+        bE1 = xp.zeros(self.D1, dtype=np.float64)
+
+        for k_idx in range(len(d0) - 1):
+            k = k_idx + 1
+
+            # A flattened m-by-m identity has ones every m+1 entries.
+            bE0[d0[k_idx] : d0[k_idx + 1] : k + 1] = 1
+            bE1[d1[k_idx] : d1[k_idx + 1] : k + 2] = 1
+
+        self.bE0 = xp.repeat(bE0[:, None], n_img, axis=1)
+        self.bE1 = xp.repeat(bE1[:, None], n_img, axis=1)
+
+    def fun_AE(self, X0, X1, Xq):
+        """
+        Apply the C1 equality operator.
+
+        Select the self-pair representation blocks and apply the quaternion
+        operator to Xq and the lowest-degree distinct-pair entries of X0/X1.
+
+        :param X0: First representation array of shape (D0, N(N+1)/2).
+        :param X1: Second representation array of shape (D1, N(N+1)/2).
+        :param Xq: Quaternion array of shape (16, N(N-1)/2).
+
+        :return: Tuple (z0, z1, zq), with shapes (D0, N), (D1, N),
+            and (17, N(N-1)/2). The equality constraints require
+            z0 == bE0, z1 == bE1, and zq == bEq.
+        """
+        z0 = X0[:, self.idx_diag]
+        z1 = X1[:, self.idx_diag]
+        zq = self.AEq @ xp.concatenate(
+            (
+                Xq,
+                X0[:1, self.idx_offdiag],
+                X1[:4, self.idx_offdiag],
+            ),
+            axis=0,
+        )
+        return z0, z1, zq
+
+    def fun_AET(self, yE0, yE1, yEq):
+        """
+        Apply the adjoint of the C1 equality operator.
+
+        Map equality multipliers back to contributions in the representation
+        and quaternion arrays.
+
+        :param yE0: Multipliers for the X0 self-pair equalities,
+            of shape (D0, N).
+        :param yE1: Multipliers for the X1 self-pair equalities,
+            of shape (D1, N).
+        :param yEq: Multipliers for the quaternion equalities,
+            of shape (17, N(N-1)/2).
+
+        :return: Tuple (Z0, Z1, Zq), with shapes (D0, N(N+1)/2),
+            (D1, N(N+1)/2), and (16, N(N-1)/2), respectively.
+        """
+        Z0 = xp.zeros((self.D0, self.n_packed), dtype=np.float64)
+        Z1 = xp.zeros((self.D1, self.n_packed), dtype=np.float64)
+        Z0[:, self.idx_diag] = yE0
+        Z1[:, self.idx_diag] = yE1
+
+        Zq = self.AEq.T @ yEq
+        Z0[:1, self.idx_offdiag] = Zq[16:17]
+        Z1[:4, self.idx_offdiag] = Zq[17:]
+
+        return Z0, Z1, Zq[:16]
+
+    def solve_normal(self, rhs0, rhs1, rhs_q):
+        """
+        Apply the pseudoinverse of the C1 equality operator times its adjoint.
+
+        The self-pair selection operators times their adjoints are identity
+        operators, so their right-hand sides are returned unchanged.
+        Apply the pseudoinverse of AEq @ AEq.T to rhs_q.
+
+        :param rhs0: Right-hand side for the X0 self-pair system,
+            of shape (D0, N).
+        :param rhs1: Right-hand side for the X1 self-pair system,
+            of shape (D1, N).
+        :param rhs_q: Right-hand side for the quaternion system,
+            of shape (17, N(N-1)/2).
+
+        :return: Tuple (yE0, yE1, yEq), with the same shapes as the inputs.
+            The first two outputs are the supplied rhs0 and rhs1 arrays.
+        """
+        return rhs0, rhs1, self.AEqAEqtinv @ rhs_q
+
+
 class _SymmetricEqualityConstraints:
     """
     Fixed equality constraints for symmetric ADMM.
@@ -2910,7 +3020,6 @@ class _SymmetricEqualityConstraints:
 
     def __init__(
         self,
-        *,
         n_img,
         d0,
         d1,
