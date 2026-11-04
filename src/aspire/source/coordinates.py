@@ -443,8 +443,11 @@ class CoordinateSource(ImageSource, ABC):
         :param coord: A list of integers: (lower left X, lower left Y, X, Y)
         """
         start_x, start_y, size_x, size_y = coord
-        # Note Y axis (rows) are from Lower corner, indices and data reversed.
-        return data[-start_y : -(start_y + size_y) : -1, start_x : start_x + size_x]
+        # Y coordinates are bottom-origin (MRC convention)
+        # Convert the box's lower bound to a row index.
+        y0 = data.shape[0] - (start_y + size_y)
+        # Then flip the data vertically to preserve the MRC Y orientation convention.
+        return data[y0 : y0 + size_y, start_x : start_x + size_x][::-1]
 
     def _images(self, indices):
         """
