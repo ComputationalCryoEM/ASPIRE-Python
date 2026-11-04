@@ -1447,7 +1447,7 @@ class CommonlineNUG(Orient3D):
             D0=D0,
             n_packed=n_packed,
             pair_batch_size=self.c1_pair_batch_size,
-            include_diagonal_pairs=self.n_sym > 1,
+            is_asymmetric=self.n_sym == 1,
         )
 
         return _ADMMData(
@@ -2897,22 +2897,25 @@ class _FejerConstraints:
         D0,
         n_packed,
         pair_batch_size,
-        include_diagonal_pairs,
+        is_asymmetric,
     ):
         """
         Initialize a Fejer constraints object with the precomputed Fejer operators,
         bound, and image-pair layout.
 
-        :param AI_mat_diag: Operator for self-pairs in symmetric ADMM.
-        :param AI_mat_offdiag: Operator for distinct image pairs.
-        :param bI: Lower bound for the inequality AI(X) >= bI.
-        :param Lambda: Scale used in the inequality-multiplier update.
-        :param idx_diag: Self-pair columns in packed image pair order.
-        :param idx_offdiag: Distinct pair columns in packed image pair order.
+        Let G be the number of SO(3) grid points. D0 and D1 are the row counts of the
+        first and second representation blocks (X0 and X1), respectively.
+
+        :param AI_mat_diag: Self-pair operator of shape (G, D0+D1).
+        :param AI_mat_offdiag: Off-diagonal operator of shape (G, D0+D1).
+        :param bI: Scalar lower bound for AI(X) >= bI.
+        :param Lambda: Scalar scale for inequality-multiplier updates.
+        :param idx_diag: Column indices for the N self-pairs.
+        :param idx_offdiag: Column indices for the N(N-1)/2 off-diagonal pairs.
         :param D0: Row count of the first representation block.
-        :param n_packed: Total number of packed image pair columns.
-        :param pair_batch_size: Distinct pair columns per C1 chunk.
-        :param include_diagonal_pairs: Whether to apply the self-pair operator.
+        :param n_packed: Number of upper-triangular image-pair columns, N(N+1)/2.
+        :param pair_batch_size: Batch size for off-diagonal image pair columns.
+        :param is_asymmetric: Whether to use the asymmetric (C1) formulation.
         """
         self.AI_mat_diag = AI_mat_diag
         self.AI_mat_offdiag = AI_mat_offdiag
@@ -2923,7 +2926,7 @@ class _FejerConstraints:
         self.D0 = D0
         self.n_packed = n_packed
         self.pair_batch_size = pair_batch_size
-        self.include_diagonal_pairs = include_diagonal_pairs
+        self.is_asymmetric = is_asymmetric
 
     def pair_chunks(self):
         """
@@ -2943,7 +2946,7 @@ class _FejerConstraints:
         """
         tmp = xp.concatenate((X0, X1), axis=0)
 
-        if not self.include_diagonal_pairs:
+        if self.is_asymmetric:
             # C1 passes a chunk containing only distinct image pairs.
             return self.AI_mat_offdiag @ tmp
 
@@ -2968,7 +2971,7 @@ class _FejerConstraints:
         """
         Z = xp.zeros((self.AI_mat_offdiag.shape[1], self.n_packed), dtype=np.float64)
 
-        if not self.include_diagonal_pairs:
+        if self.is_asymmetric:
             for columns in self.pair_chunks():
                 packed_columns = self.idx_offdiag[columns]
                 Z[:, packed_columns] = self.fun_AIT_chunk(yI[:, columns])
@@ -2983,7 +2986,7 @@ class _FejerConstraints:
         Compute the norm of the positive Fejer inequality residual in chunks.
         This avoids storing a residual over the full Fejer grid.
         """
-        if self.include_diagonal_pairs:
+        if not self.is_asymmetric:
             return xp.linalg.norm(xp.maximum(self.bI - self.fun_AI(X0, X1), 0))
 
         squared_norm = xp.zeros((), dtype=np.float64)
