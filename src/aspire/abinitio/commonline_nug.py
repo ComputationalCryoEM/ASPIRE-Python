@@ -801,47 +801,18 @@ class CommonlineNUG(Orient3D):
         rank_Ak, _ = self._compute_rank()
         logger.info(f"Rank of Ak: {rank_Ak}")
 
-        # Build per-degree equality operators coupling the k and k+1 invariant
-        # blocks. These encode the representation constraints imposed by symmetry.
-        AE = []
-        AEAETinv = []
-        for k_idx in range(Lmax):
-            k = k_idx + 1
-            size0 = k**2
-            size1 = (k + 1) ** 2
-            n_components = size0 + size1
-
-            AEk = xp.zeros((1 + n_components, 2 * n_components), dtype=np.float64)
-
-            # Row zero contains the trace constraint for the two components.
-            AEk[0, : size0 : k + 1] = 1
-            AEk[0, size0 : n_components : k + 2] = 1
-
-            # The remaining rows couple every representation entry to its
-            # corresponding auxiliary diagonal variable.
-            for component_idx in range(n_components):
-                row_idx = component_idx + 1
-                AEk[row_idx, component_idx] = 1
-                AEk[row_idx, component_idx + n_components] = 1
-
-            AE.append(AEk)
-            AEAETinv.append(xp.linalg.pinv(AEk @ AEk.T))
-
-        # Right-hand sides for the equality constraints: symmetry projector ranks
-        # and identity constraints on diagonal representation blocks.
-        bE = xp.zeros((Lmax + D0 + D1), dtype=np.float64)
-        for k_idx in range(Lmax):
-            k = k_idx + 1
-
-            start = k_idx + pre.d0[k_idx] + pre.d1[k_idx]
-            split = k_idx + 1 + pre.d0[k_idx + 1] + pre.d1[k_idx]
-            stop = k_idx + 1 + pre.d0[k_idx + 1] + pre.d1[k_idx + 1]
-
-            bE[start] = rank_Ak[k_idx]
-            bE[start + 1 : split : k + 1] = 1
-            bE[split : stop : k + 2] = 1
-
-        bE = xp.repeat(bE[:, None], N, axis=1)
+        # Prepare the symmetry/diagonal and quaternion equality constraints.
+        equality = _SymmetricEqualityConstraints(
+            n_img=N,
+            d0=pre.d0,
+            d1=pre.d1,
+            idx_diag=pre.idx_diag,
+            idx_offdiag=pre.idx_offdiag,
+            rank_Ak=rank_Ak,
+            AEq=pre.AEq,
+            AEqAEqtinv=pre.AEqAEqtinv,
+            bEq=pre.bEq,
+        )
 
         # Degree-wise permutations used to move between full Wigner blocks and the
         # two invariant block variables used by the relaxation.
@@ -856,83 +827,6 @@ class CommonlineNUG(Orient3D):
                     ]
             P.append(xp.asarray(Pk))
 
-        # -------------------------------- Constraint operators ---------------------------------
-
-        def fun_AE(X0, X1, Xd0, Xd1, Xq):
-            """
-            Apply the equality constraint operator to the current primal variables.
-
-            z contains the per-image, per-degree equality constraints that couple
-            diagonal X0/X1 blocks to auxiliary diagonal variables Xd0/Xd1.
-
-            zq contains the off-diagonal quaternion constraints built from Xq and
-            the lowest-degree off-diagonal representation blocks.
-            """
-            z = xp.zeros((Lmax + D0 + D1, N), dtype=np.float64)
-            for k_idx in range(Lmax):
-                block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
-                block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
-
-                constraint_start = k_idx + pre.d0[k_idx] + pre.d1[k_idx]
-                constraint_stop = k_idx + 1 + pre.d0[k_idx + 1] + pre.d1[k_idx + 1]
-                constraint_rows = slice(constraint_start, constraint_stop)
-
-                z[constraint_rows] = AE[k_idx] @ xp.concatenate(
-                    (
-                        X0[block0_rows, pre.idx_diag],
-                        X1[block1_rows, pre.idx_diag],
-                        Xd0[block0_rows],
-                        Xd1[block1_rows],
-                    ),
-                    axis=0,
-                )
-            zq = pre.AEq @ xp.concatenate(
-                (Xq, X0[:1, pre.idx_offdiag], X1[:4, pre.idx_offdiag]), axis=0
-            )
-            return z, zq
-
-        def fun_AET(yE, yEq):
-            """
-            Apply the adjoint of the equality constraint operator.
-
-            yE contains multipliers for the per-image, per-degree equality
-            constraints produced as z by fun_AE.
-
-            yEq contains multipliers for the off-diagonal quaternion constraints
-            produced as zq by fun_AE.
-
-            Returns the contribution of these equality multipliers back into each
-            packed primal variable block: X0, X1, Xd0, Xd1, and Xq.
-            """
-            Z0 = xp.zeros((D0, N * (N + 1) // 2), dtype=np.float64)
-            Z1 = xp.zeros((D1, N * (N + 1) // 2), dtype=np.float64)
-            Zd0 = xp.zeros((D0, N), dtype=np.float64)
-            Zd1 = xp.zeros((D1, N), dtype=np.float64)
-
-            for k_idx in range(Lmax):
-                k = k_idx + 1  # degree
-                size0 = k**2
-                size1 = (k + 1) ** 2
-
-                block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
-                block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
-
-                constraint_start = k_idx + pre.d0[k_idx] + pre.d1[k_idx]
-                constraint_stop = k_idx + 1 + pre.d0[k_idx + 1] + pre.d1[k_idx + 1]
-                constraint_rows = slice(constraint_start, constraint_stop)
-
-                Ztmp = AE[k_idx].T @ yE[constraint_rows]
-
-                Z0[block0_rows, pre.idx_diag] = Ztmp[:size0]
-                Z1[block1_rows, pre.idx_diag] = Ztmp[size0 : size0 + size1]
-                Zd0[block0_rows] = Ztmp[size0 + size1 : 2 * size0 + size1]
-                Zd1[block1_rows] = Ztmp[2 * size0 + size1 : 2 * size0 + 2 * size1]
-
-            Zq = pre.AEq.T @ yEq
-            Z0[:1, pre.idx_offdiag] = Zq[16:17]
-            Z1[:4, pre.idx_offdiag] = Zq[17:]
-            return Z0, Z1, Zd0, Zd1, Zq[:16]
-
         # ---------------------------------- ADMM update rules ----------------------------------
 
         def update_S(C0, C1, yE, yEq, yI, X0, X1, Xd0, Xd1, Xq, rho, Lmax, N):
@@ -944,7 +838,7 @@ class CommonlineNUG(Orient3D):
             matrix block onto the positive semidefinite cone.
             """
             # Equality multipliers mapped back to each primal variable block.
-            Z0, Z1, Zd0, Zd1, Zq = fun_AET(yE, yEq)
+            Z0, Z1, Zd0, Zd1, Zq = equality.fun_AET(yE, yEq)
 
             # Inequality multipliers mapped back to the X0/X1 variable blocks.
             AIT_yI0, AIT_yI1 = fejer.fun_AIT(yI)
@@ -1004,24 +898,17 @@ class CommonlineNUG(Orient3D):
             yEq enforces the off-diagonal quaternion constraints.
             """
             AIT_yI0, AIT_yI1 = fejer.fun_AIT(yI)
-            z, zq = fun_AE(
+            z, zq = equality.fun_AE(
                 -X0 / rho + C0 - S0 - AIT_yI0,
                 -X1 / rho + C1 - S1 - AIT_yI1,
                 -Xd0 / rho - Sd0,
                 -Xd1 / rho - Sd1,
                 -Xq / rho - Sq,
             )
-            yE = xp.zeros((Lmax + D0 + D1, N), dtype=np.float64)
-            for k_idx in range(Lmax):
-                constraint_start = k_idx + pre.d0[k_idx] + pre.d1[k_idx]
-                constraint_stop = k_idx + 1 + pre.d0[k_idx + 1] + pre.d1[k_idx + 1]
-                constraint_rows = slice(constraint_start, constraint_stop)
-
-                yE[constraint_rows] = AEAETinv[k_idx] @ (
-                    bE[constraint_rows] / rho + z[constraint_rows]
-                )
-            yEq = pre.AEqAEqtinv @ (pre.bEq / rho + zq)
-            return yE, yEq
+            return equality.solve_normal(
+                equality.bE / rho + z,
+                equality.bEq / rho + zq,
+            )
 
         def update_yI(C0, C1, X0, X1, S0, S1, yE, yEq, yI, rho, Lambda):
             """
@@ -1030,7 +917,7 @@ class CommonlineNUG(Orient3D):
             yI corresponds to the discretized constraints fejer.fun_AI(X0, X1) >= bI,
             one multiplier per SO(3) grid point and packed image-pair column.
             """
-            Z0, Z1, _, _, _ = fun_AET(yE, yEq)
+            Z0, Z1, _, _, _ = equality.fun_AET(yE, yEq)
             AIT_yI0, AIT_yI1 = fejer.fun_AIT(yI)
             tmp = fejer.fun_AI(
                 -X0 / rho + C0 - S0 - Z0 - AIT_yI0, -X1 / rho + C1 - S1 - Z1 - AIT_yI1
@@ -1048,7 +935,7 @@ class CommonlineNUG(Orient3D):
             Each tmp below is the current residual for one block family.
             The multiplier is advanced by mult * rho * tmp.
             """
-            Z0, Z1, Zd0, Zd1, Zq = fun_AET(yE, yEq)
+            Z0, Z1, Zd0, Zd1, Zq = equality.fun_AET(yE, yEq)
             AIT_yI0, AIT_yI1 = fejer.fun_AIT(yI)
             tmp = S0 + Z0 + AIT_yI0 - C0
             X0 = X0 + mult * rho * tmp
@@ -1078,7 +965,7 @@ class CommonlineNUG(Orient3D):
             """
             Update the ADMM penalty parameter rho.
             """
-            z, zq = fun_AE(X0, X1, Xd0, Xd1, Xq)
+            z, zq = equality.fun_AE(X0, X1, Xd0, Xd1, Xq)
             res_eq = xp.linalg.norm(z - bE) / (1 + xp.linalg.norm(bE)) + xp.linalg.norm(
                 zq - bEq
             ) / (1 + xp.linalg.norm(bEq))
@@ -1107,16 +994,18 @@ class CommonlineNUG(Orient3D):
                 )
 
                 obj_d = (
-                    xp.vdot(yE, bE)
-                    + 2 * xp.vdot(yEq, pre.bEq)
+                    xp.vdot(yE, equality.bE)
+                    + 2 * xp.vdot(yEq, equality.bEq)
                     + fejer.bI * xp.sum(yI[:, pre.idx_diag])
                     + 2 * fejer.bI * xp.sum(yI[:, pre.idx_offdiag])
                 )
 
-                z, zq = fun_AE(pre.X0, pre.X1, Xd0, Xd1, pre.Xq)
-                res_eq = xp.linalg.norm(z - bE) / (
-                    1 + xp.linalg.norm(bE)
-                ) + xp.linalg.norm(zq - pre.bEq) / (1 + xp.linalg.norm(pre.bEq))
+                z, zq = equality.fun_AE(pre.X0, pre.X1, Xd0, Xd1, pre.Xq)
+                res_eq = xp.linalg.norm(z - equality.bE) / (
+                    1 + xp.linalg.norm(equality.bE)
+                ) + xp.linalg.norm(zq - equality.bEq) / (
+                    1 + xp.linalg.norm(equality.bEq)
+                )
                 res_inq = fejer.residual_norm(pre.X0, pre.X1) / (
                     1 + abs(fejer.bI) * np.sqrt(Ngrid * N * (N + 1) / 2)
                 )
@@ -1205,8 +1094,8 @@ class CommonlineNUG(Orient3D):
         Sd0 = xp.zeros(Xd0.shape, dtype=xp.float64)
         Sd1 = xp.zeros(Xd1.shape, dtype=xp.float64)
         yI = xp.zeros((Ngrid, N * (N + 1) // 2), dtype=xp.float64)
-        yE = xp.zeros(bE.shape, dtype=xp.float64)
-        yEq = xp.zeros(pre.bEq.shape, dtype=xp.float64)
+        yE = xp.zeros(equality.bE.shape, dtype=xp.float64)
+        yEq = xp.zeros(equality.bEq.shape, dtype=xp.float64)
 
         # Run ADMM iterations, randomly ordering the block updates before each primal
         # multiplier update and penalty adjustment.
@@ -1288,8 +1177,8 @@ class CommonlineNUG(Orient3D):
                 Xd0,
                 Xd1,
                 pre.Xq,
-                bE,
-                pre.bEq,
+                equality.bE,
+                equality.bEq,
                 fejer.bI,
                 res_X,
                 rho,
@@ -3003,6 +2892,232 @@ class _FejerConstraints:
             squared_norm += xp.sum(residual * residual)
 
         return xp.sqrt(squared_norm)
+
+
+class _SymmetricEqualityConstraints:
+    """
+    Fixed equality constraints for symmetric ADMM.
+
+    Owns the per-degree symmetry/diagonal operators and targets, together
+    with the quaternion equality data. Current ADMM variables are supplied
+    explicitly to each operation.
+
+    In the docstrings below, N is the number of images and Lmax is the
+    maximum representation degree. X0 and X1 contain the two representation
+    block families, with D0 and D1 rows, respectively. Their columns correspond
+    to upper-triangular image pairs, including self-pairs.
+    """
+
+    def __init__(
+        self,
+        *,
+        n_img,
+        d0,
+        d1,
+        idx_diag,
+        idx_offdiag,
+        rank_Ak,
+        AEq,
+        AEqAEqtinv,
+        bEq,
+    ):
+        """
+        Construct the symmetric equality operators and targets.
+
+        :param n_img: Number of images.
+        :param d0: Degree-block row boundaries for X0 and Xd0.
+        :param d1: Degree-block row boundaries for X1 and Xd1.
+        :param idx_diag: Self-pair column indices.
+        :param idx_offdiag: Distinct image-pair column indices.
+        :param rank_Ak: Symmetry-projector rank at each degree.
+        :param AEq: Quaternion equality operator of shape (17, 21).
+        :param AEqAEqtinv: Pseudoinverse of AEq @ AEq.T.
+        :param bEq: Right-hand side of the quaternion equality constraints,
+            with shape (17, n_img*(n_img-1)/2).
+        """
+        self.n_img = n_img
+        self.d0 = d0
+        self.d1 = d1
+        self.idx_diag = idx_diag
+        self.idx_offdiag = idx_offdiag
+
+        self.Lmax = len(d0) - 1
+        self.D0 = d0[-1]
+        self.D1 = d1[-1]
+        self.n_packed = n_img * (n_img + 1) // 2
+
+        self.AEq = AEq
+        self.AEqAEqtinv = AEqAEqtinv
+        self.bEq = bEq
+
+        # Build the left-hand-side operators for the symmetry equality constraints.
+        self.AE = []
+        self.AEAETinv = []
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+            size0 = k**2
+            size1 = (k + 1) ** 2
+            n_components = size0 + size1
+
+            AEk = xp.zeros(
+                (1 + n_components, 2 * n_components),
+                dtype=np.float64,
+            )
+
+            # Trace constraint on the two representation components.
+            AEk[0, : size0 : k + 1] = 1
+            AEk[0, size0 : n_components : k + 2] = 1
+
+            # Couple representation entries to auxiliary diagonal entries.
+            for component_idx in range(n_components):
+                row_idx = component_idx + 1
+                AEk[row_idx, component_idx] = 1
+                AEk[row_idx, component_idx + n_components] = 1
+
+            self.AE.append(AEk)
+            self.AEAETinv.append(xp.linalg.pinv(AEk @ AEk.T))
+
+        # Build the right-hand sides: symmetry-projector ranks and identity-matrix entries.
+        bE = xp.zeros(
+            self.Lmax + self.D0 + self.D1,
+            dtype=np.float64,
+        )
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+
+            start = k_idx + d0[k_idx] + d1[k_idx]
+            split = k_idx + 1 + d0[k_idx + 1] + d1[k_idx]
+            stop = k_idx + 1 + d0[k_idx + 1] + d1[k_idx + 1]
+
+            bE[start] = rank_Ak[k_idx]
+            bE[start + 1 : split : k + 1] = 1
+            bE[split : stop : k + 2] = 1
+
+        self.bE = xp.repeat(bE[:, None], n_img, axis=1)
+
+    def _constraint_rows(self, k_idx):
+        """
+        Return the equality-row slice for one degree.
+
+        :param k_idx: Zero-based degree index.
+
+        :return: Slice selecting the trace and block sum equality rows for this degree.
+        """
+        start = k_idx + self.d0[k_idx] + self.d1[k_idx]
+        stop = k_idx + 1 + self.d0[k_idx + 1] + self.d1[k_idx + 1]
+        return slice(start, stop)
+
+    def fun_AE(self, X0, X1, Xd0, Xd1, Xq):
+        """
+        Apply the symmetric equality operator.
+
+        The per-image constraints couple self-pair blocks of X0/X1 to the
+        auxiliary blocks Xd0/Xd1 and constrain the combined representation trace.
+
+        The quaternion constraints couple Xq to the lowest degree entries of
+        X0/X1 for distinct image pairs.
+
+        :param X0: First representation array of shape (D0, N(N+1)/2).
+        :param X1: Second representation array of shape (D1, N(N+1)/2).
+        :param Xd0: First auxiliary diagonal-block array of shape (D0, N).
+        :param Xd1: Second auxiliary diagonal-block array of shape (D1, N).
+        :param Xq: Quaternion array of shape (16, N(N-1)/2).
+
+        :return: Tuple (z, zq), where z has shape (Lmax+D0+D1, N) and zq
+            has shape (17, N(N-1)/2). The equality constraints require
+            z == bE and zq == bEq.
+        """
+        z = xp.zeros(self.bE.shape, dtype=np.float64)
+
+        for k_idx in range(self.Lmax):
+            block0_rows = slice(self.d0[k_idx], self.d0[k_idx + 1])
+            block1_rows = slice(self.d1[k_idx], self.d1[k_idx + 1])
+
+            z[self._constraint_rows(k_idx)] = self.AE[k_idx] @ xp.concatenate(
+                (
+                    X0[block0_rows, self.idx_diag],
+                    X1[block1_rows, self.idx_diag],
+                    Xd0[block0_rows],
+                    Xd1[block1_rows],
+                ),
+                axis=0,
+            )
+
+        zq = self.AEq @ xp.concatenate(
+            (
+                Xq,
+                X0[:1, self.idx_offdiag],
+                X1[:4, self.idx_offdiag],
+            ),
+            axis=0,
+        )
+        return z, zq
+
+    def fun_AET(self, yE, yEq):
+        """
+        Apply the adjoint of the symmetric equality operator.
+
+        Map equality multipliers back to contributions in the representation,
+        auxiliary diagonal-block, and quaternion arrays.
+
+        :param yE: Multipliers for the per-image trace and block-sum equalities,
+            of shape (Lmax+D0+D1, N).
+        :param yEq: Multipliers for the quaternion equalities,
+            of shape (17, N(N-1)/2).
+
+        :return: Tuple (Z0, Z1, Zd0, Zd1, Zq), with shapes
+            (D0, N(N+1)/2), (D1, N(N+1)/2), (D0, N), (D1, N),
+            and (16, N(N-1)/2), respectively.
+        """
+        Z0 = xp.zeros((self.D0, self.n_packed), dtype=np.float64)
+        Z1 = xp.zeros((self.D1, self.n_packed), dtype=np.float64)
+        Zd0 = xp.zeros((self.D0, self.n_img), dtype=np.float64)
+        Zd1 = xp.zeros((self.D1, self.n_img), dtype=np.float64)
+
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+            size0 = k**2
+            size1 = (k + 1) ** 2
+
+            block0_rows = slice(self.d0[k_idx], self.d0[k_idx + 1])
+            block1_rows = slice(self.d1[k_idx], self.d1[k_idx + 1])
+
+            Ztmp = self.AE[k_idx].T @ yE[self._constraint_rows(k_idx)]
+
+            Z0[block0_rows, self.idx_diag] = Ztmp[:size0]
+            Z1[block1_rows, self.idx_diag] = Ztmp[size0 : size0 + size1]
+            Zd0[block0_rows] = Ztmp[size0 + size1 : 2 * size0 + size1]
+            Zd1[block1_rows] = Ztmp[2 * size0 + size1 : 2 * size0 + 2 * size1]
+
+        Zq = self.AEq.T @ yEq
+        Z0[:1, self.idx_offdiag] = Zq[16:17]
+        Z1[:4, self.idx_offdiag] = Zq[17:]
+
+        return Z0, Z1, Zd0, Zd1, Zq[:16]
+
+    def solve_normal(self, rhs, rhs_q):
+        """
+        Apply the pseudoinverses of the equality operators times their adjoints.
+
+        Apply each per-degree pseudoinverse of AEk @ AEk.T to the corresponding
+        rows of rhs, and the pseudoinverse of AEq @ AEq.T to rhs_q.
+
+        :param rhs: Right-hand side for the per-image equality system,
+            of shape (Lmax+D0+D1, N).
+        :param rhs_q: Right-hand side for the quaternion equality system,
+            of shape (17, N(N-1)/2).
+
+        :return: Tuple (yE, yEq) containing the solutions obtained with the
+            pseudoinverses, with the same shapes as rhs and rhs_q.
+        """
+        yE = xp.zeros(self.bE.shape, dtype=np.float64)
+
+        for k_idx in range(self.Lmax):
+            rows = self._constraint_rows(k_idx)
+            yE[rows] = self.AEAETinv[k_idx] @ rhs[rows]
+
+        yEq = self.AEqAEqtinv @ rhs_q
+        return yE, yEq
 
 
 @dataclass
