@@ -312,7 +312,7 @@ class CtfEstimator:
         )
 
         # Normalize
-        amplitude_spectrum /= N**2 * num_blocks * num_1d_tapers
+        amplitude_spectrum /= N**2 * num_blocks * num_1d_tapers**2
 
         amplitude_spectrum = fft.fftshift(amplitude_spectrum)
 
