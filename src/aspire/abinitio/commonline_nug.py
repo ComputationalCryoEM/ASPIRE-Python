@@ -374,30 +374,11 @@ class CommonlineNUG(Orient3D):
 
         :return: Relaxed representation matrices.
         """
-        Lmax = self.Lmax
-        N = self.n_img
-        max_iter = self.max_iter
-        rho = self.rho
-        ratio = self.ratio
-        factor = self.factor
-        mult = self.mult
-        Nstep_yI = self.Nstep_yI
-
-        # --------------------------- Preprocessing and problem data ----------------------------
-
-        # Prepare the objective, constraints, block layout, and initial ADMM variables.
         pre = self.ADMM_preprocessing(C)
-        fejer = pre.fejer
-        fejer.AI_mat_diag = None  # C1 does not use the self-pair operator.
         blocks = pre.blocks
-        D0, D1 = blocks.d0[-1], blocks.d1[-1]
 
-        Ngrid = self.Ngrid
-        n_pairs = N * (N - 1) // 2
-
-        # Prepare the self-pair identity and quaternion equality constraints.
         equality = _C1EqualityConstraints(
-            n_img=N,
+            n_img=blocks.n_img,
             d0=blocks.d0,
             d1=blocks.d1,
             idx_diag=blocks.idx_diag,
@@ -407,318 +388,22 @@ class CommonlineNUG(Orient3D):
             bEq=pre.bEq,
         )
 
-        # ---------------------------------- ADMM update rules ----------------------------------
+        solver = _C1ADMM(
+            pre=pre,
+            equality=equality,
+            max_iter=self.max_iter,
+            rho=self.rho,
+            ratio=self.ratio,
+            factor=self.factor,
+            mult=self.mult,
+            Nstep_yI=self.Nstep_yI,
+            verbose=verbose,
+        )
 
-        def update_S(C0, C1, yE0, yE1, yEq, yI, X0, X1, Xq, rho):
-            """
-            Update and project the asymmetric PSD slack variables.
-            """
-            Z0, Z1, Zq = equality.fun_AET(yE0, yE1, yEq)
-            AIT_yI0, AIT_yI1 = fejer.fun_AIT(yI)
+        # Release references to initial arrays before the solver replaces them.
+        del pre
 
-            S0 = C0.copy()
-            S0 -= Z0
-            S0 -= AIT_yI0
-            xp.divide(X0, rho, out=Z0)  # Z0 is no longer needed.
-            S0 -= Z0
-
-            S1 = C1.copy()
-            S1 -= Z1
-            S1 -= AIT_yI1
-            xp.divide(X1, rho, out=Z1)  # Z1 is no longer needed.
-            S1 -= Z1
-
-            # S0 = C0 - Z0 - AIT_yI0 - X0 / rho
-            # S1 = C1 - Z1 - AIT_yI1 - X1 / rho
-            Sq = -Zq - Xq / rho
-
-            # These full size adjoint and equality arrays are no longer needed during
-            # the PSD eigendecompositions. Release them for the eigensolver workspace.
-            del Z0, Z1, AIT_yI0, AIT_yI1
-
-            S0, S1 = blocks._project_representation_blocks(S0, S1)
-
-            # This is the batched equivalent of projecting each 4x4 quaternion block
-            # and storing tmp.T.reshape(16) in each column.
-            Sq = blocks._psd_projection(Sq.T.reshape(n_pairs, 4, 4))
-            Sq = Sq.T.reshape(16, n_pairs)
-            return S0, S1, Sq
-
-        def update_yE(C0, C1, S0, S1, Sq, yI, X0, X1, Xq, rho):
-            """
-            Update the asymmetric equality multipliers.
-            """
-            AIT_yI0, AIT_yI1 = fejer.fun_AIT(yI)
-            z0, z1, zq = equality.fun_AE(
-                -X0 / rho + C0 - S0 - AIT_yI0,
-                -X1 / rho + C1 - S1 - AIT_yI1,
-                -Xq / rho - Sq,
-            )
-            return equality.solve_normal(
-                equality.bE0 / rho + z0,
-                equality.bE1 / rho + z1,
-                equality.bEq / rho + zq,
-            )
-
-        def update_yI(
-            C0,
-            C1,
-            S0,
-            S1,
-            yE0,
-            yE1,
-            yEq,
-            yI,
-            X0,
-            X1,
-            rho,
-            Lambda,
-        ):
-            """
-            Update the nonnegative Fejer multipliers in pair-column chunks.
-            Each chunk is updated in place to limit temporary GPU allocations.
-            """
-            AET_yE0, AET_yE1, _ = equality.fun_AET(yE0, yE1, yEq)
-
-            for columns in fejer.pair_chunks():
-                packed_columns = blocks.idx_offdiag[columns]
-                AIT_yI = fejer.fun_AIT_chunk(yI[:, columns])
-
-                tmp0 = (
-                    -X0[:, packed_columns] / rho
-                    + C0[:, packed_columns]
-                    - S0[:, packed_columns]
-                    - AIT_yI[:D0]
-                    - AET_yE0[:, packed_columns]
-                )
-                tmp1 = (
-                    -X1[:, packed_columns] / rho
-                    + C1[:, packed_columns]
-                    - S1[:, packed_columns]
-                    - AIT_yI[D0:]
-                    - AET_yE1[:, packed_columns]
-                )
-
-                yI_chunk = yI[:, columns]
-                yI_chunk += fejer.bI / rho / Lambda
-                yI_chunk += fejer.fun_AI(tmp0, tmp1) / Lambda
-                xp.maximum(yI_chunk, 0, out=yI_chunk)
-
-            return yI
-
-        def update_X(
-            C0,
-            C1,
-            S0,
-            S1,
-            Sq,
-            yE0,
-            yE1,
-            yEq,
-            yI,
-            X0,
-            X1,
-            Xq,
-            rho,
-        ):
-            """
-            Update the asymmetric primal multipliers.
-            """
-            Z0, Z1, Zq = equality.fun_AET(yE0, yE1, yEq)
-            AIT_yI0, AIT_yI1 = fejer.fun_AIT(yI)
-
-            tmp = S0 + AIT_yI0 + Z0 - C0
-            X0 = X0 + mult * rho * tmp
-            resX0 = xp.linalg.norm(tmp)
-
-            tmp = S1 + AIT_yI1 + Z1 - C1
-            X1 = X1 + mult * rho * tmp
-            resX1 = xp.linalg.norm(tmp)
-
-            tmp = Sq + Zq
-            Xq = Xq + mult * rho * tmp
-            resXq = xp.linalg.norm(tmp)
-
-            res_X = xp.sqrt(resX0**2 + resX1**2 + resXq**2)
-            return X0, X1, Xq, res_X
-
-        def update_rho(X0, X1, Xq, res_X, rho):
-            """
-            Update the ADMM penalty parameter.
-            """
-            z0, z1, zq = equality.fun_AE(X0, X1, Xq)
-            res_eq = (
-                xp.linalg.norm(equality.bE0 - z0) / (1 + xp.linalg.norm(equality.bE0))
-                + xp.linalg.norm(equality.bE1 - z1) / (1 + xp.linalg.norm(equality.bE1))
-                + xp.linalg.norm(equality.bEq - zq) / (1 + xp.linalg.norm(equality.bEq))
-            )
-            res_inq = fejer.residual_norm(X0, X1) / (
-                1 + abs(fejer.bI) * np.sqrt(Ngrid * n_pairs)
-            )
-
-            p_resnorm = res_eq + res_inq
-            d_resnorm = res_X / (1 + pre.normC)
-            if d_resnorm > ratio * p_resnorm:
-                rho = rho * factor
-            if d_resnorm < ratio * p_resnorm:
-                rho = rho / factor
-            return rho, p_resnorm, d_resnorm
-
-        # ----------------------------- Optional iteration logging ------------------------------
-
-        def print_updates(verbose):
-            """
-            Log diagnostics for the current asymmetric ADMM iterate.
-            """
-            if not verbose:
-                return
-
-            obj_p = (
-                xp.vdot(pre.C0[:, blocks.idx_diag], pre.X0[:, blocks.idx_diag])
-                + xp.vdot(pre.C1[:, blocks.idx_diag], pre.X1[:, blocks.idx_diag])
-                + 2
-                * xp.vdot(pre.C0[:, blocks.idx_offdiag], pre.X0[:, blocks.idx_offdiag])
-                + 2
-                * xp.vdot(pre.C1[:, blocks.idx_offdiag], pre.X1[:, blocks.idx_offdiag])
-            )
-            obj_d = (
-                xp.vdot(yE0, equality.bE0)
-                + xp.vdot(yE1, equality.bE1)
-                + 2 * xp.vdot(yEq, equality.bEq)
-                + 2 * fejer.bI * xp.sum(yI)
-            )
-
-            z0, z1, zq = equality.fun_AE(pre.X0, pre.X1, pre.Xq)
-            res_eq = (
-                xp.linalg.norm(equality.bE0 - z0) / (1 + xp.linalg.norm(equality.bE0))
-                + xp.linalg.norm(equality.bE1 - z1) / (1 + xp.linalg.norm(equality.bE1))
-                + xp.linalg.norm(equality.bEq - zq) / (1 + xp.linalg.norm(equality.bEq))
-            )
-
-            res_inq = fejer.residual_norm(pre.X0, pre.X1) / (
-                1 + abs(fejer.bI) * np.sqrt(Ngrid * n_pairs)
-            )
-
-            res_psdX = 0
-            for k_idx in range(Lmax):
-                k = k_idx + 1
-                block0_rows = slice(blocks.d0[k_idx], blocks.d0[k_idx + 1])
-                block1_rows = slice(blocks.d1[k_idx], blocks.d1[k_idx + 1])
-
-                tmp = blocks.mat_block(pre.X0[block0_rows], k)
-                res_psdX += xp.linalg.norm(blocks._psd_projection(-tmp))
-
-                tmp = blocks.mat_block(pre.X1[block1_rows], k + 1)
-                res_psdX += xp.linalg.norm(blocks._psd_projection(-tmp))
-
-            res_psdX /= 1 + xp.linalg.norm(pre.X0) + xp.linalg.norm(pre.X1)
-
-            Xq_blocks = pre.Xq.T.reshape(n_pairs, 4, 4)
-            res_psdQ = xp.linalg.norm(
-                blocks._psd_projection(-Xq_blocks), axis=(-2, -1)
-            ).sum()
-            res_psdQ /= 1 + xp.linalg.norm(pre.Xq)
-
-            normS = xp.sqrt(
-                xp.linalg.norm(pre.S0) ** 2
-                + xp.linalg.norm(pre.S1) ** 2
-                + xp.linalg.norm(pre.Sq) ** 2
-            )
-            normX = xp.sqrt(
-                xp.linalg.norm(pre.X0) ** 2
-                + xp.linalg.norm(pre.X1) ** 2
-                + xp.linalg.norm(pre.Xq) ** 2
-            )
-            p_res = res_eq + res_inq + res_psdX + res_psdQ
-            d_res = res_X / (1 + pre.normC)
-
-            logger.info(
-                f"Iter {t}: p_res={p_res:.5f}, d_res={d_res:.5f}, "
-                f"obj_primal={obj_p:.2f}, obj_dual={obj_d:.2f}, "
-                f"duality gap={obj_p - obj_d:.2f}\n"
-                f"        eq_res={res_eq:.5f}, inq_res={res_inq:.5f}, "
-                f"psd_res={res_psdX + res_psdQ:.5f}, "
-                f"|S|={normS:.2f}, |X|={normX:.2f}"
-            )
-
-        # ----------------------------------- ADMM iterations -----------------------------------
-
-        yI = xp.zeros((Ngrid, n_pairs), dtype=np.float64)
-        yE0 = xp.zeros(equality.bE0.shape, dtype=np.float64)
-        yE1 = xp.zeros(equality.bE1.shape, dtype=np.float64)
-        yEq = xp.zeros(equality.bEq.shape, dtype=np.float64)
-
-        update_order = np.arange(3)
-        for t in trange(max_iter, desc="C1 NUG ADMM"):
-            np.random.shuffle(update_order)
-            for update_idx in update_order:
-                if update_idx == 0:
-                    pre.S0, pre.S1, pre.Sq = update_S(
-                        pre.C0, pre.C1, yE0, yE1, yEq, yI, pre.X0, pre.X1, pre.Xq, rho
-                    )
-                elif update_idx == 1:
-                    yE0, yE1, yEq = update_yE(
-                        pre.C0,
-                        pre.C1,
-                        pre.S0,
-                        pre.S1,
-                        pre.Sq,
-                        yI,
-                        pre.X0,
-                        pre.X1,
-                        pre.Xq,
-                        rho,
-                    )
-                else:
-                    for _ in range(Nstep_yI):
-                        yI = update_yI(
-                            pre.C0,
-                            pre.C1,
-                            pre.S0,
-                            pre.S1,
-                            yE0,
-                            yE1,
-                            yEq,
-                            yI,
-                            pre.X0,
-                            pre.X1,
-                            rho,
-                            fejer.Lambda,
-                        )
-
-            pre.X0, pre.X1, pre.Xq, res_X = update_X(
-                pre.C0,
-                pre.C1,
-                pre.S0,
-                pre.S1,
-                pre.Sq,
-                yE0,
-                yE1,
-                yEq,
-                yI,
-                pre.X0,
-                pre.X1,
-                pre.Xq,
-                rho,
-            )
-            if t % 100 == 0:
-                print_updates(verbose)
-            rho, p_resnorm, d_resnorm = update_rho(pre.X0, pre.X1, pre.Xq, res_X, rho)
-
-        # The inequality multipliers and other ADMM-only arrays are no longer needed
-        # while reconstructing the full degree matrices.
-        yI = None
-        pre.C0 = pre.C1 = None
-        pre.S0 = pre.S1 = pre.Sq = None
-        pre.Xq = None
-        fejer.AI_mat_offdiag = None
-
-        # ---------------------------- Assemble degree-wise results -----------------------------
-
-        # Reconstruct full degree-wise matrices for rotation recovery.
-        X_admm = blocks._transform_coeff_back(pre.X0, pre.X1)
-        X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
-        return X_admm
+        return solver.solve()
 
     def admm_sym_J(self, C, verbose):
         """
@@ -3144,6 +2829,346 @@ class _RepresentationBlocks:
         A[:, :k, :k] = A0.reshape(-1, k, k)
         A[:, k:, k:] = A1.reshape(-1, k + 1, k + 1)
         return Pk.T @ A @ Pk
+
+
+class _C1ADMM:
+    """
+    Solve the asymmetric NUG relaxation using ADMM.
+
+    Owns the objective, iteration variables, and solver settings.
+    Fixed layout and constraint operations are supplied by blocks,
+    equality, and fejer.
+    """
+
+    def __init__(
+        self,
+        pre,
+        equality,
+        max_iter,
+        rho,
+        ratio,
+        factor,
+        mult,
+        Nstep_yI,
+        verbose,
+    ):
+        """
+        Initialize a C1 ADMM solve from prepared problem data.
+
+        :param pre: Prepared objective, representation layout, Fejer
+            constraints, and initial representation and slack arrays.
+        :param equality: Fixed C1 equality constraints.
+        :param max_iter: Number of ADMM iterations.
+        :param rho: Initial ADMM penalty parameter.
+        :param ratio: Residual comparison ratio used to adjust rho.
+        :param factor: Multiplicative factor used to adjust rho.
+        :param mult: Step multiplier for representation-variable updates.
+        :param Nstep_yI: Number of inequality-multiplier updates per iteration.
+        :param verbose: Whether to log iteration diagnostics.
+        """
+        self.blocks = pre.blocks
+        self.equality = equality
+        self.fejer = pre.fejer
+        self.fejer.AI_mat_diag = None  # C1 does not use the self-pair operator.
+
+        self.C0 = pre.C0
+        self.C1 = pre.C1
+        self.normC = pre.normC
+
+        self.X0 = pre.X0
+        self.X1 = pre.X1
+        self.Xq = pre.Xq
+        self.S0 = pre.S0
+        self.S1 = pre.S1
+        self.Sq = pre.Sq
+
+        self.max_iter = max_iter
+        self.rho = rho
+        self.ratio = ratio
+        self.factor = factor
+        self.mult = mult
+        self.Nstep_yI = Nstep_yI
+        self.verbose = verbose
+
+        self.Ngrid = self.fejer.AI_mat_offdiag.shape[0]
+
+        # Initialize the constraint multipliers.
+        self.yI = xp.zeros((self.Ngrid, self.blocks.n_pairs), dtype=np.float64)
+        self.yE0 = xp.zeros(equality.bE0.shape, dtype=np.float64)
+        self.yE1 = xp.zeros(equality.bE1.shape, dtype=np.float64)
+        self.yEq = xp.zeros(equality.bEq.shape, dtype=np.float64)
+
+        self.iteration = 0
+        self.res_X = None
+
+    def solve(self):
+        """
+        Run ADMM and reconstruct the degree-wise representation matrices.
+
+        Updates the current solver state and releases selected work arrays
+        before result assembly. This instance is intended for one solve.
+
+        :return: List of relaxed degree-wise representation matrices
+            converted to NumPy arrays.
+        """
+        update_order = np.arange(3)
+        for t in trange(self.max_iter, desc="C1 NUG ADMM"):
+            self.iteration = t
+            np.random.shuffle(update_order)
+
+            for update_idx in update_order:
+                if update_idx == 0:
+                    self.update_S()
+                elif update_idx == 1:
+                    self.update_yE()
+                else:
+                    for _ in range(self.Nstep_yI):
+                        self.update_yI()
+
+            self.update_X()
+            if t % 100 == 0:
+                self.print_updates()
+            self.update_rho()
+
+        # Release ADMM work arrays before reconstructing full degree matrices.
+        self.yI = None
+        self.C0 = self.C1 = None
+        self.S0 = self.S1 = self.Sq = None
+        self.Xq = None
+        self.fejer.AI_mat_offdiag = None
+
+        # Reconstruct full degree-wise matrices for rotation recovery.
+        X_admm = self.blocks._transform_coeff_back(self.X0, self.X1)
+        return [xp.asnumpy(Xk) for Xk in X_admm]
+
+    def update_S(self):
+        """
+        Update and project the asymmetric PSD slack variables.
+
+        Replaces S0, S1, and Sq. Releases full-size temporary arrays before
+        the representation PSD projections.
+        """
+        Z0, Z1, Zq = self.equality.fun_AET(self.yE0, self.yE1, self.yEq)
+        AIT_yI0, AIT_yI1 = self.fejer.fun_AIT(self.yI)
+
+        S0 = self.C0.copy()
+        S0 -= Z0
+        S0 -= AIT_yI0
+        xp.divide(self.X0, self.rho, out=Z0)  # Z0 is no longer needed.
+        S0 -= Z0
+
+        S1 = self.C1.copy()
+        S1 -= Z1
+        S1 -= AIT_yI1
+        xp.divide(self.X1, self.rho, out=Z1)  # Z1 is no longer needed.
+        S1 -= Z1
+
+        # S0 = C0 - Z0 - AIT_yI0 - X0 / rho
+        # S1 = C1 - Z1 - AIT_yI1 - X1 / rho
+        Sq = -Zq - self.Xq / self.rho
+
+        # These full size adjoint and equality arrays are no longer needed during
+        # the PSD eigendecompositions. Release them for the eigensolver workspace.
+        del Z0, Z1, AIT_yI0, AIT_yI1
+
+        S0, S1 = self.blocks._project_representation_blocks(S0, S1)
+
+        # This is the batched equivalent of projecting each 4x4 quaternion block
+        # and storing tmp.T.reshape(16) in each column.
+        Sq = self.blocks._psd_projection(Sq.T.reshape(self.blocks.n_pairs, 4, 4))
+        Sq = Sq.T.reshape(16, self.blocks.n_pairs)
+        self.S0, self.S1, self.Sq = S0, S1, Sq
+
+    def update_yE(self):
+        """
+        Update the asymmetric equality multipliers.
+
+        Replaces yE0, yE1, and yEq using the current representation arrays,
+        slacks, inequality multipliers, and penalty parameter.
+        """
+        AIT_yI0, AIT_yI1 = self.fejer.fun_AIT(self.yI)
+        z0, z1, zq = self.equality.fun_AE(
+            -self.X0 / self.rho + self.C0 - self.S0 - AIT_yI0,
+            -self.X1 / self.rho + self.C1 - self.S1 - AIT_yI1,
+            -self.Xq / self.rho - self.Sq,
+        )
+        self.yE0, self.yE1, self.yEq = self.equality.solve_normal(
+            self.equality.bE0 / self.rho + z0,
+            self.equality.bE1 / self.rho + z1,
+            self.equality.bEq / self.rho + zq,
+        )
+
+    def update_yI(self):
+        """
+        Update the nonnegative Fejer multipliers in image-pair chunks.
+
+        Modifies yI in place to limit temporary GPU allocations.
+        """
+        AET_yE0, AET_yE1, _ = self.equality.fun_AET(self.yE0, self.yE1, self.yEq)
+
+        for columns in self.fejer.pair_chunks():
+            packed_columns = self.blocks.idx_offdiag[columns]
+            AIT_yI = self.fejer.fun_AIT_chunk(self.yI[:, columns])
+
+            tmp0 = (
+                -self.X0[:, packed_columns] / self.rho
+                + self.C0[:, packed_columns]
+                - self.S0[:, packed_columns]
+                - AIT_yI[: self.blocks.D0]
+                - AET_yE0[:, packed_columns]
+            )
+            tmp1 = (
+                -self.X1[:, packed_columns] / self.rho
+                + self.C1[:, packed_columns]
+                - self.S1[:, packed_columns]
+                - AIT_yI[self.blocks.D0 :]
+                - AET_yE1[:, packed_columns]
+            )
+
+            # This slice shares storage with self.yI; updates below modify it directly.
+            yI_chunk = self.yI[:, columns]
+            yI_chunk += self.fejer.bI / self.rho / self.fejer.Lambda
+            yI_chunk += self.fejer.fun_AI(tmp0, tmp1) / self.fejer.Lambda
+            xp.maximum(yI_chunk, 0, out=yI_chunk)
+
+    def update_X(self):
+        """
+        Update the representation and quaternion arrays.
+
+        Replaces X0, X1, and Xq, and stores their combined update-equation
+        residual in res_X.
+        """
+        Z0, Z1, Zq = self.equality.fun_AET(self.yE0, self.yE1, self.yEq)
+        AIT_yI0, AIT_yI1 = self.fejer.fun_AIT(self.yI)
+
+        tmp = self.S0 + AIT_yI0 + Z0 - self.C0
+        self.X0 = self.X0 + self.mult * self.rho * tmp
+        resX0 = xp.linalg.norm(tmp)
+
+        tmp = self.S1 + AIT_yI1 + Z1 - self.C1
+        self.X1 = self.X1 + self.mult * self.rho * tmp
+        resX1 = xp.linalg.norm(tmp)
+
+        tmp = self.Sq + Zq
+        self.Xq = self.Xq + self.mult * self.rho * tmp
+        resXq = xp.linalg.norm(tmp)
+
+        self.res_X = xp.sqrt(resX0**2 + resX1**2 + resXq**2)
+
+    def update_rho(self):
+        """
+        Adjust the ADMM penalty parameter using primal and dual residuals.
+
+        Modifies rho using the current constraint residuals and the res_X
+        value calculated by update_X.
+        """
+        z0, z1, zq = self.equality.fun_AE(self.X0, self.X1, self.Xq)
+        res_eq = (
+            xp.linalg.norm(self.equality.bE0 - z0)
+            / (1 + xp.linalg.norm(self.equality.bE0))
+            + xp.linalg.norm(self.equality.bE1 - z1)
+            / (1 + xp.linalg.norm(self.equality.bE1))
+            + xp.linalg.norm(self.equality.bEq - zq)
+            / (1 + xp.linalg.norm(self.equality.bEq))
+        )
+        res_inq = self.fejer.residual_norm(self.X0, self.X1) / (
+            1 + abs(self.fejer.bI) * np.sqrt(self.Ngrid * self.blocks.n_pairs)
+        )
+
+        p_resnorm = res_eq + res_inq
+        d_resnorm = self.res_X / (1 + self.normC)
+        if d_resnorm > self.ratio * p_resnorm:
+            self.rho = self.rho * self.factor
+        if d_resnorm < self.ratio * p_resnorm:
+            self.rho = self.rho / self.factor
+
+    # ----------------------------- Optional iteration logging ------------------------------
+
+    def print_updates(self):
+        """
+        Log objectives, residuals, and norms for the current iterate.
+
+        Does nothing when verbose is false. Does not modify numerical state.
+        """
+        if not self.verbose:
+            return
+
+        obj_p = (
+            xp.vdot(self.C0[:, self.blocks.idx_diag], self.X0[:, self.blocks.idx_diag])
+            + xp.vdot(
+                self.C1[:, self.blocks.idx_diag], self.X1[:, self.blocks.idx_diag]
+            )
+            + 2
+            * xp.vdot(
+                self.C0[:, self.blocks.idx_offdiag], self.X0[:, self.blocks.idx_offdiag]
+            )
+            + 2
+            * xp.vdot(
+                self.C1[:, self.blocks.idx_offdiag], self.X1[:, self.blocks.idx_offdiag]
+            )
+        )
+        obj_d = (
+            xp.vdot(self.yE0, self.equality.bE0)
+            + xp.vdot(self.yE1, self.equality.bE1)
+            + 2 * xp.vdot(self.yEq, self.equality.bEq)
+            + 2 * self.fejer.bI * xp.sum(self.yI)
+        )
+
+        z0, z1, zq = self.equality.fun_AE(self.X0, self.X1, self.Xq)
+        res_eq = (
+            xp.linalg.norm(self.equality.bE0 - z0)
+            / (1 + xp.linalg.norm(self.equality.bE0))
+            + xp.linalg.norm(self.equality.bE1 - z1)
+            / (1 + xp.linalg.norm(self.equality.bE1))
+            + xp.linalg.norm(self.equality.bEq - zq)
+            / (1 + xp.linalg.norm(self.equality.bEq))
+        )
+
+        res_inq = self.fejer.residual_norm(self.X0, self.X1) / (
+            1 + abs(self.fejer.bI) * np.sqrt(self.Ngrid * self.blocks.n_pairs)
+        )
+
+        res_psdX = 0
+        for k_idx in range(self.blocks.Lmax):
+            k = k_idx + 1
+            block0_rows = slice(self.blocks.d0[k_idx], self.blocks.d0[k_idx + 1])
+            block1_rows = slice(self.blocks.d1[k_idx], self.blocks.d1[k_idx + 1])
+
+            tmp = self.blocks.mat_block(self.X0[block0_rows], k)
+            res_psdX += xp.linalg.norm(self.blocks._psd_projection(-tmp))
+
+            tmp = self.blocks.mat_block(self.X1[block1_rows], k + 1)
+            res_psdX += xp.linalg.norm(self.blocks._psd_projection(-tmp))
+
+        res_psdX /= 1 + xp.linalg.norm(self.X0) + xp.linalg.norm(self.X1)
+
+        Xq_blocks = self.Xq.T.reshape(self.blocks.n_pairs, 4, 4)
+        res_psdQ = xp.linalg.norm(
+            self.blocks._psd_projection(-Xq_blocks), axis=(-2, -1)
+        ).sum()
+        res_psdQ /= 1 + xp.linalg.norm(self.Xq)
+
+        normS = xp.sqrt(
+            xp.linalg.norm(self.S0) ** 2
+            + xp.linalg.norm(self.S1) ** 2
+            + xp.linalg.norm(self.Sq) ** 2
+        )
+        normX = xp.sqrt(
+            xp.linalg.norm(self.X0) ** 2
+            + xp.linalg.norm(self.X1) ** 2
+            + xp.linalg.norm(self.Xq) ** 2
+        )
+        p_res = res_eq + res_inq + res_psdX + res_psdQ
+        d_res = self.res_X / (1 + self.normC)
+
+        logger.info(
+            f"Iter {self.iteration}: p_res={p_res:.5f}, d_res={d_res:.5f}, "
+            f"obj_primal={obj_p:.2f}, obj_dual={obj_d:.2f}, "
+            f"duality gap={obj_p - obj_d:.2f}\n"
+            f"        eq_res={res_eq:.5f}, inq_res={res_inq:.5f}, "
+            f"psd_res={res_psdX + res_psdQ:.5f}, "
+            f"|S|={normS:.2f}, |X|={normX:.2f}"
+        )
 
 
 @dataclass
