@@ -53,19 +53,19 @@ def volume(symmetry, resolution, dtype):
         vol = emdb_2660().astype(dtype).downsample(resolution)
     if symmetry == "C3":
         vol = CnSymmetricVolume(
-            L=resolution, order=3, C=1, K=100, dtype=dtype, seed=SEED
+            L=resolution, order=3, C=1, K=100, dtype=dtype, rng=SEED
         ).generate()
     if symmetry == "C4":
         vol = CnSymmetricVolume(
-            L=resolution, order=4, C=1, K=100, dtype=dtype, seed=SEED
+            L=resolution, order=4, C=1, K=100, dtype=dtype, rng=SEED
         ).generate()
     if symmetry == "D3":
         vol = DnSymmetricVolume(
-            L=resolution, order=3, C=1, K=100, dtype=dtype, seed=SEED
+            L=resolution, order=3, C=1, K=100, dtype=dtype, rng=SEED
         ).generate()
     if symmetry == "D4":
         vol = DnSymmetricVolume(
-            L=resolution, order=4, C=1, K=100, dtype=dtype, seed=SEED
+            L=resolution, order=4, C=1, K=100, dtype=dtype, rng=SEED
         ).generate()
     return vol
 
@@ -77,7 +77,7 @@ def source(n_img, offsets, volume):
         vols=volume,
         offsets=offsets,
         amplitudes=1,
-        seed=SEED,
+        rng=SEED,
     ).cache()  # Precompute image stack
     return src
 
@@ -113,14 +113,14 @@ def test_smoke(dtype, Volume):
     This runs through both symmetry cases and the proximal refine
     code path.
     """
-    vol = Volume(L=32, order=3, C=1, dtype=dtype, seed=SEED).generate()
+    vol = Volume(L=32, order=3, C=1, dtype=dtype, rng=SEED).generate()
 
     src = Simulation(
         n=20,
         vols=vol,
         offsets=0,
         amplitudes=1,
-        seed=SEED,
+        rng=SEED,
     ).cache()
 
     orient_est = CommonlineNUG(
@@ -152,7 +152,7 @@ def test_dtypes(volume):
         vols=volume,
         offsets=0,
         amplitudes=1,
-        seed=SEED,
+        rng=SEED,
     ).cache()
 
     # Detuned estimator for quick test
@@ -214,7 +214,7 @@ def test_c1_admm_pair_batching():
     assert n_img * (n_img - 1) // 2 > 1024
 
     vol = emdb_2660().astype(np.float64).downsample(16)
-    src = Simulation(n=n_img, vols=vol, offsets=0, seed=SEED).cache()
+    src = Simulation(n=n_img, vols=vol, offsets=0, rng=SEED).cache()
     estimator = CommonlineNUG(
         src,
         Lmax=4,
@@ -308,7 +308,7 @@ def test_symmetry_logging(caplog):
     """
     Check expected log messages for mismatch or unprovided symmetry.
     """
-    vol = CnSymmetricVolume(L=16, order=3, C=1, dtype=np.float64, seed=SEED).generate()
+    vol = CnSymmetricVolume(L=16, order=3, C=1, dtype=np.float64, rng=SEED).generate()
     src = Simulation(n=3, vols=vol).cache()
 
     # Check unprovided symmetry populates with source symmetry and logs messsage
