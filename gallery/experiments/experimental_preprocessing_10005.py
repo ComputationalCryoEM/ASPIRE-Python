@@ -162,7 +162,7 @@ src.import_aspire_ctf(selected_ctf_flist)
 # -------------
 # Execute the preprocessing stack, saving results
 
-# Legacy preprocessing
+# Example preprocessing stack
 legacy_src = src.phase_flip().cache()
 legacy_src = legacy_src.crop_pad(src.L - 1).cache()
 legacy_src = legacy_src.legacy_downsample(IMG_SIZE).cache()
@@ -171,14 +171,4 @@ legacy_src = legacy_src.legacy_whiten().cache()
 legacy_src = legacy_src.invert_contrast().cache()
 legacy_src.save(
     f"10005_legacy_preproc_{IMG_SIZE}.star", overwrite=True, save_mode="single"
-)
-
-# Development preprocessing
-dev_src = src.downsample(IMG_SIZE).cache()
-dev_src = dev_src.phase_flip().cache()
-dev_src = dev_src.normalize_background().cache()
-dev_src = dev_src.whiten().cache()
-dev_src = dev_src.invert_contrast().cache()
-dev_src.save(
-    f"10005_dev_preproc_{IMG_SIZE}.star", overwrite=True, save_mode="single"
 )
