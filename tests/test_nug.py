@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from aspire.abinitio import CommonlineNUG, compare_rots_sym, g_sync
+from aspire.abinitio.commonline_nug import _RepresentationBlocks
 from aspire.downloader import emdb_2660
 from aspire.numeric import xp
 from aspire.source import Simulation
@@ -247,19 +248,13 @@ def test_mat_block_vec_block_roundtrip(block_size):
     pair_block = sym_mat[:block_size, block_size : 2 * block_size]
     assert not np.allclose(pair_block, pair_block.T)
 
-    # Construct indices as in ADMM_preprocessing
-    i_upper, j_upper = np.triu_indices(n_img)
-    idx_upper = xp.asarray(i_upper * n_img + j_upper)
-    idx_offdiag = xp.asarray(np.flatnonzero(i_upper != j_upper))
-
-    i_off, j_off = np.triu_indices(n_img, k=1)
-    idx_lower = xp.asarray(j_off * n_img + i_off)
+    # Build the image-pair layout for packing and unpacking. The block size
+    # is supplied to each method, so one representation degree is sufficient.
+    blocks = _RepresentationBlocks(n_img=n_img, Lmax=1)
 
     # Perform round trip and check mat_block(vec_block(A)) == A
-    packed = CommonlineNUG.vec_block(xp.asarray(sym_mat), n_img, block_size, idx_upper)
-    restored = CommonlineNUG.mat_block(
-        packed, n_img, block_size, idx_upper, idx_lower, idx_offdiag
-    )
+    packed = blocks.vec_block(xp.asarray(sym_mat), block_size)
+    restored = blocks.mat_block(packed, block_size)
     np.testing.assert_allclose(xp.asnumpy(restored), sym_mat)
 
 
@@ -288,8 +283,10 @@ def test_transform_block_round_trip():
     matrices = permutation.T @ xp.asarray(components) @ permutation
 
     # Pack the components as done in ADMM, then reconstruct the full matrices.
-    packed0, packed1 = CommonlineNUG.transform_block(matrices, k, permutation)
-    restored = CommonlineNUG.transform_back_block(packed0, packed1, k, permutation)
+    packed0, packed1 = _RepresentationBlocks.transform_block(matrices, k, permutation)
+    restored = _RepresentationBlocks.transform_back_block(
+        packed0, packed1, k, permutation
+    )
 
     np.testing.assert_allclose(xp.asnumpy(restored), xp.asnumpy(matrices))
 

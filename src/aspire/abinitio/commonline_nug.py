@@ -389,7 +389,8 @@ class CommonlineNUG(Orient3D):
         pre = self.ADMM_preprocessing(C)
         fejer = pre.fejer
         fejer.AI_mat_diag = None  # C1 does not use the self-pair operator.
-        D0, D1 = pre.d0[-1], pre.d1[-1]
+        blocks = pre.blocks
+        D0, D1 = blocks.d0[-1], blocks.d1[-1]
 
         Ngrid = self.Ngrid
         n_pairs = N * (N - 1) // 2
@@ -397,10 +398,10 @@ class CommonlineNUG(Orient3D):
         # Prepare the self-pair identity and quaternion equality constraints.
         equality = _C1EqualityConstraints(
             n_img=N,
-            d0=pre.d0,
-            d1=pre.d1,
-            idx_diag=pre.idx_diag,
-            idx_offdiag=pre.idx_offdiag,
+            d0=blocks.d0,
+            d1=blocks.d1,
+            idx_diag=blocks.idx_diag,
+            idx_offdiag=blocks.idx_offdiag,
             AEq=pre.AEq,
             AEqAEqtinv=pre.AEqAEqtinv,
             bEq=pre.bEq,
@@ -435,19 +436,11 @@ class CommonlineNUG(Orient3D):
             # the PSD eigendecompositions. Release them for the eigensolver workspace.
             del Z0, Z1, AIT_yI0, AIT_yI1
 
-            S0, S1 = self._project_representation_blocks(
-                S0,
-                S1,
-                pre.d0,
-                pre.d1,
-                pre.IDX_upper,
-                pre.IDX_lower,
-                pre.idx_offdiag,
-            )
+            S0, S1 = blocks._project_representation_blocks(S0, S1)
 
             # This is the batched equivalent of projecting each 4x4 quaternion block
             # and storing tmp.T.reshape(16) in each column.
-            Sq = self._psd_projection(Sq.T.reshape(n_pairs, 4, 4))
+            Sq = blocks._psd_projection(Sq.T.reshape(n_pairs, 4, 4))
             Sq = Sq.T.reshape(16, n_pairs)
             return S0, S1, Sq
 
@@ -488,7 +481,7 @@ class CommonlineNUG(Orient3D):
             AET_yE0, AET_yE1, _ = equality.fun_AET(yE0, yE1, yEq)
 
             for columns in fejer.pair_chunks():
-                packed_columns = pre.idx_offdiag[columns]
+                packed_columns = blocks.idx_offdiag[columns]
                 AIT_yI = fejer.fun_AIT_chunk(yI[:, columns])
 
                 tmp0 = (
@@ -581,10 +574,12 @@ class CommonlineNUG(Orient3D):
                 return
 
             obj_p = (
-                xp.vdot(pre.C0[:, pre.idx_diag], pre.X0[:, pre.idx_diag])
-                + xp.vdot(pre.C1[:, pre.idx_diag], pre.X1[:, pre.idx_diag])
-                + 2 * xp.vdot(pre.C0[:, pre.idx_offdiag], pre.X0[:, pre.idx_offdiag])
-                + 2 * xp.vdot(pre.C1[:, pre.idx_offdiag], pre.X1[:, pre.idx_offdiag])
+                xp.vdot(pre.C0[:, blocks.idx_diag], pre.X0[:, blocks.idx_diag])
+                + xp.vdot(pre.C1[:, blocks.idx_diag], pre.X1[:, blocks.idx_diag])
+                + 2
+                * xp.vdot(pre.C0[:, blocks.idx_offdiag], pre.X0[:, blocks.idx_offdiag])
+                + 2
+                * xp.vdot(pre.C1[:, blocks.idx_offdiag], pre.X1[:, blocks.idx_offdiag])
             )
             obj_d = (
                 xp.vdot(yE0, equality.bE0)
@@ -607,33 +602,20 @@ class CommonlineNUG(Orient3D):
             res_psdX = 0
             for k_idx in range(Lmax):
                 k = k_idx + 1
-                block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
-                block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
+                block0_rows = slice(blocks.d0[k_idx], blocks.d0[k_idx + 1])
+                block1_rows = slice(blocks.d1[k_idx], blocks.d1[k_idx + 1])
 
-                tmp = self.mat_block(
-                    pre.X0[block0_rows],
-                    N,
-                    k,
-                    pre.IDX_upper,
-                    pre.IDX_lower,
-                    pre.idx_offdiag,
-                )
-                res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
+                tmp = blocks.mat_block(pre.X0[block0_rows], k)
+                res_psdX += xp.linalg.norm(blocks._psd_projection(-tmp))
 
-                tmp = self.mat_block(
-                    pre.X1[block1_rows],
-                    N,
-                    k + 1,
-                    pre.IDX_upper,
-                    pre.IDX_lower,
-                    pre.idx_offdiag,
-                )
-                res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
+                tmp = blocks.mat_block(pre.X1[block1_rows], k + 1)
+                res_psdX += xp.linalg.norm(blocks._psd_projection(-tmp))
+
             res_psdX /= 1 + xp.linalg.norm(pre.X0) + xp.linalg.norm(pre.X1)
 
             Xq_blocks = pre.Xq.T.reshape(n_pairs, 4, 4)
             res_psdQ = xp.linalg.norm(
-                self._psd_projection(-Xq_blocks), axis=(-2, -1)
+                blocks._psd_projection(-Xq_blocks), axis=(-2, -1)
             ).sum()
             res_psdQ /= 1 + xp.linalg.norm(pre.Xq)
 
@@ -733,9 +715,8 @@ class CommonlineNUG(Orient3D):
 
         # ---------------------------- Assemble degree-wise results -----------------------------
 
-        X_admm = self._transform_coeff_back(
-            pre.X0, pre.X1, pre.IDX_upper, pre.IDX_lower, pre.idx_offdiag
-        )
+        # Reconstruct full degree-wise matrices for rotation recovery.
+        X_admm = blocks._transform_coeff_back(pre.X0, pre.X1)
         X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
         return X_admm
 
@@ -762,7 +743,8 @@ class CommonlineNUG(Orient3D):
         # Prepare the objective, constraints, block layout, and initial ADMM variables.
         pre = self.ADMM_preprocessing(C)
         fejer = pre.fejer
-        D0, D1 = pre.d0[-1], pre.d1[-1]
+        blocks = pre.blocks
+        D0, D1 = blocks.d0[-1], blocks.d1[-1]
 
         n_pairs = N * (N - 1) // 2
         Ngrid = self.Ngrid
@@ -775,10 +757,10 @@ class CommonlineNUG(Orient3D):
         # Prepare the symmetry/diagonal and quaternion equality constraints.
         equality = _SymmetricEqualityConstraints(
             n_img=N,
-            d0=pre.d0,
-            d1=pre.d1,
-            idx_diag=pre.idx_diag,
-            idx_offdiag=pre.idx_offdiag,
+            d0=blocks.d0,
+            d1=blocks.d1,
+            idx_diag=blocks.idx_diag,
+            idx_offdiag=blocks.idx_offdiag,
             rank_Ak=rank_Ak,
             AEq=pre.AEq,
             AEqAEqtinv=pre.AEqAEqtinv,
@@ -822,34 +804,26 @@ class CommonlineNUG(Orient3D):
             Sq = -Zq - Xq / rho
 
             # Project packed X0/X1 blocks degree by degree.
-            S0, S1 = self._project_representation_blocks(
-                S0,
-                S1,
-                pre.d0,
-                pre.d1,
-                pre.IDX_upper,
-                pre.IDX_lower,
-                pre.idx_offdiag,
-            )
+            S0, S1 = blocks._project_representation_blocks(S0, S1)
 
             # Project the diagonal coupling blocks.
             Sd0 = Sd0.T
             Sd1 = Sd1.T
             for k_idx in range(Lmax):
                 k = k_idx + 1  # degree
-                block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
-                block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
+                block0_rows = slice(blocks.d0[k_idx], blocks.d0[k_idx + 1])
+                block1_rows = slice(blocks.d1[k_idx], blocks.d1[k_idx + 1])
                 permutation = P[k_idx]
 
-                tmp = self.transform_back_block(
+                tmp = blocks.transform_back_block(
                     Sd0[:, block0_rows],
                     Sd1[:, block1_rows],
                     k,
                     permutation,
                 )
-                tmp = self._psd_projection(tmp)
+                tmp = blocks._psd_projection(tmp)
 
-                Sd0[:, block0_rows], Sd1[:, block1_rows] = self.transform_block(
+                Sd0[:, block0_rows], Sd1[:, block1_rows] = blocks.transform_block(
                     tmp, k, permutation
                 )
 
@@ -857,7 +831,7 @@ class CommonlineNUG(Orient3D):
             Sd1 = Sd1.T
 
             # Project each 4x4 quaternion slack block for off-diagonal image pairs.
-            Sq = self._psd_projection(Sq.T.reshape(n_pairs, 4, 4))
+            Sq = blocks._psd_projection(Sq.T.reshape(n_pairs, 4, 4))
             Sq = Sq.T.reshape(-1, n_pairs)
             return S0, S1, Sd0, Sd1, Sq
 
@@ -956,19 +930,23 @@ class CommonlineNUG(Orient3D):
         def print_updates(verbose):
             if verbose:
                 obj_p = (
-                    xp.vdot(pre.C0[:, pre.idx_diag], pre.X0[:, pre.idx_diag])
-                    + xp.vdot(pre.C1[:, pre.idx_diag], pre.X1[:, pre.idx_diag])
+                    xp.vdot(pre.C0[:, blocks.idx_diag], pre.X0[:, blocks.idx_diag])
+                    + xp.vdot(pre.C1[:, blocks.idx_diag], pre.X1[:, blocks.idx_diag])
                     + 2
-                    * xp.vdot(pre.C0[:, pre.idx_offdiag], pre.X0[:, pre.idx_offdiag])
+                    * xp.vdot(
+                        pre.C0[:, blocks.idx_offdiag], pre.X0[:, blocks.idx_offdiag]
+                    )
                     + 2
-                    * xp.vdot(pre.C1[:, pre.idx_offdiag], pre.X1[:, pre.idx_offdiag])
+                    * xp.vdot(
+                        pre.C1[:, blocks.idx_offdiag], pre.X1[:, blocks.idx_offdiag]
+                    )
                 )
 
                 obj_d = (
                     xp.vdot(yE, equality.bE)
                     + 2 * xp.vdot(yEq, equality.bEq)
-                    + fejer.bI * xp.sum(yI[:, pre.idx_diag])
-                    + 2 * fejer.bI * xp.sum(yI[:, pre.idx_offdiag])
+                    + fejer.bI * xp.sum(yI[:, blocks.idx_diag])
+                    + 2 * fejer.bI * xp.sum(yI[:, blocks.idx_offdiag])
                 )
 
                 z, zq = equality.fun_AE(pre.X0, pre.X1, Xd0, Xd1, pre.Xq)
@@ -984,28 +962,15 @@ class CommonlineNUG(Orient3D):
                 res_psdX = 0
                 for k_idx in range(Lmax):
                     k = k_idx + 1  # degree
-                    block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
-                    block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
+                    block0_rows = slice(blocks.d0[k_idx], blocks.d0[k_idx + 1])
+                    block1_rows = slice(blocks.d1[k_idx], blocks.d1[k_idx + 1])
 
-                    tmp = self.mat_block(
-                        pre.X0[block0_rows],
-                        N,
-                        k,
-                        pre.IDX_upper,
-                        pre.IDX_lower,
-                        pre.idx_offdiag,
-                    )
-                    res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
+                    tmp = blocks.mat_block(pre.X0[block0_rows], k)
+                    res_psdX += xp.linalg.norm(blocks._psd_projection(-tmp))
 
-                    tmp = self.mat_block(
-                        pre.X1[block1_rows],
-                        N,
-                        k + 1,
-                        pre.IDX_upper,
-                        pre.IDX_lower,
-                        pre.idx_offdiag,
-                    )
-                    res_psdX += xp.linalg.norm(self._psd_projection(-tmp))
+                    tmp = blocks.mat_block(pre.X1[block1_rows], k + 1)
+                    res_psdX += xp.linalg.norm(blocks._psd_projection(-tmp))
+
                 res_psdX = res_psdX / (
                     1 + xp.linalg.norm(pre.X0) + xp.linalg.norm(pre.X1)
                 )
@@ -1013,24 +978,24 @@ class CommonlineNUG(Orient3D):
                 res_psdD = 0
                 for k_idx in range(Lmax):
                     k = k_idx + 1  # degree
-                    block0_rows = slice(pre.d0[k_idx], pre.d0[k_idx + 1])
-                    block1_rows = slice(pre.d1[k_idx], pre.d1[k_idx + 1])
+                    block0_rows = slice(blocks.d0[k_idx], blocks.d0[k_idx + 1])
+                    block1_rows = slice(blocks.d1[k_idx], blocks.d1[k_idx + 1])
 
-                    tmp = self.transform_back_block(
+                    tmp = blocks.transform_back_block(
                         Xd0[block0_rows].T,
                         Xd1[block1_rows].T,
                         k,
                         P[k_idx],
                     )
                     res_psdD += xp.linalg.norm(
-                        self._psd_projection(-tmp), axis=(-2, -1)
+                        blocks._psd_projection(-tmp), axis=(-2, -1)
                     ).sum()
                 res_psdD = res_psdD / (1 + xp.linalg.norm(Xd0) + xp.linalg.norm(Xd1))
 
                 res_psdQ = 0
                 for pair_idx in range(n_pairs):
                     tmp = pre.Xq[:, pair_idx].reshape(4, 4).T
-                    res_psdQ += xp.linalg.norm(self._psd_projection(-tmp))
+                    res_psdQ += xp.linalg.norm(blocks._psd_projection(-tmp))
                 res_psdQ = res_psdQ / (1 + xp.linalg.norm(pre.Xq))
 
                 normS = xp.sqrt(
@@ -1161,9 +1126,7 @@ class CommonlineNUG(Orient3D):
 
         # Convert the optimized packed block variables back to full degree-wise
         # representation matrices for Euler-angle recovery.
-        X_admm = self._transform_coeff_back(
-            pre.X0, pre.X1, pre.IDX_upper, pre.IDX_lower, pre.idx_offdiag
-        )
+        X_admm = blocks._transform_coeff_back(pre.X0, pre.X1)
         X_admm = [xp.asnumpy(Xk) for Xk in X_admm]
         return X_admm
 
@@ -1184,18 +1147,8 @@ class CommonlineNUG(Orient3D):
         Lmax = self.Lmax
         N = self.n_img
 
-        # Indices into the packed upper-triangular image-pair columns:
-        # diagonal self-pairs (i, i) and off-diagonal pairs (i, j), i < j.
-        iu, ju = np.triu_indices(N)
-        idx_diag = xp.asarray(np.flatnonzero(iu == ju))
-        idx_offdiag = xp.asarray(np.flatnonzero(iu != ju))
-
-        # Linear indices into the full N x N image-pair grid. IDX_upper selects
-        # upper-triangular pairs (i, j), i <= j; IDX_lower selects the matching
-        # lower-triangular pairs (j, i), i < j, in the same order as idx_offdiag.
-        iu_off, ju_off = np.triu_indices(N, k=1)
-        IDX_upper = xp.asarray(iu * N + ju)
-        IDX_lower = xp.asarray(ju_off * N + iu_off)
+        # Prepare the shared degree boundaries and image-pair layout.
+        blocks = _RepresentationBlocks(N, Lmax)
 
         # normalize C matrix
         Cnorm = 0
@@ -1213,17 +1166,13 @@ class CommonlineNUG(Orient3D):
         for k_idx in range(Lmax):
             C[k_idx] = xp.asarray(Xnorm / Cnorm * C[k_idx])
 
-        C0, C1 = self._transform_coeff(C, IDX_upper)
+        C0, C1 = blocks._transform_coeff(C)
         normC = xp.sqrt(xp.linalg.norm(C0) ** 2 + xp.linalg.norm(C1) ** 2)
 
-        # compute the block sizes for X
-        d0 = [0]
-        d1 = [0]
-        for k in range(1, Lmax + 1):
-            d0.append(d0[-1] + k**2)
-            d1.append(d1[-1] + (k + 1) ** 2)
-        D0 = d0[-1]
-        D1 = d1[-1]
+        d0, d1 = blocks.d0, blocks.d1
+        D0, D1 = blocks.D0, blocks.D1
+        idx_diag = blocks.idx_diag
+        idx_offdiag = blocks.idx_offdiag
 
         # AE and bE for quaternion constraints
         AEq = xp.asarray(self._construct_AEq())
@@ -1278,7 +1227,7 @@ class CommonlineNUG(Orient3D):
         Lambda = self._largest_eigenvalue_gram(AI_mat_offdiag)
 
         # Initialize the primal variables in packed image-pair form.
-        n_packed = N * (N + 1) // 2
+        n_packed = blocks.n_packed
         X0 = xp.zeros((D0, n_packed), dtype=np.float64)
         X1 = xp.zeros((D1, n_packed), dtype=np.float64)
         Xq = xp.zeros((16, N * (N - 1) // 2), dtype=np.float64)
@@ -1318,12 +1267,7 @@ class CommonlineNUG(Orient3D):
             bEq=bEq,
             AEqAEqtinv=AEqAEqtinv,
             fejer=fejer,
-            d0=d0,
-            d1=d1,
-            idx_diag=idx_diag,
-            idx_offdiag=idx_offdiag,
-            IDX_upper=IDX_upper,
-            IDX_lower=IDX_lower,
+            blocks=blocks,
             X0=X0,
             X1=X1,
             Xq=Xq,
@@ -1487,353 +1431,6 @@ class CommonlineNUG(Orient3D):
         AEq[16, [0, 5, 10, 15]] = 1
 
         return AEq
-
-    def _project_representation_blocks(
-        self,
-        Z0,
-        Z1,
-        d0,
-        d1,
-        IDX_upper,
-        IDX_lower,
-        idx_offdiag,
-    ):
-        """
-        Project packed degree-wise representation blocks onto the PSD cone.
-
-        :param Z0: Packed blocks of sizes 1 through `Lmax`.
-        :param Z1: Packed blocks of sizes 2 through `Lmax + 1`.
-        :param d0: Cumulative row offsets for the blocks in `Z0`.
-        :param d1: Cumulative row offsets for the blocks in `Z1`.
-        :param IDX_upper: Linear indices of upper-triangular image pairs.
-        :param IDX_lower: Linear indices of lower-triangular image pairs.
-        :param idx_offdiag: Linear indices of off-diagonal image pairs in the
-            packed upper-triangular representation.
-
-        :return: The projected packed arrays `Z0` and `Z1`.
-        """
-        for k_idx in range(self.Lmax):
-            k = k_idx + 1
-
-            block0_rows = slice(
-                d0[k_idx],
-                d0[k_idx + 1],
-            )
-            block1_rows = slice(
-                d1[k_idx],
-                d1[k_idx + 1],
-            )
-
-            block0 = self.mat_block(
-                Z0[block0_rows],
-                self.n_img,
-                k,
-                IDX_upper,
-                IDX_lower,
-                idx_offdiag,
-            )
-            block0 = self._psd_projection(block0)
-            Z0[block0_rows] = self.vec_block(
-                block0,
-                self.n_img,
-                k,
-                IDX_upper,
-            )
-
-            block1 = self.mat_block(
-                Z1[block1_rows],
-                self.n_img,
-                k + 1,
-                IDX_upper,
-                IDX_lower,
-                idx_offdiag,
-            )
-            block1 = self._psd_projection(block1)
-            Z1[block1_rows] = self.vec_block(
-                block1,
-                self.n_img,
-                k + 1,
-                IDX_upper,
-            )
-        return Z0, Z1
-
-    @staticmethod
-    def _psd_projection(B):
-        """
-        Project real square matrices onto the positive semidefinite cone.
-
-        Each matrix is first symmetrized. Negative eigenvalues are then
-        replaced with zero before the matrix is reconstructed. Leading
-        dimensions are treated as stack dimensions.
-
-        :param B: Matrix or stack of matrices with shape (..., n, n).
-
-        :return: Positive semidefinite projection with same shape as B.
-        """
-        # compute the PSD part of a symmetric matrix
-        B_sym = (B + B.swapaxes(-1, -2)) / 2
-        evals, evecs = xp.linalg.eigh(B_sym)
-        evals = xp.maximum(evals, 0)
-        return (evecs * evals[..., None, :]) @ evecs.swapaxes(-1, -2)
-
-    def _transform_coeff(self, A, IDX_upper):
-        """
-        Convert representation matrices to the block-vector form used by ADMM.
-
-        :param A: Representation matrices.
-        :param IDX_upper: Indices of upper-triangular image pair blocks.
-
-        :return: The two block-vector coefficient arrays.
-        """
-        d0 = [0]
-        d1 = [0]
-        for k in range(1, self.Lmax + 1):
-            d0.append(d0[-1] + k**2)
-            d1.append(d1[-1] + (k + 1) ** 2)
-
-        A0 = xp.zeros((d0[-1], self.n_img * (self.n_img + 1) // 2), dtype=np.float64)
-        A1 = xp.zeros((d1[-1], self.n_img * (self.n_img + 1) // 2), dtype=np.float64)
-        for k_idx in range(self.Lmax):
-            k = k_idx + 1
-
-            block0_rows = slice(d0[k_idx], d0[k_idx + 1])
-            block1_rows = slice(d1[k_idx], d1[k_idx + 1])
-
-            block0, block1 = self._permutek(A[k_idx], k, self.n_img)
-
-            A0[block0_rows] = self.vec_block(block0, self.n_img, k, IDX_upper)
-            A1[block1_rows] = self.vec_block(block1, self.n_img, k + 1, IDX_upper)
-
-        return A0, A1
-
-    def _transform_coeff_back(self, A0, A1, IDX_upper, IDX_lower, idx_offdiag):
-        """
-        Reconstruct representation matrices from their ADMM block-vector form.
-
-        :param A0: First block-vector array.
-        :param A1: Second block-vector array.
-        :param IDX_upper: Indices of upper-triangular image-pair blocks.
-        :param IDX_lower: Indices of lower-triangular image-pair blocks.
-        :param idx_offdiag: Indices of off-diagonal image pairs.
-
-        :return: Reconstructed representation matrices.
-        """
-        d0 = [0]
-        d1 = [0]
-        N = self.n_img
-        for k in range(1, self.Lmax + 1):
-            d0.append(d0[-1] + k**2)
-            d1.append(d1[-1] + (k + 1) ** 2)
-
-        A = []
-        for k_idx in range(self.Lmax):
-            k = k_idx + 1
-            dimension = 2 * k + 1
-
-            block0_rows = slice(d0[k_idx], d0[k_idx + 1])
-            block1_rows = slice(d1[k_idx], d1[k_idx + 1])
-
-            Ak = xp.zeros((N * dimension, N * dimension), dtype=np.float64)
-            Ak[: N * k, : N * k] = self.mat_block(
-                A0[block0_rows],
-                N,
-                k,
-                IDX_upper,
-                IDX_lower,
-                idx_offdiag,
-            )
-            Ak[N * k :, N * k :] = self.mat_block(
-                A1[block1_rows],
-                N,
-                k + 1,
-                IDX_upper,
-                IDX_lower,
-                idx_offdiag,
-            )
-            Ak = self._permutek_back(Ak, k, N)
-            A.append(Ak)
-        return A
-
-    @staticmethod
-    def _permutek(Ak, k, N):
-        """
-        Separate the two coordinate groups of a degree-k matrix.
-
-        Each image contributes 2k + 1 coordinates. Within an image, the
-        k-coordinate group occupies odd indices and the k + 1 group occupies
-        even indices. Reorder both axes within each image, then place the
-        k-coordinate group from every image before the (k + 1)-coordinate
-        group. Return the two diagonal blocks so they can be processed
-        separately by ADMM. Cross-group blocks are not returned.
-
-        :param Ak: Matrix in image-wise coordinate order, with shape
-            (N * (2k + 1), N * (2k + 1)).
-        :param k: Representation degree.
-        :param N: Number of images.
-
-        :return: The k-component and (k + 1)-component blocks, with shapes
-            (N*k, N*k) and (N*(k + 1), N*(k + 1)).
-        """
-        dk = 2 * k + 1
-
-        # The real degree-k basis interleaves its k- and (k+1)-coordinate
-        # components. Put the odd-indexed basis coordinates first.
-        coordinate_order = xp.asarray(
-            np.concatenate((np.arange(1, dk, 2), np.arange(0, dk, 2)))
-        )
-
-        # Reshape into blocks (image i, coordinate i, image j, coordinate j)
-        # and reorder the coordinate axes.
-        blocks = Ak.reshape(N, dk, N, dk)
-        blocks = blocks[:, coordinate_order, :, :]
-        blocks = blocks[:, :, :, coordinate_order]
-        AkP = blocks.reshape(N * dk, N * dk)
-
-        # Group the k-coordinate component of every image first, followed by
-        # the (k + 1)-coordinate component of every image.
-        image_offsets = dk * np.arange(N)[:, None]
-        first_component = (image_offsets + np.arange(k)).reshape(-1)
-        second_component = (image_offsets + np.arange(k, dk)).reshape(-1)
-        group_order = xp.asarray(np.concatenate((first_component, second_component)))
-
-        # Apply the same permutation to rows and columns.
-        AkP = AkP[group_order[:, None], group_order[None, :]]
-
-        return AkP[: N * k, : N * k], AkP[N * k :, N * k :]
-
-    @staticmethod
-    def _permutek_back(Ak, k, N):
-        """
-        Restore image-wise coordinate order after ADMM block processing.
-
-        The input is in component-grouped order: all N*k coordinates of
-        the first group precede all N*(k + 1) coordinates of the second.
-        `_transform_coeff_back` places the two processed blocks on the
-        diagonal of this matrix, with zeros elsewhere. This method then
-        restores the original image-wise coordinate order.
-
-        :param Ak: Full matrix in component-grouped order, with shape
-            (N * (2k + 1), N * (2k + 1)).
-        :param k: Representation degree.
-        :param N: Number of images.
-
-        :return: Matrix in image-wise coordinate order, with the same shape
-            as Ak.
-        """
-        dk = 2 * k + 1
-
-        # Undo the grouping of all k-coordinate components before all
-        # (k + 1)-coordinate components.
-        image_offsets = dk * np.arange(N)[:, None]
-        first_component = (image_offsets + np.arange(k)).reshape(-1)
-        second_component = (image_offsets + np.arange(k, dk)).reshape(-1)
-        group_order = np.concatenate((first_component, second_component))
-        inverse_group_order = xp.asarray(np.argsort(group_order))
-        AkB = Ak[inverse_group_order[:, None], inverse_group_order[None, :]]
-
-        # Undo the within-image ordering of the degree-k basis coordinates.
-        coordinate_order = np.concatenate((np.arange(1, dk, 2), np.arange(0, dk, 2)))
-        inverse_coordinate_order = xp.asarray(np.argsort(coordinate_order))
-
-        blocks = AkB.reshape(N, dk, N, dk)
-        blocks = blocks[:, inverse_coordinate_order, :, :]
-        blocks = blocks[:, :, :, inverse_coordinate_order]
-        return blocks.reshape(N * dk, N * dk)
-
-    @staticmethod
-    def vec_block(A, N, sz, IDX_upper):
-        """
-        Pack the upper-triangular image-pair blocks of a block matrix.
-
-        The input is interpreted as an N-by-N array of sz-by-sz blocks.
-        Blocks from the upper triangle, including the diagonal, are vectorized
-        row-wise and stored as columns of the returned array.
-
-        :param A: Block matrix with shape (N * sz, N * sz).
-        :param N: Number of block rows and columns, corresponding to the
-            number of images.
-        :param sz: Row and column size of each square block.
-        :param IDX_upper: Linear indices of the upper-triangular blocks in
-           the flattened N-by-N block grid.
-
-        :return: Packed block array with shape (sz**2, N * (N + 1) // 2).
-        """
-        vecA = (A.reshape(N, sz, N, sz).transpose(0, 2, 1, 3)).reshape(N**2, sz**2).T
-        return vecA[:, IDX_upper]
-
-    @staticmethod
-    def mat_block(vecA, N, sz, IDX_upper, IDX_lower, idx_offdiag):
-        """
-        Unpack upper-triangular blocks into a symmetric block matrix.
-
-        Each column of `vecA` is reshaped row-wise into an sz-by-sz block.
-        The blocks are placed in the upper triangle of an N-by-N block grid,
-        including the diagonal. Transposes of the off-diagonal blocks are placed
-        in the corresponding lower-triangular positions.
-
-        :param vecA: Packed block array with shape (sz**2, N * (N + 1) // 2).
-        :param N: Number of block rows and columns, corresponding to the
-            number of images.
-        :param sz: Row and column size of each square block.
-        :param IDX_upper: Linear indices of the upper-triangular blocks in
-            the flattened N-by-N block grid.
-        :param IDX_lower: Linear indices of the corresponding
-            lower-triangular off-diagonal blocks in the flattened block grid.
-        :param idx_offdiag: Column indices selecting the off-diagonal blocks
-            from vecA.
-
-        :return: Symmetric block matrix with shape (N * sz, N * sz).
-        """
-        tmp = vecA.T.reshape(N * (N + 1) // 2, sz, sz)
-        AA = xp.zeros((N**2, sz, sz), dtype=vecA.dtype)
-        AA[IDX_upper] = tmp
-        AA[IDX_lower] = tmp[idx_offdiag].transpose(0, 2, 1)
-        return (AA.reshape(N, N, sz, sz).transpose(0, 2, 1, 3)).reshape(N * sz, N * sz)
-
-    @staticmethod
-    def transform_block(A, k, Pk):
-        """
-        Permute and pack the two components of degree-k matrices.
-
-        Each input matrix is transformed as Pk @ A @ Pk.T. The leading k-by-k
-        and trailing (k + 1)-by-(k + 1) diagonal blocks are then vectorized
-        row-wise. Entries in the two off-diagonal blocks are not retained.
-
-        :param A: Batch of degree-k matrices with shape (n_blocks, 2 * k + 1, 2 * k + 1).
-        :param k: Wigner representation degree.
-        :param Pk: Permutation matrix with shape (2 * k + 1, 2 * k + 1).
-
-        :return: Packed leading and trailing block arrays with shapes
-            (n_blocks, k**2) and (n_blocks, (k + 1)**2), respectively.
-        """
-        AT = Pk @ A @ Pk.T
-        A0 = AT[:, :k, :k].reshape(A.shape[0], -1)
-        A1 = AT[:, k:, k:].reshape(A.shape[0], -1)
-        return A0, A1
-
-    @staticmethod
-    def transform_back_block(A0, A1, k, Pk):
-        """
-        Reconstruct degree-k matrices from two packed components.
-
-        Each row of A0 and A1 is interpreted as a row-wise vectorization
-        of a k-by-k or (k + 1)-by-(k + 1) block. The two blocks are placed
-        on the diagonal of a (2 * k + 1)-by-(2 * k + 1) matrix, with zeros in the
-        off-diagonal blocks. The permutation represented by Pk is then reversed.
-
-        :param A0: Packed leading blocks with shape (n_blocks, k**2).
-        :param A1: Packed trailing blocks with shape (n_blocks, (k + 1)**2).
-        :param k: Wigner representation degree.
-        :param Pk: Permutation matrix with shape (2 * k + 1, 2 * k + 1).
-
-        :return: Reconstructed degree-k matrices with shape
-            (n_blocks, 2 * k + 1, 2 * k + 1).
-        """
-        dk = 2 * k + 1
-        A = xp.zeros((A0.shape[0], dk, dk), dtype=A0.dtype)
-        A[:, :k, :k] = A0.reshape(-1, k, k)
-        A[:, k:, k:] = A1.reshape(-1, k + 1, k + 1)
-        return Pk.T @ A @ Pk
 
     ############################
     # Proximal Refinement Step #
@@ -3229,6 +2826,326 @@ class _SymmetricEqualityConstraints:
         return yE, yEq
 
 
+class _RepresentationBlocks:
+    """
+    Fixed representation layout and operations used by ADMM.
+
+    Stores degree-block row boundaries and image-pair indices. Representation
+    arrays have one column per upper-triangular image pair, including self-pairs.
+    Current representation and slack arrays are supplied to methods explicitly.
+
+    In the docstrings below, N is the number of images, and D0/D1 are
+    the row counts of the two representation arrays.
+    """
+
+    def __init__(self, n_img, Lmax):
+        """
+        Construct the degree and image-pair layout.
+
+        :param n_img: Number of images.
+        :param Lmax: Maximum representation degree.
+        """
+        self.n_img = n_img
+        self.Lmax = Lmax
+
+        self.d0 = [0]
+        self.d1 = [0]
+        for k in range(1, Lmax + 1):
+            self.d0.append(self.d0[-1] + k**2)
+            self.d1.append(self.d1[-1] + (k + 1) ** 2)
+
+        self.D0 = self.d0[-1]
+        self.D1 = self.d1[-1]
+        self.n_pairs = n_img * (n_img - 1) // 2
+        self.n_packed = n_img * (n_img + 1) // 2
+
+        # Column indices for self-pairs (i, i) and distinct pairs (i, j), i < j.
+        iu, ju = np.triu_indices(n_img)
+        self.idx_diag = xp.asarray(np.flatnonzero(iu == ju))
+        self.idx_offdiag = xp.asarray(np.flatnonzero(iu != ju))
+
+        # Positions in the full N-by-N image-pair grid. Lower-triangular
+        # positions follow the same pair order as idx_offdiag.
+        iu_off, ju_off = np.triu_indices(n_img, k=1)
+        self.IDX_upper = xp.asarray(iu * n_img + ju)
+        self.IDX_lower = xp.asarray(ju_off * n_img + iu_off)
+
+    def _project_representation_blocks(self, Z0, Z1):
+        """
+        Project the degree-wise representation arrays onto the PSD cone.
+
+        Modifies both supplied arrays in place, using the stored representation
+        layout.
+
+        :param Z0: First representation array, of shape (D0, N(N+1)/2).
+        :param Z1: Second representation array, of shape (D1, N(N+1)/2).
+
+        :return: The modified arrays (Z0, Z1).
+        """
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+
+            block0_rows = slice(
+                self.d0[k_idx],
+                self.d0[k_idx + 1],
+            )
+            block1_rows = slice(
+                self.d1[k_idx],
+                self.d1[k_idx + 1],
+            )
+
+            block0 = self.mat_block(Z0[block0_rows], k)
+            block0 = self._psd_projection(block0)
+            Z0[block0_rows] = self.vec_block(block0, k)
+
+            block1 = self.mat_block(Z1[block1_rows], k + 1)
+            block1 = self._psd_projection(block1)
+            Z1[block1_rows] = self.vec_block(block1, k + 1)
+        return Z0, Z1
+
+    def _transform_coeff(self, A):
+        """
+        Convert full degree-wise matrices into the two representation arrays.
+
+        :param A: List of full representation matrices for degrees 1 through Lmax.
+            The degree-k matrix has shape (N*(2*k+1), N*(2*k+1)).
+
+        :return: Tuple (A0, A1), with shapes (D0, N(N+1)/2) and
+            (D1, N(N+1)/2).
+        """
+        A0 = xp.zeros((self.D0, self.n_packed), dtype=np.float64)
+        A1 = xp.zeros((self.D1, self.n_packed), dtype=np.float64)
+
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+
+            block0_rows = slice(self.d0[k_idx], self.d0[k_idx + 1])
+            block1_rows = slice(self.d1[k_idx], self.d1[k_idx + 1])
+
+            block0, block1 = self._permutek(A[k_idx], k)
+
+            A0[block0_rows] = self.vec_block(block0, k)
+            A1[block1_rows] = self.vec_block(block1, k + 1)
+
+        return A0, A1
+
+    def _transform_coeff_back(self, A0, A1):
+        """
+        Reconstruct full degree-wise matrices from the two representation arrays.
+
+        :param A0: First representation array, of shape (D0, N(N+1)/2).
+        :param A1: Second representation array, of shape (D1, N(N+1)/2).
+
+        :return: List of full representation matrices for degrees 1 through Lmax.
+            The degree-k matrix has shape (N*(2*k+1), N*(2*k+1)).
+        """
+        N = self.n_img
+        A = []
+
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+            dimension = 2 * k + 1
+
+            block0_rows = slice(self.d0[k_idx], self.d0[k_idx + 1])
+            block1_rows = slice(self.d1[k_idx], self.d1[k_idx + 1])
+
+            Ak = xp.zeros((N * dimension, N * dimension), dtype=np.float64)
+            Ak[: N * k, : N * k] = self.mat_block(A0[block0_rows], k)
+            Ak[N * k :, N * k :] = self.mat_block(A1[block1_rows], k + 1)
+
+            Ak = self._permutek_back(Ak, k)
+            A.append(Ak)
+
+        return A
+
+    def _permutek(self, Ak, k):
+        """
+        Separate the two coordinate groups of a degree-k matrix.
+
+        Each image contributes 2k + 1 coordinates. Within an image, the
+        k-coordinate group occupies odd indices and the k + 1 group occupies
+        even indices. Reorder both axes within each image, then place the
+        k-coordinate group from every image before the (k + 1)-coordinate
+        group. Return the two diagonal blocks so they can be processed
+        separately by ADMM. Cross-group blocks are not returned.
+
+        :param Ak: Matrix in image-wise coordinate order, with shape
+            (N * (2k + 1), N * (2k + 1)).
+        :param k: Representation degree.
+
+        :return: The k-component and (k + 1)-component blocks, with shapes
+            (N*k, N*k) and (N*(k + 1), N*(k + 1)).
+        """
+        N = self.n_img
+        dk = 2 * k + 1
+
+        # The real degree-k basis interleaves its k- and (k+1)-coordinate
+        # components. Put the odd-indexed basis coordinates first.
+        coordinate_order = xp.asarray(
+            np.concatenate((np.arange(1, dk, 2), np.arange(0, dk, 2)))
+        )
+
+        # Reshape into blocks (image i, coordinate i, image j, coordinate j)
+        # and reorder the coordinate axes.
+        blocks = Ak.reshape(N, dk, N, dk)
+        blocks = blocks[:, coordinate_order, :, :]
+        blocks = blocks[:, :, :, coordinate_order]
+        AkP = blocks.reshape(N * dk, N * dk)
+
+        # Group the k-coordinate component of every image first, followed by
+        # the (k + 1)-coordinate component of every image.
+        image_offsets = dk * np.arange(N)[:, None]
+        first_component = (image_offsets + np.arange(k)).reshape(-1)
+        second_component = (image_offsets + np.arange(k, dk)).reshape(-1)
+        group_order = xp.asarray(np.concatenate((first_component, second_component)))
+
+        # Apply the same permutation to rows and columns.
+        AkP = AkP[group_order[:, None], group_order[None, :]]
+
+        return AkP[: N * k, : N * k], AkP[N * k :, N * k :]
+
+    def _permutek_back(self, Ak, k):
+        """
+        Restore image-wise coordinate order after ADMM block processing.
+
+        The input is in component-grouped order: all N*k coordinates of
+        the first group precede all N*(k + 1) coordinates of the second.
+        `_transform_coeff_back` places the two processed blocks on the
+        diagonal of this matrix, with zeros elsewhere. This method then
+        restores the original image-wise coordinate order.
+
+        :param Ak: Full matrix in component-grouped order, with shape
+            (N * (2k + 1), N * (2k + 1)).
+        :param k: Representation degree.
+
+        :return: Matrix in image-wise coordinate order, with the same shape
+            as Ak.
+        """
+        dk = 2 * k + 1
+
+        # Undo the grouping of all k-coordinate components before all
+        # (k + 1)-coordinate components.
+        image_offsets = dk * np.arange(self.n_img)[:, None]
+        first_component = (image_offsets + np.arange(k)).reshape(-1)
+        second_component = (image_offsets + np.arange(k, dk)).reshape(-1)
+        group_order = np.concatenate((first_component, second_component))
+        inverse_group_order = xp.asarray(np.argsort(group_order))
+        AkB = Ak[inverse_group_order[:, None], inverse_group_order[None, :]]
+
+        # Undo the within-image ordering of the degree-k basis coordinates.
+        coordinate_order = np.concatenate((np.arange(1, dk, 2), np.arange(0, dk, 2)))
+        inverse_coordinate_order = xp.asarray(np.argsort(coordinate_order))
+
+        blocks = AkB.reshape(self.n_img, dk, self.n_img, dk)
+        blocks = blocks[:, inverse_coordinate_order, :, :]
+        blocks = blocks[:, :, :, inverse_coordinate_order]
+        return blocks.reshape(self.n_img * dk, self.n_img * dk)
+
+    def vec_block(self, A, sz):
+        """
+        Pack the upper-triangular image-pair blocks of a block matrix.
+
+        Blocks are vectorized row-wise and stored as columns, using the
+        image-pair layout constructed at initialization.
+
+        :param A: Block matrix with shape (N * sz, N * sz).
+        :param sz: Row and column size of each square block.
+
+        :return: Packed block array with shape (sz**2, N * (N + 1) // 2).
+        """
+        vecA = (
+            (A.reshape(self.n_img, sz, self.n_img, sz).transpose(0, 2, 1, 3))
+            .reshape(self.n_img**2, sz**2)
+            .T
+        )
+        return vecA[:, self.IDX_upper]
+
+    def mat_block(self, vecA, sz):
+        """
+        Reconstruct a symmetric block matrix from image-pair columns.
+
+        Each column is reshaped row-wise into a square block and placed in
+        the upper triangle. Transposes of distinct-pair blocks are placed
+        in the corresponding lower-triangular positions.
+
+        :param vecA: Block array with shape (sz**2, N * (N + 1) // 2).
+        :param sz: Row and column size of each square block.
+
+        :return: Symmetric block matrix with shape (N * sz, N * sz).
+        """
+        tmp = vecA.T.reshape(self.n_packed, sz, sz)
+        AA = xp.zeros((self.n_img**2, sz, sz), dtype=vecA.dtype)
+        AA[self.IDX_upper] = tmp
+        AA[self.IDX_lower] = tmp[self.idx_offdiag].transpose(0, 2, 1)
+        return (
+            AA.reshape(self.n_img, self.n_img, sz, sz).transpose(0, 2, 1, 3)
+        ).reshape(self.n_img * sz, self.n_img * sz)
+
+    @staticmethod
+    def _psd_projection(B):
+        """
+        Project real square matrices onto the positive semidefinite cone.
+
+        Each matrix is first symmetrized. Negative eigenvalues are then
+        replaced with zero before the matrix is reconstructed. Leading
+        dimensions are treated as stack dimensions.
+
+        :param B: Matrix or stack of matrices with shape (..., n, n).
+
+        :return: Positive semidefinite projection with same shape as B.
+        """
+        # compute the PSD part of a symmetric matrix
+        B_sym = (B + B.swapaxes(-1, -2)) / 2
+        evals, evecs = xp.linalg.eigh(B_sym)
+        evals = xp.maximum(evals, 0)
+        return (evecs * evals[..., None, :]) @ evecs.swapaxes(-1, -2)
+
+    @staticmethod
+    def transform_block(A, k, Pk):
+        """
+        Permute and pack the two components of degree-k matrices.
+
+        Each input matrix is transformed as Pk @ A @ Pk.T. The leading k-by-k
+        and trailing (k + 1)-by-(k + 1) diagonal blocks are then vectorized
+        row-wise. Entries in the two off-diagonal blocks are not retained.
+
+        :param A: Batch of degree-k matrices with shape (n_blocks, 2 * k + 1, 2 * k + 1).
+        :param k: Wigner representation degree.
+        :param Pk: Permutation matrix with shape (2 * k + 1, 2 * k + 1).
+
+        :return: Packed leading and trailing block arrays with shapes
+            (n_blocks, k**2) and (n_blocks, (k + 1)**2), respectively.
+        """
+        AT = Pk @ A @ Pk.T
+        A0 = AT[:, :k, :k].reshape(A.shape[0], -1)
+        A1 = AT[:, k:, k:].reshape(A.shape[0], -1)
+        return A0, A1
+
+    @staticmethod
+    def transform_back_block(A0, A1, k, Pk):
+        """
+        Reconstruct degree-k matrices from two packed components.
+
+        Each row of A0 and A1 is interpreted as a row-wise vectorization
+        of a k-by-k or (k + 1)-by-(k + 1) block. The two blocks are placed
+        on the diagonal of a (2 * k + 1)-by-(2 * k + 1) matrix, with zeros in the
+        off-diagonal blocks. The permutation represented by Pk is then reversed.
+
+        :param A0: Packed leading blocks with shape (n_blocks, k**2).
+        :param A1: Packed trailing blocks with shape (n_blocks, (k + 1)**2).
+        :param k: Wigner representation degree.
+        :param Pk: Permutation matrix with shape (2 * k + 1, 2 * k + 1).
+
+        :return: Reconstructed degree-k matrices with shape
+            (n_blocks, 2 * k + 1, 2 * k + 1).
+        """
+        dk = 2 * k + 1
+        A = xp.zeros((A0.shape[0], dk, dk), dtype=A0.dtype)
+        A[:, :k, :k] = A0.reshape(-1, k, k)
+        A[:, k:, k:] = A1.reshape(-1, k + 1, k + 1)
+        return Pk.T @ A @ Pk
+
+
 @dataclass
 class _ADMMData:
     """
@@ -3252,9 +3169,8 @@ class _ADMMData:
             discretized Fejer constraints.
 
     Block layout:
-        d0, d1: Degree-block row boundaries for the two packed arrays.
-        idx_diag, idx_offdiag: Column indices in packed image-pair order.
-        IDX_upper, IDX_lower: Indices in the full image-pair grid.
+        blocks: Fixed degree-block boundaries, image-pair indices, and
+            representation conversion and projection operations.
 
     ADMM variables:
         X0, X1, Xq: Primal variables for the two blocks and quaternion terms.
@@ -3274,13 +3190,8 @@ class _ADMMData:
     # Fejer inequalities
     fejer: _FejerConstraints
 
-    # Block layout
-    d0: list[int]
-    d1: list[int]
-    idx_diag: xp.ndarray
-    idx_offdiag: xp.ndarray
-    IDX_upper: xp.ndarray
-    IDX_lower: xp.ndarray
+    # Fixed representation layout and block operations
+    blocks: _RepresentationBlocks
 
     # Initial and subsequently updated ADMM variables
     X0: xp.ndarray
