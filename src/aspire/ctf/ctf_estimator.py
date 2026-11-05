@@ -86,6 +86,7 @@ class CtfEstimator:
         solver_opts=None,
         linprog_method="highs-ds",
         diagnostic_plots=False,
+        normalize_micrographs=True,
         dtype=np.float32,
     ):
         """
@@ -115,6 +116,9 @@ class CtfEstimator:
         :param diagnostic_plots: Optionally generate diagnostic_plots.
             Note, these are blocking plot calls.
             Defaults to False.
+        :param normalize_micrographs: Optionally normalize micrographs to
+            mean zero and variance one before PSD estimation.
+            Defaults to True.
         :returns: CtfEstimator instance.
         """
 
@@ -146,6 +150,7 @@ class CtfEstimator:
         self.linprog_method = linprog_method
 
         self.diagnostic_plots = diagnostic_plots
+        self.normalize_micrographs = normalize_micrographs
         self.dtype = np.dtype(dtype)
 
         # Grids
@@ -204,6 +209,10 @@ class CtfEstimator:
         # Cheaper to transpose whole micrograph than all the blocks later
         # Without this transpose the astig axis will be reflected wrt other tools' convention.
         micrograph = micrograph.T
+
+        # Optionally apply normalization towards unit variance.
+        if self.normalize_micrographs:
+            micrograph = (micrograph - micrograph.mean()) / micrograph.std()
 
         # Strided view of psd_size windows, using stride `step`
         # Avoids repeatedly building the entire blocklist
@@ -312,7 +321,11 @@ class CtfEstimator:
         )
 
         # Normalize
-        amplitude_spectrum /= N**2 * num_blocks * num_1d_tapers**2
+        amplitude_spectrum /= num_blocks * num_1d_tapers**2
+        # If we are not re-normalizing towards unity
+        # divide by total number of pixel bins
+        if not self.normalize_micrographs:
+            amplitude_spectrum /= N**2
 
         amplitude_spectrum = fft.fftshift(amplitude_spectrum)
 
@@ -441,13 +454,6 @@ class CtfEstimator:
                 axis=0,
             )
 
-            # Rescale to avoid small values conflicting with internal bounds checks.
-            #     It is possible to disable with  `options={'presolve': False}`,
-            #     but this may impact the solution.
-            # Instead the input and bounds are rescaled, then the solution is rescaled.
-            _scale = 1e4
-            f, bounds = f / _scale, bounds * _scale
-
             res = linprog(
                 f,
                 A_ub=A,
@@ -461,7 +467,7 @@ class CtfEstimator:
                     f"Linear program did not succeed after {res.nit} iterations with condition {res.status}: '{res.message}'.\tHalting."
                 )
 
-            background = res.x[N:] / _scale
+            background = res.x[N:]
 
             bs_psd = signal - background
 
@@ -1043,6 +1049,7 @@ def estimate_ctf(
     dtype=np.float32,
     save_ctf_images=False,
     save_noise_images=False,
+    normalize_micrographs=True,
     rglob=r"*.mrc",
     solver_method="bfgs",
     solver_opts=None,
@@ -1074,6 +1081,9 @@ def estimate_ctf(
         Using "*.mrc[s]" will additonally include mrcs files, etc.
     :param save_ctf_images: Save diagnostic ctf images.
     :param save_noise_images: Save diagnostic noise images.
+    :param normalize_micrographs: Optionally normalize micrographs to
+        mean zero and variance one before PSD estimation.
+        Defaults to True.
     :param solver_method: Solver used to optimize defocus params.  `gd` or `bfgs`.
         Default uses single call to `bfgs`.
         Original implementation used repeated gradient descent and is provided as `gd` for reproducibility.
@@ -1120,6 +1130,7 @@ def estimate_ctf(
         solver_opts=solver_opts,
         linprog_method=linprog_method,
         dtype=dtype,
+        normalize_micrographs=normalize_micrographs,
     )
 
     # Main Loop ---------------------------------------------------------------

@@ -84,6 +84,11 @@ logger = logging.getLogger("aspire")
     default=False,
     help="Save noise diagnostic images.",
 )
+@click.option(
+    "--normalize_micrographs/--no_normalize_micrographs",
+    default=True,
+    help="Normalize micrographs to mean zero and variance one before PSD estimation.",
+)
 @log_level_option
 def estimate_ctf(
     data_folder,
@@ -102,6 +107,7 @@ def estimate_ctf(
     dtype,
     save_ctf_images,
     save_noise_images,
+    normalize_micrographs,
     loglevel,
 ):
     """
@@ -136,4 +142,5 @@ def estimate_ctf(
         dtype=dtype,
         save_ctf_images=save_ctf_images,
         save_noise_images=save_noise_images,
+        normalize_micrographs=normalize_micrographs,
     )
