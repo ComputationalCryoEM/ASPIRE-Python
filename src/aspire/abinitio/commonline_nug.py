@@ -503,48 +503,18 @@ class CommonlineNUG(Orient3D):
         bEq[-1] = 1
         bEq = xp.repeat(bEq[:, None], N * (N - 1) // 2, axis=1)
 
-        # Compute AI and bI
+        # Construct the Fejer inequality operators from representation weights.
         W0, W1, Ngrid = self._compute_fejer_weights()
+        fejer = _FejerConstraints(
+            W0=W0,
+            W1=W1,
+            blocks=blocks,
+            pair_batch_size=self.c1_pair_batch_size,
+            is_asymmetric=self.n_sym == 1,
+        )
 
-        # AI_mat_offdiag computation has been vectorized, but originally
-        # had the note by block1: this needs double checking (Ruiyi)
-        AI_mat_offdiag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
-        for k_idx in range(Lmax):
-            k = k_idx + 1
-            scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
-            block0_cols = slice(d0[k_idx], d0[k_idx + 1])
-            block1_cols = slice(D0 + d1[k_idx], D0 + d1[k_idx + 1])
-
-            block0 = scale * W0[k_idx].reshape(Ngrid, -1)
-            block1 = scale * W1[k_idx].reshape(Ngrid, -1)
-
-            AI_mat_offdiag[:, block0_cols] = block0
-            AI_mat_offdiag[:, block1_cols] = block1
-
-        # AI_mat_diag computation has been vectorized, but originally
-        # had the note by block1: this needs double checking (Ruiyi)
-        AI_mat_diag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
-        for k_idx in range(Lmax):
-            k = k_idx + 1
-            scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
-            block0_cols = slice(d0[k_idx], d0[k_idx + 1])
-            block1_cols = slice(D0 + d1[k_idx], D0 + d1[k_idx + 1])
-
-            W0_sym = 0.5 * (W0[k_idx] + W0[k_idx].transpose(0, 2, 1))
-            W1_sym = 0.5 * (W1[k_idx] + W1[k_idx].transpose(0, 2, 1))
-
-            block0 = scale * W0_sym.reshape(Ngrid, -1)
-            block1 = scale * W1_sym.reshape(Ngrid, -1)
-
-            AI_mat_diag[:, block0_cols] = block0
-            AI_mat_diag[:, block1_cols] = block1
-
-        AI_mat_diag = xp.asarray(AI_mat_diag)
-        AI_mat_offdiag = xp.asarray(AI_mat_offdiag)
-        bI = -(Lmax + 2) * (Lmax + 1) / 2
-
-        # largest eigenvalue for AIAIT
-        Lambda = self._largest_eigenvalue_gram(AI_mat_offdiag)
+        # Release representation weights after constructing the operators.
+        del W0, W1
 
         # Initialize the primal variables in packed image-pair form.
         n_packed = blocks.n_packed
@@ -564,20 +534,6 @@ class CommonlineNUG(Orient3D):
         Sq = xp.zeros(Xq.shape, dtype=np.float64)
 
         self.Ngrid = Ngrid
-
-        # Package the Fejer operators and bounds.
-        fejer = _FejerConstraints(
-            AI_mat_diag=AI_mat_diag,
-            AI_mat_offdiag=AI_mat_offdiag,
-            bI=bI,
-            Lambda=Lambda,
-            idx_diag=idx_diag,
-            idx_offdiag=idx_offdiag,
-            D0=D0,
-            n_packed=n_packed,
-            pair_batch_size=self.c1_pair_batch_size,
-            is_asymmetric=self.n_sym == 1,
-        )
 
         return _ADMMData(
             C0=C0,
@@ -668,21 +624,6 @@ class CommonlineNUG(Orient3D):
                 count += 1
 
         return SO3
-
-    @staticmethod
-    def _largest_eigenvalue_gram(AI):
-        """
-        Compute the denominator for the Fejer inequality-multiplier update.
-
-        The largest eigenvalue of AI @ AI.T is computed from the smaller
-        AI.T @ AI Gram matrix. Retain the fixed 2000 offset used by the
-        original implementation.
-
-        :param AI: Real Fejer inequality operator of shape (Ngrid, D0 + D1).
-
-        :return: Largest eigenvalue of AI @ AI.T, plus 2000.
-        """
-        return xp.linalg.eigvalsh(AI.T @ AI)[-1] + 2000
 
     def _compute_rank(self):
         """
@@ -1656,8 +1597,9 @@ class _FejerConstraints:
     """
     Class containing the data and operations for the discretized Fejer inequalities.
 
-    Holds the constraint matrices, bound, and update scale, and provides
-    the forward, adjoint, and residual operations used by both ADMM solvers.
+    Constructs the constraint matrices, bound, and update scale from
+    representation weights, and provides the forward, adjoint, and
+    residual operations used by both ADMM solvers.
 
     Note, C1 processes off-diagonal image pairs in chunks to limit peak memory use;
     the symmetric solver also applies the self-pair constraint.
@@ -1665,45 +1607,103 @@ class _FejerConstraints:
 
     def __init__(
         self,
-        AI_mat_diag,
-        AI_mat_offdiag,
-        bI,
-        Lambda,
-        idx_diag,
-        idx_offdiag,
-        D0,
-        n_packed,
+        W0,
+        W1,
+        blocks,
         pair_batch_size,
         is_asymmetric,
     ):
         """
-        Initialize a Fejer constraints object with the precomputed Fejer operators,
-        bound, and image-pair layout.
+        Construct the Fejer inequalities from representation weights.
 
-        Let G be the number of SO(3) grid points. D0 and D1 are the row counts of the
-        first and second representation blocks (X0 and X1), respectively.
+        Let G be the number of SO(3) grid points. Each list contains one
+        weight array per representation degree, starting at degree one.
 
-        :param AI_mat_diag: Self-pair operator of shape (G, D0+D1).
-        :param AI_mat_offdiag: Off-diagonal operator of shape (G, D0+D1).
-        :param bI: Scalar lower bound for AI(X) >= bI.
-        :param Lambda: Scalar scale for inequality-multiplier updates.
-        :param idx_diag: Column indices for the N self-pairs.
-        :param idx_offdiag: Column indices for the N(N-1)/2 off-diagonal pairs.
-        :param D0: Row count of the first representation block.
-        :param n_packed: Number of upper-triangular image-pair columns, N(N+1)/2.
-        :param pair_batch_size: Batch size for off-diagonal image pair columns.
-        :param is_asymmetric: Whether to use the asymmetric (C1) formulation.
+        :param W0: First representation weights; degree-k entries have
+            shape (G, k, k).
+        :param W1: Second representation weights; degree-k entries have
+            shape (G, k+1, k+1).
+        :param blocks: Fixed representation layout.
+        :param pair_batch_size: Number of distinct image pairs per C1 batch.
+        :param is_asymmetric: Whether to use the asymmetric C1 formulation.
         """
-        self.AI_mat_diag = AI_mat_diag
-        self.AI_mat_offdiag = AI_mat_offdiag
-        self.bI = bI
-        self.Lambda = Lambda
-        self.idx_diag = idx_diag
-        self.idx_offdiag = idx_offdiag
-        self.D0 = D0
-        self.n_packed = n_packed
+        self.idx_diag = blocks.idx_diag
+        self.idx_offdiag = blocks.idx_offdiag
+        self.D0 = blocks.D0
+        self.n_packed = blocks.n_packed
         self.pair_batch_size = pair_batch_size
         self.is_asymmetric = is_asymmetric
+
+        self._build_operators(W0, W1, blocks)
+
+    def _build_operators(self, W0, W1, blocks):
+        """
+        Construct and store the Fejer operators, bound, and update scale.
+
+        :param W0: First representation weights; degree-k entries have
+            shape (G, k, k).
+        :param W1: Second representation weights; degree-k entries have
+            shape (G, k+1, k+1).
+        :param blocks: Fixed representation layout defining the degree
+            boundaries and representation row counts.
+        """
+        Lmax = blocks.Lmax
+        d0, d1 = blocks.d0, blocks.d1
+        D0, D1 = blocks.D0, blocks.D1
+        Ngrid = W0[0].shape[0]
+
+        # Build the operator for distinct image pairs.
+        AI_mat_offdiag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
+        for k_idx in range(Lmax):
+            k = k_idx + 1
+            scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
+            block0_cols = slice(d0[k_idx], d0[k_idx + 1])
+            block1_cols = slice(D0 + d1[k_idx], D0 + d1[k_idx + 1])
+
+            block0 = scale * W0[k_idx].reshape(Ngrid, -1)
+            block1 = scale * W1[k_idx].reshape(Ngrid, -1)
+
+            AI_mat_offdiag[:, block0_cols] = block0
+            AI_mat_offdiag[:, block1_cols] = block1
+
+        # Build the self-pair operator using the symmetric part of each weight matrix.
+        AI_mat_diag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
+        for k_idx in range(Lmax):
+            k = k_idx + 1
+            scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
+            block0_cols = slice(d0[k_idx], d0[k_idx + 1])
+            block1_cols = slice(D0 + d1[k_idx], D0 + d1[k_idx + 1])
+
+            W0_sym = 0.5 * (W0[k_idx] + W0[k_idx].transpose(0, 2, 1))
+            W1_sym = 0.5 * (W1[k_idx] + W1[k_idx].transpose(0, 2, 1))
+
+            block0 = scale * W0_sym.reshape(Ngrid, -1)
+            block1 = scale * W1_sym.reshape(Ngrid, -1)
+
+            AI_mat_diag[:, block0_cols] = block0
+            AI_mat_diag[:, block1_cols] = block1
+
+        self.AI_mat_diag = xp.asarray(AI_mat_diag)
+        self.AI_mat_offdiag = xp.asarray(AI_mat_offdiag)
+        self.bI = -(Lmax + 2) * (Lmax + 1) / 2
+
+        # Scale used by the inequality-multiplier update.
+        self.Lambda = self._largest_eigenvalue_gram(self.AI_mat_offdiag)
+
+    @staticmethod
+    def _largest_eigenvalue_gram(AI):
+        """
+        Compute the denominator for the Fejer inequality-multiplier update.
+
+        The largest eigenvalue of AI @ AI.T is computed from the smaller
+        AI.T @ AI Gram matrix. Retain the fixed 2000 offset used by the
+        original implementation.
+
+        :param AI: Real Fejer inequality operator of shape (Ngrid, D0 + D1).
+
+        :return: Largest eigenvalue of AI @ AI.T, plus 2000.
+        """
+        return xp.linalg.eigvalsh(AI.T @ AI)[-1] + 2000
 
     def pair_chunks(self):
         """
