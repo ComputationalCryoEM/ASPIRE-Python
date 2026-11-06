@@ -377,15 +377,10 @@ class CommonlineNUG(Orient3D):
         pre = self.ADMM_preprocessing(C)
         blocks = pre.blocks
 
+        # Prepare the diagonal and quaternion equality constraints.
         equality = _C1EqualityConstraints(
-            n_img=blocks.n_img,
-            d0=blocks.d0,
-            d1=blocks.d1,
-            idx_diag=blocks.idx_diag,
-            idx_offdiag=blocks.idx_offdiag,
-            AEq=pre.AEq,
-            AEqAEqtinv=pre.AEqAEqtinv,
-            bEq=pre.bEq,
+            blocks=blocks,
+            quaternions=pre.quaternions,
         )
 
         solver = _C1ADMM(
@@ -422,15 +417,9 @@ class CommonlineNUG(Orient3D):
 
         # Prepare the symmetry/diagonal and quaternion equality constraints.
         equality = _SymmetricEqualityConstraints(
-            n_img=blocks.n_img,
-            d0=blocks.d0,
-            d1=blocks.d1,
-            idx_diag=blocks.idx_diag,
-            idx_offdiag=blocks.idx_offdiag,
+            blocks=blocks,
+            quaternions=pre.quaternions,
             rank_Ak=rank_Ak,
-            AEq=pre.AEq,
-            AEqAEqtinv=pre.AEqAEqtinv,
-            bEq=pre.bEq,
         )
 
         solver = _SymmetricADMM(
@@ -467,9 +456,6 @@ class CommonlineNUG(Orient3D):
         Lmax = self.Lmax
         N = self.n_img
 
-        # Prepare the shared degree boundaries and image-pair layout.
-        blocks = _RepresentationBlocks(N, Lmax)
-
         # normalize C matrix
         Cnorm = 0
         Xnorm = 0
@@ -486,22 +472,13 @@ class CommonlineNUG(Orient3D):
         for k_idx in range(Lmax):
             C[k_idx] = xp.asarray(Xnorm / Cnorm * C[k_idx])
 
+        # Prepare the representation layout and transform the normalized coefficients.
+        blocks = _RepresentationBlocks(N, Lmax)
         C0, C1 = blocks._transform_coeff(C)
         normC = xp.sqrt(xp.linalg.norm(C0) ** 2 + xp.linalg.norm(C1) ** 2)
 
-        d0, d1 = blocks.d0, blocks.d1
-        D0, D1 = blocks.D0, blocks.D1
-        idx_diag = blocks.idx_diag
-        idx_offdiag = blocks.idx_offdiag
-
-        # AE and bE for quaternion constraints
-        AEq = xp.asarray(self._construct_AEq())
-        AEqAEqtinv = xp.linalg.pinv(AEq @ AEq.T)
-
-        bEq = xp.zeros(17, dtype=np.float64)
-        bEq[:16:5] = 0.25  # Flattened np.eye(4)/4
-        bEq[-1] = 1
-        bEq = xp.repeat(bEq[:, None], N * (N - 1) // 2, axis=1)
+        # Prepare the quaternion equalities shared by both formulations.
+        quaternions = _QuaternionConstraints(blocks)
 
         # Construct the Fejer inequality operators from representation weights.
         W0, W1, Ngrid = self._compute_fejer_weights()
@@ -516,7 +493,8 @@ class CommonlineNUG(Orient3D):
         # Release representation weights after constructing the operators.
         del W0, W1
 
-        # Initialize the primal variables in packed image-pair form.
+        # Initialize the primal variables in upper-triangular image-pair form.
+        D0, D1 = blocks.D0, blocks.D1
         n_packed = blocks.n_packed
         X0 = xp.zeros((D0, n_packed), dtype=np.float64)
         X1 = xp.zeros((D1, n_packed), dtype=np.float64)
@@ -524,6 +502,8 @@ class CommonlineNUG(Orient3D):
 
         # The initial slack matrices are identity blocks for self-pairs and zero
         # for distinct image pairs. Build them directly in packed form.
+        d0, d1 = blocks.d0, blocks.d1
+        idx_diag = blocks.idx_diag
         S0 = xp.zeros_like(X0)
         S1 = xp.zeros_like(X1)
         for k_idx in range(Lmax):
@@ -539,9 +519,7 @@ class CommonlineNUG(Orient3D):
             C0=C0,
             C1=C1,
             normC=normC,
-            AEq=AEq,
-            bEq=bEq,
-            AEqAEqtinv=AEqAEqtinv,
+            quaternions=quaternions,
             fejer=fejer,
             blocks=blocks,
             X0=X0,
@@ -640,58 +618,6 @@ class CommonlineNUG(Orient3D):
             A.append(Ak)
             rk[k_idx] = np.linalg.matrix_rank(Ak)
         return rk, A
-
-    @staticmethod
-    def _construct_AEq():
-        """
-        Construct the linear equality operator encoding the quaternion constraints.
-
-        The operator acts on 21 variables consisting of the 16 vectorized
-        entries of an auxiliary 4-by-4 quaternion matrix followed by five
-        entries from the lowest-degree representation blocks. The first
-        16 rows couple the quaternion and representation variables. The
-        final row constrains the trace of the quaternion matrix.
-
-        :return: Equality-constraint matrix with shape (17, 21).
-        """
-        AEq = np.zeros((17, 21), np.float64)
-
-        # First 16 rows: identity constraints on first 16 variables
-        AEq[:16, :16] = np.eye(16, dtype=np.float64)
-
-        # Columns 16:21 map the low-degree X0/X1 entries into the quaternion
-        # convex-hull constraint Xq = I/4 - linear(X^(1)).
-        extra = 0.25 * np.array(
-            [
-                [-1, 1, 0, 0, 1],
-                [0, 0, 0, 0, 0],
-                [0, 0, 1, -1, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [1, 1, 0, 0, -1],
-                [0, 0, 0, 0, 0],
-                [0, 0, 1, 1, 0],
-                [0, 0, 1, -1, 0],
-                [0, 0, 0, 0, 0],
-                [-1, -1, 0, 0, -1],
-                [0, 0, 0, 0, 0],
-                [0, 0, 0, 0, 0],
-                [0, 0, 1, 1, 0],
-                [0, 0, 0, 0, 0],
-                [1, -1, 0, 0, 1],
-            ],
-            dtype=np.float64,
-        )
-
-        # `extra` uses the original column-wise order
-        # [X0_00, X1_00, X1_10, X1_01, X1_11].
-        # Swap the two off-diagonal columns to match row-wise packing of X1.
-        AEq[:16, 16:] = extra[:, [0, 1, 3, 2, 4]]
-
-        # Last row: redundant trace/sum constraint
-        AEq[16, [0, 5, 10, 15]] = 1
-
-        return AEq
 
     ############################
     # Proximal Refinement Step #
@@ -1782,13 +1708,139 @@ class _FejerConstraints:
         return xp.sqrt(squared_norm)
 
 
+class _QuaternionConstraints:
+    """
+    Quaternion equality constraints shared by the C1 and symmetric solvers.
+
+    For each pair of different images, these equations relate an auxiliary
+    4-by-4 quaternion matrix to five entries from the degree-one representation
+    blocks in X0 and X1. They also require the quaternion matrix to have trace one.
+
+    This class builds the constraint matrix and right-hand side, applies the
+    operator and its adjoint, and solves the associated multiplier equations.
+
+    In the method docstrings, N is the number of images, and D0/D1 are the
+    row counts of X0/X1.
+    """
+
+    def __init__(self, blocks):
+        """
+        Construct the quaternion operator, pseudoinverse, and right-hand side.
+
+        :param blocks: Fixed representation layout.
+        """
+        self.blocks = blocks
+        self.AEq = xp.asarray(self._construct_AEq())
+        self.AEqAEqtinv = xp.linalg.pinv(self.AEq @ self.AEq.T)
+
+        bEq = xp.zeros(17, dtype=np.float64)
+        bEq[:16:5] = 0.25  # Flattened identity matrix divided by four.
+        bEq[-1] = 1  # Unit trace.
+        self.bEq = xp.repeat(bEq[:, None], blocks.n_pairs, axis=1)
+
+    def fun_AE(self, X0, X1, Xq):
+        """
+        Apply the quaternion equality operator.
+
+        :param X0: First representation array of shape (D0, N(N+1)/2).
+        :param X1: Second representation array of shape (D1, N(N+1)/2).
+        :param Xq: Quaternion array of shape (16, N(N-1)/2).
+
+        :return: Equality values of shape (17, N(N-1)/2).
+        """
+        return self.AEq @ xp.concatenate(
+            (
+                Xq,
+                X0[:1, self.blocks.idx_offdiag],
+                X1[:4, self.blocks.idx_offdiag],
+            ),
+            axis=0,
+        )
+
+    def fun_AET(self, yEq):
+        """
+        Apply the adjoint of the quaternion equality operator.
+
+        :param yEq: Quaternion equality multipliers of shape (17, N(N-1)/2).
+
+        :return: Tuple containing contributions to the lowest-degree X0
+            entries, lowest-degree X1 entries, and Xq. Their shapes are
+            (1, N(N-1)/2), (4, N(N-1)/2), and (16, N(N-1)/2).
+            The representation contributions correspond to distinct pairs.
+        """
+        Z = self.AEq.T @ yEq
+        return Z[16:17], Z[17:], Z[:16]
+
+    def solve_normal(self, rhs):
+        """
+        Apply the pseudoinverse of AEq @ AEq.T.
+
+        :param rhs: Right-hand side of shape (17, N(N-1)/2).
+
+        :return: Solution obtained with the pseudoinverse, of the same shape.
+        """
+        return self.AEqAEqtinv @ rhs
+
+    @staticmethod
+    def _construct_AEq():
+        """
+        Construct the linear equality operator encoding the quaternion constraints.
+
+        The operator acts on 21 variables consisting of the 16 vectorized
+        entries of an auxiliary 4-by-4 quaternion matrix followed by five
+        entries from the lowest-degree representation blocks. The first
+        16 rows couple the quaternion and representation variables. The
+        final row constrains the trace of the quaternion matrix.
+
+        :return: Equality-constraint matrix with shape (17, 21).
+        """
+        AEq = np.zeros((17, 21), np.float64)
+
+        # First 16 rows: identity constraints on first 16 variables
+        AEq[:16, :16] = np.eye(16, dtype=np.float64)
+
+        # Columns 16:21 map the low-degree X0/X1 entries into the quaternion
+        # convex-hull constraint Xq = I/4 - linear(X^(1)).
+        extra = 0.25 * np.array(
+            [
+                [-1, 1, 0, 0, 1],
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, -1, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [1, 1, 0, 0, -1],
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 1, -1, 0],
+                [0, 0, 0, 0, 0],
+                [-1, -1, 0, 0, -1],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 0],
+                [0, 0, 0, 0, 0],
+                [1, -1, 0, 0, 1],
+            ],
+            dtype=np.float64,
+        )
+
+        # `extra` uses the original column-wise order
+        # [X0_00, X1_00, X1_10, X1_01, X1_11].
+        # Swap the two off-diagonal columns to match row-wise packing of X1.
+        AEq[:16, 16:] = extra[:, [0, 1, 3, 2, 4]]
+
+        # Last row: redundant trace/sum constraint
+        AEq[16, [0, 5, 10, 15]] = 1
+
+        return AEq
+
+
 class _C1EqualityConstraints:
     """
     Fixed equality constraints for asymmetric (C1) ADMM.
 
     Owns the identity right-hand sides for self-pair representation blocks
-    and the quaternion equality data. Current ADMM variables are supplied
-    explicitly to each operation.
+    and uses the shared quaternion constraints. Current ADMM variables
+    are supplied explicitly to each operation.
 
     In the docstrings below, N is the number of images. X0 and X1 contain
     the two representation block families, with D0 and D1 rows, respectively.
@@ -1796,44 +1848,24 @@ class _C1EqualityConstraints:
     self-pairs.
     """
 
-    def __init__(
-        self,
-        n_img,
-        d0,
-        d1,
-        idx_diag,
-        idx_offdiag,
-        AEq,
-        AEqAEqtinv,
-        bEq,
-    ):
+    def __init__(self, blocks, quaternions):
         """
         Prepare the C1 equality operators and right-hand sides.
 
-        :param n_img: Number of images.
-        :param d0: Degree-block row boundaries for X0.
-        :param d1: Degree-block row boundaries for X1.
-        :param idx_diag: Self-pair column indices.
-        :param idx_offdiag: Distinct image-pair column indices.
-        :param AEq: Quaternion equality operator of shape (17, 21).
-        :param AEqAEqtinv: Pseudoinverse of AEq @ AEq.T.
-        :param bEq: Right-hand side of the quaternion equality constraints,
-            with shape (17, N(N-1)/2).
+        :param blocks: Fixed representation layout.
+        :param quaternions: Shared quaternion equality constraints.
         """
-        self.idx_diag = idx_diag
-        self.idx_offdiag = idx_offdiag
-        self.D0 = d0[-1]
-        self.D1 = d1[-1]
-        self.n_packed = n_img * (n_img + 1) // 2
+        self.blocks = blocks
+        self.quaternions = quaternions
 
-        self.AEq = AEq
-        self.AEqAEqtinv = AEqAEqtinv
-        self.bEq = bEq
+        # Local references used to construct the formulation-specific right-hand sides.
+        n_img = blocks.n_img
+        d0, d1 = blocks.d0, blocks.d1
 
         # Build the right-hand sides requiring each self-pair block
         # of X0 and X1 to be an identity matrix.
-        bE0 = xp.zeros(self.D0, dtype=np.float64)
-        bE1 = xp.zeros(self.D1, dtype=np.float64)
+        bE0 = xp.zeros(blocks.D0, dtype=np.float64)
+        bE1 = xp.zeros(blocks.D1, dtype=np.float64)
 
         for k_idx in range(len(d0) - 1):
             k = k_idx + 1
@@ -1844,6 +1876,13 @@ class _C1EqualityConstraints:
 
         self.bE0 = xp.repeat(bE0[:, None], n_img, axis=1)
         self.bE1 = xp.repeat(bE1[:, None], n_img, axis=1)
+
+    @property
+    def bEq(self):
+        """
+        Right-hand side of the shared quaternion equality constraints.
+        """
+        return self.quaternions.bEq
 
     def fun_AE(self, X0, X1, Xq):
         """
@@ -1860,16 +1899,9 @@ class _C1EqualityConstraints:
             and (17, N(N-1)/2). The equality constraints require
             z0 == bE0, z1 == bE1, and zq == bEq.
         """
-        z0 = X0[:, self.idx_diag]
-        z1 = X1[:, self.idx_diag]
-        zq = self.AEq @ xp.concatenate(
-            (
-                Xq,
-                X0[:1, self.idx_offdiag],
-                X1[:4, self.idx_offdiag],
-            ),
-            axis=0,
-        )
+        z0 = X0[:, self.blocks.idx_diag]
+        z1 = X1[:, self.blocks.idx_diag]
+        zq = self.quaternions.fun_AE(X0, X1, Xq)
         return z0, z1, zq
 
     def fun_AET(self, yE0, yE1, yEq):
@@ -1889,16 +1921,17 @@ class _C1EqualityConstraints:
         :return: Tuple (Z0, Z1, Zq), with shapes (D0, N(N+1)/2),
             (D1, N(N+1)/2), and (16, N(N-1)/2), respectively.
         """
-        Z0 = xp.zeros((self.D0, self.n_packed), dtype=np.float64)
-        Z1 = xp.zeros((self.D1, self.n_packed), dtype=np.float64)
-        Z0[:, self.idx_diag] = yE0
-        Z1[:, self.idx_diag] = yE1
+        Z0 = xp.zeros((self.blocks.D0, self.blocks.n_packed), dtype=np.float64)
+        Z1 = xp.zeros((self.blocks.D1, self.blocks.n_packed), dtype=np.float64)
+        Z0[:, self.blocks.idx_diag] = yE0
+        Z1[:, self.blocks.idx_diag] = yE1
 
-        Zq = self.AEq.T @ yEq
-        Z0[:1, self.idx_offdiag] = Zq[16:17]
-        Z1[:4, self.idx_offdiag] = Zq[17:]
+        # Place the quaternion adjoint contributions in distinct-pair columns.
+        Zq0, Zq1, Zq = self.quaternions.fun_AET(yEq)
+        Z0[:1, self.blocks.idx_offdiag] = Zq0
+        Z1[:4, self.blocks.idx_offdiag] = Zq1
 
-        return Z0, Z1, Zq[:16]
+        return Z0, Z1, Zq
 
     def solve_normal(self, rhs0, rhs1, rhs_q):
         """
@@ -1918,16 +1951,16 @@ class _C1EqualityConstraints:
         :return: Tuple (yE0, yE1, yEq), with the same shapes as the inputs.
             The first two outputs are the supplied rhs0 and rhs1 arrays.
         """
-        return rhs0, rhs1, self.AEqAEqtinv @ rhs_q
+        return rhs0, rhs1, self.quaternions.solve_normal(rhs_q)
 
 
 class _SymmetricEqualityConstraints:
     """
     Fixed equality constraints for symmetric ADMM.
 
-    Owns the per-degree symmetry/diagonal operators and targets, together
-    with the quaternion equality data. Current ADMM variables are supplied
-    explicitly to each operation.
+    Owns the per-degree symmetry/diagonal operators and right-hand sides,
+    and uses the shared quaternion constraints. Current ADMM variables
+    are supplied explicitly to each operation.
 
     In the docstrings below, N is the number of images and Lmax is the
     maximum representation degree. X0 and X1 contain the two representation
@@ -1935,51 +1968,25 @@ class _SymmetricEqualityConstraints:
     to upper-triangular image pairs, including self-pairs.
     """
 
-    def __init__(
-        self,
-        n_img,
-        d0,
-        d1,
-        idx_diag,
-        idx_offdiag,
-        rank_Ak,
-        AEq,
-        AEqAEqtinv,
-        bEq,
-    ):
+    def __init__(self, blocks, quaternions, rank_Ak):
         """
-        Construct the symmetric equality operators and targets.
+        Construct the symmetric equality operators and right-hand sides.
 
-        :param n_img: Number of images.
-        :param d0: Degree-block row boundaries for X0 and Xd0.
-        :param d1: Degree-block row boundaries for X1 and Xd1.
-        :param idx_diag: Self-pair column indices.
-        :param idx_offdiag: Distinct image-pair column indices.
+        :param blocks: Fixed representation layout.
+        :param quaternions: Shared quaternion equality constraints.
         :param rank_Ak: Symmetry-projector rank at each degree.
-        :param AEq: Quaternion equality operator of shape (17, 21).
-        :param AEqAEqtinv: Pseudoinverse of AEq @ AEq.T.
-        :param bEq: Right-hand side of the quaternion equality constraints,
-            with shape (17, n_img*(n_img-1)/2).
         """
-        self.n_img = n_img
-        self.d0 = d0
-        self.d1 = d1
-        self.idx_diag = idx_diag
-        self.idx_offdiag = idx_offdiag
+        self.blocks = blocks
+        self.quaternions = quaternions
 
-        self.Lmax = len(d0) - 1
-        self.D0 = d0[-1]
-        self.D1 = d1[-1]
-        self.n_packed = n_img * (n_img + 1) // 2
-
-        self.AEq = AEq
-        self.AEqAEqtinv = AEqAEqtinv
-        self.bEq = bEq
+        # Local references used to construct the formulation-specific right-hand sides.
+        n_img = blocks.n_img
+        d0, d1 = blocks.d0, blocks.d1
 
         # Build the left-hand-side operators for the symmetry equality constraints.
         self.AE = []
         self.AEAETinv = []
-        for k_idx in range(self.Lmax):
+        for k_idx in range(self.blocks.Lmax):
             k = k_idx + 1
             size0 = k**2
             size1 = (k + 1) ** 2
@@ -2005,10 +2012,11 @@ class _SymmetricEqualityConstraints:
 
         # Build the right-hand sides: symmetry-projector ranks and identity-matrix entries.
         bE = xp.zeros(
-            self.Lmax + self.D0 + self.D1,
+            blocks.Lmax + blocks.D0 + blocks.D1,
             dtype=np.float64,
         )
-        for k_idx in range(self.Lmax):
+
+        for k_idx in range(self.blocks.Lmax):
             k = k_idx + 1
 
             start = k_idx + d0[k_idx] + d1[k_idx]
@@ -2021,6 +2029,13 @@ class _SymmetricEqualityConstraints:
 
         self.bE = xp.repeat(bE[:, None], n_img, axis=1)
 
+    @property
+    def bEq(self):
+        """
+        Right-hand side of the shared quaternion equality constraints.
+        """
+        return self.quaternions.bEq
+
     def _constraint_rows(self, k_idx):
         """
         Return the equality-row slice for one degree.
@@ -2029,8 +2044,8 @@ class _SymmetricEqualityConstraints:
 
         :return: Slice selecting the trace and block sum equality rows for this degree.
         """
-        start = k_idx + self.d0[k_idx] + self.d1[k_idx]
-        stop = k_idx + 1 + self.d0[k_idx + 1] + self.d1[k_idx + 1]
+        start = k_idx + self.blocks.d0[k_idx] + self.blocks.d1[k_idx]
+        stop = k_idx + 1 + self.blocks.d0[k_idx + 1] + self.blocks.d1[k_idx + 1]
         return slice(start, stop)
 
     def fun_AE(self, X0, X1, Xd0, Xd1, Xq):
@@ -2055,28 +2070,21 @@ class _SymmetricEqualityConstraints:
         """
         z = xp.zeros(self.bE.shape, dtype=np.float64)
 
-        for k_idx in range(self.Lmax):
-            block0_rows = slice(self.d0[k_idx], self.d0[k_idx + 1])
-            block1_rows = slice(self.d1[k_idx], self.d1[k_idx + 1])
+        for k_idx in range(self.blocks.Lmax):
+            block0_rows = slice(self.blocks.d0[k_idx], self.blocks.d0[k_idx + 1])
+            block1_rows = slice(self.blocks.d1[k_idx], self.blocks.d1[k_idx + 1])
 
             z[self._constraint_rows(k_idx)] = self.AE[k_idx] @ xp.concatenate(
                 (
-                    X0[block0_rows, self.idx_diag],
-                    X1[block1_rows, self.idx_diag],
+                    X0[block0_rows, self.blocks.idx_diag],
+                    X1[block1_rows, self.blocks.idx_diag],
                     Xd0[block0_rows],
                     Xd1[block1_rows],
                 ),
                 axis=0,
             )
 
-        zq = self.AEq @ xp.concatenate(
-            (
-                Xq,
-                X0[:1, self.idx_offdiag],
-                X1[:4, self.idx_offdiag],
-            ),
-            axis=0,
-        )
+        zq = self.quaternions.fun_AE(X0, X1, Xq)
         return z, zq
 
     def fun_AET(self, yE, yEq):
@@ -2095,31 +2103,32 @@ class _SymmetricEqualityConstraints:
             (D0, N(N+1)/2), (D1, N(N+1)/2), (D0, N), (D1, N),
             and (16, N(N-1)/2), respectively.
         """
-        Z0 = xp.zeros((self.D0, self.n_packed), dtype=np.float64)
-        Z1 = xp.zeros((self.D1, self.n_packed), dtype=np.float64)
-        Zd0 = xp.zeros((self.D0, self.n_img), dtype=np.float64)
-        Zd1 = xp.zeros((self.D1, self.n_img), dtype=np.float64)
+        Z0 = xp.zeros((self.blocks.D0, self.blocks.n_packed), dtype=np.float64)
+        Z1 = xp.zeros((self.blocks.D1, self.blocks.n_packed), dtype=np.float64)
+        Zd0 = xp.zeros((self.blocks.D0, self.blocks.n_img), dtype=np.float64)
+        Zd1 = xp.zeros((self.blocks.D1, self.blocks.n_img), dtype=np.float64)
 
-        for k_idx in range(self.Lmax):
+        for k_idx in range(self.blocks.Lmax):
             k = k_idx + 1
             size0 = k**2
             size1 = (k + 1) ** 2
 
-            block0_rows = slice(self.d0[k_idx], self.d0[k_idx + 1])
-            block1_rows = slice(self.d1[k_idx], self.d1[k_idx + 1])
+            block0_rows = slice(self.blocks.d0[k_idx], self.blocks.d0[k_idx + 1])
+            block1_rows = slice(self.blocks.d1[k_idx], self.blocks.d1[k_idx + 1])
 
             Ztmp = self.AE[k_idx].T @ yE[self._constraint_rows(k_idx)]
 
-            Z0[block0_rows, self.idx_diag] = Ztmp[:size0]
-            Z1[block1_rows, self.idx_diag] = Ztmp[size0 : size0 + size1]
+            Z0[block0_rows, self.blocks.idx_diag] = Ztmp[:size0]
+            Z1[block1_rows, self.blocks.idx_diag] = Ztmp[size0 : size0 + size1]
             Zd0[block0_rows] = Ztmp[size0 + size1 : 2 * size0 + size1]
             Zd1[block1_rows] = Ztmp[2 * size0 + size1 : 2 * size0 + 2 * size1]
 
-        Zq = self.AEq.T @ yEq
-        Z0[:1, self.idx_offdiag] = Zq[16:17]
-        Z1[:4, self.idx_offdiag] = Zq[17:]
+        # Place the quaternion adjoint contributions in distinct-pair columns.
+        Zq0, Zq1, Zq = self.quaternions.fun_AET(yEq)
+        Z0[:1, self.blocks.idx_offdiag] = Zq0
+        Z1[:4, self.blocks.idx_offdiag] = Zq1
 
-        return Z0, Z1, Zd0, Zd1, Zq[:16]
+        return Z0, Z1, Zd0, Zd1, Zq
 
     def solve_normal(self, rhs, rhs_q):
         """
@@ -2138,11 +2147,11 @@ class _SymmetricEqualityConstraints:
         """
         yE = xp.zeros(self.bE.shape, dtype=np.float64)
 
-        for k_idx in range(self.Lmax):
+        for k_idx in range(self.blocks.Lmax):
             rows = self._constraint_rows(k_idx)
             yE[rows] = self.AEAETinv[k_idx] @ rhs[rows]
 
-        yEq = self.AEqAEqtinv @ rhs_q
+        yEq = self.quaternions.solve_normal(rhs_q)
         return yE, yEq
 
 
@@ -3202,9 +3211,8 @@ class _ADMMData:
         normC: Combined norm of those coefficients.
 
     Quaternion equalities:
-        AEq: Equality-constraint matrix.
-        bEq: Equality right-hand side.
-        AEqAEqtinv: Pseudoinverse used when updating equality multipliers.
+        quaternions: Shared quaternion operator, right-hand side,
+            pseudoinverse, and associated operations.
 
     Fejer inequalities:
         fejer: Operators, bound, and multiplier-update scale for the
@@ -3224,10 +3232,8 @@ class _ADMMData:
     C1: xp.ndarray | None
     normC: float | xp.ndarray
 
-    # Quaternion equalities
-    AEq: xp.ndarray
-    bEq: xp.ndarray
-    AEqAEqtinv: xp.ndarray
+    # Shared quaternion equalities
+    quaternions: _QuaternionConstraints
 
     # Fejer inequalities
     fejer: _FejerConstraints
