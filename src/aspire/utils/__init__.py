@@ -3,6 +3,7 @@ from .coor_trans import (  # isort:skip
     mean_aligned_angular_distance,
     mean_aligned_shift_error,
     cart2pol,
+    cart2sph,
     crop_pad_2d,
     crop_pad_3d,
     grid_1d,
