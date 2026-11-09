@@ -566,17 +566,6 @@ class CommonlineNUG(Orient3D):
             TT.append(T)
             TTI.append(Tinv)
 
-        def permutek_block(Ak, k):
-            dk = 2 * k + 1
-            Pk = np.eye(dk, dtype=np.float64)
-            for m in range(k):
-                for ell in range(k - m):
-                    Pk[(m + 2 * ell, m + 2 * ell + 1), :] = Pk[
-                        (m + 2 * ell + 1, m + 2 * ell), :
-                    ]
-            AkP = Pk @ Ak @ Pk.T
-            return AkP[..., :k, :k], AkP[..., k:, k:]
-
         W0 = []
         W1 = []
         for k_idx in range(self.Lmax):
@@ -588,11 +577,37 @@ class CommonlineNUG(Orient3D):
             TinvkT = TTI[k_idx].T
 
             w = np.real(TkT @ self._WD(k, SO3_grid).conj() @ TinvkT)
-            W0k, W1k = permutek_block(w, k)
+            W0k, W1k = self._fejer_weight_blocks(w, k)
 
             W0.append(W0k)
             W1.append(W1k)
         return W0, W1, Ngrid
+
+    @staticmethod
+    def _fejer_weight_blocks(Ak, k):
+        """
+        Separate degree-k representation matrices into Fejer weight blocks.
+
+        Reorder both matrix axes to group the two representation components,
+        then select their diagonal blocks. Cross-component blocks are omitted.
+
+        :param Ak: Array of representation matrices with shape
+            (Ngrid, 2*k+1, 2*k+1).
+        :param k: Representation degree.
+
+        :return: Two weight arrays with shapes (Ngrid, k, k) and
+            (Ngrid, k+1, k+1).
+        """
+        dk = 2 * k + 1
+        Pk = np.eye(dk, dtype=np.float64)
+        for m in range(k):
+            for ell in range(k - m):
+                Pk[(m + 2 * ell, m + 2 * ell + 1), :] = Pk[
+                    (m + 2 * ell + 1, m + 2 * ell), :
+                ]
+
+        AkP = Pk @ Ak @ Pk.T
+        return AkP[..., :k, :k], AkP[..., k:, k:]
 
     def _discretize_SO3(self):
         """
