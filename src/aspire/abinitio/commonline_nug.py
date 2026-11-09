@@ -398,9 +398,10 @@ class CommonlineNUG(Orient3D):
         pre = self.ADMM_preprocessing(C)
 
         # Prepare the diagonal and quaternion equality constraints.
+        quaternions = _QuaternionConstraints(pre.blocks)
         equality = _C1EqualityConstraints(
             blocks=pre.blocks,
-            quaternions=pre.quaternions,
+            quaternions=quaternions,
         )
 
         solver = _C1ADMM(
@@ -435,9 +436,10 @@ class CommonlineNUG(Orient3D):
         logger.info(f"Rank of Ak: {rank_Ak}")
 
         # Prepare the symmetry/diagonal and quaternion equality constraints.
+        quaternions = _QuaternionConstraints(pre.blocks)
         equality = _SymmetricEqualityConstraints(
             blocks=pre.blocks,
-            quaternions=pre.quaternions,
+            quaternions=quaternions,
             rank_Ak=rank_Ak,
         )
 
@@ -472,32 +474,26 @@ class CommonlineNUG(Orient3D):
         :return: An _ADMMData instance containing the constraints, layout,
             and ADMM variables.
         """
-        Lmax = self.Lmax
-        N = self.n_img
-
         # normalize C matrix
         Cnorm = 0
         Xnorm = 0
-        for k_idx in range(Lmax):
+        for k_idx in range(self.Lmax):
             k = k_idx + 1  # degree
             dk = 2 * k + 1
 
             Cnorm += np.linalg.norm(C[k_idx]) ** 2
-            Xnorm += dk * N**2
+            Xnorm += dk * self.n_img**2
 
         Cnorm = np.sqrt(Cnorm)
         Xnorm = np.sqrt(Xnorm)
 
-        for k_idx in range(Lmax):
+        for k_idx in range(self.Lmax):
             C[k_idx] = xp.asarray(Xnorm / Cnorm * C[k_idx])
 
         # Prepare the representation layout and transform the normalized coefficients.
-        blocks = _RepresentationBlocks(N, Lmax)
+        blocks = _RepresentationBlocks(self.n_img, self.Lmax)
         C0, C1 = blocks._transform_coeff(C)
         normC = xp.sqrt(xp.linalg.norm(C0) ** 2 + xp.linalg.norm(C1) ** 2)
-
-        # Prepare the quaternion equalities shared by both formulations.
-        quaternions = _QuaternionConstraints(blocks)
 
         # Construct the Fejer inequality operators from representation weights.
         W0, W1, Ngrid = self._compute_fejer_weights()
@@ -517,7 +513,7 @@ class CommonlineNUG(Orient3D):
         n_packed = blocks.n_packed
         X0 = xp.zeros((D0, n_packed), dtype=np.float64)
         X1 = xp.zeros((D1, n_packed), dtype=np.float64)
-        Xq = xp.zeros((16, N * (N - 1) // 2), dtype=np.float64)
+        Xq = xp.zeros((16, self.n_img * (self.n_img - 1) // 2), dtype=np.float64)
 
         # The initial slack matrices are identity blocks for self-pairs and zero
         # for distinct image pairs. Build them directly in packed form.
@@ -525,7 +521,7 @@ class CommonlineNUG(Orient3D):
         idx_diag = blocks.idx_diag
         S0 = xp.zeros_like(X0)
         S1 = xp.zeros_like(X1)
-        for k_idx in range(Lmax):
+        for k_idx in range(self.Lmax):
             k = k_idx + 1
             S0[d0[k_idx] : d0[k_idx + 1] : k + 1, idx_diag] = 1
             S1[d1[k_idx] : d1[k_idx + 1] : k + 2, idx_diag] = 1
@@ -538,7 +534,6 @@ class CommonlineNUG(Orient3D):
             C0=C0,
             C1=C1,
             normC=normC,
-            quaternions=quaternions,
             fejer=fejer,
             blocks=blocks,
             X0=X0,
@@ -3284,17 +3279,13 @@ class _ADMMData:
     """
     Data constructed for the C1 and symmetric ADMM solvers.
 
-    Array fields use the active NumPy or CuPy backend. Some array fields are
-    set to None after their last use to release GPU memory. All fields are
-    populated when preprocessing returns.
+    Array fields use the active NumPy or CuPy backend. All fields are
+    populated when preprocessing returns. Solvers take ownership of the
+    initial working arrays during construction.
 
     Objective:
         C0, C1: Coefficients packed into the two representation blocks.
         normC: Combined norm of those coefficients.
-
-    Quaternion equalities:
-        quaternions: Shared quaternion operator, right-hand side,
-            pseudoinverse, and associated operations.
 
     Fejer inequalities:
         fejer: Operators, bound, and multiplier-update scale for the
@@ -3310,12 +3301,9 @@ class _ADMMData:
     """
 
     # Objective
-    C0: xp.ndarray | None
-    C1: xp.ndarray | None
+    C0: xp.ndarray
+    C1: xp.ndarray
     normC: float | xp.ndarray
-
-    # Shared quaternion equalities
-    quaternions: _QuaternionConstraints
 
     # Fejer inequalities
     fejer: _FejerConstraints
@@ -3326,7 +3314,7 @@ class _ADMMData:
     # Initial ADMM variables
     X0: xp.ndarray
     X1: xp.ndarray
-    Xq: xp.ndarray | None
-    S0: xp.ndarray | None
-    S1: xp.ndarray | None
-    Sq: xp.ndarray | None
+    Xq: xp.ndarray
+    S0: xp.ndarray
+    S1: xp.ndarray
+    Sq: xp.ndarray
