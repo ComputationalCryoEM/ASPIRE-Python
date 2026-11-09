@@ -469,7 +469,8 @@ class CommonlineNUG(Orient3D):
         Construct the transformed coefficients, constraints, indices, and
         initial variables used by ADMM.
 
-        :param C: Fourier coefficient matrices of the NUG objective.
+        :param C: Full objective coefficient matrices. Entries in this list
+            are replaced by normalized arrays on the active backend.
 
         :return: An _ADMMData instance containing the constraints, layout,
             and ADMM variables.
@@ -496,7 +497,7 @@ class CommonlineNUG(Orient3D):
         normC = xp.sqrt(xp.linalg.norm(C0) ** 2 + xp.linalg.norm(C1) ** 2)
 
         # Construct the Fejer inequality operators from representation weights.
-        W0, W1, Ngrid = self._compute_fejer_weights()
+        W0, W1 = self._compute_fejer_weights()
         fejer = _FejerConstraints(
             W0=W0,
             W1=W1,
@@ -528,8 +529,6 @@ class CommonlineNUG(Orient3D):
 
         Sq = xp.zeros(Xq.shape, dtype=np.float64)
 
-        self.Ngrid = Ngrid
-
         return _ADMMData(
             C0=C0,
             C1=C1,
@@ -548,7 +547,7 @@ class CommonlineNUG(Orient3D):
         """
         Evaluate the real Wigner representation blocks used by the discretized Fejer inequality constraints.
 
-        :return: Two sets of block weights and the number of SO(3) grid points.
+        :return: Two lists of degree-wise representation weight arrays.
         """
         SO3_grid = self._discretize_SO3()
         Ngrid = SO3_grid.shape[0]
@@ -576,7 +575,7 @@ class CommonlineNUG(Orient3D):
 
             W0.append(W0k)
             W1.append(W1k)
-        return W0, W1, Ngrid
+        return W0, W1
 
     @staticmethod
     def _fejer_weight_blocks(Ak, k):
@@ -1583,6 +1582,9 @@ class _C1ADMM:
     Owns the objective, iteration variables, and solver settings.
     Fixed layout and constraint operations are supplied by blocks,
     equality, and fejer.
+
+    The solver releases unused Fejer operator arrays during construction
+    and result assembly. Its prepared inputs are intended for one solve.
     """
 
     def __init__(
