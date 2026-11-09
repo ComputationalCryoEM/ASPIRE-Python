@@ -223,33 +223,6 @@ class CommonlineNUG(Orient3D):
             np.round((-gamma_grid - np.pi / 2) * n_theta / 2 / np.pi) % n_theta
         ).astype(int)
 
-        def fij(i, j):
-            """
-            Evaluate the pairwise common-line loss on the alpha–gamma grid.
-
-            For each sampled pair of angles, select the corresponding polar Fourier
-            rays from images i and j. Compare the rays using the L1 norm over radial
-            samples, then retain the smallest mismatch over the candidate 1D shifts.
-
-            :param i: Index of the first image.
-            :param j: Index of the second image.
-
-            :return: Loss array of shape (2*T, 2*T). Rows correspond to alpha_grid
-                and columns to gamma_grid.
-            """
-            rays_i = self.pf_full[i, alpha_idx]
-            rays_j = self.pf_full[j, gamma_idx]
-            loss_grid = np.empty((2 * T, 2 * T), dtype=np.float64)
-
-            for gamma_col, ray_j in enumerate(rays_j):
-                shifted_j = self.shift_phases * ray_j
-                differences = rays_i[:, None, :] - shifted_j[None, :, :]
-                loss_grid[:, gamma_col] = np.linalg.norm(
-                    differences, ord=1, axis=-1
-                ).min(axis=-1)
-
-            return loss_grid
-
         # Beta quadrature weights for the truncated Wigner-D Fourier expansion.
         bT = np.zeros(2 * T, dtype=np.float64)
         for n in range(2 * T):
@@ -297,7 +270,7 @@ class CommonlineNUG(Orient3D):
         ) as pbar:
             for i in range(N):
                 for j in range(i + 1, N):
-                    Fij = fij(i, j)
+                    Fij = self._pairwise_loss(i, j, alpha_idx, gamma_idx)
                     for k_idx in range(Lmax):
                         k = k_idx + 1
                         dk = 2 * k + 1
@@ -312,7 +285,7 @@ class CommonlineNUG(Orient3D):
 
         # Diagonal blocks encode self-pair losses and are handled separately.
         for i in trange(N, desc="Computing diagonal coefficients"):
-            Fii = fij(i, i)
+            Fii = self._pairwise_loss(i, i, alpha_idx, gamma_idx)
             for k_idx in range(Lmax):
                 k = k_idx + 1
                 dk = 2 * k + 1
@@ -331,6 +304,35 @@ class CommonlineNUG(Orient3D):
             )
 
         self.C = C
+
+    def _pairwise_loss(self, i, j, alpha_idx, gamma_idx):
+        """
+        Evaluate the common-line loss for a pair of images.
+
+        Select polar Fourier rays using the supplied angular indices. For each
+        pair of rays, calculate the L1 mismatch over radial samples and retain
+        the smallest mismatch over the candidate one-dimensional shifts.
+
+        :param i: Index of the first image.
+        :param j: Index of the second image. May equal i for a self-pair.
+        :param alpha_idx: One-dimensional array selecting rays from image i.
+        :param gamma_idx: One-dimensional array selecting rays from image j.
+
+        :return: Loss array of shape (len(alpha_idx), len(gamma_idx)).
+            Rows follow alpha_idx and columns follow gamma_idx.
+        """
+        rays_i = self.pf_full[i, alpha_idx]
+        rays_j = self.pf_full[j, gamma_idx]
+        loss_grid = np.empty((len(alpha_idx), len(gamma_idx)), dtype=np.float64)
+
+        for gamma_col, ray_j in enumerate(rays_j):
+            shifted_j = self.shift_phases * ray_j
+            differences = rays_i[:, None, :] - shifted_j[None, :, :]
+            loss_grid[:, gamma_col] = np.linalg.norm(differences, ord=1, axis=-1).min(
+                axis=-1
+            )
+
+        return loss_grid
 
     #############
     # ADMM Step #
