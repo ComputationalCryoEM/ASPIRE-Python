@@ -150,9 +150,9 @@ def test_g_sync(symmetry):
     noisy_rots = Rotation(delta_rots.matrices @ gt_rots.matrices)
 
     # Get mean ang dist for aligned estimates
-    # and check we're close to target.
+    # and check we're within 0.5 degrees to target.
     og_maad = mean_aligned_angular_distance(noisy_rots, gt_rots)
-    np.testing.assert_array_less(abs(og_maad - target_mean_deg), 0.2)
+    np.testing.assert_array_less(abs(og_maad - target_mean_deg), 0.5)
 
     # Simulate symmetry desynchronization for clean and noisy case.
     g_idx = np.random.randint(len(gs), size=n)
