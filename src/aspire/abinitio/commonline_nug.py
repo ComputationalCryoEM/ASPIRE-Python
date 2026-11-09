@@ -668,28 +668,7 @@ class CommonlineNUG(Orient3D):
 
         :return: Refined representation matrices.
         """
-        N = self.n_img
         C = self.C
-
-        def Ak(k, Euler):
-            """
-            Average the degree-k representation over the symmetry
-            group to form the symmetry projector Ak.
-            """
-            order = Euler.shape[0]
-            A = self._WD(k, Euler).sum(axis=0)
-            return np.round(A / order, 10)
-
-        def rel_change(A, B, eps=1e-12):
-            """
-            Measure relative change across all degree-wise relaxed matrices.
-            """
-            num = 0.0
-            den = 0.0
-            for k in range(len(A)):
-                num += np.linalg.norm(A[k] - B[k]) ** 2
-                den += np.linalg.norm(B[k]) ** 2
-            return np.sqrt(num) / max(np.sqrt(den), eps)
 
         # The symmetry projector ranks give the expected low-rank structure
         # for each degree of a valid orbit solution.
@@ -702,28 +681,8 @@ class CommonlineNUG(Orient3D):
             k = k_idx + 1
             C_base[k_idx] = xp.asnumpy(C[k_idx]).copy()
             rank_Ak[k_idx] = np.linalg.matrix_rank(
-                Ak(k, self.sym_euler), tol=1e-6, hermitian=True
+                self._symmetry_projector(k), tol=1e-6, hermitian=True
             )
-
-        def low_rank_proj(X, r_step):
-            """
-            Project diagonal image blocks toward the rank expected from symmetry.
-            """
-            Xproj = []
-            for k_idx in range(self.Lmax):
-                k = k_idx + 1
-                dk = 2 * k + 1
-                rk = min(int(rank_Ak[k_idx] * 2) + r_step, dk)
-                tmp = np.copy(X[k_idx])
-                for i in range(N):
-                    u, s, v = np.linalg.svd(
-                        tmp[i * dk : (i + 1) * dk, i * dk : (i + 1) * dk]
-                    )
-                    tmp[i * dk : (i + 1) * dk, i * dk : (i + 1) * dk] = (
-                        u[:, :rk] @ np.diag(s[:rk]) @ v[:rk]
-                    )
-                Xproj.append(tmp)
-            return Xproj
 
         # CC stores the modified objective coefficients for the next proximal ADMM solve.
         CC = [None] * self.Lmax
@@ -732,7 +691,7 @@ class CommonlineNUG(Orient3D):
         # Proximal refinement step.
         # Repeatedly bias the SDP objective toward the low-rank projection and resolve.
         for step in range(self.pr_iters):
-            X_proj = low_rank_proj(current, r[step])
+            X_proj = self._low_rank_projection(current, rank_Ak, r[step])
 
             for k_idx in range(self.Lmax):
                 CC[k_idx] = (
@@ -748,13 +707,80 @@ class CommonlineNUG(Orient3D):
             if self.verbose:
                 logger.info(
                     f"Proximal refine step {step + 1}/{self.pr_iters}: "
-                    f"relative update {rel_change(X_next, current):.3e}"
+                    f"relative update {self._relative_change(X_next, current):.3e}"
                 )
 
             # Use the refined SDP solution as the starting point for the next projection step
             current = [np.copy(Xk) for Xk in X_next]
 
         return current
+
+    def _symmetry_projector(self, k):
+        """
+        Average degree-k Wigner matrices over the estimator's symmetry group.
+
+        :param k: Representation degree.
+
+        :return: Symmetry-projector matrix of shape (2*k+1, 2*k+1),
+            rounded to ten decimal places.
+        """
+        order = self.sym_euler.shape[0]
+        A = self._WD(k, self.sym_euler).sum(axis=0)
+        return np.round(A / order, 10)
+
+    @staticmethod
+    def _relative_change(A, B, eps=1e-12):
+        """
+        Measure relative change between two lists of representation matrices.
+
+        :param A: First list of degree-wise representation matrices.
+        :param B: Reference list with matching lengths and matrix shapes.
+        :param eps: Positive lower bound for the denominator.
+
+        :return: Relative change across all supplied matrices.
+        """
+        num = 0.0
+        den = 0.0
+        for k in range(len(A)):
+            num += np.linalg.norm(A[k] - B[k]) ** 2
+            den += np.linalg.norm(B[k]) ** 2
+        return np.sqrt(num) / max(np.sqrt(den), eps)
+
+    def _low_rank_projection(self, X, rank_Ak, r_step):
+        """
+        Approximate diagonal image blocks by matrices of reduced rank.
+
+        For each degree, retain at most twice the symmetry-projector rank
+        plus r_step singular values, capped at the block dimension.
+        Off-diagonal image blocks are unchanged.
+
+        :param X: List of full representation matrices for degrees 1 through
+            Lmax. The degree-k matrix has shape (N*(2*k+1), N*(2*k+1)),
+            where N is the number of images.
+        :param rank_Ak: Symmetry projector ranks, one per degree.
+        :param r_step: Integer rank offset for the current refinement step.
+
+        :return: List of copied representation matrices with their diagonal
+            image blocks replaced by the low-rank approximations.
+        """
+        Xproj = []
+        for k_idx in range(self.Lmax):
+            k = k_idx + 1
+            dk = 2 * k + 1
+            rk = min(int(rank_Ak[k_idx] * 2) + r_step, dk)
+            tmp = np.copy(X[k_idx])
+
+            for i in range(self.n_img):
+                u, s, v = np.linalg.svd(
+                    tmp[i * dk : (i + 1) * dk, i * dk : (i + 1) * dk]
+                )
+                tmp[i * dk : (i + 1) * dk, i * dk : (i + 1) * dk] = (
+                    u[:, :rk] @ np.diag(s[:rk]) @ v[:rk]
+                )
+
+            Xproj.append(tmp)
+
+        return Xproj
 
     ##########################
     # Rotation Recovery Step #
