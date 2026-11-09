@@ -56,7 +56,7 @@ def background_neighbor_corr(imgs):
         a = np.delete(imgs, 0, axis=axis)  # delete the first row/col  1,2...L-1
         b = np.delete(imgs, -1, axis=axis)  # delete the last row/col  0,1...L-2
         # Same for mask
-        pair_mask = np.delete(bg, 0, axis=axis) & np.delete(bg, 1, axis=axis)
+        pair_mask = np.delete(bg, 0, axis=axis) & np.delete(bg, -1, axis=axis)
 
         # Apply mask returning (n_img, n_pairs)
         # Compute intermediates in doubles.
