@@ -375,11 +375,10 @@ class CommonlineNUG(Orient3D):
         :return: Relaxed representation matrices.
         """
         pre = self.ADMM_preprocessing(C)
-        blocks = pre.blocks
 
         # Prepare the diagonal and quaternion equality constraints.
         equality = _C1EqualityConstraints(
-            blocks=blocks,
+            blocks=pre.blocks,
             quaternions=pre.quaternions,
         )
 
@@ -410,14 +409,13 @@ class CommonlineNUG(Orient3D):
         :return: Relaxed representation matrices.
         """
         pre = self.ADMM_preprocessing(C)
-        blocks = pre.blocks
 
         rank_Ak, _ = self._compute_rank()
         logger.info(f"Rank of Ak: {rank_Ak}")
 
         # Prepare the symmetry/diagonal and quaternion equality constraints.
         equality = _SymmetricEqualityConstraints(
-            blocks=blocks,
+            blocks=pre.blocks,
             quaternions=pre.quaternions,
             rank_Ak=rank_Ak,
         )
