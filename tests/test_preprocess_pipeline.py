@@ -12,7 +12,7 @@ from aspire.noise import (
 from aspire.operators.filters import FunctionFilter, RadialCTFFilter
 from aspire.source import ArrayImageSource
 from aspire.source.simulation import Simulation
-from aspire.utils import grid_2d, utest_tolerance
+from aspire.utils import grid_2d, support_mask, utest_tolerance
 from aspire.utils.matrix import anorm
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "saved_test_data")
@@ -36,6 +36,44 @@ def get_sim_object(L, dtype):
         dtype=dtype,
     )
     return sim
+
+
+def background_neighbor_corr(imgs):
+    """
+    Helper function to compute mean correlation between neighboring background pixels.
+
+    Computes the correlation for every pair of (horizontal and vertical) adjacent pixels outside the mask, averaged across the pixels and `imgs`.
+
+    :param imgs: `Image` stack, or Numpy array (n_img, L, L).
+    :return: Correlation
+    """
+    bg = ~support_mask(imgs.shape[-1])
+
+    corrs = []
+    # for row/col
+    for axis in (-2, -1):
+        # Pair each pixel with its neighbor along `axis`.
+        a = np.delete(imgs, 0, axis=axis)  # delete the first row/col  1,2...L-1
+        b = np.delete(imgs, -1, axis=axis)  # delete the last row/col  0,1...L-2
+        # Same for mask
+        pair_mask = np.delete(bg, 0, axis=axis) & np.delete(bg, 1, axis=axis)
+
+        # Apply mask returning (n_img, n_pairs)
+        # Compute intermediates in doubles.
+        a = a[:, pair_mask].astype(np.float64)
+        b = b[:, pair_mask].astype(np.float64)
+        # and de-mean each pixel pair.
+        a -= a.mean(axis=0)
+        b -= b.mean(axis=0)
+
+        # covar(a,b) / (std(a)std(b))
+        corrs.append(
+            np.sum(a * b, axis=0)
+            / np.sqrt(np.sum(a * a, axis=0) * np.sum(b * b, axis=0))
+        )
+
+    # Take mean over all images and both directions.
+    return np.mean(np.concatenate(corrs))
 
 
 @pytest.mark.parametrize("L, dtype", params)
@@ -162,14 +200,12 @@ def testWhiten(dtype):
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
     wt_sim = sim.whiten(noise_estimator)
-    imgs_wt = wt_sim.images[:num_images].asnumpy()
+    imgs_wt = wt_sim.images[:num_images]
 
-    # calculate original correlation two neighboring pixels from background
+    # calculate mean correlation between neighboring background pixels
     imgs = sim.images[:num_images].asnumpy()
-    corr_coef = np.corrcoef(imgs[:, L - 1, L - 1], imgs[:, L - 2, L - 1])[0, 1]
-
-    # calculate whitened correlation between two neighboring pixels from background
-    corr_coef_wt = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])[0, 1]
+    corr_coef = background_neighbor_corr(imgs)
+    corr_coef_wt = background_neighbor_corr(imgs_wt)
 
     # correlation should be greatly reduce via whitening
     np.testing.assert_array_less(corr_coef_wt, corr_coef / 2)
@@ -189,12 +225,12 @@ def testWhiten2(dtype):
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
     sim_wt = sim.whiten(noise_estimator.filter)
-    imgs = sim.images[:num_images].asnumpy()
-    imgs_wt = sim_wt.images[:num_images].asnumpy()
+    imgs = sim.images[:num_images]
+    imgs_wt = sim_wt.images[:num_images]
 
-    # calculate correlation between two neighboring pixels from background
-    corr_coef = np.corrcoef(imgs[:, L - 1, L - 1], imgs[:, L - 2, L - 1])[0, 1]
-    corr_coef_wt = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])[0, 1]
+    # calculate mean correlation between neighboring background pixels
+    corr_coef = background_neighbor_corr(imgs)
+    corr_coef_wt = background_neighbor_corr(imgs_wt)
 
     # correlation should be greatly reduce via whitening
     np.testing.assert_array_less(corr_coef_wt, corr_coef / 2)
@@ -213,12 +249,12 @@ def testWhitenNoCTF(dtype):
     sim.filter_stack = None
     noise_estimator = AnisotropicNoiseEstimator(sim)
     sim_wt = sim.whiten(noise_estimator)
-    imgs = sim.images[:num_images].asnumpy()
-    imgs_wt = sim_wt.images[:num_images].asnumpy()
+    imgs = sim.images[:num_images]
+    imgs_wt = sim_wt.images[:num_images]
 
-    # calculate correlation between two neighboring pixels from background
-    corr_coef = np.corrcoef(imgs[:, L - 1, L - 1], imgs[:, L - 2, L - 1])[0, 1]
-    corr_coef_wt = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])[0, 1]
+    # calculate mean correlation between neighboring background pixels
+    corr_coef = background_neighbor_corr(imgs)
+    corr_coef_wt = background_neighbor_corr(imgs_wt)
 
     # correlation should be greatly reduce via whitening
     np.testing.assert_array_less(corr_coef_wt, corr_coef / 2)
@@ -293,12 +329,12 @@ def test_legacy_whiten(dtype):
     sim = get_sim_object(L, dtype)
     sim_wt = sim.legacy_whiten()
 
-    imgs = sim.images[:num_images].asnumpy()
-    imgs_wt = sim_wt.images[:num_images].asnumpy()
+    imgs = sim.images[:num_images]
+    imgs_wt = sim_wt.images[:num_images]
 
-    # calculate correlation between two neighboring pixels from background
-    corr_coef = np.corrcoef(imgs[:, L - 1, L - 1], imgs[:, L - 2, L - 1])[0, 1]
-    corr_coef_wt = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])[0, 1]
+    # calculate mean correlation between neighboring background pixels
+    corr_coef = background_neighbor_corr(imgs)
+    corr_coef_wt = background_neighbor_corr(imgs_wt)
 
     # correlation should be greatly reduce via whitening
     np.testing.assert_array_less(corr_coef_wt, corr_coef / 2)
@@ -318,12 +354,12 @@ def test_legacy_whiten_2(dtype):
     noise_estimator = LegacyNoiseEstimator(sim)
     sim_wt = sim.legacy_whiten(noise_estimator)
 
-    imgs = sim.images[:num_images].asnumpy()
-    imgs_wt = sim_wt.images[:num_images].asnumpy()
+    imgs = sim.images[:num_images]
+    imgs_wt = sim_wt.images[:num_images]
 
-    # calculate correlation between two neighboring pixels from background
-    corr_coef = np.corrcoef(imgs[:, L - 1, L - 1], imgs[:, L - 2, L - 1])[0, 1]
-    corr_coef_wt = np.corrcoef(imgs_wt[:, L - 1, L - 1], imgs_wt[:, L - 2, L - 1])[0, 1]
+    # calculate mean correlation between neighboring background pixels
+    corr_coef = background_neighbor_corr(imgs)
+    corr_coef_wt = background_neighbor_corr(imgs_wt)
 
     # correlation should be greatly reduce via whitening
     np.testing.assert_array_less(corr_coef_wt, corr_coef / 2)
