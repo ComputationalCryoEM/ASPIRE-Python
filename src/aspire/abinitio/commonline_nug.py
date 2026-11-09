@@ -237,25 +237,6 @@ class CommonlineNUG(Orient3D):
             btk = np.sum(bT[:, None, None] * self._Wd(k, beta_grid), axis=0)
             BTK.append(btk.T)
 
-        def fijhat_k(k_idx, F):
-            """
-            Approximate the degree-k Fourier coefficient block of a sampled pairwise loss.
-            """
-            k = k_idx + 1  # degree
-            dk = 2 * k + 1
-
-            exp_alpha_grid = np.zeros((2 * T, dk), dtype=np.complex128)
-            for m in range(-k, k + 1):
-                exp_alpha_grid[:, m + k] = np.exp(1j * m * alpha_grid)
-
-            exp_gamma_grid = np.zeros((2 * T, dk), dtype=np.complex128)
-            for m in range(-k, k + 1):
-                exp_gamma_grid[:, m + k] = np.exp(1j * m * gamma_grid)
-
-            S = (exp_alpha_grid.T @ F @ exp_gamma_grid).T
-            fhat = BTK[k_idx] * S / 4 / T**2
-            return fhat
-
         # Allocate one coefficient matrix per Wigner degree;
         # each is block-indexed by image pair.
         C = []
@@ -275,7 +256,9 @@ class CommonlineNUG(Orient3D):
                         k = k_idx + 1
                         dk = 2 * k + 1
                         C[k_idx][j * dk : (j + 1) * dk, i * dk : (i + 1) * dk] = (
-                            fijhat_k(k_idx, Fij)
+                            self._pairwise_fourier_coeff(
+                                k, Fij, alpha_grid, gamma_grid, BTK[k_idx]
+                            )
                         )
                     pbar.update(1)
 
@@ -289,8 +272,10 @@ class CommonlineNUG(Orient3D):
             for k_idx in range(Lmax):
                 k = k_idx + 1
                 dk = 2 * k + 1
-                C[k_idx][i * dk : (i + 1) * dk, i * dk : (i + 1) * dk] = fijhat_k(
-                    k_idx, Fii
+                C[k_idx][i * dk : (i + 1) * dk, i * dk : (i + 1) * dk] = (
+                    self._pairwise_fourier_coeff(
+                        k, Fii, alpha_grid, gamma_grid, BTK[k_idx]
+                    )
                 )
 
         # Convert complex Wigner coefficients to the real representation basis used by ADMM.
@@ -333,6 +318,40 @@ class CommonlineNUG(Orient3D):
             )
 
         return loss_grid
+
+    @staticmethod
+    def _pairwise_fourier_coeff(k, F, alpha_grid, gamma_grid, beta_weights):
+        """
+        Approximate a degree-k Fourier coefficient matrix of a pairwise loss.
+
+        Sum the sampled loss against complex exponentials on the alpha and gamma
+        grids, then apply the degree-specific beta quadrature weights.
+
+        :param k: Representation degree.
+        :param F: Sampled pairwise loss array of shape (2*T, 2*T), with rows
+            following alpha_grid and columns following gamma_grid.
+        :param alpha_grid: Sampled alpha angles in radians, of shape (2*T,).
+        :param gamma_grid: Sampled gamma angles in radians, of shape (2*T,).
+        :param beta_weights: Degree-specific beta/Wigner weight matrix,
+            of shape (2*k+1, 2*k+1).
+
+        :return: Complex coefficient matrix of shape (2*k+1, 2*k+1).
+        """
+        dk = 2 * k + 1
+
+        # Quadrature resolution: each angular grid contains 2*T samples.
+        T = len(alpha_grid) // 2
+
+        exp_alpha_grid = np.zeros((2 * T, dk), dtype=np.complex128)
+        for m in range(-k, k + 1):
+            exp_alpha_grid[:, m + k] = np.exp(1j * m * alpha_grid)
+
+        exp_gamma_grid = np.zeros((2 * T, dk), dtype=np.complex128)
+        for m in range(-k, k + 1):
+            exp_gamma_grid[:, m + k] = np.exp(1j * m * gamma_grid)
+
+        S = (exp_alpha_grid.T @ F @ exp_gamma_grid).T
+        return beta_weights * S / 4 / T**2
 
     #############
     # ADMM Step #
