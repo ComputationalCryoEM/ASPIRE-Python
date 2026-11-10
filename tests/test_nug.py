@@ -2,7 +2,12 @@ import numpy as np
 import pytest
 
 from aspire.abinitio import CommonlineNUG, compare_rots_sym, g_sync
-from aspire.abinitio.commonline_nug import _C1EqualityConstraints, _QuaternionConstraints, _RepresentationBlocks
+from aspire.abinitio.commonline_nug import (
+    _C1EqualityConstraints,
+    _QuaternionConstraints,
+    _RepresentationBlocks,
+    _SymmetricEqualityConstraints,
+)
 from aspire.downloader import emdb_2660
 from aspire.numeric import xp
 from aspire.source import Simulation
@@ -343,6 +348,7 @@ def test_c1_proximal_refinement_raises(dtype):
     ):
         CommonlineNUG(src, pr_iters=1)
 
+
 def test_c1_equality_adjoint():
     """
     Check that the C1 equality operator and its adjoint agree,
@@ -350,9 +356,9 @@ def test_c1_equality_adjoint():
     """
     blocks = _RepresentationBlocks(n_img=10, Lmax=12)
     equality = _C1EqualityConstraints(blocks, _QuaternionConstraints(blocks))
+    rng = np.random.default_rng(SEED)
 
     # Use random inputs and equality multipliers.
-    rng = np.random.default_rng(SEED)
     X0 = xp.asarray(rng.normal(size=(blocks.D0, blocks.n_packed)))
     X1 = xp.asarray(rng.normal(size=(blocks.D1, blocks.n_packed)))
     Xq = xp.asarray(rng.normal(size=(16, blocks.n_pairs)))
@@ -365,4 +371,38 @@ def test_c1_equality_adjoint():
 
     left = xp.vdot(z0, y0) + xp.vdot(z1, y1) + xp.vdot(zq, yq)
     right = xp.vdot(X0, Z0) + xp.vdot(X1, Z1) + xp.vdot(Xq, Zq)
-    np.testing.assert_allclose(xp.asnumpy(left), xp.asnumpy(right), rtol=1e-12)
+    np.testing.assert_allclose(xp.asnumpy(left), xp.asnumpy(right))
+
+
+def test_symmetric_equality_adjoint():
+    """
+    Check that the symmetric equality operator and its adjoint agree,
+    ie. <AE(X), y> = <X, AE.T(y)>.
+    """
+    blocks = _RepresentationBlocks(n_img=3, Lmax=1)
+    equality = _SymmetricEqualityConstraints(
+        blocks, _QuaternionConstraints(blocks), rank_Ak=[1]
+    )
+    rng = np.random.default_rng(SEED)
+
+    # Use random inputs and equality multipliers.
+    X0 = xp.asarray(rng.normal(size=(blocks.D0, blocks.n_packed)))
+    X1 = xp.asarray(rng.normal(size=(blocks.D1, blocks.n_packed)))
+    Xd0 = xp.asarray(rng.normal(size=(blocks.D0, blocks.n_img)))
+    Xd1 = xp.asarray(rng.normal(size=(blocks.D1, blocks.n_img)))
+    Xq = xp.asarray(rng.normal(size=(16, blocks.n_pairs)))
+    y = xp.asarray(rng.normal(size=equality.bE.shape))
+    yq = xp.asarray(rng.normal(size=equality.bEq.shape))
+
+    z, zq = equality.fun_AE(X0, X1, Xd0, Xd1, Xq)
+    Z0, Z1, Zd0, Zd1, Zq = equality.fun_AET(y, yq)
+
+    left = xp.vdot(z, y) + xp.vdot(zq, yq)
+    right = (
+        xp.vdot(X0, Z0)
+        + xp.vdot(X1, Z1)
+        + xp.vdot(Xd0, Zd0)
+        + xp.vdot(Xd1, Zd1)
+        + xp.vdot(Xq, Zq)
+    )
+    np.testing.assert_allclose(xp.asnumpy(left), xp.asnumpy(right))
