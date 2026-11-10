@@ -237,6 +237,38 @@ def test_c1_admm_pair_batching():
     estimator.perform_admm()
 
 
+def test_c1_admm_batching_matches_one_chunk():
+    """
+    Check that C1 pair batching preserves the ADMM result.
+    """
+    vol = emdb_2660().astype(np.float64).downsample(16)
+    src = Simulation(n=5, vols=vol, offsets=0, rng=SEED).cache()
+
+    # n=5 corresponds to 10 image pairs. So batch_size=3 runs in chunks
+    # and batch_size=10 is a single chunk.
+    results = []
+    for batch_size in (3, 10):
+        np.random.seed(SEED)  # preserve ADMM update order
+        estimator = CommonlineNUG(
+            src,
+            Lmax=2,
+            T=5,
+            S2_grid=50,
+            max_shift=0,
+            max_iter=5,
+            Nstep_yI=1,
+            c1_pair_batch_size=batch_size,
+            pr_iters=None,
+            verbose=False,
+        )
+        estimator.compute_coeff()
+        estimator.perform_admm()
+        results.append(estimator.X_est)
+
+    for k in range(2):
+        np.testing.assert_allclose(results[0][k], results[1][k], rtol=1e-10, atol=1e-10)
+
+
 @pytest.mark.parametrize("block_size", [2, 3, 12, 13])
 def test_mat_block_vec_block_roundtrip(block_size):
     """
@@ -380,9 +412,9 @@ def test_symmetric_equality_adjoint():
     Check that the symmetric equality operator and its adjoint agree,
     ie. <AE(X), y> = <X, AE.T(y)>.
     """
-    blocks = _RepresentationBlocks(n_img=3, Lmax=1)
+    blocks = _RepresentationBlocks(n_img=10, Lmax=12)
     equality = _SymmetricEqualityConstraints(
-        blocks, _QuaternionConstraints(blocks), rank_Ak=[1]
+        blocks, _QuaternionConstraints(blocks), rank_Ak=np.ones(blocks.Lmax)
     )
     rng = np.random.default_rng(SEED)
 
