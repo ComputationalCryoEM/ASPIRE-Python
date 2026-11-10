@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from aspire.abinitio import CommonlineNUG, compare_rots_sym, g_sync
-from aspire.abinitio.commonline_nug import _RepresentationBlocks
+from aspire.abinitio.commonline_nug import _C1EqualityConstraints, _QuaternionConstraints, _RepresentationBlocks
 from aspire.downloader import emdb_2660
 from aspire.numeric import xp
 from aspire.source import Simulation
@@ -342,3 +342,27 @@ def test_c1_proximal_refinement_raises(dtype):
         match=r"Proximal refinement is not supported for asymmetric",
     ):
         CommonlineNUG(src, pr_iters=1)
+
+def test_c1_equality_adjoint():
+    """
+    Check that the C1 equality operator and its adjoint agree,
+    ie. <AE(X), y> = <X, AE.T(y)>.
+    """
+    blocks = _RepresentationBlocks(n_img=10, Lmax=12)
+    equality = _C1EqualityConstraints(blocks, _QuaternionConstraints(blocks))
+
+    # Use random inputs and equality multipliers.
+    rng = np.random.default_rng(SEED)
+    X0 = xp.asarray(rng.normal(size=(blocks.D0, blocks.n_packed)))
+    X1 = xp.asarray(rng.normal(size=(blocks.D1, blocks.n_packed)))
+    Xq = xp.asarray(rng.normal(size=(16, blocks.n_pairs)))
+    y0 = xp.asarray(rng.normal(size=equality.bE0.shape))
+    y1 = xp.asarray(rng.normal(size=equality.bE1.shape))
+    yq = xp.asarray(rng.normal(size=equality.bEq.shape))
+
+    z0, z1, zq = equality.fun_AE(X0, X1, Xq)  # forward
+    Z0, Z1, Zq = equality.fun_AET(y0, y1, yq)  # adjoint
+
+    left = xp.vdot(z0, y0) + xp.vdot(z1, y1) + xp.vdot(zq, yq)
+    right = xp.vdot(X0, Z0) + xp.vdot(X1, Z1) + xp.vdot(Xq, Zq)
+    np.testing.assert_allclose(xp.asnumpy(left), xp.asnumpy(right), rtol=1e-12)
