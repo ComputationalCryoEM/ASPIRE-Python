@@ -58,7 +58,7 @@ IMG_SIZE = 129  # Desired resolution for downsampled images
 # This section demonstrates configuration and execution of CTF estimation using ASPIRE.
 # The results are saved, and imported in a later stage.
 
-ctf_result_dir = "./ctf_estimate_results"
+ctf_result_dir = "./ctf_estimate_results_10005"
 ctf_globber = lambda: glob.glob(os.path.join(ctf_result_dir, "*.star"))
 
 # Because CTF estimation may take some time, This code will skip

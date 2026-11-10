@@ -423,14 +423,16 @@ class CoordinateSource(ImageSource, ABC):
         for mrc_idx, filter_index in enumerate(indices):
             particle_indices_this_mrc = self.mrc_index_to_particles[mrc_idx]
             num_particles_this_mrc = len(particle_indices_this_mrc)
-            self.set_metadata(
-                CTF_params,
-                np.vstack((filter_params[filter_index],) * num_particles_this_mrc),
-                particle_indices_this_mrc,
-            )
-            self.set_metadata(
-                "__filter_indices", filter_index, particle_indices_this_mrc
-            )
+            # Handle empty coord files, nly add metadata if particles in this MRC.
+            if num_particles_this_mrc>0:
+                self.set_metadata(
+                    CTF_params,
+                    np.vstack((filter_params[filter_index],) * num_particles_this_mrc),
+                    particle_indices_this_mrc,
+                )
+                self.set_metadata(
+                    "__filter_indices", filter_index, particle_indices_this_mrc
+                )
 
     @staticmethod
     def _crop_micrograph(data, coord):
