@@ -4,6 +4,7 @@ import pytest
 from aspire.abinitio import CommonlineNUG, compare_rots_sym, g_sync
 from aspire.abinitio.commonline_nug import (
     _C1EqualityConstraints,
+    _FejerConstraints,
     _QuaternionConstraints,
     _RepresentationBlocks,
     _SymmetricEqualityConstraints,
@@ -405,4 +406,32 @@ def test_symmetric_equality_adjoint():
         + xp.vdot(Xd1, Zd1)
         + xp.vdot(Xq, Zq)
     )
+    np.testing.assert_allclose(xp.asnumpy(left), xp.asnumpy(right))
+
+
+@pytest.mark.parametrize("is_asymmetric", [True, False])
+def test_fejer_adjoint(is_asymmetric):
+    """Check <AI(X), y> = <X, AI.T(y)> for Fejér constraints."""
+    blocks = _RepresentationBlocks(n_img=10, Lmax=12)
+    rng = np.random.default_rng(SEED)
+
+    W0 = [rng.normal(size=(5, k, k)) for k in range(1, blocks.Lmax + 1)]
+    W1 = [rng.normal(size=(5, k + 1, k + 1)) for k in range(1, blocks.Lmax + 1)]
+    fejer = _FejerConstraints(
+        W0, W1, blocks, pair_batch_size=20, is_asymmetric=is_asymmetric
+    )
+
+    X0 = xp.asarray(rng.normal(size=(blocks.D0, blocks.n_packed)))
+    X1 = xp.asarray(rng.normal(size=(blocks.D1, blocks.n_packed)))
+
+    if is_asymmetric:
+        z = fejer.fun_AI(X0[:, blocks.idx_offdiag], X1[:, blocks.idx_offdiag])
+    else:
+        z = fejer.fun_AI(X0, X1)
+
+    y = xp.asarray(rng.normal(size=z.shape))
+    Z0, Z1 = fejer.fun_AIT(y)
+
+    left = xp.vdot(z, y)
+    right = xp.vdot(X0, Z0) + xp.vdot(X1, Z1)
     np.testing.assert_allclose(xp.asnumpy(left), xp.asnumpy(right))
