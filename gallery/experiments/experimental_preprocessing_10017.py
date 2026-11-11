@@ -132,7 +132,8 @@ for i in selected_ids:
 # %%
 # Setup CentersCoordinateSource
 # -----------------------------
-#
+# The published coordinates do not follow the MRC lower-left-origin convention,
+# and are loaded with `flip_y=False`.
 
 # Setup Source
 src = CentersCoordinateSource(
@@ -158,33 +159,4 @@ src = src.legacy_downsample(IMG_SIZE).cache()
 src = src.legacy_normalize_background().cache()
 src = src.legacy_whiten().cache()
 src = src.invert_contrast().cache()
-src.save(
-    f"10017_legacy_preproc_{IMG_SIZE}_dev.star", overwrite=True, save_mode="single"
-)
-
-
-# ---- Recon
-from aspire.denoising import LegacyClassAvgSource
-from aspire.reconstruction import MeanEstimator
-from aspire.source import OrientedSource
-
-n_classes = 3000  # How many class averages to compute.
-n_nbor = 50  # How many neighbors to stack
-class_avg_fn = f"10017_var_sorted_cls_avgs_m{n_nbor}_{IMG_SIZE}px.star"
-oriented_fn = f"10017_oriented_class_averages_{IMG_SIZE}px.star"
-volume_output_filename = f"10017_abinitio_c{n_classes}_m{n_nbor}_{IMG_SIZE}px.mrc"
-
-logger.info("Begin Class Averaging")
-avgs = LegacyClassAvgSource(src, n_nbor=n_nbor).cache()
-avgs.save(class_avg_fn, save_mode="single", overwrite=True)
-avgs = avgs[:n_classes].cache()
-
-logger.info("Begin Orientation Estimation")
-oriented_src = OrientedSource(avgs)
-oriented_src.save(oriented_fn, save_mode="single", overwrite=True)
-
-logger.info("Begin Volume reconstruction")
-estimator = MeanEstimator(oriented_src)
-estimated_volume = estimator.estimate()
-estimated_volume.save(volume_output_filename, overwrite=True)
-logger.info(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")
+src.save(f"10017_legacy_preproc_{IMG_SIZE}.star", overwrite=True, save_mode="single")
