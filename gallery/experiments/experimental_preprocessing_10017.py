@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 # These parameters are taken from the published data.
 PIXEL_SIZE = 1.77
-PRTCL_SIZE = 256
+PRTCL_SIZE = 200
 
 # Data location
 root_data_dir = "10017/data"
@@ -47,8 +47,8 @@ centers_flist = glob.glob(os.path.join(root_data_dir, "*.coord"))
 
 
 # These are user configurable
-DTYPE = np.float32
-IMG_SIZE = 129  # Desired resolution for downsampled images
+DTYPE = np.float64
+IMG_SIZE = 89  # Desired resolution for downsampled images
 
 
 # %%
@@ -139,6 +139,7 @@ src = CentersCoordinateSource(
     selected_src_flist,
     pixel_size=PIXEL_SIZE,
     particle_size=PRTCL_SIZE,
+    flip_y=False,
 ).cache()
 
 # Assign CTF estimates to src
@@ -151,12 +152,39 @@ src.import_aspire_ctf(selected_ctf_flist)
 # Execute the preprocessing stack, saving results
 
 # Example preprocessing stack
-legacy_src = src.phase_flip().cache()
-legacy_src = legacy_src.crop_pad(src.L - 1).cache()
-legacy_src = legacy_src.legacy_downsample(IMG_SIZE).cache()
-legacy_src = legacy_src.legacy_normalize_background().cache()
-legacy_src = legacy_src.legacy_whiten().cache()
-legacy_src = legacy_src.invert_contrast().cache()
-legacy_src.save(
-    f"10017_legacy_preproc_{IMG_SIZE}.star", overwrite=True, save_mode="single"
+src = src.phase_flip().cache()
+src = src.crop_pad(src.L - 41).cache()  # crop from 200 to 159
+src = src.legacy_downsample(IMG_SIZE).cache()
+src = src.legacy_normalize_background().cache()
+src = src.legacy_whiten().cache()
+src = src.invert_contrast().cache()
+src.save(
+    f"10017_legacy_preproc_{IMG_SIZE}_dev.star", overwrite=True, save_mode="single"
 )
+
+
+# ---- Recon
+from aspire.denoising import LegacyClassAvgSource
+from aspire.reconstruction import MeanEstimator
+from aspire.source import OrientedSource
+
+n_classes = 3000  # How many class averages to compute.
+n_nbor = 50  # How many neighbors to stack
+class_avg_fn = f"10017_var_sorted_cls_avgs_m{n_nbor}_{IMG_SIZE}px.star"
+oriented_fn = f"10017_oriented_class_averages_{IMG_SIZE}px.star"
+volume_output_filename = f"10017_abinitio_c{n_classes}_m{n_nbor}_{IMG_SIZE}px.mrc"
+
+logger.info("Begin Class Averaging")
+avgs = LegacyClassAvgSource(src, n_nbor=n_nbor).cache()
+avgs.save(class_avg_fn, save_mode="single", overwrite=True)
+avgs = avgs[:n_classes].cache()
+
+logger.info("Begin Orientation Estimation")
+oriented_src = OrientedSource(avgs)
+oriented_src.save(oriented_fn, save_mode="single", overwrite=True)
+
+logger.info("Begin Volume reconstruction")
+estimator = MeanEstimator(oriented_src)
+estimated_volume = estimator.estimate()
+estimated_volume.save(volume_output_filename, overwrite=True)
+logger.info(f"Saved Volume to {str(Path(volume_output_filename).resolve())}")
