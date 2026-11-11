@@ -56,6 +56,7 @@ class CoordinateSource(ImageSource, ABC):
         B,
         symmetry_group,
         bin_multiplier=1,
+        flip_y=True,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
@@ -65,6 +66,7 @@ class CoordinateSource(ImageSource, ABC):
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
         :param bin_multiplier: Optional scalar for datasets where coordinates correspond to binned representations of the micrograph.  Default 1.
+        :param flip_y: Optionally flips the Y coordinate system as per the MRC origin convention.  Default True.  Set to False for coordinates that are opposite of the convention.
         """
         mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
@@ -72,6 +74,7 @@ class CoordinateSource(ImageSource, ABC):
         # it may be None in the case of an BoxesCoordinateSource
         self.particle_size = particle_size
         self.bin_multiplier = float(bin_multiplier)
+        self.flip_y = flip_y
 
         # keep this list to identify micrograph paths by index rather than
         # storing many copies of the same string
@@ -424,7 +427,7 @@ class CoordinateSource(ImageSource, ABC):
             particle_indices_this_mrc = self.mrc_index_to_particles[mrc_idx]
             num_particles_this_mrc = len(particle_indices_this_mrc)
             # Handle empty coord files, nly add metadata if particles in this MRC.
-            if num_particles_this_mrc>0:
+            if num_particles_this_mrc > 0:
                 self.set_metadata(
                     CTF_params,
                     np.vstack((filter_params[filter_index],) * num_particles_this_mrc),
@@ -434,8 +437,7 @@ class CoordinateSource(ImageSource, ABC):
                     "__filter_indices", filter_index, particle_indices_this_mrc
                 )
 
-    @staticmethod
-    def _crop_micrograph(data, coord):
+    def _crop_micrograph(self, data, coord):
         """
         Crops a particle box defined by `coord` out of `data`.
         According to MRC 2014 convention, the origin represents the bottom-left
@@ -446,8 +448,10 @@ class CoordinateSource(ImageSource, ABC):
         """
         start_x, start_y, size_x, size_y = coord
         # Y coordinates are bottom-origin (MRC convention)
-        # Convert the box's lower bound to a row index.
-        y0 = data.shape[0] - (start_y + size_y)
+        y0 = start_y
+        if self.flip_y:
+            # Convert the box's lower bound to a row index.
+            y0 = data.shape[0] - (y0 + size_y)
         # Then flip the data vertically to preserve the MRC Y orientation convention.
         return data[y0 : y0 + size_y, start_x : start_x + size_x][::-1]
 
@@ -494,7 +498,7 @@ class CoordinateSource(ImageSource, ABC):
         # their origin micrograph
         for mrc_index, coord_list in grouped.items():
             # Load file as 2D numpy array.
-            arr = Image._load_raw(self.mrc_paths[mrc_index],verbose=False)[0]
+            arr = Image._load_raw(self.mrc_paths[mrc_index], verbose=False)[0]
 
             # create iterable of the coordinates in this mrc
             # we don't need to worry about exhausting this iter
@@ -543,6 +547,7 @@ class BoxesCoordinateSource(CoordinateSource):
         B=0,
         symmetry_group=None,
         bin_multiplier=1,
+        flip_y=True,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
@@ -552,6 +557,7 @@ class BoxesCoordinateSource(CoordinateSource):
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
         :param bin_multiplier: Optional scalar for datasets where coordinates correspond to binned representations of the micrograph.  Default 1.
+        :param flip_y: Optionally flips the Y coordinate system as per the MRC origin convention.  Default True.  Set to False for coordinates that are opposite of the convention.
         """
         # instantiate super
         CoordinateSource.__init__(
@@ -563,6 +569,7 @@ class BoxesCoordinateSource(CoordinateSource):
             B,
             symmetry_group,
             bin_multiplier=bin_multiplier,
+            flip_y=flip_y,
         )
 
     def _extract_box_size(self, box_file):
@@ -676,6 +683,7 @@ class CentersCoordinateSource(CoordinateSource):
         symmetry_group=None,
         bin_multiplier=1,
         xy_cols=(0, 1),
+        flip_y=True,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
@@ -687,6 +695,7 @@ class CentersCoordinateSource(CoordinateSource):
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
         :param bin_multiplier: Optional scalar for datasets where coordinates correspond to binned representations of the micrograph.  Default 1.
         :param xy_cols: Optionally define columns containing the center x,y coordinates contained in `files`. Zero based indexing, defaults to (0,1).
+        :param flip_y: Optionally flips the Y coordinate system as per the MRC origin convention.  Default True.  Set to False for coordinates that are opposite of the convention.
         """
         self.xy_cols = tuple(xy_cols)
         # instantiate super
@@ -699,6 +708,7 @@ class CentersCoordinateSource(CoordinateSource):
             B,
             symmetry_group,
             bin_multiplier=bin_multiplier,
+            flip_y=flip_y,
         )
 
     def _validate_centers_file(self, coord_file):
