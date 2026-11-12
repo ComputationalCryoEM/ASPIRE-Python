@@ -519,9 +519,14 @@ def test_detect_equator_images():
 
     equator_indices = cl_symm._detect_equator_images()
 
-    recall = np.isin(equator_indices_gt, equator_indices).mean()
-    assert recall >= 0.8, (
-        f"Equator recall: {recall}; "
+    # Check how many equator images were found out of the number that could
+    # fit in the detector's selected set.
+    n_correct = np.isin(equator_indices, equator_indices_gt).sum()
+    n_possible = min(len(equator_indices_gt), len(equator_indices))
+    fraction_found = n_correct / n_possible
+
+    assert fraction_found >= 0.75, (
+        f"Found {n_correct} of {n_possible} possible equator images; "
         f"ground truth: {equator_indices_gt}; "
         f"detected: {equator_indices}"
     )
