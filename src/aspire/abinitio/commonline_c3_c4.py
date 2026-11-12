@@ -102,6 +102,7 @@ class CLSymmetryC3C4(CLOrient3D):
         self.max_iters = max_iters
         self.degree_res = degree_res
 
+        # Check and set C4 equator detection values.
         if not 0 <= equator_fraction <= 1:
             raise ValueError("equator_fraction must be between 0 and 1.")
         if self.order == 3 and equator_fraction:
@@ -109,6 +110,12 @@ class CLSymmetryC3C4(CLOrient3D):
                 "Equator correction is only used for C4; "
                 "equator_fraction is ignored for C3."
             )
+        if (
+            self.order == 4
+            and equator_fraction > 0
+            and self.n_theta % equator_res_factor != 0
+        ):
+            raise ValueError("equator_res_factor must divide n_theta.")
 
         self.equator_fraction = equator_fraction
         self.equator_max_shift = equator_max_shift
