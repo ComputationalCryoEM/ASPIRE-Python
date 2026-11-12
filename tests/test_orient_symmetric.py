@@ -514,7 +514,8 @@ def test_detect_equator_images():
     if len(equator_indices_gt) == 0:
         pytest.skip("Simulation contains no equator views.")
 
-    # Detect equator images and check at least 80% are correctly identified.
+    # Detect equator images and check at least 75% of possible detections
+    # are correctly identified.
     cl_symm = CLSymmetryC3C4(src, symmetry="C4")
 
     equator_indices = cl_symm._detect_equator_images()
