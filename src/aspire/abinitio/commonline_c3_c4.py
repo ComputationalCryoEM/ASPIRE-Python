@@ -48,6 +48,9 @@ class CLSymmetryC3C4(CLOrient3D):
         epsilon=1e-2,
         max_iters=1000,
         degree_res=1,
+        equator_fraction=0,
+        equator_max_shift=5,
+        equator_res_factor=10,
         rng=None,
         mask=True,
         J_weighting=False,
@@ -66,6 +69,12 @@ class CLSymmetryC3C4(CLOrient3D):
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param degree_res: Degree resolution for estimating in-plane rotations.
+        :param equator_fraction: Fraction of C4 images whose self-commonlines
+            are corrected as equator views. Default 0 disables correction.
+        :param equator_max_shift: Integer translation search radius, in pixels,
+            for detecting equator views. Default 5.
+        :param equator_res_factor: Number of angular samples per detector score
+            bin. Default 10.
         :param rng: Optional RNG or seed.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
@@ -92,6 +101,18 @@ class CLSymmetryC3C4(CLOrient3D):
         self.epsilon = epsilon
         self.max_iters = max_iters
         self.degree_res = degree_res
+
+        if not 0 <= equator_fraction <= 1:
+            raise ValueError("equator_fraction must be between 0 and 1.")
+        if self.order == 3 and equator_fraction:
+            logger.warning(
+                "Equator correction is only used for C4; "
+                "equator_fraction is ignored for C3."
+            )
+
+        self.equator_fraction = equator_fraction
+        self.equator_max_shift = equator_max_shift
+        self.equator_res_factor = equator_res_factor
 
         # Setup J-synchronization
         self.J_sync = JSync(
@@ -281,9 +302,12 @@ class CLSymmetryC3C4(CLOrient3D):
             sclmatrix[i] = [scl1, scl2]
 
         # Correct C4 equator self-common-lines using the shared symmetry axis.
-        if order == 4:
-            # Detect equator images.
-            equator_indices = self._detect_equator_images()
+        if order == 4 and self.equator_fraction > 0:
+            equator_indices = self._detect_equator_images(
+                max_shift=self.equator_max_shift,
+                res_factor=self.equator_res_factor,
+                fraction=self.equator_fraction,
+            )
 
             if len(equator_indices) >= 2:
                 # Equator self-common-lines are 180 degrees apart and cannot
