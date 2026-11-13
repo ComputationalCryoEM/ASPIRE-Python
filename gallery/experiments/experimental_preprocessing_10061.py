@@ -131,13 +131,20 @@ for i in selected_ids:
 # %%
 # Setup BoxesCoordinateSource
 # -----------------------------
+# The published coordinates do not follow the MRC lower-left-origin convention,
+# and are loaded with `flip_y=False`.
 #
+# Also do to the extra large box size, the source will crop by half to
+# 768 on load, and skip caching.
 
 # Setup Source
 src = BoxesCoordinateSource(
     selected_src_flist,
     pixel_size=PIXEL_SIZE,
-).cache()
+    particle_size=768,  # half published box
+    flip_y=False,
+)
+
 
 # Assign CTF estimates to src
 # This file list order must match the src list in `BoxesCoordinateSource`
@@ -146,15 +153,17 @@ src.import_aspire_ctf(selected_ctf_flist)
 # %%
 # Preprocessing
 # -------------
-# Execute the preprocessing stack, saving results
+# Execute the preprocessing stack, saving results.
+#
+# Again caching is skipped for the earlier higher pixel count steps.
+# Similarly downsampling is done in smaller batches.
+# Caching is resumed after downsampling for performance.
 
 # Example preprocessing stack
-src = src.phase_flip().cache()
-src = src.crop_pad(src.L - 1).cache()
-src = src.legacy_downsample(IMG_SIZE).cache()
+src = src.phase_flip()
+src = src.crop_pad(src.L - 1)
+src = src.legacy_downsample(IMG_SIZE).cache(batch_size=128)
 src = src.legacy_normalize_background().cache()
 src = src.legacy_whiten().cache()
 src = src.invert_contrast().cache()
-src.save(
-    f"10061_legacy_preproc_{IMG_SIZE}.star", overwrite=True, save_mode="single"
-)
+src.save(f"10061_legacy_preproc_{IMG_SIZE}.star", overwrite=True, save_mode="single")
