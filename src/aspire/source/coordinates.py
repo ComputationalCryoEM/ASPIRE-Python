@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable
 from math import floor
+from operator import itemgetter
 
 import mrcfile
 import numpy as np
@@ -54,6 +55,8 @@ class CoordinateSource(ImageSource, ABC):
         max_rows,
         B,
         symmetry_group,
+        bin_multiplier=1,
+        flip_y=True,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
@@ -62,12 +65,16 @@ class CoordinateSource(ImageSource, ABC):
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
+        :param bin_multiplier: Optional scalar for datasets where coordinates correspond to binned representations of the micrograph.  Default 1.
+        :param flip_y: Optionally flips the Y coordinate system as per the MRC origin convention.  Default True.  Set to False for coordinates that are opposite of the convention.
         """
         mrc_paths, coord_paths = [f[0] for f in files], [f[1] for f in files]
         # the particle_size parameter is the *user-specified* argument
         # and is used in self._populate_particles
         # it may be None in the case of an BoxesCoordinateSource
         self.particle_size = particle_size
+        self.bin_multiplier = float(bin_multiplier)
+        self.flip_y = flip_y
 
         # keep this list to identify micrograph paths by index rather than
         # storing many copies of the same string
@@ -201,9 +208,8 @@ class CoordinateSource(ImageSource, ABC):
         for i in range(self.num_micrographs):
             # read in all coordinates for the given mrc using subclass's
             # method of reading the corresponding coord file
-            self.particles += [
-                (i, coord) for coord in self._coords_list_from_file(coord_paths[i])
-            ]
+            coords = self._coords_list_from_file(coord_paths[i])
+            self.particles += [(i, coord) for coord in coords]
 
     @abstractmethod
     def _coords_list_from_file(self, coord_file):
@@ -331,7 +337,7 @@ class CoordinateSource(ImageSource, ABC):
 
         mrc_shapes = np.zeros((self.num_micrographs, 2), dtype=int)
         for i, mrc in enumerate(self.mrc_paths):
-            mrc_shapes[i, :] = Image._load_raw(mrc)[0].shape
+            mrc_shapes[i, :] = Image._load_raw(mrc, verbose=False)[0].shape
 
         return mrc_shapes
 
@@ -420,17 +426,18 @@ class CoordinateSource(ImageSource, ABC):
         for mrc_idx, filter_index in enumerate(indices):
             particle_indices_this_mrc = self.mrc_index_to_particles[mrc_idx]
             num_particles_this_mrc = len(particle_indices_this_mrc)
-            self.set_metadata(
-                CTF_params,
-                np.vstack((filter_params[filter_index],) * num_particles_this_mrc),
-                particle_indices_this_mrc,
-            )
-            self.set_metadata(
-                "__filter_indices", filter_index, particle_indices_this_mrc
-            )
+            # Handle empty coord files, nly add metadata if particles in this MRC.
+            if num_particles_this_mrc > 0:
+                self.set_metadata(
+                    CTF_params,
+                    np.vstack((filter_params[filter_index],) * num_particles_this_mrc),
+                    particle_indices_this_mrc,
+                )
+                self.set_metadata(
+                    "__filter_indices", filter_index, particle_indices_this_mrc
+                )
 
-    @staticmethod
-    def _crop_micrograph(data, coord):
+    def _crop_micrograph(self, data, coord):
         """
         Crops a particle box defined by `coord` out of `data`.
         According to MRC 2014 convention, the origin represents the bottom-left
@@ -440,7 +447,13 @@ class CoordinateSource(ImageSource, ABC):
         :param coord: A list of integers: (lower left X, lower left Y, X, Y)
         """
         start_x, start_y, size_x, size_y = coord
-        return data[start_y : start_y + size_y, start_x : start_x + size_x]
+        # Y coordinates are bottom-origin (MRC convention)
+        y0 = start_y
+        if self.flip_y:
+            # Convert the box's lower bound to a row index.
+            y0 = data.shape[0] - (y0 + size_y)
+        # Then flip the data vertically to preserve the MRC Y orientation convention.
+        return data[y0 : y0 + size_y, start_x : start_x + size_x][::-1]
 
     def _images(self, indices):
         """
@@ -485,7 +498,7 @@ class CoordinateSource(ImageSource, ABC):
         # their origin micrograph
         for mrc_index, coord_list in grouped.items():
             # Load file as 2D numpy array.
-            arr = Image._load_raw(self.mrc_paths[mrc_index])[0]
+            arr = Image._load_raw(self.mrc_paths[mrc_index], verbose=False)[0]
 
             # create iterable of the coordinates in this mrc
             # we don't need to worry about exhausting this iter
@@ -533,6 +546,8 @@ class BoxesCoordinateSource(CoordinateSource):
         max_rows=None,
         B=0,
         symmetry_group=None,
+        bin_multiplier=1,
+        flip_y=True,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
@@ -541,6 +556,8 @@ class BoxesCoordinateSource(CoordinateSource):
         :param max_rows: Maximum number of particles to read. (If `None`, will attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
+        :param bin_multiplier: Optional scalar for datasets where coordinates correspond to binned representations of the micrograph.  Default 1.
+        :param flip_y: Optionally flips the Y coordinate system as per the MRC origin convention.  Default True.  Set to False for coordinates that are opposite of the convention.
         """
         # instantiate super
         CoordinateSource.__init__(
@@ -551,6 +568,8 @@ class BoxesCoordinateSource(CoordinateSource):
             max_rows,
             B,
             symmetry_group,
+            bin_multiplier=bin_multiplier,
+            flip_y=flip_y,
         )
 
     def _extract_box_size(self, box_file):
@@ -662,6 +681,9 @@ class CentersCoordinateSource(CoordinateSource):
         max_rows=None,
         B=0,
         symmetry_group=None,
+        bin_multiplier=1,
+        xy_cols=(0, 1),
+        flip_y=True,
     ):
         """
         :param files: A list of tuples of the form (path_to_mrc, path_to_coord)
@@ -671,7 +693,11 @@ class CentersCoordinateSource(CoordinateSource):
         attempt to load all particles)
         :param B: CTF envelope decay factor
         :param symmetry_group: A `SymmetryGroup` object or string corresponding to the symmetry of the molecule.
+        :param bin_multiplier: Optional scalar for datasets where coordinates correspond to binned representations of the micrograph.  Default 1.
+        :param xy_cols: Optionally define columns containing the center x,y coordinates contained in `files`. Zero based indexing, defaults to (0,1).
+        :param flip_y: Optionally flips the Y coordinate system as per the MRC origin convention.  Default True.  Set to False for coordinates that are opposite of the convention.
         """
+        self.xy_cols = tuple(xy_cols)
         # instantiate super
         CoordinateSource.__init__(
             self,
@@ -681,6 +707,8 @@ class CentersCoordinateSource(CoordinateSource):
             max_rows,
             B,
             symmetry_group,
+            bin_multiplier=bin_multiplier,
+            flip_y=flip_y,
         )
 
     def _validate_centers_file(self, coord_file):
@@ -737,10 +765,16 @@ class CentersCoordinateSource(CoordinateSource):
         Given a coordinate file with (x,y) particle centers,
         return a list of coordinates in box format.
         """
+        # assign the x,y columns from `coord_file`
+        get_xy = itemgetter(*self.xy_cols)
         # check if it's a STAR file list of centers
         if os.path.splitext(coord_file)[1] == ".star":
             return self._coords_list_from_star(coord_file)
         # otherwise we assume text file format with one coord per line:
         with open(coord_file, "r") as infile:
-            lines = [[float(c) for c in line.split()] for line in infile.readlines()]
+            lines = [
+                [float(c) * self.bin_multiplier for c in get_xy(line.split())]
+                for line in infile.readlines()
+            ]
+
         return [self._box_coord_from_center(line, self.particle_size) for line in lines]

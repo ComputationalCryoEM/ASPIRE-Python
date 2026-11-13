@@ -90,11 +90,12 @@ def normalize_bg(imgs, bg_radius=1.0, do_ramp=True, shifted=False, ddof=0):
     return imgs.astype(input_dtype, copy=False)
 
 
-def load_mrc(filepath):
+def load_mrc(filepath, verbose=True):
     """
     Load raw data from `.mrc` into an array.
 
     :param filepath: File path (string).
+    :param verbose: Optionally emit/log warnings. Default True.
     :return: (numpy array of image data, pixel_size)
     """
 
@@ -118,7 +119,7 @@ def load_mrc(filepath):
 
         # Log a single warning to user
         # Give context and note assocated filepath
-        if len(ws) > 0:
+        if verbose and (len(ws) > 0):
             logger.warning(
                 f"Image.load of {filepath} reporting {len(ws)} corruptions."
                 " Most likely this is a problem with the header contents."
@@ -129,7 +130,7 @@ def load_mrc(filepath):
     return im, pixel_size
 
 
-def load_tiff(filepath):
+def load_tiff(filepath, verbose=True):
     """
     Load raw data from `.tiff` into an array.
 
@@ -138,6 +139,7 @@ def load_tiff(filepath):
     `Image` instances when required. Defaults to `pixel_size=None`.
 
     :param filepath: File path (string).
+    :param verbose: Optionally emit/log warnings. Default True.
     :return: (numpy array of image data, pixel_size=None)
     """
     # Use PIL to open `filepath`
@@ -756,7 +758,7 @@ class Image:
                 mrc.voxel_size = self.pixel_size
 
     @staticmethod
-    def _load_raw(filepath, dtype=None):
+    def _load_raw(filepath, dtype=None, verbose=True):
         """
         Load raw data from supported files.
 
@@ -765,6 +767,7 @@ class Image:
         :param filepath: File path (string).
         :param dtype: Optionally force cast to `dtype`.
              Default dtype is inferred from the file contents.
+        :param verbose: Optionally emit/log warnings. Default True.
         :returns:
             - numpy array of image data.
             - pixel size
@@ -780,7 +783,7 @@ class Image:
             )
 
         # Call the appropriate file reader
-        im, pixel_size = Image.extensions[ext](filepath)
+        im, pixel_size = Image.extensions[ext](filepath, verbose=verbose)
 
         # Attempt casting when user provides dtype
         if dtype is not None:
@@ -1037,7 +1040,8 @@ class Image:
         # Convert from recarray to single values,
         #   checks uniformity.
         if isinstance(vx, np.recarray):
-            if vx.x != vx.y:
+            # Avoid spamming for nan voxels
+            if np.isfinite(vx.x) and vx.x != vx.y:
                 logger.warning(f"Voxel sizes are not uniform: {vx}")
             vx = vx.x
 

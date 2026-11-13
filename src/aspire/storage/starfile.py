@@ -41,7 +41,7 @@ class StarFile:
                 logger.error(f"Could not open {self.filepath}")
                 raise FileNotFoundError
             self._initialize_blocks()
-        logger.info(f"Created {self}")
+        logger.debug(f"Created {self} at {self.filepath}")
 
     def _initialize_blocks(self):
         """
