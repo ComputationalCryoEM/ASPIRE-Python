@@ -10,7 +10,7 @@ from aspire.abinitio import (
 )
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
 from aspire.abinitio.commonline_utils import _cl_angles_to_ind
-from aspire.source import Simulation
+from aspire.source import ArrayImageSource, Simulation
 from aspire.utils import (
     J_conjugate,
     Rotation,
@@ -426,6 +426,41 @@ def test_commonlines(n_img, L, order, dtype):
     within_1 = within_1_degree / n_estimates
     assert within_5 > 0.98
     assert within_1 > 0.90
+
+
+def test_prune_images():
+    """
+    Test that image removal updates the source and associated data.
+    """
+    n_img, L = 5, 12
+
+    # Use distinct values so incorrect image or pair indices are visible.
+    images = np.arange(n_img * L * L, dtype=np.float32).reshape(n_img, L, L)
+    src = ArrayImageSource(images, pixel_size=1)
+    est = CLSymmetryC3C4(src, symmetry="C4", n_theta=36, non_rank1_removal_fraction=0.4)
+
+    pf = np.arange(n_img * 18 * 5, dtype=np.float32).reshape(n_img, 18, 5)
+    est._pf = pf.astype(np.complex64)
+    est.clmatrix = np.arange(25).reshape(5, 5)
+
+    # Remove original images 1 and 3, leaving images 0, 2, and 4 in order.
+    est._image_indices_to_remove = np.array([1, 3])
+
+    vijs = np.arange(10 * 9).reshape(10, 3, 3)
+    viis = np.arange(n_img * 9).reshape(n_img, 3, 3)
+    kept_vijs, kept_viis = est._prune_images(vijs, viis)
+
+    # Check that the retained source and cached data refer to the same images.
+    np.testing.assert_array_equal(est.src.index_map, [0, 2, 4])
+    np.testing.assert_array_equal(est.src.images[:].asnumpy(), images[[0, 2, 4]])
+    np.testing.assert_array_equal(est.pf, pf[[0, 2, 4]])
+    np.testing.assert_array_equal(est.clmatrix, [[0, 2, 4], [10, 12, 14], [20, 22, 24]])
+    np.testing.assert_array_equal(kept_viis, viis[[0, 2, 4]])
+
+    # In the original pair ordering, positions 1, 3, and 8 are
+    # (0, 2), (0, 4), and (2, 4).
+    np.testing.assert_array_equal(kept_vijs, vijs[[1, 3, 8]])
+    assert est.n_img == est.src.n == est.n_check == 3
 
 
 @pytest.mark.parametrize(

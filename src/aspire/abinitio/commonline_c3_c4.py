@@ -72,8 +72,10 @@ class CLSymmetryC3C4(CLOrient3D):
         :param degree_res: Degree resolution for estimating in-plane rotations.
         :param non_rank1_removal_fraction: Fraction of images with the fewest
             successful rank-one pairs to remove. Default 0 disables removal.
+            In practice, 0.25 has been used on experimental datasets.
         :param equator_fraction: Fraction of C4 images whose self-commonlines
             are corrected as equator views. Default 0 disables correction.
+            In practice, 0.1 has been used on experimental datasets.
         :param equator_max_shift: Integer translation search radius, in pixels,
             for detecting equator views. Default 5.
         :param equator_res_factor: Number of angular samples per detector score
