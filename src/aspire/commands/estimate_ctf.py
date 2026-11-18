@@ -42,10 +42,13 @@ logger = logging.getLogger("aspire")
     "--g_min",
     default=30,
     type=float,
-    help="Inverse of minimum resolution for Power Spectrum Distribution",
+    help="Lowest resolution (Angstrom) of PSD band used in fit",
 )
 @click.option(
-    "--g_max", default=5, type=float, help="Inverse of maximum resolution for PSD"
+    "--g_max",
+    default=5,
+    type=float,
+    help="Highest resolution (Angstrom) of PSD band used in fit",
 )
 @click.option(
     "--min_defocus",

@@ -98,8 +98,8 @@ class CtfEstimator:
         :param psd_size: Block size (in pixels) for PSD estimation. Default 1024.
         :param num_tapers: Optional, number of tapers to apply in PSD estimation.
             Defaults to 4.
-        :param g_min: Inverse of minimum resolution for PSD. Default 30.
-        :param g_max: Inverse of maximum resolution for PSD. Default 5.
+        :param g_min: Lowest resolution (Angstrom) of PSD band used in fit. Default 30.
+        :param g_max: Highest resolution (Angstrom) of PSD band used in fit. Default 5.
         :param min_defocus: Start of defocus loop scan (Angstrom). Default 5000.
         :param max_defocus: End of defocus loop scan (Angstrom). Default 100000.
         :param step_defocus: Step size of defocus loop scan (Angstrom). Default 10.
@@ -1062,8 +1062,8 @@ def estimate_ctf(
     :param num_tapers: Optional, number of tapers to apply in PSD estimation.
         Defaults to 4.
     :param psd_size: Block size (in pixels) for PSD estimation.
-    :param g_min: Inverse of minimum resolution for PSD. Default 30.
-    :param g_max: Inverse of maximum resolution for PSD. Default 5.
+    :param g_min: Lowest resolution (Angstrom) of PSD band used in fit. Default 30.
+    :param g_max: Highest resolution (Angstrom) of PSD band used in fit. Default 5.
     :param min_defocus: Start of defocus loop scan (Angstrom). Default 5000.
     :param max_defocus: End of defocus loop scan (Angstrom). Default 100000.
     :param step_defocus: Step size of defocus loop scan (Angstrom). Default 10.
