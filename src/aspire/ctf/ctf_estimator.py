@@ -390,6 +390,7 @@ class CtfEstimator:
             )
 
         amplitude_spectrum = amplitude_spectrum.asnumpy()[0, center, center:]
+        # Magic Low Pass 1
         amplitude_spectrum = amplitude_spectrum[
             0 : 3 * amplitude_spectrum.shape[-1] // 4
         ]
@@ -483,6 +484,7 @@ class CtfEstimator:
         signal = xp.asarray(amplitude_spectrum.T)
         signal = xp.maximum(0.0, signal)
         signal = xp.sqrt(signal)
+        # Magic Low Pass 2
         signal = signal[: 3 * signal.shape[0] // 4]
         N, M = signal.shape
 
@@ -504,27 +506,34 @@ class CtfEstimator:
             )
         )
 
+        # Want sums per column m (low freq cutoff m+1),
+        #   rows i > m.
+        # Construct a triangular mask
+        T = xp.tril(xp.ones((N, M), dtype=self.dtype), k=-1)
+        # counts rows below diagonal for each column
+        nrows = T.sum(axis=0)
+
         # Compute `signal` statistics, independent of defocus
-        LT = xp.tril(signal, k=-1)  # keep lower triangle
+        LT = T * signal  # keep lower triangle
         sx = LT.sum(axis=0)  # sum of row values
         sxx = (LT * LT).sum(axis=0)  # sum of squared row values
-        nrows = (N - 1 - xp.arange(M)).astype(
-            self.dtype
-        )  # rows below diagonal for each column
         Sxx = sxx - sx**2 / nrows  # centered
 
-        # CTF statistics
+        # CTF statistics, column sums over rows i > m
+        # Perform sums for all defoci in ctf_ims at once using a GEMM
         ctf_ims = xp.asarray(ctf_ims, dtype=self.dtype)[:, :N]
-        sy = tail_sum(ctf_ims, M)
-        syy = tail_sum(ctf_ims * ctf_ims, M)
-        Syy = syy - sy**2 / nrows
+        sy = ctf_ims @ T  # sum of row values
+        syy = (ctf_ims * ctf_ims) @ T  # sum of squared row values
+        Syy = syy - sy**2 / nrows  # centered
 
-        # Compute the cross corr using one GEMM
-        c = ctf_ims @ LT
-        c -= sy * sx[None, :] / nrows
-        c = c / xp.sqrt(Sxx[None, :] * Syy)
+        # Compute the cross corr for all defoci using one GEMM
+        sxy = ctf_ims @ LT  # compute all cross sums
+        Sxy = sxy - sy * sx[None, :] / nrows  # center for covariance
+        c = Sxy / xp.sqrt(Sxx[None, :] * Syy)  # normalize for correlation
 
+        # Find the index for the best cross correlation
         max_c = xp.argmax(c).item()
+        # Convert the max_c location into a defocus step index and cutoff index
         avg_defocus_steps, low_freq_cutoff_col = np.unravel_index(max_c, c.shape)[:2]
         # Convert from number of steps to nm defocus units
         avg_defocus_nm = (
@@ -1195,10 +1204,3 @@ else:
     # numpy expression fallback
     def _abs2_sum0(x, out):
         out[:] = (x.real**2 + x.imag**2).sum(axis=0)
-
-
-# Helper function
-def tail_sum(x, M):
-    """sum over i > m  (exclusive reverse cumsum)"""
-    cs = xp.cumsum(x, axis=1)
-    return cs[:, -1:] - cs[:, :M]
