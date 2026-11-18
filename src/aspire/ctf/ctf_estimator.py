@@ -318,19 +318,29 @@ class CtfEstimator:
 
         return Image(xp.asnumpy(amplitude_spectrum), pixel_size=self.pixel_size)
 
-    def radial_average(self, amplitude_spectrum):
+    def elliptical_average(self, amplitude_spectrum, circular=False):
         """
-        Computes radial average of the power spectrum.
+        Computes elliptical (or circular) average of the power spectrum.
+
+        The spectrum is expanded in `self.basis` and split/masked by
+        angular frequency.  For the circular case, the returned
+        `noise` is `None` to save computation.
 
         :param amplitude_spectrum: Power spectrum to average.
-        :return: PSD and noise as 2-tuple of Image instances
+        :param circular: Optionally zero the angular indices equal to
+            2 (astigmatic) component for a circular (radial) average.
+            Default False.
+        :return: PSD and noise as 2-tuple of Image instances.  Note `noise` is `None` for circular case.
         """
-        noise = amplitude_spectrum  # pass through
+
         coefs_s = self.basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
+        if circular:
+            coefs_n = coefs_s.copy()
+        else:
+            noise = None
 
-        mask_s = (self.basis.angular_indices == 1) | (self.basis.angular_indices == 2)
-        coefs_s[:, mask_s] = 0
-
+        ells = self.basis.angular_indices
+        coefs_s[:, (ells == 1) | (circular & (ells == 2))] = 0
         psd = Coef(
             self.basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size
         ).evaluate()
@@ -341,41 +351,15 @@ class CtfEstimator:
             )
             psd = Image(np.maximum(psd, 0), pixel_size=self.pixel_size)
 
-        return psd, noise
-
-    def elliptical_average(self, amplitude_spectrum):
-        """
-        Computes elliptical average of the power spectrum.
-
-        :param amplitude_spectrum: Power spectrum to average.
-        :return: PSD and noise as 2-tuple of Image instances.
-        """
-
-        coefs_s = self.basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
-        coefs_n = coefs_s.copy()
-
-        mask_s = self.basis.angular_indices == 1
-        coefs_s[:, mask_s] = 0
-
-        mask_n = (self.basis.angular_indices == 0) | (self.basis.angular_indices == 2)
-        coefs_n[:, mask_n] = 0
-
-        noise = Coef(
-            self.basis, coefs_n, pixel_size=amplitude_spectrum.pixel_size
-        ).evaluate()
-        psd = Coef(
-            self.basis, coefs_s, pixel_size=amplitude_spectrum.pixel_size
-        ).evaluate()
-
-        if (_min := np.min(psd)) < 0:
-            logger.debug(
-                f"PSD should be strictly greater than 0, found {_min}, clipping to 0."
-            )
-            psd = Image(np.maximum(psd, 0), pixel_size=self.pixel_size)
-        if (_min := np.min(noise)) < 0:
-            logger.debug(
-                f"noise should be strictly greater than 0, found {_min}, clipping to 0."
-            )
+        if circular:
+            coefs_n[:, (ells == 0) | (ells == 2)] = 0
+            noise = Coef(
+                self.basis, coefs_n, pixel_size=amplitude_spectrum.pixel_size
+            ).evaluate()
+            if (_min := np.min(noise)) < 0:
+                logger.debug(
+                    f"noise should be strictly greater than 0, found {_min}, clipping to 0."
+                )
             noise = Image(np.maximum(noise, 0), pixel_size=self.pixel_size)
 
         return psd, noise
@@ -949,7 +933,7 @@ class CtfEstimator:
 
         signal_observed = self.estimate_psd(micrograph_blocks)
 
-        amplitude_spectrum, _ = self.radial_average(signal_observed)
+        amplitude_spectrum, _ = self.elliptical_average(signal_observed, circular=True)
 
         signal_1d, background_1d = self.background_subtract_1d(
             amplitude_spectrum, linprog_method=self.linprog_method
