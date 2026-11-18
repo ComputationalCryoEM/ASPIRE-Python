@@ -347,7 +347,7 @@ class CtfEstimator:
         """
 
         coefs_s = self.basis.evaluate_t(amplitude_spectrum).asnumpy().copy()
-        if circular:
+        if not circular:
             coefs_n = coefs_s.copy()
         else:
             noise = None
@@ -364,7 +364,7 @@ class CtfEstimator:
             )
             psd = Image(np.maximum(psd, 0), pixel_size=self.pixel_size)
 
-        if circular:
+        if not circular:
             coefs_n[:, (ells == 0) | (ells == 2)] = 0
             noise = Coef(
                 self.basis, coefs_n, pixel_size=amplitude_spectrum.pixel_size
