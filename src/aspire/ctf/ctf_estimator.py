@@ -106,7 +106,7 @@ class CtfEstimator:
         :param basis: Optional user provided SteerableBasis2D.  Defaults to `FFBBasis2D`.
         :param solver_method: Solver used to optimize defocus params.  `gd` or `bfgs`.
             Default uses single call to `bfgs`.
-            Original implementation used repeated gradient descent and is provided for reproducibility.
+            Original implementation used repeated gradient descent and is provided as `gd` for reproducibility.
             Each solver may have unique configuration options, optionally passed via a dictionary.
         :param solver_opts: Optional dictionary of solver options.
             Populated with `default_solver_opts[solver]` by default.
@@ -1075,7 +1075,7 @@ def estimate_ctf(
     :param save_noise_images: Save diagnostic noise images.
     :param solver_method: Solver used to optimize defocus params.  `gd` or `bfgs`.
         Default uses single call to `bfgs`.
-        Original implementation used repeated gradient descent and is provided for reproducibility.
+        Original implementation used repeated gradient descent and is provided as `gd` for reproducibility.
         Each solver may have unique configuration options, optionally passed via a dictionary.
     :param solver_opts: Optional dictionary of solver options.
         Populated with `CtfEstimator.default_solver_opts[solver]` by default.
