@@ -612,6 +612,68 @@ class CtfEstimator:
 
         return ratio
 
+    @staticmethod
+    def _defocus_to_xyz(df1, df2, angle_ast):
+        """
+        Convert defocus parameters to the (x, y, z) solver variables.
+
+        :param df1: Defocus value in the direction perpendicular to df2.
+        :param df2: Defocus value in the direction perpendicular to df1.
+        :param angle_ast: Angle between df1 and the x-axis, Radians.
+        :return: NumPy array [x, y, z].
+        """
+        return np.array(
+            [
+                df1 + df2,
+                (df1 - df2) * np.cos(2 * angle_ast),
+                (df1 - df2) * np.sin(2 * angle_ast),
+            ]
+        )
+
+    @staticmethod
+    def _xyz_to_defocus(v):
+        """
+        Convert (x, y, z) solver variables back to defocus parameters.
+
+        :param v: Solver variables [x, y, z].
+        :return: df1, df2, angle_ast (Radians).
+        """
+        x, y, z = v
+        df1 = (x + np.hypot(y, z)) / 2
+        df2 = (x - np.hypot(y, z)) / 2
+        angle_ast = np.arctan2(z, y) / 2
+        return df1, df2, angle_ast
+
+    def _solver_setup(self, signal):
+        """
+        Precompute solver terms that do not depend on the solver variables.
+
+        :param signal: Signal PSD as an Image.
+        :return: 4-tuple (A, b, sig, sum_A)
+        """
+        signal = signal.asnumpy()[0].T
+        N = signal.shape[1]
+        center = N // 2
+
+        rad_sq_min = N * self.pixel_size / self.g_min
+        rad_sq_max = N * self.pixel_size / self.g_max
+
+        max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
+        min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
+        mask = (self.r_ctf <= max_val) & (self.r_ctf > min_val)
+
+        # Everything below depends only on the ring of pixels
+        r2 = self.r_ctf[mask] ** 2
+        a = (np.pi * self.lmbd / 2) * r2
+        b = (np.pi * self.lmbd**3 * self.cs * 1e6 / 2) * r2**2 - self.amplitude_contrast
+
+        sig = np.ascontiguousarray(signal[mask])  # repack for compute below
+        theta2 = 2 * self.theta[mask]
+        A = np.ascontiguousarray(np.stack([a, a * np.cos(theta2), a * np.sin(theta2)]))
+        sum_A = sig @ sig
+
+        return A, b, sig, sum_A
+
     def _gd(
         self,
         signal,
@@ -635,43 +697,17 @@ class CtfEstimator:
         :return: Optimal defocus parameters
         """
 
+        # step sizes for (x, y, z)
+        alpha = np.array([1e5, 1e4, 1e4])
+
         if stop_cond is None:
             stop_cond = 1e-10 if self.dtype == np.float32 else 1e-20
         stop_cond = float(stop_cond)
 
-        # step sizes for (x, y, z)
-        alpha = np.array([1e5, 1e4, 1e4])
+        A, b, sig, sum_A = self._solver_setup(signal)
 
-        # initialization
-        x = df1 + df2
-        y = (df1 - df2) * np.cos(2 * angle_ast)
-        z = (df1 - df2) * np.sin(2 * angle_ast)
-
-        signal = signal.asnumpy()[0].T
-        N = signal.shape[1]
-        center = N // 2
-
-        rad_sq_min = N * self.pixel_size / self.g_min
-        rad_sq_max = N * self.pixel_size / self.g_max
-
-        max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
-        min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
-        mask = (self.r_ctf <= max_val) & (self.r_ctf > min_val)
-
-        # everything below depends only on the ring of pixels
-        r2 = self.r_ctf[mask] ** 2
-        a = (np.pi * self.lmbd / 2) * r2
-        b = (np.pi * self.lmbd**3 * self.cs * 1e6 / 2) * r2**2 - self.amplitude_contrast
-
-        sig = np.ascontiguousarray(signal[mask])  # repack for compute below
-        theta2 = 2 * self.theta[mask]
-
-        # Referencing old implementation,
-        # psi = x*a + y*a*cos2t + z*a*sin2t - b  ==  v @ A - b
-        A = np.ascontiguousarray(np.stack([a, a * np.cos(theta2), a * np.sin(theta2)]))
-
-        sum_A = sig @ sig
-        v = np.array([x, y, z], dtype=A.dtype)
+        # Initial solver variables v = [x, y, z]
+        v = self._defocus_to_xyz(df1, df2, angle_ast)
         W = np.empty((sig.size, 2), dtype=A.dtype)
 
         def evaluate(v, need_grad=True):
@@ -707,10 +743,7 @@ class CtfEstimator:
                 stop_cond = max(dx, dy, dz) + 1
             iter_no += 1
 
-        x, y, z = v
-        df1 = (x + np.hypot(y, z)) / 2
-        df2 = (x - np.hypot(y, z)) / 2
-        angle_ast = np.arctan2(z, y) / 2
+        df1, df2, angle_ast = self._xyz_to_defocus(v)
 
         c1, c2, _ = evaluate(v, need_grad=False)
         p = c1 / c2
@@ -721,10 +754,12 @@ class CtfEstimator:
         self, signal, initial_df1, initial_df2, gradient_descent_iterations=6, **kwargs
     ):
         """
-        Calls gradient descent loop multiple times and
-        returns best optimum found.
+        Calls gradient descent returning the best optimum defocus and angle found.
 
-        This implementation was adapted and optimized from the original MATLAB code.
+        This method repeats gradient descent from multiple starting angles
+        to avoid poor local optimal values.
+
+        The implementation was adapted and optimized from the original MATLAB code.
 
         :param signal: Signal PSD array.
         :param initial_df1: Initial major defocus (nm)
@@ -780,38 +815,14 @@ class CtfEstimator:
         :return: defocus_u_nm, defocus_v_nm, defocus_ang_radian
         """
 
-        # Initial v = [x, y, z]
-        angle_ast = np.deg2rad(-75)  # legacy value, shouldn't matter in bfgs
-        v0 = np.array(
-            [
-                initial_df1 + initial_df2,
-                (initial_df1 - initial_df2) * np.cos(2 * angle_ast),
-                (initial_df1 - initial_df2) * np.sin(2 * angle_ast),
-            ]
-        )
-
-        signal = signal.asnumpy()[0].T
-        N = signal.shape[1]
-        center = N // 2
-        rad_sq_min = N * self.pixel_size / self.g_min
-        rad_sq_max = N * self.pixel_size / self.g_max
-
-        max_val = self.r_ctf[center, int(center - 1 + np.floor(rad_sq_max))]
-        min_val = self.r_ctf[center, int(center - 1 + np.ceil(rad_sq_min))]
-        mask = (self.r_ctf <= max_val) & (self.r_ctf > min_val)
-
-        # Everything that does not depend on (x, y, z)
-        # psi = x*a + y*a*cos(2t) + z*a*sin(2t) - b  ==  v @ A - b
-        r2 = self.r_ctf[mask] ** 2
-        a = (np.pi * self.lmbd / 2) * r2
-        b = (np.pi * self.lmbd**3 * self.cs * 1e6 / 2) * r2**2 - self.amplitude_contrast
-        sig = np.ascontiguousarray(signal[mask])
-        theta2 = 2 * self.theta[mask]
-        A = np.ascontiguousarray(np.stack([a, a * np.cos(theta2), a * np.sin(theta2)]))
-        sum_A = sig @ sig
-
         # Variable scaling
         scale = np.array([1e2, 1e1, 1e1])
+
+        # Initial solver variables v = [x, y, z]
+        angle_ast = np.deg2rad(-75)  # legacy value, shouldn't matter in bfgs
+        v0 = self._defocus_to_xyz(initial_df1, initial_df2, angle_ast)
+
+        A, b, sig, sum_A = self._solver_setup(signal)
 
         def neg_p_and_grad(u):
             v = u * scale
@@ -837,10 +848,7 @@ class CtfEstimator:
             options={"gtol": gtol, "maxiter": maxiter},
         )
 
-        x, y, z = res.x * scale
-        df1 = (x + np.hypot(y, z)) / 2  # nm
-        df2 = (x - np.hypot(y, z)) / 2  # nm
-        angle_ast = np.arctan2(z, y) / 2  # Radians
+        df1, df2, angle_ast = self._xyz_to_defocus(res.x * scale)
 
         logger.debug(f"BFGS :\tp={-res.fun}\titers={res.nit}")
 
