@@ -266,16 +266,18 @@ def testWhitenNoCTF(dtype):
 def test_whiten_safeguard(dtype):
     """Test that whitening safeguard works as expected."""
     L = 25
-    epsilon = 0.02
     sim = get_sim_object(L, dtype)
     noise_estimator = AnisotropicNoiseEstimator(sim)
+    filt_vals = noise_estimator.filter.xfer_fn_array
+
+    # Use the `filt_vals` PSD to choose an epsilon that forces using the guard.
+    epsilon = np.quantile(filt_vals, 0.1)  # 10% of values should hit guard
     sim = sim.whiten(noise_estimator.filter, epsilon=epsilon)
 
     # Get whitening_filter from generation pipeline.
     whiten_filt = sim.generation_pipeline.xforms[0].filter.evaluate_grid(sim.L)
 
     # Generate whitening_filter without safeguard directly from noise_estimator.
-    filt_vals = noise_estimator.filter.xfer_fn_array
     whiten_filt_unsafe = filt_vals**-0.5
 
     # Get indices where safeguard should be applied
