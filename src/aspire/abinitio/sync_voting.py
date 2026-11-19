@@ -62,7 +62,7 @@ def _syncmatrix_ij_vote_3n(
 
 def _syncrotations(S):
     """
-    Compute the rotations from the syncronization matrix S.
+    Compute the rotations from the synchronization matrix S.
 
     :param S: A 2Kx2K synchronization matrix.
 

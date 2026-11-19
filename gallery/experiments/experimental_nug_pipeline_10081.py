@@ -1,6 +1,6 @@
 """
-Symmetric NUG Pipeline
-======================
+Cn-Symmetric NUG Pipeline
+=========================
 
 This notebook demonstrates reproducing similar results to the
 experiment found in:

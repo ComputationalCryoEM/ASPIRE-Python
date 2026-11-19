@@ -282,7 +282,7 @@ def test_mat_block_vec_block_roundtrip(block_size):
 
     # The full matrix is symmetric, but an off-diagonal image-pair
     # block is not generally symmetric. Check at least one block is
-    # not symmetric as a safegaurd to expose mistaken transposes.
+    # not symmetric as a safeguard to expose mistaken transposes.
     pair_block = sym_mat[:block_size, block_size : 2 * block_size]
     assert not np.allclose(pair_block, pair_block.T)
 
@@ -329,7 +329,7 @@ def test_transform_block_round_trip():
     np.testing.assert_allclose(xp.asnumpy(restored), xp.asnumpy(matrices))
 
 
-def test_unspupported_symmetry_raises(dtype):
+def test_unsupported_symmetry_raises(dtype):
     """
     Check that we raise for symmetries other than Cn/Dn.
     """
@@ -349,7 +349,7 @@ def test_symmetry_logging(caplog):
     vol = CnSymmetricVolume(L=16, order=3, C=1, dtype=np.float64, rng=SEED).generate()
     src = Simulation(n=3, vols=vol).cache()
 
-    # Check unprovided symmetry populates with source symmetry and logs messsage
+    # Check unprovided symmetry populates with source symmetry and logs message
     caplog.clear()
     with caplog.at_level("INFO"):
         orient_est = CommonlineNUG(src)

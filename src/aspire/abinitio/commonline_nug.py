@@ -143,7 +143,7 @@ class CommonlineNUG(Orient3D):
             )
 
         # Get Euler angles for the symmetry group.
-        # Supress expected gimbal-lock warning (due to identity matrix).
+        # Suppress expected gimbal-lock warning (due to identity matrix).
         sym_rotations = Rotation(
             self.sym_grp.matrices,
             gimble_lock_warnings=False,

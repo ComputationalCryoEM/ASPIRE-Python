@@ -194,11 +194,7 @@ def test_g_sync(symmetry):
 @pytest.mark.parametrize("symmetry", ["C3", "C4", "D3", "D4", "T", "O"])
 def test_compare_rots_sym(symmetry):
     """
-    Thwe compare_rots_sym method finds the mean squared error between all pairs
-    of relative rotations, Ri.T @ Rj, taking into account each rotation being
-    multiplied by an arbitrary symmetry group element, ie. g @ Ri. In this test
-    we check that a set of rotations multiplied by random symmetry group elements
-    gives a zero MSE when compared to the original set.
+    Check that symmetry-related rotations have zero pairwise MSE.
     """
     n = 100
     dtype = np.float64
