@@ -803,7 +803,7 @@ class CommonlineNUG(Orient3D):
 
         :param X1: Relaxed degree-one representation matrix.
 
-        :return: Estimated rotation matrices and Euler angles.
+        :return: Estimated rotation matrices.
         """
         S = self.syncmatrix_from_X1(X1)
         rots = _syncrotations(S)
@@ -854,7 +854,7 @@ class CommonlineNUG(Orient3D):
 
         :param X_est: Relaxed representation matrices.
 
-        :return: Estimated rotation matrices and Euler angles.
+        :return: Estimated rotation matrices.
         """
         S = self.sym_grp.order
 
