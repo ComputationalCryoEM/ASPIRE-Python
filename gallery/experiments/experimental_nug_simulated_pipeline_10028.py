@@ -50,13 +50,15 @@ logger = logging.getLogger(__name__)
 # -------------------
 # Start with 100 images. The paper also reports results for 500 images and
 # SNR ranging from 1 to 1/128, which requires substantially more computation.
+# The published workflow adds noise before downsampling. Here noise is added
+# at the resolution passed to NUG, so the listed SNR applies to NUG’s input images.
 SEED = 1980
 RESOLUTION = 129
 N_IMAGES = (100,)
 SNR_VALUES = (1, 1 / 2, 1 / 4, 1 / 8, 1 / 16)
 
 # Download volume once; every SNR uses the same underlying volume.
-volume = emdb_2660().astype(np.float64)
+volume = emdb_2660().astype(np.float64).downsample(RESOLUTION)
 
 # %%
 # Estimate rotations at each SNR
@@ -68,18 +70,14 @@ for n_images in N_IMAGES:
         logger.info(f"Estimating rotations: n={n_images}, SNR={snr}")
         # Keeping the simulation seed fixed gives corresponding ground-truth
         # orientations across SNR conditions.
-        source = (
-            Simulation(
-                n=n_images,
-                vols=volume,
-                offsets=0,
-                amplitudes=1,
-                seed=SEED,
-                noise_adder=WhiteNoiseAdder.from_snr(snr=snr),
-            )
-            .downsample(RESOLUTION)
-            .cache()
-        )
+        source = Simulation(
+            n=n_images,
+            vols=volume,
+            offsets=0,
+            amplitudes=1,
+            rng=SEED,
+            noise_adder=WhiteNoiseAdder.from_snr(snr=snr),
+        ).cache()
 
         # Initialize the NUG orientation estimator, matching parameters
         # to the referenced experiment.
