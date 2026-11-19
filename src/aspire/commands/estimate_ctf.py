@@ -28,13 +28,13 @@ logger = logging.getLogger("aspire")
 )
 @click.option(
     "--num_tapers",
-    default=2,
+    default=4,
     type=int,
     help="Number of tapers to apply in PSD estimation",
 )
 @click.option(
     "--psd_size",
-    default=512,
+    default=1024,
     type=int,
     help="Size of blocks for use in Power Spectrum estimation",
 )
@@ -42,10 +42,28 @@ logger = logging.getLogger("aspire")
     "--g_min",
     default=30,
     type=float,
-    help="Inverse of minimum resolution for Power Spectrum Distribution",
+    help="Lowest resolution (Angstrom) of PSD band used in fit",
 )
 @click.option(
-    "--g_max", default=5, type=float, help="Inverse of maximum resolution for PSD"
+    "--g_max",
+    default=5,
+    type=float,
+    help="Highest resolution (Angstrom) of PSD band used in fit",
+)
+@click.option(
+    "--min_defocus",
+    default=5000,
+    type=int,
+    help="Start of defocus loop scan (Angstrom).",
+)
+@click.option(
+    "--max_defocus",
+    default=100000,
+    type=int,
+    help="End of defocus loop scan (Angstrom).",
+)
+@click.option(
+    "--step_defocus", default=10, type=int, help="Step of defocus loop scan (Angstrom)."
 )
 @click.option(
     "--dtype",
@@ -56,6 +74,20 @@ logger = logging.getLogger("aspire")
     "--output_dir",
     default="results",
     help="Path to output files, defaults to './results'",
+)
+@click.option(
+    "--save_ctf_images", is_flag=True, default=False, help="Save ctf diagnostic images."
+)
+@click.option(
+    "--save_noise_images",
+    is_flag=True,
+    default=False,
+    help="Save noise diagnostic images.",
+)
+@click.option(
+    "--normalize_micrographs/--no_normalize_micrographs",
+    default=True,
+    help="Normalize micrographs to mean zero and variance one before PSD estimation.",
 )
 @log_level_option
 def estimate_ctf(
@@ -68,8 +100,14 @@ def estimate_ctf(
     psd_size,
     g_min,
     g_max,
+    min_defocus,
+    max_defocus,
+    step_defocus,
     output_dir,
     dtype,
+    save_ctf_images,
+    save_noise_images,
+    normalize_micrographs,
     loglevel,
 ):
     """
@@ -77,7 +115,11 @@ def estimate_ctf(
     and returns CTF as a mrc file.
 
     This is a Click command line interface wrapper for
-    the aspire.ctf module.
+    the aspire.ctf.CtfEstimator.
+
+    Note not every option to `CtfEstimator` is exposed via CLI.  Users
+    may want to consider calling `estimate_ctf` directly for advanced
+    applications.  The CLI is provided convenient general use.
     """
 
     # Set desired logging option for the command line
@@ -85,14 +127,20 @@ def estimate_ctf(
 
     return ctf.estimate_ctf(
         data_folder,
-        pixel_size,
-        cs,
-        amplitude_contrast,
-        voltage,
-        num_tapers,
-        psd_size,
-        g_min,
-        g_max,
-        output_dir,
-        dtype,
+        pixel_size=pixel_size,
+        cs=cs,
+        amplitude_contrast=amplitude_contrast,
+        voltage=voltage,
+        num_tapers=num_tapers,
+        psd_size=psd_size,
+        g_min=g_min,
+        g_max=g_max,
+        min_defocus=min_defocus,
+        max_defocus=max_defocus,
+        step_defocus=step_defocus,
+        output_dir=output_dir,
+        dtype=dtype,
+        save_ctf_images=save_ctf_images,
+        save_noise_images=save_noise_images,
+        normalize_micrographs=normalize_micrographs,
     )
