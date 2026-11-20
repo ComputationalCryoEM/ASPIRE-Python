@@ -1103,16 +1103,19 @@ class CommonlineNUG(Orient3D):
                 B1[i, j] = np.real((Xij[2, 2] - 2 * abs(Xij[0, 0]) + 0.5) / 3 * 2)
 
         # Recover the vector cos(beta_i)^2 from the leading eigenpair.
-        # Its entries should be nonnegative, so orient the eigenvector
-        # using the sign of its first entry.
+        # In the ideal case, its entries should be nonnegative. To account
+        # for potential poor individual estimates we orient the eigenvector
+        # using the aggregate of the signs of all entries.
         e1, v1 = np.linalg.eigh(B1)
         idx = np.argmax(e1)
-        b1 = v1[:, idx] * np.sqrt(e1[idx]) * np.sign(v1[0, idx])
+        b1 = v1[:, idx] * np.sqrt(e1[idx])
+        if np.sign(b1).sum() < 0:
+            b1 = -b1
 
         # Taking the square root recovers abs(cos(beta_i)). Consequently,
         # each image retains an independent beta_i <-> pi - beta_i
         # ambiguity, as described in the paper.
-        beta_est = np.arccos(np.clip(np.sqrt(b1), -1, 1)) % np.pi
+        beta_est = np.arccos(np.sqrt(np.clip(b1, 0, 1)))
 
         Aminus = np.zeros((N, N), dtype=np.complex128)
         Aplus = np.zeros((N, N), dtype=np.complex128)
