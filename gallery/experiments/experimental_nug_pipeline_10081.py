@@ -81,15 +81,7 @@ orient_est = CommonlineNUG(avgs, max_shift=0, pr_iters=15)
 # estimation in a lazy fashion upon request of images or rotations.
 oriented_src = OrientedSource(avgs, orient_est)
 
-# Estimate orientations and override the estimated shifts.
-# In the case of insufficient number of images, estimating shifts fails.
-oriented_src.rotations
-oriented_src = oriented_src.update(offsets=0)
-
-# Confirm offsets have been set to zero.
-logger.info(f"Offsets: {oriented_src.offsets}")
-
-# Save oriented source.
+# Save off the set of images, along with estimated rotations and shifts.
 oriented_src.save(oriented_fn)
 
 # %%
