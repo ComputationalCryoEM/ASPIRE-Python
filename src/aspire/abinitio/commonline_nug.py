@@ -47,6 +47,7 @@ class CommonlineNUG(Orient3D):
         c1_pair_batch_size=1024,
         pr_iters=None,
         verbose=True,
+        rng=None,
         **kwargs,
     ):
         """
@@ -93,6 +94,8 @@ class CommonlineNUG(Orient3D):
             `ValueError`. Default is None.
         :param verbose: Whether to log ADMM and proximal refinement progress.
             Default is True.
+        :param rng: Optional RNG or seed for randomized estimator and ADMM steps.
+            Default is None.
         """
 
         super().__init__(
@@ -102,6 +105,7 @@ class CommonlineNUG(Orient3D):
             max_shift=max_shift,
             shift_step=shift_step,
             mask=mask,
+            rng=rng,
             **kwargs,
         )
 
@@ -414,6 +418,7 @@ class CommonlineNUG(Orient3D):
             mult=self.mult,
             Nstep_yI=self.Nstep_yI,
             verbose=verbose,
+            rng=self.rng,
         )
 
         # Release references to initial arrays before the solver replaces them.
@@ -453,6 +458,7 @@ class CommonlineNUG(Orient3D):
             mult=self.mult,
             Nstep_yI=self.Nstep_yI,
             verbose=verbose,
+            rng=self.rng,
         )
 
         # Release references to initial arrays before the solver replaces them.
@@ -1598,6 +1604,7 @@ class _C1ADMM:
         mult,
         Nstep_yI,
         verbose,
+        rng,
     ):
         """
         Initialize a C1 ADMM solve from prepared problem data.
@@ -1612,6 +1619,7 @@ class _C1ADMM:
         :param mult: Step multiplier for representation-variable updates.
         :param Nstep_yI: Number of inequality-multiplier updates per iteration.
         :param verbose: Whether to log iteration diagnostics.
+        :param rng: RNG used to shuffle the ADMM update order.
         """
         self.blocks = pre.blocks
         self.equality = equality
@@ -1636,6 +1644,7 @@ class _C1ADMM:
         self.mult = mult
         self.Nstep_yI = Nstep_yI
         self.verbose = verbose
+        self.rng = rng
 
         self.Ngrid = self.fejer.AI_mat_offdiag.shape[0]
 
@@ -1661,7 +1670,7 @@ class _C1ADMM:
         update_order = np.arange(3)
         for t in trange(self.max_iter, desc="C1 NUG ADMM"):
             self.iteration = t
-            np.random.shuffle(update_order)
+            self.rng.shuffle(update_order)
 
             for update_idx in update_order:
                 if update_idx == 0:
@@ -1939,6 +1948,7 @@ class _SymmetricADMM:
         mult,
         Nstep_yI,
         verbose,
+        rng,
     ):
         """
         Initialize a symmetric ADMM solve from prepared problem data.
@@ -1953,6 +1963,7 @@ class _SymmetricADMM:
         :param mult: Step multiplier for representation-variable updates.
         :param Nstep_yI: Number of inequality-multiplier updates per iteration.
         :param verbose: Whether to log iteration diagnostics.
+        :param rng: RNG used to shuffle the ADMM update order.
         """
         self.blocks = pre.blocks
         self.equality = equality
@@ -1976,6 +1987,7 @@ class _SymmetricADMM:
         self.mult = mult
         self.Nstep_yI = Nstep_yI
         self.verbose = verbose
+        self.rng = rng
 
         self.Ngrid = self.fejer.AI_mat_offdiag.shape[0]
 
@@ -2019,7 +2031,7 @@ class _SymmetricADMM:
         update_order = np.arange(3)
         for t in trange(self.max_iter, desc="Symmetric NUG ADMM"):
             self.iteration = t
-            np.random.shuffle(update_order)
+            self.rng.shuffle(update_order)
 
             for update_idx in update_order:
                 if update_idx == 0:

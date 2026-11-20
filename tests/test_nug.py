@@ -248,7 +248,6 @@ def test_c1_admm_batching_matches_one_chunk():
     # and batch_size=10 is a single chunk.
     results = []
     for batch_size in (3, 10):
-        np.random.seed(SEED)  # preserve ADMM update order
         estimator = CommonlineNUG(
             src,
             Lmax=2,
@@ -260,6 +259,7 @@ def test_c1_admm_batching_matches_one_chunk():
             c1_pair_batch_size=batch_size,
             pr_iters=None,
             verbose=False,
+            rng=SEED,
         )
         estimator.compute_coeff()
         estimator.perform_admm()
