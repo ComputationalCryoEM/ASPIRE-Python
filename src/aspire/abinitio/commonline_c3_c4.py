@@ -5,6 +5,7 @@ from numpy.linalg import norm, svd
 
 from aspire.abinitio import CLOrient3D, JSync
 from aspire.abinitio.sync_voting import _syncmatrix_ij_vote_3n
+from aspire.numeric import fft
 from aspire.operators import PolarFT
 from aspire.utils import J_conjugate, Rotation, all_pairs, anorm, tqdm, trange
 
@@ -47,6 +48,10 @@ class CLSymmetryC3C4(CLOrient3D):
         epsilon=1e-2,
         max_iters=1000,
         degree_res=1,
+        non_rank1_removal_fraction=0,
+        equator_fraction=0,
+        equator_max_shift=5,
+        equator_res_factor=10,
         rng=None,
         mask=True,
         J_weighting=False,
@@ -65,6 +70,16 @@ class CLSymmetryC3C4(CLOrient3D):
         :param epsilon: Tolerance for the power method.
         :param max_iter: Maximum iterations for the power method.
         :param degree_res: Degree resolution for estimating in-plane rotations.
+        :param non_rank1_removal_fraction: Fraction of images with the fewest
+            successful rank-one pairs to remove. Default 0 disables removal.
+            In practice, 0.25 has been used on experimental datasets.
+        :param equator_fraction: Fraction of C4 images whose self-commonlines
+            are corrected as equator views. Default 0 disables correction.
+            In practice, 0.1 has been used on experimental datasets.
+        :param equator_max_shift: Integer translation search radius, in pixels,
+            for detecting equator views. Default 5.
+        :param equator_res_factor: Number of angular samples per detector score
+            bin. Default 10.
         :param rng: Optional RNG or seed.
         :param mask: Option to mask `src.images` with a fuzzy mask (boolean).
             Default, `True`, applies a mask.
@@ -92,15 +107,37 @@ class CLSymmetryC3C4(CLOrient3D):
         self.max_iters = max_iters
         self.degree_res = degree_res
 
+        if not 0 <= non_rank1_removal_fraction < 1:
+            raise ValueError("non_rank1_removal_fraction must be in [0, 1).")
+        self.non_rank1_removal_fraction = non_rank1_removal_fraction
+
+        # Create flag that tells an OrientedSource that the original source
+        # will be altered by this estimator.
+        self.alters_source = non_rank1_removal_fraction > 0
+
+        # Check and set C4 equator detection values.
+        if not 0 <= equator_fraction <= 1:
+            raise ValueError("equator_fraction must be between 0 and 1.")
+        if self.order == 3 and equator_fraction:
+            logger.warning(
+                "Equator correction is only used for C4; "
+                "equator_fraction is ignored for C3."
+            )
+        if (
+            self.order == 4
+            and equator_fraction > 0
+            and self.n_theta % equator_res_factor != 0
+        ):
+            raise ValueError("equator_res_factor must divide n_theta.")
+
+        self.equator_fraction = equator_fraction
+        self.equator_max_shift = equator_max_shift
+        self.equator_res_factor = equator_res_factor
+
         # Setup J-synchronization
-        self.J_sync = JSync(
-            src.n,
-            epsilon=self.epsilon,
-            max_iters=self.max_iters,
-            rng=self.rng,
-            disable_gpu=disable_gpu,
-            J_weighting=J_weighting,
-        )
+        self.disable_gpu = disable_gpu
+        self.J_weighting = J_weighting
+        self.J_sync = None
 
     def _check_symmetry(self, symmetry):
         if symmetry is None:
@@ -122,6 +159,9 @@ class CLSymmetryC3C4(CLOrient3D):
         :return: Array of rotation matrices, size n_imgx3x3.
         """
         vijs, viis = self._estimate_relative_viewing_directions()
+
+        if self._image_indices_to_remove.size:
+            vijs, viis = self._prune_images(vijs, viis)
 
         logger.info("Performing global handedness synchronization.")
         vijs, viis = self._global_J_sync(vijs, viis)
@@ -167,6 +207,53 @@ class CLSymmetryC3C4(CLOrient3D):
 
         return vijs, viis
 
+    def _prune_images(self, vijs, viis):
+        """
+        Remove selected images and their pairs before global J-sync.
+
+        If image pruning is enabled, via `non_rank1_removal_fraction`, the set of indices
+        of images to be removed is computed during relative viewing direction estimation.
+        Here, we remove the images from the source and adjust all internal arrays to reflect
+        that removal for downstream processing.
+
+        :param vijs: An (n-choose-2)x3x3 array where each 3x3 slice holds an estimate for the
+            corresponding outer-product vi*vj^T between the third rows of the rotation matrices
+            Ri and Rj.
+        :param viis: An n_imgx3x3 array where the i'th slice holds an estimate for the outer
+            product vi*vi^T between the third row of matrix Ri and itself.
+
+        :return: vijs, viis
+        """
+        original_n_img = self.n_img
+        remove_indices = self._image_indices_to_remove
+
+        # Create mask of images to keep.
+        keep_mask = np.ones(original_n_img, dtype=bool)
+        keep_mask[remove_indices] = False
+        keep_indices = np.flatnonzero(keep_mask)
+
+        # Create mask for pairs of images to keep.
+        pairs = all_pairs(original_n_img)
+        keep_pairs = keep_mask[pairs[:, 0]] & keep_mask[pairs[:, 1]]
+
+        # Update source and data arrays.
+        new_src = self.src[keep_indices]
+        new_pf = self.pf[keep_indices]
+        new_clmatrix = self.clmatrix[keep_indices][:, keep_indices]
+
+        self.src = new_src
+        self.n_img = len(keep_indices)
+        self.n_check = min(self.n_check, self.n_img)
+        self._pf = new_pf
+        self.clmatrix = new_clmatrix
+        self._retained_indices = keep_indices
+
+        logger.info(
+            f"Removed {len(remove_indices)} of {original_n_img} images "
+            "with the fewest successful rank-one pairs."
+        )
+        return vijs[keep_pairs], viis[keep_indices]
+
     def _global_J_sync(self, vijs, viis):
         """
         Global J-synchronization of all third row outer products. Given 3x3 matrices vijs and viis, each
@@ -183,6 +270,15 @@ class CLSymmetryC3C4(CLOrient3D):
 
         :return: vijs, viis all of which have a spurious J or not.
         """
+
+        self.J_sync = JSync(
+            self.n_img,
+            epsilon=self.epsilon,
+            max_iters=self.max_iters,
+            rng=self.rng,
+            disable_gpu=self.disable_gpu,
+            J_weighting=self.J_weighting,
+        )
 
         # Determine relative handedness of vijs.
         vijs = self.J_sync.global_J_sync(vijs)
@@ -278,6 +374,36 @@ class CLSymmetryC3C4(CLOrient3D):
             # Find maximum correlation.
             shift, scl1, scl2 = np.unravel_index(np.argmax(np.real(corrs)), corrs.shape)
             sclmatrix[i] = [scl1, scl2]
+
+        # Correct C4 equator self-common-lines using the shared symmetry axis.
+        if order == 4 and self.equator_fraction > 0:
+            equator_indices = self._detect_equator_images(
+                max_shift=self.equator_max_shift,
+                res_factor=self.equator_res_factor,
+                fraction=self.equator_fraction,
+            )
+
+            if len(equator_indices) >= 2:
+                # Equator self-common-lines are 180 degrees apart and cannot
+                # be distinguished from conjugate symmetry. All equator views
+                # share the symmetry axis, including an image and its
+                # symmetry-related copies. Estimate this axis from each
+                # image's median common-line with the other equator views.
+                clmatrix_eq = self.clmatrix[equator_indices][:, equator_indices]
+                n_theta_half = n_theta // 2
+
+                for i, image_index in enumerate(equator_indices):
+                    # Exclude diagonal entries and missing common-lines.
+                    lines = clmatrix_eq[i]
+                    lines = lines[lines >= 0]  # diagonal vals are -1
+
+                    # Map common-lines into [0, 180 degrees) before
+                    # taking the median.
+                    line = np.median(lines % n_theta_half)
+                    sclmatrix[image_index] = [
+                        line,
+                        (line + n_theta_half) % n_theta,
+                    ]
 
         return sclmatrix
 
@@ -381,10 +507,13 @@ class CLSymmetryC3C4(CLOrient3D):
         # Estimate vijs via local handedness synchronization.
         vijs = np.zeros((n_pairs, 3, 3))
 
+        rank1_pair_success = np.zeros(n_pairs, dtype=bool)
+        rank1_tol = 0.1
+        rank1_image_counts = np.zeros(n_img, dtype=int)
+
         pbar = tqdm(desc="Performing local J-sync", total=n_pairs)
         for idx, (i, j) in enumerate(pairs):
             opts = np.zeros((2, 2, 2, 3, 3))
-            scores_rank1 = np.zeros(8)
             Rii = Riis[i]
             Rjj = Riis[j]
             Rij = Rijs[idx]
@@ -427,6 +556,17 @@ class CLSymmetryC3C4(CLOrient3D):
 
             opts = opts.reshape((8, 3, 3))
             svals = svd(opts, compute_uv=False)
+            rank1_pair_success[idx] = np.any(
+                (np.abs(svals[:, 0] - 1) < rank1_tol)
+                & (np.sum(np.abs(svals[:, 1:]), axis=1) / 2 < rank1_tol)
+            )
+
+            # Count successful rank-one pairs for each image.
+            # Images with fewer successful pairs are candidates for removal.
+            if rank1_pair_success[idx]:
+                rank1_image_counts[i] += 1
+                rank1_image_counts[j] += 1
+
             scores_rank1 = anorm(svals - [1, 0, 0], axes=[1])
             min_idx = np.argmin(scores_rank1)
 
@@ -436,4 +576,99 @@ class CLSymmetryC3C4(CLOrient3D):
             pbar.update()
         pbar.close()
 
+        self._rank1_pair_success = rank1_pair_success
+        self._rank1_image_counts = rank1_image_counts
+
+        # Select the images with the fewest successful rank-one pairs.
+        # A zero removal fraction selects no images.
+        n_remove = int(np.floor(self.non_rank1_removal_fraction * n_img))
+        self._image_indices_to_remove = np.argsort(rank1_image_counts, kind="stable")[
+            :n_remove
+        ]
+
         return vijs, viis
+
+    def _detect_equator_images(self, max_shift=5, res_factor=10, fraction=0.1):
+        """
+        Detect C4 equator images using angular reflection symmetry.
+
+        Follow MATLAB's integer translation search, angular correlation,
+        binning, and selection, using ASPIRE's polar frequency conventions.
+
+        :param max_shift: Integer translation search radius in pixels.
+        :param res_factor: Number of angular samples per score bin.
+        :param fraction: Fraction of images selected as equator images.
+
+        :return: Selected image indices in descending score order.
+        """
+        pf = self.pf
+
+        # Build the polar frequency grid used to generate translation phases.
+        polar_ft = PolarFT(
+            (self.n_res, self.n_res),
+            nrad=self.n_rad,
+            ntheta=self.n_theta,
+            dtype=self.dtype,
+        )
+
+        # Search a square grid of integer (x, y) translations, as MATLAB
+        # does. The default radius of 5 gives 121 candidate translations.
+        # This search is independent of the common-line shift search.
+        shifts = np.array(
+            [
+                (x, y)
+                for x in range(-max_shift, max_shift + 1)
+                for y in range(-max_shift, max_shift + 1)
+            ],
+            dtype=self.dtype,
+        )
+
+        # Reshape the frequency grid into (coordinate, angle, radius),
+        # then remove DC to match the radial samples stored in self.pf.
+        freqs = polar_ft.freqs.reshape(2, self.n_theta // 2, self.n_rad)[:, :, 1:]
+
+        # Precompute the Fourier phase multiplier for every translation.
+        # Take the dot product of each translation with each frequency
+        # coordinate, producing shape (n_shifts, n_theta // 2, n_r - 1).
+        # Reversing (x, y) and using a positive exponential matches
+        # PolarFT.shift. These phases are reused for every image.
+        shift_phases = np.exp(1j * np.einsum("sa,atr->str", shifts[:, ::-1], freqs))
+
+        # Store each image's strongest reflection-correlation score.
+        scores = np.empty(self.n_img, dtype=np.float64)
+
+        for i in trange(self.n_img, desc="Detecting C4 equator images"):
+            # Apply shifts and reconstruct the full circle using conjugate symmetry.
+            # The result has shape (n_shifts, n_theta, n_r - 1).
+            shifted = PolarFT.half_to_full(shift_phases * pf[i][None])
+
+            # Normalize over angles.
+            shifted /= norm(shifted, axis=1, keepdims=True)
+
+            # Reverse angular order to form a reflected version.
+            reflected = shifted[:, ::-1, :]
+
+            # Compute circular cross-correlation along the angular axis:
+            # FFT(image) * conjugate(FFT(reflection)), followed by IFFT.
+            cross_spectrum = (
+                fft.fft(shifted, axis=1) * fft.fft(reflected, axis=1).conj()
+            )
+            correlations = fft.ifft(cross_spectrum, axis=1).real
+
+            # Sum correlation contributions over radial frequencies. Group
+            # neighboring angular offsets into fixed bins of res_factor samples.
+            # Keep the best score across all translations and angular bins.
+            angular_scores = correlations.sum(axis=2)
+            binned_scores = angular_scores.reshape(
+                len(shifts), self.n_theta // res_factor, res_factor
+            ).sum(axis=2)
+            scores[i] = binned_scores.max()
+
+        # Match MATLAB's selection policy: retain the top fraction by score.
+        # Note: this imposes no absolute quality threshold and selects this
+        # many images even if the dataset contains no true equator views.
+        count = int(np.floor(fraction * self.n_img))
+        self._equator_scores = scores
+        self._equator_indices = np.argsort(-scores, kind="stable")[:count]
+
+        return self._equator_indices.copy()

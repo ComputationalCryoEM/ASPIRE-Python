@@ -10,7 +10,7 @@ from aspire.abinitio import (
 )
 from aspire.abinitio.commonline_cn import MeanOuterProductEstimator
 from aspire.abinitio.commonline_utils import _cl_angles_to_ind
-from aspire.source import Simulation
+from aspire.source import ArrayImageSource, Simulation
 from aspire.utils import (
     J_conjugate,
     Rotation,
@@ -428,6 +428,41 @@ def test_commonlines(n_img, L, order, dtype):
     assert within_1 > 0.90
 
 
+def test_prune_images():
+    """
+    Test that image removal updates the source and associated data.
+    """
+    n_img, L = 5, 12
+
+    # Use distinct values so incorrect image or pair indices are visible.
+    images = np.arange(n_img * L * L, dtype=np.float32).reshape(n_img, L, L)
+    src = ArrayImageSource(images, pixel_size=1)
+    est = CLSymmetryC3C4(src, symmetry="C4", n_theta=36, non_rank1_removal_fraction=0.4)
+
+    pf = np.arange(n_img * 18 * 5, dtype=np.float32).reshape(n_img, 18, 5)
+    est._pf = pf.astype(np.complex64)
+    est.clmatrix = np.arange(25).reshape(5, 5)
+
+    # Remove original images 1 and 3, leaving images 0, 2, and 4 in order.
+    est._image_indices_to_remove = np.array([1, 3])
+
+    vijs = np.arange(10 * 9).reshape(10, 3, 3)
+    viis = np.arange(n_img * 9).reshape(n_img, 3, 3)
+    kept_vijs, kept_viis = est._prune_images(vijs, viis)
+
+    # Check that the retained source and cached data refer to the same images.
+    np.testing.assert_array_equal(est.src.index_map, [0, 2, 4])
+    np.testing.assert_array_equal(est.src.images[:].asnumpy(), images[[0, 2, 4]])
+    np.testing.assert_array_equal(est.pf, pf[[0, 2, 4]])
+    np.testing.assert_array_equal(est.clmatrix, [[0, 2, 4], [10, 12, 14], [20, 22, 24]])
+    np.testing.assert_array_equal(kept_viis, viis[[0, 2, 4]])
+
+    # In the original pair ordering, positions 1, 3, and 8 are
+    # (0, 2), (0, 4), and (2, 4).
+    np.testing.assert_array_equal(kept_vijs, vijs[[1, 3, 8]])
+    assert est.n_img == est.src.n == est.n_check == 3
+
+
 @pytest.mark.parametrize(
     "n_img, dtype",
     [(3, np.float32), (3, np.float64), (20, np.float32), (20, np.float64)],
@@ -477,6 +512,60 @@ def test_dtype_pass_through(dtype):
     order = 3  # test does not depend on order
     src, cl_symm = source_orientation_objs(n_img, L, order, dtype)
     assert src.dtype == cl_symm.dtype
+
+
+def test_detect_equator_images():
+    """
+    Check that _detect_equator_images detects most ground truth equator views.
+
+    The method is heuristic and selects the highest-scoring 10% of images
+    by default, so some missed detections and false positives are expected.
+    """
+    n_img = 200
+    L = 44
+    dtype = np.float32
+
+    vol = CnSymmetricVolume(
+        L=L,
+        C=1,
+        K=100,
+        order=4,
+        dtype=dtype,
+    ).generate()
+
+    src = Simulation(
+        vols=vol,
+        n=n_img,
+        C=1,
+        offsets=0,
+        amplitudes=1,
+        dtype=dtype,
+    )
+
+    # Find viewing directions within 5 degrees of the equator.
+    equator_indices_gt = np.flatnonzero(
+        np.abs(src.rotations[:, 2, 2]) < np.sin(np.deg2rad(5))
+    )
+    if len(equator_indices_gt) == 0:
+        pytest.skip("Simulation contains no equator views.")
+
+    # Detect equator images and check at least 75% of possible detections
+    # are correctly identified.
+    cl_symm = CLSymmetryC3C4(src, symmetry="C4")
+
+    equator_indices = cl_symm._detect_equator_images()
+
+    # Check how many equator images were found out of the number that could
+    # fit in the detector's selected set.
+    n_correct = np.isin(equator_indices, equator_indices_gt).sum()
+    n_possible = min(len(equator_indices_gt), len(equator_indices))
+    fraction_found = n_correct / n_possible
+
+    assert fraction_found >= 0.75, (
+        f"Found {n_correct} of {n_possible} possible equator images; "
+        f"ground truth: {equator_indices_gt}; "
+        f"detected: {equator_indices}"
+    )
 
 
 def build_self_commonlines_matrix(n_theta, rots, order):

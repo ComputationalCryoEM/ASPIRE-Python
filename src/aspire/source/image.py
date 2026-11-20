@@ -1858,20 +1858,28 @@ class OrientedSource(IndexedSource):
         :param orientation_estimator: Orient3D subclass used for orientation estimation.
             Default uses the CLSync3N method.
         """
+        if not isinstance(src, ImageSource):
+            raise ValueError(f"`src` should be subclass of `ImageSource`, found {src}.")
 
-        self.src = src
-        if not isinstance(self.src, ImageSource):
+        if orientation_estimator is None:
+            orientation_estimator = CLSync3N(src)
+
+        if not isinstance(orientation_estimator, Orient3D):
             raise ValueError(
-                f"`src` should be subclass of `ImageSource`, found {self.src}."
+                "`orientation_estimator` should be subclass of `Orient3D`,"
+                f" found {orientation_estimator}."
             )
 
-        # `indices` for IndexedSource.
-        indices = np.arange(self.src.n)
+        self.orientation_estimator = orientation_estimator
+        self._alters_source = getattr(orientation_estimator, "alters_source", False)
 
-        super().__init__(
-            src=self.src,
-            indices=indices,
-        )
+        # Resolve estimators that change the image set before fixing this
+        # source's image count, index map, and metadata.
+        if self._alters_source:
+            orientation_estimator.estimate()
+            src = orientation_estimator.src
+
+        super().__init__(src=src, indices=np.arange(src.n))
 
         # Remove any orientation information passed in by original source.
         self._reset_orientation()
@@ -1879,15 +1887,13 @@ class OrientedSource(IndexedSource):
         # Flag for lazy eval of orientation estimation.
         self._oriented = False
 
-        if orientation_estimator is None:
-            orientation_estimator = CLSync3N(src)
-
-        self.orientation_estimator = orientation_estimator
-        if not isinstance(self.orientation_estimator, Orient3D):
-            raise ValueError(
-                "`orientation_estimator` should be subclass of `Orient3D`,"
-                f" found {self.orientation_estimator}."
-            )
+        # For estimators that alter the source estimation has already occured.
+        # Update rotations and offsets and flip lazy flag.
+        if self._alters_source:
+            self._mutable = True
+            self.rotations = orientation_estimator.rotations
+            self.offsets = orientation_estimator.shifts
+            self._oriented = True
 
         # Any further operations should not mutate this instance.
         self._mutable = False
