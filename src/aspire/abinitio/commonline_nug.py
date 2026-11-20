@@ -1673,7 +1673,7 @@ class _C1ADMM:
                         self.update_yI()
 
             self.update_X()
-            if t % 100 == 0:
+            if t % 100 == 0 or t == self.max_iter - 1:
                 self.print_updates()
             self.update_rho()
 
