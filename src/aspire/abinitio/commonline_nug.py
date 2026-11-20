@@ -146,6 +146,13 @@ class CommonlineNUG(Orient3D):
                 f"This algorithm supports cyclic, dihedral, and asymmetric molecules. Found {str(self.sym_grp)}."
             )
 
+        # Rotation recovery uses the Wigner representation degree corresponding
+        # to the symmetry group order. Guard against too few degrees.
+        if self.Lmax < self.sym_grp.order:
+            raise ValueError(
+                f"Lmax must be at least {self.sym_grp.order} for {self.sym_grp}."
+            )
+
         # Get Euler angles for the symmetry group.
         # Suppress expected gimbal-lock warning (due to identity matrix).
         sym_rotations = Rotation(
