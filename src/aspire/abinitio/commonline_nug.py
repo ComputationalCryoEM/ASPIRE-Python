@@ -791,6 +791,8 @@ class CommonlineNUG(Orient3D):
             R_est = self.rounding_C1(X_est[0])
         elif isinstance(self.sym_grp, CnSymmetryGroup):
             R_est = self.euler_est_Cm(X_est[0], X_est[self.n_sym - 1])
+        elif isinstance(self.sym_grp, DnSymmetryGroup) and self.sym_grp.order == 2:
+            R_est = self.rounding_D2(X_est[1])
         elif isinstance(self.sym_grp, DnSymmetryGroup):
             R_est = self.euler_est_Dm(X_est)
 
@@ -808,6 +810,153 @@ class CommonlineNUG(Orient3D):
         S = self.syncmatrix_from_X1(X1)
         rots = _syncrotations(S)
         return rots
+
+    def rounding_D2(self, X2):
+        """
+        Recover rotations for D2 symmetry from the degree-two solution.
+
+        The Euler-angle recovery used for D_n, n >= 3, relies on the degree-two
+        symmetry projector having rank one, i.e. a single principal axis. For D2
+        it has rank two, and the degree-two block carries all three 2-fold axes
+        on an equal footing:
+
+            X_ij = sum_a t(r_i^a) t(r_j^a)^T,
+
+        where r_i^a is the a-th row of rotation R_i and t(r) is the traceless
+        part of r r^T written in the degree-two real basis. Instead of Euler
+        angles, recover each image's frame directly:
+
+        1. Split X2 into its handedness-even and handedness-odd blocks (the
+           cross blocks are zero in the handedness-averaged solution). Each is
+           rank two; factor each with its top two scaled eigenvectors.
+        2. The two factors are only determined up to independent 2x2
+           orthogonal transforms. Align the odd factor to the even one using
+           the per-image identity V_i^T V_i = I, solved in closed form. The
+           remaining sign is the usual global handedness ambiguity.
+        3. A fixed combination w of the two columns gives, for every image,
+           a symmetric 3x3 matrix M_i = R_i^T diag(b) R_i with the same
+           eigenvalues b for all images. Choose w so that b is evenly spaced.
+        4. The eigenvectors of M_i, sorted by eigenvalue, are the rows of
+           R_i, labelled consistently across images. Fix det(R_i) = +1.
+
+        The estimates are determined up to the D2 symmetry of each image, a
+        global rotation, and global handedness.
+
+        :param X2: Relaxed degree-two representation matrix in the real basis,
+            shape (5 * n_img, 5 * n_img).
+
+        :return: Estimated rotation matrices, shape (n_img, 3, 3).
+        """
+        N = self.n_img
+        X2 = np.asarray(X2, dtype=np.float64).reshape(N, 5, N, 5)
+        even, odd = [0, 2, 4], [1, 3]
+
+        # 1. Rank-two factors of the handedness-even and handedness-odd blocks.
+        Xe = X2[:, even][..., even].reshape(3 * N, 3 * N)
+        Xo = X2[:, odd][..., odd].reshape(2 * N, 2 * N)
+        Pe = self._top_two_factor(Xe).reshape(N, 3, 2)
+        Po = self._top_two_factor(Xo).reshape(N, 2, 2)
+
+        # 2. Align the odd factor with the even factor.
+        Q = self._align_d2_factors(
+            np.einsum("nki,nkj->nij", Pe, Pe),
+            np.einsum("nki,nkj->nij", Po, Po),
+        )
+        V = np.zeros((N, 5, 2), dtype=np.float64)
+        V[:, even] = Pe
+        V[:, odd] = Po @ Q
+
+        # 3. Choose the column combination giving evenly spaced eigenvalues,
+        #    i.e. the middle eigenvalue closest to zero across all images.
+        basis = self._degree_two_basis()
+        phis = np.linspace(0, np.pi, 180, endpoint=False)
+        W = np.stack([np.cos(phis), np.sin(phis)])
+        M = np.einsum("npj,jk,pab->knab", V, W, basis, optimize=True)
+        lam = np.linalg.eigvalsh(M)
+        spread = np.sum((lam[..., 2] - lam[..., 0]) ** 2, axis=1)
+        w = W[:, np.argmin(np.sum(lam[..., 1] ** 2, axis=1) / spread)]
+
+        # 4. Eigenvectors sorted by eigenvalue are the rows of R_i.
+        M = np.einsum("np,pab->nab", V @ w, basis)
+        _, vecs = np.linalg.eigh(M)
+        rots = np.ascontiguousarray(vecs.transpose(0, 2, 1))
+        rots[np.linalg.det(rots) < 0, 2] *= -1
+
+        return rots
+
+    @staticmethod
+    def _top_two_factor(Y):
+        """
+        Rank-two factor of a symmetric matrix from its top two eigenpairs.
+
+        :param Y: Symmetric matrix of shape (n, n).
+
+        :return: Array F of shape (n, 2) with F @ F.T the best rank-two PSD
+            approximation of Y.
+        """
+        evals, evecs = np.linalg.eigh(Y)
+        return evecs[:, -2:] * np.sqrt(np.clip(evals[-2:], 0, None))
+
+    @staticmethod
+    def _align_d2_factors(A, B):
+        """
+        Find Q in O(2) minimizing sum_i ||A_i + Q^T B_i Q - I||_F^2.
+
+        Write the traceless part of a symmetric 2x2 matrix S as the complex
+        number dev(S) = (S_00 - S_11) / 2 + i S_01. For a rotation by theta,
+        dev(Q^T S Q) = dev(S) exp(-2i theta), and a reflection additionally
+        conjugates dev(S). The trace part does not depend on Q, so the
+        problem reduces to a phase fit with a closed-form solution. Q and -Q
+        are equally good; that sign is the global handedness ambiguity.
+
+        :param A: Even-block Gram matrices, shape (n_img, 2, 2).
+        :param B: Odd-block Gram matrices, shape (n_img, 2, 2).
+
+        :return: Orthogonal matrix Q of shape (2, 2).
+        """
+
+        def dev(S):
+            return (S[:, 0, 0] - S[:, 1, 1]) / 2 + 1j * S[:, 0, 1]
+
+        a, b = dev(A), dev(B)
+
+        # sum_i |a_i + b_i exp(-2i theta)|^2 is minimized by
+        # exp(-2i theta) = -conj(z) / |z| with z = sum_i conj(a_i) b_i.
+        z_rot = np.sum(np.conj(a) * b)
+        z_ref = np.sum(np.conj(a) * np.conj(b))
+        reflect = abs(z_ref) > abs(z_rot)
+        z = z_ref if reflect else z_rot
+        theta = -np.angle(-np.conj(z)) / 2
+
+        c, s = np.cos(theta), np.sin(theta)
+        Q = np.array([[c, -s], [s, c]])
+        if reflect:
+            Q = np.diag([1.0, -1.0]) @ Q
+
+        return Q
+
+    @staticmethod
+    def _degree_two_basis():
+        """
+        Symmetric traceless 3x3 matrices L_p for the degree-two real basis.
+
+        In this basis the real degree-two representation of g acts as
+        M -> g M g^T, i.e. g L_q g^T = sum_p D_real(g)[p, q] L_p, where
+        D_real(g) = Tinv @ _WD(2, euler(g)) @ T with (T, Tinv) from
+        `_complex2real(2)`. Indices 0, 2, 4 are handedness-even and 1, 3 are
+        handedness-odd.
+
+        :return: Array of shape (5, 3, 3).
+        """
+        s2, s6 = np.sqrt(2), np.sqrt(6)
+        L = np.zeros((5, 3, 3), dtype=np.float64)
+        L[0, 0, 1] = L[0, 1, 0] = 1 / s2
+        L[1, 1, 2] = L[1, 2, 1] = 1 / s2
+        L[2] = np.diag([1.0, 1.0, -2.0]) / s6
+        L[3, 0, 2] = L[3, 2, 0] = -1 / s2
+        L[4] = np.diag([-1.0, 1.0, 0.0]) / s2
+
+        return L
 
     def euler_est_Cm(self, X1, XS):
         """
