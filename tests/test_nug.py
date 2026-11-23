@@ -467,3 +467,98 @@ def test_fejer_adjoint(is_asymmetric):
     left = xp.vdot(z, y)
     right = xp.vdot(X0, Z0) + xp.vdot(X1, Z1)
     np.testing.assert_allclose(xp.asnumpy(left), xp.asnumpy(right))
+
+
+#####################
+# D2 Rounding Tests #
+#####################
+
+
+def _d2_estimator(dtype, n=10, L=16):
+    """
+    Small D2 source and estimator for exercising the D2 rounding directly,
+    without running the SDP.
+    """
+    vol = DnSymmetricVolume(L=L, order=2, C=1, K=10, dtype=dtype, rng=SEED).generate()
+    src = Simulation(n=n, vols=vol, offsets=0, amplitudes=1, rng=SEED)
+    orient_est = CommonlineNUG(src, Lmax=2, max_shift=0, verbose=False)
+    return src, orient_est
+
+
+def test_degree_two_basis():
+    """
+    Check that the D2 rounding basis intertwines the real degree-two
+    representation with the action M -> g M g^T.
+    """
+    src, orient_est = _d2_estimator(np.float64, n=5)
+    T, Tinv = orient_est._complex2real(2)
+    L = orient_est._degree_two_basis()
+    D = Tinv @ orient_est._WD(2, src.angles.astype(np.float64)) @ T
+    np.testing.assert_allclose(D.imag, 0, atol=1e-12)
+
+    for g, Dg in zip(src.rotations.astype(np.float64), D.real):
+        lhs = np.einsum("ij,qjk,lk->qil", g, L, g)
+        rhs = np.einsum("pq,pil->qil", Dg, L)
+        np.testing.assert_allclose(lhs, rhs, atol=1e-12)
+
+
+def test_d2_rounding_ground_truth(dtype):
+    """
+    Check that the D2 rounding recovers the rotations from the ground-truth,
+    handedness-averaged representation matrices.
+    """
+    src, orient_est = _d2_estimator(dtype)
+    orient_est.X_est = orient_est.form_ground_truth_X(src.angles.astype(np.float64))
+    orient_est.recover_rotations()
+
+    assert orient_est.rotations.dtype == dtype
+    MSE = compare_rots_sym(orient_est.rotations, src.rotations, orient_est.sym_grp)
+    np.testing.assert_array_less(MSE, 1e-6)
+    gt_rots = g_sync(orient_est.rotations, src.rotations, orient_est.sym_grp)
+    mean_aligned_angular_distance(orient_est.rotations, gt_rots, 0.1)
+
+
+def test_d2_rounding_perturbed():
+    """
+    Check that the D2 rounding degrades gracefully when the degree-two block
+    is perturbed, mimicking an inexact SDP solution.
+    """
+    src, orient_est = _d2_estimator(np.float64, n=20)
+    X1, X2 = orient_est.form_ground_truth_X(src.angles)
+
+    rng = np.random.default_rng(SEED)
+    E = rng.normal(size=X2.shape)
+    E = (E + E.T) / 2
+    X2 = X2 + 0.1 * np.linalg.norm(X2) * E / np.linalg.norm(E)
+
+    # Restore the handedness zero pattern of the SDP solution.
+    parity = np.tile(np.arange(5) % 2, src.n)
+    X2[parity[:, None] != parity[None, :]] = 0
+
+    orient_est.X_est = [X1, X2]
+    orient_est.recover_rotations()
+    gt_rots = g_sync(orient_est.rotations, src.rotations, orient_est.sym_grp)
+    mean_aligned_angular_distance(orient_est.rotations, gt_rots, 2.0)
+
+
+def test_smoke_d2(dtype):
+    """
+    Quick end-to-end run of the D2 path, including proximal refinement.
+    """
+    vol = DnSymmetricVolume(L=32, order=2, C=1, dtype=dtype, rng=SEED).generate()
+    src = Simulation(n=10, vols=vol, offsets=0, amplitudes=1, rng=SEED).cache()
+
+    orient_est = CommonlineNUG(
+        src,
+        Lmax=4,
+        T=5,
+        max_iter=10,
+        pr_iters=1,
+        S2_grid=50,
+        max_shift=0,
+        verbose=False,
+    )
+    rots = orient_est.estimate_rotations()
+
+    assert rots.shape == (src.n, 3, 3)
+    assert rots.dtype == dtype
