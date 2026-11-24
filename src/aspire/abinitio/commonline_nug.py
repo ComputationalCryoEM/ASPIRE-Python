@@ -677,17 +677,13 @@ class CommonlineNUG(Orient3D):
 
         # The symmetry projector ranks give the expected low-rank structure
         # for each degree of a valid orbit solution.
-        rank_Ak = np.zeros(self.Lmax, dtype=np.float64)
+        rank_Ak = self._compute_rank()
 
         # Keep an unmodified copy of the original objective coefficients; each
         # refinement step adds a temporary proximal term to these.
         C_base = [None] * self.Lmax
         for k_idx in range(self.Lmax):
-            k = k_idx + 1
             C_base[k_idx] = xp.asnumpy(C[k_idx]).copy()
-            rank_Ak[k_idx] = np.linalg.matrix_rank(
-                self._symmetry_projector(k), tol=1e-6, hermitian=True
-            )
 
         # CC stores the modified objective coefficients for the next proximal ADMM solve.
         CC = [None] * self.Lmax
@@ -719,19 +715,6 @@ class CommonlineNUG(Orient3D):
             current = [np.copy(Xk) for Xk in X_next]
 
         return current
-
-    def _symmetry_projector(self, k):
-        """
-        Average degree-k Wigner matrices over the estimator's symmetry group.
-
-        :param k: Representation degree.
-
-        :return: Symmetry-projector matrix of shape (2*k+1, 2*k+1),
-            rounded to ten decimal places.
-        """
-        order = self.sym_euler.shape[0]
-        A = self._WD(k, self.sym_euler).sum(axis=0)
-        return np.round(A / order, 10)
 
     @staticmethod
     def _relative_change(A, B, eps=1e-12):
