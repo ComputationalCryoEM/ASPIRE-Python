@@ -627,7 +627,7 @@ class CommonlineNUG(Orient3D):
 
         # discretize S1
         S1_size = round(np.sqrt(np.pi * S2_size))
-        alpha = np.linspace(0, 2 * np.pi, S1_size)
+        alpha = np.linspace(0, 2 * np.pi, S1_size, endpoint=False)
 
         # discretize S2
         gamma, beta, _ = cart2sph(S2[:, 0], S2[:, 1], S2[:, 2])
