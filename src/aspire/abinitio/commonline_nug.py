@@ -787,6 +787,10 @@ class CommonlineNUG(Orient3D):
             R_est = self.euler_est_Cm(X_est[0], X_est[self.n_sym - 1])
         elif isinstance(self.sym_grp, DnSymmetryGroup):
             R_est = self.euler_est_Dm(X_est)
+        else:
+            raise NotImplementedError(
+                f"Rotation recovery is not implemented for {self.sym_grp}."
+            )
 
         self.rotations = R_est.astype(self.dtype)
 
