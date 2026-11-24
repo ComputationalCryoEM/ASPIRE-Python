@@ -1129,26 +1129,12 @@ class CommonlineNUG(Orient3D):
             for j in range(N):
                 Xij = X2[5 * i : 5 * (i + 1), 5 * j : 5 * (j + 1)]
 
-                # Avoid division by a numerically vanishing
-                # sin(2*beta) factor.
-                if abs(beta_est[i]) < 1e-6:
-                    beta_est[i] = 1e-6
-                if abs(beta_est[j]) < 1e-6:
-                    beta_est[j] = 1e-6
-                Aminus[i, j] = (
-                    Xij[1, 1]
-                    / np.sin(2 * beta_est[i])
-                    / np.sin(2 * beta_est[j])
-                    * 8
-                    / 3
-                )
-                Aplus[i, j] = (
-                    -Xij[1, 3]
-                    / np.sin(2 * beta_est[i])
-                    / np.sin(2 * beta_est[j])
-                    * 8
-                    / 3
-                )
+                # Avoid division by a numerically vanishing sin(2*beta) factor.
+                phase_scale = np.sin(2 * beta_est[i]) * np.sin(2 * beta_est[j])
+                phase_scale = max(phase_scale, 1e-6)
+
+                Aminus[i, j] = Xij[1, 1] / phase_scale * 8 / 3
+                Aplus[i, j] = -Xij[1, 3] / phase_scale * 8 / 3
 
         # Angular synchronization of the difference phases recovers
         # exp(i * alpha_i) up to a common phase.
