@@ -521,7 +521,8 @@ def test_d2_rounding_ground_truth(dtype):
 def test_d2_rounding_perturbed():
     """
     Check that the D2 rounding degrades gracefully when the degree-two block
-    is perturbed, mimicking an inexact SDP solution.
+    is perturbed, mimicking an inexact SDP solution. The threshold is below
+    the error of a readout from a single mixture of the two columns.
     """
     src, orient_est = _d2_estimator(np.float64, n=20)
     X1, X2 = orient_est.form_ground_truth_X(src.angles)
@@ -538,7 +539,24 @@ def test_d2_rounding_perturbed():
     orient_est.X_est = [X1, X2]
     orient_est.recover_rotations()
     gt_rots = g_sync(orient_est.rotations, src.rotations, orient_est.sym_grp)
-    mean_aligned_angular_distance(orient_est.rotations, gt_rots, 2.0)
+    mean_aligned_angular_distance(orient_est.rotations, gt_rots, 0.4)
+
+
+def test_d2_rounding_unbalanced():
+    """
+    Check that the D2 rounding is unaffected when the relaxed solution
+    under-weights the handedness-odd block, as observed in SDP output.
+    """
+    src, orient_est = _d2_estimator(np.float64, n=20)
+    X1, X2 = orient_est.form_ground_truth_X(src.angles)
+
+    odd = np.tile(np.arange(5) % 2 == 1, src.n)
+    X2[np.ix_(odd, odd)] *= 0.5
+
+    orient_est.X_est = [X1, X2]
+    orient_est.recover_rotations()
+    gt_rots = g_sync(orient_est.rotations, src.rotations, orient_est.sym_grp)
+    mean_aligned_angular_distance(orient_est.rotations, gt_rots, 0.1)
 
 
 def test_smoke_d2(dtype):
