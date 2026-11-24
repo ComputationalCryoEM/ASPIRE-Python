@@ -9,6 +9,7 @@ from aspire.abinitio.sync_voting import _syncrotations
 from aspire.numeric import xp
 from aspire.operators import PolarFT
 from aspire.utils import Rotation, cart2sph, tqdm, trange
+from aspire.utils.matrix import nearest_rotations
 from aspire.volume import (
     CnSymmetryGroup,
     DnSymmetryGroup,
@@ -816,31 +817,40 @@ class CommonlineNUG(Orient3D):
         Recover rotations for D2 symmetry from the degree-two solution.
 
         The Euler-angle recovery used for D_n, n >= 3, relies on the degree-two
-        symmetry projector having rank one, i.e. a single principal axis. For D2
-        it has rank two, and the degree-two block carries all three 2-fold axes
-        on an equal footing:
+        symmetry projector having rank one: the degree-two solution then
+        carries one principal axis per image. For D2 the projector has rank two
+        and the solution carries all three 2-fold axes. With r_i^k the k-th row
+        of R_i and t(r) = r r^T - I / 3 in the basis `_degree_two_basis()`, the
+        solution for one handedness is
 
-            X_ij = sum_a t(r_i^a) t(r_j^a)^T,
+            X2_ij = sum_k t(r_i^k) t(r_j^k)^T = V_i V_j^T,
 
-        where r_i^a is the a-th row of rotation R_i and t(r) is the traceless
-        part of r r^T written in the degree-two real basis. Instead of Euler
-        angles, recover each image's frame directly:
+        where V_i (5 x 2) holds columns 2 and 4 of the real degree-two
+        representation of g_i = R_i^T, so that V_i^T V_i = I. Averaging over
+        handedness keeps the entries that couple two even indices (0, 2, 4) or
+        two odd indices (1, 3) and zeros the rest. The axes are read off
+        spectrally:
 
-        1. Split X2 into its handedness-even and handedness-odd blocks (the
-           cross blocks are zero in the handedness-averaged solution). Each is
-           rank two; factor each with its top two scaled eigenvectors.
-        2. The two factors are only determined up to independent 2x2
-           orthogonal transforms. Align the odd factor to the even one using
-           the per-image identity V_i^T V_i = I, solved in closed form. The
-           remaining sign is the usual global handedness ambiguity.
-        3. A fixed combination w of the two columns gives, for every image,
-           a symmetric 3x3 matrix M_i = R_i^T diag(b) R_i with the same
-           eigenvalues b for all images. Choose w so that b is evenly spaced.
-        4. The eigenvectors of M_i, sorted by eigenvalue, are the rows of
-           R_i, labelled consistently across images. Fix det(R_i) = +1.
+        1. Factor. Factor the even block and the odd block of X2 by their top
+           two eigenpairs. Each factor is determined only up to its own 2x2
+           orthogonal transform. This assumes both blocks have rank two; if
+           all views lie near a great circle perpendicular to one 2-fold axis,
+           the odd block has rank one and accuracy drops.
+        2. Align. Find the orthogonal transform and the relative scale of the
+           odd factor that best restore V_i^T V_i proportional to I, in closed
+           form (`_align_d2_factors`). The scale corrects an uneven weighting
+           of the two blocks in the relaxed solution.
+        3. Read the axes. Each unit vector w gives a symmetric traceless matrix
+           M_i(w) = sum_p (V_i w)_p L_p in the frame of image i. For three
+           directions w_k, 120 degrees apart, M_i(w_k) is proportional to
+           t(r_i^k) for every image, so its top eigenvector is the axis r_i^k.
+           These directions maximize the cubic invariant sum_i tr(M_i(w)^3)
+           and are found in closed form. Return the rotation nearest to the
+           matrix with rows r_i^k.
 
         The estimates are determined up to the D2 symmetry of each image, a
-        global rotation, and global handedness.
+        common permutation of the three 2-fold axes (a global rotation that
+        normalizes D2), and global handedness.
 
         :param X2: Relaxed degree-two representation matrix in the real basis,
             shape (5 * n_img, 5 * n_img).
@@ -857,32 +867,34 @@ class CommonlineNUG(Orient3D):
         Pe = self._top_two_factor(Xe).reshape(N, 3, 2)
         Po = self._top_two_factor(Xo).reshape(N, 2, 2)
 
-        # 2. Align the odd factor with the even factor.
-        Q = self._align_d2_factors(
+        # 2. Align and rescale the odd factor so that each V_i^T V_i is close
+        #    to a multiple of I.
+        Q, scale = self._align_d2_factors(
             np.einsum("nki,nkj->nij", Pe, Pe),
             np.einsum("nki,nkj->nij", Po, Po),
         )
         V = np.zeros((N, 5, 2), dtype=np.float64)
         V[:, even] = Pe
-        V[:, odd] = Po @ Q
+        V[:, odd] = np.sqrt(scale) * Po @ Q
+        M = np.einsum("npa,pij->naij", V, self._degree_two_basis())
 
-        # 3. Choose the column combination giving evenly spaced eigenvalues,
-        #    i.e. the middle eigenvalue closest to zero across all images.
-        basis = self._degree_two_basis()
-        phis = np.linspace(0, np.pi, 180, endpoint=False)
-        W = np.stack([np.cos(phis), np.sin(phis)])
-        M = np.einsum("npj,jk,pab->knab", V, W, basis, optimize=True)
-        lam = np.linalg.eigvalsh(M)
-        spread = np.sum((lam[..., 2] - lam[..., 0]) ** 2, axis=1)
-        w = W[:, np.argmin(np.sum(lam[..., 1] ** 2, axis=1) / spread)]
+        # 3. For w = (cos(psi), sin(psi)), sum_i tr(M_i(w)^3) = sum_abc t_abc
+        #    w_a w_b w_c. Its cos(3 psi), sin(3 psi) part is proportional to
+        #    cos(3 psi - phase); on exact data that is all of it, and its three
+        #    maxima are where M_i(w) is proportional to t(r_i^k).
+        t = np.einsum("naij,nbjk,ncki->abc", M, M, M)
+        phase = np.arctan2(3 * t[0, 0, 1] - t[1, 1, 1], t[0, 0, 0] - 3 * t[0, 1, 1])
+        rots = np.empty((N, 3, 3), dtype=np.float64)
+        for k in range(3):
+            psi = (phase + 2 * np.pi * k) / 3
+            _, vecs = np.linalg.eigh(np.cos(psi) * M[:, 0] + np.sin(psi) * M[:, 1])
+            rots[:, k] = vecs[:, :, -1]
 
-        # 4. Eigenvectors sorted by eigenvalue are the rows of R_i.
-        M = np.einsum("np,pab->nab", V @ w, basis)
-        _, vecs = np.linalg.eigh(M)
-        rots = np.ascontiguousarray(vecs.transpose(0, 2, 1))
+        # The axes are known up to sign. Make det > 0, so that the nearest
+        # orthogonal matrix is a rotation.
         rots[np.linalg.det(rots) < 0, 2] *= -1
 
-        return rots
+        return nearest_rotations(rots)
 
     @staticmethod
     def _top_two_factor(Y):
@@ -900,40 +912,48 @@ class CommonlineNUG(Orient3D):
     @staticmethod
     def _align_d2_factors(A, B):
         """
-        Find Q in O(2) minimizing sum_i ||A_i + Q^T B_i Q - I||_F^2.
+        Find Q in O(2) and s >= 0 making every A_i + s Q^T B_i Q as close as
+        possible to a multiple of I, i.e. minimizing the summed squared norm of
+        its traceless part.
 
         Write the traceless part of a symmetric 2x2 matrix S as the complex
         number dev(S) = (S_00 - S_11) / 2 + i S_01. For a rotation by theta,
-        dev(Q^T S Q) = dev(S) exp(-2i theta), and a reflection additionally
-        conjugates dev(S). The trace part does not depend on Q, so the
-        problem reduces to a phase fit with a closed-form solution. Q and -Q
-        are equally good; that sign is the global handedness ambiguity.
+        dev(Q^T S Q) = exp(-2i theta) dev(S); for a rotation by theta followed
+        by diag(1, -1) it is exp(2i theta) conj(dev(S)). In both cases the
+        problem is the linear least-squares fit dev(A_i) + u b_i ~ 0 in one
+        complex unknown u, with b_i = dev(B_i), u = s exp(-2i theta) for a
+        rotation and b_i = conj(dev(B_i)), u = s exp(2i theta) for a
+        reflection. Solve both in closed form and keep the one with the smaller
+        residual. Q and -Q are equally good; that sign is the global handedness
+        ambiguity. If every B_i is a multiple of I (e.g. all views along body
+        diagonals), Q and s are not identifiable; return Q = I and s = 1.
 
         :param A: Even-block Gram matrices, shape (n_img, 2, 2).
         :param B: Odd-block Gram matrices, shape (n_img, 2, 2).
 
-        :return: Orthogonal matrix Q of shape (2, 2).
+        :return: Orthogonal matrix Q of shape (2, 2) and the scale s.
         """
 
         def dev(S):
             return (S[:, 0, 0] - S[:, 1, 1]) / 2 + 1j * S[:, 0, 1]
 
         a, b = dev(A), dev(B)
+        norm_b = np.sum(np.abs(b) ** 2)
+        if norm_b <= 1e-12 * np.sum(B**2):
+            return np.eye(2), 1.0
 
-        # sum_i |a_i + b_i exp(-2i theta)|^2 is minimized by
-        # exp(-2i theta) = -conj(z) / |z| with z = sum_i conj(a_i) b_i.
-        z_rot = np.sum(np.conj(a) * b)
-        z_ref = np.sum(np.conj(a) * np.conj(b))
+        z_rot = np.sum(np.conj(b) * a)
+        z_ref = np.sum(b * a)
         reflect = abs(z_ref) > abs(z_rot)
-        z = z_ref if reflect else z_rot
-        theta = -np.angle(-np.conj(z)) / 2
+        u = -(z_ref if reflect else z_rot) / norm_b
 
+        theta = np.angle(u) / 2 if reflect else -np.angle(u) / 2
         c, s = np.cos(theta), np.sin(theta)
         Q = np.array([[c, -s], [s, c]])
         if reflect:
-            Q = np.diag([1.0, -1.0]) @ Q
+            Q = Q @ np.diag([1.0, -1.0])
 
-        return Q
+        return Q, abs(u)
 
     @staticmethod
     def _degree_two_basis():
