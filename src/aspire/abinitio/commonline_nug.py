@@ -788,7 +788,6 @@ class CommonlineNUG(Orient3D):
         elif isinstance(self.sym_grp, DnSymmetryGroup):
             R_est = self.euler_est_Dm(X_est)
 
-        # self.Euler_est = Euler_est
         self.rotations = R_est.astype(self.dtype)
 
     def rounding_C1(self, X1):
