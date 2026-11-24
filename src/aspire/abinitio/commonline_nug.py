@@ -1657,8 +1657,7 @@ class _C1ADMM:
                 elif update_idx == 1:
                     self.update_yE()
                 else:
-                    for _ in range(self.Nstep_yI):
-                        self.update_yI()
+                    self.update_yI()
 
             self.update_X()
             if t % 100 == 0 or t == self.max_iter - 1:
@@ -1741,30 +1740,31 @@ class _C1ADMM:
         """
         AET_yE0, AET_yE1, _ = self.equality.fun_AET(self.yE0, self.yE1, self.yEq)
 
-        for columns in self.fejer.pair_chunks():
-            packed_columns = self.blocks.idx_offdiag[columns]
-            AIT_yI = self.fejer.fun_AIT_chunk(self.yI[:, columns])
+        for _ in range(self.Nstep_yI):
+            for columns in self.fejer.pair_chunks():
+                packed_columns = self.blocks.idx_offdiag[columns]
+                AIT_yI = self.fejer.fun_AIT_chunk(self.yI[:, columns])
 
-            tmp0 = (
-                -self.X0[:, packed_columns] / self.rho
-                + self.C0[:, packed_columns]
-                - self.S0[:, packed_columns]
-                - AIT_yI[: self.blocks.D0]
-                - AET_yE0[:, packed_columns]
-            )
-            tmp1 = (
-                -self.X1[:, packed_columns] / self.rho
-                + self.C1[:, packed_columns]
-                - self.S1[:, packed_columns]
-                - AIT_yI[self.blocks.D0 :]
-                - AET_yE1[:, packed_columns]
-            )
+                tmp0 = (
+                    -self.X0[:, packed_columns] / self.rho
+                    + self.C0[:, packed_columns]
+                    - self.S0[:, packed_columns]
+                    - AIT_yI[: self.blocks.D0]
+                    - AET_yE0[:, packed_columns]
+                )
+                tmp1 = (
+                    -self.X1[:, packed_columns] / self.rho
+                    + self.C1[:, packed_columns]
+                    - self.S1[:, packed_columns]
+                    - AIT_yI[self.blocks.D0 :]
+                    - AET_yE1[:, packed_columns]
+                )
 
-            # This slice shares storage with self.yI; updates below modify it directly.
-            yI_chunk = self.yI[:, columns]
-            yI_chunk += self.fejer.bI / self.rho / self.fejer.Lambda
-            yI_chunk += self.fejer.fun_AI(tmp0, tmp1) / self.fejer.Lambda
-            xp.maximum(yI_chunk, 0, out=yI_chunk)
+                # This slice shares storage with self.yI; updates below modify it directly.
+                yI_chunk = self.yI[:, columns]
+                yI_chunk += self.fejer.bI / self.rho / self.fejer.Lambda
+                yI_chunk += self.fejer.fun_AI(tmp0, tmp1) / self.fejer.Lambda
+                xp.maximum(yI_chunk, 0, out=yI_chunk)
 
     def update_X(self):
         """
@@ -2018,8 +2018,7 @@ class _SymmetricADMM:
                 if update_idx == 1:
                     self.update_yE()
                 if update_idx == 2:
-                    for _ in range(self.Nstep_yI):
-                        self.update_yI()
+                    self.update_yI()
 
             self.update_X()
             if t % 100 == 0:
@@ -2117,17 +2116,19 @@ class _SymmetricADMM:
         Replaces yI using the current solver state and penalty parameter.
         """
         Z0, Z1, _, _, _ = self.equality.fun_AET(self.yE, self.yEq)
-        AIT_yI0, AIT_yI1 = self.fejer.fun_AIT(self.yI)
-        tmp = self.fejer.fun_AI(
-            -self.X0 / self.rho + self.C0 - self.S0 - Z0 - AIT_yI0,
-            -self.X1 / self.rho + self.C1 - self.S1 - Z1 - AIT_yI1,
-        )
-        self.yI = (
-            self.yI
-            + self.fejer.bI / self.rho / self.fejer.Lambda
-            + tmp / self.fejer.Lambda
-        )
-        self.yI = xp.maximum(self.yI, 0)
+
+        for _ in range(self.Nstep_yI):
+            AIT_yI0, AIT_yI1 = self.fejer.fun_AIT(self.yI)
+            tmp = self.fejer.fun_AI(
+                -self.X0 / self.rho + self.C0 - self.S0 - Z0 - AIT_yI0,
+                -self.X1 / self.rho + self.C1 - self.S1 - Z1 - AIT_yI1,
+            )
+            self.yI = (
+                self.yI
+                + self.fejer.bI / self.rho / self.fejer.Lambda
+                + tmp / self.fejer.Lambda
+            )
+            self.yI = xp.maximum(self.yI, 0)
 
     def update_X(self):
         """
