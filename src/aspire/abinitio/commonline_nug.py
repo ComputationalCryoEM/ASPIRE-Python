@@ -444,7 +444,7 @@ class CommonlineNUG(Orient3D):
         """
         pre = self.ADMM_preprocessing(C)
 
-        rank_Ak, _ = self._compute_rank()
+        rank_Ak = self._compute_rank()
         logger.info(f"Rank of Ak: {rank_Ak}")
 
         # Prepare the symmetry/diagonal and quaternion equality constraints.
@@ -646,19 +646,17 @@ class CommonlineNUG(Orient3D):
 
     def _compute_rank(self):
         """
-        Compute the ranks and matrices of the symmetry-averaging projectors at each degree.
+        Compute the ranks of the symmetry-averaging projectors at each degree.
 
-        :return: Ranks and symmetry-averaging matrices for each degree.
+        :return: Ranks for each degree.
         """
         rk = np.zeros(self.Lmax, dtype=np.float64)
-        A = []
         for k_idx in range(self.Lmax):
             k = k_idx + 1  # degree
             Ak = np.sum(self._WD(k, self.sym_euler), axis=0)
             Ak = np.round(Ak / self.n_sym, 6)
-            A.append(Ak)
             rk[k_idx] = np.linalg.matrix_rank(Ak)
-        return rk, A
+        return rk
 
     ############################
     # Proximal Refinement Step #
