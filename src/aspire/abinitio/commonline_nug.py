@@ -1569,8 +1569,8 @@ class _C1ADMM:
     Fixed layout and constraint operations are supplied by blocks,
     equality, and fejer.
 
-    The solver releases unused Fejer operator arrays during construction
-    and result assembly. Its prepared inputs are intended for one solve.
+    The solver releases its Fejér operator before result assembly.
+    Its prepared inputs are intended for one solve.
     """
 
     def __init__(
@@ -1604,7 +1604,6 @@ class _C1ADMM:
         self.blocks = pre.blocks
         self.equality = equality
         self.fejer = pre.fejer
-        self.fejer.AI_mat_diag = None  # C1 does not use the self-pair operator.
 
         self.C0 = pre.C0
         self.C1 = pre.C1
@@ -2822,24 +2821,27 @@ class _FejerConstraints:
             AI_mat_offdiag[:, block0_cols] = block0
             AI_mat_offdiag[:, block1_cols] = block1
 
-        # Build the self-pair operator using the symmetric part of each weight matrix.
-        AI_mat_diag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
-        for k_idx in range(Lmax):
-            k = k_idx + 1
-            scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
-            block0_cols = slice(d0[k_idx], d0[k_idx + 1])
-            block1_cols = slice(D0 + d1[k_idx], D0 + d1[k_idx + 1])
+        self.AI_mat_diag = None
+        if not self.is_asymmetric:
+            # Build the self-pair operator using the symmetric part of each weight matrix.
+            AI_mat_diag = np.zeros((Ngrid, D0 + D1), dtype=np.float64)
+            for k_idx in range(Lmax):
+                k = k_idx + 1
+                scale = (Lmax - k + 2) * (Lmax - k + 1) * (k + 0.5)
+                block0_cols = slice(d0[k_idx], d0[k_idx + 1])
+                block1_cols = slice(D0 + d1[k_idx], D0 + d1[k_idx + 1])
 
-            W0_sym = 0.5 * (W0[k_idx] + W0[k_idx].transpose(0, 2, 1))
-            W1_sym = 0.5 * (W1[k_idx] + W1[k_idx].transpose(0, 2, 1))
+                W0_sym = 0.5 * (W0[k_idx] + W0[k_idx].transpose(0, 2, 1))
+                W1_sym = 0.5 * (W1[k_idx] + W1[k_idx].transpose(0, 2, 1))
 
-            block0 = scale * W0_sym.reshape(Ngrid, -1)
-            block1 = scale * W1_sym.reshape(Ngrid, -1)
+                block0 = scale * W0_sym.reshape(Ngrid, -1)
+                block1 = scale * W1_sym.reshape(Ngrid, -1)
 
-            AI_mat_diag[:, block0_cols] = block0
-            AI_mat_diag[:, block1_cols] = block1
+                AI_mat_diag[:, block0_cols] = block0
+                AI_mat_diag[:, block1_cols] = block1
 
-        self.AI_mat_diag = xp.asarray(AI_mat_diag)
+            self.AI_mat_diag = xp.asarray(AI_mat_diag)
+
         self.AI_mat_offdiag = xp.asarray(AI_mat_offdiag)
         self.bI = -(Lmax + 2) * (Lmax + 1) / 2
 
